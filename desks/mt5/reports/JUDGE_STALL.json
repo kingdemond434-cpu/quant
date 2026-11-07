@@ -1,21 +1,21 @@
 {
- "at": "2026-11-07T03:16:01+00:00",
+ "at": "2026-11-07T03:31:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 3.74,
-   "why": "no new verdict for 3.7h (last 2026-11-06T23:31:37+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 3.99,
+   "why": "no new verdict for 4.0h (last 2026-11-06T23:31:37+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": true,
    "floor": 4.0,
    "docket_depth": 1409240,
-   "busy_judge_cores": 0.92,
-   "busy_other_cores": 15.08,
-   "why": "judge tree at 0.92 cores (others 15.08) with a docket pending (resident SWEEPING, queue depth 1409240); floor 4; under the floor on every reading for 0.5h (limit 1h)",
-   "low_since": "2026-11-07T02:46:15+00:00",
-   "hours": 0.5
+   "busy_judge_cores": 0.98,
+   "busy_other_cores": 14.06,
+   "why": "judge tree at 0.98 cores (others 14.06) with a docket pending (resident SWEEPING, queue depth 1409240); floor 4; under the floor on every reading for 0.1h (limit 1h)",
+   "low_since": "2026-11-07T03:26:11+00:00",
+   "hours": 0.08
   },
   "resident_dead": {
    "open": false,
@@ -25,9 +25,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 3.59,
+   "hours": 3.84,
    "limit_h": 25.59,
-   "why": "3.6h since the last sweep ended (2026-11-06T23:40:35+00:00), status SWEEPING; limit 25.59h"
+   "why": "3.8h since the last sweep ended (2026-11-06T23:40:35+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -43,10 +43,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "collect_and_cut",
-   "hours": 0.38,
+   "phase": "merge_and_publish",
+   "hours": 0.13,
    "known_phase": true,
-   "why": "sweep phase collect_and_cut has run 0.4h since 2026-11-07T02:53:20+00:00 (limit 1h)"
+   "why": "sweep phase merge_and_publish has run 0.1h since 2026-11-07T03:23:26+00:00 (limit 3h)"
   },
   "host_unreadable": {
    "open": false,
@@ -91,7 +91,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-07T03:15:49+00:00",
+  "heartbeat_utc": "2026-11-07T03:30:50+00:00",
   "last_sweep_ended_utc": "2026-11-06T23:40:35+00:00",
   "last_rc": 0
  },

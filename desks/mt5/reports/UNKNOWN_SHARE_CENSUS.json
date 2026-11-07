@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "building",
+  "stage": "carving",
   "utc_day": "2026-11-07",
   "started_at": "2026-11-07T02:58:57+00:00",
-  "written_at": "2026-11-07T03:16:08+00:00",
+  "written_at": "2026-11-07T03:34:14+00:00",
   "cells_planned": 6000,
-  "cells_visited": 1035,
+  "cells_visited": 6000,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 23591,
     "rss_cap_mb": 5898,
-    "peak_rss_mb": 906
+    "peak_rss_mb": 565
   },
-  "lockbox_cut": "2023-03-27",
+  "lockbox_cut": "2022-09-05",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 90,
-  "elapsed_s": 1028.6,
+  "cells_carved_at_own_tail": 336,
+  "elapsed_s": 2114.7,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 20,
@@ -39,123 +39,127 @@
     }
   },
   "sampled_cells": {
-    "cells": 1035,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 43
     },
-    "preflight_refused": 492,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 500,
-    "unknown": 133,
-    "unknown_share_of_judged": 0.266,
+    "preflight_refused": 2794,
+    "build_failed": 1,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 1
+    },
+    "deferred": 1931,
+    "judged_built": 1231,
+    "unknown": 334,
+    "unknown_share_of_judged": 0.2713,
     "wilson95": [
-      0.2292,
-      0.3064
+      0.2472,
+      0.2968
     ],
     "unknown_by_reason": {
-      "no_signals": 114,
-      "too_rare": 13,
-      "short_history_after_cut": 3,
-      "lockbox_consumed_history": 2,
+      "no_signals": 275,
+      "too_rare": 28,
+      "lockbox_consumed_history": 16,
+      "short_history_after_cut": 14,
       "signals_no_trades": 1
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "orderflow_imbalance": 22,
-      "formula": 21,
-      "session_range_breakout": 14,
-      "alt_conditioned": 10,
-      "regime_transition": 6,
-      "ensemble": 5,
-      "monday_gap": 5,
-      "multi_speed_trend": 5,
-      "overnight_drift": 4,
-      "forced_flow": 4,
-      "exit_operated": 3,
-      "htf_anchor_trend": 3,
-      "liquidity_regime": 3,
-      "opening_range": 3,
-      "london_close_momentum": 3
+      "formula": 54,
+      "orderflow_imbalance": 47,
+      "session_range_breakout": 37,
+      "overnight_drift": 15,
+      "alt_conditioned": 14,
+      "regime_transition": 13,
+      "exogenous_conditioner": 11,
+      "ensemble": 10,
+      "multi_speed_trend": 10,
+      "exit_operated": 7,
+      "htf_anchor_trend": 7,
+      "comex_settlement": 7,
+      "monday_gap": 7,
+      "forced_flow": 7,
+      "hedging_demand_close": 7
     },
     "unknown_by_chart": {
-      "H1": 51,
-      "M30": 28,
-      "M5": 21,
-      "M15": 12,
-      "H4": 9,
-      "D1": 6,
-      "M1": 6
+      "H1": 144,
+      "M30": 49,
+      "M5": 49,
+      "M15": 41,
+      "H4": 27,
+      "D1": 13,
+      "M1": 11
     },
     "judged_by_chart": {
-      "H1": 207,
-      "M30": 112,
-      "M15": 76,
-      "M5": 74,
-      "H4": 17,
-      "M1": 8,
-      "D1": 6
+      "H1": 520,
+      "M30": 238,
+      "M15": 212,
+      "M5": 179,
+      "H4": 48,
+      "D1": 19,
+      "M1": 15
     }
   },
   "sampled_plus_siblings": {
-    "cells": 1035,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 43
     },
-    "preflight_refused": 492,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 500,
-    "unknown": 133,
-    "unknown_share_of_judged": 0.266,
+    "preflight_refused": 2794,
+    "build_failed": 1,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 1
+    },
+    "deferred": 1931,
+    "judged_built": 1231,
+    "unknown": 334,
+    "unknown_share_of_judged": 0.2713,
     "wilson95": [
-      0.2292,
-      0.3064
+      0.2472,
+      0.2968
     ],
     "unknown_by_reason": {
-      "no_signals": 114,
-      "too_rare": 13,
-      "short_history_after_cut": 3,
-      "lockbox_consumed_history": 2,
+      "no_signals": 275,
+      "too_rare": 28,
+      "lockbox_consumed_history": 16,
+      "short_history_after_cut": 14,
       "signals_no_trades": 1
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "orderflow_imbalance": 22,
-      "formula": 21,
-      "session_range_breakout": 14,
-      "alt_conditioned": 10,
-      "regime_transition": 6,
-      "ensemble": 5,
-      "monday_gap": 5,
-      "multi_speed_trend": 5,
-      "overnight_drift": 4,
-      "forced_flow": 4,
-      "exit_operated": 3,
-      "htf_anchor_trend": 3,
-      "liquidity_regime": 3,
-      "opening_range": 3,
-      "london_close_momentum": 3
+      "formula": 54,
+      "orderflow_imbalance": 47,
+      "session_range_breakout": 37,
+      "overnight_drift": 15,
+      "alt_conditioned": 14,
+      "regime_transition": 13,
+      "exogenous_conditioner": 11,
+      "ensemble": 10,
+      "multi_speed_trend": 10,
+      "exit_operated": 7,
+      "htf_anchor_trend": 7,
+      "comex_settlement": 7,
+      "monday_gap": 7,
+      "forced_flow": 7,
+      "hedging_demand_close": 7
     },
     "unknown_by_chart": {
-      "H1": 51,
-      "M30": 28,
-      "M5": 21,
-      "M15": 12,
-      "H4": 9,
-      "D1": 6,
-      "M1": 6
+      "H1": 144,
+      "M30": 49,
+      "M5": 49,
+      "M15": 41,
+      "H4": 27,
+      "D1": 13,
+      "M1": 11
     },
     "judged_by_chart": {
-      "H1": 207,
-      "M30": 112,
-      "M15": 76,
-      "M5": 74,
-      "H4": 17,
-      "M1": 8,
-      "D1": 6
+      "H1": 520,
+      "M30": 238,
+      "M15": 212,
+      "M5": 179,
+      "H4": 48,
+      "D1": 19,
+      "M1": 15
     }
   },
   "siblings_only": {
