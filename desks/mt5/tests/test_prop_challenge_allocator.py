@@ -171,6 +171,21 @@ def test_a_measured_stop_prices_the_spread_exactly() -> None:
     assert out["bias_r_per_trade"] == pytest.approx(want, abs=1e-4)
 
 
+def test_a_quotes_only_hour_is_priced_at_the_dearer_of_quotes_and_proxy() -> None:
+    """One quote per hourly pass can miss the rollover spike PROXY_SHAPE carries (Auditor SF)."""
+    fusion = _surface({1: 20.0, 10: 10.0})
+    reg = {"AUDNZD": {"point": 1e-5, "median_spread_pts": 12.0}}
+    quoted = {"symbols": {"AUDNZD": {"hours": {"1": {"status": "MEASURED", "p50": 60.0,
+                                                     "p50_bars": None, "n_quotes": 5}}}}}
+    calm = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia",
+                               {"AUDNZD": {"point": 1e-5, "spread": 10}}, quoted, fusion, reg)
+    assert calm["basis"] == "FTMO venue quotes (n=5)"
+    spiky = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia",
+                                {"AUDNZD": {"point": 1e-5, "spread": 60}}, quoted, fusion, reg)
+    assert spiky["basis"] == "PROXY_SHAPE"
+    assert spiky["ftmo_spread_px"] == pytest.approx(60 * 1e-5 * 20.0 / 15.0)
+
+
 # ------------------------------------------------------------------ the phase chain
 
 def test_the_phase_advances_only_after_a_pass() -> None:
