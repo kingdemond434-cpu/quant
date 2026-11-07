@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-11-07T05:56:34.417423+00:00",
+ "generated_utc": "2026-11-07T12:47:58.762737+00:00",
  "stages": {
   "intake": {
-   "files": 56407,
-   "files_7d": 3117,
+   "files": 56529,
+   "files_7d": 3189,
    "rows_recent_files": 3016
   },
   "proposers": {
@@ -23,41 +23,41 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 160,
-    "rows_latest": 7,
-    "last": "2026-11-07T05:54:01.111736+00:00"
+    "files": 161,
+    "rows_latest": 6,
+    "last": "2026-11-07T11:33:02.335554+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 871,
-   "decided_total": 59379,
+   "queued": 874,
+   "decided_total": 60025,
    "backlog": 0
   },
   "judged": {
-   "cells": 1123075,
-   "unmeasured": 19290
+   "cells": 1145927,
+   "unmeasured": 11863
   },
   "certified": {
-   "cells": 2947,
-   "last_certified": "2026-11-06",
-   "certified_last_30d": 2128
+   "cells": 3004,
+   "last_certified": "2026-11-07",
+   "certified_last_30d": 2185
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 2947,
+   "certificates": 3004,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 2947,
+   "forward_eligible_certificates": 3004,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 1020,
    "clocks_ticked_24h": 1001,
    "clocks_ticked_7d": 1001,
-   "last_tick": "2026-11-07T05:56:23+00:00",
-   "engine_silent_hours": 0.0,
-   "n_certificates": 2947,
+   "last_tick": "2026-11-07T12:28:35+00:00",
+   "engine_silent_hours": 0.3,
+   "n_certificates": 3004,
    "n_enrolled": 1016,
    "n_accruing": 551,
    "n_blocked": 21,
@@ -68,7 +68,7 @@
     "BLOCKED_TIER_S": 8,
     "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-11-07T03:35:04+00:00"
+   "census_at": "2026-11-07T10:57:50+00:00"
   },
   "recommendations": {
    "total": 784,
@@ -79,8 +79,8 @@
  "conversion": {
   "intake_to_compiled": 10.1326,
   "judged_to_certified": 0.0026,
-  "certified_to_forward": 0.187,
-  "certified_to_clock": 0.3448
+  "certified_to_forward": 0.1834,
+  "certified_to_clock": 0.3382
  },
  "bottleneck": "none obvious"
 }
