@@ -46,6 +46,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk.family_exogenous_conditioner import MIN_OBSERVATIONS  # noqa: E402
+
 SEAT = "free_stack_proposer"
 COLUMNS = DESK / "data" / "free_stack" / "columns.json"
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -84,6 +86,31 @@ def series_exists(sid: str) -> bool:
     return any((SERIES / f"fs_{sid}{ext}").exists() for ext in (".parquet", ".csv"))
 
 
+def column_observations(sid: str, col: str) -> int | str:
+    """Point-in-time observations of `fs_<sid>.<col>` on this host: the series every one of the
+    three families reads, through the SAME `conditioner` they call, untransformed.
+
+    WHY THE PROPOSER ASKS (2026-11-05). All three families return no signals -- never a price
+    fallback -- when the column has fewer than `MIN_OBSERVATIONS` stamped points, so such a cell
+    reaches the gauntlet with zero trading days and is written UNKNOWN `no_trades`. MEASURED on
+    the box that day: 88% of the last 20,000 UNKNOWN verdicts were these three families; every
+    conditioner that built had 1 to 23 points (app ranks, Telegram tone, Google Trends, all
+    begun in the last weeks), one column (`fs_cn_guba.USEQ_bull`) was absent from its frame,
+    and 7,030 of one sweep's 10,570 judged cells were UNMEASURED. Each was also charged to the
+    lifetime trial ledger through `tests_run`, raising the deflated-Sharpe bar every testable
+    cell must clear for a test that could not run. The raw count is the LOOSEST bar any of the
+    three applies (the z-transforms only lose points), so nothing that could build is held.
+
+    A reader that RAISES returns the exception's name, never 0: a broken reader must not read
+    as an empty column (audit SF2 of 81ac105d6)."""
+    from mt5desk.family_exogenous_conditioner import conditioner
+    try:
+        s = conditioner(f"fs_{sid}", col, "raw", root=SERIES)
+    except Exception as exc:
+        return f"{type(exc).__name__}: {exc}"[:160]
+    return 0 if s is None else len(s)
+
+
 def _row(sid: str, src: dict[str, Any], col: str, meta: dict[str, Any], sym: str, chart: str,
          family: str, params: dict[str, Any], arm: str) -> dict[str, Any]:
     from proposer_common import candidate
@@ -118,6 +145,16 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"
             continue
         for col in sorted(columns[sid]):
+            n_obs = column_observations(sid, col)
+            if isinstance(n_obs, str):
+                skipped[f"{sid}.{col}"] = f"series reader raised {n_obs}"
+                continue
+            if n_obs < MIN_OBSERVATIONS:
+                # NOT MINTED YET, AND NAMED. The ring re-reads every column each pass, so the
+                # column is minted on the first pass after it reaches the floor.
+                skipped[f"{sid}.{col}"] = (f"{n_obs} point-in-time observation(s) on this host; "
+                                           f"the families need {MIN_OBSERVATIONS} to emit a signal")
+                continue
             meta = columns[sid][col] or {}
             for sym, chart in product(meta.get("hypothesis") or [], CHARTS):
                 base = {"source": f"fs_{sid}", "signal": col}
