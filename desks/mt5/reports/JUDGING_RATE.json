@@ -1,5 +1,5 @@
 {
- "at": "2026-11-07T14:44:29+00:00",
+ "at": "2026-11-07T15:47:20+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -9,7 +9,7 @@
   "counts": {
    "1h": 0,
    "24h": 37197,
-   "7d": 338832,
+   "7d": 327650,
    "build_step_lo": 24971,
    "build_step_hi": 0
   },
@@ -17,7 +17,7 @@
   "first_terminal_counts": {
    "1h": 0,
    "24h": 12448,
-   "7d": 185789,
+   "7d": 182628,
    "build_step_lo": 6916,
    "build_step_hi": 0
   },
@@ -25,23 +25,23 @@
   "first_terminal_per_hour": {
    "1h": 0.0,
    "24h": 518.667,
-   "7d": 1105.887
+   "7d": 1087.071
   },
   "per_hour": {
    "1h": 0.0,
    "24h": 1549.875,
-   "7d": 2016.857
+   "7d": 1950.298
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 60340,
-   "7d": 140304
+   "24h": 61171,
+   "7d": 141198
   },
   "per_hour": {
-   "24h": 2514.167,
-   "7d": 835.143
+   "24h": 2548.792,
+   "7d": 840.464
   }
  },
  "verdicts_per_hour": 1549.875,
@@ -50,13 +50,13 @@
  "first_judged_per_day": 12448.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": true,
- "created_per_day": 60340.0,
+ "created_per_day": 61171.0,
  "backlog": 1058576,
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
   "status": "GROWING",
   "hours": null,
-  "net_per_day": -47892.0,
+  "net_per_day": -48723.0,
   "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
  },
  "workers_planned": 18,
@@ -64,7 +64,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-07T14:42:46+00:00",
-  "pid": 18788
+  "started_at": "2026-11-07T15:44:02+00:00",
+  "pid": 27620
  }
 }
