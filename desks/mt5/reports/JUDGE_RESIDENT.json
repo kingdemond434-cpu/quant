@@ -17,7 +17,7 @@
  "uptime_s": 923084.4,
  "last_sweep_ended_utc": "2026-11-07T09:05:55+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-07T09:48:40+00:00",
+ "heartbeat_utc": "2026-11-07T10:04:44+00:00",
  "sweep_phase": {
   "pid": 22240,
   "sweep_started_utc": "2026-11-07T09:06:07+00:00",
@@ -88,37 +88,37 @@
      }
     },
     "prewarm": {
-     "samples": 182,
+     "samples": 278,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 156,
-       "share": 0.857
+       "n": 244,
+       "share": 0.878
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 17,
-       "share": 0.093
+       "n": 23,
+       "share": 0.083
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 8,
-       "share": 0.044
+       "n": 10,
+       "share": 0.036
       },
       {
        "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 1,
-       "share": 0.005
+       "share": 0.004
       }
      ],
      "process": {
-      "cpu_s": 1025.7,
-      "page_faults": 76055288.0,
-      "read_bytes": 33043497.0,
-      "write_bytes": 85300869195.0,
-      "sampled_s": 1810.0,
-      "rss_mb_max": 3298.4,
-      "cpu_share_of_wall": 0.567
+      "cpu_s": 1583.8,
+      "page_faults": 117948348.0,
+      "read_bytes": 52327888.0,
+      "write_bytes": 133718233624.0,
+      "sampled_s": 2770.0,
+      "rss_mb_max": 3383.2,
+      "cpu_share_of_wall": 0.572
      }
     }
    }
