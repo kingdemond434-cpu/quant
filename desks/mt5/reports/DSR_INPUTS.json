@@ -2,51 +2,51 @@
  "schema": "dsr_inputs/v1",
  "status": "MEASURED",
  "unmeasured_reason": null,
- "measured_at": "2026-11-01T21:44:29+00:00",
+ "measured_at": "2026-11-07T06:40:08+00:00",
  "max_age_s": 14400,
  "variance": {
   "units": "per-period (daily) Sharpe, not annualised: the units of libs.validation.dsr.expected_max_sharpe",
   "method": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
   "window": {
    "days": 30,
-   "start": "2026-10-02T21:44:29+00:00",
-   "end": "2026-11-01T21:44:29+00:00"
+   "start": "2026-10-08T06:40:08+00:00",
+   "end": "2026-11-07T06:40:08+00:00"
   },
   "min_family_n": 30,
   "min_pooled_n": 100,
   "pooled": {
-   "n": 163648,
-   "variance": 0.2000296476,
+   "n": 288271,
+   "variance": 0.2453414357,
    "status": "MEASURED"
   },
   "lifetime_pooled": {
-   "n": 163648,
-   "variance": 0.2000296476
+   "n": 298429,
+   "variance": 0.2468691604
   },
   "by_family": {
    "adx_channel_hybrid": {
-    "n": 2018,
-    "variance": 0.0623422947,
+    "n": 1524,
+    "variance": 0.0623489588,
     "status": "MEASURED"
    },
    "asia_momentum": {
-    "n": 1516,
-    "variance": 0.0501566703,
+    "n": 1498,
+    "variance": 0.0504650212,
     "status": "MEASURED"
    },
    "carry": {
-    "n": 11080,
-    "variance": 0.208049073,
+    "n": 11666,
+    "variance": 0.2086862781,
     "status": "MEASURED"
    },
    "clock_transition": {
-    "n": 7726,
-    "variance": 0.3157374404,
+    "n": 8164,
+    "variance": 0.3130614721,
     "status": "MEASURED"
    },
    "comex_settlement": {
-    "n": 1352,
-    "variance": 0.0545350858,
+    "n": 1095,
+    "variance": 0.0555355609,
     "status": "MEASURED"
    },
    "correlation_regime": {
@@ -81,13 +81,18 @@
     "status": "MEASURED"
    },
    "cross_asset_residual": {
-    "n": 38680,
-    "variance": 0.0383259375,
+    "n": 47732,
+    "variance": 0.0398779387,
+    "status": "MEASURED"
+   },
+   "dav_range_filter_adx": {
+    "n": 1728,
+    "variance": 0.0613730509,
     "status": "MEASURED"
    },
    "dow_effect": {
-    "n": 1272,
-    "variance": 0.0351219219,
+    "n": 1183,
+    "variance": 0.0360745232,
     "status": "MEASURED"
    },
    "drawdown_conditional": {
@@ -95,45 +100,39 @@
     "variance": 0.2094625019,
     "status": "MEASURED"
    },
-   "engulfing_reversal": {
-    "n": 540,
-    "variance": 0.1385316106,
-    "status": "MEASURED"
-   },
    "execution_state": {
-    "n": 497,
-    "variance": 0.1152540424,
+    "n": 1032,
+    "variance": 0.0865811765,
     "status": "MEASURED"
    },
    "exit_operated": {
-    "n": 124,
-    "variance": 0.0274653842,
+    "n": 76,
+    "variance": 0.0206600033,
     "status": "MEASURED"
    },
    "failed_breakout": {
-    "n": 1460,
-    "variance": 0.0386394718,
+    "n": 1307,
+    "variance": 0.0385629909,
     "status": "MEASURED"
    },
    "formula": {
-    "n": 12898,
-    "variance": 0.2244773315,
+    "n": 104962,
+    "variance": 0.3204847966,
     "status": "MEASURED"
    },
    "fx_fixing_reversal": {
-    "n": 1713,
-    "variance": 0.4224614119,
+    "n": 1433,
+    "variance": 0.4273240421,
     "status": "MEASURED"
    },
    "generic": {
-    "n": 14,
-    "variance": 0.2207208782,
-    "status": "UNMEASURED",
-    "why": "14 distinct cells in the window, 30 required"
+    "n": 1691,
+    "variance": 0.2897363872,
+    "status": "MEASURED"
    },
    "hedging_demand_close": {
-    "n": 354,
-    "variance": 0.3095724768,
+    "n": 353,
+    "variance": 0.3104031705,
     "status": "MEASURED"
    },
    "htf_anchor_trend": {
@@ -142,18 +141,18 @@
     "status": "MEASURED"
    },
    "ict_fvg": {
-    "n": 3673,
-    "variance": 0.7021446908,
+    "n": 1072,
+    "variance": 1.0902596523,
     "status": "MEASURED"
    },
    "joint_genome": {
-    "n": 867,
-    "variance": 0.1790691471,
+    "n": 528,
+    "variance": 0.2534277996,
     "status": "MEASURED"
    },
    "jump": {
-    "n": 4107,
-    "variance": 0.2869015451,
+    "n": 3343,
+    "variance": 0.2966604144,
     "status": "MEASURED"
    },
    "lead_lag": {
@@ -162,8 +161,8 @@
     "status": "MEASURED"
    },
    "level_breakout": {
-    "n": 1539,
-    "variance": 0.0875981391,
+    "n": 2417,
+    "variance": 0.093051324,
     "status": "MEASURED"
    },
    "liquidity_gamma_reversal": {
@@ -172,43 +171,43 @@
     "status": "MEASURED"
    },
    "london_close_momentum": {
-    "n": 1302,
-    "variance": 0.1150332655,
+    "n": 1258,
+    "variance": 0.1128772548,
     "status": "MEASURED"
    },
    "macro_conditional": {
-    "n": 3601,
-    "variance": 0.2977841391,
+    "n": 4641,
+    "variance": 0.3556299433,
     "status": "MEASURED"
    },
    "mean_reversion_bollinger": {
-    "n": 2663,
-    "variance": 0.0639633263,
+    "n": 2419,
+    "variance": 0.0703728057,
     "status": "MEASURED"
    },
    "mean_reversion_rsi": {
-    "n": 798,
-    "variance": 0.1307377745,
+    "n": 2559,
+    "variance": 0.2989132397,
     "status": "MEASURED"
    },
    "momentum_volgate": {
-    "n": 1448,
-    "variance": 0.0227598752,
+    "n": 171,
+    "variance": 0.0311476297,
     "status": "MEASURED"
    },
    "multi_speed_trend": {
-    "n": 1332,
-    "variance": 0.081406956,
+    "n": 1988,
+    "variance": 0.0842357657,
     "status": "MEASURED"
    },
    "opening_range": {
-    "n": 1698,
-    "variance": 0.2894667209,
+    "n": 1697,
+    "variance": 0.289543436,
     "status": "MEASURED"
    },
    "overnight_drift": {
-    "n": 1808,
-    "variance": 0.0233234603,
+    "n": 4845,
+    "variance": 0.0313274891,
     "status": "MEASURED"
    },
    "overnight_gap_decay": {
@@ -217,8 +216,8 @@
     "status": "MEASURED"
    },
    "pca_residual": {
-    "n": 7869,
-    "variance": 0.1155699215,
+    "n": 7870,
+    "variance": 0.11542395,
     "status": "MEASURED"
    },
    "pin_bar_reversal": {
@@ -227,44 +226,33 @@
     "status": "MEASURED"
    },
    "pullback_entry": {
-    "n": 2892,
-    "variance": 0.0462210203,
+    "n": 2883,
+    "variance": 0.0463524916,
     "status": "MEASURED"
    },
    "range_reversion": {
-    "n": 726,
-    "variance": 0.0229397244,
+    "n": 3977,
+    "variance": 0.0229954585,
     "status": "MEASURED"
    },
-   "regime_transition": {
-    "n": 1,
-    "variance": null,
-    "status": "UNMEASURED",
-    "why": "1 distinct cells in the window, 30 required"
-   },
    "relative_value": {
-    "n": 7315,
-    "variance": 0.1444014316,
+    "n": 7291,
+    "variance": 0.1457378015,
     "status": "MEASURED"
    },
    "retail_overlap_reversal": {
-    "n": 1615,
-    "variance": 0.182654809,
-    "status": "MEASURED"
-   },
-   "session_handoff": {
-    "n": 418,
-    "variance": 0.1410031374,
+    "n": 1608,
+    "variance": 0.1812641173,
     "status": "MEASURED"
    },
    "session_range_breakout": {
-    "n": 263,
-    "variance": 0.0902924508,
+    "n": 6360,
+    "variance": 0.1921305629,
     "status": "MEASURED"
    },
    "spread_state": {
-    "n": 891,
-    "variance": 0.2315365209,
+    "n": 8268,
+    "variance": 0.2777732338,
     "status": "MEASURED"
    },
    "style_premia": {
@@ -273,13 +261,13 @@
     "status": "MEASURED"
    },
    "trend_ma_cross": {
-    "n": 2637,
-    "variance": 0.1015561915,
+    "n": 2760,
+    "variance": 0.1106073023,
     "status": "MEASURED"
    },
    "turn_of_month": {
-    "n": 1561,
-    "variance": 0.0601756315,
+    "n": 1550,
+    "variance": 0.060093006,
     "status": "MEASURED"
    },
    "vol_mean_reversion": {
@@ -288,32 +276,32 @@
     "status": "MEASURED"
    },
    "vol_transition": {
-    "n": 3891,
-    "variance": 0.2090643766,
+    "n": 4342,
+    "variance": 0.2482216347,
     "status": "MEASURED"
    },
    "volatility_squeeze": {
-    "n": 1062,
-    "variance": 0.0404092589,
+    "n": 591,
+    "variance": 0.0425943375,
     "status": "MEASURED"
    },
    "volume_spike": {
-    "n": 1554,
-    "variance": 0.1022935672,
+    "n": 3516,
+    "variance": 0.0703076037,
     "status": "MEASURED"
    }
   },
   "by_campaign": {
    "external_discoveries": {
-    "n": 163648,
-    "variance": 0.2000296476,
+    "n": 288271,
+    "variance": 0.2453414357,
     "status": "MEASURED"
    }
   }
  },
  "effective_trials": {
-  "nominal": 163648,
-  "effective": 161854,
+  "nominal": 298429,
+  "effective": 295186,
   "by_family": {
    "adx_channel_hybrid": {
     "nominal": 2018,
@@ -328,16 +316,16 @@
     "rho_sum": 1489.3308
    },
    "carry": {
-    "nominal": 11080,
-    "effective": 10874,
+    "nominal": 11999,
+    "effective": 11783,
     "distinct_symbols": 101,
-    "rho_sum": 10873.6479
+    "rho_sum": 11782.7677
    },
    "clock_transition": {
-    "nominal": 7726,
-    "effective": 7654,
+    "nominal": 8180,
+    "effective": 8103,
     "distinct_symbols": 133,
-    "rho_sum": 7653.0301
+    "rho_sum": 8102.1492
    },
    "comex_settlement": {
     "nominal": 1352,
@@ -382,10 +370,16 @@
     "rho_sum": 291.5704
    },
    "cross_asset_residual": {
-    "nominal": 38680,
-    "effective": 38321,
+    "nominal": 47737,
+    "effective": 47280,
     "distinct_symbols": 134,
-    "rho_sum": 38320.0741
+    "rho_sum": 47279.7023
+   },
+   "dav_range_filter_adx": {
+    "nominal": 1728,
+    "effective": 1710,
+    "distinct_symbols": 133,
+    "rho_sum": 1709.4223
    },
    "dow_effect": {
     "nominal": 1272,
@@ -406,10 +400,10 @@
     "rho_sum": 532.2048
    },
    "execution_state": {
-    "nominal": 497,
-    "effective": 492,
-    "distinct_symbols": 40,
-    "rho_sum": 491.8436
+    "nominal": 1032,
+    "effective": 1022,
+    "distinct_symbols": 41,
+    "rho_sum": 1021.0918
    },
    "exit_operated": {
     "nominal": 124,
@@ -424,10 +418,10 @@
     "rho_sum": 1445.9757
    },
    "formula": {
-    "nominal": 12898,
-    "effective": 12793,
-    "distinct_symbols": 125,
-    "rho_sum": 12792.4394
+    "nominal": 104964,
+    "effective": 103869,
+    "distinct_symbols": 133,
+    "rho_sum": 103868.6378
    },
    "fx_fixing_reversal": {
     "nominal": 1713,
@@ -436,10 +430,10 @@
     "rho_sum": 1689.2798
    },
    "generic": {
-    "nominal": 14,
-    "effective": 14,
-    "distinct_symbols": 7,
-    "rho_sum": 13.8038
+    "nominal": 1691,
+    "effective": 1673,
+    "distinct_symbols": 112,
+    "rho_sum": 1672.7744
    },
    "hedging_demand_close": {
     "nominal": 354,
@@ -478,10 +472,10 @@
     "rho_sum": 9931.4804
    },
    "level_breakout": {
-    "nominal": 1539,
-    "effective": 1513,
+    "nominal": 2417,
+    "effective": 2381,
     "distinct_symbols": 125,
-    "rho_sum": 1512.3952
+    "rho_sum": 2380.9559
    },
    "liquidity_gamma_reversal": {
     "nominal": 977,
@@ -496,22 +490,22 @@
     "rho_sum": 1278.969
    },
    "macro_conditional": {
-    "nominal": 3601,
-    "effective": 3564,
-    "distinct_symbols": 133,
-    "rho_sum": 3563.06
+    "nominal": 4641,
+    "effective": 4592,
+    "distinct_symbols": 137,
+    "rho_sum": 4591.879
    },
    "mean_reversion_bollinger": {
-    "nominal": 2663,
-    "effective": 2639,
+    "nominal": 3166,
+    "effective": 3137,
     "distinct_symbols": 129,
-    "rho_sum": 2638.4907
+    "rho_sum": 3136.0829
    },
    "mean_reversion_rsi": {
-    "nominal": 798,
-    "effective": 793,
-    "distinct_symbols": 129,
-    "rho_sum": 792.2736
+    "nominal": 2559,
+    "effective": 2535,
+    "distinct_symbols": 132,
+    "rho_sum": 2534.341
    },
    "momentum_volgate": {
     "nominal": 1448,
@@ -520,10 +514,10 @@
     "rho_sum": 1428.8809
    },
    "multi_speed_trend": {
-    "nominal": 1332,
-    "effective": 1310,
+    "nominal": 1988,
+    "effective": 1959,
     "distinct_symbols": 132,
-    "rho_sum": 1309.845
+    "rho_sum": 1958.7924
    },
    "opening_range": {
     "nominal": 1698,
@@ -532,10 +526,10 @@
     "rho_sum": 1685.635
    },
    "overnight_drift": {
-    "nominal": 1808,
-    "effective": 1795,
+    "nominal": 4852,
+    "effective": 4807,
     "distinct_symbols": 133,
-    "rho_sum": 1794.9779
+    "rho_sum": 4806.2519
    },
    "overnight_gap_decay": {
     "nominal": 3452,
@@ -544,10 +538,10 @@
     "rho_sum": 3419.5786
    },
    "pca_residual": {
-    "nominal": 7869,
-    "effective": 7801,
+    "nominal": 7870,
+    "effective": 7802,
     "distinct_symbols": 133,
-    "rho_sum": 7800.1469
+    "rho_sum": 7801.1362
    },
    "pin_bar_reversal": {
     "nominal": 863,
@@ -562,10 +556,10 @@
     "rho_sum": 2868.0004
    },
    "range_reversion": {
-    "nominal": 726,
-    "effective": 714,
-    "distinct_symbols": 102,
-    "rho_sum": 713.167
+    "nominal": 4019,
+    "effective": 3971,
+    "distinct_symbols": 128,
+    "rho_sum": 3970.764
    },
    "regime_transition": {
     "nominal": 1,
@@ -574,10 +568,10 @@
     "rho_sum": 0.98
    },
    "relative_value": {
-    "nominal": 7315,
-    "effective": 7236,
+    "nominal": 7469,
+    "effective": 7388,
     "distinct_symbols": 134,
-    "rho_sum": 7235.4528
+    "rho_sum": 7387.7972
    },
    "retail_overlap_reversal": {
     "nominal": 1615,
@@ -592,16 +586,16 @@
     "rho_sum": 412.1434
    },
    "session_range_breakout": {
-    "nominal": 263,
-    "effective": 261,
-    "distinct_symbols": 56,
-    "rho_sum": 260.5324
+    "nominal": 6400,
+    "effective": 6332,
+    "distinct_symbols": 125,
+    "rho_sum": 6331.5535
    },
    "spread_state": {
-    "nominal": 891,
-    "effective": 875,
-    "distinct_symbols": 128,
-    "rho_sum": 874.6665
+    "nominal": 8332,
+    "effective": 8236,
+    "distinct_symbols": 132,
+    "rho_sum": 8235.6683
    },
    "style_premia": {
     "nominal": 1440,
@@ -610,10 +604,10 @@
     "rho_sum": 1429.6255
    },
    "trend_ma_cross": {
-    "nominal": 2637,
-    "effective": 2614,
+    "nominal": 2774,
+    "effective": 2750,
     "distinct_symbols": 133,
-    "rho_sum": 2613.9964
+    "rho_sum": 2749.5235
    },
    "turn_of_month": {
     "nominal": 1561,
@@ -628,10 +622,10 @@
     "rho_sum": 2784.8713
    },
    "vol_transition": {
-    "nominal": 3891,
-    "effective": 3840,
+    "nominal": 5229,
+    "effective": 5164,
     "distinct_symbols": 134,
-    "rho_sum": 3839.6277
+    "rho_sum": 5163.2428
    },
    "volatility_squeeze": {
     "nominal": 1062,
@@ -640,53 +634,53 @@
     "rho_sum": 1050.654
    },
    "volume_spike": {
-    "nominal": 1554,
-    "effective": 1543,
+    "nominal": 3516,
+    "effective": 3484,
     "distinct_symbols": 132,
-    "rho_sum": 1542.8485
+    "rho_sum": 3483.755
    }
   },
   "method": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
  },
- "sr0_pooled_at_lifetime_effective": 2.010128,
+ "sr0_pooled_at_lifetime_effective": 2.288749,
  "provenance": {
   "sources": [
    {
     "path": "desks/mt5/data/dsr_trial_sharpes.jsonl",
     "role": "append-only ledger of judged trial Sharpes",
-    "sha256": "cece3fe757a05968d5701d391350ebcfc7c9c75c97a818b72d4019300ff4a80f",
-    "rows": 217128,
-    "distinct_cells": 163648
+    "sha256": "374ea1d06f94f4205a7201116e2f17682e065828c8926e7481dc9768948fed9e",
+    "rows": 407406,
+    "distinct_cells": 298429
    },
    {
     "path": "desks/mt5/reports/universal_gates_external.json",
     "role": "latest sweep report harvested into the ledger",
-    "sha256": "27f4442ad216c85d0bf7323e0abefa1216f101c1e71dbd654a3ca169c5587152"
+    "sha256": "fc6e72547745e1e9545b92b9fa87399124289c27be7d52cc2a17277815811349"
    }
   ],
   "harvest": {
    "status": "MEASURED",
-   "appended": 92809,
-   "sweep_id": "27f4442ad216c85d",
-   "sha256": "27f4442ad216c85d0bf7323e0abefa1216f101c1e71dbd654a3ca169c5587152",
-   "swept_at": "2026-11-01T17:30:08+00:00",
+   "appended": 190278,
+   "sweep_id": "fc6e72547745e1e9",
+   "sha256": "fc6e72547745e1e9545b92b9fa87399124289c27be7d52cc2a17277815811349",
+   "swept_at": "2026-11-07T03:57:55+00:00",
    "campaign": "external_discoveries"
   },
   "code": {
    "path": "libs/research/dsr_inputs.py",
    "sha256": "ebb86b51c49c09c7c626bdefe735b5abee51fd077300c81c4faf19a6b66ea6f1"
   },
-  "n": 163648,
+  "n": 288271,
   "window": {
    "days": 30,
-   "start": "2026-10-02T21:44:29+00:00",
-   "end": "2026-11-01T21:44:29+00:00"
+   "start": "2026-10-08T06:40:08+00:00",
+   "end": "2026-11-07T06:40:08+00:00"
   },
   "method": {
    "variance": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
    "effective_trials": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
   },
-  "timestamp": "2026-11-01T21:44:29+00:00"
+  "timestamp": "2026-11-07T06:40:08+00:00"
  },
- "content_sha256": "700dc28ebf2ba3326c7728001c9094411486f6ed7be17fc6db2406f1fcae7e9a"
+ "content_sha256": "d0064a9121d2aeb2ca6b5344aee799476a0193f170eb510f501f5a44d21e0d0d"
 }
