@@ -1,52 +1,52 @@
 {
- "at": "2026-11-07T02:49:01+00:00",
+ "at": "2026-11-07T08:42:56+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1478051,
+  "rows_total": 1480429,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-06T23:31:37+00:00",
+  "last_verdict_at": "2026-11-07T04:03:31+00:00",
   "counts": {
    "1h": 0,
-   "24h": 22465,
-   "7d": 333469
+   "24h": 14342,
+   "7d": 315542
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 9964,
-   "7d": 192145
+   "24h": 6527,
+   "7d": 179638
   },
-  "first_terminal_cells": 667991,
+  "first_terminal_cells": 668724,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 415.167,
-   "7d": 1143.72
+   "24h": 271.958,
+   "7d": 1069.274
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 936.042,
-   "7d": 1984.935
+   "24h": 597.583,
+   "7d": 1878.226
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 49123,
-   "7d": 105202
+   "24h": 52067,
+   "7d": 123224
   },
   "per_hour": {
-   "24h": 2046.792,
-   "7d": 626.202
+   "24h": 2169.458,
+   "7d": 733.476
   }
  },
- "verdicts_per_hour": 936.042,
- "verdicts_per_day": 22465.0,
+ "verdicts_per_hour": 597.583,
+ "verdicts_per_day": 14342.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 9964.0,
+ "first_judged_per_day": 6527.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 49123.0,
+ "created_per_day": 52067.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -54,11 +54,11 @@
   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
  "workers_planned": 18,
- "workers_last_sweep": 15,
+ "workers_last_sweep": 18,
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-07T02:48:16+00:00",
-  "pid": 28756
+  "started_at": "2026-11-07T08:41:45+00:00",
+  "pid": 6268
  }
 }
