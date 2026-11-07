@@ -21,7 +21,7 @@ import stat
 import sys
 import time
 import traceback
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -839,6 +839,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    _reset_spread_caches()
     state_path = SHADOW_DIR / ledger
     state = _TouchedState(_read_state(state_path) or {})
     today = datetime.now(UTC).date().isoformat()
@@ -1246,6 +1247,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 memo.put(_bt_key, res, h1, extra)
             else:
                 prof.hit("backtest")
+            # THE SPREAD IS THE ONE THE TRADE CROSSED, NOT AN ALL-HOURS MEDIAN (2026-11-05 HOLD).
+            # See `reprice_at_measured_spread`: two-sided, each trade's source recorded. The memo
+            # above holds the UNPRICED result; repricing builds new trades and never mutates it.
+            with prof.phase("spread"):
+                _priced, _spread_rep = reprice_at_measured_spread(
+                    res.trades, h1, costs, meta.get(sym) or {}, sym)
+            _by_entry = _spread_rep.pop("by_entry", {})
+            st["entry_spread"] = _spread_rep
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
             # Trades before that boundary were available while the cell was being SELECTED,
@@ -1257,7 +1266,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # n/exp_r/max_dd/verdicts -- starts at the boundary. The boundary is CONVERTED,
             # not assumed: bar stamps are on the
             # broker clock (+3h at Fusion) while forward_start is true UTC.
-            all_trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
+            all_trades = [t for t in _priced if t.entry_time >= SHADOW_START]
             _fs = st.get("forward_start")
             _boundary = None
             if _fs:
@@ -1286,9 +1295,19 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   "r_multiple": t.r_multiple, "reason": t.reason,
                   "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
                             else "historical"),
+                  "key": key,
+                  **spread_fields(_by_entry, t, _spread_rep),
                   **_stamp}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
+            # THE CELL FILE ABOVE IS SHARED BY EVERY KEY ON (symbol, family, window) AND HOLDS
+            # WHICHEVER KEY RAN LAST; its readers name a sleeve by its stem, so it stays as it is
+            # and each row now says which key wrote it. Each key's own evidence is kept beside it
+            # in `keys/`, a directory no `ledger_*.json` glob reaches, so nothing double counts.
+            _write_key_ledger(key, all_trades, _boundary, _stamp, _by_entry, _spread_rep)
+            st["entry_stream"] = entry_stream_id(
+                sym, [t for t in all_trades
+                      if _boundary is not None and t.entry_time >= _boundary])
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours
@@ -1613,6 +1632,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # A date is not a timestamp. `last_run` cannot distinguish a pass at 00:01 from one at 23:59,
     # which is why it could look maintained while carrying no usable freshness at all. Both are
     # written now, and `updated_at` carries the time.
+    for _line in apply_stream_peers(state):
+        slog(_line)
     state["last_run"] = today
     state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
@@ -1624,8 +1645,444 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     _persist_state(state_path, state, final=True)
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
+    try:  # ONE CLOCK PER ENTRY STREAM: the collapse the promoter and the trial count must read.
+        (SHADOW_DIR / f"entry_streams_{Path(ledger).stem}.json").write_text(
+            json.dumps({"at": state["updated_at"], **entry_stream_report(state),
+                        "spread_reprice": spread_reprice_report(state)}, indent=2),
+            encoding="utf-8")
+    except (OSError, TypeError, ValueError) as exc:
+        slog(f"entry stream report write failed ({type(exc).__name__}: {exc})")
     _enrolment_watermark(len(enrolled), ledger)
 
+
+#: Each key's own forward ledger. A subdirectory on purpose: every `ledger_*.json` reader names a
+#: sleeve by the file's stem, so a per-key file beside the cell file would read as a new sleeve.
+KEY_LEDGER_DIR = SHADOW_DIR / "keys"
+
+
+def _key_ledger_path(key: str) -> Path:
+    import hashlib
+    safe = "".join(c if (c.isalnum() or c in "._-@") else "_" for c in str(key))[:120]
+    return KEY_LEDGER_DIR / f"{safe}__{hashlib.sha1(str(key).encode()).hexdigest()[:10]}.json"
+
+
+def spread_fields(by_entry: dict, t: object, rep: dict) -> dict:
+    """What ONE trade was charged for the spread, so any single row can be re-checked."""
+    got = by_entry.get(str(getattr(t, "entry_time", ""))) or {}
+    if got:
+        return {"spread_source": got.get("src"), "spread_pts_charged": got.get("pts"),
+                "d_r_spread": got.get("d_r", 0.0)}
+    return {"spread_source": "frozen", "spread_pts_charged": rep.get("charged_spread_pts"),
+            "d_r_spread": 0.0}
+
+
+def _write_key_ledger(key: str, trades: list, boundary: object, stamp: dict,
+                      by_entry: dict | None = None, rep: dict | None = None) -> None:
+    """Write `key`'s own trades, every row carrying the key. Best effort: a failed write here
+    must never stop the clock, and the cell file above still holds the rows."""
+    try:
+        KEY_LEDGER_DIR.mkdir(parents=True, exist_ok=True)
+        rows = [{"key": key, "entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
+                 "side": t.side, "entry": t.entry, "exit": t.exit,
+                 "r_multiple": t.r_multiple, "reason": t.reason,
+                 "phase": ("forward" if (boundary is not None and t.entry_time >= boundary)
+                           else "historical"),
+                 **spread_fields(by_entry or {}, t, rep or {}),
+                 **stamp} for t in trades]
+        _key_ledger_path(key).write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    except OSError as exc:
+        slog(f"{key}: per-key ledger write failed ({type(exc).__name__}: {exc})")
+
+
+def entry_stream_id(sym: str, forward_trades: list) -> dict:
+    """Fingerprint the forward entries a key actually took.
+
+    Keys that differ only in fields the family never reads take the SAME trades, and 20 of the 25
+    GBPCHF formula keys sat on one 29-entry stream on 2026-11-05. Counting each as its own
+    evidence counts one bet twenty times. Keys that share this id are ONE effective trial and ONE
+    forward clock; `entry_stream_report` publishes the collapse and the promoter must read it.
+    """
+    import hashlib
+    sig = "|".join(f"{t.side}@{t.entry_time}" for t in forward_trades)
+    return {"id": hashlib.sha1(f"{sym}|{sig}".encode()).hexdigest()[:16] if forward_trades
+            else None, "n": len(forward_trades)}
+
+
+#: A promotion candidate whose forward entries are identical to another's. The suffix form keeps
+#: every prefix-aware reader right (it is DECIDED to the enrolment, terminal to `_is_terminal`)
+#: and the promoter, which promotes only the exact "PROMOTION CANDIDATE", leaves it alone.
+STREAM_PEER = "PROMOTION CANDIDATE_STREAM_PEER"
+
+
+#: Shadow verdicts that retire a bet. A stream holding one of these is DECIDED: none of its twins
+#: may take the promotion verdict back, or a retired bet returns under another key's name.
+_RETIRING = ("KILL", "KILLED", "DEAD", "RETIRED", "REJECTED", "QUARANTINED")
+
+
+def _registry_view() -> tuple[set, dict] | None:
+    """(LIVE keys, {key: why} for keys the registry or the gateway has retired), or None."""
+    try:
+        import sleeve_registry
+        live = set(sleeve_registry.live_keys())
+        gw = set(sleeve_registry.gateway_retired_keys())
+        rows = sleeve_registry._read(sleeve_registry.REGISTRY).get("sleeves", {})
+    except Exception:
+        return None
+    retired = {k: "GATEWAY_RETIRED" for k in gw}
+    for k, v in rows.items():
+        status = str((v or {}).get("status") or "").upper()
+        if any(status == r or status.startswith(r + "_") for r in _RETIRING):
+            retired.setdefault(k, f"registry {status}")
+    return live - set(retired), retired
+
+
+def apply_stream_peers(state: dict, *,
+                       registry: Callable[[], tuple[set, dict] | None] = _registry_view
+                       ) -> list[str]:
+    """ONE BET, ONE CLOCK: a stream of identical forward entries holds one promotion candidate.
+
+    Auditor HOLD_gbpchf_formula_promotion (2026-11-05): 20 of 25 GBPCHF formula keys took the same
+    29 entries. The promoter promotes every "PROMOTION CANDIDATE", so it would have written one
+    bet LIVE twenty times and the allocator would have read twenty independent edges. Re-derived
+    every pass over EVERY row carrying an `entry_stream` id, whatever its status:
+      * a stream with a LIVE key is anchored on it; every non-live candidate is a STREAM_PEER;
+      * a stream any key of which is RETIRED (registry, gateway, or a retiring shadow verdict) is
+        DECIDED: every candidate on it is a STREAM_PEER of that key and none gets the verdict
+        back, so a retired bet never returns under its twin's name (Auditor HOLD on #734);
+      * otherwise the best forward expectancy keeps "PROMOTION CANDIDATE" (ties by key) and the
+        other candidates are STREAM_PEERs, each naming its representative in `stream_peer_of`;
+      * a peer whose stream is now its own (its entries diverged) or whose live representative's
+        stream no longer anchors it gets "PROMOTION CANDIDATE" back on the same pass.
+    The stream still promotes, once: only duplicate copies of one bet stay off the book. LIVE
+    keys are never relabelled. An unreadable registry changes nothing (UNMEASURED, never a guess).
+    """
+    view = registry()
+    if view is None:
+        return ["stream peers: UNMEASURED -- the sleeve registry is unreadable; no change"]
+    live_now, retired = view
+    pcs = ("PROMOTION CANDIDATE", STREAM_PEER)
+    by_stream: dict[str, list[str]] = {}
+    for key, st in state.items():
+        if not isinstance(st, dict):
+            continue
+        es = st.get("entry_stream")
+        sid = es.get("id") if isinstance(es, dict) else None
+        if sid:
+            by_stream.setdefault(str(sid), []).append(key)
+        elif st.get("status") in pcs:
+            by_stream.setdefault(f"__own__{key}", []).append(key)
+
+    def _exp(k: str) -> float:
+        try:
+            return float(state[k].get("exp_r") or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _retired_why(k: str) -> str | None:
+        if k in retired:
+            return retired[k]
+        status = str(state[k].get("status") or "").upper()
+        if any(status == r or status.startswith(r + "_") for r in _RETIRING):
+            return f"shadow {status}"
+        return None
+
+    lines: list[str] = []
+    for keys in by_stream.values():
+        cands = [k for k in keys if state[k].get("status") in pcs and k not in live_now]
+        if not cands:
+            continue
+        on_live = sorted(k for k in keys if k in live_now)
+        dead = sorted(k for k in keys if _retired_why(k))
+        if on_live:
+            anchor, decided = on_live[0], False
+        elif dead:
+            anchor, decided = dead[0], True
+        else:
+            anchor = sorted(cands, key=lambda k: (-_exp(k), k))[0]
+            decided = False
+        for k in cands:
+            st = state[k]
+            if k == anchor and not decided:
+                if st.get("status") == STREAM_PEER:
+                    st["status"] = "PROMOTION CANDIDATE"
+                    st["stream_peer_of"] = None
+                    lines.append(f"{k}: stream peer -> PROMOTION CANDIDATE (it represents its "
+                                 f"stream now)")
+                continue
+            if st.get("status") != STREAM_PEER or st.get("stream_peer_of") != anchor:
+                why = (f"its stream is decided: {anchor} is {_retired_why(anchor)}" if decided
+                       else f"same forward entries as {anchor}")
+                lines.append(f"{k}: {why} -> {STREAM_PEER}")
+            st["status"] = STREAM_PEER
+            st["stream_peer_of"] = anchor
+    return lines
+
+
+def entry_stream_report(state: dict) -> dict:
+    """Group keys by forward entry stream: how many effective trials the forward book holds."""
+    groups: dict[str, list[str]] = {}
+    for key, st in state.items():
+        es = st.get("entry_stream") if isinstance(st, dict) else None
+        if isinstance(es, dict) and es.get("id"):
+            groups.setdefault(str(es["id"]), []).append(key)
+    shared = {g: sorted(ks) for g, ks in groups.items() if len(ks) > 1}
+    return {"keys_with_stream": sum(len(v) for v in groups.values()),
+            "effective_streams": len(groups),
+            "shared_streams": len(shared),
+            "keys_on_shared_streams": sum(len(v) for v in shared.values()),
+            "shared": shared,
+            "reads": ("keys listed under one stream took identical forward entries; they are ONE "
+                      "effective trial and ONE clock, never independent evidence")}
+
+
+def spread_reprice_report(state: dict, top: int = 40) -> dict:
+    """Which rows the measured spread moved, and by how much R, across every trade replayed."""
+    rows = []
+    counts: dict[str, int] = {}
+    for key, st in state.items():
+        es = st.get("entry_spread") if isinstance(st, dict) else None
+        if not isinstance(es, dict):
+            continue
+        counts[str(es.get("status"))] = counts.get(str(es.get("status")), 0) + 1
+        if es.get("repriced"):
+            rows.append({"key": key, "status": st.get("status"),
+                         "repriced": es.get("repriced"), "trades": es.get("trades"),
+                         "r_delta": es.get("r_delta"), "sources": es.get("sources"),
+                         "charged_spread_pts": es.get("charged_spread_pts")})
+    rows.sort(key=lambda r: abs(float(r.get("r_delta") or 0.0)), reverse=True)
+    return {"rows_by_status": counts, "rows_repriced": len(rows), "top": rows[:top],
+            "reads": ("r_delta is the R the measured spread moved across ALL trades replayed "
+                      "(historical and forward): negative where the old basis undercharged, "
+                      "positive where it overcharged. Ranked by size; a promotion candidate near "
+                      "the top is the first to re-read")}
+
+
+#: A minute on the tape is a measurement only with at least this many quotes in it.
+TAPE_MIN_TICKS = 3
+#: ONE SYMBOL'S TAPE, held for the whole pass. Rows are replayed grouped by symbol, so the cache
+#: is dropped only when the symbol changes: every key on a symbol shares the same day files, and a
+#: day is at most 1,440 minute medians, so a symbol's whole forward history is ~115k floats.
+_TAPE: dict = {"sym": None, "files": {}, "days": {}, "errors": 0}
+_TICK_SURFACES: list[dict] | None = None
+
+
+def _reset_spread_caches() -> None:
+    """Every pass reads the tape and the surfaces as they are NOW."""
+    global _TICK_SURFACES
+    _TAPE.update(sym=None, files={}, days={}, errors=0)
+    _TICK_SURFACES = None
+    _VENUE_MAX_DOC.clear()
+
+
+def _tape_for(sym: str) -> dict:
+    """The per-symbol tape cache, listing the symbol's day files ONCE when the symbol changes."""
+    if _TAPE["sym"] != sym:
+        files: dict[str, list] = {}
+        try:
+            from mt5desk.tape import day_files
+            for d, f in day_files(sym):
+                files.setdefault(d, []).append(f)
+        except Exception:
+            _TAPE["errors"] += 1
+        _TAPE.update(sym=sym, files=files, days={}, error_days=set())
+    return _TAPE
+
+
+def _tape_minute_spreads(sym: str, day: str, point: float) -> dict[int, float] | None:
+    """Median quoted spread, in points, per venue minute of one tape day.
+
+    Read once per (symbol, day) per pass. Returns None for a day the tape does not hold or could
+    not read; an unreadable day is also counted and named in `_TAPE["error_days"]`, so a broken
+    tape shows in `entry_spread.sources` as `*_tape_error` instead of passing silently (L1.28a).
+    """
+    tape = _tape_for(sym)
+    if day in tape["days"]:
+        return tape["days"][day]
+    paths = tape["files"].get(day)
+    out: dict[int, float] | None = None
+    if paths:
+        try:
+            t = pd.concat([pd.read_parquet(f, columns=["time_msc", "bid", "ask"])
+                           for f in paths], ignore_index=True)
+            tm = pd.to_numeric(t["time_msc"], errors="coerce")
+            bid = pd.to_numeric(t["bid"], errors="coerce")
+            ask = pd.to_numeric(t["ask"], errors="coerce")
+            ok = tm.notna() & (bid > 0) & (ask > 0)
+            out = {}
+            if ok.any():
+                minute = (tm[ok].astype("int64") // 60_000)
+                pts = (ask[ok] - bid[ok]) / point
+                g = pts.groupby(minute.to_numpy())
+                med, n = g.median(), g.size()
+                out = {int(m): float(v) for m, v in med[n >= TAPE_MIN_TICKS].items()}
+        except Exception:                     # a tape problem must never stop the clock
+            tape["errors"] += 1
+            tape.setdefault("error_days", set()).add(day)
+            out = None
+    tape["days"][day] = out
+    return out
+
+
+def _tick_surfaces() -> list[dict]:
+    """The tick-measured hour surfaces, best first: the tape's own, then the bar surface's
+    `tick_hours` block. Loaded once per pass; an absent file is simply not a source."""
+    global _TICK_SURFACES
+    if _TICK_SURFACES is None:
+        found: list[dict] = []
+        for name in ("cost_surface_tick.json", "cost_surface.json"):
+            try:
+                found.append(json.loads((BASE / "data" / name).read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                continue
+        _TICK_SURFACES = found
+    return _TICK_SURFACES
+
+
+def _tick_hour_spread(sym: str, hour: int) -> float | None:
+    for doc in _tick_surfaces():
+        entry = (doc.get("symbols") or {}).get(sym) or {}
+        if doc.get("source", "").startswith("mt5 tick tape"):
+            cell = (entry.get("hours") or {}).get(str(hour)) or {}
+        else:
+            cell = ((entry.get("tick_hours") or {}).get("hours") or {}).get(str(hour)) or {}
+        if cell.get("status") == "MEASURED" and cell.get("p50") is not None:
+            return float(cell["p50"])
+    return None
+
+
+#: The widest spread across the live venues, per symbol and true-UTC hour (Desk health, #739).
+VENUE_MAX = BASE / "data" / "cost_truth_quotes.max.json"
+_VENUE_MAX_DOC: list = []
+
+
+def _venue_max_spread(sym: str, at: pd.Timestamp, point: float) -> tuple[float, str] | None:
+    """(points in THIS symbol's tick, source) from the widest-venue file, or None.
+
+    Bars and the tape are stamped on the venue clock; the file is keyed by TRUE UTC hour, so the
+    stamp is converted with `session_clock.server_to_utc` first. `spread_price` is compared, not
+    `spread_pts`, because venues quote different digits. An absent hour is UNMEASURED (None),
+    never zero; a stale row is still the widest value last known and says so in its source.
+    """
+    if not _VENUE_MAX_DOC:
+        try:
+            _VENUE_MAX_DOC.append(json.loads(VENUE_MAX.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            _VENUE_MAX_DOC.append({})
+    row_sym = ((_VENUE_MAX_DOC[0] or {}).get("symbols") or {}).get(sym) or {}
+    if not row_sym or point <= 0:
+        return None
+    try:
+        from libs.regime.session_clock import server_to_utc
+        utc_hour = int(server_to_utc(pd.DatetimeIndex([pd.Timestamp(at)]))[0].hour)
+    except Exception:
+        return None
+    cell = row_sym.get(f"{utc_hour:02d}") or {}
+    try:
+        price = float(cell["spread_price"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not price > 0:
+        return None
+    return price / point, ("venue_max_hour_stale" if cell.get("stale") else "venue_max_hour")
+
+
+def measured_spread_at(sym: str, at: pd.Timestamp, point: float) -> tuple[float | None, str]:
+    """The spread a market order crossed at `at`, in points, and where the number came from.
+
+    `tape_minute`: the median quote in that venue minute on the tick tape. `venue_max_hour`: the
+    WIDEST spread across the live venues for that true-UTC hour (`cost_truth_quotes.max.json`,
+    the Judge's ruling 2026-11-05: every account copies every sleeve, so a clock is charged the
+    dearest venue it will trade on); it outranks a narrower tape minute and stands in when the tape
+    has none. `tick_hour`: the tick-measured median for that venue hour. Neither: (None, "frozen") and the caller keeps the
+    basis it already charged. The bars' own `spread` column is DELIBERATELY not a source: on
+    this feed it is bimodal (GBPCHF hours 10-16 read 0 on 69% of bars and 150 on the rest, a p50
+    of 150 against a raw-account spread of a few points), so it would overcharge quiet hours by
+    two orders of magnitude and undercharge the rollover minute, both at once.
+
+    `at` is a BAR's open: a long's entry bar, a short's exit bar. A short that left on a stop or
+    target hit inside that bar is priced at the bar-open minute, not the intrabar minute of the
+    hit. A day the tape holds but could not read is named in the source (`*_tape_error`).
+    """
+    ts = pd.Timestamp(at)
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    minute = int(ts.value // 60_000_000_000)
+    tape_broken = False
+    widest = _venue_max_spread(sym, ts, point)
+    for day in (ts.strftime("%Y-%m-%d"), (ts - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+                (ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")):
+        mins = _tape_minute_spreads(sym, day, point)
+        if mins and minute in mins:
+            if widest is not None and widest[0] > mins[minute]:
+                return widest
+            return mins[minute], "tape_minute"
+        if day in (_TAPE.get("error_days") or ()):
+            tape_broken = True
+    hour_pts = _tick_hour_spread(sym, int(ts.hour))
+    # THE WIDEST VENUE IS AT LEAST AS WIDE AS THE HOME VENUE. The max file is a sparse sample (one
+    # quote per venue per hourly pass), the tick hour is every quote on the home tape, so neither
+    # may undercut the other: the charge is the larger, labelled by whichever won.
+    if widest is not None and (hour_pts is None or widest[0] >= hour_pts):
+        return widest
+    if hour_pts is not None:
+        return hour_pts, ("tick_hour_tape_error" if tape_broken else "tick_hour")
+    return None, ("frozen_tape_error" if tape_broken else "frozen")
+
+
+def reprice_at_measured_spread(trades: list, bars: pd.DataFrame, costs: object,
+                               meta: dict, sym: str = "") -> tuple[list, dict]:
+    """Charge each trade the spread measured where it crossed it, in BOTH directions.
+
+    THE REPLAY PRICED EVERY TRADE AT AN ALL-HOURS MEDIAN SPREAD (`Costs.from_symbol` reads
+    `median_spread_pts`). Spread is not a constant of a symbol: on 2026-11-05 every GBPCHF formula
+    entry sat in the first minute after rollover, where the tape's median spread was 82 pts
+    against the ~2-3 the replay charged, and the two promotion candidates went from +6.22R to
+    about -5.46R at the real spread (Auditor HOLD_gbpchf_formula_promotion).
+
+    TWO-SIDED (Auditor, same day): a trade that crossed a spread NARROWER than the basis gets the
+    difference back, because overcharging kills real edges as surely as undercharging
+    manufactures false ones (Rule 1). The bars are bid-quoted, so a LONG crosses the spread at its
+    entry bar and a SHORT at its exit bar. Sources, best first, per `measured_spread_at`; each
+    trade's source is recorded. With no tick size nothing changes and the row reads UNMEASURED.
+    """
+    import dataclasses as _dc
+    report: dict = {"status": "UNMEASURED", "trades": len(trades), "repriced": 0,
+                    "r_delta": 0.0, "sources": {}, "by_entry": {}}
+    if not trades:
+        report["status"] = "NO_TRADES"
+        return list(trades), report
+    try:
+        tick = float(meta.get("tick_size") or meta.get("point") or 0.0)
+        contract = float(getattr(costs, "contract_oz", 0.0) or 0.0)
+        charged_px = float(getattr(costs, "spread_per_lot", 0.0)) / contract if contract else None
+    except (TypeError, ValueError):
+        tick, charged_px = 0.0, None
+    if tick <= 0 or charged_px is None:
+        report["why"] = "no tick size or contract size: the spread cannot be put in price units"
+        return list(trades), report
+    out, delta_total, worst_cut = [], 0.0, 0.0
+    for t in trades:
+        at = pd.Timestamp(t.entry_time if t.side > 0 else t.exit_time)
+        pts, src = measured_spread_at(sym, at, tick)
+        report["sources"][src] = report["sources"].get(src, 0) + 1
+        stop_dist = abs(float(t.entry) - float(t.stop))
+        if pts is None or stop_dist <= 0:
+            out.append(t)
+            continue
+        d_r = (charged_px - pts * tick) * float(getattr(t, "units", 1.0) or 1.0) / stop_dist
+        report["by_entry"][str(t.entry_time)] = {"src": src, "pts": round(pts, 3),
+                                                 "d_r": round(d_r, 6)}
+        if d_r == 0.0:
+            out.append(t)
+            continue
+        delta_total += d_r
+        worst_cut = min(worst_cut, d_r)
+        report["repriced"] += 1
+        out.append(_dc.replace(t, r_multiple=float(t.r_multiple) + d_r))
+    report.update(status="MEASURED", r_delta=round(delta_total, 6),
+                  worst_trade_r_delta=round(worst_cut, 6),
+                  charged_spread_pts=round(charged_px / tick, 4))
+    return out, report
 
 class PassProfile:
     """Where one shadow pass spends its wall clock (2026-11-05).
