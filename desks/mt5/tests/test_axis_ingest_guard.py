@@ -150,9 +150,50 @@ def test_the_fred_token_is_scoped_and_honest() -> None:
     assert ai.UA == "quant-desk-axis-ingest/1.0 (research)", (
         "the shared token must not change: three axes were ingesting 85.9 MB, 1.1 MB and 786 KB "
         "on it, and a global change would risk them to repair a fourth")
-    src = (_DESK / "research" / "axis_ingest.py").read_text(encoding="utf-8")
-    fred_call = src.split("def ingest_fred", 1)[1]
-    assert 'headers={"User-Agent": FRED_UA}' in fred_call, (
-        "ingest_fred must send the scoped token, not the shared one")
-    assert 'headers={"User-Agent": UA}' in src.split("def ingest_fred", 1)[0], (
-        "the other ingesters must still send the shared token")
+
+
+def test_every_fred_request_carries_the_scoped_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Behavioural, not a grep: intercept urlopen and read the header each request actually sent.
+    The keyed API and the website fallback must BOTH send `FRED_UA` -- the fallback is the host
+    whose edge measured the token -- and the other ingesters keep the shared `UA`."""
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    from research import axis_ingest as ai
+
+    sent: list[tuple[str, str | None]] = []
+
+    class _Resp:
+        def __init__(self, body: str) -> None:
+            self._b = body.encode()
+
+        def read(self) -> bytes:
+            return self._b
+
+        def __enter__(self) -> _Resp:
+            return self
+
+        def __exit__(self, *a: object) -> None:
+            return None
+
+    def fake_urlopen(req: urllib.request.Request, timeout: float = 0) -> _Resp:
+        url = req.full_url
+        sent.append((url, req.get_header("User-agent")))
+        if "api.stlouisfed.org" in url:
+            if "series_id=DGS2" in url:          # force the website fallback for one series
+                raise urllib.error.HTTPError(url, 500, "x", None, None)  # type: ignore[arg-type]
+            return _Resp(_json.dumps({"observations": [{"date": "2026-10-27", "value": "4.1"}]}))
+        if "fredgraph" in url:
+            return _Resp("DATE,DGS2\n2026-10-27,3.5\n")
+        return _Resp("")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    doc = ai.ingest_fred(key="k" * 32)
+    assert doc["transport"]["DGS2"] == "fredgraph" and doc["transport"]["DGS10"] == "api"
+    fred = [ua for u, ua in sent if "stlouisfed.org" in u]
+    assert any("fredgraph" in u for u, _ in sent) and any("api.stlouisfed" in u for u, _ in sent)
+    assert fred and all(ua == ai.FRED_UA for ua in fred), fred
+    sent.clear()
+    ai._fetch("https://example.invalid/x")
+    assert sent[0][1] == ai.UA, "the other ingesters must still send the shared token"
