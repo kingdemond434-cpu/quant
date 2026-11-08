@@ -1,11 +1,12 @@
 {
   "upstream": "@{u}",
-  "ahead": 1634,
-  "merges": 589,
-  "non_merge": 1045,
-  "state_only": 758,
-  "code_touching": 287,
+  "ahead": 1641,
+  "merges": 592,
+  "non_merge": 1049,
+  "state_only": 761,
+  "code_touching": 288,
   "code_commits": [
+    "da5f48ab378433fa03e0dc50c8b4da5b33423a25",
     "169f385ccc59d194ef9131dbf96c455b9cea2928",
     "5de0361b51b63e41ecf16a788102e7e643708ee2",
     "a1eefc148a7a0a1cc4a557d2e127b7d0ee599c2f",
@@ -204,15 +205,83 @@
     "0e8dfa9ecca4828a4f9322ee20228a32fa6817e8",
     "058e7b310491d52f0fa3f3a5f4936ec3799b3210",
     "2de0a172281c58311c74442fdc53b0fa673bdb16",
-    "233c8ee46cf6044bd0f3d94efe3c862b52537173",
-    "7e6ae43e281765e628efd8ab6351a898f9b17fdf"
+    "233c8ee46cf6044bd0f3d94efe3c862b52537173"
   ],
-  "code_paths_touched": 2526,
+  "code_paths_touched": 2535,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-04T18:22:31+00:00",
+  "measured_at": "2026-11-07T20:05:59+00:00",
   "code_paths_differing": 0,
   "code_paths": [],
-  "skipped": [],
+  "skipped": [
+    {
+      "path": "desks/mt5/ops/box_tasks.manifest",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/prop/e8_executor.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/factor_residual_engine.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/hourly_cycle.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/local_converter.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/merge_hypotheses.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/scripts/sync_shadow_to_git.ps1",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_factor_residual_book.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_hourly_cycle_leg_rotation.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "libs/ops/leg_rotation.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/release/authority/authority.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/release/publisher/publish.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_dead_architecture.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/mine_channel_transcripts.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/run_law_gate.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_release_authority.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_state_publisher.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    }
+  ],
   "denied_paths": [],
   "secret_screen_hits": [],
   "withheld_paths": [],
