@@ -110,12 +110,38 @@
   "fresh_budget_s": 8640.0,
   "fresh_budget_why": "task execution is unlimited; build step: measuring 8640s, 4 of 2 whole sweeps over 20.6 h",
   "task_time_limit_s": 0.0,
-  "task_time_limit_basis": "previous_pass (re-read in the apply phase)"
+  "task_time_limit_basis": "schtasks"
  },
  "applied": {
   "env_file": "C:\\opt\\quant\\desks\\mt5\\data\\judging_throughput.env.json",
-  "machine_env": "PENDING",
-  "cadence": "PENDING",
+  "machine_env": {
+   "status": "APPLIED",
+   "set": {},
+   "unchanged": {
+    "GAUNTLET_WORKERS": "18",
+    "GAUNTLET_SHARDS": "18",
+    "GAUNTLET_MEMORY_BUDGET_MB": "13824",
+    "GAUNTLET_HEADROOM_CAP_MB": "13824",
+    "GAUNTLET_PER_WORKER_MB": "768",
+    "GAUNTLET_FRESH_BUDGET_SEC": "8640"
+   },
+   "failed": {},
+   "retired": {
+    "WARM_WORKERS": "ABSENT"
+   }
+  },
+  "cadence": {
+   "status": "FAILED",
+   "minutes": 1,
+   "task": "MT5-Gauntlet",
+   "next_run_before": "11/8/2026 5:06:00 AM",
+   "attempts": [
+    "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 55.03658559988253 seconds"
+   ],
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 55.03658559988253 seconds",
+   "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
+  },
   "process_env": {
    "GAUNTLET_SHARDS": "18"
   }
@@ -232,5 +258,6 @@
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
   "started_at": "2026-11-08T04:03:01+00:00",
   "pid": 34536
- }
+ },
+ "seconds": 213.8
 }
