@@ -1,5 +1,5 @@
 {
- "at": "2026-11-08T11:56:41+00:00",
+ "at": "2026-11-08T16:40:01+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -9941,7 +9941,7 @@
   },
   "measured": {
    "swept_at": "2026-11-08T11:35:40.304676+00:00",
-   "age_h": 0.35,
+   "age_h": 5.07,
    "n_cells": 261132,
    "n_judged": 246438,
    "n_unmeasured": 14694,
@@ -10068,16 +10068,16 @@
   "read_back_with": "registry.memories(category=\"candidate_prior\")"
  },
  "core": {
-  "at": "2026-11-08T11:56:41+00:00",
+  "at": "2026-11-08T16:40:01+00:00",
   "inputs": {},
   "testing_24h": {
    "status": "MEASURED",
-   "verdicts": 47110,
-   "cells_judged": 46560,
-   "per_hour": 1940.0,
-   "passed": 1965,
+   "verdicts": 27993,
+   "cells_judged": 27652,
+   "per_hour": 1152.167,
+   "passed": 1140,
    "ledger": "READ",
-   "measured_at": "2026-11-08T11:56:41+00:00",
+   "measured_at": "2026-11-08T16:40:01+00:00",
    "source": "build_core"
   },
   "re_measured": [
