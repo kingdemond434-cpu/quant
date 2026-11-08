@@ -3,25 +3,26 @@
  "create_time": 1794117069.1438947,
  "status": "RUNNING",
  "started_utc": "2026-11-08T05:51:09+00:00",
- "beat_utc": "2026-11-08T09:35:08+00:00",
- "beats": 445,
+ "beat_utc": "2026-11-08T09:49:56+00:00",
+ "beats": 454,
  "beat_every_s": 30.0,
- "phase": "rule_shards",
- "phase_started_utc": "2026-11-08T09:31:29+00:00",
- "phase_elapsed_s": 219.2,
+ "phase": "merge_and_publish",
+ "phase_started_utc": "2026-11-08T09:37:18+00:00",
+ "phase_elapsed_s": 757.3,
  "phases_done": {
   "plan": 459.2,
   "prewarm": 9154.1,
   "plan_handoff": 59.1,
   "build_shards": 2729.1,
-  "collect_and_cut": 808.8
+  "collect_and_cut": 808.8,
+  "rule_shards": 349.5
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
   "run_s": 129422.8,
   "run_deadline_utc": "2026-11-09T17:48:12+00:00",
-  "phase_s": 3600.0,
-  "phase_deadline_utc": "2026-11-08T10:31:29+00:00",
+  "phase_s": 153594.0,
+  "phase_deadline_utc": "2026-11-10T04:17:12+00:00",
   "no_progress_s": 1800.0,
   "consecutive_stalls": 0
  },
@@ -30,9 +31,9 @@
  "shards": {
   "phase": "rule",
   "total": 18,
-  "done": 0,
+  "done": 18,
   "failed": 0,
-  "running": 15,
+  "running": 0,
   "stalled": 0,
   "slow": 0,
   "retrying": 0,
@@ -44,23 +45,23 @@
    "widest": 15,
    "last": {
     "running": 15,
-    "available_mb": 47051.2,
-    "wave_rss_mb": 20000.0,
-    "estimate_mb": 1893.8,
+    "available_mb": 28145.2,
+    "wave_rss_mb": 15709.8,
+    "estimate_mb": 1426.1,
     "estimate_basis": "historic_peak",
-    "room_mb": 12130.9,
-    "reserve_mb": 28601.3,
+    "room_mb": 2498.0,
+    "reserve_mb": 22000.1,
     "admitted": false
    }
   }
  },
  "tree": {
-  "procs": 31,
-  "rss_mb": 22467.9,
-  "cpu_s": 4189.2
+  "procs": 1,
+  "rss_mb": 6653.4,
+  "cpu_s": 2309.5
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-08T09:35:08+00:00",
+ "last_progress_utc": "2026-11-08T09:49:56+00:00",
  "idle_s": 0.0,
- "progress_gaps": 0
+ "progress_gaps": 2
 }
