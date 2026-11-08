@@ -17,7 +17,7 @@
  "uptime_s": 997799.0,
  "last_sweep_ended_utc": "2026-11-08T05:51:09+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-08T09:20:01+00:00",
+ "heartbeat_utc": "2026-11-08T09:35:02+00:00",
  "sweep_phase": {
   "pid": 12944,
   "sweep_started_utc": "2026-11-08T05:51:18+00:00",
@@ -25,10 +25,11 @@
    "plan": 459.2,
    "prewarm": 9154.1,
    "plan_handoff": 59.1,
-   "build_shards": 2729.1
+   "build_shards": 2729.1,
+   "collect_and_cut": 808.8
   },
-  "phase": "collect_and_cut",
-  "phase_started_utc": "2026-11-08T09:18:00+00:00",
+  "phase": "rule_shards",
+  "phase_started_utc": "2026-11-08T09:31:29+00:00",
   "plan_steps": {
    "lane_and_docket": 45.3,
    "docket_grouping": 51.6,
@@ -196,15 +197,67 @@
      }
     },
     "collect_and_cut": {
-     "samples": 1,
+     "samples": 69,
      "top": [
       {
-       "stack": "__init__.py:exists:676 < external_gauntlet.py:_shard_collect:4721 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 1,
-       "share": 1.0
+       "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 32,
+       "share": 0.464
+      },
+      {
+       "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 9,
+       "share": 0.13
+      },
+      {
+       "stack": "base.py:ensure_index:7659 < managers.py:__setstate__:1945 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 4,
+       "share": 0.058
+      },
+      {
+       "stack": "managers.py:unpickle_block:1933 < managers.py:<genexpr>:1948 < managers.py:__setstate__:1947 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796",
+       "n": 4,
+       "share": 0.058
+      },
+      {
+       "stack": "generic.py:__setstate__:2239 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
+       "n": 3,
+       "share": 0.043
       }
      ],
-     "process": {}
+     "process": {
+      "cpu_s": 554.6,
+      "page_faults": 2971897.0,
+      "read_bytes": 6950616165.0,
+      "write_bytes": 121210.0,
+      "sampled_s": 680.0,
+      "rss_mb_max": 7624.8,
+      "cpu_share_of_wall": 0.816
+     }
+    },
+    "rule_shards": {
+     "samples": 20,
+     "top": [
+      {
+       "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < run_sharded_gauntlet.py:_admitted_wave:261 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
+       "n": 19,
+       "share": 0.95
+      },
+      {
+       "stack": "_pswindows.py:virtual_memory:187 < __init__.py:virtual_memory:2049 < run_sharded_gauntlet.py:_available_mb:74 < run_sharded_gauntlet.py:<lambda>:175 < run_sharded_gauntlet.py:admits:199 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 1,
+       "share": 0.05
+      }
+     ],
+     "process": {
+      "cpu_s": 18.3,
+      "page_faults": 785594.0,
+      "read_bytes": 0.0,
+      "write_bytes": 22350.0,
+      "sampled_s": 190.0,
+      "rss_mb_max": 7626.2,
+      "cpu_share_of_wall": 0.096
+     }
     }
    }
   },
@@ -266,6 +319,21 @@
      "cpu_share_of_wall": 0.673
     }
    }
+  },
+  "shards": {
+   "phase": "rule",
+   "total": 18,
+   "started": 15,
+   "done_ok": 0,
+   "failed": 0,
+   "retries": 0,
+   "running": 15,
+   "last_finish_epoch": null,
+   "last_finish_utc": null,
+   "longest_shard_s": null,
+   "seconds_since_last_finish": null,
+   "stalled_hint": false,
+   "stalled_hint_authority": "report_only"
   }
  }
 }
