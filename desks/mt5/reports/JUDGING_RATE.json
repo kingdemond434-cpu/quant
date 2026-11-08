@@ -1,62 +1,62 @@
 {
- "at": "2026-11-08T05:39:23+00:00",
+ "at": "2026-11-08T06:42:27+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 1532146,
-  "rows_unstamped": 15334,
-  "last_verdict_at": "2026-11-08T00:31:50+00:00",
+  "rows_unstamped": 0,
+  "last_verdict_at": "2026-11-08T05:39:49+00:00",
   "counts": {
    "1h": 0,
-   "24h": 36383,
-   "7d": 308020,
-   "build_step_lo": 36383,
+   "24h": 51717,
+   "7d": 316410,
+   "build_step_lo": 51717,
    "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 11397,
-   "7d": 167290,
-   "build_step_lo": 11397,
+   "24h": 17245,
+   "7d": 168766,
+   "build_step_lo": 17245,
    "build_step_hi": 0
   },
-  "first_terminal_cells": 680121,
+  "first_terminal_cells": 685969,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 474.875,
-   "7d": 995.774
+   "24h": 718.542,
+   "7d": 1004.56
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 1515.958,
-   "7d": 1833.452
+   "24h": 2154.875,
+   "7d": 1883.393
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 77444,
-   "7d": 178589
+   "24h": 81561,
+   "7d": 182136
   },
   "per_hour": {
-   "24h": 3226.833,
-   "7d": 1063.03
+   "24h": 3398.375,
+   "7d": 1084.143
   }
  },
- "verdicts_per_hour": 1515.958,
- "verdicts_per_day": 36383.0,
+ "verdicts_per_hour": 2154.875,
+ "verdicts_per_day": 51717.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 11397.0,
+ "first_judged_per_day": 17245.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": true,
- "created_per_day": 77444.0,
+ "created_per_day": 81561.0,
  "backlog": 1030735,
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
   "status": "GROWING",
   "hours": null,
-  "net_per_day": -66047.0,
+  "net_per_day": -64316.0,
   "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
  },
  "workers_planned": 18,
@@ -64,7 +64,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-08T05:37:47+00:00",
-  "pid": 30320
+  "started_at": "2026-11-08T06:40:28+00:00",
+  "pid": 6092
  }
 }

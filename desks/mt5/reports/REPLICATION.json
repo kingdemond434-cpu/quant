@@ -1,10 +1,10 @@
 {
- "at": "2026-11-08T05:36:51+00:00",
+ "at": "2026-11-08T06:36:52+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
  "population": {
-  "certificates": 3928,
+  "certificates": 4939,
   "forward_rows": 1877,
   "spec_book": [
    "carry",
@@ -21,15 +21,15 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 0,
-  "UNMEASURED": 16
+  "MISMATCH": 2,
+  "UNMEASURED": 14
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=a8f93449101b8c63",
-   "certificate": "external.NZDSGD.formula.p=a8f93449101b8c63",
-   "fp": "6a2b41b7ea87a39a",
+   "key": "NZDSGD.formula.p=cbdeb0f7b1c18823",
+   "certificate": "external.NZDSGD.formula.p=cbdeb0f7b1c18823",
+   "fp": "c6c1dd0e10af7c1e",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -41,9 +41,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=375517165f0e3520",
-   "certificate": "external.NZDSGD.formula.p=375517165f0e3520",
-   "fp": "e89afa3f282726b0",
+   "key": "NZDSGD.formula.p=2b3cf5ae66d2344a",
+   "certificate": "external.NZDSGD.formula.p=2b3cf5ae66d2344a",
+   "fp": "8cf1b2e7e121cdf4",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -55,9 +55,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=b0235de7e7d8a672",
-   "certificate": "external.NZDSGD.formula.p=b0235de7e7d8a672",
-   "fp": "803701172d2cfcea",
+   "key": "NZDSGD.formula.p=9e697bf69fbaa5ac",
+   "certificate": "external.NZDSGD.formula.p=9e697bf69fbaa5ac",
+   "fp": "9c686f6cdf7f0e4a",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -69,9 +69,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=6fdd4fafda93a380",
-   "certificate": "external.NZDSGD.formula.p=6fdd4fafda93a380",
-   "fp": "2146b703b9340aa7",
+   "key": "NZDSGD.formula.p=03682631a9964f28",
+   "certificate": "external.NZDSGD.formula.p=03682631a9964f28",
+   "fp": "d3cdbddef9a2c247",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -83,9 +83,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=3237166f42257db3",
-   "certificate": "external.NZDSGD.formula.p=3237166f42257db3",
-   "fp": "9982e9d74f60fd59",
+   "key": "NZDSGD.formula.p=800a35a35c0d08d1",
+   "certificate": "external.NZDSGD.formula.p=800a35a35c0d08d1",
+   "fp": "dd4b7ff31114280b",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -97,9 +97,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=bfaf955dbee9527e",
-   "certificate": "external.NZDSGD.formula.p=bfaf955dbee9527e",
-   "fp": "ce8a14487c3652cd",
+   "key": "NZDSGD.formula.p=15c6f5a0bf401193",
+   "certificate": "external.NZDSGD.formula.p=15c6f5a0bf401193",
+   "fp": "cb4ce4e59c22b4d6",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -111,9 +111,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=a49bdac222ad6c24",
-   "certificate": "external.NZDSGD.formula.p=a49bdac222ad6c24",
-   "fp": "6328e80b99dd98c5",
+   "key": "NZDSGD.formula.p=f54fd8984118c6ed",
+   "certificate": "external.NZDSGD.formula.p=f54fd8984118c6ed",
+   "fp": "9a3c05771a4d2bac",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -125,9 +125,9 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDSGD.formula.p=43529ae48ce9f71a",
-   "certificate": "external.NZDSGD.formula.p=43529ae48ce9f71a",
-   "fp": "22dc396d45c31ca6",
+   "key": "NZDSGD.formula.p=49084fe784b308c9",
+   "certificate": "external.NZDSGD.formula.p=49084fe784b308c9",
+   "fp": "2f6b1064c32e4b67",
    "symbol": "NZDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -139,47 +139,143 @@
   },
   {
    "lane": "forward",
-   "key": "GBPDKK.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "symbol": "GBPDKK",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 5]]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
+   "key": "GBPMXN.overnight_gap_decay.asia#session=asia",
    "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 14 rebuilt vs 44 in the ledger",
+    "only 13/44 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 14,
+    "pnl_R": 6.564,
+    "cost": {
+     "spread_per_lot": 605.0000000000001,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 21.03636,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 44,
+    "cost_fields": {
+     "spread_per_lot": 530.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 19.74717,
+     "swap_per_lot_per_night": 0.0
+    },
+    "forward_start": "2026-10-07T11:55:25+00:00"
+   },
+   "divergence": {
+    "n_ledger": 44,
+    "n_rebuilt": 14,
+    "matched": 13,
+    "match_share": 0.295,
+    "fill_ratio": 0.318,
+    "median_abs_dR": 0.0306,
+    "pnl_ledger_R": 36.301,
+    "pnl_rebuilt_R": 6.564,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.142,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.065
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "GBPMXN.overnight_gap_decay.asia#session=overlap",
+   "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 17 rebuilt vs 44 in the ledger",
+    "only 16/44 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 17,
+    "pnl_R": 7.939,
+    "cost": {
+     "spread_per_lot": 605.0000000000001,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 21.03636,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 44,
+    "cost_fields": {
+     "spread_per_lot": 530.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 19.74717,
+     "swap_per_lot_per_night": 0.0
+    },
+    "forward_start": "2026-09-30T05:32:54+00:00"
+   },
+   "divergence": {
+    "n_ledger": 44,
+    "n_rebuilt": 17,
+    "matched": 16,
+    "match_share": 0.364,
+    "fill_ratio": 0.386,
+    "median_abs_dR": 0.0297,
+    "pnl_ledger_R": 36.301,
+    "pnl_rebuilt_R": 7.939,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.142,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.065
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "GBPMXN.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+   "symbol": "GBPMXN",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPMXN.spread_state.asia#session=asia",
+   "symbol": "GBPMXN",
+   "family": "spread_state",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'spread_state'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPMXN.range_reversion.asia@M15",
+   "symbol": "GBPMXN",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['neg', 'spread'], 8]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "symbol": "GBPNOK",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -191,8 +287,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
-   "symbol": "GBPMXN",
+   "key": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 5]]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
+   "symbol": "GBPNOK",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -204,34 +300,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 2]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-   "symbol": "GBPMXN",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-   "symbol": "GBPMXN",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-   "symbol": "GBPMXN",
+   "key": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "symbol": "GBPNOK",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -242,81 +312,76 @@
    "divergence": {}
   }
  ],
- "quarantined": [],
+ "quarantined": [
+  "GBPMXN.overnight_gap_decay.asia#session=asia",
+  "GBPMXN.overnight_gap_decay.asia#session=overlap"
+ ],
  "unmeasured": [
   {
-   "what": "NZDSGD.formula.p=a8f93449101b8c63",
+   "what": "NZDSGD.formula.p=cbdeb0f7b1c18823",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=375517165f0e3520",
+   "what": "NZDSGD.formula.p=2b3cf5ae66d2344a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=b0235de7e7d8a672",
+   "what": "NZDSGD.formula.p=9e697bf69fbaa5ac",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=6fdd4fafda93a380",
+   "what": "NZDSGD.formula.p=03682631a9964f28",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=3237166f42257db3",
+   "what": "NZDSGD.formula.p=800a35a35c0d08d1",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=bfaf955dbee9527e",
+   "what": "NZDSGD.formula.p=15c6f5a0bf401193",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=a49bdac222ad6c24",
+   "what": "NZDSGD.formula.p=f54fd8984118c6ed",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDSGD.formula.p=43529ae48ce9f71a",
+   "what": "NZDSGD.formula.p=49084fe784b308c9",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPDKK.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+   "what": "GBPMXN.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+   "why": "no written specification in the spec book for family 'spread_state'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+   "what": "GBPMXN.spread_state.asia#session=asia",
+   "why": "no written specification in the spec book for family 'spread_state'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+   "what": "GBPMXN.range_reversion.asia@M15",
+   "why": "no written specification in the spec book for family 'range_reversion'"
   },
   {
-   "what": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 5]]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
+   "what": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['neg', 'spread'], 8]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+   "what": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 5]]_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 2]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
-   "why": "no written specification in the spec book for family 'formula'"
-  },
-  {
-   "what": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
+   "what": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
    "why": "no written specification in the spec book for family 'formula'"
   }
  ],
  "recorded": {
-  "quarantined": 0,
-  "memory": 0,
-  "candidates": 0
+  "quarantined": 2,
+  "memory": 2,
+  "candidates": 464
  },
  "cursor": {
-  "forward": 1357,
-  "at": "2026-11-08T04:42:26+00:00",
+  "forward": 1365,
+  "at": "2026-11-08T05:36:51+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -342,16 +407,16 @@
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M15.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 1.76
+ "seconds": 8.16
 }
