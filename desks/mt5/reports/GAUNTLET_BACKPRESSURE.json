@@ -1,71 +1,70 @@
 {
- "at": "2026-11-08T00:46:16+00:00",
+ "at": "2026-11-08T03:09:48+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
-   "since": "2026-11-06T20:12:25+00:00",
+   "since": "2026-11-07T03:09:48+00:00",
    "intake": {
-    "born_cells": 37974,
-    "per_hour": 1582.25,
-    "prior_window_born": 16910
+    "born_cells": 35673,
+    "per_hour": 1486.375,
+    "prior_window_born": 15571
    },
    "testing": {
-    "verdicts": 41275,
-    "cells_judged": 40299,
-    "per_hour": 1679.125,
-    "passed": 1557,
-    "pass_rate": 0.0377
+    "verdicts": 38761,
+    "cells_judged": 38143,
+    "per_hour": 1589.292,
+    "passed": 1010,
+    "pass_rate": 0.0261
    },
    "backlog": {
-    "born_minus_judged": -2325,
-    "prior_window": -11105,
+    "born_minus_judged": -2470,
+    "prior_window": -5866,
     "growing": true,
-    "capacity_cells": 40299,
-    "over_capacity_multiple": -0.058,
+    "capacity_cells": 38143,
+    "over_capacity_multiple": -0.065,
     "registry_queue_depth": {
      "status": "MEASURED",
      "by_origin_status": {
       "DESK": {
-       "claimed": 184078,
-       "donated": 45968,
+       "claimed": 184236,
+       "donated": 45702,
        "judged": 23833,
-       "queued": 158,
-       "retired": 40030,
+       "queued": 284,
+       "retired": 40280,
        "study": 3113,
        "survived": 20
       },
       "EXTERNAL": {
-       "claimed": 204060,
-       "donated": 33010,
+       "claimed": 204117,
+       "donated": 33014,
        "judged": 8521,
-       "queued": 48,
+       "queued": 38,
        "retired": 198485,
        "survived": 2
       },
       "MOAT": {
-       "claimed": 59301,
-       "donated": 189006,
+       "claimed": 60142,
+       "donated": 193604,
        "judged": 700,
-       "queued": 841,
-       "retired": 61117,
+       "queued": 295,
+       "retired": 61391,
        "study": 1236,
        "survived": 2
       },
       "culture_gap_cells": {
-       "claimed": 783,
-       "queued": 102
+       "claimed": 885
       },
       "factor_model_coevolution": {
        "claimed": 409
       },
       "futures_state": {
-       "claimed": 4221,
-       "queued": 4779
+       "claimed": 9157,
+       "queued": 5142
       },
       "independence_intake": {
-       "claimed": 219949,
+       "claimed": 224888,
        "judged": 632,
-       "queued": 4363,
+       "queued": 2304,
        "retired": 32843,
        "study": 407
       },
@@ -73,80 +72,82 @@
        "claimed": 348
       },
       "model_search": {
-       "claimed": 499
+       "claimed": 499,
+       "queued": 2
       },
       "pack_cells": {
        "claimed": 5574,
        "judged": 2
       },
       "rank_recovery": {
-       "claimed": 553823,
+       "claimed": 558343,
        "judged": 1791,
-       "queued": 5136,
-       "retired": 50275,
-       "study": 648
+       "queued": 1129,
+       "retired": 50851,
+       "study": 688
       },
       "session_variant_remap": {
-       "claimed": 449
+       "claimed": 449,
+       "queued": 357
       },
       "timeframe_fanout": {
        "claimed": 1361
       }
      }
     },
-    "registry_grid_cells": 544344
+    "registry_grid_cells": 549615
    },
    "failure_mix": {
-    "n_failures": 39718,
+    "n_failures": 37751,
     "by_gate": {
-     "UNKNOWN": 22117,
-     "in_sample_screen": 13434,
-     "deflated_sharpe": 3347,
-     "lockbox": 430,
-     "cpcv": 248,
-     "stress_costs": 125,
-     "swap_cost": 15,
+     "UNKNOWN": 24046,
+     "in_sample_screen": 10965,
+     "deflated_sharpe": 2195,
+     "lockbox": 295,
+     "cpcv": 151,
+     "stress_costs": 84,
+     "swap_cost": 13,
      "walk_forward": 2
     },
     "by_class": {
-     "no_edge": 17211,
-     "unstable": 248,
-     "cost_killed": 140,
+     "no_edge": 13455,
+     "unstable": 151,
+     "cost_killed": 97,
      "regime_specific": 2
     },
     "class_shares": {
-     "no_edge": 0.9778,
-     "unstable": 0.0141,
-     "cost_killed": 0.008,
+     "no_edge": 0.9818,
+     "unstable": 0.011,
+     "cost_killed": 0.0071,
      "regime_specific": 0.0001
     },
     "unmeasured_gates": {
-     "UNKNOWN": 22117
+     "UNKNOWN": 24046
     },
-    "cost_killed_share": 0.008
+    "cost_killed_share": 0.0071
    },
    "concentration": {
-    "fx_h1_asia": 4272,
-    "fx_h1_asia_share": 0.1125,
+    "fx_h1_asia": 2510,
+    "fx_h1_asia_share": 0.0704,
     "top_grid_cells": [
      {
       "cell": "fx_exotic|H1|all",
-      "n": 4418,
-      "share": 0.1163
+      "n": 4213,
+      "share": 0.1181
      },
      {
       "cell": "index|H1|all",
-      "n": 2595,
-      "share": 0.0683
+      "n": 2580,
+      "share": 0.0723
      },
      {
-      "cell": "fx_exotic|H1|asia",
-      "n": 2350,
-      "share": 0.0619
+      "cell": "fx_exotic|H4|all",
+      "n": 1978,
+      "share": 0.0554
      }
     ],
-    "top3_grid_share": 0.2466,
-    "distinct_grid_cells": 201
+    "top3_grid_share": 0.2459,
+    "distinct_grid_cells": 204
    },
    "cross_asset_novelty": {
     "top3_asset_classes": [
@@ -154,22 +155,22 @@
      "fx_cross",
      "index"
     ],
-    "outside_top3": 9255,
-    "share": 0.2437,
+    "outside_top3": 8690,
+    "share": 0.2436,
     "by_asset_class": {
-     "fx_exotic": 16476,
-     "fx_cross": 6493,
-     "index": 5750,
-     "soft": 2596,
-     "crypto": 2221,
-     "fx_major": 1919,
-     "metal": 1548,
-     "forex_exotics": 921
+     "fx_exotic": 15530,
+     "fx_cross": 5810,
+     "index": 5643,
+     "soft": 2436,
+     "crypto": 2196,
+     "fx_major": 1752,
+     "metal": 1572,
+     "forex_exotics": 676
     }
    },
    "event_mechanisms": {
-    "n": 3177,
-    "share": 0.0837,
+    "n": 3210,
+    "share": 0.09,
     "families": [
      "calendar_month",
      "comex_settlement",
@@ -195,9 +196,9 @@
     "why": "share of intake rows carrying any point-in-time stamp"
    },
    "duplicates": {
-    "n_born": 37974,
+    "n_born": 35673,
     "content_hash": {
-     "distinct": 37974,
+     "distinct": 35673,
      "repeated_rows": 0,
      "share": 0.0,
      "why": "rows sharing (family, symbol, params, chart, session)"
@@ -205,8 +206,8 @@
     "registry": {
      "status": "MEASURED",
      "n_candidates": 100000,
-     "n_search_count_gt_1": 82003,
-     "share": 0.82
+     "n_search_count_gt_1": 83192,
+     "share": 0.8319
     },
     "novelty_gate": {
      "status": "MEASURED",
@@ -216,83 +217,83 @@
      "redundant_share": 0.474,
      "why": "REDUNDANT means every measurable dimension reads as a named twin"
     },
-    "share": 0.82,
+    "share": 0.8319,
     "basis": "registry.search_count"
    }
   },
   "7d": {
    "hours": 168.0,
-   "since": "2026-10-31T20:12:25+00:00",
+   "since": "2026-11-01T03:09:48+00:00",
    "intake": {
-    "born_cells": 214184,
-    "per_hour": 1274.905,
-    "prior_window_born": 36501
+    "born_cells": 198774,
+    "per_hour": 1183.179,
+    "prior_window_born": 56373
    },
    "testing": {
-    "verdicts": 334058,
-    "cells_judged": 326558,
-    "per_hour": 1943.798,
-    "passed": 2547,
-    "pass_rate": 0.0076
+    "verdicts": 308020,
+    "cells_judged": 301015,
+    "per_hour": 1791.756,
+    "passed": 2606,
+    "pass_rate": 0.0085
    },
    "backlog": {
-    "born_minus_judged": -112374,
-    "prior_window": -127518,
+    "born_minus_judged": -102241,
+    "prior_window": -133180,
     "growing": true,
-    "capacity_cells": 326558,
-    "over_capacity_multiple": -0.344
+    "capacity_cells": 301015,
+    "over_capacity_multiple": -0.34
    },
    "failure_mix": {
-    "n_failures": 331511,
+    "n_failures": 305414,
     "by_gate": {
-     "in_sample_screen": 175630,
-     "UNKNOWN": 128636,
-     "deflated_sharpe": 25443,
-     "lockbox": 938,
-     "cpcv": 489,
-     "stress_costs": 331,
-     "swap_cost": 30,
-     "walk_forward": 12,
+     "in_sample_screen": 157078,
+     "UNKNOWN": 122318,
+     "deflated_sharpe": 24220,
+     "lockbox": 947,
+     "cpcv": 480,
+     "stress_costs": 328,
+     "swap_cost": 32,
+     "walk_forward": 9,
      "reality_check_spa": 2
     },
     "by_class": {
-     "no_edge": 202013,
-     "unstable": 489,
-     "cost_killed": 361,
-     "regime_specific": 12
+     "no_edge": 182247,
+     "unstable": 480,
+     "cost_killed": 360,
+     "regime_specific": 9
     },
     "class_shares": {
-     "no_edge": 0.9958,
-     "unstable": 0.0024,
-     "cost_killed": 0.0018,
-     "regime_specific": 0.0001
+     "no_edge": 0.9954,
+     "unstable": 0.0026,
+     "cost_killed": 0.002,
+     "regime_specific": 0.0
     },
     "unmeasured_gates": {
-     "UNKNOWN": 128636
+     "UNKNOWN": 122318
     },
-    "cost_killed_share": 0.0018
+    "cost_killed_share": 0.002
    },
    "concentration": {
-    "fx_h1_asia": 12034,
-    "fx_h1_asia_share": 0.0562,
+    "fx_h1_asia": 11709,
+    "fx_h1_asia_share": 0.0589,
     "top_grid_cells": [
      {
       "cell": "fx_exotic|H1|all",
-      "n": 30645,
-      "share": 0.1431
+      "n": 28867,
+      "share": 0.1452
      },
      {
       "cell": "fx_cross|H1|all",
-      "n": 12568,
-      "share": 0.0587
+      "n": 11944,
+      "share": 0.0601
      },
      {
       "cell": "fx_exotic|H4|all",
-      "n": 11995,
-      "share": 0.056
+      "n": 11789,
+      "share": 0.0593
      }
     ],
-    "top3_grid_share": 0.2578,
+    "top3_grid_share": 0.2646,
     "distinct_grid_cells": 269
    },
    "cross_asset_novelty": {
@@ -301,22 +302,22 @@
      "fx_cross",
      "index"
     ],
-    "outside_top3": 53654,
-    "share": 0.2505,
+    "outside_top3": 50215,
+    "share": 0.2526,
     "by_asset_class": {
-     "fx_exotic": 94720,
-     "fx_cross": 35886,
-     "index": 29924,
-     "crypto": 16410,
-     "soft": 15005,
-     "fx_major": 10417,
-     "metal": 8942,
-     "forex_exotics": 2356
+     "fx_exotic": 87239,
+     "fx_cross": 33134,
+     "index": 28186,
+     "crypto": 15169,
+     "soft": 14212,
+     "fx_major": 9760,
+     "metal": 8280,
+     "forex_exotics": 2416
     }
    },
    "event_mechanisms": {
-    "n": 6688,
-    "share": 0.0312,
+    "n": 6996,
+    "share": 0.0352,
     "families": [
      "calendar_month",
      "comex_settlement",
@@ -345,9 +346,9 @@
     "why": "share of intake rows carrying any point-in-time stamp"
    },
    "duplicates": {
-    "n_born": 214184,
+    "n_born": 198774,
     "content_hash": {
-     "distinct": 214184,
+     "distinct": 198774,
      "repeated_rows": 0,
      "share": 0.0,
      "why": "rows sharing (family, symbol, params, chart, session)"
@@ -355,8 +356,8 @@
     "registry": {
      "status": "MEASURED",
      "n_candidates": 100000,
-     "n_search_count_gt_1": 82003,
-     "share": 0.82
+     "n_search_count_gt_1": 83192,
+     "share": 0.8319
     },
     "novelty_gate": {
      "status": "MEASURED",
@@ -366,7 +367,7 @@
      "redundant_share": 0.474,
      "why": "REDUNDANT means every measurable dimension reads as a named twin"
     },
-    "share": 0.82,
+    "share": 0.8319,
     "basis": "registry.search_count"
    }
   }
@@ -376,7 +377,7 @@
    "code": "too_many_duplicates",
    "trigger": "duplicate share > 0.2",
    "measured": {
-    "share": 0.82,
+    "share": 0.8319,
     "basis": "registry.search_count"
    },
    "instruction": "the same rule is being re-enqueued: generators must diff against the registry's content hash before donating, and spend the saved cells on an unvisited grid cell",
@@ -387,11 +388,11 @@
    "code": "too_many_cost_killed",
    "trigger": "cost_killed share of classified failures > 0.5",
    "measured": {
-    "share": 0.008,
+    "share": 0.0071,
     "by_class": {
-     "no_edge": 17211,
-     "unstable": 248,
-     "cost_killed": 140,
+     "no_edge": 13455,
+     "unstable": 151,
+     "cost_killed": 97,
      "regime_specific": 2
     }
    },
@@ -403,25 +404,25 @@
    "code": "too_much_fx_h1_asia",
    "trigger": "fx x H1 x asia share of intake > 0.4",
    "measured": {
-    "share": 0.1125,
+    "share": 0.0704,
     "top_grid_cells": [
      {
       "cell": "fx_exotic|H1|all",
-      "n": 4418,
-      "share": 0.1163
+      "n": 4213,
+      "share": 0.1181
      },
      {
       "cell": "index|H1|all",
-      "n": 2595,
-      "share": 0.0683
+      "n": 2580,
+      "share": 0.0723
      },
      {
-      "cell": "fx_exotic|H1|asia",
-      "n": 2350,
-      "share": 0.0619
+      "cell": "fx_exotic|H4|all",
+      "n": 1978,
+      "share": 0.0554
      }
     ],
-    "top3_grid_share": 0.2466
+    "top3_grid_share": 0.2459
    },
    "instruction": "the compiler's novelty gate raises the bar for that cell; scouts and engines prefer other cells -- another chart, another session, another asset class",
    "fired": false,
@@ -431,8 +432,8 @@
    "code": "not_enough_event_mechanisms",
    "trigger": "event / forced-flow share of intake < 0.1",
    "measured": {
-    "share": 0.0837,
-    "n": 3177
+    "share": 0.09,
+    "n": 3210
    },
    "instruction": "mine mechanisms with a DATED PAYER -- releases, fixings, index and futures rolls, close hedging flow -- which do not need the counterparty to be wrong",
    "fired": true,
@@ -460,7 +461,7 @@
    "code": "weak_cross_asset_novelty",
    "trigger": "intake outside the top-3 asset classes < 0.15",
    "measured": {
-    "share": 0.2437,
+    "share": 0.2436,
     "top3": [
      "fx_exotic",
      "fx_cross",
@@ -475,17 +476,17 @@
    "code": "backlog_growing",
    "trigger": "backlog rose over the window AND exceeds 2.0x the cells judged in it",
    "measured": {
-    "backlog": -2325,
-    "prior": -11105,
-    "capacity_cells": 40299,
-    "multiple": -0.058
+    "backlog": -2470,
+    "prior": -5866,
+    "capacity_cells": 38143,
+    "multiple": -0.065
    },
    "instruction": "READY_PRIORITY only: the exchange serves the top-scored, the rest wait. Generate no less -- order the queue by score and let the tail sit until capacity frees",
    "fired": false,
    "window": "24h"
   }
  ],
- "elapsed_s": 364.94,
+ "elapsed_s": 488.84,
  "budget_s": 480.0,
  "messages_window": "24h",
  "fired": [
@@ -499,23 +500,23 @@
    "family": "formula",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 87871,
-   "n_passed": 1076,
-   "p_edge_prior": 0.012251,
+   "n_judged": 86977,
+   "n_passed": 1106,
+   "p_edge_prior": 0.012722,
    "failure_class_shares": {
-    "no_edge": 0.9965,
-    "cost_killed": 0.0008,
+    "no_edge": 0.9964,
+    "cost_killed": 0.0009,
     "unstable": 0.0027
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 58104,
-    "UNKNOWN": 20715,
-    "deflated_sharpe": 7308,
-    "lockbox": 435,
-    "cpcv": 177
+    "in_sample_screen": 57278,
+    "UNKNOWN": 20750,
+    "deflated_sharpe": 7158,
+    "lockbox": 451,
+    "cpcv": 178
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -523,24 +524,48 @@
    "family": "formula",
    "chart": "H1",
    "asset_class": "fx_cross",
-   "n_judged": 23021,
-   "n_passed": 1010,
-   "p_edge_prior": 0.043893,
+   "n_judged": 23368,
+   "n_passed": 1047,
+   "p_edge_prior": 0.044824,
    "failure_class_shares": {
-    "no_edge": 0.9742,
-    "unstable": 0.0108,
-    "cost_killed": 0.0147,
+    "no_edge": 0.9741,
+    "unstable": 0.0109,
+    "cost_killed": 0.0148,
     "regime_specific": 0.0002
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 13451,
-    "UNKNOWN": 4276,
-    "deflated_sharpe": 3594,
-    "lockbox": 233,
-    "stress_costs": 230
+    "in_sample_screen": 13643,
+    "UNKNOWN": 4330,
+    "deflated_sharpe": 3630,
+    "lockbox": 252,
+    "stress_costs": 234
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:session_range_breakout|H1|fx_exotic",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 23013,
+   "n_passed": 5,
+   "p_edge_prior": 0.000239,
+   "failure_class_shares": {
+    "no_edge": 0.9951,
+    "cost_killed": 0.0045,
+    "unstable": 0.0004
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 14981,
+    "in_sample_screen": 5424,
+    "deflated_sharpe": 2509,
+    "lockbox": 55,
+    "stress_costs": 36
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -548,7 +573,7 @@
    "family": "formula",
    "chart": "H1",
    "asset_class": "metal",
-   "n_judged": 22495,
+   "n_judged": 22496,
    "n_passed": 2,
    "p_edge_prior": 0.000111,
    "failure_class_shares": {
@@ -560,55 +585,11 @@
    "terminal_gates": {
     "in_sample_screen": 13800,
     "UNKNOWN": 5552,
-    "deflated_sharpe": 3115,
+    "deflated_sharpe": 3116,
     "cpcv": 16,
     "lockbox": 8
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:session_range_breakout|H1|fx_exotic",
-   "family": "session_range_breakout",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 21463,
-   "n_passed": 5,
-   "p_edge_prior": 0.000256,
-   "failure_class_shares": {
-    "no_edge": 0.9951,
-    "cost_killed": 0.0045,
-    "unstable": 0.0004
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 13441,
-    "in_sample_screen": 5415,
-    "deflated_sharpe": 2508,
-    "lockbox": 55,
-    "stress_costs": 36
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:formula|H1|crypto",
-   "family": "formula",
-   "chart": "H1",
-   "asset_class": "crypto",
-   "n_judged": 17151,
-   "n_passed": 0,
-   "p_edge_prior": 2.9e-05,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 13719,
-    "UNKNOWN": 3153,
-    "deflated_sharpe": 279
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -616,9 +597,9 @@
    "family": "cross_asset_residual",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 17101,
-   "n_passed": 44,
-   "p_edge_prior": 0.002602,
+   "n_judged": 17107,
+   "n_passed": 45,
+   "p_edge_prior": 0.00266,
    "failure_class_shares": {
     "no_edge": 0.9981,
     "unstable": 0.0018,
@@ -626,13 +607,33 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 13278,
-    "deflated_sharpe": 2297,
+    "in_sample_screen": 13282,
+    "deflated_sharpe": 2298,
     "UNKNOWN": 1392,
     "lockbox": 58,
     "cpcv": 28
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:formula|H1|crypto",
+   "family": "formula",
+   "chart": "H1",
+   "asset_class": "crypto",
+   "n_judged": 16371,
+   "n_passed": 0,
+   "p_edge_prior": 3.1e-05,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 12939,
+    "UNKNOWN": 3154,
+    "deflated_sharpe": 278
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -640,7 +641,7 @@
    "family": "formula",
    "chart": "H1",
    "asset_class": "index",
-   "n_judged": 15330,
+   "n_judged": 15209,
    "n_passed": 0,
    "p_edge_prior": 3.3e-05,
    "failure_class_shares": {
@@ -649,13 +650,13 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 10688,
-    "UNKNOWN": 4094,
-    "deflated_sharpe": 545,
+    "in_sample_screen": 10545,
+    "UNKNOWN": 4124,
+    "deflated_sharpe": 537,
     "cpcv": 2,
     "lockbox": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -663,7 +664,7 @@
    "family": "formula",
    "chart": "H1",
    "asset_class": "soft",
-   "n_judged": 11204,
+   "n_judged": 11120,
    "n_passed": 0,
    "p_edge_prior": 4.5e-05,
    "failure_class_shares": {
@@ -671,34 +672,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 7150,
-    "UNKNOWN": 4006,
+    "in_sample_screen": 7035,
+    "UNKNOWN": 4037,
     "deflated_sharpe": 48
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:formula|H1|forex_exotics",
-   "family": "formula",
-   "chart": "H1",
-   "asset_class": "forex_exotics",
-   "n_judged": 9592,
-   "n_passed": 421,
-   "p_edge_prior": 0.043938,
-   "failure_class_shares": {
-    "no_edge": 0.9975,
-    "unstable": 0.0025
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 5147,
-    "UNKNOWN": 2874,
-    "deflated_sharpe": 1109,
-    "lockbox": 25,
-    "cpcv": 16
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -706,7 +684,7 @@
    "family": "overnight_drift",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 9477,
+   "n_judged": 9488,
    "n_passed": 1,
    "p_edge_prior": 0.000158,
    "failure_class_shares": {
@@ -714,11 +692,34 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 5049,
-    "in_sample_screen": 4125,
-    "deflated_sharpe": 302
+    "UNKNOWN": 5054,
+    "in_sample_screen": 4129,
+    "deflated_sharpe": 304
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:formula|H1|forex_exotics",
+   "family": "formula",
+   "chart": "H1",
+   "asset_class": "forex_exotics",
+   "n_judged": 9318,
+   "n_passed": 432,
+   "p_edge_prior": 0.046411,
+   "failure_class_shares": {
+    "no_edge": 0.9973,
+    "unstable": 0.0027
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 4885,
+    "UNKNOWN": 2898,
+    "deflated_sharpe": 1063,
+    "lockbox": 24,
+    "cpcv": 16
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -726,23 +727,46 @@
    "family": "formula",
    "chart": "H1",
    "asset_class": "fx_major",
-   "n_judged": 7694,
+   "n_judged": 7670,
    "n_passed": 0,
    "p_edge_prior": 6.5e-05,
    "failure_class_shares": {
-    "no_edge": 0.998,
+    "no_edge": 0.9979,
     "cost_killed": 0.0007,
-    "unstable": 0.0013
+    "unstable": 0.0015
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 5761,
-    "UNKNOWN": 1562,
-    "deflated_sharpe": 263,
-    "lockbox": 96,
-    "cpcv": 8
+    "in_sample_screen": 5723,
+    "UNKNOWN": 1568,
+    "deflated_sharpe": 268,
+    "lockbox": 98,
+    "cpcv": 9
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:session_range_breakout|H1|fx_cross",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 6702,
+   "n_passed": 21,
+   "p_edge_prior": 0.003208,
+   "failure_class_shares": {
+    "no_edge": 0.9996,
+    "unstable": 0.0004
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 4108,
+    "in_sample_screen": 1927,
+    "deflated_sharpe": 616,
+    "lockbox": 29,
+    "cpcv": 1
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -750,7 +774,7 @@
    "family": "cross_asset_residual",
    "chart": "H1",
    "asset_class": "fx_cross",
-   "n_judged": 6426,
+   "n_judged": 6427,
    "n_passed": 1,
    "p_edge_prior": 0.000233,
    "failure_class_shares": {
@@ -760,36 +784,13 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 4689,
+    "in_sample_screen": 4690,
     "deflated_sharpe": 1248,
     "UNKNOWN": 396,
     "lockbox": 41,
     "cpcv": 35
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:session_range_breakout|H1|fx_cross",
-   "family": "session_range_breakout",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 6232,
-   "n_passed": 19,
-   "p_edge_prior": 0.003129,
-   "failure_class_shares": {
-    "no_edge": 0.9996,
-    "unstable": 0.0004
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 3643,
-    "in_sample_screen": 1927,
-    "deflated_sharpe": 613,
-    "lockbox": 29,
-    "cpcv": 1
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -797,20 +798,20 @@
    "family": "session_range_breakout",
    "chart": "H1",
    "asset_class": "index",
-   "n_judged": 5546,
+   "n_judged": 5906,
    "n_passed": 0,
-   "p_edge_prior": 9e-05,
+   "p_edge_prior": 8.5e-05,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 3645,
-    "in_sample_screen": 1650,
+    "UNKNOWN": 4001,
+    "in_sample_screen": 1654,
     "deflated_sharpe": 244,
     "lockbox": 7
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -850,11 +851,33 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:session_range_breakout|H1|crypto",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "crypto",
+   "n_judged": 4219,
+   "n_passed": 0,
+   "p_edge_prior": 0.000118,
+   "failure_class_shares": {
+    "no_edge": 0.9893,
+    "unstable": 0.0107
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 2073,
+    "in_sample_screen": 1785,
+    "deflated_sharpe": 338,
+    "cpcv": 23
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:cross_asset_residual|H1|index",
    "family": "cross_asset_residual",
    "chart": "H1",
    "asset_class": "index",
-   "n_judged": 4200,
+   "n_judged": 4201,
    "n_passed": 0,
    "p_edge_prior": 0.000119,
    "failure_class_shares": {
@@ -862,11 +885,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 3421,
+    "in_sample_screen": 3422,
     "UNKNOWN": 577,
     "deflated_sharpe": 202
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -890,33 +913,11 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:session_range_breakout|H1|crypto",
-   "family": "session_range_breakout",
-   "chart": "H1",
-   "asset_class": "crypto",
-   "n_judged": 3993,
-   "n_passed": 0,
-   "p_edge_prior": 0.000125,
-   "failure_class_shares": {
-    "no_edge": 0.9893,
-    "unstable": 0.0107
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 1848,
-    "in_sample_screen": 1784,
-    "deflated_sharpe": 338,
-    "cpcv": 23
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:mean_reversion_rsi|H1|fx_exotic",
    "family": "mean_reversion_rsi",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 3993,
+   "n_judged": 3994,
    "n_passed": 0,
    "p_edge_prior": 0.000125,
    "failure_class_shares": {
@@ -924,36 +925,12 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 3619,
+    "in_sample_screen": 3620,
     "UNKNOWN": 208,
     "deflated_sharpe": 165,
     "lockbox": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:clock_transition|H1|fx_exotic",
-   "family": "clock_transition",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 3667,
-   "n_passed": 29,
-   "p_edge_prior": 0.008043,
-   "failure_class_shares": {
-    "regime_specific": 0.0074,
-    "no_edge": 0.9798,
-    "cost_killed": 0.0128
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 2698,
-    "in_sample_screen": 792,
-    "deflated_sharpe": 114,
-    "lockbox": 15,
-    "stress_costs": 12
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -980,7 +957,7 @@
    "family": "mean_reversion_bollinger",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 3479,
+   "n_judged": 3480,
    "n_passed": 0,
    "p_edge_prior": 0.000144,
    "failure_class_shares": {
@@ -988,11 +965,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 2948,
+    "in_sample_screen": 2949,
     "UNKNOWN": 349,
     "deflated_sharpe": 182
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1072,6 +1049,29 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:session_range_breakout|H1|metal",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 3087,
+   "n_passed": 4,
+   "p_edge_prior": 0.001457,
+   "failure_class_shares": {
+    "no_edge": 0.9975,
+    "unstable": 0.0025
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 2279,
+    "in_sample_screen": 602,
+    "deflated_sharpe": 198,
+    "cpcv": 2,
+    "lockbox": 2
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:alt_conditioned|H1|index",
    "family": "alt_conditioned",
    "chart": "H1",
@@ -1092,7 +1092,7 @@
    "family": "volume_spike",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 2920,
+   "n_judged": 2921,
    "n_passed": 0,
    "p_edge_prior": 0.000171,
    "failure_class_shares": {
@@ -1101,33 +1101,10 @@
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 2516,
-    "UNKNOWN": 295,
+    "UNKNOWN": 296,
     "deflated_sharpe": 109
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:session_range_breakout|H1|metal",
-   "family": "session_range_breakout",
-   "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 2908,
-   "n_passed": 4,
-   "p_edge_prior": 0.001547,
-   "failure_class_shares": {
-    "no_edge": 0.9975,
-    "unstable": 0.0025
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 2100,
-    "in_sample_screen": 602,
-    "deflated_sharpe": 198,
-    "cpcv": 2,
-    "lockbox": 2
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1135,21 +1112,21 @@
    "family": "overnight_drift",
    "chart": "H1",
    "asset_class": "fx_cross",
-   "n_judged": 2897,
+   "n_judged": 2904,
    "n_passed": 0,
-   "p_edge_prior": 0.000173,
+   "p_edge_prior": 0.000172,
    "failure_class_shares": {
     "no_edge": 0.9994,
     "cost_killed": 0.0006
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 1479,
-    "UNKNOWN": 1330,
+    "in_sample_screen": 1480,
+    "UNKNOWN": 1336,
     "deflated_sharpe": 87,
     "stress_costs": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1255,11 +1232,35 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:clock_transition|H1|fx_exotic",
+   "family": "clock_transition",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 2420,
+   "n_passed": 32,
+   "p_edge_prior": 0.013424,
+   "failure_class_shares": {
+    "regime_specific": 0.0074,
+    "no_edge": 0.9798,
+    "cost_killed": 0.0128
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 1447,
+    "in_sample_screen": 793,
+    "deflated_sharpe": 114,
+    "lockbox": 15,
+    "stress_costs": 12
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:overnight_drift|H1|index",
    "family": "overnight_drift",
    "chart": "H1",
    "asset_class": "index",
-   "n_judged": 2356,
+   "n_judged": 2361,
    "n_passed": 0,
    "p_edge_prior": 0.000212,
    "failure_class_shares": {
@@ -1267,11 +1268,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 1405,
-    "in_sample_screen": 938,
+    "UNKNOWN": 1408,
+    "in_sample_screen": 940,
     "deflated_sharpe": 13
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1361,6 +1362,46 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:session_range_breakout|H1|soft",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "soft",
+   "n_judged": 2213,
+   "n_passed": 0,
+   "p_edge_prior": 0.000226,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 1647,
+    "in_sample_screen": 565,
+    "deflated_sharpe": 1
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:session_range_breakout|H1|fx_major",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "fx_major",
+   "n_judged": 2118,
+   "n_passed": 0,
+   "p_edge_prior": 0.000236,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 1322,
+    "in_sample_screen": 756,
+    "deflated_sharpe": 40
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:execution_state|H1|fx_exotic",
    "family": "execution_state",
    "chart": "H1",
@@ -1401,26 +1442,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:session_range_breakout|H1|soft",
-   "family": "session_range_breakout",
-   "chart": "H1",
-   "asset_class": "soft",
-   "n_judged": 2031,
-   "n_passed": 0,
-   "p_edge_prior": 0.000246,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 1466,
-    "in_sample_screen": 564,
-    "deflated_sharpe": 1
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:relative_value|H1|fx_exotic",
    "family": "relative_value",
    "chart": "H1",
@@ -1445,23 +1466,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:session_range_breakout|H1|fx_major",
-   "family": "session_range_breakout",
+   "memory_key": "prior:regime_transition|H1|fx_exotic",
+   "family": "regime_transition",
    "chart": "H1",
-   "asset_class": "fx_major",
-   "n_judged": 1993,
+   "asset_class": "fx_exotic",
+   "n_judged": 1982,
    "n_passed": 0,
-   "p_edge_prior": 0.000251,
+   "p_edge_prior": 0.000252,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 1197,
-    "in_sample_screen": 756,
-    "deflated_sharpe": 40
+    "UNKNOWN": 1954,
+    "in_sample_screen": 27,
+    "deflated_sharpe": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1469,19 +1490,19 @@
    "family": "cross_asset_residual",
    "chart": "H1",
    "asset_class": "soft",
-   "n_judged": 1813,
+   "n_judged": 1814,
    "n_passed": 0,
-   "p_edge_prior": 0.000276,
+   "p_edge_prior": 0.000275,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 1365,
-    "UNKNOWN": 439,
+    "UNKNOWN": 440,
     "deflated_sharpe": 9
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1489,7 +1510,7 @@
    "family": "cross_asset_residual",
    "chart": "H1",
    "asset_class": "fx_major",
-   "n_judged": 1765,
+   "n_judged": 1766,
    "n_passed": 0,
    "p_edge_prior": 0.000283,
    "failure_class_shares": {
@@ -1500,30 +1521,11 @@
    "terminal_gates": {
     "in_sample_screen": 1525,
     "UNKNOWN": 112,
-    "deflated_sharpe": 105,
+    "deflated_sharpe": 106,
     "cpcv": 12,
     "lockbox": 11
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:regime_transition|H1|fx_exotic",
-   "family": "regime_transition",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 1763,
-   "n_passed": 0,
-   "p_edge_prior": 0.000283,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 1756,
-    "in_sample_screen": 7
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1685,7 +1687,7 @@
    "family": "overnight_drift",
    "chart": "H1",
    "asset_class": "crypto",
-   "n_judged": 1375,
+   "n_judged": 1378,
    "n_passed": 0,
    "p_edge_prior": 0.000363,
    "failure_class_shares": {
@@ -1694,10 +1696,10 @@
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 733,
-    "UNKNOWN": 636,
+    "UNKNOWN": 639,
     "deflated_sharpe": 6
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1726,19 +1728,19 @@
    "family": "momentum_volgate",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 1295,
+   "n_judged": 1301,
    "n_passed": 0,
-   "p_edge_prior": 0.000386,
+   "p_edge_prior": 0.000384,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 1148,
-    "UNKNOWN": 113,
-    "deflated_sharpe": 34
+    "in_sample_screen": 1152,
+    "UNKNOWN": 114,
+    "deflated_sharpe": 35
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1755,6 +1757,26 @@
     "UNKNOWN": 1292
    },
    "last_verdict_at": "2026-11-07T13:30:47+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:fx_fixing_reversal|H1|fx_exotic",
+   "family": "fx_fixing_reversal",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 1253,
+   "n_passed": 0,
+   "p_edge_prior": 0.000399,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 1041,
+    "UNKNOWN": 178,
+    "deflated_sharpe": 34
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1778,47 +1800,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:clock_transition|H1|fx_cross",
-   "family": "clock_transition",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 1225,
-   "n_passed": 59,
-   "p_edge_prior": 0.048532,
-   "failure_class_shares": {
-    "no_edge": 0.9845,
-    "cost_killed": 0.0133,
-    "regime_specific": 0.0022
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 714,
-    "in_sample_screen": 297,
-    "deflated_sharpe": 140,
-    "lockbox": 8,
-    "stress_costs": 5
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:fx_fixing_reversal|H1|fx_exotic",
-   "family": "fx_fixing_reversal",
+   "memory_key": "prior:comex_settlement|H1|fx_exotic",
+   "family": "comex_settlement",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 1210,
+   "n_judged": 1198,
    "n_passed": 0,
-   "p_edge_prior": 0.000413,
+   "p_edge_prior": 0.000417,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 1027,
-    "UNKNOWN": 149,
-    "deflated_sharpe": 34
+    "in_sample_screen": 686,
+    "UNKNOWN": 495,
+    "deflated_sharpe": 17
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1849,19 +1847,19 @@
    "family": "overnight_drift",
    "chart": "H1",
    "asset_class": "fx_major",
-   "n_judged": 1161,
+   "n_judged": 1165,
    "n_passed": 0,
-   "p_edge_prior": 0.00043,
+   "p_edge_prior": 0.000429,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 622,
-    "UNKNOWN": 528,
+    "in_sample_screen": 624,
+    "UNKNOWN": 530,
     "deflated_sharpe": 11
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1869,7 +1867,7 @@
    "family": "overnight_drift",
    "chart": "H1",
    "asset_class": "metal",
-   "n_judged": 1151,
+   "n_judged": 1152,
    "n_passed": 0,
    "p_edge_prior": 0.000434,
    "failure_class_shares": {
@@ -1877,31 +1875,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 711,
+    "UNKNOWN": 712,
     "in_sample_screen": 397,
     "deflated_sharpe": 43
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:comex_settlement|H1|fx_exotic",
-   "family": "comex_settlement",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 1132,
-   "n_passed": 0,
-   "p_edge_prior": 0.000441,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 661,
-    "UNKNOWN": 454,
-    "deflated_sharpe": 17
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1909,42 +1887,20 @@
    "family": "macro_conditional",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 1122,
+   "n_judged": 1126,
    "n_passed": 0,
-   "p_edge_prior": 0.000445,
+   "p_edge_prior": 0.000444,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 791,
+    "in_sample_screen": 795,
     "UNKNOWN": 269,
     "deflated_sharpe": 61,
     "lockbox": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:pca_residual|H1|fx_exotic",
-   "family": "pca_residual",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 1117,
-   "n_passed": 0,
-   "p_edge_prior": 0.000447,
-   "failure_class_shares": {
-    "no_edge": 0.9957,
-    "cost_killed": 0.0043
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 814,
-    "UNKNOWN": 195,
-    "deflated_sharpe": 104,
-    "stress_costs": 4
-   },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -1952,22 +1908,22 @@
    "family": "mean_reversion_bollinger",
    "chart": "H1",
    "asset_class": "fx_cross",
-   "n_judged": 1108,
+   "n_judged": 1111,
    "n_passed": 0,
-   "p_edge_prior": 0.000451,
+   "p_edge_prior": 0.00045,
    "failure_class_shares": {
     "no_edge": 0.998,
     "unstable": 0.002
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 914,
-    "UNKNOWN": 102,
+    "in_sample_screen": 915,
+    "UNKNOWN": 104,
     "deflated_sharpe": 89,
     "cpcv": 2,
     "lockbox": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -2134,6 +2090,28 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:pca_residual|H1|fx_exotic",
+   "family": "pca_residual",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 1018,
+   "n_passed": 0,
+   "p_edge_prior": 0.000491,
+   "failure_class_shares": {
+    "no_edge": 0.9957,
+    "cost_killed": 0.0043
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 814,
+    "deflated_sharpe": 104,
+    "UNKNOWN": 96,
+    "stress_costs": 4
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:volatility_squeeze|H1|fx_exotic",
    "family": "volatility_squeeze",
    "chart": "H1",
@@ -2213,9 +2191,9 @@
    "family": "volume_spike",
    "chart": "H1",
    "asset_class": "fx_cross",
-   "n_judged": 967,
+   "n_judged": 968,
    "n_passed": 0,
-   "p_edge_prior": 0.000517,
+   "p_edge_prior": 0.000516,
    "failure_class_shares": {
     "no_edge": 0.9988,
     "unstable": 0.0012
@@ -2223,11 +2201,11 @@
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 773,
-    "UNKNOWN": 113,
+    "UNKNOWN": 114,
     "deflated_sharpe": 80,
     "cpcv": 1
    },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -2296,6 +2274,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:retail_overlap_reversal|H1|fx_exotic",
+   "family": "retail_overlap_reversal",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 899,
+   "n_passed": 0,
+   "p_edge_prior": 0.000556,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 655,
+    "UNKNOWN": 147,
+    "deflated_sharpe": 97
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:htf_anchor_trend|H1|index",
    "family": "htf_anchor_trend",
    "chart": "H1",
@@ -2313,26 +2311,6 @@
     "deflated_sharpe": 14
    },
    "last_verdict_at": "2026-11-04T19:14:37+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:retail_overlap_reversal|H1|fx_exotic",
-   "family": "retail_overlap_reversal",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 888,
-   "n_passed": 0,
-   "p_edge_prior": 0.000562,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 649,
-    "UNKNOWN": 145,
-    "deflated_sharpe": 94
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -2395,23 +2373,47 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:clock_transition|H1|fx_cross",
+   "family": "clock_transition",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 852,
+   "n_passed": 62,
+   "p_edge_prior": 0.073271,
+   "failure_class_shares": {
+    "no_edge": 0.9845,
+    "cost_killed": 0.0133,
+    "regime_specific": 0.0022
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 338,
+    "in_sample_screen": 297,
+    "deflated_sharpe": 140,
+    "lockbox": 8,
+    "stress_costs": 5
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:vol_transition|H1|fx_exotic",
    "family": "vol_transition",
    "chart": "H1",
    "asset_class": "fx_exotic",
-   "n_judged": 841,
+   "n_judged": 843,
    "n_passed": 0,
-   "p_edge_prior": 0.000594,
+   "p_edge_prior": 0.000592,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 484,
-    "UNKNOWN": 295,
+    "UNKNOWN": 297,
     "deflated_sharpe": 62
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -2419,19 +2421,19 @@
    "family": "mean_reversion_rsi",
    "chart": "H1",
    "asset_class": "index",
-   "n_judged": 834,
+   "n_judged": 835,
    "n_passed": 0,
-   "p_edge_prior": 0.000599,
+   "p_edge_prior": 0.000598,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 758,
+    "in_sample_screen": 759,
     "UNKNOWN": 67,
     "deflated_sharpe": 9
    },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -2751,6 +2753,46 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:volume_spike|H1|index",
+   "family": "volume_spike",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 626,
+   "n_passed": 0,
+   "p_edge_prior": 0.000797,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 459,
+    "UNKNOWN": 154,
+    "deflated_sharpe": 13
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:regime_transition|H1|fx_cross",
+   "family": "regime_transition",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 626,
+   "n_passed": 0,
+   "p_edge_prior": 0.000797,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 510,
+    "in_sample_screen": 92,
+    "deflated_sharpe": 24
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:relative_value|H1|fx_cross",
    "family": "relative_value",
    "chart": "H1",
@@ -2770,26 +2812,6 @@
     "stress_costs": 15,
     "lockbox": 9,
     "reality_check_spa": 3
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:volume_spike|H1|index",
-   "family": "volume_spike",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 625,
-   "n_passed": 0,
-   "p_edge_prior": 0.000799,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 459,
-    "UNKNOWN": 153,
-    "deflated_sharpe": 13
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
@@ -2911,26 +2933,6 @@
     "deflated_sharpe": 8
    },
    "last_verdict_at": "2026-11-02T12:50:06+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:regime_transition|H1|fx_cross",
-   "family": "regime_transition",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 571,
-   "n_passed": 0,
-   "p_edge_prior": 0.000874,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 499,
-    "in_sample_screen": 57,
-    "deflated_sharpe": 15
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3161,9 +3163,9 @@
    "family": "momentum_volgate",
    "chart": "H1",
    "asset_class": "metal",
-   "n_judged": 510,
+   "n_judged": 511,
    "n_passed": 0,
-   "p_edge_prior": 0.000978,
+   "p_edge_prior": 0.000977,
    "failure_class_shares": {
     "no_edge": 1.0
    },
@@ -3171,9 +3173,9 @@
    "terminal_gates": {
     "in_sample_screen": 369,
     "UNKNOWN": 104,
-    "deflated_sharpe": 37
+    "deflated_sharpe": 38
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3194,6 +3196,26 @@
     "deflated_sharpe": 54
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:london_close_momentum|H1|fx_exotic",
+   "family": "london_close_momentum",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 507,
+   "n_passed": 0,
+   "p_edge_prior": 0.000984,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 380,
+    "UNKNOWN": 82,
+    "deflated_sharpe": 45
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3249,26 +3271,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:london_close_momentum|H1|fx_exotic",
-   "family": "london_close_momentum",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 500,
-   "n_passed": 0,
-   "p_edge_prior": 0.000998,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 376,
-    "UNKNOWN": 82,
-    "deflated_sharpe": 42
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:relative_value|H1|index",
    "family": "relative_value",
    "chart": "H1",
@@ -3312,6 +3314,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:asia_momentum|H1|fx_exotic",
+   "family": "asia_momentum",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 474,
+   "n_passed": 0,
+   "p_edge_prior": 0.001053,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 323,
+    "UNKNOWN": 104,
+    "deflated_sharpe": 47
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:vol_mean_reversion|H1|metal",
    "family": "vol_mean_reversion",
    "chart": "H1",
@@ -3329,26 +3351,6 @@
     "deflated_sharpe": 41
    },
    "last_verdict_at": "2026-11-04T00:59:02+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:asia_momentum|H1|fx_exotic",
-   "family": "asia_momentum",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 473,
-   "n_passed": 0,
-   "p_edge_prior": 0.001055,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 323,
-    "UNKNOWN": 103,
-    "deflated_sharpe": 47
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3513,6 +3515,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:momentum_volgate|H1|index",
+   "family": "momentum_volgate",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 450,
+   "n_passed": 0,
+   "p_edge_prior": 0.001109,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 366,
+    "UNKNOWN": 73,
+    "deflated_sharpe": 11
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:multi_speed_trend|H1|index",
    "family": "multi_speed_trend",
    "chart": "H1",
@@ -3537,9 +3559,9 @@
    "family": "volume_spike",
    "chart": "H1",
    "asset_class": "crypto",
-   "n_judged": 448,
+   "n_judged": 449,
    "n_passed": 0,
-   "p_edge_prior": 0.001114,
+   "p_edge_prior": 0.001111,
    "failure_class_shares": {
     "no_edge": 1.0
    },
@@ -3547,9 +3569,9 @@
    "terminal_gates": {
     "in_sample_screen": 418,
     "UNKNOWN": 26,
-    "deflated_sharpe": 4
+    "deflated_sharpe": 5
    },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3569,43 +3591,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:momentum_volgate|H1|index",
-   "family": "momentum_volgate",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 445,
-   "n_passed": 0,
-   "p_edge_prior": 0.001121,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 363,
-    "UNKNOWN": 72,
-    "deflated_sharpe": 10
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:volume_spike|H1|metal",
    "family": "volume_spike",
    "chart": "H1",
    "asset_class": "metal",
-   "n_judged": 435,
+   "n_judged": 437,
    "n_passed": 0,
-   "p_edge_prior": 0.001147,
+   "p_edge_prior": 0.001142,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 290,
-    "UNKNOWN": 86,
+    "UNKNOWN": 88,
     "deflated_sharpe": 59
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3644,27 +3646,6 @@
     "in_sample_screen": 377,
     "UNKNOWN": 35,
     "deflated_sharpe": 11
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:clock_transition|H1|index",
-   "family": "clock_transition",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 422,
-   "n_passed": 0,
-   "p_edge_prior": 0.001182,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 250,
-    "in_sample_screen": 160,
-    "deflated_sharpe": 10,
-    "lockbox": 2
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
@@ -3726,26 +3707,6 @@
     "deflated_sharpe": 9
    },
    "last_verdict_at": "2026-11-01T11:57:43+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:clock_transition|H1|crypto",
-   "family": "clock_transition",
-   "chart": "H1",
-   "asset_class": "crypto",
-   "n_judged": 417,
-   "n_passed": 0,
-   "p_edge_prior": 0.001196,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 213,
-    "UNKNOWN": 191,
-    "deflated_sharpe": 13
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3881,27 +3842,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:clock_transition|H1|metal",
-   "family": "clock_transition",
-   "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 394,
-   "n_passed": 3,
-   "p_edge_prior": 0.008861,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 255,
-    "in_sample_screen": 102,
-    "deflated_sharpe": 33,
-    "lockbox": 1
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:mean_reversion_bollinger|H1|fx_major",
    "family": "mean_reversion_bollinger",
    "chart": "H1",
@@ -3922,6 +3862,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:clock_transition|H1|crypto",
+   "family": "clock_transition",
+   "chart": "H1",
+   "asset_class": "crypto",
+   "n_judged": 394,
+   "n_passed": 0,
+   "p_edge_prior": 0.001266,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 213,
+    "UNKNOWN": 164,
+    "deflated_sharpe": 17
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:joint_genome|H1|crypto",
    "family": "joint_genome",
    "chart": "H1",
@@ -3938,6 +3898,45 @@
     "in_sample_screen": 106
    },
    "last_verdict_at": "2026-11-02T12:50:06+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:comex_settlement|H1|fx_cross",
+   "family": "comex_settlement",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 384,
+   "n_passed": 0,
+   "p_edge_prior": 0.001299,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 193,
+    "UNKNOWN": 173,
+    "deflated_sharpe": 18
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:regime_transition|H1|index",
+   "family": "regime_transition",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 383,
+   "n_passed": 0,
+   "p_edge_prior": 0.001302,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 381,
+    "in_sample_screen": 2
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -3961,6 +3960,29 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:vol_transition|H1|fx_cross",
+   "family": "vol_transition",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 379,
+   "n_passed": 0,
+   "p_edge_prior": 0.001316,
+   "failure_class_shares": {
+    "no_edge": 0.9814,
+    "unstable": 0.0186
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 164,
+    "in_sample_screen": 150,
+    "deflated_sharpe": 59,
+    "cpcv": 4,
+    "lockbox": 2
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:volatility_squeeze|H1|fx_cross",
    "family": "volatility_squeeze",
    "chart": "H1",
@@ -3978,29 +4000,6 @@
     "deflated_sharpe": 33
    },
    "last_verdict_at": "2026-11-02T22:18:00+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:vol_transition|H1|fx_cross",
-   "family": "vol_transition",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 376,
-   "n_passed": 0,
-   "p_edge_prior": 0.001326,
-   "failure_class_shares": {
-    "no_edge": 0.9814,
-    "unstable": 0.0186
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 161,
-    "in_sample_screen": 150,
-    "deflated_sharpe": 59,
-    "cpcv": 4,
-    "lockbox": 2
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4119,23 +4118,24 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:comex_settlement|H1|fx_cross",
-   "family": "comex_settlement",
+   "memory_key": "prior:clock_transition|H1|index",
+   "family": "clock_transition",
    "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 362,
+   "asset_class": "index",
+   "n_judged": 364,
    "n_passed": 0,
-   "p_edge_prior": 0.001377,
+   "p_edge_prior": 0.00137,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 193,
-    "UNKNOWN": 152,
-    "deflated_sharpe": 17
+    "UNKNOWN": 191,
+    "in_sample_screen": 160,
+    "deflated_sharpe": 11,
+    "lockbox": 2
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4143,19 +4143,19 @@
    "family": "retail_overlap_reversal",
    "chart": "H1",
    "asset_class": "fx_cross",
-   "n_judged": 362,
+   "n_judged": 363,
    "n_passed": 0,
-   "p_edge_prior": 0.001377,
+   "p_edge_prior": 0.001374,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 259,
+    "in_sample_screen": 260,
     "deflated_sharpe": 57,
     "UNKNOWN": 46
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4255,25 +4255,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:clock_transition|H1|soft",
-   "family": "clock_transition",
-   "chart": "H1",
-   "asset_class": "soft",
-   "n_judged": 350,
-   "n_passed": 0,
-   "p_edge_prior": 0.001425,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 222,
-    "in_sample_screen": 128
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:vol_mean_reversion|H1|soft",
    "family": "vol_mean_reversion",
    "chart": "H1",
@@ -4337,18 +4318,18 @@
    "family": "mean_reversion_rsi",
    "chart": "H1",
    "asset_class": "soft",
-   "n_judged": 347,
+   "n_judged": 348,
    "n_passed": 0,
-   "p_edge_prior": 0.001437,
+   "p_edge_prior": 0.001433,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 304,
-    "UNKNOWN": 43
+    "UNKNOWN": 44
    },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4369,26 +4350,6 @@
     "deflated_sharpe": 32
    },
    "last_verdict_at": "2026-10-31T21:27:06+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:pca_residual|H1|index",
-   "family": "pca_residual",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 336,
-   "n_passed": 0,
-   "p_edge_prior": 0.001484,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 214,
-    "UNKNOWN": 114,
-    "deflated_sharpe": 8
-   },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4446,6 +4407,26 @@
     "reality_check_spa": 1
    },
    "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:fx_fixing_reversal|H1|fx_cross",
+   "family": "fx_fixing_reversal",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 333,
+   "n_passed": 0,
+   "p_edge_prior": 0.001497,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 262,
+    "UNKNOWN": 64,
+    "deflated_sharpe": 7
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4540,25 +4521,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:regime_transition|H1|index",
-   "family": "regime_transition",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 326,
-   "n_passed": 0,
-   "p_edge_prior": 0.001529,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 325,
-    "in_sample_screen": 1
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:carry|H1|fx_major",
    "family": "carry",
    "chart": "H1",
@@ -4579,6 +4541,25 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:clock_transition|H1|soft",
+   "family": "clock_transition",
+   "chart": "H1",
+   "asset_class": "soft",
+   "n_judged": 324,
+   "n_passed": 0,
+   "p_edge_prior": 0.001538,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 196,
+    "in_sample_screen": 128
+   },
+   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:volume_spike|H1|soft",
    "family": "volume_spike",
    "chart": "H1",
@@ -4595,26 +4576,6 @@
     "UNKNOWN": 96
    },
    "last_verdict_at": "2026-11-07T13:30:47+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:fx_fixing_reversal|H1|fx_cross",
-   "family": "fx_fixing_reversal",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 323,
-   "n_passed": 0,
-   "p_edge_prior": 0.001543,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 262,
-    "UNKNOWN": 54,
-    "deflated_sharpe": 7
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4650,26 +4611,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:pca_residual|H1|soft",
-   "family": "pca_residual",
-   "chart": "H1",
-   "asset_class": "soft",
-   "n_judged": 318,
-   "n_passed": 0,
-   "p_edge_prior": 0.001567,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 195,
-    "UNKNOWN": 119,
-    "deflated_sharpe": 4
-   },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:forced_flow|H1|fx_cross",
    "family": "forced_flow",
    "chart": "H1",
@@ -4683,6 +4624,26 @@
     "UNKNOWN": 317
    },
    "last_verdict_at": "2026-11-01T23:09:39+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:session_range_breakout|H1|forex_exotics",
+   "family": "session_range_breakout",
+   "chart": "H1",
+   "asset_class": "forex_exotics",
+   "n_judged": 313,
+   "n_passed": 0,
+   "p_edge_prior": 0.001592,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 206,
+    "in_sample_screen": 89,
+    "deflated_sharpe": 18
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4784,26 +4745,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:session_range_breakout|H1|forex_exotics",
-   "family": "session_range_breakout",
-   "chart": "H1",
-   "asset_class": "forex_exotics",
-   "n_judged": 291,
-   "n_passed": 0,
-   "p_edge_prior": 0.001712,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 186,
-    "in_sample_screen": 87,
-    "deflated_sharpe": 18
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:macro_conditional|H1|crypto",
    "family": "macro_conditional",
    "chart": "H1",
@@ -4864,6 +4805,27 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:clock_transition|H1|metal",
+   "family": "clock_transition",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 280,
+   "n_passed": 3,
+   "p_edge_prior": 0.012456,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 141,
+    "in_sample_screen": 102,
+    "deflated_sharpe": 33,
+    "lockbox": 1
+   },
+   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:adx_channel_hybrid|H1|fx_cross",
    "family": "adx_channel_hybrid",
    "chart": "H1",
@@ -4900,6 +4862,26 @@
     "UNKNOWN": 26
    },
    "last_verdict_at": "2026-10-31T21:27:06+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:pca_residual|H1|index",
+   "family": "pca_residual",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 280,
+   "n_passed": 0,
+   "p_edge_prior": 0.001779,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 214,
+    "UNKNOWN": 58,
+    "deflated_sharpe": 8
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -4980,26 +4962,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:pca_residual|H1|fx_cross",
-   "family": "pca_residual",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 275,
-   "n_passed": 0,
-   "p_edge_prior": 0.001812,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 187,
-    "deflated_sharpe": 47,
-    "UNKNOWN": 41
-   },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:joint_genome|H1|soft",
    "family": "joint_genome",
    "chart": "H1",
@@ -5036,6 +4998,42 @@
     "deflated_sharpe": 43
    },
    "last_verdict_at": "2026-11-01T23:09:39+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:regime_transition|H1|crypto",
+   "family": "regime_transition",
+   "chart": "H1",
+   "asset_class": "crypto",
+   "n_judged": 274,
+   "n_passed": 0,
+   "p_edge_prior": 0.001818,
+   "failure_class_shares": {},
+   "dominant_failure_class": null,
+   "terminal_gates": {
+    "UNKNOWN": 274
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:pca_residual|H1|soft",
+   "family": "pca_residual",
+   "chart": "H1",
+   "asset_class": "soft",
+   "n_judged": 273,
+   "n_passed": 0,
+   "p_edge_prior": 0.001825,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 195,
+    "UNKNOWN": 74,
+    "deflated_sharpe": 4
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5134,19 +5132,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:regime_transition|H1|crypto",
-   "family": "regime_transition",
+   "memory_key": "prior:pca_residual|H1|fx_cross",
+   "family": "pca_residual",
    "chart": "H1",
-   "asset_class": "crypto",
-   "n_judged": 257,
+   "asset_class": "fx_cross",
+   "n_judged": 261,
    "n_passed": 0,
-   "p_edge_prior": 0.001938,
-   "failure_class_shares": {},
-   "dominant_failure_class": null,
-   "terminal_gates": {
-    "UNKNOWN": 257
+   "p_edge_prior": 0.001908,
+   "failure_class_shares": {
+    "no_edge": 1.0
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 187,
+    "deflated_sharpe": 47,
+    "UNKNOWN": 27
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5226,24 +5228,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:clock_transition|H1|fx_major",
-   "family": "clock_transition",
+   "memory_key": "prior:regime_transition|H1|fx_major",
+   "family": "regime_transition",
    "chart": "H1",
    "asset_class": "fx_major",
-   "n_judged": 243,
+   "n_judged": 244,
    "n_passed": 0,
-   "p_edge_prior": 0.002049,
+   "p_edge_prior": 0.002041,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 111,
-    "in_sample_screen": 106,
-    "deflated_sharpe": 24,
-    "lockbox": 2
+    "UNKNOWN": 215,
+    "in_sample_screen": 28,
+    "deflated_sharpe": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5283,6 +5284,26 @@
     "deflated_sharpe": 15
    },
    "last_verdict_at": "2026-11-02T22:18:00+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:fx_fixing_reversal|H1|index",
+   "family": "fx_fixing_reversal",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 233,
+   "n_passed": 0,
+   "p_edge_prior": 0.002137,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 185,
+    "UNKNOWN": 47,
+    "deflated_sharpe": 1
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5326,23 +5347,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:fx_fixing_reversal|H1|index",
-   "family": "fx_fixing_reversal",
+   "memory_key": "prior:clock_transition|H1|fx_major",
+   "family": "clock_transition",
    "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 229,
+   "asset_class": "fx_major",
+   "n_judged": 223,
    "n_passed": 0,
-   "p_edge_prior": 0.002174,
+   "p_edge_prior": 0.002232,
    "failure_class_shares": {
-    "no_edge": 1.0
+    "no_edge": 0.9925,
+    "cost_killed": 0.0075
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 182,
-    "UNKNOWN": 46,
-    "deflated_sharpe": 1
+    "in_sample_screen": 107,
+    "UNKNOWN": 89,
+    "deflated_sharpe": 24,
+    "lockbox": 2,
+    "swap_cost": 1
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5383,6 +5407,26 @@
     "UNKNOWN": 1
    },
    "last_verdict_at": "2026-11-06T23:31:37+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:comex_settlement|H1|index",
+   "family": "comex_settlement",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 212,
+   "n_passed": 0,
+   "p_edge_prior": 0.002347,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 110,
+    "UNKNOWN": 98,
+    "deflated_sharpe": 4
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5481,6 +5525,25 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:regime_transition|H1|metal",
+   "family": "regime_transition",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 202,
+   "n_passed": 0,
+   "p_edge_prior": 0.002463,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 201,
+    "in_sample_screen": 1
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:range_reversion|H1|fx_cross",
    "family": "range_reversion",
    "chart": "H1",
@@ -5498,6 +5561,26 @@
     "deflated_sharpe": 9
    },
    "last_verdict_at": "2026-11-06T16:20:49+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:london_close_momentum|H1|fx_cross",
+   "family": "london_close_momentum",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 200,
+   "n_passed": 0,
+   "p_edge_prior": 0.002488,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 164,
+    "UNKNOWN": 26,
+    "deflated_sharpe": 10
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5521,26 +5604,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:london_close_momentum|H1|fx_cross",
-   "family": "london_close_momentum",
-   "chart": "H1",
-   "asset_class": "fx_cross",
-   "n_judged": 198,
-   "n_passed": 0,
-   "p_edge_prior": 0.002513,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 163,
-    "UNKNOWN": 26,
-    "deflated_sharpe": 9
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:trend_ma_cross|H1|fx_major",
    "family": "trend_ma_cross",
    "chart": "H1",
@@ -5557,45 +5620,6 @@
     "UNKNOWN": 66
    },
    "last_verdict_at": "2026-11-07T13:30:47+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:regime_transition|H1|fx_major",
-   "family": "regime_transition",
-   "chart": "H1",
-   "asset_class": "fx_major",
-   "n_judged": 197,
-   "n_passed": 0,
-   "p_edge_prior": 0.002525,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 188,
-    "in_sample_screen": 9
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:comex_settlement|H1|index",
-   "family": "comex_settlement",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 196,
-   "n_passed": 0,
-   "p_edge_prior": 0.002538,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 97,
-    "in_sample_screen": 95,
-    "deflated_sharpe": 4
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5639,6 +5663,25 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:macro_conditional|H1|fx_major",
+   "family": "macro_conditional",
+   "chart": "H1",
+   "asset_class": "fx_major",
+   "n_judged": 192,
+   "n_passed": 0,
+   "p_edge_prior": 0.002591,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 108,
+    "UNKNOWN": 84
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:correlation_regime|H1|metal",
    "family": "correlation_regime",
    "chart": "H1",
@@ -5656,25 +5699,6 @@
     "deflated_sharpe": 32
    },
    "last_verdict_at": "2026-11-01T23:09:39+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:macro_conditional|H1|fx_major",
-   "family": "macro_conditional",
-   "chart": "H1",
-   "asset_class": "fx_major",
-   "n_judged": 191,
-   "n_passed": 0,
-   "p_edge_prior": 0.002604,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 107,
-    "UNKNOWN": 84
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5806,22 +5830,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:regime_transition|H1|metal",
-   "family": "regime_transition",
-   "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 186,
-   "n_passed": 0,
-   "p_edge_prior": 0.002674,
-   "failure_class_shares": {},
-   "dominant_failure_class": null,
-   "terminal_gates": {
-    "UNKNOWN": 186
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:opening_range|H1|index",
    "family": "opening_range",
    "chart": "H1",
@@ -5839,6 +5847,46 @@
     "deflated_sharpe": 8
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:monday_gap|H1|fx_exotic",
+   "family": "monday_gap",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 182,
+   "n_passed": 0,
+   "p_edge_prior": 0.002732,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 114,
+    "in_sample_screen": 62,
+    "deflated_sharpe": 6
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:momentum_volgate|H1|fx_major",
+   "family": "momentum_volgate",
+   "chart": "H1",
+   "asset_class": "fx_major",
+   "n_judged": 178,
+   "n_passed": 0,
+   "p_edge_prior": 0.002793,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 145,
+    "UNKNOWN": 30,
+    "deflated_sharpe": 3
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5862,26 +5910,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:momentum_volgate|H1|fx_major",
-   "family": "momentum_volgate",
-   "chart": "H1",
-   "asset_class": "fx_major",
-   "n_judged": 177,
-   "n_passed": 0,
-   "p_edge_prior": 0.002809,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 145,
-    "UNKNOWN": 30,
-    "deflated_sharpe": 2
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:spread_state|H1|index",
    "family": "spread_state",
    "chart": "H1",
@@ -5899,26 +5927,6 @@
     "deflated_sharpe": 13
    },
    "last_verdict_at": "2026-11-07T13:30:47+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:monday_gap|H1|fx_exotic",
-   "family": "monday_gap",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 177,
-   "n_passed": 0,
-   "p_edge_prior": 0.002809,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 112,
-    "in_sample_screen": 59,
-    "deflated_sharpe": 6
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -5994,30 +6002,50 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:retail_overlap_reversal|H1|metal",
+   "family": "retail_overlap_reversal",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 171,
+   "n_passed": 0,
+   "p_edge_prior": 0.002907,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 105,
+    "deflated_sharpe": 54,
+    "UNKNOWN": 12
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:vol_transition|H1|crypto",
    "family": "vol_transition",
    "chart": "H1",
    "asset_class": "crypto",
-   "n_judged": 167,
+   "n_judged": 169,
    "n_passed": 0,
-   "p_edge_prior": 0.002976,
+   "p_edge_prior": 0.002941,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
     "in_sample_screen": 112,
-    "UNKNOWN": 49,
+    "UNKNOWN": 51,
     "deflated_sharpe": 2,
     "reality_check_spa": 2,
     "lockbox": 2
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:retail_overlap_reversal|H1|metal",
-   "family": "retail_overlap_reversal",
+   "memory_key": "prior:range_reversion|H1|metal",
+   "family": "range_reversion",
    "chart": "H1",
    "asset_class": "metal",
    "n_judged": 166,
@@ -6028,11 +6056,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 100,
-    "deflated_sharpe": 54,
-    "UNKNOWN": 12
+    "in_sample_screen": 150,
+    "deflated_sharpe": 12,
+    "UNKNOWN": 4
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6056,23 +6084,19 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:range_reversion|H1|metal",
-   "family": "range_reversion",
+   "memory_key": "prior:regime_transition|H1|soft",
+   "family": "regime_transition",
    "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 164,
+   "asset_class": "soft",
+   "n_judged": 160,
    "n_passed": 0,
-   "p_edge_prior": 0.00303,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
+   "p_edge_prior": 0.003106,
+   "failure_class_shares": {},
+   "dominant_failure_class": null,
    "terminal_gates": {
-    "in_sample_screen": 150,
-    "deflated_sharpe": 12,
-    "UNKNOWN": 2
+    "UNKNOWN": 160
    },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6235,6 +6259,25 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:cross_asset_residual|H1|equity",
+   "family": "cross_asset_residual",
+   "chart": "H1",
+   "asset_class": "equity",
+   "n_judged": 145,
+   "n_passed": 0,
+   "p_edge_prior": 0.003425,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 84,
+    "in_sample_screen": 61
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:pullback_entry|H1|soft",
    "family": "pullback_entry",
    "chart": "H1",
@@ -6294,19 +6337,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:regime_transition|H1|soft",
-   "family": "regime_transition",
+   "memory_key": "prior:vol_transition|H1|index",
+   "family": "vol_transition",
    "chart": "H1",
-   "asset_class": "soft",
+   "asset_class": "index",
    "n_judged": 142,
    "n_passed": 0,
    "p_edge_prior": 0.003497,
-   "failure_class_shares": {},
-   "dominant_failure_class": null,
-   "terminal_gates": {
-    "UNKNOWN": 142
+   "failure_class_shares": {
+    "no_edge": 1.0
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 90,
+    "in_sample_screen": 44,
+    "deflated_sharpe": 8
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6323,45 +6370,6 @@
     "UNKNOWN": 142
    },
    "last_verdict_at": "2026-11-07T13:30:47+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:vol_transition|H1|index",
-   "family": "vol_transition",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 141,
-   "n_passed": 0,
-   "p_edge_prior": 0.003521,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 90,
-    "in_sample_screen": 43,
-    "deflated_sharpe": 8
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:cross_asset_residual|H1|equity",
-   "family": "cross_asset_residual",
-   "chart": "H1",
-   "asset_class": "equity",
-   "n_judged": 141,
-   "n_passed": 0,
-   "p_edge_prior": 0.003521,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 82,
-    "in_sample_screen": 59
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6460,6 +6468,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:london_close_momentum|H1|index",
+   "family": "london_close_momentum",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 134,
+   "n_passed": 0,
+   "p_edge_prior": 0.003704,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 110,
+    "UNKNOWN": 19,
+    "deflated_sharpe": 5
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:turn_of_month|H1|metal",
    "family": "turn_of_month",
    "chart": "H1",
@@ -6480,6 +6508,25 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:comex_settlement|H1|crypto",
+   "family": "comex_settlement",
+   "chart": "H1",
+   "asset_class": "crypto",
+   "n_judged": 133,
+   "n_passed": 0,
+   "p_edge_prior": 0.003731,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 67,
+    "in_sample_screen": 66
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:execution_state|H1|fx_major",
    "family": "execution_state",
    "chart": "H1",
@@ -6493,26 +6540,6 @@
     "UNKNOWN": 133
    },
    "last_verdict_at": "2026-11-06T16:20:49+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:london_close_momentum|H1|index",
-   "family": "london_close_momentum",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 133,
-   "n_passed": 0,
-   "p_edge_prior": 0.003731,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 110,
-    "UNKNOWN": 19,
-    "deflated_sharpe": 4
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6618,6 +6645,45 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:dow_effect|H1|fx_exotic",
+   "family": "dow_effect",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 127,
+   "n_passed": 0,
+   "p_edge_prior": 0.003906,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 60,
+    "UNKNOWN": 59,
+    "deflated_sharpe": 8
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:fx_fixing_reversal|H1|soft",
+   "family": "fx_fixing_reversal",
+   "chart": "H1",
+   "asset_class": "soft",
+   "n_judged": 125,
+   "n_passed": 0,
+   "p_edge_prior": 0.003968,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 102,
+    "UNKNOWN": 23
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:forced_flow|H1|fx_major",
    "family": "forced_flow",
    "chart": "H1",
@@ -6634,29 +6700,10 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:comex_settlement|H1|crypto",
-   "family": "comex_settlement",
-   "chart": "H1",
-   "asset_class": "crypto",
-   "n_judged": 123,
-   "n_passed": 0,
-   "p_edge_prior": 0.004032,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 65,
-    "in_sample_screen": 58
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:fx_fixing_reversal|H1|soft",
+   "memory_key": "prior:fx_fixing_reversal|H1|metal",
    "family": "fx_fixing_reversal",
    "chart": "H1",
-   "asset_class": "soft",
+   "asset_class": "metal",
    "n_judged": 122,
    "n_passed": 0,
    "p_edge_prior": 0.004065,
@@ -6665,10 +6712,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 102,
-    "UNKNOWN": 20
+    "in_sample_screen": 97,
+    "UNKNOWN": 22,
+    "deflated_sharpe": 3
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6766,6 +6814,25 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:fx_fixing_reversal|H1|fx_major",
+   "family": "fx_fixing_reversal",
+   "chart": "H1",
+   "asset_class": "fx_major",
+   "n_judged": 115,
+   "n_passed": 0,
+   "p_edge_prior": 0.00431,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 82,
+    "UNKNOWN": 33
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:dav_range_filter_adx|H1|metal",
    "family": "dav_range_filter_adx",
    "chart": "H1",
@@ -6782,26 +6849,6 @@
     "deflated_sharpe": 11
    },
    "last_verdict_at": "2026-11-06T23:31:37+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:fx_fixing_reversal|H1|metal",
-   "family": "fx_fixing_reversal",
-   "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 114,
-   "n_passed": 0,
-   "p_edge_prior": 0.004348,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 89,
-    "UNKNOWN": 22,
-    "deflated_sharpe": 3
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6913,10 +6960,10 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:fx_fixing_reversal|H1|fx_major",
-   "family": "fx_fixing_reversal",
+   "memory_key": "prior:hedging_demand_close|H1|index",
+   "family": "hedging_demand_close",
    "chart": "H1",
-   "asset_class": "fx_major",
+   "asset_class": "index",
    "n_judged": 111,
    "n_passed": 0,
    "p_edge_prior": 0.004464,
@@ -6925,10 +6972,10 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 82,
-    "UNKNOWN": 29
+    "in_sample_screen": 78,
+    "UNKNOWN": 33
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -6989,25 +7036,6 @@
     "UNKNOWN": 3
    },
    "last_verdict_at": "2026-11-03T03:10:41+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:hedging_demand_close|H1|index",
-   "family": "hedging_demand_close",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 109,
-   "n_passed": 0,
-   "p_edge_prior": 0.004545,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 78,
-    "UNKNOWN": 31
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7118,26 +7146,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:pca_residual|H1|metal",
-   "family": "pca_residual",
-   "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 103,
-   "n_passed": 0,
-   "p_edge_prior": 0.004808,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 54,
-    "UNKNOWN": 35,
-    "deflated_sharpe": 14
-   },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:session_handoff|H1|fx_exotic",
    "family": "session_handoff",
    "chart": "H1",
@@ -7176,6 +7184,26 @@
     "lockbox": 1
    },
    "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:comex_settlement|H1|metal",
+   "family": "comex_settlement",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 101,
+   "n_passed": 0,
+   "p_edge_prior": 0.004902,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 56,
+    "in_sample_screen": 44,
+    "deflated_sharpe": 1
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7266,8 +7294,8 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:comex_settlement|H1|metal",
-   "family": "comex_settlement",
+   "memory_key": "prior:vol_transition|H1|metal",
+   "family": "vol_transition",
    "chart": "H1",
    "asset_class": "metal",
    "n_judged": 94,
@@ -7278,30 +7306,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 55,
-    "in_sample_screen": 39
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:vol_transition|H1|metal",
-   "family": "vol_transition",
-   "chart": "H1",
-   "asset_class": "metal",
-   "n_judged": 93,
-   "n_passed": 0,
-   "p_edge_prior": 0.005319,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 41,
+    "UNKNOWN": 42,
     "in_sample_screen": 31,
     "deflated_sharpe": 21
    },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7325,26 +7334,22 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:clock_transition|H1|forex_exotics",
-   "family": "clock_transition",
+   "memory_key": "prior:comex_settlement|H1|fx_major",
+   "family": "comex_settlement",
    "chart": "H1",
-   "asset_class": "forex_exotics",
-   "n_judged": 90,
-   "n_passed": 1,
-   "p_edge_prior": 0.016484,
+   "asset_class": "fx_major",
+   "n_judged": 91,
+   "n_passed": 0,
+   "p_edge_prior": 0.005435,
    "failure_class_shares": {
-    "regime_specific": 0.125,
-    "no_edge": 0.875
+    "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "UNKNOWN": 81,
-    "in_sample_screen": 3,
-    "deflated_sharpe": 3,
-    "walk_forward": 1,
-    "lockbox": 1
+    "UNKNOWN": 52,
+    "in_sample_screen": 39
    },
-   "last_verdict_at": "2026-11-07T13:30:47+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7367,23 +7372,23 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:pca_residual|H1|crypto",
-   "family": "pca_residual",
+   "memory_key": "prior:asia_momentum|H1|index",
+   "family": "asia_momentum",
    "chart": "H1",
-   "asset_class": "crypto",
-   "n_judged": 88,
+   "asset_class": "index",
+   "n_judged": 89,
    "n_passed": 0,
-   "p_edge_prior": 0.005618,
+   "p_edge_prior": 0.005556,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 65,
-    "UNKNOWN": 21,
+    "UNKNOWN": 49,
+    "in_sample_screen": 38,
     "deflated_sharpe": 2
    },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7463,45 +7468,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:comex_settlement|H1|fx_major",
-   "family": "comex_settlement",
-   "chart": "H1",
-   "asset_class": "fx_major",
-   "n_judged": 84,
-   "n_passed": 0,
-   "p_edge_prior": 0.005882,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 45,
-    "in_sample_screen": 39
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:asia_momentum|H1|index",
-   "family": "asia_momentum",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 84,
-   "n_passed": 0,
-   "p_edge_prior": 0.005882,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 45,
-    "in_sample_screen": 37,
-    "deflated_sharpe": 2
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:drawdown_conditional|H1|fx_cross",
    "family": "drawdown_conditional",
    "chart": "H1",
@@ -7535,6 +7501,26 @@
     "deflated_sharpe": 1
    },
    "last_verdict_at": "2026-11-07T08:53:55+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:pca_residual|H1|metal",
+   "family": "pca_residual",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 77,
+   "n_passed": 0,
+   "p_edge_prior": 0.00641,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 54,
+    "deflated_sharpe": 14,
+    "UNKNOWN": 9
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7574,6 +7560,26 @@
     "UNKNOWN": 14
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:pca_residual|H1|crypto",
+   "family": "pca_residual",
+   "chart": "H1",
+   "asset_class": "crypto",
+   "n_judged": 73,
+   "n_passed": 0,
+   "p_edge_prior": 0.006757,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 65,
+    "UNKNOWN": 6,
+    "deflated_sharpe": 2
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7670,10 +7676,10 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:dow_effect|H1|fx_exotic",
-   "family": "dow_effect",
+   "memory_key": "prior:vol_transition|H1|soft",
+   "family": "vol_transition",
    "chart": "H1",
-   "asset_class": "fx_exotic",
+   "asset_class": "soft",
    "n_judged": 70,
    "n_passed": 0,
    "p_edge_prior": 0.007042,
@@ -7682,11 +7688,10 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 60,
-    "deflated_sharpe": 8,
-    "UNKNOWN": 2
+    "UNKNOWN": 50,
+    "in_sample_screen": 20
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -7730,6 +7735,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:dow_effect|H1|fx_cross",
+   "family": "dow_effect",
+   "chart": "H1",
+   "asset_class": "fx_cross",
+   "n_judged": 69,
+   "n_passed": 0,
+   "p_edge_prior": 0.007143,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 46,
+    "UNKNOWN": 16,
+    "deflated_sharpe": 7
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:orderflow_imbalance|H1|forex_exotics",
    "family": "orderflow_imbalance",
    "chart": "H1",
@@ -7743,25 +7768,6 @@
     "UNKNOWN": 68
    },
    "last_verdict_at": "2026-11-03T14:50:51+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:vol_transition|H1|soft",
-   "family": "vol_transition",
-   "chart": "H1",
-   "asset_class": "soft",
-   "n_judged": 67,
-   "n_passed": 0,
-   "p_edge_prior": 0.007353,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 50,
-    "in_sample_screen": 17
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -8009,6 +8015,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:london_close_momentum|H1|soft",
+   "family": "london_close_momentum",
+   "chart": "H1",
+   "asset_class": "soft",
+   "n_judged": 56,
+   "n_passed": 0,
+   "p_edge_prior": 0.008772,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 45,
+    "UNKNOWN": 9,
+    "deflated_sharpe": 2
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:pin_bar_reversal|H1|fx_cross",
    "family": "pin_bar_reversal",
    "chart": "H1",
@@ -8068,23 +8094,22 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:london_close_momentum|H1|soft",
-   "family": "london_close_momentum",
+   "memory_key": "prior:asia_momentum|H1|soft",
+   "family": "asia_momentum",
    "chart": "H1",
    "asset_class": "soft",
-   "n_judged": 53,
+   "n_judged": 54,
    "n_passed": 0,
-   "p_edge_prior": 0.009259,
+   "p_edge_prior": 0.009091,
    "failure_class_shares": {
     "no_edge": 1.0
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 42,
-    "UNKNOWN": 9,
-    "deflated_sharpe": 2
+    "UNKNOWN": 35,
+    "in_sample_screen": 19
    },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -8107,10 +8132,10 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:dow_effect|H1|fx_cross",
-   "family": "dow_effect",
+   "memory_key": "prior:monday_gap|H1|index",
+   "family": "monday_gap",
    "chart": "H1",
-   "asset_class": "fx_cross",
+   "asset_class": "index",
    "n_judged": 53,
    "n_passed": 0,
    "p_edge_prior": 0.009259,
@@ -8119,30 +8144,11 @@
    },
    "dominant_failure_class": "no_edge",
    "terminal_gates": {
-    "in_sample_screen": 46,
-    "deflated_sharpe": 7
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:pca_residual|H1|fx_major",
-   "family": "pca_residual",
-   "chart": "H1",
-   "asset_class": "fx_major",
-   "n_judged": 52,
-   "n_passed": 0,
-   "p_edge_prior": 0.009434,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 37,
-    "UNKNOWN": 14,
+    "UNKNOWN": 33,
+    "in_sample_screen": 19,
     "deflated_sharpe": 1
    },
-   "last_verdict_at": "2026-11-06T23:31:37+00:00",
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -8161,25 +8167,6 @@
     "in_sample_screen": 26,
     "deflated_sharpe": 20,
     "UNKNOWN": 6
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:asia_momentum|H1|soft",
-   "family": "asia_momentum",
-   "chart": "H1",
-   "asset_class": "soft",
-   "n_judged": 52,
-   "n_passed": 0,
-   "p_edge_prior": 0.009434,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 33,
-    "in_sample_screen": 19
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
@@ -8371,26 +8358,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:monday_gap|H1|index",
-   "family": "monday_gap",
-   "chart": "H1",
-   "asset_class": "index",
-   "n_judged": 48,
-   "n_passed": 0,
-   "p_edge_prior": 0.010204,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 30,
-    "in_sample_screen": 17,
-    "deflated_sharpe": 1
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:ensemble|H1|crypto",
    "family": "ensemble",
    "chart": "H1",
@@ -8548,6 +8515,41 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:comex_settlement|H1|soft",
+   "family": "comex_settlement",
+   "chart": "H1",
+   "asset_class": "soft",
+   "n_judged": 43,
+   "n_passed": 0,
+   "p_edge_prior": 0.011364,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 23,
+    "in_sample_screen": 20
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:cot_positioning|H1|fx_exotic",
+   "family": "cot_positioning",
+   "chart": "H1",
+   "asset_class": "fx_exotic",
+   "n_judged": 43,
+   "n_passed": 0,
+   "p_edge_prior": 0.011364,
+   "failure_class_shares": {},
+   "dominant_failure_class": null,
+   "terminal_gates": {
+    "UNKNOWN": 43
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:jump|H1|equity",
    "family": "jump",
    "chart": "H1",
@@ -8564,6 +8566,26 @@
     "UNKNOWN": 20
    },
    "last_verdict_at": "2026-10-31T21:27:06+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:pca_residual|H1|fx_major",
+   "family": "pca_residual",
+   "chart": "H1",
+   "asset_class": "fx_major",
+   "n_judged": 43,
+   "n_passed": 0,
+   "p_edge_prior": 0.011364,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 37,
+    "UNKNOWN": 5,
+    "deflated_sharpe": 1
+   },
+   "last_verdict_at": "2026-11-06T23:31:37+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -8729,22 +8751,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:cot_positioning|H1|fx_exotic",
-   "family": "cot_positioning",
-   "chart": "H1",
-   "asset_class": "fx_exotic",
-   "n_judged": 39,
-   "n_passed": 0,
-   "p_edge_prior": 0.0125,
-   "failure_class_shares": {},
-   "dominant_failure_class": null,
-   "terminal_gates": {
-    "UNKNOWN": 39
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:joint_genome|H1|forex_exotics",
    "family": "joint_genome",
    "chart": "H1",
@@ -8822,6 +8828,26 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:fx_fixing_reversal|H1|forex_exotics",
+   "family": "fx_fixing_reversal",
+   "chart": "H1",
+   "asset_class": "forex_exotics",
+   "n_judged": 37,
+   "n_passed": 0,
+   "p_edge_prior": 0.013158,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 29,
+    "UNKNOWN": 5,
+    "deflated_sharpe": 3
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:pin_bar_reversal|H1|index",
    "family": "pin_bar_reversal",
    "chart": "H1",
@@ -8854,26 +8880,6 @@
     "UNKNOWN": 37
    },
    "last_verdict_at": "2026-11-07T13:30:47+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
-   "memory_key": "prior:fx_fixing_reversal|H1|forex_exotics",
-   "family": "fx_fixing_reversal",
-   "chart": "H1",
-   "asset_class": "forex_exotics",
-   "n_judged": 36,
-   "n_passed": 0,
-   "p_edge_prior": 0.013514,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "in_sample_screen": 29,
-    "UNKNOWN": 4,
-    "deflated_sharpe": 3
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -8912,25 +8918,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:comex_settlement|H1|soft",
-   "family": "comex_settlement",
-   "chart": "H1",
-   "asset_class": "soft",
-   "n_judged": 35,
-   "n_passed": 0,
-   "p_edge_prior": 0.013889,
-   "failure_class_shares": {
-    "no_edge": 1.0
-   },
-   "dominant_failure_class": "no_edge",
-   "terminal_gates": {
-    "UNKNOWN": 23,
-    "in_sample_screen": 12
-   },
-   "last_verdict_at": "2026-11-07T18:24:22+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:opening_range|H1|fx_major",
    "family": "opening_range",
    "chart": "H1",
@@ -8947,6 +8934,25 @@
     "UNKNOWN": 10
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:regime_transition|H1|forex_exotics",
+   "family": "regime_transition",
+   "chart": "H1",
+   "asset_class": "forex_exotics",
+   "n_judged": 34,
+   "n_passed": 0,
+   "p_edge_prior": 0.014286,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 33,
+    "in_sample_screen": 1
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -9176,22 +9182,6 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
-   "memory_key": "prior:regime_transition|H1|forex_exotics",
-   "family": "regime_transition",
-   "chart": "H1",
-   "asset_class": "forex_exotics",
-   "n_judged": 27,
-   "n_passed": 0,
-   "p_edge_prior": 0.017857,
-   "failure_class_shares": {},
-   "dominant_failure_class": null,
-   "terminal_gates": {
-    "UNKNOWN": 27
-   },
-   "last_verdict_at": "2026-11-07T08:53:55+00:00",
-   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
-  },
-  {
    "memory_key": "prior:trend_ma_cross|H1|forex_exotics",
    "family": "trend_ma_cross",
    "chart": "H1",
@@ -9316,6 +9306,25 @@
     "UNKNOWN": 7
    },
    "last_verdict_at": "2026-11-01T23:09:39+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:dow_effect|H1|metal",
+   "family": "dow_effect",
+   "chart": "H1",
+   "asset_class": "metal",
+   "n_judged": 23,
+   "n_passed": 0,
+   "p_edge_prior": 0.020833,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "in_sample_screen": 16,
+    "UNKNOWN": 7
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
@@ -9486,6 +9495,29 @@
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   },
   {
+   "memory_key": "prior:clock_transition|H1|forex_exotics",
+   "family": "clock_transition",
+   "chart": "H1",
+   "asset_class": "forex_exotics",
+   "n_judged": 20,
+   "n_passed": 1,
+   "p_edge_prior": 0.071429,
+   "failure_class_shares": {
+    "regime_specific": 0.125,
+    "no_edge": 0.875
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 11,
+    "in_sample_screen": 3,
+    "deflated_sharpe": 3,
+    "walk_forward": 1,
+    "lockbox": 1
+   },
+   "last_verdict_at": "2026-11-07T13:30:47+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
    "memory_key": "prior:cot_change_momentum|H1|metal",
    "family": "cot_change_momentum",
    "chart": "H1",
@@ -9518,6 +9550,25 @@
     "UNKNOWN": 20
    },
    "last_verdict_at": "2026-11-07T18:24:22+00:00",
+   "jeffreys": "p = (passed + 0.5) / (judged + 1)"
+  },
+  {
+   "memory_key": "prior:dow_effect|H1|index",
+   "family": "dow_effect",
+   "chart": "H1",
+   "asset_class": "index",
+   "n_judged": 20,
+   "n_passed": 0,
+   "p_edge_prior": 0.02381,
+   "failure_class_shares": {
+    "no_edge": 1.0
+   },
+   "dominant_failure_class": "no_edge",
+   "terminal_gates": {
+    "UNKNOWN": 14,
+    "in_sample_screen": 6
+   },
+   "last_verdict_at": "2026-11-08T00:31:50+00:00",
    "jeffreys": "p = (passed + 0.5) / (judged + 1)"
   }
  ],
@@ -9566,11 +9617,11 @@
   "wrong_direction",
   "wrong_horizon"
  ],
- "cold_share": 0.4285,
+ "cold_share": 0.4433,
  "cold": {
-  "cold_share": 0.4285,
-  "n_cold": 16273,
-  "n_born": 37974,
+  "cold_share": 0.4433,
+  "n_cold": 15814,
+  "n_born": 35673,
   "explore_floor": 0.2,
   "under_floor": false,
   "grid": "asset_class|mechanism",
@@ -9585,178 +9636,178 @@
   "applied": true,
   "n_families": 84,
   "floor_share": 0.01,
-  "total_share": 0.99999966,
+  "total_share": 1.00000008,
   "shares": {
-   "carry": 0.02511765,
-   "clock_transition": 0.02511765,
-   "cross_asset_residual": 0.02511765,
-   "formula": 0.02511765,
-   "macro_conditional": 0.02511765,
-   "overnight_gap_decay": 0.02511765,
-   "spread_state": 0.02511765,
-   "range_reversion": 0.01262306,
-   "anti_donchian_breakout": 0.01255883,
-   "anti_three_bar_momentum": 0.01255883,
-   "fair_value_gap": 0.01255883,
-   "usd_session_shock": 0.01255883,
-   "pca_residual": 0.01230962,
-   "adx_channel_hybrid": 0.01054941,
-   "alt_conditioned": 0.01054941,
-   "alt_series_momentum": 0.01054941,
-   "asia_momentum": 0.01054941,
-   "calendar_month": 0.01054941,
-   "comex_settlement": 0.01054941,
-   "correlation_regime": 0.01054941,
-   "cot_change_fade": 0.01054941,
-   "cot_change_momentum": 0.01054941,
-   "cot_comm_follow": 0.01054941,
-   "cot_net_fade": 0.01054941,
-   "cot_positioning": 0.01054941,
-   "crisis_only_class_defensive": 0.01054941,
-   "cross_sectional_class_low_vol": 0.01054941,
-   "cross_sectional_class_momentum": 0.01054941,
-   "cross_sectional_class_reversal": 0.01054941,
-   "cross_sectional_class_value": 0.01054941,
-   "dav_macd_qqe": 0.01054941,
-   "dav_range_filter_adx": 0.01054941,
-   "dav_supertrend_trail": 0.01054941,
-   "discovered": 0.01054941,
-   "dow_effect": 0.01054941,
-   "drawdown_conditional": 0.01054941,
-   "engulfing_reversal": 0.01054941,
-   "ensemble": 0.01054941,
-   "entry_conditioned": 0.01054941,
-   "event_reaction": 0.01054941,
-   "execution_state": 0.01054941,
-   "exit_operated": 0.01054941,
-   "exogenous_conditioner": 0.01054941,
-   "failed_breakout": 0.01054941,
-   "forced_flow": 0.01054941,
-   "fx_fixing_reversal": 0.01054941,
-   "generic": 0.01054941,
-   "hedging_demand_close": 0.01054941,
-   "htf_anchor_trend": 0.01054941,
-   "ict_fvg": 0.01054941,
-   "joint_genome": 0.01054941,
-   "jump": 0.01054941,
-   "lead_lag": 0.01054941,
-   "lead_lag_class_catchup": 0.01054941,
-   "level_breakout": 0.01054941,
-   "liquidity_gamma_reversal": 0.01054941,
-   "liquidity_regime": 0.01054941,
-   "london_close_momentum": 0.01054941,
-   "lvc_asia_london": 0.01054941,
-   "mean_reversion_bollinger": 0.01054941,
-   "mean_reversion_rsi": 0.01054941,
-   "momentum_volgate": 0.01054941,
-   "monday_gap": 0.01054941,
-   "multi_speed_trend": 0.01054941,
-   "opening_range": 0.01054941,
-   "orderflow_imbalance": 0.01054941,
-   "overnight_drift": 0.01054941,
-   "pin_bar_reversal": 0.01054941,
-   "pullback_entry": 0.01054941,
-   "regime_split": 0.01054941,
-   "regime_transition": 0.01054941,
-   "relative_value": 0.01054941,
-   "retail_overlap_reversal": 0.01054941,
-   "session_handoff": 0.01054941,
-   "session_range_breakout": 0.01054941,
-   "style_premia": 0.01054941,
-   "trend_ma_cross": 0.01054941,
-   "triangle": 0.01054941,
-   "turn_of_month": 0.01054941,
-   "vol_mean_reversion": 0.01054941,
-   "vol_transition": 0.01054941,
-   "volatility_squeeze": 0.01054941,
-   "volume_spike": 0.01054941,
-   "world_macro_state": 0.01054941
+   "carry": 0.02512255,
+   "clock_transition": 0.02512255,
+   "cross_asset_residual": 0.02512255,
+   "formula": 0.02512255,
+   "macro_conditional": 0.02512255,
+   "overnight_gap_decay": 0.02512255,
+   "spread_state": 0.02512255,
+   "anti_donchian_breakout": 0.01256127,
+   "anti_three_bar_momentum": 0.01256127,
+   "fair_value_gap": 0.01256127,
+   "usd_session_shock": 0.01256127,
+   "range_reversion": 0.01252226,
+   "pca_residual": 0.01222052,
+   "adx_channel_hybrid": 0.01055147,
+   "alt_conditioned": 0.01055147,
+   "alt_series_momentum": 0.01055147,
+   "asia_momentum": 0.01055147,
+   "calendar_month": 0.01055147,
+   "comex_settlement": 0.01055147,
+   "correlation_regime": 0.01055147,
+   "cot_change_fade": 0.01055147,
+   "cot_change_momentum": 0.01055147,
+   "cot_comm_follow": 0.01055147,
+   "cot_net_fade": 0.01055147,
+   "cot_positioning": 0.01055147,
+   "crisis_only_class_defensive": 0.01055147,
+   "cross_sectional_class_low_vol": 0.01055147,
+   "cross_sectional_class_momentum": 0.01055147,
+   "cross_sectional_class_reversal": 0.01055147,
+   "cross_sectional_class_value": 0.01055147,
+   "dav_macd_qqe": 0.01055147,
+   "dav_range_filter_adx": 0.01055147,
+   "dav_supertrend_trail": 0.01055147,
+   "discovered": 0.01055147,
+   "dow_effect": 0.01055147,
+   "drawdown_conditional": 0.01055147,
+   "engulfing_reversal": 0.01055147,
+   "ensemble": 0.01055147,
+   "entry_conditioned": 0.01055147,
+   "event_reaction": 0.01055147,
+   "execution_state": 0.01055147,
+   "exit_operated": 0.01055147,
+   "exogenous_conditioner": 0.01055147,
+   "failed_breakout": 0.01055147,
+   "forced_flow": 0.01055147,
+   "fx_fixing_reversal": 0.01055147,
+   "generic": 0.01055147,
+   "hedging_demand_close": 0.01055147,
+   "htf_anchor_trend": 0.01055147,
+   "ict_fvg": 0.01055147,
+   "joint_genome": 0.01055147,
+   "jump": 0.01055147,
+   "lead_lag": 0.01055147,
+   "lead_lag_class_catchup": 0.01055147,
+   "level_breakout": 0.01055147,
+   "liquidity_gamma_reversal": 0.01055147,
+   "liquidity_regime": 0.01055147,
+   "london_close_momentum": 0.01055147,
+   "lvc_asia_london": 0.01055147,
+   "mean_reversion_bollinger": 0.01055147,
+   "mean_reversion_rsi": 0.01055147,
+   "momentum_volgate": 0.01055147,
+   "monday_gap": 0.01055147,
+   "multi_speed_trend": 0.01055147,
+   "opening_range": 0.01055147,
+   "orderflow_imbalance": 0.01055147,
+   "overnight_drift": 0.01055147,
+   "pin_bar_reversal": 0.01055147,
+   "pullback_entry": 0.01055147,
+   "regime_split": 0.01055147,
+   "regime_transition": 0.01055147,
+   "relative_value": 0.01055147,
+   "retail_overlap_reversal": 0.01055147,
+   "session_handoff": 0.01055147,
+   "session_range_breakout": 0.01055147,
+   "style_premia": 0.01055147,
+   "trend_ma_cross": 0.01055147,
+   "triangle": 0.01055147,
+   "turn_of_month": 0.01055147,
+   "vol_mean_reversion": 0.01055147,
+   "vol_transition": 0.01055147,
+   "volatility_squeeze": 0.01055147,
+   "volume_spike": 0.01055147,
+   "world_macro_state": 0.01055147
   },
   "factors": {
-   "adx_channel_hybrid": 0.8862,
-   "alt_conditioned": 0.8862,
-   "alt_series_momentum": 0.8862,
-   "anti_donchian_breakout": 1.0549,
-   "anti_three_bar_momentum": 1.0549,
-   "asia_momentum": 0.8862,
-   "calendar_month": 0.8862,
-   "carry": 2.1099,
-   "clock_transition": 2.1099,
-   "comex_settlement": 0.8862,
-   "correlation_regime": 0.8862,
-   "cot_change_fade": 0.8862,
-   "cot_change_momentum": 0.8862,
-   "cot_comm_follow": 0.8862,
-   "cot_net_fade": 0.8862,
-   "cot_positioning": 0.8862,
-   "crisis_only_class_defensive": 0.8862,
-   "cross_asset_residual": 2.1099,
-   "cross_sectional_class_low_vol": 0.8862,
-   "cross_sectional_class_momentum": 0.8862,
-   "cross_sectional_class_reversal": 0.8862,
-   "cross_sectional_class_value": 0.8862,
-   "dav_macd_qqe": 0.8862,
-   "dav_range_filter_adx": 0.8862,
-   "dav_supertrend_trail": 0.8862,
-   "discovered": 0.8862,
-   "dow_effect": 0.8862,
-   "drawdown_conditional": 0.8862,
-   "engulfing_reversal": 0.8862,
-   "ensemble": 0.8862,
-   "entry_conditioned": 0.8862,
-   "event_reaction": 0.8862,
-   "execution_state": 0.8862,
-   "exit_operated": 0.8862,
-   "exogenous_conditioner": 0.8862,
-   "failed_breakout": 0.8862,
-   "fair_value_gap": 1.0549,
-   "forced_flow": 0.8862,
-   "formula": 2.1099,
-   "fx_fixing_reversal": 0.8862,
-   "generic": 0.8862,
-   "hedging_demand_close": 0.8862,
-   "htf_anchor_trend": 0.8862,
-   "ict_fvg": 0.8862,
-   "joint_genome": 0.8862,
-   "jump": 0.8862,
-   "lead_lag": 0.8862,
-   "lead_lag_class_catchup": 0.8862,
-   "level_breakout": 0.8862,
-   "liquidity_gamma_reversal": 0.8862,
-   "liquidity_regime": 0.8862,
-   "london_close_momentum": 0.8862,
-   "lvc_asia_london": 0.8862,
-   "macro_conditional": 2.1099,
-   "mean_reversion_bollinger": 0.8862,
-   "mean_reversion_rsi": 0.8862,
-   "momentum_volgate": 0.8862,
-   "monday_gap": 0.8862,
-   "multi_speed_trend": 0.8862,
-   "opening_range": 0.8862,
-   "orderflow_imbalance": 0.8862,
-   "overnight_drift": 0.8862,
-   "overnight_gap_decay": 2.1099,
-   "pca_residual": 1.034,
-   "pin_bar_reversal": 0.8862,
-   "pullback_entry": 0.8862,
-   "range_reversion": 1.0603,
-   "regime_split": 0.8862,
-   "regime_transition": 0.8862,
-   "relative_value": 0.8862,
-   "retail_overlap_reversal": 0.8862,
-   "session_handoff": 0.8862,
-   "session_range_breakout": 0.8862,
-   "spread_state": 2.1099,
-   "style_premia": 0.8862,
-   "trend_ma_cross": 0.8862,
-   "triangle": 0.8862,
-   "turn_of_month": 0.8862,
-   "usd_session_shock": 1.0549,
-   "vol_mean_reversion": 0.8862,
-   "vol_transition": 0.8862,
-   "volatility_squeeze": 0.8862,
-   "volume_spike": 0.8862,
-   "world_macro_state": 0.8862
+   "adx_channel_hybrid": 0.8863,
+   "alt_conditioned": 0.8863,
+   "alt_series_momentum": 0.8863,
+   "anti_donchian_breakout": 1.0551,
+   "anti_three_bar_momentum": 1.0551,
+   "asia_momentum": 0.8863,
+   "calendar_month": 0.8863,
+   "carry": 2.1103,
+   "clock_transition": 2.1103,
+   "comex_settlement": 0.8863,
+   "correlation_regime": 0.8863,
+   "cot_change_fade": 0.8863,
+   "cot_change_momentum": 0.8863,
+   "cot_comm_follow": 0.8863,
+   "cot_net_fade": 0.8863,
+   "cot_positioning": 0.8863,
+   "crisis_only_class_defensive": 0.8863,
+   "cross_asset_residual": 2.1103,
+   "cross_sectional_class_low_vol": 0.8863,
+   "cross_sectional_class_momentum": 0.8863,
+   "cross_sectional_class_reversal": 0.8863,
+   "cross_sectional_class_value": 0.8863,
+   "dav_macd_qqe": 0.8863,
+   "dav_range_filter_adx": 0.8863,
+   "dav_supertrend_trail": 0.8863,
+   "discovered": 0.8863,
+   "dow_effect": 0.8863,
+   "drawdown_conditional": 0.8863,
+   "engulfing_reversal": 0.8863,
+   "ensemble": 0.8863,
+   "entry_conditioned": 0.8863,
+   "event_reaction": 0.8863,
+   "execution_state": 0.8863,
+   "exit_operated": 0.8863,
+   "exogenous_conditioner": 0.8863,
+   "failed_breakout": 0.8863,
+   "fair_value_gap": 1.0551,
+   "forced_flow": 0.8863,
+   "formula": 2.1103,
+   "fx_fixing_reversal": 0.8863,
+   "generic": 0.8863,
+   "hedging_demand_close": 0.8863,
+   "htf_anchor_trend": 0.8863,
+   "ict_fvg": 0.8863,
+   "joint_genome": 0.8863,
+   "jump": 0.8863,
+   "lead_lag": 0.8863,
+   "lead_lag_class_catchup": 0.8863,
+   "level_breakout": 0.8863,
+   "liquidity_gamma_reversal": 0.8863,
+   "liquidity_regime": 0.8863,
+   "london_close_momentum": 0.8863,
+   "lvc_asia_london": 0.8863,
+   "macro_conditional": 2.1103,
+   "mean_reversion_bollinger": 0.8863,
+   "mean_reversion_rsi": 0.8863,
+   "momentum_volgate": 0.8863,
+   "monday_gap": 0.8863,
+   "multi_speed_trend": 0.8863,
+   "opening_range": 0.8863,
+   "orderflow_imbalance": 0.8863,
+   "overnight_drift": 0.8863,
+   "overnight_gap_decay": 2.1103,
+   "pca_residual": 1.0265,
+   "pin_bar_reversal": 0.8863,
+   "pullback_entry": 0.8863,
+   "range_reversion": 1.0519,
+   "regime_split": 0.8863,
+   "regime_transition": 0.8863,
+   "relative_value": 0.8863,
+   "retail_overlap_reversal": 0.8863,
+   "session_handoff": 0.8863,
+   "session_range_breakout": 0.8863,
+   "spread_state": 2.1103,
+   "style_premia": 0.8863,
+   "trend_ma_cross": 0.8863,
+   "triangle": 0.8863,
+   "turn_of_month": 0.8863,
+   "usd_session_shock": 1.0551,
+   "vol_mean_reversion": 0.8863,
+   "vol_transition": 0.8863,
+   "volatility_squeeze": 0.8863,
+   "volume_spike": 0.8863,
+   "world_macro_state": 0.8863
   },
   "above_the_equal_share": [
    "anti_donchian_breakout",
@@ -9857,7 +9908,7 @@
   },
   "measured": {
    "swept_at": "2026-11-08T00:25:57.166860+00:00",
-   "age_h": 0.34,
+   "age_h": 2.73,
    "n_cells": 252410,
    "n_judged": 234417,
    "n_unmeasured": 17993,
@@ -9878,92 +9929,92 @@
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "cold"
    },
    "mutate_survivor": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "adjacent"
    },
    "combine_survivors": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "adjacent"
    },
    "conditional_state_edge": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "adjacent"
    },
    "execution_improvement": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "exploit"
    },
    "exit_improvement": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "exploit"
    },
    "cross_asset_signal": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "exploit"
    },
    "alt_data_hypothesis": {
-    "born": 214184,
-    "failed": 211735,
-    "certified": 2240,
-    "p_survivor": 0.0105,
+    "born": 198774,
+    "failed": 196226,
+    "certified": 2320,
+    "p_survivor": 0.0117,
     "group": "cold"
    },
    "failure_derived": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "exploit"
    },
    "model_architecture": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "exploit"
    },
    "external_screen": {
     "born": 0,
     "failed": 0,
     "certified": 0,
-    "p_survivor": 0.055,
+    "p_survivor": 0.0561,
     "group": "exploit"
    }
   },
   "intended_feedback": {
    "shape": "per-arm worth multiplier from the window's failure mix",
    "failure_class_shares": {
-    "no_edge": 0.9778,
-    "unstable": 0.0141,
-    "cost_killed": 0.008,
+    "no_edge": 0.9818,
+    "unstable": 0.011,
+    "cost_killed": 0.0071,
     "regime_specific": 0.0001
    },
    "arms_seen_in_window": {
     "alt_data_hypothesis": {
-     "born_in_window": 214184,
-     "p_survivor": 0.0105
+     "born_in_window": 198774,
+     "p_survivor": 0.0117
     }
    },
    "applied": false,
@@ -9972,34 +10023,14 @@
   }
  },
  "unmeasured": {
-  "hypothesis_graph.jsonl": "TRUNCATED_KEPT_NEWEST(500000 of 559048 in horizon, 1059049 lines)",
+  "hypothesis_graph.jsonl": "TRUNCATED_KEPT_NEWEST(500000 of 563926 in horizon, 1063927 lines)",
   "gate_verdict_ledger.jsonl": "TRUNCATED_KEPT_NEWEST(500000 of more; read backwards and stopped at the cap after 500002 lines)"
  },
  "rule": "the gauntlet talks back: the miners change what they generate, and every failure class moves a prior, while cold exploration keeps its floor",
- "mode": "core",
- "full_at": "2026-11-07T20:12:25+00:00",
+ "mode": "full",
+ "full_at": "2026-11-08T03:09:48+00:00",
  "prior_write": {
   "status": "PENDING",
   "why": "report published before the registry write"
- },
- "core": {
-  "at": "2026-11-08T00:46:16+00:00",
-  "inputs": {},
-  "testing_24h": {
-   "status": "MEASURED",
-   "verdicts": 38761,
-   "cells_judged": 38143,
-   "per_hour": 1589.292,
-   "passed": 1010,
-   "ledger": "READ",
-   "measured_at": "2026-11-08T00:46:16+00:00",
-   "source": "build_core"
-  },
-  "re_measured": [
-   "capacity",
-   "core.testing_24h"
-  ],
-  "carried_from_full_at": "2026-11-07T20:12:25+00:00",
-  "why": "every block other than `capacity` and `core.testing_24h` is the last FULL build's, stamped `full_at`, and unchanged; a reader that needs a fresh window must check `full_at`, never `at`"
  }
 }
