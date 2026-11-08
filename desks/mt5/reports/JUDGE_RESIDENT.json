@@ -17,7 +17,7 @@
  "uptime_s": 1043613.0,
  "last_sweep_ended_utc": "2026-11-08T18:34:42+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-08T20:04:54+00:00",
+ "heartbeat_utc": "2026-11-08T20:19:55+00:00",
  "sweep_phase": {
   "pid": 28616,
   "sweep_started_utc": "2026-11-08T18:34:51+00:00",
@@ -88,32 +88,37 @@
      }
     },
     "prewarm": {
-     "samples": 476,
+     "samples": 572,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 449,
-       "share": 0.943
+       "n": 544,
+       "share": 0.951
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 21,
-       "share": 0.044
+       "share": 0.037
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 6,
-       "share": 0.013
+       "share": 0.01
+      },
+      {
+       "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 1,
+       "share": 0.002
       }
      ],
      "process": {
-      "cpu_s": 1909.6,
-      "page_faults": 136556483.0,
-      "read_bytes": 61645812.0,
-      "write_bytes": 157762070773.0,
-      "sampled_s": 4750.0,
-      "rss_mb_max": 3453.4,
-      "cpu_share_of_wall": 0.402
+      "cpu_s": 2038.8,
+      "page_faults": 145180539.0,
+      "read_bytes": 65406311.0,
+      "write_bytes": 166975465728.0,
+      "sampled_s": 5710.0,
+      "rss_mb_max": 3501.7,
+      "cpu_share_of_wall": 0.357
      }
     }
    }
