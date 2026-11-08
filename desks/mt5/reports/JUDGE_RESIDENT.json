@@ -17,7 +17,7 @@
  "uptime_s": 1043613.0,
  "last_sweep_ended_utc": "2026-11-08T18:34:42+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-08T23:20:02+00:00",
+ "heartbeat_utc": "2026-11-08T23:35:03+00:00",
  "sweep_phase": {
   "pid": 28616,
   "sweep_started_utc": "2026-11-08T18:34:51+00:00",
@@ -25,10 +25,11 @@
    "plan": 529.1,
    "prewarm": 12775.6,
    "plan_handoff": 241.8,
-   "build_shards": 3137.2
+   "build_shards": 3137.2,
+   "collect_and_cut": 1087.9
   },
-  "phase": "collect_and_cut",
-  "phase_started_utc": "2026-11-08T23:12:54+00:00",
+  "phase": "rule_shards",
+  "phase_started_utc": "2026-11-08T23:31:02+00:00",
   "plan_steps": {
    "lane_and_docket": 44.8,
    "docket_grouping": 59.0,
@@ -196,15 +197,67 @@
      }
     },
     "collect_and_cut": {
-     "samples": 1,
+     "samples": 56,
      "top": [
       {
-       "stack": "external_gauntlet.py:_shard_collect:4714 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 1,
-       "share": 1.0
+       "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 14,
+       "share": 0.25
+      },
+      {
+       "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 13,
+       "share": 0.232
+      },
+      {
+       "stack": "base.py:_simple_new:662 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 4,
+       "share": 0.071
+      },
+      {
+       "stack": "base.py:ensure_index:7659 < managers.py:__setstate__:1945 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 3,
+       "share": 0.054
+      },
+      {
+       "stack": "managers.py:__setstate__:1947 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
+       "n": 2,
+       "share": 0.036
       }
      ],
-     "process": {}
+     "process": {
+      "cpu_s": 478.3,
+      "page_faults": 2619188.0,
+      "read_bytes": 5434242994.0,
+      "write_bytes": 102406.0,
+      "sampled_s": 550.0,
+      "rss_mb_max": 7585.5,
+      "cpu_share_of_wall": 0.87
+     }
+    },
+    "rule_shards": {
+     "samples": 13,
+     "top": [
+      {
+       "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < run_sharded_gauntlet.py:_admitted_wave:261 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
+       "n": 12,
+       "share": 0.923
+      },
+      {
+       "stack": "__init__.py:children:978 < run_sharded_gauntlet.py:_wave_children_rss_mb:143 < run_sharded_gauntlet.py:admits:202 < run_sharded_gauntlet.py:_admitted_wave:255 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
+       "n": 1,
+       "share": 0.077
+      }
+     ],
+     "process": {
+      "cpu_s": 10.8,
+      "page_faults": 409550.0,
+      "read_bytes": 589.0,
+      "write_bytes": 121085.0,
+      "sampled_s": 120.0,
+      "rss_mb_max": 7096.4,
+      "cpu_share_of_wall": 0.09
+     }
     }
    }
   },
@@ -266,6 +319,21 @@
      "cpu_share_of_wall": 0.671
     }
    }
+  },
+  "shards": {
+   "phase": "rule",
+   "total": 18,
+   "started": 18,
+   "done_ok": 15,
+   "failed": 0,
+   "retries": 0,
+   "running": 3,
+   "last_finish_epoch": 1794180889.5121655,
+   "last_finish_utc": "2026-11-08T23:34:49+00:00",
+   "longest_shard_s": 206.9,
+   "seconds_since_last_finish": 0.0,
+   "stalled_hint": false,
+   "stalled_hint_authority": "report_only"
   }
  }
 }
