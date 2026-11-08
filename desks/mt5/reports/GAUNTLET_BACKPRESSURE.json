@@ -1,5 +1,5 @@
 {
- "at": "2026-11-07T20:12:25+00:00",
+ "at": "2026-11-08T00:46:16+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -9856,13 +9856,13 @@
    "why": "seconds of FIRST-TIME cell building one sweep may spend; cached cells are free and are always all loaded"
   },
   "measured": {
-   "swept_at": "2026-11-07T18:17:27.226693+00:00",
-   "age_h": 1.92,
-   "n_cells": 268628,
-   "n_judged": 235053,
-   "n_unmeasured": 33575,
-   "n_cells_discovered": 1600914,
-   "n_cells_deferred_build_budget": 92759,
+   "swept_at": "2026-11-08T00:25:57.166860+00:00",
+   "age_h": 0.34,
+   "n_cells": 252410,
+   "n_judged": 234417,
+   "n_unmeasured": 17993,
+   "n_cells_discovered": 1575260,
+   "n_cells_deferred_build_budget": 94004,
    "n_cells_deferred_memory_budget": 0,
    "memory_budget_mb": 13824.0,
    "workers": 18,
@@ -9976,10 +9976,30 @@
   "gate_verdict_ledger.jsonl": "TRUNCATED_KEPT_NEWEST(500000 of more; read backwards and stopped at the cap after 500002 lines)"
  },
  "rule": "the gauntlet talks back: the miners change what they generate, and every failure class moves a prior, while cold exploration keeps its floor",
- "mode": "full",
+ "mode": "core",
  "full_at": "2026-11-07T20:12:25+00:00",
  "prior_write": {
   "status": "PENDING",
   "why": "report published before the registry write"
+ },
+ "core": {
+  "at": "2026-11-08T00:46:16+00:00",
+  "inputs": {},
+  "testing_24h": {
+   "status": "MEASURED",
+   "verdicts": 38761,
+   "cells_judged": 38143,
+   "per_hour": 1589.292,
+   "passed": 1010,
+   "ledger": "READ",
+   "measured_at": "2026-11-08T00:46:16+00:00",
+   "source": "build_core"
+  },
+  "re_measured": [
+   "capacity",
+   "core.testing_24h"
+  ],
+  "carried_from_full_at": "2026-11-07T20:12:25+00:00",
+  "why": "every block other than `capacity` and `core.testing_24h` is the last FULL build's, stamped `full_at`, and unchanged; a reader that needs a fresh window must check `full_at`, never `at`"
  }
 }
