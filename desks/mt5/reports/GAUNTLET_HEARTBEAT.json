@@ -1,65 +1,36 @@
 {
- "pid": 5036,
- "create_time": 1794139002.937754,
- "status": "DONE",
- "started_utc": "2026-11-08T11:56:43+00:00",
- "beat_utc": "2026-11-08T18:34:41+00:00",
- "beats": 734,
+ "pid": 28616,
+ "create_time": 1794162882.9101846,
+ "status": "RUNNING",
+ "started_utc": "2026-11-08T18:34:43+00:00",
+ "beat_utc": "2026-11-08T18:49:46+00:00",
+ "beats": 30,
  "beat_every_s": 30.0,
- "phase": "done",
- "phase_started_utc": "2026-11-08T18:34:41+00:00",
- "phase_elapsed_s": null,
+ "phase": "prewarm",
+ "phase_started_utc": "2026-11-08T18:43:40+00:00",
+ "phase_elapsed_s": 366.5,
  "phases_done": {
-  "plan": 507.1,
-  "prewarm": 12890.8,
-  "plan_handoff": 83.6,
-  "build_shards": 2731.2,
-  "collect_and_cut": 882.5,
-  "rule_shards": 346.2,
-  "merge_and_publish": 6427.0
+  "plan": 529.1
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
   "run_s": 129422.8,
-  "run_deadline_utc": "2026-11-09T23:53:45+00:00",
-  "phase_s": null,
-  "phase_deadline_utc": null,
+  "run_deadline_utc": "2026-11-10T06:31:45+00:00",
+  "phase_s": 153594.0,
+  "phase_deadline_utc": "2026-11-10T13:23:34+00:00",
   "no_progress_s": 1800.0,
   "consecutive_stalls": 0
  },
- "run_deadline_utc": "2026-11-09T23:53:45+00:00",
+ "run_deadline_utc": "2026-11-10T06:31:45+00:00",
  "slow": [],
- "shards": {
-  "phase": "rule",
-  "total": 18,
-  "done": 18,
-  "failed": 0,
-  "running": 0,
-  "stalled": 0,
-  "slow": 0,
-  "retrying": 0,
-  "shard_slow_s": 1800.0,
-  "shard_idle_kill_s": 1800.0,
-  "wave_started_utc": "2026-11-08T16:41:47+00:00",
-  "admission": {
-   "floor": 10,
-   "widest": 11,
-   "last": {
-    "running": 10,
-    "available_mb": 38894.8,
-    "wave_rss_mb": 6482.5,
-    "estimate_mb": 1481.7,
-    "estimate_basis": "historic_peak",
-    "room_mb": 17225.0,
-    "reserve_mb": 15928.7,
-    "admitted": true
-   }
-  }
+ "shards": {},
+ "tree": {
+  "procs": 19,
+  "rss_mb": 8732.9,
+  "cpu_s": 1805.0
  },
- "tree": null,
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-08T18:34:41+00:00",
+ "last_progress_utc": "2026-11-08T18:49:46+00:00",
  "idle_s": 0.0,
- "progress_gaps": 5,
- "rc": 0
+ "progress_gaps": 0
 }
