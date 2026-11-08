@@ -1,6 +1,6 @@
 {
  "schema": "tape_freshness/2",
- "generated_at": "2026-11-07T09:37:57+00:00",
+ "generated_at": "2026-11-08T12:47:57+00:00",
  "max_age_h": 2.0,
  "status": "RED",
  "red": [
@@ -11,7 +11,7 @@
  "cause": "the terminal link is up and the recorder reports no pause: it is not running or not advancing -- read desks/mt5/logs/MT5-TickRecorder.log",
  "terminal_link": {
   "status": "UP",
-  "last_ok": "2026-11-07T09:30:03.691252+00:00",
+  "last_ok": "2026-11-08T12:40:02.483565+00:00",
   "age_h": 0.13,
   "why": ""
  },
@@ -43,86 +43,86 @@
     "CLOSED": 230,
     "FRESH": 13
    },
-   "newest_tick_venue": "2026-11-07T11:36:55.903000",
+   "newest_tick_venue": "2026-11-08T14:47:08.787000",
    "stale": [],
    "unmeasured": [],
    "symbols": {
     "ADAUSD": {
-     "last_tick_ms": 1794051415040,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149224325,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "AVAXUSD": {
-     "last_tick_ms": 1794051415465,
+     "last_tick_ms": 1794149221715,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "BCHUSD": {
-     "last_tick_ms": 1794051415193,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149227120,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "BNBUSD": {
-     "last_tick_ms": 1794051402756,
+     "last_tick_ms": 1794149220379,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "BTCUSD": {
-     "last_tick_ms": 1794051414018,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149228787,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "DOGEUSD": {
-     "last_tick_ms": 1794051415093,
+     "last_tick_ms": 1794149220565,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "DOTUSD": {
-     "last_tick_ms": 1794051415493,
+     "last_tick_ms": 1794149220563,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "ETHUSD": {
-     "last_tick_ms": 1794051415903,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149228241,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "LNKUSD": {
-     "last_tick_ms": 1794051415125,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149228736,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "LTCUSD": {
-     "last_tick_ms": 1794051414387,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149225908,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "MATICUSD": {
-     "last_tick_ms": 1794051408628,
+     "last_tick_ms": 1794149223393,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "SOLUSD": {
-     "last_tick_ms": 1794051407267,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149224852,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "XLMUSD": {
-     "last_tick_ms": 1794051415862,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794149228042,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     }
    },

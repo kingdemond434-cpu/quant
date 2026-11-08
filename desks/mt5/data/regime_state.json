@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-08T12:30:02.102469+00:00",
+  "swept_at": "2026-11-08T12:45:06.632769+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -382,8 +382,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.3243,
+      "shadow_n": 73,
+      "shadow_exp_r": -0.4895,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -2704,7 +2704,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1468,
+      "shadow_exp_r": -0.3298,
       "woke_on_shadow": false
     },
     "GBPZAR|clock_transition_asia": {
@@ -2737,7 +2737,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.053,
+      "shadow_exp_r": -0.3906,
       "woke_on_shadow": false
     },
     "GBPZAR|overnight_gap_decay_asia": {
