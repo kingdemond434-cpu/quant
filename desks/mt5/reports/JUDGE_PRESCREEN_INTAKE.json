@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-07T23:07:29+00:00",
+ "generated_at": "2026-11-08T05:32:41+00:00",
  "mode": "SHADOW",
- "rows": 1576301,
- "rows_already_ruled_not_screened": 745292,
+ "rows": 1575967,
+ "rows_already_ruled_not_screened": 746395,
  "would_kill": {
-  "needs_data": 1112,
+  "needs_data": 1110,
   "chart_short": 0,
-  "sibling_dead": 249362
+  "sibling_dead": 248715
  },
- "would_kill_total": 250474,
- "would_kill_share": 0.1589,
+ "would_kill_total": 249825,
+ "would_kill_share": 0.158522,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 249362,
-  "10": 198709,
-  "20": 119975,
-  "40": 54329,
-  "80": 23759
+  "5": 248715,
+  "10": 197904,
+  "20": 118965,
+  "40": 53424,
+  "80": 23889
  },
- "ms_per_row": 0.76018,
- "seconds": 1198.278,
+ "ms_per_row": 0.20778,
+ "seconds": 327.451,
  "samples": {
   "needs_data": [
    {
@@ -160,23 +160,23 @@
   "chart_short": [],
   "sibling_dead": [
    {
-    "cell": "E35@M5.session_range_breakout.p=4f569fbdd5c4c7f3",
-    "bucket": "E35|M5|session_range_breakout",
-    "named_cells": 7,
+    "cell": "AUDUSD.asia_momentum.p=a666e20b3e95803e",
+    "bucket": "AUDUSD|H1|asia_momentum",
+    "named_cells": 9,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "E35@M30.session_range_breakout.p=57b2afbf9c1c8f54",
-    "bucket": "E35|M30|session_range_breakout",
-    "named_cells": 5,
+    "cell": "NZDUSD.asia_momentum.p=36a5208c7c3e9ba4",
+    "bucket": "NZDUSD|H1|asia_momentum",
+    "named_cells": 9,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "E35@M15.session_range_breakout.p=c5b26143b7abe681",
-    "bucket": "E35|M15|session_range_breakout",
-    "named_cells": 5,
+    "cell": "USDINR@M15.session_range_breakout.p=10c47a63e21d5bc2",
+    "bucket": "USDINR|M15|session_range_breakout",
+    "named_cells": 21,
     "cleared_cells": 0,
     "k": 5
    },
@@ -188,37 +188,9 @@
     "k": 5
    },
    {
-    "cell": "E35@M30.session_range_breakout.p=e748d187c770f51f",
-    "bucket": "E35|M30|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD@M30.session_range_breakout.p=ff910ceb442ce5d5",
-    "bucket": "AUDNZD|M30|session_range_breakout",
-    "named_cells": 46,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD@M15.session_range_breakout.p=a0b2b8475d8cad49",
-    "bucket": "AUDNZD|M15|session_range_breakout",
-    "named_cells": 43,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "CHFSEK@M5.session_range_breakout.p=959c1d284573a5ba",
-    "bucket": "CHFSEK|M5|session_range_breakout",
-    "named_cells": 41,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "JPN225@M30.session_range_breakout.p=babb154f67eaa96f",
-    "bucket": "JPN225|M30|session_range_breakout",
-    "named_cells": 30,
+    "cell": "E35@M5.session_range_breakout.p=45cdc10f56a6c590",
+    "bucket": "E35|M5|session_range_breakout",
+    "named_cells": 7,
     "cleared_cells": 0,
     "k": 5
    },
@@ -230,8 +202,8 @@
     "k": 5
    },
    {
-    "cell": "CHFHUF@M5.session_range_breakout.p=56fbec9ebd929bbf",
-    "bucket": "CHFHUF|M5|session_range_breakout",
+    "cell": "AUDNZD@M5.session_range_breakout.p=1274b23b5d8d773d",
+    "bucket": "AUDNZD|M5|session_range_breakout",
     "named_cells": 39,
     "cleared_cells": 0,
     "k": 5
@@ -251,13 +223,6 @@
     "k": 5
    },
    {
-    "cell": "USDCHF@M5.session_range_breakout.p=cfc2cb86a87f6147",
-    "bucket": "USDCHF|M5|session_range_breakout",
-    "named_cells": 39,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
     "cell": "E35@M5.session_range_breakout.p=ef2a31053ca7ae5a",
     "bucket": "E35|M5|session_range_breakout",
     "named_cells": 7,
@@ -265,72 +230,107 @@
     "k": 5
    },
    {
-    "cell": "EURCZK@M5.session_range_breakout.p=a95109ed5224c541",
-    "bucket": "EURCZK|M5|session_range_breakout",
-    "named_cells": 43,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "GBPHUF@M5.session_range_breakout.p=98f1d0724fe2d74e",
-    "bucket": "GBPHUF|M5|session_range_breakout",
-    "named_cells": 44,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "GBPDKK@M5.session_range_breakout.p=574280c92d59f30d",
-    "bucket": "GBPDKK|M5|session_range_breakout",
-    "named_cells": 38,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "COFROB@M5.session_range_breakout.p=18ac448782467210",
-    "bucket": "COFROB|M5|session_range_breakout",
-    "named_cells": 5,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
     "cell": "USCOCOA@M5.session_range_breakout.p=d53073cf305d3995",
     "bucket": "USCOCOA|M5|session_range_breakout",
-    "named_cells": 5,
+    "named_cells": 6,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "EURPLN@M5.session_range_breakout.p=7dab36768dd1393b",
-    "bucket": "EURPLN|M5|session_range_breakout",
+    "cell": "ADAUSD@M15.session_range_breakout.p=2a8376c0bf62c705",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 47,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=61e1e7bee125f991",
+    "bucket": "ADAUSD|M5|session_range_breakout",
     "named_cells": 44,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "GBPSEK@M5.session_range_breakout.p=88e00e5cbde8b4b5",
-    "bucket": "GBPSEK|M5|session_range_breakout",
-    "named_cells": 42,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "SEKJPY@M5.session_range_breakout.p=136244711b0b25c0",
-    "bucket": "SEKJPY|M5|session_range_breakout",
-    "named_cells": 43,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "NOKSEK@M5.session_range_breakout.p=c044d460bef28de8",
-    "bucket": "NOKSEK|M5|session_range_breakout",
+    "cell": "ADAUSD@M5.session_range_breakout.p=1601e1013a4ba204",
+    "bucket": "ADAUSD|M5|session_range_breakout",
     "named_cells": 44,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "USDHKD@M5.session_range_breakout.p=9a4d7a8457575789",
-    "bucket": "USDHKD|M5|session_range_breakout",
-    "named_cells": 43,
+    "cell": "ADAUSD@M15.session_range_breakout.p=e7089be0f2ab5919",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 47,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M15.session_range_breakout.p=d801a7e8babd3b26",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 47,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=a2481d5c9922f58c",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 44,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M15.session_range_breakout.p=b8a4462f7c336948",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 47,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=a449c8428eb4d78c",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 44,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M15.overnight_drift.p=6f04ba5ce5f41d4e",
+    "bucket": "AUDCHF|M15|overnight_drift",
+    "named_cells": 17,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.overnight_drift.p=1a6516064b5f6148",
+    "bucket": "AUDCHF|M5|overnight_drift",
+    "named_cells": 16,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.overnight_drift.p=79710a89cc17809d",
+    "bucket": "AUDCHF|M5|overnight_drift",
+    "named_cells": 16,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=a53474a3d434c126",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=5af751f537128743",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=6286e127e1089f21",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
     "cleared_cells": 0,
     "k": 5
    }
@@ -338,8 +338,8 @@
  },
  "missed_growth": [
   {
-   "day": "2026-11-07",
-   "at": "2026-11-07T23:07:29+00:00",
+   "day": "2026-11-08",
+   "at": "2026-11-08T05:32:41+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -354,13 +354,13 @@
    "would_act_sibling_dead": {
     "k": 5,
     "true_survivors_killed": 18,
-    "cleared_in_sample_killed": 1896,
+    "cleared_in_sample_killed": 1897,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
-   "day": "2026-11-07",
-   "at": "2026-11-07T23:07:29+00:00",
+   "day": "2026-11-08",
+   "at": "2026-11-08T05:32:41+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.11866697432178527,
-   "would_free_seconds_if_all_rules_acted": 29723.0
+   "seconds_per_cell": 0.11849121190178395,
+   "would_free_seconds_if_all_rules_acted": 29602.1
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
