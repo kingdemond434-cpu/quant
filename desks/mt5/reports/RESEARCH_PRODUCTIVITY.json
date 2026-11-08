@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-11-07T18:42:05.823735+00:00",
+ "generated_utc": "2026-11-08T01:22:28.474597+00:00",
  "stages": {
   "intake": {
-   "files": 56671,
-   "files_7d": 3284,
+   "files": 56813,
+   "files_7d": 3375,
    "rows_recent_files": 3016
   },
   "proposers": {
@@ -13,9 +13,9 @@
     "last": "2026-10-03T09:13:19.892529+00:00"
    },
    "plumbing": {
-    "files": 32,
+    "files": 33,
     "rows_latest": 34,
-    "last": "2026-11-07T00:13:27.744747+00:00"
+    "last": "2026-11-08T00:59:40.339740+00:00"
    },
    "transition_alpha": {
     "files": 0,
@@ -23,41 +23,41 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 162,
-    "rows_latest": 12,
-    "last": "2026-11-07T17:52:25.719249+00:00"
+    "files": 163,
+    "rows_latest": 7,
+    "last": "2026-11-08T00:19:16.696854+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 846,
-   "decided_total": 60465,
+   "queued": 860,
+   "decided_total": 60522,
    "backlog": 0
   },
   "judged": {
-   "cells": 1133692,
-   "unmeasured": 33575
+   "cells": 1114751,
+   "unmeasured": 17993
   },
   "certified": {
-   "cells": 3828,
+   "cells": 3841,
    "last_certified": "2026-11-07",
-   "certified_last_30d": 3009
+   "certified_last_30d": 3022
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 3828,
+   "certificates": 3841,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 3828,
+   "forward_eligible_certificates": 3841,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 1020,
    "clocks_ticked_24h": 1001,
    "clocks_ticked_7d": 1001,
-   "last_tick": "2026-11-07T18:36:47+00:00",
-   "engine_silent_hours": 0.1,
-   "n_certificates": 3828,
+   "last_tick": "2026-11-08T01:22:18+00:00",
+   "engine_silent_hours": 0.0,
+   "n_certificates": 3841,
    "n_enrolled": 1016,
    "n_accruing": 551,
    "n_blocked": 21,
@@ -68,7 +68,7 @@
     "BLOCKED_TIER_S": 8,
     "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-11-07T17:32:53+00:00"
+   "census_at": "2026-11-08T00:32:44+00:00"
   },
   "recommendations": {
    "total": 784,
@@ -79,8 +79,8 @@
  "conversion": {
   "intake_to_compiled": 10.1326,
   "judged_to_certified": 0.0034,
-  "certified_to_forward": 0.1439,
-  "certified_to_clock": 0.2654
+  "certified_to_forward": 0.1435,
+  "certified_to_clock": 0.2645
  },
  "bottleneck": "none obvious"
 }
