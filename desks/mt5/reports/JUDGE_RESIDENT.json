@@ -17,7 +17,7 @@
  "uptime_s": 1043613.0,
  "last_sweep_ended_utc": "2026-11-08T18:34:42+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-08T21:34:57+00:00",
+ "heartbeat_utc": "2026-11-08T21:49:58+00:00",
  "sweep_phase": {
   "pid": 28616,
   "sweep_started_utc": "2026-11-08T18:34:51+00:00",
@@ -88,22 +88,22 @@
      }
     },
     "prewarm": {
-     "samples": 1016,
+     "samples": 1112,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 986,
-       "share": 0.97
+       "n": 1082,
+       "share": 0.973
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 21,
-       "share": 0.021
+       "share": 0.019
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 7,
-       "share": 0.007
+       "share": 0.006
       },
       {
        "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
@@ -117,13 +117,13 @@
       }
      ],
      "process": {
-      "cpu_s": 2057.1,
-      "page_faults": 146318672.0,
-      "read_bytes": 65859648.0,
-      "write_bytes": 168093188657.0,
-      "sampled_s": 10150.0,
+      "cpu_s": 2059.6,
+      "page_faults": 146475388.0,
+      "read_bytes": 65914641.0,
+      "write_bytes": 168228492587.0,
+      "sampled_s": 11110.0,
       "rss_mb_max": 3501.7,
-      "cpu_share_of_wall": 0.203
+      "cpu_share_of_wall": 0.185
      }
     }
    }
