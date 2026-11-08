@@ -1,5 +1,5 @@
 {
- "at": "2026-11-07T12:43:54+00:00",
+ "at": "2026-11-08T13:44:12+00:00",
  "attestation_in_force": {
   "version": "mt5-original-universal-10-v3-reserved-lockbox",
   "fingerprint": "7bec8da705e664a8",
@@ -15,8 +15,8 @@
   "version": "mt5-original-universal-10-v3-reserved-lockbox",
   "fingerprint": "7bec8da705e664a8",
   "differs_in": [],
-  "swept_at": "2026-11-07T09:00:47.029428+00:00",
-  "n": 3004,
+  "swept_at": "2026-11-08T11:55:06.558570+00:00",
+  "n": 4943,
   "restamped_not_rejudged": [],
   "undated_unmeasured": [],
   "pending_rejudge": 0,
@@ -28,8 +28,8 @@
   "version": "mt5-original-universal-10-v3-reserved-lockbox",
   "fingerprint": "7bec8da705e664a8",
   "differs_in": [],
-  "swept_at": "2026-11-07T06:18:33.735189+00:00",
-  "n": 3004,
+  "swept_at": "2026-11-08T11:55:06.558570+00:00",
+  "n": 4943,
   "restamped_not_rejudged": [],
   "undated_unmeasured": [],
   "pending_rejudge": 0,
@@ -43,7 +43,7 @@
  "enrolment_frozen": false,
  "authorized_runs": {
   "status": "MEASURED",
-  "n": 3004
+  "n": 4943
  },
  "certificates_pending_rejudge": 0,
  "queueable_cells": 0,
@@ -59,8 +59,8 @@
  },
  "frozen_at": null,
  "first_sweep_started_after_freeze": null,
- "last_sweep_started_at": "2026-11-07T09:15:14+00:00",
- "last_sweep_completed_at": "2026-11-07T08:54:15+00:00",
+ "last_sweep_started_at": "2026-11-08T12:03:10+00:00",
+ "last_sweep_completed_at": "2026-11-08T11:47:35+00:00",
  "reminted_at": null,
  "frozen_hours": 0.0,
  "breach": false,
