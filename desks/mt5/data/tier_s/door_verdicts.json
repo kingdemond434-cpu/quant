@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-08T10:51:49.827842+00:00",
+ "generated_utc": "2026-11-08T11:55:54.923021+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -54271,6 +54271,50 @@
     "n_oos": 10,
     "confidence": 0.1379,
     "sd": 0.063,
+    "status": "REFUTED"
+   }
+  },
+  "external.EURNOK@M30.formula.p=e4a914e66cde608c": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
+   }
+  },
+  "external.EURSEK@M30.formula.p=fa4928fb3d69e54d": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
+   }
+  },
+  "external.NZDJPY@M30.formula.p=3d6e58cf0fe40889": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
+   }
+  },
+  "external.SGDJPY@M30.formula.p=e1bee36cfdcf0ed2": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
     "status": "REFUTED"
    }
   }
