@@ -17,7 +17,7 @@
  "uptime_s": 957412.8,
  "last_sweep_ended_utc": "2026-11-07T18:38:03+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-08T00:20:04+00:00",
+ "heartbeat_utc": "2026-11-08T00:35:04+00:00",
  "sweep_phase": {
   "pid": 14952,
   "sweep_started_utc": "2026-11-07T18:38:12+00:00",
@@ -261,42 +261,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 449,
+     "samples": 525,
      "top": [
       {
        "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__lt__:48 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__lt__:48 < common.py:new_method:76",
        "n": 43,
-       "share": 0.096
+       "share": 0.082
       },
       {
        "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__ge__:60 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__ge__:60 < common.py:new_method:76",
        "n": 34,
-       "share": 0.076
+       "share": 0.065
+      },
+      {
+       "stack": "_methods.py:_var:168 < _methods.py:_std:219 < dsr.py:sharpe_ratio:24 < dsr.py:probabilistic_sharpe_ratio:34 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
+       "n": 27,
+       "share": 0.051
       },
       {
        "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
        "n": 19,
-       "share": 0.042
-      },
-      {
-       "stack": "_methods.py:_var:168 < _methods.py:_std:219 < dsr.py:sharpe_ratio:24 < dsr.py:probabilistic_sharpe_ratio:34 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
-       "n": 19,
-       "share": 0.042
+       "share": 0.036
       },
       {
        "stack": "managers.py:get_rows_with_mask:1978 < series.py:_get_rows_with_mask:1229 < series.py:__getitem__:1163 < gate_policy.py:carve_lockbox:181 < external_gauntlet.py:run_gauntlet:3018 < external_gauntlet.py:main:3883",
        "n": 19,
-       "share": 0.042
+       "share": 0.036
       }
      ],
      "process": {
-      "cpu_s": 2585.9,
-      "page_faults": 272267284.0,
-      "read_bytes": 4023756778.0,
-      "write_bytes": 991594.0,
-      "sampled_s": 4480.0,
+      "cpu_s": 3278.3,
+      "page_faults": 306426464.0,
+      "read_bytes": 15370484650.0,
+      "write_bytes": 1688776658.0,
+      "sampled_s": 5240.0,
       "rss_mb_max": 11695.8,
-      "cpu_share_of_wall": 0.577
+      "cpu_share_of_wall": 0.626
      }
     }
    }
