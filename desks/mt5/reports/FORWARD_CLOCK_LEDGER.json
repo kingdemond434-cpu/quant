@@ -1,8 +1,8 @@
 {
- "at": "2026-11-01T20:15:34+00:00",
+ "at": "2026-11-07T13:09:38+00:00",
  "status": "OK",
- "n_clocks": 981,
- "n_live": 981,
+ "n_clocks": 1014,
+ "n_live": 1014,
  "n_closed_by_identity": 0,
  "n_refused_moves": 0,
  "n_earlier_starts_accepted": 0,
