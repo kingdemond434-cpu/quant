@@ -17,15 +17,17 @@
  "uptime_s": 1019732.9,
  "last_sweep_ended_utc": "2026-11-08T11:56:42+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-08T15:34:43+00:00",
+ "heartbeat_utc": "2026-11-08T15:49:44+00:00",
  "sweep_phase": {
   "pid": 5036,
   "sweep_started_utc": "2026-11-08T11:56:52+00:00",
   "phases": {
-   "plan": 507.1
+   "plan": 507.1,
+   "prewarm": 12890.8,
+   "plan_handoff": 83.6
   },
-  "phase": "prewarm",
-  "phase_started_utc": "2026-11-08T12:05:19+00:00",
+  "phase": "build_shards",
+  "phase_started_utc": "2026-11-08T15:41:34+00:00",
   "plan_steps": {
    "lane_and_docket": 42.6,
    "docket_grouping": 44.2,
@@ -33,16 +35,19 @@
    "preflight": 93.2,
    "cache_prune": 160.6,
    "order": 72.9,
-   "yield_allocation": 47.3
+   "yield_allocation": 47.3,
+   "prewarm": 12890.8,
+   "plan_handoff": 83.6
   },
-  "plan_step": "prewarm",
-  "plan_step_started_utc": "2026-11-08T12:05:19+00:00",
+  "plan_step": "dispatch",
+  "plan_step_started_utc": "2026-11-08T15:41:34+00:00",
   "plan_counts": {
    "docket_rows": 1667600,
    "unique_cells": 1666988,
-   "gate0_advance": 1653606
+   "gate0_advance": 1653606,
+   "planned_cells": 390029
   },
-  "plan_last_marker": "  docket order: 35112 never-judged cell(s) first, then 354917 in symbol-rotation order",
+  "plan_last_marker": "SHARDED SWEEP: 390029 planned cell(s) across 18 shard(s)",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
@@ -88,17 +93,17 @@
      }
     },
     "prewarm": {
-     "samples": 1247,
+     "samples": 1287,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 1211,
-       "share": 0.971
+       "n": 1247,
+       "share": 0.969
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 22,
-       "share": 0.018
+       "share": 0.017
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
@@ -106,22 +111,100 @@
        "share": 0.01
       },
       {
-       "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "stack": "threading.py:join:1132 < process.py:shutdown:865 < _base.py:__exit__:667 < external_gauntlet.py:_prewarm_cache:2070 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
+       "n": 3,
+       "share": 0.002
+      },
+      {
+       "stack": "external_gauntlet.py:<genexpr>:2120 < external_gauntlet.py:_prewarm_cache:2120 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 1,
        "share": 0.001
       }
      ],
      "process": {
-      "cpu_s": 1632.8,
-      "page_faults": 121376707.0,
-      "read_bytes": 54983218.0,
-      "write_bytes": 140568708223.0,
-      "sampled_s": 12460.0,
+      "cpu_s": 1634.0,
+      "page_faults": 121428235.0,
+      "read_bytes": 54995668.0,
+      "write_bytes": 140588404559.0,
+      "sampled_s": 12860.0,
       "rss_mb_max": 3423.0,
-      "cpu_share_of_wall": 0.131
+      "cpu_share_of_wall": 0.127
+     }
+    },
+    "plan_handoff": {
+     "samples": 7,
+     "top": [
+      {
+       "stack": "external_gauntlet.py:_pickle_atomic:4565 < external_gauntlet.py:_run_shards:4790 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 6,
+       "share": 0.857
+      },
+      {
+       "stack": "external_gauntlet.py:main:3840 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601 < run_sharded_gauntlet.py:<module>:3748",
+       "n": 1,
+       "share": 0.143
+      }
+     ],
+     "process": {
+      "cpu_s": 8.5,
+      "page_faults": 349083.0,
+      "read_bytes": 32798.0,
+      "write_bytes": 95806534.0,
+      "sampled_s": 60.0,
+      "rss_mb_max": 1797.6,
+      "cpu_share_of_wall": 0.142
+     }
+    },
+    "build_shards": {
+     "samples": 48,
+     "top": [
+      {
+       "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < run_sharded_gauntlet.py:_admitted_wave:261 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
+       "n": 43,
+       "share": 0.896
+      },
+      {
+       "stack": "glob.py:scandir:529 < glob.py:select_wildcard:427 < run_sharded_gauntlet.py:_wave_peaks_mb:160 < run_sharded_gauntlet.py:estimate_mb:186 < run_sharded_gauntlet.py:admits:203 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 3,
+       "share": 0.062
+      },
+      {
+       "stack": "_pswindows.py:virtual_memory:187 < __init__.py:virtual_memory:2049 < run_sharded_gauntlet.py:_available_mb:74 < run_sharded_gauntlet.py:<lambda>:175 < run_sharded_gauntlet.py:admits:199 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 1,
+       "share": 0.021
+      },
+      {
+       "stack": "glob.py:scandir:528 < glob.py:select_wildcard:427 < run_sharded_gauntlet.py:_wave_peaks_mb:160 < run_sharded_gauntlet.py:estimate_mb:186 < run_sharded_gauntlet.py:admits:203 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 1,
+       "share": 0.021
+      }
+     ],
+     "process": {
+      "cpu_s": 40.0,
+      "page_faults": 1602551.0,
+      "read_bytes": 0.0,
+      "write_bytes": 39453.0,
+      "sampled_s": 470.0,
+      "rss_mb_max": 1651.0,
+      "cpu_share_of_wall": 0.085
      }
     }
    }
+  },
+  "shards": {
+   "phase": "build",
+   "total": 18,
+   "started": 12,
+   "done_ok": 0,
+   "failed": 0,
+   "retries": 0,
+   "running": 12,
+   "last_finish_epoch": null,
+   "last_finish_utc": null,
+   "longest_shard_s": null,
+   "seconds_since_last_finish": null,
+   "stalled_hint": false,
+   "stalled_hint_authority": "report_only"
   }
  }
 }
