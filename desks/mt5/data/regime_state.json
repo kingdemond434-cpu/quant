@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-09T06:30:08.747012+00:00",
+  "swept_at": "2026-11-09T06:45:03.298641+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -52,8 +52,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 8,
-      "shadow_exp_r": 0.0117,
+      "shadow_n": 11,
+      "shadow_exp_r": 2.3708,
       "woke_on_shadow": false
     },
     "AUDCHF|carry_asia": {
@@ -1494,7 +1494,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1661,
+      "shadow_exp_r": -0.1695,
       "woke_on_shadow": false
     },
     "EURMXN|carry_continuous": {
@@ -1527,7 +1527,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1578,
+      "shadow_exp_r": -0.1546,
       "woke_on_shadow": false
     },
     "EURMXN|macro_conditional_continuous": {
@@ -3122,7 +3122,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2029,
+      "shadow_exp_r": -0.1687,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3144,7 +3144,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 10,
-      "shadow_exp_r": 0.3356,
+      "shadow_exp_r": 0.2889,
       "woke_on_shadow": false
     },
     "NZDCAD|overnight_gap_decay_continuous": {
