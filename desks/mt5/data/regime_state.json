@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-09T12:15:02.324311+00:00",
+  "swept_at": "2026-11-09T12:30:02.435060+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -691,7 +691,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1511,
+      "shadow_exp_r": -0.2535,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -1527,7 +1527,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1184,
+      "shadow_exp_r": -0.077,
       "woke_on_shadow": false
     },
     "EURMXN|macro_conditional_continuous": {
@@ -2099,7 +2099,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1266,
+      "shadow_exp_r": -0.1249,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_asia": {
@@ -2990,7 +2990,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 73,
-      "shadow_exp_r": -0.0534,
+      "shadow_exp_r": -0.06,
       "woke_on_shadow": false
     },
     "NAS100|pca_residual_continuous": {
@@ -3287,7 +3287,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.066,
+      "shadow_exp_r": -0.0672,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -3848,7 +3848,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.417,
+      "shadow_exp_r": -0.4216,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -3947,7 +3947,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2256,
+      "shadow_exp_r": -0.227,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
@@ -4233,7 +4233,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3053,
+      "shadow_exp_r": -0.3307,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
@@ -5267,7 +5267,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0034,
+      "shadow_exp_r": -0.0036,
       "woke_on_shadow": false
     },
     "XAUUSD|macro_conditional_continuous": {
