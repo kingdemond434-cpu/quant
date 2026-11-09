@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-09T04:45:03.038597+00:00",
+  "swept_at": "2026-11-09T05:00:03.609338+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1494,7 +1494,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.166,
+      "shadow_exp_r": -0.1661,
       "woke_on_shadow": false
     },
     "EURMXN|carry_continuous": {
@@ -1527,7 +1527,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.158,
+      "shadow_exp_r": -0.1578,
       "woke_on_shadow": false
     },
     "EURMXN|macro_conditional_continuous": {
@@ -2099,7 +2099,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1099,
+      "shadow_exp_r": -0.1135,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_asia": {
@@ -2209,7 +2209,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0332,
+      "shadow_exp_r": 0.0444,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -3122,7 +3122,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2209,
+      "shadow_exp_r": -0.2029,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3144,7 +3144,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 10,
-      "shadow_exp_r": 0.3441,
+      "shadow_exp_r": 0.3356,
       "woke_on_shadow": false
     },
     "NZDCAD|overnight_gap_decay_continuous": {
@@ -3925,7 +3925,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2123,
+      "shadow_exp_r": -0.2236,
       "woke_on_shadow": false
     },
     "USDMXN|formula_asia": {
@@ -3936,7 +3936,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 52,
-      "shadow_exp_r": 0.5178,
+      "shadow_exp_r": 0.5079,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_asia": {
@@ -3947,7 +3947,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.26,
+      "shadow_exp_r": -0.2533,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
