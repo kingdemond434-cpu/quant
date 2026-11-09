@@ -17,7 +17,7 @@
  "uptime_s": 1108631.5,
  "last_sweep_ended_utc": "2026-11-09T12:38:20+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-09T15:04:43+00:00",
+ "heartbeat_utc": "2026-11-09T15:19:43+00:00",
  "sweep_phase": {
   "pid": 29284,
   "sweep_started_utc": "2026-11-09T12:38:29+00:00",
@@ -88,22 +88,22 @@
      }
     },
     "prewarm": {
-     "samples": 770,
+     "samples": 821,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 738,
-       "share": 0.958
+       "n": 785,
+       "share": 0.956
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 14,
+       "n": 15,
        "share": 0.018
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 12,
-       "share": 0.016
+       "n": 14,
+       "share": 0.017
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
@@ -111,19 +111,19 @@
        "share": 0.006
       },
       {
-       "stack": "threading.py:__init__:303 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
+       "stack": "threading.py:__init__:301 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
        "n": 1,
        "share": 0.001
       }
      ],
      "process": {
-      "cpu_s": 1390.1,
-      "page_faults": 84821355.0,
-      "read_bytes": 37644472.0,
-      "write_bytes": 97201336895.0,
-      "sampled_s": 7690.0,
+      "cpu_s": 1627.3,
+      "page_faults": 98818849.0,
+      "read_bytes": 43998048.0,
+      "write_bytes": 112870898875.0,
+      "sampled_s": 8200.0,
       "rss_mb_max": 3313.9,
-      "cpu_share_of_wall": 0.181
+      "cpu_share_of_wall": 0.198
      }
     }
    }
