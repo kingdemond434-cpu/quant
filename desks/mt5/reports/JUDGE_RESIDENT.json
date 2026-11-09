@@ -17,69 +17,93 @@
  "uptime_s": 1089770.4,
  "last_sweep_ended_utc": "2026-11-09T07:24:00+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-09T07:35:06+00:00",
+ "heartbeat_utc": "2026-11-09T07:50:07+00:00",
  "sweep_phase": {
   "pid": 35848,
   "sweep_started_utc": "2026-11-09T07:24:12+00:00",
-  "phases": {},
-  "phase": "plan",
-  "phase_started_utc": "2026-11-09T07:24:12+00:00",
+  "phases": {
+   "plan": 1311.3
+  },
+  "phase": "prewarm",
+  "phase_started_utc": "2026-11-09T07:46:03+00:00",
   "plan_steps": {
    "lane_and_docket": 46.1,
    "docket_grouping": 55.5,
    "gate0": 67.0,
-   "preflight": 97.6
+   "preflight": 97.6,
+   "cache_prune": 926.1,
+   "order": 85.2,
+   "yield_allocation": 33.8
   },
-  "plan_step": "cache_prune",
-  "plan_step_started_utc": "2026-11-09T07:28:38+00:00",
+  "plan_step": "prewarm",
+  "plan_step_started_utc": "2026-11-09T07:46:03+00:00",
   "plan_counts": {
    "docket_rows": 1615973,
    "unique_cells": 1615368,
    "gate0_advance": 1603884
   },
-  "plan_last_marker": "Build preflight: 773443 incomplete input/variant(s) conserved without spending build/gate compute; 830441 executable cell(s) remain",
+  "plan_last_marker": "  docket order: 25425 never-judged cell(s) first, then 345175 in symbol-rotation order",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 59,
+     "samples": 130,
      "top": [
       {
        "stack": "__init__.py:stat:659 < external_gauntlet.py:main:3613 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
-       "n": 15,
-       "share": 0.254
+       "n": 38,
+       "share": 0.292
+      },
+      {
+       "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
+       "n": 25,
+       "share": 0.192
       },
       {
        "stack": "glob.py:scandir:529 < glob.py:select_wildcard:427 < external_gauntlet.py:main:3612 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 15,
-       "share": 0.254
+       "share": 0.115
       },
       {
        "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 4,
-       "share": 0.068
+       "share": 0.031
       },
       {
-       "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3516 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
        "n": 4,
-       "share": 0.068
-      },
-      {
-       "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
-       "n": 3,
-       "share": 0.051
+       "share": 0.031
       }
      ],
      "process": {
-      "cpu_s": 247.7,
-      "page_faults": 8406651.0,
-      "read_bytes": 6001670616.0,
-      "write_bytes": 122437.0,
-      "sampled_s": 580.0,
-      "rss_mb_max": 3522.9,
-      "cpu_share_of_wall": 0.427
+      "cpu_s": 572.0,
+      "page_faults": 14505813.0,
+      "read_bytes": 10005293690.0,
+      "write_bytes": 311913.0,
+      "sampled_s": 1290.0,
+      "rss_mb_max": 5794.8,
+      "cpu_share_of_wall": 0.443
+     }
+    },
+    "prewarm": {
+     "samples": 13,
+     "top": [
+      {
+       "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
+       "n": 13,
+       "share": 1.0
+      }
+     ],
+     "process": {
+      "cpu_s": 6.3,
+      "page_faults": 259204.0,
+      "read_bytes": 115808.0,
+      "write_bytes": 303625062.0,
+      "sampled_s": 120.0,
+      "rss_mb_max": 3379.1,
+      "cpu_share_of_wall": 0.052
      }
     }
    }
