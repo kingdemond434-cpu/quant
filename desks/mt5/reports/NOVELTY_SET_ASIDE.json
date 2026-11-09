@@ -1,8 +1,14 @@
 {
- "at": "2026-11-09T12:48:41+00:00",
+ "at": "2026-11-09T19:21:43+00:00",
  "screened": 1500,
- "set_aside": 854,
+ "set_aside": 310,
  "rows": [
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
   {
    "sym": "AUDCAD",
    "family": "formula",
@@ -1774,28 +1780,22 @@
    "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
-   "sym": "NZDCAD",
+   "sym": "GBPJPY",
    "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
-   "sym": "NZDCAD",
+   "sym": "GBPJPY",
    "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
-   "sym": "NZDCAD",
+   "sym": "GBPJPY",
    "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
-  },
-  {
-   "sym": "NZDCAD",
-   "family": "formula",
-   "twin": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "why": "every measurable dimension reads as a twin of external.NZDCAD@M5.formula.p=389fe42767236de9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+   "twin": "external.GBPJPY@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
    "sym": "NZDCAD",
