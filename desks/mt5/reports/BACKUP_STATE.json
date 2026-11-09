@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-11-09T13:15:22+00:00",
+ "at": "2026-11-09T13:30:20+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -19,7 +19,7 @@
  },
  "ops_redundancy": {
   "state": "FAIL",
-  "at": "2026-11-08T07:11:05+00:00",
+  "at": "2026-11-09T13:17:08+00:00",
   "offbox_restore_drill": "PASS"
  },
  "reboot_drill": {
