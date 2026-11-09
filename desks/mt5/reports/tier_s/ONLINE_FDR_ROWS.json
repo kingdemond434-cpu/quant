@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-09T04:57:29.313538+00:00",
+ "generated_utc": "2026-11-09T05:52:00.517999+00:00",
  "over_budget": [
   {
    "test_id": "external.USDZAR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
@@ -19806,8 +19806,8 @@
    "test_id": "external.XAUEUR@M15.style_premia.p=3411bcff02687f5a",
    "at": "2026-11-01T23:17:26.509250+00:00",
    "family": "style_premia",
-   "p": 0.0008205128000000235,
-   "e": 17.455300272902182,
+   "p": 0.0008000000000000229,
+   "e": 17.677669529663437,
    "lord_level": 0.02068534651673036,
    "lord_reject": true,
    "elond_level": 3.3282774282940897e-06,
