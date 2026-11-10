@@ -26,7 +26,7 @@
   "rba_tables": {
    "host": "www.rba.gov.au",
    "doc_url": "https://www.rba.gov.au/copyright/",
-   "clause": "UNVERIFIED PARAPHRASE of copyright notice section 5 (Financial Data): use, reproduction and publication permitted for personal or commercial purposes with attribution. Not active until the verbatim sentence is read from the live page.",
+   "clause": "Section 5, Financial Data terms and conditions: Financial Data may be used, reproduced, published, communicated to the public or referenced for \"personal or commercial use\" (verbatim fragment; read 2026-11-10, HTTP 200), provided no RBA endorsement is implied. The page has no sentence on automated access. Inactive until the Auditor reads section 5 on the live page and confirms.",
    "licence": "RBA Financial Data terms (excluded from CC BY 4.0), attribution 'Source: RBA [year]'",
    "endpoint_doc": "https://www.rba.gov.au/statistics/tables/ (CSV files under /statistics/tables/csv/)",
    "key": "none",
