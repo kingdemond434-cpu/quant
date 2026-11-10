@@ -22,7 +22,8 @@ THE Z IS TAKEN ON THE SERIES' OWN OBSERVATIONS, NOT ON THE BAR CLOCK: a monthly 
 filled onto hourly bars is constant for ~500 bars, and a bar-clock z of a constant is undefined.
 The z is computed where the value changes, then carried causally onto the bars.
 
-REFUSES (returns []) with too little history, an unnamed series or an unknown direction.
+REFUSES (returns []) with too little history or an unknown direction; a recipe with no
+`series_key` is incomplete and raises (the parameter has no default).
 
 AN ABSENT SERIES IS A NAMED REFUSAL, NOT A CELL THAT NEVER FIRES (2026-11-10). A `series_key`
 this host's store cannot resolve -- no `keys.json`, the key not in it, or its parquet gone --
