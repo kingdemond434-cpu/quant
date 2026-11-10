@@ -587,3 +587,37 @@ def test_the_digest_keeps_every_organs_section_and_stays_bounded(tmp_path: Path)
     got = subprocess.run(["git", "check-ignore", "-q",
                           dg.DIGEST.relative_to(ROOT).as_posix()], cwd=ROOT, check=False)
     assert got.returncode == 1, "the digest must be committable"
+
+
+def test_a_refused_admission_is_still_donated_tagged_and_last(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """DATA-47 audit must-fix (GROWTH_GOVERNANCE Rule 1): the pre-gauntlet admission never
+    vetoes a release-PASS cell. A refused cell keeps its PASS, reaches the donated output tagged
+    admission=REFUSED, and sorts behind every admitted cell, so the gauntlet has the last word."""
+    import libs.research.incremental_gate as ig
+    import libs.research.release_gain as rg
+
+    class _Gain:
+        def as_dict(self) -> dict[str, Any]:
+            return {"verdict": "PASS", "ic": 0.2, "n": 60, "why": "beats the date shift"}
+
+    monkeypatch.setattr(A, "_bars_close", lambda paths, sym: pd.Series([1.0], name=sym))
+    monkeypatch.setattr(rg, "release_gain", lambda *a, **k: _Gain())
+
+    def admit(ev: Any, close: pd.Series, **k: Any) -> dict[str, Any]:
+        ok = close.name != "AUDUSD"            # AUDUSD < USDKRW by key; refusing it tests order
+        return {"verdict": "PASS" if ok else "FAIL", "incremental": {"why": "x"},
+                "battery": {"why": "y"}}
+    monkeypatch.setattr(ig, "admit", admit)
+    pts = [{"available_time": "2026-09-01T00:00:00+00:00", "surprise_z": 1.0,
+            "pit_quality": "live"}]
+    gains = A.gain_tests(_tmp_desk(tmp_path), {"kr_exports_early": {"daily_avg_yoy": pts}})
+    refused = gains["kr_exports_early|daily_avg_yoy|AUDUSD"]
+    assert refused["verdict"] == "PASS" and refused["admission_tag"] == "REFUSED"
+    assert refused["release_verdict"] == "PASS"
+    cells = A.direct_cells(gains, NOW)
+    assert len(cells) == sum(1 for g in gains.values() if g["verdict"] == "PASS") > 1
+    tags = [c["admission"] for c in cells]
+    assert tags[-1] == "REFUSED" and tags[:-1] == ["ADMITTED"] * (len(cells) - 1)
+    assert cells[-1]["symbol"] == "AUDUSD"
+    assert cells[-1]["evidence"]["admission_verdict"] == "FAIL"

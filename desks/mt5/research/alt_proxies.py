@@ -95,6 +95,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
 UNMEASURED = "UNMEASURED"
+#: DATA-47 admission tags: they ORDER donation (admitted first), never veto it.
+ADMITTED, REFUSED = "ADMITTED", "REFUSED"
 UA = "quant-desk-alt-proxies/1.0 (+public statistics research)"
 TIMEOUT = 30.0
 MAX_BYTES = 16 * 1024 * 1024
@@ -3785,18 +3787,22 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
                                        / len(pts), 3) if pts else None)
         res["trial"] = _trial(sid, series, sym)
         if res.get("verdict") == "PASS":
-            # DATA-47: BEFORE ANY GAUNTLET WORK the surprise must add to the instrument's own
-            # pre-release returns (charged partial F + held-out error) and beat the placebo
-            # battery (value permutation, sign flip, pre-release window). A cell that clears the
-            # date-shift placebo and fails either is not donated; its release verdict is kept.
+            # DATA-47: BEFORE ANY GAUNTLET WORK the surprise is asked whether it adds to the
+            # instrument's own pre-release returns (charged partial F + held-out error) and beats
+            # the placebo battery (value permutation, sign flip, pre-release window). The answer
+            # ORDERS the donation and never vetoes it (GROWTH_GOVERNANCE Rule 1: no new veto on
+            # research breadth without a missed-growth line): a REFUSED cell keeps its release
+            # PASS, is still donated, tagged admission=REFUSED and placed behind every admitted
+            # cell, so the gauntlet keeps the final word and nothing is dropped.
             seed = int(hashlib.sha256(key.encode()).hexdigest()[:8], 16)
             adm = admit(ev, close, horizon_bars=HORIZON_BARS, n_cells=len(cells), seed=seed)
             res["release_verdict"] = res["verdict"]
             res["admission"] = adm
-            if adm["verdict"] != "PASS":
-                res["verdict"] = adm["verdict"]
-                res["why"] = (f"{res.get('why')}; pre-gauntlet admission {adm['verdict']}: "
-                              f"incremental {adm['incremental'].get('why')}; battery "
+            res["admission_tag"] = ADMITTED if adm["verdict"] == "PASS" else REFUSED
+            if res["admission_tag"] == REFUSED:
+                res["why"] = (f"{res.get('why')}; pre-gauntlet admission {adm['verdict']} "
+                              f"(donated last, tagged REFUSED): incremental "
+                              f"{adm['incremental'].get('why')}; battery "
                               f"{adm['battery'].get('why')}")[:600]
         out[key] = res
     return out
@@ -3842,9 +3848,14 @@ def trial_grid(gains: dict[str, dict[str, Any]], gates: list[dict[str, Any]],
 
 def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
     """PASSING cells only, as `exogenous_conditioner` recipes the gauntlet rebuilds from the lake
-    series itself. The side is the MEASURED sign of the IC, never the prior."""
+    series itself. The side is the MEASURED sign of the IC, never the prior.
+
+    Every release-PASS cell is donated. The DATA-47 admission only ORDERS them: admitted cells
+    first, then cells the admission REFUSED, each tagged `admission`, so the gauntlet judges
+    the refused ones too and keeps the final word."""
     out: list[dict[str, Any]] = []
-    for key, g in sorted(gains.items()):
+    order = sorted(gains.items(), key=lambda kv: (kv[1].get("admission_tag") == REFUSED, kv[0]))
+    for key, g in order:
         if g.get("verdict") != "PASS" or not g.get("ic"):
             continue
         sid, series, sym = key.split("|")
@@ -3859,6 +3870,7 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
             "source": SOURCE, "kind": "hypothesis", "symbol": sym, "symbols": [sym],
             "family": "exogenous_conditioner", "params": params, "url": "",
             "cell": f"{sym}.exogenous_conditioner.{lake_file(src, series)}",
+            "admission": g.get("admission_tag", UNMEASURED),
             "title": f"{src.name}: {series} surprise -> {sym} ({'+' if side > 0 else '-'})"[:120],
             "available_time": now.isoformat(timespec="seconds"),
             "event_time": now.isoformat(timespec="seconds"),
@@ -3868,7 +3880,9 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
                           "returns no longer beats the shifted-release placebo at p<=0.05"),
             "evidence": {k: g.get(k) for k in ("ic", "n", "t", "p_t", "p_placebo",
                                                "placebo_abs_ic_p95", "backfill_share",
-                                               "horizon_bars", "min_detectable_ic", "why")},
+                                               "horizon_bars", "min_detectable_ic", "why")}
+            | {"admission": g.get("admission_tag", UNMEASURED),
+               "admission_verdict": (g.get("admission") or {}).get("verdict")},
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
                            "series": series, **_meta(src)}})
     return out
@@ -4469,14 +4483,14 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         # pass spent per axis against what it charged.
         "admission": {
             "release_pass": sum(1 for g in gains.values() if g.get("release_verdict") == "PASS"),
-            "admitted": sum(1 for g in gains.values() if g.get("release_verdict") == "PASS"
-                            and g.get("verdict") == "PASS"),
+            "admitted": sum(1 for g in gains.values() if g.get("admission_tag") == ADMITTED),
             "refused": {k: g["admission"]["verdict"] for k, g in sorted(gains.items())
-                        if g.get("release_verdict") == "PASS" and g.get("verdict") != "PASS"},
-            "rule": ("a cell reaches the gauntlet only if its surprise adds to the instrument's "
-                     "own pre-release returns (partial F charged over every cell, and lower "
-                     "held-out error) and beats value-permutation, sign-flip and pre-release "
-                     "placebos as well as the date shift")},
+                        if g.get("admission_tag") == REFUSED},
+            "rule": ("every release-PASS cell is donated; the admission (surprise adds to the "
+                     "instrument's own pre-release returns: partial F charged over every cell "
+                     "and lower held-out error; and beats value-permutation, sign-flip and "
+                     "pre-release placebos) only ORDERS them -- admitted first, refused last and "
+                     "tagged admission=REFUSED -- so the gauntlet keeps the final word")},
         "trial_grid": trial_grid(gains, child_gates),
         "power": {"target_ic": TARGET_IC,
                   "n_underpowered": sum(1 for g in gains.values()
