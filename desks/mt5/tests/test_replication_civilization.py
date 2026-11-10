@@ -271,6 +271,65 @@ def test_a_forward_verdict_needs_enough_trades_one_sign_and_both_sides_matched()
     assert any("rebuilt fills have a ledger trade" in w for w in why)
 
 
+def test_a_thin_forward_clock_is_published_by_name_and_the_standing_quarantine_has_a_reader(
+        tmp_path: Path) -> None:
+    """Auditor condition on r3: UNMEASURED-thin is not held by the promotion door, so every pass
+    says how many LIVE/STANDBY clocks sit there and which; and quarantine.json is read by the
+    report (it had no reader)."""
+    bars = _gap_bars()
+    p, _ = rc.resolve_spec("overnight_gap_decay", {}, "asia", "LONG")
+    _orders, fills = rc.rebuild("overnight_gap_decay", bars, p, rc.cost_spec(META).price_units)
+    assert len(fills) > 60
+    start_fill = fills[-(rc.MIN_FORWARD_TRADES - 2)]
+
+    def stamp(ns: int) -> str:
+        return str(np.datetime64(ns, "ns")).replace("T", " ")[:19] + "+00:00"
+
+    start = stamp(start_fill.entry_t - 3_600_000_000_000)
+    ledger = [{"entry_time": stamp(f.entry_t), "exit_time": stamp(f.exit_t), "side": f.side,
+               "r_multiple": f.r, "phase": "forward"} for f in fills
+              if f.entry_t >= start_fill.entry_t]
+    assert 0 < len(ledger) < rc.MIN_FORWARD_TRADES
+
+    def clock(name: str, status: str) -> dict[str, Any]:
+        return {"key": name, "status": status, "forward_start": start,
+                "identity": {"family": "overnight_gap_decay", "symbol": "TESTFX",
+                             "direction": "LONG", "timeframe": "H1", "selector": "asia",
+                             "params": {}}}
+
+    qpath = tmp_path / "quarantine.json"
+    # a count-based quarantine row from before the minimum existed, and one on another lane
+    qpath.write_text(json.dumps({"rows": [
+        {"lane": "forward", "key": "A.live", "why": ["FILLS disagree: 2 rebuilt vs 26"]},
+        {"lane": "certificate", "key": "some certificate", "why": ["SIGN"]}]}), "utf-8")
+    kw: dict[str, Any] = {
+        "certificates": [], "universe_meta": {"TESTFX": META},
+        "forward": [clock("A.live", "LIVE"), clock("B.standby", "STANDBY"),
+                    clock("C.retired", "RETIRED")],
+        "bars_loader": lambda s, t: bars, "ledger_loader": lambda key, ident: ledger,
+        "cursor_path": tmp_path / "cursor.json", "quarantine_path": qpath,
+        "report": tmp_path / "REPLICATION.json", "max_per_pass": 16}
+    doc = rc.build(budget_s=60, dry_run=False, conn=_NoRegistry(), **kw)
+    assert doc["counts"][rc.UNMEASURED] == 3, doc["verdicts"]
+    thin = doc["forward_thin_unmeasured"]
+    assert thin["rows"] == ["A.live", "B.standby"] and thin["n"] == 2      # RETIRED is not named
+    assert thin["by_status"] == {"LIVE": 1, "STANDBY": 1}
+    assert thin["forward_rows_never_reached"] == 0 and "NOT hold" in thin["scope"]
+    # the count-based row is released and counted; the other lane's row stands and is PUBLISHED
+    assert doc["recorded"]["released_thin"] == 1
+    assert doc["standing_quarantine"]["keys"] == ["some certificate"]
+    assert doc["standing_quarantine"]["by_lane"] == {"certificate": 1}
+    # the forward book outlives the pass, so the next report still names a clock it did not read
+    book = json.loads((tmp_path / "verdicts.json").read_text("utf-8"))
+    assert book["forward"]["A.live"]["thin"] is True
+    nxt = rc.build(budget_s=60, dry_run=True, conn=None,
+                   **{**kw, "forward": [*kw["forward"], clock("D.new", "LIVE")],
+                      "max_per_pass": 2})
+    assert nxt["forward_thin_unmeasured"]["n"] >= 2
+    assert nxt["forward_thin_unmeasured"]["forward_rows_never_reached"] <= 1
+    assert any("thin forward clocks" in line for line in rc.render(doc))
+
+
 def test_the_lane_never_imports_the_original_implementation() -> None:
     src = (DESK / "research" / "replication_civilization.py").read_text("utf-8")
     imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", src, re.M)

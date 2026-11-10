@@ -16,8 +16,10 @@ own code from that text. Then it compares outcomes with what the desk recorded:
                       the registry froze
 
 and QUARANTINES on a material disagreement -- `replication_mismatch` in research memory, the
-cell in `data/replication_civilization/quarantine.json`, and `replication_verdict` on every
-queued registry candidate of the same (symbol, family) -- with the divergence named. Agreement
+cell in `data/replication_civilization/quarantine.json` (published every pass as
+`standing_quarantine` in the report; the door itself reads the pass's `verdicts`), and
+`replication_verdict` on every queued registry candidate of the same (symbol, family) -- with
+the divergence named. Agreement
 is REPLICATED; a family the book has no written rule for, a cell with no bars, or a forward row
 with no ledger is UNMEASURED by name (a value, never a pass).
 
@@ -1199,7 +1201,8 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     ident = dict(row.get("identity") or {})
     fam, sym = str(ident.get("family") or ""), str(ident.get("symbol") or "")
     out: dict[str, Any] = {"lane": "forward", "key": str(row.get("key") or ""), "symbol": sym,
-                           "family": fam, "verdict": UNMEASURED, "why": [], "ours": {},
+                           "family": fam, "status": str(row.get("status") or ""),
+                           "verdict": UNMEASURED, "why": [], "ours": {},
                            "theirs": {}, "divergence": {}}
     p, why = resolve_spec(fam, ident.get("params"), ident.get("selector"),
                           ident.get("direction"), symbol=sym,
@@ -1265,17 +1268,70 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
 
 
 # ------------------------------------------------------------------------------- recording
+#: What an UNMEASURED-thin forward verdict means downstream, published with every pass so the
+#: abstention is a number and never a silence.
+THIN_SCOPE = (f"forward replication is a detector from {MIN_FORWARD_TRADES} forward trades. Below "
+              f"that a clock's forward verdict is UNMEASURED and the promotion door's replication "
+              f"check does NOT hold it: the guarantees before that are the certificate lane "
+              f"(a certificate enrols only when its spec is REPLICATED) and the wrong-side / "
+              f"wrong-bar contradiction, which is a MISMATCH at any n")
+PROMOTABLE_STATUS = frozenset({"LIVE", "STANDBY"})
+
+
+def _thin_unmeasured(r: Mapping[str, Any]) -> bool:
+    return (r.get("lane") == "forward" and r.get("verdict") == UNMEASURED
+            and bool((r.get("divergence") or {}).get("thin")))
+
+
+def forward_thin_unmeasured(fbook: Mapping[str, Any], registry: Sequence[Mapping[str, Any]]
+                            ) -> dict[str, Any]:
+    """LIVE and STANDBY rows whose LATEST forward verdict is UNMEASURED-thin, by name. Status is
+    the registry's of this pass, the verdict is the forward book's (rows the rotation has not
+    reached yet have none, and that count is published beside it)."""
+    status = {str(r.get("key") or ""): str(r.get("status") or "") for r in registry}
+    names = sorted(k for k, v in fbook.items()
+                   if isinstance(v, dict) and v.get("thin") and v.get("verdict") == UNMEASURED
+                   and status.get(k) in PROMOTABLE_STATUS)
+    judged = sum(1 for k in status if k in fbook)
+    return {"scope": THIN_SCOPE, "min_forward_trades": MIN_FORWARD_TRADES, "n": len(names),
+            "by_status": {s: sum(1 for k in names if status[k] == s)
+                          for s in sorted(PROMOTABLE_STATUS)},
+            "rows": names[:400], "forward_rows": len(status),
+            "forward_rows_with_a_verdict": judged,
+            "forward_rows_never_reached": len(status) - judged}
+
+
+def standing_quarantine(quarantine_path: Path) -> dict[str, Any]:
+    """quarantine.json's reader. The promotion door reads only the `verdicts` of the CURRENT
+    pass; the standing set is published here so a quarantine the rotation has moved past is
+    visible by name in the report every consumer already reads."""
+    rows = [r for r in ((_read_json(quarantine_path, {}) or {}).get("rows") or [])
+            if isinstance(r, dict)]
+    return {"n": len(rows),
+            "by_lane": {lane: sum(1 for r in rows if r.get("lane") == lane)
+                        for lane in sorted({str(r.get("lane")) for r in rows})},
+            "keys": sorted(str(r.get("key")) for r in rows)[:500],
+            "held_by_the_door": ("only while the row is also in this pass's `verdicts`; the "
+                                 "standing set itself blocks nothing")}
+
+
 def record(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool,
            quarantine_path: Path = QUARANTINE) -> dict[str, int]:
-    out = {"quarantined": 0, "memory": 0, "candidates": 0}
+    out = {"quarantined": 0, "memory": 0, "candidates": 0, "released_thin": 0}
     mismatches = [r for r in rows if r.get("verdict") == MISMATCH]
     if dry_run:
         return out
+    # A thin forward row that reads UNMEASURED was searched for a contradiction and none was
+    # found (a contradiction is a MISMATCH at any n), so a standing quarantine row for it can
+    # only be a count-based one from before the minimum existed: it is released, and counted.
+    thin = [r for r in rows if _thin_unmeasured(r)]
     definitive = [r for r in rows if r.get("verdict") in (MISMATCH, REPLICATED)]
-    if definitive:
+    if definitive or thin:
         doc = _read_json(quarantine_path, {}) or {}
         old = [r for r in (doc.get("rows") or []) if isinstance(r, dict)]
-        keys = {(r.get("lane"), r.get("key")) for r in definitive}
+        thin_keys = {(r.get("lane"), r.get("key")) for r in thin}
+        out["released_thin"] = sum(1 for r in old if (r.get("lane"), r.get("key")) in thin_keys)
+        keys = {(r.get("lane"), r.get("key")) for r in definitive} | thin_keys
         kept = [r for r in old if (r.get("lane"), r.get("key")) not in keys]
         for r in mismatches:
             kept.append({"key": r["key"], "lane": r["lane"], "symbol": r["symbol"],
@@ -1355,6 +1411,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     verdicts_path = cursor_path.parent / VERDICTS_NAME
     book_doc = _read_json(verdicts_path, {}) or {}
     book = dict(book_doc.get("certificates") or {}) if isinstance(book_doc, dict) else {}
+    fbook = dict(book_doc.get("forward") or {}) if isinstance(book_doc, dict) else {}
     # NEVER-JUDGED FIRST. A certificate the book has no verdict for -- or a verdict under a
     # different spec -- cannot start a forward clock (the admission door), so it is judged ahead
     # of the rotation: a new certificate waits about one pass, never a full cycle of the canon.
@@ -1398,6 +1455,12 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                       ledger=ledger_loader(str(row.get("key") or ""), ident)))
         cursor["forward"] = (fi + k + 1) % len(fwd)
     recorded = record(rows, conn=conn, dry_run=dry_run, quarantine_path=quarantine_path)
+    for r in rows:
+        if r.get("lane") == "forward" and r.get("key"):
+            d = r.get("divergence") or {}
+            fbook[str(r["key"])] = {"verdict": r["verdict"], "thin": bool(d.get("thin")),
+                                    "n_ledger": d.get("n_ledger"), "status": r.get("status"),
+                                    "why": list(r.get("why") or [])[:2], "at": _now()}
     counts = {v: sum(1 for r in rows if r["verdict"] == v)
               for v in (REPLICATED, MISMATCH, UNMEASURED)}
     doc = {
@@ -1409,6 +1472,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "quarantined": [r["key"] for r in rows if r["verdict"] == MISMATCH],
         "unmeasured": [{"what": r["key"], "why": "; ".join(r["why"])} for r in rows
                        if r["verdict"] == UNMEASURED],
+        "forward_thin_unmeasured": forward_thin_unmeasured(fbook, fwd),
+        "standing_quarantine": standing_quarantine(quarantine_path),
         "recorded": recorded, "cursor": cursor, "notes": notes,
         "independence": {"forbidden_imports": list(FORBIDDEN_IMPORTS),
                          "bars_read_by_this_module": list(BARS_READ[-50:]),
@@ -1426,7 +1491,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
-        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
+        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book,
+                                      "forward": fbook})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
                            "judged_first_this_pass": min(len(pending), per_lane)}
     return doc
@@ -1440,6 +1506,13 @@ def render(doc: Mapping[str, Any]) -> list[str]:
     for r in (doc.get("verdicts") or [])[:16]:
         lines.append(f"  {r['verdict']:<11} {r['lane']:<11} {str(r['key'])[:52]:<52} "
                      f"{'; '.join(r.get('why') or [])[:90]}")
+    thin = doc.get("forward_thin_unmeasured") or {}
+    lines.append(f"  thin forward clocks (under {thin.get('min_forward_trades')} trades, "
+                 f"UNMEASURED, NOT held by the door): {thin.get('n', 0)} LIVE/STANDBY of "
+                 f"{thin.get('forward_rows_with_a_verdict', 0)} judged; "
+                 f"{thin.get('forward_rows_never_reached', 0)} never reached")
+    sq = doc.get("standing_quarantine") or {}
+    lines.append(f"  standing quarantine: {sq.get('n', 0)} row(s) {sq.get('by_lane') or {}}")
     for note in doc.get("notes") or []:
         lines.append(f"  note: {note}")
     return lines
