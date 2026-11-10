@@ -706,6 +706,55 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The posterior-sizing measurement's report (hourly leg `posterior_sizing_missed_growth`). The
+#: posterior terms are registered modifiers (`capital_modifiers`: state_posterior, macro_regime)
+#: in a sealed register, so the realised two-sided line -- what sizing by the posterior earned or
+#: cost against one static size per sleeve -- is PUBLISHED on that artifact and carried here.
+POSTERIOR_SIZING = BASE / "reports" / "posterior_sizing_missed_growth.json"
+POSTERIOR_SIZING_MAX_AGE_H = 6.0
+
+
+def published_posterior_sizing_line() -> dict[str, Any]:
+    """The posterior-sized book against a static size per sleeve, read from its own report.
+
+    Signed: a positive `value_logw` is realised log wealth the posterior sizing GAINED over the
+    scored trades, a negative one is growth it forwent (COSTS_GROWTH). The line changes no size;
+    it is the bill and the credit side by side. A missing, stale or unmeasured report is
+    UNMEASURED with its why -- never a clean zero."""
+    doc = _json(POSTERIOR_SIZING)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/posterior_sizing_missed_growth.json on this host: the "
+                       "hourly posterior_sizing_missed_growth leg has not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= POSTERIOR_SIZING_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the posterior-sizing report is older than "
+                       f"{POSTERIOR_SIZING_MAX_AGE_H:g}h or unstamped: today's line is unknown"}
+    line = doc.get("missed_growth_line")
+    if not isinstance(line, dict):
+        return {"verdict": UNMEASURED, "lines": [], "age_h": round(age_h, 2),
+                "why": "the report carries no missed_growth_line"}
+    verdict = line.get("verdict")
+    value = line.get("value")
+    if verdict not in (EARNS, COSTS, NOT_BINDING) or not isinstance(value, (int, float)):
+        return {"verdict": UNMEASURED, "lines": [line], "age_h": round(age_h, 2),
+                "source": "reports/posterior_sizing_missed_growth.json",
+                "why": str(line.get("why") or "the line is unmeasured")}
+    return {"verdict": verdict, "source": "reports/posterior_sizing_missed_growth.json",
+            "age_h": round(age_h, 2), "lines": [line], "value_logw": round(float(value), 12),
+            "direction": line.get("direction"), "basis": line.get("basis"),
+            "baseline": line.get("baseline"), "n_streams": line.get("n_streams"),
+            "n_trades": line.get("n_trades"),
+            "why": "realised log wealth over the scored trades, as sized minus static "
+                   "(+ gained, - forgone); a report, never a size"}
+
+
 #: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the
 #: one-gold-at-risk veto, the cross-account opposite-side fence, the Fusion daily-loss rail, and
 #: the book's 0.01 floor lift and lot ceiling. Like the stop-geometry gate they register no rail
@@ -1201,7 +1250,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "posterior_sizing": published_posterior_sizing_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
