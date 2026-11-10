@@ -7,8 +7,8 @@ file is parked (left on disk, counted, named with what it costs) and not read.
 
 FAIL-CLOSED IN BOTH DIRECTIONS. The registry (`terms_fences.json`) can add fences and can reopen
 one, but a fence built into this module is enforced even if the registry is missing, unreadable,
-has had the row removed or has had its patterns emptied or narrowed; and a fence is open only with `open: true` AND a pasted permitting
-clause, so a stray flag cannot reopen it.
+has had the row removed or has had its patterns emptied or narrowed; and a fence is open only
+with `open: true` AND a pasted permitting clause, so a stray flag cannot reopen it.
 """
 from __future__ import annotations
 
@@ -54,8 +54,9 @@ def load(registry: Path | None = None) -> list[dict[str, Any]]:
             rows.append(dict(built))
             continue
         for key in ("match", "seats"):
-            mine = row.get(key) if isinstance(row.get(key), list) else []
-            row[key] = [*mine, *(x for x in built.get(key) or [] if x not in mine)]
+            got = row.get(key)
+            mine: list[Any] = list(got) if isinstance(got, list) else []
+            row[key] = mine + [x for x in built.get(key) or [] if x not in mine]
         for key in ("reason", "missed_growth"):
             row[key] = row.get(key) or built.get(key, "")
     return [f for f in rows if not is_open(f)]
