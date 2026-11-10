@@ -291,6 +291,7 @@ MODULES = [
     "libs/execution/digital_twin.py",
     "desks/mt5/mt5desk/risk_units.py",
     "desks/mt5/mt5desk/position_manager.py",
+    "desks/mt5/mt5desk/mt5_manage.py",
     "desks/mt5/mt5desk/provenance.py",
     "desks/mt5/mt5desk/independence.py",
     "desks/mt5/mt5desk/multiplicity.py",
