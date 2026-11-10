@@ -505,6 +505,13 @@ BOX_TASK_CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the 10-minute workflow gate's own state"),
     "Quant-SignTrain":  ("C:/ProgramData/QuantBox/logs/sign_train.json", 30,
                          "the 10-minute sign train leg's state"),
+    # Two tasks that joined the manifest on LIVE after this table was written (2026-11-05).
+    "Quant-VideoCells": ("desks/mt5/reports/VIDEO_MINING_COVERAGE.json", 180,
+                         "run_video_cells_box.ps1 rewrites the coverage proof every hourly "
+                         "pass (mine_channel_transcripts.py --report-only)"),
+    "Quant-SideChannelMiners": ("desks/mt5/logs/Quant-SideChannelMiners.log", 360,
+                                "run_side_channel_miners.cmd appends start/end to this log "
+                                "on every 2-hourly run"),
 }
 
 #: Box tasks that genuinely produce no artifact a freshness contract could read, each with the
