@@ -435,6 +435,11 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             # information was still private. Declaring the frame is what stops that, and the
             # family drops any stamp it cannot convert rather than using it raw.
             extra["clock"] = "utc"
+            # THE FORWARD SIDE NAMES THE ROW'S INSTRUMENT, AS THE JUDGE DOES (2026-11-10). The
+            # sealed `build_cell` sets `symbol = sym` for this family whatever params say; this
+            # side passed params through, so a cell carrying a stale name would have been
+            # certified on one instrument's events and run forward on another's.
+            extra["symbol"] = sym
             return extra, "ok"
 
         if family == "discovered":

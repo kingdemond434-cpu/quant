@@ -105,3 +105,24 @@ def test_the_event_index_reads_the_backfilled_history_beside_the_polled_calendar
         pd.DatetimeIndex(["2015-03-06 13:30"], tz="UTC"), "AUDNZD")) == 1
     assert fi.EVENT_PLACEMENT["table_empty_calls"] == 1      # named, never silent
     osw._event_index.cache_clear()               # leave no temp-dir reading behind
+
+
+def test_the_forward_side_names_the_rows_instrument_like_the_judge(monkeypatch):
+    """The sealed judge sets `symbol = sym` for event_reaction; `resolve` (the forward engine's
+    door) passed a stale name in params straight through. One cell, one instrument, both sides."""
+    for extra in (str(DESK / "research"),):
+        if extra not in sys.path:
+            sys.path.insert(0, extra)
+    idx = pd.DatetimeIndex(["2026-09-04 12:30"], tz="UTC")
+    for name in ("research.orthogonal_sweep", "orthogonal_sweep"):
+        mod = sys.modules.get(name)
+        if mod is not None:
+            monkeypatch.setattr(mod, "_event_index", lambda: idx)
+    try:
+        from research import orthogonal_sweep as osw
+    except ImportError:
+        import orthogonal_sweep as osw
+    monkeypatch.setattr(osw, "_event_index", lambda: idx)
+    extra, why = fi.resolve("EURUSD", "event_reaction", {"symbol": "USDJPY"}, None)
+    assert why == "ok" and extra["symbol"] == "EURUSD" and extra["clock"] == "utc"
+    assert extra["events"] == [{"symbol": "EURUSD", "at": "2026-09-04T12:30:00+00:00"}]
