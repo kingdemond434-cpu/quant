@@ -640,11 +640,21 @@ def rule_only_families() -> frozenset[str]:
     (measured 2026-11-10: 416 `mass_screen_carry` rows whose params were sensor descriptors, 0
     judged). Pickers skip them; `mass_screen.py`, which emits the real rule, is untouched.
     """
+    return frozenset(rule_only_status()["families"])
+
+
+def rule_only_status() -> dict[str, Any]:
+    """The rule-only set and whether it could be READ. An unimportable grammar module leaves
+    the exclusion empty, which would quietly put the pickers back on rule-only families, so the
+    registry report carries this row and says UNMEASURED with the reason, never an empty OK."""
     try:
         from mt5desk.mass_screen_rules import MASS_SCREEN_FAMILIES
-    except Exception:
-        return frozenset()
-    return frozenset(MASS_SCREEN_FAMILIES)
+    except Exception as exc:
+        return {"status": "UNMEASURED", "families": [], "n": 0,
+                "why": f"mass_screen_rules unimportable ({type(exc).__name__}): the pickers "
+                       "are NOT excluding rule-only families this pass"}
+    return {"status": "OK", "families": sorted(MASS_SCREEN_FAMILIES),
+            "n": len(MASS_SCREEN_FAMILIES)}
 
 
 def family_for(mechanism: str, information_source: str, families: frozenset[str],
@@ -846,6 +856,7 @@ def build(max_proposals: int = MAX_PROPOSALS) -> tuple[dict[str, Any], dict[str,
               "axes": axis_counts(cells), "occupancy": occupancy(cells),
               "empty_regions": regions, "unknown_counts": unknown_counts(cells),
               "selection": selection, "rule": RULE, "inputs": note,
+              "rule_only_families": rule_only_status(),
               "prior": {"source": prior_source, "n": model.get("n"),
                         "global": model.get("global"), "why": model.get("why")},
               "families_registered": len(families), "family_table_size": len(FAMILY_TABLE),

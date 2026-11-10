@@ -434,3 +434,12 @@ def test_pickers_never_assign_a_rule_only_family():
         for mech, info in {(m, i) for m, i, _ in ar.FAMILY_TABLE.values()}:
             got = ar.family_for(mech, info, fams, frozenset(), salt)
             assert got not in rule_only
+
+
+def test_an_unreadable_rule_only_set_is_unmeasured_never_an_empty_ok(monkeypatch):
+    import sys
+    assert ar.rule_only_status()["status"] == "OK" and ar.rule_only_status()["n"] > 0
+    monkeypatch.setitem(sys.modules, "mt5desk.mass_screen_rules", None)
+    got = ar.rule_only_status()
+    assert got["status"] == "UNMEASURED" and got["families"] == [] and "NOT excluding" in got["why"]
+    assert ar.rule_only_families() == frozenset()
