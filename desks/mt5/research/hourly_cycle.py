@@ -1193,8 +1193,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The bandit's shares, re-derived hourly before the legs that spend them (Tier S).
     "research_bandit",
     # THE TIER S DOOR'S WRITER, EVERY HOUR (2026-09-30): the promotion door fails closed on a
-    # verdict older than 6h, so this leg is on the core clock and exempt from rotation
-    # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
+    # verdict older than 6h, so this leg runs on its own due-by-age clock (soft 3h, hard 5h;
+    # libs/ops/leg_rotation.DUE_BY_AGE_H) instead of every hour, which kept the core legs
+    # starved. ~10 min measured end to end under its 1,500 s cap.
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
@@ -1552,6 +1553,10 @@ def department_of(name: str) -> str:
 OWN_CLOCK_LEGS: frozenset[str] = frozenset({
     "state_vector",       # MT5-StateVector
     "external_gauntlet",  # MT5-Gauntlet
+    # THE FTMO BOOK'S SOLVE (2026-11-05): ~722 s never fit the core rotation's room, so it was
+    # deferred every pass and never ran after 2026-10-29 -- seven days of FTMO trading only the gold
+    # fallback. Its own hourly task (scripts/install_ftmo_allocator_task.ps1) is the only clock.
+    "prop_challenge_allocator",  # MT5-FTMO-Allocator
 })
 
 

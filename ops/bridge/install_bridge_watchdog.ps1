@@ -86,6 +86,30 @@ if (-not (Test-Path $src)) { throw "bridge_watchdog.ps1 missing at $src" }
 # may read). Files already inside lose any explicit entry (icacls /reset on the children), and the
 # copy and its pin are deleted and written fresh, never written over a file someone pre-created.
 # The pin protects against non-admins only: an administrator can rewrite the pin and the copy.
+# THE CLI'S OWN `latest` DEBUG LINK IS THE ONE REPARSE POINT ALLOWED (2026-11-05, Desk health).
+# `claude remote-control --debug-file <file>` drops a symbolic link named `latest` beside the file.
+# The child walk refused it, so from the watchdog's first restart (10-28 13:46Z) every run exited 4
+# and the bridge stayed down. Exactly one shape is exempt, identically in the watchdog, its status
+# reader and the installer: a SymbolicLink (never a junction or mount point) named `latest` directly
+# in the log folder, whose single target is a regular, non-reparse file directly in that same folder
+# named rc_debug_YYYYMMDD_HHMMSS.log. Anything else, or anything that cannot be read, stays a refusal.
+function Test-DebugLatestLink($c, [string] $logDir) {
+    try {
+        if ($c.Name -cne 'latest') { return $false }
+        if ([string]$c.LinkType -cne 'SymbolicLink') { return $false }
+        $ld = [IO.Path]::GetFullPath($logDir).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        if ([IO.Path]::GetFullPath($c.FullName) -ne (Join-Path $ld 'latest')) { return $false }
+        $t = @($c.Target)
+        if ($t.Count -ne 1 -or -not $t[0]) { return $false }
+        $tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))
+        if ((Split-Path -Parent $tp) -ne $ld) { return $false }
+        if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\d{8}_\d{6}\.log$') { return $false }
+        $f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop
+        if ($f.PSIsContainer) { return $false }
+        if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }
+        return $true
+    } catch { return $false }
+}
 function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     if ((Test-Path -LiteralPath $dir) -and ((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw "$dir is a junction or symlink; not installing"
@@ -94,6 +118,7 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     if (Test-Path -LiteralPath $dir) {
         foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
             if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+            if (Test-DebugLatestLink $c $LogDir) { continue }
             throw "$($c.FullName) is a junction or symlink; not installing"
         }
     }
@@ -107,6 +132,7 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     # /inheritance:r above, a non-admin could still plant one (audit v1.9 race)
     foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
         if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+        if (Test-DebugLatestLink $c $LogDir) { continue }
         throw "$($c.FullName) is a junction or symlink; not installing"
     }
     if (@(Get-ChildItem -LiteralPath $dir -Force).Count -gt 0) {
