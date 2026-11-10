@@ -2858,10 +2858,10 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 ### Phase V — The blueprint verification re-score (principal 2026-09-29, BACKLOG rows 20 and 82): the 138-row strict matrix and the 272-section Tier-5 audit (its 20 audit items and 52 partials) scored row by row from evidence every hour
 
 - **BP1 Re-score every blueprint row from evidence, hourly: the 138 strict rows (docs/research/blueprint_ledger/) and the 272 Tier-5 sections, DONE / PARTIAL / OPEN / UNMEASURED per row, the 20 audit items and 52 Tier-5 partials as their own subsets, open rows ranked by E[log W] weight, RED on a lie or a fall in a DONE count** — EXISTS-LIT
-  - scripts/check_blueprint_score.py:119 -- one verifier: the blueprint ledger is judged by check_tier1_program.check, the Tier-5 ledger by check_tier5_audit.check
-  - scripts/check_blueprint_score.py:267 -- seven marks per row (I/W/T/R/D measured on this host, A/C recorded with a 14-day TTL); the state is min(claim, evidence); a DONE claim unproven is a lie
-  - scripts/check_blueprint_score.py:350 -- Tier-5 rows: cited files + known clock + a current artifact; a PARTIAL whose declared artifact is absent reads UNMEASURED
-  - scripts/check_blueprint_score.py:477 -- the box half: BLUEPRINT_SCORE.json present, under 3 h old and not RED
+  - scripts/blueprint_marks.py:73 -- one verifier: the blueprint ledger is judged by check_tier1_program.check, the Tier-5 ledger by check_tier5_audit.check
+  - scripts/blueprint_marks.py:195 -- seven marks per row (I/W/T/R/D measured on this host, A/C recorded with a 14-day TTL); the state is min(claim, evidence); a DONE claim unproven is a lie
+  - scripts/blueprint_marks.py:278 -- Tier-5 rows: cited files + known clock + a current artifact; a PARTIAL whose declared artifact is absent reads UNMEASURED
+  - scripts/check_blueprint_score.py:89 -- the ledger is stored split (docs/research/blueprint_ledger/: index + parts, each small enough for the independent reviewer); a missing part reads UNMEASURED
   - clock: hourly_cycle:blueprint_score · artifact: desks/mt5/reports/BLUEPRINT_SCORE.json · consumer: desks/mt5/research/issue_board.py CADENCE (staleness), scripts/run_law_gate.py (portable fence and the --require-state box half), the BACKLOG verifier routing the ranked open rows
   - next: A reviewer re-records A and C (with mark_evidence) on the rows the box's R and D marks now prove; until then no row can honestly read DONE.
 
