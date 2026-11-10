@@ -498,3 +498,71 @@ def test_discontinued_eia_curves_are_named_not_read(tmp_desk: Path) -> None:
                                               bars=lambda s: None)
     assert not built
     assert any(n.get("source") == "eia_futures" and n["status"] == "UNMEASURED" for n in notes)
+
+
+# ------------------------------------------------------------- scheduled-release first prints
+
+def _alfred_rows(n: int) -> list[dict[str, str]]:
+    """Monthly payroll-like first prints, each released on the first Friday after its month,
+    plus an archive bulk-load: 12 old periods all stamped with one realtime_start."""
+    rows = [{"date": f"19{80 + i // 12:02d}-{i % 12 + 1:02d}-01", "realtime_start": "1999-01-01",
+             "value": str(90000 + i)} for i in range(12)]
+    for i, p in enumerate(pd.date_range("2018-01-01", periods=n, freq="MS")):
+        rel = (p + pd.offsets.MonthBegin(1) + pd.offsets.Week(weekday=4)).strftime("%Y-%m-%d")
+        rows.append({"date": p.strftime("%Y-%m-%d"), "realtime_start": rel,
+                     "value": str(150000 + 150 * i + (900 if i == n - 1 else 0))})
+    return rows
+
+
+def _alfred_get(rows: list[dict[str, str]]):
+    calls: list[str] = []
+
+    def get(url: str) -> Any:
+        calls.append(url)
+        return {"observations": rows}
+
+    get.calls = calls  # type: ignore[attr-defined]
+    return get
+
+
+def test_first_prints_drop_the_archive_bulk_load_and_ask_for_initial_release() -> None:
+    get = _alfred_get(_alfred_rows(60))
+    p = fs.alfred_first_prints("PAYEMS", "k", get)
+    assert len(p) == 60
+    assert (p["released"] > p["period"]).all()
+    q = urllib.parse.parse_qs(urllib.parse.urlsplit(get.calls[0]).query)
+    assert q["output_type"] == ["4"] and q["series_id"] == ["PAYEMS"]
+
+
+def test_release_shock_never_sees_its_own_release() -> None:
+    p = fs.alfred_first_prints("PAYEMS", "k", _alfred_get(_alfred_rows(60)))
+    a = fs.release_shock(p)
+    b = fs.release_shock(p.iloc[:-1])
+    # earlier releases are unchanged when a later one is added
+    pd.testing.assert_series_equal(a["shock_z"].iloc[:-1].reset_index(drop=True),
+                                   b["shock_z"].reset_index(drop=True))
+    # the final print jumps by 900 over a steady +150 trend: a large positive shock
+    assert a["shock_z"].iloc[-1] > 3
+
+
+def test_release_is_available_only_after_the_new_york_release_time() -> None:
+    at = fs.release_available(pd.Series(pd.to_datetime(["2026-01-09", "2026-07-10"])))
+    # 08:30 New York is 13:30 UTC in winter and 12:30 UTC in summer, plus the grace
+    assert str(at.iloc[0]) == "2026-01-09 13:35:00+00:00"
+    assert str(at.iloc[1]) == "2026-07-10 12:35:00+00:00"
+
+
+def test_first_release_set_mints_exogenous_cells(tmp_desk: Path, monkeypatch) -> None:
+    monkeypatch.setenv("FRED_API_KEY", "k")
+    reg = {"sources": [{"id": "fred_rates", "adapter": "fred", "terms": "OPEN",
+                        "key_env": ["FRED_API_KEY"]}],
+           "fred_sets": [{"id": "usrel", "mode": "first_release", "targets": ["XAUUSD"],
+                          "releases": [{"series": "PAYEMS", "at": "08:30"}]}]}
+    built, frames, _n = fs.build_market_series(reg, get=_alfred_get(_alfred_rows(60)),
+                                               state={}, bars=lambda s: None)
+    assert "fred_usrel_payems" in built
+    f = frames["fred_usrel_payems"]
+    assert {"available_time", "event_time", "shock_z"} <= set(f.columns)
+    assert (f["available_time"] > f["event_time"]).all()
+    plan = fs.cell_plan(built, frames, frozenset({"XAUUSD"}))
+    assert any(c == "shock_z" for _s, c, _t, _y, _ch in plan)
