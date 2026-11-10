@@ -624,7 +624,7 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
         ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
         ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
-        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "AUTO"),
+        ([_f("ops/box/install_unattended.ps1")], 1, set(), "AUTO"),
         ([_f("CODEOWNERS")], 1, set(), "AUTO"),
         ([_f("docs/x/CLAUDE.md")], 1, set(), "AUTO"),
         ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "AUTO"),
@@ -2125,7 +2125,7 @@ def test_the_live_book_installers_are_money_path_on_the_real_tree() -> None:
 @pytest.mark.parametrize(
     "name",
     ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",
-     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/workflow_gate.ps1"],
+     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/install_unattended.ps1"],
 )  # fmt: skip
 def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, name: str) -> None:
     """zuck 2026-10-29: no comment needed, but a missing or failed AUTO job is never a pass."""
@@ -2688,6 +2688,41 @@ def test_a_large_diff_passes_only_when_every_part_and_the_final_vote_pass() -> N
     assert not any("This is part" in u for u in asked)  # a larger rung reads it whole
 
 
+def test_a_diff_that_fits_the_context_but_not_one_calls_time_is_read_in_parts() -> None:
+    """2026-11-05: #659's 58k diff fit num_ctx whole and timed out on all five asks (2 h 42 min).
+    Parts are capped at PART_CHARS; a hunk over the cap is still read whole, as before."""
+    mid = _diff(*((f"docs/m{i}.py", ["+" + "m" * 14_000]) for i in range(4)))  # ~56k chars
+    assert len(mid) < 88_000  # fits 32k tokens whole: before the cap this was ONE call
+    asked: list[str] = []
+    v, log = _review(mid, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                        ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "PASS" and "final vote" in log[0]
+    parts = [u for u in asked if "This is part" in u]
+    assert len(asked) >= 4  # parts and the final, from the first family
+    assert len(parts) >= 3 and all(len(u) <= ir.PART_CHARS for u in parts)
+    asked.clear()
+    v, _ = _review(mid, [("qwen", "q1", _counting(_PASS, asked=asked)),
+                        ("llama", "l1", _counting(_PASS))], part_chars=None)
+    assert v == "PASS" and len(asked) == 1  # uncapped: read whole, the old behaviour
+    one = _diff(("docs/big.py", ["+" + "b" * 40_000]), ("docs/s.py", ["+s"]))
+    asked.clear()
+    v, _ = _review(one, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                        ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "PASS" and any("b" * 40_000 in u for u in asked)  # one big hunk: whole, not FAIL
+    # Auditor SF on #735: money files whose own part (manifest + frame) is just over num_ctx
+    # while the whole diff fits it are read whole, never a new FAIL
+    room = (32_768 - ir.ANSWER_TOKENS) * ir.CHARS_PER_TOKEN - len(ir.VAGUE_NOTE) - 2 - len(
+        (ir.HERE / "review_rubric.md").read_text(encoding="utf-8"))
+    base = _diff(("desks/mt5/prop/a.py", ["+RISK = 1"]), ("docs/s.py", ["+s"]))
+    pad = room - len(ir.prompt(base, ["f.py"], "0" * 16)) - 40
+    edge = _diff(("desks/mt5/prop/a.py", ["+RISK = 1" + " " * pad]), ("docs/s.py", ["+s"]))
+    assert len(ir.prompt(edge, ["f.py"], "0" * 16)) <= room
+    asked.clear()
+    v, log = _review(edge, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                            ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "PASS" and not any("never read apart" in x for x in log)
+
+
 def test_money_files_are_read_together_in_one_part_or_the_review_fails() -> None:
     """#547 audit MF1 (a): max_lot raised in one money file, its min() dropped in another."""
     a = ("desks/mt5/prop/a.py", ["+MAX_LOT = 50" + " " * 30_000])
@@ -2997,11 +3032,12 @@ def test_a_revert_that_does_not_apply_leaves_the_checkout_clean(monkeypatch: Any
 
 def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> None:
     spec = importlib.util.spec_from_file_location(
-        "send_alert", Path(__file__).resolve().parents[2] / "scripts" / "send_alert.py"
+        "send_alert", Path(__file__).resolve().parents[2] / "libs" / "ops" / "send_alert.py"
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    monkeypatch.chdir(Path.cwd())  # main() moves to the tree root; monkeypatch puts it back
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 0})
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
