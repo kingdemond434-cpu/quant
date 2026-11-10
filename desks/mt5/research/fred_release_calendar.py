@@ -231,8 +231,18 @@ def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None
         if check.get("per_year_ok") is False:
             # not the event it claims to be: nothing is written and any old file is removed,
             # so no reader can use it
+            if path.exists():
+                # a NAMED drop: readers were using this file, and the event index's fall in
+                # rows must be explainable from the report
+                rep.setdefault("removed", []).append({
+                    "release": slug, "rows_removed": int(old.get("rows") or 0),
+                    "date": today.isoformat(), "file": path.name,
+                    "why": f"typical year {check['typical_year']} outside "
+                           f"{list(rel['per_year'])}"})
+                r["removed_on"] = today.isoformat()
             path.unlink(missing_ok=True)
             r.pop("fetched", None)
+            r.pop("rows", None)
             r["status"] = (f"UNMEASURED: {check['typical_year']} dates in a typical year, "
                            f"outside the expected {list(rel['per_year'])}; not used")
             continue
