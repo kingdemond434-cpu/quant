@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-07T15:17:10+00:00",
+ "generated_utc": "2026-11-09T01:27:37+00:00",
  "law": "BREADTH IS MANDATORY. Every empty alpha cluster must receive at least 3 cells per sweep. ATTEMPTED AND FAILED is a measurement and is fine; NEVER ATTEMPTED is a defect. n_eff ratchets UP only.",
  "why_the_existing_floors_miss_it": "the bandit floors EXPLORATION at 40% of compute, and exploration inside an OCCUPIED cluster is still exploration -- a sweep can satisfy the floor entirely on its four-hundredth session-liquidity variant while eleven clusters get nothing. And bandit.breadth_credit prices new_mechanism at 1.2491 against combine_survivors at 0.8295, a 1.5x spread that cannot outbid a 3x declared cost difference.",
  "declared_clusters": 15,
@@ -23,21 +23,21 @@
   "positioning_flow"
  ],
  "cluster_cell_counts": {
-  "UNCLASSIFIED": 863320,
-  "session_liquidity": 156907,
-  "trend": 41175,
-  "fixing_roll_calendar": 18738,
-  "mean_reversion": 25479,
-  "volatility_transition": 86939,
-  "relative_value": 248963,
-  "macro_rates": 35216,
-  "cross_asset_lead_lag": 54419,
-  "crisis_drawdown": 18371,
-  "cross_sectional_fx": 20673,
-  "event_surprise": 3892,
-  "positioning_flow": 1774
+  "UNCLASSIFIED": 893563,
+  "session_liquidity": 165266,
+  "fixing_roll_calendar": 18994,
+  "mean_reversion": 26364,
+  "volatility_transition": 88567,
+  "relative_value": 251856,
+  "macro_rates": 35587,
+  "trend": 39243,
+  "cross_asset_lead_lag": 54416,
+  "crisis_drawdown": 20497,
+  "cross_sectional_fx": 21036,
+  "event_surprise": 4629,
+  "positioning_flow": 2084
  },
- "counts_basis": "1575866 docket cell(s) classified",
+ "counts_basis": "1622102 docket cell(s) classified",
  "min_cells_per_empty_cluster": 3,
  "census": {
   "ATTEMPTED": 3,
@@ -64,7 +64,7 @@
   }
  ],
  "ratchet": {
-  "n_eff": 2.934,
+  "n_eff": 3.065,
   "floor": null,
   "status": "FLOOR_SET",
   "why": "first measurement becomes the floor"
@@ -72,15 +72,15 @@
  "clusters": [
   {
    "cluster": "cross_asset_lead_lag",
-   "cells_in_docket": 54419,
+   "cells_in_docket": 54416,
    "verdict": "ATTEMPTED",
-   "why": "54419 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+   "why": "54416 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
   },
   {
    "cluster": "event_surprise",
-   "cells_in_docket": 3892,
+   "cells_in_docket": 4629,
    "verdict": "ATTEMPTED",
-   "why": "3892 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+   "why": "4629 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
   },
   {
    "cluster": "execution_entry",
@@ -102,9 +102,9 @@
   },
   {
    "cluster": "positioning_flow",
-   "cells_in_docket": 1774,
+   "cells_in_docket": 2084,
    "verdict": "ATTEMPTED",
-   "why": "1774 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+   "why": "2084 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
   }
  ]
 }
