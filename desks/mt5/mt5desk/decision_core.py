@@ -1665,27 +1665,83 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
-def cell_key(s: Mapping[str, Any]) -> str | None:
-    """A roster row's canonical cell AND timeframe, `cell:symbol|family|selector|tf` lower-cased,
-    or None when the row names no symbol or family (the gold windows, which the book keys by
-    name). The cell is the roster's own `canonical_identity` rule (symbol|family|selector); the
-    timeframe comes from the row, else an `@M15`-style tag in its name, else H1.
+def executable_copy_keys(groups: object) -> dict[str, str]:
+    """{roster row name: its copy-group key} from the Judge's published executable groups
+    (reports/HYPOTHESIS_FAMILIES.json -> intake.executable_groups.sleeves.groups; each group is
+    {symbol, family, copies, members[{name, state}]}).
 
-    WHY (the Judge, 2026-11-10): carry certificates and forward clocks exist as COPIES of one
-    executable under different names (`input_symbol=GBPJPY` and `=eBay` are the same rule: the
-    family takes no such parameter) -- 43 canon certificates across 8 pairs, 197 carry clocks.
-    A copy the allocator has not priced joins no book key, so each LIVE copy took the base
-    fraction and the same bet was sized once per name. One cell on one timeframe is one bet.
-    Different timeframes stay different bets (different bars, different signals)."""
-    sym = str(s.get("symbol") or "").strip().lower()
-    fam = str(s.get("family") or "").strip().lower()
-    if not (sym and fam):
-        return None
-    tf = str(s.get("timeframe") or "").strip().lower()
-    if not tf:
-        m = re.search(r"@([mh]\d+)", str(s.get("name") or ""), re.IGNORECASE)
-        tf = m.group(1).lower() if m else "h1"
-    return f"cell:{sym}|{fam}|{str(s.get('selector') or '').strip().lower()}|{tf}"
+    ONLY TRUE COPIES FOLD (#823 audit MF1). The Judge keys a sleeve by the params of the
+    CERTIFICATE it names, minus the parameters its family never reads
+    (`hypothesis_families.EXECUTABLE_UNREAD`; today carry: input_symbol, symbol). Two rows in one
+    group are one executable under two names -- 43 canon certificates across 8 pairs on
+    2026-11-10 -- and a copy adds no independent E[log W]. A parameter VARIANT is a distinct
+    rule and is in no group with its sibling, a family outside the Judge's table has no groups,
+    and a row whose certificate was not found is in none: each folds with nothing. A group of
+    one, a malformed group, or a name the artifact lists in two groups yields no key."""
+    out: dict[str, str] = {}
+    twice: set[str] = set()
+    for g in groups if isinstance(groups, list) else ():
+        if not isinstance(g, Mapping):
+            continue
+        members = g.get("members")
+        names = sorted({str(m.get("name")) for m in (members if isinstance(members, list) else ())
+                        if isinstance(m, Mapping) and m.get("name")})
+        if len(names) < 2:
+            continue
+        key = f"exe:{str(g.get('symbol') or '').lower()}|{str(g.get('family') or '').lower()}" \
+              f"|{names[0]}"
+        for n in names:
+            if n in out:
+                twice.add(n)
+            out[n] = key
+    for n in twice:
+        out.pop(n, None)
+    return out
+
+
+#: How old the Judge's published executable groups may be and still fold copies. Derived from
+#: its clock: reports/HYPOTHESIS_FAMILIES.json is rewritten hourly, so three missed passes
+#: (3 x 3600 s) is a stalled publisher, and a stale grouping must not suppress an entry: past
+#: it nothing is folded and the reason is logged.
+EXECUTABLE_COPIES_MAX_AGE_S = 10800.0
+#: The Judge's hourly artifact (research/hypothesis_families.py). Read at call time, so the path
+#: a test or the box points this at is the one honoured.
+EXECUTABLE_COPIES_FILE = _DESK / "reports" / "HYPOTHESIS_FAMILIES.json"
+
+
+def executable_copies(path: Path | None = None,
+                      now: float | None = None) -> tuple[dict[str, str], str]:
+    """({roster row name: copy-group key}, why) from the Judge's hourly artifact
+    (`EXECUTABLE_COPIES_FILE` unless `path` is given). Absent, unreadable, stale or without
+    `intake.executable_groups` (the artifact before #806): no copies are known and nothing is
+    folded -- every row sizes exactly as before."""
+    p = Path(path) if path is not None else Path(EXECUTABLE_COPIES_FILE)
+    try:
+        age = (time.time() if now is None else now) - p.stat().st_mtime
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {}, f"executable copies UNMEASURED ({p.name}: {type(exc).__name__})"
+    if age > EXECUTABLE_COPIES_MAX_AGE_S:
+        return {}, (f"executable copies UNMEASURED ({p.name} is {age / 3600:.1f}h old, limit "
+                    f"{EXECUTABLE_COPIES_MAX_AGE_S / 3600:.0f}h)")
+    sl = (((doc.get("intake") or {}).get("executable_groups") or {}).get("sleeves")
+          if isinstance(doc, dict) and isinstance(doc.get("intake"), dict) else None)
+    if not isinstance(sl, dict) or "groups" not in sl:
+        return {}, f"executable copies UNMEASURED ({p.name} publishes no sleeve groups yet)"
+    keys = executable_copy_keys(sl.get("groups"))
+    return keys, (f"executable copies from {p.name}: {len(keys)} row(s) in "
+                  f"{len(set(keys.values()))} copy group(s)")
+
+
+def carrier_ties(keys: Mapping[str, str | None],
+                 rank: Mapping[str, tuple[str, float]]) -> list[str]:
+    """The fold keys whose two best rows rank EQUAL, so the name decided the carrier."""
+    worst = ("9999", 0.0)
+    by_key: dict[str, list[tuple[str, float]]] = {}
+    for name, k in keys.items():
+        if k is not None:
+            by_key.setdefault(k, []).append(rank.get(name, worst))
+    return sorted(k for k, rs in by_key.items() if len(rs) > 1 and sorted(rs)[0] == sorted(rs)[1])
 
 
 def carrier_rank(s: Mapping[str, Any]) -> tuple[str, float]:
