@@ -98,8 +98,8 @@ UNMEASURED = "UNMEASURED"
 #: reads this tuple and the source.
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
-    "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "mt5desk.family_state_space", "mt5desk.engine", "mt5desk.family_call", "proposer_common",
+    "external_gauntlet", "lead_replication", "shadow_forward", "external_shadow")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -1063,6 +1063,467 @@ SPEC_BOOK["jump"] = RuleSpec(
     {"mode": "continue", "lookback": 48, "jump_k": 4.0, "cooldown_bars": 8, "atr_n": 20,
      "stop_atr": 1.5, "rr": 1.5, "ttl_bars": 8},
     _build_jump, rule_sets_side=True, session_in_params=True)
+
+
+# --------------------------------------------------------------- the state-space rule book
+# Five written rules for the framework families of 2026-11-10 (GARCH, Kalman trend and pair,
+# copula pair, OU half-life). None takes a `side`: the rule decides it. Each fires on the bar
+# its condition BECOMES true, and never on the last bar of the file.
+def _rising(cond: np.ndarray) -> np.ndarray:
+    """Rows where `cond` is true and was not true on the row before."""
+    c = np.asarray(cond, dtype=bool)
+    return np.flatnonzero(c & ~np.concatenate([[False], c[:-1]]))
+
+
+def _log_returns(c: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(log close, its bar-to-bar change); a non-positive close is undefined."""
+    with np.errstate(invalid="ignore", divide="ignore"):
+        lc = np.log(np.where(c > 0, c, np.nan))
+    return lc, np.concatenate([[np.nan], np.diff(lc)])
+
+
+def _gjr_variance(x: np.ndarray, omega: float, alpha: float, gamma: float, beta: float,
+                  v0: float) -> np.ndarray:
+    """v[0] = v0 and v[t+1] = omega + (alpha + gamma [x_t < 0]) x_t^2 + beta v[t], each value
+    floored at 1e-12 after the pass: len(x) + 1 values, the last being the next-bar forecast."""
+    from scipy.signal import lfilter
+
+    v = np.empty(x.size + 1)
+    v[0] = max(v0, 1e-12)
+    if x.size:
+        shock = omega + (alpha + gamma * (x < 0)) * x * x
+        v[1:], _ = lfilter([1.0], [1.0, -beta], shock, zi=[beta * v[0]])
+    return np.maximum(v, 1e-12)
+
+
+GARCH_STARTS = ((0.05, 0.05, 0.05, 0.85), (0.02, 0.08, 0.02, 0.9))
+
+
+def _gjr_fit(r: np.ndarray) -> tuple[float, float, float, float] | None:
+    """The written fit: finite returns (250 or more), demeaned and divided by their own sd;
+    Gaussian likelihood of the GJR recursion started at 1; Nelder-Mead from the two written
+    starts (600 iterations, xatol 1e-5, fatol 1e-4); the lower likelihood wins."""
+    from scipy.optimize import minimize
+
+    r = r[np.isfinite(r)]
+    if r.size < 250:
+        return None
+    r = r - r.mean()
+    s = float(r.std())
+    if not np.isfinite(s) or s <= 0:
+        return None
+    x = r / s
+
+    def loss(q: np.ndarray) -> float:
+        om, al, ga, be = q
+        if om <= 0 or al < 0 or ga < 0 or be < 0 or al + be + 0.5 * ga >= 0.999:
+            return 1e10
+        v = _gjr_variance(x, om, al, ga, be, 1.0)[:-1]
+        return float(0.5 * np.sum(np.log(v) + x * x / v))
+
+    best = None
+    for start in GARCH_STARTS:
+        try:
+            res = minimize(loss, np.array(start), method="Nelder-Mead",
+                           options={"maxiter": 600, "xatol": 1e-5, "fatol": 1e-4})
+        except (ValueError, FloatingPointError):
+            continue
+        if res.fun < 1e9 and (best is None or res.fun < best.fun):
+            best = res
+    if best is None:
+        return None
+    om, al, ga, be = (float(q) for q in best.x)
+    return om * s * s, al, ga, be
+
+
+def _build_garch_shock(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, state = str(p.get("side_mode") or ""), str(p.get("vol_state") or "")
+    window, refit = int(p["window"]), int(p["refit"])
+    if (mode not in ("fade", "follow") or state not in ("any", "calm", "stressed")
+            or window < 1 or refit < 1 or len(b) < window + refit):
+        return []
+    _, r = _log_returns(b.c)
+    n = len(b)
+    sigma, ratio = np.full(n, np.nan), np.full(n, np.nan)
+    k = window
+    while k < n:
+        end = min(n, k + refit)
+        past = r[k - window:k]
+        fit = _gjr_fit(past)
+        if fit is not None:
+            om, al, ga, be = fit
+            longrun = om / (1.0 - (al + be + 0.5 * ga))
+            seg = np.nan_to_num(r[k - window:end] - np.nanmean(past))
+            v = _gjr_variance(seg, om, al, ga, be, float(np.nanvar(past)))
+            sigma[k:end] = np.sqrt(v[window:window + (end - k)])
+            if np.isfinite(longrun) and longrun > 0:
+                ratio[k:end] = v[window + 1:window + 1 + (end - k)] / longrun
+        k = end
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = r / sigma
+    cond = np.isfinite(z) & (np.abs(z) >= float(p["entry_z"]))
+    if state == "calm":
+        cond &= np.isfinite(ratio) & (ratio < 1.0)
+    elif state == "stressed":
+        cond &= np.isfinite(ratio) & (ratio >= 1.0)
+    a = atr(b, int(p["atr_n"]))
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for i in _rising(cond):
+        if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        move = 1 if r[i] > 0 else -1
+        side = -move if mode == "fade" else move
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * rr * sd, ttl))
+    return out
+
+
+SPEC_BOOK["garch_shock"] = RuleSpec(
+    "garch_shock",
+    "Log close-to-close returns r. Walk forward in blocks of refit bars from bar window: each "
+    "block is labelled by a zero-mean GJR-GARCH(1,1) fitted on the window returns before it "
+    "(finite ones, 250 or more; demeaned and scaled to unit sd; Gaussian likelihood with the "
+    "variance started at 1; omega > 0, alpha, gamma, beta >= 0, alpha + beta + gamma/2 < 0.999; "
+    "Nelder-Mead from (0.05, 0.05, 0.05, 0.85) and (0.02, 0.08, 0.02, 0.9), 600 iterations, "
+    "xatol 1e-5, fatol 1e-4, lower likelihood wins; omega rescaled by the sd squared). The "
+    "recursion v' = omega + (alpha + gamma [r < 0]) r^2 + beta v is run over the window and "
+    "the block on returns less the window's mean (missing as 0), started at the window's "
+    "variance, floored at 1e-12; sigma_i is the forecast FOR bar i, and the ratio at i is the "
+    "forecast for bar i + 1 over the long-run variance omega / (1 - alpha - beta - gamma/2). A "
+    "block whose fit fails has neither. Stands aside on an unknown side_mode or vol_state or "
+    "fewer than window + refit bars. The condition is |r_i / sigma_i| >= entry_z, and for calm "
+    "a ratio < 1, for stressed a ratio >= 1. A bar on which the condition becomes true, with a "
+    "positive ATR(atr_n), signals: fade against the return's sign, follow with it. Stop "
+    "stop_atr x ATR and target rr x that from the signal close, entry next open, time exit "
+    "after ttl_bars. The session is the certificate's parameter.",
+    {"window": 1000, "refit": 250, "entry_z": 2.5, "vol_state": "any", "side_mode": "fade",
+     "atr_n": 20, "stop_atr": 1.5, "rr": 1.5, "ttl_bars": 24},
+    _build_garch_shock, rule_sets_side=True, session_in_params=True)
+
+
+def _prior_ewma_var(r: np.ndarray, lam: float) -> np.ndarray:
+    """out[t] = the exponentially weighted mean of r^2 over the finite returns BEFORE t (the
+    first one seeds it); NaN until one exists."""
+    out = np.full(r.size, np.nan)
+    acc = float("nan")
+    for t in range(r.size):
+        out[t] = acc
+        if np.isfinite(r[t]):
+            sq = float(r[t]) * float(r[t])
+            acc = sq if not np.isfinite(acc) else lam * acc + (1.0 - lam) * sq
+    return out
+
+
+STATE_SPACE_LAMBDA = 0.97
+
+
+def _build_kalman_trend(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, warmup = str(p.get("side_mode") or ""), int(p["warmup"])
+    ql, qs = float(p["q_level"]), float(p["q_slope"])
+    if mode not in ("follow", "fade") or qs <= 0 or ql < 0 or len(b) < warmup + 100:
+        return []
+    y, r = _log_returns(b.c)
+    noise = _prior_ewma_var(r, STATE_SPACE_LAMBDA)
+    n = len(b)
+    tstat = np.full(n, np.nan)
+    started = False
+    level = slope = p00 = p01 = p11 = 0.0
+    for t in range(n):
+        obs, rv = float(y[t]), float(noise[t])
+        if not (np.isfinite(obs) and np.isfinite(rv) and rv > 0):
+            continue
+        if not started:
+            level, slope, p00, p01, p11, started = obs, 0.0, rv, 0.0, rv, True
+            continue
+        # predict: the level takes the slope, both variances grow by their stated noise
+        a00 = p00 + 2 * p01 + p11 + ql * rv
+        a01 = p01 + p11
+        a11 = p11 + qs * rv
+        gain0, gain1 = a00 / (a00 + rv), a01 / (a00 + rv)
+        miss = obs - (level + slope)
+        level, slope = level + slope + gain0 * miss, slope + gain1 * miss
+        p00, p01, p11 = a00 - gain0 * a00, a01 - gain0 * a01, a11 - gain1 * a01
+        sd = float(np.sqrt(max(p11, 0.0)))
+        if sd > 0:
+            tstat[t] = slope / sd
+    tstat[:warmup] = np.nan
+    limit = float(p["entry_t"])
+    a = atr(b, int(p["atr_n"]))
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for trend, rows in ((1, _rising(np.isfinite(tstat) & (tstat >= limit))),
+                        (-1, _rising(np.isfinite(tstat) & (tstat <= -limit)))):
+        for i in rows:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = trend if mode == "follow" else -trend
+            px, sd_px = float(b.c[i]), stop_atr * float(a[i])
+            out.append(Order(int(b.t[i]), side, px - side * sd_px, px + side * rr * sd_px, ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["kalman_trend"] = RuleSpec(
+    "kalman_trend",
+    "A local-linear-trend Kalman filter on log close: level' = level + slope + noise, slope' = "
+    "slope + noise, close = level + noise. The observation variance R at bar t is the 0.97 "
+    "exponentially weighted mean of squared one-bar log returns BEFORE t; the level and slope "
+    "noises are q_level x R and q_slope x R. Bars without a positive R are skipped; the first "
+    "usable bar starts level = log close, slope = 0, both variances R. The statistic is the "
+    "filtered slope over its posterior sd, undefined for the first warmup bars. Stands aside on "
+    "an unknown side_mode, q_slope <= 0, q_level < 0 or fewer than warmup + 100 bars. A bar on "
+    "which the statistic becomes >= entry_t (up) or <= -entry_t (down), with a positive "
+    "ATR(atr_n), signals: follow with the slope, fade against it. Stop stop_atr x ATR and "
+    "target rr x that from the signal close, entry next open, time exit after ttl_bars. The "
+    "session is the certificate's parameter.",
+    {"q_level": 0.1, "q_slope": 1e-3, "entry_t": 2.0, "side_mode": "follow", "warmup": 500,
+     "atr_n": 20, "stop_atr": 2.0, "rr": 2.0, "ttl_bars": 48},
+    _build_kalman_trend, rule_sets_side=True, session_in_params=True)
+
+
+def _paired_closes(b: Bars, p: Mapping[str, Any]
+                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """(rows of `b`, this leg's close, the peer's close) on the stamps BOTH printed, exactly --
+    no carried peer close. None with no pair_symbol, off the H1 chart, or no peer bars."""
+    name = str(p.get("pair_symbol") or "")
+    if not name or b.minutes != 60:
+        return None
+    peer = FACTOR_BARS(name, "H1")
+    if peer is None:
+        return None
+    common = np.intersect1d(np.unique(b.t), peer.t)
+    rows = np.searchsorted(b.t, common)
+    mine, theirs = b.c[rows], peer.c[np.searchsorted(peer.t, common)]
+    keep = np.isfinite(mine) & np.isfinite(theirs)
+    return rows[keep], mine[keep], theirs[keep]
+
+
+def _build_kalman_pair(b: Bars, p: dict[str, Any]) -> list[Order]:
+    delta, warmup = float(p["delta"]), int(p["warmup"])
+    if not 0 < delta < 1:
+        return []
+    joined = _paired_closes(b, p)
+    if joined is None or len(joined[0]) < warmup + 100:
+        return []
+    rows, mine, theirs = joined
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ya, yb = np.log(mine), np.log(theirs)
+    n = len(rows)
+    gap, z = np.full(n, np.nan), np.full(n, np.nan)
+    started = False
+    icpt = hedge = 0.0
+    c00, c01, c11 = 1.0, 0.0, 1.0
+    meas = float("nan")
+    for t in range(n):
+        u, w = float(ya[t]), float(yb[t])
+        if not (np.isfinite(u) and np.isfinite(w)):
+            continue
+        if not started:
+            icpt, hedge, c00, c01, c11, started = u - w, 1.0, 1.0, 0.0, 1.0, True
+            continue
+        miss = u - (icpt + hedge * w)
+        ve = meas if np.isfinite(meas) else miss * miss + 1e-12
+        d00, d01, d11 = c00 + delta * ve, c01, c11 + delta * ve
+        g0, g1 = d00 + d01 * w, d01 + d11 * w            # state covariance times (1, peer)
+        spread_var = g0 + w * g1 + ve
+        gap[t], z[t] = miss, miss / np.sqrt(spread_var)
+        k0, k1 = g0 / spread_var, g1 / spread_var
+        icpt, hedge = icpt + k0 * miss, hedge + k1 * miss
+        c00, c01, c11 = d00 - k0 * g0, d01 - k0 * g1, d11 - k1 * g1
+        meas = STATE_SPACE_LAMBDA * ve + (1.0 - STATE_SPACE_LAMBDA) * miss * miss
+    z[:warmup] = np.nan
+    limit, frac = float(p["entry_z"]), float(p["target_frac"])
+    a = atr(b, int(p["atr_n"]))[rows]
+    stop_atr, ttl = float(p["stop_atr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for hits in (_rising(np.isfinite(z) & (z >= limit)), _rising(np.isfinite(z) & (z <= -limit))):
+        for i in hits:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = -1 if z[i] > 0 else 1
+            px = float(mine[i])
+            out.append(Order(int(b.t[rows[i]]), side, px - side * stop_atr * float(a[i]),
+                             px * float(np.exp(-frac * gap[i])), ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["kalman_pair"] = RuleSpec(
+    "kalman_pair",
+    "This leg's and the peer's (pair_symbol) H1 closes on the stamps both printed. Log close of "
+    "this leg = intercept + hedge x log close of the peer + noise, intercept and hedge random "
+    "walks tracked by a Kalman filter: started on the first joined row at intercept = the log "
+    "difference, hedge = 1, identity covariance; each later row's innovation e is this leg less "
+    "the prediction, the measurement variance is the 0.97 exponentially weighted mean of "
+    "squared innovations BEFORE the row (the first row uses its own e^2 + 1e-12), the state "
+    "noise is delta x that, and z = e over the sd of the predicted spread; undefined for the "
+    "first warmup rows. Stands aside with no pair_symbol, no peer bars, off H1, delta outside "
+    "(0, 1) or fewer than warmup + 100 joined rows. A row on which z becomes >= entry_z "
+    "(short) or <= -entry_z (long), with a positive ATR(atr_n) of this leg, signals. Stop "
+    "stop_atr x ATR from the signal close; target = close x exp(-target_frac x e); entry next "
+    "open, time exit after ttl_bars. The session is the certificate's parameter.",
+    {"pair_symbol": None, "delta": 1e-4, "entry_z": 2.0, "target_frac": 1.0, "warmup": 500,
+     "atr_n": 20, "stop_atr": 2.5, "ttl_bars": 48},
+    _build_kalman_pair, rule_sets_side=True, session_in_params=True)
+
+
+def _trailing_pct_rank(v: np.ndarray, n: int) -> np.ndarray:
+    """The last value's average rank among the trailing n (itself included) over n, scaled by
+    n / (n + 1) so it is never 1; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    for t in range(n - 1, v.size):
+        w = v[t - n + 1:t + 1]
+        if np.isfinite(w).all():
+            rank = float((w < w[-1]).sum()) + (float((w == w[-1]).sum()) + 1.0) / 2.0
+            out[t] = (rank / n) * n / (n + 1)
+    return out
+
+
+def _trailing_corr(x: np.ndarray, y: np.ndarray, n: int) -> np.ndarray:
+    """Pearson correlation over the trailing n rows; NaN unless all n pairs are finite."""
+    out = np.full(x.size, np.nan)
+    for t in range(n - 1, x.size):
+        u, w = x[t - n + 1:t + 1], y[t - n + 1:t + 1]
+        if not (np.isfinite(u).all() and np.isfinite(w).all()):
+            continue
+        du, dw = u - u.mean(), w - w.mean()
+        den = float(np.sqrt((du * du).sum() * (dw * dw).sum()))
+        if den > 0:
+            out[t] = float((du * dw).sum()) / den
+    return out
+
+
+def _build_copula_pair(b: Bars, p: dict[str, Any]) -> list[Order]:
+    kind, nu = str(p.get("kind") or ""), float(p["nu"])
+    window, cum = int(p["window"]), int(p["cum_bars"])
+    if kind not in ("gauss", "t") or nu <= 2 or window < 2 or cum < 1:
+        return []
+    joined = _paired_closes(b, p)
+    if joined is None or len(joined[0]) < 2 * window + cum:
+        return []
+    from scipy import stats
+
+    rows, mine, theirs = joined
+    _, ra = _log_returns(mine)
+    _, rb = _log_returns(theirs)
+    ua, ub = _trailing_pct_rank(ra, window), _trailing_pct_rank(rb, window)
+    if kind == "t":
+        xa, xb = stats.t.ppf(ua, nu), stats.t.ppf(ub, nu)
+    else:
+        xa, xb = stats.norm.ppf(ua), stats.norm.ppf(ub)
+    rho = np.clip(_trailing_corr(xa, xb, window), -0.995, 0.995)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        if kind == "t":
+            scale = np.sqrt((nu + xb * xb) * (1 - rho * rho) / (nu + 1))
+            cond_p = stats.t.cdf((xa - rho * xb) / scale, nu + 1)
+        else:
+            cond_p = stats.norm.cdf((xa - rho * xb) / np.sqrt(1 - rho * rho))
+    excess = np.where(np.isfinite(rho), cond_p, np.nan) - 0.5
+    n = len(rows)
+    index = np.full(n, np.nan)
+    for t in range(cum - 1, n):
+        w = excess[t - cum + 1:t + 1]
+        if np.isfinite(w).all():
+            index[t] = float(w.sum())
+    tied = np.isfinite(rho) & (np.abs(rho) >= float(p["min_rho"]))
+    limit = float(p["entry_m"])
+    a = atr(b, int(p["atr_n"]))[rows]
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for hits in (_rising(tied & np.isfinite(index) & (index >= limit)),
+                 _rising(tied & np.isfinite(index) & (index <= -limit))):
+        for i in hits:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = -1 if index[i] > 0 else 1
+            px, sd = float(mine[i]), stop_atr * float(a[i])
+            out.append(Order(int(b.t[rows[i]]), side, px - side * sd, px + side * rr * sd, ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["copula_pair"] = RuleSpec(
+    "copula_pair",
+    "This leg's and the peer's (pair_symbol) H1 closes on the stamps both printed; log returns "
+    "row to row. Each return's percentile u is its average rank among the trailing window "
+    "returns (itself included) over window, times window / (window + 1). x = the inverse CDF "
+    "of u (Student-t with nu degrees for kind t, normal for gauss); rho = the correlation of "
+    "the two x series over the trailing window rows, clipped to +/-0.995. The conditional "
+    "probability of this leg given the peer is, for t, T_{nu+1}((xa - rho xb) / sqrt((nu + "
+    "xb^2)(1 - rho^2) / (nu + 1))), for gauss Phi((xa - rho xb) / sqrt(1 - rho^2)). The index "
+    "is the sum of (probability - 0.5) over the last cum_bars rows, all defined. Stands aside "
+    "with no pair_symbol, no peer bars, off H1, an unknown kind, nu <= 2 or fewer than 2 x "
+    "window + cum_bars joined rows. A row with |rho| >= min_rho on which the index becomes >= "
+    "entry_m (short) or <= -entry_m (long), with a positive ATR(atr_n) of this leg, signals. "
+    "Stop stop_atr x ATR and target rr x that from the signal close, entry next open, time "
+    "exit after ttl_bars. The session is the certificate's parameter.",
+    {"pair_symbol": None, "window": 500, "kind": "t", "nu": 4.0, "cum_bars": 12,
+     "entry_m": 2.0, "min_rho": 0.3, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 24},
+    _build_copula_pair, rule_sets_side=True, session_in_params=True)
+
+
+def _build_ou_reversion(b: Bars, p: dict[str, Any]) -> list[Order]:
+    window = int(p["window"])
+    hl_min, hl_max = float(p["hl_min"]), float(p["hl_max"])
+    hold, frac = float(p["hold_mult"]), float(p["target_frac"])
+    if (not 0 < hl_min < hl_max or hold < 1 or not 0 < frac <= 1 or window < 3
+            or len(b) < 2 * window):
+        return []
+    x, _ = _log_returns(b.c)
+    n = len(b)
+    half, dist, z = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
+    for t in range(window, n):
+        now, was = x[t - window + 1:t + 1], x[t - window:t]
+        if not (np.isfinite(now).all() and np.isfinite(was[0])):
+            continue
+        dn, dw = now - now.mean(), was - was.mean()
+        var_was = float((dw * dw).sum()) / (window - 1)
+        if not var_was > 0:
+            continue
+        slope = float((dn * dw).sum()) / (window - 1) / var_was
+        if not 0 < slope < 1:
+            continue
+        resid = max(float((dn * dn).sum()) / (window - 1) - slope * slope * var_was, 0.0)
+        mu = (float(now.mean()) - slope * float(was.mean())) / (1 - slope)
+        sd = float(np.sqrt(resid / (1 - slope * slope)))
+        half[t] = -np.log(2.0) / np.log(slope)
+        dist[t] = float(x[t]) - mu
+        if sd > 0:
+            z[t] = dist[t] / sd
+    inside = np.isfinite(half) & (half >= hl_min) & (half <= hl_max) & np.isfinite(z)
+    limit, max_ttl = float(p["entry_z"]), int(p["max_ttl"])
+    a = atr(b, int(p["atr_n"]))
+    stop_atr = float(p["stop_atr"])
+    out: list[Order] = []
+    for hits in (_rising(inside & (z >= limit)), _rising(inside & (z <= -limit))):
+        for i in hits:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = -1 if z[i] > 0 else 1
+            px = float(b.c[i])
+            ttl = int(min(max_ttl, np.ceil(hold * half[i])))
+            out.append(Order(int(b.t[i]), side, px - side * stop_atr * float(a[i]),
+                             px * float(np.exp(-frac * dist[i])), ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["ou_reversion"] = RuleSpec(
+    "ou_reversion",
+    "Log close x. At bar t, the least-squares line x_s = a + b x_{s-1} over the window bars "
+    "ending at t (sample variances and covariance). Only 0 < b < 1 is mean-reverting: half-life "
+    "= -ln 2 / ln b bars, equilibrium mu = a / (1 - b), stationary sd = sqrt(residual variance "
+    "/ (1 - b^2)) with residual variance = var(x) - b^2 var(lagged x), floored at 0; z = (x_t - "
+    "mu) / sd. Stands aside unless 0 < hl_min < hl_max, hold_mult >= 1, 0 < target_frac <= 1 "
+    "and there are 2 x window bars. A bar with hl_min <= half-life <= hl_max on which z becomes "
+    ">= entry_z (short) or <= -entry_z (long), with a positive ATR(atr_n), signals. Stop "
+    "stop_atr x ATR from the signal close; target = close x exp(-target_frac x (x_t - mu)); "
+    "entry next open; time exit after ceil(hold_mult x half-life) bars, at most max_ttl. The "
+    "session is the certificate's parameter.",
+    {"window": 500, "entry_z": 2.0, "hl_min": 4.0, "hl_max": 96.0, "hold_mult": 2.0,
+     "target_frac": 0.5, "atr_n": 20, "stop_atr": 2.5, "max_ttl": 240},
+    _build_ou_reversion, rule_sets_side=True, session_in_params=True)
 
 
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
