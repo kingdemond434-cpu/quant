@@ -437,3 +437,35 @@ def test_carry_rejects_unknown_score_and_crash(universe):
     df = universe["GGGHHH"]
     assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", score="swap") == []
     assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", crash="vix") == []
+
+
+def test_a_measurement_stands_for_the_remeasure_window():
+    """Firing is re-measured weekly, not daily: a daily re-measure of the whole grid kept every
+    pass inside the alphabet's first classes and the FX classes were never reached."""
+    from research import cross_sectional_breadth as csb
+    assert csb._due({}, "2026-11-10")
+    assert not csb._due({"day": "2026-11-09"}, "2026-11-10")
+    assert csb._due({"day": "2026-11-03"}, "2026-11-10")
+    assert csb._due({"day": "garbled"}, "2026-11-10")
+
+
+def test_a_cut_short_pass_resumes_on_the_classes_it_did_not_reach():
+    from research import cross_sectional_breadth as csb
+
+    def plan_of(sym):
+        return [("fam", None, {"symbol": sym})]
+    cells = {csb.identity("AAA", "fam", {"symbol": "AAA"}): {"day": "2026-11-10"},
+             csb.identity("BBB", "fam", {"symbol": "BBB"}): {"day": "2026-11-01"}}
+    order = csb._oldest_first({"a_equity": ["AAA", "BBB"], "fx_usd": ["EURUSD"]}, cells, plan_of)
+    assert order == [("fx_usd", "EURUSD"), ("a_equity", "BBB"), ("a_equity", "AAA")]
+
+
+def test_the_seeding_loop_stops_inside_its_share_of_the_budget(universe, tmp_path, monkeypatch):
+    """A zero budget measures nothing and still returns (and saves) instead of being killed."""
+    from research import cross_sectional_breadth as csb
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
+    got = csb.seed(budget_s=0.0, dry_run=False)
+    assert got["status"] == "OK" and got["stopped_because"].startswith("time budget")
+    assert sum(v.get("measured_this_pass", 0) for v in got["cells_by_family"].values()) == 0
+    assert (tmp_path / "state.json").exists()

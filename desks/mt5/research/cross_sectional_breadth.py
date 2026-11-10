@@ -73,6 +73,15 @@ FIRE_FLOOR = 60
 SEED_FLOOR = 66
 #: Bytes of the verdict ledger's tail read per pass. The newest verdicts are at the end.
 VERDICT_TAIL_BYTES = 64 * 1024 * 1024
+#: Days a cell's firing count stands before it is measured again. Firing over years of bars
+#: barely moves in a week; re-measuring the whole grid daily is what kept the pass from ever
+#: reaching the FX classes (measured 2026-11-10: every pass TIMEOUT at ~1036s, no state saved).
+REMEASURE_DAYS = 7
+#: Share of the pass budget the seeding loop may spend; the rest is the report's (it tails the
+#: verdict ledger), so the whole pass ends inside the leg's kill time.
+SEED_SHARE = 0.7
+#: Seconds between state saves inside the loop, so a killed pass keeps what it measured.
+SAVE_EVERY_S = 30.0
 
 
 def _now() -> str:
@@ -143,6 +152,32 @@ def _save_state(state: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
+def _due(prior: dict[str, Any], today: str) -> bool:
+    """True when a cell has never been measured, or its measurement is REMEASURE_DAYS old."""
+    day = str(prior.get("day") or "")
+    if not day:
+        return True
+    try:
+        age = (datetime.fromisoformat(today).date() - datetime.fromisoformat(day).date()).days
+    except ValueError:
+        return True
+    return age >= REMEASURE_DAYS
+
+
+def _oldest_first(classes: dict[str, list[str]], cells: dict[str, Any],
+                  plan_of: Any) -> list[tuple[str, str]]:
+    """(class, symbol) pairs, the least recently measured first: a symbol with any cell never
+    measured sorts ahead of every measured one, so a pass cut short by its budget always spends
+    itself on the classes the last pass did not reach, never on the alphabet's first class."""
+    order = []
+    for klass, members in classes.items():
+        for sym in members:
+            days = [str((cells.get(identity(sym, f, c)) or {}).get("day") or "")
+                    for f, _fn, c in plan_of(sym)]
+            order.append((min(days) if days else "", klass, sym))
+    return [(k, s) for _d, k, s in sorted(order)]
+
+
 def _mechanism(family: str, symbol: str, klass: str) -> str:
     t = xs.TARGETS.get(family, {})
     return (f"{family} on {symbol} ranked within its {klass} class: {t.get('prior', '')}. "
@@ -168,50 +203,61 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
     no_bars: list[str] = []
     errors: Counter = Counter()
     stopped = "grid exhausted"
-    for klass, members in sorted(classes.items()):
+    deadline = started + float(budget_s) * SEED_SHARE
+    last_save = time.monotonic()
+
+    def plan_of(sym: str) -> list[tuple[str, Any, dict[str, Any]]]:
+        return [(fam, fn, {"symbol": sym, **params})
+                for fam, fn in xs.CROSS_SECTIONAL_FAMILIES.items() for params in grid(fam)]
+
+    for klass, members in classes.items():
         row = by_class.setdefault(klass, Counter())
         row["members_in_registry"] = len(members)
-        for sym in members:
-            if symbols and sym not in symbols:
-                continue
-            if time.monotonic() - started > budget_s:
-                stopped = f"time budget {budget_s:g}s reached; resumes next pass"
-                break
-            plan = [(fam, fn, {"symbol": sym, **params})
-                    for fam, fn in xs.CROSS_SECTIONAL_FAMILIES.items() for params in grid(fam)]
-            stale = any((cells_state.get(identity(sym, f, c)) or {}).get("day") != today
-                        for f, _fn, c in plan)
-            d = _bars(sym) if stale else None
-            if stale and d is None:
-                no_bars.append(sym)
-                row["members_without_bars"] += 1
-                continue
-            for fam, fn, call in plan:
-                ident = identity(sym, fam, call)
-                prior = cells_state.get(ident) or {}
-                by_family[fam]["grid"] += 1
-                row["grid"] += 1
-                if prior.get("day") != today:
-                    try:
-                        got = firing(list(fn(d, **call) or []), d)
-                    except Exception as exc:
-                        errors[f"{fam}: {type(exc).__name__}"] += 1
-                        continue
-                    prior = {**prior, **got, "day": today, "family": fam, "symbol": sym,
-                             "klass": klass, "params": call}
-                    cells_state[ident] = prior
-                    by_family[fam]["measured_this_pass"] += 1
-                ok = int(prior.get("trade_days_lb") or 0) >= SEED_FLOOR
-                by_family[fam]["clears_floor" if ok else "held_back_under_floor"] += 1
-                row["clears_floor" if ok else "held_back_under_floor"] += 1
-                if ok and not prior.get("donated_at"):
-                    cands.append({"ident": ident, "symbol": sym, "family": fam,
-                                  "params": call, "klass": klass,
-                                  "firing": {k: prior.get(k) for k in
-                                             ("signal_days", "trade_days_lb")}})
-        else:
+    for klass, sym in _oldest_first(classes, cells_state, plan_of):
+        if symbols and sym not in symbols:
             continue
-        break
+        if time.monotonic() > deadline:
+            stopped = f"time budget {budget_s:g}s reached; resumes next pass, oldest first"
+            break
+        row = by_class[klass]
+        plan = plan_of(sym)
+        due = any(_due(cells_state.get(identity(sym, f, c)) or {}, today) for f, _fn, c in plan)
+        d = _bars(sym) if due else None
+        if due and d is None:
+            no_bars.append(sym)
+            row["members_without_bars"] += 1
+            continue
+        for fam, fn, call in plan:
+            ident = identity(sym, fam, call)
+            prior = cells_state.get(ident) or {}
+            by_family[fam]["grid"] += 1
+            row["grid"] += 1
+            if _due(prior, today):
+                if time.monotonic() > deadline:
+                    stopped = f"time budget {budget_s:g}s reached; resumes next pass, oldest first"
+                    break
+                try:
+                    got = firing(list(fn(d, **call) or []), d)
+                except Exception as exc:
+                    errors[f"{fam}: {type(exc).__name__}"] += 1
+                    continue
+                prior = {**prior, **got, "day": today, "family": fam, "symbol": sym,
+                         "klass": klass, "params": call}
+                cells_state[ident] = prior
+                by_family[fam]["measured_this_pass"] += 1
+            ok = int(prior.get("trade_days_lb") or 0) >= SEED_FLOOR
+            by_family[fam]["clears_floor" if ok else "held_back_under_floor"] += 1
+            row["clears_floor" if ok else "held_back_under_floor"] += 1
+            if ok and not prior.get("donated_at"):
+                cands.append({"ident": ident, "symbol": sym, "family": fam,
+                              "params": call, "klass": klass,
+                              "firing": {k: prior.get(k) for k in
+                                         ("signal_days", "trade_days_lb")}})
+        if not dry_run and time.monotonic() - last_save > SAVE_EVERY_S:
+            _save_state(state)
+            last_save = time.monotonic()
+        if stopped != "grid exhausted":
+            break
 
     donated = 0
     donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
