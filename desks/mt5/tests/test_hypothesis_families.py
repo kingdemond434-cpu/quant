@@ -651,7 +651,9 @@ def test_stored_moved_cells_are_repaired_counted_and_named_void(tmp_path) -> Non
     assert b["params"] == {"symbol": ["ADAUSD"], "input_symbol": "ADAUSD", "fx_symbol": "USDJPY"}
     assert c["params"] == {"symbol": "EURUSD"} and c["spec_id"] == "c1"
     assert out[4]["params"] == {"input_symbol": "DXY"}            # an input, never a mismatch
-    assert out[5]["params"] == {"mode": "harvest"}                # no key: not this pass's
+    # no key at all on a family that cannot run without one: completed, and nothing is void
+    assert out[5]["params"] == {"mode": "harvest", "symbol": "GER40"}
+    assert census["symbol_supplied"] == 1
     again, census2, void2 = hf.repair_moved_cells(out)
     assert census2["rewritten"] == 0 and census2["mismatched"] == 2 and void2 == []
     assert census2["repaired_earlier"] == 2 and again == out
@@ -680,3 +682,34 @@ def test_a_fault_after_the_repair_stores_no_corrected_row_without_its_void_entry
     assert out is rows and rows[0]["params"] == {"symbol": "USDSGD"}
     assert rows[0]["spec_id"] == "aef9" and "moved_cell_repair" not in rows[0]
     assert not (tmp_path / "moved_cell_void.json").exists()
+
+
+def test_a_family_that_needs_its_instrument_is_told_it(tmp_path) -> None:
+    """Box 2026-11-10: 144 carry_risk_off rows from local_converter carried `params: {}`. The
+    family returns no orders without `symbol` and the sealed judge supplies it only for carry
+    and event_reaction, so 133 were judged UNKNOWN and none could ever fire."""
+    assert hf.with_row_symbol("carry_risk_off", "ADAUSD", {}) == {"symbol": "ADAUSD"}
+    assert hf.with_row_symbol("carry_risk_off", "ADAUSD", {"symbol": "ADAUSD", "z_thr": 1.0}) == {
+        "symbol": "ADAUSD", "z_thr": 1.0}
+    assert hf.with_row_symbol("forced_flow", "XAUUSD", {}) == {}     # runs without one
+    assert hf.with_row_symbol("carry", "EURUSD", {}) == {}           # the judge supplies it
+    rows = [{"symbol": "ADAUSD", "family": "carry_risk_off", "params": {}, "spec_id": "4a07",
+             "producer": "desks/mt5/research/local_converter.py"},
+            {"symbol": "AUDCAD", "family": "carry_risk_off", "params": {}, "spec_id": "f008"},
+            {"symbol": "AUDCAD", "family": "carry_risk_off", "params": {"symbol": "AUDCAD"}},
+            {"symbol": "XAUUSD", "family": "forced_flow", "params": {}}]
+    out, census, void = hf.repair_moved_cells(rows)
+    assert void == [] and rows[0]["params"] == {}                 # no test happened: none void
+    assert census["symbol_missing"] == 2 and census["symbol_supplied"] == 1
+    assert census["merged_into_existing"] == 1 and census["mismatched"] == 0
+    assert census["symbol_missing_by_origin"] == {"desks/mt5/research/local_converter.py": 1,
+                                                  "unknown": 1}
+    assert len(out) == 3 and out[0]["params"] == {"symbol": "ADAUSD"}
+    assert out[0]["row_symbol_supplied"]["never_fired_spec_id"] == "4a07"
+    assert "spec_id" not in out[0] and out[2] == rows[3]
+    assert hf.repair_moved_cells(out)[1]["symbol_missing"] == 0   # idempotent
+    counted = hf.repair_moved_cells(rows, rewrite=False)
+    assert counted[0] == rows and counted[1]["symbol_supplied"] == 0
+    # the converter is the producer: it now writes the instrument itself
+    text = (Path(hf.__file__).resolve().parent / "local_converter.py").read_text("utf-8")
+    assert "with_row_symbol(str(fam), str(sym), params)" in text

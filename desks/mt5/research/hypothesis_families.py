@@ -1036,7 +1036,21 @@ JUDGE_SUPPLIES_SYMBOL = frozenset({"carry"})
 #: verdicts. Adding a family here is a reviewed one-line change after its rows are read.
 MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow",
                                  "event_reaction"})
+#: Families that return NO ORDERS unless told which instrument they trade, and that the sealed
+#: judge does not tell (it supplies `symbol` for carry and event_reaction only). A row of one of
+#: these with no `symbol` in params can never fire: box 2026-11-10, 144 carry_risk_off rows from
+#: `local_converter` with `params: {}`, 133 judged UNKNOWN and 11 never reached. Named, not
+#: inferred from signatures: several families take an optional `symbol` and run without it.
+ROW_SYMBOL_FAMILIES = frozenset({"carry_risk_off"})
 MOVED_VOID = HYP / "moved_cell_void.json"
+
+
+def with_row_symbol(family: str, symbol: str, params: Mapping[str, Any] | None) -> dict[str, Any]:
+    """`params` naming the row's own instrument, for a family that cannot run without it."""
+    out = dict(params or {})
+    if str(family) in ROW_SYMBOL_FAMILIES and symbol and not _named(out.get("symbol")):
+        out["symbol"] = str(symbol)
+    return out
 
 
 def _named(value: Any) -> str:
@@ -1080,6 +1094,8 @@ def repair_moved_cells(rows: list[dict[str, Any]], *,
                               "merged_into_existing": 0, "skipped_judge_supplies_symbol": 0,
                               "repaired_earlier": 0, "unreviewed_family": 0,
                               "first_seen_unknown": 0, "rewrite_enabled": bool(rewrite),
+                              "symbol_missing": 0, "symbol_supplied": 0,
+                              "symbol_missing_by_origin": {},
                               "by_family_origin": {}, "by_first_seen_day": {},
                               "by_origin_skipped": {}, "unreviewed_by_family_origin": {}}
     present = {ident(r) for r in rows if isinstance(r, dict)}
@@ -1092,6 +1108,30 @@ def repair_moved_cells(rows: list[dict[str, Any]], *,
         params = r.get("params")
         sym = _sym(r)
         stale = _named(params.get("symbol")) if isinstance(params, dict) else ""
+        if not stale and sym and _fam(r) in ROW_SYMBOL_FAMILIES:
+            # NEVER TOLD ITS INSTRUMENT: it could not fire, so nothing it "tested" is void --
+            # there was no test. The row is completed (a copy) and judged for the first time.
+            census["symbol_missing"] += 1
+            who = str(r.get("origin") or r.get("producer") or r.get("source") or "unknown")
+            census["symbol_missing_by_origin"][who] = (
+                census["symbol_missing_by_origin"].get(who, 0) + 1)
+            done = {k: v for k, v in r.items()
+                    if k not in ("spec_id", "prereg_hash", "prereg_status", "dup_status")}
+            done["params"] = with_row_symbol(_fam(r), sym, params if isinstance(params, dict)
+                                             else {})
+            if rewrite and ident(done) not in present:
+                present.discard(ident(r))
+                present.add(ident(done))
+                done["row_symbol_supplied"] = {"at": stamp, "never_fired_spec_id":
+                                               r.get("spec_id")}
+                census["symbol_supplied"] += 1
+                out.append(done)
+                continue
+            if rewrite:
+                census["merged_into_existing"] += 1
+                continue
+            out.append(r)
+            continue
         if not stale or not sym or stale == sym.upper():
             if r.get("moved_cell_repair"):
                 census["repaired_earlier"] += 1

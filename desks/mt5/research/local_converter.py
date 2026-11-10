@@ -422,6 +422,10 @@ def docket_rows(cands: list[dict]) -> list[dict]:
         # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
         # cells rather than one cell with a label the builder cannot read.
         params = {"selector": c["selector"]} if c.get("selector") else {}
+        # A FAMILY THAT CANNOT RUN WITHOUT ITS INSTRUMENT IS TOLD IT (box 2026-11-10: 144
+        # carry_risk_off rows left here with `params: {}` and none could ever fire).
+        from research.hypothesis_families import with_row_symbol
+        params = with_row_symbol(str(fam), str(sym), params)
         k = key(str(sym), str(fam), params)
         if k in seen:
             continue
