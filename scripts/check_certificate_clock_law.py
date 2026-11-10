@@ -127,6 +127,16 @@ MAX_SAMPLES = 96
 WORKING_STATUSES = frozenset({"", "ACTIVE", "NONE", "UNMEASURED", "ACCUMULATING",
                               "PROXY_SHADOW"})
 
+#: Statuses the PROMOTER writes onto a clock that reached candidacy and was refused LIVE
+#: promotion (desks/mt5/research/promoter.py: tier_s_block, regrade_block, blind_review_veto).
+#: The forward engine keeps replaying these rows -- measured on the box 2026-11-10,
+#: GBPNOK.overnight_gap_decay.asia read BLOCKED_TIER_S with n=31 and a last entry that morning --
+#: so the clock is NOT stopped and "the engine will not advance this clock" was false for all of
+#: them. They are judged on their row count like any working clock, and the refusal is published
+#: as `promotion_block` for the gate that owns it. The engine's OWN blocks (BLOCKED_NO_BARS,
+#: BLOCKED_FAMILY_UNBUILDABLE, IDENTITY_BROKEN ...) really do stop a clock and stay breaches.
+PROMOTER_REFUSALS = frozenset({"BLOCKED_TIER_S", "BLOCKED_COST_REGRADE", "BLOCKED_BLIND_REVIEW"})
+
 #: A verdict, not a stall: the clock did its job and the desk decided.
 DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
                               "PROMOTION CANDIDATE", "PROMOTION_CANDIDATE"})
@@ -442,7 +452,10 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
         return _seal(entry)
 
     # ---- 4. a clock the engine refuses to advance is a breach whatever its row count says
-    if status not in WORKING_STATUSES:
+    if status in PROMOTER_REFUSALS:
+        entry["promotion_block"] = (f"{status}: "
+                                    + str(row.get("gate_reason") or "no reason recorded")[:300])
+    elif status not in WORKING_STATUSES:
         entry.update(verdict="BLOCKED", breach=True,
                      blocker=str(row.get("last_error") or "")[:400] or status,
                      why=f"BREACH: the engine will not advance this clock (`{status}`), so the "
@@ -586,6 +599,12 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
     late = [e for e in judged if e.get("late")]
     for e in late:
         problems.append(f"LATE_CLOCK {e['certificate']} ({e['family']}): {e['latency_breach']}")
+    refused = [e for e in judged if e.get("promotion_block")]
+    if refused:
+        notes.append(f"{len(refused)} clock(s) matured and were refused LIVE promotion by a "
+                     f"promoter gate (judged on their rows, not a clock breach; the gate owns "
+                     f"them): " + ", ".join(sorted(e["certificate"] for e in refused)[:20])
+                     + (" ..." if len(refused) > 20 else ""))
     late_history = [e for e in judged if e.get("late_history")]
     if late_history:
         notes.append(f"{len(late_history)} clock(s) began late more than {LATE_WINDOW_H:g}h ago "
@@ -625,6 +644,7 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         "counts": counts,
         "n_late": len(late),
         "n_late_history": len(late_history),
+        "n_promotion_refused": len(refused),
         "late_window_h": LATE_WINDOW_H,
         "latency_breach_h": LATENCY_BREACH_H,
         "family_gap_hours": {k: round(v, 3) for k, v in sorted(gaps.items())},

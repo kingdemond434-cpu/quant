@@ -431,3 +431,30 @@ def test_the_window_never_hides_a_certificate_with_no_clock() -> None:
     cert = _cert(certified_at=(NOW - timedelta(days=60)).isoformat())
     e = law.judge(cert, "K", None, [], 100.0, "why", NOW)
     assert e["verdict"] == "NO_CLOCK" and e["breach"] is True
+
+
+# ------------------------------- a promoter's refusal is not a stopped clock; the engine's block is
+@pytest.mark.parametrize("status", sorted(law.PROMOTER_REFUSALS))
+def test_a_promoter_refusal_is_judged_on_its_rows(status: str) -> None:
+    """Box 2026-11-10: GBPNOK.overnight_gap_decay.asia read BLOCKED_TIER_S with n=31 and a fresh
+    last entry -- the engine was advancing it, so calling it a stopped clock was false."""
+    row = _row(n=31, status=status, gate_reason="tier S door closed",
+               forward_start="2026-09-17T22:57:51+00:00", enrolled_at="2026-09-17T22:57:51+00:00")
+    e = law.judge(_cert(certified_at="2026-09-17T22:57:00+00:00"), "K", row,
+                  _samples((80, 20), (1, 31)), 48.0, "why", NOW)
+    assert e["verdict"] != "BLOCKED" and e["breach"] is False
+    assert e["promotion_block"].startswith(status) and "tier S door closed" in e["promotion_block"]
+
+
+def test_a_promoter_refusal_whose_rows_froze_is_still_frozen() -> None:
+    row = _row(n=31, status="BLOCKED_TIER_S", forward_start="2026-09-17T22:57:51+00:00",
+               enrolled_at="2026-09-17T22:57:51+00:00")
+    e = law.judge(_cert(certified_at="2026-09-17T22:57:00+00:00"), "K", row,
+                  _samples((80, 31), (1, 31)), 48.0, "why", NOW)
+    assert e["verdict"] == "FROZEN_ROWS" and e["breach"] is True
+
+
+@pytest.mark.parametrize("status", ["BLOCKED_NO_BARS", "BLOCKED_FAMILY_UNBUILDABLE"])
+def test_the_engines_own_blocks_stay_breaches(status: str) -> None:
+    e = law.judge(_cert(), "K", _row(n=4, status=status), [], 100.0, "why", NOW)
+    assert e["verdict"] == "BLOCKED" and e["breach"] is True
