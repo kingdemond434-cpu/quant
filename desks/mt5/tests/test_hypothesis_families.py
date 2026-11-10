@@ -713,3 +713,80 @@ def test_a_family_that_needs_its_instrument_is_told_it(tmp_path) -> None:
     # the converter is the producer: it now writes the instrument itself
     text = (Path(hf.__file__).resolve().parent / "local_converter.py").read_text("utf-8")
     assert "with_row_symbol(str(fam), str(sym), params)" in text
+
+
+def test_one_executable_is_one_key_and_a_fresh_copy_is_refused(tmp_path) -> None:
+    """Box 2026-11-10: `family_carry` reads no `input_symbol` and the judge supplies its
+    instrument, so CHFNOK carry held 15 certificates that are copies of fewer rules. The
+    canonical key groups them WITHOUT touching any stored identity; a fresh copy is refused at
+    intake, stored copies are counted and left, and no other family is examined."""
+    a = {"symbol": "CHFNOK", "family": "carry", "params": {"session": "ny"}}
+    b = {"symbol": "CHFNOK", "family": "carry", "origin": "moat",
+         "params": {"session": "ny", "input_symbol": "eBay"}}
+    c = {"symbol": "CHFNOK", "family": "carry", "origin": "moat",
+         "params": {"session": "ny", "input_symbol": "GBPJPY", "symbol": "GBPJPY"}}
+    d = {"symbol": "CHFNOK", "family": "carry", "params": {"session": "asia"}}
+    e = {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_symbol": "DXY"}}
+    f = {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_symbol": "VIX"}}
+    key = hf.executable_key
+    assert key("CHFNOK", "carry", a["params"]) == key("chfnok", "carry", b["params"]) == key(
+        "CHFNOK", "carry", c["params"])
+    assert key("CHFNOK", "carry", a["params"]) != key("CHFNOK", "carry", d["params"])
+    assert key("CHFNOK", "carry", {}, chart="M15") != key("CHFNOK", "carry", {}, chart="M5")
+    assert key("EURUSD", "macro_conditional", e["params"]) != key(
+        "EURUSD", "macro_conditional", f["params"])            # an input that IS read
+    assert hf.identity(a) != hf.identity(b)                       # identities are untouched
+    rows = [a, b, d, e, f, c]
+    out, rep = hf.refuse_executable_copies(rows, fresh={hf.identity(c), hf.identity(f)})
+    assert out == [a, b, d, e, f]                                 # only the fresh copy goes
+    assert rep["fresh_refused"] == 1 and rep["refused_by_origin"] == {"moat": 1}
+    assert rep["stored_copies"] == 1 and rep["stored_copies_by_symbol"] == {"CHFNOK": 1}
+    assert rep["examined"] == 4 and rep["executables"] == 2
+    kept, counted = hf.refuse_executable_copies(rows, fresh={hf.identity(c)}, refuse=False)
+    assert kept == rows and counted["fresh_refused"] == 1 and not counted["refuse_enabled"]
+    # a fresh executable nobody holds is kept; a second fresh copy of it is not
+    g = {"symbol": "USDZAR", "family": "carry", "params": {}}
+    h = {"symbol": "USDZAR", "family": "carry", "params": {"input_symbol": "eBay"}}
+    assert hf.refuse_executable_copies([g, h], fresh={hf.identity(g), hf.identity(h)})[0] == [g]
+
+    # the stores, grouped: certificates, clocks and sleeves, each copy by its own name
+    gates = {"cpcv": {"passed": True}}
+
+    def cert(params: dict) -> dict:
+        return {"sym": "CHFNOK", "gates": gates, "status": "UNIVERSAL",
+                "shadow_spec": {"symbol": "CHFNOK", "family": "carry", "selector": "asia",
+                                "params": params}}
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "UNIVERSAL_SURVIVORS.canon.json").write_text(json.dumps({"survivors": {
+        "external.CHFNOK.carry.p=1": cert({"input_symbol": "eBay"}),
+        "external.CHFNOK.carry.p=2": cert({"input_symbol": "GBPJPY"}),
+        "external.CHFNOK.carry.p=3": cert({"require_quiet": False})}}), "utf-8")
+    # a sleeve is keyed by the params of the CERTIFICATE it names, never by its own partial
+    # `params` (three rows reading {"timeframe": "H1"} under three hashes are three rules)
+    def sleeve(name: str, cell: str) -> dict:
+        return {"name": name, "symbol": "CHFNOK", "family": "carry", "selector": "asia",
+                "status": "RETIRED", "risk_frac": 0.03, "params": {"timeframe": "H1"},
+                "certificate": {"cell": cell}}
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": [
+        sleeve("s1", "external.CHFNOK.carry.p=1"), sleeve("s2", "external.CHFNOK.carry.p=2"),
+        sleeve("s3", "external.CHFNOK.carry.p=3"), sleeve("s4", "external.CHFNOK.carry.p=9")]}),
+        "utf-8")
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps({"sleeves": {
+        "a": {"status": "LIVE", "identity": {"sleeve_id": "a", "symbol": "CHFNOK",
+              "family": "carry", "timeframe": "M15", "params": {"input_symbol": "eBay"}}},
+        "b": {"status": "LIVE", "identity": {"sleeve_id": "b", "symbol": "CHFNOK",
+              "family": "carry", "timeframe": "M15", "params": {"input_symbol": "GBPJPY"}}},
+        "c": {"status": "LIVE", "identity": {"sleeve_id": "c", "symbol": "CHFNOK",
+              "family": "carry", "timeframe": "M5", "params": {"input_symbol": "eBay"}}}}}),
+        "utf-8")
+    doc = hf.executable_groups(tmp_path)
+    assert doc["canon"]["records"] == 3 and doc["canon"]["executables"] == 2
+    assert doc["canon"]["surplus_copies"] == 1
+    assert doc["canon"]["groups"][0]["copies"] == 2
+    assert doc["sleeves"]["records"] == 3 and doc["sleeves"]["surplus_copies"] == 1
+    assert doc["sleeves"]["unjoined_to_a_certificate"] == 1
+    assert doc["sleeve_registry"]["records"] == 3
+    assert doc["sleeve_registry"]["surplus_copies"] == 1          # M15 twice, M5 once
+    assert doc["sleeves"]["groups"][0]["members"][0] == {"name": "s1",
+                                                         "state": "RETIRED risk_frac=0.03"}
+    assert doc["reports_survivors"]["status"] == "UNMEASURED"

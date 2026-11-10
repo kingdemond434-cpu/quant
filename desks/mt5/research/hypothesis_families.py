@@ -1217,6 +1217,182 @@ def record_moved_void(void: list[dict[str, Any]], path: Path | None = None) -> d
     return {"added": added, "n": len(known), "by_family": by_family, "written": ok}
 
 
+#: Params a family is handed but NEVER READS, per family, each traced in code -- so two rows that
+#: differ only in them are ONE executable. `carry`: `family_carry` has no `input_symbol`
+#: argument and the sealed judge pops it and sets `symbol` to the row's own instrument
+#: (`external_gauntlet.build_cell`, the carry branch). Box 2026-11-10: 43 canon certificates and
+#: 21 forward clocks across 8 pairs are copies of fewer carry rules under different
+#: `input_symbol` names (CHFNOK alone: 15 certificates). A family is added here only after its
+#: unread keys are traced; every other family's executable key is its identity.
+EXECUTABLE_UNREAD: dict[str, frozenset[str]] = {"carry": frozenset({"input_symbol", "symbol"})}
+
+
+def executable_key(symbol: str, family: str, params: Mapping[str, Any] | None,
+                   **dims: Any) -> str:
+    """The CANONICAL EXECUTABLE: instrument, family, the params the family reads, plus any
+    `dims` the store keeps outside params (chart, selector).
+
+    NOT AN IDENTITY AND NEVER A REPLACEMENT FOR ONE. `identity`, `spec_id`, certificate cells
+    and sleeve ids stay exactly as stored -- re-keying them would orphan certificates and
+    forward clocks, which is how certificates were lost before. This key only answers "are
+    these two records the same rule on the same instrument", for refusing a new copy at intake
+    and for counting breadth honestly."""
+    fam = str(family or "").strip()
+    unread = EXECUTABLE_UNREAD.get(fam, frozenset())
+    p = params if isinstance(params, Mapping) else {}
+    return json.dumps({"symbol": str(symbol or "").strip().upper(), "family": fam,
+                       "params": {k: p[k] for k in sorted(p) if k not in unread},
+                       "dims": {k: dims[k] for k in sorted(dims) if dims[k] not in (None, "")}},
+                      sort_keys=True, default=str)
+
+
+def refuse_executable_copies(rows: list[dict[str, Any]], fresh: set[str], *,
+                             identity_fn: Callable[[dict[str, Any]], str] | None = None,
+                             refuse: bool = True
+                             ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """A FRESH row that is a copy of an executable the docket already holds is refused at
+    intake; copies already stored are counted and LEFT (collapsing them is a capital question
+    for the allocator, through the promoter).
+
+    Only families in `EXECUTABLE_UNREAD` are examined. Rows the bank already held claim their
+    key first, so a new copy never displaces an old row; among fresh copies the first is kept.
+    Each copy that was judged was charged as a trial and stays charged; a refused copy is
+    never judged, so it is never charged -- it was never a distinct test. `refuse=False`
+    (QUANT_EXECUTABLE_DEDUP=0) counts and removes nothing."""
+    ident = identity_fn or identity
+    out: list[dict[str, Any]] = []
+    held: dict[str, int] = {}
+    report: dict[str, Any] = {"families": sorted(EXECUTABLE_UNREAD), "examined": 0,
+                              "executables": 0, "stored_copies": 0, "fresh_refused": 0,
+                              "refuse_enabled": bool(refuse), "refused_by_origin": {},
+                              "stored_copies_by_symbol": {}}
+    keyed: list[tuple[dict[str, Any], str | None, bool]] = []
+    for r in rows:
+        if not isinstance(r, dict) or _fam(r) not in EXECUTABLE_UNREAD:
+            keyed.append((r, None, False))
+            continue
+        report["examined"] += 1
+        key = executable_key(_sym(r), _fam(r), r.get("params"))
+        is_fresh = ident(r) in fresh
+        keyed.append((r, key, is_fresh))
+        if not is_fresh:
+            held[key] = held.get(key, 0) + 1
+    for key, n in held.items():
+        if n > 1:
+            report["stored_copies"] += n - 1
+            sym = json.loads(key)["symbol"]
+            report["stored_copies_by_symbol"][sym] = (
+                report["stored_copies_by_symbol"].get(sym, 0) + n - 1)
+    for r, key, is_fresh in keyed:
+        if key is None or not is_fresh:
+            out.append(r)
+            continue
+        if key in held:
+            report["fresh_refused"] += 1
+            who = str(r.get("origin") or r.get("producer") or r.get("source") or "unknown")
+            report["refused_by_origin"][who] = report["refused_by_origin"].get(who, 0) + 1
+            if refuse:
+                continue
+            out.append(r)
+            continue
+        held[key] = 1
+        out.append(r)
+    report["executables"] = len(held)
+    return out, report
+
+
+def executable_groups(base: Path | None = None, *, top: int = 40) -> dict[str, Any]:
+    """Certificates, forward clocks and sleeves GROUPED by canonical executable, read-only.
+
+    The published answer to "how many distinct rules does the desk hold": per store, records of
+    the keyed families, distinct executables, and every executable held more than once with
+    each copy's own name and state. Retires nothing. An absent store is UNMEASURED."""
+    root = base or BASE
+
+    def group(records: Iterable[tuple[str, str, str, Any, dict[str, Any], str]]
+              ) -> dict[str, Any]:
+        by: dict[str, list[dict[str, str]]] = {}
+        n = 0
+        for name, sym, fam, params, dims, state in records:
+            if fam not in EXECUTABLE_UNREAD:
+                continue
+            n += 1
+            by.setdefault(executable_key(sym, fam, params, **dims), []).append(
+                {"name": name, "state": state})
+        multi = sorted(((k, v) for k, v in by.items() if len(v) > 1),
+                       key=lambda kv: -len(kv[1]))
+        return {"records": n, "executables": len(by), "surplus_copies": n - len(by),
+                "groups_held_more_than_once": len(multi),
+                "groups": [{"symbol": json.loads(k)["symbol"], "family": json.loads(k)["family"],
+                            "copies": len(v), "members": v[:25]} for k, v in multi[:top]]}
+
+    certified: dict[str, Any] = {}            # certificate cell -> the params it certifies
+
+    def survivors(rel: str) -> dict[str, Any]:
+        doc = _read(root / rel)
+        surv = doc.get("survivors") if isinstance(doc, dict) else None
+        if not isinstance(surv, dict) or not surv:
+            return {"status": "UNMEASURED", "why": f"{rel} absent or empty on this host"}
+        recs = []
+        for name, row in surv.items():
+            spec = row.get("shadow_spec") if isinstance(row, dict) else None
+            if not isinstance(spec, dict):
+                continue
+            if isinstance(spec.get("params"), dict):
+                certified.setdefault(str(name), spec["params"])
+            recs.append((str(name), str(spec.get("symbol") or row.get("sym") or ""),
+                         str(spec.get("family") or ""), spec.get("params"),
+                         {"chart": spec.get("chart") or spec.get("timeframe"),
+                          "selector": spec.get("selector")}, str(row.get("status") or "")))
+        return group(recs)
+
+    out: dict[str, Any] = {
+        "key": "research/hypothesis_families.executable_key(symbol, family, params, **dims)",
+        "unread_params": {k: sorted(v) for k, v in EXECUTABLE_UNREAD.items()},
+        "canon": survivors("data/UNIVERSAL_SURVIVORS.canon.json"),
+        "reports_survivors": survivors("reports/UNIVERSAL_SURVIVORS.json")}
+    reg = _read(root / "data" / "sleeve_registry.json")
+    rows = reg.get("sleeves") if isinstance(reg, dict) else None
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    if isinstance(rows, list) and rows:
+        out["sleeve_registry"] = group(
+            (str((r.get("identity") or {}).get("sleeve_id") or ""),
+             str((r.get("identity") or {}).get("symbol") or ""),
+             str((r.get("identity") or {}).get("family") or ""),
+             (r.get("identity") or {}).get("params"),
+             {"chart": (r.get("identity") or {}).get("timeframe"),
+              "selector": (r.get("identity") or {}).get("selector"),
+              "direction": (r.get("identity") or {}).get("direction")},
+             str(r.get("status") or "")) for r in rows if isinstance(r, dict))
+    else:
+        out["sleeve_registry"] = {"status": "UNMEASURED", "why": "sleeve_registry.json absent"}
+    # A SLEEVE ROW'S OWN `params` IS NOT THE CERTIFIED PARAMETERIZATION (several rows read
+    # `{"timeframe": "H1"}` under different certificate hashes), so grouping on it would call
+    # distinct rules copies. Each sleeve is keyed by the params of the certificate it names;
+    # one whose certificate cannot be found here is counted `unjoined` and grouped with nothing.
+    sl = _read(root / "data" / "sleeves.json")
+    rows = sl.get("sleeves") if isinstance(sl, dict) else None
+    if isinstance(rows, list) and rows:
+        recs, unjoined = [], 0
+        for r in rows:
+            if not isinstance(r, dict) or str(r.get("family") or "") not in EXECUTABLE_UNREAD:
+                continue
+            cell = str((r.get("certificate") or {}).get("cell") or "") if isinstance(
+                r.get("certificate"), dict) else ""
+            if cell not in certified:
+                unjoined += 1
+                continue
+            recs.append((str(r.get("name") or ""), str(r.get("symbol") or ""),
+                         str(r.get("family") or ""), certified[cell],
+                         {"selector": r.get("selector"), "state": r.get("state")},
+                         f"{r.get('status') or ''} risk_frac={r.get('risk_frac')}"))
+        out["sleeves"] = {**group(recs), "unjoined_to_a_certificate": unjoined}
+    else:
+        out["sleeves"] = {"status": "UNMEASURED", "why": "sleeves.json absent"}
+    return out
+
+
 _SAFE = ("source", "producer", "origin", "title", "url", "source_title", "source_url",
          "mechanism", "mechanism_status", "mechanism_note", "timeframe", "chart")
 
@@ -1469,9 +1645,20 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
         rows, moved, void = repair_moved_cells(
             given, identity_fn=identity_fn, now=now,
             rewrite=os.environ.get("QUANT_MOVED_CELL_REPAIR", "1") != "0")
+        # ONE EXECUTABLE, ONE ROW: a fresh copy of a rule the docket already holds is refused
+        # here (QUANT_EXECUTABLE_DEDUP=0 counts and refuses nothing).
+        rows, copies = refuse_executable_copies(
+            rows, fresh, identity_fn=identity_fn,
+            refuse=os.environ.get("QUANT_EXECUTABLE_DEDUP", "1") != "0")
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
                               clusters=clusters, done=reaimed_parents(ledger), now=now)
         rep["moved_cells"] = moved
+        rep["executable_copies"] = copies
+        try:
+            rep["executable_groups"] = executable_groups(
+                hyp_dir.parent.parent if hyp_dir is not None and hyp_dir != HYP else None)
+        except Exception as exc:
+            rep["executable_groups"] = {"status": f"UNMEASURED: {type(exc).__name__}: {exc}"}
         # THE REVERT PATH, not a throttle: QUANT_FAMILY_REAIM=0 keeps the check, the stamps and
         # the census and mints no descendant (the duplicates were never removed either way).
         if os.environ.get("QUANT_FAMILY_REAIM", "1") == "0":
@@ -1549,7 +1736,7 @@ def summary(doc: Mapping[str, Any]) -> dict[str, Any]:
     out["daily_trend"] = (doc.get("daily") or {}).get("trend")
     out["intake"] = {k: (doc.get("intake") or {}).get(k) for k in
                      ("checked", "by_status", "duplicate_share", "reaimed",
-                      "no_lawful_empty_target", "moved_cells")}
+                      "no_lawful_empty_target", "moved_cells", "executable_copies")}
     out["report"] = "desks/mt5/reports/HYPOTHESIS_FAMILIES.json"
     return out
 
