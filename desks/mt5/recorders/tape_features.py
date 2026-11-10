@@ -61,8 +61,12 @@ holds it to the worst of its own measured runs rather than to a hopeful constant
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import sys
+import time
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -92,6 +96,9 @@ COST_OUT = _DESK / "data" / "cost_surface_tick.json"
 SLIPPAGE_OUT = _DESK / "data" / "tape" / "slippage_surface.json"
 REPORT = _DESK / "reports" / "TAPE_FEATURES.json"
 STATE = _DESK / "data" / "tape_features_state.json"
+#: One JSON per built symbol-day holding that day's hour cells, so a pass that skips an unchanged
+#: (or deferred) day still pools it into the cost and slippage surfaces. Derived, prunable.
+CELL_CACHE = _DESK / "data" / "tape" / "cell_cache"
 UNIVERSE = _DESK / "data" / "universe" / "universe.json"
 #: `tick_integrity`'s verdict per symbol-day. READ BEFORE BUILDING, AND THIS IS THE WHOLE POINT
 #: OF HAVING WRITTEN IT. A day the checker called FAIL has a hole in it that no gap row explains,
@@ -118,6 +125,77 @@ INTRABAR_FREQS = ("1min", "5min", "15min", "1h", "4h", "1D")
 #: Days to look back when nothing has been built yet. Bounded so a first run on a long tape does
 #: not try to build a year in one pass -- the watermark makes the next run continue.
 DEFAULT_DAYS = 30
+
+#: THE OPEN DAY ON ITS OWN CLOCK (2026-11-06). An unsealed day's watermark is its byte count, which
+#: moves every minute, so every hourly pass rebuilt TODAY in full for every symbol: 2291-2540 s on
+#: the box and killed at the task's 2700 s limit on 2 of 5 runs, losing the whole pass. An unsealed
+#: day already built within this many seconds is deferred to a later pass and its cached cells are
+#: pooled instead. Sealed days are unaffected: they still rebuild the moment their digest changes.
+OPEN_DAY_REBUILD_S = float(os.environ.get("QUANT_TAPE_OPEN_DAY_REBUILD_S", "7200"))
+_OPEN_BUILT = "_open_day_built_at"
+
+
+def _now_s() -> float:
+    return time.time()
+
+
+def _cache_path(symbol: str, day: str) -> Path:
+    return CELL_CACHE / symbol / f"{day}.json"
+
+
+def _replace(tmp: Path, dst: Path) -> None:
+    """os.replace, retried through Windows sharing/read-only refusals when libs is importable."""
+    try:
+        from libs.ops.win_write import replace_resilient
+    except ImportError:
+        os.replace(tmp, dst)
+        return
+    replace_resilient(tmp, dst)
+
+
+def _write_json_atomic(dst: Path, doc: Any, **dump_kw: Any) -> None:
+    """A pid-unique temp file, then one rename: a kill mid-write never leaves a torn JSON behind.
+
+    THE STATE IS THE WHOLE WATERMARK (Auditor MF, 2026-11-06). `_load` reads a torn state as {} and
+    the next pass then rebuilds every day of every symbol, times out, and tears it again -- the
+    exact loop the per-symbol checkpoint exists to end, so the checkpoint must never truncate.
+    """
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dst.with_name(f".{dst.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, **dump_kw) + "\n", "utf-8")
+    try:
+        _replace(tmp, dst)
+    finally:
+        with contextlib.suppress(OSError):
+            if tmp.exists():
+                tmp.unlink()
+
+
+def _save_cells(symbol: str, day: str, cells: list[ms.QuoteStats]) -> None:
+    _write_json_atomic(_cache_path(symbol, day), [asdict(c) for c in cells])
+
+
+def _prune_cache(symbol: str, cutoff: str) -> int:
+    """Drop cached days older than the look-back window; nothing outside it is ever pooled."""
+    n = 0
+    folder = CELL_CACHE / symbol
+    if not cutoff or not folder.is_dir():
+        return 0
+    for f in folder.glob("*.json"):
+        if f.stem < cutoff:
+            with contextlib.suppress(OSError):
+                f.unlink()
+                n += 1
+    return n
+
+
+def _cached_cells(symbol: str, day: str) -> list[ms.QuoteStats] | None:
+    """The day's cells from its last build, or None when there is no readable cache."""
+    try:
+        rows = json.loads(_cache_path(symbol, day).read_text("utf-8"))
+        return [ms.QuoteStats(**r) for r in rows]
+    except (OSError, ValueError, TypeError):
+        return None
 
 
 def _load(path: Path, default: Any) -> Any:
@@ -423,6 +501,10 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
     built: list[dict[str, Any]] = []
     skipped: list[str] = []
     intrabar_tally: dict[str, dict[str, float]] = {}
+    open_built: dict[str, float] = state.setdefault(_OPEN_BUILT, {})
+    deferred_open: list[str] = []
+    deferred_age_s: list[float] = []
+    pruned = 0
     for sym in syms:
         cells: list[ms.QuoteStats] = []
         for day in store.days(sym):
@@ -442,29 +524,49 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
             # did not is skipped -- an mtime would rebuild everything after any touch.
             token = (seal.manifest_sha256 if seal else f"unsealed:{store.day_bytes(sym, day)}")
             if not rebuild and state.get(key) == token:
+                cached = _cached_cells(sym, day)
+                if cached is not None:
+                    cells.extend(cached)
                 continue
+            if not rebuild and seal is None and key in state:
+                age = _now_s() - float(open_built.get(key, 0.0))
+                cached = _cached_cells(sym, day) if age < OPEN_DAY_REBUILD_S else None
+                if cached is not None:
+                    cells.extend(cached)
+                    deferred_open.append(key)
+                    deferred_age_s.append(age)
+                    continue
             point = _point_for(sym, store, day, registry)
             res = build_day(store, sym, day, point)
             if res["status"] != "BUILT":
                 skipped.append(f"{key}: {res['status']}")
                 continue
-            cells.extend(res.pop("cells"))
+            day_cells = res.pop("cells")
+            _save_cells(sym, day, day_cells)
+            cells.extend(day_cells)
             for freq, row in res["intrabar"].items():
                 t = intrabar_tally.setdefault(freq, {"bars": 0.0, "high_first": 0.0})
                 t["bars"] += row["bars"]
                 t["high_first"] += row["bars"] * row["high_first_frac"]
             built.append(res)
             state[key] = token
+            if seal is None:
+                open_built[key] = _now_s()
+            else:
+                open_built.pop(key, None)
         if cells:
             by_symbol[sym] = _merge_cells(cells)
+        pruned += _prune_cache(sym, cutoff)
+        # CHECKPOINT PER SYMBOL: a pass killed at its time limit keeps the watermarks it earned
+        # instead of losing all of them, which made the next pass redo the same work.
+        _write_json_atomic(STATE, state, indent=0, sort_keys=True)
 
     cost = cost_surface_from_cells(by_symbol, registry)
     slip = slippage_surface(by_symbol)
     for path, doc in ((COST_OUT, cost), (SLIPPAGE_OUT, slip)):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
-    STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(state, indent=0, sort_keys=True) + "\n", "utf-8")
+    _write_json_atomic(STATE, state, indent=0, sort_keys=True)
 
     measured_cells = sum(1 for cells in by_symbol.values() for c in cells if c.status == "MEASURED")
     total_cells = sum(len(c) for c in by_symbol.values())
@@ -490,6 +592,12 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
         "days_refused_on_integrity": len(failed_days),
         "skipped": skipped[:50],
         "n_skipped": len(skipped),
+        "open_days_deferred": len(deferred_open),
+        "open_day_rebuild_s": OPEN_DAY_REBUILD_S,
+        # HOW STALE THE DEFERRED SILVER IS, stated rather than implied (Auditor SF3).
+        "open_days_deferred_max_age_s": (round(max(deferred_age_s), 1) if deferred_age_s
+                                         else None),
+        "cell_cache_pruned": pruned,
         # NAMED, NOT IMPLIED. A feature nobody reads is the failure mode this module exists to
         # avoid, so every artifact says who is supposed to read it and what happens if nobody does.
         "consumers": CONSUMERS,

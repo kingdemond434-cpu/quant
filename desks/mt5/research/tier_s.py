@@ -4755,6 +4755,44 @@ def _run(name: str, fn: Callable[[], dict[str, Any]], timings: dict[str, float],
     return out
 
 
+#: THE FULL PASS NEVER FINISHED (box, 2026-11-05): every full `tier_s` run was killed at its
+#: 1,500 s leg cap, always in the same place, so TIER_S.json was never written and the organs at
+#: the back of the fixed order (genomes, grammar, theory and after) had not run since 11-02.
+#: The door's inputs (truth_kernel .. online_fdr) still run first, in their fixed order; the rest
+#: run least-recently-STARTED first, so each killed pass resumes where the last one stopped and
+#: an organ that is itself killed goes to the back instead of blocking the queue forever.
+FULL_PASS_HEAD: tuple[str, ...] = ("truth_kernel", "firewall", "immune", "red_queen",
+                                   "test_invention", "online_fdr")
+ORGAN_STARTS = "organ_starts"
+
+
+def _order_full_pass(plan: list[tuple[str, Callable[[], dict[str, Any]]]]
+                     ) -> list[tuple[str, Callable[[], dict[str, Any]]]]:
+    starts = _state(ORGAN_STARTS)
+    head = [x for x in plan if x[0] in FULL_PASS_HEAD]
+    tail = [x for x in plan if x[0] not in FULL_PASS_HEAD]
+    # never started sorts first ("" < any ISO stamp); ties keep the authored order (stable sort)
+    tail.sort(key=lambda x: str(starts.get(x[0]) or ""))
+    return head + tail
+
+
+def _mark_started(name: str) -> None:
+    starts = _state(ORGAN_STARTS)
+    starts[name] = datetime.now(UTC).isoformat()
+    _save_state(ORGAN_STARTS, starts)
+
+
+def _write_partial_summary(reports: Mapping[str, Any], timings: Mapping[str, float],
+                           errors: Mapping[str, str], last: str) -> None:
+    """A summary that survives the leg cap: marked incomplete, so nothing reads it as a full
+    pass. The end-of-pass write replaces it with `complete: True`."""
+    _write(SUMMARY, {"generated_utc": NOW.isoformat(), "complete": False,
+                     "partial_through": last, "organs": sorted(reports),
+                     "seconds": dict(timings),
+                     "total_seconds": round(sum(timings.values()), 2),
+                     "errors": {k: v.splitlines()[0] for k, v in errors.items()}})
+
+
 #: a door input missing this long is a LOUD defect: every promotion is withheld meanwhile
 DOOR_INPUT_GRACE_H = 2.0
 
@@ -4855,9 +4893,15 @@ def main(argv: list[str] | None = None) -> int:
         ("world_science", organ_world_and_science), ("exchange", organ_exchange),
         ("worlds", organ_worlds),
     ]
+    if not only:
+        plan = _order_full_pass(plan)
     for name, fn in plan:
         if want(name):
+            if not only:
+                _mark_started(name)
             reports[name] = _run(name, fn, timings, errors)
+            if not only:
+                _write_partial_summary(reports, timings, errors, name)
     if want("frontier"):
         th = _state("topology").get("rank_history") or []
         reports["frontier"] = _run("frontier", lambda: organ_frontier(th), timings, errors)
@@ -4880,7 +4924,7 @@ def main(argv: list[str] | None = None) -> int:
         sm = reports.get("self_model") or {}
         reports["twin"] = _run("twin", lambda: organ_twin(sm.get("regression") or {}),
                                timings, errors)
-    summary = {"generated_utc": NOW.isoformat(), "organs": sorted(reports),
+    summary = {"generated_utc": NOW.isoformat(), "complete": True, "organs": sorted(reports),
                "seconds": timings, "total_seconds": round(sum(timings.values()), 2),
                "errors": {k: v.splitlines()[0] for k, v in errors.items()},
                "metrics": {k: (v or {}).get("metric") for k, v in reports.items()},

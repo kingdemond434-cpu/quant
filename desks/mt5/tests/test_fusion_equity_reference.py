@@ -48,9 +48,11 @@ def _deadman():
 def test_the_equity_floor_counts_the_withdrawal_and_still_trips_on_a_real_loss() -> None:
     dm = _deadman()
     codes = lambda acct: [c for c, _ in dm.evaluate(acct, [], [], 568.77)]  # noqa: E731
-    assert "EQUITY_FLOOR" in codes({"equity": 266.0})
-    assert "EQUITY_FLOOR" not in codes({"equity": 266.0, "withdrawn_offset": 200.0})
-    assert "EQUITY_FLOOR" in codes({"equity": 90.0, "withdrawn_offset": 200.0})
+    floor = dm.EQUITY_FLOOR_EUR                  # EUR 10 since 2026-11-05 (D-20261105-042)
+    assert "EQUITY_FLOOR" in codes({"equity": floor - 4.0})
+    assert "EQUITY_FLOOR" not in codes({"equity": floor - 4.0, "withdrawn_offset": 5.0})
+    assert "EQUITY_FLOOR" in codes({"equity": floor - 8.0, "withdrawn_offset": 5.0})
+    assert "EQUITY_FLOOR" not in codes({"equity": 266.0})       # the 2026-11-05 halt level
 
 
 def test_a_locked_breach_log_never_kills_the_rail(tmp_path: Path, monkeypatch, capsys) -> None:
