@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-07T12:43:55+00:00",
+ "generated_utc": "2026-11-09T07:52:25+00:00",
  "attestation_in_force": "mt5-original-universal-10-v3-reserved-lockbox",
  "canon_attestation": "mt5-original-universal-10-v3-reserved-lockbox",
  "report_attestation": "mt5-original-universal-10-v3-reserved-lockbox",
@@ -533,11 +533,11 @@
     "state": "REMINTED",
     "store": "canon",
     "key": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.5302,
+    "lockbox_sharpe": 0.5313,
     "wf_sharpe": 0.5512,
     "lockbox_passed": true,
     "lockbox_equals_wf": false,
-    "gated_at": "2026-11-01T23:17:00.705674+00:00",
+    "gated_at": "2026-11-09T01:54:53.243375+00:00",
     "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
@@ -1731,11 +1731,11 @@
     "state": "REMINTED",
     "store": "canon",
     "key": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.8448,
-    "wf_sharpe": 0.5717,
+    "lockbox_sharpe": 0.8348,
+    "wf_sharpe": 0.573,
     "lockbox_passed": true,
     "lockbox_equals_wf": false,
-    "gated_at": "2026-11-01T23:17:01.600562+00:00",
+    "gated_at": "2026-11-09T01:55:01.340815+00:00",
     "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
