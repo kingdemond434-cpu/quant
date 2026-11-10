@@ -162,7 +162,8 @@ def test_a_held_step_is_one_episode_and_lands_beside_the_roster(
          {"time": "2026-11-13T05:00:00+00:00", "r_multiple": -1.0}]
     monkeypatch.setattr(M, "sleeve_trades", lambda _n: t)
     v = M.regime_step_values()
-    assert v["RETIRE->FADE"]["value_r"] == pytest.approx(0.25)
+    # the first episode ends when the second step starts, so it holds only the 11-11 trade
+    assert v["RETIRE->FADE"]["value_r"] == pytest.approx(0.75)
     assert v["HEALTHY->FADE"]["value_r"] == pytest.approx(0.5)
 
 
