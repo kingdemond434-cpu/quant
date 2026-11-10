@@ -45,6 +45,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "dead_architecture.json"
+#: ARCH-33's join of this census with roles and tests (scripts/check_component_use.py, the leg
+#: after this one); its last reading is carried here so readers of this report see both halves.
+COMPONENT_USE = DESK / "reports" / "COMPONENT_USE.json"
 
 #: EVERY production tree, not the obvious five. `desks/mt5/side_channels/controller.py` is the
 #: only production importer of `mt5desk/compiler.py`, so a root list that stopped at research/
@@ -355,6 +358,12 @@ def census(root: Path = ROOT) -> dict[str, Any]:
         organs[name] = {"planes": planes, "artifacts": arts, "consumers": consumers[:12],
                         "n_consumers": len(consumers), "verdict": verdict}
     contested = {a: sorted(w) for a, w in writers_of.items() if len(w) > 1}
+    try:
+        cu = json.loads((root / COMPONENT_USE.relative_to(ROOT)).read_text("utf-8"))
+        component_use: dict[str, Any] = {k: cu.get(k) for k in (
+            "at", "n_clocked", "counts", "gaps", "used_share", "gapped_ratchet")}
+    except (OSError, ValueError):
+        component_use = {"status": "UNMEASURED", "why": "COMPONENT_USE.json absent or unreadable"}
     by_verdict: dict[str, list[str]] = defaultdict(list)
     for name, o in organs.items():
         by_verdict[o["verdict"]].append(name)
@@ -364,6 +373,7 @@ def census(root: Path = ROOT) -> dict[str, Any]:
         "live": sorted(by_verdict[LIVE]), "burning": sorted(by_verdict[BURNING]),
         "no_clock": sorted(by_verdict[NO_CLOCK]), "unreached": sorted(by_verdict[UNREACHED]),
         "contested_artifacts": dict(sorted(contested.items())),
+        "component_use": component_use,
         "counts": {k: len(v) for k, v in sorted(by_verdict.items())},
         "burning_ratchet": MAX_BURNING,
         "burning_ratchet_ok": len(by_verdict[BURNING]) <= MAX_BURNING,

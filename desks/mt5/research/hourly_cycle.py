@@ -1184,7 +1184,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
-    "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    "stamp_freshness", "time_joins", "layer_census", "opportunity_cost",
+    # ARCH-33: every clocked organ's role, test, consumer and tested consumer; the census after it
+    # carries its counts.
+    "component_use", "dead_architecture",
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
@@ -2062,6 +2065,9 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ARCH-33 component use: the dead-architecture census (~15 s measured) plus one pass over the
+    # test files' import lines; the cap covers a cold disk on the box.
+    "component_use": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6299,6 +6305,10 @@ def main() -> None:
     slw = _costed("scaling_laws", lambda: _producer("scaling_laws", "libs/ops/scaling_laws.py"))
     # WHICH ORGANS HAVE ANYTHING ON THE OTHER END (Tier-1 item I4). Report only: nothing is
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
+    # EVERY SCHEDULED COMPONENT USED, NOT A MUSEUM (ARCH-33): a role, a test, a consumer and a
+    # tested consumer per clocked organ; GAPPED ratchets down in the law gate's state fences.
+    cus = _costed("component_use", lambda: _producer(
+        "component_use", "scripts/check_component_use.py"))
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
     # EVERY SILENT ORGAN, BY NAME (CRO noon 2026-09-30: "101 silent scheduled failures" was a sum
@@ -6560,7 +6570,7 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
+                    "component_use": cus, "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,

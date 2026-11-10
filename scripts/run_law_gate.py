@@ -624,6 +624,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # timer or trim a budget, which would be a reduction in aggressiveness with no E[log W] proof.
     # Portable: it reads the tree and the manifest, so it means the same in CI and on the box.
     ("check_dead_architecture.py", ("--ratchet",)),
+    # EVERY SCHEDULED COMPONENT USED (ARCH-33, principal 2026-10-07: "not a museum"). Each clocked
+    # organ needs a role (layer or box task), a test, a consumer and a tested consumer, or a
+    # declared ZERO_WEIGHT redundancy; the GAPPED count ratchets DOWN only. STATE, like the census
+    # it extends: a red here must not wedge the push that heals it. It removes nothing.
+    ("check_component_use.py", ("--ratchet", "--no-write")),
     # THE MONEY BRAIN PRODUCED, PROVED AND PUBLISHED THIS CYCLE (principal 2026-09-23). The heat
     # fence above asks whether the FLOOR is deployed; this one asks whether the allocator RAN at
     # all, whether its certificate is still alive, whether each input it conditioned on is inside

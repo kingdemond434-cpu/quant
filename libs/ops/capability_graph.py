@@ -911,6 +911,10 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/compute_ledger.jsonl",)),
     Node("hourly_cycle", "desks/mt5/research/hourly_cycle.py",
          writes=("desks/mt5/data/sync_marker.json",)),
+    # ARCH-33: role, test, consumer and tested consumer per clocked organ, hourly; the
+    # dead-architecture census carries its counts.
+    Node("component_use", "scripts/check_component_use.py",
+         writes=("desks/mt5/reports/COMPONENT_USE.json",)),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
@@ -1054,6 +1058,9 @@ HUMAN_READ = frozenset({
 #: prospector's targets, the box's PowerShell reads the manifest. DECLARED, so a DEAD_PRODUCER
 #: verdict cannot be silenced by an unnamed "something reads it".
 EXTERNAL_READERS = {
+    "desks/mt5/reports/COMPONENT_USE.json": ("scripts/check_dead_architecture.py (its "
+                                             "component_use block) and the law gate's "
+                                             "check_component_use --ratchet state fence"),
     "desks/mt5/reports/STYLE_NOVELTY.json": ("judge_coverage.rank_by_value's novelty factor and "
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),
