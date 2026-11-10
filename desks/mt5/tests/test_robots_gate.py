@@ -45,7 +45,7 @@ def _http(code: int) -> urllib.error.HTTPError:
 def test_an_allow_is_public_and_a_missing_file_is_absent() -> None:
     assert rg.read(URL, "a", opener=_serve("User-agent: *\nDisallow: /private/\n"))[0] == "PUBLIC"
     assert rg.read(URL, "a", opener=_serve(""))[0] == "PUBLIC"
-    for code in (404, 410, 400, 429):
+    for code in (404, 410, 400):
         label, why = rg.read(URL, "a", opener=_fail(_http(code)))
         assert label == "ROBOTS_ABSENT" and str(code) in why and not rg.stops(label)
 
@@ -64,8 +64,9 @@ def test_a_disallow_on_the_exact_path_is_disallowed() -> None:
 
 
 def test_a_401_or_403_on_robots_is_a_refusal_that_stops() -> None:
-    """Governance ruling 2026-11-10 20:08Z: a 401/403 on robots.txt is a refusal aimed at us."""
-    for code in (401, 403):
+    """Governance ruling 2026-11-10 20:08Z: a 401/403 on robots.txt is a refusal aimed at us; a
+    429/451 is held with them (a rate limit is never worked around), as in libs/data."""
+    for code in (401, 403, 429, 451):
         label, why = rg.read(URL, "a", opener=_fail(_http(code)))
         assert label == "ROBOTS_REFUSED" and str(code) in why and rg.stops(label)
 

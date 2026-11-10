@@ -1,15 +1,24 @@
 """ONE robots.txt reader for the desk's fetchers: a Disallow on the exact path stops the fetch.
 
-Governance ruling 2026-11-10 (journal row in #819): a robots.txt Disallow on the exact fetched
-path stops the fetch, and a source that answers 401/403/429/451 has said no. This module is the
-shared reader, so a fetcher does not carry its own copy of the matching rules:
+Governance desk-wide robots ruling 2026-11-10 20:08Z (this module is the chosen single reader):
+
+    robots.txt answer            verdict      reason                fetch?
+    2xx, path allowed            ALLOWED      ROBOTS_ALLOWED        yes
+    2xx, Disallow on the path    DISALLOWED   ROBOTS_DISALLOWED     no
+    404/410/other 4xx            ALLOWED      ROBOTS_ABSENT         yes (no rules, as RFC 9309 says)
+    401/403/429/451              UNREAD       ROBOTS_REFUSED        no  (the host said no)
+    5xx/timeout/unreachable      UNREAD       ROBOTS_UNREACHABLE    no  (retry next pass)
+
+429 and 451 are held with 401/403 because HARD_STOP already names them a refusal for pages; a
+host that refuses or rate-limits its own robots.txt is not read as "no rules". Every check is
+counted by reason in `gate.counts`, so a fetcher publishes how many routes fell in each case.
 
     gate = RobotsGate(get, agent="quant-research")      # get(url) -> (status | None, body)
     verdict = gate.check("https://host/path?page=2")    # "ALLOWED" | "DISALLOWED" | "UNREAD"
+    gate.reason("https://host/path")                     # "ROBOTS_ABSENT", ...
 
-`ALLOWED` covers a readable robots.txt with no matching Disallow and a 404 (no robots.txt is
-no restriction, as the standard says). `UNREAD` is any other failure to read the file: the policy
-is unknown, and an unknown policy is not a yes, so callers stop on it exactly as on DISALLOWED.
+Callers stop on DISALLOWED and UNREAD alike. The cache lives for one gate (one pass), so an
+unreachable robots.txt is asked again on the next pass.
 
 Matching follows the published standard (RFC 9309): `*` matches any run of characters, a trailing
 `$` anchors the end, the longest matching rule wins and Allow wins a tie. The group that names
@@ -25,6 +34,9 @@ from collections.abc import Callable
 Rules = list[tuple[str, bool]]
 
 ALLOWED, DISALLOWED, UNREAD = "ALLOWED", "DISALLOWED", "UNREAD"
+
+R_ALLOWED, R_DISALLOWED, R_ABSENT = "ROBOTS_ALLOWED", "ROBOTS_DISALLOWED", "ROBOTS_ABSENT"
+R_REFUSED, R_UNREACHABLE = "ROBOTS_REFUSED", "ROBOTS_UNREACHABLE"
 
 #: Statuses that are a refusal by the server. A fetcher that sees one stops; it does not retry,
 #: change headers, or try a sibling host.
@@ -85,6 +97,17 @@ def robots_allows(rules: Rules, url: str) -> bool:
     return True if best is None else best[1]
 
 
+def classify_robots_status(code: int | None) -> str:
+    """How the robots.txt answer reads under the 2026-11-10 ruling (2xx is parsed by the caller)."""
+    if code is not None and 200 <= code < 300:
+        return R_ALLOWED
+    if code in HARD_STOP:
+        return R_REFUSED
+    if code is not None and 400 <= code < 500:
+        return R_ABSENT
+    return R_UNREACHABLE
+
+
 class RobotsGate:
     """Per-host robots.txt, read once per gate and cached. Thread-safe."""
 
@@ -92,10 +115,11 @@ class RobotsGate:
                  agent: str = "quant-research") -> None:
         self._get = get
         self._agent = agent
-        self._rules: dict[str, Rules | None] = {}
+        self._rules: dict[str, tuple[Rules | None, str]] = {}
         self._lock = threading.Lock()
+        self.counts: dict[str, int] = {}
 
-    def _host_rules(self, scheme: str, host: str) -> Rules | None:
+    def _host_rules(self, scheme: str, host: str) -> tuple[Rules | None, str]:
         with self._lock:
             if host in self._rules:
                 return self._rules[host]
@@ -103,23 +127,36 @@ class RobotsGate:
             code, body = self._get(f"{scheme}://{host}/robots.txt")
         except Exception:
             code, body = None, ""
+        kind = classify_robots_status(code)
         rules: Rules | None
-        if code == 404:
-            rules = []
-        elif code is not None and 200 <= code < 300:
+        if kind == R_ALLOWED:
             rules = robots_rules(body, self._agent)
+        elif kind == R_ABSENT:
+            rules = []
         else:
             rules = None
         with self._lock:
-            self._rules.setdefault(host, rules)
+            self._rules.setdefault(host, (rules, kind))
             return self._rules[host]
 
-    def check(self, url: str) -> str:
+    def _verdict(self, url: str) -> tuple[str, str]:
         p = urllib.parse.urlsplit(url)
         host = p.netloc.lower()
         if not host:
-            return UNREAD
-        rules = self._host_rules(p.scheme or "https", host)
+            return UNREAD, R_UNREACHABLE
+        rules, kind = self._host_rules(p.scheme or "https", host)
         if rules is None:
-            return UNREAD
-        return ALLOWED if robots_allows(rules, url) else DISALLOWED
+            return UNREAD, kind
+        if robots_allows(rules, url):
+            return ALLOWED, kind
+        return DISALLOWED, R_DISALLOWED
+
+    def reason(self, url: str) -> str:
+        """The ruling's case for this URL (reads robots.txt if not yet cached; not counted)."""
+        return self._verdict(url)[1]
+
+    def check(self, url: str) -> str:
+        verdict, why = self._verdict(url)
+        with self._lock:
+            self.counts[why] = self.counts.get(why, 0) + 1
+        return verdict

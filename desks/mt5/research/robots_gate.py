@@ -5,17 +5,19 @@ THE RULE (Governance rulings of 2026-11-10, journalled in PR #819; RFC 9309, str
   robots.txt answer                           label               the fetch
   ------------------------------------------  ------------------  -----------------------------
   read, no rule covers the path               PUBLIC              made
-  404, 410 or any other 4xx but 401/403        ROBOTS_ABSENT       made, and COUNTED
+  404, 410 or any other 4xx but those below   ROBOTS_ABSENT       made, and COUNTED
   read, a Disallow covers the exact path      DISALLOWED          STOPPED
-  401 or 403 on robots.txt itself             ROBOTS_REFUSED      STOPPED (a refusal aimed at us;
-                                                                  never worked around)
+  401, 403, 429 or 451 on robots.txt itself   ROBOTS_REFUSED      STOPPED (a refusal or a rate
+                                                                  limit aimed at us; never
+                                                                  worked around)
   5xx, timeout, DNS, TLS, not http(s)         ROBOTS_UNREACHABLE  STOPPED this pass; the next
                                                                   scheduled pass asks again --
                                                                   never a retry loop
 
 The rule matching itself (`*`, `$`, longest match wins, Allow wins a tie, our agent's group else
-`*`) is `libs/data/robots_gate.py`, the desk's one parser; this module adds the desk's labels and
-the bill. Every caller stops on `stops(label)` and on nothing else.
+`*`) and the status table above (`classify_robots_status`) are `libs/data/robots_gate.py`, the
+desk's one reader; this module adds the desk's labels for fetchers and the bill. Every caller
+stops on `stops(label)` and on nothing else.
 
 IT IS A BRAKE, SO IT IS BILLED (GROWTH_GOVERNANCE Rule 1). Every stopped fetch is:
   * returned to the caller as a SET_ASIDE row -- the label, the reason and the named events that
@@ -96,7 +98,7 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
     unreachable host is therefore asked once a pass and stopped for the rest of it: the retry
     is the next scheduled pass, never a loop.
     """
-    from libs.data.robots_gate import robots_allows, robots_rules
+    from libs.data.robots_gate import classify_robots_status, robots_allows, robots_rules
     parts = urllib.parse.urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.netloc:
         return ROBOTS_UNREACHABLE, "not an http(s) URL: no robots.txt can be read"
@@ -108,10 +110,11 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
             text = (opener or _open)(f"{root}/robots.txt", agent, timeout)
         except urllib.error.HTTPError as exc:
             code = int(getattr(exc, "code", 0) or 0)
-            if code in (401, 403):
+            kind = classify_robots_status(code)          # the desk's one meaning, libs/data
+            if kind == ROBOTS_REFUSED:
                 held = (ROBOTS_REFUSED, f"robots.txt answers HTTP {code}: a refusal aimed at "
                                         f"our agent, not fetched and never worked around")
-            elif 400 <= code < 500:
+            elif kind == ROBOTS_ABSENT:
                 held = (ROBOTS_ABSENT, f"no robots.txt (HTTP {code}): no rules, fetched")
             else:
                 held = (ROBOTS_UNREACHABLE, f"robots.txt unreadable (HTTP {code}): not "
