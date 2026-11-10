@@ -847,9 +847,10 @@ def sweep(budget_s: float | None = None) -> dict:
             "carry": {"symbol": sym},
             "relative_value": {"peer": peer_df},
             "correlation_regime": {"peer": peer_df},
-            # The quant-framework pair families (2026-11-10): same structural peer, same chart.
-            "kalman_pair": {"peer": peer_df},
-            "copula_pair": {"peer": peer_df},
+            # The quant-framework pair families (2026-11-10): the same structural peer, named by
+            # value -- they read its H1 closes themselves and are declared H1-only.
+            "kalman_pair": {"pair_symbol": peer_sym},
+            "copula_pair": {"pair_symbol": peer_sym},
             "cross_asset_residual": {"factors": factor_dfs},
             # NEVER PASSED BEFORE. Absent from this map, `pca_residual` ran with factors=None,
             # hit its own `len(factors) < 4` refusal and returned [] on every symbol in the
@@ -875,8 +876,8 @@ def sweep(budget_s: float | None = None) -> dict:
             "carry": {"input_symbol": sym},
             "relative_value": {"peer_symbol": peer_sym} if peer_sym else {},
             "correlation_regime": {"peer_symbol": peer_sym} if peer_sym else {},
-            "kalman_pair": {"peer_symbol": peer_sym} if peer_sym else {},
-            "copula_pair": {"peer_symbol": peer_sym} if peer_sym else {},
+            "kalman_pair": {"pair_symbol": peer_sym} if peer_sym else {},
+            "copula_pair": {"pair_symbol": peer_sym} if peer_sym else {},
             "cross_asset_residual": {"factor_symbols": factor_names},
             "pca_residual": {"factor_symbols": factor_names},
             "liquidity_regime": {"input_source": "fusion_tick_tape"},

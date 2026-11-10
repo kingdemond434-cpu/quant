@@ -204,8 +204,8 @@ def qlike_vs_ewma(r: pd.Series, window: int = 2000, refit: int = 500,
 def family_garch_shock(
     df: pd.DataFrame,
     *,
-    window: int = 2000,
-    refit: int = 500,
+    window: int = 1000,
+    refit: int = 250,
     entry_z: float = 2.5,
     vol_state: str = "any",
     side_mode: str = "fade",
@@ -355,35 +355,37 @@ def family_kalman_trend(
     return out
 
 
-def _peer_frame(family: str, d: pd.DataFrame, peer: pd.DataFrame | None,
-                peer_symbol: str | None) -> pd.DataFrame | None:
-    """The peer's bars on THIS cell's stamps: the handed-over frame, else the bar store's.
+def _peer_frame(family: str, d: pd.DataFrame, pair_symbol: str | None) -> pd.DataFrame | None:
+    """The peer's H1 closes on THIS cell's stamps, read from the bar store by `pair_symbol`.
 
-    THE SEALED GAUNTLET LOADS PEERS ONLY FOR THE FAMILIES IT NAMES (`relative_value`,
-    `correlation_regime`), so for these two `peer_symbol` reaches the family as an ordinary
-    parameter. The family then reads the peer's H1 closes itself, through the class books' own
-    loader -- the precedent `families_specialist` set for `risk_symbol` -- matched to this cell's
-    stamps EXACTLY (no as-of carry), so a missing peer bar drops the bar instead of pairing a
-    fresh close with a stale one. Only on an hourly chart: the store holds peers at H1, and an H1
-    close joined onto an M5 cell would be the chart mismatch `family_inputs` documents. Anything
-    else with a named peer and no frame RAISES, so the judge files it as a build failure by name.
+    THE FAMILY LOADS ITS OWN SECOND LEG, the class books' and `families_specialist`'s contract
+    (`risk_symbol`, `cond_symbol`): the sealed gauntlet loads a `peer` frame only for the two
+    families it names, so a `peer` argument here would be called with None and every cell would
+    build with zero signals (`gauntlet_buildability` says so by name). The cell carries the peer
+    by value instead. `pair_symbol`, NOT `peer_symbol`: that one is an identity key the forward
+    clock strips before the call, which would leave the family peerless exactly where forward
+    evidence accrues.
+
+    Matched to this cell's stamps EXACTLY (no as-of carry), so a missing peer bar drops the bar
+    instead of pairing a fresh close with a stale one. H1 only, declared in `FAMILY_TIMEFRAMES`:
+    the store holds the peer at H1, and an H1 close joined onto an M5 cell is the chart mismatch
+    `family_inputs` documents. A named peer that cannot be read RAISES, so the judge files a
+    build failure by name rather than a cell that "never fires".
     """
-    if peer is not None and not getattr(peer, "empty", True):
-        return _h1(peer)
-    if not peer_symbol:
+    if not pair_symbol:
         return None
     step = pd.Series(d.index).diff().median()
     if step != pd.Timedelta(hours=1):
-        raise ValueError(f"{family}: peer_symbol={peer_symbol!r} named on a {step} chart with no "
-                         "peer frame handed over; only H1 peers are loaded from the store")
+        raise ValueError(f"{family}: pair_symbol={pair_symbol!r} on a {step} chart; the peer is "
+                         "read from the H1 store, so this family runs on H1 only")
     from mt5desk.families_specialist import asof_close
     # The store's stamps are UTC nanoseconds; a frame read at another unit (pandas 3 keeps the
     # parquet's, often microseconds) would match nothing, so the unit is stated, not assumed.
     idx = d.index if d.index.tz is None else d.index.tz_convert(None)
     stamps = idx.as_unit("ns").asi8
-    closes = asof_close(np.asarray(stamps, dtype="int64"), str(peer_symbol), max_stale_h=0.0)
+    closes = asof_close(np.asarray(stamps, dtype="int64"), str(pair_symbol), max_stale_h=0.0)
     if not np.isfinite(closes).any():
-        raise ValueError(f"{family}: no H1 bars in the store for peer {peer_symbol!r}")
+        raise ValueError(f"{family}: no H1 bars in the store for pair_symbol {pair_symbol!r}")
     return pd.DataFrame({"close": closes}, index=d.index).dropna()
 
 
@@ -430,8 +432,7 @@ def kalman_hedge_path(a: np.ndarray, b: np.ndarray, delta: float, lam: float = 0
 def family_kalman_pair(
     df: pd.DataFrame,
     *,
-    peer: pd.DataFrame | None = None,
-    peer_symbol: str | None = None,
+    pair_symbol: str | None = None,
     delta: float = 1e-4,
     entry_z: float = 2.0,
     target_frac: float = 1.0,
@@ -449,7 +450,7 @@ def family_kalman_pair(
     if not (0 < delta < 1):
         return []
     d = _h1(df)
-    p = _peer_frame("kalman_pair", d, peer, peer_symbol)
+    p = _peer_frame("kalman_pair", d, pair_symbol)
     if p is None:
         return []
     j = d[["close"]].join(p[["close"]], how="inner", rsuffix="_peer").dropna()
@@ -515,8 +516,7 @@ def copula_mispricing(ra: pd.Series, rb: pd.Series, window: int, kind: str, nu: 
 def family_copula_pair(
     df: pd.DataFrame,
     *,
-    peer: pd.DataFrame | None = None,
-    peer_symbol: str | None = None,
+    pair_symbol: str | None = None,
     window: int = 500,
     kind: str = "t",
     nu: float = 4.0,
@@ -537,7 +537,7 @@ def family_copula_pair(
     if kind not in {"gauss", "t"} or nu <= 2:
         return []
     d = _h1(df)
-    p = _peer_frame("copula_pair", d, peer, peer_symbol)
+    p = _peer_frame("copula_pair", d, pair_symbol)
     if p is None:
         return []
     j = d[["close"]].join(p[["close"]], how="inner", rsuffix="_peer").dropna()
@@ -647,6 +647,5 @@ FAMILIES = {
     "copula_pair": family_copula_pair,
     "ou_reversion": family_ou_reversion,
 }
-#: Families with a second leg. A caller that has the peer frame passes it as `peer`; one that
-#: does not (the sealed gauntlet) passes `peer_symbol` and the family reads the store itself.
+#: Families with a second leg, named on the cell as `pair_symbol` and read by the family itself.
 PEER_FAMILIES = frozenset({"kalman_pair", "copula_pair"})

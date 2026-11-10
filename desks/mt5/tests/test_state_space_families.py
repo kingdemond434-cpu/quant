@@ -108,34 +108,76 @@ def _pair(n: int = 3000) -> tuple[pd.DataFrame, pd.DataFrame]:
     return a, b
 
 
+def _store(monkeypatch, b: pd.DataFrame) -> None:
+    from mt5desk import families_cross_sectional as xs
+    stamps = b.index.as_unit("us").asi8 * 1000      # the store's unit (ns) from a us-unit frame
+    monkeypatch.setattr(xs, "_load_series",
+                        lambda symbol: (stamps, b["close"].to_numpy(dtype=float)))
+
+
 @pytest.mark.parametrize("name", ["kalman_pair", "copula_pair"])
-def test_pair_families_fade_the_dislocation(name):
+def test_pair_families_fade_the_dislocation(name, monkeypatch):
     a, b = _pair()
-    sigs = fs.FAMILIES[name](a, peer=b)
+    _store(monkeypatch, b)
+    sigs = fs.FAMILIES[name](a, pair_symbol="PEER")
     assert len(sigs) > 10
     assert {s.side for s in sigs} == {-1, 1}
 
 
 @pytest.mark.parametrize("name", ["kalman_pair", "copula_pair"])
-def test_a_named_peer_with_no_bars_is_a_named_failure(name, monkeypatch):
+def test_a_named_pair_with_no_bars_is_a_named_failure(name, monkeypatch):
     from mt5desk import families_cross_sectional as xs
     monkeypatch.setattr(xs, "_load_series", lambda symbol: None)
     a, _b = _pair()
     with pytest.raises(ValueError, match="no H1 bars"):
-        fs.FAMILIES[name](a, peer_symbol="NOSUCH")
-    assert fs.FAMILIES[name](a) == []            # no peer named: nothing to trade, no error
+        fs.FAMILIES[name](a, pair_symbol="NOSUCH")
+    assert fs.FAMILIES[name](a) == []            # no pair named: nothing to trade, no error
 
 
 @pytest.mark.parametrize("name", ["kalman_pair", "copula_pair"])
-def test_peer_read_from_the_store_matches_the_handed_frame(name, monkeypatch):
-    from mt5desk import families_cross_sectional as xs
+def test_pair_families_refuse_a_chart_the_store_cannot_match(name, monkeypatch):
     a, b = _pair()
-    stamps = b.index.as_unit("us").asi8 * 1000      # the store's unit (ns) from a us-unit frame
-    monkeypatch.setattr(xs, "_load_series",
-                        lambda symbol: (stamps, b["close"].to_numpy(dtype=float)))
-    via_frame = fs.FAMILIES[name](a, peer=b)
-    via_store = fs.FAMILIES[name](a, peer_symbol="PEER")
-    assert [(s.time, s.side) for s in via_frame] == [(s.time, s.side) for s in via_store]
+    _store(monkeypatch, b)
+    four_hour = a.iloc[::4]
+    with pytest.raises(ValueError, match="H1 only"):
+        fs.FAMILIES[name](four_hour, pair_symbol="PEER")
+
+
+def test_the_sealed_gauntlet_can_build_every_family():
+    """No family takes a DATA argument build_cell would leave None, nor an identity key."""
+    import inspect
+
+    from mt5desk import families_orthogonal as fo
+    from mt5desk.family_inputs import IDENTITY_KEYS
+    from research.gauntlet_buildability import BUILDABLE, DATA_INPUT_ARGS, family_verdict
+    for name, fn in fs.FAMILIES.items():
+        args = set(inspect.signature(fn).parameters)
+        assert not args & DATA_INPUT_ARGS, name
+        assert not args & IDENTITY_KEYS, name
+        assert "side" not in args, name
+        assert family_verdict(name)[0] == BUILDABLE, name
+    for name in fs.PEER_FAMILIES:
+        assert fo.timeframe_refusal(name, "M5") and fo.timeframe_refusal(name, "H1") is None
+
+
+def test_default_cells_need_no_more_than_sixty_h1_days():
+    """The judge's observations gate needs signals inside 60 development days of H1."""
+    close = 1.2 * np.exp(np.cumsum(_gjr(60 * 24, seed=21)))
+    d = _frame(close)
+    for name in ("garch_shock", "kalman_trend", "ou_reversion"):
+        kw = {"entry_z": 1.5} if name != "kalman_trend" else {"entry_t": 1.5}
+        assert fs.FAMILIES[name](d, **kw), name
+
+
+def test_every_family_is_classed_and_swept():
+    from research import alpha_genome, axis_registry, breadth_sweep
+    for name in fs.FAMILIES:
+        assert name in alpha_genome.MECHANISM_CLASS
+        assert axis_registry.classify_family(name)[0] != axis_registry.UNKNOWN
+        assert breadth_sweep.READY[name]["grid"]
+    targets = breadth_sweep._targets("kalman_pair", breadth_sweep.READY["kalman_pair"],
+                                     ["EURUSD", "GBPUSD"])
+    assert targets == [("EURUSD", {"pair_symbol": "GBPUSD"})]
 
 
 def test_registered_where_the_judge_and_the_forward_clock_look():
@@ -144,4 +186,6 @@ def test_registered_where_the_judge_and_the_forward_clock_look():
     for name in fs.FAMILIES:
         assert fo.ORTHOGONAL_FAMILIES[name] is fs.FAMILIES[name]
         assert name in fo.FAMILY_INPUTS
-    assert fs.PEER_FAMILIES <= fi._PEER_FAMILIES
+    # The forward clock strips identity keys and loads frames only for its own peer families;
+    # these carry `pair_symbol` by value, so they must NOT be in that set.
+    assert not fs.PEER_FAMILIES & fi._PEER_FAMILIES
