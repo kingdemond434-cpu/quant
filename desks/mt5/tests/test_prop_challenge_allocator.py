@@ -516,3 +516,48 @@ def test_a_column_the_executors_door_blocks_takes_no_solve_heat(tmp_path, monkey
     row = uni["columns"]["EURUSD_x_asia"]
     assert row["admitted"] is False and "TIER_S_BLOCKED" in row["why"]
     assert "replication MISMATCH" in row["why"]
+
+
+_FORMULA_SCREEN = [{"certificate": "external.EURUSD.formula.p=1", "column": "EURUSD_x_asia",
+                    "symbol": "EURUSD"}]
+
+
+def _formula_world(tmp_path: Path, monkeypatch, expr: object, rejudged: list[str]) -> dict:
+    p = tmp_path / "FORMULA_REJUDGED.json"
+    p.write_text(json.dumps({"certificates": rejudged}), encoding="utf-8")
+    monkeypatch.setattr(pca, "FORMULA_REJUDGED", p)
+    real = pca.formula_unmeasured
+    spec = {"symbol": "EURUSD", "family": "formula", "key": "external.EURUSD.formula.p=1",
+            "params": {"params": {"expr": expr}}}
+    monkeypatch.setattr(pca, "formula_unmeasured", lambda _s, key, path=None: real(spec, key))
+    return _roster_world(tmp_path, monkeypatch, tier_s={}, screen=_FORMULA_SCREEN)
+
+
+def test_a_spread_reading_formula_certificate_funds_nothing_until_rejudged(tmp_path,
+                                                                          monkeypatch) -> None:
+    """Auditor 2026-11-10: the stored verdict of a formula that reads the spread counted
+    unrecorded (zero) bars as data. UNMEASURED evidence takes no solve heat and is named."""
+    uni = _formula_world(tmp_path, monkeypatch, "zscore(div(spread, atr), 48)", [])
+    assert uni["status"] == "NO_ADMISSIBLE_SLEEVE"
+    assert uni["formula_unmeasured"] == ["EURUSD_x_asia"]
+    row = uni["columns"]["EURUSD_x_asia"]
+    assert row["admitted"] is False and row["rail"] == "ftmo_formula_unmeasured"
+    assert "UNMEASURED" in row["why"] and "spread" in row["why"]
+
+
+def test_a_price_only_formula_and_a_rejudged_one_are_admitted(tmp_path, monkeypatch) -> None:
+    """Evidence invalidity, not a family ban: a formula on recorded bars is untouched, and the
+    Judge's re-judgement list releases a spread reader on its new verdict."""
+    uni = _formula_world(tmp_path, monkeypatch, ["zscore", ["sub", "close", "open"], 20], [])
+    assert uni["status"] == "OK" and uni["formula_unmeasured"] == []
+    uni = _formula_world(tmp_path, monkeypatch, ["ts_rank", "activity", 48],
+                         ["external.EURUSD.formula.p=1"])
+    assert uni["status"] == "OK" and uni["cols"] == ["EURUSD_x_asia"]
+
+
+def test_an_unreadable_formula_expression_is_unmeasured_and_other_families_pass() -> None:
+    why = pca.formula_unmeasured({"family": "formula", "params": {}}, "k")
+    assert why and "unreadable" in why
+    assert pca.formula_unmeasured({"family": "carry", "params": {"expr": "spread"}}, "k") is None
+    flow = pca.formula_unmeasured({"family": "formula", "params": {"expr": "flow"}}, "k")
+    assert flow and "flow" in flow

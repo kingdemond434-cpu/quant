@@ -597,6 +597,49 @@ def door_block(cert_key: str) -> str | None:
         return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
 
 
+#: A FORMULA CERTIFICATE THAT READS THE SPREAD OR THE TICK COUNT IS UNMEASURED EVIDENCE
+#: (Auditor, box read 2026-11-10 18:08Z, formula_spread_zero_measure_AUDSGD): 5,702 of 5,757
+#: `formula` certificates read `spread`, `activity` or `flow` (flow = sign(body) x activity), and
+#: on AUDSGD the certified edge disappears once the bars whose spread was never recorded (stored
+#: as zero) are treated as missing. The stored verdict of such a certificate therefore measures
+#: the recording gap, not the rule, so it funds nothing here until the Judge re-judges it. This is
+#: evidence invalidity, never a risk cut: no other column, cap or fraction changes, and the
+#: refusal is named per column on the report (rail `ftmo_formula_unmeasured`).
+#: RELEASE: the Judge lists a re-judged certificate key in `FORMULA_REJUDGED` ("certificates":
+#: [...]); a listed key is admitted again on its new verdict. This module never writes that file.
+FORMULA_UNRECORDED_TERMINALS = frozenset({"spread", "activity", "flow"})
+FORMULA_REJUDGED = BASE / "data" / "FORMULA_REJUDGED.json"
+
+
+def formula_unmeasured(spec: dict[str, Any] | None, cert_key: str,
+                       path: Path | None = None) -> str | None:
+    """Why `cert_key`'s stored verdict is UNMEASURED, or None. Only the `formula` family; an
+    expression that cannot be read is UNMEASURED too (absence never resolves to a clean
+    verdict)."""
+    if not isinstance(spec, dict) or str(spec.get("family") or "").lower() != "formula":
+        return None
+    doc = _read_json(path or FORMULA_REJUDGED)
+    if isinstance(doc, dict) and cert_key in {str(k) for k in (doc.get("certificates") or [])}:
+        return None
+    params = spec.get("params") if isinstance(spec.get("params"), dict) else {}
+    inner = params.get("params") if isinstance(params.get("params"), dict) else {}
+    expr = params.get("expr", inner.get("expr", spec.get("expr")))
+    try:
+        from libs.research.alpha_grammar import TERMINALS, from_str, terminals_in
+        tree = from_str(expr) if isinstance(expr, str) and "(" in expr else expr
+        if not isinstance(tree, (str, list, tuple)) or not tree or (
+                isinstance(tree, str) and tree not in TERMINALS):
+            raise ValueError("no expression on the certificate")
+        reads = sorted(terminals_in(tree) & FORMULA_UNRECORDED_TERMINALS)
+    except Exception as exc:
+        return (f"UNMEASURED: formula expression unreadable ({type(exc).__name__}); its "
+                f"spread/tick dependence cannot be ruled out")
+    if not reads:
+        return None
+    return (f"UNMEASURED: formula reads {', '.join(reads)}, whose unrecorded (zero) bars the "
+            f"stored verdict counted as data; awaiting the Judge's re-judgement")
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -661,6 +704,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
     door_blocked: list[str] = []
+    formula_held: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
@@ -679,6 +723,9 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
+        elif (unm := formula_unmeasured(sleeve_spec(cert_key)[0], cert_key)):
+            reason = unm
+            formula_held.append(col)
         else:
             door = door_block(cert_key)
             if door:
@@ -688,7 +735,9 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                 reason = f"TIER_S_BLOCKED at the executor's door: {door}"
                 door_blocked.append(col)
         if reason:
-            columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
+            columns[col] = {"admitted": False, "why": reason,
+                            "rail": ("ftmo_formula_unmeasured" if col in formula_held
+                                     else "ftmo_universe")}
             continue
         admit(col, r_c[:, :, k], (f"Tier S via {cert_key}" if col in tier_s else
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
@@ -707,6 +756,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps, "door_blocked": door_blocked,
+                "formula_unmeasured": formula_held,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
                 "listing": listing, "tier_s": tier_s}
     r = np.stack(slices, axis=2)
@@ -721,6 +771,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
             "caps": caps, "specs": specs, "door_blocked": door_blocked,
+            "formula_unmeasured": formula_held,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -998,6 +1049,8 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["rail_blocks"] = rail_blocks(uni)
     doc["tier_s_door_blocked"] = {"n": len(uni.get("door_blocked") or []),
                                   "columns": sorted(uni.get("door_blocked") or [])}
+    doc["formula_unmeasured"] = {"n": len(uni.get("formula_unmeasured") or []),
+                                 "columns": sorted(uni.get("formula_unmeasured") or [])}
     doc["e8_overlap"] = sorted(c for c, row in (uni.get("columns") or {}).items()
                                if row.get("e8_overlap"))
     doc["status"] = now_block["status"]
