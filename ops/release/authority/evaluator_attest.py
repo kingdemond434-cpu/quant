@@ -52,7 +52,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +66,8 @@ TYPE = "quant.evaluator.attestation/v1"
 PINNED_PUBKEY_B64 = ""
 #: Sealed files the authority may never re-sign: the fence that judges every other seal.
 NEVER_ATTESTED = ("scripts/check_immutable_evaluator.py",)
+#: An envelope not applied within this long is dead; the authority re-issues on a fresh row.
+MAX_AGE = timedelta(days=14)
 REQUIRED = (
     "type", "repo", "file", "old_hash", "new_hash", "head_sha", "base_sha", "policy_digest",
     "auditor_at", "key_id", "issued_at",
@@ -171,15 +173,27 @@ def apply(
     current: Mapping[str, str],
     immutable: Sequence[str],
     key: tuple[Any, str] | None,
+    is_ancestor: Callable[[str], bool],
     now: datetime | None = None,
 ) -> tuple[bool, list[str]]:
-    """Write the manifest from verified envelopes, all or nothing. (written, one line per file)."""
+    """Write the manifest from verified envelopes, all or nothing. (written, one line per file).
+
+    SINGLE USE (audit MF1, 2026-11-10). An envelope binds (file, old, new, head) and is spent
+    once: one already in `attestation_log` is refused, so an owner who re-signs X->Y back to X
+    cannot be undone by the old envelope if Y's bytes come back. Its head must be an ancestor
+    of this checkout (`is_ancestor`), and it must be at most MAX_AGE old."""
+    when = now or datetime.now(UTC)
     doc = _read_manifest(manifest)
     files = doc.get("files")
     if not isinstance(files, dict):
         return False, ["the manifest has no files section: only the owner's --sign creates one"]
     if not envelopes:
         return False, ["no envelopes given"]
+    spent = {
+        (r.get("file"), r.get("old_hash"), r.get("new_hash"), r.get("head_sha"))
+        for r in (doc.get("attestation_log") or [])
+        if isinstance(r, Mapping)
+    }
     ok: list[tuple[dict[str, Any], Any]] = []
     out: list[str] = []
     seen: set[str] = set()
@@ -193,6 +207,12 @@ def apply(
             out.append(f"REFUSED {f}: not a sealed judge file")
         elif f in seen:
             out.append(f"REFUSED {f}: two envelopes for one file")
+        elif (f, st["old_hash"], st["new_hash"], st["head_sha"]) in spent:
+            out.append(f"REFUSED {f}: this envelope was already applied once (single use)")
+        elif when - datetime.fromisoformat(str(st["issued_at"])) > MAX_AGE:
+            out.append(f"REFUSED {f}: issued more than {MAX_AGE.days} days ago")
+        elif not is_ancestor(str(st["head_sha"])):
+            out.append(f"REFUSED {f}: head {st['head_sha'][:9]} is not in this checkout's history")
         elif files.get(f) != st["old_hash"]:
             out.append(f"REFUSED {f}: the manifest holds {files.get(f)}, the attestation was "
                        f"issued against {st['old_hash']} (stale or replayed)")  # fmt: skip
@@ -205,7 +225,7 @@ def apply(
         seen.add(f)
     if len(ok) != len(envelopes):
         return False, [*out, "nothing written: every envelope must pass"]
-    stamp = (now or datetime.now(UTC)).isoformat()
+    stamp = when.isoformat()
     rot = doc.get("rotation_signers")
     rot = dict(rot) if isinstance(rot, dict) else {}
     atts = doc.get("attestations")
@@ -226,15 +246,26 @@ def apply(
     return True, out
 
 
+def _by_authority(signer: Any) -> bool:
+    return str(signer or "").startswith("release-authority:")
+
+
 def verify_manifest(manifest: Path, key: tuple[Any, str] | None) -> list[str]:
     """Breaches among the attestations the manifest carries ([] = clean, or none carried).
-    An attestation whose file was later re-signed by the owner is history, not a breach."""
+
+    VALID AND BOUND (audit MF2). A file whose `rotation_signers` entry names the release
+    authority must carry an attestation that verifies AND names the hash the manifest holds;
+    anything else is a hand edit wearing the authority's name. A file the owner re-signed later
+    (its rotation entry no longer names the authority) keeps its envelope as history."""
     doc = _read_manifest(manifest)
     atts = doc.get("attestations")
     if not atts:
         return []
     if not isinstance(atts, dict):
         return ["the manifest's attestations section is not an object"]
+    files_raw, rot_raw = doc.get("files"), doc.get("rotation_signers")
+    files: dict[str, Any] = files_raw if isinstance(files_raw, dict) else {}
+    rot: dict[str, Any] = rot_raw if isinstance(rot_raw, dict) else {}
     bad = []
     for f, env in sorted(atts.items()):
         st, why = verify_envelope(env, key)
@@ -242,6 +273,14 @@ def verify_manifest(manifest: Path, key: tuple[Any, str] | None) -> list[str]:
             bad.append(f"{f}: {why}")
         elif st["file"] != f:
             bad.append(f"{f}: the envelope attests {st['file']}")
+        elif str(rot.get(f, "")).startswith("release-authority:") and st["new_hash"] != files.get(
+            f
+        ):
+            bad.append(f"{f}: the manifest holds {files.get(f)} under the authority's name, the "
+                       f"attestation names {st['new_hash']}")  # fmt: skip
+    for f, signer in sorted(rot.items()):
+        if _by_authority(signer) and f not in atts:
+            bad.append(f"{f}: signed in the authority's name with no attestation")
     return bad
 
 
@@ -425,8 +464,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"evaluator-attest: unreadable envelopes ({type(exc).__name__})")
         return 1
     envs = envs if isinstance(envs, list) else [envs]
+
+    def is_ancestor(sha: str) -> bool:
+        p = subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", sha, "HEAD"],
+                           capture_output=True, check=False)  # fmt: skip
+        return p.returncode == 0
+
     done, lines = apply(envs, manifest=fen.MANIFEST, current=fen._hashes(),
-                        immutable=fen.IMMUTABLE, key=key)  # fmt: skip
+                        immutable=fen.IMMUTABLE, key=key, is_ancestor=is_ancestor)  # fmt: skip
     print("\n".join(lines))
     return 0 if done else 1
 

@@ -62,6 +62,12 @@ def _envs(
     return [EA.sign_statement(st, priv, kid) for st in sts]
 
 
+def _apply(*a: Any, **k: Any) -> tuple[bool, list[str]]:
+    k.setdefault("is_ancestor", lambda sha: True)
+    k.setdefault("now", T0)
+    return EA.apply(*a, **k)  # type: ignore[no-any-return]
+
+
 def _manifest(tmp: Path, files: dict[str, str]) -> Path:
     p = tmp / "IMMUTABLE_MANIFEST.json"
     p.write_text(
@@ -74,7 +80,7 @@ def _manifest(tmp: Path, files: dict[str, str]) -> Path:
 def test_no_pinned_key_means_the_path_is_off(tmp_path: Path) -> None:
     priv, (_pub, kid) = _key()
     m = _manifest(tmp_path, {F: OLD})
-    ok, _why = EA.apply(_envs(priv, kid), manifest=m, current={F: NEW}, immutable=(F,), key=None)
+    ok, _why = _apply(_envs(priv, kid), manifest=m, current={F: NEW}, immutable=(F,), key=None)
     assert not ok and json.loads(m.read_text())["files"][F] == OLD
     assert EA.PINNED_PUBKEY_B64 == "" or EA.pinned_key() is not None
 
@@ -82,7 +88,7 @@ def test_no_pinned_key_means_the_path_is_off(tmp_path: Path) -> None:
 def test_apply_writes_only_the_attested_hash_and_keeps_the_record_seals(tmp_path: Path) -> None:
     priv, key = _key()
     m = _manifest(tmp_path, {F: OLD, "other.py": "c" * 16})
-    ok, lines = EA.apply(
+    ok, lines = _apply(
         _envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key, now=T0
     )
     doc = json.loads(m.read_text())
@@ -97,7 +103,7 @@ def test_another_key_is_refused(tmp_path: Path) -> None:
     priv, _ = _key()
     _, other = _key()
     m = _manifest(tmp_path, {F: OLD})
-    ok, _ = EA.apply(_envs(priv, other[1]), manifest=m, current={F: NEW}, immutable=(F,), key=other)
+    ok, _ = _apply(_envs(priv, other[1]), manifest=m, current={F: NEW}, immutable=(F,), key=other)
     assert not ok
 
 
@@ -106,18 +112,16 @@ def test_an_edited_statement_fails_the_signature(tmp_path: Path) -> None:
     env = _envs(priv, key[1])[0]
     env["statement"] = env["statement"].replace(NEW, "e" * 16)
     m = _manifest(tmp_path, {F: OLD})
-    ok, lines = EA.apply([env], manifest=m, current={F: "e" * 16}, immutable=(F,), key=key)
+    ok, lines = _apply([env], manifest=m, current={F: "e" * 16}, immutable=(F,), key=key)
     assert not ok and any("signature" in x for x in lines)
 
 
 def test_stale_or_replayed_and_wrong_checkout_are_refused(tmp_path: Path) -> None:
     priv, key = _key()
     m = _manifest(tmp_path, {F: "f" * 16})
-    assert not EA.apply(_envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key)[
-        0
-    ]
+    assert not _apply(_envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key)[0]
     m = _manifest(tmp_path, {F: OLD})
-    assert not EA.apply(
+    assert not _apply(
         _envs(priv, key[1]), manifest=m, current={F: "9" * 16}, immutable=(F,), key=key
     )[0]
 
@@ -127,7 +131,7 @@ def test_all_or_nothing(tmp_path: Path) -> None:
     g = "libs/portfolio/rails.py"
     envs = _envs(priv, key[1], {F: (OLD, NEW), g: (OLD, NEW)})
     m = _manifest(tmp_path, {F: OLD, g: "0" * 16})
-    ok, _ = EA.apply(envs, manifest=m, current={F: NEW, g: NEW}, immutable=(F, g), key=key)
+    ok, _ = _apply(envs, manifest=m, current={F: NEW, g: NEW}, immutable=(F, g), key=key)
     assert not ok and json.loads(m.read_text())["files"] == {F: OLD, g: "0" * 16}
 
 
@@ -135,7 +139,7 @@ def test_the_fence_itself_is_never_attested(tmp_path: Path) -> None:
     priv, key = _key()
     me = "scripts/check_immutable_evaluator.py"
     m = _manifest(tmp_path, {me: OLD})
-    ok, _ = EA.apply(
+    ok, _ = _apply(
         _envs(priv, key[1], {me: (OLD, NEW)}),
         manifest=m,
         current={me: NEW},
@@ -169,7 +173,7 @@ def test_latest_auditor_row_wins_and_hold_vetoes() -> None:
 def test_verify_flags_a_forged_attestation(tmp_path: Path) -> None:
     priv, key = _key()
     m = _manifest(tmp_path, {F: OLD})
-    assert EA.apply(_envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key)[0]
+    assert _apply(_envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key)[0]
     doc = json.loads(m.read_text())
     doc["attestations"][F]["sig"] = base64.b64encode(b"\0" * 64).decode()
     m.write_text(json.dumps(doc))
@@ -184,3 +188,49 @@ def test_hash_rule_matches_the_fence() -> None:
 def test_the_repository_manifest_carries_no_unverifiable_attestation() -> None:
     fen = EA.fence()
     assert EA.verify_manifest(fen.MANIFEST, EA.pinned_key()) == []
+
+
+def test_an_envelope_is_single_use_so_an_owner_revert_stands(tmp_path: Path) -> None:
+    """ABA: X->Y attested and applied, the owner re-signs back to X, Y's bytes come back."""
+    priv, key = _key()
+    envs = _envs(priv, key[1])
+    m = _manifest(tmp_path, {F: OLD})
+    assert _apply(envs, manifest=m, current={F: NEW}, immutable=(F,), key=key)[0]
+    doc = json.loads(m.read_text())
+    doc["files"][F] = OLD  # the owner's re-sign back to X (rotation entry dropped by --sign-files)
+    doc["rotation_signers"].pop(F)
+    m.write_text(json.dumps(doc))
+    ok, lines = _apply(envs, manifest=m, current={F: NEW}, immutable=(F,), key=key)
+    assert not ok and any("single use" in x for x in lines)
+    assert EA.verify_manifest(m, key) == []  # the old envelope is history, not a breach
+
+
+def test_head_must_be_in_this_checkouts_history_and_fresh(tmp_path: Path) -> None:
+    priv, key = _key()
+    m = _manifest(tmp_path, {F: OLD})
+    ok, lines = _apply(
+        _envs(priv, key[1]),
+        manifest=m,
+        current={F: NEW},
+        immutable=(F,),
+        key=key,
+        is_ancestor=lambda sha: False,
+    )
+    assert not ok and any("history" in x for x in lines)
+    late = T0.replace(day=30)
+    ok, lines = _apply(
+        _envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key, now=late
+    )
+    assert not ok and any("days ago" in x for x in lines)
+
+
+def test_a_hand_edit_under_the_authoritys_name_is_a_breach(tmp_path: Path) -> None:
+    priv, key = _key()
+    m = _manifest(tmp_path, {F: OLD, "g.py": "0" * 16})
+    assert _apply(_envs(priv, key[1]), manifest=m, current={F: NEW}, immutable=(F,), key=key)[0]
+    doc = json.loads(m.read_text())
+    doc["files"][F] = "7" * 16  # moved without a new envelope
+    doc["rotation_signers"]["g.py"] = f"release-authority:{key[1]}"  # claimed, never attested
+    m.write_text(json.dumps(doc))
+    bad = EA.verify_manifest(m, key)
+    assert any(F in b for b in bad) and any("g.py" in b for b in bad)
