@@ -559,3 +559,23 @@ def test_the_unrunnable_bank_is_asked_about_the_child_row_with_its_row_level_tim
     # the spec the bank saw for the chosen target keys exactly as the child row will
     asked = next(s for s in seen if s["symbol"] == kids[0]["symbol"])
     assert fi.docket_cell_id(asked) == fi.docket_cell_id(kids[0])
+
+
+def test_a_moved_cell_names_the_instrument_it_now_trades() -> None:
+    """Measured on the box 2026-11-10: a `carry_risk_off` cell minted for USDSGD and moved to
+    ADAUSD kept `symbol: USDSGD` in its params, so it was judged on ADAUSD's bars with USDSGD's
+    carry side. The traded-instrument keys follow the move; a second leg never does."""
+    params = {"symbol": "USDSGD", "risk_symbol": "JPN225", "mode": "unwind", "hold_d": 5}
+    moved = hf.retarget_params(params, "USDSGD", "ADAUSD")
+    assert moved == {"symbol": "ADAUSD", "risk_symbol": "JPN225", "mode": "unwind", "hold_d": 5}
+    assert params["symbol"] == "USDSGD"                     # the parent is never edited
+    # the grid's list form, and the other two traded-instrument keys
+    assert hf.retarget_params({"symbol": ["usdsgd"], "input_symbol": "USDSGD",
+                               "fx_symbol": "EURUSD"}, "USDSGD", "ADAUSD") == {
+        "symbol": ["ADAUSD"], "input_symbol": "ADAUSD", "fx_symbol": "EURUSD"}
+    # a parameter naming ANOTHER instrument is the cell's own leg; no move, no change
+    for p, old, new in (({"symbol": "XAUUSD"}, "USDSGD", "ADAUSD"),
+                        ({"symbol": "USDSGD"}, "USDSGD", "USDSGD"),
+                        ({"peer_symbol": "USDSGD"}, "USDSGD", "ADAUSD"),
+                        ({"symbol": "USDSGD"}, "", "ADAUSD")):
+        assert hf.retarget_params(p, old, new) == p

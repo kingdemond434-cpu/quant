@@ -576,8 +576,9 @@ class Steerer:
 
     def _child(self, row: dict[str, Any], move: Mapping[str, Any]) -> dict[str, Any] | None:
         fam = _fam(row)
-        params = dict(row.get("params") or {})
         sym = str(move.get("symbol") or _sym(row))
+        from research.hypothesis_families import retarget_params
+        params = retarget_params(row.get("params") or {}, _sym(row), sym)
         if "timeframe" in move:
             if move["timeframe"] == "H1":
                 params.pop("timeframe", None)

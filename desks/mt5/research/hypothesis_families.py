@@ -997,6 +997,34 @@ REAIM_VERSION = "family-reaim-v1"
 #: Provenance a child may carry. NOT `contributing_sources` / `n_independent_sources`: no source
 #: named the new instrument, so copying them would overstate agreement (deepening_worker scores on
 #: them). The child records 0 sources of its own and names its parent instead.
+#: Parameters through which a cell names the instrument it TRADES (the specialist families take
+#: `symbol`; the swap and FX-leg readers take the other two).
+TRADED_SYMBOL_KEYS = ("symbol", "input_symbol", "fx_symbol")
+
+
+def retarget_params(params: Mapping[str, Any], old: str, new: str) -> dict[str, Any]:
+    """`params` for a cell moved from instrument `old` to `new`.
+
+    A MOVED CELL MUST NAME THE INSTRUMENT IT NOW TRADES (measured on the box 2026-11-10). Both
+    re-targeting paths copied `params` unchanged under a new row symbol, so a `carry_risk_off`
+    cell minted for USDSGD and moved to ADAUSD was judged on ADAUSD's bars with USDSGD's carry
+    side and swap terms: it builds, it fires, and it tests a rule nobody wrote. A parameter that
+    named the OLD instrument is rewritten to the new one; one that names anything else (a risk
+    proxy, a peer, a factor) is the cell's own second leg and is left alone.
+    """
+    out = dict(params)
+    if not old or not new or old == new:
+        return out
+    for key in TRADED_SYMBOL_KEYS:
+        value = out.get(key)
+        if isinstance(value, str) and value.strip().upper() == old.upper():
+            out[key] = new
+        elif (isinstance(value, list) and len(value) == 1 and isinstance(value[0], str)
+              and value[0].strip().upper() == old.upper()):
+            out[key] = [new]
+    return out
+
+
 _SAFE = ("source", "producer", "origin", "title", "url", "source_title", "source_url",
          "mechanism", "mechanism_status", "mechanism_note", "timeframe", "chart")
 
@@ -1081,7 +1109,8 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
         def make(sym: str, row: dict[str, Any] = row, fam: str = fam,
                  params: dict[str, Any] = params) -> dict[str, Any]:
             c = {k: row[k] for k in _SAFE if k in row}
-            c.update({"symbol": sym, "family": fam, "params": dict(params),
+            c.update({"symbol": sym, "family": fam,
+                      "params": retarget_params(params, _sym(row), sym),
                       "contributing_sources": [], "n_independent_sources": 0})
             return c
 
