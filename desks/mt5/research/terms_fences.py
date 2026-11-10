@@ -6,8 +6,8 @@ sat in the donation tree, where the compiler reads every file. This is the fence
 file is parked (left on disk, counted, named with what it costs) and not read.
 
 FAIL-CLOSED IN BOTH DIRECTIONS. The registry (`terms_fences.json`) can add fences and can reopen
-one, but a fence built into this module is enforced even if the registry is missing, unreadable
-or has had the row removed; and a fence is open only with `open: true` AND a pasted permitting
+one, but a fence built into this module is enforced even if the registry is missing, unreadable,
+has had the row removed or has had its patterns emptied or narrowed; and a fence is open only with `open: true` AND a pasted permitting
 clause, so a stray flag cannot reopen it.
 """
 from __future__ import annotations
@@ -44,8 +44,20 @@ def load(registry: Path | None = None) -> list[dict[str, Any]]:
         rows = [dict(f) for f in doc.get("fences") or [] if isinstance(f, dict) and f.get("id")]
     except (OSError, ValueError, AttributeError):
         rows = []
-    have = {str(f["id"]) for f in rows}
-    rows += [dict(f) for f in BUILT_IN if f["id"] not in have]
+    # A registry row may ADD patterns or seats to a built-in fence and may reopen it with a
+    # clause; it can never narrow it. An emptied or shortened `match` is the same as a removed
+    # row: the built-in patterns are still enforced.
+    by_id = {str(f["id"]): f for f in rows}
+    for built in BUILT_IN:
+        row = by_id.get(built["id"])
+        if row is None:
+            rows.append(dict(built))
+            continue
+        for key in ("match", "seats"):
+            mine = row.get(key) if isinstance(row.get(key), list) else []
+            row[key] = [*mine, *(x for x in built.get(key) or [] if x not in mine)]
+        for key in ("reason", "missed_growth"):
+            row[key] = row.get(key) or built.get(key, "")
     return [f for f in rows if not is_open(f)]
 
 

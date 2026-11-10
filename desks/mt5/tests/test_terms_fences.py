@@ -141,3 +141,20 @@ def test_the_deepening_replay_skips_fenced_files(tmp_path, monkeypatch) -> None:
     keep = _write(a, "world/discoveries_1.json", [{"title": "other"}])
     monkeypatch.setattr(dw, "INTEL_ROOTS", (a,))
     assert dw._replay_paths() == [keep]
+
+
+def test_a_registry_row_cannot_narrow_a_built_in_fence(tmp_path: Path) -> None:
+    reg = tmp_path / "r.json"
+    for row in ({"id": "bis_speeches", "match": []},
+                {"id": "bis_speeches", "match": ["bis_speeches/only_this.json"], "seats": []},
+                {"id": "bis_speeches", "match": "nonsense", "open": False},
+                {"id": "bis_speeches"}):
+        reg.write_text(json.dumps({"fences": [row]}), "utf-8")
+        fences = tf.load(reg)
+        assert tf.fence_for("bis_speeches/discoveries_1.json", fences), row
+        assert tf.fence_for("central_banks/bis_speech_tone.jsonl", fences), row
+        assert tf.fence_for("central_banks/cb_tone_series.jsonl", fences), row
+        assert tf.seat_fenced("bis_speeches", fences), row
+    reg.write_text(json.dumps({"fences": [{"id": "bis_speeches", "match": ["extra/*"]}]}),
+                   "utf-8")
+    assert tf.fence_for("extra/x.json", tf.load(reg))          # adding is allowed
