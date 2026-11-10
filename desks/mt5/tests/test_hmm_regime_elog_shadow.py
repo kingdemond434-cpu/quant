@@ -1,7 +1,9 @@
 """Pass item 54: HMM regime posterior conditions the E[log W] solve, in SHADOW only."""
 from __future__ import annotations
 
+import json
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -55,3 +57,44 @@ def test_leg_is_wired() -> None:
     assert '_costed("hmm_regime_elog_shadow", hmm_regime_elog_shadow)' in src
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["hmm_regime_elog_shadow"] == "sizing"
+
+
+def test_refit_every_k_is_faster_and_still_helps() -> None:
+    r = _two_state(220)
+    t0 = time.perf_counter()
+    every = hs.walk_forward(r, refit_every=1)
+    t1 = time.perf_counter()
+    sparse = hs.walk_forward(r)
+    t2 = time.perf_counter()
+    assert sparse["refits"] < every["refits"] and sparse["refits"] == -(-(220 - hs.MIN_FIT_N) // 10)
+    assert sparse["conditioned_logw"] > sparse["plain_logw"]
+    assert (t2 - t1) < (t1 - t0)
+    res = hs.evaluate({"a": r})
+    assert res["sleeves"]["a"]["wall_s"] >= 0
+
+
+def test_verdict_needs_share_sum_and_sign_test() -> None:
+    assert hs.sign_test_p(5, 5) == 1 / 32
+    assert abs(hs.sign_test_p(3, 4) - 5 / 16) < 1e-12
+    assert hs.sign_test_p(0, 0) is None
+    assert hs.verdict_of(2, 2, 1.0)[0] == "UNMEASURED"
+    assert hs.verdict_of(5, 5, 1.0)[0] == "PROMOTE_CANDIDATE"
+    assert hs.verdict_of(5, 5, -0.1)[0] == "NOT_PROMOTE"      # summed delta must be positive
+    assert hs.verdict_of(3, 4, 1.0)[0] == "NOT_PROMOTE"       # 75% wins but p = 0.3125
+    assert hs.verdict_of(3, 5, 1.0)[0] == "NOT_PROMOTE"
+
+
+def test_ledger_keys_by_account_and_dedupes(tmp_path: Path) -> None:
+    rows = [
+        {"account": 1, "sleeve": "s", "signal_time": "t1", "time": "t1", "r_multiple": 1.0},
+        {"account": 1, "sleeve": "s", "signal_time": "t1", "time": "t1", "r_multiple": 1.0},
+        {"account": 1, "sleeve": "s", "signal_time": "t2", "time": "t2", "r_multiple": -0.5},
+        {"account": 2, "sleeve": "s", "signal_time": "t1", "time": "t1", "r_multiple": 2.0},
+        {"sleeve": "s", "open_time": "t3", "time": "t3", "r_multiple": 0.3},
+        {"sleeve": "s", "open_time": "t3", "time": "t3", "r_multiple": 0.3},
+    ]
+    led = tmp_path / "l.jsonl"
+    led.write_text("\n".join(json.dumps(x) for x in rows), encoding="utf-8")
+    out = hs.load_ledger(led)
+    assert out == {("1", "s"): [1.0, -0.5], ("2", "s"): [2.0], "s": [0.3]}
+    assert set(hs.evaluate(out)["sleeves"]) == {"1|s", "2|s", "s"}
