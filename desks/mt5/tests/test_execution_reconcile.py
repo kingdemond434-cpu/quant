@@ -61,6 +61,33 @@ def test_the_shadow_drill_catches_every_planted_break_and_clears_every_clean_boo
     assert d["verdict"] == "PASS" and (d["passed"], d["n"]) == (8, 8)
 
 
+def test_each_scenario_starts_with_the_doors_in_doubt_memory_empty(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every scenario sends the same request, so a key one scenario leaves in the door's
+    process memory (it stays there when the in-doubt file cannot be written) must not be
+    visible to the next scenario's send."""
+    from mt5desk import order_door
+    seen: list[int] = []
+    real = xr._scenarios
+
+    def spy() -> dict[str, Any]:
+        out = {}
+        for sid, (desc, fn) in real().items():
+            def wrapped(fn: Any = fn) -> Any:
+                seen.append(len(order_door._MEMORY_IN_DOUBT))
+                order_door._MEMORY_IN_DOUBT["leftover"] = {"at": NOW.isoformat()}
+                return fn()
+            out[sid] = (desc, wrapped)
+        return out
+
+    monkeypatch.setattr(xr, "_scenarios", spy)
+    try:
+        xr.drill()
+    finally:
+        order_door._MEMORY_IN_DOUBT.clear()
+    assert seen == [0] * 8
+
+
 def test_an_unmeasured_gateway_row_is_published_and_never_counted_as_a_pass() -> None:
     d = xr.drill()
     assert d["gateway"] and not any(r["scenario"].startswith("gateway") for r in d["scenarios"])

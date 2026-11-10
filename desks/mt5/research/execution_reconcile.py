@@ -572,10 +572,20 @@ def _gateway_scenarios() -> list[dict[str, Any]]:
     return out
 
 
+def _fresh_door_memory() -> None:
+    """Every scenario sends the same `_req()`, so the door's process-local in-doubt memory from
+    one scenario would dedupe the next one's send. Each scenario starts with that memory empty,
+    exactly as a fresh gateway process would; the on-disk in-doubt file is already per-scenario
+    (each scenario runs in its own temp MT5_ORDER_DOOR_DIR)."""
+    from mt5desk import order_door
+    order_door._MEMORY_IN_DOUBT.clear()
+
+
 def drill() -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for sid, (desc, fn) in _scenarios().items():
         try:
+            _fresh_door_memory()
             ok, why, _res = fn()
             rows.append({"scenario": sid, "expect": desc, "verdict": "PASS" if ok else "FAIL",
                          "why": why})
