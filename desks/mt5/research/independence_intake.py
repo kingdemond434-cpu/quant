@@ -547,8 +547,13 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
             extra = {k: donor[k] for k in ("generator", "producer", "discovery_id", "region")
                      if donor.get(k)}
             try:
+                # THE CARRIED CELL NAMES THE INSTRUMENT IT NOW TRADES (box, 2026-11-10: 143
+                # carry_risk_off rows were ADAUSD-and-others with `symbol: USDSGD` in params,
+                # judged on the new bars with the donor's carry side).
+                from research.hypothesis_families import retarget_params
                 _id, made = enqueue_candidate(
-                    family=donor["family"], symbol=sym, params=donor["params"],
+                    family=donor["family"], symbol=sym,
+                    params=retarget_params(donor["params"], str(donor["symbol"]), sym),
                     origin=SOURCE, horizon=hor, conn=con,
                     mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
                                f"{hor} (mutation: {op})"),
