@@ -253,7 +253,7 @@ def leading_fill_end(values: Any, run_bars: int) -> int:
     x = pd.to_numeric(pd.Series(values), errors="coerce").to_numpy(dtype=float)
     st, ln = _value_runs(x)
     end = 0
-    for s, n in zip(st.tolist(), ln.tolist()):
+    for s, n in zip(st.tolist(), ln.tolist(), strict=True):
         # A FILL IS A POSITIVE CONSTANT. A held 0 is the venue not recording the spread, which
         # is a different defect (box dry run 2026-11-10: on H4, 0-runs chained every few days
         # carried AUDJPY's "era" to 2025-04-16); it never extends the era and is published as
@@ -280,7 +280,8 @@ def input_fill_report(raw: pd.DataFrame, column: str = "spread") -> dict[str, An
     st, ln = _value_runs(x[b:])
     suspect = [{"kind": "SUSPECT_CONSTANT_RUN", "value": float(x[b + s]),
                 "start": str(idx[b + s]), "end": str(idx[b + s + n - 1]), "bars": int(n)}
-               for s, n in zip(st.tolist(), ln.tolist()) if n >= r and np.isfinite(x[b + s])]
+               for s, n in zip(st.tolist(), ln.tolist(), strict=True)
+               if n >= r and np.isfinite(x[b + s])]
     return {"column": column, "bars": int(x.size), "run_bars": r, "fill_end_index": b,
             "fill_end_time": str(idx[b]) if 0 < b < x.size else None,
             "whole_column_held": bool(x.size and b >= x.size),
