@@ -83,6 +83,7 @@ for _p in (str(BASE), str(BASE / "research"), str(REPO)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.secret_scrub import scrub  # noqa: E402
 from libs.research import coverage as CV  # noqa: E402
 
 UNMEASURED = CV.UNMEASURED
@@ -1825,7 +1826,7 @@ def donate(emitted: Sequence[Mapping[str, Any]], *, at: str, day: str, dry_run: 
     if dry_run:
         return out
     path = MISSIONS_DIR / f"missions_{day}.json"
-    _write_atomic(path, {"generated_at": at, "source": SOURCE_TYPE, "rows": rows})
+    _write_atomic(path, scrub({"generated_at": at, "source": SOURCE_TYPE, "rows": rows}))
     out["intelligence_rows"] = len(rows)
     out["path"] = str(path)
     if conn is None:
