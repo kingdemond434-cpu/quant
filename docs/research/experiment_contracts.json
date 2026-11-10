@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "exploration_share": {
+   "hypothesis": "Turning the judge's own published allocation into one measured exploration share per hour, beside the seven declared exploration constants, exposes any gap between what the desk says it explores and what its judge actually builds, so exploration cannot decay to zero while the constants still read 0.25.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "exploration_share",
+    "better": "up",
+    "organ": "report:EXPLORATION_SHARE.json"
+   },
+   "falsifier": {
+    "metric": "exploration_share",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: the judge's allocation is never fresh enough to read, so the share stays UNMEASURED and the declared constants remain unchecked"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

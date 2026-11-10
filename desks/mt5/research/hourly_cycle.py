@@ -1149,6 +1149,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # N9 (2026-11-10): what share of the judge's docket was not yield-chosen; one file read.
+    "exploration_share",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -6190,6 +6192,10 @@ def main() -> None:
         "srb_basket_judge", "research/srb_basket_judge.py", "--once", "--budget-s", "600"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # THE MEASURED EXPLORATION SHARE (N9, 2026-11-10): the judge's own published allocation
+    # turned into one number per hour, set beside the seven declared exploration constants.
+    exs = _costed("exploration_share", lambda: _producer(
+        "exploration_share", "research/exploration_share.py"))
     # RED WHEN THE NOON CRO PASS STOPS LANDING (2026-10-29). It was driven from a laptop session
     # parked since 09-29 and the ledger held two noon rows in a month with nothing turning red.
     # The pass now runs here as MT5-CycleNoon; this reads its rows and fails the leg past 26 h.
@@ -6538,6 +6544,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "exploration_share": exs,
                     "cro_noon_freshness": cnf,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
