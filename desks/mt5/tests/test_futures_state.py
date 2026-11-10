@@ -394,8 +394,9 @@ def test_mof_rows_are_stamped_at_disclosure_never_at_intervention(tmp_desk: Path
     assert "mof_q_net" in fs._feature_cols(q)
 
 
-def test_mof_robots_disallow_is_a_label_and_the_fetch_proceeds(tmp_desk: Path) -> None:
-    """LAWS 5e: a Disallow labels the source PUBLIC_WITH_TERMS; it never stops the fetch."""
+def test_mof_robots_disallow_stops_the_fetch_and_is_set_aside(tmp_desk: Path) -> None:
+    """A Disallow on the exact path means no fetch (ruling of 2026-11-10, PR #819). The source
+    is set aside with its missed-growth line and a named reopen, never silently skipped."""
     calls: list[str] = []
 
     def get_text(url: str) -> str:
@@ -406,10 +407,49 @@ def test_mof_robots_disallow_is_a_label_and_the_fetch_proceeds(tmp_desk: Path) -
     state: dict = {}
     fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
                     "monthly_index_url": "https://h/m/index.html"}, get_text, state, notes)
-    assert calls[:3] == ["https://h/robots.txt", "https://h/a.csv", "https://h/m/index.html"]
-    assert notes[0]["access_label"] == "PUBLIC_WITH_TERMS"
-    assert notes[0]["redistribute_allowed"] is False
-    assert state["access_labels"]["mof_japan_intervention"] == "PUBLIC_WITH_TERMS"
+    assert set(calls) == {"https://h/robots.txt"}, "nothing but robots.txt may be read"
+    assert [n["status"] for n in notes] == ["SET_ASIDE", "SET_ASIDE"]
+    assert notes[0]["access_label"] == "DISALLOWED" and notes[0]["reopen"]
+    assert {m["side"] for m in notes[0]["missed_growth"]} == {"cost", "gain"}
+    assert all(m["verdict"] == "UNMEASURED" for m in notes[0]["missed_growth"])
+    assert state["access_labels"]["mof_japan_intervention"] == "DISALLOWED"
+
+
+def test_mof_disallow_on_one_path_leaves_the_other_fetched(tmp_desk: Path) -> None:
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        calls.append(url)
+        if url.endswith("robots.txt"):
+            return "User-agent: *\nDisallow: /m/\n"
+        return ""
+
+    notes: list = []
+    state: dict = {}
+    fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
+                    "monthly_index_url": "https://h/m/index.html"}, get_text, state, notes)
+    assert "https://h/a.csv" in calls and "https://h/m/index.html" not in calls
+    assert [n["source"] for n in notes if n.get("status") == "SET_ASIDE"] == \
+        ["mof_japan_intervention:monthly"]
+
+
+def test_mof_no_robots_file_is_public_and_fetches(tmp_desk: Path) -> None:
+    import urllib.error
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        calls.append(url)
+        if url.endswith("robots.txt"):
+            raise urllib.error.HTTPError(url, 404, "x", None, None)  # type: ignore[arg-type]
+        return ""
+
+    notes: list = []
+    state: dict = {}
+    fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
+                    "monthly_index_url": "https://h/m/index.html"}, get_text, state, notes)
+    assert "https://h/a.csv" in calls and "https://h/m/index.html" in calls
+    assert state["access_labels"]["mof_japan_intervention"] == "PUBLIC"
+    assert not [n for n in notes if n.get("status") == "SET_ASIDE"]
 
 
 def test_unreadable_robots_is_access_unclear(tmp_desk: Path) -> None:
@@ -420,6 +460,7 @@ def test_unreadable_robots_is_access_unclear(tmp_desk: Path) -> None:
             raise urllib.error.HTTPError(url, 500, "x", None, None)  # type: ignore[arg-type]
         return ""
     assert fs.robots_label("https://h/a.csv", get_text)[0] == "ACCESS_UNCLEAR"
+    assert fs.robots_allow("https://h/a.csv", get_text) is False
 
 
 def _registry_calendar() -> dict:
@@ -514,7 +555,7 @@ def test_discontinued_eia_curves_are_named_not_read(tmp_desk: Path) -> None:
     assert any(n.get("source") == "eia_futures" and n["status"] == "UNMEASURED" for n in notes)
 
 
-def test_robots_allow_shim_survives_for_importers() -> None:
+def test_robots_allow_is_true_only_for_a_public_path() -> None:
     def get_text(url: str) -> str:
         return "User-agent: *\nDisallow: /x\n"
     assert fs.robots_allow("https://h/a.csv", get_text) is True

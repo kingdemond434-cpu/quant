@@ -580,11 +580,13 @@ def fetch_text(url: str, timeout: float = 40.0) -> str:
 
 
 def robots_label(url: str, get_text: Callable[[str], str]) -> tuple[str, str]:
-    """robots.txt for the URL's host, READ AND LABELLED, never a veto (LAWS 5e, 2026-09-23).
+    """robots.txt for the URL's host, read with our own UA, as a LABEL with its reason.
 
-    A missing file (404) or an allow is PUBLIC; a Disallow is PUBLIC_WITH_TERMS; a file that
-    could not be read is ACCESS_UNCLEAR. Every label withholds redistribution and none of them
-    stops the fetch -- only a hard status (401/403/429/451) does that.
+    PUBLIC: no robots.txt (404), or the file allows this exact path for our agent.
+    DISALLOWED: the file disallows this exact path. The fetch does not happen (ruling of
+    2026-11-10, PR #819: a Disallow covering the exact path stops the fetch).
+    ACCESS_UNCLEAR: the file could not be read. An unread policy is never treated as a yes,
+    so nothing is fetched this pass and the next pass reads it again.
     """
     import urllib.robotparser
     p = urllib.parse.urlsplit(url)
@@ -597,13 +599,34 @@ def robots_label(url: str, get_text: Callable[[str], str]) -> tuple[str, str]:
         return "ACCESS_UNCLEAR", f"robots.txt unreadable: {type(exc).__name__}"
     if rp.can_fetch(UA, url):
         return "PUBLIC", "robots allows this path for our agent"
-    return "PUBLIC_WITH_TERMS", "robots disallows this path: recorded as a label, not a refusal"
+    return "DISALLOWED", "robots disallows this exact path for our agent"
 
 
 def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
-    """Compatibility shim for importers (global_flow, #659): True only for a PUBLIC label.
-    New code calls `robots_label` and carries the label instead of skipping (LAWS 5e)."""
+    """True only for a PUBLIC label: the one answer that permits a fetch."""
     return robots_label(url, get_text)[0] == "PUBLIC"
+
+
+def set_aside(sid: str, label: str, why: str, url: str) -> dict[str, Any]:
+    """The note for a source NOT fetched because of its robots label, with the two-sided
+    missed-growth line the growth law asks of every brake (GROWTH_GOVERNANCE Rule 1) and the
+    named events that reopen it. Neither side is priced in E[log W]: both say UNMEASURED."""
+    return {
+        "source": sid, "status": "SET_ASIDE", "access_label": label, "why": why, "url": url,
+        "redistribute_allowed": False,
+        "reopen": ("the next pass re-reads robots.txt and fetches as soon as it allows this "
+                   "path (or returns 404); or a permitting clause from the publisher's terms "
+                   "is pasted into this source's registry row"),
+        "missed_growth": [
+            {"rail": "futures_state.robots_set_aside", "side": "cost", "value": None,
+             "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+             "why": "cells conditioned on this source get no new rows while it is set aside; "
+                    "rows already held stay in the lake and keep their stamps"},
+            {"rail": "futures_state.robots_set_aside", "side": "gain", "value": None,
+             "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+             "why": "the desk does not build evidence on a path its publisher asked agents "
+                    "not to read"}],
+    }
 
 
 def mof_sign(pair: str) -> float:
@@ -722,29 +745,38 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     if get_text is not None and src.get("terms") == "OPEN" and \
             sid not in state.get("hard_stops", {}):
         try:
-            label, why = robots_label(str(src["csv_url"]), get_text)
+            # Each path is asked about by name: the CSV and the monthly pages live in
+            # different directories and a Disallow on one says nothing about the other.
+            csv_url, index_url = str(src["csv_url"]), str(src["monthly_index_url"])
+            label, why = robots_label(csv_url, get_text)
+            m_label, m_why = (label, why) if label == "ACCESS_UNCLEAR" else \
+                robots_label(index_url, get_text)
             state.setdefault("access_labels", {})[sid] = label
+            state["access_labels"][f"{sid}:monthly"] = m_label
             if label != "PUBLIC":
-                notes.append({"source": sid, "access_label": label, "why": why,
-                              "redistribute_allowed": False})
-            text = get_text(str(src["csv_url"]))
-            if mof_days(text)[1]:
-                csv_path.parent.mkdir(parents=True, exist_ok=True)
-                tmp = csv_path.with_suffix(".csv.tmp")
-                tmp.write_text(text, encoding="utf-8")
-                _replace(tmp, csv_path)
-            index = get_text(str(src["monthly_index_url"]))
-            base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
-            links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
-                           set(re.findall(r'href="(\d{8}e?)\.html"', index)))
-            todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
-            for ln in todo:
-                got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
-                if got is None:
-                    notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
-                    continue
-                pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
-            _write(pages_path, pages)
+                notes.append(set_aside(sid, label, why, csv_url))
+            else:
+                text = get_text(csv_url)
+                if mof_days(text)[1]:
+                    csv_path.parent.mkdir(parents=True, exist_ok=True)
+                    tmp = csv_path.with_suffix(".csv.tmp")
+                    tmp.write_text(text, encoding="utf-8")
+                    _replace(tmp, csv_path)
+            if m_label != "PUBLIC":
+                notes.append(set_aside(f"{sid}:monthly", m_label, m_why, index_url))
+            else:
+                index = get_text(index_url)
+                base = index_url.rsplit("/", 1)[0]
+                links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
+                               set(re.findall(r'href="(\d{8}e?)\.html"', index)))
+                todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
+                for ln in todo:
+                    got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
+                    if got is None:
+                        notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
+                        continue
+                    pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
+                _write(pages_path, pages)
         except HardStop as hs:
             state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
         except Exception as exc:
@@ -901,8 +933,9 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
     if mof.get("adapter") == "mof_feio":
         days, quarters, pages = mof_collect(mof, get_text, state, notes)
         targets = list(mof.get("targets") or [])
-        label = str((state.get("access_labels") or {}).get("mof_japan_intervention", "PUBLIC"))
-        tag = {"access_label": label, "redistribute_allowed": False}
+        # Every held row was fetched under a PUBLIC label (nothing else permits a fetch); the
+        # label of TODAY's robots read lives in state["access_labels"] and the SET_ASIDE note.
+        tag = {"access_label": "PUBLIC", "redistribute_allowed": False}
         q = mof_quarterly(days, quarters)
         if len(q) >= MIN_ROWS:
             feat = dynamics(q, ["mof_q_net", "mof_net_4q"], window=40)
