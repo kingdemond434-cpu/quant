@@ -377,7 +377,10 @@ def _peer_frame(family: str, d: pd.DataFrame, peer: pd.DataFrame | None,
         raise ValueError(f"{family}: peer_symbol={peer_symbol!r} named on a {step} chart with no "
                          "peer frame handed over; only H1 peers are loaded from the store")
     from mt5desk.families_specialist import asof_close
-    stamps = d.index.asi8 if d.index.tz is None else d.index.tz_convert(None).asi8
+    # The store's stamps are UTC nanoseconds; a frame read at another unit (pandas 3 keeps the
+    # parquet's, often microseconds) would match nothing, so the unit is stated, not assumed.
+    idx = d.index if d.index.tz is None else d.index.tz_convert(None)
+    stamps = idx.as_unit("ns").asi8
     closes = asof_close(np.asarray(stamps, dtype="int64"), str(peer_symbol), max_stale_h=0.0)
     if not np.isfinite(closes).any():
         raise ValueError(f"{family}: no H1 bars in the store for peer {peer_symbol!r}")

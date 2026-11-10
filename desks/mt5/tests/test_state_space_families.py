@@ -130,7 +130,7 @@ def test_a_named_peer_with_no_bars_is_a_named_failure(name, monkeypatch):
 def test_peer_read_from_the_store_matches_the_handed_frame(name, monkeypatch):
     from mt5desk import families_cross_sectional as xs
     a, b = _pair()
-    stamps = b.index.asi8
+    stamps = b.index.as_unit("us").asi8 * 1000      # the store's unit (ns) from a us-unit frame
     monkeypatch.setattr(xs, "_load_series",
                         lambda symbol: (stamps, b["close"].to_numpy(dtype=float)))
     via_frame = fs.FAMILIES[name](a, peer=b)
