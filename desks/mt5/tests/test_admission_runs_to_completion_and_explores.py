@@ -269,7 +269,7 @@ def test_the_missed_growth_line_bills_the_pair_and_a_pass_that_lent_nothing_is_a
 
 def test_run_explores_before_the_proof_on_the_published_book_and_never_moves_the_total() -> None:
     src = inspect.getsource(pa.run)
-    i_bind = src.index("book, funded = bind_verdict(nt, prev_book, held, book, funded)")
+    i_bind = src.index("book, funded = bind_verdict(nt, prev_book, held, book, funded,")
     i_adm = src.index("admission = marginal_admission(")
     i_apply = src.index("explored, e_why = apply_explore(base_now, lend, adm_bounds)")
     i_proof = src.index("proof = contest(ev, funded, current_book()")
