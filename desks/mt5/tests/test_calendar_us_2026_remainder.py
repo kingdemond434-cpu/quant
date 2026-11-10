@@ -39,8 +39,20 @@ def test_november_and_december_2026_are_exactly_the_official_rows() -> None:
     assert got == sorted(OFFICIAL)
 
 
-def test_the_fence_is_no_longer_blind_for_the_rest_of_2026() -> None:
-    assert nf.uncovered_families(date(2026, 11, 1), date(2026, 12, 31)) == ()
+def test_the_monthly_families_are_all_dated_and_the_undated_minutes_are_a_named_gap() -> None:
+    # Every monthly family is dated for the rest of 2026. The October-meeting minutes have no
+    # official date yet: that is published as a gap for November, never a quiet month.
+    assert nf.uncovered_families(date(2026, 11, 1), date(2026, 12, 31)) == \
+        ("FOMC_MINUTES:2026-11",)
+    assert nf.uncovered_families(date(2026, 12, 1), date(2026, 12, 31)) == ()
+    v = nf.verdict(datetime(2026, 11, 18, 19, 0, tzinfo=UTC), flag_path=Path("/nonexistent"))
+    assert not v.calendar_ok and "FOMC_MINUTES:2026-11" in v.uncovered
+
+
+def test_a_dated_row_clears_the_undated_gap_by_itself(monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = (*cal.FIXED[2026], ("FOMC_MINUTES", 11, 18, 14, 0))
+    monkeypatch.setitem(cal.FIXED, 2026, rows)
+    assert nf.uncovered_families(date(2026, 11, 1), date(2026, 11, 30)) == ()
 
 
 def test_the_rule_derived_nfp_agrees_with_the_official_dates() -> None:

@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 
 __all__ = ["Release", "us_eastern_offset", "releases", "blackout", "TIER1",
-           "FIXED_SOURCES"]
+           "FIXED_SOURCES", "UNDATED"]
 
 #: Event families the desk treats as capable of repricing gold outright.
 TIER1 = ("FOMC", "FOMC_MINUTES", "CPI", "NFP", "PPI", "GDP", "PCE")
@@ -109,6 +109,15 @@ FIXED: dict[int, tuple[tuple[str, int, int, int, int], ...]] = {
     # entry holding FOMC alone would stop `releases` refusing the year while the fence saw
     # one family in seven. The year stays a refusal until the monthly families are dated.
 }
+
+#: Tier-1 releases known to be coming whose date no official page gives yet: (family, year,
+#: month, why). The fence publishes each as a named gap for that month (never a quiet month)
+#: until a FIXED row for that family lands in that month, which clears it by itself.
+UNDATED: tuple[tuple[str, int, int, str], ...] = (
+    ("FOMC_MINUTES", 2026, 11,
+     "minutes of the October 27-28 meeting: the Fed page had no release link on 2026-11-10 "
+     "(usually three weeks after the meeting)"),
+)
 
 #: Where each batch of FIXED rows was read, so the table can be re-checked against the page.
 FIXED_SOURCES: dict[str, dict[str, str]] = {
