@@ -404,7 +404,7 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
 
 
-# ------------------------------------------------- a late START is a breach for a week, then history
+# ------------------------------------------ a late START is a breach for a week, then history
 def test_a_late_start_older_than_the_window_is_history_not_a_standing_breach() -> None:
     """The box 2026-11-07: 423 LATE_CLOCKs that began 09-17..11-05 held BREACH with nothing left
     to fix. Latency is two frozen stamps, so without a window it can never clear."""
