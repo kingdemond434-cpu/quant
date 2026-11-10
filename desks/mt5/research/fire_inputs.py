@@ -116,6 +116,8 @@ def _probe_event(sym: str) -> dict[str, Any]:
     _seen_c = dict(fer._CONVERTED)
     fer._DROPPED.clear()
     fer._CONVERTED.clear()
+    from mt5desk import family_inputs as fin
+    _before = dict(fin.EVENT_PLACEMENT)
     try:
         times = _event_times(events_for_symbol(events, sym), sym, clock="utc")
         dropped = dict(fer._DROPPED)      # THIS call's drops, by the family's own reason
@@ -126,8 +128,10 @@ def _probe_event(sym: str) -> dict[str, Any]:
         fer._CONVERTED.clear()
         fer._CONVERTED.update(_seen_c)
     if times:
+        # What the currency placement did on THIS call, by name (see `EVENT_PLACEMENT`).
+        backfill = {k: int(v) - int(_before.get(k, 0)) for k, v in fin.EVENT_PLACEMENT.items()}
         return {"status": PRESENT, "input": "event_calendar", "placeable_events": len(times),
-                "clock": placed, "dropped": dropped}
+                "clock": placed, "dropped": dropped, "backfill_placement": backfill}
     # THE LABEL IS THE FAMILY'S OWN DROP REASON (audit of c72ecfc53). Keying it off "is there any
     # offset at all" called a missing SEASON offset `event_calendar_history`; the input that is
     # missing there is the bar clock. Only events dropped as shoulder-month, with every event's
