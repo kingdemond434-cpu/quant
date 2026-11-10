@@ -164,3 +164,23 @@ def test_a_held_step_is_one_episode_and_lands_beside_the_roster(
     v = M.regime_step_values()
     assert v["RETIRE->FADE"]["value_r"] == pytest.approx(0.25)
     assert v["HEALTHY->FADE"]["value_r"] == pytest.approx(0.5)
+
+
+def test_an_episode_is_valued_only_while_it_lasts(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(M, "SLEEVES_FILE", tmp_path / "sleeves.json")
+    s = {"n": 30, "cum_r": -3.0}
+    M._log_regime_step("x", "RETIRE->FADE", "RETIRE", "FADE", "2026-11-10T00:00:00+00:00", s)
+    M._close_cleared_steps({}, "2026-11-12T00:00:00+00:00")           # step cleared
+    M._close_cleared_steps({}, "2026-11-13T00:00:00+00:00")           # nothing open: no row
+    M._log_regime_step("x", "RETIRE->FADE", "RETIRE", "FADE", "2026-11-14T00:00:00+00:00", s)
+    eps = M._episodes()
+    assert len(eps) == 2 and eps[0]["ended_at"].startswith("2026-11-12") \
+        and not eps[1].get("ended_at")
+    t = [{"time": "2026-11-11T05:00:00+00:00", "r_multiple": 1.5},   # inside episode 1
+         {"time": "2026-11-13T05:00:00+00:00", "r_multiple": -1.0},  # between: in neither
+         {"time": "2026-11-15T05:00:00+00:00", "r_multiple": 1.0}]   # inside episode 2
+    monkeypatch.setattr(M, "sleeve_trades", lambda _n: t)
+    v = M.regime_step_values()["RETIRE->FADE"]
+    assert (v["episodes"], v["open"], v["measured"]) == (2, 1, 2)
+    assert v["value_r"] == pytest.approx(0.5 * 1.5 + 0.5 * 1.0)

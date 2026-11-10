@@ -320,35 +320,79 @@ def _regime_step_rows() -> list[dict]:
     return [r for r in rows if isinstance(r, dict)]
 
 
-def _log_regime_step(name: str, step: str, ladder: str, verdict_now: str, now: str,
-                     s: dict) -> dict:
-    """One row per sleeve per CHANGE of step (a step that holds across passes is one episode,
-    priced from its first pass). Returns the row this pass stands on."""
-    last = next((r for r in reversed(_regime_step_rows()) if r.get("sleeve") == name), None)
-    if last and last.get("step") == step and not last.get("ended_at"):
-        return last
-    row = {"at": now, "sleeve": name, "step": step, "ladder": ladder, "verdict": verdict_now,
-           "n_at_step": s.get("n"), "cum_r_at_step": s.get("cum_r")}
+def _episodes() -> list[dict]:
+    """Episodes from the append-only ledger: a START row (`step`) opens one, an END row
+    (`end`: true, `at`) closes the sleeve's open episode. Rows are never edited."""
+    eps: list[dict] = []
+    open_by: dict[str, dict] = {}
+    for r in _regime_step_rows():
+        name = str(r.get("sleeve") or "")
+        if r.get("end"):
+            ep = open_by.pop(name, None)
+            if ep is not None:
+                ep["ended_at"] = r.get("at")
+        elif r.get("step"):
+            prev = open_by.pop(name, None)
+            if prev is not None:                       # a new step closes the previous one
+                prev["ended_at"] = r.get("at")
+            ep = {**r}
+            eps.append(ep)
+            open_by[name] = ep
+    return eps
+
+
+def _open_episode(name: str) -> dict | None:
+    return next((e for e in reversed(_episodes())
+                 if e.get("sleeve") == name and not e.get("ended_at")), None)
+
+
+def _append_step_row(row: dict) -> None:
     with contextlib.suppress(OSError), _steps_path().open("a", encoding="utf-8") as f:
         f.write(json.dumps(row) + "\n")
+
+
+def _log_regime_step(name: str, step: str, ladder: str, verdict_now: str, now: str,
+                     s: dict) -> dict:
+    """Open an episode when a sleeve's step starts or changes; a step that holds across passes
+    stays one episode. Returns the episode this pass stands on."""
+    cur = _open_episode(name)
+    if cur and cur.get("step") == step:
+        return cur
+    row = {"at": now, "sleeve": name, "step": step, "ladder": ladder, "verdict": verdict_now,
+           "n_at_step": s.get("n"), "cum_r_at_step": s.get("cum_r")}
+    _append_step_row(row)            # a different open step is closed by this START row
     return row
 
 
+def _close_cleared_steps(stepped: dict[str, str], now: str) -> None:
+    """END every open episode whose sleeve did not take the same step this pass (it cleared, the
+    ladder moved, or the sleeve left the roster), so its value stops at `now`."""
+    for ep in _episodes():
+        name = str(ep.get("sleeve") or "")
+        if not ep.get("ended_at") and stepped.get(name) != ep.get("step"):
+            _append_step_row({"at": now, "sleeve": name, "end": True})
+
+
 def regime_step_values() -> dict:
-    """Realised value of every logged step from the sleeve's trades closed after it (R at full
-    risk), summed per step kind: the missed-growth / avoided-loss line the governance asks of
-    every risk modifier."""
+    """Realised value of every episode from the sleeve's trades closed INSIDE it, [at, ended_at)
+    (R at full risk), summed per step kind: the missed-growth / avoided-loss line the governance
+    asks of every risk modifier."""
     per: dict[str, dict] = {}
-    for r in _regime_step_rows():
+    for ep in _episodes():
         try:
-            at = datetime.fromisoformat(str(r.get("at")))
+            start = datetime.fromisoformat(str(ep.get("at")))
+            end = (datetime.fromisoformat(str(ep["ended_at"])) if ep.get("ended_at")
+                   else None)
         except ValueError:
             continue
-        after = [float(t["r_multiple"]) for t in sleeve_trades(str(r.get("sleeve")))
-                 if (ts := _row_time(t)) is not None and ts > at]
-        v = decay_regime.step_value(str(r.get("step")), after, FADE_FACTOR)
-        agg = per.setdefault(str(r.get("step")), {"episodes": 0, "measured": 0, "value_r": 0.0})
+        inside = [float(t["r_multiple"]) for t in sleeve_trades(str(ep.get("sleeve")))
+                  if (ts := _row_time(t)) is not None and ts > start
+                  and (end is None or ts < end)]
+        v = decay_regime.step_value(str(ep.get("step")), inside, FADE_FACTOR)
+        agg = per.setdefault(str(ep.get("step")), {"episodes": 0, "open": 0, "measured": 0,
+                                                   "value_r": 0.0})
         agg["episodes"] += 1
+        agg["open"] += end is None
         if v["status"] == "MEASURED":
             agg["measured"] += 1
             agg["value_r"] = round(agg["value_r"] + v["value_r"], 4)
@@ -727,6 +771,10 @@ def main(write_queue: bool = True) -> int:
             sleeves.pop(name, None)
             queue_close([name])
             changed = True
+
+    with contextlib.suppress(Exception):  # a report ledger, never a reason to fail the pass
+        _close_cleared_steps({n: r["regime_step"] for n, r in report.items()
+                              if r.get("regime_step")}, now)
 
     # THE POOLED VERDICT, AFTER THE PER-SLEEVE ONE: a pool that is losing fades every live sleeve
     # in it; a pool past the retirement bar retires every live sleeve in it; a pool that has
