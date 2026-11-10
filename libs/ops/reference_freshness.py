@@ -1192,6 +1192,23 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "when CORRUPT_KEEP newer ones exist, ordered by quarantine sequence, never the clock. "
              "Declared 2026-10-27 (daily-chain lock v1.4, audit of fd141ebb9).",
     ),
+    DestructivePath(
+        path_id="warm_reaper.reap",
+        module="desks/mt5/research/warm_reaper.py",
+        function="reap",
+        removes="only orphaned warm_gauntlet_cache.py python processes (process kill); no file, "
+                "ledger, certificate or evidence row",
+        reference="the live process table read at call time: command line, create time, own "
+                  "ancestry and parent liveness of each candidate",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a process is ended only when its command line names "
+             "warm_gauntlet_cache.py, it is neither this process nor an ancestor, it is older "
+             "than the warmer's hard stop plus REAP_MARGIN_S, and its parent is gone or cannot "
+             "be waiting on it. A listing that fails reaps nothing (UNMEASURED). Every decision "
+             "is appended to reports/warm_cache_state/reaped.jsonl. The pop() the scan sees "
+             "removes the in-memory process handle from a report row, not evidence. Declared "
+             "2026-11-10 (cachewarm unstick, pid 36780).",
+    ),
 )
 
 
