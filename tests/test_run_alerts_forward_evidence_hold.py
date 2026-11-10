@@ -3,6 +3,7 @@ pages when the file that would say so is absent, unstamped or stale (audit of #3
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -75,6 +76,32 @@ def test_wired_means_a_writer_marker_or_a_file_seen_once(tmp_path: Path, monkeyp
     (tmp_path / "writer").write_text("", "utf-8")
     assert _keys(run_alerts._forward_evidence_hold_alarms(missing)) == [
         "forward_evidence_hold_alarm_absent"]
+
+
+def test_the_marker_and_the_alarm_resolve_from_the_repo_root_not_the_cwd(
+        tmp_path: Path, monkeypatch) -> None:
+    """A pager started from another directory must find the same marker: a cwd-relative path
+    there reads a registered writer as unwired, and its dead alarm file stops paging."""
+    scripts = Path(run_alerts.__file__).resolve().parent
+    data = scripts.parent / "desks" / "mt5" / "data"
+    alarm, marker = run_alerts._FE_HOLD_ALARM, run_alerts._FE_HOLD_WRITER_MARKER
+    assert alarm == data / "forward_evidence_hold_alarm.json"
+    assert marker == data / "forward_evidence_hold_alarm.writer"
+    assert alarm.is_absolute() and marker.is_absolute()
+    # a fresh interpreter started in a directory that holds no desks/ at all gets the same two
+    code = ("import sys; sys.path.insert(0, sys.argv[1]); import run_alerts as r; "
+            "print(r._FE_HOLD_ALARM); print(r._FE_HOLD_WRITER_MARKER)")
+    out = subprocess.run([sys.executable, "-c", code, str(scripts)], cwd=tmp_path,
+                         capture_output=True, text=True, check=True).stdout.split()
+    assert [Path(x) for x in out] == [alarm, marker]
+    # and the wired reading itself does not move with the current directory
+    here = tmp_path / "repo" / "desks" / "mt5" / "data" / "forward_evidence_hold_alarm.writer"
+    here.parent.mkdir(parents=True)
+    here.write_text("", "utf-8")
+    monkeypatch.setattr(run_alerts, "_STATE", tmp_path / "no_state.json")
+    monkeypatch.setattr(run_alerts, "_FE_HOLD_WRITER_MARKER", here)
+    monkeypatch.chdir(tmp_path)
+    assert run_alerts._fe_hold_wired() is True
 
 
 def test_a_file_that_exists_is_held_to_the_full_standard_with_no_writer_registered(

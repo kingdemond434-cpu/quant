@@ -450,7 +450,12 @@ def _checks() -> list[tuple[str, str]]:
 #: The promoter's long-hold alarm (audit 2026-10-13). NOTHING AT THIS REVISION WRITES IT: the
 #: writer is the promoter's forward-evidence hold, which has not landed. Until it does the file is
 #: absent, and absent is paged as UNMEASURED below rather than read as "no candidate is held".
-_FE_HOLD_ALARM = Path("desks/mt5/data/forward_evidence_hold_alarm.json")
+#: BOTH HOLD-ALARM PATHS ARE ANCHORED AT THE REPO ROOT, NOT THE CURRENT DIRECTORY (audit of #351,
+#: third pass). A cwd-relative marker read from any other directory is simply not found, which
+#: turns a registered writer back into "unwired" and its dead alarm file into a line nobody is
+#: paged for. The alarm and its marker resolve the same way so they can never disagree.
+_FE_HOLD_ROOT = Path(__file__).resolve().parents[1]
+_FE_HOLD_ALARM = _FE_HOLD_ROOT / "desks/mt5/data/forward_evidence_hold_alarm.json"
 #: The writer's cadence is 15 minutes and the file crosses machines on the hourly sync, so a
 #: document older than this was not refreshed: the writer stopped, and its silence is not "clear".
 _FE_HOLD_STALE_H = 2.0
@@ -459,7 +464,7 @@ _FE_HOLD_STALE_H = 2.0
 _FE_HOLD_RELEASED_H = 1.0
 #: A writer registers itself by creating this file beside the alarm (any content). From then on an
 #: absent alarm file is a dead writer and pages, even before the first document is ever seen.
-_FE_HOLD_WRITER_MARKER = Path("desks/mt5/data/forward_evidence_hold_alarm.writer")
+_FE_HOLD_WRITER_MARKER = _FE_HOLD_ALARM.with_suffix(".writer")
 #: The pager's own memory that the alarm file has existed at least once (set in `main`).
 _FE_HOLD_SEEN_KEY = "_fe_hold_alarm_seen"
 #: UNWIRED LINES OF THIS TICK: conditions that are counted and printed in the alerts report and
