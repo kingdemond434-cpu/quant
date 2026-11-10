@@ -125,23 +125,140 @@ def test_a_refusal_stops_the_host_and_is_named_as_missed_growth(tmp_path: Path) 
     assert "UNMEASURED" in rep["banks"]["Fed"]["missed_growth"]
 
 
-def test_page_budget_bounds_a_pass_and_a_disallow_is_a_label(tmp_path: Path) -> None:
+def _ten_speeches(robots: str) -> tuple[dict[str, tuple[int, str]], dict]:
     idx = FED["index"].format(year=2026)
     links = "".join(f'<a href="/newsevents/speech/x202601{d:02d}a.htm">s</a>' for d in range(1, 11))
-    pages = {"https://www.federalreserve.gov/robots.txt":
-             (200, "User-agent: *\nDisallow: /newsevents/"),
+    pages = {"https://www.federalreserve.gov/robots.txt": (200, robots),
              FED["feeds"][0]: (200, "<rss></rss>"), idx: (200, links)}
     for d in range(1, 11):
         pages[f"https://www.federalreserve.gov/newsevents/speech/x202601{d:02d}a.htm"] = (200, SPEECH)
-    bank = {**FED, "index_from_year": 2026}
+    return pages, {**FED, "index_from_year": 2026}
+
+
+def test_page_budget_bounds_a_pass(tmp_path: Path) -> None:
+    pages, bank = _ten_speeches("User-agent: *\nAllow: /")
     rep = cb.refresh(fetch=_site(pages), registry=_one_bank(bank), out=tmp_path / "o",
                      report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
                      today=date(2026, 11, 10), max_pages=4)
     assert rep["pages_fetched"] == 4 and rep["banks"]["Fed"]["backlog"] == 6
-    rows = [json.loads(x) for x in
-            (tmp_path / "rows.jsonl").read_text().splitlines()]
-    assert {r["access"] for r in rows} == {"PUBLIC_WITH_TERMS"}     # labelled, still read (5e)
+    rows = [json.loads(x) for x in (tmp_path / "rows.jsonl").read_text().splitlines()]
+    assert {r["access"] for r in rows} == {"PUBLIC"}
     assert len(rows[0]["published_utc"]) == 10                      # a bare date, no invented hour
+
+
+def test_a_robots_disallow_is_never_fetched_and_is_counted(tmp_path: Path) -> None:
+    pages, bank = _ten_speeches("User-agent: *\nDisallow: /newsevents/speech/")
+    fetch = _site(pages)
+    rep = cb.refresh(fetch=fetch, registry=_one_bank(bank), out=tmp_path / "o",
+                     report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+                     today=date(2026, 11, 10))
+    assert not [u for u in fetch.calls if "/newsevents/speech/" in u]
+    fed = rep["banks"]["Fed"]
+    assert rep["pages_fetched"] == 0 and rep["speeches_total"] == 0
+    assert fed["robots_skipped"] == 10 and fed["backlog"] == 10     # still owed, not written off
+    assert "UNMEASURED" in fed["missed_growth_robots"]
+
+
+def test_permitted_needs_permitting_terms_and_a_public_door() -> None:
+    base = {"bank": "Fed", "currency": "USD", "published_utc": "2026-10-15", "delivered":
+            "2026-10-15", "hawk": 2, "dove": 1, "terms": "permitted", "access": "PUBLIC"}
+    ok = cb.aggregate([{**base, "url": "a"}, {**base, "url": "b"}])
+    assert ok[0]["terms"] == "permitted" and ok[0]["n_speeches"] == 2
+    for bad in ({"access": "ACCESS_UNCLEAR"}, {"access": "PUBLIC_WITH_TERMS"},
+                {"access": None}, {"terms": "unverified"}):
+        day = cb.aggregate([{**base, "url": "a"}, {**base, "url": "b", **bad}])
+        assert day[0]["terms"] == "unverified", bad                 # one doubtful speech taints the day
+
+
+def test_unreadable_robots_is_read_but_never_permitted(tmp_path: Path) -> None:
+    url = "https://www.federalreserve.gov/newsevents/speech/bowman20261014a.htm"
+    fetch = _site({"https://www.federalreserve.gov/robots.txt": (500, ""),
+                   FED["feeds"][0]: (200, FED_FEED), url: (200, SPEECH)})
+    cb.refresh(fetch=fetch, registry=_one_bank({**FED, "index": None}), out=tmp_path / "o",
+               report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+               today=date(2026, 11, 10))
+    row = json.loads((tmp_path / "rows.jsonl").read_text().splitlines()[0])
+    assert row["access"] == "ACCESS_UNCLEAR" and row["terms"] == "permitted"
+    series = json.loads((tmp_path / "o" / "official_tone_series.jsonl").read_text().splitlines()[0])
+    assert series["terms"] == "unverified"
+
+
+def test_a_crash_before_the_state_save_does_not_count_a_speech_twice(tmp_path: Path) -> None:
+    url = "https://www.federalreserve.gov/newsevents/speech/bowman20261014a.htm"
+    fetch = _site({"https://www.federalreserve.gov/robots.txt": (200, ""),
+                   FED["feeds"][0]: (200, FED_FEED), url: (200, SPEECH)})
+    kw = dict(fetch=fetch, registry=_one_bank({**FED, "index": None}), out=tmp_path / "o",
+              report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+              today=date(2026, 11, 10))
+    cb.refresh(**kw)
+    (tmp_path / "o" / "state.json").unlink()            # rows were appended, the state was lost
+    rep = cb.refresh(**kw)
+    assert fetch.calls.count(url) == 2                  # the page was re-scored and re-appended
+    assert len((tmp_path / "rows.jsonl").read_text().splitlines()) == 2
+    assert rep["speeches_total"] == 1                   # ...and still counts once
+    series = [json.loads(x) for x in
+              (tmp_path / "o" / "official_tone_series.jsonl").read_text().splitlines()]
+    assert len(series) == 1 and series[0]["n_speeches"] == 1
+
+
+def test_a_stopped_host_is_tried_again_after_the_cooldown_and_stops_again(tmp_path: Path) -> None:
+    fetch = _site({"https://www.federalreserve.gov/robots.txt": (403, "")})
+    kw = dict(fetch=fetch, registry=_one_bank({**FED, "index": None}), out=tmp_path / "o",
+              report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+              today=date(2026, 11, 10))
+    cb.refresh(**kw)
+    sp = tmp_path / "o" / "state.json"
+    st = json.loads(sp.read_text())
+    st["hard_stops"]["Fed"]["at"] = "2026-01-01T00:00:00+00:00"
+    sp.write_text(json.dumps(st))
+    rep = cb.refresh(**kw)
+    assert len(fetch.calls) == 2                        # exactly one more knock
+    assert rep["banks"]["Fed"]["hard_stop"]["at"] > "2026-01-02"    # refused: stopped afresh
+    cb.refresh(**kw)
+    assert len(fetch.calls) == 2
+
+
+def test_short_pages_are_capped_and_named_and_a_future_speech_stays_pending(
+        tmp_path: Path) -> None:
+    short = "https://www.federalreserve.gov/newsevents/speech/bowman20261014a.htm"
+    future = "https://www.federalreserve.gov/newsevents/speech/x20261201a.htm"
+    idx = FED["index"].format(year=2026)
+    fetch = _site({"https://www.federalreserve.gov/robots.txt": (200, ""),
+                   FED["feeds"][0]: (200, FED_FEED), short: (200, "<html>moved</html>"),
+                   idx: (200, '<a href="/newsevents/speech/x20261201a.htm">s</a>')})
+    kw = dict(fetch=fetch, registry=_one_bank({**FED, "index_from_year": 2026}),
+              out=tmp_path / "o", report=tmp_path / "r.json",
+              speech_rows=tmp_path / "rows.jsonl", today=date(2026, 11, 10))
+    for _ in range(cb.MAX_SHORT_ATTEMPTS + 2):
+        rep = cb.refresh(**kw)
+    assert fetch.calls.count(short) == cb.MAX_SHORT_ATTEMPTS
+    assert rep["banks"]["Fed"]["short_given_up"] == [short]
+    assert fetch.calls.count(future) == 0 and rep["banks"]["Fed"]["future_pending"] == 1
+    state = json.loads((tmp_path / "o" / "state.json").read_text())
+    assert future not in state["done"]                  # read it when it has been given
+
+
+def test_a_changed_terms_page_drops_new_rows_to_unverified(tmp_path: Path) -> None:
+    url = "https://www.federalreserve.gov/newsevents/speech/bowman20261014a.htm"
+    pages = {"https://www.federalreserve.gov/robots.txt": (200, ""),
+             FED["terms_url"]: (200, "<p>public domain</p>"),
+             FED["feeds"][0]: (200, "<rss></rss>")}
+    kw = dict(fetch=_site(pages), registry=_one_bank({**FED, "index": None}),
+              out=tmp_path / "o", report=tmp_path / "r.json",
+              speech_rows=tmp_path / "rows.jsonl", today=date(2026, 11, 10))
+    rep = cb.refresh(**kw)
+    tp = rep["banks"]["Fed"]["terms_page"]
+    assert len(tp["sha256"]) == 64 and tp["fetched"] and tp["sha256"] == tp["baseline_sha256"]
+    sp = tmp_path / "o" / "state.json"
+    st = json.loads(sp.read_text())
+    st["terms_pages"]["Fed"]["fetched"] = "2026-01-01T00:00:00+00:00"   # the recheck is due
+    sp.write_text(json.dumps(st))
+    pages[FED["terms_url"]] = (200, "<p>all rights reserved</p>")
+    pages[FED["feeds"][0]] = (200, FED_FEED)
+    pages[url] = (200, SPEECH)
+    rep = cb.refresh(**kw)
+    assert rep["banks"]["Fed"]["terms_changed"] and "re-read" in rep["banks"]["Fed"]["missed_growth"]
+    assert json.loads((tmp_path / "rows.jsonl").read_text().splitlines()[0])["terms"] == "unverified"
 
 
 def test_rba_rows_stay_unverified_and_state_stays_out_of_the_donation_tree() -> None:

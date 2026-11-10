@@ -19,8 +19,14 @@ only from 00:00 UTC of the NEXT day. The series this module writes applies the s
 
 POLITENESS. One request per host at a time through `libs.data.polite_fetch` (shared host gate),
 an honest User-Agent, a hard per-pass page budget, and every page fetched once in its life
-(`state.json`). robots.txt is read and recorded as a label (LAWS 5e); 401/403/429/451 stops that
-host and is recorded, never retried in the pass and never routed around.
+(`state.json`). robots.txt is read FIRST and obeyed for this series: a Disallowed feed, index or
+page is not fetched, is counted per bank (`robots_skipped`) and carries a missed_growth line,
+because a row the desk may trade on must have been read through an open door. 401/403/429/451
+stops that host and is recorded, never retried in the pass and never routed around; after
+HARD_STOP_COOLDOWN the host is tried again, and the first refusal stops it again.
+
+PERMITTED means BOTH: the bank's reuse terms were read and permit use, AND the page was PUBLIC
+under a robots.txt this pass could read. Anything else is `unverified` and research-only.
 
 OUTPUT.
     desks/mt5/data/intelligence/central_banks/official_speech_tone.jsonl
@@ -34,6 +40,7 @@ OUTPUT.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import os
@@ -68,6 +75,13 @@ MAX_INDEX_PER_PASS = 6
 #: speech; it is counted and retried on a later pass, never scored.
 MIN_SPEECH_CHARS = 1500
 HARD_STOP = frozenset({401, 403, 429, 451})
+#: A stopped host is left alone this long, then tried again; a refusal stops it again.
+HARD_STOP_COOLDOWN = timedelta(hours=24)
+#: A page that comes back too short this many times is given up on and named in the report.
+MAX_SHORT_ATTEMPTS = 3
+#: The bank's terms page is re-read this often; a changed page drops the bank to `unverified`
+#: until someone re-reads the clause and moves `terms_read` in the registry.
+TERMS_RECHECK = timedelta(days=7)
 
 _DROP_BLOCKS = re.compile(r"(?is)<(script|style|nav|header|footer|noscript|form)\b.*?</\1>")
 _TAGS = re.compile(r"(?s)<[^>]+>")
@@ -158,7 +172,8 @@ def knowable_from(published: str) -> str:
 
 
 def robots_label(robots_text: str | None, url: str, agent: str) -> dict[str, str]:
-    """LAWS 5e: robots is a LABEL. Unreadable -> ACCESS_UNCLEAR; a Disallow -> PUBLIC_WITH_TERMS."""
+    """Unreadable robots.txt -> ACCESS_UNCLEAR; a Disallow -> PUBLIC_WITH_TERMS (and `refresh`
+    does not fetch that URL); otherwise PUBLIC."""
     if robots_text is None:
         return {"access": "ACCESS_UNCLEAR", "note": "robots.txt unreadable"}
     rp = urllib.robotparser.RobotFileParser()
@@ -166,6 +181,23 @@ def robots_label(robots_text: str | None, url: str, agent: str) -> dict[str, str
     if rp.can_fetch(agent, url):
         return {"access": "PUBLIC", "note": ""}
     return {"access": "PUBLIC_WITH_TERMS", "note": "robots.txt Disallow covers this path"}
+
+
+def read_rows(path: Path) -> list[dict[str, Any]]:
+    """The per-speech rows, one per URL, FIRST row wins. Rows are appended before the state file
+    is saved, so a crash between the two re-scores the same URLs on the next pass; without this
+    a speech would be counted twice in its day."""
+    rows: dict[str, dict[str, Any]] = {}
+    if not path.exists():
+        return []
+    for line in path.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and r.get("url"):
+            rows.setdefault(str(r["url"]), r)
+    return list(rows.values())
 
 
 def _read_json(p: Path, default: Any) -> Any:
@@ -190,7 +222,8 @@ def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """One row per (date, currency), stamped with the LATEST availability among its speeches.
     net_tone is None, not 0.0, when the day's speeches carry no lexicon hit (L1.28a)."""
     agg: dict[tuple[str, str], dict[str, Any]] = defaultdict(
-        lambda: {"n": 0, "hawk": 0, "dove": 0, "banks": set(), "avail": "", "terms": set()})
+        lambda: {"n": 0, "hawk": 0, "dove": 0, "banks": set(), "avail": "", "terms": set(),
+                 "access": set()})
     for r in rows:
         a = agg[(str(r.get("delivered") or r["published_utc"])[:10], r["currency"])]
         a["n"] += 1
@@ -198,6 +231,7 @@ def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         a["dove"] += int(r["dove"])
         a["banks"].add(r["bank"])
         a["terms"].add(r["terms"])
+        a["access"].add(r.get("access"))
         a["avail"] = max(a["avail"], knowable_from(str(r["published_utc"])))
     out = []
     for (day, ccy), a in sorted(agg.items()):
@@ -206,8 +240,10 @@ def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "n_speeches": a["n"], "hawk": a["hawk"], "dove": a["dove"],
                     "net_tone": round((a["hawk"] - a["dove"]) / tot, 4) if tot else None,
                     "available_time": a["avail"],
-                    # a day is permitted only if every speech in it was read under such terms
-                    "terms": "permitted" if a["terms"] == {"permitted"} else "unverified"})
+                    # permitted only if EVERY speech in the day was read under permitting
+                    # terms AND through a door robots.txt showed open
+                    "terms": "permitted" if a["terms"] == {"permitted"}
+                    and a["access"] == {"PUBLIC"} else "unverified"})
     return out
 
 
@@ -244,6 +280,9 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
     known: dict[str, dict[str, str]] = state.setdefault("known", {})
     idx_done: dict[str, str] = state.setdefault("index_done", {})
     stops: dict[str, Any] = state.setdefault("hard_stops", {})
+    short: dict[str, int] = state.setdefault("short_attempts", {})
+    terms_seen: dict[str, dict[str, str]] = state.setdefault("terms_pages", {})
+    now = datetime.now(UTC)
     per_speech = speech_rows or SPEECH_ROWS
     per_speech.parent.mkdir(parents=True, exist_ok=True)
     rep: dict[str, Any] = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -256,8 +295,18 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
         b: dict[str, Any] = {"currency": bank["currency"], "terms": bank["terms"],
                              "terms_clause": bank.get("terms_clause", ""),
                              "terms_url": bank.get("terms_url", ""), "short_pages": 0,
+                             "short_given_up": [], "robots_skipped": 0, "future_pending": 0,
                              "errors": [], "scored_this_pass": 0}
         rep["banks"][name] = b
+        if name in stops:
+            try:
+                cooled = now - datetime.fromisoformat(stops[name]["at"]) >= HARD_STOP_COOLDOWN
+            except (KeyError, TypeError, ValueError):
+                cooled = False
+            if cooled:
+                # one more knock: robots.txt is the first request below, and any refusal on
+                # this pass stops the host again with a fresh stamp
+                b["retried_after_stop"] = stops.pop(name)
         if name in stops:
             b["hard_stop"] = stops[name]
             b["missed_growth"] = (f"{name} speeches unread since the host answered "
@@ -274,9 +323,51 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
         if st in HARD_STOP:
             stop(int(st or 0), str(bank["base"]) + "/robots.txt")
             continue
-        robots_text = txt if st is not None and 200 <= st < 300 else None
+        # no robots.txt at all (404) is the convention for "nothing is disallowed"
+        robots_text = txt if st is not None and 200 <= st < 300 else "" if st == 404 else None
+        b["robots"] = "unreadable" if robots_text is None else "read"
+
+        def allowed(url: str, robots_text: str | None = robots_text,
+                    b: dict[str, Any] = b) -> bool:
+            if robots_label(robots_text, url, agent)["access"] == "PUBLIC_WITH_TERMS":
+                b["robots_skipped"] += 1
+                return False
+            return True
+
+        # the terms page itself: fetch date and content hash, re-read on a slow clock
+        bank_terms, turl = str(bank["terms"]), str(bank.get("terms_url") or "")
+        seen = terms_seen.get(name) or {}
+        if seen.get("terms_read") != str(bank.get("terms_read", "")) or seen.get("url") != turl:
+            seen = {}           # the clause was re-read by a person or session: new baseline
+        due = True
+        if seen.get("fetched"):
+            try:
+                due = now - datetime.fromisoformat(seen["fetched"]) >= TERMS_RECHECK
+            except ValueError:
+                due = True
+        if turl and due and allowed(turl):
+            st, txt, _err = get(turl)
+            if st in HARD_STOP:
+                stop(int(st or 0), turl)
+                continue
+            if st is not None and 200 <= st < 300:
+                digest = hashlib.sha256(page_text(txt).encode("utf-8")).hexdigest()
+                seen = {"url": turl, "terms_read": str(bank.get("terms_read", "")),
+                        "baseline_sha256": seen.get("baseline_sha256") or digest,
+                        "sha256": digest, "fetched": now.isoformat(timespec="seconds")}
+                terms_seen[name] = seen
+        b["terms_page"] = dict(seen)
+        if seen and seen.get("sha256") != seen.get("baseline_sha256"):
+            bank_terms = "unverified"
+            b["terms_changed"] = True
+            b["missed_growth"] = (f"{name} terms page changed since it was read "
+                                  f"{bank.get('terms_read', '')}; new rows are research-only "
+                                  "until the clause is re-read and terms_read is moved")
+        b["terms_effective"] = bank_terms
 
         for feed in bank.get("feeds") or []:
+            if not allowed(str(feed)):
+                continue
             st, txt, err = get(str(feed))
             if st in HARD_STOP:
                 stop(int(st or 0), str(feed))
@@ -300,6 +391,8 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
                 fresh = y >= today.year - 1
                 if index_budget <= 0 or (url in idx_done and not fresh) \
                         or idx_done.get(url) == today.isoformat():
+                    continue
+                if not allowed(url):
                     continue
                 st, txt, err = get(url)
                 index_budget -= 1
@@ -325,8 +418,13 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
                 break
             k = known[url]
             day = str(k.get("date") or "")
-            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day) or day > today.isoformat():
-                done[url] = "undated_or_future"
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+                done[url] = "undated"
+                continue
+            if day > today.isoformat():
+                b["future_pending"] += 1    # announced, not yet given: read it when it is
+                continue
+            if not allowed(url):
                 continue
             st, raw, err = get(url)
             page_budget -= 1
@@ -342,11 +440,16 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
             text = page_text(raw)
             if len(text) < MIN_SPEECH_CHARS:
                 b["short_pages"] += 1
+                short[url] = int(short.get(url, 0)) + 1
+                if short[url] >= MAX_SHORT_ATTEMPTS:
+                    done[url] = "short"
+                    short.pop(url, None)
                 continue
+            short.pop(url, None)
             hawk, dove = score_tone(text)
             lab = robots_label(robots_text, url, agent)
             new_rows.append({
-                "source": str(bank["source"]), "terms": str(bank["terms"]),
+                "source": str(bank["source"]), "terms": bank_terms,
                 "terms_basis": f"{bank.get('terms_clause', '')} ({bank.get('terms_url', '')}, "
                                f"read {bank.get('terms_read', '')})",
                 "bank": name, "currency": str(bank["currency"]).upper(),
@@ -359,19 +462,19 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
             done[url] = day
             b["scored_this_pass"] += 1
         b["backlog"] = sum(1 for u, k in known.items() if k.get("bank") == name and u not in done)
+        b["short_given_up"] = sorted(u for u, v in done.items() if v == "short"
+                                     and (known.get(u) or {}).get("bank") == name)[:50]
+        if b["robots_skipped"]:
+            b["missed_growth_robots"] = (
+                f"{b['robots_skipped']} {name} URL(s) not fetched because robots.txt disallows "
+                f"them; any {bank['currency']} speech behind them is UNMEASURED, not neutral")
         b["errors"] = b["errors"][:10]
 
     if new_rows:
         with per_speech.open("a", encoding="utf-8") as fh:
             for r in new_rows:
                 fh.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
-    rows: list[dict[str, Any]] = []
-    if per_speech.exists():
-        for line in per_speech.read_text("utf-8").splitlines():
-            try:
-                rows.append(json.loads(line))
-            except ValueError:
-                continue
+    rows = read_rows(per_speech)
     series = aggregate(rows)
     tmp = out / "official_tone_series.jsonl.tmp"
     tmp.write_text("".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n"
