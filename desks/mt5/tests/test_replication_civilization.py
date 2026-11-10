@@ -211,6 +211,66 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
                                 ledger=drift2)["verdict"] == rc.MISMATCH
 
 
+def test_a_forward_verdict_needs_enough_trades_one_sign_and_both_sides_matched() -> None:
+    """Auditor HOLD on #830: REPLICATED lifts a quarantine, so it is never given on a handful of
+    trades, on P&L of opposite sign, or with a fifth of either side unmatched."""
+    hour = 3_600_000_000_000
+    day = 24 * hour
+    t0 = int(np.datetime64("2026-09-01T07:00:00", "ns").astype("int64"))
+    cost = rc.cost_spec(META)
+
+    def stamp(ns: int) -> str:
+        return str(np.datetime64(ns, "ns")).replace("T", " ")[:19] + "+00:00"
+
+    def fill(i: int, r: float = 0.3, side: int = 1, shift: int = 0) -> Any:
+        t = t0 + i * day + shift
+        return rc.Fill(entry_t=t, exit_t=t + 5 * hour, side=side, entry=1.0, exit=1.0, r=r,
+                       reason="time", bars_held=5)
+
+    def led(f: Any, **kw: Any) -> dict[str, Any]:
+        return {"entry_time": stamp(f.entry_t), "exit_time": stamp(f.exit_t), "side": f.side,
+                "r_multiple": f.r, **kw}
+
+    def judge(ledger: list[dict[str, Any]], fills: list[Any]) -> tuple[str, list[str], dict]:
+        return rc.judge_forward(ledger, fills, 60, cost, None)
+
+    full = [fill(i) for i in range(rc.MIN_FORWARD_TRADES)]
+    assert judge([led(f) for f in full], full)[0] == rc.REPLICATED
+    # one trade short of the minimum is not a test, however well it agrees
+    thin = full[:-1]
+    v, why, div = judge([led(f) for f in thin], thin)
+    assert v == rc.UNMEASURED and "too few forward trades" in why[0] and div["thin"] is True
+    # ...and a thin ledger the rebuild simply has nothing for is not a mismatch either
+    assert judge([led(f) for f in thin], [fill(40)])[0] == rc.UNMEASURED
+    # but a contradiction is a mismatch at any n: the same bar on the OTHER side...
+    v, why, div = judge([led(f, side=-1) for f in thin[:2]], thin[:2])
+    assert v == rc.MISMATCH and div["wrong_side"] == 2 and "OTHER side" in why[0]
+    # ...or an unclaimed rebuilt fill a few bars off the ledger's bar
+    v, why, div = judge([led(thin[0])], [fill(0, shift=3 * hour)])
+    assert v == rc.MISMATCH and div["wrong_bar"] == 1
+    # a neighbour that matched its own ledger trade is not a shifted entry for the next one
+    v, _why, div = judge([led(fill(0)), led(fill(1))], [fill(0)])
+    assert v == rc.UNMEASURED and div["wrong_bar"] == 0
+    # OPPOSITE-SIGN P&L beyond the band is never REPLICATED, even with every per-trade R inside
+    # its own tolerance
+    n = 12
+    ours = [fill(i, r=0.1) for i in range(n)]
+    theirs = [led(f, r_multiple=-0.1) for f in ours]
+    v, why, div = judge(theirs, ours)
+    assert div["median_abs_dR"] <= rc.R_TOLERANCE and v == rc.MISMATCH
+    assert any("SIGN" in w for w in why)
+    # ...while two sums a hair either side of zero are the same result
+    flat_ours = [fill(i, r=0.01) for i in range(n)]
+    assert judge([led(f, r_multiple=-0.01) for f in flat_ours], flat_ours)[0] == rc.REPLICATED
+    # 15 of 23 ledger trades matched (the box's CHFDKK clock) is a mismatch, both directions
+    many = [fill(i) for i in range(23)]
+    v, why, div = judge([led(f) for f in many], many[:15])
+    assert v == rc.MISMATCH and div["match_share"] < rc.MATCH_SHARE
+    v, why, div = judge([led(f) for f in many[:15]], many)
+    assert v == rc.MISMATCH and div["rebuilt_matched_share"] < rc.MATCH_SHARE
+    assert any("rebuilt fills have a ledger trade" in w for w in why)
+
+
 def test_the_lane_never_imports_the_original_implementation() -> None:
     src = (DESK / "research" / "replication_civilization.py").read_text("utf-8")
     imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", src, re.M)

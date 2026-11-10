@@ -85,8 +85,26 @@ SHARPE_NOISE = 0.05
 SHARPE_RATIO = (0.5, 2.0)
 SHARPE_METRIC_VERSION = "daily-r-per-period-v2"
 FILL_SHARE = 0.5
-MATCH_SHARE = 0.5
+#: Share of ledger trades that must have a rebuilt fill on the same bar and side, AND share of
+#: rebuilt fills that must have a ledger trade. 0.5 until 2026-11-10. Box read (201
+#: overnight_gap_decay clocks, replication_before_after_overnight_gap_decay_2026-11-10T1820Z.jsonl):
+#: among clocks with >= 10 forward ledger trades the shares fall in two groups, <= 0.77 (trades
+#: on one side with no counterpart on the other: 8 of 23, 7 of 27, 8 of 31) and >= 0.82; a rule
+#: that passes "a third of the trades are not there" passes almost anything. 0.8 sits between.
+MATCH_SHARE = 0.8
 R_TOLERANCE = 0.25
+#: A forward verdict needs this many forward ledger trades. Below it the tolerances are not a
+#: test (same box read: 33 of the 52 clocks the forward-phase fix moved to REPLICATED rested on
+#: 3 or fewer trades), so the verdict is UNMEASURED -- unless a ledger trade is CONTRADICTED
+#: (see `judge_forward`), which is a mismatch at any n. No clock on the box sits between 7 and 8
+#: trades; the first cluster with enough trades to test starts at 9, and 10 is the Auditor's floor.
+MIN_FORWARD_TRADES = 10
+#: Summed forward P&L of OPPOSITE sign, further apart than this many R, is never REPLICATED
+#: (two R tolerances: one per side). It was only checked when the ledger's own sum reached 1R.
+SIGN_BAND_R = 0.5
+#: Bars either side of a ledger trade in which a rebuilt fill counts as "the rebuild traded
+#: here, on another bar" -- a contradiction, as opposed to the rebuild not trading at all.
+NEAR_BARS = 24
 COST_RATIO = (0.5, 2.0)
 MATCH_BARS = 1
 
@@ -952,38 +970,83 @@ def judge_certificate(recorded_sharpe: float | None, ours: float | None, n_fills
 def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], bar_minutes: int,
                   cost_ours: CostSpec, cost_theirs: Mapping[str, Any] | None
                   ) -> tuple[str, list[str], dict[str, Any]]:
-    """Fills, per-trade R, summed P&L, position state and cost terms, compared."""
+    """Fills, per-trade R, summed P&L, position state and cost terms, compared.
+
+    THREE THINGS A VERDICT HERE MUST NOT DO (Auditor HOLD on #830, 2026-11-10; a REPLICATED
+    verdict lifts a quarantine): pass on too few trades to test, pass with the two P&Ls pointing
+    opposite ways, or pass with a third of the trades missing on one side. So:
+      * fewer than MIN_FORWARD_TRADES ledger trades -> UNMEASURED, unless a ledger trade is
+        CONTRADICTED: a rebuilt fill on its bar on the other side, or a rebuilt fill within
+        NEAR_BARS of it but not on its bar. Those are mismatches at any n;
+      * opposite-sign summed P&L further apart than SIGN_BAND_R -> never REPLICATED;
+      * MATCH_SHARE applies both ways: ledger trades with a rebuilt fill, and rebuilt fills with
+        a ledger trade."""
     theirs = [r for r in ledger if _num(r.get("r_multiple")) is not None]
-    div: dict[str, Any] = {"n_ledger": len(theirs), "n_rebuilt": len(fills)}
+    div: dict[str, Any] = {"n_ledger": len(theirs), "n_rebuilt": len(fills),
+                           "min_forward_trades": MIN_FORWARD_TRADES}
     if not theirs:
         return UNMEASURED, ["the forward ledger holds no trade with an R to compare"], div
+    thin = len(theirs) < MIN_FORWARD_TRADES
     if not fills:
+        if thin:
+            return UNMEASURED, [f"too few forward trades to replicate: {len(theirs)} ledger "
+                                f"trade(s), the rebuild produced none, and "
+                                f"{MIN_FORWARD_TRADES} are needed"], div
         return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger "
                           f"trade(s)"], div
     why: list[str] = []
+    hard: list[str] = []          # contradictions: a mismatch at any n
     tol = MATCH_BARS * bar_minutes * 60_000_000_000
+    near = NEAR_BARS * bar_minutes * 60_000_000_000
     ours_t = np.asarray([f.entry_t for f in fills], dtype="int64")
     matched: list[tuple[float, float]] = []
+    used: set[int] = set()
+    wrong_side = wrong_bar = 0
+    unmatched: list[int] = []
     for row in theirs:
         try:
             t = int(np.datetime64(str(row.get("entry_time")).replace(" ", "T")
                                   .replace("+00:00", ""), "ns").astype("int64"))
         except (ValueError, TypeError):
             continue
-        k = int(np.argmin(np.abs(ours_t - t))) if len(ours_t) else -1
-        if k >= 0 and abs(int(ours_t[k]) - t) <= tol and \
-                int(fills[k].side) == int(row.get("side") or fills[k].side):
+        k = int(np.argmin(np.abs(ours_t - t)))
+        gap = abs(int(ours_t[k]) - t)
+        if gap <= tol and int(fills[k].side) == int(row.get("side") or fills[k].side):
             matched.append((float(row["r_multiple"]), fills[k].r))
+            used.add(k)
+        elif gap <= tol:
+            wrong_side += 1
+        else:
+            unmatched.append(t)
+    # A rebuilt fill that matched its own ledger trade is not evidence against a neighbour: only
+    # a fill NO ledger trade claimed, sitting near an unmatched ledger trade, is a shifted entry.
+    free = np.asarray([int(ours_t[i]) for i in range(len(fills)) if i not in used],
+                      dtype="int64")
+    for t in unmatched:
+        if len(free) and int(np.min(np.abs(free - t))) <= near:
+            wrong_bar += 1
     div["matched"] = len(matched)
+    div["wrong_side"], div["wrong_bar"] = wrong_side, wrong_bar
+    if wrong_side:
+        hard.append(f"{wrong_side} ledger trade(s) have a rebuilt fill on the same bar on the "
+                    f"OTHER side")
+    if wrong_bar:
+        hard.append(f"{wrong_bar} ledger trade(s) have a rebuilt fill within {NEAR_BARS} bars "
+                    f"but not on their bar")
     share = len(matched) / len(theirs)
     div["match_share"] = round(share, 3)
+    back = len(used) / len(fills)
+    div["rebuilt_matched_share"] = round(back, 3)
     fill_ratio = len(fills) / len(theirs)
     div["fill_ratio"] = round(fill_ratio, 3)
     if not (1 - FILL_SHARE <= fill_ratio <= 1 + FILL_SHARE):
         why.append(f"FILLS disagree: {len(fills)} rebuilt vs {len(theirs)} in the ledger")
     if share < MATCH_SHARE:
         why.append(f"only {len(matched)}/{len(theirs)} ledger trades have a rebuilt fill on the "
-                   f"same bar and side")
+                   f"same bar and side (need {MATCH_SHARE:.0%})")
+    if back < MATCH_SHARE:
+        why.append(f"only {len(used)}/{len(fills)} rebuilt fills have a ledger trade on the "
+                   f"same bar and side (need {MATCH_SHARE:.0%})")
     if matched:
         dr = float(np.median([abs(a - b) for a, b in matched]))
         div["median_abs_dR"] = round(dr, 4)
@@ -991,7 +1054,7 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
             why.append(f"per-trade R disagrees: median |dR| = {dr:.3f} > {R_TOLERANCE}")
     pnl_t, pnl_o = sum(float(r["r_multiple"]) for r in theirs), sum(f.r for f in fills)
     div["pnl_ledger_R"], div["pnl_rebuilt_R"] = round(pnl_t, 3), round(pnl_o, 3)
-    if abs(pnl_t) >= 1.0 and np.sign(pnl_t) != np.sign(pnl_o):
+    if pnl_t * pnl_o < 0 and abs(pnl_t - pnl_o) > SIGN_BAND_R:
         why.append(f"summed P&L disagrees in SIGN: ledger {pnl_t:+.2f}R, rebuilt {pnl_o:+.2f}R")
     open_theirs = any(r.get("exit_time") in (None, "") or str(r.get("phase")) == "open"
                       for r in theirs[-1:])
@@ -1012,6 +1075,13 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
             if not (COST_RATIO[0] <= ratio <= COST_RATIO[1]):
                 why.append(f"COST term {key} disagrees: rebuilt {ours_v:.4g} vs frozen "
                            f"{tv:.4g}")
+    div["thin"] = thin
+    if hard:
+        return MISMATCH, hard + why, div
+    if thin:
+        return UNMEASURED, [f"too few forward trades to replicate: {len(theirs)} ledger "
+                            f"trade(s), {MIN_FORWARD_TRADES} are needed",
+                            *([f"(would otherwise read: {why[0]})"] if why else [])], div
     if why:
         return MISMATCH, why, div
     return REPLICATED, [f"{len(matched)}/{len(theirs)} trades matched, P&L {pnl_o:+.2f}R vs "
