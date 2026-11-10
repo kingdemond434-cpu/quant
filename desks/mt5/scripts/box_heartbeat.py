@@ -23,6 +23,10 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
     silent     `reports/SILENT_ORGANS.json` fence RED (a NEW silent organ or an escalation) or
                UNMEASURED (an input unreadable, stale or existence-only), or the census older
                than SILENT_MAX_MIN -- audit R2, 2026-09-30: the fence paged nobody before this
+    clock_census     `reports/CLOCK_LIVENESS.json` older than CLOCK_CENSUS_MAX_H, absent, or
+                     stamped in the future (an unreadable age is not a fresh one): nobody is
+                     measuring whether forward clocks are kept or retired (it sat 44h stale on
+                     the box 2026-10-12..13 while every reading of it still looked clean)
 
 All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
 whenever a check JOINS the failing set (or the silent fence names a new organ), one page through `libs.ops.alert_channels.send_all` (whatever is
@@ -70,6 +74,10 @@ GATEWAY_MAX_MIN = 30.0
 WATCHDOG_MAX_MIN = 30.0
 DISK_MIN_GB = 5.0
 TIMEOUT_S = 10.0
+#: the clock census, written by MT5-ClockLiveness
+CLOCK_LIVENESS = BASE / "reports" / "CLOCK_LIVENESS.json"
+#: MT5-ClockLiveness writes the census hourly; three missed passes is a stopped writer
+CLOCK_CENSUS_MAX_H = 3.0
 
 
 def fx_open(now: datetime) -> bool:
@@ -126,6 +134,10 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
                       "min_gb": DISK_MIN_GB,
                       "fail": disk_free_gb is None or disk_free_gb < DISK_MIN_GB}
     checks["silent"] = silent_check(t)
+    c = _age_min(CLOCK_LIVENESS, t)
+    checks["clock_census"] = {"age_h": None if c is None else round(c / 60.0, 2),
+                              "max_h": CLOCK_CENSUS_MAX_H,
+                              "fail": c is None or c < 0 or c > CLOCK_CENSUS_MAX_H * 60}
     failing = sorted(k for k, v in checks.items() if v["fail"])
     return {"at": dt.isoformat(timespec="seconds"), "checks": checks, "failing": failing,
             "verdict": "FAIL" if failing else "OK"}

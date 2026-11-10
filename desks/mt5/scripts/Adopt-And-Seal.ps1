@@ -562,7 +562,8 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 foreach ($ensure in @(
         @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
-        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
+        @{ Task = "MT5-ClockLiveness"; Installer = "install_clock_liveness_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }

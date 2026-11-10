@@ -57,7 +57,8 @@ NOTHING HERE CAPS ENROLMENT. Re-enrolment is uncapped by principal order (forwar
 evidence and deploy no capital); this organ adds no quota, no ranking and no waiting queue, and
 retires only an instrument the broker no longer lists.
 
-Clock: hourly leg `clock_liveness` (department forward, `--once --budget-s 300`).
+Clock: its own box task `MT5-ClockLiveness` (hourly at :28, `--once --budget-s 300`); it is in
+`hourly_cycle.OWN_CLOCK_LEGS`, so no cycle plan runs it (2026-10-13: the pass was killed first).
 Artifact: `desks/mt5/reports/CLOCK_LIVENESS.json` + `docs/research/CLOCK_LIVENESS.md`.
 Consumers: `scripts/check_clock_liveness.py` (the fence: fails while any clock is FROZEN past its
 own window, when the frozen count rises above the ratchet, or when this report is stale/absent).
