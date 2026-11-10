@@ -410,6 +410,108 @@ def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
     return specs, zero, unmeasured
 
 
+def formula_evidence_unmeasured(name: str, symbol: str, family: str, selector: str,
+                                params: Mapping[str, Any] | None,
+                                gated_at: object = "") -> str | None:
+    """Why this certificate's stored verdict is UNMEASURED evidence, or None when it stands.
+
+    THE FORMULA INPUT FINDING (Auditor, measured on the box 2026-11-10 18:08Z:
+    reports/box_reads/formula_spread_zero_measure_AUDSGD_2026-11-10T1808Z.json): 5,702 of 5,757
+    `formula` certificates read the bars' spread or tick columns, and on AUDSGD the certified
+    edge disappears when the unrecorded (zero) bars are treated as missing. Evidence invalidity,
+    not a risk cut: such a certificate is not priced, so it holds no capital on its stored
+    verdict, and nothing else in the book changes.
+
+    ONE SHARED TEST, THE JUDGE'S (Auditor's ruling): the rule -- which expressions read which
+    inputs, and when a re-gate lifts the hold -- lives in
+    `research.shadow_admission.formula_input_unmeasured(name, row)` and nowhere here. Only the
+    `formula` family is asked. FAIL CLOSED: on a tree that does not carry the Judge's test yet,
+    or when it raises, every formula certificate is UNMEASURED and the reason says so."""
+    if str(family) != "formula":
+        return None
+    spec = {"symbol": symbol, "family": family, "selector": selector,
+            "params": dict(params or {})}
+    row = {**spec, "gated_at": str(gated_at or ""), "shadow_spec": spec}
+    try:
+        try:
+            from research.shadow_admission import formula_input_unmeasured
+        except ModuleNotFoundError:        # entrypoint put research/ on the path
+            from shadow_admission import (  # type: ignore[no-redef,import-not-found]
+                formula_input_unmeasured,
+            )
+    except ImportError:
+        return ("UNMEASURED: the Judge's shared test (shadow_admission.formula_input_unmeasured) "
+                "is not on this tree; every formula certificate is held until it is")
+    try:
+        why = formula_input_unmeasured(str(name), row)
+    except Exception as exc:
+        return (f"UNMEASURED: the Judge's shared test raised {type(exc).__name__}: {exc}; "
+                f"held (fail closed)")
+    if not why:
+        return None
+    # The Judge's own switch (QUANT_FORMULA_INPUT_HOLD=0) enrols held certificates; the allocator
+    # follows it so the two never disagree. Absent or raising, the hold stands.
+    try:
+        import research.shadow_admission as _sa
+    except ModuleNotFoundError:
+        import shadow_admission as _sa  # type: ignore[no-redef]
+    try:
+        if not _sa.formula_input_hold_enforced():
+            return None
+    except Exception:
+        pass
+    return str(why)
+
+
+def unmeasured_formula_rows(cells: Sequence[str], certs: Mapping[str, Any]) -> dict[str, str]:
+    """{roster row name: why} for every LIVE or STANDBY `formula` row that stands on UNMEASURED
+    evidence -- its own certificate is one of `certs`, or its cell (SYMBOL_formula_selector) is
+    one of `cells`. Published in the artifact's zeroed list, so the gateway sizes the row from
+    the book at 0 and sends no order: a row the book does not name would take the base ramp."""
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        return {}
+    cellset = {str(c).lower() for c in cells}
+    out: dict[str, str] = {}
+    for r in rows:
+        if not isinstance(r, dict) or str(r.get("family") or "") != "formula" \
+                or str(r.get("status") or "").upper() not in ("LIVE", "STANDBY"):
+            continue
+        cert = r.get("certificate")
+        key = str(cert.get("cell") or "") if isinstance(cert, dict) else ""
+        sel = str(r.get("selector") or "")
+        cell = f"{str(r.get('symbol') or '').upper()}_formula{'_' + sel if sel else ''}"
+        if key in certs or cell.lower() in cellset:
+            out[str(r.get("name"))] = (
+                "evidence UNMEASURED: this row's formula certificate reads unrecorded bar "
+                "inputs and awaits the Judge's re-judge; 0% until then. NOT retired.")
+    return out
+
+
+def unmeasured_evidence_report(cert_acct: Mapping[str, Any], prev_book: Mapping[str, float],
+                               funded: Mapping[str, float]) -> dict[str, Any]:
+    """The artifact's `evidence_unmeasured` block: how many certificates and cells were held,
+    the paper fractions the previous book carried on them (removed), and where that heat went
+    (the largest increases among the other columns). Read by `missed_growth`."""
+    certs = dict(cert_acct.get("evidence_unmeasured") or {})
+    cells = [str(c) for c in (cert_acct.get("evidence_unmeasured_cells") or [])]
+    removed = {c: round(float(prev_book[c]), 6) for c in cells
+               if float(prev_book.get(c) or 0.0) > 0.0}
+    gains = {k: round(float(v) - float(prev_book.get(k) or 0.0), 6) for k, v in funded.items()
+             if k not in removed and float(v) - float(prev_book.get(k) or 0.0) > 1e-6}
+    top = dict(sorted(gains.items(), key=lambda kv: -kv[1])[:8])
+    return {"status": "HELD" if certs else "NONE",
+            "n_certificates": len(certs), "n_cells": len(cells), "cells": cells,
+            "rows_zeroed": dict(cert_acct.get("evidence_unmeasured_rows") or {}),
+            "paper_fractions_removed": removed,
+            "freed_heat": round(sum(removed.values()), 6),
+            "refilled_into": top,
+            "book_total": round(float(sum(funded.values())), 6),
+            "rule": ("research.shadow_admission.formula_input_unmeasured (the Judge's shared "
+                     "test); evidence invalidity, not a risk cut")}
+
+
 def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
 
@@ -428,7 +530,9 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     Returns (series by sleeve name, accounting). Every refusal is named: a sleeve that cannot be
     priced is reported, never dropped into a silence that reads like an empty library.
     """
-    acct: dict[str, Any] = {"certificates": 0, "priced": 0, "refused": {}}
+    acct: dict[str, Any] = {"certificates": 0, "priced": 0, "refused": {},
+                            "evidence_unmeasured": {}, "evidence_unmeasured_cells": [],
+                            "evidence_unmeasured_rows": {}}
     try:
         sys.path.insert(0, str(BASE / "scripts"))
         import external_gauntlet as eg  # type: ignore[import-not-found]
@@ -485,8 +589,16 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
         if not sym or not fam or (sym, fam, win) in seen:
             continue
-        seen.add((sym, fam, win))
         _cell_name = f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}"
+        # UNMEASURED EVIDENCE IS NOT PRICED, and the cell is left open so a later certificate
+        # of the same cell whose evidence stands is priced instead.
+        _why = formula_evidence_unmeasured(str(sv.get("key") or _cell_name), sym, fam, win,
+                                           sv.get("params"), sv.get("gated_at"))
+        if _why:
+            acct["evidence_unmeasured"][str(sv.get("key") or _cell_name)] = {
+                "cell": _cell_name, "why": _why}
+            continue
+        seen.add((sym, fam, win))
         _price(_cell_name, sym, fam, dict(sv.get("params") or {}))
         if _cell_name in out and sv.get("key"):
             cell_cert[_cell_name] = str(sv["key"])
@@ -500,16 +612,29 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     # correlation floor see it as the sibling it is. LIVE rows are never re-keyed here.
     survivor_params = {str(sv.get("key")): dict(sv.get("params") or {})
                        for sv in survivors if sv.get("key")}
+    survivor_gated = {str(sv.get("key")): sv.get("gated_at") for sv in survivors if sv.get("key")}
     specs, zero, unmeasured = _rostered_certificates(survivor_params)
     identity: dict[str, tuple[str, str]] = {}
     for name, sp in specs.items():
         if sp["cell"] in cell_cert.values():
+            continue
+        _why = formula_evidence_unmeasured(str(sp["cell"]), sp["symbol"], sp["family"], "",
+                                           sp["params"], survivor_gated.get(str(sp["cell"])))
+        if _why:
+            unmeasured[name] = _why
+            acct["evidence_unmeasured"].setdefault(str(sp["cell"]), {"cell": name, "why": _why})
             continue
         _price(name, sp["symbol"], sp["family"], sp["params"])
         if name in out:
             identity[name] = (sp["symbol"], sp["family"])
         else:
             unmeasured[name] = acct["refused"].get(name, "replay produced no series")
+    # The cells every one of whose certificates is UNMEASURED: no certified column was priced,
+    # and `run` drops the same cell's shadow-ledger column (its history is the same replay).
+    acct["evidence_unmeasured_cells"] = sorted(
+        {v["cell"] for v in acct["evidence_unmeasured"].values()} - set(out))
+    acct["evidence_unmeasured_rows"] = unmeasured_formula_rows(
+        acct["evidence_unmeasured_cells"], acct["evidence_unmeasured"])
     acct["identity"] = identity
     acct["rostered_zero"] = zero
     acct["rostered_unmeasured"] = unmeasured
@@ -3650,6 +3775,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # therefore reached the roster at STANDBY and could never leave it, because `admission_of`
     # had nothing to join to and `_door_status` writes LIVE only on a MEASURED admission.
     scalp, scalp_acct = scalp_evidence()
+    # A cell whose every certificate is UNMEASURED evidence is not in the priced universe: its
+    # shadow-ledger column is the same replay over the same unrecorded bars, so it leaves too.
+    _unm_cells = frozenset(str(c) for c in (cert_acct.get("evidence_unmeasured_cells") or ()))
+    _unm_cols = [c for c in daily.columns if str(c) in _unm_cells]
+    if cert_acct.get("evidence_unmeasured"):
+        _log(f"evidence UNMEASURED: {len(cert_acct['evidence_unmeasured'])} formula "
+             f"certificate(s) are not priced (the Judge's shared input test); "
+             f"{len(_unm_cells)} cell(s) leave the priced universe "
+             f"({len(_unm_cols)} shadow column(s) dropped), "
+             f"{len(cert_acct.get('evidence_unmeasured_rows') or {})} roster row(s) held at 0")
+    if _unm_cols:
+        daily = daily.drop(columns=_unm_cols)
     daily = align(align(daily, certified), scalp)
     _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days "
          f"({len(scalp)} of them scalp clocks priced on forward ledgers)")
@@ -3822,7 +3959,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if lp_zero:
         _log(f"live policy ZERO: {len(lp_zero)} column(s) the Fusion account may not trade, "
              f"bound to fraction 0 ({', '.join(sorted(lp_zero)[:6])})")
-    ts_zero = ts_zero | lp_zero
+    # A HELD BOOK MAY STILL CARRY AN UNMEASURED CELL (it left the universe this pass, the book
+    # held from the last one did not): the same zero path removes it and refills its heat.
+    ts_zero = ts_zero | lp_zero | _unm_cells
     if ts_zero:
         _log(f"tier S exchange ZERO: {len(ts_zero)} sleeve(s) bound to fraction 0 in every path "
              f"({', '.join(sorted(ts_zero)[:6])})")
@@ -4608,7 +4747,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
     # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
     zeroed = zeroed_live(ev, funded, extra={**prev_book, **dict.fromkeys(ts_zero, 0.0)},
-                         recorded=cert_acct.get("rostered_zero"))
+                         recorded={**(cert_acct.get("rostered_zero") or {}),
+                                   **(cert_acct.get("evidence_unmeasured_rows") or {})})
     if zeroed:
         _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
              f"({', '.join(sorted(zeroed)[:6])})")
@@ -4956,6 +5096,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "exchange_zero": exchange_zero_meta,
         # Which columns the principal's live policy bound to 0 on the Fusion book, and why.
         "live_policy": live_policy_meta,
+        # Formula certificates held as UNMEASURED evidence: counted, named, with the paper
+        # fractions removed and where the freed heat went (missed_growth publishes the line).
+        "evidence_unmeasured": unmeasured_evidence_report(cert_acct, prev_book, funded),
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
         # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
         # to choose whose certificate applies. Published so the delta is a measurement.

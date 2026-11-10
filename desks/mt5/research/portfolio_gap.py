@@ -156,6 +156,9 @@ def load_survivors() -> list[dict[str, Any]]:
         if not axes:
             continue
         axes["key"] = str(r.get("_key") or r.get("key") or "")
+        # When the gauntlet gated this certificate: the Judge's shared evidence test
+        # (shadow_admission.formula_input_unmeasured) reads it to know a re-judgement.
+        axes["gated_at"] = str(r.get("gated_at") or "")
         axes["hunt"] = str(r.get("hunt") or "")
         axes["days"] = str(r.get("days") or "")
         out.append(axes)
