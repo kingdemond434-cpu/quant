@@ -184,20 +184,32 @@ def worker_cell(cell: dict) -> tuple:
         return (sym, fam, side, win, state, None, str(e))
 
 
+#: How an attestation declares the fixed per-cell bar: the prefix of its `trial_count_basis`.
+FIXED_BAR_BASIS_PREFIX = "fixed_per_cell_bar"
+LEGACY_DSR_BASIS = "campaign_trials_x_sweep_variance"
+
+
 def dsr_bar(n_obs: int, campaign_trials: int, sweep_variance: float) -> tuple[int, float, str]:
     """(n_trials, variance_of_sharpes, basis) for the deflated-Sharpe gate: THE BASIS THE
     ATTESTATION THIS FILE STAMPS DECLARES (audit 2026-10-13, T8 blocker b).
 
-    Under the fixed per-cell bar (`gate_policy.dsr_hurdle_inputs`, the principal's Tier S ruling
-    2026-10-13: N=5, null variance 1/(T-1)) this judges on exactly that bar, so `gate_policy`
-    stamped below is the bar actually applied. Where that policy is not in force the legacy
-    campaign charge and sweep variance stand, which is what the legacy attestation declares."""
+    THE LEGACY BASIS UNLESS ATTESTED (audit of #351, SF-c). The fixed per-cell bar
+    (`gate_policy.dsr_hurdle_inputs`, the principal's Tier S ruling 2026-10-13: N=5, null variance
+    1/(T-1)) is applied only when BOTH hold: the policy exposes that function, AND the attestation
+    it stamps declares the bar (`ATTESTATION["trial_count_basis"]` opens with
+    `FIXED_BAR_BASIS_PREFIX`). The first version switched on the function's mere presence, so a
+    helper landing ahead of its attestation would have judged on a bar no certificate declared.
+    At this revision `gate_policy` has no such function and attests the campaign charge, so this
+    returns the legacy campaign charge and sweep variance -- pinned by
+    `test_qquant_dsr_basis_matches_stamp.py` against the real policy."""
     import gate_policy as _gp
     fixed = getattr(_gp, "dsr_hurdle_inputs", None)
-    if fixed is not None:
+    att = getattr(_gp, "ATTESTATION", None)
+    declared = str(att.get("trial_count_basis") or "") if isinstance(att, dict) else ""
+    if callable(fixed) and declared.startswith(FIXED_BAR_BASIS_PREFIX):
         n_t, var, basis = fixed(int(n_obs))
         return int(n_t), float(var), str(basis)
-    return int(campaign_trials), float(sweep_variance), "campaign_trials_x_sweep_variance"
+    return int(campaign_trials), float(sweep_variance), LEGACY_DSR_BASIS
 
 
 def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,

@@ -489,12 +489,23 @@ def pending_roster() -> tuple[set[str], str]:
     worst case keeps the opposite-direction twin of the SAME pending certificate. Unreadable is
     an empty set: nothing is kept that the canon does not name.
     """
+    since, why = pending_roster_since()
+    return set(since), why
+
+
+def pending_roster_since() -> tuple[dict[str, str | None], str]:
+    """`pending_roster`'s keys, each with the canon's own `pending_since` stamp (None if absent).
+
+    The stamp is what bounds the wait: `clock_certificate.audit` ages every REMINT_PENDING clock
+    from it and raises the alarm past `REMINT_PENDING_ALARM_S`. Where two sources name one key the
+    EARLIER stamp stands, so the wait is never read as younger than it is.
+    """
     cwd = os.getcwd()
     try:
         os.chdir(str(DESK))
         import shadow_admission as sa  # type: ignore[import-not-found]
         import shadow_forward as sf  # type: ignore[import-not-found]
-        keys: set[str] = set()
+        keys: dict[str, str | None] = {}
         rows = 0
         for rel, _what in sa.CANON_SOURCES:
             doc = read_json(DESK / rel)
@@ -511,12 +522,16 @@ def pending_roster() -> tuple[set[str], str]:
                     params = {**dict(sf.WINDOWS.get(str(spec["selector"]), {})), **params}
                 sides = ([str(spec["side"]).upper()] if spec.get("side")
                          else ["LONG", "SHORT"])
+                raw = row.get("pending_since")
+                stamp = raw if isinstance(raw, str) and raw else None
                 for side in sides:
-                    keys.add(sf.sleeve_key(str(spec["symbol"]), str(spec["selector"]), params,
-                                           fam, side))
+                    key = sf.sleeve_key(str(spec["symbol"]), str(spec["selector"]), params,
+                                        fam, side)
+                    prev = keys.get(key)
+                    keys[key] = min(prev, stamp) if (prev and stamp) else (prev or stamp)
         return keys, f"pending_rejudge -> {rows} certificate row(s), {len(keys)} key(s)"
     except Exception as exc:
-        return set(), f"pending_rejudge unreadable ({type(exc).__name__}: {exc}); none kept"
+        return {}, f"pending_rejudge unreadable ({type(exc).__name__}: {exc}); none kept"
     finally:
         os.chdir(cwd)
 
@@ -1159,8 +1174,10 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     # certificate at all, which is a breach of a standing law. The audit traces every clock to
     # its backing certificate, pushes each breached CELL to the front of the judge's queue, and
     # takes a clock away only on the judge's own rejection -- never to make the count smaller.
-    pending, pending_why = pending_roster()
-    cert = cc.audit(after, roster=roster, now=now_utc(), apply=apply, pending=pending)
+    pending_since, pending_why = pending_roster_since()
+    pending = set(pending_since)
+    cert = cc.audit(after, roster=roster, now=now_utc(), apply=apply, pending=pending,
+                    pending_since=pending_since)
     cert["pending_roster"] = pending_why
     cert["unbacked_found"] = len(cert.get("retire") or [])
     if apply and cert.get("retire"):
@@ -1172,7 +1189,8 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
         n_retired = cc.retire_unbacked(cert["retire"], LANE_BY_NAME)
         after = census(cal, roster, now_utc(), tasks, host=host, host_why=host_why)
         counts_after = _counts(after)
-        cert = cc.audit(after, roster=roster, now=now_utc(), apply=False, pending=pending)
+        cert = cc.audit(after, roster=roster, now=now_utc(), apply=False, pending=pending,
+                        pending_since=pending_since)
         cert["pending_roster"] = pending_why
         cert["retired_now"] = n_retired
         cert["unbacked_found"] = n_retired

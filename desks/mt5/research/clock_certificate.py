@@ -102,6 +102,13 @@ BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED = (
 #: re-pass, retired (JUDGE_REJECTED) on a MEASURED failure -- never on a re-judge that could not
 #: measure (an UNMEASURED/UNKNOWN re-judge stays pending in the gauntlet too).
 REMINT_PENDING = "CERTIFICATE_REMINT_PENDING"
+#: A WAIT WITH NO AGE IS A PERMANENT EXEMPTION (audit of #351, SF-a). The state above keeps a clock
+#: off the strict rule for as long as its row sits in `pending_rejudge`, and nothing read how long
+#: that had been. The re-mint's own rule is "at most one sweep"; a day is several heavy sweeps, so
+#: a row still pending past it means the judge is not reaching it. This is an ALARM, never a
+#: retirement: the clock is kept (its certificate was never rejected) and the age is published
+#: for the pager (`scripts/run_alerts.py`), which is what makes the wait visible.
+REMINT_PENDING_ALARM_S = 24 * 3600.0
 BACKING_STATES = (BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED, REMINT_PENDING)
 
 #: One judging cycle, kept only because the artifact still publishes breach ages for the record.
@@ -267,6 +274,17 @@ def verdict_state(row: Mapping[str, Any] | None) -> tuple[str, str]:
 
 
 # ------------------------------------------------------------------------------ breach ledger
+def _as_utc(raw: Any) -> datetime | None:
+    """An ISO stamp as an aware UTC time, or None: an unreadable stamp is no stamp."""
+    if not isinstance(raw, str) or not raw:
+        return None
+    try:
+        t = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
+
+
 def load_ledger(path: Path | None = None) -> dict[str, Any]:
     doc = _read_json(path or BREACH_LEDGER)
     return doc if isinstance(doc, dict) else {}
@@ -362,11 +380,16 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
           canon_path: Path | None = None, verdict_path: Path | None = None,
           ledger_path: Path | None = None,
           queue_path: Path | None = None,
-          pending: set[str] | None = None) -> dict[str, Any]:
+          pending: set[str] | None = None,
+          pending_since: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """The whole law in one pass: trace, queue, keep, retire -- and publish the four counts.
 
     `pending` is the engine-keyed set of clocks whose certificate sits in the canon's
-    `pending_rejudge` block (see REMINT_PENDING); such a clock is kept, never retired."""
+    `pending_rejudge` block (see REMINT_PENDING); such a clock is kept while the judge has not
+    ruled, and BREACHES like any other the pass the judge's own verdict is a rejection.
+    `pending_since` maps those keys to the canon's own `pending_since` stamp, which bounds the
+    wait with an alarm (REMINT_PENDING_ALARM_S); a key without one is aged from the pass this
+    audit first saw it pending."""
     now = now or now_utc()
     n_canon, canon_why = canon_state(canon_path)
     rows: list[dict[str, Any]] = []
@@ -425,7 +448,12 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
     # A PARKED CELL THE JUDGE HAS REJECTED IS NOT WAITING (audit of #126 v2, MF1). The wait is
     # for a re-judge; once the judge's own verdict is a rejection, the clock breaches and retires
     # like any other, with the judge's reason.
-    waiting = [r for r in rows if r.get("pending_rejudge")]
+    # AND THAT HOLDS FOR BOTH WAITING STATES (audit of #351, MUST-FIX). REMINT_PENDING is decided
+    # before the parked branch and carries no `pending_rejudge` flag, so reading the flag alone
+    # skipped this check for exactly the rows the engine-keyed join catches: a clock whose cell
+    # the judge had rejected, still listed in the canon's pending block, was kept. Both waits are
+    # for the same re-judge, so both answer to the same verdict.
+    waiting = [r for r in rows if r.get("pending_rejudge") or r["backing"] == REMINT_PENDING]
     if waiting:
         p_index = verdict_index(((str(r["symbol"]), str(r["family"]), str(r["timeframe"]))
                                  for r in waiting), verdict_path)
@@ -441,6 +469,28 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                            for r in breached), verdict_path)
     ledger = load_ledger(ledger_path)
     seen = dict(ledger.get("first_seen") or {})
+    # THE AGE OF EVERY RE-MINT WAIT (SF-a). The canon's own `pending_since` where the row carries
+    # one, and the pass this audit first saw the key pending otherwise -- whichever is EARLIER, so
+    # a row re-stamped by a later sweep cannot make its wait look younger than it is.
+    remint_prev = ledger.get("remint_first_seen")
+    remint_seen: dict[str, str] = {}
+    remint_ages: list[float] = []
+    for r in rows:
+        if r["backing"] != REMINT_PENDING:
+            continue
+        key = str(r.get("key"))
+        stamps = [(remint_prev or {}).get(key) if isinstance(remint_prev, dict) else None,
+                  (pending_since or {}).get(key), now.isoformat()]
+        first_t = now
+        for raw in stamps:
+            t = _as_utc(raw)
+            if t is not None and t < first_t:
+                first_t = t
+        remint_seen[key] = first_t.isoformat()
+        age_s = round(max(0.0, (now - first_t).total_seconds()), 1)
+        remint_ages.append(age_s)
+        r |= {"pending_since": remint_seen[key], "remint_pending_age_s": age_s,
+              "remint_pending_overdue": age_s > REMINT_PENDING_ALARM_S}
     # STRICT: EVERY UNBACKED CLOCK IS RETIRED ON THIS PASS. The judge's verdict is still read,
     # because a cell the judge has already REJECTED deserves that as its recorded reason rather
     # than the generic one -- but the OUTCOME no longer depends on it. There is no AWAITING state
@@ -467,6 +517,7 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
     still = {r["cell"] for r in breached}
     if apply:
         save_ledger({"first_seen": {k: v for k, v in seen.items() if k in still},
+                     "remint_first_seen": remint_seen,
                      "at": now.isoformat(), "n_breached": len(still),
                      "rule": ("a cell leaves this ledger only when its clock is backed or "
                               "retired; the age it carries is what the fence measures")},
@@ -486,6 +537,9 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
         "breached": counts[BREACHED],
         "awaiting": 0, "backed": counts[BACKED], "retired": counts[RETIRED],
         "remint_pending": counts[REMINT_PENDING],
+        "remint_pending_alarm_s": REMINT_PENDING_ALARM_S,
+        "remint_pending_oldest_age_s": max(remint_ages, default=0.0),
+        "remint_pending_overdue": sum(1 for a in remint_ages if a > REMINT_PENDING_ALARM_S),
         "pending_rejudge": sum(1 for r in rows if r.get("pending_rejudge")),
         # What the fence reads: clocks still running with no certificate AFTER this pass. Zero by
         # construction once the retirement is applied; anything else is the law broken.
@@ -501,7 +555,8 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                                           "breach_age_s")} for r in retire],
         "rows": [{k: r.get(k) for k in
                   ("lane", "key", "cell", "symbol", "family", "timeframe", "backing", "judge",
-                   "breach_age_s", "over_one_judging_cycle", "why")} for r in rows],
+                   "breach_age_s", "over_one_judging_cycle", "why", "pending_since",
+                   "remint_pending_age_s", "remint_pending_overdue")} for r in rows],
     }
 
 

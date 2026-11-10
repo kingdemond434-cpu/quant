@@ -44,7 +44,9 @@ _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600,
                        "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
                        # the chain runs once a day; its failures can only change once a day
-                       "research_chain_failed": 24 * 3600}
+                       "research_chain_failed": 24 * 3600,
+                       # standing until the promoter's hold writer lands: remind daily
+                       "forward_evidence_hold_alarm_absent": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -443,35 +445,101 @@ def _checks() -> list[tuple[str, str]]:
                     "sudo -u quant -i ; claude setup-token"))
     out.extend(_digger_health())
     out.extend(_forward_evidence_hold_alarms())
+    out.extend(_remint_pending_alarms())
     return out
 
 
-#: the promoter's long-hold alarm (audit 2026-10-13); absent until the promoter hold lands
+#: The promoter's long-hold alarm (audit 2026-10-13). NOTHING AT THIS REVISION WRITES IT: the
+#: writer is the promoter's forward-evidence hold, which has not landed. Until it does the file is
+#: absent, and absent is paged as UNMEASURED below rather than read as "no candidate is held".
 _FE_HOLD_ALARM = Path("desks/mt5/data/forward_evidence_hold_alarm.json")
+#: The writer's cadence is 15 minutes and the file crosses machines on the hourly sync, so a
+#: document older than this was not refreshed: the writer stopped, and its silence is not "clear".
+_FE_HOLD_STALE_H = 2.0
+#: An entry the writer has not refreshed for this long is a RELEASED hold -- but only inside a
+#: document that is itself fresh, which is what tells a released hold from a dead writer.
+_FE_HOLD_RELEASED_H = 1.0
 
 
 def _forward_evidence_hold_alarms(path: Path | None = None) -> list[tuple[str, str]]:
     """Page on every PROMOTION CANDIDATE the forward-evidence hold has kept over its alarm age.
 
-    The promoter refreshes an entry each 15-minute pass while it holds it, so an entry whose
-    `last_held_at` is over an hour old is a released hold, never paged. Names only, no values."""
+    ABSENCE AND STALENESS PAGE TOO (audit of #351, SF-b). The first version returned nothing for
+    an absent file, an entry with no `last_held_at`, and a stamp over an hour old alike, so a
+    writer that never ran or had died read exactly like a desk holding nothing. A released hold
+    is silent only when the DOCUMENT is fresh (its own stamp inside `_FE_HOLD_STALE_H`): then an
+    old `last_held_at` means the writer ran and no longer holds that name. Names only, no values."""
+    p = path or _FE_HOLD_ALARM
     try:
-        doc = json.loads((path or _FE_HOLD_ALARM).read_text("utf-8"))
-    except (OSError, ValueError):
-        return []
-    held = doc.get("held") if isinstance(doc, dict) and isinstance(doc.get("held"), dict) else {}
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        return [("forward_evidence_hold_alarm_absent",
+                 f"{p.name} is ABSENT: whether any promotion candidate is held past its alarm "
+                 "age is UNMEASURED -- the promoter's forward-evidence hold is not writing it")]
+    except (OSError, ValueError) as exc:
+        return [("forward_evidence_hold_alarm_unreadable",
+                 f"{p.name} is unreadable ({type(exc).__name__}): long forward-evidence holds "
+                 "are UNMEASURED")]
+    if not isinstance(doc, dict):
+        return [("forward_evidence_hold_alarm_unreadable",
+                 f"{p.name} is not an object: long forward-evidence holds are UNMEASURED")]
+    doc_age_h, _key = stamp_age_h(doc)
+    if doc_age_h is None or doc_age_h > _FE_HOLD_STALE_H:
+        how = ("carries no readable stamp of its own" if doc_age_h is None
+               else f"was last written {doc_age_h:.1f}h ago")
+        return [("forward_evidence_hold_alarm_stale",
+                 f"{p.name} {how} (limit {_FE_HOLD_STALE_H:g}h): its writer is not running, so "
+                 "its list of long forward-evidence holds is UNMEASURED, never clear")]
+    held = doc.get("held") if isinstance(doc.get("held"), dict) else {}
+    alarm = doc.get("alarm") if isinstance(doc.get("alarm"), list) else []
     out: list[tuple[str, str]] = []
-    for name in doc.get("alarm") or []:
-        last = (held.get(name) or {}).get("last_held_at")
-        age = stamp_age_h({"ts": last}) if last else (None, None)
-        if age[0] is None or age[0] > 1.0:
+    for name in alarm:
+        entry = held.get(name) if isinstance(held.get(name), dict) else {}
+        last = entry.get("last_held_at")
+        age = stamp_age_h({"ts": last})[0] if isinstance(last, str) and last else None
+        if age is None:
+            out.append((f"forward_evidence_hold_{name}",
+                        f"promotion candidate {name} is on the forward-evidence hold alarm with "
+                        "no readable `last_held_at`: whether it is still held is UNMEASURED"))
             continue
+        if age > _FE_HOLD_RELEASED_H:
+            continue        # the writer is alive (fresh document) and no longer holds this name
         out.append((f"forward_evidence_hold_{name}",
                     f"promotion candidate {name} held by the forward-evidence hold for over "
                     f"{doc.get('alarm_after_h', 24)}h since "
-                    f"{(held.get(name) or {}).get('first_held_at')}: its clock cannot measure it "
-                    f"-- {str((held.get(name) or {}).get('why') or '')[:120]}"))
+                    f"{entry.get('first_held_at')}: its clock cannot measure it "
+                    f"-- {str(entry.get('why') or '')[:120]}"))
     return out
+
+
+#: `clock_liveness` publishes the age of every clock kept as CERTIFICATE_REMINT_PENDING here.
+_CLOCK_LIVENESS = Path("desks/mt5/reports/CLOCK_LIVENESS.json")
+
+
+def _remint_pending_alarms(path: Path | None = None) -> list[tuple[str, str]]:
+    """Page when a forward clock has waited on its certificate's re-judge past the alarm age.
+
+    A clock in that state is exempt from CLOCK IF AND ONLY IF CERTIFICATE for as long as its row
+    sits in the canon's `pending_rejudge` (audit of #351, SF-a); this is what bounds the wait. An
+    absent or unreadable report pages nothing HERE: `check_clock_liveness` owns that defect."""
+    try:
+        doc = json.loads((path or _CLOCK_LIVENESS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    cert = doc.get("certificate") if isinstance(doc, dict) else None
+    if not isinstance(cert, dict):
+        return []
+    n = cert.get("remint_pending_overdue")
+    if isinstance(n, bool) or not isinstance(n, int) or n <= 0:
+        return []
+    oldest = cert.get("remint_pending_oldest_age_s")
+    limit = cert.get("remint_pending_alarm_s")
+    oldest_h = f"{float(oldest) / 3600.0:.1f}h" if isinstance(oldest, (int, float)) else "?"
+    limit_h = f"{float(limit) / 3600.0:.0f}h" if isinstance(limit, (int, float)) else "?"
+    return [("clock_remint_pending_overdue",
+             f"{n} forward clock(s) have waited over {limit_h} for their certificate's re-judge "
+             f"(oldest {oldest_h}): kept, never retired, but the judge is not reaching them -- "
+             "check attestation_remint's docket and the heavy sweep")]
 
 
 def _brain_running() -> bool:
