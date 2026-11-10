@@ -1344,6 +1344,7 @@ def executable_groups(base: Path | None = None, *, top: int = 40) -> dict[str, A
         return {"records": n, "executables": len(by), "surplus_copies": n - len(by),
                 "groups_held_more_than_once": len(multi),
                 "groups": [{"symbol": json.loads(k)["symbol"], "family": json.loads(k)["family"],
+                            "key": hashlib.sha256(k.encode("utf-8")).hexdigest()[:16],
                             "copies": len(v), "members": v[:25]} for k, v in multi[:top]]}
 
     certified: dict[str, Any] = {}            # certificate cell -> the params it certifies

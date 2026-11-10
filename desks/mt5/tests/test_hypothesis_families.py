@@ -835,6 +835,7 @@ def test_one_executable_is_one_key_and_a_fresh_copy_is_refused(tmp_path) -> None
     assert doc["canon"]["records"] == 3 and doc["canon"]["executables"] == 2
     assert doc["canon"]["surplus_copies"] == 1
     assert doc["canon"]["groups"][0]["copies"] == 2
+    assert len(doc["canon"]["groups"][0]["key"]) == 16         # a stable id per executable
     assert doc["sleeves"]["records"] == 3 and doc["sleeves"]["surplus_copies"] == 1
     assert doc["sleeves"]["unjoined_to_a_certificate"] == 1
     assert doc["sleeve_registry"]["records"] == 3
