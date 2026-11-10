@@ -1,57 +1,51 @@
 {
  "schema": 1,
- "started_at": "2026-11-10T09:55:38+00:00",
- "pid": 14852,
- "phase": "applied",
- "phase_at": "2026-11-10T10:00:13+00:00",
- "done": true,
+ "started_at": "2026-11-10T11:02:57+00:00",
+ "pid": 12200,
+ "phase": "written",
+ "phase_at": "2026-11-10T11:04:27+00:00",
+ "done": false,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-11-10T09:55:38+00:00",
+   "at": "2026-11-10T11:02:57+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-11-10T09:55:39+00:00",
+   "at": "2026-11-10T11:02:57+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "queue",
-   "at": "2026-11-10T09:55:53+00:00",
-   "elapsed_s": 14.3
+   "at": "2026-11-10T11:03:55+00:00",
+   "elapsed_s": 58.1
   },
   {
    "phase": "plan",
-   "at": "2026-11-10T09:55:53+00:00",
-   "elapsed_s": 14.3
+   "at": "2026-11-10T11:03:55+00:00",
+   "elapsed_s": 58.1
   },
   {
    "phase": "rate",
-   "at": "2026-11-10T09:55:53+00:00",
-   "elapsed_s": 14.3
+   "at": "2026-11-10T11:03:55+00:00",
+   "elapsed_s": 58.1
   },
   {
    "phase": "rate_written",
-   "at": "2026-11-10T09:58:42+00:00",
-   "elapsed_s": 183.1
+   "at": "2026-11-10T11:04:25+00:00",
+   "elapsed_s": 87.8
   },
   {
    "phase": "task_limit",
-   "at": "2026-11-10T09:58:43+00:00",
-   "elapsed_s": 184.4
+   "at": "2026-11-10T11:04:26+00:00",
+   "elapsed_s": 89.1
   },
   {
    "phase": "written",
-   "at": "2026-11-10T09:58:43+00:00",
-   "elapsed_s": 184.5
-  },
-  {
-   "phase": "applied",
-   "at": "2026-11-10T10:00:13+00:00",
-   "elapsed_s": 274.5
+   "at": "2026-11-10T11:04:27+00:00",
+   "elapsed_s": 90.4
   }
  ],
- "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason",
- "seconds": 274.6
+ "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
 }
