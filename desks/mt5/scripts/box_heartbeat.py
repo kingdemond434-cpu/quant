@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import re
 import shutil
 import sys
 import time
@@ -92,6 +93,21 @@ def _age_min(p: Path, now: float) -> float | None:
         return None
 
 
+def _stamp_age_min(p: Path, now: float, key: str = "checked_at") -> float | None:
+    """Age of a beat by the stamp its writer put INSIDE it. The file's mtime lies: a git commit
+    or checkout of the file refreshes it (stall_watch.json looked alive while its watchdog had
+    been dead since 2026-09-16). No readable stamp is None, which fails."""
+    try:
+        raw = json.loads(p.read_text(encoding="utf-8-sig")).get(key)
+        text = re.sub(r"(\.\d{6})\d+", r"\1", str(raw)).replace("Z", "+00:00")
+        at = datetime.fromisoformat(text)
+    except (OSError, ValueError, AttributeError, TypeError):
+        return None
+    if at.tzinfo is None:
+        return None
+    return (now - at.timestamp()) / 60.0
+
+
 def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
             disk_free_gb: float | None = None) -> dict[str, Any]:
     """Every check's reading and whether it fails. A beat that does not exist FAILS: absence is
@@ -114,7 +130,7 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
     checks["gateway"] = {"age_min": None if g is None else round(g, 1), "max_min": GATEWAY_MAX_MIN,
                          "market_open": is_open,
                          "fail": is_open and (g is None or g > GATEWAY_MAX_MIN)}
-    w = _age_min(WATCHDOG_BEAT, t)
+    w = _stamp_age_min(WATCHDOG_BEAT, t)
     checks["watchdog"] = {"age_min": None if w is None else round(w, 1),
                           "max_min": WATCHDOG_MAX_MIN, "fail": w is None or w > WATCHDOG_MAX_MIN}
     if disk_free_gb is None:

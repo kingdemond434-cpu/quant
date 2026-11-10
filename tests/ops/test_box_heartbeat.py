@@ -24,6 +24,9 @@ def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: floa
     for p in (g, w):
         p.write_text("{}")
         os.utime(p, (now - age_min * 60, now - age_min * 60))
+    at = datetime.fromtimestamp(now - age_min * 60, tz=UTC)
+    w.write_text(json.dumps({"checked_at": at.strftime("%Y-%m-%dT%H:%M:%S.%f") + "1Z"}))
+    os.utime(w, (now, now))  # the mtime says fresh; only the stamp counts
     monkeypatch.setattr(hb, "GATEWAY_BEAT", g)
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", w)
     monkeypatch.setattr(hb, "SILENT_ORGANS", s)
@@ -125,3 +128,24 @@ def test_red_fence_pages_even_when_the_box_was_already_failing(
     assert len(sent) == 2
     hb.run(out=out, secrets=sec, reading=reading(["disk", "silent"], ["leg:y"]))
     assert len(sent) == 3
+
+
+def test_watchdog_is_aged_by_its_stamp_not_its_file_time(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """stall_watch.json's mtime is refreshed by every git commit or checkout of it, so a watchdog
+    dead since 2026-09-16 looked alive (hourly pass idea 572)."""
+    now = datetime(2026, 11, 10, 23, tzinfo=UTC).timestamp()
+    w = tmp_path / "stall_watch.json"
+    monkeypatch.setattr(hb, "WATCHDOG_BEAT", w)
+    w.write_text('\ufeff{"checked_at":  "2026-09-16T16:30:39.7903532Z"}', encoding="utf-8")
+    os.utime(w, (now, now))
+    r = hb.measure(now, research={"age_days": 0.01}, disk_free_gb=50)
+    assert r["checks"]["watchdog"]["fail"] and r["checks"]["watchdog"]["age_min"] > 70000
+    for body in ("{}", "not json", '{"checked_at": "2026-11-10T22:50:00"}'):  # no zone: unread
+        w.write_text(body)
+        os.utime(w, (now, now))
+        r = hb.measure(now, research={"age_days": 0.01}, disk_free_gb=50)
+        assert r["checks"]["watchdog"]["fail"] and r["checks"]["watchdog"]["age_min"] is None
+    w.write_text('{"checked_at": "2026-11-10T22:50:00.1234567Z"}')
+    r = hb.measure(now, research={"age_days": 0.01}, disk_free_gb=50)
+    assert not r["checks"]["watchdog"]["fail"] and r["checks"]["watchdog"]["age_min"] == 10.0
