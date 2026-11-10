@@ -8,6 +8,7 @@ import sys
 import os
 import json
 import multiprocessing
+import stat
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -132,10 +133,36 @@ ALL_MINERS = [
 ]
 
 
+#: Channels that need a configured credential or contact before they may fetch at all.
+REQUIRES_ENV = {"sec_edgar": "QUANT_EDGAR_UA"}
+
+
+def allowed_channels() -> set[str] | None:
+    """QUANT_MINERS_ALLOW (comma-separated channel names) or None for every channel.
+
+    The box sets it to the clear-access channels only (official APIs, open data and local
+    computation); a channel outside it is reported SET_ASIDE by name, never as a zero."""
+    raw = os.environ.get("QUANT_MINERS_ALLOW", "").strip()
+    if not raw:
+        return None
+    return {x.strip() for x in raw.split(",") if x.strip()}
+
+
 def run_all_miners() -> dict:
     results = {}
     total = 0
+    allow = allowed_channels()
+    set_aside = {}
     for name, fn in ALL_MINERS:
+        if allow is not None and name not in allow:
+            set_aside[name] = "not in QUANT_MINERS_ALLOW (no clear machine-access terms on this host)"
+            results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
+            continue
+        need = REQUIRES_ENV.get(name)
+        if need and not os.environ.get(need):
+            set_aside[name] = f"{need} is not configured"
+            results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
+            continue
         status, payload = _run_miner(name, fn)
         if status == "ok":
             disc = payload
@@ -147,15 +174,30 @@ def run_all_miners() -> dict:
         else:
             results[name] = {"count": 0, "error": payload}
             print(f"  {name}: FAILED ({payload})")
+    for name, why in set_aside.items():
+        print(f"  {name}: SET_ASIDE ({why})")
 
-    ok = sum(1 for r in results.values() if r.get("count", 0) > 0)
+    ok = sum(1 for r in results.values() if (r.get("count") or 0) > 0)
     results["summary"] = {
         "total_miners": len(ALL_MINERS),
+        "ran": len(ALL_MINERS) - len(set_aside),
+        "set_aside": sorted(set_aside),
         "total_discoveries": total,
         "successful_miners": ok,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     return results
+
+
+def write_atomic(path: Path, text: str) -> None:
+    """tmp file in the same directory, then os.replace: a reader never sees a half-written
+    file. A read-only target (Windows refuses os.replace onto one) is made writable first."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 if __name__ == "__main__":
@@ -165,6 +207,5 @@ if __name__ == "__main__":
     print(f"\n{s['successful_miners']}/{s['total_miners']} miners returned {s['total_discoveries']} discoveries")
 
     out = Path(__file__).resolve().parent.parent / "data" / "intelligence" / "latest_discoveries.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(r, indent=2, default=str), encoding="utf-8")
+    write_atomic(out, json.dumps(r, indent=2, default=str))
     print(f"Saved to {out}")
