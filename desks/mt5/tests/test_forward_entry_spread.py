@@ -154,6 +154,15 @@ def test_key_ledgers_live_where_no_cell_ledger_glob_reads_them(tmp_path, monkeyp
     assert sf._key_ledger_path("a/b") != sf._key_ledger_path("a_b")
 
 
+def test_key_ledgers_follow_a_redirected_shadow_dir(tmp_path, monkeypatch):
+    """The near-miss farm swaps SHADOW_DIR for its pass; farm keys must land under the farm."""
+    monkeypatch.setattr(sf, "KEY_LEDGER_DIR", None)
+    monkeypatch.setattr(sf, "SHADOW_DIR", tmp_path / "farm")
+    sf._write_key_ledger("EURUSD.formula.asia@M5|y", [_trade(1, 0, 3)], None, {})
+    assert len(list((tmp_path / "farm" / "keys").glob("*.json"))) == 1
+    assert sf._key_ledger_path("k").parent == tmp_path / "farm" / "keys"
+
+
 def test_the_replay_reprices_writes_the_key_and_publishes_the_streams():
     src = (DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
     assert ("reprice_at_measured_spread(\n"

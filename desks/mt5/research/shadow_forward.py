@@ -1655,13 +1655,19 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
 
 #: Each key's own forward ledger. A subdirectory on purpose: every `ledger_*.json` reader names a
 #: sleeve by the file's stem, so a per-key file beside the cell file would read as a new sleeve.
-KEY_LEDGER_DIR = SHADOW_DIR / "keys"
+#: None means "SHADOW_DIR / keys", read at CALL time: the near-miss farm redirects SHADOW_DIR for
+#: its pass, and a directory bound at import would have written farm keys into the main lane.
+KEY_LEDGER_DIR: Path | None = None
+
+
+def _key_ledger_dir() -> Path:
+    return KEY_LEDGER_DIR if KEY_LEDGER_DIR is not None else SHADOW_DIR / "keys"
 
 
 def _key_ledger_path(key: str) -> Path:
     import hashlib
     safe = "".join(c if (c.isalnum() or c in "._-@") else "_" for c in str(key))[:120]
-    return KEY_LEDGER_DIR / f"{safe}__{hashlib.sha1(str(key).encode()).hexdigest()[:10]}.json"
+    return _key_ledger_dir() / f"{safe}__{hashlib.sha1(str(key).encode()).hexdigest()[:10]}.json"
 
 
 def spread_fields(by_entry: dict, t: object, rep: dict) -> dict:
@@ -1679,7 +1685,7 @@ def _write_key_ledger(key: str, trades: list, boundary: object, stamp: dict,
     """Write `key`'s own trades, every row carrying the key. Best effort: a failed write here
     must never stop the clock, and the cell file above still holds the rows."""
     try:
-        KEY_LEDGER_DIR.mkdir(parents=True, exist_ok=True)
+        _key_ledger_dir().mkdir(parents=True, exist_ok=True)
         rows = [{"key": key, "entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
                  "side": t.side, "entry": t.entry, "exit": t.exit,
                  "r_multiple": t.r_multiple, "reason": t.reason,
