@@ -67,6 +67,7 @@ from libs.portfolio.robust_elog import (  # noqa: E402
     WorldConfig,
     Worlds,
     optimise,
+    _corr_abs,
     sample_worlds,
     score_book,
 )
@@ -2956,6 +2957,10 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     # FIRST, ranked among itself, and the rest follow ranked among themselves. Coverage is
     # therefore complete over a few passes without any pass giving up its ranking.
     cand_names = [n for n in names if n not in allowed_base]
+    # ONE CORRELATION MATRIX FOR THE WHOLE SCAN. Every re-solve below runs on the same `ev`, and
+    # building the matrix took ~5 s of each candidate's 8 s budget (2026-11-10 19:26Z: 190
+    # re-solves stopped at 0 iterations), so the budget bought setup instead of ascent.
+    corr = _corr_abs(ev)
     rank = order or {}
     pref = set(prefer or ())
     cand_names.sort(key=lambda n: (n not in pref, -float(rank.get(n, 0.0)), n))
@@ -2989,7 +2994,8 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
         try:
             ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
                            max_per_sleeve=_ub(allowed_base | {name}),
-                           warm_start=ws, iterations=iterations, deadline=deadline)
+                           warm_start=ws, iterations=iterations, deadline=deadline,
+                           corr_abs=corr)
         except ValueError as exc:
             doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
             continue
@@ -3009,7 +3015,8 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
             try:
                 ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
                                max_per_sleeve=_ub(allowed_base | {name}),
-                               warm_start=ws, iterations=iterations, deadline=deadline)
+                               warm_start=ws, iterations=iterations, deadline=deadline,
+                               corr_abs=corr)
             except ValueError as exc:
                 doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
                 continue

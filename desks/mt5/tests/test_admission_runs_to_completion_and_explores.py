@@ -309,3 +309,22 @@ def test_a_ruinous_carried_start_is_re_solved_from_the_incumbent_not_refused() -
     # no ascent at all on a ruinous start is unscored, never a refusal
     src = inspect.getsource(pa.marginal_admission)
     assert "stopped before its first step on a ruinous start; NOT a verdict" in src
+
+
+def test_the_scan_builds_the_correlation_matrix_once_and_it_changes_nothing(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE BUDGET BUYS ASCENT, NOT SETUP (2026-11-10 19:26Z: 190 re-solves at 0 iterations,
+    setup ~5 s of the 8 s budget, almost all of it the O(n^2) correlation build)."""
+    from libs.portfolio import robust_elog as re_mod
+    held, diversifier, star = _book_and_two_candidates()
+    before = _scan(held, diversifier, star)
+    calls: list[int] = []
+    real = re_mod._corr_abs
+    monkeypatch.setattr(pa, "_corr_abs", lambda ev: (calls.append(1), real(ev))[1])
+    monkeypatch.setattr(re_mod, "_corr_abs", lambda ev: (calls.append(1), real(ev))[1])
+    after = _scan(held, diversifier, star)
+    assert len(calls) <= 2, "one build for the scan (and at most one for the incumbent solve)"
+    assert after["admitted"] == before["admitted"] and after["refused"] == before["refused"]
+    for name, row in after["candidates"].items():
+        assert row["delta_elogw_per_day"] == pytest.approx(
+            before["candidates"][name]["delta_elogw_per_day"], abs=1e-12)
