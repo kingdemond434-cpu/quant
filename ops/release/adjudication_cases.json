@@ -704,6 +704,19 @@
     "The change modifies the behavior of `_run_fence` to return a specific failure message when a fence times out, which could be misinterpreted as a valid verdict."
    ],
    "source": "independent-review job 127643128705; law-gate rotation scheduling only (no money path). The change STOPS budget timeouts being recorded as real FAIL verdicts (keeps prior verdict, and after 3 cuts records an explicit 'cut short by the rotation budget' FAIL), so the flagged behaviour is the fix; ROTATION_MAX_BUDGET_CUTS is documented and covered by tests/scripts/test_law_gate_rotation_fits_its_budget.py; Auditor CLEAR 221aaed19"
+  },
+  {
+   "pr": 485,
+   "head": "674c286b024bae7a5f497d46f928c61d0f3ba167",
+   "base": "d6d1963583532f5204f92451a18a06e71d336d78",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new parameter `CERT_BUDGET_SHARE` which could increase risk by changing the budget allocation for certificate processing.",
+    "The code logic has been significantly altered, introducing new conditions and sorting mechanisms that could affect the system's behavior in unexpected ways."
+   ],
+   "source": "independent-review job 127377466124; Auditor CLEAR row 2026-11-05T16:31:45Z and false-FAIL judgement 2026-11-10: CERT_BUDGET_SHARE (replication_civilization.py) is the share of the replication pass's wall-clock budget spent on certificates first; it orders a research queue and sizes no position, heat or capital."
   }
  ]
 }
