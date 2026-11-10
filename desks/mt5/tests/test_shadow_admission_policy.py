@@ -319,7 +319,8 @@ def test_one_forward_clock_per_executable_and_no_clock_is_ever_taken(tmp_path: P
     assert sa.EXECUTABLE_COPIES[0]["copies"] == 3
     assert sa.EXECUTABLE_COPIES[0]["not_enrolled"] == []
 
-    # p=b already holds a clock: it keeps it, and the two clockless copies are not enrolled
+    # p=b already holds a clock under a FOREIGN label: it keeps that clock, but the keeper is
+    # p=c, the copy naming its own instrument; the clockless foreign copy p=a is not enrolled
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps({"sleeves": {
         "CHFNOK.carry.asia.b": {"identity": {"symbol": "CHFNOK", "family": "carry",
@@ -327,33 +328,59 @@ def test_one_forward_clock_per_executable_and_no_clock_is_ever_taken(tmp_path: P
                                 "forward_start": "2026-10-01", "status": "LIVE"}}}),
         encoding="utf-8")
     names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
-    assert names == set(survivors) - {"external.CHFNOK.carry.p=a", "external.CHFNOK.carry.p=c"}
+    assert names == set(survivors) - {"external.CHFNOK.carry.p=a"}
     (group,) = sa.EXECUTABLE_COPIES
-    assert group["keeps_clock"] == "external.CHFNOK.carry.p=b"
-    assert group["keeper_names_its_own_instrument"] is False     # a foreign label, and said so
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=c"
+    assert group["keeper_names_its_own_instrument"] is True
+    assert group["surplus_clocks_left_running"] == ["external.CHFNOK.carry.p=b"]
     assert {"external.CHFNOK.carry@M15.p=h", "external.CHFNOK.carry.p=i"} <= names
-    assert sorted(group["not_enrolled"]) == ["external.CHFNOK.carry.p=a",
-                                             "external.CHFNOK.carry.p=c"]
-    assert sum("EXECUTABLE_COPY" in d["why"] for d in sa.DROPPED_CERTIFICATES) == 2
-
-    # a second copy that ALSO has a clock is left running and named, never dropped
-    reg = json.loads((tmp_path / "data" / "sleeve_registry.json").read_text("utf-8"))
-    reg["sleeves"]["CHFNOK.carry.asia.a"] = {
-        "identity": {"symbol": "CHFNOK", "family": "carry",
-                     "params": {"input_symbol": "EBAY", "k": 1}},
-        "forward_start": "2026-10-09", "status": "LIVE"}
-    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps(reg), encoding="utf-8")
-    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
-    assert names == set(survivors) - {"external.CHFNOK.carry.p=c"}
-    (group,) = sa.EXECUTABLE_COPIES
-    assert group["keeps_clock"] == "external.CHFNOK.carry.p=b"         # the older clock
-    assert group["surplus_clocks_left_running"] == ["external.CHFNOK.carry.p=a"]
+    assert group["not_enrolled"] == ["external.CHFNOK.carry.p=a"]
+    assert sum("EXECUTABLE_COPY" in d["why"] for d in sa.DROPPED_CERTIFICATES) == 1
+    assert sa.NO_OWN_INSTRUMENT_CERTIFICATES == []
 
     # the switch: counted, nothing withheld
     monkeypatch.setenv("QUANT_ONE_CLOCK_PER_EXECUTABLE", "0")
     names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
     assert names == set(survivors)
-    assert sa.EXECUTABLE_COPIES[0]["would_not_enrol"] == ["external.CHFNOK.carry.p=c"]
+    assert sa.EXECUTABLE_COPIES[0]["would_not_enrol"] == ["external.CHFNOK.carry.p=a"]
+    monkeypatch.delenv("QUANT_ONE_CLOCK_PER_EXECUTABLE")
+
+    # a second foreign copy that ALSO has a clock is left running and named, never dropped
+    reg = json.loads((tmp_path / "data" / "sleeve_registry.json").read_text("utf-8"))
+    reg["sleeves"]["CHFNOK.carry.asia.a"] = {
+        "identity": {"symbol": "CHFNOK", "family": "carry",
+                     "params": {"input_symbol": "EBAY", "k": 1}},
+        "forward_start": "2026-09-01", "status": "LIVE"}
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps(reg), encoding="utf-8")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == set(survivors)
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=c"    # an older clock is no keeper
+    assert sorted(group["surplus_clocks_left_running"]) == ["external.CHFNOK.carry.p=a",
+                                                            "external.CHFNOK.carry.p=b"]
+
+    # NO copy names its own instrument: none is enrolled, each is named and billed
+    # (VOID_MOVED_CELL's way); a copy that already has a clock still keeps it
+    foreign = {
+        "external.AUDCHF.carry.p=e": cert("AUDCHF", "carry", {"input_symbol": "EBAY", "k": 1}),
+        "external.AUDCHF.carry.p=j": cert("AUDCHF", "carry", {"input_symbol": "GBPJPY", "k": 1}),
+        "external.AUDCHF.carry.p=k": cert("AUDCHF", "carry", {"input_symbol": "USDJPY", "k": 1}),
+    }
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": foreign, "n": 3}), encoding="utf-8")
+    reg["sleeves"]["AUDCHF.carry.asia.k"] = {
+        "identity": {"symbol": "AUDCHF", "family": "carry",
+                     "params": {"input_symbol": "USDJPY", "k": 1}},
+        "forward_start": "2026-09-01", "status": "LIVE"}
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps(reg), encoding="utf-8")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == {"external.AUDCHF.carry.p=k"}
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] is None and group["keeper_names_its_own_instrument"] is False
+    assert group["surplus_clocks_left_running"] == ["external.AUDCHF.carry.p=k"]
+    assert sorted(sa.NO_OWN_INSTRUMENT_CERTIFICATES) == ["external.AUDCHF.carry.p=e",
+                                                         "external.AUDCHF.carry.p=j"]
+    assert sum("NO_OWN_INSTRUMENT" in d["why"] for d in sa.DROPPED_CERTIFICATES) == 2
 
 
 def test_a_certificate_whose_engine_key_is_a_running_clock_is_never_refused(tmp_path: Path) -> None:
@@ -413,3 +440,20 @@ def test_a_certificate_whose_engine_key_is_a_running_clock_is_never_refused(tmp_
                        "params": {}}) is not None:               # the engine imports here
         assert group["sharing_keepers_key"] == ["external.CHFNOK.carry.p=c"]
         assert group["not_enrolled"] == []
+
+    # among copies naming their own instrument a LIVE row outranks an older STANDBY one
+    both = {"external.CHFNOK.carry.p=s": cert({"input_symbol": "CHFNOK", "k": 1,
+                                               "symbol": "CHFNOK"}),
+            "external.CHFNOK.carry.p=t": cert({"input_symbol": "CHFNOK", "k": 1})}
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": both, "n": 2}), encoding="utf-8")
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps({"sleeves": {
+        "x.s": {"identity": {"symbol": "CHFNOK", "family": "carry",
+                             "params": {"input_symbol": "CHFNOK", "k": 1, "symbol": "CHFNOK"}},
+                "forward_start": "2026-09-01", "status": "STANDBY"},
+        "x.t": {"identity": {"symbol": "CHFNOK", "family": "carry",
+                             "params": {"input_symbol": "CHFNOK", "k": 1}},
+                "forward_start": "2026-10-01", "status": "LIVE"}}}), encoding="utf-8")
+    sa.authorized_runs(tmp_path, lanes=("h1",))
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=t"

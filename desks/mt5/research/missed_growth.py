@@ -1070,8 +1070,9 @@ def executable_copy_clock_line() -> dict[str, Any]:
     only while ANOTHER certificate of the same executable (same instrument, family and every
     param the replay reads) is enrolled in the same pass, and never from one that already has a
     clock. The withheld copy's forward series would be the keeper's, trade for trade, so the
-    forgone E[log W] is zero by construction and the line is NOT_BINDING with the counts; it is
-    UNMEASURED when admission cannot be read."""
+    forgone E[log W] is zero by construction and the line is NOT_BINDING with the counts. When
+    no copy names its own instrument none is enrolled; those refusals are billed one line each,
+    UNMEASURED, like VOID_MOVED_CELL. It is UNMEASURED when admission cannot be read."""
     try:
         from research import shadow_admission as sa
         sa.authorized_runs(BASE, lanes=("h1",))
@@ -1079,6 +1080,19 @@ def executable_copy_clock_line() -> dict[str, Any]:
     except Exception as exc:
         return {"verdict": UNMEASURED,
                 "why": f"shadow admission unreadable: {type(exc).__name__}: {exc}"}
+    no_own = list(sa.NO_OWN_INSTRUMENT_CERTIFICATES)
+    if no_own:
+        # Like VOID_MOVED_CELL: no copy of these executables is forward-tested, so the refusal
+        # forgoes a return nobody measures. One line per refused certificate.
+        return {"verdict": UNMEASURED, "n_lines": len(no_own),
+                "lines": [{"certificate": c, "verdict": UNMEASURED,
+                           "why": "refused a forward clock as NO_OWN_INSTRUMENT; never had one, "
+                                  "so the forgone E[log W] is unmeasured until a copy naming "
+                                  "its own instrument is certified"} for c in no_own],
+                "executables_held_more_than_once": len(groups),
+                "copies_not_enrolled": sum(len(g["not_enrolled"]) for g in groups),
+                "enforced": sa.one_clock_per_executable_enforced(), "groups": groups[:40],
+                "why": "executables with no copy naming its own instrument are not enrolled"}
     return {"verdict": NOT_BINDING, "executables_held_more_than_once": len(groups),
             "copies_not_enrolled": sum(len(g["not_enrolled"]) for g in groups),
             "surplus_clocks_left_running": sum(len(g["surplus_clocks_left_running"])
