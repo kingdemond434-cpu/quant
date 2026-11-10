@@ -47,6 +47,21 @@ def _bars(seed: int, drift: float = 0.0, days: int = DAYS) -> pd.DataFrame:
                          "tick_volume": 100}, index=idx)
 
 
+#: Each member's planted differential: GGGHHH and EEEFFF are the class's high-carry tercile,
+#: CCCDDD and AAABBB its low one, so every generic test symbol has a carry leg to build.
+CARRY_LEVEL = {"AAABBB": 1.0, "CCCDDD": 0.0, "EEEFFF": 6.0, "GGGHHH": 7.0, "IIIJJJ": 3.0,
+               "KKKLLL": 4.0, "MMMNNN": 5.0, "OOOPPP": 2.0}
+
+
+def _carry_frame(level: float, start: str = "2019-10-01", months: int = 40) -> pd.DataFrame:
+    """A monthly rate differential at `level` percent with a small wobble, stamped like
+    research/futures_state stamps the OECD series: available 76 days after the month starts."""
+    ev = pd.date_range(start, periods=months, freq="MS", tz="UTC")
+    wob = 0.1 * np.sin(np.arange(months))
+    return pd.DataFrame({"diff": level + wob, "event_time": ev,
+                         "available_time": ev + pd.Timedelta(days=76, hours=23)})
+
+
 @pytest.fixture()
 def universe(tmp_path, monkeypatch):
     """Eight synthetic class members on disk; AAABBB is a planted relative winner."""
@@ -56,6 +71,12 @@ def universe(tmp_path, monkeypatch):
         frames[sym] = _bars(i + 1, drift)
         frames[sym].to_parquet(tmp_path / f"{sym}_H1.parquet")
     monkeypatch.setattr(xs, "UNIVERSE_DIR", tmp_path)
+    carry_dir = tmp_path / "series"
+    carry_dir.mkdir()
+    for sym in MEMBERS:
+        _carry_frame(CARRY_LEVEL[sym]).to_parquet(
+            carry_dir / f"{xs.CARRY_SOURCE}_{sym.lower()}.parquet")
+    monkeypatch.setattr(xs, "CARRY_DIR", carry_dir)
     monkeypatch.setattr(xs, "class_of", lambda s: "fx_cross" if s in MEMBERS else None)
     monkeypatch.setattr(xs, "class_symbols", lambda k: list(MEMBERS) if k == "fx_cross" else [])
     xs._SERIES_CACHE.clear()
@@ -367,3 +388,52 @@ def test_one_argument_doors_still_work():
     judged, off, _, _ = mh.split_by_lane([{"symbol": "X", "family": "f"}],
                                          lambda s: "event", "now")
     assert not judged and len(off) == 1
+
+
+# ------------------------------------------------------------------ carry class book (HML_FX) ---
+def test_carry_ranks_the_high_rate_member_long_and_the_low_short(universe):
+    """GGGHHH carries the highest differential, AAABBB the second lowest -- and AAABBB is the
+    planted PRICE winner: carry is long the first and short the second regardless."""
+    hi = xs.family_cross_sectional_class_carry(universe["GGGHHH"], symbol="GGGHHH")
+    lo = xs.family_cross_sectional_class_carry(universe["AAABBB"], symbol="AAABBB")
+    assert hi and all(s.side > 0 for s in hi)
+    assert lo and all(s.side < 0 for s in lo)
+    mid = xs.family_cross_sectional_class_carry(universe["MMMNNN"], symbol="MMMNNN")
+    assert mid == []                                      # middle tercile holds nothing
+
+
+def test_carry_reads_only_what_was_published(universe, tmp_path_factory, monkeypatch):
+    """Truncating every differential at T (by availability) changes no signal before T + lag."""
+    df = universe["GGGHHH"]
+    full = _key(xs.family_cross_sectional_class_carry(df, symbol="GGGHHH"))
+    cut = pd.Timestamp("2021-01-15", tz="UTC")
+    short = tmp_path_factory.mktemp("carry_cut")
+    for sym in MEMBERS:
+        f = _carry_frame(CARRY_LEVEL[sym])
+        f[f["available_time"] < cut].to_parquet(
+            short / f"{xs.CARRY_SOURCE}_{sym.lower()}.parquet")
+    monkeypatch.setattr(xs, "CARRY_DIR", short)
+    trunc = _key(xs.family_cross_sectional_class_carry(df, symbol="GGGHHH"))
+    before = [k for k in full if k[0] < cut.value]
+    assert before and [k for k in trunc if k[0] < cut.value] == before
+
+
+def test_carry_is_unmeasured_without_its_own_differential(universe, monkeypatch, tmp_path):
+    empty = tmp_path / "none"
+    empty.mkdir()
+    monkeypatch.setattr(xs, "CARRY_DIR", empty)
+    assert xs.family_cross_sectional_class_carry(universe["GGGHHH"], symbol="GGGHHH") == []
+
+
+def test_carry_crash_filter_only_removes_trades(universe):
+    df = universe["GGGHHH"]
+    plain = {k[:4] for k in _key(xs.family_cross_sectional_class_carry(df, symbol="GGGHHH"))}
+    calm = {k[:4] for k in _key(xs.family_cross_sectional_class_carry(
+        df, symbol="GGGHHH", crash="class_vol", history_d=120))}
+    assert calm and calm < plain
+
+
+def test_carry_rejects_unknown_score_and_crash(universe):
+    df = universe["GGGHHH"]
+    assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", score="swap") == []
+    assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", crash="vix") == []
