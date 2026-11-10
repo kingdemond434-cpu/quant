@@ -87,6 +87,30 @@ function Get-AclProblem([string] $path, [int64] $mask, [string[]] $owners = $Adm
     }
     return $null
 }
+# THE CLI'S OWN `latest` DEBUG LINK IS THE ONE REPARSE POINT ALLOWED (2026-11-05, Desk health).
+# `claude remote-control --debug-file <file>` drops a symbolic link named `latest` beside the file.
+# The child walk refused it, so from the watchdog's first restart (10-28 13:46Z) every run exited 4
+# and the bridge stayed down. Exactly one shape is exempt, identically in the watchdog, its status
+# reader and the installer: a SymbolicLink (never a junction or mount point) named `latest` directly
+# in the log folder, whose single target is a regular, non-reparse file directly in that same folder
+# named rc_debug_YYYYMMDD_HHMMSS.log. Anything else, or anything that cannot be read, stays a refusal.
+function Test-DebugLatestLink($c, [string] $logDir) {
+    try {
+        if ($c.Name -cne 'latest') { return $false }
+        if ([string]$c.LinkType -cne 'SymbolicLink') { return $false }
+        $ld = [IO.Path]::GetFullPath($logDir).TrimEnd([IO.Path]::DirectorySeparatorChar)
+        if ([IO.Path]::GetFullPath($c.FullName) -ne (Join-Path $ld 'latest')) { return $false }
+        $t = @($c.Target)
+        if ($t.Count -ne 1 -or -not $t[0]) { return $false }
+        $tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))
+        if ((Split-Path -Parent $tp) -ne $ld) { return $false }
+        if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\d{8}_\d{6}\.log$') { return $false }
+        $f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop
+        if ($f.PSIsContainer) { return $false }
+        if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }
+        return $true
+    } catch { return $false }
+}
 function Get-UnsafeReason([string] $dir, [switch] $Shallow, [string[]] $owners = $AdminSids) {
     try {
         $item = Get-Item -LiteralPath $dir -Force -ErrorAction Stop
@@ -100,6 +124,7 @@ function Get-UnsafeReason([string] $dir, [switch] $Shallow, [string[]] $owners =
         }
         if (-not $Shallow) {
             foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {
+                if (Test-DebugLatestLink $c $LogDir) { continue }
                 if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c.FullName) is a reparse point" }
             }
         }

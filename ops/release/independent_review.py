@@ -100,6 +100,16 @@ MAX_DIFF_CHARS = 600_000
 #: How long the job keeps trying free models before it reports UNAVAILABLE.
 BUDGET_S = 150 * 60
 CALL_TIMEOUT_S = 1800
+#: The largest prompt (without the rubric) one LOCAL call is given when the diff can be cut.
+#: MEASURED on the hosted runner's CPU (2026-11-05): qwen2.5-coder:7b took 4 min on a 3.7k diff,
+#: 7 min on 8-9k, 8.5-15 min on 18-21k, and timed out at CALL_TIMEOUT_S on every one of five
+#: asks of #659's 58k diff (2 h 42 min, then UNAVAILABLE), as on ~30 release-gates runs that
+#: night. A diff that fits num_ctx whole is not thereby readable inside one call's time, so a
+#: diff over this is read in parts (same three rules as a diff over num_ctx): each part stays
+#: near the 15 min measured, inside the 30 min call. Money files are still read together in one
+#: part, and one hunk too large for this cap is still read whole up to num_ctx: the cap only
+#: ever cuts where a cut was already allowed.
+PART_CHARS = 24_000
 LOCAL = HERE / "local_models.json"
 #: Characters per token assumed when sizing a local prompt: low on purpose (code runs 3.2-4), so
 #: a prompt counted as fitting nearly always does; the server's own count is checked after (MF4),
@@ -827,6 +837,7 @@ def review(
     clock: Callable[[], float] = time.monotonic,
     whole_only: bool = False,
     closure: frozenset[str] | None = None,
+    part_chars: int | None = PART_CHARS,
 ) -> tuple[str, list[str]]:
     """vote() on the whole diff when it fits the runner's models (or a larger rung is on the
     ladder: `whole_only`), else in parts under three rules (#547 audit MF1):
@@ -837,7 +848,9 @@ def review(
     One budget and one abstention set for all. The diff was screened whole before this."""
     rubric = (HERE / "review_rubric.md").read_text(encoding="utf-8")
     room = (num_ctx - ANSWER_TOKENS) * CHARS_PER_TOKEN - len(rubric) - len(VAGUE_NOTE) - 2
-    if whole_only or len(prompt(diff, files, "0" * 16)) <= room:
+    # a part a local model can answer inside one call (PART_CHARS); num_ctx stays the hard limit
+    quick = room if part_chars is None else min(room, part_chars)
+    if whole_only or len(prompt(diff, files, "0" * 16)) <= quick:
         return vote(diff, files, ladder, budget_s, sleep, clock)
     head = manifest(diff)
     frame = len(prompt(head, files, "0" * 16, f"{10**6} of {10**6}"))
@@ -853,9 +866,15 @@ def review(
     own = frozenset(p for x, m in pairs if m for p in _section_paths(x))
     mhead = manifest(diff, own)
     if money and len(prompt(mhead + money, files, "0" * 16, f"{10**6} of {10**6}")) > room:
+        if len(prompt(diff, files, "0" * 16)) <= room:  # fits whole: the cap never adds a FAIL
+            return vote(diff, files, ladder, budget_s, sleep, clock)
         return "FAIL", [f"FAIL: the money-path files ({len(money)} characters) do not fit one "
                         f"part: they are never read apart"]  # fmt: skip
-    others = split_diff(rest, limit) if rest else []
+    others = split_diff(rest, quick - frame) if rest and quick - frame > 0 else None
+    if rest and others is None:  # a hunk over the time cap is read whole, as before the cap
+        others = split_diff(rest, limit)
+    elif not rest:
+        others = []
     if others is None:
         return "FAIL", ["FAIL: one hunk alone is too large for the reviewers to read whole"]
     parts = ([mhead + money] if money else []) + [head + x for x in others]

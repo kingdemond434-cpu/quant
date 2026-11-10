@@ -556,7 +556,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # -IfMissing, so a registered task is NEVER touched (re-registering live tasks has failed with
 # "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
 # a failed registration is logged and never stops the seal.
+# FTMO trades every certified sleeve (principal 2026-11-03 / 11-05; Governance ruling 2026-11-05):
+# the book's solve on its own clock and the sleeve executor, which stays STANDBY until
+# data\FTMO_EXECUTOR_ARMED exists. Registering either arms nothing.
 foreach ($ensure in @(
+        @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
+        @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
         # Declared in box_tasks.manifest since #773 and registered by nothing: 19 side-channel
         # seats read DEAD at once on 2026-11-05 because no box task ran run_all_miners.
