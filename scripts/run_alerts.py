@@ -44,9 +44,7 @@ _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "brain_noop": 24 * 3600, "principal_action_needed": 24 * 3600,
                        "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
                        # the chain runs once a day; its failures can only change once a day
-                       "research_chain_failed": 24 * 3600,
-                       # standing until the promoter's hold writer lands: remind daily
-                       "forward_evidence_hold_alarm_absent": 24 * 3600}
+                       "research_chain_failed": 24 * 3600}
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -459,23 +457,58 @@ _FE_HOLD_STALE_H = 2.0
 #: An entry the writer has not refreshed for this long is a RELEASED hold -- but only inside a
 #: document that is itself fresh, which is what tells a released hold from a dead writer.
 _FE_HOLD_RELEASED_H = 1.0
+#: A writer registers itself by creating this file beside the alarm (any content). From then on an
+#: absent alarm file is a dead writer and pages, even before the first document is ever seen.
+_FE_HOLD_WRITER_MARKER = Path("desks/mt5/data/forward_evidence_hold_alarm.writer")
+#: The pager's own memory that the alarm file has existed at least once (set in `main`).
+_FE_HOLD_SEEN_KEY = "_fe_hold_alarm_seen"
+#: UNWIRED LINES OF THIS TICK: conditions that are counted and printed in the alerts report and
+#: recorded in the pager state, and are NOT pages. An organ nobody has wired yet is a defect to
+#: see, never one to wake the principal for every day until somebody builds it.
+_UNWIRED: list[tuple[str, str]] = []
 
 
-def _forward_evidence_hold_alarms(path: Path | None = None) -> list[tuple[str, str]]:
+def _fe_hold_wired() -> bool:
+    """A writer exists: its marker is present, or this pager has seen the alarm file before."""
+    if _FE_HOLD_WRITER_MARKER.exists():
+        return True
+    try:
+        state = json.loads(_STATE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(state, dict) and bool(state.get(_FE_HOLD_SEEN_KEY))
+
+
+def _forward_evidence_hold_alarms(path: Path | None = None, *, wired: bool | None = None,
+                                  unwired: list[tuple[str, str]] | None = None,
+                                  ) -> list[tuple[str, str]]:
     """Page on every PROMOTION CANDIDATE the forward-evidence hold has kept over its alarm age.
 
     ABSENCE AND STALENESS PAGE TOO (audit of #351, SF-b). The first version returned nothing for
     an absent file, an entry with no `last_held_at`, and a stamp over an hour old alike, so a
     writer that never ran or had died read exactly like a desk holding nothing. A released hold
     is silent only when the DOCUMENT is fresh (its own stamp inside `_FE_HOLD_STALE_H`): then an
-    old `last_held_at` means the writer ran and no longer holds that name. Names only, no values."""
+    old `last_held_at` means the writer ran and no longer holds that name. Names only, no values.
+
+    BUT AN ABSENT FILE PAGES ONLY ONCE A WRITER EXISTS (audit of #351, second pass). Nothing at
+    this revision writes the file, so paging its absence would page every day for an organ nobody
+    has built. While no writer is registered (`_fe_hold_wired`: no marker, file never seen) the
+    absence is a counted UNWIRED line in the alerts report -- visible, not paged. Once the file
+    has existed once, or the marker is present, absence is a dead writer and pages. A file that
+    EXISTS is held to the full standard either way: unreadable, unstamped and stale all page."""
     p = path or _FE_HOLD_ALARM
     try:
         doc = json.loads(p.read_text("utf-8"))
     except FileNotFoundError:
-        return [("forward_evidence_hold_alarm_absent",
-                 f"{p.name} is ABSENT: whether any promotion candidate is held past its alarm "
-                 "age is UNMEASURED -- the promoter's forward-evidence hold is not writing it")]
+        msg = (f"{p.name} is ABSENT: whether any promotion candidate is held past its alarm "
+               "age is UNMEASURED -- the promoter's forward-evidence hold is not writing it")
+        if _fe_hold_wired() if wired is None else wired:
+            return [("forward_evidence_hold_alarm_absent", msg)]
+        (_UNWIRED if unwired is None else unwired).append(
+            ("forward_evidence_hold_alarm_unwired",
+             msg + " (UNWIRED: no writer is registered and the file has never existed; "
+                   "not paged until one is)"))
+        return []
     except (OSError, ValueError) as exc:
         return [("forward_evidence_hold_alarm_unreadable",
                  f"{p.name} is unreadable ({type(exc).__name__}): long forward-evidence holds "
@@ -627,7 +660,11 @@ def main() -> None:
         state = {}
     now = time.time()
     sent = 0
+    _UNWIRED.clear()
     checks = _checks()
+    if _FE_HOLD_ALARM.exists():
+        state.setdefault(_FE_HOLD_SEEN_KEY, now)   # from here on its absence is a dead writer
+    state["_unwired"] = dict(_UNWIRED)
     active = {k for k, _ in checks}
     paged = set(state.get("_paged", []))
     for key, msg in checks:
@@ -681,8 +718,10 @@ def main() -> None:
         # external liveness service; failing it must never stop pages that have already been
         # computed from going out, which is what raising here would do.
         pass
-    print(f"alerts: {sent} page(s) sent "
+    print(f"alerts: {sent} page(s) sent, {len(_UNWIRED)} UNWIRED (not paged) "
           f"({datetime.now(tz=UTC).isoformat()[:16]}Z)")
+    for key, msg in _UNWIRED:
+        print(f"  UNWIRED {key}: {msg}")
 
 
 if __name__ == "__main__":

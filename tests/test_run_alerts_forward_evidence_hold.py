@@ -39,9 +39,61 @@ def test_a_released_hold_in_a_fresh_document_does_not_page(tmp_path: Path) -> No
     assert run_alerts._forward_evidence_hold_alarms(_doc(tmp_path / "a.json", 3.0)) == []
 
 
-def test_an_absent_file_pages_unmeasured(tmp_path: Path) -> None:
-    out = run_alerts._forward_evidence_hold_alarms(tmp_path / "missing.json")
+def test_an_absent_file_with_no_writer_is_a_counted_unwired_line_not_a_page(
+        tmp_path: Path) -> None:
+    unwired: list = []
+    out = run_alerts._forward_evidence_hold_alarms(tmp_path / "missing.json", wired=False,
+                                                   unwired=unwired)
+    assert out == []
+    assert _keys(unwired) == ["forward_evidence_hold_alarm_unwired"]
+    assert "UNMEASURED" in unwired[0][1] and "UNWIRED" in unwired[0][1]
+
+
+def test_an_absent_file_pages_once_a_writer_exists(tmp_path: Path) -> None:
+    unwired: list = []
+    out = run_alerts._forward_evidence_hold_alarms(tmp_path / "missing.json", wired=True,
+                                                   unwired=unwired)
     assert _keys(out) == ["forward_evidence_hold_alarm_absent"] and "UNMEASURED" in out[0][1]
+    assert unwired == []
+
+
+def test_wired_means_a_writer_marker_or_a_file_seen_once(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(run_alerts, "_STATE", tmp_path / "state.json")
+    monkeypatch.setattr(run_alerts, "_FE_HOLD_WRITER_MARKER", tmp_path / "writer")
+    monkeypatch.setattr(run_alerts, "_UNWIRED", [])
+    missing = tmp_path / "missing.json"
+    assert run_alerts._fe_hold_wired() is False
+    assert run_alerts._forward_evidence_hold_alarms(missing) == []
+    assert _keys(run_alerts._UNWIRED) == ["forward_evidence_hold_alarm_unwired"]
+    (tmp_path / "state.json").write_text(json.dumps({"other": 1}), "utf-8")
+    assert run_alerts._fe_hold_wired() is False
+    (tmp_path / "state.json").write_text(
+        json.dumps({run_alerts._FE_HOLD_SEEN_KEY: 1.0}), "utf-8")
+    assert _keys(run_alerts._forward_evidence_hold_alarms(missing)) == [
+        "forward_evidence_hold_alarm_absent"]
+    (tmp_path / "state.json").unlink()
+    (tmp_path / "writer").write_text("", "utf-8")
+    assert _keys(run_alerts._forward_evidence_hold_alarms(missing)) == [
+        "forward_evidence_hold_alarm_absent"]
+
+
+def test_a_file_that_exists_is_held_to_the_full_standard_with_no_writer_registered(
+        tmp_path: Path) -> None:
+    unwired: list = []
+    stale = run_alerts._forward_evidence_hold_alarms(
+        _doc(tmp_path / "a.json", 3.0, doc_age_h=3.0), wired=False, unwired=unwired)
+    assert _keys(stale) == ["forward_evidence_hold_alarm_stale"] and unwired == []
+    (tmp_path / "b.json").write_text("{not json", "utf-8")
+    assert _keys(run_alerts._forward_evidence_hold_alarms(
+        tmp_path / "b.json", wired=False, unwired=unwired)) == [
+        "forward_evidence_hold_alarm_unreadable"] and unwired == []
+
+
+def test_the_pager_remembers_the_file_and_reports_the_unwired_count() -> None:
+    src = Path(run_alerts.__file__).read_text("utf-8")
+    assert "state.setdefault(_FE_HOLD_SEEN_KEY, now)" in src
+    assert 'state["_unwired"] = dict(_UNWIRED)' in src
+    assert "{len(_UNWIRED)} UNWIRED (not paged)" in src
 
 
 def test_a_stale_document_pages_instead_of_reading_as_released(tmp_path: Path) -> None:
