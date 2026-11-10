@@ -614,6 +614,8 @@ LEG_LAYER: dict[str, str] = {
     # A pack's series IS information; re-minting a known mechanism on another chart is a claim
     # about returns, so it is prediction; recording what a live order actually paid is execution.
     "pack_cells": "information", "timeframe_fanout": "prediction",
+    # Futures positioning, curves and FX state turned into stamped series and cells.
+    "futures_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and

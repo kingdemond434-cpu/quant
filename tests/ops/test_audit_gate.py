@@ -624,7 +624,7 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
         ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
         ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
-        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "AUTO"),
+        ([_f("ops/box/install_unattended.ps1")], 1, set(), "AUTO"),
         ([_f("CODEOWNERS")], 1, set(), "AUTO"),
         ([_f("docs/x/CLAUDE.md")], 1, set(), "AUTO"),
         ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "AUTO"),
@@ -1227,11 +1227,55 @@ def test_a_rail_list_may_grow_but_never_shrink(head: str | None, lost: str | Non
     assert (bad == []) if lost is None else any(lost in b for b in bad), bad
 
 
+@pytest.mark.parametrize(
+    ("src", "breach"),
+    [
+        ("OUT = DESK / 'a.json'\n", False),  # the base's expression
+        ("OUT = _PATHS['out']\n", False),  # the pending PR's expression
+        ("OUT = DESK / 'b.json'\n", True),  # anything else
+        ("OUT = DESK / 'a.json'\nOUT = _PATHS['x']\n", True),  # every value must match
+    ],
+)
+def test_a_list_source_pin_holds_one_of_its_reviewed_expressions(src: str, breach: bool) -> None:
+    ceil = {
+        "source": {"p.py": {"OUT": {"any_of": ["DESK / 'a.json'", "_PATHS['out']"], "until_pr": 1}}}
+    }
+    bad = ri.check(ceil, _reader(p=src), _reader(p=src))
+    assert bool(bad) is breach, bad
+
+
 def test_the_live_tree_is_inside_its_ceilings() -> None:
     import json
 
     ceilings = json.loads((ROOT / "ops/release/ceilings.json").read_text(encoding="utf-8"))
     assert ri.check(ceilings, ri.git_reader("HEAD"), ri.git_reader("HEAD")) == []
+    # an any_of pin expires when its PR lands (#590 audit should-fix)
+    assert ri.stale_any_of_pins(ceilings, ri.git_reader("HEAD")) == []
+
+
+@pytest.mark.parametrize(
+    ("src", "stale"),
+    [
+        ("OUT = DESK / 'a.json'\n", False),  # the PR has not landed
+        ("OUT = _PATHS['out']\n", True),  # it has: the old expression must go
+    ],
+)
+def test_an_any_of_pin_expires_when_its_pr_lands(src: str, stale: bool) -> None:
+    ceil = {
+        "source": {"p.py": {"OUT": {"any_of": ["DESK / 'a.json'", "_PATHS['out']"], "until_pr": 7}}}
+    }
+    bad = ri.stale_any_of_pins(ceil, _reader(p=src))
+    assert bool(bad) is stale and (not stale or "#7" in bad[0]), bad
+
+
+@pytest.mark.parametrize(
+    "want", [["a", "b"], {"any_of": ["a", "b"]}, {"any_of": ["a"], "until_pr": 1}, 3]
+)
+def test_a_pin_without_an_expiry_is_malformed(want: object) -> None:
+    bad = ri.check(
+        {"source": {"p.py": {"OUT": want}}}, _reader(p="OUT = a\n"), _reader(p="OUT = a\n")
+    )
+    assert any("malformed" in b for b in bad), bad
 
 
 # ----------------------------------------------------------------- step C: independent review
@@ -1797,6 +1841,29 @@ def test_identical_books_pass_and_prose_is_not_a_decision(tmp_path: Path) -> Non
     assert rep["intents_compared"] == 4
 
 
+@pytest.mark.parametrize(
+    ("lane", "ftmo", "unmeasured"),
+    [
+        (True, {"error": "RuntimeError: boom"}, "the base FTMO leg raised"),
+        (True, {"exec": {"sleeves": []}}, "decided on no sleeve"),
+        (False, {"error": "RuntimeError: boom"}, None),  # no lane on the base: nothing owed
+    ],
+)
+def test_the_ftmo_leg_is_owed_where_the_base_has_the_lane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lane: bool, ftmo: dict, unmeasured: str | None
+) -> None:
+    base, head = tmp_path / "b", tmp_path / "h"
+    for t in (base, head):
+        (t / "desks/mt5/prop").mkdir(parents=True)
+        if lane:
+            (t / rs.FTMO_EXECUTOR).write_text("X = 1\n")
+    step = {"hour": 7.0, "doc": {}, "intents": [{"a": 1}], "error": None, "ftmo": ftmo}
+    monkeypatch.setattr(rs, "run_tree", lambda tree, sc: {"steps": [step], "imported": []})
+    rep = rs.compare(base, head, [], [{"id": "s", "hours": [7.0]}])
+    hits = [p for p in rep["problems"] if "FTMO" in p]
+    assert (hits == []) if unmeasured is None else any(unmeasured in p for p in hits), hits
+
+
 def test_a_changed_decision_fails(tmp_path: Path) -> None:
     base = _tree(tmp_path / "base")
     head = _tree(tmp_path / "head", _BOOK.replace("LOT = 0.1", "LOT = 0.2"))
@@ -2058,7 +2125,7 @@ def test_the_live_book_installers_are_money_path_on_the_real_tree() -> None:
 @pytest.mark.parametrize(
     "name",
     ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",
-     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/workflow_gate.ps1"],
+     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/install_unattended.ps1"],
 )  # fmt: skip
 def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, name: str) -> None:
     """zuck 2026-10-29: no comment needed, but a missing or failed AUTO job is never a pass."""
@@ -2930,11 +2997,12 @@ def test_a_revert_that_does_not_apply_leaves_the_checkout_clean(monkeypatch: Any
 
 def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> None:
     spec = importlib.util.spec_from_file_location(
-        "send_alert", Path(__file__).resolve().parents[2] / "scripts" / "send_alert.py"
+        "send_alert", Path(__file__).resolve().parents[2] / "libs" / "ops" / "send_alert.py"
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    monkeypatch.chdir(Path.cwd())  # main() moves to the tree root; monkeypatch puts it back
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 0})
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
