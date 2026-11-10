@@ -92,7 +92,8 @@ def test_a_refusal_is_a_row_a_ledger_line_and_a_daily_count(_ledger: dict[str, P
     assert doc["refused_today"] == 3 and doc["daily"][day] == {
         "total": 3, "by_label": {"DISALLOWED": 2, "ROBOTS_UNREACHABLE": 1},
         "by_organ": {"asia_collector": 2, "shadow_institutional": 1}, "distinct_sources": 2,
-        "absent_fetched": 0, "absent_fetched_by_organ": {}}
+        "absent_fetched": 0, "absent_fetched_by_organ": {},
+        "permit_fetched": 0, "permit_fetched_by_source": {}}
     assert [m["fetches_refused"] for m in doc["missed_growth"]] == [3, 3]
 
 
