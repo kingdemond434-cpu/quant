@@ -225,7 +225,8 @@ def test_the_asia_collector_fetches_a_public_path(monkeypatch: pytest.MonkeyPatc
 def _permits(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **row: Any) -> None:
     base = {"host": "example.invalid", "doc_url": "https://example.invalid/terms",
             "clause": "machine use permitted", "licence": "CC BY 4.0",
-            "recorded_at": "2026-11-10", "active": True}
+            "endpoint_doc": "https://example.invalid/api", "key": "none",
+            "rate_limit": "once a pass", "recorded_at": "2026-11-10", "active": True}
     path = tmp_path / "permits.json"
     path.write_text(json.dumps({"permits": {"src_a": {**base, **row}}}), "utf-8")
     monkeypatch.setattr(rg, "PERMITS", path)
@@ -247,7 +248,20 @@ def test_a_permit_reopens_a_refused_robots_file_and_nothing_else(
     assert rg.read(URL, "a", opener=_fail(_http(503)), source="src_a")[0] == "ROBOTS_UNREACHABLE"
 
 
+@pytest.mark.parametrize("code", [429, 451])
+def test_a_permit_never_reopens_a_rate_limit_or_a_legal_refusal(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, code: int) -> None:
+    """Auditor 2026-11-10 20:29Z: fetching through a 429 is a rate-limit bypass and a 451 is a
+    legal bar. Both stay ROBOTS_REFUSED with an active permit, and from the per-pass cache."""
+    _permits(tmp_path, monkeypatch)
+    cache: dict = {}
+    for _ in range(2):
+        label = rg.read(URL, "a", opener=_fail(_http(code)), source="src_a", cache=cache)[0]
+        assert label == "ROBOTS_REFUSED"
+
+
 @pytest.mark.parametrize("bad", [{"active": False}, {"clause": ""}, {"doc_url": ""},
+                                 {"endpoint_doc": ""}, {"key": ""}, {"rate_limit": ""},
                                  {"host": "elsewhere.invalid"}])
 def test_an_inactive_incomplete_or_foreign_permit_is_no_permit(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, bad: dict[str, Any]) -> None:

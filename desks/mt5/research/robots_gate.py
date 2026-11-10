@@ -15,10 +15,11 @@ THE RULE (Governance rulings of 2026-11-10, journalled in PR #819; RFC 9309, str
                                                                   never a retry loop
 
 A PUBLISHER'S PERMIT REOPENS A REFUSAL, AND ONLY A REFUSAL (Governance ruling 2026-11-10 20:24Z).
-A ROBOTS_REFUSED source whose `research/robots_permits.json` row quotes the publisher's own
-clause permitting machine reading is PERMITTED: fetched on the documented endpoint with the
-honest agent and its own key, counted as PERMIT_FETCHED. If the data endpoint itself answers
-401/403/429/451, that pass stops as ROBOTS_REFUSED (`data_refused`), with no retry.
+A source whose robots.txt answers 401/403 (never 429 or 451) and whose
+`research/robots_permits.json` row quotes the publisher's own clause permitting machine reading
+is PERMITTED: fetched on the documented endpoint with the honest agent and its own key, counted
+as PERMIT_FETCHED. If the data endpoint itself answers 401/403/429/451, that pass stops as
+ROBOTS_REFUSED (`data_refused`), with no retry.
 
 The rule matching itself (`*`, `$`, longest match wins, Allow wins a tie, our agent's group else
 `*`) and the status table above (`classify_robots_status`) are `libs/data/robots_gate.py`, the
@@ -78,6 +79,11 @@ PERMIT_FETCHED = "PERMIT_FETCHED"
 #: the permit covers a refusal of robots.txt, never a refusal of the data itself.
 DATA_REFUSAL = frozenset({401, 403, 429, 451})
 PERMITS = Path(__file__).resolve().with_name("robots_permits.json")
+#: The robots.txt statuses a permit may reopen. Never 429 (a rate limit) or 451 (a legal bar).
+PERMIT_REOPENS = frozenset({401, 403})
+#: Every field a permit row must fill before it counts.
+PERMIT_FIELDS = ("host", "doc_url", "clause", "licence", "endpoint_doc", "key", "rate_limit",
+                 "recorded_at")
 RAIL = "robots_gate.set_aside"
 #: Days of per-day counts kept on the report. The ledger itself is never trimmed.
 REPORT_DAYS = 30
@@ -113,8 +119,7 @@ def permit_for(source: str, url: str, path: Path | None = None) -> dict[str, Any
     row = rows.get(source) or rows.get(str(source).split("__ep", 1)[0])
     if not isinstance(row, dict) or row.get("active") is not True:
         return None
-    if not all(str(row.get(k) or "").strip() for k in ("host", "doc_url", "clause", "licence",
-                                                       "recorded_at")):
+    if not all(str(row.get(k) or "").strip() for k in PERMIT_FIELDS):
         return None
     if urllib.parse.urlsplit(url).netloc.lower() != str(row["host"]).lower():
         return None
@@ -151,27 +156,29 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
             kind = classify_robots_status(code)          # the desk's one meaning, libs/data
             if kind == ROBOTS_REFUSED:
                 held = (ROBOTS_REFUSED, f"robots.txt answers HTTP {code}: a refusal aimed at "
-                                        f"our agent, not fetched and never worked around")
+                                        f"our agent, not fetched and never worked around", code)
             elif kind == ROBOTS_ABSENT:
-                held = (ROBOTS_ABSENT, f"no robots.txt (HTTP {code}): no rules, fetched")
+                held = (ROBOTS_ABSENT, f"no robots.txt (HTTP {code}): no rules, fetched", code)
             else:
                 held = (ROBOTS_UNREACHABLE, f"robots.txt unreadable (HTTP {code}): not "
-                                            f"fetched this pass, asked again next pass")
+                                            f"fetched this pass, asked again next pass", code)
         except Exception as exc:
             held = (ROBOTS_UNREACHABLE, f"robots.txt unreadable ({type(exc).__name__}): not "
-                                        f"fetched this pass, asked again next pass")
+                                        f"fetched this pass, asked again next pass", None)
         else:
             held = robots_rules(text, agent)
         if cache is not None:
             cache[key] = held
     if isinstance(held, tuple):
-        if held[0] == ROBOTS_REFUSED and source:
+        # A permit reopens a 401/403 ONLY. A 429 is the host rate-limiting us and a 451 is a
+        # legal refusal: fetching through either is never a permit's to allow (Auditor, 20:29Z).
+        if held[0] == ROBOTS_REFUSED and held[2] in PERMIT_REOPENS and source:
             permit = permit_for(source, url)
             if permit is not None:
                 return PERMITTED, (f"{held[1]}; reopened by the publisher's terms "
                                    f"({permit['doc_url']}): fetched on the documented endpoint, "
                                    f"counted as {PERMIT_FETCHED}")
-        return held
+        return str(held[0]), str(held[1])
     if robots_allows(held, url):
         return PUBLIC, "robots.txt allows this path for our agent"
     return DISALLOWED, "robots.txt disallows this exact path for our agent: not fetched"

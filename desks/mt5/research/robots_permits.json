@@ -4,21 +4,21 @@
   "eia_energy": {
    "host": "api.eia.gov",
    "doc_url": "https://www.eia.gov/opendata/terms-of-service.php",
-   "clause": "You may use the EIA API to develop a service to search, display, analyze, retrieve, view",
+   "clause": "You may use the EIA API to develop a service to search, display, analyze, retrieve, view and otherwise \"get\" information from EIA data.",
    "licence": "US government work, public domain: 'U.S. government publications are in the public domain and are not subject to copyright protection.' (https://www.eia.gov/about/copyrights_reuse.php)",
    "endpoint_doc": "https://www.eia.gov/opendata/documentation.php",
    "key": "EIA_API_KEY (free registration, https://www.eia.gov/opendata/register.php)",
-   "rate_limit": "EIA throttles per second and per hour and suspends a key on excess; the collector asks once per weekly cadence",
+   "rate_limit": "EIA's terms, 'Right to Limit': exceeding or circumventing the limits gets a key blocked; the collector asks once per weekly cadence, and a 429 on the data endpoint stops the pass (robots_gate.data_refused), never a retry",
    "recorded_at": "2026-11-10",
    "active": true
   },
   "abs_trade": {
    "host": "data.api.abs.gov.au",
-   "doc_url": "https://www.abs.gov.au/website-privacy-copyright-and-disclaimer",
-   "clause": "All material presented on this website is provided under a Creative Commons Attribution 4.0 International licence",
-   "licence": "CC BY 4.0 (commercial use and redistribution with attribution)",
+   "doc_url": "https://www.abs.gov.au/about/data-services/application-programming-interfaces-apis/data-api-user-guide",
+   "clause": "The Data API is freely accessible without the need for an API key.",
+   "licence": "CC BY 4.0: 'All material presented on this website is provided under a Creative Commons Attribution 4.0 International licence' (https://www.abs.gov.au/website-privacy-copyright-and-disclaimer)",
    "endpoint_doc": "https://www.abs.gov.au/about/data-services/application-programming-interfaces-apis/data-api-user-guide",
-   "key": "none: 'The Data API is freely accessible without the need for an API key.'",
+   "key": "none (keys removed 29 Nov 2024, per the Data API user guide)",
    "rate_limit": "no published limit found; the collector asks once per monthly cadence",
    "recorded_at": "2026-11-10",
    "active": true
@@ -26,7 +26,7 @@
   "rba_tables": {
    "host": "www.rba.gov.au",
    "doc_url": "https://www.rba.gov.au/copyright/",
-   "clause": "Section 5, Financial Data terms and conditions: Financial Data may be used, reproduced, published, communicated to the public or referenced for \"personal or commercial use\" (verbatim fragment; read 2026-11-10, HTTP 200), provided no RBA endorsement is implied. The page has no sentence on automated access. Inactive until the Auditor reads section 5 on the live page and confirms.",
+   "clause": "Section 5: Financial Data 'may be used, reproduced, published, communicated to the public or otherwise referenced for personal or commercial use'. INACTIVE (Auditor 2026-11-10 20:29Z): the page's dcterms.rights metadata says 'personal, non-commercial use within your organisation' and nothing addresses automated access, so the clause is ambiguous and stays fail-closed.",
    "licence": "RBA Financial Data terms (excluded from CC BY 4.0), attribution 'Source: RBA [year]'",
    "endpoint_doc": "https://www.rba.gov.au/statistics/tables/ (CSV files under /statistics/tables/csv/)",
    "key": "none",
