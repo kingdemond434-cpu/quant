@@ -1070,7 +1070,10 @@ def lab_inputs(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame]
 
 
 #: Wall-clock budget for one pass's network reads; past it every source serves what it holds.
-FETCH_BUDGET_S = 600.0
+#: The leg is killed at its planned 720s, and the series writes, the mint and the report come
+#: after the reads: at 600s the only pass in the ledger was killed at 778s with no report written
+#: (2026-11-05). 420s leaves the rest of the pass room to finish.
+FETCH_BUDGET_S = 420.0
 
 
 def stale_series(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame],
