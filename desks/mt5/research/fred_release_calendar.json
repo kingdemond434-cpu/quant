@@ -1,11 +1,93 @@
 {
- "note": "Scheduled US events whose DATES come from FRED's release calendar (api.stlouisfed.org/fred/release/dates; FRED API terms OPEN, same key as futures_state). Add a release as a row here, never in code. `name_contains` is checked against the name FRED returns for the id before any date is used: an id that answers with another name writes nothing. `at`/`tz` is the publisher's own fixed wall-clock release time, a convention applied to every row (time_basis says so); `from` is the first date that convention holds. Releases whose history already comes from first prints in futures_state (payrolls, CPI, claims, retail sales, PCE, industrial production, JOLTS) are NOT repeated here, so the event index does not see one release twice.",
- "key_env": ["FRED_API_KEY", "FRED_KEY"],
+ "note": "Scheduled US events whose DATES come from FRED's release calendar (api.stlouisfed.org/fred/release/dates; FRED API terms OPEN, same key as futures_state). Add a release as a row here, never in code. `name_contains` is checked against the name FRED returns for the id before any date is used: an id that answers with another name writes nothing. `at`/`tz` is the publisher's own fixed wall-clock release time, a convention applied to every row (time_basis says so); `from` is the first date that convention holds. Releases whose history already comes from first prints in futures_state (payrolls, CPI, claims, retail sales, PCE, industrial production, JOLTS) are NOT repeated here, so the event index does not see one release twice. `per_year` is the [low, high] count of past dates a typical complete year must hold; outside it the release writes nothing (FRED lists load dates, and a release that is really daily series would list every business day). `usual_weekdays` (Mon=0) only counts past dates off the usual day in the report, e.g. unscheduled FOMC actions, which still carry the convention stamp.",
+ "key_env": [
+  "FRED_API_KEY",
+  "FRED_KEY"
+ ],
  "releases": [
-  {"rid": 101, "slug": "fomc", "name_contains": "FOMC", "title": "FOMC Statement", "currency": "USD", "impact": "High", "at": "14:00", "tz": "America/New_York", "from": "2013-03-01", "why": "the policy decision: the largest scheduled repricing of USD rates and gold. 14:00 ET since March 2013; earlier statements came at other times and are left out rather than mis-stamped. Unscheduled inter-meeting actions appear on their own dates and carry the same stamp, which may be wrong for them"},
-  {"rid": 46, "slug": "ppi", "name_contains": "Producer Price", "title": "PPI m/m", "currency": "USD", "impact": "High", "at": "08:30", "tz": "America/New_York", "from": "2000-01-01", "why": "pipeline inflation, read ahead of or just after CPI"},
-  {"rid": 53, "slug": "gdp", "name_contains": "Gross Domestic Product", "title": "GDP q/q", "currency": "USD", "impact": "High", "at": "08:30", "tz": "America/New_York", "from": "2000-01-01", "why": "advance, second and third estimates each reprice growth"},
-  {"rid": 51, "slug": "trade", "name_contains": "International Trade", "title": "Trade Balance", "currency": "USD", "impact": "Medium", "at": "08:30", "tz": "America/New_York", "from": "2000-01-01", "why": "the external balance behind the dollar"},
-  {"rid": 95, "slug": "factory_orders", "name_contains": "Shipments, Inventories, and Orders", "title": "Factory Orders m/m", "currency": "USD", "impact": "Medium", "at": "10:00", "tz": "America/New_York", "from": "2000-01-01", "why": "manufacturing demand"}
+  {
+   "rid": 101,
+   "slug": "fomc",
+   "name_contains": "FOMC",
+   "title": "FOMC Statement",
+   "currency": "USD",
+   "impact": "High",
+   "at": "14:00",
+   "tz": "America/New_York",
+   "from": "2013-03-01",
+   "why": "the policy decision: the largest scheduled repricing of USD rates and gold. 14:00 ET since March 2013; earlier statements came at other times and are left out rather than mis-stamped. Unscheduled inter-meeting actions appear on their own dates and carry the same stamp, which may be wrong for them",
+   "per_year": [
+    6,
+    12
+   ],
+   "usual_weekdays": [
+    1,
+    2
+   ]
+  },
+  {
+   "rid": 46,
+   "slug": "ppi",
+   "name_contains": "Producer Price",
+   "title": "PPI m/m",
+   "currency": "USD",
+   "impact": "High",
+   "at": "08:30",
+   "tz": "America/New_York",
+   "from": "2000-01-01",
+   "why": "pipeline inflation, read ahead of or just after CPI",
+   "per_year": [
+    10,
+    14
+   ]
+  },
+  {
+   "rid": 53,
+   "slug": "gdp",
+   "name_contains": "Gross Domestic Product",
+   "title": "GDP q/q",
+   "currency": "USD",
+   "impact": "High",
+   "at": "08:30",
+   "tz": "America/New_York",
+   "from": "2000-01-01",
+   "why": "advance, second and third estimates each reprice growth",
+   "per_year": [
+    10,
+    16
+   ]
+  },
+  {
+   "rid": 51,
+   "slug": "trade",
+   "name_contains": "International Trade",
+   "title": "Trade Balance",
+   "currency": "USD",
+   "impact": "Medium",
+   "at": "08:30",
+   "tz": "America/New_York",
+   "from": "2000-01-01",
+   "why": "the external balance behind the dollar",
+   "per_year": [
+    10,
+    14
+   ]
+  },
+  {
+   "rid": 95,
+   "slug": "factory_orders",
+   "name_contains": "Shipments, Inventories, and Orders",
+   "title": "Factory Orders m/m",
+   "currency": "USD",
+   "impact": "Medium",
+   "at": "10:00",
+   "tz": "America/New_York",
+   "from": "2000-01-01",
+   "why": "manufacturing demand",
+   "per_year": [
+    10,
+    14
+   ]
+  }
  ]
 }

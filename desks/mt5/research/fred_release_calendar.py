@@ -10,7 +10,9 @@ WHAT A ROW IS, AND IS NOT. Timing only: when a scheduled event happened or is du
 actual, no forecast and no surprise in these rows. The date is FRED's; the time of day is the
 publisher's fixed release time applied as a convention (`time_basis`), so a row is as right as
 that convention was on that day. FRED lists a date when it loaded the release, which for these
-releases is the release day; a weekend date cannot be one and is dropped and counted.
+releases is the release day; a weekend date cannot be one and is dropped and counted. Past
+days FRED's calendar lists with no data are left out and counted; a release whose typical year
+holds far more or fewer dates than the registry expects writes nothing.
 
 OUTPUT, outside `data/intelligence/` on purpose (the candidate compiler mints a cell per
 calendar-shaped row it finds there):
@@ -103,9 +105,48 @@ def event_rows(rel: Mapping[str, Any], dates: list[str], today: date
                      "impact": str(rel.get("impact") or "High"),
                      "release_id": int(rel["rid"]), "source": "fred_release_dates",
                      "instant_basis": "fred_release_date",
-                     "time_basis": f"convention {rel['at']} {rel['tz']}",
+                     # from the desk's knowledge of the publisher's schedule, not yet read
+                     # off the publisher's page: a reader should widen its window for these
+                     "time_basis": f"unverified convention {rel['at']} {rel['tz']}",
                      "scheduled": d > today, "timing_only": True, "backfill": True})
     return rows, drops
+
+
+def yearly_check(rel: Mapping[str, Any], rows: list[dict[str, Any]], today: date
+                 ) -> dict[str, Any]:
+    """Past rows per complete calendar year, and whether that matches what the release is known
+    to do (`per_year`: [low, high] in the registry). FRED lists a date when it LOADED a release;
+    for a release that is really a set of daily series, that could be every business day. A
+    release whose typical year falls outside its band is not the event it claims to be."""
+    per: dict[int, int] = {}
+    for x in rows:
+        y = int(x["event_date"][:4])
+        if not x["scheduled"] and y < today.year:
+            per[y] = per.get(y, 0) + 1
+    out: dict[str, Any] = {"per_year": {str(k): v for k, v in sorted(per.items())[-6:]}}
+    band = rel.get("per_year")
+    if band and per:
+        counts = sorted(per.values())
+        typical = counts[len(counts) // 2]
+        out["typical_year"] = typical
+        out["per_year_ok"] = int(band[0]) <= typical <= int(band[1])
+    usual = rel.get("usual_weekdays")
+    if usual:
+        out["off_usual_weekday"] = sum(
+            1 for x in rows if not x["scheduled"]
+            and datetime.fromisoformat(x["event_date"]).astimezone(
+                ZoneInfo(str(rel["tz"]))).weekday() not in set(usual))
+    return out
+
+
+def _stale(r: dict[str, Any], why: str, path: Path, today: date) -> None:
+    """A failed ask: with yesterday's file still on disk the release is STALE (its rows are
+    still being read), with its age; with no file it is UNMEASURED."""
+    if r.get("fetched") and path.exists():
+        age = (today - date.fromisoformat(str(r["fetched"]))).days
+        r.update({"status": "STALE", "stale_days": age, "stale_why": why})
+    else:
+        r["status"] = f"UNMEASURED: {why}"
 
 
 def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None,
@@ -136,11 +177,13 @@ def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None
             continue
         r: dict[str, Any] = {**old, "rid": int(rel["rid"]), "title": rel["title"]}
         rep["releases"][slug] = r
+        r.pop("stale_days", None)
+        r.pop("stale_why", None)
         if not key:
-            r["status"] = "UNMEASURED: no FRED key in the environment"
+            _stale(r, "no FRED key in the environment", path, today)
             continue
         if stopped:
-            r["status"] = f"UNMEASURED: FRED answered HTTP {stopped} today; not asked again"
+            _stale(r, f"FRED answered HTTP {stopped} today; not asked again", path, today)
             continue
         base = {"release_id": int(rel["rid"]), "api_key": key, "file_type": "json"}
         try:
@@ -148,28 +191,50 @@ def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None
             rep["requests"] += 1
             if st in HARD_STOP:
                 stopped = int(st or 0)
-                r["status"] = f"UNMEASURED: HTTP {stopped}"
+                _stale(r, f"HTTP {stopped}", path, today)
                 continue
             name = str(((doc or {}).get("releases") or [{}])[0].get("name") or "")
             r["fred_name"] = name
             if str(rel["name_contains"]).lower() not in name.lower():
                 r["status"] = "UNMEASURED: FRED's name for this id is not the release expected"
                 continue
-            st, doc = get(f"{API}/release/dates?" + urllib.parse.urlencode(
-                {**base, "include_release_dates_with_no_data": "true", "limit": 10000,
-                 "sort_order": "asc"}))
-            rep["requests"] += 1
+            # PAST dates: only days FRED holds data for. Its calendar also lists days on which
+            # nothing was published (a postponed or shutdown-delayed release); those are asked
+            # for separately and used for the FUTURE only, where no date can have data yet.
+            lists: list[list[str]] = []
+            for no_data in ("false", "true"):
+                st, doc = get(f"{API}/release/dates?" + urllib.parse.urlencode(
+                    {**base, "include_release_dates_with_no_data": no_data, "limit": 10000,
+                     "sort_order": "asc"}))
+                rep["requests"] += 1
+                if st in HARD_STOP:
+                    break
+                lists.append([str(x.get("date")) for x in (doc or {}).get("release_dates") or []])
             if st in HARD_STOP:
                 stopped = int(st or 0)
-                r["status"] = f"UNMEASURED: HTTP {stopped}"
+                _stale(r, f"HTTP {stopped}", path, today)
                 continue
-            dates = [str(x.get("date")) for x in (doc or {}).get("release_dates") or []]
         except Exception as exc:                      # the URL holds the key: type name only
-            r["status"] = f"UNMEASURED: {type(exc).__name__}"
+            _stale(r, type(exc).__name__, path, today)
             continue
+        with_data, calendar = set(lists[0]), set(lists[1])
+        iso = today.isoformat()
+        phantom = sorted(d for d in calendar - with_data if d <= iso)
+        dates = sorted({d for d in with_data if d <= iso} | {d for d in calendar if d > iso})
         rows, drops = event_rows(rel, dates, today)
+        drops["past_no_data"] = len(phantom)
         if not rows:
-            r["status"] = f"UNMEASURED: no usable dates (HTTP {st})"
+            _stale(r, f"no usable dates (HTTP {st})", path, today)
+            continue
+        check = yearly_check(rel, rows, today)
+        r.update(check)
+        if check.get("per_year_ok") is False:
+            # not the event it claims to be: nothing is written and any old file is removed,
+            # so no reader can use it
+            path.unlink(missing_ok=True)
+            r.pop("fetched", None)
+            r["status"] = (f"UNMEASURED: {check['typical_year']} dates in a typical year, "
+                           f"outside the expected {list(rel['per_year'])}; not used")
             continue
         out.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(path.suffix + ".tmp")
@@ -183,8 +248,10 @@ def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None
     if stopped:
         rep["hard_stop"], rep["hard_stop_day"] = stopped, today.isoformat()
     rep["rows_total"] = sum(int(x.get("rows") or 0) for x in rep["releases"].values()
-                            if x.get("status") == "ok")
-    rep["unmeasured"] = sorted(s for s, x in rep["releases"].items() if x.get("status") != "ok")
+                            if x.get("status") in ("ok", "STALE"))
+    rep["stale"] = sorted(s for s, x in rep["releases"].items() if x.get("status") == "STALE")
+    rep["unmeasured"] = sorted(s for s, x in rep["releases"].items()
+                               if x.get("status") not in ("ok", "STALE"))
     _write_json(report, rep)
     return rep
 
@@ -195,7 +262,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.parse_args(argv)
     rep = refresh()
     print(json.dumps({"rows_total": rep["rows_total"], "requests": rep["requests"],
-                      "unmeasured": rep["unmeasured"]}, sort_keys=True))
+                      "stale": rep["stale"], "unmeasured": rep["unmeasured"]}, sort_keys=True))
     return 0
 
 

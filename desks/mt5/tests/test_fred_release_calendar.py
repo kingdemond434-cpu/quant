@@ -21,7 +21,8 @@ FOMC = next(r for r in REG["releases"] if r["slug"] == "fomc")
 KEY = "k" * 32
 
 
-def _fred(names: dict[int, str], dates: dict[int, list[str]], status: int = 200):
+def _fred(names: dict[int, str], dates: dict[int, list[str]], status: int = 200,
+          no_data: tuple[str, ...] | None = None):
     calls: list[str] = []
 
     def get(url: str) -> tuple[int | None, Any]:
@@ -30,7 +31,9 @@ def _fred(names: dict[int, str], dates: dict[int, list[str]], status: int = 200)
         if status != 200:
             return status, None
         if "/release/dates?" in url:
-            return 200, {"release_dates": [{"release_id": rid, "date": d} for d in dates[rid]]}
+            ds = dates[rid] if "no_data=true" in url else [
+                d for d in dates[rid] if d not in (no_data or ())]
+            return 200, {"release_dates": [{"release_id": rid, "date": d} for d in ds]}
         return 200, {"releases": [{"id": rid, "name": names[rid]}]}
 
     get.calls = calls  # type: ignore[attr-defined]
@@ -49,7 +52,8 @@ def _rows(p: Path) -> list[dict]:
 
 def test_the_statement_is_stamped_in_new_york_time_through_both_seasons(tmp_path: Path) -> None:
     get = _fred({101: "FOMC Press Release"},
-                {101: ["2012-12-12", "2026-01-28", "2026-06-17", "2026-06-20", "2026-12-09"]})
+                {101: ["2012-12-12", "2026-01-28", "2026-06-17", "2026-06-20", "2026-12-09"]},
+                no_data=("2026-12-09",))
     rep = frc.refresh(**_kw(tmp_path, get, [FOMC]))
     rows = _rows(tmp_path / "cal" / "backfill_fredrel_fomc.jsonl.gz")
     assert [r["event_date"] for r in rows] == [
@@ -59,7 +63,9 @@ def test_the_statement_is_stamped_in_new_york_time_through_both_seasons(tmp_path
     assert [r["scheduled"] for r in rows] == [False, False, True]
     assert {r["currency"] for r in rows} == {"USD"} and all(r["timing_only"] for r in rows)
     fomc = rep["releases"]["fomc"]
-    assert fomc["dropped"] == {"before_from": 1, "weekend": 1, "unreadable": 0}
+    assert fomc["dropped"] == {"before_from": 1, "weekend": 1, "unreadable": 0,
+                               "past_no_data": 0}
+    assert all(r["time_basis"].startswith("unverified convention") for r in rows)
     assert fomc["rows"] == 3 and fomc["scheduled_ahead"] == 1 and rep["unmeasured"] == []
 
 
@@ -70,15 +76,40 @@ def test_a_wrong_name_for_the_id_writes_nothing(tmp_path: Path) -> None:
     assert not (tmp_path / "cal").exists() and len(get.calls) == 1
 
 
+def test_a_past_date_with_no_data_is_left_out_and_counted(tmp_path: Path) -> None:
+    get = _fred({101: "FOMC Press Release"},
+                {101: ["2026-01-28", "2026-03-18", "2026-12-09"]},
+                no_data=("2026-03-18", "2026-12-09"))        # one postponed day, one future
+    rep = frc.refresh(**_kw(tmp_path, get, [FOMC]))
+    rows = _rows(tmp_path / "cal" / "backfill_fredrel_fomc.jsonl.gz")
+    assert [r["event_date"][:10] for r in rows] == ["2026-01-28", "2026-12-09"]
+    assert rep["releases"]["fomc"]["dropped"]["past_no_data"] == 1
+
+
+def test_a_release_that_is_really_daily_loads_writes_nothing(tmp_path: Path) -> None:
+    from datetime import timedelta
+    days = [(date(2024, 1, 1) + timedelta(days=i)).isoformat() for i in range(700)]
+    ok = _fred({101: "FOMC Press Release"},
+               {101: [f"{y}-{m:02d}-15" for y in (2024, 2025) for m in range(1, 9)]})
+    rep = frc.refresh(**_kw(tmp_path, ok, [FOMC]))
+    fomc = rep["releases"]["fomc"]
+    assert fomc["per_year_ok"] and fomc["typical_year"] <= 8 and fomc["per_year"]["2025"] <= 8
+    assert fomc["off_usual_weekday"] > 0                     # the 15th is not always Tue/Wed
+    bad = _fred({101: "FOMC Press Release"}, {101: days})
+    rep = frc.refresh(**{**_kw(tmp_path, bad, [FOMC]), "today": date(2026, 11, 11)})
+    assert rep["unmeasured"] == ["fomc"] and "not used" in rep["releases"]["fomc"]["status"]
+    assert not (tmp_path / "cal" / "backfill_fredrel_fomc.jsonl.gz").exists()
+
+
 def test_asked_once_a_day_and_the_key_never_reaches_the_report(tmp_path: Path) -> None:
     get = _fred({101: "FOMC Press Release"}, {101: ["2026-01-28"]})
     kw = _kw(tmp_path, get, [FOMC])
     frc.refresh(**kw)
     frc.refresh(**kw)
-    assert len(get.calls) == 2                               # name + dates, once
+    assert len(get.calls) == 3                               # name + two date lists, once
     assert KEY not in (tmp_path / "r.json").read_text()
     frc.refresh(**{**kw, "today": date(2026, 11, 11)})
-    assert len(get.calls) == 4                               # a new day asks again
+    assert len(get.calls) == 6                               # a new day asks again
 
 
 def test_a_refusal_stops_every_release_for_the_day_and_keeps_the_old_file(tmp_path: Path) -> None:
@@ -90,8 +121,9 @@ def test_a_refusal_stops_every_release_for_the_day_and_keeps_the_old_file(tmp_pa
     no = _fred({}, {}, status=429)
     kw = {**_kw(tmp_path, no, [FOMC, ppi]), "today": date(2026, 11, 11)}
     rep = frc.refresh(**kw)
-    assert len(no.calls) == 1 and rep["unmeasured"] == ["fomc", "ppi"]
-    assert rep["hard_stop"] == 429
+    assert len(no.calls) == 1 and rep["unmeasured"] == [] and rep["stale"] == ["fomc", "ppi"]
+    assert rep["hard_stop"] == 429 and rep["releases"]["fomc"]["stale_days"] == 1
+    assert rep["rows_total"] == 2                            # the files are still being read
     frc.refresh(**kw)
     assert len(no.calls) == 1                                # not asked again that day
     assert (tmp_path / "cal" / "backfill_fredrel_fomc.jsonl.gz").read_bytes() == before
