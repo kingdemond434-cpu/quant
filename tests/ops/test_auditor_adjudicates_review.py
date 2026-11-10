@@ -323,6 +323,29 @@ def test_a_clear_older_than_the_review_run_merges_nothing(case: _Case) -> None:
     assert not case.merged()
 
 
+def test_a_review_still_running_on_a_head_with_an_older_clear_is_a_wait(case: _Case) -> None:
+    # Governance read of #816, point 5: the reviewer is merely pending, the CLEAR predates
+    # whatever it will say. The authority WAITs (never CLEAR) and the gate merges nothing.
+    plain = case.sb.gh.runs
+
+    def runs() -> list[dict[str, Any]]:
+        out = plain()
+        for r in out:
+            if r["name"] == "independent-review":
+                r.update(status="in_progress", conclusion=None, completed_at=None)
+        return out
+
+    case.sb.gh.runs = runs
+    case.comment()
+    case.sync(_row())
+    v, why = case.sb.authority()
+    assert v == "WAIT" and "independent-review" in why[0]
+    case.window()
+    case.sync()
+    case.sb.gate()
+    assert not case.merged() and case.sb.notices == []
+
+
 @pytest.mark.parametrize("job", ["replay-shadow", "risk-invariants", "quality"])
 def test_no_other_red_job_is_ever_adjudicated(case: _Case, job: str) -> None:
     case.sb.gh.conclusion[job] = "failure"
