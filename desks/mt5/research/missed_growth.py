@@ -712,13 +712,21 @@ def published_gate_lines() -> dict[str, Any]:
 #: cost against one static size per sleeve -- is PUBLISHED on that artifact and carried here.
 POSTERIOR_SIZING = BASE / "reports" / "posterior_sizing_missed_growth.json"
 POSTERIOR_SIZING_MAX_AGE_H = 6.0
+#: The posterior-sizing line is a two-sided MEASUREMENT with a t-stat, so a delta that does not
+#: clear this |t| is NOT_SIGNIFICANT: not a cost, not a gain, and not NOT_BINDING either (that
+#: word means a rail did not fire). Same number as `posterior_sizing_missed_growth.SIGNIFICANT_T`.
+POSTERIOR_SIZING_SIGNIFICANT_T = 2.0
+NOT_SIGNIFICANT = "NOT_SIGNIFICANT"
 
 
 def published_posterior_sizing_line() -> dict[str, Any]:
     """The posterior-sized book against a static size per sleeve, read from its own report.
 
     Signed: a positive `value_logw` is realised log wealth the posterior sizing GAINED over the
-    scored trades, a negative one is growth it forwent (COSTS_GROWTH). The line changes no size;
+    scored trades, a negative one is growth it forwent. The sign becomes a verdict
+    (EARNS_ITS_PLACE / COSTS_GROWTH) only when `significant`: the report's t-stat is measured
+    and |t| >= POSTERIOR_SIZING_SIGNIFICANT_T. Otherwise the line is NOT_SIGNIFICANT, on either
+    basis, and carries the t-stat and the sign-test p beside the value. The line changes no size;
     it is the bill and the credit side by side. A missing, stale or unmeasured report is
     UNMEASURED with its why -- never a clean zero."""
     doc = _json(POSTERIOR_SIZING)
@@ -742,17 +750,37 @@ def published_posterior_sizing_line() -> dict[str, Any]:
                 "why": "the report carries no missed_growth_line"}
     verdict = line.get("verdict")
     value = line.get("value")
-    if verdict not in (EARNS, COSTS, NOT_BINDING) or not isinstance(value, (int, float)):
+    if (verdict not in (EARNS, COSTS, NOT_BINDING, NOT_SIGNIFICANT)
+            or isinstance(value, bool) or not isinstance(value, (int, float))):
         return {"verdict": UNMEASURED, "lines": [line], "age_h": round(age_h, 2),
+                "significant": False,
                 "source": "reports/posterior_sizing_missed_growth.json",
                 "why": str(line.get("why") or "the line is unmeasured")}
+    # Significance is RE-DERIVED from the report's own t-stat, never trusted from its verdict:
+    # a report from a build that published the bare sign still cannot bill a cost here.
+    t = _num(line.get("t_stat"))
+    significant = t is not None and abs(t) >= POSTERIOR_SIZING_SIGNIFICANT_T
+    v = float(value)
+    if significant and v != 0.0:
+        verdict, direction = (EARNS, "gained") if v > 0 else (COSTS, "forgone")
+        why = ("realised log wealth over the scored trades, as sized minus static "
+               f"(+ gained, - forgone), at |t| >= {POSTERIOR_SIZING_SIGNIFICANT_T:g}; a report, "
+               "never a size")
+    else:
+        verdict, direction = NOT_SIGNIFICANT, "not_significant"
+        why = (("no t-stat on the report" if t is None else
+                f"|t| = {abs(t):.2f} < {POSTERIOR_SIZING_SIGNIFICANT_T:g}")
+               + ": the summed delta is indistinguishable from zero, so it is carried as "
+                 "neither a gain nor a cost; a report, never a size")
     return {"verdict": verdict, "source": "reports/posterior_sizing_missed_growth.json",
-            "age_h": round(age_h, 2), "lines": [line], "value_logw": round(float(value), 12),
-            "direction": line.get("direction"), "basis": line.get("basis"),
+            "age_h": round(age_h, 2), "lines": [line], "value_logw": round(v, 12),
+            "significant": significant, "t_stat": t,
+            "sign_test_p": _num(line.get("sign_test_p")),
+            "significance_rule": (f"|t_stat| >= {POSTERIOR_SIZING_SIGNIFICANT_T:g} and the "
+                                  f"t-stat measured"),
+            "direction": direction, "basis": line.get("basis"),
             "baseline": line.get("baseline"), "n_streams": line.get("n_streams"),
-            "n_trades": line.get("n_trades"),
-            "why": "realised log wealth over the scored trades, as sized minus static "
-                   "(+ gained, - forgone); a report, never a size"}
+            "n_trades": line.get("n_trades"), "why": why}
 
 
 #: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the

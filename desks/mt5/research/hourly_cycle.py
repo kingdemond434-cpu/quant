@@ -1417,8 +1417,6 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "event_surprise", "cross_asset_graph", "transmission_engine",
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
-                     # posterior-sized book vs a static size per sleeve, on the desk's own trades
-                     "posterior_sizing_missed_growth",
                      # the Alpha Capture substitute: public analyst views -> PIT events
                      "alpha_capture"), "macro"),
     # execution: the execution research command
@@ -1436,7 +1434,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration",
+                     # posterior-sized book vs a static size per sleeve, on the desk's own
+                     # trades: a SIZING-layer measurement, so it sits with the allocator
+                     "posterior_sizing_missed_growth"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",

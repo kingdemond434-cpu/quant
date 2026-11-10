@@ -72,7 +72,14 @@ OUT = DESK / "reports" / "posterior_sizing_missed_growth.json"
 SCHEMA = "posterior_sizing_missed_growth/1"
 UNMEASURED = "UNMEASURED"
 MEASURED = "MEASURED"
-EARNS, COSTS, NOT_BINDING = "EARNS_ITS_PLACE", "COSTS_GROWTH", "NOT_BINDING"
+EARNS, COSTS = "EARNS_ITS_PLACE", "COSTS_GROWTH"
+#: A measured delta whose pooled t-stat does not clear SIGNIFICANT_T (or has none). NOT_BINDING
+#: would be wrong here: that word means a rail did not fire, and this book did trade.
+NOT_SIGNIFICANT = "NOT_SIGNIFICANT"
+#: |t| the pooled per-trade differences must reach before the sign of the summed delta is
+#: published as a gain or a cost. `missed_growth.POSTERIOR_SIZING_SIGNIFICANT_T` is the same
+#: number and a test pins the two together.
+SIGNIFICANT_T = 2.0
 
 #: THE FLOORS, stated because every UNMEASURED below is one of them.
 MIN_STREAM_STEPS = 10    # out-of-sample trades a stream needs before it is scored
@@ -234,11 +241,21 @@ def aggregate(streams: dict[str, dict[str, Any]], basis: str, base: str) -> dict
             f"fewer than {MIN_T_N} pooled per-trade differences, or no dispersion"}
 
 
+def is_significant(t: Any) -> bool:
+    """True only for a MEASURED t-stat with |t| >= SIGNIFICANT_T. None, a bool, a string or a
+    non-finite number is not a measurement and is never significant."""
+    if isinstance(t, bool) or not isinstance(t, (int, float)):
+        return False
+    return math.isfinite(float(t)) and abs(float(t)) >= SIGNIFICANT_T
+
+
 def missed_growth_line(aggs: dict[str, dict[str, dict[str, Any]]], at: str,
                        input_why: str | None = None) -> dict[str, Any]:
     """The signed line: E[log W] gained (+) or forgone (-) by sizing with the posterior rather
     than holding each sleeve at its first posted size. The first MEASURED basis is the headline;
-    with none, UNMEASURED and the reason -- never a zero."""
+    with none, UNMEASURED and the reason -- never a zero. The SIGN is published as a verdict
+    (EARNS / COSTS) only when the pooled t-stat is measured and |t| >= SIGNIFICANT_T; otherwise
+    the line is NOT_SIGNIFICANT, carrying the same value, t-stat and sign-test p."""
     base = HEADLINE_BASELINE
     line: dict[str, Any] = {"gate": "posterior_sizing", "at": at, "baseline": base,
                             "unit": "sum of realised log(1 + f r) over scored trades",
@@ -248,25 +265,37 @@ def missed_growth_line(aggs: dict[str, dict[str, dict[str, Any]]], at: str,
         if ag.get("status") != MEASURED:
             continue
         v = float(ag["delta_logw_sum"])
+        t = ag["t_stat"]
+        significant = is_significant(t)
+        if significant:
+            verdict, direction = (EARNS, "gained") if v > 0 else (COSTS, "forgone")
+            why = (f"|t| = {abs(float(t)):.2f} >= {SIGNIFICANT_T:g} on the pooled per-trade "
+                   f"differences: the sign of the summed delta is published; no size changes "
+                   f"on it")
+        else:
+            verdict, direction = NOT_SIGNIFICANT, "not_significant"
+            why = ((f"|t| = {abs(float(t)):.2f} < {SIGNIFICANT_T:g}" if t is not None else
+                    "no t-stat (" + str(ag.get("t_stat_note")) + ")")
+                   + ": the summed delta is a point estimate indistinguishable from zero, so "
+                     "it is published as neither a gain nor a cost; no size changes on it")
         return {**line, "basis": basis,
                 "basis_note": (None if basis == "recorded" else
                                "REPLAY, not the fraction the desk traded: the live solve re-run "
                                "per stream. recorded basis: "
                                + str(aggs["recorded"][base].get("why"))),
-                "verdict": EARNS if v > 1e-12 else COSTS if v < -1e-12 else NOT_BINDING,
-                "direction": "gained" if v > 1e-12 else "forgone" if v < -1e-12 else "none",
-                "value": round(v, 8), "forgone_logw": round(max(0.0, -v), 8),
+                "verdict": verdict, "direction": direction, "significant": significant,
+                "significance_rule": f"|t_stat| >= {SIGNIFICANT_T:g} and the t-stat measured",
+                "value": round(v, 8),
+                "forgone_logw": round(max(0.0, -v), 8) if significant else None,
                 "value_per_trade": ag["delta_logw_per_trade"],
                 "n_streams": ag["scored_streams"], "n_trades": ag["n_trades"],
                 "win_share": ag["win_share"],
                 "sign_test_p": (ag["sign_test_p_as_sized_better"] if v >= 0
                                 else ag["sign_test_p_static_better"]),
-                "t_stat": ag["t_stat"],
-                "why": ("the verdict is the SIGN of the summed delta; its weight is the "
-                        "sign-test p and the t-stat beside it, and no size changes on it")}
+                "t_stat": t, "why": why}
     why = input_why or "; ".join(f"{b}: {aggs[b][base].get('why')}" for b in BASES)
     return {**line, "basis": None, "verdict": UNMEASURED, "direction": None, "value": None,
-            "forgone_logw": None, "value_per_trade": None, "why": why}
+            "significant": False, "forgone_logw": None, "value_per_trade": None, "why": why}
 
 
 # ------------------------------------------------------------------ inputs
