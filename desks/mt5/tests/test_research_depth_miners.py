@@ -55,18 +55,46 @@ def test_one_parser_reads_rss2_rdf_and_atom() -> None:
     assert c["authors"] == "B. Writer" and c["url"].endswith("2611.00001v1")
 
 
-def test_a_feed_declaring_entities_is_refused() -> None:
+def test_a_feed_declaring_entities_or_a_doctype_anywhere_is_refused() -> None:
     with pytest.raises(ValueError):
         rdm.parse_feed('<?xml version="1.0"?><!DOCTYPE r [<!ENTITY a "x">]><rss/>')
+    late = "<!-- " + "x" * 9000 + ' -->\n<!doctype r [<!entity a "x">]><rss/>'
+    with pytest.raises(ValueError):
+        rdm.parse_feed(late)
+
+
+def test_a_feed_without_recorded_terms_is_never_fetched() -> None:
+    st: dict[str, Any] = {}
+    asked: list[str] = []
+
+    def get(url: str) -> str:
+        asked.append(url)
+        return _get(url)
+
+    rdm.mine_research_feeds(st, get, _row, _cfg(), sleep=lambda s: None)
+    assert "https://u/rss" not in asked
+    assert st["rf_status"]["unknown_terms"]["status"] == "closed"
+    shipped = rdm.load_feed_config()
+    assert all(f["terms"] in ("open", "unrecorded") and f.get("terms_note")
+               for f in shipped["feeds"])
+
+
+def test_the_feed_pass_defers_what_its_deadline_cannot_reach() -> None:
+    st: dict[str, Any] = {}
+    ticks = iter(range(0, 10_000, 400))
+    rdm.mine_research_feeds(st, _get, _row, _cfg(), sleep=lambda s: None,
+                            clock=lambda: float(next(ticks)), deadline_s=600)
+    assert any(v["status"] == "deferred" for v in st["rf_status"].values())
 
 
 def _cfg() -> dict[str, Any]:
     return {"feeds": [{"name": "nber_new", "url": "https://n/rss", "kind": "working_paper",
-                       "institution": "NBER"},
-                      {"name": "dead", "url": "https://dead/rss"},
-                      {"name": "blank", "url": "https://blank/rss"}],
+                       "institution": "NBER", "terms": "open"},
+                      {"name": "dead", "url": "https://dead/rss", "terms": "open"},
+                      {"name": "blank", "url": "https://blank/rss", "terms": "open"},
+                      {"name": "unknown_terms", "url": "https://u/rss"}],
             "arxiv": {"categories": ["q-fin.TR", "q-fin.ST"], "page_size": 50,
-                      "backfill_depth": 120}}
+                      "backfill_depth": 120, "terms": "open"}}
 
 
 def _get(url: str) -> str:
@@ -180,7 +208,8 @@ def test_discussions_are_read_only_with_a_token_and_the_token_is_never_stored() 
 def test_the_rate_floor_stops_the_pass_before_it_starts_and_mid_pass() -> None:
     st: dict[str, Any] = {}
     gh = _GitHub(remaining=rdm.GH_FLOOR_ANON + 3)
-    assert rdm.mine_github_depth(st, gh, _row, {"a/b": 1}, token=None) == []
+    out = rdm.mine_github_depth(st, gh, _row, {"a/b": 1}, token=None)
+    assert [r["kind"] for r in out] == ["unmeasured"] and not out[0]["needs_selector_work"]
     assert st["gd_status"]["stopped"].startswith("rate floor")
     assert [u for _, u, _ in gh.calls] == [f"{rdm.GH_API}/rate_limit"]
     st = {}
@@ -229,3 +258,76 @@ def test_both_miners_are_on_the_seed_miner_clock() -> None:
     import seed_miners
     assert seed_miners.MINERS["research_feeds"] is seed_miners.mine_research_feeds
     assert seed_miners.MINERS["github_depth"] is seed_miners.mine_github_depth
+
+
+def test_crypto_exchange_repos_and_forks_are_never_read(tmp_path: Path) -> None:
+    d = tmp_path / "github_topics"
+    d.mkdir()
+    (d / "discoveries_20261110_0100.json").write_text(json.dumps([
+        {"title": "freqtrade/freqtrade", "topic": "trading-bot", "stars": 9},
+        {"title": "x/grid", "topic": "algorithmic-trading", "stars": 9,
+         "text": "Binance grid bot using ccxt"},
+        {"title": "y/ea", "topic": "mql5", "stars": 3, "text": "London breakout EA for XAUUSD"}]))
+    assert rdm.topic_repos(tmp_path) == {"y/ea": 3}
+    for name in ("hummingbot/hummingbot", "a/bybit-scalper", "a/defi-arb", "a/okx-bot"):
+        assert rdm.is_crypto(name)
+    assert not rdm.is_crypto("a/gold-breakout", "EURUSD mean reversion", "metatrader5")
+    st: dict[str, Any] = {"gd_fork_pool": {"z/binance-fork": 50}}
+    gh = _GitHub()
+    rdm.mine_github_depth(st, gh, _row, {"y/ea": 3}, token=None)
+    assert not any("binance" in u for _, u, _ in gh.calls)
+
+
+def test_an_unreadable_rate_limit_is_unmeasured_and_spends_nothing() -> None:
+    def broken(url: str, **kw: Any) -> _Resp:
+        return _Resp(None, 500, left=None)
+
+    st: dict[str, Any] = {}
+    out = rdm.mine_github_depth(st, broken, _row, {"a/b": 1}, token=None)
+    assert out[0]["kind"] == "unmeasured" and "UNMEASURED" in out[0]["title"]
+    assert st["gd_status"]["remaining_start"] == "UNMEASURED"
+
+
+def test_github_state_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(rdm, "FORK_POOL_CAP", 3)
+    monkeypatch.setattr(rdm, "VISITED_CAP", 2)
+    st: dict[str, Any] = {"gd_fork_pool": {f"f/{i}": i for i in range(10)},
+                          "gd_repos": {f"r/{i}": {"visited": f"2026-11-0{i}"} for i in range(5)}}
+    rdm._bound(st)
+    assert set(st["gd_fork_pool"]) == {"f/9", "f/8", "f/7"}
+    assert set(st["gd_repos"]) == {"r/4", "r/3"}
+
+
+def test_discussions_pause_below_the_graphql_floor() -> None:
+    class _Low(_GitHub):
+        def __call__(self, url: str, **kw: Any) -> _Resp:
+            if url.endswith("/graphql"):
+                self.calls.append(("POST", url, {}))
+                return _Resp({"data": {"rateLimit": {"remaining": 5}, "repository": None}})
+            return super().__call__(url, **kw)
+
+    st: dict[str, Any] = {}
+    gh = _Low()
+    rdm.mine_github_depth(st, gh, _row, {"a/b": 3, "c/d": 2}, token="t")  # noqa: S106 - fake
+    assert sum(1 for m, _, _ in gh.calls if m == "POST") == 1
+    assert st["gd_status"]["discussions"].startswith("paused")
+
+
+def test_the_token_is_read_from_the_environment_only(monkeypatch: pytest.MonkeyPatch,
+                                                     tmp_path: Path) -> None:
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    (tmp_path / ".gh_token").write_text("file-token")
+    assert rdm.github_token() is None
+    monkeypatch.setenv("GITHUB_TOKEN", " env-token ")
+    assert rdm.github_token() == "env-token"
+
+
+def test_state_writes_are_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import seed_miners
+    state = tmp_path / "seed_miners_state.json"
+    monkeypatch.setattr(seed_miners, "STATE", state)
+    seed_miners._write_state({"gh_topic_cursor": 4})
+    seed_miners._merge_state({"rf_seen": ["k"]})
+    assert json.loads(state.read_text()) == {"gh_topic_cursor": 4, "rf_seen": ["k"]}
+    assert [p.name for p in tmp_path.iterdir()] == ["seed_miners_state.json"]  # no temp left

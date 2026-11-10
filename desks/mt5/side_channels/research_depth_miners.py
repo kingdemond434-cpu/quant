@@ -38,6 +38,7 @@ import base64
 import hashlib
 import html
 import json
+import os
 import re
 import time
 from collections.abc import Callable
@@ -65,6 +66,30 @@ GH_COST_PER_REPO = 4
 GH_FLOOR_ANON, GH_FLOOR_TOKEN = 10, 500
 GH_MAX_REPOS_ANON, GH_MAX_REPOS_TOKEN = 10, 80
 FORK_POOL_MIN_STARS = 5
+# Bounded state: the fork pool keeps its most-starred entries, the visit memory its most recent.
+FORK_POOL_CAP, VISITED_CAP = 2_000, 5_000
+# GraphQL has its own points budget; discussions stop below this many points.
+GQL_FLOOR = 200
+# Wall-clock budgets per pass, so one slow host can never hold the hourly sweep.
+FEEDS_DEADLINE_S, GITHUB_DEADLINE_S = 600.0, 900.0
+# An identifiable client, as arXiv's API terms ask; no personal detail in it.
+HONEST_UA = "quant-research-miner/1.0 (+https://github.com/kingdemond434-cpu/quant)"
+# Feeds are fetched only under a recorded terms verdict that permits it. A feed whose terms
+# were never recorded is CLOSED and says so in rf_status: unknown is not permission.
+OPEN_TERMS = frozenset({"open"})
+
+# THE MT5 MANDATE (CLAUDE.md): crypto-exchange ground is never hunted. `trading-bot` and
+# `algorithmic-trading` are dominated by exchange bots, so every repo and fork is screened on
+# its name, description and topics before a single depth request is spent on it.
+CRYPTO_RE = re.compile(
+    r"ccxt|binance|bybit|okx|hyperliquid|freqtrade|hummingbot|crypto|defi\b|bitcoin|btc\b"
+    r"|ethereum|\beth\b|solana|coinbase|kucoin|bitmex|deribit|uniswap|web3|altcoin|memecoin",
+    re.IGNORECASE)
+
+
+def is_crypto(*fields: Any) -> bool:
+    """True when any field names crypto-exchange ground."""
+    return any(CRYPTO_RE.search(str(f or "")) for f in fields)
 
 Row = dict[str, Any]
 RowFn = Callable[..., Row]
@@ -95,8 +120,9 @@ def parse_feed(xml_text: str) -> list[dict[str, str]]:
     regex anchored on a literal `<item>` never met an RDF `<item rdf:about=...>`. Here every
     dialect is the same walk. A document declaring entities is refused outright.
     """
-    if "<!ENTITY" in xml_text[:4000]:
-        raise ValueError("feed declares XML entities; refused")
+    head = (xml_text if isinstance(xml_text, str) else xml_text.decode("utf-8", "replace")).upper()
+    if "<!DOCTYPE" in head or "<!ENTITY" in head:
+        raise ValueError("feed carries a DOCTYPE or entity declaration; refused")
     root = ET.fromstring(xml_text.encode("utf-8") if isinstance(xml_text, str) else xml_text)
     out: list[dict[str, str]] = []
     for el in root.iter():
@@ -151,9 +177,12 @@ def _arxiv_url(categories: list[str], start: int, size: int) -> str:
 
 def mine_research_feeds(st: dict[str, Any], get_text: Callable[[str], str], row: RowFn,
                         config: dict[str, Any] | None = None,
-                        sleep: Callable[[float], None] = time.sleep) -> list[Row]:
+                        sleep: Callable[[float], None] = time.sleep,
+                        clock: Callable[[], float] = time.monotonic,
+                        deadline_s: float = FEEDS_DEADLINE_S) -> list[Row]:
     """Every configured feed plus arXiv q-fin head and backfill. Mutates `st` in place."""
     cfg = config if config is not None else load_feed_config()
+    t0 = clock()
     seen_list: list[str] = list(st.get("rf_seen", []))
     seen = set(seen_list)
     status: dict[str, Any] = st.setdefault("rf_status", {})
@@ -173,11 +202,20 @@ def mine_research_feeds(st: dict[str, Any], get_text: Callable[[str], str], row:
                            e.get("text", ""), feed=feed, institution=institution, **extra))
         return new
 
-    sources: list[tuple[str, str, str, str]] = [
-        (f["name"], f["url"], f.get("kind", "paper"), f.get("institution", ""))
-        for f in cfg.get("feeds", [])]
+    sources: list[tuple[str, str, str, str]] = []
+    for f in cfg.get("feeds", []):
+        if f.get("terms") not in OPEN_TERMS:
+            status[f["name"]] = {"at": _now(), "status": "closed",
+                                 "why": f"terms {f.get('terms') or 'unrecorded'}; fetched only "
+                                        "once a permitting verdict is recorded",
+                                 "url": f["url"]}
+            continue
+        sources.append((f["name"], f["url"], f.get("kind", "paper"), f.get("institution", "")))
     ax = cfg.get("arxiv") or {}
-    if ax.get("categories"):
+    if ax.get("categories") and ax.get("terms") not in OPEN_TERMS:
+        status["arxiv_qfin"] = {"at": _now(), "status": "closed",
+                                "why": f"terms {ax.get('terms') or 'unrecorded'}"}
+    elif ax.get("categories"):
         size = int(ax.get("page_size", 100))
         depth = int(ax.get("backfill_depth", 20_000))
         back = int(st.get("rf_arxiv_back", size))
@@ -188,6 +226,10 @@ def mine_research_feeds(st: dict[str, Any], get_text: Callable[[str], str], row:
         sources.append(("arxiv_qfin_backfill", _arxiv_url(ax["categories"], back, size),
                         "paper", "arXiv"))
     for i, (name, url, kind, inst) in enumerate(sources):
+        if clock() - t0 > deadline_s:
+            status[name] = {"at": _now(), "status": "deferred",
+                            "why": f"pass deadline {deadline_s:.0f}s reached", "url": url}
+            continue
         if name.startswith("arxiv") and i:
             sleep(3.0)                                  # arXiv API asks for 3 s between calls
         try:
@@ -212,11 +254,9 @@ class RateFloor(Exception):
 
 
 def github_token() -> str | None:
-    try:
-        from libs.data.papers import github_token as _tok
-    except Exception:
-        return None
-    return _tok()
+    """GITHUB_TOKEN from the environment only. No dotfile is read; absence is normal."""
+    tok = os.environ.get("GITHUB_TOKEN", "").strip()
+    return tok or None
 
 
 def topic_repos(intel_dir: Path, max_files: int = 96) -> dict[str, int]:
@@ -232,7 +272,8 @@ def topic_repos(intel_dir: Path, max_files: int = 96) -> dict[str, int]:
             rows = rows.get("discoveries", [])
         for r in rows if isinstance(rows, list) else []:
             if (isinstance(r, dict) and r.get("topic") in TRADING_TOPICS
-                    and "/" in str(r.get("title"))):
+                    and "/" in str(r.get("title"))
+                    and not is_crypto(r.get("title"), r.get("text"), r.get("topics"))):
                 repos[str(r["title"])] = int(r.get("stars") or 0)
     return repos
 
@@ -245,15 +286,27 @@ def _order(pool: dict[str, int], visited: dict[str, Any]) -> list[str]:
     return fresh + stale
 
 
+def _bound(st: dict[str, Any]) -> None:
+    pool: dict[str, int] = st.get("gd_fork_pool", {})
+    if len(pool) > FORK_POOL_CAP:
+        st["gd_fork_pool"] = dict(sorted(pool.items(), key=lambda kv: -kv[1])[:FORK_POOL_CAP])
+    seen: dict[str, Any] = st.get("gd_repos", {})
+    if len(seen) > VISITED_CAP:
+        keep = sorted(seen, key=lambda r: str(seen[r].get("visited", "")))[-VISITED_CAP:]
+        st["gd_repos"] = {r: seen[r] for r in keep}
+
+
 def mine_github_depth(st: dict[str, Any], http_get: Callable[..., Any], row: RowFn,
-                      pool: dict[str, int], token: str | None) -> list[Row]:
+                      pool: dict[str, int], token: str | None,
+                      clock: Callable[[], float] = time.monotonic,
+                      deadline_s: float = GITHUB_DEADLINE_S) -> list[Row]:
     """Read README, new commits, new issues, starred forks and (with a token) discussions.
 
     `http_get(url, headers=..., timeout=...)` returns an object with `status_code`, `headers`,
     `json()`; tests pass a fake. Mutates `st` in place.
     """
     headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
-               "User-Agent": "quant-research-miner"}
+               "User-Agent": HONEST_UA}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     floor = GH_FLOOR_TOKEN if token else GH_FLOOR_ANON
@@ -264,21 +317,34 @@ def mine_github_depth(st: dict[str, Any], http_get: Callable[..., Any], row: Row
                               "UNMEASURED: no GITHUB_TOKEN; discussions need GraphQL auth"}
     st["gd_status"] = status
     out: list[Row] = []
-    full_pool = {**extra, **pool}
-    if not full_pool:
-        status["stopped"] = "no trading repos archived by github_topics yet"
+    t0 = clock()
+
+    def stop(why: str) -> list[Row]:
+        # A pass that read nothing says WHY in a row of its own, so the sweep never mistakes it
+        # for a parser whose markup moved.
+        status["stopped"] = why
+        out.append(row("github_depth", "unmeasured", f"github_depth: {why}",
+                       "https://api.github.com/rate_limit", why, needs_selector_work=False))
         return out
 
-    rl = http_get(f"{GH_API}/rate_limit", headers=headers, timeout=20)
-    remaining = int(((rl.json() or {}).get("resources", {}).get("core", {}) or {})
-                    .get("remaining", 0)) if rl.status_code == 200 else 0
+    full_pool = {r: n for r, n in {**extra, **pool}.items() if not is_crypto(r)}
+    if not full_pool:
+        return stop("no trading repos archived by github_topics yet")
+    try:
+        rl = http_get(f"{GH_API}/rate_limit", headers=headers, timeout=20)
+        core = ((rl.json() or {}).get("resources", {}) or {}).get("core", {}) or {}
+        remaining = int(core["remaining"]) if rl.status_code == 200 else None
+    except Exception:
+        remaining = None
+    if remaining is None:
+        status["remaining_start"] = "UNMEASURED"
+        return stop("rate budget UNMEASURED: /rate_limit unreadable, no request spent")
     status["remaining_start"] = remaining
     budget = max(0, (remaining - floor) // GH_COST_PER_REPO)
     n = min(budget, GH_MAX_REPOS_TOKEN if token else GH_MAX_REPOS_ANON)
     status["planned"] = n
     if n == 0:
-        status["stopped"] = f"rate floor: {remaining} remaining, floor {floor}"
-        return out
+        return stop(f"rate floor: {remaining} remaining, floor {floor}")
 
     def get(path: str) -> Any:
         r = http_get(f"{GH_API}{path}", headers=headers, timeout=20)
@@ -295,6 +361,9 @@ def mine_github_depth(st: dict[str, Any], http_get: Callable[..., Any], row: Row
 
     try:
         for repo in _order(full_pool, visited)[:n]:
+            if clock() - t0 > deadline_s:
+                status["stopped"] = f"pass deadline {deadline_s:.0f}s reached"
+                break
             stars = full_pool.get(repo, 0)
             mem = visited.setdefault(repo, {})
             since = mem.get("visited")
@@ -335,7 +404,8 @@ def mine_github_depth(st: dict[str, Any], http_get: Callable[..., Any], row: Row
             seen_forks = set(mem.get("forks", []))
             for fk in forks if isinstance(forks, list) else []:
                 name, fstars = str(fk.get("full_name", "")), int(fk.get("stargazers_count") or 0)
-                if not name or fstars <= 0 or name in seen_forks:
+                if (not name or fstars <= 0 or name in seen_forks
+                        or is_crypto(name, fk.get("description"), fk.get("topics"))):
                     continue
                 seen_forks.add(name)
                 if fstars >= FORK_POOL_MIN_STARS and name not in pool:
@@ -345,28 +415,38 @@ def mine_github_depth(st: dict[str, Any], http_get: Callable[..., Any], row: Row
                                _clean(str(fk.get("description") or "")),
                                repo=name, parent=repo, stars=fstars, pushed=fk.get("pushed_at")))
             mem["forks"] = sorted(seen_forks)[-50:]
-            if token:
-                out.extend(_discussions(repo, stars, http_get, headers, row, mem))
+            if token and int(status.get("gql_remaining", GQL_FLOOR)) >= GQL_FLOOR:
+                out.extend(_discussions(repo, stars, http_get, headers, row, mem, status))
+            elif token:
+                status["discussions"] = f"paused: GraphQL points below floor {GQL_FLOOR}"
             mem["visited"] = _now()
             status["repos_read"] += 1
     except RateFloor as exc:
         status["stopped"] = f"rate floor: {exc}"
+    _bound(st)
     return out
 
 
-_DISCUSSIONS_Q = ("query($o:String!,$n:String!){repository(owner:$o,name:$n){discussions("
+_DISCUSSIONS_Q = ("query($o:String!,$n:String!){rateLimit{remaining}"
+                  "repository(owner:$o,name:$n){discussions("
                   "first:5,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{title url body "
                   "updatedAt category{name}}}}}")
 
 
 def _discussions(repo: str, stars: int, http_get: Callable[..., Any], headers: dict[str, str],
-                 row: RowFn, mem: dict[str, Any]) -> list[Row]:
+                 row: RowFn, mem: dict[str, Any], status: dict[str, Any]) -> list[Row]:
     owner, name = repo.split("/", 1)
     try:
         r = http_get(f"{GH_API}/graphql", headers=headers, timeout=20, method="POST",
                      payload={"query": _DISCUSSIONS_Q, "variables": {"o": owner, "n": name}})
-        nodes = ((((r.json() or {}).get("data") or {}).get("repository") or {})
-                 .get("discussions") or {}).get("nodes") or []
+        if r.status_code in (403, 429):
+            status["gql_remaining"] = 0
+            return []
+        data = (r.json() or {}).get("data") or {}
+        left = (data.get("rateLimit") or {}).get("remaining")
+        if left is not None:
+            status["gql_remaining"] = int(left)
+        nodes = ((data.get("repository") or {}).get("discussions") or {}).get("nodes") or []
     except Exception:
         return []
     last = str(mem.get("discussions_seen", ""))
@@ -380,11 +460,21 @@ def _discussions(repo: str, stars: int, http_get: Callable[..., Any], headers: d
     return out
 
 
+def feed_text(url: str, timeout: int = 40) -> str:
+    """A feed fetch under the honest client name (never the browser string seed_miners sends)."""
+    r = requests_get(url, headers={"Accept": "application/atom+xml, application/rss+xml, "
+                                             "application/xml;q=0.9, */*;q=0.5"},
+                     timeout=timeout)
+    r.raise_for_status()
+    return str(r.text)
+
+
 def requests_get(url: str, headers: dict[str, str] | None = None, timeout: int = 20,
                  method: str = "GET", payload: dict[str, Any] | None = None) -> Any:
-    """The production transport: one request, 1 s spacing, no retries."""
+    """The production transport: one request, 1 s spacing, no retries, an honest client name."""
     import requests
     time.sleep(1.0)
+    headers = {**(headers or {}), "User-Agent": HONEST_UA}
     if method == "POST":
         return requests.post(url, headers=headers, json=payload, timeout=timeout)
     return requests.get(url, headers=headers, timeout=timeout)

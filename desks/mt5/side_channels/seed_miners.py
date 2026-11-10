@@ -288,7 +288,7 @@ def mine_darwinex() -> list[dict]:
                        f"https://web.archive.org/web/{ts}/{orig}",
                        darwin=code.group(1) if code else ""))
     st["darwinex_cdx_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out[:120]
 
 # ---------------------------------------------------------------- S12 TradingView scripts
@@ -424,7 +424,7 @@ def mine_forextsd_cdx() -> list[dict]:
         out.append(row("forextsd_cdx", "era_archive", orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}"))
     st["forextsd_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out[:120]
 
 
@@ -584,7 +584,7 @@ def mine_github_topics() -> list[dict]:
                            (it.get("description") or "")[:400], topic=topic,
                            stars=s, star_delta=delta, pushed=it.get("pushed_at")))
     st["gh_topic_cursor"] = (topic_cursor + len(selected)) % len(topics)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out
 
 
@@ -609,7 +609,7 @@ def mine_propfirm_boards() -> list[dict]:
     cur = int(st.get("propfirm_cursor", 0)) % len(locs)
     take = locs[cur:cur + 30]
     st["propfirm_cursor"] = (cur + 30) % len(locs)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return [row("propfirm_boards", "trading_update",
                 u.rstrip("/").rsplit("/", 1)[-1].replace("-", " "), u) for u in take]
 
@@ -645,7 +645,7 @@ def mine_research_feeds() -> list[dict]:
     q-fin categories, head AND backfill. Feeds live in research_feeds.json, not here."""
     rdm = _depth_module()
     st = _state()
-    out = rdm.mine_research_feeds(st, lambda u: fetch(u, timeout=40), row)
+    out = rdm.mine_research_feeds(st, rdm.feed_text, row)
     _merge_state({k: st[k] for k in ("rf_seen", "rf_status", "rf_arxiv_back") if k in st})
     return out
 
@@ -675,7 +675,26 @@ def _merge_state(updates: dict) -> None:
     """
     cur = _state()
     cur.update(updates)
-    STATE.write_text(json.dumps(cur, indent=0), "utf-8")
+    _write_state(cur)
+
+
+def _write_state(st: dict) -> None:
+    """Atomic replace: a reader sees the old file or the new one, never a torn half.
+
+    A torn write used to read back as `{}` in `_state()`, and the next merge would then write
+    every cursor away. Same directory, so `os.replace` stays one rename on both boxes.
+    """
+    import os
+    import tempfile
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=STATE.parent, prefix=".seed_state.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(st, fh, indent=0)
+        os.replace(tmp, STATE)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 MINERS = {
