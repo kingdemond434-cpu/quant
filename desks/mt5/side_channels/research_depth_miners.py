@@ -61,8 +61,8 @@ TRADING_TOPICS = frozenset({
     "quantitative-trading", "trading-bot",
 })
 GH_API = "https://api.github.com"
-# Requests one repo visit costs on the REST quota: readme, commits, issues, forks.
-GH_COST_PER_REPO = 4
+# Requests one repo visit costs on the REST quota: metadata, readme, commits, issues, forks.
+GH_COST_PER_REPO = 5
 GH_FLOOR_ANON, GH_FLOOR_TOKEN = 10, 500
 GH_MAX_REPOS_ANON, GH_MAX_REPOS_TOKEN = 10, 80
 FORK_POOL_MIN_STARS = 5
@@ -72,8 +72,9 @@ FORK_POOL_CAP, VISITED_CAP = 2_000, 5_000
 GQL_FLOOR = 200
 # Wall-clock budgets per pass, so one slow host can never hold the hourly sweep.
 FEEDS_DEADLINE_S, GITHUB_DEADLINE_S = 600.0, 900.0
-# An identifiable client, as arXiv's API terms ask; no personal detail in it.
-HONEST_UA = "quant-research-miner/1.0 (+https://github.com/kingdemond434-cpu/quant)"
+# An honest, generic client name (not a browser string). It names no person, account or
+# repository: nothing about the owner is published to third-party hosts.
+HONEST_UA = "research-feed-miner/1.0 (automated; RSS/Atom and public API reader)"
 # Feeds are fetched only under a recorded terms verdict that permits it. A feed whose terms
 # were never recorded is CLOSED and says so in rf_status: unknown is not permission.
 OPEN_TERMS = frozenset({"open"})
@@ -367,6 +368,17 @@ def mine_github_depth(st: dict[str, Any], http_get: Callable[..., Any], row: Row
             stars = full_pool.get(repo, 0)
             mem = visited.setdefault(repo, {})
             since = mem.get("visited")
+            if mem.get("screened") == "crypto":
+                continue
+            # One metadata read first: a neutral NAME can still be an exchange bot, and its
+            # description and topics say so before any content request is spent on it.
+            meta = get(f"/repos/{repo}")
+            if not isinstance(meta, dict) or is_crypto(
+                    meta.get("full_name"), meta.get("description"), meta.get("topics")):
+                mem["screened"] = "crypto" if isinstance(meta, dict) else "missing"
+                mem["visited"] = _now()
+                status["screened_out"] = int(status.get("screened_out", 0)) + 1
+                continue
             readme = get(f"/repos/{repo}/readme")
             if isinstance(readme, dict) and readme.get("sha") != mem.get("readme_sha"):
                 try:

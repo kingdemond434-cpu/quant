@@ -153,6 +153,12 @@ class _GitHub:
             return _Resp({"data": {"repository": {"discussions": {"nodes": [
                 {"title": "Does the London open fade work?", "url": "https://d/1", "body": "b",
                  "updatedAt": "2026-11-09T00:00:00Z", "category": {"name": "Ideas"}}]}}}})
+        tail = url.removeprefix(f"{rdm.GH_API}/repos/")
+        if tail != url and tail.count("/") == 1:
+            crypto = "neutral" in tail
+            return _Resp({"full_name": tail, "topics": ["ccxt"] if crypto else ["mql5"],
+                          "description": "Bybit perp bot" if crypto else "gold EA"},
+                         left=self.left)
         if "/readme" in url:
             return _Resp({"sha": "r1", "content": base64.b64encode(b"# Gold scalper").decode()},
                          left=self.left)
@@ -331,3 +337,21 @@ def test_state_writes_are_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     seed_miners._merge_state({"rf_seen": ["k"]})
     assert json.loads(state.read_text()) == {"gh_topic_cursor": 4, "rf_seen": ["k"]}
     assert [p.name for p in tmp_path.iterdir()] == ["seed_miners_state.json"]  # no temp left
+
+
+def test_a_neutral_name_is_screened_on_its_description_before_any_content_read() -> None:
+    st: dict[str, Any] = {}
+    gh = _GitHub()
+    out = rdm.mine_github_depth(st, gh, _row, {"x/neutral": 9}, token=None)
+    assert out == [] and st["gd_repos"]["x/neutral"]["screened"] == "crypto"
+    assert [u.removeprefix(rdm.GH_API) for _, u, _ in gh.calls] == ["/rate_limit",
+                                                                   "/repos/x/neutral"]
+    gh2 = _GitHub()
+    rdm.mine_github_depth(st, gh2, _row, {"x/neutral": 9}, token=None)
+    assert len(gh2.calls) == 1                                  # never asked about again
+
+
+def test_the_client_name_publishes_nothing_about_the_owner() -> None:
+    assert "github.com" not in rdm.HONEST_UA and "Mozilla" not in rdm.HONEST_UA
+    assert all(f.get("terms_url") and f.get("terms_recorded")
+               for f in rdm.load_feed_config()["feeds"])
