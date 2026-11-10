@@ -1254,7 +1254,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
+    # THE EXECUTION RECONCILIATION (ARCH-06) runs just before the scorecard that grades it
+    # (`recovery_drills` row `reconciliation`): it joins the account book to the order door's
+    # ledger, the intents and the deals, and drills the join in shadow.
+    "ops_redundancy", "execution_reconcile", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -6282,6 +6285,9 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    # ARCH-06: the positions / door ledger / intents reconciliation, graded by recovery_drills.
+    xrc = _costed("execution_reconcile", lambda: _producer(
+        "execution_reconcile", "research/execution_reconcile.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
@@ -6557,7 +6563,7 @@ def main() -> None:
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "recovery_drills": rcd,
+                    "execution_reconcile": xrc, "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
