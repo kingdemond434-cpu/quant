@@ -145,3 +145,13 @@ def test_cheap_money_and_health_fences_are_pinned():
     for leg in ("decay_monitor", "placement_interlock", "box_state_freshness", "desk_health",
                 "judge_alive"):
         assert leg in LR.ALWAYS_RUN, leg
+
+
+def test_the_tick_recorders_only_alarm_is_pinned():
+    """`tape_fresh` is the one leg that notices a dead tick recorder; on 2026-11-10 it had been
+    admitted 4 times in 6 days and its RED outlived the outage by 11 h. It must run every pass,
+    and it must stay a core leg so the pin applies to the hourly core plan."""
+    import libs.ops.leg_rotation as LR
+    assert "tape_fresh" in LR.ALWAYS_RUN
+    assert "tape_fresh" in hourly_cycle.CORE_LEGS
+    assert "tape_fresh" in LR.legs_in_order(DESK / "research" / "hourly_cycle.py")

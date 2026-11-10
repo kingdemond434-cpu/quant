@@ -136,6 +136,14 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
     # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
     "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
+    # tape_fresh (2026-11-10): the only watcher of the tick recorder -- the leg exists because
+    # MT5-TickRecorder once sat dead for two days unseen. Measured on the box (compute_ledger):
+    # admitted 4 times in 6 days (11-05, 11-07, 11-08, 11-10), 16-56 s each, "deferred this pass:
+    # 56s would pass the 2640s budget" otherwise. So a dead recorder could again go a day or more
+    # unseen, and its RED outlives the outage: TAPE_FRESHNESS.json said RED for 11 h on 11-10
+    # after the tape had recovered. Under the 60 s bar; if its measured wall_s grows past it,
+    # cut the script's cost rather than unpin the recorder's only alarm.
+    "tape_fresh",
 })
 
 
