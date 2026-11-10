@@ -325,8 +325,16 @@ def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]
     # Cut on a normalised prefix so a row stored with a space separator instead of `T` is not
     # silently excluded -- an undercount here would read as a barren producer, the exact false
     # positive this fence must never make.
-    cutoff = (datetime.now(UTC) - timedelta(hours=window_hours)).strftime("%Y-%m-%dT%H:%M:%S")
-    when = "replace(substr(created_at,1,19),' ','T') >= ?"
+    start = datetime.now(UTC) - timedelta(hours=window_hours)
+    cutoff = start.strftime("%Y-%m-%dT%H:%M:%S")
+    # AN INDEXED FLOOR FIRST, THEN THE EXACT NORMALISED CUT. The normalised expression alone
+    # cannot use ix_candidates_created_at, so both queries below scanned all of
+    # research_candidates (and probed discoveries per row) on every run; PRODUCER_YIELD.json
+    # last wrote 2026-11-09 05:41Z because the script ran into its 600 s fence cap. The floor is a
+    # bare date one day earlier, which every stored spelling (`T` or space separator) sorts at or
+    # above, so it can only narrow the scan, never drop a row the exact cut would keep.
+    floor = (start - timedelta(days=1)).strftime("%Y-%m-%d")
+    when = "created_at >= ? and replace(substr(created_at,1,19),' ','T') >= ?"
     judged = ("(donated_cell is not null or status in "
               "('donated','claimed','retired','judged'))")
     try:
@@ -357,13 +365,13 @@ def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]
                 f"select {gen}, count(*), "  # noqa: S608 -- fragments are literals above
                 f"count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)), "
                 f"sum(case when {judged} then 1 else 0 end) "
-                f"from {src} where {when} group by 1", (cutoff,)):
+                f"from {src} where {when} group by 1", (floor, cutoff)):
             per[str(key)] = {"cells_emitted": int(raw or 0), "unique_cells": int(uniq or 0),
                              "cells_to_judge": int(sent or 0)}
         cells: dict[str, list[str]] = {}
         for key, ident in cur.execute(
                 f"select distinct {gen}, {cell} from {src} "  # noqa: S608
-                f"where {when} and {judged}", (cutoff,)):
+                f"where {when} and {judged}", (floor, cutoff)):
             cells.setdefault(str(key), []).append(str(ident))
         # A window in which NOTHING was created is UNMEASURED, never a verdict on any one
         # producer: if the whole registry is silent the failure is the desk's, and convicting
