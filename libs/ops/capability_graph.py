@@ -811,7 +811,14 @@ NODES: tuple[Node, ...] = (
     Node("timeframe_coverage", "desks/mt5/scripts/check_timeframe_coverage.py",
          writes=("desks/mt5/reports/TIMEFRAME_COVERAGE.json",)),
     Node("world_crawler", "desks/mt5/side_channels/world_crawler.py",
-         writes=("desks/mt5/reports/world_crawl.json",)),
+         writes=("desks/mt5/reports/world_crawl.json",),
+         reads=("desks/mt5/data/hypotheses/conversion_debt_seeds.json",)),
+    Node("conversion_debt", "desks/mt5/research/conversion_debt.py",
+         writes=("desks/mt5/reports/CONVERSION_DEBT.json",
+                 "desks/mt5/data/hypotheses/conversion_debt_seeds.json"),
+         reads=("desks/mt5/data/hypotheses/miner_deepening_queue.json",
+                "desks/mt5/data/hypotheses/deepening_worked.jsonl",
+                "desks/mt5/reports/DEEPENING_BACKLOG.json")),
     # ---------------------------------------------------------------------------------
     # DECLARED 2026-09-15, because a leg that declares nothing cannot be checked for
     # completion by anything -- which is how a leg returning exit 1 every hour went six days
@@ -933,6 +940,9 @@ HUMAN_READ = frozenset({
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
+    # Conversion debt's census. Its decision edge is conversion_debt_seeds.json, which the world
+    # crawler reads (declared on both nodes); the report is how a person reads what is undriven.
+    "desks/mt5/reports/CONVERSION_DEBT.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable

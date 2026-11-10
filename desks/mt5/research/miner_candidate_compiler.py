@@ -1773,6 +1773,9 @@ def main() -> int:
             # which therefore still folds identical rows from different files into one task.
             compact.update({k: row_prov[k] for k in ("source_url", "source_id", "retrieved_at",
                                                      "content_hash") if row_prov.get(k)})
+            # WHERE THE TIME CAME FROM, always (empty included): `conversion_debt` reads it to
+            # tell a producer-stamped row from one whose only time is the artifact's mtime.
+            compact["retrieved_at_basis"] = str(row_prov.get("retrieved_at_basis") or "")
             _body = _body_text(row)
             if _body:
                 compact["description"] = _body[:1500]
