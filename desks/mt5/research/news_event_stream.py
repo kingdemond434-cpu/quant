@@ -401,11 +401,12 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None) -> lis
         say.append(f"{NEWS_CAPTURES} absent: the news desk's own captures are {UNMEASURED}")
     seen_seats = 0
     from desks.mt5.research import terms_fences
+    fences = terms_fences.load()            # read once, not once per seat
     for seat in NEWS_SEATS:
         folder = INTEL / seat
         if not folder.is_dir():
             continue
-        if terms_fences.seat_fenced(seat) is not None:
+        if terms_fences.seat_fenced(seat, fences) is not None:
             say.append(f"seat {seat} is behind a terms fence (noncommercial terms): not read")
             continue
         seen_seats += 1
