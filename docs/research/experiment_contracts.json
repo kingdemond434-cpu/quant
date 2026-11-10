@@ -265,6 +265,36 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "conversion_ledger": {
+   "hypothesis": "Re-measuring the research funnel every hour (count in, count out and loss reason per stage) keeps the binding stage and the trial misallocation current, so the trial budget can move toward the ground that certifies and the binding stage's conversion rate rises above its last frozen reading (0.001046 on 2026-09-05).",
+   "metric": {
+    "gain": "INFO_PER_COMPUTE",
+    "metric": "binding_rate",
+    "better": "up",
+    "organ": "report:../data/conversion_ledger.json"
+   },
+   "falsifier": {
+    "metric": "binding_rate",
+    "op": "<=",
+    "threshold": 0.001046,
+    "after": "14 days of hourly readings on the trading box: the binding stage converts no better than the 2026-09-05 reading, so measuring it hourly bought no conversion"
+   }
+  },
+  "trial_allocator": {
+   "hypothesis": "Publishing the trial budget per (family, class) from measured certificates per trial every hour moves search toward cell types that certify, raising certificates per compute hour.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "n_cell_types",
+    "better": "up",
+    "organ": "report:TRIAL_ALLOCATION.json"
+   },
+   "falsifier": {
+    "metric": "n_cell_types",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no cell type carried a measured yield, so the allocator is spending trials blind"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
