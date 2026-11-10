@@ -641,10 +641,68 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
         return None
 
 
+#: The box sync carries a report only under its 4 MB wire cap (sync_shadow_to_git.ps1,
+#: $ReportCapBytes). The full artifact passed it when the canon held ~3,000 certificates and was
+#: 8.7 MB at 7,458 (box, 2026-11-10), so every reader off the box -- the hourly pass included --
+#: read the 11-07 copy as current for three days. The SUMMARY is what crosses the wire; the full
+#: artifact stays on the box for the organs that read per-certificate rows.
+SUMMARY_BUDGET_BYTES = 3_000_000
+#: Breach rows listed per verdict in the summary before the rest are counted only.
+SUMMARY_ROWS_PER_VERDICT = 400
+
+
+def summarise(doc: dict[str, Any], rows_per_verdict: int = SUMMARY_ROWS_PER_VERDICT
+              ) -> dict[str, Any]:
+    """Everything a reader off the box needs to act on, small enough to publish.
+
+    Every headline field is copied as-is. Breaching certificates are kept as compact rows,
+    grouped by verdict, with each group's TOTAL always stated, so a trimmed list can never read
+    as the whole: `listed` < `n` says rows were left on the box, and the full artifact names them.
+    """
+    keep = ("at", "law", "alert_id", "host_why", "ok", "verdict", "n_certificates",
+            "n_clock_keys", "n_clock_rows", "counts", "n_late", "n_late_history",
+            "n_promotion_refused", "latency_breach_h", "late_window_h", "family_gap_hours",
+            "notes", "rule")
+    out: dict[str, Any] = {k: doc[k] for k in keep if k in doc}
+    out["collisions"] = len(doc.get("collisions") or {})
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for e in doc.get("certificates") or []:
+        if not isinstance(e, dict) or not (e.get("breach") or e.get("promotion_block")):
+            continue
+        kind = ("LATE_CLOCK" if e.get("late") and e.get("verdict") not in
+                ("NO_CLOCK", "BLOCKED", "FROZEN_ROWS") else str(e.get("verdict")))
+        if e.get("promotion_block") and not e.get("breach"):
+            kind = "PROMOTION_REFUSED"
+        groups.setdefault(kind, []).append(
+            {"certificate": e.get("certificate"), "family": e.get("family"),
+             "key": e.get("key"), "status": e.get("status"), "n": e.get("n"),
+             "latency_h": e.get("latency_h"), "blocker": e.get("blocker"),
+             "promotion_block": e.get("promotion_block")})
+    by_family: dict[str, dict[str, int]] = {}
+    for kind, rows in groups.items():
+        fam: dict[str, int] = {}
+        for r in rows:
+            fam[str(r["family"])] = fam.get(str(r["family"]), 0) + 1
+        by_family[kind] = dict(sorted(fam.items(), key=lambda kv: -kv[1]))
+    out["breaches"] = {kind: {"n": len(rows), "listed": min(len(rows), rows_per_verdict),
+                              "by_family": by_family[kind],
+                              "rows": [{k: v for k, v in r.items() if v is not None}
+                                       for r in rows[:rows_per_verdict]]}
+                       for kind, rows in sorted(groups.items())}
+    out["full_artifact"] = "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json (on the box)"
+    return out
+
+
 def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     path = Path(target or OUT)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=2, default=str) + "\n", encoding="utf-8")
+    rows = SUMMARY_ROWS_PER_VERDICT
+    text = json.dumps(summarise(doc, rows), indent=1, default=str)
+    while len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES and rows > 10:
+        rows //= 2
+        text = json.dumps(summarise(doc, rows), indent=1, default=str)
+    path.with_name(path.stem + "_SUMMARY.json").write_text(text + "\n", encoding="utf-8")
     return path
 
 

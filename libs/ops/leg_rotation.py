@@ -134,6 +134,12 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
     # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
     "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
+    # THE CERTIFICATE CLOCK LAW (L1.102), pinned 2026-11-10. Measured in LEG_ROTATION on the box
+    # that day: last run 11-09 15:03Z, starved ~32 h, last five walls 84.1/12.2/7.1/9.1/2.8 s.
+    # It is the one reading that says whether every certificate holds a ticking clock, and the
+    # promoter's "immediately" is judged against it; a day-old reading cannot see a clock that
+    # stopped this morning.
+    "certificate_clock_law",
 })
 
 

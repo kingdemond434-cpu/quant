@@ -402,3 +402,26 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     """Most-recent would be minutes old on an hourly cadence and could never show a freeze."""
     n, at = law._prior_sample(_samples((300, 1), (200, 2), (1, 9)), "K", NOW, 100.0)
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
+
+
+# ----------------------------------------- the wire carries a summary the box sync will not skip
+def test_the_summary_is_written_beside_the_artifact_and_keeps_every_total(tmp_path) -> None:
+    """The box's full artifact reached 8.7 MB at 7,458 certificates; the sync skips reports over
+    4 MB, so origin kept the 11-07 copy for days. The summary must fit and never hide a count."""
+    certs = [{"certificate": f"c{i}", "family": "fam", "key": f"k{i}", "status": "", "n": 0,
+              "verdict": "NO_CLOCK", "breach": True, "why": "x" * 400} for i in range(5000)]
+    certs.append({"certificate": "ok", "family": "fam", "verdict": "ACCUMULATING",
+                  "breach": False})
+    doc = {"at": "t", "ok": False, "verdict": "BREACH", "counts": {"NO_CLOCK": 5000},
+           "n_certificates": 5001, "certificates": certs, "problems": ["p" * 400] * 5000,
+           "notes": ["n"], "collisions": {"a": ["x", "y"]}}
+    full = law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
+    summary = tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json"
+    assert full.exists() and summary.exists()
+    assert summary.stat().st_size < law.SUMMARY_BUDGET_BYTES
+    s = json.loads(summary.read_text())
+    assert s["counts"] == {"NO_CLOCK": 5000} and s["n_certificates"] == 5001
+    group = s["breaches"]["NO_CLOCK"]
+    assert group["n"] == 5000 and group["listed"] == len(group["rows"]) <= 5000
+    assert group["by_family"] == {"fam": 5000} and s["collisions"] == 1
+    assert "ok" not in {r["certificate"] for r in group["rows"]}
