@@ -22,7 +22,17 @@ THE Z IS TAKEN ON THE SERIES' OWN OBSERVATIONS, NOT ON THE BAR CLOCK: a monthly 
 filled onto hourly bars is constant for ~500 bars, and a bar-clock z of a constant is undefined.
 The z is computed where the value changes, then carried causally onto the bars.
 
-REFUSES (returns []) without the series, with too little history, or with an unknown direction.
+REFUSES (returns []) with too little history, an unnamed series or an unknown direction.
+
+AN ABSENT SERIES IS A NAMED REFUSAL, NOT A CELL THAT NEVER FIRES (2026-11-10). A `series_key`
+this host's store cannot resolve -- no `keys.json`, the key not in it, or its parquet gone --
+raises `WorldSeriesUnavailable`. Returning [] there made the judge file the cell as UNKNOWN /
+never_fires, a statement about the market, when the truth is a statement about the host: the
+input is not here. Measured on the box 2026-11-10: 1,074 world_macro_state cells mined, 0 judged,
+and all 84 null-lab draws built with zero trades. The sealed builder turns the raise into
+`_build_failed("world_macro_state raised WorldSeriesUnavailable: ...")`, and
+`research/build_input_probe` parks the cell by the missing input's name (`world_series:<key>`)
+and re-admits it the pass the series is present (L1.28a: UNMEASURED is a real answer).
 """
 from __future__ import annotations
 
@@ -31,6 +41,10 @@ import pandas as pd
 from mt5desk.families import Signal, _atr, _h1
 
 DIRECTIONS = {"long": 1, "short": -1}
+
+
+class WorldSeriesUnavailable(LookupError):
+    """The recipe names a world series this host's store does not hold."""
 
 
 def _series(series_key: str):
@@ -70,7 +84,11 @@ def family_world_macro_state(
     if not series_key or flip is None or float(z_hi) <= float(z_lo):
         return []
     raw, align = _series(str(series_key))
-    if raw is None or len(raw) < int(z_obs) + 2:
+    if raw is None:
+        raise WorldSeriesUnavailable(
+            f"world series {series_key} is absent from the world dataset store on this host "
+            "(keys.json, the key or its parquet); the input is missing, the cell is unjudged")
+    if len(raw) < int(z_obs) + 2:
         return []
     z = world_state_z(raw, int(z_obs))
     if z.empty:

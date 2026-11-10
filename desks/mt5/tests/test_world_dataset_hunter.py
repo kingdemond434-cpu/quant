@@ -405,10 +405,19 @@ def test_the_family_is_point_in_time():
     assert z.index.min() == s.index[23]
 
 
-def test_an_absent_series_yields_no_signals_not_an_error(box):
-    from mt5desk.family_world_macro import family_world_macro_state
-    assert family_world_macro_state(_bars(2000), series_key="wdeadbeef0000", **PARAMS) == []
+def test_an_absent_series_is_a_named_refusal_not_a_never_firing_cell(box):
+    """A key this host cannot resolve is a missing INPUT, never a market finding: the family
+    raises by name, and the sealed builder turns that into a named build failure the
+    build-input probe parks and re-admits. An unnamed series stays the family's own []."""
+    from desks.mt5.scripts import external_gauntlet as gauntlet
+    from mt5desk.family_world_macro import WorldSeriesUnavailable, family_world_macro_state
+    with pytest.raises(WorldSeriesUnavailable, match="wdeadbeef0000"):
+        family_world_macro_state(_bars(2000), series_key="wdeadbeef0000", **PARAMS)
     assert family_world_macro_state(_bars(2000), series_key="", **PARAMS) == []
+    params = {"series_key": "wdeadbeef0000", **PARAMS}
+    assert gauntlet.build_cell("AUDUSD", "world_macro_state", params, {},
+                               h1_override=_bars(2000)) is None
+    assert "WorldSeriesUnavailable" in str(gauntlet.LAST_BUILD_FAILURE)
 
 
 def test_the_proposer_mints_world_macro_state_cells_from_the_exposure(box, monkeypatch):
