@@ -35,6 +35,7 @@ import argparse
 import fnmatch
 import os
 import re
+import subprocess
 import sys
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -139,15 +140,22 @@ def decide(
     window: Callable[[], tuple[datetime | None, str]],
     now: datetime,
 ) -> tuple[str, str]:
-    """("merge" | "bring_up" | "wait" | "zuck", why) for one PR. Pure apart from `window`."""
-    if pr.get("draft"):
-        return "wait", "draft"
+    """("merge" | "bring_up" | "ready" | "wait" | "zuck", why) for one PR. Pure apart from
+    `window`. "ready": a DRAFT whose latest registry row is the Auditor's CLEAR of its exact head
+    and that the live fence passes is marked ready for review (no session can flip a draft in
+    this repo, so it waited on zuck's tap; NO_OWNER_EVER touch D, zuck 2026-11-10 23:19Z). Being
+    ready merges nothing: the next sweep still needs every rule above, the window included."""
     if pr.get("base", {}).get("ref") != BASE:
         return "wait", f"base is {pr.get('base', {}).get('ref')}, not {BASE}"
     why = fenced(files)
     if why:
         return "zuck", why
     head = str(pr["head"]["sha"])
+    if pr.get("draft"):
+        mine = [r for r in rows if r.get("pr") == int(pr["number"])]
+        if mine and mine[-1].get("verdict") == "CLEAR" and mine[-1].get("sha") == head:
+            return "ready", f"draft with the Auditor's CLEAR of {head[:9]}: marked ready"
+        return "wait", "draft"
     ok, gwhy = green(runs)
     if not ok:
         return "wait", gwhy
@@ -159,6 +167,16 @@ def decide(
     if clear is None:
         return "wait", cwhy
     return "merge", cwhy
+
+
+def mark_ready(n: int) -> None:
+    """Mark draft #n ready for review with the box's gh login, as audit_gate does for quant."""
+    got = subprocess.run(
+        ["gh", "pr", "ready", str(n), "-R", REPO],
+        capture_output=True, text=True, timeout=ag.GH_TIMEOUT_S, check=False,
+    )  # fmt: skip
+    if got.returncode != 0:
+        raise RuntimeError(f"gh pr ready {n}: {(got.stderr or '').strip()[:200]}")
 
 
 def sweep(registry: str, clone: str | None, now: datetime | None = None) -> int:
@@ -200,7 +218,9 @@ def sweep(registry: str, clone: str | None, now: datetime | None = None) -> int:
                 lambda n=n, head=head: ag.registry_window(seen, n, head, now, ag.run_notify),
                 now,
             )
-            if verdict == "bring_up":
+            if verdict == "ready":
+                mark_ready(n)
+            elif verdict == "bring_up":
                 ag._gh(
                     f"repos/{REPO}/pulls/{n}/update-branch",
                     "-X",

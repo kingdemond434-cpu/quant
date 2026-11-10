@@ -149,8 +149,38 @@ def test_red_running_or_missing_ci_waits():
 def test_behind_is_brought_up_and_unknown_waits_and_drafts_wait():
     assert _decide(behind=3)[0] == "bring_up"
     assert _decide(behind=None)[0] == "wait"
-    assert _decide(pr=_pr(draft=True))[0] == "wait"
+    assert _decide(pr=_pr(draft=True), rows=[])[0] == "wait"
     assert _decide(pr=_pr(base={"ref": "dev"}))[0] == "wait"
+
+
+def test_an_auditor_cleared_draft_is_marked_ready_and_nothing_else_is():
+    """NO_OWNER_EVER touch D: no session can flip a memecoin draft, so it waited on zuck's tap.
+    Ready merges nothing: the next sweep still needs green, up to date and the window."""
+    draft = _pr(draft=True)
+    assert _decide(pr=draft)[0] == "ready"
+    assert _decide(pr=draft, rows=[])[0] == "wait"
+    assert _decide(pr=draft, rows=[{**ROW[0], "sha": "b" * 40}])[0] == "wait"  # another head
+    assert _decide(pr=draft, rows=[*ROW, {**ROW[0], "verdict": "HOLD"}])[0] == "wait"
+    fenced = _files(("src/execution/signer.py", "+x = 1"))
+    assert _decide(pr=draft, files=fenced)[0] == "zuck"  # the live fence is still zuck's
+    assert _decide(pr=_pr(draft=True, base={"ref": "dev"}))[0] == "wait"
+
+
+def test_marking_ready_uses_the_box_login_and_a_refusal_is_an_error(monkeypatch):
+    calls = []
+
+    class Done:
+        def __init__(self, rc):
+            self.returncode, self.stderr = rc, "nope"
+
+    monkeypatch.setattr(mg.subprocess, "run", lambda cmd, **k: calls.append(cmd) or Done(0))
+    mg.mark_ready(143)
+    assert calls == [["gh", "pr", "ready", "143", "-R", mg.REPO]]
+    monkeypatch.setattr(mg.subprocess, "run", lambda cmd, **k: Done(1))
+    import pytest
+
+    with pytest.raises(RuntimeError):
+        mg.mark_ready(143)
 
 
 def test_its_merge_title_is_one_auto_revert_recognises():
