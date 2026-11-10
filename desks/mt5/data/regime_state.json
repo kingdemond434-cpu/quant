@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-10T00:00:02.846123+00:00",
+  "swept_at": "2026-11-10T00:15:02.525298+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -195,8 +195,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 73,
-      "shadow_exp_r": 0.1637,
+      "shadow_n": 72,
+      "shadow_exp_r": 0.1565,
       "woke_on_shadow": false
     },
     "AUDNZD|cross_asset_residual_asia": {
@@ -383,7 +383,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1415,
+      "shadow_exp_r": -0.282,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -822,8 +822,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 63,
-      "shadow_exp_r": 0.0789,
+      "shadow_n": 62,
+      "shadow_exp_r": 0.0834,
       "woke_on_shadow": false
     },
     "CHFJPY|pca_residual_continuous": {
@@ -2352,7 +2352,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2073,
+      "shadow_exp_r": -0.208,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
@@ -2373,8 +2373,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 88,
-      "shadow_exp_r": 0.1237,
+      "shadow_n": 87,
+      "shadow_exp_r": 0.1101,
       "woke_on_shadow": false
     },
     "GBPNOK|formula_asia": {
@@ -3308,8 +3308,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 65,
-      "shadow_exp_r": 1.2932,
+      "shadow_n": 64,
+      "shadow_exp_r": 1.3299,
       "woke_on_shadow": false
     },
     "NZDSGD|cross_asset_residual_asia": {
@@ -3374,8 +3374,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 33,
-      "shadow_exp_r": 0.1394,
+      "shadow_n": 32,
+      "shadow_exp_r": 0.0989,
       "woke_on_shadow": false
     },
     "NZDSGD|pca_residual_continuous": {
