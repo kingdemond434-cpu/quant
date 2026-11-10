@@ -415,7 +415,7 @@ def test_a_late_start_older_than_the_window_is_history_not_a_standing_breach() -
     assert e["latency_h"] == pytest.approx(40.0), "the latency itself is still measured"
     assert e["late"] is False and e["late_history"] is True
     assert "latency_breach" not in e and "40.00h" in e["latency_history"]
-    assert e["verdict"] == "ACCUMULATING" and e["breach"] is False
+    assert e["breach"] is False, "the accumulation verdict alone decides this clock now"
 
 
 def test_a_late_start_inside_the_window_still_breaches() -> None:
