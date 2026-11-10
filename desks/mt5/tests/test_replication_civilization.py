@@ -174,6 +174,30 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
     assert off["verdict"] == rc.MISMATCH and any("COST" in w for w in off["why"])
     none = rc.replicate_forward(row, meta=META, bars=bars, ledger=[])
     assert none["verdict"] == rc.UNMEASURED
+    # THE ENGINE'S OWN HISTORY IS NOT A FORWARD FILL (box 2026-11-10: 26 ledger trades against
+    # 2 rebuilt). The shadow ledger carries every trade since its replay start, tagged by phase;
+    # only the forward rows are compared, and the historical ones are counted.
+    early = [f for f in fills if f.entry_t < start]
+    tagged = ([{"entry_time": stamp(f.entry_t), "exit_time": stamp(f.exit_t), "side": f.side,
+                "r_multiple": f.r, "reason": f.reason, "phase": "historical"} for f in early]
+              + [dict(r, phase="forward") for r in honest_ledger])
+    whole = rc.replicate_forward(row, meta=META, bars=bars, ledger=tagged)
+    assert whole["verdict"] == rc.REPLICATED, whole
+    assert whole["divergence"]["n_ledger_historical_set_aside"] == len(early) > 0
+    assert whole["divergence"]["n_ledger"] == len(honest_ledger)
+    # the engine draws its line a few hours after forward_start (broker clock): a trade it
+    # filed as historical is not a rebuilt forward fill either
+    shifted = ([dict(r, phase="historical") for r in honest_ledger[:2]]
+               + [dict(r, phase="forward") for r in honest_ledger[2:]])
+    late = rc.replicate_forward(row, meta=META, bars=bars, ledger=shifted)
+    assert late["verdict"] == rc.REPLICATED, late
+    only_history = rc.replicate_forward(
+        row, meta=META, bars=bars, ledger=[dict(r, phase="historical") for r in honest_ledger])
+    assert only_history["verdict"] == rc.UNMEASURED
+    # a forward row the rebuild cannot produce is still a mismatch
+    drift2 = [dict(r, r_multiple=float(r["r_multiple"]) + 1.0) for r in tagged]
+    assert rc.replicate_forward(row, meta=META, bars=bars,
+                                ledger=drift2)["verdict"] == rc.MISMATCH
 
 
 def test_the_lane_never_imports_the_original_implementation() -> None:

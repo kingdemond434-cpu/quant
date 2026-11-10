@@ -1105,6 +1105,25 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     return out
 
 
+def _forward_phase(ledger: Sequence[Mapping[str, Any]]
+                   ) -> tuple[list[Mapping[str, Any]], int | None]:
+    """The ledger rows that are forward evidence, and the last HISTORICAL entry time (ns).
+
+    A row is historical only when it says so; an untagged ledger is returned whole."""
+    forward = [r for r in ledger if str(r.get("phase") or "").lower() != "historical"]
+    last: int | None = None
+    for r in ledger:
+        if str(r.get("phase") or "").lower() != "historical":
+            continue
+        try:
+            t = int(np.datetime64(str(r.get("entry_time")).replace(" ", "T")
+                                  .replace("+00:00", ""), "ns").astype("int64"))
+        except (ValueError, TypeError):
+            continue
+        last = t if last is None else max(last, t)
+    return forward, last
+
+
 def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: Bars | None,
                       ledger: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     ident = dict(row.get("identity") or {})
@@ -1132,8 +1151,26 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     except (ValueError, TypeError):
         t0 = int(bars.t[0])
     window = [f for f in fills if f.entry_t >= t0]
-    verdict, reasons, div = judge_forward(ledger, window, bars.minutes, cost,
+    # ONLY THE LEDGER'S FORWARD ROWS ARE FORWARD EVIDENCE (box 2026-11-10: six
+    # overnight_gap_decay clocks read MISMATCH with 26 ledger trades against 2 rebuilt and 41
+    # against 11). The shadow engine writes every trade since its replay start into the ledger
+    # and tags each `phase: historical | forward`; the rebuild here starts at `forward_start`.
+    # Comparing the whole file against the forward window counted the engine's history as fills
+    # the spec forbids. Historical rows are set aside and counted, and a rebuilt fill at or
+    # before the last historical entry is the engine's history too (the engine draws the line on
+    # the broker clock, a few hours after `forward_start` in UTC). A ledger with no phase tag is
+    # compared whole, as before.
+    forward_ledger, hist_last = _forward_phase(ledger)
+    n_hist = len(ledger) - len(forward_ledger)
+    if hist_last is not None:
+        window = [f for f in window if f.entry_t > hist_last]
+    if n_hist and not forward_ledger:
+        out["why"] = [f"the ledger holds {n_hist} historical trade(s) and no forward one yet"]
+        out["divergence"] = {"n_ledger_historical_set_aside": n_hist}
+        return out
+    verdict, reasons, div = judge_forward(forward_ledger, window, bars.minutes, cost,
                                           row.get("cost_fields"))
+    div["n_ledger_historical_set_aside"] = n_hist
     out.update(verdict=verdict, why=reasons, divergence=div,
                ours={"n_fills": len(window), "pnl_R": round(sum(f.r for f in window), 3),
                      "cost": {"spread_per_lot": cost.spread_per_lot,
