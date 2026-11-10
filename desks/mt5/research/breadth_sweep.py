@@ -161,6 +161,21 @@ READY: dict[str, dict] = {
         "grid": [{"window": w, "entry_z": z, "hl_max": h, "hold_mult": 2.0}
                  for w in (250, 500) for z in (2.0, 2.5) for h in (48.0, 96.0)],
     },
+    # Item 58 of the same audit. The prior (how big and how long a drift regime is) is the claim,
+    # so it is the grid; the particle seed is a module constant and never an axis.
+    "particle_regime": {
+        "why": "the posterior probability of a positive drift when drift and variance are "
+               "unknown together -- a non-Gaussian posterior a Kalman filter cannot state",
+        "grid": [{"drift_vol": v, "drift_hl": h, "entry_p": 0.9, "side_mode": m, "ttl_bars": 48}
+                 for v in (0.2, 0.3) for h in (24.0, 96.0) for m in ("follow", "fade")],
+    },
+    "gp_forecast": {
+        "why": "a Gaussian-process forecast of the next bars' drift in units of its own "
+               "posterior sd, with the length-scale chosen by marginal likelihood on bars the "
+               "forecast never labels",
+        "grid": [{"amp": a, "horizon": k, "entry_t": 1.0, "side_mode": m, "ttl_bars": 24}
+                 for a in (0.2, 0.3) for k in (8, 24) for m in ("follow", "fade")],
+    },
     "kalman_pair": {
         "why": "a hedge ratio tracked bar by bar instead of lagged by half a rolling window, so "
                "the dislocation faded is the pair's, not the estimator's",

@@ -222,6 +222,8 @@ FAMILY_CLUSTER: dict[str, str] = {
     "london_close_momentum": "trend",
     "multi_speed_trend": "trend",
     "kalman_trend": "trend",
+    "gp_forecast": "trend",
+    "particle_regime": "trend",
     "trend": "trend",
     # -- mean reversion and liquidity provision
     "overnight_gap_decay": "mean_reversion",

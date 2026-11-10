@@ -1,4 +1,4 @@
-"""Five quant-framework families: GARCH, Kalman (trend and pair), copula pair, OU half-life.
+"""Quant-framework families: GARCH, Kalman (trend, pair), copula pair, OU, particle filter, GP.
 
 WHY THESE EXIST (2026-11-10). The framework audit of the live tree (PASS_COVERAGE.md,
 "Quant-framework coverage", items 52, 53, 56 and 57) found the desk ran Gaussian HMMs, Bayesian
@@ -25,6 +25,16 @@ forecast that is admired and never traded:
                    of that half-life -- item 57's rule (a mean-reversion trade whose half-life is
                    longer than its hold is a trend bet) built into the family rather than bolted
                    on after certification.
+
+ITEM 58 (added after the five above, same conventions):
+
+    particle_regime  Rao-Blackwellised bootstrap particle filter on a latent drift with
+                     stochastic volatility; trades the posterior P(drift > 0) crossing a
+                     threshold. The joint drift-and-variance posterior is not Gaussian, which is
+                     the case a Kalman filter cannot state and a particle filter can.
+    gp_forecast      Gaussian-process regression (RBF + noise) of the drift on a trailing window,
+                     length-scale chosen per calendar block by marginal likelihood; trades the
+                     forecast drift measured in its own posterior sd.
 
 EVERY ESTIMATE IS CAUSAL. Parameters are fitted on a trailing window that ends at the bar being
 labelled (GARCH refits on blocks it could not see; the rolling statistics end at bar i), the
@@ -712,6 +722,281 @@ def family_ou_reversion(
     out.sort(key=lambda s: s.time)
     return out
 
+# ---------------------------------------------------------------------------------------------
+# Particle filter and Gaussian process (item 58)
+# ---------------------------------------------------------------------------------------------
+
+#: Bars per calendar block for the particle filter (see `_refit_starts`), and the stream its
+#: random numbers are drawn from. The seed is a CONSTANT, not a cell parameter: a seed on the
+#: recipe would let one rule be judged many times under different noise and the best draw kept.
+PARTICLE_BLOCK = 500
+PARTICLE_SEED = 20261110
+#: Log-variance dynamics of the particle model, in units of the block's own warm-up variance.
+_SV_PHI = 0.97
+_SV_SIGMA = 0.2
+
+
+def particle_drift_path(r: pd.Series, warmup: int, drift_vol: float, drift_hl: float,
+                        n_particles: int = 128) -> tuple[pd.Series, pd.Series]:
+    """Filtered P(drift_t > 0 | returns to t) and the filtered return sigma, bar by bar.
+
+    THE MODEL: x_t = m_t + exp(h_t / 2) e_t, with a latent drift m (AR(1), half-life `drift_hl`
+    bars, stationary sd `drift_vol` in units of one bar's sd) and a latent log-variance h (AR(1)).
+    Drift and variance are unknown together, so the posterior is not Gaussian and a Kalman filter
+    cannot state it; a bootstrap particle filter over h does, with the drift carried exactly per
+    particle (Rao-Blackwellised: given h the drift is linear-Gaussian, so each particle holds a
+    Kalman mean and variance rather than a sampled drift, which is the same posterior with less
+    Monte-Carlo noise). Systematic resampling every bar.
+
+    CAUSAL AND THE SAME ON ANY FRAME. Each calendar block (`_refit_starts`) is filtered from
+    `warmup` bars before its first bar; returns are scaled by the sd of those warm-up bars only;
+    and the block's random numbers come from a generator seeded by `PARTICLE_SEED` and the
+    block's first timestamp, drawn in bar order. So a labelled bar is a function of at most
+    `warmup + block` bars before it and of nothing after it, whatever bar the frame starts or ends
+    on. All blocks are filtered together (one array row per block), which is what makes ~40k bars
+    cost about a second instead of a Python loop of that length times the particle count.
+    """
+    from scipy.special import ndtr
+
+    x = r.to_numpy(dtype=float)
+    n = x.size
+    p_up = np.full(n, np.nan)
+    sig = np.full(n, np.nan)
+    index = pd.DatetimeIndex(r.index)
+    # `warmup + 1`: bar 0's return is undefined on every frame, so no block may warm up over it.
+    starts = _refit_starts(index, int(warmup) + 1, PARTICLE_BLOCK)
+    if not len(starts) or drift_vol <= 0 or drift_hl <= 0 or n_particles < 8:
+        return pd.Series(p_up, index=r.index), pd.Series(sig, index=r.index)
+    ends = np.append(starts[1:], n)
+    w, npart, nb = int(warmup), int(n_particles), len(starts)
+    steps = w + int((ends - starts).max())
+    idx = index if index.tz is None else index.tz_convert(None)
+    stamp = idx.as_unit("ns").asi8
+    obs = np.full((nb, steps), np.nan)
+    scale = np.full(nb, np.nan)
+    noise = np.zeros((nb, steps + 1, npart), dtype=np.float32)
+    unif = np.zeros((nb, steps))
+    for b, (k, e) in enumerate(zip(starts, ends, strict=True)):
+        seg = x[k - w:e]
+        s0 = float(np.nanstd(seg[:w]))
+        if not (math.isfinite(s0) and s0 > 0):
+            continue
+        scale[b] = s0
+        obs[b, :seg.size] = seg / s0
+        key = [PARTICLE_SEED, int(stamp[k] // 3_600_000_000_000)]
+        noise[b, :seg.size + 1] = np.random.default_rng([*key, 0]).standard_normal(
+            (seg.size + 1, npart), dtype=np.float32)
+        unif[b, :seg.size] = np.random.default_rng([*key, 1]).random(seg.size)
+    phi_m = 0.5 ** (1.0 / float(drift_hl))
+    q_m = float(drift_vol) ** 2 * (1.0 - phi_m * phi_m)
+    var_h = _SV_SIGMA ** 2 / (1.0 - _SV_PHI ** 2)
+    mu_h = -0.5 * var_h                          # E[exp(h)] = 1: the warm-up variance
+    h = mu_h + math.sqrt(var_h) * noise[:, 0, :].astype(float)
+    mm = np.zeros((nb, npart))
+    pp = np.full((nb, npart), float(drift_vol) ** 2)
+    rows = np.arange(nb)[:, None]
+    out_p = np.full((nb, steps), np.nan)
+    out_v = np.full((nb, steps), np.nan)
+    for t in range(steps):
+        h = mu_h + _SV_PHI * (h - mu_h) + _SV_SIGMA * noise[:, t + 1, :]
+        mp = phi_m * mm
+        pq = phi_m * phi_m * pp + q_m
+        o = obs[:, t]
+        ok = np.isfinite(o)[:, None]
+        rv = np.exp(h)
+        s = pq + rv
+        innov = np.where(ok, o[:, None] - mp, 0.0)
+        gain = pq / s
+        mm = np.where(ok, mp + gain * innov, mp)
+        pp = np.where(ok, (1.0 - gain) * pq, pq)
+        logw = np.where(ok, -0.5 * (np.log(s) + innov * innov / s), 0.0)
+        wt = np.exp(logw - logw.max(axis=1, keepdims=True))
+        wt /= wt.sum(axis=1, keepdims=True)
+        out_p[:, t] = (wt * ndtr(mm / np.sqrt(pp))).sum(axis=1)
+        out_v[:, t] = (wt * rv).sum(axis=1)
+        # systematic resampling, every row at once: one uniform per block per bar
+        cs = np.cumsum(wt, axis=1)
+        cs[:, -1] = 1.0
+        pos = (unif[:, t][:, None] + np.arange(npart)) / npart
+        pick = np.minimum((cs[:, None, :] < pos[:, :, None]).sum(axis=2), npart - 1)
+        h, mm, pp = h[rows, pick], mm[rows, pick], pp[rows, pick]
+    for b, (k, e) in enumerate(zip(starts, ends, strict=True)):
+        if math.isfinite(scale[b]):
+            p_up[k:e] = out_p[b, w:w + (e - k)]
+            sig[k:e] = np.sqrt(out_v[b, w:w + (e - k)]) * scale[b]
+    bad = ~np.isfinite(x)
+    p_up[bad] = np.nan
+    return pd.Series(p_up, index=r.index), pd.Series(sig, index=r.index)
+
+
+def family_particle_regime(
+    df: pd.DataFrame,
+    *,
+    drift_vol: float = 0.2,
+    drift_hl: float = 48.0,
+    entry_p: float = 0.9,
+    side_mode: str = "follow",
+    warmup: int = 250,
+    n_particles: int = 128,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 2.0,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Enter when the particle posterior P(drift > 0) crosses `entry_p` (long) or 1 - `entry_p`.
+
+    `follow` is the claim that a drift regime the filter has become sure of persists; `fade` that
+    such certainty marks its end. `drift_vol` is the PRIOR size of a drift regime in units of one
+    bar's sd and `drift_hl` how long one lasts -- both are the claim under test, on the recipe,
+    never fitted.
+    """
+    if side_mode not in {"follow", "fade"} or not (0.5 < entry_p < 1.0):
+        return []
+    d = _h1(df)
+    if len(d) < warmup + 3:
+        return []
+    r = pd.Series(_log_close(d), index=d.index).diff()
+    p, _sig = particle_drift_path(r, warmup, drift_vol, drift_hl, n_particles)
+    pv = p.to_numpy()
+    up = np.isfinite(pv) & (pv >= entry_p)
+    dn = np.isfinite(pv) & (pv <= 1.0 - entry_p)
+    atr = _atr(d, atr_n).to_numpy()
+    close = d["close"].astype(float).to_numpy()
+    out: list[Signal] = []
+    for direction, mask in ((1, _edges(up)), (-1, _edges(dn))):
+        for i in np.flatnonzero(mask):
+            if i >= len(d) - 1 or not (np.isfinite(atr[i]) and atr[i] > 0):
+                continue
+            side = direction if side_mode == "follow" else -direction
+            stop, target = _bracket(float(close[i]), side, float(atr[i]), stop_atr, rr)
+            out.append(Signal(time=d.index[i], side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag=f"particle_regime.{side_mode}",
+                              trigger=None, wait_bars=1))
+    out.sort(key=lambda s: s.time)
+    return out
+
+
+#: Length-scales (bars) the GP's marginal likelihood chooses between at each calendar block, and
+#: the block length. A grid, not an optimiser: four Cholesky factorisations a block, no
+#: convergence to fail, and the same answer on every machine.
+GP_LENGTHS = (6.0, 12.0, 24.0, 48.0)
+GP_BLOCK = 500
+
+
+def _gp_weights(window: int, horizon: int, amp: float, ell: float
+                ) -> tuple[np.ndarray, float, np.ndarray]:
+    """FIR weights, posterior sd and the Cholesky factor for one (amp, ell) on a regular grid.
+
+    Observations y_j = f(j) + e_j over j = 0..window-1 with f ~ GP(0, amp^2 RBF(ell)) and unit
+    noise; the target is g = f(window) + ... + f(window - 1 + horizon), the drift summed over the
+    next `horizon` bars. On equally spaced bars the posterior mean is one fixed linear filter of
+    the window, so a whole block is a single matrix product.
+    """
+    from scipy.linalg import cho_factor, cho_solve
+
+    j = np.arange(window, dtype=float)
+    fut = window + np.arange(horizon, dtype=float)
+    a2 = amp * amp
+    kxx = a2 * np.exp(-0.5 * ((j[:, None] - j[None, :]) / ell) ** 2) + np.eye(window)
+    c = (a2 * np.exp(-0.5 * ((fut[:, None] - j[None, :]) / ell) ** 2)).sum(axis=0)
+    kff = float((a2 * np.exp(-0.5 * ((fut[:, None] - fut[None, :]) / ell) ** 2)).sum())
+    cf = cho_factor(kxx, lower=True)
+    wts = cho_solve(cf, c)
+    var = max(kff - float(c @ wts), 1e-18)
+    return wts, math.sqrt(var), cf[0]
+
+
+def gp_forecast_path(r: pd.Series, window: int, horizon: int, amp: float
+                     ) -> tuple[pd.Series, pd.Series]:
+    """t-statistic of the GP forecast of the next `horizon` bars' drift, and the length-scale used.
+
+    Returns are divided by their own trailing-`window` sd (ending at the bar), so `amp` -- the
+    prior sd of the drift in units of one bar's sd -- means the same on every instrument. At each
+    calendar block (`_refit_starts`) the RBF length-scale is the one in `GP_LENGTHS` with the
+    highest marginal likelihood on the `window` standardised returns BEFORE the block; the block's
+    bars are then forecast with that length-scale from their own trailing window. Nothing after a
+    bar enters its forecast, and nothing earlier than `2 * window + block` bars before it.
+    """
+    from numpy.lib.stride_tricks import sliding_window_view
+    from scipy.linalg import solve_triangular
+
+    w, k = int(window), int(horizon)
+    x = r.to_numpy(dtype=float)
+    n = x.size
+    tstat = np.full(n, np.nan)
+    used = np.full(n, np.nan)
+    sd = r.rolling(w, min_periods=w).std().to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        z = np.where(sd > 0, x / sd, np.nan)     # each bar in the sd of the window ending at it
+    # `2w + 1`: the fit window's standardised returns each need their own full trailing window.
+    starts = _refit_starts(pd.DatetimeIndex(r.index), 2 * w + 1, GP_BLOCK)
+    if not len(starts) or amp <= 0 or k < 1 or n < w:
+        return pd.Series(tstat, index=r.index), pd.Series(used, index=r.index)
+    models = [_gp_weights(w, k, float(amp), ell) for ell in GP_LENGTHS]
+    view = sliding_window_view(x, w)             # view[i - w + 1] = x[i - w + 1 .. i]
+    ends = np.append(starts[1:], n)
+    for s0, e in zip(starts, ends, strict=True):
+        y = z[s0 - w:s0]
+        if not np.isfinite(y).all():
+            continue
+        best, best_ll = 0, -np.inf
+        for m, (_wts, _psd, chol) in enumerate(models):
+            a = solve_triangular(chol, y, lower=True)
+            ll = -0.5 * float(a @ a) - float(np.log(np.diag(chol)).sum())
+            if ll > best_ll:
+                best, best_ll = m, ll
+        wts, psd, _ = models[best]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            mean = (view[s0 - w + 1:e - w + 1] @ wts) / sd[s0:e]
+        tstat[s0:e] = mean / psd
+        used[s0:e] = GP_LENGTHS[best]
+    return pd.Series(tstat, index=r.index), pd.Series(used, index=r.index)
+
+
+def family_gp_forecast(
+    df: pd.DataFrame,
+    *,
+    window: int = 240,
+    horizon: int = 8,
+    amp: float = 0.2,
+    entry_t: float = 1.0,
+    side_mode: str = "follow",
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 1.5,
+    ttl_bars: int = 24,
+) -> list[Signal]:
+    """Enter when the GP's forecast drift over `horizon` bars is `entry_t` posterior sds from zero.
+
+    The t-statistic is posterior mean over posterior sd of the LATENT drift, so it is small by
+    construction when the window says nothing (posterior = prior, mean ~ 0): the threshold is in
+    units of what the model itself claims to know. `amp` is the prior and is on the recipe.
+    """
+    if side_mode not in {"follow", "fade"} or window < 60 or horizon < 1 or amp <= 0:
+        return []
+    d = _h1(df)
+    if len(d) < 2 * window + 3:
+        return []
+    r = pd.Series(_log_close(d), index=d.index).diff()
+    t, _ell = gp_forecast_path(r, window, horizon, amp)
+    tv = t.to_numpy()
+    up = np.isfinite(tv) & (tv >= entry_t)
+    dn = np.isfinite(tv) & (tv <= -entry_t)
+    atr = _atr(d, atr_n).to_numpy()
+    close = d["close"].astype(float).to_numpy()
+    out: list[Signal] = []
+    for direction, mask in ((1, _edges(up)), (-1, _edges(dn))):
+        for i in np.flatnonzero(mask):
+            if i >= len(d) - 1 or not (np.isfinite(atr[i]) and atr[i] > 0):
+                continue
+            side = direction if side_mode == "follow" else -direction
+            stop, target = _bracket(float(close[i]), side, float(atr[i]), stop_atr, rr)
+            out.append(Signal(time=d.index[i], side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag=f"gp_forecast.{side_mode}",
+                              trigger=None, wait_bars=1))
+    out.sort(key=lambda s: s.time)
+    return out
+
 
 FAMILIES = {
     "garch_shock": family_garch_shock,
@@ -719,6 +1004,8 @@ FAMILIES = {
     "kalman_pair": family_kalman_pair,
     "copula_pair": family_copula_pair,
     "ou_reversion": family_ou_reversion,
+    "particle_regime": family_particle_regime,
+    "gp_forecast": family_gp_forecast,
 }
 #: Families with a second leg, named on the cell as `pair_symbol` and read by the family itself.
 PEER_FAMILIES = frozenset({"kalman_pair", "copula_pair"})

@@ -68,7 +68,8 @@ def test_ou_half_life_is_estimated_and_the_hold_covers_it():
     assert all(s.ttl_bars >= 8 for s in sigs)
 
 
-@pytest.mark.parametrize("name", ["garch_shock", "kalman_trend", "ou_reversion"])
+@pytest.mark.parametrize("name", ["garch_shock", "kalman_trend", "ou_reversion",
+                                  "particle_regime", "gp_forecast"])
 def test_single_leg_families_do_not_see_the_future(name):
     rng = np.random.default_rng(7)
     close = 1.2 * np.exp(np.cumsum(_gjr(4000, seed=5)) + 0.3 * _ou(4000, 20.0)
@@ -86,12 +87,13 @@ def test_single_leg_families_do_not_see_the_future(name):
     assert early and early == trunc
 
 
-@pytest.mark.parametrize("name", ["garch_shock", "kalman_trend"])
+@pytest.mark.parametrize("name", ["garch_shock", "kalman_trend", "particle_regime",
+                                  "gp_forecast"])
 def test_bracket_is_anchored_on_the_signal_bars_own_close(name):
     close = 1.2 * np.exp(np.cumsum(_gjr(4000, seed=11)))
     d = _frame(close)
     kw = {"window": 1500, "refit": 500, "entry_z": 2.0} if name == "garch_shock" else {}
-    rr = 1.5
+    rr = 1.75
     sigs = fs.FAMILIES[name](d, rr=rr, **kw)
     assert sigs
     for s in sigs:
@@ -147,7 +149,8 @@ def test_pair_families_refuse_a_chart_the_store_cannot_match(name, monkeypatch):
 
 
 @pytest.mark.parametrize("name", ["garch_shock", "kalman_trend", "ou_reversion",
-                                  "kalman_pair", "copula_pair"])
+                                  "kalman_pair", "copula_pair", "particle_regime",
+                                  "gp_forecast"])
 def test_a_frame_that_starts_later_trades_the_same_rule(name, monkeypatch):
     """The forward clock's frame is shorter than the gauntlet's; the certificate must not move."""
     a, b = _pair(6000)
@@ -206,6 +209,58 @@ def test_default_cells_need_no_more_than_sixty_h1_days():
     for name in ("garch_shock", "kalman_trend", "ou_reversion"):
         kw = {"entry_z": 1.5} if name != "kalman_trend" else {"entry_t": 1.5}
         assert fs.FAMILIES[name](d, **kw), name
+    for name in ("particle_regime", "gp_forecast"):      # at their defaults, no loosened entry
+        assert fs.FAMILIES[name](d), name
+
+
+def _drift_regimes(n: int, seed: int, size: float = 0.35, run: int = 150) -> tuple[np.ndarray,
+                                                                                   np.ndarray]:
+    """Unit-noise returns whose drift flips sign every `run` bars: (returns, true drift)."""
+    rng = np.random.default_rng(seed)
+    m = size * np.where((np.arange(n) // run) % 2 == 0, 1.0, -1.0)
+    return 1e-3 * (m + rng.standard_normal(n)), m
+
+
+def test_particle_filter_recovers_the_drift_sign_and_the_volatility():
+    n = 4000
+    x, m = _drift_regimes(n, seed=31)
+    rng = np.random.default_rng(32)
+    vol = np.where((np.arange(n) // 700) % 2 == 0, 1.0, 3.0)      # a variance regime on top
+    x = 1e-3 * (m + vol * rng.standard_normal(n))
+    idx = pd.date_range("2020-01-01", periods=n, freq="h", tz="UTC")
+    p, sig = fs.particle_drift_path(pd.Series(x, index=idx), 250, 0.3, 96.0)
+    ok = p.notna().to_numpy()
+    assert ok.sum() > 3000
+    pv, sv = p.to_numpy()[ok], sig.to_numpy()[ok]
+    assert pv[m[ok] > 0].mean() > 0.65 and pv[m[ok] < 0].mean() < 0.35
+    assert np.corrcoef(np.log(sv), np.log(vol[ok]))[0, 1] > 0.6
+
+
+def test_particle_filter_is_the_same_filter_twice():
+    """The seed is a constant keyed on the calendar, so a rerun is bit-for-bit the same path."""
+    x, _m = _drift_regimes(2000, seed=33)
+    idx = pd.date_range("2020-01-01", periods=2000, freq="h", tz="UTC")
+    a, _ = fs.particle_drift_path(pd.Series(x, index=idx), 250, 0.2, 48.0)
+    b, _ = fs.particle_drift_path(pd.Series(x, index=idx), 250, 0.2, 48.0)
+    assert a.notna().sum() > 1000 and a.equals(b)
+
+
+def test_gp_forecast_tracks_a_smooth_drift_and_says_little_about_noise():
+    n = 4000
+    rng = np.random.default_rng(41)
+    drift = 0.5 * np.sin(2 * np.pi * np.arange(n) / 200.0)
+    idx = pd.date_range("2020-01-01", periods=n, freq="h", tz="UTC")
+    t, ell = fs.gp_forecast_path(pd.Series(1e-3 * (drift + rng.standard_normal(n)), index=idx),
+                                 240, 8, 0.3)
+    ok = t.notna().to_numpy()
+    fut = np.array([drift[i + 1:i + 9].sum() if i + 9 <= n else np.nan for i in range(n)])
+    use = ok & np.isfinite(fut)
+    assert use.sum() > 2500
+    assert np.corrcoef(t.to_numpy()[use], fut[use])[0, 1] > 0.6
+    assert set(ell.dropna().unique()) <= set(fs.GP_LENGTHS)
+    noise, _ = fs.gp_forecast_path(pd.Series(1e-3 * rng.standard_normal(n), index=idx),
+                                   240, 8, 0.3)
+    assert (noise.abs() >= 1.0).mean() < 0.5 * (t.abs() >= 1.0).mean()
 
 
 def test_every_family_is_classed_and_swept():

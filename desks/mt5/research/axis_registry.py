@@ -150,7 +150,8 @@ MECHANISM_ACTOR = {
 _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only market": "anti_three_bar_momentum h4_momentum momentum_volgate"
                                            " multi_speed_trend trend_ma_cross"
-                                           " htf_anchor_trend kalman_trend",
+                                           " htf_anchor_trend kalman_trend gp_forecast"
+                                           " particle_regime",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"

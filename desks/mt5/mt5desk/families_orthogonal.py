@@ -2615,7 +2615,8 @@ FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
 from mt5desk.family_state_space import FAMILIES as _STATE_SPACE  # noqa: E402
 
 ORTHOGONAL_FAMILIES.update(_STATE_SPACE)
-for _fam in ("garch_shock", "kalman_trend", "ou_reversion"):
+# `particle_regime` and `gp_forecast` are item 58 of the same audit: price only, single leg.
+for _fam in ("garch_shock", "kalman_trend", "ou_reversion", "particle_regime", "gp_forecast"):
     FAMILY_INPUTS[_fam] = ("price only", None)
 for _fam in ("kalman_pair", "copula_pair"):
     FAMILY_INPUTS[_fam] = ("the H1 closes of the instrument named by `pair_symbol`, matched to "
