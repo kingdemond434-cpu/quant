@@ -1029,6 +1029,13 @@ def retarget_params(params: Mapping[str, Any], old: str, new: str) -> dict[str, 
 #: (`external_gauntlet.build_cell` sets `call_params["symbol"] = sym`): a stale name in their
 #: params is wrong on paper only, so their rows are counted and never rewritten.
 JUDGE_SUPPLIES_SYMBOL = frozenset({"carry"})
+#: The families whose mismatched rows were LOOKED AT on the box (2026-11-10) and found to be a
+#: moved cell reading its donor's instrument. Only these are rewritten. A mismatch in any other
+#: family is counted `unreviewed_family` and left exactly as stored: it may be a cell that names
+#: a second instrument on purpose, and rewriting that would destroy a valid rule and void honest
+#: verdicts. Adding a family here is a reviewed one-line change after its rows are read.
+MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow",
+                                 "event_reaction"})
 MOVED_VOID = HYP / "moved_cell_void.json"
 
 
@@ -1040,7 +1047,7 @@ def _named(value: Any) -> str:
 
 def repair_moved_cells(rows: list[dict[str, Any]], *,
                        identity_fn: Callable[[dict[str, Any]], str] | None = None,
-                       now: datetime | None = None
+                       now: datetime | None = None, rewrite: bool = True
                        ) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
     """Stored cells that still name ANOTHER instrument as the one they trade -> (rows, census,
     void entries).
@@ -1061,13 +1068,20 @@ def repair_moved_cells(rows: list[dict[str, Any]], *,
 
     SELECTED BY THE MISMATCH, NEVER BY ORIGIN, and the census is by origin and family and by
     the day each row was first seen: a count that grows for any origin after the four fixes are
-    on the box is a fifth door. Idempotent: a second pass finds nothing to rewrite."""
+    on the box is a fifth door. Idempotent: a second pass finds nothing to rewrite.
+
+    THE CALLER'S ROWS ARE NEVER MUTATED: a rewritten row is a copy. A caller that fails after
+    this pass can therefore hand back its original rows, and no corrected row is ever stored
+    without its old spec having been named (audit of 72ff7b1e23e0). `rewrite=False` is the
+    count-only reading the revert switch uses."""
     ident = identity_fn or identity
     stamp = (now or datetime.now(tz=UTC)).isoformat()
     census: dict[str, Any] = {"rows": len(rows), "mismatched": 0, "rewritten": 0,
                               "merged_into_existing": 0, "skipped_judge_supplies_symbol": 0,
-                              "repaired_earlier": 0, "by_family_origin": {},
-                              "by_first_seen_day": {}, "by_origin_skipped": {}}
+                              "repaired_earlier": 0, "unreviewed_family": 0,
+                              "first_seen_unknown": 0, "rewrite_enabled": bool(rewrite),
+                              "by_family_origin": {}, "by_first_seen_day": {},
+                              "by_origin_skipped": {}, "unreviewed_by_family_origin": {}}
     present = {ident(r) for r in rows if isinstance(r, dict)}
     out: list[dict[str, Any]] = []
     void: list[dict[str, Any]] = []
@@ -1091,31 +1105,48 @@ def repair_moved_cells(rows: list[dict[str, Any]], *,
             out.append(r)
             continue
         key = f"{fam}|{origin}"
+        if fam not in MOVED_CELL_FAMILIES:
+            census["unreviewed_family"] += 1
+            census["unreviewed_by_family_origin"][key] = (
+                census["unreviewed_by_family_origin"].get(key, 0) + 1)
+            out.append(r)
+            continue
         census["by_family_origin"][key] = census["by_family_origin"].get(key, 0) + 1
-        day = str(r.get("first_seen") or "unknown")[:10]
-        census["by_first_seen_day"][day] = census["by_first_seen_day"].get(day, 0) + 1
+        seen = next((str(r[k]) for k in ("first_seen", "available_time", "ingested_time",
+                                         "found_at") if r.get(k)), "")
+        if seen:
+            census["by_first_seen_day"][seen[:10]] = (
+                census["by_first_seen_day"].get(seen[:10], 0) + 1)
+        else:
+            census["first_seen_unknown"] += 1
+        if not rewrite:
+            out.append(r)
+            continue
         old_identity = ident(r)
         fixed = dict(params)
         for k in TRADED_SYMBOL_KEYS:
             if _named(fixed.get(k)) == stale:
                 fixed[k] = [sym] if isinstance(fixed[k], list) else sym
+        # stamps of the OLD executable are left behind; the writer re-derives them
+        candidate = {k: v for k, v in r.items()
+                     if k not in ("spec_id", "prereg_hash", "prereg_status", "dup_status")}
+        candidate["params"] = fixed
+        new_identity = ident(candidate)
         void.append({"spec_id": r.get("spec_id"), "symbol": sym, "family": fam,
                      "named": stale, "origin": origin, "candidate_id": r.get("candidate_id"),
                      "identity_sha": hashlib.sha256(old_identity.encode()).hexdigest()[:16],
+                     "corrected_identity_sha":
+                         hashlib.sha256(new_identity.encode()).hexdigest()[:16],
                      "first_recorded": stamp})
-        candidate = {**r, "params": fixed}
-        new_identity = ident(candidate)
         if new_identity in present:
             census["merged_into_existing"] += 1
             continue
         present.discard(old_identity)
         present.add(new_identity)
-        r["params"] = fixed
-        r["moved_cell_repair"] = {"at": stamp, "named": stale, "void_spec_id": r.get("spec_id")}
-        for k in ("spec_id", "prereg_hash", "prereg_status", "dup_status"):
-            r.pop(k, None)                  # stamps of the OLD executable; the writer re-derives
+        candidate["moved_cell_repair"] = {"at": stamp, "named": stale,
+                                          "void_spec_id": r.get("spec_id")}
         census["rewritten"] += 1
-        out.append(r)
+        out.append(candidate)
     return out, census, void
 
 
@@ -1387,15 +1418,17 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
     if avail is None or avail * 1024 ** 2 * 0.25 > len(rows) * 400:
         _RULE_CACHE = {}
     ledger = (hyp_dir / REAIM_LEDGER.name) if hyp_dir is not None else REAIM_LEDGER
+    given = rows
     try:
         syms = {_sym(r).upper() for r in rows} - {""}
         clusters, cmeta = load_clusters(
             syms, path=(hyp_dir / CLUSTERS.name) if hyp_dir is not None else None)
         # REPAIR FIRST: the census and the re-aim must see the cell each row actually is.
-        void: list[dict[str, Any]] = []
-        moved: dict[str, Any] = {"status": "UNMEASURED"}
-        if os.environ.get("QUANT_MOVED_CELL_REPAIR", "1") != "0":
-            rows, moved, void = repair_moved_cells(rows, identity_fn=identity_fn, now=now)
+        # THE REVERT PATH, like the re-aim's: QUANT_MOVED_CELL_REPAIR=0 keeps the census and
+        # rewrites nothing. `given` is what the caller handed in, returned untouched on a fault.
+        rows, moved, void = repair_moved_cells(
+            given, identity_fn=identity_fn, now=now,
+            rewrite=os.environ.get("QUANT_MOVED_CELL_REPAIR", "1") != "0")
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
                               clusters=clusters, done=reaimed_parents(ledger), now=now)
         rep["moved_cells"] = moved
@@ -1415,7 +1448,7 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
         pending.void_path = (hyp_dir / MOVED_VOID.name) if hyp_dir is not None else MOVED_VOID
         return out, summary(doc), pending
     except Exception as exc:
-        return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
+        return given, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
     finally:
         _RULE_CACHE = None
 

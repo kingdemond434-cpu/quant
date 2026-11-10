@@ -620,14 +620,28 @@ def test_stored_moved_cells_are_repaired_counted_and_named_void(tmp_path) -> Non
         {"symbol": "EURUSD", "family": "carry_risk_off", "origin": "x",
          "params": {"symbol": "GBPUSD"}, "spec_id": "dup"},
         {"symbol": "GER40", "family": "carry_risk_off", "params": {"mode": "harvest"}},
+        # a family nobody has looked at: counted, never rewritten
+        {"symbol": "EURUSD", "family": "relative_value", "origin": "y",
+         "params": {"symbol": "GBPUSD"}, "spec_id": "rv"},
     ]
+    import copy
+    before = copy.deepcopy(rows)
     out, census, void = hf.repair_moved_cells(rows)
-    assert census["mismatched"] == 4 and census["rewritten"] == 2
+    assert rows == before                                         # the caller's rows are intact
+    assert census["mismatched"] == 5 and census["rewritten"] == 2
+    assert census["unreviewed_family"] == 1 and out[-1] == rows[-1]
+    assert census["unreviewed_by_family_origin"] == {"relative_value|y": 1}
+    assert census["first_seen_unknown"] == 2
+    assert all(len(v["corrected_identity_sha"]) == 16 for v in void)
+    # count-only under the revert switch: same census, nothing rewritten, nothing voided
+    same, counted, none = hf.repair_moved_cells(rows, rewrite=False)
+    assert same == rows and none == [] and counted["rewritten"] == 0
+    assert counted["by_family_origin"] == census["by_family_origin"]
     assert census["skipped_judge_supplies_symbol"] == 1 and census["merged_into_existing"] == 1
     assert census["by_family_origin"] == {"carry_risk_off|independence_intake": 1,
                                           "forced_flow|rank_recovery": 1, "carry_risk_off|x": 1}
     assert census["by_first_seen_day"]["2026-11-05"] == 1
-    assert len(out) == 6 and [v["spec_id"] for v in void] == ["aef9", "9f3d", "dup"]
+    assert len(out) == 7 and [v["spec_id"] for v in void] == ["aef9", "9f3d", "dup"]
     a, b, c = out[0], out[1], out[2]
     assert a["params"] == {"symbol": "ADAUSD", "risk_symbol": "JPN225", "mode": "harvest"}
     assert "spec_id" not in a and "prereg_hash" not in a          # re-derived by the writer
@@ -639,7 +653,7 @@ def test_stored_moved_cells_are_repaired_counted_and_named_void(tmp_path) -> Non
     assert out[4]["params"] == {"input_symbol": "DXY"}            # an input, never a mismatch
     assert out[5]["params"] == {"mode": "harvest"}                # no key: not this pass's
     again, census2, void2 = hf.repair_moved_cells(out)
-    assert census2["rewritten"] == 0 and census2["mismatched"] == 1 and void2 == []
+    assert census2["rewritten"] == 0 and census2["mismatched"] == 2 and void2 == []
     assert census2["repaired_earlier"] == 2 and again == out
     # the void list is standing, keyed by the old executable, and a re-run adds nothing
     path = tmp_path / "moved_cell_void.json"
@@ -648,3 +662,21 @@ def test_stored_moved_cells_are_repaired_counted_and_named_void(tmp_path) -> Non
                      "by_family": {"carry_risk_off": 2, "forced_flow": 1}}
     assert hf.record_moved_void(void, path)["added"] == 0
     assert len(json.loads(path.read_text("utf-8"))["void"]) == 3
+
+
+def test_a_fault_after_the_repair_stores_no_corrected_row_without_its_void_entry(
+        tmp_path, monkeypatch) -> None:
+    """Audit of 72ff7b1e23e0: if the family pass fails after the repair, the writer must get
+    back exactly what it handed in. A corrected row stored with no void entry would never be
+    seen as a mismatch again, and its old spec would never be named."""
+    rows = [{"symbol": "ADAUSD", "family": "carry_risk_off", "origin": "independence_intake",
+             "params": {"symbol": "USDSGD"}, "spec_id": "aef9"}]
+
+    def boom(*_a, **_k):
+        raise RuntimeError("reaim down")
+    monkeypatch.setattr(hf, "reaim", boom)
+    out, block, pending = hf.apply(rows, fresh=set(), reproposed=set(), hyp_dir=tmp_path)
+    assert pending is None and block["status"].startswith("FAILED")
+    assert out is rows and rows[0]["params"] == {"symbol": "USDSGD"}
+    assert rows[0]["spec_id"] == "aef9" and "moved_cell_repair" not in rows[0]
+    assert not (tmp_path / "moved_cell_void.json").exists()
