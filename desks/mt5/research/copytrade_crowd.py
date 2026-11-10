@@ -26,10 +26,12 @@ aggregates observations captured in the last FRESH_H hours, and each per-symbol 
 Raw observations are appended to `data/crowd/copytrade/raw/<day>.jsonl.gz`: this history cannot
 be bought later, so every pass that does not run is history lost.
 
-HONEST ACCESS. Logged-out pages only. robots.txt is read per host and LABELS the route (LAWS
-section 5e, the #651 pattern): allowed or 404 = PUBLIC, Disallow = PUBLIC_WITH_TERMS, unreadable =
-ACCESS_UNCLEAR. Every label is fetched; the label rides on the observation and the series rows
-with `redistribute` withheld. The access controls stay: a login wall is recorded as BLOCKED_AUTH
+HONEST ACCESS. Logged-out pages only. robots.txt is read per host before any page: allowed or
+404 = PUBLIC and is fetched; a Disallow on the exact path (PUBLIC_WITH_TERMS) or an unreadable
+robots.txt (ACCESS_UNCLEAR) STOPS that fetch and is counted `robots_stopped` (governance ruling
+2026-11-10: a Disallow on the exact fetched path stops the fetch, and an unknown policy is not a
+yes). The label still rides on every observation and series row.
+The access controls stay: a login wall is recorded as BLOCKED_AUTH
 and that route stops for the pass; 401/403/429/451 is a HARD STOP written to state and the source
 is not fetched again until `--release <source>`. No login, cookie, proxy, CAPTCHA or paywall
 step exists here.
@@ -206,7 +208,8 @@ def robots_allows(rules: list[tuple[str, bool]], url: str) -> bool:
 
 class Fetcher:
     """One honest GET per URL through the desk's polite client: no retries, our own UA, a robots
-    access label per URL, hard stops recorded. `get` is injectable so tests run offline."""
+    check per URL that stops a disallowed or unreadable route, hard stops recorded.
+    `get` is injectable so tests run offline."""
 
     def __init__(self, state: dict[str, Any], deadline: float,
                  get: Callable[[str], tuple[int | None, str]] | None = None) -> None:
@@ -229,7 +232,7 @@ class Fetcher:
 
     def access_label(self, url: str) -> str:
         """PUBLIC (allowed or no robots.txt), PUBLIC_WITH_TERMS (Disallow), ACCESS_UNCLEAR
-        (robots.txt unreadable). A label, never a refusal (LAWS section 5e)."""
+        (robots.txt unreadable). `fetch` only proceeds on PUBLIC."""
         host = urllib.parse.urlsplit(url).netloc.lower()
         if host not in self._robots:
             code, body = self._get(f"https://{host}/robots.txt")
@@ -254,6 +257,9 @@ class Fetcher:
         label = self.access_label(url)
         self._stat(source, f"access_{label}")
         self.labels.setdefault(source, set()).add(label)
+        if label != "PUBLIC":
+            self._stat(source, "robots_stopped")
+            return None
         code, body = self._get(url)
         self._stat(source, "fetched")
         if code in HARD_STOP:
@@ -727,7 +733,7 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
         "generated_utc": _iso(now),
         "rule": ("Public, logged-out copy-trade pages aggregated into a per-symbol crowd book; "
                  "login walls and 401/403/429/451 stop a route and are never routed around; "
-                 "robots.txt is an access label carried on every row (LAWS 5e). "
+                 "a robots.txt Disallow on the path, or an unreadable robots.txt, stops the fetch. "
                  "Smart = >=26 weeks and top-decile log-growth/drawdown; dumb = losing "
                  "or below-median. available_time = capture time."),
         "observations_this_pass": len(fresh),

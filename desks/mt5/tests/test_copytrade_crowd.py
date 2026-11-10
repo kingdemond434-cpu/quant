@@ -68,7 +68,7 @@ def test_robots_wildcards_longest_match_and_agent_groups() -> None:
     assert cc.robots_allows([("/x$", False)], "https://h/xy")
 
 
-def test_robots_is_a_label_and_hard_stop_is_recorded_and_not_retried() -> None:
+def test_robots_stops_the_fetch_and_hard_stop_is_recorded_and_not_retried() -> None:
     calls: list[str] = []
 
     def get(url: str) -> tuple[int | None, str]:
@@ -81,10 +81,13 @@ def test_robots_is_a_label_and_hard_stop_is_recorded_and_not_retried() -> None:
 
     state: dict = {}
     f = cc.Fetcher(state, deadline=1e18, get=get)
-    assert f.fetch("s", "https://bad.example/a") == "ok"          # fetched, labelled
+    assert f.fetch("s", "https://bad.example/a") is None          # robots unreadable: no fetch
     assert f.stats["s"]["access_ACCESS_UNCLEAR"] == 1
-    assert f.fetch("w", "https://terms.example/a") == "ok"
+    assert f.stats["s"]["robots_stopped"] == 1
+    assert f.fetch("w", "https://terms.example/a") is None        # Disallow on the path: no fetch
     assert f.labels["w"] == {"PUBLIC_WITH_TERMS"}
+    assert f.fetch("w", "https://terms.example/b") == "ok"        # same host, path not disallowed
+    assert [u for u in calls if not u.endswith("robots.txt")] == ["https://terms.example/b"]
     assert f.fetch("t", "https://ok.example/a") is None
     assert state["hard_stops"]["t"]["code"] == 403
     n = len(calls)
