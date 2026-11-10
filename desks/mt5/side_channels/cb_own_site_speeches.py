@@ -15,7 +15,8 @@ desk needs the reading, not a copy of the text.
 POINT-IN-TIME. `published_utc` is the feed's own publication instant when the speech came from a
 feed. A speech found on a year index has only its delivery DATE; then `published_utc` is that
 bare date, and the contract with the reader (`cb_tone_event`) is that a bare date is knowable
-only from 00:00 UTC of the NEXT day. The series this module writes applies the same rule.
+only from the END of the next day (00:00 UTC of D+2): a US-evening speech on date D is spoken
+after 00:00 UTC of D+1. The series this module writes applies the same rule.
 
 POLITENESS. One request per host at a time through `libs.data.polite_fetch` (shared host gate),
 an honest User-Agent, a hard per-pass page budget, and every page fetched once in its life
@@ -30,9 +31,12 @@ under a robots.txt this pass could read. Anything else is `unverified` and resea
 
 OUTPUT.
     desks/mt5/data/intelligence/central_banks/official_speech_tone.jsonl
-        one row per speech, append-only; the file `cb_tone_event` reads. It sits beside
-        `bis_speech_tone.jsonl`, whose rows the candidate compiler already reads as event
-        donations; identical specs share one genome id, so more rows mint no more cells.
+        one row per speech, append-only; the file `cb_tone_event` reads. ONLY rows read under
+        permitting terms AND through a PUBLIC door are written here: the candidate compiler
+        reads every .jsonl in this tree as donations and does not know what `terms` means.
+    desks/mt5/data/cb_speeches/research_only_speech_tone.jsonl
+        every other row (unverified terms, unreadable robots, a changed terms page):
+        research-only, outside the donation tree
     desks/mt5/data/cb_speeches/state.json, official_tone_series.jsonl
         this module's own state and a (date, currency) series, kept out of the donation tree
     desks/mt5/reports/CB_OWN_SITE_SPEECHES.json   coverage, labels, stops, backlog
@@ -164,10 +168,13 @@ def published_utc(published: str | None, day: str) -> str:
 
 
 def knowable_from(published: str) -> str:
-    """When a row may first be used: its instant, or 00:00 UTC of the day AFTER a bare date."""
+    """When a row may first be used: its instant, or the END of the day after a bare date
+    (00:00 UTC of D+2). Late on purpose: a speech given in the US evening of date D is spoken
+    at or after 00:00 UTC of D+1 (20:00 Pacific is 04:00 UTC), so the start of D+1 would let a
+    bar use words not yet said."""
     if len(published) > 10:
         return published
-    d = date.fromisoformat(published) + timedelta(days=1)
+    d = date.fromisoformat(published) + timedelta(days=2)
     return datetime(d.year, d.month, d.day, tzinfo=UTC).isoformat(timespec="seconds")
 
 
@@ -181,6 +188,11 @@ def robots_label(robots_text: str | None, url: str, agent: str) -> dict[str, str
     if rp.can_fetch(agent, url):
         return {"access": "PUBLIC", "note": ""}
     return {"access": "PUBLIC_WITH_TERMS", "note": "robots.txt Disallow covers this path"}
+
+
+def tradeable(row: Mapping[str, Any]) -> bool:
+    """May this row sit in the donation tree: permitting terms AND a PUBLIC door, nothing less."""
+    return row.get("terms") == "permitted" and row.get("access") == "PUBLIC"
 
 
 def read_rows(path: Path) -> list[dict[str, Any]]:
@@ -470,11 +482,19 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
                 f"them; any {bank['currency']} speech behind them is UNMEASURED, not neutral")
         b["errors"] = b["errors"][:10]
 
-    if new_rows:
-        with per_speech.open("a", encoding="utf-8") as fh:
-            for r in new_rows:
-                fh.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
-    rows = read_rows(per_speech)
+    research_only = out / "research_only_speech_tone.jsonl"
+    for dest, keep in ((per_speech, True), (research_only, False)):
+        batch = [r for r in new_rows if tradeable(r) is keep]
+        if batch:
+            with dest.open("a", encoding="utf-8") as fh:
+                for r in batch:
+                    fh.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
+    # a permitted row never comes from the research-only file, whatever was appended to it
+    rows = [r for r in read_rows(per_speech) if tradeable(r)]
+    seen_urls = {str(r["url"]) for r in rows}
+    held = [r for r in read_rows(research_only) if str(r["url"]) not in seen_urls]
+    rep["research_only_rows"] = len(held)
+    rows += [{**r, "terms": "unverified"} if tradeable(r) else r for r in held]
     series = aggregate(rows)
     tmp = out / "official_tone_series.jsonl.tmp"
     tmp.write_text("".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n"

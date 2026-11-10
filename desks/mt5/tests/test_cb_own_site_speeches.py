@@ -74,9 +74,9 @@ def test_index_links_read_the_date_from_the_url() -> None:
     assert [r["date"] for r in rba] == ["2025-12-16", "2026-11-09"]
 
 
-def test_a_bare_date_is_knowable_only_from_the_next_day() -> None:
+def test_a_bare_date_is_knowable_only_from_the_end_of_the_next_day() -> None:
     assert cb.published_utc(None, "2025-12-15") == "2025-12-15"
-    assert cb.knowable_from("2025-12-15") == "2025-12-16T00:00:00+00:00"
+    assert cb.knowable_from("2025-12-15") == "2025-12-17T00:00:00+00:00"
     assert cb.knowable_from("2026-10-15T02:55:00+00:00") == "2026-10-15T02:55:00+00:00"
 
 
@@ -177,7 +177,9 @@ def test_unreadable_robots_is_read_but_never_permitted(tmp_path: Path) -> None:
     cb.refresh(fetch=fetch, registry=_one_bank({**FED, "index": None}), out=tmp_path / "o",
                report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
                today=date(2026, 11, 10))
-    row = json.loads((tmp_path / "rows.jsonl").read_text().splitlines()[0])
+    assert not (tmp_path / "rows.jsonl").exists()        # nothing doubtful in the donation tree
+    row = json.loads((tmp_path / "o" / "research_only_speech_tone.jsonl").read_text()
+                     .splitlines()[0])
     assert row["access"] == "ACCESS_UNCLEAR" and row["terms"] == "permitted"
     series = json.loads((tmp_path / "o" / "official_tone_series.jsonl").read_text().splitlines()[0])
     assert series["terms"] == "unverified"
@@ -258,7 +260,9 @@ def test_a_changed_terms_page_drops_new_rows_to_unverified(tmp_path: Path) -> No
     pages[url] = (200, SPEECH)
     rep = cb.refresh(**kw)
     assert rep["banks"]["Fed"]["terms_changed"] and "re-read" in rep["banks"]["Fed"]["missed_growth"]
-    assert json.loads((tmp_path / "rows.jsonl").read_text().splitlines()[0])["terms"] == "unverified"
+    assert not (tmp_path / "rows.jsonl").exists()
+    held = (tmp_path / "o" / "research_only_speech_tone.jsonl").read_text().splitlines()
+    assert json.loads(held[0])["terms"] == "unverified"
 
 
 def test_rba_rows_stay_unverified_and_state_stays_out_of_the_donation_tree() -> None:
@@ -268,3 +272,32 @@ def test_rba_rows_stay_unverified_and_state_stays_out_of_the_donation_tree() -> 
     # per-speech rows belong there, never this module's own state or series
     assert "intelligence" not in cb.OUT.parts
     assert cb.SPEECH_ROWS.name == "official_speech_tone.jsonl"
+
+
+def test_no_unverified_row_can_land_in_the_donation_tree(tmp_path: Path) -> None:
+    url = "https://www.rba.gov.au/speeches/2026/sp-gov-2026-10-14.html"
+    assert cb.re.search(RBA["link_regex"], url)
+    feed = ("<rss><channel><item><title>Speech</title><link>" + url + "</link>"
+            "<pubDate>Wed, 14 Oct 2026 02:00:00 GMT</pubDate></item></channel></rss>")
+    pages = {"https://www.rba.gov.au/robots.txt": (200, ""), url: (200, SPEECH)}
+    for f in RBA["feeds"]:
+        pages[f] = (200, feed)
+    rep = cb.refresh(fetch=_site(pages), registry=_one_bank({**RBA, "index": None}),
+                     out=tmp_path / "o", report=tmp_path / "r.json",
+                     speech_rows=tmp_path / "intelligence" / "rows.jsonl",
+                     today=date(2026, 11, 10))
+    assert rep["banks"]["RBA"]["scored_this_pass"] == 1 and rep["research_only_rows"] == 1
+    assert not (tmp_path / "intelligence" / "rows.jsonl").exists()
+    series = json.loads((tmp_path / "o" / "official_tone_series.jsonl").read_text().splitlines()[0])
+    assert series["terms"] == "unverified" and series["currency"] == "AUD"
+    assert cb.tradeable({"terms": "permitted", "access": "PUBLIC"})
+    for bad in ({"terms": "unverified", "access": "PUBLIC"}, {"terms": "permitted"},
+                {"terms": "permitted", "access": "ACCESS_UNCLEAR"},
+                {"terms": "permitted", "access": "PUBLIC_WITH_TERMS"}):
+        assert not cb.tradeable(bad), bad
+
+
+def test_a_us_evening_speech_is_not_knowable_before_it_is_spoken() -> None:
+    # delivered 20:00 Pacific on 14 October = 04:00 UTC on the 15th; the index gives only the date
+    spoken = "2026-10-15T04:00:00+00:00"
+    assert cb.knowable_from("2026-10-14") == "2026-10-16T00:00:00+00:00" > spoken
