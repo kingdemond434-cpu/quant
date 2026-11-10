@@ -4161,6 +4161,24 @@ def main() -> None:
     rb = _costed("refresh_bars", refresh_bars)
     smoke = _costed("smoke_release", smoke_release)
     h = _costed("health", health)
+    # THE BOX'S STATE FRESHNESS AND THE DESK'S HEALTH, AT THE HEAD OF THE PASS (moved 2026-11-10).
+    # They used to sit just before `publish_state` so the push carried this hour's verdict. But
+    # MT5-HourlyCore is stopped at its PT55M limit while the heavy legs are still running (box
+    # read 2026-11-10: tier_s 1500 s, replication_civilization 1035 s, daily 902 s, all TIMEOUT;
+    # many "plan=core" lines with no "cycle done"), so the tail was never reached and neither
+    # fence wrote a row after 2026-11-08 -- pinned in ALWAYS_RUN and still dark. At the head they
+    # run every pass; the push still carries them, at most one pass older than before.
+    # Each writes a published report (BOX_STATE_FRESHNESS.json carries CRO D17's
+    # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding).
+    # The fence exits 1 on STALE/UNMEASURED and the leg reads FAILED then -- loud, gating nothing.
+    # BAR AND TICK FRESHNESS first (2026-10-21): `desk_health` reads BARS_STATE.json and flags a
+    # stale feed. Footer reads under a 20 s self-budget; fail-soft, never touches an account.
+    bst = _costed("bars_state", lambda: _producer(
+        "bars_state", "research/bars_state.py", "--budget-s", "20"))
+    bsf = _costed("box_state_freshness", lambda: _producer(
+        "box_state_freshness", "scripts/check_box_state_freshness.py"))
+    dhl = _costed("desk_health", lambda: _producer(
+        "desk_health", "scripts/check_desk_health.py", "--out"))
     # Replication is a required live-door input with a six-hour expiry. Keeping its
     # writer late in the validation department let E8's entry door go stale even
     # while core passes ran. Refresh it on the existing core clock, before the door
@@ -6391,20 +6409,8 @@ def main() -> None:
     rdh = _costed("research_dashboard", lambda: _producer("research_dashboard",
                                                           "research/research_dashboard.py",
                                                           "--once", "--budget-s", "300"))
-    # THE BOX'S STATE FRESHNESS AND THE DESK'S HEALTH, IMMEDIATELY BEFORE PUBLICATION (2026-09-30).
-    # Both write a published report (BOX_STATE_FRESHNESS.json carries CRO D17's
-    # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
-    # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
-    # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
-    # BAR AND TICK FRESHNESS, BEFORE THE PUSH THAT CARRIES IT (2026-10-21), and before
-    # `desk_health`, which reads BARS_STATE.json and flags a stale feed. Footer reads under a 20 s
-    # self-budget; fail-soft, it gates nothing and never touches the terminal or an account.
-    bst = _costed("bars_state", lambda: _producer(
-        "bars_state", "research/bars_state.py", "--budget-s", "20"))
-    bsf = _costed("box_state_freshness", lambda: _producer(
-        "box_state_freshness", "scripts/check_box_state_freshness.py"))
-    dhl = _costed("desk_health", lambda: _producer(
-        "desk_health", "scripts/check_desk_health.py", "--out"))
+    # (bars_state, box_state_freshness and desk_health moved to the head of the pass, 2026-11-10:
+    # see the comment beside `health`.)
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
