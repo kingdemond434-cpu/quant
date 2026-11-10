@@ -65,6 +65,10 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    carrier_rank,
+    carrier_ties,
+    copy_fold_keys,
+    executable_copies,
     fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
@@ -314,6 +318,10 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     cert_book_zero as cert_book_zero,
+    EXECUTABLE_COPIES_FILE as EXECUTABLE_COPIES_FILE,
+    EXECUTABLE_COPIES_MAX_AGE_S as EXECUTABLE_COPIES_MAX_AGE_S,
+    executable_copy_keys as executable_copy_keys,
+    priced_first as priced_first,
 )
 from mt5desk.decision_core import (
     FUSION_DEADMAN_MAX_AGE_S as FUSION_DEADMAN_MAX_AGE_S,
@@ -5266,9 +5274,37 @@ def main() -> None:
     # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
     # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
     # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
-    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
-                                                    else _book_key(_s, _book))
-                                  for _s in sleeves})
+    # ONE BET PER EXECUTABLE, PRICED OR NOT (the Judge, 2026-11-10): a row the book has not
+    # priced joins no book key, so COPIES of one executable each took the base fraction. Such a
+    # row folds on the copy group the Judge published for it (`executable_copies`); a parameter
+    # variant, a family outside the Judge's table and a row with no certificate fold with
+    # nothing. The oldest certificate, then the longest clock, carries (`carrier_rank`).
+    _copies, _copies_why = executable_copies()
+    _pairs = {str(_s["name"]): ((None, None) if cert_book_zero(_s.get("name"))
+                                else (_book_key(_s, _book), _copies.get(str(_s["name"]))))
+              for _s in sleeves}
+    # An unpriced copy of a PRICED bet folds onto the priced row's book key, and a priced row
+    # always outranks an unpriced one as carrier (`copy_fold_keys`, `priced_first`).
+    _fold_keys = copy_fold_keys(_pairs)
+    _ranks = {str(_s["name"]): priced_first(carrier_rank(_s),
+                                            _pairs[str(_s["name"])][0] is not None)
+              for _s in sleeves}
+    _aliases = fold_book_aliases(_fold_keys, _ranks)
+    _onto_priced = sorted(n for n in _aliases
+                          if _pairs[n][0] is None and _pairs[_aliases[n]][0] is not None)
+    # THE PASS REPORT: how many rows were folded onto how many carriers, and which keys' carrier
+    # was decided by name because two rows ranked equal. Saved with the gateway's own state.
+    st["alias_folded"] = {
+        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "n_folded": len(_aliases), "n_carriers": len(set(_aliases.values())),
+        "ties_decided_by_name": carrier_ties(_fold_keys, _ranks),
+        "unpriced_copies_onto_priced": _onto_priced,
+        "aliases": dict(sorted(_aliases.items())), "executable_copies": _copies_why}
+    if _aliases:
+        log(f"ALIAS_FOLDED summary: {len(_aliases)} row(s) folded onto "
+            f"{len(set(_aliases.values()))} carrier(s); "
+            f"{len(st['alias_folded']['ties_decided_by_name'])} tie(s) decided by name; "
+            f"{_copies_why}")
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
@@ -5294,6 +5330,16 @@ def main() -> None:
                 _s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]
                 log(f"ALIAS_FOLDED {_s['name']} -> {_s['alias_of']} on book key {_key}: one "
                     f"order per key, sized at the key's {float(_book[_key]):.5f}")
+        elif str(_s["name"]) in _aliases:
+            # AN UNPRICED COPY: ENTRY SUPPRESSED, ROW KEPT (#823 audit MF2). It stays on the
+            # roster, so an open position or resting bracket of its own is still managed and
+            # closed by every path below; only a NEW entry is withheld, the same way a priced
+            # alias is -- sized by the book at 0 -- never by the base ramp.
+            from_book = True
+            _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
+            _s["alias_of"] = _aliases[str(_s["name"])]
+            log(f"ALIAS_FOLDED {_s['name']} -> {_s['alias_of']} on "
+                f"{_fold_keys[str(_s['name'])]}: a copy of one executable; no new entry")
         if cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
             # forgone sleeve is a missed-growth line once per sleeve per day.

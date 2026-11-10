@@ -59,7 +59,8 @@ def test_a_name_zeroed_row_is_never_the_carrier(monkeypatch) -> None:
     keys = {n: (None if n in zeroed else "CHFNOK_carry_asia") for n in names}
     assert dc.fold_book_aliases(keys) == {}            # b2 carries; a1 is zeroed on its own
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
-    assert 'None if cert_book_zero(_s.get("name"))' in src
+    # a name-zeroed row is given no book key and no copy key: it can carry nothing
+    assert '(None, None) if cert_book_zero(_s.get("name"))' in src
 
 
 def test_rows_on_different_keys_or_off_the_book_are_never_folded() -> None:
@@ -72,7 +73,7 @@ def test_the_gateway_folds_before_sizing_and_logs_alias_folded() -> None:
     assert "_aliases = fold_book_aliases(" in src
     i = src.index("_aliases = fold_book_aliases(")
     j = src.index('_s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]')
-    k = src.index('log(f"ALIAS_FOLDED')
+    k = src.index('log(f"ALIAS_FOLDED', j)        # the priced alias's log, after its zero
     assert i < j < k
     # the alias stays sized by the book: allocator sovereignty sends no order at 0
     assert dc.promoted_lot(10_000.0, 500, dist_usd=0.005, symbol="EURUSD",

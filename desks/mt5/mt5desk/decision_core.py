@@ -1665,16 +1665,145 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
-def fold_book_aliases(keys: Mapping[str, str | None]) -> dict[str, str]:
+def executable_copy_keys(groups: object) -> dict[str, str]:
+    """{roster row name: its copy-group key} from the Judge's published executable groups
+    (reports/HYPOTHESIS_FAMILIES.json -> intake.executable_groups.sleeves.groups; each group is
+    {symbol, family, copies, members[{name, state}]}).
+
+    ONLY TRUE COPIES FOLD (#823 audit MF1). The Judge keys a sleeve by the params of the
+    CERTIFICATE it names, minus the parameters its family never reads
+    (`hypothesis_families.EXECUTABLE_UNREAD`; today carry: input_symbol, symbol). Two rows in one
+    group are one executable under two names -- 43 canon certificates across 8 pairs on
+    2026-11-10 -- and a copy adds no independent E[log W]. A parameter VARIANT is a distinct
+    rule and is in no group with its sibling, a family outside the Judge's table has no groups,
+    and a row whose certificate was not found is in none: each folds with nothing. A group of
+    one, a malformed group, or a name the artifact lists in two groups yields no key."""
+    out: dict[str, str] = {}
+    twice: set[str] = set()
+    for g in groups if isinstance(groups, list) else ():
+        if not isinstance(g, Mapping):
+            continue
+        members = g.get("members")
+        names = sorted({str(m.get("name")) for m in (members if isinstance(members, list) else ())
+                        if isinstance(m, Mapping) and m.get("name")})
+        if len(names) < 2:
+            continue
+        # The Judge's own group key when the artifact carries one (a 16-hex digest of the
+        # executable key, stable within the sleeves store); until then symbol, family and the
+        # first member name are the join, as the Judge specified.
+        gk = g.get("key")
+        key = (f"exe:{gk}" if isinstance(gk, str) and gk else
+               f"exe:{str(g.get('symbol') or '').lower()}|{str(g.get('family') or '').lower()}"
+               f"|{names[0]}")
+        for n in names:
+            if n in out:
+                twice.add(n)
+            out[n] = key
+    for n in twice:
+        out.pop(n, None)
+    return out
+
+
+#: How old the Judge's published executable groups may be and still fold copies. Derived from
+#: its clock: reports/HYPOTHESIS_FAMILIES.json is rewritten hourly, so three missed passes
+#: (3 x 3600 s) is a stalled publisher, and a stale grouping must not suppress an entry: past
+#: it nothing is folded and the reason is logged.
+EXECUTABLE_COPIES_MAX_AGE_S = 10800.0
+#: The Judge's hourly artifact (research/hypothesis_families.py). Read at call time, so the path
+#: a test or the box points this at is the one honoured.
+EXECUTABLE_COPIES_FILE = _DESK / "reports" / "HYPOTHESIS_FAMILIES.json"
+
+
+def executable_copies(path: Path | None = None,
+                      now: float | None = None) -> tuple[dict[str, str], str]:
+    """({roster row name: copy-group key}, why) from the Judge's hourly artifact
+    (`EXECUTABLE_COPIES_FILE` unless `path` is given). Absent, unreadable, stale or without
+    `intake.executable_groups` (the artifact before #806): no copies are known and nothing is
+    folded -- every row sizes exactly as before."""
+    p = Path(path) if path is not None else Path(EXECUTABLE_COPIES_FILE)
+    try:
+        age = (time.time() if now is None else now) - p.stat().st_mtime
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {}, f"executable copies UNMEASURED ({p.name}: {type(exc).__name__})"
+    if age > EXECUTABLE_COPIES_MAX_AGE_S:
+        return {}, (f"executable copies UNMEASURED ({p.name} is {age / 3600:.1f}h old, limit "
+                    f"{EXECUTABLE_COPIES_MAX_AGE_S / 3600:.0f}h)")
+    sl = (((doc.get("intake") or {}).get("executable_groups") or {}).get("sleeves")
+          if isinstance(doc, dict) and isinstance(doc.get("intake"), dict) else None)
+    if not isinstance(sl, dict) or "groups" not in sl:
+        return {}, f"executable copies UNMEASURED ({p.name} publishes no sleeve groups yet)"
+    groups = sl.get("groups")
+    keys = executable_copy_keys(groups)
+    # The artifact lists the 40 largest groups and 25 members of each; `copies` is the true
+    # count. A member past the cap is not listed and so folds with nothing: counted, not hidden.
+    cut = sum(1 for g in (groups if isinstance(groups, list) else ())
+              if isinstance(g, Mapping) and isinstance(g.get("members"), list)
+              and isinstance(g.get("copies"), int) and g["copies"] > len(g["members"]))
+    return keys, (f"executable copies from {p.name}: {len(keys)} row(s) in "
+                  f"{len(set(keys.values()))} copy group(s)"
+                  + (f"; {cut} group(s) list fewer members than their copies (capped)"
+                     if cut else ""))
+
+
+def copy_fold_keys(pairs: Mapping[str, tuple[str | None, str | None]]) -> dict[str, str | None]:
+    """{row: fold key} from {row: (book key or None, copy-group key or None)}.
+
+    A priced row folds on its BOOK key (#708). An unpriced copy folds on the book key of a
+    priced member of its copy group when there is one (#823 audit SF: otherwise the unpriced
+    copy still took the base fraction beside the priced bet), else on its copy-group key. A row
+    with neither folds with nothing."""
+    group_book: dict[str, str] = {}
+    for _name, (bk, ek) in sorted(pairs.items()):
+        if bk and ek:
+            group_book.setdefault(ek, bk)
+    return {name: (bk or (group_book.get(ek) if ek else None) or ek)
+            for name, (bk, ek) in pairs.items()}
+
+
+def priced_first(rank: tuple[str, float], priced: bool) -> tuple[str, float]:
+    """`carrier_rank` with a PRICED row ahead of every unpriced one: the carrier of a key the book
+    prices must be a row the book prices, or the cell's fraction would be replaced by the base
+    ramp of an unpriced copy."""
+    return (("0|" if priced else "1|") + rank[0], rank[1])
+
+
+def carrier_ties(keys: Mapping[str, str | None],
+                 rank: Mapping[str, tuple[str, float]]) -> list[str]:
+    """The fold keys whose two best rows rank EQUAL, so the name decided the carrier."""
+    worst = ("9999", 0.0)
+    by_key: dict[str, list[tuple[str, float]]] = {}
+    for name, k in keys.items():
+        if k is not None:
+            by_key.setdefault(k, []).append(rank.get(name, worst))
+    return sorted(k for k, rs in by_key.items() if len(rs) > 1 and sorted(rs)[0] == sorted(rs)[1])
+
+
+def carrier_rank(s: Mapping[str, Any]) -> tuple[str, float]:
+    """Which row of one bet carries it: the OLDEST certificate, then the LONGEST forward clock
+    (the Judge's rule for collapsing copies). Rows without either sort last; ties fall to name."""
+    cert = s.get("certificate")
+    gated = str(cert.get("gated_at") or "") if isinstance(cert, Mapping) else ""
+    try:
+        days = float(s.get("shadow_days") or 0.0)
+    except (TypeError, ValueError):
+        days = 0.0
+    return (gated or "9999", -days)
+
+
+def fold_book_aliases(keys: Mapping[str, str | None],
+                      rank: Mapping[str, tuple[str, float]] | None = None) -> dict[str, str]:
     """ONE ORDER PER BOOK KEY (hourly pass / Auditor MUST-FIX, 2026-11-04). The allocator prices a
     (symbol, family, window) CELL once; every roster row that `_book_key` folds onto that cell
     would otherwise send the cell's whole fraction, so k LIVE variants of one cell sent k times
     its risk and `cap_by_heat` only trims the total. Given {row name: book key or None}, returns
-    {alias row name: the row that carries the key}: the carrier is the first name in sorted order
-    (deterministic across passes), every other row on the key is an ALIAS that sends nothing."""
+    {alias row name: the row that carries the key}: the carrier is the best `rank` (see
+    `carrier_rank`), then the first name in sorted order (deterministic across passes); every
+    other row on the key is an ALIAS that sends nothing."""
     carrier: dict[str, str] = {}
     folded: dict[str, str] = {}
-    for name in sorted(keys):
+    worst = ("9999", 0.0)
+    for name in sorted(keys, key=lambda n: ((rank or {}).get(n, worst), n)):
         k = keys[name]
         if k is None:
             continue
