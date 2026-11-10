@@ -40,7 +40,7 @@ import os
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -98,8 +98,8 @@ UNMEASURED = "UNMEASURED"
 #: reads this tuple and the source.
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
-    "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "mt5desk.family_state_space", "mt5desk.engine", "mt5desk.family_call", "proposer_common",
+    "external_gauntlet", "lead_replication", "shadow_forward", "external_shadow")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -146,6 +146,9 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: The broker's own per-bar columns when the file carries them (`spread`, `tick_volume`),
+    #: aligned to `t`. Only the rules that read the venue's state use them.
+    cols: dict[str, np.ndarray] = field(default_factory=dict)
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -164,7 +167,7 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, cols: Mapping[str, np.ndarray] | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
@@ -173,7 +176,12 @@ def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.nda
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000),
+                {k: np.asarray(v, dtype="float64")[order] for k, v in dict(cols or {}).items()})
+
+
+#: The broker's per-bar columns the lane carries beside OHLC when a file holds them.
+VENUE_COLUMNS = ("spread", "tick_volume")
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -221,11 +229,14 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = {k: frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 for k in VENUE_COLUMNS if k in cols and cols[k] in frame.columns}
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), arrs[0], arrs[1], arrs[2], arrs[3],
+                            cols=extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -286,6 +297,13 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The rule itself decides each order's side (a fade reverses the move it reads), so the
+    #: certificate's single `side` field must not filter its orders.
+    rule_sets_side: bool = False
+    #: The session is the certificate's own `session` PARAMETER, never its selector: the desk
+    #: builds these cells with no window (`_selector` stamps them "continuous", and older rows
+    #: carry the "asia" fallback the gauntlet records as a lie for families with no session).
+    session_in_params: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -746,6 +764,832 @@ SPEC_BOOK.update({
 })
 
 
+#: The plumbing moments a clock_transition certificate may name. The lane reads the STAMP HOUR the
+#: certificate carries, never a time-zone conversion, so only the names are needed here.
+CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_equity_close",
+                          "comex_settle", "tokyo_open", "london_open", "ny_open",
+                          "broker_rollover"})
+CLOCK_MODES = ("into", "out_of", "fade")
+
+
+def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
+    label, mode = str(p.get("label") or ""), str(p.get("mode") or "")
+    side, hour = int(p.get("side") or 0), int(p.get("stamp_hour", -1))
+    if label not in CLOCK_LABELS or mode not in CLOCK_MODES or side not in (1, -1):
+        return []
+    if not 0 <= hour <= 23 or len(b) < max(1, 1440 // max(1, b.minutes)) * 60:
+        return []
+    at = np.flatnonzero(b.hour == hour)
+    if at.size < 40:
+        return []
+    lead, hold = int(p["lead_bars"]), int(p["hold_bars"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    a = atr(b, int(p["atr_n"]))
+    out: list[Order] = []
+    for i in at:
+        if mode == "into":
+            entry, ttl, s = int(i) - lead, lead, side
+            if entry < 1:
+                continue
+        elif mode == "out_of":
+            entry, ttl, s = int(i), hold, side
+        else:
+            j = int(i) - lead
+            if j < 1:
+                continue
+            move = float(b.c[i] - b.c[j])
+            if move == 0.0:
+                continue
+            entry, ttl, s = int(i), hold, (-1 if move > 0 else 1) * side
+        ai = float(a[entry])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[entry])
+        out.append(Order(int(b.t[entry]), s, px - s * stop_atr * ai,
+                         px + s * stop_atr * ai * rr, max(1, ttl)))
+    return out
+
+
+SPEC_BOOK["clock_transition"] = RuleSpec(
+    "clock_transition",
+    "One named plumbing moment (label: london_fix, ny_option_cut, cme_fx_close, "
+    "cash_equity_close, comex_settle, tokyo_open, london_open, ny_open, broker_rollover) at the "
+    "broker STAMP hour the certificate names (stamp_hour). Stands aside on fewer than 60 days of "
+    "bars or fewer than 40 bars at that hour. At every bar i stamped at that hour: into -- signal "
+    "at bar i - lead_bars on `side`, time exit after lead_bars; out_of -- signal at bar i on "
+    "`side`, time exit after hold_bars; fade -- signal at bar i against the sign of close[i] - "
+    "close[i - lead_bars] (times `side`; no move, no signal), time exit after hold_bars. Stop "
+    "stop_atr x ATR(atr_n) and target rr x that from the signal close, entry next open; ATR "
+    "is the trailing mean true range, fewer bars allowed at the start.",
+    {"label": "", "stamp_hour": -1, "mode": "out_of", "side": 1, "lead_bars": 2,
+     "hold_bars": 4, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+    _build_clock_transition, rule_sets_side=True)
+
+
+#: Where a factor's bars come from. `load_bars` on the desk's universe store, the same chart the
+#: target is read from; a test hands in its own frames here.
+FACTOR_BARS: Callable[[str, str], Bars | None] = load_bars
+RESIDUAL_SIDE_MODES = frozenset({"revert", "continue"})
+
+
+def _causal_ols_residual(y: np.ndarray, x: np.ndarray, win: int) -> np.ndarray:
+    """eps[t] = y[t] - (a + x[t] . b), with (a, b) the least-squares fit on rows t-win .. t-1
+    only; NaN before row `win`. Written as the plain loop on purpose: this lane is the second
+    implementation, so it does not borrow the desk's cumulative-sum solver."""
+    n, k = x.shape
+    eps = np.full(n, np.nan)
+    if win < k + 2:
+        return eps
+    for t in range(win, n):
+        z = np.column_stack([np.ones(win), x[t - win:t]])
+        coef, *_ = np.linalg.lstsq(z, y[t - win:t], rcond=None)
+        eps[t] = y[t] - float(coef[0] + x[t] @ coef[1:])
+    return eps
+
+
+def _trailing_z(v: np.ndarray, n: int) -> np.ndarray:
+    """(v - mean) / sd (ddof 1) over the trailing n values; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    if n < 2 or v.size < n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n)
+    full = np.isfinite(w).all(axis=1)
+    mu = np.where(full, np.nanmean(np.where(np.isfinite(w), w, 0.0), axis=1), np.nan)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        sd = np.where(full, np.std(np.where(np.isfinite(w), w, 0.0), axis=1, ddof=1), np.nan)
+        out[n - 1:] = (v[n - 1:] - mu) / sd
+    return out
+
+
+def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
+    names = [str(s) for s in (p.get("factor_symbols") or []) if str(s)]
+    mode = str(p.get("side_mode") or "")
+    if not names or mode not in RESIDUAL_SIDE_MODES:
+        return []
+    tf = str(p.get("timeframe") or "H1")
+    loaded = [FACTOR_BARS(s, tf) for s in names]
+    factors = [f for f in loaded if f is not None]
+    if len(factors) != len(loaded):
+        return []                               # a partial basket is a different model
+    lookback = int(p["lookback"])
+    bwin = int(p.get("beta_win") or 0) or lookback
+    # the bars every leg printed: the target's stamps, intersected with each factor's
+    common = np.unique(b.t)
+    for f in factors:
+        common = np.intersect1d(common, f.t)
+    yc = b.c[np.searchsorted(b.t, common)]
+    xc = np.column_stack([f.c[np.searchsorted(f.t, common)] for f in factors])
+    keep = np.isfinite(yc) & np.isfinite(xc).all(axis=1)
+    common, yc, xc = common[keep], yc[keep], xc[keep]
+    if len(common) < bwin + lookback * 2:
+        return []
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ry = np.concatenate([[np.nan], np.diff(np.log(yc))])
+        rx = np.vstack([np.full((1, xc.shape[1]), np.nan), np.diff(np.log(xc), axis=0)])
+    ok = np.isfinite(ry) & np.isfinite(rx).all(axis=1)
+    if int(ok.sum()) < bwin + lookback * 2:
+        return []
+    t_ok = common[ok]
+    eps = _causal_ols_residual(ry[ok], rx[ok], bwin)
+    cum = np.where(np.isfinite(eps), np.cumsum(np.where(np.isfinite(eps), eps, 0.0)), np.nan)
+    z = _trailing_z(cum, lookback)
+    a = atr(b, int(p["atr_n"]))[np.searchsorted(b.t, t_ok)]
+    hours = {int(h) for h in p["active_hours"]} if p.get("active_hours") else None
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for i in range(bwin + lookback, len(cum) - 1):
+        zi = float(z[i])
+        if not np.isfinite(zi) or abs(zi) < float(p["entry_z"]):
+            continue
+        if hours is not None and int((t_ok[i] // 3_600_000_000_000) % 24) not in hours:
+            continue
+        if not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
+        # THE ANCHOR IS ROW i OF THE JOINED FRAME, NOT OF THE RETURN SERIES, as the family
+        # indexes it: the first joined row has no return, so this is the close one row BEFORE
+        # the signal row. Mirrored, not corrected: the certificates were minted on it.
+        px, sd = float(yc[i]), stop_atr * float(a[i])
+        out.append(Order(int(t_ok[i]), side, px - side * sd, px + side * sd * rr, ttl))
+    return out
+
+
+SPEC_BOOK["cross_asset_residual"] = RuleSpec(
+    "cross_asset_residual",
+    "The target's close and each named factor's close (factor_symbols, same chart) on the bars "
+    "every leg printed. Log returns bar to bar; the residual at row t is the target's return "
+    "less an intercept and the factors' returns weighted by a least-squares fit on rows "
+    "t - beta_win .. t - 1 only (beta_win defaults to lookback). Cumulative residual, z-scored "
+    "over the trailing lookback rows (sample sd). Stands aside on a missing factor, an unknown "
+    "side_mode, or fewer than beta_win + 2 x lookback rows. From row beta_win + lookback on, "
+    "|z| >= entry_z on a stamp hour in active_hours (every hour when none) signals: revert "
+    "fades the sign of z, continue follows it. Stop stop_atr x ATR(atr_n) (at the signal row) "
+    "and target rr x that from the close of joined row i -- the row before the signal row, as "
+    "the family indexes it -- entry next open, time exit after ttl_bars. The session is the "
+    "certificate's `session` parameter, never its selector.",
+    {"factor_symbols": [], "timeframe": "H1", "lookback": 240, "beta_win": None,
+     "entry_z": 2.0, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72,
+     "side_mode": "revert", "active_hours": None},
+    _build_cross_asset_residual, rule_sets_side=True, session_in_params=True)
+
+
+SPREAD_MODES = frozenset({"spike_reversion", "calm_continuation"})
+
+
+def _ffill(v: np.ndarray) -> np.ndarray:
+    """Each NaN takes the last finite value before it; leading NaNs stay NaN."""
+    ok = np.isfinite(v)
+    pos = np.where(ok, np.arange(v.size), -1)
+    np.maximum.accumulate(pos, out=pos)
+    return np.where(pos >= 0, v[np.maximum(pos, 0)], np.nan)
+
+
+def _trailing_rank(v: np.ndarray, n: int) -> np.ndarray:
+    """At row i >= n: the share of the n values before row i that are <= the value at row i
+    (a NaN compares false, so it counts in the denominator only); NaN before row n."""
+    out = np.full(v.size, np.nan)
+    if v.size <= n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n + 1)
+    with np.errstate(invalid="ignore"):
+        out[n:] = (w[:, :-1] <= w[:, -1:]).mean(axis=1)
+    return out
+
+
+def _build_spread_state(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, nw = str(p.get("mode") or ""), int(p["norm_window"])
+    if mode not in SPREAD_MODES or "spread" not in b.cols or len(b) < nw * 3:
+        return []
+    spread = _ffill(b.cols["spread"])
+    fin = spread[np.isfinite(spread)]
+    if fin.size == 0 or not (fin.size > 1 and float(np.std(fin, ddof=1)) > 0):
+        return []
+    ret = np.concatenate([[np.nan], np.diff(b.c)])
+    a = atr(b, int(p["atr_n"]))
+    sp_rank = _trailing_rank(spread, nw)
+    has_vol = "tick_volume" in b.cols
+    act_rank = _trailing_rank(_ffill(b.cols["tick_volume"]), nw) if has_vol else None
+    hold, min_mv = int(p["hold_bars"]), float(p["min_move_atr"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    last = -10 ** 9
+    for i in range(nw, len(b) - 1):
+        if i - last < hold or not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        mv = float(ret[i])
+        if not np.isfinite(mv) or abs(mv) < min_mv * a[i] or not np.isfinite(sp_rank[i]):
+            continue
+        if mode == "spike_reversion":
+            if sp_rank[i] < float(p["spike_pct"]):
+                continue
+            side = -1 if mv > 0 else 1
+        else:
+            if sp_rank[i] > float(p["calm_pct"]):
+                continue
+            if act_rank is not None and not (np.isfinite(act_rank[i])
+                                             and act_rank[i] >= float(p["active_pct"])):
+                continue
+            side = 1 if mv > 0 else -1
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * sd * rr, hold))
+        last = i
+    return out
+
+
+SPEC_BOOK["spread_state"] = RuleSpec(
+    "spread_state",
+    "The broker's own per-bar spread (forward-filled over gaps) and, when the file has it, "
+    "tick_volume. Each is ranked at row i as the share of the norm_window values before it at "
+    "or below it. Stands aside with no spread column, a flat spread, an unknown mode, or fewer "
+    "than 3 x norm_window bars. From row norm_window on, a bar whose close-to-close move is at "
+    "least min_move_atr x ATR(atr_n) signals -- spike_reversion: spread rank >= spike_pct, "
+    "against the move; calm_continuation: spread rank <= calm_pct and (with volume) activity "
+    "rank >= active_pct, with the move -- then nothing for hold_bars bars. Stop stop_atr x ATR "
+    "and target rr x that from the signal close, entry next open, time exit after hold_bars.",
+    {"mode": "spike_reversion", "norm_window": 240, "spike_pct": 0.95, "calm_pct": 0.20,
+     "active_pct": 0.80, "min_move_atr": 0.5, "hold_bars": 6, "atr_n": 20, "stop_atr": 2.0,
+     "rr": 1.5},
+    _build_spread_state, rule_sets_side=True, session_in_params=True)
+
+
+def _trailing_mean(v: np.ndarray, n: int) -> np.ndarray:
+    """Mean of rows i-n+1 .. i; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    if n < 1 or v.size < n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n)
+    full = np.isfinite(w).all(axis=1)
+    out[n - 1:] = np.where(full, np.where(np.isfinite(w), w, 0.0).mean(axis=1), np.nan)
+    return out
+
+
+def _build_jump(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, lb, atr_n = str(p.get("mode") or ""), int(p["lookback"]), int(p["atr_n"])
+    if mode not in ("continue", "revert") or lb < 4 or len(b) < lb + atr_n + 3:
+        return []
+    with np.errstate(invalid="ignore", divide="ignore"):
+        r = np.concatenate([[np.nan], np.diff(np.log(b.c))])
+        absr = np.abs(r)
+        bip = _trailing_mean(absr * np.concatenate([[np.nan], absr[:-1]]), lb)
+        sigma = np.sqrt(np.concatenate([[np.nan], bip[:-1]]) * (np.pi / 2.0))
+        stat = absr / sigma
+    a = atr(b, atr_n)
+    flip = 1 if mode == "continue" else -1
+    k, cool = float(p["jump_k"]), int(p["cooldown_bars"])
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    last = -(10 ** 9)
+    for i in range(lb + 1, len(b) - 1):
+        if not (np.isfinite(stat[i]) and stat[i] >= k and np.isfinite(r[i]) and r[i] != 0.0
+                and np.isfinite(a[i]) and a[i] > 0) or i - last < cool:
+            continue
+        last = i
+        side = flip * (1 if r[i] > 0 else -1)
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * sd * rr, ttl))
+    return out
+
+
+SPEC_BOOK["jump"] = RuleSpec(
+    "jump",
+    "Log close-to-close returns r. At bar i the jump statistic is |r_i| / sigma_i, with "
+    "sigma_i^2 = (pi/2) x the mean of |r_j||r_j-1| over the lookback bars ending at i - 1 "
+    "(bipower variation, bar i excluded; NaN unless every term exists). Stands aside on an "
+    "unknown mode, lookback < 4, or fewer than lookback + atr_n + 3 bars. From bar lookback + 1, "
+    "a statistic >= jump_k on a non-zero return with a positive ATR(atr_n) signals -- continue "
+    "with the return's sign, revert against it -- and no further signal for cooldown_bars "
+    "bars. Stop stop_atr x ATR and target rr x that from the signal close, entry next open, "
+    "time exit after ttl_bars. The session is the certificate's parameter.",
+    {"mode": "continue", "lookback": 48, "jump_k": 4.0, "cooldown_bars": 8, "atr_n": 20,
+     "stop_atr": 1.5, "rr": 1.5, "ttl_bars": 8},
+    _build_jump, rule_sets_side=True, session_in_params=True)
+
+
+# --------------------------------------------------------------- the state-space rule book
+# Five written rules for the framework families of 2026-11-10 (GARCH, Kalman trend and pair,
+# copula pair, OU half-life). None takes a `side`: the rule decides it. Each fires on the bar
+# its condition BECOMES true, and never on the last bar of the file.
+def _rising(cond: np.ndarray) -> np.ndarray:
+    """Rows where `cond` is true and was not true on the row before."""
+    c = np.asarray(cond, dtype=bool)
+    return np.flatnonzero(c & ~np.concatenate([[False], c[:-1]]))
+
+
+def _crossings(v: np.ndarray, limit: float) -> tuple[np.ndarray, np.ndarray]:
+    """(rows where v becomes >= limit, rows where v becomes <= -limit). INCLUSIVE on purpose: a
+    value exactly at the threshold signals, as every rule below writes it (">=", "<=")."""
+    ok = np.isfinite(v)
+    return _rising(ok & (v >= limit)), _rising(ok & (v <= -limit))
+
+
+def _calendar_blocks(t_ns: np.ndarray, back: int, every: int) -> list[tuple[int, int]]:
+    """[start, end) row blocks cut by the CALENDAR: a block starts on the first row of each
+    period of `every` bar-steps counted from the epoch (the bar-step is the median gap between
+    stamps), provided `back` rows precede it; it ends where the next begins, the last at the
+    end of the file."""
+    n = int(t_ns.size)
+    if n < 2 or every < 1:
+        return []
+    step = int(np.median(np.diff(t_ns)))
+    if step <= 0:
+        return []
+    period = t_ns // (step * int(every))
+    starts = [int(i) for i in np.flatnonzero(period[1:] != period[:-1]) + 1 if i >= back]
+    return [(k, starts[j + 1] if j + 1 < len(starts) else n) for j, k in enumerate(starts)]
+
+
+def _log_returns(c: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(log close, its bar-to-bar change); a non-positive close is undefined."""
+    with np.errstate(invalid="ignore", divide="ignore"):
+        lc = np.log(np.where(c > 0, c, np.nan))
+    return lc, np.concatenate([[np.nan], np.diff(lc)])
+
+
+def _gjr_variance(x: np.ndarray, omega: float, alpha: float, gamma: float, beta: float,
+                  v0: float) -> np.ndarray:
+    """v[0] = v0 and v[t+1] = omega + (alpha + gamma [x_t < 0]) x_t^2 + beta v[t], each value
+    floored at 1e-12 after the pass: len(x) + 1 values, the last being the next-bar forecast."""
+    from scipy.signal import lfilter
+
+    v = np.empty(x.size + 1)
+    v[0] = max(v0, 1e-12)
+    if x.size:
+        shock = omega + (alpha + gamma * (x < 0)) * x * x
+        v[1:], _ = lfilter([1.0], [1.0, -beta], shock, zi=[beta * v[0]])
+    return np.maximum(v, 1e-12)
+
+
+GARCH_STARTS = ((0.05, 0.05, 0.05, 0.85), (0.02, 0.08, 0.02, 0.9))
+
+
+def _gjr_fit(r: np.ndarray) -> tuple[float, float, float, float] | None:
+    """The written fit: finite returns (250 or more), demeaned and divided by their own sd;
+    Gaussian likelihood of the GJR recursion started at 1; Nelder-Mead from the two written
+    starts (600 iterations, xatol 1e-5, fatol 1e-4); the lower likelihood wins."""
+    from scipy.optimize import minimize
+
+    r = r[np.isfinite(r)]
+    if r.size < 250:
+        return None
+    r = r - r.mean()
+    s = float(r.std())
+    if not np.isfinite(s) or s <= 0:
+        return None
+    x = r / s
+
+    def loss(q: np.ndarray) -> float:
+        om, al, ga, be = q
+        if om <= 0 or al < 0 or ga < 0 or be < 0 or al + be + 0.5 * ga >= 0.999:
+            return 1e10
+        v = _gjr_variance(x, om, al, ga, be, 1.0)[:-1]
+        return float(0.5 * np.sum(np.log(v) + x * x / v))
+
+    best = None
+    for start in GARCH_STARTS:
+        try:
+            res = minimize(loss, np.array(start), method="Nelder-Mead",
+                           options={"maxiter": 600, "xatol": 1e-5, "fatol": 1e-4})
+        except (ValueError, FloatingPointError):
+            continue
+        if res.fun < 1e9 and (best is None or res.fun < best.fun):
+            best = res
+    if best is None:
+        return None
+    om, al, ga, be = (float(q) for q in best.x)
+    return om * s * s, al, ga, be
+
+
+def _build_garch_shock(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, state = str(p.get("side_mode") or ""), str(p.get("vol_state") or "")
+    window, refit = int(p["window"]), int(p["refit"])
+    if (mode not in ("fade", "follow") or state not in ("any", "calm", "stressed")
+            or window < 1 or refit < 1 or len(b) < window + 2):
+        return []
+    _, r = _log_returns(b.c)
+    n = len(b)
+    sigma, ratio = np.full(n, np.nan), np.full(n, np.nan)
+    for k, end in _calendar_blocks(b.t, window, refit):
+        past = r[k - window:k]
+        fit = _gjr_fit(past)
+        if fit is None:
+            continue
+        om, al, ga, be = fit
+        longrun = om / (1.0 - (al + be + 0.5 * ga))
+        seg = np.nan_to_num(r[k - window:end] - np.nanmean(past))
+        v = _gjr_variance(seg, om, al, ga, be, float(np.nanvar(past)))
+        sigma[k:end] = np.sqrt(v[window:window + (end - k)])
+        if np.isfinite(longrun) and longrun > 0:
+            ratio[k:end] = v[window + 1:window + 1 + (end - k)] / longrun
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = r / sigma
+    cond = np.isfinite(z) & (np.abs(z) >= float(p["entry_z"]))
+    if state == "calm":
+        cond &= np.isfinite(ratio) & (ratio < 1.0)
+    elif state == "stressed":
+        cond &= np.isfinite(ratio) & (ratio >= 1.0)
+    a = atr(b, int(p["atr_n"]))
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for i in _rising(cond):
+        if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        move = 1 if r[i] > 0 else -1
+        side = -move if mode == "fade" else move
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * rr * sd, ttl))
+    return out
+
+
+SPEC_BOOK["garch_shock"] = RuleSpec(
+    "garch_shock",
+    "Log close-to-close returns r. Blocks are cut by the calendar: a block starts on the first "
+    "bar of each period of refit bar-steps counted from the epoch (bar-step = the median gap "
+    "between stamps) that has window bars before it, and runs to the next start. Each block "
+    "is labelled by a zero-mean GJR-GARCH(1,1) fitted on the window returns before it "
+    "(finite ones, 250 or more; demeaned and scaled to unit sd; Gaussian likelihood with the "
+    "variance started at 1; omega > 0, alpha, gamma, beta >= 0, alpha + beta + gamma/2 < 0.999; "
+    "Nelder-Mead from (0.05, 0.05, 0.05, 0.85) and (0.02, 0.08, 0.02, 0.9), 600 iterations, "
+    "xatol 1e-5, fatol 1e-4, lower likelihood wins; omega rescaled by the sd squared). The "
+    "recursion v' = omega + (alpha + gamma [r < 0]) r^2 + beta v is run over the window and "
+    "the block on returns less the window's mean (missing as 0), started at the window's "
+    "variance, floored at 1e-12; sigma_i is the forecast FOR bar i, and the ratio at i is the "
+    "forecast for bar i + 1 over the long-run variance omega / (1 - alpha - beta - gamma/2). A "
+    "block whose fit fails has neither. Stands aside on an unknown side_mode or vol_state or "
+    "fewer than window + 2 bars. The condition is |r_i / sigma_i| >= entry_z, and for calm "
+    "a ratio < 1, for stressed a ratio >= 1. A bar on which the condition becomes true, with a "
+    "positive ATR(atr_n), signals: fade against the return's sign, follow with it. Stop "
+    "stop_atr x ATR and target rr x that from the signal close, entry next open, time exit "
+    "after ttl_bars. The session is the certificate's parameter.",
+    {"window": 1000, "refit": 250, "entry_z": 2.5, "vol_state": "any", "side_mode": "fade",
+     "atr_n": 20, "stop_atr": 1.5, "rr": 1.5, "ttl_bars": 24},
+    _build_garch_shock, rule_sets_side=True, session_in_params=True)
+
+
+def _prior_ewma_var(r: np.ndarray, lam: float) -> np.ndarray:
+    """out[t] = the exponentially weighted mean of r^2 over the finite returns BEFORE t (the
+    first one seeds it); NaN until one exists."""
+    out = np.full(r.size, np.nan)
+    acc = float("nan")
+    for t in range(r.size):
+        out[t] = acc
+        if np.isfinite(r[t]):
+            sq = float(r[t]) * float(r[t])
+            acc = sq if not np.isfinite(acc) else lam * acc + (1.0 - lam) * sq
+    return out
+
+
+STATE_SPACE_LAMBDA = 0.97
+
+
+KALMAN_BLOCK = 500
+
+
+def _trend_tstat(y: np.ndarray, ql: float, qs: float) -> np.ndarray:
+    """The filtered slope over its posterior sd, for one run of the filter from y[0]."""
+    r = np.concatenate([[np.nan], np.diff(y)])
+    noise = _prior_ewma_var(r, STATE_SPACE_LAMBDA)
+    tstat = np.full(y.size, np.nan)
+    started = False
+    level = slope = p00 = p01 = p11 = 0.0
+    for t in range(y.size):
+        obs, rv = float(y[t]), float(noise[t])
+        if not (np.isfinite(obs) and np.isfinite(rv) and rv > 0):
+            continue
+        if not started:
+            level, slope, p00, p01, p11, started = obs, 0.0, rv, 0.0, rv, True
+            continue
+        # predict: the level takes the slope, both variances grow by their stated noise
+        a00 = p00 + 2 * p01 + p11 + ql * rv
+        a01 = p01 + p11
+        a11 = p11 + qs * rv
+        gain0, gain1 = a00 / (a00 + rv), a01 / (a00 + rv)
+        miss = obs - (level + slope)
+        level, slope = level + slope + gain0 * miss, slope + gain1 * miss
+        p00, p01, p11 = a00 - gain0 * a00, a01 - gain0 * a01, a11 - gain1 * a01
+        sd = float(np.sqrt(max(p11, 0.0)))
+        if sd > 0:
+            tstat[t] = slope / sd
+    return tstat
+
+
+def _build_kalman_trend(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, warmup = str(p.get("side_mode") or ""), int(p["warmup"])
+    ql, qs = float(p["q_level"]), float(p["q_slope"])
+    if mode not in ("follow", "fade") or qs <= 0 or ql < 0 or len(b) < warmup + 2:
+        return []
+    y, _ = _log_returns(b.c)
+    n = len(b)
+    tstat = np.full(n, np.nan)
+    for k, end in _calendar_blocks(b.t, warmup, KALMAN_BLOCK):
+        tstat[k:end] = _trend_tstat(y[k - warmup:end], ql, qs)[warmup:]
+    a = atr(b, int(p["atr_n"]))
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for trend, rows in zip((1, -1), _crossings(tstat, float(p["entry_t"])), strict=True):
+        for i in rows:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = trend if mode == "follow" else -trend
+            px, sd_px = float(b.c[i]), stop_atr * float(a[i])
+            out.append(Order(int(b.t[i]), side, px - side * sd_px, px + side * rr * sd_px, ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["kalman_trend"] = RuleSpec(
+    "kalman_trend",
+    "A local-linear-trend Kalman filter on log close: level' = level + slope + noise, slope' = "
+    "slope + noise, close = level + noise. The observation variance R at bar t is the 0.97 "
+    "exponentially weighted mean of squared one-bar log returns BEFORE t; the level and slope "
+    "noises are q_level x R and q_slope x R. Bars without a positive R are skipped; the first "
+    "usable bar starts level = log close, slope = 0, both variances R. The statistic is the "
+    "filtered slope over its posterior sd. The filter is RESTARTED for each calendar block (the "
+    "first bar of each period of 500 bar-steps from the epoch, bar-step = the median gap between "
+    "stamps, with warmup bars before it; a block runs to the next start): it is run from "
+    "warmup bars before the block and only the block's bars are labelled. Stands aside on an "
+    "unknown side_mode, q_slope <= 0, q_level < 0 or fewer than warmup + 2 bars. A bar on "
+    "which the statistic becomes >= entry_t (up) or <= -entry_t (down), with a positive "
+    "ATR(atr_n), signals: follow with the slope, fade against it. Stop stop_atr x ATR and "
+    "target rr x that from the signal close, entry next open, time exit after ttl_bars. The "
+    "session is the certificate's parameter.",
+    {"q_level": 0.1, "q_slope": 1e-3, "entry_t": 2.0, "side_mode": "follow", "warmup": 500,
+     "atr_n": 20, "stop_atr": 2.0, "rr": 2.0, "ttl_bars": 48},
+    _build_kalman_trend, rule_sets_side=True, session_in_params=True)
+
+
+MAX_PEER_LAG_BARS = 6
+
+
+def _paired_closes(b: Bars, p: Mapping[str, Any]
+                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """(rows of `b`, this leg's close, the peer's close) on the stamps BOTH printed, exactly --
+    no carried peer close. None with no pair_symbol, off the H1 chart, no peer bars, or a peer
+    whose last close is more than MAX_PEER_LAG_BARS of this leg's bars before its last bar."""
+    name = str(p.get("pair_symbol") or "")
+    if not name or b.minutes != 60:
+        return None
+    peer = FACTOR_BARS(name, "H1")
+    if peer is None:
+        return None
+    common = np.intersect1d(np.unique(b.t), peer.t)
+    rows = np.searchsorted(b.t, common)
+    mine, theirs = b.c[rows], peer.c[np.searchsorted(peer.t, common)]
+    seen = rows[np.isfinite(theirs)]
+    if not seen.size or len(b) - 1 - int(seen[-1]) > MAX_PEER_LAG_BARS:
+        return None                             # a peer store that has fallen behind
+    keep = np.isfinite(mine) & np.isfinite(theirs)
+    return rows[keep], mine[keep], theirs[keep]
+
+
+def _hedge_gap(ya: np.ndarray, yb: np.ndarray, delta: float) -> tuple[np.ndarray, np.ndarray]:
+    """(innovation, innovation over the sd of the predicted spread) for one run of the
+    time-varying hedge filter from row 0."""
+    n = ya.size
+    gap, z = np.full(n, np.nan), np.full(n, np.nan)
+    started = False
+    icpt = hedge = 0.0
+    c00, c01, c11 = 1.0, 0.0, 1.0
+    meas = float("nan")
+    for t in range(n):
+        u, w = float(ya[t]), float(yb[t])
+        if not (np.isfinite(u) and np.isfinite(w)):
+            continue
+        if not started:
+            icpt, hedge, c00, c01, c11, started = u - w, 1.0, 1.0, 0.0, 1.0, True
+            continue
+        miss = u - (icpt + hedge * w)
+        ve = meas if np.isfinite(meas) else miss * miss + 1e-12
+        d00, d01, d11 = c00 + delta * ve, c01, c11 + delta * ve
+        g0, g1 = d00 + d01 * w, d01 + d11 * w            # state covariance times (1, peer)
+        spread_var = g0 + w * g1 + ve
+        gap[t], z[t] = miss, miss / np.sqrt(spread_var)
+        k0, k1 = g0 / spread_var, g1 / spread_var
+        icpt, hedge = icpt + k0 * miss, hedge + k1 * miss
+        c00, c01, c11 = d00 - k0 * g0, d01 - k0 * g1, d11 - k1 * g1
+        meas = STATE_SPACE_LAMBDA * ve + (1.0 - STATE_SPACE_LAMBDA) * miss * miss
+    return gap, z
+
+
+def _build_kalman_pair(b: Bars, p: dict[str, Any]) -> list[Order]:
+    delta, warmup = float(p["delta"]), int(p["warmup"])
+    if not 0 < delta < 1:
+        return []
+    joined = _paired_closes(b, p)
+    if joined is None or len(joined[0]) < warmup + 2:
+        return []
+    rows, mine, theirs = joined
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ya, yb = np.log(mine), np.log(theirs)
+    n = len(rows)
+    gap, z = np.full(n, np.nan), np.full(n, np.nan)
+    for k, end in _calendar_blocks(b.t[rows], warmup, KALMAN_BLOCK):
+        seg_gap, seg_z = _hedge_gap(ya[k - warmup:end], yb[k - warmup:end], delta)
+        gap[k:end], z[k:end] = seg_gap[warmup:], seg_z[warmup:]
+    frac, near = float(p["target_frac"]), float(p["min_target_atr"])
+    a = atr(b, int(p["atr_n"]))[rows]
+    stop_atr, ttl = float(p["stop_atr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for hits in _crossings(z, float(p["entry_z"])):
+        for i in hits:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = -1 if z[i] > 0 else 1
+            px = float(mine[i])
+            target = px * float(np.exp(-frac * gap[i]))
+            if abs(target - px) < near * float(a[i]):
+                continue                        # a dislocation too small to trade
+            out.append(Order(int(b.t[rows[i]]), side, px - side * stop_atr * float(a[i]),
+                             target, ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["kalman_pair"] = RuleSpec(
+    "kalman_pair",
+    "This leg's and the peer's (pair_symbol) H1 closes on the stamps both printed. Log close of "
+    "this leg = intercept + hedge x log close of the peer + noise, intercept and hedge random "
+    "walks tracked by a Kalman filter: started on its first row at intercept = the log "
+    "difference, hedge = 1, identity covariance; each later row's innovation e is this leg less "
+    "the prediction, the measurement variance is the 0.97 exponentially weighted mean of "
+    "squared innovations BEFORE the row (the first uses its own e^2 + 1e-12), the state noise "
+    "is delta x that, and z = e over the sd of the predicted spread. The filter is RESTARTED "
+    "for each calendar block of joined rows (the first row of each period of 500 bar-steps "
+    "from the epoch, bar-step = the median gap between joined stamps, with warmup rows before "
+    "it; a block runs to the next start): it is run from warmup rows before the block and only "
+    "the block's rows are labelled. Stands aside with no pair_symbol, no peer bars, a peer "
+    "whose last close is more than 6 of this leg's bars before its last bar, off H1, delta "
+    "outside (0, 1) or fewer than warmup + 2 joined rows. A row on which z becomes >= entry_z "
+    "(short) or <= -entry_z (long), with a positive ATR(atr_n) of this leg, signals -- unless "
+    "the target is closer to the close than min_target_atr x ATR. Stop stop_atr x ATR from the "
+    "signal close; target = close x exp(-target_frac x e); entry next open, time exit after "
+    "ttl_bars. The session is the certificate's parameter.",
+    {"pair_symbol": None, "delta": 1e-4, "entry_z": 2.0, "target_frac": 1.0,
+     "min_target_atr": 0.5, "warmup": 1000, "atr_n": 20, "stop_atr": 2.5, "ttl_bars": 48},
+    _build_kalman_pair, rule_sets_side=True, session_in_params=True)
+
+
+def _trailing_pct_rank(v: np.ndarray, n: int) -> np.ndarray:
+    """The last value's average rank among the trailing n (itself included) over n, scaled by
+    n / (n + 1) so it is never 1; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    for t in range(n - 1, v.size):
+        w = v[t - n + 1:t + 1]
+        if np.isfinite(w).all():
+            rank = float((w < w[-1]).sum()) + (float((w == w[-1]).sum()) + 1.0) / 2.0
+            out[t] = (rank / n) * n / (n + 1)
+    return out
+
+
+def _trailing_corr(x: np.ndarray, y: np.ndarray, n: int) -> np.ndarray:
+    """Pearson correlation over the trailing n rows; NaN unless all n pairs are finite."""
+    out = np.full(x.size, np.nan)
+    for t in range(n - 1, x.size):
+        u, w = x[t - n + 1:t + 1], y[t - n + 1:t + 1]
+        if not (np.isfinite(u).all() and np.isfinite(w).all()):
+            continue
+        du, dw = u - u.mean(), w - w.mean()
+        den = float(np.sqrt((du * du).sum() * (dw * dw).sum()))
+        if den > 0:
+            out[t] = float((du * dw).sum()) / den
+    return out
+
+
+def _build_copula_pair(b: Bars, p: dict[str, Any]) -> list[Order]:
+    kind, nu = str(p.get("kind") or ""), float(p["nu"])
+    window, cum = int(p["window"]), int(p["cum_bars"])
+    if kind not in ("gauss", "t") or nu <= 2 or window < 2 or cum < 1:
+        return []
+    joined = _paired_closes(b, p)
+    if joined is None or len(joined[0]) < 2 * window + cum:
+        return []
+    from scipy import stats
+
+    rows, mine, theirs = joined
+    _, ra = _log_returns(mine)
+    _, rb = _log_returns(theirs)
+    ua, ub = _trailing_pct_rank(ra, window), _trailing_pct_rank(rb, window)
+    if kind == "t":
+        xa, xb = stats.t.ppf(ua, nu), stats.t.ppf(ub, nu)
+    else:
+        xa, xb = stats.norm.ppf(ua), stats.norm.ppf(ub)
+    rho = np.clip(_trailing_corr(xa, xb, window), -0.995, 0.995)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        if kind == "t":
+            scale = np.sqrt((nu + xb * xb) * (1 - rho * rho) / (nu + 1))
+            cond_p = stats.t.cdf((xa - rho * xb) / scale, nu + 1)
+        else:
+            cond_p = stats.norm.cdf((xa - rho * xb) / np.sqrt(1 - rho * rho))
+    excess = np.where(np.isfinite(rho), cond_p, np.nan) - 0.5
+    n = len(rows)
+    index = np.full(n, np.nan)
+    for t in range(cum - 1, n):
+        w = excess[t - cum + 1:t + 1]
+        if np.isfinite(w).all():
+            index[t] = float(w.sum())
+    tied = np.isfinite(rho) & (np.abs(rho) >= float(p["min_rho"]))
+    a = atr(b, int(p["atr_n"]))[rows]
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    # a row without the dependence is not in the condition, so it is masked BEFORE the crossing
+    for hits in _crossings(np.where(tied, index, np.nan), float(p["entry_m"])):
+        for i in hits:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = -1 if index[i] > 0 else 1
+            px, sd = float(mine[i]), stop_atr * float(a[i])
+            out.append(Order(int(b.t[rows[i]]), side, px - side * sd, px + side * rr * sd, ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["copula_pair"] = RuleSpec(
+    "copula_pair",
+    "This leg's and the peer's (pair_symbol) H1 closes on the stamps both printed; log returns "
+    "row to row. Each return's percentile u is its average rank among the trailing window "
+    "returns (itself included) over window, times window / (window + 1). x = the inverse CDF "
+    "of u (Student-t with nu degrees for kind t, normal for gauss); rho = the correlation of "
+    "the two x series over the trailing window rows, clipped to +/-0.995. The conditional "
+    "probability of this leg given the peer is, for t, T_{nu+1}((xa - rho xb) / sqrt((nu + "
+    "xb^2)(1 - rho^2) / (nu + 1))), for gauss Phi((xa - rho xb) / sqrt(1 - rho^2)). The index "
+    "is the sum of (probability - 0.5) over the last cum_bars rows, all defined. Stands aside "
+    "with no pair_symbol, no peer bars, a peer whose last close is more than 6 of this leg's "
+    "bars before its last bar, off H1, an unknown kind, nu <= 2 or fewer than 2 x "
+    "window + cum_bars joined rows. A row with |rho| >= min_rho on which the index becomes >= "
+    "entry_m (short) or <= -entry_m (long), with a positive ATR(atr_n) of this leg, signals. "
+    "Stop stop_atr x ATR and target rr x that from the signal close, entry next open, time "
+    "exit after ttl_bars. The session is the certificate's parameter.",
+    {"pair_symbol": None, "window": 500, "kind": "t", "nu": 4.0, "cum_bars": 12,
+     "entry_m": 2.0, "min_rho": 0.3, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 24},
+    _build_copula_pair, rule_sets_side=True, session_in_params=True)
+
+
+def _build_ou_reversion(b: Bars, p: dict[str, Any]) -> list[Order]:
+    window = int(p["window"])
+    hl_min, hl_max = float(p["hl_min"]), float(p["hl_max"])
+    hold, frac = float(p["hold_mult"]), float(p["target_frac"])
+    if (not 0 < hl_min < hl_max or hold < 1 or not 0 < frac <= 1 or window < 3
+            or len(b) < 2 * window):
+        return []
+    x, _ = _log_returns(b.c)
+    n = len(b)
+    half, dist, z = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
+    for t in range(window, n):
+        now, was = x[t - window + 1:t + 1], x[t - window:t]
+        if not (np.isfinite(now).all() and np.isfinite(was[0])):
+            continue
+        dn, dw = now - now.mean(), was - was.mean()
+        var_was = float((dw * dw).sum()) / (window - 1)
+        if not var_was > 0:
+            continue
+        slope = float((dn * dw).sum()) / (window - 1) / var_was
+        if not 0 < slope < 1:
+            continue
+        resid = max(float((dn * dn).sum()) / (window - 1) - slope * slope * var_was, 0.0)
+        mu = (float(now.mean()) - slope * float(was.mean())) / (1 - slope)
+        sd = float(np.sqrt(resid / (1 - slope * slope)))
+        half[t] = -np.log(2.0) / np.log(slope)
+        dist[t] = float(x[t]) - mu
+        if sd > 0:
+            z[t] = dist[t] / sd
+    inside = np.isfinite(half) & (half >= hl_min) & (half <= hl_max) & np.isfinite(z)
+    max_ttl, near = int(p["max_ttl"]), float(p["min_target_atr"])
+    a = atr(b, int(p["atr_n"]))
+    stop_atr = float(p["stop_atr"])
+    out: list[Order] = []
+    for hits in _crossings(np.where(inside, z, np.nan), float(p["entry_z"])):
+        for i in hits:
+            if i >= n - 1 or not (np.isfinite(a[i]) and a[i] > 0):
+                continue
+            side = -1 if z[i] > 0 else 1
+            px = float(b.c[i])
+            ttl = int(min(max_ttl, np.ceil(hold * half[i])))
+            target = px * float(np.exp(-frac * dist[i]))
+            if abs(target - px) < near * float(a[i]):
+                continue                        # a reversion smaller than its own cost
+            out.append(Order(int(b.t[i]), side, px - side * stop_atr * float(a[i]),
+                             target, ttl))
+    out.sort(key=lambda o: o.t_ns)
+    return out
+
+
+SPEC_BOOK["ou_reversion"] = RuleSpec(
+    "ou_reversion",
+    "Log close x. At bar t, the least-squares line x_s = a + b x_{s-1} over the window bars "
+    "ending at t (sample variances and covariance). Only 0 < b < 1 is mean-reverting: half-life "
+    "= -ln 2 / ln b bars, equilibrium mu = a / (1 - b), stationary sd = sqrt(residual variance "
+    "/ (1 - b^2)) with residual variance = var(x) - b^2 var(lagged x), floored at 0; z = (x_t - "
+    "mu) / sd. Stands aside unless 0 < hl_min < hl_max, hold_mult >= 1, 0 < target_frac <= 1 "
+    "and there are 2 x window bars. A bar with hl_min <= half-life <= hl_max on which z becomes "
+    ">= entry_z (short) or <= -entry_z (long), with a positive ATR(atr_n), signals -- unless the "
+    "target is closer to the close than min_target_atr x ATR. Stop "
+    "stop_atr x ATR from the signal close; target = close x exp(-target_frac x (x_t - mu)); "
+    "entry next open; time exit after ceil(hold_mult x half-life) bars, at most max_ttl. The "
+    "session is the certificate's parameter.",
+    {"window": 500, "entry_z": 2.0, "hl_min": 4.0, "hl_max": 96.0, "hold_mult": 2.0,
+     "target_frac": 0.5, "min_target_atr": 0.5, "atr_n": 20, "stop_atr": 2.5, "max_ttl": 240},
+    _build_ou_reversion, rule_sets_side=True, session_in_params=True)
+
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
@@ -906,6 +1750,8 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
     if family in HUNT16_FAMILIES:
         p["_session"] = None
+    if spec.session_in_params:
+        p["_session"] = SESSIONS.get(str(dict(params or {}).get("session") or "").lower())
     return p, "ok"
 
 
@@ -916,7 +1762,7 @@ HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
             ) -> tuple[list[Order], list[Fill]]:
     orders = SPEC_BOOK[family].build(bars, dict(p))
-    side = int(p.get("_side") or 0)
+    side = 0 if SPEC_BOOK[family].rule_sets_side else int(p.get("_side") or 0)
     if side:
         orders = [o for o in orders if o.side == side]
     win = p.get("_session")
