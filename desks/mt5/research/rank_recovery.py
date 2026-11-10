@@ -444,6 +444,7 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
     created = existing = failed = 0
     by_producer: Counter[str] = Counter()
     set_aside: Counter[str] = Counter()
+    mint_stamp: dict[str, Any] = {}
     made_rows: list[tuple[str, str]] = []
     stopped = "plan exhausted"
     try:
@@ -464,17 +465,23 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
                 # THE CARRIED CELL NAMES THE INSTRUMENT IT NOW TRADES (box, 2026-11-10: a
                 # forced_flow row on ADAUSD still read `symbol: XAUUSD`, the donor's; this door
                 # is the fourth that moved a cell with its donor's params untouched).
-                from research.gauntlet_buildability import mint_refusal
+                from research.gauntlet_buildability import (
+                    mint_refusal,
+                    mint_refusal_enforced,
+                    mint_refusal_stamp,
+                )
                 from research.hypothesis_families import retarget_params, with_row_symbol
                 carried = with_row_symbol(
                     donor["family"], sym,
                     retarget_params(donor["params"], str(donor["symbol"]), sym))
                 # A CELL THE JUDGE CANNOT BUILD AS CLAIMED IS NOT MINTED: it would credit a
                 # producer with rank for a row that comes back NOT_RUN. Counted by reason.
-                why_not = mint_refusal(donor["family"], carried)
+                why_not = mint_refusal(donor["family"], carried, donor.get("timeframe"))
+                mint_stamp = mint_refusal_stamp()
                 if why_not:
                     set_aside[f"{donor['family']}|{why_not.split(':', 1)[0]}"] += 1
-                    continue
+                    if mint_refusal_enforced():
+                        continue
                 _id, made = enqueue_candidate(
                     family=donor["family"], symbol=sym, params=carried,
                     origin=SOURCE, horizon=hor, conn=con,
@@ -499,6 +506,7 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
         "planned": len(plan), "cells_created": created, "already_present": existing,
         "failed": failed, "producers_credited": len(by_producer),
         "set_aside_unbuildable": sum(set_aside.values()),
+        "mint_refusal": mint_stamp,
         "set_aside_by_family_reason": dict(set_aside.most_common(60)),
         "by_producer": dict(by_producer.most_common(40)),
         "created_rows": made_rows,

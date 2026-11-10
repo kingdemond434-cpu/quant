@@ -58,6 +58,12 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 from libs.moat import registry as R  # noqa: E402
 
 SOURCE = "moat_factory"
+#: A claimed row the judge cannot build as claimed. Not `claimed` (read as sent to the judge by
+#: check_producer_yield) and not `queued` (it would be claimed and refused again every pass).
+SET_ASIDE_STATUS = "set_aside_unbuildable"
+#: Refusals that are facts of the cell itself, true on every host and release.
+PERMANENT_REFUSALS = frozenset({"NO_IMPLEMENTATION", "MISSING_PARAMS", "TIMEFRAME_REFUSED",
+                                "MODIFIER_REFUSED", "BANNED"})
 REPORT = BASE / "reports" / "MOAT_FACTORY.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 SLEEVES = ROOT / "data" / "sleeves.json"
@@ -320,21 +326,47 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
     # from this door carrying a modifier the replay refuses by name. A cell the judge cannot
     # build as claimed is set aside and counted here, never donated; a fault in the question
     # refuses nothing.
+    mint_stamp: dict[str, Any] = {}
+    enforced = True
     try:
-        from research.gauntlet_buildability import mint_refusal
+        from research.gauntlet_buildability import (
+            mint_refusal,
+            mint_refusal_enforced,
+            mint_refusal_stamp,
+        )
+        mint_stamp, enforced = mint_refusal_stamp(), mint_refusal_enforced()
     except Exception:                                          # pragma: no cover - import guard
         mint_refusal = None  # type: ignore[assignment]
     set_aside: Counter[str] = Counter()
+    unmarked = 0
+    marked: Counter[str] = Counter()
     cands: list[dict[str, Any]] = []
     for r in claimed:
         params = _read_params(r.get("params_json"))
         fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
         if not fam or not sym:
             continue
-        why_not = mint_refusal(fam, params) if mint_refusal is not None else None
+        why_not = (mint_refusal(fam, params, r.get("timeframe") or None)
+                   if mint_refusal is not None else None)
         if why_not:
             set_aside[f"{fam}|{why_not.split(':', 1)[0]}"] += 1
-            continue
+            if enforced:
+                # ITS OWN STATUS, NOT `claimed`: check_producer_yield reads `claimed` as sent
+                # to the judge, and this row never reaches it. A reason that is a fact of the
+                # cell (no implementation, a missing param, a refused chart or modifier) parks
+                # it; any other reason can change with the host or the release, so the row
+                # goes back to the queue and is asked again. A failed write is counted.
+                verdict = why_not.split(":", 1)[0]
+                to = SET_ASIDE_STATUS if verdict in PERMANENT_REFUSALS else "queued"
+                rid = str(r.get("id") or "")
+                try:
+                    if rid and R.mark_candidate(rid, to, conn=conn):
+                        marked[to] += 1
+                    else:
+                        unmarked += 1
+                except Exception:
+                    unmarked += 1
+                continue
         mark = provenance_mark(r)
         cand = pc.candidate(
             SOURCE, sym, fam, params, str(r.get("mechanism") or ""),
@@ -358,6 +390,9 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
     out["refusals"] = pc.donation_counts()
     out["set_aside_unbuildable"] = int(sum(set_aside.values()))
     out["set_aside_by_family_reason"] = dict(sorted(set_aside.items()))
+    out["set_aside_status_written"] = dict(marked)
+    out["set_aside_status_not_written"] = unmarked
+    out["mint_refusal"] = mint_stamp
     return out
 
 

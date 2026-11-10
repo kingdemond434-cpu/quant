@@ -597,10 +597,22 @@ def test_every_path_that_moves_a_cell_rewrites_its_traded_instrument() -> None:
     # and both carrying doors ask the judge's own buildability before minting
     for name in ("independence_intake.py", "rank_recovery.py"):
         text = (research / name).read_text("utf-8")
-        assert "mint_refusal(donor[\"family\"], carried)" in text, name
+        assert "mint_refusal(donor[\"family\"], carried, " in text, name
         assert "set_aside_by_family_reason" in text, name
     moat = (research / "moat_candidate_compiler.py").read_text("utf-8")
-    assert "mint_refusal(fam, params)" in moat and "set_aside_by_family_reason" in moat
+    assert "mint_refusal(fam, params, " in moat and "set_aside_by_family_reason" in moat
+    assert "SET_ASIDE_STATUS if verdict in PERMANENT_REFUSALS" in moat
+
+
+def test_the_mint_refusal_switch_counts_and_refuses_nothing(monkeypatch) -> None:
+    from research import gauntlet_buildability as gb
+    assert gb.mint_refusal_enforced() is True
+    monkeypatch.setenv("QUANT_MINT_REFUSAL", "0")
+    assert gb.mint_refusal_enforced() is False
+    stamp = gb.mint_refusal_stamp()
+    assert stamp["enforced"] is False and stamp["answered_on_host"]
+    # the question is still answered under the switch: the doors count it
+    assert gb.mint_refusal("no_such_family_xyz", {}) is not None
     # the intake's donor symbol comes from the registry in whatever case it was stored
     assert hf.retarget_params({"symbol": "USDSGD", "risk_symbol": "JPN225"}, "usdsgd",
                               "ADAUSD") == {"symbol": "ADAUSD", "risk_symbol": "JPN225"}

@@ -527,6 +527,7 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     by_operator: Counter[str] = Counter()
     by_producer: Counter[str] = Counter()
     set_aside: Counter[str] = Counter()
+    mint_stamp: dict[str, Any] = {}
     stopped = "list exhausted"
     try:
         con = connect()
@@ -551,7 +552,11 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
                 # THE CARRIED CELL NAMES THE INSTRUMENT IT NOW TRADES (box, 2026-11-10: 143
                 # carry_risk_off rows were ADAUSD-and-others with `symbol: USDSGD` in params,
                 # judged on the new bars with the donor's carry side).
-                from research.gauntlet_buildability import mint_refusal
+                from research.gauntlet_buildability import (
+                    mint_refusal,
+                    mint_refusal_enforced,
+                    mint_refusal_stamp,
+                )
                 from research.hypothesis_families import retarget_params, with_row_symbol
                 carried = with_row_symbol(
                     donor["family"], sym,
@@ -559,10 +564,12 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
                 # A CELL THE JUDGE CANNOT BUILD AS CLAIMED IS NOT MINTED (box, 2026-11-10: 110
                 # world_macro_state rows naming no series came through this door). Set aside
                 # and counted by reason; the coordinate stays empty and is named as such.
-                why_not = mint_refusal(donor["family"], carried)
+                why_not = mint_refusal(donor["family"], carried, donor.get("timeframe"))
+                mint_stamp = mint_refusal_stamp()
                 if why_not:
                     set_aside[f"{donor['family']}|{why_not.split(':', 1)[0]}"] += 1
-                    continue
+                    if mint_refusal_enforced():
+                        continue
                 _id, made = enqueue_candidate(
                     family=donor["family"], symbol=sym, params=carried,
                     origin=SOURCE, horizon=hor, conn=con,
@@ -594,6 +601,7 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
         "frontier_cells_created": frontier_hits,
         "already_present": existing, "failed": failed,
         "set_aside_unbuildable": sum(set_aside.values()),
+        "mint_refusal": mint_stamp,
         "set_aside_by_family_reason": dict(set_aside.most_common(60)),
         "by_operator": dict(by_operator),
         # WHOSE RULE WENT WHERE. The transplant carries the donor's attribution because the cell

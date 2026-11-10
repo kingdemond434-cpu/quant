@@ -271,6 +271,24 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     return BUILDABLE, why
 
 
+def mint_refusal_enforced() -> bool:
+    """False under QUANT_MINT_REFUSAL=0: the doors still ask and count, and refuse nothing."""
+    import os
+    return os.environ.get("QUANT_MINT_REFUSAL", "1").strip() != "0"
+
+
+def mint_refusal_stamp() -> dict[str, Any]:
+    """Which host answered, and whether the answer was enforced. A reason that depends on a
+    series being on disk is true of THIS host only (the VPS and the box differ), so a report
+    carrying a refusal count says where it was measured."""
+    import socket
+    try:
+        host = socket.gethostname()
+    except Exception:
+        host = "UNMEASURED"
+    return {"answered_on_host": host, "enforced": mint_refusal_enforced()}
+
+
 def mint_refusal(family: str, params: dict[str, Any] | None = None,
                  timeframe: str | None = None) -> str | None:
     """Why a producer must NOT mint this cell, or None when the judge can build it as claimed.
