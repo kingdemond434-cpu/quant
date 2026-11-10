@@ -66,6 +66,29 @@ def _label(key: str) -> str:
     return f"{loc[0]}/{loc[1]}:{name}"[:160]
 
 
+def funnel(rows: list[dict[str, Any]], *, variants: int, too_few: int) -> dict[str, Any]:
+    """Where the sweep's variants stopped, so a run that proposes nothing says why.
+
+    A report only: it reads the rows `pc.deflate` already marked and moves no bar. Before it, a
+    run of 2,130 screened tests and 0 proposals (the box, 2026-11-10) could not say whether the
+    variants died on trade count, on cost, or on the sweep's own deflation.
+    """
+    costed = [r for r in rows if r.get("clears_cost")]
+
+    def _top(key: str, pool: list[dict[str, Any]]) -> Any:
+        vals = [float(r[key]) for r in pool if isinstance(r.get(key), int | float)]
+        return round(max(vals), 3) if vals else UNMEASURED
+
+    return {"variants_built": variants, "too_few_trades": too_few,
+            "min_trades": pc.MIN_TRADES, "screened": len(rows),
+            "clears_cost": len(costed),
+            "clears_cost_and_propose_bar": sum(1 for r in rows if r.get("proposed")),
+            "propose_t": pc.PROPOSE_T,
+            "best_t_gross": _top("t_gross", rows),
+            "best_t_gross_clearing_cost": _top("t_gross", costed),
+            "best_t_deflated_sweep_clearing_cost": _top("t_deflated_sweep", costed)}
+
+
 def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
         donate: bool = True) -> dict[str, Any]:
     now = now or datetime.now(UTC)
@@ -88,6 +111,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
     rows: list[dict[str, Any]] = []
     swept: list[str] = []
     skipped: dict[str, str] = {}
+    variants = too_few = 0
     for sym in order:
         if time.monotonic() - t0 > budget_s:
             break
@@ -109,8 +133,10 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
                         params = {"series_key": key, "z_obs": Z_OBS, "z_lo": lo, "z_hi": hi,
                                   "direction": direction, "hold_bars": hold}
                         sig = family_world_macro_state(d, **params)
+                        variants += 1
                         sc = pc.screen(d, sig, cost, unf)
                         if sc is None:
+                            too_few += 1
                             continue
                         rows.append({"cell": f"{sym}.{FAMILY}.{key}", "symbol": sym,
                                      "params": params, **sc})
@@ -137,6 +163,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
     rep.update({"status": "OK", "symbols_available": len(syms), "symbols_swept": len(swept),
                 "cursor_start": start, "tests_run": len(rows),
                 "cells_proposed": len(proposals),
+                "funnel": funnel(rows, variants=variants, too_few=too_few),
                 "donated": len(cands) if donated else 0, "donation_path": str(donated or ""),
                 "donation_refusals": dict(pc.LAST_DONATION) if donated is None and cands
                 else None,
