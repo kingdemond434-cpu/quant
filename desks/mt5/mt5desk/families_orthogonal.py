@@ -2065,10 +2065,6 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a "
         "Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong "
         "eigenvalues"),
-    "cb_tone_event": (
-        ("H1", "H4", "D1"),
-        "the event is a speech keyed on a publication DATE with no hour, entered from the day "
-        "after; a sub-hourly entry asserts a timing precision the input does not carry"),
     "world_macro_state": (
         ("H1", "H4", "D1"),
         "the conditioning variable is an official statistic printed daily at best and usually "

@@ -153,7 +153,8 @@ def test_the_family_is_registered_and_passes_the_judges_own_preflight():
     from research import family_policy, orthogonal_sweep
     assert fo.ORTHOGONAL_FAMILIES["cb_tone_event"] is F.family_cb_tone_event
     assert "cb_tone_event" in fo.FAMILY_INPUTS
-    assert fo.FAMILY_TIMEFRAMES["cb_tone_event"][0] == ("H1", "H4", "D1")
+    # every chart: the entry is an instant, and a restriction is an exception with a reason
+    assert "cb_tone_event" not in fo.FAMILY_TIMEFRAMES
     assert "cb_tone_event" in orthogonal_sweep.NOT_SOURCED_HERE
     assert not family_policy.family_banned("cb_tone_event")
     spec = {"sym": "XAUUSD", "family": "cb_tone_event",
