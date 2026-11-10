@@ -46,7 +46,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(RPP, "TENSOR", reports / "COVERAGE_TENSOR.json")
     monkeypatch.setattr(RPP, "INGESTION", reports / "INGESTION_EXPLOITATION.json")
     monkeypatch.setattr(RPP, "INGESTION_LEDGER", data / "ingestion_ledger.jsonl")
-    monkeypatch.setattr(RPP, "DEPTH_REPORT", reports / "regional_parity.json")
+    monkeypatch.setattr(RPP, "DEPTH_REPORT", reports / "REGIONAL_DEPTH.json")
     monkeypatch.setattr(RPP, "WORLD", data / "intelligence" / "world")
     monkeypatch.setattr(RPP, "DIGEST", data / "digests" / "regional_parity_digest.json")
     monkeypatch.setattr(RPP, "OUT", reports / "REGIONAL_PARITY.json")
@@ -65,7 +65,7 @@ def doc_and_files(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
                             ("TENSOR", tmp / "reports" / "COVERAGE_TENSOR.json"),
                             ("INGESTION", tmp / "reports" / "INGESTION_EXPLOITATION.json"),
                             ("INGESTION_LEDGER", tmp / "data" / "ingestion_ledger.jsonl"),
-                            ("DEPTH_REPORT", tmp / "reports" / "regional_parity.json"),
+                            ("DEPTH_REPORT", tmp / "reports" / "REGIONAL_DEPTH.json"),
                             ("WORLD", tmp / "data" / "intelligence" / "world"),
                             ("DIGEST", tmp / "data" / "digests" / "regional_parity_digest.json"),
                             ("OUT", tmp / "reports" / "REGIONAL_PARITY.json"),
@@ -170,3 +170,19 @@ def test_candidate_ledger_never_drops_a_row() -> None:
     assert second["n"] == 1 and second["n_present"] == 0
     assert kept["present"] is False and kept["first_seen"] == "2026-10-06T00:00:00+00:00"
     assert kept["last_seen"] == "2026-10-06T00:00:00+00:00"
+
+
+def test_the_depth_report_and_the_pass_output_are_different_files_on_windows() -> None:
+    """The trading box compares names without case: two names that differ only by case are ONE
+    file there, and the organ that writes second replaces the other's document."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "check_regional_parity_names",
+        Path(RPP.__file__).resolve().parents[3] / "scripts" / "check_regional_parity.py")
+    assert spec is not None and spec.loader is not None
+    fence = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fence)
+    assert fence.REPORT.parent.name == RPP.OUT.parent.name == "reports"
+    assert fence.REPORT.name.casefold() != RPP.OUT.name.casefold()
+    # the pass reads the depth report the fence writes, by the same name
+    assert RPP.DEPTH_REPORT.name == fence.REPORT.name

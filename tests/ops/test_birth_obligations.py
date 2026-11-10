@@ -35,7 +35,7 @@ def _baseline_tree(root: Path) -> None:
            json.dumps({"rows": [{"source": "old_source", "stage": "cells_judged"}]}))
     _write(root / "desks" / "mt5" / "reports" / "JUDGE_COVERAGE.json",
            json.dumps({"families": {"old_family": {"judged": 12}}}))
-    _write(root / "desks" / "mt5" / "reports" / "regional_parity.json",
+    _write(root / "desks" / "mt5" / "reports" / "REGIONAL_DEPTH.json",
            json.dumps({"regions": {"old_region": {"depth": 3}}, "flagged": []}))
     _write(root / "libs" / "old_deleter.py",
            "import shutil\n\n\ndef go(p):\n    if p.exists():\n        shutil.rmtree(p)\n")
@@ -73,7 +73,7 @@ def _plant_five(root: Path) -> None:
            json.dumps({"families": {"old_family": {"judged": 12},
                                     "new_family": {"judged": 0}}}))
     # 4. a new country arriving below the standing floors
-    _write(root / "desks" / "mt5" / "reports" / "regional_parity.json",
+    _write(root / "desks" / "mt5" / "reports" / "REGIONAL_DEPTH.json",
            json.dumps({"regions": {"old_region": {"depth": 3}, "new_country": {"depth": 0}},
                        "flagged": ["new_country"]}))
     # 5. a new destructive path that acts without looking
