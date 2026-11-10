@@ -144,3 +144,38 @@ def test_the_fetch_never_writes_fetch_head() -> None:
     src = (ROOT / "ops/release/auditor_sync.py").read_text(encoding="utf-8")
     assert '"--no-write-fetch-head"' in src and '"FETCH_HEAD:' not in src
     assert sy.LOCAL_REF.startswith("refs/auditor-sync/")
+
+
+def test_the_memecoin_registry_is_synced_beside_it_and_one_refusal_never_blocks_the_other(
+    tmp_path: Path, capsys: Any
+) -> None:
+    """Governance 2026-11-10 23:17Z: the Auditor's memecoin rows reach memecoin_gate's
+    MEMECOIN_AUDIT_REGISTRY only through this sync, under the same rules."""
+    origin, box = tmp_path / "origin", tmp_path / "box"
+    origin.mkdir()
+    _git(origin, "init", "-q", "-b", "audit-registry")
+    (origin / sy.FILE).write_text(_text(_row()), encoding="utf-8")
+    meme = _row(pr=143, sha=H2)
+    (origin / sy.MEMECOIN_FILE).write_text(_text(meme), encoding="utf-8")
+    _git(origin, "add", sy.FILE, sy.MEMECOIN_FILE)
+    _git(origin, "commit", "-q", "-m", "rows")
+    subprocess.run(["git", "clone", "-q", str(origin), str(box)], check=True, capture_output=True)
+    out, mout = tmp_path / "rows.jsonl", tmp_path / "memecoin_registry.jsonl"
+    args = ["--repo-dir", str(box), "--out", str(out), "--memecoin-out", str(mout)]
+    assert sy.main(args) == 0
+    assert out.read_text(encoding="utf-8") == _text(_row())
+    assert mout.read_text(encoding="utf-8") == _text(meme)
+    # the memecoin history is rewritten: it alone is refused, quant's rows still sync
+    (origin / sy.FILE).write_text(_text(_row(), _row(verdict="HOLD")), encoding="utf-8")
+    (origin / sy.MEMECOIN_FILE).write_text(_text(_row(pr=144)), encoding="utf-8")
+    _git(origin, "commit", "-q", "-am", "a hold, and a rewrite")
+    capsys.readouterr()
+    assert sy.main(args) == 1
+    said = capsys.readouterr().out
+    assert f"{sy.MEMECOIN_FILE}: REFUSED" in said and f"{sy.FILE}: synced" in said
+    assert out.read_text(encoding="utf-8") == _text(_row(), _row(verdict="HOLD"))
+    assert mout.read_text(encoding="utf-8") == _text(meme)  # kept
+    # one file can never be both outputs; and without --memecoin-out nothing memecoin is touched
+    assert sy.main(["--repo-dir", str(box), "--out", str(out), "--memecoin-out", str(out)]) == 1
+    mout.unlink()
+    assert sy.main(["--repo-dir", str(box), "--out", str(out)]) == 0 and not mout.exists()

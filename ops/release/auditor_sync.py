@@ -32,6 +32,12 @@ WHAT THIS IS NOT. Every Claude session pushes through one GitHub identity, so th
 proof of who wrote a row. It keeps an accidental self-CLEAR from merging; a deliberate forge
 of both records needs an authenticated Auditor channel, which is the named follow-up.
 
+THE MEMECOIN REGISTRY (2026-11-10 23:17Z, Governance). The Auditor keeps the memecoin repo's
+verdicts in a second sole-writer file, MEMECOIN_FILE on the same ref. With --memecoin-out the
+same run copies it, under the same rules, to the file memecoin_gate reads
+(MEMECOIN_AUDIT_REGISTRY). Each file is synced or refused on its own; one refusal never blocks
+the other, and the exit code is 1 if either was refused.
+
 Exit 0 synced; 1 refused (the reason is printed and the old copy is kept).
 """
 
@@ -48,6 +54,7 @@ from pathlib import Path
 
 REF = "refs/heads/audit-registry"
 FILE = "REGISTRY_ROWS.jsonl"
+MEMECOIN_FILE = "MEMECOIN_REGISTRY_ROWS.jsonl"
 #: Where the fetched tip is kept in the checkout: a ref of this script's own, outside heads,
 #: remotes and tags, so no branch, no adopter and no gate ever reads it.
 LOCAL_REF = "refs/auditor-sync/registry"
@@ -92,26 +99,38 @@ def check_rows(text: str) -> int:
     return n
 
 
-def fetch(repo_dir: Path, ref: str = REF, name: str = FILE) -> str:
-    """The registry file at the ref's tip on origin, as text. FETCH_HEAD is never written: the
-    box adopter reads "the FETCH_HEAD already on disk" of the same checkout, and a sync landing
-    in between would hand it this one-file tree (Auditor, #818). The tip goes to LOCAL_REF."""
-    steps = (
-        ("fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", f"+{ref}:{LOCAL_REF}"),
-        ("show", f"{LOCAL_REF}:{name}"),
-    )
-    for args in steps:
-        try:
-            done = subprocess.run(["git", "-C", str(repo_dir), *args], capture_output=True,
-                                  timeout=GIT_TIMEOUT_S, check=False)  # fmt: skip
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            raise Refused(f"git {args[0]} did not run ({type(exc).__name__})") from exc
-        if done.returncode != 0:
-            raise Refused(f"git {args[0]} failed: {done.stderr.decode('utf-8', 'replace')[:200]}")
+def _git(repo_dir: Path, *args: str) -> bytes:
     try:
-        return done.stdout.decode("utf-8")
+        done = subprocess.run(["git", "-C", str(repo_dir), *args], capture_output=True,
+                              timeout=GIT_TIMEOUT_S, check=False)  # fmt: skip
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise Refused(f"git {args[0]} did not run ({type(exc).__name__})") from exc
+    if done.returncode != 0:
+        raise Refused(f"git {args[0]} failed: {done.stderr.decode('utf-8', 'replace')[:200]}")
+    return done.stdout
+
+
+def fetch_ref(repo_dir: Path, ref: str = REF) -> None:
+    """Fetch the ref's tip to LOCAL_REF. FETCH_HEAD is never written: the box adopter reads "the
+    FETCH_HEAD already on disk" of the same checkout, and a sync landing in between would hand it
+    this one-file tree (Auditor, #818)."""
+    _git(repo_dir, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin",
+         f"+{ref}:{LOCAL_REF}")  # fmt: skip
+
+
+def read_file(repo_dir: Path, name: str = FILE) -> str:
+    """One registry file at the fetched tip (LOCAL_REF), as text."""
+    out = _git(repo_dir, "show", f"{LOCAL_REF}:{name}")
+    try:
+        return out.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise Refused("the registry is not UTF-8") from exc
+        raise Refused(f"{name} is not UTF-8") from exc
+
+
+def fetch(repo_dir: Path, ref: str = REF, name: str = FILE) -> str:
+    """The registry file at the ref's tip on origin, as text (fetch_ref, then read_file)."""
+    fetch_ref(repo_dir, ref)
+    return read_file(repo_dir, name)
 
 
 def _lines(text: str) -> list[str]:
@@ -144,14 +163,26 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-dir", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--memecoin-out", type=Path, help="memecoin_gate's MEMECOIN_AUDIT_REGISTRY")
     ap.add_argument("--ref", default=REF)
     a = ap.parse_args(argv)
-    try:
-        print(f"auditor-sync: {sync(fetch(a.repo_dir, a.ref), a.out)}")
-    except Refused as exc:
-        print(f"auditor-sync: REFUSED -- {exc}; the old copy is kept and will read stale")
+    if a.memecoin_out is not None and a.memecoin_out.resolve() == a.out.resolve():
+        print("auditor-sync: REFUSED -- --memecoin-out is the same file as --out")
         return 1
-    return 0
+    try:
+        fetch_ref(a.repo_dir, a.ref)
+    except Refused as exc:
+        print(f"auditor-sync: REFUSED -- {exc}; every old copy is kept and will read stale")
+        return 1
+    rc = 0
+    jobs = [(FILE, a.out)] + ([(MEMECOIN_FILE, a.memecoin_out)] if a.memecoin_out else [])
+    for name, out in jobs:
+        try:
+            print(f"auditor-sync {name}: {sync(read_file(a.repo_dir, name), out)}")
+        except Refused as exc:
+            print(f"auditor-sync {name}: REFUSED -- {exc}; the old copy is kept")
+            rc = 1
+    return rc
 
 
 if __name__ == "__main__":
