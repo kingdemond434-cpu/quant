@@ -262,6 +262,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # canon holding n=0 and 46.7h stale. Portable: it reads the tree and one tracked module, so a
     # fresh clone and the box get the same answer; no desk state required.
     ("check_no_retirement_on_absence.py", ()),
+    # FIXTURE ISOLATION (ARCH-17, 2026-11-10). The adversary's poison canaries and the placebo
+    # audit's positive control are synthetic strategies handed to the real gauntlet every hour,
+    # and the positive control is built to pass it. This reads the survivor register, the
+    # certificate provenance, the sleeve roster and registry, the forward reconcile and the live
+    # deal ledger, and fails when one of those identities stands in any of them. The markers are
+    # proved from the producers' own source. It removes nothing; an absent record is UNMEASURED.
+    ("check_fixture_isolation.py", ()),
     # REGIONAL PARITY (LAWS 5n, principal 2026-09-19). No region absent: every regional forest
     # resolves a country pack or runs a dedicated region package. Depth, coverage debt and the
     # Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute +
