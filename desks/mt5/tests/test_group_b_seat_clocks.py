@@ -70,3 +70,47 @@ def test_text_tail_never_raises() -> None:
     assert hourly_cycle._text_tail(None, 10) == ""
     assert hourly_cycle._text_tail(b"\xffabc", 3) == "abc"
     assert hourly_cycle._text_tail("x" * 50, 5) == "xxxxx"
+
+
+def _rules(lines):
+    import urllib.robotparser
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse(lines)
+    return rp
+
+
+def test_every_index_request_passes_the_robots_gate(monkeypatch) -> None:
+    """Governance ruling (PR #819): a robots.txt Disallow on the exact path stops the fetch, and
+    unreadable robots are not permission. _get is the only network call; it asks first."""
+    opened = []
+    monkeypatch.setattr(index_discovery.urllib.request, "urlopen",
+                        lambda *a, **k: opened.append(a) or (_ for _ in ()).throw(OSError()))
+    monkeypatch.setattr(index_discovery, "_ROBOTS", {
+        "https://api.example.org": _rules(["User-agent: *", "Disallow: /private"]),
+        "https://down.example.org": "robots.txt unreadable (URLError)"})
+    body, why = index_discovery._get("https://api.example.org/private/x")
+    assert body is None and why.startswith("REFUSED") and not opened
+    body, why = index_discovery._get("https://down.example.org/works")
+    assert body is None and "unreadable" in why and not opened
+    index_discovery._get("https://api.example.org/works?q=1")
+    assert len(opened) == 1                       # allowed path: the fetch is attempted
+    src = inspect.getsource(index_discovery)
+    assert src.count("urlopen(") == 2             # the gated fetch and the robots read only
+
+
+def test_robots_status_codes_map_to_allow_deny_or_refuse(monkeypatch) -> None:
+    import urllib.error
+
+    def fail(code):
+        def _open(req, timeout=None, context=None):
+            raise urllib.error.HTTPError(req.full_url, code, "x", {}, None)
+        return _open
+
+    for code, expect in ((404, True), (403, False), (500, None)):
+        monkeypatch.setattr(index_discovery, "_ROBOTS", {})
+        monkeypatch.setattr(index_discovery.urllib.request, "urlopen", fail(code))
+        r = index_discovery._robots_for("https", "h.example.org")
+        if expect is None:
+            assert isinstance(r, str)
+        else:
+            assert r.can_fetch(index_discovery.UA, "https://h.example.org/a") is expect
