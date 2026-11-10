@@ -508,3 +508,70 @@ def test_the_family_reads_the_written_artifact(tmp_path: Path,
     # An artifact that holds nothing for the kind falls back to the rules rather than going dark.
     monkeypatch.setattr(fam, "CALENDAR_PATH", tmp_path / "absent.json")
     assert fam.family_forced_flow(_bars(), 1, mode="pre_flow")
+
+
+# ------------------------------------------------------------- 2026-10-13 flow-mechanics kinds
+
+def _named(kind: str, lo: date, hi: date) -> dict[date, str]:
+    return {e.date: e.name for e in C.events(lo, hi) if e.kind == kind}
+
+
+def test_effective_gotobi_brings_a_closed_day_forward_not_back() -> None:
+    """Sun 15 Mar settles Fri 13 Mar; the 20 Mar equinox holiday settles Thu 19 Mar."""
+    days = sorted(_named("gotobi_fix", date(2026, 3, 1), date(2026, 3, 31)))
+    assert date(2026, 3, 13) in days and date(2026, 3, 16) not in days
+    assert date(2026, 3, 19) in days and date(2026, 3, 23) not in days
+    assert date(2026, 3, 2) not in days                    # Sat 28 Feb belongs to Fri 27 Feb
+    assert date(2026, 2, 27) in _named("gotobi_fix", date(2026, 2, 20), date(2026, 2, 28))
+
+
+def test_japanese_fiscal_flow_is_the_last_ten_tokyo_business_days_of_march_and_september() -> None:
+    march = sorted(_named("jp_fiscal_flow", date(2026, 3, 1), date(2026, 3, 31)))
+    assert len(march) == 10 and march[-1] == date(2026, 3, 31)
+    assert date(2026, 3, 20) not in march                  # Vernal Equinox Day
+    assert not _named("jp_fiscal_flow", date(2026, 4, 1), date(2026, 8, 31))
+    assert len(_named("jp_fiscal_flow", date(2026, 9, 1), date(2026, 9, 30))) == 10
+
+
+def test_fx_option_expiry_is_the_second_friday_before_the_third_wednesday() -> None:
+    rows = [e for e in C.events(date(2026, 3, 1), date(2026, 3, 31))
+            if e.kind == "fx_option_expiry"]
+    assert [e.date for e in rows] == [date(2026, 3, 6)]    # 3rd Wed 18 Mar
+    assert rows[0].name.startswith("imm_")
+    cut = rows[0].window_end_utc - pd.Timedelta(minutes=30)
+    assert cut.astimezone(ZoneInfo("America/New_York")).hour == 10
+
+
+def test_coupon_auctions_are_monthly_and_refunding_is_quarterly() -> None:
+    oct_ = _named("ust_coupon_auction", date(2026, 10, 1), date(2026, 10, 31))
+    assert len(oct_) == 6
+    assert {n.split("_")[1] for n in oct_.values()} == {"2y", "3y", "5y", "7y", "10y", "30y"}
+    assert not _named("ust_refunding", date(2026, 9, 1), date(2026, 10, 31))
+    assert list(_named("ust_refunding", date(2026, 11, 1), date(2026, 11, 30))) == \
+        [date(2026, 11, 4)]
+
+
+def test_cn_holiday_and_the_two_sessions_before_each_closure() -> None:
+    hol = _named("cn_holiday", date(2026, 2, 1), date(2026, 2, 28))
+    assert date(2026, 2, 17) in hol
+    pre = sorted(_named("cn_pre_holiday", date(2026, 2, 1), date(2026, 2, 28)))
+    assert pre == [date(2026, 2, 12), date(2026, 2, 13)]
+    assert C.build(today=date(2026, 10, 13))["unmeasured"]["cn_holiday_years"] == [2027]
+
+
+def test_every_new_kind_is_declared_and_named_by_program_ir() -> None:
+    from libs.research.program_ir import CALENDAR_KINDS
+    for kind in ("gotobi_fix", "jp_fiscal_flow", "fx_option_expiry", "ust_coupon_auction",
+                 "ust_refunding", "cn_holiday", "cn_pre_holiday"):
+        assert kind in C.KINDS and kind in CALENDAR_KINDS
+
+
+def test_a_partial_artifact_never_truncates_the_backtest_history(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The hourly artifact holds ~400 days; a span it does not cover is computed, not dropped."""
+    import mt5desk.family_forced_flow as fam
+    out = tmp_path / "forced_flow_calendar.json"
+    C.write(out, days_ahead=30, days_back=30, today=date(2026, 3, 31))
+    monkeypatch.setattr(fam, "CALENDAR_PATH", out)
+    windows = calendar_windows("month_end", date(2024, 1, 1), date(2026, 3, 31))
+    assert len(windows) == 27

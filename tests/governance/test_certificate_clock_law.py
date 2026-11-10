@@ -203,7 +203,9 @@ def test_a_never_traded_family_is_judged_exactly_like_every_other() -> None:
     absent = law.judge(_cert(family=NOVEL), "K", None, [], 100.0, "why", NOW)
     assert absent["verdict"] == "NO_CLOCK" and absent["breach"] is True
 
-    ticking = law.judge(_cert(family=NOVEL), "K", _row(n=5), _samples((200, 1)),
+    ticking = law.judge(_cert(family=NOVEL), "K",
+                        _row(n=5, forward_start=(NOW - timedelta(hours=300)).isoformat()),
+                        _samples((200, 1)),
                         100.0, "why", NOW)
     assert ticking["verdict"] == "ACCUMULATING" and ticking["breach"] is False
     assert ticking["family"] == NOVEL
@@ -402,3 +404,120 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     """Most-recent would be minutes old on an hourly cadence and could never show a freeze."""
     n, at = law._prior_sample(_samples((300, 1), (200, 2), (1, 9)), "K", NOW, 100.0)
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
+
+
+def test_a_sample_from_before_the_clocks_epoch_is_never_the_prior() -> None:
+    """A re-begun forward window restarts n at 0; a pre-reset sample counts another series."""
+    epoch = NOW - timedelta(hours=150)
+    n, at = law._prior_sample(_samples((300, 24), (120, 1)), "K", NOW, 100.0, epoch)
+    assert (n, at) == (1, NOW - timedelta(hours=120))
+
+
+def test_with_no_sample_in_the_epoch_the_epoch_itself_is_zero() -> None:
+    epoch = NOW - timedelta(hours=150)
+    assert law._prior_sample(_samples((300, 24)), "K", NOW, 100.0, epoch) == (0, epoch)
+    # An epoch younger than the window has nothing to rule on yet.
+    young = NOW - timedelta(hours=50)
+    assert law._prior_sample(_samples((300, 24)), "K", NOW, 100.0, young) == (None, None)
+
+
+
+def test_a_history_younger_than_the_epoch_never_reads_zero_at_the_epoch() -> None:
+    """Audit HOLD on #487: a clock frozen at n=5 across a 150h hole read ACCUMULATING because the
+    epoch was taken as a zero sample the history never saw. Without a sample at or before the
+    epoch, the prior is UNMEASURED."""
+    epoch = NOW - timedelta(hours=400)
+    assert law._prior_sample(_samples((90, 5), (1, 5)), "K", NOW, 100.0, epoch) == (None, None)
+    assert law._prior_sample(_samples((450, 3), (1, 5)), "K", NOW, 100.0, epoch) == (0, epoch)
+
+# ----------------------------------------------- a duplicate convicts only while it breaks a clock
+def _dup_scan(monkeypatch, tmp_path, rows):
+    monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))
+    monkeypatch.setattr(law, "certificates",
+                        lambda p=None: ([_cert(name="a"), _cert(name="b"), _cert(name="z")], []))
+    monkeypatch.setattr(law, "clock_keys",
+                        lambda c, d=None: ({"a": "K", "b": "K", "z": "Z"}, []))
+    monkeypatch.setattr(law, "clock_rows", lambda d=None: (rows, []))
+    return law.scan(root=tmp_path, now=NOW, record=False)
+
+
+def test_a_duplicate_sharing_one_compliant_clock_is_a_note_not_a_breach(monkeypatch,
+                                                                       tmp_path) -> None:
+    """Measured on the box 2026-10-29: both CHFNOK carry pairs ACCUMULATING at n=37, each still
+    convicted. The engine collapses the pair onto one frozen identity, so one clock serves both."""
+    doc = _dup_scan(monkeypatch, tmp_path, {"K": _row(n=3), "Z": _row(n=3)})
+    assert not any("CANON_DUPLICATE" in p for p in doc["problems"])
+    assert any("CANON_DUPLICATE K" in n and "compliant" in n for n in doc["notes"])
+    assert doc["collisions"] == {"K": ["a", "b"]}, "the canon defect is still published"
+
+
+def test_a_duplicate_whose_clock_is_broken_still_breaches(monkeypatch, tmp_path) -> None:
+    doc = _dup_scan(monkeypatch, tmp_path, {"Z": _row(n=3)})
+    assert any("CANON_DUPLICATE K" in p for p in doc["problems"])
+    assert doc["verdict"] == "BREACH"
+
+
+def test_a_farm_clock_is_read_and_a_promoting_lane_wins_a_shared_key(tmp_path) -> None:
+    """A certificate the integrity door holds out of every promoting lane is clocked by the farm;
+    the row is read, and a promoting lane's row for the same key always wins."""
+    shadow = tmp_path / "reports" / "shadow"
+    (shadow / "farm").mkdir(parents=True)
+    (shadow / "farm" / "near_miss_farm.json").write_text(
+        json.dumps({"HELD": {"n": 4}, "BOTH": {"n": 1}}), encoding="utf-8")
+    (shadow / "shadow_state.json").write_text(json.dumps({"BOTH": {"n": 9}}), encoding="utf-8")
+    rows, _ = law.clock_rows(tmp_path)
+    assert rows["HELD"]["lane"] == "farm/near_miss_farm.json" and rows["HELD"]["n"] == 4
+    assert rows["BOTH"]["lane"] == "shadow_state.json" and rows["BOTH"]["n"] == 9
+
+
+def test_a_late_duplicate_is_late_not_a_duplicate_breach(monkeypatch, tmp_path) -> None:
+    """Lateness is reported on its own; the shared clock is running, so the pair is a note."""
+    monkeypatch.setattr(law, "LATENCY_BREACH_H", -1.0)
+    doc = _dup_scan(monkeypatch, tmp_path, {"K": _row(n=3), "Z": _row(n=3)})
+    assert not any("CANON_DUPLICATE" in p for p in doc["problems"])
+
+
+def test_a_farm_only_clock_is_its_own_breach_never_compliant() -> None:
+    """Audit on #487: a farm clock has no promotion authority, so it cannot mature; counting it
+    compliant would hide the certificates the integrity door still holds."""
+    e = law.judge(_cert(), "K", _row(n=4, lane=law.FARM_LANE), [], 72.0, "t", NOW)
+    assert e["verdict"] == "FARM_ONLY" and e["breach"] is True
+
+
+def _ledger(tmp_path, at) -> None:
+    rep = tmp_path / "desks" / "mt5" / law.CLOCK_LEDGER_REPORT
+    rep.parent.mkdir(parents=True, exist_ok=True)
+    rep.write_text(json.dumps({"at": at.isoformat(), "status": "OK"}), encoding="utf-8")
+
+
+def _one_compliant_clock(monkeypatch) -> None:
+    monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))
+    monkeypatch.setattr(law, "certificates", lambda p=None: ([_cert(name="has")], []))
+    monkeypatch.setattr(law, "clock_keys", lambda c, d=None: ({"has": "K"}, []))
+    monkeypatch.setattr(law, "clock_rows", lambda d=None: ({"K": _row(n=3)}, []))
+
+
+def test_a_stale_forward_start_ledger_is_a_breach(monkeypatch, tmp_path) -> None:
+    """MEASURED 2026-11-03: the ledger report sat ~40h old while this law ran hourly."""
+    _one_compliant_clock(monkeypatch)
+    _ledger(tmp_path, NOW - timedelta(hours=law.LEDGER_STALE_H + 1))
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert any(p.startswith("LEDGER_STALE") for p in doc["problems"])
+    assert doc["ok"] is False and doc["ledger_age_h"] > law.LEDGER_STALE_H
+
+
+def test_a_fresh_ledger_raises_nothing_and_an_absent_one_is_a_breach(monkeypatch,
+                                                                     tmp_path) -> None:
+    _one_compliant_clock(monkeypatch)
+    _ledger(tmp_path, NOW - timedelta(hours=2))
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert not any(p.startswith("LEDGER_STALE") for p in doc["problems"])
+    (tmp_path / "desks" / "mt5" / law.CLOCK_LEDGER_REPORT).unlink()
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert any(p.startswith("LEDGER_STALE") for p in doc["problems"])
+    assert doc["ledger_age_h"] == law.UNMEASURED
+
+
+def test_the_ledger_writer_is_never_deferred_by_the_rotation() -> None:
+    from libs.ops import leg_rotation as lr
+    assert "clock_ledger" in lr.ALWAYS_RUN

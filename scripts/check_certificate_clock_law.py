@@ -121,8 +121,19 @@ DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
                               "PROMOTION CANDIDATE", "PROMOTION_CANDIDATE"})
 
 #: The lane state files that hold forward clock rows, in the order the engine writes them.
+#: The farm ledger is LAST so a promoting lane's row always wins a shared key. A certificate the
+#: integrity door holds out of every promoting lane (HELD_UNREPLICATED) is clocked there by
+#: `near_miss_farm` with no promotion authority. That clock can never mature into a promotion, so
+#: it is judged FARM_ONLY, still a breach, but one the reader can tell from a certificate with
+#: no clock at all.
+FARM_LANE = "farm/near_miss_farm.json"
+#: The forward-start ledger every clock's window is measured against, and how old it may get.
+#: `clock_ledger` is an always-run leg, so a day-old file means the writer stopped, not that the
+#: rotation deferred it. 26h leaves a full pass of slack over a daily republish.
+CLOCK_LEDGER_REPORT = "reports/FORWARD_CLOCK_LEDGER.json"
+LEDGER_STALE_H = 26.0
 LANES = ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json",
-         "external_shadow_state.json", "FAMILY_shadow_state.json")
+         "external_shadow_state.json", "FAMILY_shadow_state.json", FARM_LANE)
 
 UNMEASURED = "UNMEASURED"
 
@@ -313,16 +324,28 @@ def save_history(samples: list[dict[str, Any]], path: Path | None = None) -> Pat
 
 
 def _prior_sample(samples: list[dict[str, Any]], key: str,
-                  now: datetime, threshold_h: float) -> tuple[int | None, datetime | None]:
-    """The oldest recorded count for `key` that is at least `threshold_h` old.
+                  now: datetime, threshold_h: float,
+                  epoch: datetime | None = None) -> tuple[int | None, datetime | None]:
+    """The oldest recorded count for `key` that is at least `threshold_h` old, in THIS epoch.
 
     Oldest-within-window rather than most-recent: the question is whether the clock moved across
     the whole window, and the most recent sample is minutes old on an hourly cadence.
+
+    THE EPOCH IS THE CLOCK'S CURRENT `forward_start` (2026-10-13). When a clock's forward window
+    is re-begun (a session-filter correction, a cost rebase, the 2026-10-07 re-freeze), `n`
+    restarts at zero and earlier trades become HISTORICAL. A sample taken before that boundary
+    counts a different series, so diffing against it read 302 clocks that had accrued 1-20
+    observations since the boundary as FROZEN_ROWS ("has not moved off 3", against a pre-reset
+    24). No sample before the epoch is used. At the epoch itself the forward count is 0 by
+    construction, so once the epoch is `threshold_h` old and no later sample is, (0, epoch) is
+    the prior: a clock still at 0 is frozen, one above 0 accumulated.
     """
     best: tuple[int, datetime] | None = None
     for s in samples:
         t = _parse_ts(s.get("at"))
         if t is None or (now - t).total_seconds() / 3600.0 < threshold_h:
+            continue
+        if epoch is not None and t < epoch:
             continue
         counts = s.get("counts")
         if not isinstance(counts, dict) or key not in counts:
@@ -332,6 +355,14 @@ def _prior_sample(samples: list[dict[str, Any]], key: str,
             continue
         if best is None or t < best[1]:
             best = (n, t)
+    # (0, epoch) needs the HISTORY to reach back to the epoch. If the oldest retained sample is
+    # younger than the epoch (the history is capped at MAX_SAMPLES, or it has a hole), there is no
+    # record of what happened in between, and a frozen clock would read ACCUMULATING off nothing
+    # (audit HOLD on #487, 2026-10-29: n=5 frozen across a 150h gap). That is UNMEASURED.
+    stamps = [t for t in (_parse_ts(s.get("at")) for s in samples) if t is not None]
+    if (best is None and epoch is not None and stamps and min(stamps) <= epoch
+            and (now - epoch).total_seconds() / 3600.0 >= threshold_h):
+        return 0, epoch
     return best if best is not None else (None, None)
 
 
@@ -378,6 +409,13 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
                      why="BREACH: certified and holds no forward clock at all, so it can never "
                          "mature and can never be promoted. Remedy: enrol it -- never withdraw "
                          "the certificate")
+        return entry
+
+    if row.get("lane") == FARM_LANE:
+        entry.update(verdict="FARM_ONLY", breach=True,
+                     why="BREACH: the only clock is the farm's, which accrues evidence with no "
+                         "promotion authority, so this certificate still cannot mature. Remedy: "
+                         "replicate it so the integrity door admits it to a promoting lane")
         return entry
 
     # ---- 2. did it get that clock IMMEDIATELY? ("immediate" is the principal's word)
@@ -441,7 +479,8 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
                          f"decided. Reported, never breached (L1.28a)")
         return _seal(entry)
 
-    prior_n, prior_at = _prior_sample(samples, key, now, threshold_h)
+    epoch = _parse_ts(row.get("forward_start"))
+    prior_n, prior_at = _prior_sample(samples, key, now, threshold_h, epoch)
     if prior_n is not None and n > prior_n:
         entry.update(verdict="ACCUMULATING", breach=False, prior_n=prior_n,
                      prior_at=prior_at.isoformat() if prior_at else UNMEASURED,
@@ -483,6 +522,26 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
                      f"reads `{status or 'ACTIVE'}` and its file is being rewritten -- a fresh "
                      f"timestamp over frozen content is not evidence")
     return _seal(entry)
+
+
+def ledger_freshness(desk: Path, now: datetime) -> tuple[float | None, str | None]:
+    """(age in hours, problem) for the forward-start ledger report; problem None when fresh.
+
+    MEASURED 2026-11-03: the report was last written 2026-11-01 20:15 while the clock law ran
+    hourly, because the rotation kept deferring the leg and nothing read the file's age. An
+    unreadable or unstamped report is a breach too: a writer that never ran is a claim the desk
+    cannot cash (L1.49), never a clean reading."""
+    doc = _read_json(desk / CLOCK_LEDGER_REPORT)
+    at = _parse_ts(doc.get("at")) if isinstance(doc, dict) else None
+    if at is None:
+        return None, (f"LEDGER_STALE {CLOCK_LEDGER_REPORT}: unreadable or unstamped, so no "
+                      f"forward start can be shown immutable. Remedy: run the clock_ledger leg")
+    age_h = (now - at).total_seconds() / 3600.0
+    if age_h > LEDGER_STALE_H:
+        return age_h, (f"LEDGER_STALE {CLOCK_LEDGER_REPORT}: last written {at.isoformat()}, "
+                       f"{age_h:.1f}h ago (breach past {LEDGER_STALE_H:g}h). Remedy: run the "
+                       f"clock_ledger leg -- it is always-run, so find what stopped it")
+    return age_h, None
 
 
 def scan(root: Path | None = None, *, now: datetime | None = None,
@@ -580,14 +639,34 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         g = gaps.get(fam)
         notes.append(f"family `{fam}`: measured inter-observation gap "
                      + (f"{g:.2f}h" if g is not None else UNMEASURED))
-    if collisions:
-        for k, names in sorted(collisions.items()):
-            problems.append(
-                f"CANON_DUPLICATE {k}: {len(names)} certificates share one clock key "
-                f"({', '.join(sorted(names))}). They differ only by a default written out "
-                f"explicitly; they alternately rewrite one row, which the identity guard reads "
-                f"as `params changed after the clock froze`. Remedy: collapse the duplicate in "
-                f"the organ that mints canon -- never retire the clock")
+    # A DUPLICATE IS A BREACH ONLY WHILE IT BREAKS THE CLOCK. Since 2026-09-24 the engine's
+    # `_one_clock_per_identity` collapses rows it cannot tell apart, keeping the frozen spelling,
+    # so the pair no longer rewrite one row. Measured 2026-10-29 on the box: both CHFNOK carry
+    # pairs judged ACCUMULATING at n=37, yet each still counted as a breach. The canon defect is
+    # published as a note; it convicts only when a certificate sharing the key is judged a breach.
+    # Latency is NOT the duplicate's doing, so only an accumulation breach convicts it here.
+    broken = {e.get("certificate") for e in judged
+              if e.get("verdict") in ("NO_CLOCK", "BLOCKED", "FROZEN_ROWS", "FARM_ONLY")}
+    judged_names = {e.get("certificate") for e in judged}
+    for k, names in sorted(collisions.items()):
+        if all(n in judged_names and n not in broken for n in names):
+            notes.append(f"CANON_DUPLICATE {k}: {len(names)} certificates share one clock key "
+                         f"({', '.join(sorted(names))}) and that one clock is compliant; collapse "
+                         f"the duplicate in the organ that mints canon")
+            continue
+        problems.append(
+            f"CANON_DUPLICATE {k}: {len(names)} certificates share one clock key "
+            f"({', '.join(sorted(names))}). They differ only by a default written out "
+            f"explicitly; they alternately rewrite one row, which the identity guard reads "
+            f"as `params changed after the clock froze`. Remedy: collapse the duplicate in "
+            f"the organ that mints canon -- never retire the clock")
+
+    ledger_age_h, ledger_problem = ledger_freshness(desk, t)
+    if ledger_problem:
+        problems.append(ledger_problem)
+    else:
+        notes.append(f"forward-start ledger republished {ledger_age_h:.1f}h ago "
+                     f"(breach past {LEDGER_STALE_H:g}h)")
 
     doc = {
         "at": t.isoformat(), "law": "L1.102", "alert_id": ALERT_ID,
@@ -599,6 +678,7 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         "n_clock_rows": len(rows),
         "counts": counts,
         "n_late": len(late),
+        "ledger_age_h": UNMEASURED if ledger_age_h is None else round(ledger_age_h, 2),
         "latency_breach_h": LATENCY_BREACH_H,
         "family_gap_hours": {k: round(v, 3) for k, v in sorted(gaps.items())},
         "collisions": collisions,
