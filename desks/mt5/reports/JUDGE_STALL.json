@@ -1,19 +1,19 @@
 {
- "at": "2026-11-10T05:31:02+00:00",
+ "at": "2026-11-10T05:46:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 1.99,
-   "why": "no new verdict for 2.0h (last 2026-11-10T03:31:26+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 2.24,
+   "why": "no new verdict for 2.2h (last 2026-11-10T03:31:26+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": false,
    "floor": 4.0,
    "docket_depth": 1358166,
-   "busy_judge_cores": 6.37,
-   "busy_other_cores": 8.4,
-   "why": "judge tree at 6.37 cores (others 8.4) with a docket pending (resident SWEEPING, queue depth 1358166); floor 4"
+   "busy_judge_cores": 4.79,
+   "busy_other_cores": 11.13,
+   "why": "judge tree at 4.79 cores (others 11.13) with a docket pending (resident SWEEPING, queue depth 1358166); floor 4"
   },
   "resident_dead": {
    "open": false,
@@ -23,9 +23,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 1.42,
+   "hours": 1.67,
    "limit_h": 25.59,
-   "why": "1.4h since the last sweep ended (2026-11-10T04:05:58+00:00), status SWEEPING; limit 25.59h"
+   "why": "1.7h since the last sweep ended (2026-11-10T04:05:58+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -42,9 +42,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "prewarm",
-   "hours": 0.88,
+   "hours": 1.13,
    "known_phase": true,
-   "why": "sweep phase prewarm has run 0.9h since 2026-11-10T04:38:07+00:00 (limit 4.06h)"
+   "why": "sweep phase prewarm has run 1.1h since 2026-11-10T04:38:07+00:00 (limit 4.06h)"
   },
   "host_unreadable": {
    "open": false,
@@ -89,7 +89,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-10T05:30:45+00:00",
+  "heartbeat_utc": "2026-11-10T05:45:46+00:00",
   "last_sweep_ended_utc": "2026-11-10T04:05:58+00:00",
   "last_rc": 0
  },
