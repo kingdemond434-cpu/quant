@@ -1230,9 +1230,10 @@ SPEC_BOOK["formula"] = RuleSpec(
 CAR_RIDGE_FRAC = 1e-10
 CAR_VOL_REGIMES = {"high_vol": 1, "high_volatility": 1, "low_vol": -1}
 CAR_NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
-#: Where stop and target are measured from. prev_row is what the certified family does (Auditor
-#: and CRO ruling 2026-11-04: the family stays as certified and is judged against what it does);
-#: signal_close is the corrected reading, a separate spec with its own certificates.
+#: Where stop and target are measured from. The rule is judged against what the family does
+#: (Auditor and CRO ruling 2026-11-04). Since LIVE's fix of 2026-11-06 the family anchors on the
+#: signal bar's own close, so signal_close is the default; prev_row (the joined row before it,
+#: what the family did until then) stays readable for a spec that names it.
 CAR_REFERENCES = ("prev_row", "signal_close")
 
 
@@ -1287,7 +1288,7 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
     regime = str(p.get("regime") or "").strip().lower()
     timing = str(p.get("entry_timing") or "").strip().lower()
     style = str(p.get("execution_style") or p.get("entry_style") or "").strip().lower()
-    ref = str(p.get("reference") or "prev_row").strip().lower()
+    ref = str(p.get("reference") or "signal_close").strip().lower()
     if (not names or mode not in ("revert", "continue") or ref not in CAR_REFERENCES
             or (regime not in CAR_NO_OP_REGIMES and regime not in CAR_VOL_REGIMES)
             or timing not in ("", "instant", "delayed") or style not in ("", "market")):
@@ -1343,10 +1344,10 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
         if vol is not None and not bool(vol[j]):
             continue
         side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
-        # The certified family prices stop and target off the joined frame's close at the SAME
-        # position index as the residual row, which is at least one joined row before the signal
-        # (the residual series starts after the first return): reference=prev_row, the default,
-        # reproduces it. signal_close is the corrected variant, certified as its own spec.
+        # The family prices stop and target off the signal bar's own close (LIVE, 2026-11-06):
+        # reference=signal_close, the default. prev_row is the joined frame's close at the same
+        # position index as the residual row, one joined row or more before the signal, which is
+        # what the family did before that fix.
         px = float(M[i, 0]) if ref == "prev_row" else float(b.c[j])
         at = j + 1 if timing == "delayed" else j
         if at >= len(b):
@@ -1365,9 +1366,9 @@ SPEC_BOOK["cross_asset_residual"] = RuleSpec(
     "lookback joined rows. From row beta_win + lookback on, every bar with |z| >= entry_z and "
     "ATR(atr_n) > 0 is a signal at that bar's close: revert takes the side against z, continue "
     "with it; stop stop_atr x ATR, target rr x that, entry next open, time exit after "
-    "ttl_bars. Stop and target are measured from the reference: prev_row (the default, what the "
-    "certified family does) is the joined frame's close at the residual row's own position "
-    "index, at least one joined row before the signal; signal_close is the signal bar's close; "
+    "ttl_bars. Stop and target are measured from the reference: signal_close (the default, what "
+    "the family does since 2026-11-06) is the signal bar's close; prev_row is the joined frame's "
+    "close at the residual row's own position index, at least one joined row before the signal; "
     "any other reference stands aside. A non-positive close stays in the joined frame and only "
     "its log return is dropped. "
     "The session (the cell's own session parameter; none: every hour) is judged at "
@@ -1378,7 +1379,7 @@ SPEC_BOOK["cross_asset_residual"] = RuleSpec(
     "style stands aside.",
     {"factor_symbols": [], "lookback": 240, "beta_win": None, "entry_z": 2.0, "atr_n": 20,
      "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72, "side_mode": "revert", "regime": "",
-     "entry_timing": "", "execution_style": "", "timeframe": "H1", "reference": "prev_row"},
+     "entry_timing": "", "execution_style": "", "timeframe": "H1", "reference": "signal_close"},
     _build_cross_asset_residual, session_from_params=True, session_in_build=True)
 
 
