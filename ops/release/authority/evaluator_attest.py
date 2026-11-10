@@ -63,7 +63,7 @@ TYPE = "quant.evaluator.attestation/v1"
 #: The release authority's public key, raw 32 bytes as base64. EMPTY = the attested path is OFF:
 #: `apply` refuses and `verify` fails any manifest that claims an attestation. Pinned by the
 #: owner's own merge of this ROOT file (read it from the box file QUANT_AUTHORITY_PUBKEY names).
-PINNED_PUBKEY_B64 = ""
+PINNED_PUBKEY_B64 = "/Y86h+0HML18pA+VRjv4z/XFS2yAig1sFCGfkrFaVHs="  # key id 035c535b87e08c20
 #: Sealed files the authority may never re-sign: the fence that judges every other seal.
 NEVER_ATTESTED = ("scripts/check_immutable_evaluator.py",)
 #: An envelope not applied within this long is dead; the authority re-issues on a fresh row.
