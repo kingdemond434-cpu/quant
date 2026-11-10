@@ -1,21 +1,19 @@
 {
- "at": "2026-11-10T08:01:02+00:00",
+ "at": "2026-11-10T08:16:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.16,
-   "why": "no new verdict for 0.2h (last 2026-11-10T07:51:30+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.41,
+   "why": "no new verdict for 0.4h (last 2026-11-10T07:51:30+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
-   "low": true,
+   "low": false,
    "floor": 4.0,
    "docket_depth": 1358166,
-   "busy_judge_cores": 0.12,
-   "busy_other_cores": 13.24,
-   "why": "judge tree at 0.12 cores (others 13.24) with a docket pending (resident SWEEPING, queue depth 1358166); floor 4; under the floor on every reading for 0.9h (limit 1h)",
-   "low_since": "2026-11-10T07:06:15+00:00",
-   "hours": 0.92
+   "busy_judge_cores": 6.79,
+   "busy_other_cores": 10.25,
+   "why": "judge tree at 6.79 cores (others 10.25) with a docket pending (resident SWEEPING, queue depth 1358166); floor 4"
   },
   "resident_dead": {
    "open": false,
@@ -25,9 +23,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 0.12,
+   "hours": 0.37,
    "limit_h": 25.59,
-   "why": "0.1h since the last sweep ended (2026-11-10T07:54:05+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.4h since the last sweep ended (2026-11-10T07:54:05+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -43,10 +41,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "plan",
-   "hours": 0.11,
+   "phase": "prewarm",
+   "hours": 0.1,
    "known_phase": true,
-   "why": "sweep phase plan has run 0.1h since 2026-11-10T07:54:17+00:00 (limit 4.5h)"
+   "why": "sweep phase prewarm has run 0.1h since 2026-11-10T08:10:10+00:00 (limit 4.06h)"
   },
   "host_unreadable": {
    "open": false,
@@ -91,16 +89,21 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-10T08:01:00+00:00",
+  "heartbeat_utc": "2026-11-10T08:16:00+00:00",
   "last_sweep_ended_utc": "2026-11-10T07:54:05+00:00",
   "last_rc": 0
  },
  "host": "trading box",
  "page": {
-  "sent": false,
+  "sent": true,
   "open": [],
   "opened": [],
   "reminded": [],
-  "resolved": []
+  "resolved": [
+   "cores_idle"
+  ],
+  "title": "JUDGE STALL RESOLVED: cores_idle",
+  "armed": 1,
+  "delivered": 1
  }
 }
