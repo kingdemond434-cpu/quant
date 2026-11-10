@@ -135,8 +135,9 @@ def _raw_get(url: str, timeout: float = REQUEST_TIMEOUT_S,
 class AccessGate:
     """THE ACCESS RULES, IN ONE PLACE (Governance ruling 2026-11-10; Auditor MF1 on #773).
 
-    * robots.txt Disallow on the exact path stops that fetch; an unreadable robots.txt (anything
-      but a 404) stops it too, because an unread policy is not a yes.
+    * robots.txt per libs/data/robots_gate.py (Governance desk-wide ruling 2026-11-10 20:08Z):
+      a Disallow on the exact path stops that fetch; 404/410/other 4xx means no rules (fetch,
+      ROBOTS_ABSENT); 401/403/429/451 or 5xx/timeout stops it, retried next pass.
     * 401/403/429/451 is a refusal by the HOST: nothing more is fetched from it this run, and the
       stop is kept in the state file for HARD_STOP_COOLDOWN_H before one re-probe is allowed.
       No retry, no changed headers, no sibling host.
@@ -1114,7 +1115,9 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
                  "workers": workers, "sources": len(SOURCES), "rows": total_real,
                  "sources_yielded": sum(1 for k, v in results.items()
                                         if k != "fbs_tape" and v["count"]),
-                 "access": dict(sorted(g.counts.items())), "hard_stops": sorted(g.stops),
+                 "access": dict(sorted(g.counts.items())),
+                 "robots_by_case": dict(sorted(g.robots.counts.items())),
+                 "hard_stops": sorted(g.stops),
                  "terms_unread": sorted(n for n in SOURCES
                                         if str((rows_doc.get(n) or {}).get("terms")
                                                or "UNREAD").upper() == "UNREAD"),

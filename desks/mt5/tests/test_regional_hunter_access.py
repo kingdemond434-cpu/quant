@@ -49,6 +49,20 @@ def test_robots_rules_wildcards_and_longest_match() -> None:
     assert RobotsGate(lambda u: (404, "")).check("https://h/a") == "ALLOWED"
 
 
+def test_robots_ruling_cases_are_classified_and_counted() -> None:
+    answers = {"ok": (200, "User-agent: *\nDisallow: /no"), "gone": (410, ""), "teapot": (418, ""),
+               "auth": (401, ""), "deny": (403, ""), "slow": (429, ""), "down": (503, ""),
+               "dead": (None, "")}
+    g = RobotsGate(lambda u: answers[u.split("//")[1].split("/")[0]])
+    got = {h: g.check(f"https://{h}/yes") for h in answers}
+    assert got == {"ok": "ALLOWED", "gone": "ALLOWED", "teapot": "ALLOWED", "auth": "UNREAD",
+                   "deny": "UNREAD", "slow": "UNREAD", "down": "UNREAD", "dead": "UNREAD"}
+    assert g.check("https://ok/no") == "DISALLOWED"
+    assert g.reason("https://gone/x") == "ROBOTS_ABSENT"
+    assert g.counts == {"ROBOTS_ALLOWED": 1, "ROBOTS_DISALLOWED": 1, "ROBOTS_ABSENT": 2,
+                        "ROBOTS_REFUSED": 3, "ROBOTS_UNREACHABLE": 2}
+
+
 def test_a_403_stops_the_source_with_no_alternate_and_no_site_root_walk(monkeypatch) -> None:
     monkeypatch.setitem(rh.ALTERNATES, "t", ("https://b.example/list",))
     calls = _wire(monkeypatch, {"https://a.example/list?page=1": (403, ""),
