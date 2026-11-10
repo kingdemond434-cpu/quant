@@ -26,11 +26,12 @@ aggregates observations captured in the last FRESH_H hours, and each per-symbol 
 Raw observations are appended to `data/crowd/copytrade/raw/<day>.jsonl.gz`: this history cannot
 be bought later, so every pass that does not run is history lost.
 
-HONEST ACCESS. Logged-out pages only. robots.txt is read per host before any page: allowed or
-404 = PUBLIC and is fetched; a Disallow on the exact path (PUBLIC_WITH_TERMS) or an unreadable
-robots.txt (ACCESS_UNCLEAR) STOPS that fetch and is counted `robots_stopped` (governance ruling
-2026-11-10: a Disallow on the exact fetched path stops the fetch, and an unknown policy is not a
-yes). The label still rides on every observation and series row.
+HONEST ACCESS. Logged-out pages only. robots.txt is read per host before any page (desk-wide
+ruling 2026-11-10 20:08Z): allowed, or 404/410/other 4xx (no rules), = PUBLIC and is fetched;
+a Disallow on the exact path (PUBLIC_WITH_TERMS) stops that fetch; 401/403/429/451 or
+5xx/timeout on robots.txt (ACCESS_UNCLEAR) stops it too and is asked again next pass. Stops are
+counted `robots_stopped`, and each host's case (ROBOTS_READ/ABSENT/REFUSED/UNREACHABLE) is
+counted per source. The label still rides on every observation and series row.
 The access controls stay: a login wall is recorded as BLOCKED_AUTH
 and that route stops for the pass; 401/403/429/451 is a HARD STOP written to state and the source
 is not fetched again until `--release <source>`. No login, cookie, proxy, CAPTCHA or paywall
@@ -217,6 +218,7 @@ class Fetcher:
         self.deadline = deadline
         self._get = get or self._polite
         self._robots: dict[str, list[tuple[str, bool]] | None] = {}
+        self._robots_case: dict[str, str] = {}
         self.stats: dict[str, dict[str, int]] = {}
         self.labels: dict[str, set[str]] = {}
 
@@ -236,12 +238,16 @@ class Fetcher:
         host = urllib.parse.urlsplit(url).netloc.lower()
         if host not in self._robots:
             code, body = self._get(f"https://{host}/robots.txt")
-            if code == 404:
-                self._robots[host] = []
-            elif code is not None and 200 <= code < 300:
+            if code is not None and 200 <= code < 300:
                 self._robots[host] = robots_rules(body)
+            elif code is not None and 400 <= code < 500 and code not in HARD_STOP:
+                self._robots[host] = []                # 404/410/other 4xx: no rules
             else:
-                self._robots[host] = None
+                self._robots[host] = None              # refused or unreachable: stop
+            self._robots_case[host] = (
+                "ROBOTS_READ" if code is not None and 200 <= code < 300
+                else "ROBOTS_ABSENT" if self._robots[host] == []
+                else "ROBOTS_REFUSED" if code in HARD_STOP else "ROBOTS_UNREACHABLE")
         rules = self._robots[host]
         if rules is None:
             return "ACCESS_UNCLEAR"
@@ -256,6 +262,8 @@ class Fetcher:
             return None
         label = self.access_label(url)
         self._stat(source, f"access_{label}")
+        self._stat(source, self._robots_case.get(urllib.parse.urlsplit(url).netloc.lower(),
+                                                 "ROBOTS_UNREACHABLE"))
         self.labels.setdefault(source, set()).add(label)
         if label != "PUBLIC":
             self._stat(source, "robots_stopped")

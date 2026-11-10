@@ -68,6 +68,20 @@ def test_robots_wildcards_longest_match_and_agent_groups() -> None:
     assert cc.robots_allows([("/x$", False)], "https://h/xy")
 
 
+def test_robots_4xx_is_no_rules_and_refusal_stops() -> None:
+    codes = {"gone": 410, "auth": 403, "slow": 429}
+
+    def get(url: str) -> tuple[int | None, str]:
+        host = url.split("//")[1].split("/")[0]
+        return (codes[host], "") if url.endswith("robots.txt") else (200, "ok")
+
+    f = cc.Fetcher({}, deadline=1e18, get=get)
+    assert f.fetch("g", "https://gone/a") == "ok"
+    assert f.stats["g"]["ROBOTS_ABSENT"] == 1
+    assert f.fetch("a", "https://auth/a") is None and f.stats["a"]["ROBOTS_REFUSED"] == 1
+    assert f.fetch("s", "https://slow/a") is None and f.stats["s"]["robots_stopped"] == 1
+
+
 def test_robots_stops_the_fetch_and_hard_stop_is_recorded_and_not_retried() -> None:
     calls: list[str] = []
 
@@ -87,6 +101,7 @@ def test_robots_stops_the_fetch_and_hard_stop_is_recorded_and_not_retried() -> N
     assert f.fetch("w", "https://terms.example/a") is None        # Disallow on the path: no fetch
     assert f.labels["w"] == {"PUBLIC_WITH_TERMS"}
     assert f.fetch("w", "https://terms.example/b") == "ok"        # same host, path not disallowed
+    assert f.stats["w"]["ROBOTS_READ"] == 2 and f.stats["s"]["ROBOTS_UNREACHABLE"] == 1
     assert [u for u in calls if not u.endswith("robots.txt")] == ["https://terms.example/b"]
     assert f.fetch("t", "https://ok.example/a") is None
     assert state["hard_stops"]["t"]["code"] == 403
