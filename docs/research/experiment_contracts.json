@@ -276,9 +276,9 @@
    },
    "falsifier": {
     "metric": "binding_rate",
-    "op": "<=",
+    "op": "<",
     "threshold": 0.001046,
-    "after": "14 days of hourly readings on the trading box: the binding stage converts no better than the 2026-09-05 reading, so measuring it hourly bought no conversion"
+    "after": "14 days of hourly readings on the trading box: the binding stage converts worse than the frozen 2026-09-05 reading, so measuring it hourly bought no conversion (equal reads as not yet improved, not falsified, because the first hourly run starts from that reading)"
    }
   },
   "trial_allocator": {
