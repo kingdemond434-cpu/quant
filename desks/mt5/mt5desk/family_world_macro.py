@@ -74,7 +74,13 @@ def family_world_macro_state(
     df: pd.DataFrame,
     *,
     side: int | None = None,
-    series_key: str = "",
+    # REQUIRED, WITH NO DEFAULT (2026-11-10). It defaulted to "", and a docket row minted from
+    # the family's "defaults" (params {} -- 1,059 such rows, 0 judged, 168 parked never_fires,
+    # measured on the box) built a cell with no series and no signals: a recipe that names no
+    # statistic read as a market that never moved. With no default, the signature itself says
+    # the recipe is incomplete: `gauntlet_buildability.cell_verdict` answers MISSING_PARAMS for
+    # such a cell, and the sealed builder names the TypeError instead of filing zero trades.
+    series_key: str,
     z_obs: int = 24,
     z_lo: float = 1.0,
     z_hi: float = 99.0,
@@ -89,7 +95,11 @@ def family_world_macro_state(
     # so honouring it would make the two callers build different trades from one identity.
     del side
     flip = DIRECTIONS.get(str(direction))
-    if not series_key or flip is None or float(z_hi) <= float(z_lo):
+    if not series_key:
+        raise WorldSeriesUnavailable(
+            "the recipe names no series_key: world_macro_state has no default statistic, so "
+            "the cell is incomplete and unjudged")
+    if flip is None or float(z_hi) <= float(z_lo):
         return []
     raw, align = _series(str(series_key))
     if raw is None:

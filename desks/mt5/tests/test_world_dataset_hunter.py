@@ -408,12 +408,23 @@ def test_the_family_is_point_in_time():
 def test_an_absent_series_is_a_named_refusal_not_a_never_firing_cell(box):
     """A key this host cannot resolve is a missing INPUT, never a market finding: the family
     raises by name, and the sealed builder turns that into a named build failure the
-    build-input probe parks and re-admits. An unnamed series stays the family's own []."""
+    build-input probe parks and re-admits. A recipe naming no series is refused the same way."""
     from desks.mt5.scripts import external_gauntlet as gauntlet
     from mt5desk.family_world_macro import WorldSeriesUnavailable, family_world_macro_state
     with pytest.raises(WorldSeriesUnavailable, match="wdeadbeef0000"):
         family_world_macro_state(_bars(2000), series_key="wdeadbeef0000", **PARAMS)
-    assert family_world_macro_state(_bars(2000), series_key="", **PARAMS) == []
+    # a recipe that names NO series is incomplete, never a cell that silently never fires
+    with pytest.raises(WorldSeriesUnavailable, match="names no series_key"):
+        family_world_macro_state(_bars(2000), series_key="", **PARAMS)
+    with pytest.raises(TypeError, match="series_key"):
+        family_world_macro_state(_bars(2000), **PARAMS)
+    assert gauntlet.build_cell("AUDUSD", "world_macro_state", {}, {},
+                               h1_override=_bars(2000)) is None
+    assert "series_key" in str(gauntlet.LAST_BUILD_FAILURE)
+    from research.gauntlet_buildability import MISSING_PARAMS, cell_verdict
+    assert cell_verdict("world_macro_state", {})[0] == MISSING_PARAMS
+    assert cell_verdict("world_macro_state", {"timeframe": "H4", "session": "asia"})[0] \
+        == MISSING_PARAMS
     params = {"series_key": "wdeadbeef0000", **PARAMS}
     assert gauntlet.build_cell("AUDUSD", "world_macro_state", params, {},
                                h1_override=_bars(2000)) is None
