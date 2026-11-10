@@ -510,7 +510,7 @@ def _alfred_rows(n: int) -> list[dict[str, str]]:
     for i, p in enumerate(pd.date_range("2018-01-01", periods=n, freq="MS")):
         rel = (p + pd.offsets.MonthBegin(1) + pd.offsets.Week(weekday=4)).strftime("%Y-%m-%d")
         rows.append({"date": p.strftime("%Y-%m-%d"), "realtime_start": rel,
-                     "value": str(150000 + 150 * i + (900 if i == n - 1 else 0))})
+                     "value": str(150000 + 150 * i + 20 * (i % 5) + (900 if i == n - 1 else 0))})
     return rows
 
 
@@ -541,7 +541,7 @@ def test_release_shock_never_sees_its_own_release() -> None:
     # earlier releases are unchanged when a later one is added
     pd.testing.assert_series_equal(a["shock_z"].iloc[:-1].reset_index(drop=True),
                                    b["shock_z"].reset_index(drop=True))
-    # the final print jumps by 900 over a steady +150 trend: a large positive shock
+    # the final print jumps by 900 over a near-steady +150 trend: a large positive shock
     assert a["shock_z"].iloc[-1] > 3
 
 
