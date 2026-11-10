@@ -56980,6 +56980,75 @@
       "retired_at": "2026-11-10T02:13:18+00:00",
       "retire_reason": "GBPNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "EURMXN.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+      "symbol": "EURMXN",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['eurmxn.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95', 'eurmxn|spread_state|asia', 'eurmxn|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['eurmxn.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95', 'eurmxn|spread_state|asia', 'eurmxn|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-10T03:14:14+00:00",
+      "shadow_exp": 0.45140429109253494,
+      "family": "spread_state",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURMXN.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+      "sleeve_id": "13023d97d4da6b0638dc",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "hold_bars": 4,
+        "min_move_atr": 0.5,
+        "mode": "spike_reversion",
+        "spike_pct": 0.95
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-10T03:14:15+00:00",
+      "retire_reason": "EURMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "GBPMXN.spread_state.asia#session=asia",
+      "symbol": "GBPMXN",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'gbpmxn|spread_state|asia' (zeroed by this solve)",
+        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-10T03:14:14+00:00",
+      "shadow_exp": 0.6580030932994071,
+      "family": "spread_state",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPMXN.spread_state.asia#session=asia",
+      "sleeve_id": "93903c48a5f3bdc9739a",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "asia"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-10T03:14:15+00:00",
+      "retire_reason": "GBPMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
