@@ -25,23 +25,28 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 #: Discovery never adopts a crypto-exchange's own channel (MT5 mandate; crypto = CFDs only).
 EXCHANGE_BRANDS = ("binance", "coinbase", "kraken", "bybit", "okx", "kucoin", "bitget",
                    "gate.io", "huobi", "htx", "mexc", "bitfinex", "bitmex", "deribit", "crypto.com")
 
+_ROOT = Path(__file__).resolve().parent.parent
+#: The box-side coverage proof (written by --report-only in the hourly Quant-VideoCells run).
+REPORT = _ROOT / "desks" / "mt5" / "reports" / "VIDEO_MINING_COVERAGE.json"
+
 STATUSES = ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE", "ACCESS_LIMIT", "FETCH_FAILED")
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def channel_url(handle: str) -> str:
@@ -96,7 +101,7 @@ def discover(cfg: dict, out: Path, per_query: int) -> list[dict]:
     yt-dlp, one request per query). Discovered channels are appended to discovered.json with
     status CANDIDATE; the yield ranker (cells passing the judge per video) promotes or prunes."""
     path = out / "discovered.json"
-    disc = json.loads(path.read_text("utf-8")) if path.exists() else {}
+    disc = load_json_or_empty(path)
     known = {c["handle"] for c in cfg["channels"]} | set(disc)
     for q in cfg.get("discovery_queries", []):
         cmd = [sys.executable, "-m", "yt_dlp", "--flat-playlist", "-J", "--no-warnings",
@@ -119,8 +124,25 @@ def discover(cfg: dict, out: Path, per_query: int) -> list[dict]:
                          "videos_mined": 0, "cells_passed": 0}
             print(f"[discover] + {cid} {disc[cid]['name']} (via {q!r})", flush=True)
         time.sleep(5)
-    path.write_text(json.dumps(disc, indent=1, ensure_ascii=False), encoding="utf-8")
+    atomic_write(path, json.dumps(disc, indent=1, ensure_ascii=False))
     return [d for d in disc.values() if d["status"] in ("CANDIDATE", "ACTIVE")]
+
+
+def atomic_write(path: Path, text: str) -> None:
+    """Write via a temp file + os.replace: a run killed mid-write (the task's time limit) leaves
+    the previous file whole instead of a truncated one that every later run would choke on."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def load_json_or_empty(path: Path) -> dict:
+    """A missing or unreadable cache is an empty cache (everything re-lists), never a dead miner."""
+    try:
+        data = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def load_ledger(path: Path) -> dict[str, dict]:
@@ -176,11 +198,34 @@ def fetch_transcript(api, vid: str):
         return "NO_TRANSCRIPT", "", {"error": type(exc).__name__}
     except gone as exc:
         return "UNAVAILABLE", "", {"error": type(exc).__name__}
-    except Exception as exc:  # noqa: BLE001 - typed into the ledger, never swallowed
+    except Exception as exc:
         return "FETCH_FAILED", "", {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
 
 
+def coverage(ledger: dict[str, dict], enum_report: dict, stopped: str | None) -> dict:
+    """Per-channel status counts (every enumerated video has exactly one) + distinct links."""
+    summary: dict = {"ts": now(), "enumeration": enum_report, "stopped": stopped, "channels": {}}
+    for r in ledger.values():
+        c = summary["channels"].setdefault(r["channel"], {})
+        c[r["status"]] = c.get(r["status"], 0) + 1
+    for c in summary["channels"].values():
+        c["total"] = sum(c.values())
+    links: dict[str, list[str]] = {}
+    for r in ledger.values():
+        for u in r.get("links", []):
+            links.setdefault(u, []).append(r["video_id"])
+    summary["distinct_links"] = len(links)
+    summary["_links"] = links
+    return summary
+
+
 def main() -> int:
+    # A scheduled task redirects stdout to a file in the console code page (cp1252 on the PC), and
+    # one emoji in a discovered channel name raised UnicodeEncodeError and killed the run before
+    # any fetch (2026-11-04). Write the log as UTF-8 whatever the host code page is.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/video_mining_channels.json")
     ap.add_argument("--out", default="video_mining_out")
@@ -191,7 +236,26 @@ def main() -> int:
     ap.add_argument("--per-query", type=int, default=20)
     ap.add_argument("--backoff-min", type=float, default=90.0,
                     help="after an access wall, later runs exit until this many minutes pass")
+    ap.add_argument("--report-only", action="store_true",
+                    help="no network: publish the coverage report from an existing ledger "
+                         "(the box's hourly Quant-VideoCells run uses this on unsealed bundles)")
+    ap.add_argument("--report", default="", help="also write the coverage summary here")
+    ap.add_argument("--refresh-hours", type=float, default=24.0,
+                    help="re-run discovery and re-list a channel's tabs at most this often; "
+                         "between refreshes the ledger is the work list, so runs spend their "
+                         "time fetching captions instead of re-listing 100k videos")
     args = ap.parse_args()
+
+    if args.report_only:
+        led = load_ledger(Path(args.out) / "ledger.jsonl")
+        summary = coverage(led, {}, None)
+        summary.pop("_links")
+        summary["mode"] = "report-only (box)"
+        rep = Path(args.report) if args.report else REPORT
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text(json.dumps(summary, indent=1), encoding="utf-8")
+        print(json.dumps({k: summary[k] for k in ("channels", "distinct_links")}))
+        return 0
 
     from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
     api = YouTubeTranscriptApi()
@@ -219,21 +283,45 @@ def main() -> int:
     # 1. enumerate every tab of every channel (a video is never silently dropped)
     todo: list[dict] = []
     enum_report = {}
+    cache_path = out / "enum_cache.json"
+    cache: dict = load_json_or_empty(cache_path)
+    fresh = args.refresh_hours * 3600
+
+    def stale(key: str) -> bool:
+        return time.time() - float(cache.get(key, {}).get("t", 0)) > fresh
+
+    named = [c["handle"] for c in cfg["channels"]]
     channels = list(cfg["channels"])
     if args.discover:
-        channels += [{"handle": d["handle"], "tabs": ["videos"]}
-                     for d in discover(cfg, out, args.per_query)]
+        if stale("_discovery") or not (out / "discovered.json").exists():
+            found = discover(cfg, out, args.per_query)
+            cache["_discovery"] = {"t": time.time()}
+        else:
+            dpath = out / "discovered.json"
+            disc = load_json_or_empty(dpath)
+            found = [d for d in disc.values() if d["status"] in ("CANDIDATE", "ACTIVE")]
+        channels += [{"handle": d["handle"], "tabs": ["videos"]} for d in found]
     for ch in channels:
         seen = set()
         for tab in ch.get("tabs", ["videos", "shorts", "streams"]):
-            try:
-                vids = enumerate_tab(ch["handle"], tab)
-            except Exception as exc:  # noqa: BLE001
-                enum_report[f"{ch['handle']}/{tab}"] = f"ERROR {exc}"
-                print(f"[enum] {ch['handle']}/{tab}: ERROR {exc}", flush=True)
-                continue
-            enum_report[f"{ch['handle']}/{tab}"] = len(vids)
-            print(f"[enum] {ch['handle']}/{tab}: {len(vids)} videos", flush=True)
+            key = f"{ch['handle']}/{tab}"
+            if not stale(key):
+                # listed within the refresh window: its videos are already ledger rows
+                vids = [{k: r[k] for k in ("video_id", "title", "duration", "tab") if k in r}
+                        for r in ledger.values()
+                        if r.get("channel") == ch["handle"] and r.get("tab") == tab]
+                enum_report[key] = len(vids)
+            else:
+                try:
+                    vids = enumerate_tab(ch["handle"], tab)
+                except Exception as exc:
+                    enum_report[key] = f"ERROR {exc}"
+                    print(f"[enum] {key}: ERROR {exc}", flush=True)
+                    continue
+                enum_report[key] = len(vids)
+                cache[key] = {"t": time.time(), "n": len(vids)}
+                atomic_write(cache_path, json.dumps(cache))
+                print(f"[enum] {key}: {len(vids)} videos", flush=True)
             for v in vids:
                 if v["video_id"] in seen:
                     continue
@@ -247,22 +335,33 @@ def main() -> int:
                     write({**v, "status": "PENDING", "ts": now()})
                 todo.append(v)
 
-    # long-form first (where mechanisms live), shorts last
+    atomic_write(cache_path, json.dumps(cache))
+    # Priority: the channels named in config first (in config order), then discovered channels
+    # smallest-first, so one 28k-video news channel cannot starve every focused strategy channel.
+    # Nothing is dropped: big channels are fetched last, not skipped. Within a channel,
+    # long-form first (where mechanisms live), shorts last.
     order = {"videos": 0, "streams": 1, "shorts": 2}
-    todo.sort(key=lambda v: order.get(v.get("tab"), 3))
+    size: dict[str, int] = {}
+    for v in todo:
+        size[v["channel"]] = size.get(v["channel"], 0) + 1
+    rank = {h: i for i, h in enumerate(named)}
+
+    def prio(v: dict) -> tuple:
+        ch = v["channel"]
+        return (0, rank[ch], 0) if ch in rank else (1, size[ch], ch)
+
+    todo.sort(key=lambda v: (*prio(v), order.get(v.get("tab"), 3)))
 
     # 2. fetch captions, politely; stop the whole run at the first access wall (no bypass)
-    fetched = 0
     stopped = None
-    for v in todo:
-        if args.limit and fetched >= args.limit:
+    for fetched, v in enumerate(todo, 1):
+        if args.limit and fetched > args.limit:
             break
         prev = ledger.get(v["video_id"]) or {}
         if prev.get("status") in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE"):
             status, text, meta = prev["status"], None, {}
         else:
             status, text, meta = fetch_transcript(api, v["video_id"])
-        fetched += 1
         row = {**prev, **v, "status": status, "ts": now(), **meta}
         if status != "ACCESS_LIMIT" and v.get("tab") != "shorts":
             desc, links, dmeta = fetch_description(v["video_id"])
@@ -284,29 +383,25 @@ def main() -> int:
             wall.unlink()   # a clean stretch resets the escalation
         print(f"[{fetched}/{len(todo)}] {v['channel']} {v['video_id']} {status} "
               f"{row.get('chars', '')} {v['title'][:60]}", flush=True)
+        if fetched % 10 == 0:   # a run cut off by the task's time limit still leaves its proof
+            part = coverage(ledger, enum_report, None)
+            part.pop("_links")
+            atomic_write(out / "coverage_summary.json", json.dumps(part, indent=1))
         if status == "ACCESS_LIMIT":
             stopped = f"access wall at {v['video_id']} ({meta.get('error')}); stopping, no bypass"
             print(stopped, flush=True)
             with wall.open("a", encoding="utf-8") as wf:
                 wf.write(f"{now()} {stopped}\n")
             break
-        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))
+        # jitter for polite pacing only, not security
+        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))  # noqa: S311
     lf.close()
 
     # 3. coverage summary: every enumerated video has exactly one status
-    summary: dict = {"ts": now(), "enumeration": enum_report, "stopped": stopped, "channels": {}}
-    for r in ledger.values():
-        c = summary["channels"].setdefault(r["channel"], {})
-        c[r["status"]] = c.get(r["status"], 0) + 1
-    for c in summary["channels"].values():
-        c["total"] = sum(c.values())
-    links: dict[str, list[str]] = {}
-    for r in ledger.values():
-        for u in r.get("links", []):
-            links.setdefault(u, []).append(r["video_id"])
-    summary["distinct_links"] = len(links)
+    summary = coverage(ledger, enum_report, stopped)
+    links = summary.pop("_links")
     (out / "links.json").write_text(json.dumps(links, indent=1), encoding="utf-8")
-    (out / "coverage_summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
+    atomic_write(out / "coverage_summary.json", json.dumps(summary, indent=1))
     print(json.dumps(summary, indent=1))
 
     zip_base = out.parent / "video_mining_out"
