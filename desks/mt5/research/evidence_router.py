@@ -57,6 +57,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from desks.mt5.research import terms_fences as _terms_fences  # noqa: E402
 from libs.moat import registry as R  # noqa: E402
 from libs.research import access_classifier as ac  # noqa: E402
 
@@ -212,6 +213,9 @@ def intel_rows(budget_s: float, t0: float) -> tuple[dict[str, dict[str, Any]], d
             if time.monotonic() - t0 > budget_s:
                 break
             if not seat_dir.is_dir():
+                continue
+            if _terms_fences.seat_fenced(seat_dir.name) is not None:
+                stats["seats_terms_fenced"] = int(stats.get("seats_terms_fenced", 0)) + 1
                 continue
             files = sorted(seat_dir.glob("*.json"), reverse=True)
             for path in files[:MAX_FILES_PER_SEAT]:

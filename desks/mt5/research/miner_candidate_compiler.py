@@ -501,7 +501,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     # SOURCES WHOSE TERMS FORBID COMMERCIAL USE ARE NOT READ (2026-11-10). Their files stay on
     # disk; each is counted here by fence, with the reason and what it costs, and the count is
     # carried in the compiled artifact (`intake.terms_fenced`).
-    from research import terms_fences
+    from desks.mt5.research import terms_fences
     fences = terms_fences.load()
     fenced: dict[str, dict] = {}
     for root in INTEL_ROOTS:

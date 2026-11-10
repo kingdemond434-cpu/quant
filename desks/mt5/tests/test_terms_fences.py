@@ -88,3 +88,56 @@ def test_reopening_needs_the_flag_and_the_pasted_clause(tmp_path: Path) -> None:
         **row, "open": True, "permit_clause": "commercial use is permitted with credit"}]}),
         "utf-8")
     assert tf.fence_for("bis_speeches/x.json", tf.load(reg)) is None
+
+
+def test_one_predicate_answers_for_paths_and_seats() -> None:
+    desk_intel = DESK / "data" / "intelligence"
+    assert tf.path_fenced(desk_intel / "central_banks" / "bis_speech_tone.jsonl")
+    assert tf.path_fenced(desk_intel / "central_banks" / "cb_tone_series.jsonl")   # built from BIS
+    assert tf.path_fenced(ROOT / "data" / "intelligence" / "bis_speeches" / "d.json")
+    assert tf.path_fenced(desk_intel / "central_banks" / "official_speech_tone.jsonl") is None
+    assert tf.path_fenced(Path("/tmp/somewhere/bis_speech_tone.jsonl")) is None    # not a tree
+    assert tf.seat_fenced("bis_speeches") and tf.seat_fenced("central_banks") is None
+
+
+def test_every_reader_calls_the_shared_predicate_and_keeps_no_copy() -> None:
+    sites = {"research/miner_candidate_compiler.py": "terms_fences.fence_for(",
+             "research/deepening_worker.py": "terms_fences.fence_for(",
+             "research/nlp_event_factors.py": "terms_fences.path_fenced(",
+             "research/cb_tone_screen.py": "terms_fences.path_fenced(",
+             "research/news_event_stream.py": "terms_fences.seat_fenced(",
+             "research/evidence_router.py": "_terms_fences.seat_fenced(",
+             "side_channels/bis_speech_tone.py": "terms_fences.seat_fenced(",
+             "side_channels/seed_miners.py": "terms_fences.seat_fenced("}
+    for rel, call in sites.items():
+        src = (DESK / rel).read_text("utf-8")
+        assert call in src, rel
+        assert "noncommercial purposes" not in src or rel.endswith("bis_speech_tone.py"), rel
+
+
+def test_the_bis_miner_does_not_fetch_and_says_why(tmp_path, monkeypatch) -> None:
+    from side_channels import seed_miners as sm
+
+    called: list[str] = []
+    monkeypatch.setattr(sm, "MINERS", {"bis_speeches": lambda: called.append("bis") or [],
+                                       "other": lambda: [sm.row("other", "x", "t")]})
+    monkeypatch.setattr(sm, "SOURCE_WALLS", {})
+    monkeypatch.setattr(sm, "INTEL", tmp_path)
+    monkeypatch.setattr(sm, "STATE", tmp_path / "seed_miners_state.json")
+    written: dict[str, list[dict]] = {}
+    monkeypatch.setattr(sm, "_write_rows",
+                        lambda name, rows, *a, **k: written.__setitem__(name, rows))
+    sm.run_and_save()
+    assert called == [] and "other" in written
+    row = written["bis_speeches"][0]
+    assert row["verdict"] == "TERMS_FENCED" and "noncommercial" in row["title"]
+
+
+def test_news_stream_and_replay_skip_the_fenced_seat(tmp_path, monkeypatch) -> None:
+    from research import deepening_worker as dw
+
+    a = tmp_path / "intelligence"
+    _write(a, "bis_speeches/discoveries_1.json", [{"title": "bis"}])
+    keep = _write(a, "world/discoveries_1.json", [{"title": "other"}])
+    monkeypatch.setattr(dw, "INTEL_ROOTS", (a,))
+    assert dw._replay_paths() == [keep]

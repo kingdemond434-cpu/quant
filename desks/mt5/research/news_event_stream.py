@@ -400,9 +400,13 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None) -> lis
     else:
         say.append(f"{NEWS_CAPTURES} absent: the news desk's own captures are {UNMEASURED}")
     seen_seats = 0
+    from desks.mt5.research import terms_fences
     for seat in NEWS_SEATS:
         folder = INTEL / seat
         if not folder.is_dir():
+            continue
+        if terms_fences.seat_fenced(seat) is not None:
+            say.append(f"seat {seat} is behind a terms fence (noncommercial terms): not read")
             continue
         seen_seats += 1
         files = sorted(folder.glob("*.json*"), key=lambda p: p.stat().st_mtime)[-8:]
