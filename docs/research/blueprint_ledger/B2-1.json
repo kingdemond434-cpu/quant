@@ -1,0 +1,470 @@
+{
+ "phase": "B2",
+ "items": [
+  {
+   "id": "T16",
+   "item": "Counterfactual World Lab",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Closure and agent worlds run in `synthetic_regimes` (scheduled) and are joined per certificate. **A gained:** the ecologist's HIGH `CLOSURE_GAP_LOSS` / `LOSES_IN_EVERY_ECOLOGY` withholds at the door. **The pandas-3 failure is fixed**, so both pins pass."
+   ],
+   "gap": "No box artifact. C: birth obligations fail, and CI has no verdict.",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/synthetic_regimes.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:788",
+   "tests": []
+  },
+  {
+   "id": "T17",
+   "item": "Alpha Theory Compiler",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**T gained:** `compose` is tested (identity, order, and the execution falsifier in the composite)."
+   ],
+   "gap": "No authority over any decision. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:789",
+   "tests": []
+  },
+  {
+   "id": "T18",
+   "item": "Theory↔Evidence graph",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`THEORY_REFUTED` withholds. **The promoter wrapper now fails closed** (DOOR_ERROR). The stale-input withhold rides an ALWAYS_RUN leg."
+   ],
+   "gap": "`live_door.json` has no reader. The first-adoption withhold window is unmeasured. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [
+    "live_door.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:790",
+   "tests": []
+  },
+  {
+   "id": "T19",
+   "item": "Heterogeneous non-LLM intelligence",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged."
+   ],
+   "gap": "No solver or prover. No authority. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:791",
+   "tests": []
+  },
+  {
+   "id": "T20",
+   "item": "AI peer review panels",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The ecologist now reads the world flags. `REVIEW_PANEL_FAILED` withholds, and the promoter fails closed."
+   ],
+   "gap": "The reviewers are fixed if-rules. The live-row review (`live_door.json`) has no consumer. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [
+    "live_door.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:792",
+   "tests": []
+  },
+  {
+   "id": "T21",
+   "item": "Auto-invent new tests",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. Ratified gates reorder the docket via `prejudge_verdict` / `merge_hypotheses`."
+   ],
+   "gap": "No ratified rule exists on any ref. Demotion only reorders. DSR variance is a constant (0.0002). No artifact. C.",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/merge_hypotheses.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:793",
+   "tests": []
+  },
+  {
+   "id": "T22",
+   "item": "Auto-invent research grammars",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged."
+   ],
+   "gap": "No new representation class. No budget authority. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:794",
+   "tests": []
+  },
+  {
+   "id": "T23",
+   "item": "Execution as autonomous science",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**W regained on LIVE:** `hourly_cycle.execution_science` is costed every pass. Drag reaches the exchange bids, and capture reaches pf_allocator. Tests pass."
+   ],
+   "gap": "`split_fills` is a hook with test-only callers. matched_fills = 0. No slicing, urgency or adverse-selection model. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:795",
+   "tests": []
+  },
+  {
+   "id": "T24",
+   "item": "No-trade first-class",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "#53 is merged (allocator sovereignty: zero or below-min sends no order). A factor below 0.5 is applied."
+   ],
+   "gap": "The exchange ZERO is a zero mean, not a zero weight. The `book_fallback` baselines over every `ev` name still re-fund it. C.",
+   "owner": "Tier S build / Institutional",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:796",
+   "tests": []
+  },
+  {
+   "id": "T25",
+   "item": "Opportunity Exchange",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The chain holds, with drag in the bids. **FREEZE now tilts heat toward OOS-evidenced sleeves**, heat-neutrally. The control arm is exactly 1.0."
+   ],
+   "gap": "The ZERO→fallback leak. No box artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:797",
+   "tests": []
+  },
+  {
+   "id": "T26",
+   "item": "Live prediction-accounting",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged."
+   ],
+   "gap": "No vol, factor or correlation forecasts, and none per model. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:798",
+   "tests": []
+  },
+  {
+   "id": "T27",
+   "item": "Live reality outranks backtests",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**The honesty channel is now tested, and a real defect was fixed:** the exchange posterior turned a measured honesty of 0 into 1. It now reads the writer's certificate→factory map and respects the predictions suspension."
+   ],
+   "gap": "C only: the birth-obligation breach and no CI verdict. It still does not reach admission for new discoveries.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:799",
+   "tests": []
+  },
+  {
+   "id": "T28",
+   "item": "Digital twin (shadow desk) and rollback",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**A gained:** `_consume_shadow_verdicts` turns a LOSS into a REJECTED challenger (slot freed, adoption blocked) and a WIN into a principal proposal. The self-model counts a losing twin as a deficiency. Tested in `test_tier_s_twin_consumer.py`."
+   ],
+   "gap": "Rollback is still a manual `--apply-rollback`. Adopt-And-Seal has no regression stop. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:800",
+   "tests": [
+    "desks/mt5/tests/test_tier_s_twin_consumer.py"
+   ]
+  },
+  {
+   "id": "T29",
+   "item": "Self-model",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "It now also reads TWIN.json as a deficiency."
+   ],
+   "gap": "No authority. p_fix and cost are hand-set. No artifact. C.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [
+    "TWIN.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:801",
+   "tests": []
+  },
+  {
+   "id": "T30",
+   "item": "Architecture evolution",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. The ledger says BLOCKED_ON_USER."
+   ],
+   "gap": "Money-path adoption is refused. No regression stop. No artifact.",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:802",
+   "tests": []
+  },
+  {
+   "id": "LOOP",
+   "item": "Closed research→capital loop inside a Truth Kernel",
+   "phase": "B2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": false,
+    "W": true,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "On LIVE now: the promoter fails closed; FREEZE reaches the allocator; TWIN and world flags have consumers; #52/#53 are merged; the seal is clean."
+   ],
+   "gap": "The fallback re-funds exchange zeros. `live_door.json` has no reader. The DSR variance is a constant. Rollback is manual. `split_fills` is a hook. There is no end-to-end loop test and no box artifact. The law gate's birth-obligation breach covers Tier S checkers. CI on d30be2ce was cancelled.",
+   "owner": "Tier S build / Institutional",
+   "code": [],
+   "artifacts": [
+    "live_door.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:803",
+   "tests": []
+  }
+ ]
+}

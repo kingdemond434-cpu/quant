@@ -68,11 +68,15 @@ def _row(rid: str = "X1", *, claim: str = "PARTIAL", status: str = "PARTIAL",
 
 
 def _ledger(root: Path, rows: list[dict[str, Any]], **extra: Any) -> Path:
-    doc = {"version": 1, "mark_ttl_days": 14,
-           "expected_counts": {"A1": sum(1 for r in rows if r["phase"] == "A1")},
-           "items": rows, **extra}
-    p = root / "docs" / "research" / "blueprint_ledger.json"
-    p.write_text(json.dumps(doc), "utf-8")
+    """The ledger in its committed (split) form; returns the index, which holds the header."""
+    d = root / "docs" / "research" / "blueprint_ledger"
+    d.mkdir(parents=True, exist_ok=True)
+    index = {"version": 1, "mark_ttl_days": 14,
+             "expected_counts": {"A1": sum(1 for r in rows if r["phase"] == "A1")},
+             "parts": ["A1-1.json"], **extra}
+    (d / "A1-1.json").write_text(json.dumps({"phase": "A1", "items": rows}), "utf-8")
+    p = d / "index.json"
+    p.write_text(json.dumps(index), "utf-8")
     return p
 
 
@@ -196,6 +200,29 @@ def test_missing_ledgers_read_unmeasured_never_green(tmp_path: Path) -> None:
     assert bs.main(["--root", str(root)]) == 2
 
 
+def test_a_missing_part_reads_unmeasured_never_a_short_ledger(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    _ledger(root, [_row()])
+    (root / "docs" / "research" / "blueprint_ledger" / "A1-1.json").unlink()
+    _tier5(root, [])
+    doc = _score(root)
+    assert doc["ledgers"]["blueprint"]["measured"] is False
+    assert doc["verdict"] == "UNMEASURED"
+
+
+def test_the_split_ledger_assembles_like_the_single_file(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    rows = [_row("X1"), _row("X2")]
+    idx = _ledger(root, rows, updated="2026-11-03")
+    single = tmp_path / "single.json"
+    header = {k: v for k, v in json.loads(idx.read_text("utf-8")).items() if k != "parts"}
+    single.write_text(json.dumps({**header, "items": rows}), "utf-8")
+    assert bs.load_blueprint(idx.parent) == bs.load_blueprint(single)
+    _tier5(root, [])
+    a, b = _score(root), _score(root, blueprint_path=single)
+    assert a["ledgers"] == b["ledgers"] and a["rows"] == b["rows"] and a["lies"] == b["lies"]
+
+
 def test_a_row_with_nothing_measurable_is_unmeasured(tmp_path: Path) -> None:
     root = _repo(tmp_path)
     _ledger(root, [_row(code=[], artifacts=[], reviewed_at="2026-09-30")])
@@ -273,9 +300,19 @@ def test_the_committed_ledgers_tell_no_lie_and_carry_the_named_subsets() -> None
     assert doc["ledgers"]["blueprint"]["n"] == 138
     assert doc["ledgers"]["audit_items_20"]["n"] == 20
     assert doc["ledgers"]["tier5_partials_52"]["n"] == 52
-    led = json.loads((ROOT / "docs" / "research" / "blueprint_ledger.json").read_text("utf-8"))
+    led = bs.load_blueprint(bs.BLUEPRINT)
+    assert led is not None
     assert led["expected_counts"] == {"A1": 43, "A2": 21, "B1": 30, "B2": 16, "C": 28}
     assert not any(it.get("claim") == "DONE" for it in led["items"])
+
+
+def test_every_committed_ledger_part_stays_small_enough_for_the_reviewers() -> None:
+    """A hunk is never read in part by the independent reviewer, so no file may outgrow it."""
+    files = sorted(bs.BLUEPRINT.glob("*.json"))
+    index = json.loads((bs.BLUEPRINT / "index.json").read_text("utf-8"))
+    assert sorted(index["parts"] + ["index.json"]) == [f.name for f in files]
+    for f in files:
+        assert len(f.read_text("utf-8")) < 16_000, f.name
 
 
 def test_wired_as_an_hourly_leg_with_board_row_layer_fences_and_attestation() -> None:

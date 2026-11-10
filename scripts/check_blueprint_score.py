@@ -12,7 +12,7 @@ five weeks: the matrix (docs/audit/BLUEPRINT_VERIFICATION.md) is prose, so every
 began to decay the hour it was written. The cure is the one the Tier-1 programme already uses --
 the ledger is DATA and a checker is its gate -- applied to the two ledgers that were not data:
 
-  * docs/research/blueprint_ledger.json  the 138 strict rows (A1, A2 = the 20 audit items I1-I20
+  * docs/research/blueprint_ledger/      the 138 strict rows (A1, A2 = the 20 audit items I1-I20
     plus P1, B1, B2, C), in the Tier-1 ledger's schema, verified by
     `check_tier1_program.check` itself -- one verifier, not a second;
   * docs/research/tier5_audit.json       the 272 Tier-5 sections (52 of them PARTIAL), verified
@@ -64,7 +64,7 @@ from types import ModuleType
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-BLUEPRINT = ROOT / "docs" / "research" / "blueprint_ledger.json"
+BLUEPRINT = ROOT / "docs" / "research" / "blueprint_ledger"
 TIER5 = ROOT / "docs" / "research" / "tier5_audit.json"
 REPORT = ROOT / "desks" / "mt5" / "reports" / "BLUEPRINT_SCORE.json"
 LIVE_BRANCH = "claude/llm-auto-upgrade-verify-gcjac3"
@@ -125,6 +125,31 @@ def _read_json(path: Path) -> Any:
         return json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
         return None
+
+
+def load_blueprint(path: Path) -> dict[str, Any] | None:
+    """The blueprint ledger as ONE document, whichever form it is stored in.
+
+    It is stored SPLIT (docs/research/blueprint_ledger/: index.json holds every header field and
+    names its parts in order; each part holds {"phase", "items"}) because a single 4,000-line
+    file is one diff hunk too large for the independent reviewer to read whole. The assembled
+    document is the one the single file held, field for field and row for row. A missing or
+    unreadable index or part reads None -- UNMEASURED, never a ledger silently short of rows."""
+    if not path.is_dir():
+        doc = _read_json(path)
+        return doc if isinstance(doc, dict) else None
+    index = _read_json(path / "index.json")
+    if not isinstance(index, dict) or not isinstance(index.get("parts"), list):
+        return None
+    items: list[Any] = []
+    for name in index["parts"]:
+        part = _read_json(path / str(name))
+        if not isinstance(part, dict) or not isinstance(part.get("items"), list):
+            return None
+        items += part["items"]
+    doc = {k: v for k, v in index.items() if k != "parts"}
+    doc["items"] = items
+    return doc
 
 
 def _text(path: Path) -> str:
@@ -372,7 +397,7 @@ def score(root: Path = ROOT, *, now: datetime | None = None, branch: str | None 
     now = now or datetime.now(tz=UTC)
     t0 = time.monotonic()
     host = Host(root, now, branch)
-    bp_doc = _read_json(blueprint_path or root / "docs" / "research" / "blueprint_ledger.json")
+    bp_doc = load_blueprint(blueprint_path or root / "docs" / "research" / "blueprint_ledger")
     t5_doc = _read_json(tier5_path or root / "docs" / "research" / "tier5_audit.json")
     lies: list[str] = []
     ledgers: dict[str, Any] = {}
@@ -396,7 +421,7 @@ def score(root: Path = ROOT, *, now: datetime | None = None, branch: str | None 
                                              for p in sorted({str(r["phase"]) for r in bp_rows})}}
         ledgers["audit_items_20"] = {"measured": True, "n": len(audit), "counts": _counts(audit)}
     else:
-        ledgers["blueprint"] = {"measured": False, "why": "docs/research/blueprint_ledger.json "
+        ledgers["blueprint"] = {"measured": False, "why": "docs/research/blueprint_ledger/ "
                                 "absent or unreadable"}
         ledgers["audit_items_20"] = {"measured": False, "why": "the blueprint ledger is absent"}
     if isinstance(t5_doc, dict) and isinstance(t5_doc.get("sections"), list):

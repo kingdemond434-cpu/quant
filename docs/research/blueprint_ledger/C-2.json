@@ -1,0 +1,256 @@
+{
+ "phase": "C",
+ "items": [
+  {
+   "id": "DP4",
+   "item": "Clear the judging backlog",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged."
+   ],
+   "gap": "A post-#77 box reading with judged ≥ created. Green CI.",
+   "owner": "Institutional",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:914",
+   "tests": []
+  },
+  {
+   "id": "DP5",
+   "item": "Measure actual independent breadth",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`effective_breadth.jsonl` still ends 09-16."
+   ],
+   "gap": "Append a current reading. Green CI.",
+   "owner": "Institutional",
+   "code": [
+    "libs/research/effective_breadth.py"
+   ],
+   "artifacts": [
+    "effective_breadth.jsonl"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:915",
+   "tests": []
+  },
+  {
+   "id": "DP6",
+   "item": "Research-budget allocation sovereign",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`research_budget.json` (09-28) has `authoritative:false`."
+   ],
+   "gap": "An applied box reading with `authoritative:true`.",
+   "owner": "Institutional",
+   "code": [],
+   "artifacts": [
+    "research_budget.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:916",
+   "tests": []
+  },
+  {
+   "id": "DP7",
+   "item": "Allocator sovereign",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "#53 is merged (decision_core, sizing, pf_allocator, promoter). `test_allocator_sovereignty` passes, and `test_scalp_promotion` is 15/15 now, so T ✓."
+   ],
+   "gap": "A box pass showing the allocator's fractions deployed. Green CI.",
+   "owner": "Institutional",
+   "code": [
+    "desks/mt5/mt5desk/decision_core.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:917",
+   "tests": [
+    "desks/mt5/tests/test_allocator_sovereignty.py",
+    "desks/mt5/tests/test_scalp_promotion.py"
+   ]
+  },
+  {
+   "id": "DP8",
+   "item": "Cost truth mandatory",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "#53: `promoter.save_sleeves` demotes a LIVE row with no cost basis to STANDBY (`cost_basis_of`: the row, then the clock identity, then the registry). `test_live_rows_need_a_cost_basis` passes. R ✗: the committed `sleeves.json` shows 0/40 LIVE rows carrying `cost_hash`."
+   ],
+   "gap": "A box promoter pass that stamps or demotes every LIVE row, committed.",
+   "owner": "Institutional",
+   "code": [
+    "desks/mt5/research/promoter.py",
+    "libs/research/sleeves.py"
+   ],
+   "artifacts": [
+    "sleeves.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:918",
+   "tests": [
+    "desks/mt5/tests/test_live_rows_need_a_cost_basis.py"
+   ]
+  },
+  {
+   "id": "DP9",
+   "item": "CI permanently green",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The seal is consistent now: manifest 0/18, and QB-002 passes. 4 test files still fail (event_surprise, macro_regime, certificate_single_writer, and universe_producers_merge depending on invocation). None of them is specific to pandas 3. The d30be2ce CI run was cancelled."
+   ],
+   "gap": "One completed green run. The 4 files fixed (#97 covers 2, after d30be2ce). A `sys.path` fix in test_macro_regime.",
+   "owner": "Institutional",
+   "code": [
+    "desks/mt5/research/event_surprise.py",
+    "desks/mt5/mt5desk/macro_regime.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:919",
+   "tests": []
+  },
+  {
+   "id": "DP10",
+   "item": "Recursive research competition",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Cloud QD.json and GENOMES.json."
+   ],
+   "gap": "Winners gain only compute. 0 independent discoveries.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [
+    "QD.json",
+    "GENOMES.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:920",
+   "tests": []
+  },
+  {
+   "id": "DP11",
+   "item": "Accumulate untouched forward/live evidence",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`test_scalp_promotion` (the forward clock as certificate) now passes, so T ✓. There is no post-#84 box census."
+   ],
+   "gap": "A box census with `n_silent` 0 and ledgers advancing. Then time.",
+   "owner": "Institutional",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:921",
+   "tests": [
+    "desks/mt5/tests/test_scalp_promotion.py"
+   ]
+  }
+ ]
+}

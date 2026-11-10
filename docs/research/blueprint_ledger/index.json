@@ -1,0 +1,33 @@
+{
+ "version": 1,
+ "updated": "2026-11-03",
+ "source": "docs/audit/BLUEPRINT_VERIFICATION.md -- the strict seven-mark re-score of every blueprint the principal gave on 2026-09-29 (138 rows, scored 2026-09-30 13:30Z at LIVE d30be2ce); converted to data 2026-11-03 so a machine re-scores it hourly (BACKLOG rows 20 and 82)",
+ "rule": "A row is DONE only when all seven marks hold on THIS host: I (cited code exists), W (a clock the repo knows names it), A (authoritative), T (a test names it), R (a named artifact exists here and is under 72 h old), D (this checkout is LIVE), C (consistent). I, W, T, R and D are MEASURED by scripts/check_blueprint_score.py every hour; A and C are judgements recorded here, and a recorded mark older than mark_ttl_days reads UNMEASURED. The derived state is the minimum of the row's claim and its evidence; a row that claims DONE without proof is a lie that fails the fence. Edit this file, never the Markdown matrix.",
+ "mark_ttl_days": 14,
+ "expected_counts": {
+  "A1": 43,
+  "A2": 21,
+  "B1": 30,
+  "B2": 16,
+  "C": 28
+ },
+ "phases": {
+  "A1": "Audit: critical sequence (CS), named defects (D), 10/10 acceptance table (AC)",
+  "A2": "Audit: the 20 implementation items (I1-I20) and the pipeline chain (P1)",
+  "B1": "Tier S: the 15-layer table (L) and sections 1-15 (T)",
+  "B2": "Tier S: sections 16-30 (T) and the final loop",
+  "C": "16 hardening items (H), depth priorities (DP) and the admission rule (ADM)"
+ },
+ "parts": [
+  "A1-1.json",
+  "A1-2.json",
+  "A1-3.json",
+  "A2-1.json",
+  "A2-2.json",
+  "B1-1.json",
+  "B1-2.json",
+  "B2-1.json",
+  "C-1.json",
+  "C-2.json"
+ ]
+}
