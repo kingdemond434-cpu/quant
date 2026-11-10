@@ -426,10 +426,11 @@ RESIDUAL_TEXT = (
     "lookback std. Refuse with fewer than beta_win + 2 x lookback joined rows. From row "
     "beta_win + lookback on, where |z| >= entry_z (and, with active_hours, the bar hour is one "
     "of them): side_mode revert trades -sign(z), continue trades sign(z); stop stop_atr x "
-    "ATR(atr_n) of this instrument and target rr x that, BOTH LAID FROM THE JOINED CLOSE ONE "
-    "ROW BEFORE THE SIGNAL ROW (the desk's implementation indexes the joined frame before its "
-    "first return is dropped; written down here because it is what the certificate trades); "
-    "entry next open; time exit after ttl_bars.")
+    "ATR(atr_n) of this instrument and target rr x that, both laid from this instrument's "
+    "close ON THE SIGNAL ROW ITSELF (until 2026-11-06 the desk read the close one joined row "
+    "early and this rule wrote that down; the desk's anchor was fixed in 1b8e3dca5 and the rule "
+    "follows it, so a certificate judged under the old anchor is re-judged, never matched to "
+    "it); entry next open; time exit after ttl_bars.")
 
 
 def _join(own: Bars, others: list[Bars]) -> tuple[np.ndarray, list[np.ndarray]]:
@@ -492,7 +493,7 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
     ct = t[ok]
     a_own = atr(b, int(p["atr_n"]))
     a = a_own[np.searchsorted(b.t, ct)]
-    ref = closes[0]                     # indexed by residual row: one joined row early
+    ref = closes[0][ok]                 # the signal row's own close (desk fix 1b8e3dca5)
     hours = ({int(h) for h in p["active_hours"]} if p.get("active_hours") else None)
     revert = p["side_mode"] == "revert"
     sa, rr, ez, ttl = float(p["stop_atr"]), float(p["rr"]), float(p["entry_z"]), \
