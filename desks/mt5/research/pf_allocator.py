@@ -66,8 +66,8 @@ from libs.portfolio.robust_elog import (  # noqa: E402
     SleeveEvidence,
     WorldConfig,
     Worlds,
-    optimise,
     _corr_abs,
+    optimise,
     sample_worlds,
     score_book,
 )
@@ -2960,7 +2960,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     # ONE CORRELATION MATRIX FOR THE WHOLE SCAN. Every re-solve below runs on the same `ev`, and
     # building the matrix took ~5 s of each candidate's 8 s budget (2026-11-10 19:26Z: 190
     # re-solves stopped at 0 iterations), so the budget bought setup instead of ascent.
-    corr = _corr_abs(ev)
+    corr_m = _corr_abs(ev)
     rank = order or {}
     pref = set(prefer or ())
     cand_names.sort(key=lambda n: (n not in pref, -float(rank.get(n, 0.0)), n))
@@ -2995,7 +2995,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
             ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
                            max_per_sleeve=_ub(allowed_base | {name}),
                            warm_start=ws, iterations=iterations, deadline=deadline,
-                           corr_abs=corr)
+                           corr_abs=corr_m)
         except ValueError as exc:
             doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
             continue
@@ -3016,7 +3016,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                 ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
                                max_per_sleeve=_ub(allowed_base | {name}),
                                warm_start=ws, iterations=iterations, deadline=deadline,
-                               corr_abs=corr)
+                               corr_abs=corr_m)
             except ValueError as exc:
                 doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
                 continue
