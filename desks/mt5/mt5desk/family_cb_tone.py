@@ -119,10 +119,6 @@ def published_day(row: dict[str, Any]) -> pd.Timestamp | None:
         pub = (pub.tz_localize("UTC") if pub.tzinfo is None else pub.tz_convert("UTC")).normalize()
     except (TypeError, ValueError):
         return None
-    if len(raw) <= 10:
-        # a date with no hour: the speech may have been given in the US evening, which is the
-        # NEXT UTC day, so the day it names is not yet a day the text was public throughout
-        pub += pd.Timedelta(days=1)
     delivered = str(row.get("delivered") or "").strip()
     if delivered:
         try:
@@ -130,6 +126,10 @@ def published_day(row: dict[str, Any]) -> pd.Timestamp | None:
                 return None                   # public before it was spoken: a typo, not a clock
         except (TypeError, ValueError):
             return None
+    if len(raw) <= 10:
+        # a date with no hour: the speech may have been given in the US evening, which is the
+        # NEXT UTC day, so the day it names is not yet a day the text was public throughout
+        pub += pd.Timedelta(days=1)
     return pub
 
 
