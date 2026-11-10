@@ -77,6 +77,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import statistics
 import sys
 from datetime import UTC, datetime
@@ -702,7 +703,12 @@ def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     while len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES and rows > 10:
         rows //= 2
         text = json.dumps(summarise(doc, rows), indent=1, default=str)
-    path.with_name(path.stem + "_SUMMARY.json").write_text(text + "\n", encoding="utf-8")
+    # TEMP + REPLACE: the box sync can read this file mid-write, and a half-written summary
+    # published off the box is worse than the previous whole one.
+    summary = path.with_name(path.stem + "_SUMMARY.json")
+    tmp = summary.with_name(summary.name + ".tmp")
+    tmp.write_text(text + "\n", encoding="utf-8")
+    os.replace(tmp, summary)
     return path
 
 
