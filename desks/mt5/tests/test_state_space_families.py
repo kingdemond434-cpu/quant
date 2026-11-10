@@ -172,6 +172,16 @@ def test_garch_refit_blocks_are_cut_by_the_calendar():
     assert len(full) >= 7 and set(shifted) <= set(full) and set(full[1:]) <= set(shifted)
 
 
+@pytest.mark.parametrize("name", ["kalman_pair", "copula_pair"])
+def test_a_peer_store_that_fell_behind_is_a_named_failure(name, monkeypatch):
+    a, b = _pair()
+    _store(monkeypatch, b.iloc[:-3])                 # a few bars: different hours, tolerated
+    assert fs.FAMILIES[name](a, pair_symbol="PEER")
+    _store(monkeypatch, b.iloc[:-50])
+    with pytest.raises(ValueError, match="bars before this cell"):
+        fs.FAMILIES[name](a, pair_symbol="PEER")
+
+
 def test_the_sealed_gauntlet_can_build_every_family():
     """No family takes a DATA argument build_cell would leave None, nor an identity key."""
     import inspect

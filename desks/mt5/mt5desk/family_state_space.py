@@ -165,6 +165,10 @@ def _refit_starts(index: pd.DatetimeIndex, window: int, refit: int) -> np.ndarra
     return starts[starts >= window]
 
 
+#: How many of this cell's newest bars may lack a peer close before the peer store is called
+#: stale (see `_peer_frame`). Six hourly bars covers differing session hours, not a dead feed.
+MAX_PEER_LAG_BARS = 6
+
 #: Bars per calendar block for the Kalman families (see `_blocked`).
 KALMAN_BLOCK = 500
 
@@ -437,6 +441,15 @@ def _peer_frame(family: str, d: pd.DataFrame, pair_symbol: str) -> pd.DataFrame:
     closes = asof_close(np.asarray(stamps, dtype="int64"), str(pair_symbol), max_stale_h=0.0)
     if not np.isfinite(closes).any():
         raise ValueError(f"{family}: no H1 bars in the store for pair_symbol {pair_symbol!r}")
+    # A PEER STORE THAT HAS FALLEN BEHIND IS A NAMED FAILURE, NOT A QUIET CLOCK. With exact-stamp
+    # matching, a peer whose newest bar is older than this cell's simply drops the newest bars
+    # from the join and the family fires nothing -- on a forward clock that reads exactly like a
+    # calm market. A short gap is normal (the two instruments keep different hours around the
+    # weekend and the daily break); beyond `MAX_PEER_LAG_BARS` the store is stale and says so.
+    last = np.flatnonzero(np.isfinite(closes))[-1]
+    if len(closes) - 1 - last > MAX_PEER_LAG_BARS:
+        raise ValueError(f"{family}: the H1 store for pair_symbol {pair_symbol!r} ends "
+                         f"{len(closes) - 1 - last} bars before this cell's last bar")
     return pd.DataFrame({"close": closes}, index=d.index).dropna()
 
 
