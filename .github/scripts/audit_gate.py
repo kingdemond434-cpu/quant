@@ -437,13 +437,22 @@ def standing(level: str, board: Iterable[Mapping[str, Any]]) -> bool:
     return level in ("LOW", "AUTO") and activated(board)[0]
 
 
-def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> tuple[bool, str]:
+def approved(
+    clear: Mapping[str, str],
+    at: str | None,
+    stands: bool = False,
+    second: Callable[[], tuple[bool, str]] | None = None,
+) -> tuple[bool, str]:
     """Does zuck's latest approval cover this CLEAR? A CLEAR given BEFORE it, always; a later
-    one only when the approval is standing (`stands`, and typed at or after STANDING_FROM)."""
+    one only when the approval is standing (`stands`, and typed at or after STANDING_FROM) and
+    `second` (the synced Auditor registry, #816) agrees. `second` is asked only on that path."""
     if at is None:
         return False, f"no `{APPROVE}` from zuck on #{APPROVALS_ISSUE} yet"
     if clear["at"] >= at and stands and at >= STANDING_FROM:
-        return True, f"covered by zuck's standing approval of {at}"
+        ok, swhy = second() if second is not None else (True, "")
+        if not ok:
+            return False, f"zuck's standing approval of {at} needs the second record: {swhy}"
+        return True, f"covered by zuck's standing approval of {at}" + (f"; {swhy}" if swhy else "")
     if clear["at"] >= at:
         return False, (
             f"the CLEAR ({clear['at']}) came after zuck's latest approval ({at}): "
@@ -899,6 +908,63 @@ def auditor_row_agrees(
     return True, f"the Auditor registry agrees (CLEAR {head[:9]}, copy {age_h:.1f} h old)"
 
 
+def _wait_kind(why: str) -> str:
+    for kind in ("no synced", "unreadable", "stale", "has no row", "not a CLEAR"):
+        if kind in why:
+            return kind.replace(" ", "-")
+    return "other"
+
+
+def notify_wait(
+    pr: int,
+    head: str,
+    why: str,
+    notify: Callable[[str, str], bool] | None = None,
+    path: str | None = None,
+) -> bool:
+    """Tell the owner's alert channel ONCE per (PR, head, kind of wait) that a merge the Auditor
+    cleared is waiting because its synced registry copy is absent, stale or disagrees (the
+    Auditor's #816 ruling: absent or stale = WAIT, counted and alerted). Recorded in
+    `<QUANT_AUDITOR_ROWS>.waits.json` only once the notice went out, so an undelivered one is
+    retried on the next pass. True when a notice was sent now. It never changes a verdict."""
+    rows = path if path is not None else os.environ.get(AUDITOR_ROWS_ENV) or ""
+    if not rows:
+        return False
+    notify = notify or run_notify
+    store = Path(rows + ".waits.json")
+    try:
+        seen = json.loads(store.read_text(encoding="utf-8")) if store.exists() else {}
+    except (OSError, ValueError):
+        seen = {}
+    seen = seen if isinstance(seen, dict) else {}
+    key = f"{pr}:{head}:{_wait_kind(why)}"
+    if key in seen:
+        return False
+    title = f"#{pr}: the Auditor's CLEAR of {head[:9]} waits on its registry copy"
+    if not notify(title, f"#{pr} at {head[:9]} is not merged: {why}."):
+        return False
+    seen[key] = datetime.now(UTC).isoformat()
+    try:
+        tmp = store.with_suffix(store.suffix + ".tmp")
+        tmp.write_text(json.dumps(seen, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, store)
+    except OSError:
+        pass  # the notice went out; at worst it is sent once more
+    return True
+
+
+def standing_second(pr: int, head: str) -> tuple[bool, str]:
+    """The second record #811's standing approval needs once the box syncs the Auditor's
+    registry (QUANT_AUDITOR_ROWS set): that copy must CLEAR the exact head, fresh. Unset, the
+    standing rule is exactly as #811 merged it. Absent, stale or disagreeing = wait, alerted."""
+    if not os.environ.get(AUDITOR_ROWS_ENV):
+        return True, "no synced Auditor registry on this host: the standing rule as merged"
+    ok, why = auditor_row_agrees(pr, head)
+    if not ok:
+        notify_wait(pr, head, why)
+    return ok, why
+
+
 def adjudicated(
     pr: int,
     found: list[dict[str, str]],
@@ -913,6 +979,7 @@ def adjudicated(
         return (), why
     agrees, rwhy = auditor_row_agrees(pr, head)
     if not agrees:
+        notify_wait(pr, head, rwhy)
         return (), f"{why}, but {rwhy}: waiting"
     return ADJUDICABLE, f"{why}; {rwhy}"
 
@@ -1378,7 +1445,12 @@ def run(
         if (
             ours
             and boards
-            and approved(last, approval_at(boards[-1]), standing(level, boards[-1]))[0]
+            and approved(
+                last,
+                approval_at(boards[-1]),
+                standing(level, boards[-1]),
+                lambda: standing_second(pr, head),
+            )[0]
         ):
             return "zuck approved its CLEAR of this head"
         return None
@@ -1482,7 +1554,9 @@ def run(
                 "--slurp",
             )
             board = _flat(ap)
-            ok, awhy = approved(clear, approval_at(board), standing(level, board))
+            ok, awhy = approved(
+                clear, approval_at(board), standing(level, board), lambda: standing_second(pr, head)
+            )
             if ok or not registry:
                 return (clear if ok else None), f"{why}; {awhy}"
             why = f"{why}; {awhy}"

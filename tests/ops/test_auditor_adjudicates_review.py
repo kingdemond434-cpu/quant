@@ -277,7 +277,13 @@ def test_a_comment_without_the_registry_row_merges_nothing(case: _Case) -> None:
     assert v == "FAIL" and "not adjudicated" in why[0]
     case.window()
     case.sb.gate()
-    assert not case.merged() and case.sb.notices == []
+    # no veto window starts; the wait itself is alerted, once (Auditor's #816 ruling)
+    assert (
+        not case.merged() and [n for n in case.sb.notices if "waits on its registry" not in n] == []
+    )
+    assert len(case.sb.notices) == 1
+    case.sb.gate()
+    assert len(case.sb.notices) == 1 and not case.merged()
 
 
 def test_a_registry_copy_gone_stale_by_window_end_merges_nothing(case: _Case) -> None:
