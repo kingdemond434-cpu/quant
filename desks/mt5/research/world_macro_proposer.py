@@ -66,7 +66,7 @@ def _label(key: str) -> str:
     return f"{loc[0]}/{loc[1]}:{name}"[:160]
 
 
-def funnel(rows: list[dict[str, Any]], *, variants: int, too_few: int) -> dict[str, Any]:
+def funnel(rows: list[dict[str, Any]], *, variants: int, refused: int) -> dict[str, Any]:
     """Where the sweep's variants stopped, so a run that proposes nothing says why.
 
     A report only: it reads the rows `pc.deflate` already marked and moves no bar. Before it, a
@@ -79,7 +79,10 @@ def funnel(rows: list[dict[str, Any]], *, variants: int, too_few: int) -> dict[s
         vals = [float(r[key]) for r in pool if isinstance(r.get(key), int | float)]
         return round(max(vals), 3) if vals else UNMEASURED
 
-    return {"variants_built": variants, "too_few_trades": too_few,
+    # `screen_refused` is every variant the shared screen returned nothing for. The screen has
+    # three such exits (no signals, fewer than MIN_TRADES fills, a flat return series) and does
+    # not say which, so this count does not either.
+    return {"variants_built": variants, "screen_refused": refused,
             "min_trades": pc.MIN_TRADES, "screened": len(rows),
             "clears_cost": len(costed),
             "clears_cost_and_propose_bar": sum(1 for r in rows if r.get("proposed")),
@@ -111,7 +114,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
     rows: list[dict[str, Any]] = []
     swept: list[str] = []
     skipped: dict[str, str] = {}
-    variants = too_few = 0
+    variants = refused = 0
     for sym in order:
         if time.monotonic() - t0 > budget_s:
             break
@@ -136,7 +139,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
                         variants += 1
                         sc = pc.screen(d, sig, cost, unf)
                         if sc is None:
-                            too_few += 1
+                            refused += 1
                             continue
                         rows.append({"cell": f"{sym}.{FAMILY}.{key}", "symbol": sym,
                                      "params": params, **sc})
@@ -163,7 +166,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
     rep.update({"status": "OK", "symbols_available": len(syms), "symbols_swept": len(swept),
                 "cursor_start": start, "tests_run": len(rows),
                 "cells_proposed": len(proposals),
-                "funnel": funnel(rows, variants=variants, too_few=too_few),
+                "funnel": funnel(rows, variants=variants, refused=refused),
                 "donated": len(cands) if donated else 0, "donation_path": str(donated or ""),
                 "donation_refusals": dict(pc.LAST_DONATION) if donated is None and cands
                 else None,
