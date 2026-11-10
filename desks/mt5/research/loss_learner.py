@@ -99,7 +99,6 @@ REGISTRY = DATA / "sleeve_registry.json"
 CERT_BOOK = DATA / "CERT_BOOK_LIVE.json"
 FUSION_LEDGER = DATA / "live_ledger.jsonl"
 PROP_LEDGER = DATA / "live_ledger_prop.jsonl"
-MINLOT = DATA / "MINLOT_OVERRIDE.json"
 
 #: Trailing window the loss modes are measured over.
 TRAIL_DAYS = 60
@@ -249,10 +248,11 @@ def ledger_rows(now: datetime, fusion: Path | None = None, prop: Path | None = N
     return kept, state
 
 
-def live_sleeves(sleeves_doc: Any, cert_book: Any, minlot: Any = None
-                 ) -> dict[str, dict[str, Any]]:
+def live_sleeves(sleeves_doc: Any, cert_book: Any,
+                 minlot: tuple[Any, float | None] | None = None) -> dict[str, dict[str, Any]]:
     """name -> {books, frac, row}. Live NOW = a LIVE sleeves.json row (Fusion), a positive
-    cert-book key on any book, or a sleeve the Fusion min-lot override sends. A retired sleeve's
+    cert-book key on any book, or a sleeve in the Fusion min-lot book's scope (`minlot` =
+    (names, target risk), from `minlot_scope()`). A retired sleeve's
     old losses are not this organ's input: its parent is gone and a variant could replace
     nothing."""
     out: dict[str, dict[str, Any]] = {}
@@ -275,11 +275,26 @@ def live_sleeves(sleeves_doc: Any, cert_book: Any, minlot: Any = None
                 f = _num(v)
                 if f and f > 0:
                     _add(str(k), book, f)
-    if isinstance(minlot, dict) and minlot.get("enabled") is True:
-        tr = _num(minlot.get("target_risk"))
-        for k in minlot.get("sleeves") or []:
+    if minlot:
+        names, tr = minlot
+        for k in names or ():
             _add(str(k), "fusion", tr)
     return out
+
+
+def minlot_scope() -> tuple[frozenset[str], float | None]:
+    """The Fusion min-lot book's scope, READ FROM THE CODE (decision_core's constant set and its
+    fixed target risk), never from the switch file: the core is the switch's only reader
+    (test_fusion_minlot_book.test_no_organ_writes_the_switch), and the file can only NARROW the
+    code's set. A sleeve in scope but switched off sends no trades, so it yields no episodes and
+    no variants; the superset costs nothing. Unimportable core -> empty scope, said in the report.
+    """
+    try:
+        from mt5desk import decision_core as dcore
+    except Exception:  # noqa: BLE001 -- an unreadable core narrows the input, never raises
+        return frozenset(), None
+    return (frozenset(getattr(dcore, "MINLOT_OVERRIDE_SLEEVES", frozenset())),
+            _num(getattr(dcore, "MINLOT_OVERRIDE_TARGET_FRAC", None)))
 
 
 def _registry(doc: Any) -> dict[str, dict[str, Any]]:
@@ -723,7 +738,7 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
     cert_book = _json(CERT_BOOK, {})
     registry = _registry(_json(REGISTRY, {}))
     pins = cert_book.get("e8_pins") if isinstance(cert_book, dict) else {}
-    live = live_sleeves(sleeves_doc, cert_book, _json(MINLOT, {}))
+    live = live_sleeves(sleeves_doc, cert_book, minlot_scope())
     lineage = lineage_rows()
     existing, grid, graph_note = _graph_state()
     existing |= {str(r.get("id")) for r in lineage if r.get("id")}
