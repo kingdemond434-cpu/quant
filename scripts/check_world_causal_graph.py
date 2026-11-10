@@ -39,7 +39,7 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "WORLD_CAUSAL_GRAPH.json"
 STALE_H = 3.0
 #: R0237: the exit code is `fence_exit` over a DECLARED pass set. UNMEASURED is only ever returned
 #: without --require-state (a clean checkout, where the leg is not scheduled).
-_PASSING = frozenset({"PASS", "UNMEASURED"})
+_PASSING = frozenset({"OK", "UNMEASURED"})
 
 
 def _age_h(stamp: Any, now: datetime) -> float | None:
@@ -53,10 +53,10 @@ def _age_h(stamp: Any, now: datetime) -> float | None:
 
 
 def judge(report: Any, *, require_state: bool, now: datetime | None = None) -> dict[str, Any]:
-    """{verdict: PASS | FAIL | UNMEASURED, why, ...} for one report document (None = absent)."""
+    """{status: OK | FAIL | UNMEASURED, why, ...} for one report document (None = absent)."""
     now = now or datetime.now(tz=UTC)
     if not isinstance(report, dict):
-        return {"verdict": "FAIL" if require_state else "UNMEASURED",
+        return {"status": "FAIL" if require_state else "UNMEASURED",
                 "why": f"{REPORT.name} is absent or unreadable: the causal_graph leg has not "
                        "run on this host"}
     block = report.get("zero_admission")
@@ -64,16 +64,16 @@ def judge(report: Any, *, require_state: bool, now: datetime | None = None) -> d
     out: dict[str, Any] = {"age_h": None if age is None else round(age, 2),
                            "zero_admission": block if isinstance(block, dict) else None}
     if require_state and (age is None or age > STALE_H):
-        return {**out, "verdict": "FAIL",
+        return {**out, "status": "FAIL",
                 "why": f"{REPORT.name} is {'undated' if age is None else f'{age:.1f}h old'} "
                        f"(> {STALE_H}h): the causal_graph leg stopped"}
     if not isinstance(block, dict):
-        return {**out, "verdict": "FAIL" if require_state else "UNMEASURED",
+        return {**out, "status": "FAIL" if require_state else "UNMEASURED",
                 "why": "the report carries no zero_admission block (written by an older organ)"}
     if block.get("verdict") == "RED":
-        return {**out, "verdict": "FAIL",
+        return {**out, "status": "FAIL",
                 "why": f"RED: {block.get('why') or 'inputs flow and no edge is admitted'}"}
-    return {**out, "verdict": "PASS",
+    return {**out, "status": "OK",
             "why": f"zero_admission {block.get('verdict')} (runs={block.get('runs')}, "
                    f"admitted_total={block.get('admitted_total')})"}
 
@@ -91,9 +91,9 @@ def main(argv: list[str] | None = None) -> int:
     if a.json:
         print(json.dumps(res, indent=1, default=str))
     else:
-        print(f"world causal graph fence: {res['verdict']} -- {res['why']}")
+        print(f"world causal graph fence: {res['status']} -- {res['why']}")
     from libs.ops.fence_exit import fence_exit
-    return fence_exit(res["verdict"], _PASSING, fail=1)
+    return fence_exit(res["status"], _PASSING, fail=1)
 
 
 if __name__ == "__main__":
