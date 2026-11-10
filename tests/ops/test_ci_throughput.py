@@ -415,10 +415,56 @@ def test_the_box_sweep_skips_pending_prs_streams_and_stops_on_budget(
     monkeypatch.setattr(ag, "_gh", gh)
     monkeypatch.setattr(ag, "run", fake_run)
     assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3, 2]  # still running: last
-    ticks = iter([0.0] * 5 + [10_000.0] * 5)  # start, three pre-reads, one run, then out
+    # start, the order read's own cutoff, three pre-reads, one run, then out
+    ticks = iter([0.0] * 6 + [10_000.0] * 5)
     ran.clear()
     ag.sweep("o/r", ag.LIVE, budget_s=60, clock=lambda: next(ticks))
     assert ran == [1]
+
+
+def test_a_registry_cleared_head_runs_first_and_a_slow_order_read_never_eats_the_budget(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """2026-11-03 19:08Z: 209 order reads at ~13 s each spent the whole budget, so the sweep
+    never reached a merge. The registry's CLEARed exact heads run first with no read; the order
+    read stops at PRE_READ_SHARE of the budget and the rest go last, never dropped."""
+    prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2, 3, 4)]
+    reg = tmp_path / "registry.jsonl"
+    reg.write_text(
+        "\n".join(
+            json.dumps(r)
+            for r in (
+                {"pr": 3, "sha": f"{3:040d}", "verdict": "CLEAR", "at": "2026-11-03T00:00:00Z"},
+                {"pr": 4, "sha": "f" * 40, "verdict": "CLEAR", "at": "2026-11-03T00:00:00Z"},
+            )
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(ag.REGISTRY_ENV, str(reg))
+    green = [{"name": j, "status": "completed", "conclusion": "success",
+              "started_at": "t"} for j in ag.GATING_JOBS]  # fmt: skip
+    reads: list[str] = []
+    now = [0.0]
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if path.startswith("repos/o/r/commits?"):
+            return []  # auto_revert: nothing on the base to look at
+        if "/check-runs" in path:
+            assert k.get("timeout") == ag.PRE_READ_TIMEOUT_S  # a short timeout for the order read
+            reads.append(path)
+            now[0] += 50.0  # one slow read spends half the order-read share of a 200 s budget
+            return {"check_runs": green}
+        raise AssertionError(path)
+
+    ran: list[int] = []
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
+    ag.sweep("o/r", ag.LIVE, budget_s=200, clock=lambda: now[0])
+    assert ran[0] == 3  # the registry CLEAR of its exact head: first, and never read
+    assert all("0" * 39 + "3" not in r for r in reads)
+    assert len(reads) == 2 and sorted(ran) == [1, 2, 3, 4]  # #4's row names another head
 
 
 def test_the_watcher_runs_on_every_exit_of_the_box_sweep() -> None:
@@ -652,13 +698,20 @@ def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> 
     two = dict(ok, rc=1, fail_runs=2)  # two in a row is not yet RED
     assert mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=two, sign_expected=True)["red"] == []
     # v3: a closed-unmerged wait carries waiting_on too, so it reds like an open one
-    closed = dict(ok, waiting_on="claude/sign-train-def", waiting_since=_iso(150),
-                  note="a sign PR for def was closed unmerged; waiting for LIVE to move")
+    closed = dict(
+        ok,
+        waiting_on="claude/sign-train-def",
+        waiting_since=_iso(150),
+        note="a sign PR for def was closed unmerged; waiting for LIVE to move",
+    )
     rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=closed, sign_expected=True)
     assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
     # v3 SF: an untimeable wait, or a counter that is not a number, reds instead of raising
-    for odd in (dict(ok, waiting_on="claude/sign-train-abc", waiting_since="soon"),
-                dict(ok, fail_runs={"n": 1}), dict(ok, mutex_held_runs="x")):
+    for odd in (
+        dict(ok, waiting_on="claude/sign-train-abc", waiting_since="soon"),
+        dict(ok, fail_runs={"n": 1}),
+        dict(ok, mutex_held_runs="x"),
+    ):
         rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=odd, sign_expected=True)
         assert rep["status"] == "RED"
     swept = {"at": _iso(5), "rc": 0, "mutex_held_runs": [1]}
@@ -690,3 +743,120 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert 'TASK name="Quant-SignTrain"' in rows
     inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
     assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst
+
+
+def test_live_first_stops_at_its_budget_and_loses_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """2026-11-03 23:31Z: unbounded under 100% CPU, live-first outran Quant-WorkflowGate's 30-min
+    limit, the task was killed and the gate sweep behind it never ran. Past the budget nothing
+    more is cancelled, and an owed re-run it never reached is carried with its count unchanged."""
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    state = tmp_path / "lf.json"
+    state.write_text(json.dumps({"owed": [{"id": 9, "attempt": 1, "calls": 2}]}))
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if "/comments" in path:
+            return []
+        return {"status": "queued", "run_attempt": 1}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    t = iter(range(0, 10_000, 100))  # every clock read is 100 s later
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None,
+                  clock=lambda: float(next(t)), budget_s=150) == 0  # fmt: skip
+    assert not any(p.endswith(("/cancel", "/rerun")) for _, p in calls)
+    assert json.loads(state.read_text())["owed"] == [{"id": 9, "attempt": 1, "calls": 2}]
+    assert lf.BUDGET_S <= 600  # well inside the gate task's 30-minute limit
+
+
+def test_live_first_budget_is_a_ceiling_no_caller_can_raise(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """independent-review @ aca6be9e6: an arbitrary --budget-s could run longer than intended.
+    The flag only shortens the call, and run() clamps any larger value to BUDGET_S."""
+    lf = _lf()
+    for bad in ("0", "-5", str(lf.BUDGET_S + 1), "86400"):
+        with pytest.raises(SystemExit):
+            lf.main(["--repo", "o/r", "--budget-s", bad])
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    calls: list[str] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append(path)
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if "/comments" in path:
+            return []
+        return {"status": "queued", "run_attempt": 1}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    t = iter([0.0] + [lf.BUDGET_S] * 1000)  # the second clock read is exactly BUDGET_S later
+    lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None,
+           clock=lambda: next(t), budget_s=10 * lf.BUDGET_S)  # fmt: skip
+    assert not any(p.endswith(("/cancel", "/rerun")) for p in calls)  # stopped at the ceiling
+
+
+def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Desk health 2026-11-04 00:12Z: PR runs cancelled while queued (a reorder, a burst) were
+    quarantined by the audit gate as "CI failed (cancelled)" and only hands re-ran them. Rule 4
+    re-runs such a run once (first attempt only), on a current head, when no job ever started
+    and the head has no newer run of that workflow. Everything else is left alone."""
+    lf = _lf()
+    now = datetime.now(UTC)
+    ts = (now - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    older = (now - timedelta(minutes=40)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stale = (now - timedelta(hours=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def run_(i: int, sha: str = "h1", attempt: int = 1, wf: int = 7, at: str = ts) -> dict:
+        return {"id": i, "event": "pull_request", "status": "completed",
+                "conclusion": "cancelled", "run_attempt": attempt, "head_branch": "b1",
+                "head_sha": sha, "workflow_id": wf, "created_at": at}  # fmt: skip
+
+    cancelled = [
+        run_(10),  # never started: re-run
+        run_(11, wf=8),  # a job started: left alone
+        run_(12, attempt=2, wf=9),  # already re-run once: left alone
+        run_(13, sha="old", wf=10),  # head moved: left alone
+        run_(14, wf=11, at=stale),  # too old: left alone
+        run_(15, wf=12),  # its head has a newer run of that workflow: left alone
+        run_(16, at=older),  # an older duplicate of 10's (head, workflow): left alone
+    ]
+    jobs = {i: [{"steps": [], "runner_name": None, "runner_id": 0}] for i in (10, 15, 16)}
+    jobs[11] = [{"steps": [{"name": "checkout"}], "runner_name": "GitHub Actions 3"}]
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": []}
+        if "/pulls?" in path:
+            return [{"number": 1, "head": {"ref": "b1", "sha": "h1"}}]
+        if "status=cancelled" in path:
+            return {"workflow_runs": cancelled}
+        if path.endswith("/jobs?per_page=100"):
+            return {"jobs": jobs[int(path.split("/")[-2])]}
+        if "head_sha=" in path:
+            return {"workflow_runs": [*cancelled, {"workflow_id": 12, "created_at": "9999"}]}
+        return None
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    assert lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None) == 0
+    reruns = [p for m, p in calls if p.endswith("/rerun")]
+    assert reruns == ["repos/o/r/actions/runs/10/rerun"]
+    assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
+    assert not lf.never_started([]) and lf.never_started(jobs[10])
