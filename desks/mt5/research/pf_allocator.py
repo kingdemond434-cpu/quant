@@ -927,6 +927,11 @@ def _execution_costs(names: Any) -> dict[str, Any]:
         reg = reg.get("symbols", reg) if isinstance(reg, dict) else {}
     except (OSError, ValueError):
         reg = {}
+    # THIS ACCOUNT'S OWN VENUE (Judge, 2026-11-05): the Fusion book is sized net of Fusion's own
+    # quoted spread at each fill hour (data/cost_truth_quotes.<fusion venue>.json), laid over the
+    # bar-measured surface; the Judge's gate charges the cross-venue max, never this.
+    from libs.portfolio.venue_cost import account_surface
+    surface = account_surface(BASE / "data", "fusion", surface)
     rows = [{"name": str(c), "symbol": str(c).split("_")[0], "selector": str(c)} for c in names]
     return costs_for(rows, surface, registry=reg)
 
