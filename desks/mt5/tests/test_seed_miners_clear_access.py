@@ -82,6 +82,51 @@ def test_without_the_switch_the_sweep_is_unchanged(sweep) -> None:
     assert not [n for n, r in res.items() if r.get("status") == "SET_ASIDE"]
 
 
+def test_the_set_aside_publishes_its_two_sided_missed_growth_line(sweep, tmp_path) -> None:
+    """Rule 1: the set-aside is billed. Cost and gain both written, neither priced as zero, and
+    the desk's missed-growth report carries them from the state file."""
+    from research import missed_growth as mg
+
+    state = tmp_path / "intelligence" / "seed_miners_state.json"
+    assert mg.organ_published_lines(state)["verdict"] == "UNMEASURED"      # never ran: said
+    sm.run_and_save(clear_access_only=True)
+    aside = sorted(set(sm.MINERS) - set(sm.CLEAR_ACCESS))
+    lines = json.loads(state.read_text("utf-8"))["missed_growth"]
+    assert [ln["side"] for ln in lines] == ["cost", "gain"]
+    cost, gain = lines
+    assert cost["rail"] == gain["rail"] == "seed_miners_clear_access"
+    assert cost["sources"] == aside and cost["n_sources"] == gain["n_sources"] == len(aside)
+    for ln in lines:                                   # UNMEASURED is the answer, not a zero
+        assert ln["value"] is None and ln["verdict"] == "UNMEASURED"
+        assert ln["e_log_w"] == "UNMEASURED" and ln["at"] and ln["day"] == ln["at"][:10]
+    carried = mg.organ_published_lines(state)
+    assert carried["verdict"] == "UNMEASURED" and carried["n_lines"] == 2
+    assert carried["lines"] == lines
+
+
+def test_a_sweep_that_sets_nothing_aside_publishes_no_line(sweep, tmp_path) -> None:
+    from research import missed_growth as mg
+
+    state = tmp_path / "intelligence" / "seed_miners_state.json"
+    sm.run_and_save(clear_access_only=True)
+    sm.run_and_save()                                  # the next sweep replaces the line
+    assert json.loads(state.read_text("utf-8"))["missed_growth"] == []
+    assert mg.organ_published_lines(state)["verdict"] == "NOT_BINDING"
+
+
+def test_the_missed_growth_report_reads_the_seed_miners_state_file() -> None:
+    from research import missed_growth as mg
+
+    assert mg.SEED_MINERS_STATE == sm.STATE
+    src = (_DESK / "research" / "missed_growth.py").read_text("utf-8")
+    assert '"seed_miners_clear_access": organ_published_lines(' in src
+
+
+def test_the_archive_sources_are_named_as_still_set_aside() -> None:
+    assert not ({"darwinex", "forextsd_cdx", "ff_calendar_vintage"} & sm.CLEAR_ACCESS)
+    assert {"darwinex", "forextsd_cdx", "ff_calendar_vintage"} <= set(sm.MINERS)
+
+
 def test_the_command_line_switch_is_the_one_the_hourly_leg_passes() -> None:
     src = (_DESK / "side_channels" / "seed_miners.py").read_text("utf-8")
     assert 'run_and_save(clear_access_only="--clear-access-only" in sys.argv[1:])' in src

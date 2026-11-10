@@ -660,11 +660,43 @@ MINERS = {
 #: archive of a site's pages, with a browser User-Agent; none has clear machine-access terms, so
 #: under the flag each is SET_ASIDE by name -- not fetched, and its wall not probed. A source is
 #: added here only with the terms that allow it; absence from this set is not a permission.
+#: STILL SET ASIDE ON THE BOX: the Wayback CDX sources (`darwinex`, `forextsd_cdx`) and
+#: `ff_calendar_vintage`. They stay outside this set until their access terms are recorded here,
+#: beside the name, the way the five above are.
 CLEAR_ACCESS: frozenset[str] = frozenset({
     "quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps",
 })
 SET_ASIDE_WHY = ("not in seed_miners.CLEAR_ACCESS (no clear machine-access terms; this host runs "
                  "clear-access sources only)")
+
+
+def set_aside_missed_growth(set_aside: list[str], at: str) -> list[dict]:
+    """THE TWO-SIDED LEDGER LINE for the clear-access set-aside (GROWTH_GOVERNANCE Rule 1;
+    judge_prescreen / canon_publication precedent).
+
+    COST: the sources this sweep did not mine, by name -- every claim they would have donated to
+    the compiler this hour is absent, and what that is worth in E[log W] is UNMEASURED, said,
+    never zero. GAIN: the requests not sent to hosts with no recorded machine-access terms; it is
+    not a growth quantity and is not priced as one. No source set aside -> no lines, which
+    `missed_growth.organ_published_lines` reads as NOT_BINDING: the flag cost nothing this sweep.
+    """
+    names = sorted(set_aside)
+    if not names:
+        return []
+    common = {"day": at[:10], "at": at, "rail": "seed_miners_clear_access",
+              "by": "side_channels/seed_miners.py --clear-access-only"}
+    cost = {**common, "side": "cost", "kind": "opportunity_cost",
+            "value": None, "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+            "units": "seed sources not mined this sweep (their donated claims never reach the "
+                     "compiler); no yield per source is measured under the flag",
+            "n_sources": len(names), "sources": names, "why": SET_ASIDE_WHY}
+    gain = {**common, "side": "gain", "kind": "access_terms_respected",
+            "value": None, "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+            "units": "sources neither fetched nor wall-probed without recorded machine-access "
+                     "terms; not a growth quantity, so no E[log W] is claimed for it",
+            "n_sources": len(names),
+            "released_by": "recording the source's access terms and adding it to CLEAR_ACCESS"}
+    return [cost, gain]
 
 
 def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: dict,
@@ -773,9 +805,14 @@ def run_and_save(clear_access_only: bool = False) -> dict:
         _write_rows(name, rows_, ts, results, summary)
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
-    st["last_sweep"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+    swept_at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    st["last_sweep"] = {"at": swept_at,
                         "clear_access_only": bool(clear_access_only),
                         "set_aside": sorted(set_aside)}
+    # The set-aside's two-sided line, at the top level of this state file, which is where
+    # research/missed_growth.py (organ_published_lines) reads an organ's own lines from. It is
+    # THIS sweep's line, replaced each sweep: a sweep that set nothing aside publishes none.
+    st["missed_growth"] = set_aside_missed_growth(set_aside, swept_at)
     STATE.write_text(json.dumps(st, indent=0), "utf-8")
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"

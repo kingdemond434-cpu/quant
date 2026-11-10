@@ -901,6 +901,9 @@ DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 #: (the rail register is sealed), cost and gain both UNMEASURED until priced.
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
 GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
+#: seed_miners' own state: under --clear-access-only (the box's hourly leg) every source outside
+#: seed_miners.CLEAR_ACCESS is set aside by name, and the sweep publishes its two-sided line here.
+SEED_MINERS_STATE = BASE / "data" / "intelligence" / "seed_miners_state.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1201,6 +1204,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
+                                    "seed_miners_clear_access": organ_published_lines(
+                                        SEED_MINERS_STATE),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
