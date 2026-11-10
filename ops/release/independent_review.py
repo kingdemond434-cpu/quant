@@ -97,9 +97,27 @@ GEMINI_MODELS = ("gemini-2.5-pro", "gemini-2.5-flash")
 VOTES = 2
 #: Above this the diff is not reviewed in part: the PR fails and takes the manual path.
 MAX_DIFF_CHARS = 600_000
-#: How long the job keeps trying free models before it reports UNAVAILABLE.
-BUDGET_S = 150 * 60
+#: How long the job keeps trying free models before it reports UNAVAILABLE. The workflow says
+#: how long its job may run (REVIEW_BUDGET_MIN); without it (a re-run replays the workflow file of
+#: the PR's last push: older files had a 200-minute job) 170 minutes, which ends inside that job.
+BUDGET_S = 170 * 60
+#: The most the budget can be set to: GitHub ends a hosted job at 360 minutes.
+MAX_BUDGET_S = 340 * 60
 CALL_TIMEOUT_S = 1800
+#: SIZED LOCAL CALLS (Combiner blocker, 2026-11-10). One local call was cut at CALL_TIMEOUT_S
+#: whatever its size, then asked again from the start until the budget ran out: #604 #618 #667
+#: #713 #772 #774 #787 #788 ended UNAVAILABLE after 5 x 30-minute timeouts, 162 minutes each,
+#: and a re-run did the same. Their money-path files (70-90k characters) are read together in ONE
+#: part by rule (#547 MF1 a), so no part cap can make that call shorter. Measured on the hosted
+#: runner (11-05..11-08 release-gates logs): 38k characters in 20-28 min (once over 30), 58-61k in
+#: 29-30 min. A local call may now run 90 s per 1,000 characters of prompt (about 1.5 to 3 times
+#: the measured rate), never less than CALL_TIMEOUT_S and never past the job's budget. Same
+#: model, same prompt, same votes: the gate only waits long enough for the answer to arrive.
+LOCAL_S_PER_KCHAR = 90
+#: When the budget ends (time.monotonic), set by main(); None outside a review job.
+_DEADLINE: float | None = None
+#: The timeout of the next HTTP call; ask_local() sizes it for its own prompt.
+_call_timeout: float = CALL_TIMEOUT_S
 LOCAL = HERE / "local_models.json"
 #: Characters per token assumed when sizing a local prompt: low on purpose (code runs 3.2-4), so
 #: a prompt counted as fitting nearly always does; the server's own count is checked after (MF4),
@@ -135,7 +153,7 @@ def _http(url: str, body: dict[str, Any] | None, headers: dict[str, str]) -> Any
         url, data=data, headers={"Content-Type": "application/json", **headers}
     )
     try:
-        with urllib.request.urlopen(req, timeout=CALL_TIMEOUT_S) as r:
+        with urllib.request.urlopen(req, timeout=_call_timeout) as r:
             return json.loads(r.read().decode("utf-8", errors="replace"))
     except urllib.error.HTTPError as exc:
         if exc.code in (408, 429) or exc.code >= 500:
@@ -538,22 +556,54 @@ class TooLarge(RuntimeError):
     """The prompt does not fit the model whole: never a vote, never retried as unavailable."""
 
 
+def local_timeout(chars: int, left: float | None = None) -> float:
+    """Seconds one local call on a prompt of `chars` characters may take: LOCAL_S_PER_KCHAR per
+    1,000 characters, at least CALL_TIMEOUT_S, and never more than the `left` of the budget (a
+    call is never cut short of CALL_TIMEOUT_S by its size, only by the budget)."""
+    want = max(float(CALL_TIMEOUT_S), chars / 1000 * LOCAL_S_PER_KCHAR)
+    return want if left is None else max(1.0, min(want, left))
+
+
+def budget_s(env: dict[str, str] | None = None) -> float:
+    """The job's review budget: REVIEW_BUDGET_MIN from the workflow, else BUDGET_S. Never below
+    BUDGET_S and never past MAX_BUDGET_S, so a typo cannot end a review early or outlive its job."""
+    raw = (os.environ if env is None else env).get("REVIEW_BUDGET_MIN", "")
+    try:
+        got = float(raw) * 60
+    except ValueError:
+        return float(BUDGET_S)
+    if got != got:  # NaN
+        return float(BUDGET_S)
+    return float(min(MAX_BUDGET_S, max(BUDGET_S, got)))
+
+
 def ask_local(url: str, model: str, num_ctx: int, rubric: str, user: str) -> str:
     """One local answer. "" (unreadable: retried once, then FAIL) when the server counted the
     prompt as filling the context or as implausibly short, either of which means it truncated."""
     if (len(rubric) + len(user)) // CHARS_PER_TOKEN + ANSWER_TOKENS > num_ctx:
         raise TooLarge(f"{model}: the prompt does not fit {num_ctx} tokens")
-    doc = _http(
-        f"{url}/api/chat",
-        {
-            "model": model,
-            "stream": False,
-            "format": "json",
-            "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
-            "messages": [{"role": "system", "content": rubric}, {"role": "user", "content": user}],
-        },
-        {},
-    )
+    global _call_timeout
+    left = None if _DEADLINE is None else _DEADLINE - time.monotonic()
+    if left is not None and left <= 0:
+        raise Unavailable("the review budget is spent")
+    _call_timeout = local_timeout(len(rubric) + len(user), left)
+    try:
+        doc = _http(
+            f"{url}/api/chat",
+            {
+                "model": model,
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
+                "messages": [
+                    {"role": "system", "content": rubric},
+                    {"role": "user", "content": user},
+                ],
+            },
+            {},
+        )
+    finally:
+        _call_timeout = CALL_TIMEOUT_S
     if doc.get("error"):
         raise Unavailable(str(doc["error"])[:200])
     seen = int(doc.get("prompt_eval_count") or 0)
@@ -999,17 +1049,31 @@ def main(argv: list[str] | None = None) -> int:
     local = {str(m["name"]) for m in cfg["models"]}
     # The pinned set says how many families must PASS (zuck 2026-11-03 16:22Z, journal
     # D-20261103-003: llama3.1:8b FAILed 25 of 25 heads the Auditor read clean, so it is unpinned).
-    global VOTES
+    global VOTES, _DEADLINE
     saved, VOTES = VOTES, max(1, int(cfg.get("votes", VOTES)))
+    budget = budget_s()
+    print(
+        f"review budget: {int(budget // 60)} min; a local call may run {LOCAL_S_PER_KCHAR} s "
+        f"per 1,000 prompt characters (at least {CALL_TIMEOUT_S} s)"
+    )
+    _DEADLINE = time.monotonic() + budget
     try:
         whole = reads_whole(ladder, local)
         verdict, log = (
-            review(diff, files, ladder, int(cfg["num_ctx"]), whole_only=whole, closure=closure)
+            review(
+                diff,
+                files,
+                ladder,
+                int(cfg["num_ctx"]),
+                budget_s=budget,
+                whole_only=whole,
+                closure=closure,
+            )
             if ladder
             else ("UNAVAILABLE", ["no free model"])
         )
     finally:
-        VOTES = saved
+        VOTES, _DEADLINE = saved, None
     for line in log:
         print(line)
     print(f"independent review @ {a.head[:9]}: {verdict}")

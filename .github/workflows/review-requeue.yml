@@ -1,0 +1,42 @@
+name: review-requeue
+
+# A QUEUED independent review (REVIEW_UNAVAILABLE, exit 75) is re-run on this clock, so the re-run
+# never waits on an AUDIT verdict or on the box (.github/scripts/review_requeue.py). It only asks
+# GitHub to run the same review job again: it reads no verdict, writes no status and merges
+# nothing. A schedule runs this file from the DEFAULT branch, which ci.yml's promote job syncs
+# from LIVE, so the clock starts once a promote carries it there.
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write   # POST .../actions/jobs/{id}/rerun
+  checks: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: review-requeue
+  cancel-in-progress: false
+
+jobs:
+  requeue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/llm-auto-upgrade-verify-gcjac3
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Re-run queued reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -I .github/scripts/review_requeue.py --repo "${{ github.repository }}"
