@@ -1185,6 +1185,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # ONE CONSOLIDATED DESIGN (ARCH-31): interfaces, timing, ownership, budgets and the named
+    # contradictions between them, derived from the registry every pass (~6 s).
+    "institution_design",
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
@@ -2062,6 +2065,8 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ARCH-31 institution design: one registry build (~6-16 s measured) and a few joins.
+    "institution_design": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6299,6 +6304,11 @@ def main() -> None:
     slw = _costed("scaling_laws", lambda: _producer("scaling_laws", "libs/ops/scaling_laws.py"))
     # WHICH ORGANS HAVE ANYTHING ON THE OTHER END (Tier-1 item I4). Report only: nothing is
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
+    # THE CONSOLIDATED DESIGN, DERIVED (ARCH-31): the component registry's interfaces, timing,
+    # state ownership, uncertainty, failure handling and budgets, and every contradiction between
+    # them with its precedence rule. Report only.
+    ids = _costed("institution_design", lambda: _producer(
+        "institution_design", "scripts/build_institution_design.py"))
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
     # EVERY SILENT ORGAN, BY NAME (CRO noon 2026-09-30: "101 silent scheduled failures" was a sum
@@ -6560,7 +6570,7 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
+                    "institution_design": ids, "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
