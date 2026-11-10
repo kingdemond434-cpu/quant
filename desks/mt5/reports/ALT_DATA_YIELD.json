@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-10T14:03:17+00:00",
+ "generated_utc": "2026-11-10T14:53:41+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -3185,25 +3185,25 @@
    },
    "KRX 정보데이터시스템": {
     "outcome": "EMPTY",
-    "attempts": 450,
-    "successes": 200,
+    "attempts": 451,
+    "successes": 201,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 200,
+    "datasets": 201,
     "last_error": "",
-    "last_attempt": "2026-11-10T08:49:04.333987+00:00",
+    "last_attempt": "2026-11-10T14:53:24.956609+00:00",
     "language": "ko",
     "region": "kr"
    },
    "KRX 투자자별 거래실적": {
     "outcome": "EMPTY",
-    "attempts": 22,
-    "successes": 22,
+    "attempts": 23,
+    "successes": 23,
     "rows": 1,
     "findings_total": 1,
-    "datasets": 22,
+    "datasets": 23,
     "last_error": "",
-    "last_attempt": "2026-11-10T08:49:04.057233+00:00",
+    "last_attempt": "2026-11-10T14:53:25.536388+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5249,13 +5249,13 @@
    },
    "Telegram KR 시장": {
     "outcome": "EMPTY",
-    "attempts": 439,
+    "attempts": 440,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-10T08:49:05.855522+00:00",
+    "last_attempt": "2026-11-10T14:53:27.400614+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5321,13 +5321,13 @@
    },
    "The Investor: Korea's near-24-hour won market": {
     "outcome": "EMPTY",
-    "attempts": 23,
+    "attempts": 24,
     "successes": 1,
     "rows": 3,
     "findings_total": 3,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-10T08:49:03.690091+00:00",
+    "last_attempt": "2026-11-10T14:53:24.315021+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5585,13 +5585,13 @@
    },
    "Velog quant": {
     "outcome": "BLOCKED",
-    "attempts": 465,
+    "attempts": 466,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismat; URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mism",
-    "last_attempt": "2026-11-10T08:48:42.005468+00:00",
+    "last_attempt": "2026-11-10T14:53:09.142974+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -79157,13 +79157,13 @@
    },
    "관세청 수출입 통계": {
     "outcome": "EMPTY",
-    "attempts": 452,
-    "successes": 202,
+    "attempts": 453,
+    "successes": 203,
     "rows": 0,
     "findings_total": 1,
-    "datasets": 202,
+    "datasets": 203,
     "last_error": "",
-    "last_attempt": "2026-11-10T08:49:03.908981+00:00",
+    "last_attempt": "2026-11-10T14:53:24.521667+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -79205,13 +79205,13 @@
    },
    "팍스넷 종목토론": {
     "outcome": "YIELDED",
-    "attempts": 432,
-    "successes": 136,
-    "rows": 292,
-    "findings_total": 295,
+    "attempts": 433,
+    "successes": 137,
+    "rows": 293,
+    "findings_total": 296,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-10T08:49:20.827513+00:00",
+    "last_attempt": "2026-11-10T14:53:36.620789+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -79229,13 +79229,13 @@
    },
    "한국은행 경제통계시스템 ECOS": {
     "outcome": "BLOCKED",
-    "attempts": 457,
+    "attempts": 458,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-10T08:49:03.334252+00:00",
+    "last_attempt": "2026-11-10T14:53:13.957651+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -79320,8 +79320,8 @@
    "last_run": "2026-11-10T09:28:39+00:00",
    "fetches_per_s": 0.5344,
    "success_rate": 0.7144,
-   "wall_s_24h": 2396.3,
-   "cpu_s_24h": 472.2
+   "wall_s_24h": 1721.9,
+   "cpu_s_24h": 351.9
   },
   "forest_europe": {
    "runs": 28,
@@ -79334,8 +79334,8 @@
    "last_run": "2026-11-10T14:03:17+00:00",
    "fetches_per_s": 0.4997,
    "success_rate": 0.7805,
-   "wall_s_24h": 4119.0,
-   "cpu_s_24h": 850.1
+   "wall_s_24h": 5217.3,
+   "cpu_s_24h": 900.2
   },
   "forest_global_academic_code": {
    "runs": 19,
@@ -79408,18 +79408,18 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 28,
-   "fetches": 2537,
-   "ok": 1812,
+   "runs": 29,
+   "fetches": 2552,
+   "ok": 1827,
    "http_errors": 33,
    "transport_errors": 692,
-   "seconds": 8230.4,
-   "rows": 324,
-   "last_run": "2026-11-10T08:53:21+00:00",
-   "fetches_per_s": 0.3082,
-   "success_rate": 0.7142,
-   "wall_s_24h": 1830.3,
-   "cpu_s_24h": 276.9
+   "seconds": 8282.5,
+   "rows": 328,
+   "last_run": "2026-11-10T14:53:41+00:00",
+   "fetches_per_s": 0.3081,
+   "success_rate": 0.7159,
+   "wall_s_24h": 1536.4,
+   "cpu_s_24h": 207.6
   },
   "forest_latam": {
    "runs": 28,
