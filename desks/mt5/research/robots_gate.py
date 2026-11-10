@@ -78,6 +78,23 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
     `cache` (a dict the caller owns for ONE pass) holds each host's parsed robots.txt, or the
     reason it could not be read, so a pass asks a host once however many of its paths it wants.
 
+    PUBLIC          robots.txt allows the path, or the site serves none (a 4xx other than
+                    401/403).
+    DISALLOWED      robots.txt was READ and disallows this exact path for our agent. Nothing
+                    else is a Disallow.
+    ACCESS_UNCLEAR  the file could not be read: a 5xx, a timeout, DNS, TLS, a non-http URL --
+                    and a 401/403 on robots.txt itself. A REFUSAL TO SERVE THE FILE IS NOT A
+                    RULE IN THE FILE (measured on the box 2026-11-10: 9 of 13 non-allowing
+                    Asia sources were a 403 on /robots.txt, among them keyed public APIs the
+                    desk holds a key for -- api.eia.gov, data.api.abs.gov.au -- where the 403
+                    is the host's answer to an unkeyed request, not a crawl policy). The
+                    standard library reads 401/403 as "everything disallowed"; RFC 9309 reads
+                    every 4xx as "no policy". This gate takes neither side: it says the policy
+                    is UNREAD and lets the caller's own rule for unread decide.
+
+    `cache` (a dict the caller owns for ONE pass) holds each host's parsed robots.txt, or the
+    reason it could not be read, so a pass asks a host once however many of its paths it wants.
+
     PUBLIC          robots.txt allows the path, or the site serves none (any 4xx but 401/403).
     DISALLOWED      robots.txt disallows the path; or the file itself answers 401/403, which the
                     standard library also reads as "everything disallowed".
@@ -95,13 +112,10 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
             text = (opener or _open)(f"{root}/robots.txt", agent, timeout)
         except urllib.error.HTTPError as exc:
             code = int(getattr(exc, "code", 0) or 0)
-            if code in (401, 403):
-                held = (DISALLOWED,
-                        f"robots.txt answers HTTP {code}: read as everything disallowed")
-            elif 400 <= code < 500:
-                held = (PUBLIC, f"no robots.txt (HTTP {code})")
-            else:
+            if code in (401, 403) or not 400 <= code < 500:
                 held = (ACCESS_UNCLEAR, f"robots.txt unreadable (HTTP {code})")
+            else:
+                held = (PUBLIC, f"no robots.txt (HTTP {code})")
         except Exception as exc:
             held = (ACCESS_UNCLEAR, f"robots.txt unreadable ({type(exc).__name__})")
         else:

@@ -159,9 +159,13 @@ def _robots_open(url: str, agent: str, timeout: float) -> str:
         return str(r.read(200_000).decode("utf-8", errors="replace"))
 
 
-#: One pass's robots.txt per host (parsed, or why it could not be read). `main` clears it, so a
-#: host is asked once a pass however many of its paths the registry declares.
+#: One pass's robots.txt per host (parsed, or why it could not be read), so a host is asked once
+#: a pass however many of its paths the registry declares. `main` clears it, and it also expires
+#: by age, because `event_surprise` and `data_acquisition_scientist` reach `_robots_verdict`
+#: without going through `main` and a long-lived process must not hold a stale verdict.
 _ROBOTS_CACHE: dict[tuple[str, str], Any] = {}
+_ROBOTS_CACHE_TTL_S = 900.0
+_ROBOTS_CACHE_BORN = [0.0]
 
 
 def _robots_verdict(url: str, agent: str = "quant-desk-collector") -> tuple[str, str]:
@@ -170,6 +174,9 @@ def _robots_verdict(url: str, agent: str = "quant-desk-collector") -> tuple[str,
         from research import robots_gate as RG
     except ImportError:                                                      # pragma: no cover
         import robots_gate as RG  # type: ignore[no-redef]
+    if time.monotonic() - _ROBOTS_CACHE_BORN[0] > _ROBOTS_CACHE_TTL_S:
+        _ROBOTS_CACHE.clear()
+        _ROBOTS_CACHE_BORN[0] = time.monotonic()
     return RG.read(url, agent, opener=_robots_open, cache=_ROBOTS_CACHE)
 
 

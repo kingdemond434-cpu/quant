@@ -52,7 +52,6 @@ def test_only_an_allow_or_a_missing_file_is_public() -> None:
 def test_a_disallow_on_the_exact_path_is_disallowed() -> None:
     label, why = rg.read(URL, "a", opener=_serve("User-agent: *\nDisallow: /data/\n"))
     assert label == "DISALLOWED" and "exact path" in why
-    assert rg.read(URL, "a", opener=_fail(_http(403)))[0] == "DISALLOWED"
     # an agent-specific group binds only that agent
     body = "User-agent: other\nDisallow: /\n\nUser-agent: *\nDisallow:\n"
     assert rg.read(URL, "a", opener=_serve(body))[0] == "PUBLIC"
@@ -61,6 +60,11 @@ def test_a_disallow_on_the_exact_path_is_disallowed() -> None:
 
 def test_an_unread_policy_is_labelled_access_unclear() -> None:
     assert rg.read(URL, "a", opener=_fail(_http(503)))[0] == "ACCESS_UNCLEAR"
+    # A refusal to SERVE robots.txt is not a rule IN it (box, 2026-11-10: api.eia.gov and eight
+    # others answer 403 on /robots.txt). Unread, so the caller's rule for unread decides.
+    for code in (401, 403):
+        label, why = rg.read(URL, "a", opener=_fail(_http(code)))
+        assert label == "ACCESS_UNCLEAR" and str(code) in why
     assert rg.read(URL, "a", opener=_fail(TimeoutError()))[0] == "ACCESS_UNCLEAR"
     assert rg.read("ftp://example.invalid/x", "a", opener=_serve(""))[0] == "ACCESS_UNCLEAR"
 
@@ -175,6 +179,21 @@ def test_the_asia_collector_still_fetches_on_an_unread_robots_file_and_counts_it
     assert rec["robots_counted"] is True
     line = json.loads(_ledger["ledger"].read_text("utf-8").splitlines()[0])
     assert line["status"] == "UNREAD_FETCHED" and line["organ"] == "asia_collector"
+
+
+def test_the_collector_cache_expires_by_age(monkeypatch: pytest.MonkeyPatch) -> None:
+    asked: list[str] = []
+    monkeypatch.setattr(acol, "_robots_open",
+                        lambda url, agent, timeout: asked.append(url) or "")
+    monkeypatch.setattr(acol, "_ROBOTS_CACHE", {})
+    monkeypatch.setattr(acol, "_ROBOTS_CACHE_BORN", [acol.time.monotonic()])
+    acol._robots_verdict(URL)
+    acol._robots_verdict(URL + "2")
+    assert len(asked) == 1
+    monkeypatch.setattr(acol, "_ROBOTS_CACHE_BORN",
+                        [acol.time.monotonic() - acol._ROBOTS_CACHE_TTL_S - 1])
+    acol._robots_verdict(URL)
+    assert len(asked) == 2
 
 
 def test_the_asia_collector_fetches_a_public_path(monkeypatch: pytest.MonkeyPatch,
