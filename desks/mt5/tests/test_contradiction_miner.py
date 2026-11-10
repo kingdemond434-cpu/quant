@@ -29,6 +29,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cm, "REPORT", tmp_path / "reports" / "CONTRADICTIONS.json")
     monkeypatch.setattr(cm, "DONATIONS", tmp_path / "data" / "intelligence" / "contradiction_miner")
     monkeypatch.setattr(cm, "SEEN", tmp_path / "data" / "contradiction_miner_seen.json")
+    monkeypatch.setattr(cm, "COMPILED", tmp_path / "data" / "hypotheses" / "miner_candidates.json")
     return tmp_path
 
 
@@ -132,3 +133,25 @@ def test_the_leg_is_wired_into_the_hourly_cycle_and_a_layer() -> None:
 
     assert "contradiction_miner" in hourly_cycle.CORE_LEGS
     assert "contradiction_miner" in layers.LEG_LAYER
+
+
+def test_conversion_reads_the_compilers_count_of_this_seat(desk: Path,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    out = desk / "data" / "hypotheses" / "miner_candidates.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    hyps = [{"symbol": "XAUUSD", "family": f, "source": "miner:contradiction_miner"}
+            for f in (cm.FOLLOW_FAMILY, cm.FADE_FAMILY)]
+    hyps.append({"symbol": "EURUSD", "family": "carry", "source": "miner:deepseek"})
+    out.write_text(json.dumps({"hypotheses": hyps, "per_source": {
+        "deepseek": {"rows": 9, "candidates": 1, "deepening": 0},
+        "contradiction_miner": {"rows": 4, "candidates": 2, "deepening": 0}}}))
+    monkeypatch.setattr(cm, "_CHUNK", 64)           # force matches across chunk boundaries
+    conv = cm.conversion()
+    assert conv["state"] == "MEASURED" and conv["hypotheses_compiled"] == 2
+    assert (conv["rows_read"], conv["candidates"]) == (4, 2)
+    assert conv["reach_and_verdicts"].startswith("UNMEASURED")
+
+
+def test_an_absent_compiler_output_is_unmeasured(desk: Path) -> None:
+    conv = cm.conversion()
+    assert conv["state"] == "UNMEASURED" and "why" in conv

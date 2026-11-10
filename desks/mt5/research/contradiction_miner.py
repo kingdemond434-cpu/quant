@@ -39,6 +39,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
@@ -55,6 +56,9 @@ import unseen_frontier as uf  # noqa: E402
 REPORT = BASE / "reports" / "CONTRADICTIONS.json"
 DONATIONS = BASE / "data" / "intelligence" / "contradiction_miner"
 SEEN = BASE / "data" / "contradiction_miner_seen.json"
+#: The candidate compiler's output: how many of this seat's rows it read and compiled.
+COMPILED = BASE / "data" / "hypotheses" / "miner_candidates.json"
+SEAT = "contradiction_miner"
 
 #: The two registered price-only families that settle a split: one follows, one fades.
 FOLLOW_FAMILY = "trend_ma_cross"
@@ -214,6 +218,51 @@ def donation_rows(found: list[dict[str, Any]], seen: set[str]) -> list[dict[str,
     return rows
 
 
+#: The compiled file is tens of megabytes on the box and is scanned, never parsed: one regex for
+#: the seat's own `per_source` entry, one for each compiled hypothesis it sourced.
+_PER_SOURCE = re.compile(r'"' + SEAT + r'"\s*:\s*\{\s*"rows"\s*:\s*(\d+)\s*,\s*'
+                         r'"candidates"\s*:\s*(\d+)')
+_SOURCED = re.compile(r'"source"\s*:\s*"miner:' + SEAT + r'"')
+_CHUNK = 8 << 20
+_OVERLAP = 256
+
+
+def conversion(path: Path | None = None) -> dict[str, Any]:
+    """What the compiler made of this seat's donations: rows read, candidates, hypotheses kept.
+
+    This is the stage before the judge, read from the one file the compiler writes; reach and
+    verdicts are reported UNMEASURED until an artifact links a verdict to a compiler-fed seat.
+    Unreadable or absent reads UNMEASURED with its reason, never 0.
+    """
+    target = path or COMPILED
+    out: dict[str, Any] = {"source": str(target.relative_to(BASE)) if target.is_relative_to(BASE)
+                           else str(target), "state": "UNMEASURED"}
+    rows = cands = None
+    kept = 0
+    try:
+        with target.open("r", encoding="utf-8", errors="replace") as fh:
+            carry = ""
+            while chunk := fh.read(_CHUNK):
+                blob = carry + chunk
+                # Count only matches that end inside the new text, so the overlap is not
+                # counted twice.
+                kept += sum(1 for m in _SOURCED.finditer(blob) if m.end() > len(carry))
+                if rows is None and (m := _PER_SOURCE.search(blob)):
+                    rows, cands = int(m.group(1)), int(m.group(2))
+                carry = blob[-_OVERLAP:]
+    except OSError as exc:
+        out["why"] = f"{type(exc).__name__}: the compiler's output is not readable"
+        return out
+    out.update(state="MEASURED", hypotheses_compiled=kept,
+               rows_read=rows, candidates=cands,
+               per_source=("PRESENT" if rows is not None else
+                           "ABSENT: the compiler has not yet read this seat's directory"),
+               reach_and_verdicts=("UNMEASURED: the compiled hypotheses keep the source "
+                                   f"'miner:{SEAT}', but no artifact yet links a judge verdict "
+                                   "back to a compiler-fed seat"))
+    return out
+
+
 def _load_seen() -> set[str]:
     try:
         doc = json.loads(SEEN.read_text("utf-8"))
@@ -241,6 +290,7 @@ def build() -> tuple[dict[str, Any], list[dict[str, Any]], set[str]]:
         "new_this_pass": len(seen) - before,
         "cells_donated": len(rows),
         "found": found,
+        "conversion": conversion(),
         "consumer": ("desks/mt5/research/miner_candidate_compiler.py (STRUCTURED_HYPOTHESIS) via "
                      "data/intelligence/contradiction_miner/"),
     }

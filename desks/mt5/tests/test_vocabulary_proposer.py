@@ -40,6 +40,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         monkeypatch.setattr(uf, name, tmp_path / rel)
     monkeypatch.setattr(uf, "asset_class_of", lambda s: uf.UNKNOWN)
     monkeypatch.setattr(uf, "_LEARNT", None)
+    monkeypatch.setattr(uf, "_LEARNT_KEY", None)
     monkeypatch.setattr(vp, "REPORT", tmp_path / "reports" / "VOCABULARY_PROPOSALS.json")
     monkeypatch.setattr(vp, "ALIASES", tmp_path / "data" / "vocabulary_aliases.json")
     return tmp_path
@@ -133,11 +134,25 @@ def test_the_frontier_reads_learnt_words_last_and_only_then(desk: Path) -> None:
     vp.ALIASES.write_text(json.dumps({"aliases": {"forced_liquidation": TREND,
                                                   "momentum": CARRY},
                                       "proposed": {"basis_squeeze": "proposed:basis_squeeze"}}))
-    uf._LEARNT = None
+    # No cache reset: a long-lived caller sees the new file because its mtime changed.
     assert uf.mechanism_of(family="forced_liquidation") == TREND
     assert uf.mechanism_of(tags=["basis_squeeze"]) == "proposed:basis_squeeze"
     assert uf.mechanism_of(tags=["momentum"]) == TREND        # the desk's own table wins
     assert uf.mechanism_of(family="never_seen") == uf.UNKNOWN
+
+
+def test_a_rewritten_word_file_is_read_again_by_a_long_lived_caller(desk: Path) -> None:
+    import os
+
+    vp.ALIASES.parent.mkdir(parents=True, exist_ok=True)
+    vp.ALIASES.write_text(json.dumps({"aliases": {"forced_liquidation": TREND}, "proposed": {}}))
+    assert uf.mechanism_of(family="forced_liquidation") == TREND
+    vp.ALIASES.write_text(json.dumps({"aliases": {"forced_liquidation": CARRY}, "proposed": {}}))
+    st = vp.ALIASES.stat()
+    os.utime(vp.ALIASES, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000_000))
+    assert uf.mechanism_of(family="forced_liquidation") == CARRY
+    vp.ALIASES.unlink()
+    assert uf.mechanism_of(family="forced_liquidation") == uf.UNKNOWN
 
 
 def test_an_unreadable_word_file_changes_nothing(desk: Path) -> None:

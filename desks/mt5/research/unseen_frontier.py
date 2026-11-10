@@ -277,10 +277,23 @@ def learnt_words(path: Path | None = None) -> dict[str, str]:
     return out
 
 
+#: What `_LEARNT` was read from: (path, mtime_ns), or None when the file was absent. A long-lived
+#: caller re-reads the words when the proposer writes a new file, never more often.
+_LEARNT_KEY: tuple[str, int | None] | None = None
+
+
+def _aliases_key() -> tuple[str, int | None]:
+    try:
+        return str(ALIASES), ALIASES.stat().st_mtime_ns
+    except OSError:
+        return str(ALIASES), None
+
+
 def _learnt() -> dict[str, str]:
-    global _LEARNT
-    if _LEARNT is None:
-        _LEARNT = learnt_words()
+    global _LEARNT, _LEARNT_KEY
+    key = _aliases_key()
+    if _LEARNT is None or key != _LEARNT_KEY:
+        _LEARNT, _LEARNT_KEY = learnt_words(), key
     return _LEARNT
 
 
@@ -615,11 +628,12 @@ def _headline(block: dict[str, Any]) -> dict[str, Any]:
 
 def build() -> dict[str, Any]:
     """Read every ground, estimate every ground and every cell, and say what went unmeasured."""
-    global _LEARNT
+    global _LEARNT, _LEARNT_KEY
     note: dict[str, str] = {}
     stats: Counter[str] = Counter()
     vocab = vocabulary(note)
-    _LEARNT = learnt_words()                  # this pass reads the proposer's latest words
+    # this pass reads the proposer's latest words
+    _LEARNT, _LEARNT_KEY = learnt_words(), _aliases_key()
     note[ALIASES.name] = (f"READ({len(_LEARNT)})" if ALIASES.exists() else "ABSENT")
     sightings, named_grounds = collect(note, stats)
     history = read_history(note)
