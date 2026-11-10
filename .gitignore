@@ -607,3 +607,12 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# The seven artifacts the hourly pass measures (2026-11-10, sync_shadow_to_git.ps1 $reportPaths).
+# DAILY_CYCLE_STATE.json is the read-only mirror; data/daily_cycle_state.json stays ignored above.
+!desks/mt5/reports/E8_GOLD.json
+!desks/mt5/reports/E8_EXEC.json
+!desks/mt5/reports/TRIAL_ALLOCATION.json
+!desks/mt5/reports/COMBINER_COVERAGE.json
+!desks/mt5/reports/admission_heavy_pass.json
+!desks/mt5/reports/pf_allocation.json
+!desks/mt5/reports/DAILY_CYCLE_STATE.json

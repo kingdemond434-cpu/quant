@@ -876,8 +876,34 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl"
+    "desks/mt5/data/cross_asset_anchors.pkl",
+    # THE SEVEN THE HOURLY PASS MEASURES AND NEVER SAW (2026-11-10). Each was fresh on the box and
+    # absent from origin, so the pass scored the prop books, the trial budget, the allocator and
+    # the heavy admission scan UNMEASURED every hour. tests/scripts/test_box_sync_publishes_
+    # contracted_artifacts.py now fails when a contracted artifact is neither here nor tracked.
+    # Account identity is withheld by libs/ops/account_withhold.py and libs/ops/login_fence.py
+    # before any of them is hashed, exactly as for gateway_state.json above.
+    "desks/mt5/reports/E8_GOLD.json",
+    "desks/mt5/reports/E8_EXEC.json",
+    "desks/mt5/reports/TRIAL_ALLOCATION.json",
+    "desks/mt5/reports/COMBINER_COVERAGE.json",
+    "desks/mt5/reports/admission_heavy_pass.json",
+    "desks/mt5/reports/pf_allocation.json",
+    # data/daily_cycle_state.json is a PER-BOX stamp and stays gitignored (see .gitignore: a
+    # research box's stamp pulled onto this box would skip the day's only real run). Its mirror
+    # below is written by this script from the box's own stamp and is read, never obeyed.
+    "desks/mt5/reports/DAILY_CYCLE_STATE.json"
 )
+# Mirror the per-box daily-cycle stamp under reports/, so readers off the box see when the
+# operating chain last ran without the stamp itself ever crossing the wire.
+$dailyStamp = Join-Path $RepoRoot "desks\mt5\data\daily_cycle_state.json"
+if (Test-Path -LiteralPath $dailyStamp -PathType Leaf) {
+    try {
+        Copy-Item -LiteralPath $dailyStamp -Destination (Join-Path $RepoRoot "desks\mt5\reports\DAILY_CYCLE_STATE.json") -Force
+    } catch {
+        Write-SyncLog ("daily-cycle mirror not refreshed: " + $_.Exception.Message)
+    }
+}
 $existing = @()
 foreach ($rel in $relPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
