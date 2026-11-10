@@ -1,17 +1,17 @@
 {
- "at": "2026-11-10T02:40:51+00:00",
+ "at": "2026-11-10T04:00:08+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 41397,
+  "free_phys_mb": 38832,
   "commit_limit_mb": 213499,
-  "commit_free_mb": 31208,
+  "commit_free_mb": 26250,
   "cpu_source": "psutil",
-  "busy_other_cores": 15.66,
-  "busy_judge_cores": 0.97,
+  "busy_other_cores": 16.43,
+  "busy_judge_cores": 0.04,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
@@ -45,16 +45,16 @@
   "judge_env_torn_frames": 0,
   "judge_env_source": "GAUNTLET_PASSES.json",
   "source_at": "2026-11-09T18:16:54.954710+00:00",
-  "source_age_seconds": 30070.614587,
+  "source_age_seconds": 34803.074062,
   "file_at": "2026-11-09T22:54:13+00:00",
-  "file_age_seconds": 13432.569321,
+  "file_age_seconds": 18165.028797,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity",
   "alarm": {
    "code": "JUDGE_SWEEP_STALE",
    "severity": "ALARM",
    "owner": "desks/mt5/scripts/run_sharded_gauntlet.py",
-   "file_age_seconds": 13432.569321,
-   "sweep_age_seconds": 30070.614587,
+   "file_age_seconds": 18165.028797,
+   "sweep_age_seconds": 34803.074062,
    "max_age_seconds": 21600,
    "queue_reads": "UNMEASURED",
    "why": "the file is fresh but the last sweep it reports is older than 6h: the judge has not finished a sweep"
@@ -71,7 +71,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "cores",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 26, commit 20 at 768MB a worker; the binding one is cores",
+  "why": "cores 15 (reserved 3), memory 25, commit 17 at 768MB a worker; the binding one is cores",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -126,12 +126,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "11/10/2026 3:41:00 AM",
+   "next_run_before": "11/10/2026 5:01:00 AM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.64263719995506 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.645542099839076 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.64263719995506 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 58.645542099839076 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -144,8 +144,8 @@
    "code": "JUDGE_SWEEP_STALE",
    "severity": "ALARM",
    "owner": "desks/mt5/scripts/run_sharded_gauntlet.py",
-   "file_age_seconds": 13432.569321,
-   "sweep_age_seconds": 30070.614587,
+   "file_age_seconds": 18165.028797,
+   "sweep_age_seconds": 34803.074062,
    "max_age_seconds": 21600,
    "queue_reads": "UNMEASURED",
    "why": "the file is fresh but the last sweep it reports is older than 6h: the judge has not finished a sweep"
@@ -153,23 +153,23 @@
  ],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-11-10T02:38:05+00:00",
+  "at": "2026-11-10T03:56:58+00:00",
   "status": "UNMEASURED",
-  "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,019,904 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count",
+  "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 897,024 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count",
   "verdicts": {
    "status": "UNMEASURED",
-   "rows_read": 1019904,
-   "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,019,904 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count"
+   "rows_read": 897024,
+   "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 897,024 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count"
   },
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 43643,
-    "7d": 268819
+    "24h": 43751,
+    "7d": 269485
    },
    "per_hour": {
-    "24h": 1818.458,
-    "7d": 1600.113
+    "24h": 1822.958,
+    "7d": 1604.077
    }
   },
   "verdicts_per_hour": "UNMEASURED",
@@ -178,7 +178,7 @@
   "first_judged_per_day": "UNMEASURED",
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
   "coverage_backlog_fresh": false,
-  "created_per_day": 43643.0,
+  "created_per_day": 43751.0,
   "backlog": "UNMEASURED",
   "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "eta_to_drain": {
@@ -190,8 +190,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-11-10T02:37:56+00:00",
-   "pid": 944
+   "started_at": "2026-11-10T03:56:48+00:00",
+   "pid": 33824
   }
  },
  "blas_single_thread": {
@@ -230,11 +230,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 177.2,
+ "measure_seconds": 200.4,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-10T02:37:56+00:00",
-  "pid": 944
+  "started_at": "2026-11-10T03:56:48+00:00",
+  "pid": 33824
  },
- "seconds": 267.3
+ "seconds": 290.5
 }
