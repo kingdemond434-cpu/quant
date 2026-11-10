@@ -187,10 +187,21 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
     assert whole["divergence"]["n_ledger"] == len(honest_ledger)
     # the engine draws its line a few hours after forward_start (broker clock): a trade it
     # filed as historical is not a rebuilt forward fill either
-    shifted = ([dict(r, phase="historical") for r in honest_ledger[:2]]
-               + [dict(r, phase="forward") for r in honest_ledger[2:]])
+    assert window[0].entry_t - start < 86_400_000_000_000
+    shifted = ([dict(r, phase="historical") for r in honest_ledger[:1]]
+               + [dict(r, phase="forward") for r in honest_ledger[1:]])
     late = rc.replicate_forward(row, meta=META, bars=bars, ledger=shifted)
     assert late["verdict"] == rc.REPLICATED, late
+    assert late["divergence"]["n_rebuilt_dropped_at_boundary"] == 1
+    # ...but a "historical" row days into the forward window is a mis-tag, not a clock offset:
+    # the fills it hides are counted and the clock is not called replicated on the remainder
+    k = len(honest_ledger) // 2
+    mistag = ([dict(r, phase="historical") for r in honest_ledger[:k]]
+              + [dict(r, phase="forward") for r in honest_ledger[k:]])
+    hid = rc.replicate_forward(row, meta=META, bars=bars, ledger=mistag)
+    assert hid["verdict"] == rc.UNMEASURED and hid["divergence"][
+        "n_rebuilt_dropped_at_boundary"] == k
+    assert any("more than a day AFTER" in w for w in hid["why"])
     only_history = rc.replicate_forward(
         row, meta=META, bars=bars, ledger=[dict(r, phase="historical") for r in honest_ledger])
     assert only_history["verdict"] == rc.UNMEASURED

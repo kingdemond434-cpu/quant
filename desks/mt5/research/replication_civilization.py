@@ -1162,8 +1162,13 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     # compared whole, as before.
     forward_ledger, hist_last = _forward_phase(ledger)
     n_hist = len(ledger) - len(forward_ledger)
+    dropped, late_history = 0, False
     if hist_last is not None:
-        window = [f for f in window if f.entry_t > hist_last]
+        kept = [f for f in window if f.entry_t > hist_last]
+        dropped, window = len(window) - len(kept), kept
+        # A row tagged historical more than a day after forward_start is not the broker-clock
+        # offset: it would hide rebuilt fills that have no ledger twin, so it is named.
+        late_history = hist_last - t0 > 86_400_000_000_000
     if n_hist and not forward_ledger:
         out["why"] = [f"the ledger holds {n_hist} historical trade(s) and no forward one yet"]
         out["divergence"] = {"n_ledger_historical_set_aside": n_hist}
@@ -1171,6 +1176,13 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     verdict, reasons, div = judge_forward(forward_ledger, window, bars.minutes, cost,
                                           row.get("cost_fields"))
     div["n_ledger_historical_set_aside"] = n_hist
+    div["n_rebuilt_dropped_at_boundary"] = dropped
+    if late_history:
+        reasons = [*reasons, f"a ledger row tagged historical is more than a day AFTER "
+                             f"forward_start; {dropped} rebuilt fill(s) before it were not "
+                             f"compared"]
+        if verdict == REPLICATED:
+            verdict = UNMEASURED
     out.update(verdict=verdict, why=reasons, divergence=div,
                ours={"n_fills": len(window), "pnl_R": round(sum(f.r for f in window), 3),
                      "cost": {"spread_per_lot": cost.spread_per_lot,
