@@ -163,16 +163,18 @@ def _robots(monkeypatch: pytest.MonkeyPatch, body: str | None) -> list[str]:
     """Serve `body` as robots.txt (None = unreadable) and record every data URL opened."""
     opened: list[str] = []
 
-    def _read(self: Any) -> None:
+    from research import robots_gate as RG
+
+    def _read(url: str, agent: str, timeout: float) -> str:
         if body is None:
             raise si.urllib.error.URLError("robots unreachable")
-        self.parse(body.splitlines())
+        return body
 
     def _spy(req: Any, **_k: Any) -> Any:
         opened.append(str(getattr(req, "full_url", req)))
         raise si.urllib.error.URLError("no network in this test")
 
-    monkeypatch.setattr(si.urllib.robotparser.RobotFileParser, "read", _read)
+    monkeypatch.setattr(RG, "_open", _read)
     monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
     return opened
 
@@ -198,8 +200,8 @@ def test_an_unreadable_robots_file_is_not_a_yes(
     guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
     assert guard.robots_ok("https://example.invalid/data/x")[0] is False
     payload, why = guard.get(_checked())
-    assert payload is None and "UNMEASURED" in why and opened == []
-    assert guard.set_aside[0]["access_label"] == "ACCESS_UNCLEAR"
+    assert payload is None and "next pass" in why and opened == []
+    assert guard.set_aside[0]["access_label"] == "ROBOTS_UNREACHABLE"
 
 
 def test_a_robots_allow_and_a_disallow_elsewhere_both_fetch(

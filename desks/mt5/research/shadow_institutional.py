@@ -73,7 +73,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.robotparser
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, date, datetime, timedelta
@@ -512,36 +511,28 @@ class Guard:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
     def robots_verdict(self, url: str) -> tuple[str, str]:
-        """Group-scoped robots verdict for this exact URL: (label, why).
+        """(label, why) for this exact URL from the desk's one robots gate
+        (`research/robots_gate.py`), one robots.txt read per host per pass (per Guard)."""
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
 
-        PUBLIC when robots.txt allows the path for our agent or the site publishes none (a 4xx,
-        which `RobotFileParser.read` treats as allow-all). DISALLOWED on a Disallow.
-        ACCESS_UNCLEAR when the file could not be read: an unread policy is never a yes, and
-        the next pass (a new Guard) reads it again.
-        """
-        parts = urllib.parse.urlsplit(url)
-        root = f"{parts.scheme}://{parts.netloc}"
-        if root not in self._robots:
-            rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(f"{root}/robots.txt")
+        def opener(robots_url: str, agent: str, timeout: float) -> str:
             self.calls += 1
-            try:
-                rp.read()
-            except (OSError, urllib.error.URLError, ValueError) as exc:
-                self._robots[root] = f"unreadable: {type(exc).__name__}"
-            else:
-                self._robots[root] = rp
-        got = self._robots[root]
-        if isinstance(got, str):
-            return "ACCESS_UNCLEAR", f"robots.txt {got} -- UNMEASURED, not fetched this pass"
-        if got.can_fetch(UA, url):
-            return "PUBLIC", "robots allows this path for our agent"
-        return "DISALLOWED", "robots disallows this exact path for our agent: not fetched"
+            return RG._open(robots_url, agent, timeout)
+
+        return RG.read(url, UA, opener=opener, timeout=min(12.0, max(1.0, self.left())),
+                       cache=self._robots)
 
     def robots_ok(self, url: str) -> tuple[bool, str]:
-        """(may fetch, why): True only for a PUBLIC verdict."""
+        """(may fetch, why): False exactly when the robots gate says the label stops."""
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
         label, why = self.robots_verdict(url)
-        return label == "PUBLIC", why
+        return not RG.stops(label), why
 
     def _set_aside(self, sensor_id: str, url: str, label: str, why: str) -> dict[str, Any]:
         """The row for a sensor NOT fetched on its robots verdict, built and BILLED by the
@@ -582,11 +573,12 @@ class Guard:
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
         if sensor.robots == "checked":
-            # A DISALLOW ON THE EXACT PATH, OR AN UNREAD robots.txt, STOPS THE FETCH (ruling of
-            # 2026-11-10, PR #819). It is never silent: the sensor is set aside with its
-            # missed-growth line and its reopen, so the ground is re-argued every pass.
-            label, why = self.robots_verdict(url)
-            if label != "PUBLIC":
+            # A DISALLOW ON THE EXACT PATH, A 401/403 ON robots.txt OR AN UNREACHABLE robots.txt
+            # STOPS THE FETCH (rulings of 2026-11-10, PR #819). It is never silent: the sensor is
+            # set aside with its missed-growth line and its reopen, re-argued every pass.
+            ok, why = self.robots_ok(url)
+            if not ok:
+                label, _ = self.robots_verdict(url)
                 self._set_aside(sensor.sensor_id, url, label, why)
                 return None, f"SET_ASIDE: {why}"
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})

@@ -1,28 +1,35 @@
-"""ONE ROBOTS GATE FOR EVERY FETCHER: read robots.txt, stop on a Disallow, and count what it cost.
+"""ONE ROBOTS GATE FOR EVERY FETCHER: read robots.txt, stop when it says no, and count the cost.
 
-THE RULE (ruling of 2026-11-10, journalled in PR #819). A robots.txt Disallow covering the exact
-path a fetcher is about to request STOPS THAT FETCH. A site that publishes no robots.txt (404
-and the other 4xx) has disallowed nothing and is fetched as before.
+THE RULE (Governance rulings of 2026-11-10, journalled in PR #819; RFC 9309, stricter on 401/403):
 
-AN UNREADABLE robots.txt (a 5xx, a timeout, DNS, TLS) IS THE CALLER'S DECISION, AND IT IS COUNTED
-EITHER WAY. The ruling names a Disallow only. The running collectors (`asia_collector`,
-`data_acquisition_scientist`) therefore keep fetching on ACCESS_UNCLEAR, exactly as they did
-before, and call `note_unread` so the day's count shows how often that happened -- slow regional
-hosts time out on robots.txt routinely, and stopping on it would be a new brake of unmeasured
-size. `shadow_institutional.Guard`, where no sensor consults robots today, refuses on it.
+  robots.txt answer                           label               the fetch
+  ------------------------------------------  ------------------  -----------------------------
+  read, no rule covers the path               PUBLIC              made
+  404, 410 or any other 4xx but 401/403        ROBOTS_ABSENT       made, and COUNTED
+  read, a Disallow covers the exact path      DISALLOWED          STOPPED
+  401 or 403 on robots.txt itself             ROBOTS_REFUSED      STOPPED (a refusal aimed at us;
+                                                                  never worked around)
+  5xx, timeout, DNS, TLS, not http(s)         ROBOTS_UNREACHABLE  STOPPED this pass; the next
+                                                                  scheduled pass asks again --
+                                                                  never a retry loop
 
-IT IS A BRAKE, SO IT IS BILLED (GROWTH_GOVERNANCE Rule 1). Every refusal is:
+The rule matching itself (`*`, `$`, longest match wins, Allow wins a tie, our agent's group else
+`*`) is `libs/data/robots_gate.py`, the desk's one parser; this module adds the desk's labels and
+the bill. Every caller stops on `stops(label)` and on nothing else.
+
+IT IS A BRAKE, SO IT IS BILLED (GROWTH_GOVERNANCE Rule 1). Every stopped fetch is:
   * returned to the caller as a SET_ASIDE row -- the label, the reason and the named events that
-    reopen it -- so a source is never lost silently the way `BLOCKED_BY_ROBOTS` once lost them;
-  * appended to `data/robots_set_aside.jsonl`, one line per refused fetch;
-  * summed per day and per organ in `reports/ROBOTS_SET_ASIDE.json`, which also carries the
-    two-sided missed-growth line `missed_growth.run` picks up. Neither side is priced in
-    E[log W] yet: both say UNMEASURED, never zero. The COUNT is measured.
+    reopen it -- so a source is never lost silently;
+  * appended to `data/robots_set_aside.jsonl`, one line per stopped fetch;
+  * summed per day, per label and per organ in `reports/ROBOTS_SET_ASIDE.json`, which also
+    carries the two-sided missed-growth line `missed_growth.run` picks up. Neither side is
+    priced in E[log W] yet: both say UNMEASURED, never zero. The COUNT is measured.
+A ROBOTS_ABSENT fetch is counted beside the refusals (`absent_fetched`), never among them.
 
 WHAT THIS IS NOT. It is not a terms veto: licence and terms notes still route redistribution and
-never stop mining. It is not a new access boundary either: logins, paywalls and hard statuses
-are refused where they always were. This module only answers "does the site's robots.txt let
-our agent read this exact path", and writes down every time the answer was no.
+never stop mining. Logins, paywalls and hard statuses on the DATA URL are refused where they
+always were. This module answers one question -- may our agent read this exact path, by the
+site's robots.txt -- and writes down every time the answer was no.
 
     python -m research.robots_gate            # print today's count from the ledger
 """
@@ -46,19 +53,23 @@ LEDGER = DESK / "data" / "robots_set_aside.jsonl"
 REPORT = DESK / "reports" / "ROBOTS_SET_ASIDE.json"
 
 PUBLIC = "PUBLIC"
+ROBOTS_ABSENT = "ROBOTS_ABSENT"
 DISALLOWED = "DISALLOWED"
-ACCESS_UNCLEAR = "ACCESS_UNCLEAR"
-#: Ledger statuses. SET_ASIDE = the fetch was NOT made. UNREAD_FETCHED = robots.txt could not be
-#: read and the caller fetched anyway; counted beside the refusals, never among them.
+ROBOTS_REFUSED = "ROBOTS_REFUSED"
+ROBOTS_UNREACHABLE = "ROBOTS_UNREACHABLE"
+#: The labels that stop a fetch. Every caller asks `stops(label)`; none keeps its own list.
+STOP_LABELS = frozenset({DISALLOWED, ROBOTS_REFUSED, ROBOTS_UNREACHABLE})
+#: Ledger statuses. SET_ASIDE = the fetch was NOT made. ABSENT_FETCHED = the site serves no
+#: robots.txt and the fetch was made; counted beside the refusals, never among them.
 SET_ASIDE = "SET_ASIDE"
-UNREAD_FETCHED = "UNREAD_FETCHED"
+ABSENT_FETCHED = "ABSENT_FETCHED"
 RAIL = "robots_gate.set_aside"
 #: Days of per-day counts kept on the report. The ledger itself is never trimmed.
 REPORT_DAYS = 30
 
-REOPEN = ("the next pass re-reads robots.txt and fetches as soon as it allows this path (or the "
-          "site serves none); or a permitting clause from the publisher's terms is recorded on "
-          "the source's registry row")
+REOPEN = ("the next scheduled pass re-reads robots.txt and fetches as soon as it is readable and "
+          "allows this path (or the site serves none); or a documented API or licence that "
+          "permits machine reading is recorded on the source's registry row")
 
 Opener = Callable[[str, str, float], str]
 #: Collectors refuse from worker threads; one writer at a time keeps the report's tmp file whole.
@@ -71,39 +82,24 @@ def _open(url: str, agent: str, timeout: float) -> str:
         return str(r.read(500_000).decode("utf-8", errors="replace"))
 
 
+def stops(label: str) -> bool:
+    """True when this label stops the fetch. The one test every caller makes."""
+    return label in STOP_LABELS
+
+
 def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float = 12.0,
          cache: dict[tuple[str, str], Any] | None = None) -> tuple[str, str]:
-    """(label, why) for this exact URL and this agent.
+    """(label, why) for this exact URL and this agent; see the table in the module docstring.
 
-    `cache` (a dict the caller owns for ONE pass) holds each host's parsed robots.txt, or the
-    reason it could not be read, so a pass asks a host once however many of its paths it wants.
-
-    PUBLIC          robots.txt allows the path, or the site serves none (a 4xx other than
-                    401/403).
-    DISALLOWED      robots.txt was READ and disallows this exact path for our agent. Nothing
-                    else is a Disallow.
-    ACCESS_UNCLEAR  the file could not be read: a 5xx, a timeout, DNS, TLS, a non-http URL --
-                    and a 401/403 on robots.txt itself. A REFUSAL TO SERVE THE FILE IS NOT A
-                    RULE IN THE FILE (measured on the box 2026-11-10: 9 of 13 non-allowing
-                    Asia sources were a 403 on /robots.txt, among them keyed public APIs the
-                    desk holds a key for -- api.eia.gov, data.api.abs.gov.au -- where the 403
-                    is the host's answer to an unkeyed request, not a crawl policy). The
-                    standard library reads 401/403 as "everything disallowed"; RFC 9309 reads
-                    every 4xx as "no policy". This gate takes neither side: it says the policy
-                    is UNREAD and lets the caller's own rule for unread decide.
-
-    `cache` (a dict the caller owns for ONE pass) holds each host's parsed robots.txt, or the
-    reason it could not be read, so a pass asks a host once however many of its paths it wants.
-
-    PUBLIC          robots.txt allows the path, or the site serves none (any 4xx but 401/403).
-    DISALLOWED      robots.txt disallows the path; or the file itself answers 401/403, which the
-                    standard library also reads as "everything disallowed".
-    ACCESS_UNCLEAR  the file could not be read (5xx, timeout, DNS, TLS, a non-http URL).
+    `cache` (a dict the caller owns for ONE pass) holds each host's parsed rules, or the label
+    it earned instead, so a pass asks a host once however many of its paths it wants. An
+    unreachable host is therefore asked once a pass and stopped for the rest of it: the retry
+    is the next scheduled pass, never a loop.
     """
-    from urllib.robotparser import RobotFileParser
+    from libs.data.robots_gate import robots_allows, robots_rules
     parts = urllib.parse.urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.netloc:
-        return ACCESS_UNCLEAR, "not an http(s) URL: no robots.txt to read"
+        return ROBOTS_UNREACHABLE, "not an http(s) URL: no robots.txt can be read"
     root = f"{parts.scheme}://{parts.netloc}"
     key = (root, agent)
     held = cache.get(key) if cache is not None else None
@@ -112,22 +108,26 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
             text = (opener or _open)(f"{root}/robots.txt", agent, timeout)
         except urllib.error.HTTPError as exc:
             code = int(getattr(exc, "code", 0) or 0)
-            if code in (401, 403) or not 400 <= code < 500:
-                held = (ACCESS_UNCLEAR, f"robots.txt unreadable (HTTP {code})")
+            if code in (401, 403):
+                held = (ROBOTS_REFUSED, f"robots.txt answers HTTP {code}: a refusal aimed at "
+                                        f"our agent, not fetched and never worked around")
+            elif 400 <= code < 500:
+                held = (ROBOTS_ABSENT, f"no robots.txt (HTTP {code}): no rules, fetched")
             else:
-                held = (PUBLIC, f"no robots.txt (HTTP {code})")
+                held = (ROBOTS_UNREACHABLE, f"robots.txt unreadable (HTTP {code}): not "
+                                            f"fetched this pass, asked again next pass")
         except Exception as exc:
-            held = (ACCESS_UNCLEAR, f"robots.txt unreadable ({type(exc).__name__})")
+            held = (ROBOTS_UNREACHABLE, f"robots.txt unreadable ({type(exc).__name__}): not "
+                                        f"fetched this pass, asked again next pass")
         else:
-            held = RobotFileParser()
-            held.parse(text.splitlines())
+            held = robots_rules(text, agent)
         if cache is not None:
             cache[key] = held
     if isinstance(held, tuple):
         return held
-    if held.can_fetch(agent, url):
+    if robots_allows(held, url):
         return PUBLIC, "robots.txt allows this path for our agent"
-    return DISALLOWED, "robots.txt disallows this exact path for our agent"
+    return DISALLOWED, "robots.txt disallows this exact path for our agent: not fetched"
 
 
 def set_aside_row(organ: str, source: str, url: str, label: str, why: str) -> dict[str, Any]:
@@ -175,7 +175,7 @@ def _write_atomic(path: Path, doc: dict[str, Any]) -> None:
 
 def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
     """Per day: `total` fetches REFUSED (by label, by organ, distinct sources) and, beside it,
-    `unread_fetched` -- fetches made although robots.txt could not be read. Torn lines are
+    `absent_fetched` -- fetches made because the site serves no robots.txt. Torn lines are
     COUNTED as torn, never dropped silently."""
     path = ledger or LEDGER
     days: dict[str, dict[str, Any]] = {}
@@ -196,11 +196,11 @@ def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
             torn += 1
             continue
         d = days.setdefault(day, {"total": 0, "by_label": Counter(), "by_organ": Counter(),
-                                  "sources": set(), "unread_fetched": 0,
-                                  "unread_by_organ": Counter()})
-        if str(row.get("status") or SET_ASIDE) == UNREAD_FETCHED:
-            d["unread_fetched"] += 1
-            d["unread_by_organ"][str(row.get("organ"))] += 1
+                                  "sources": set(), "absent_fetched": 0,
+                                  "absent_by_organ": Counter()})
+        if str(row.get("status") or SET_ASIDE) == ABSENT_FETCHED:
+            d["absent_fetched"] += 1
+            d["absent_by_organ"][str(row.get("organ"))] += 1
             continue
         d["total"] += 1
         d["by_label"][str(row.get("access_label"))] += 1
@@ -208,8 +208,8 @@ def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
         d["sources"].add(str(row.get("source")))
     out = {day: {"total": d["total"], "by_label": dict(d["by_label"]),
                  "by_organ": dict(d["by_organ"]), "distinct_sources": len(d["sources"]),
-                 "unread_fetched": d["unread_fetched"],
-                 "unread_fetched_by_organ": dict(d["unread_by_organ"])}
+                 "absent_fetched": d["absent_fetched"],
+                 "absent_fetched_by_organ": dict(d["absent_by_organ"])}
            for day, d in sorted(days.items())}
     return {"status": "OK", "days": out, "torn_lines": torn}
 
@@ -220,11 +220,12 @@ def publish(ledger: Path | None = None, report: Path | None = None) -> dict[str,
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     days = counts.get("days") or {}
     today = days.get(now[:10])
-    doc = {"generated_utc": now, "rule": "a robots.txt Disallow on the exact path, or an "
-                                         "unreadable robots.txt, stops that fetch (PR #819)",
+    doc = {"generated_utc": now, "rule": ("a Disallow on the exact path, a 401/403 on robots.txt "
+                                          "or an unreachable robots.txt stops that fetch; a "
+                                          "missing robots.txt (other 4xx) is fetched (PR #819)"),
            "status": counts["status"], "torn_lines": counts.get("torn_lines", 0),
            "refused_today": int(today["total"]) if today else 0,
-           "unread_fetched_today": int(today["unread_fetched"]) if today else 0,
+           "absent_fetched_today": int(today["absent_fetched"]) if today else 0,
            "daily": dict(list(days.items())[-REPORT_DAYS:]), "reopen": REOPEN,
            # No line on a day nothing was refused: missed_growth reads NOT_BINDING.
            "missed_growth": (missed_growth_pair(today["total"], at=now,
@@ -264,22 +265,21 @@ def refuse(organ: str, source: str, url: str, label: str, why: str, *,
     return row
 
 
-def note_unread(organ: str, source: str, url: str, why: str, *,
+def note_absent(organ: str, source: str, url: str, why: str, *,
                 ledger: Path | None = None, report: Path | None = None) -> bool:
-    """Count a fetch that WAS made although robots.txt could not be read. Not a refusal and
-    never billed as one: it is the measurement that says how large a stop-on-unreadable rule
-    would be, should anyone propose it."""
-    return record({"organ": organ, "source": source, "url": url, "status": UNREAD_FETCHED,
-                   "access_label": ACCESS_UNCLEAR, "why": why}, ledger=ledger, report=report)
+    """Count a fetch that WAS made because the site serves no robots.txt. Not a refusal and
+    never billed as one: it says how often the desk reads a site that states no rules."""
+    return record({"organ": organ, "source": source, "url": url, "status": ABSENT_FETCHED,
+                   "access_label": ROBOTS_ABSENT, "why": why}, ledger=ledger, report=report)
 
 
 def main() -> int:
     doc = publish()
     print(f"robots gate: {doc['refused_today']} fetch(es) refused today, "
-          f"{doc['unread_fetched_today']} fetched with robots.txt unread ({doc['status']})")
+          f"{doc['absent_fetched_today']} fetched with no robots.txt ({doc['status']})")
     for day, d in list((doc.get("daily") or {}).items())[-7:]:
         print(f"  {day}  refused={d['total']}  {d['by_label']}  {d['by_organ']}  "
-              f"unread_fetched={d['unread_fetched']}")
+              f"absent_fetched={d['absent_fetched']}")
     return 0
 
 

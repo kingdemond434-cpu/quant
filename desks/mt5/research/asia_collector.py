@@ -25,9 +25,10 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
                     is NOT fetched (ruling of 2026-11-10, PR #819; from 2026-09-23 until then a
                     Disallow was recorded as a label and fetched). Never silent: the row carries
                     the label, what reopens it and a two-sided missed-growth line, and
-                    `robots_gate` counts every refusal per day. A robots.txt that could not be
-                    READ is not this state: the page is fetched as before, the row says
-                    ACCESS_UNCLEAR, and the gate counts it as UNREAD_FETCHED.
+                    `robots_gate` counts every refusal per day. The same state, with its own
+                    label, when robots.txt itself answers 401/403 (ROBOTS_REFUSED) or cannot be
+                    reached (ROBOTS_UNREACHABLE: asked again next pass, never in a loop). A site
+                    serving no robots.txt (another 4xx) is fetched and counted ROBOTS_ABSENT.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -178,20 +179,6 @@ def _robots_verdict(url: str, agent: str = "quant-desk-collector") -> tuple[str,
         _ROBOTS_CACHE.clear()
         _ROBOTS_CACHE_BORN[0] = time.monotonic()
     return RG.read(url, agent, opener=_robots_open, cache=_ROBOTS_CACHE)
-
-
-def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
-    """Ask the host's robots.txt. False ONLY on a Disallow covering this exact path; an allow,
-    a missing file and an unreadable file are all True, as an unreadable file always was here.
-
-    History, because this helper has been both things. Until 2026-09-23 a served Disallow was a
-    refusal that left no trace beyond a status. From then until 2026-11-10 it was a label and the
-    page was fetched (LAWS 5e as then read). The ruling of 2026-11-10 (PR #819) makes it a
-    refusal again, this time with a set-aside row, a reopen and a daily count -- see
-    `research/robots_gate.py`. `event_surprise` and `data_acquisition_scientist` share this path.
-    """
-    label, why = _robots_verdict(url, agent)
-    return label != "DISALLOWED", why
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -381,11 +368,11 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
-    # A ROBOTS DISALLOW ON THIS EXACT PATH STOPS THE FETCH (ruling of 2026-11-10, PR #819). The
-    # refusal is a named state with its reopen and its missed-growth line, and `robots_gate`
-    # counts it, so the cost of the rule is measured every day. AN UNREADABLE robots.txt DOES
-    # NOT STOP IT: that was "treated as allowing" here before and still is -- the row carries
-    # ACCESS_UNCLEAR and the gate counts the fetch as UNREAD_FETCHED.
+    # robots.txt DECIDES BEFORE THE PAGE IS ASKED FOR (rulings of 2026-11-10, PR #819): a
+    # Disallow on this exact path, a 401/403 on robots.txt or an unreachable robots.txt stops
+    # the fetch. The refusal is a named state with its reopen and its missed-growth line, and
+    # `robots_gate` counts it by label, so the cost of the rule is measured every day. A site
+    # serving no robots.txt is fetched and counted as ROBOTS_ABSENT.
     label, why_robots = _robots_verdict(url)
     rec["robots"] = why_robots
     rec["robots_disallows"] = label == "DISALLOWED"
@@ -394,9 +381,9 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         from research import robots_gate as RG
     except ImportError:                                                      # pragma: no cover
         import robots_gate as RG  # type: ignore[no-redef]
-    if label == "ACCESS_UNCLEAR":
-        rec["robots_counted"] = RG.note_unread("asia_collector", sid, url, why_robots)
-    if label == "DISALLOWED":
+    if label == RG.ROBOTS_ABSENT:
+        rec["robots_counted"] = RG.note_absent("asia_collector", sid, url, why_robots)
+    if RG.stops(label):
         aside = RG.refuse("asia_collector", sid, url, label, why_robots)
         rec.update({"status": "BLOCKED_BY_ROBOTS", "access_label": label, "why": why_robots,
                     "reopen": aside["reopen"], "missed_growth": aside["missed_growth"],

@@ -17,7 +17,7 @@ carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and ne
 reading was a discovery brake and is deleted. ROBOTS IS NOT A TERMS NOTE (ruling of
 2026-11-10, PR #819): a robots.txt Disallow on the exact path means the sample is NOT taken --
 `BLOCKED_BY_ROBOTS`, with its reopen, its missed-growth line and a daily count in
-`research/robots_gate.py`. An unreadable robots.txt does not stop the sample; it is counted.
+`research/robots_gate.py`; so does a 401/403 on robots.txt or an unreachable one.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
@@ -514,7 +514,7 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 # --------------------------------------------------------------------------- the sample
 def _robots_verdict(url: str) -> tuple[str, str]:
-    """(label, why) from the shared robots gate. Only DISALLOWED stops the sample."""
+    """(label, why) from the shared robots gate; `robots_gate.stops(label)` decides."""
     try:
         from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
@@ -554,10 +554,10 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
 
     LAWS 5e (2026-09-23): a `machine_use_allowed=false` used to return
     REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken. That brake is deleted.
-    A robots Disallow on the exact path DOES stop the sample (ruling of 2026-11-10, PR #819):
-    the row is BLOCKED_BY_ROBOTS with its reopen and its missed-growth line, and `robots_gate`
-    counts it. An unreadable robots.txt does not: the sample is taken, as it always was, the
-    row carries ACCESS_UNCLEAR and the gate counts it as UNREAD_FETCHED.
+    A robots Disallow on the exact path, a 401/403 on robots.txt or an unreachable robots.txt
+    stops the sample (rulings of 2026-11-10, PR #819): the row is BLOCKED_BY_ROBOTS with its
+    label, its reopen and its missed-growth line, and `robots_gate` counts it. A site serving
+    no robots.txt is sampled and counted as ROBOTS_ABSENT.
     """
     url = str(cand.get("url") or "")
     if verdict.refused:
@@ -576,10 +576,10 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
         from research import robots_gate as RG
     except ImportError:                                                      # pragma: no cover
         import robots_gate as RG  # type: ignore[no-redef]
-    if label == "ACCESS_UNCLEAR":
-        RG.note_unread("data_acquisition_scientist", str(cand["dataset"]), url, robots_note)
-        terms_note = f"{terms_note} | robots: {robots_note} (unread; fetched and counted)"
-    if label == "DISALLOWED":
+    if label == RG.ROBOTS_ABSENT:
+        RG.note_absent("data_acquisition_scientist", str(cand["dataset"]), url, robots_note)
+        terms_note = f"{terms_note} | robots: {robots_note}"
+    if RG.stops(label):
         aside = RG.refuse("data_acquisition_scientist", str(cand["dataset"]), url, label,
                           robots_note)
         return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,

@@ -232,9 +232,10 @@ def test_every_collector_stops_on_a_robots_disallow_and_bills_it() -> None:
     So what must never return now is EITHER half alone: a collector that fetches past a
     Disallow, or one that refuses without billing the refusal.
 
-    AN UNREADABLE robots.txt IS NOT A DISALLOW. The two running collectors keep fetching on it,
-    as they always did, and count the fetch (`robots_gate.note_unread`); a collector that turned
-    an unread file into a stop would be a new brake nobody has measured, and this test fails it.
+    WHICH LABELS STOP is the gate's alone (`robots_gate.stops`, Governance ruling 2026-11-10
+    20:08Z: a Disallow, a 401/403 on robots.txt, an unreachable robots.txt). A collector that
+    keeps its own list of labels drifts from that ruling, and this test fails it; a site that
+    serves no robots.txt is fetched and counted (`robots_gate.note_absent`).
     """
     from pathlib import Path
 
@@ -249,9 +250,10 @@ def test_every_collector_stops_on_a_robots_disallow_and_bills_it() -> None:
     for rel in ("desks/mt5/research/asia_collector.py",
                 "desks/mt5/research/data_acquisition_scientist.py"):
         src = (repo / rel).read_text("utf-8")
-        assert ".note_unread(" in src, f"{rel}: an unread robots.txt is not counted"
-        assert 'label != "PUBLIC"' not in src, f"{rel}: stops on an unreadable robots.txt"
+        assert ".note_absent(" in src, f"{rel}: a fetch with no robots.txt is not counted"
+        assert "RG.stops(label)" in src, f"{rel}: decides on its own list of labels"
+        assert 'label == "DISALLOWED":' not in src, f"{rel}: stops on a Disallow only"
     gate = (repo / "desks/mt5/research/robots_gate.py").read_text("utf-8")
-    for needle in ("def refuse(", "def note_unread(", "missed_growth_pair",
+    for needle in ("def refuse(", "def note_absent(", "def stops(", "missed_growth_pair",
                    "def daily_counts(", "REOPEN"):
         assert needle in gate, needle

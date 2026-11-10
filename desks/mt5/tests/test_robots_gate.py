@@ -1,6 +1,6 @@
-"""The one robots gate: a Disallow on the exact path stops the fetch and is a billed SET_ASIDE
-row; an unreadable robots.txt keeps the running collectors fetching and is counted beside the
-refusals (ruling of 2026-11-10, PR #819)."""
+"""The one robots gate (Governance rulings of 2026-11-10, PR #819): a Disallow on the exact path,
+a 401/403 on robots.txt and an unreachable robots.txt each stop the fetch as a billed SET_ASIDE row
+under its own label; a site serving no robots.txt is fetched and counted beside the refusals."""
 from __future__ import annotations
 
 import json
@@ -42,36 +42,45 @@ def _http(code: int) -> urllib.error.HTTPError:
                                   None, None)  # type: ignore[arg-type]
 
 
-def test_only_an_allow_or_a_missing_file_is_public() -> None:
+def test_an_allow_is_public_and_a_missing_file_is_absent() -> None:
     assert rg.read(URL, "a", opener=_serve("User-agent: *\nDisallow: /private/\n"))[0] == "PUBLIC"
     assert rg.read(URL, "a", opener=_serve(""))[0] == "PUBLIC"
-    assert rg.read(URL, "a", opener=_fail(_http(404)))[0] == "PUBLIC"
-    assert rg.read(URL, "a", opener=_fail(_http(410)))[0] == "PUBLIC"
+    for code in (404, 410, 400, 429):
+        label, why = rg.read(URL, "a", opener=_fail(_http(code)))
+        assert label == "ROBOTS_ABSENT" and str(code) in why and not rg.stops(label)
 
 
 def test_a_disallow_on_the_exact_path_is_disallowed() -> None:
     label, why = rg.read(URL, "a", opener=_serve("User-agent: *\nDisallow: /data/\n"))
-    assert label == "DISALLOWED" and "exact path" in why
+    assert label == "DISALLOWED" and "exact path" in why and rg.stops(label)
     # an agent-specific group binds only that agent
     body = "User-agent: other\nDisallow: /\n\nUser-agent: *\nDisallow:\n"
     assert rg.read(URL, "a", opener=_serve(body))[0] == "PUBLIC"
     assert rg.read(URL, "other", opener=_serve(body))[0] == "DISALLOWED"
+    # RFC 9309 matching from the shared parser: the longest rule wins, Allow wins a tie
+    body = "User-agent: *\nDisallow: /data/\nAllow: /data/series.csv\n"
+    assert rg.read(URL, "a", opener=_serve(body))[0] == "PUBLIC"
+    assert rg.read(URL, "a", opener=_serve("User-agent: *\nDisallow: /*.csv$\n"))[0] == "DISALLOWED"
 
 
-def test_an_unread_policy_is_labelled_access_unclear() -> None:
-    assert rg.read(URL, "a", opener=_fail(_http(503)))[0] == "ACCESS_UNCLEAR"
-    # A refusal to SERVE robots.txt is not a rule IN it (box, 2026-11-10: api.eia.gov and eight
-    # others answer 403 on /robots.txt). Unread, so the caller's rule for unread decides.
+def test_a_401_or_403_on_robots_is_a_refusal_that_stops() -> None:
+    """Governance ruling 2026-11-10 20:08Z: a 401/403 on robots.txt is a refusal aimed at us."""
     for code in (401, 403):
         label, why = rg.read(URL, "a", opener=_fail(_http(code)))
-        assert label == "ACCESS_UNCLEAR" and str(code) in why
-    assert rg.read(URL, "a", opener=_fail(TimeoutError()))[0] == "ACCESS_UNCLEAR"
-    assert rg.read("ftp://example.invalid/x", "a", opener=_serve(""))[0] == "ACCESS_UNCLEAR"
+        assert label == "ROBOTS_REFUSED" and str(code) in why and rg.stops(label)
+
+
+def test_an_unreachable_robots_file_stops_this_pass() -> None:
+    for opener in (_fail(_http(503)), _fail(_http(500)), _fail(TimeoutError()),
+                   _fail(urllib.error.URLError("dns"))):
+        label, why = rg.read(URL, "a", opener=opener)
+        assert label == "ROBOTS_UNREACHABLE" and "next pass" in why and rg.stops(label)
+    assert rg.read("ftp://example.invalid/x", "a", opener=_serve(""))[0] == "ROBOTS_UNREACHABLE"
 
 
 def test_a_refusal_is_a_row_a_ledger_line_and_a_daily_count(_ledger: dict[str, Path]) -> None:
     row = rg.refuse("asia_collector", "src_a", URL, "DISALLOWED", "robots disallows")
-    rg.refuse("asia_collector", "src_b", URL + "2", "ACCESS_UNCLEAR", "robots unreadable")
+    rg.refuse("asia_collector", "src_b", URL + "2", "ROBOTS_UNREACHABLE", "robots unreadable")
     rg.refuse("shadow_institutional", "src_a", URL, "DISALLOWED", "robots disallows")
     assert row["status"] == "SET_ASIDE" and row["billed"] is True and row["reopen"]
     assert {m["side"] for m in row["missed_growth"]} == {"cost", "gain"}
@@ -80,22 +89,22 @@ def test_a_refusal_is_a_row_a_ledger_line_and_a_daily_count(_ledger: dict[str, P
     doc = json.loads(_ledger["report"].read_text("utf-8"))
     (day,) = doc["daily"]
     assert doc["refused_today"] == 3 and doc["daily"][day] == {
-        "total": 3, "by_label": {"DISALLOWED": 2, "ACCESS_UNCLEAR": 1},
+        "total": 3, "by_label": {"DISALLOWED": 2, "ROBOTS_UNREACHABLE": 1},
         "by_organ": {"asia_collector": 2, "shadow_institutional": 1}, "distinct_sources": 2,
-        "unread_fetched": 0, "unread_fetched_by_organ": {}}
+        "absent_fetched": 0, "absent_fetched_by_organ": {}}
     assert [m["fetches_refused"] for m in doc["missed_growth"]] == [3, 3]
 
 
-def test_an_unread_fetch_is_counted_beside_the_refusals_never_among_them(
+def test_a_fetch_with_no_robots_file_is_counted_beside_the_refusals_never_among_them(
         _ledger: dict[str, Path]) -> None:
-    assert rg.note_unread("asia_collector", "src_c", URL, "robots.txt unreadable (HTTP 503)")
+    assert rg.note_absent("asia_collector", "src_c", URL, "no robots.txt (HTTP 404)")
     doc = json.loads(_ledger["report"].read_text("utf-8"))
     (day,) = doc["daily"]
-    assert doc["refused_today"] == 0 and doc["unread_fetched_today"] == 1
-    assert doc["daily"][day]["unread_fetched_by_organ"] == {"asia_collector": 1}
+    assert doc["refused_today"] == 0 and doc["absent_fetched_today"] == 1
+    assert doc["daily"][day]["absent_fetched_by_organ"] == {"asia_collector": 1}
     assert doc["missed_growth"] == [], "a fetch that was made is not a missed-growth line"
     line = json.loads(_ledger["ledger"].read_text("utf-8").splitlines()[0])
-    assert line["status"] == "UNREAD_FETCHED" and line["access_label"] == "ACCESS_UNCLEAR"
+    assert line["status"] == "ABSENT_FETCHED" and line["access_label"] == "ROBOTS_ABSENT"
 
 
 def test_one_pass_asks_a_host_for_robots_once() -> None:
@@ -110,9 +119,10 @@ def test_one_pass_asks_a_host_for_robots_once() -> None:
     assert rg.read("https://example.invalid/private/x", "a", opener=opener,
                    cache=cache)[0] == "DISALLOWED"
     assert asked == ["https://example.invalid/robots.txt"]
+    # an unreachable host is asked once a pass and stopped for the rest of it: never a loop
     unread: dict = {}
-    assert rg.read(URL, "a", opener=_fail(TimeoutError()), cache=unread)[0] == "ACCESS_UNCLEAR"
-    assert rg.read(URL, "a", opener=_serve(""), cache=unread)[0] == "ACCESS_UNCLEAR"
+    assert rg.read(URL, "a", opener=_fail(TimeoutError()), cache=unread)[0] == "ROBOTS_UNREACHABLE"
+    assert rg.read(URL, "a", opener=_serve(""), cache=unread)[0] == "ROBOTS_UNREACHABLE"
 
 
 def test_no_ledger_is_unmeasured_and_a_torn_line_is_counted(_ledger: dict[str, Path]) -> None:
@@ -169,16 +179,23 @@ def test_the_asia_collector_does_not_fetch_a_disallowed_path(
     assert line["organ"] == "asia_collector" and line["source"] == "src_a"
 
 
-def test_the_asia_collector_still_fetches_on_an_unread_robots_file_and_counts_it(
-        monkeypatch: pytest.MonkeyPatch, _ledger: dict[str, Path]) -> None:
-    """The ruling names a Disallow. An unreadable robots.txt was "treated as allowing" on this
-    path before and still is; what is new is that the fetch is counted."""
-    rec, opened = _collect(monkeypatch, ("ACCESS_UNCLEAR", "robots.txt unreadable (HTTP 503)"))
-    assert opened == [URL] and rec["status"] == "UNREACHABLE"
-    assert rec["access_label"] == "ACCESS_UNCLEAR" and rec["robots_disallows"] is False
-    assert rec["robots_counted"] is True
+@pytest.mark.parametrize("label", ["ROBOTS_REFUSED", "ROBOTS_UNREACHABLE"])
+def test_the_asia_collector_stops_on_a_refused_or_unreachable_robots_file(
+        monkeypatch: pytest.MonkeyPatch, _ledger: dict[str, Path], label: str) -> None:
+    rec, opened = _collect(monkeypatch, (label, "robots.txt said no"))
+    assert opened == [] and rec["status"] == "BLOCKED_BY_ROBOTS"
+    assert rec["access_label"] == label and rec["billed"] is True
     line = json.loads(_ledger["ledger"].read_text("utf-8").splitlines()[0])
-    assert line["status"] == "UNREAD_FETCHED" and line["organ"] == "asia_collector"
+    assert line["status"] == "SET_ASIDE" and line["access_label"] == label
+
+
+def test_the_asia_collector_fetches_a_site_with_no_robots_file_and_counts_it(
+        monkeypatch: pytest.MonkeyPatch, _ledger: dict[str, Path]) -> None:
+    rec, opened = _collect(monkeypatch, ("ROBOTS_ABSENT", "no robots.txt (HTTP 404)"))
+    assert opened == [URL] and rec["status"] == "UNREACHABLE"
+    assert rec["access_label"] == "ROBOTS_ABSENT" and rec["robots_counted"] is True
+    line = json.loads(_ledger["ledger"].read_text("utf-8").splitlines()[0])
+    assert line["status"] == "ABSENT_FETCHED" and line["organ"] == "asia_collector"
 
 
 def test_the_collector_cache_expires_by_age(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -198,6 +215,6 @@ def test_the_collector_cache_expires_by_age(monkeypatch: pytest.MonkeyPatch) -> 
 
 def test_the_asia_collector_fetches_a_public_path(monkeypatch: pytest.MonkeyPatch,
                                                   _ledger: dict[str, Path]) -> None:
-    rec, opened = _collect(monkeypatch, ("PUBLIC", "no robots.txt (HTTP 404)"))
+    rec, opened = _collect(monkeypatch, ("PUBLIC", "robots.txt allows this path"))
     assert opened == [URL] and rec["status"] == "UNREACHABLE"
     assert not _ledger["ledger"].exists(), "an allowed fetch is not billed"

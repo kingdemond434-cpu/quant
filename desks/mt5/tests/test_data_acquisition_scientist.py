@@ -198,19 +198,36 @@ def test_a_robots_disallow_takes_no_sample_and_is_billed(
     assert line["source"] == "kr_krx_short_sale_balance"
 
 
-def test_an_unread_robots_file_still_samples_and_is_counted(
+@pytest.mark.parametrize("label", ["ROBOTS_REFUSED", "ROBOTS_UNREACHABLE"])
+def test_a_refused_or_unreachable_robots_file_takes_no_sample_and_is_billed(
+        desk: Any, monkeypatch: pytest.MonkeyPatch, label: str) -> None:
+    """Governance ruling 2026-11-10 20:08Z: a 401/403 on robots.txt and an unreachable
+    robots.txt stop the sample like a Disallow, counted under their own label."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", desk["tmp"] / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", desk["tmp"] / "ROBOTS_SET_ASIDE.json")
+    monkeypatch.setattr(das, "_robots_verdict", lambda url: (label, "robots.txt said no"))
+    doc = _build(desk)
+    krx = {s["dataset"]: s for s in doc["samples"]}["kr_krx_short_sale_balance"]
+    assert desk["calls"]["fetch"] == []
+    assert krx["status"] == "BLOCKED_BY_ROBOTS" and krx["access_label"] == label
+    line = json.loads((desk["tmp"] / "robots_set_aside.jsonl").read_text("utf-8").splitlines()[0])
+    assert line["status"] == "SET_ASIDE" and line["access_label"] == label
+
+
+def test_a_site_with_no_robots_file_is_sampled_and_counted(
         desk: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     from research import robots_gate as RG
     monkeypatch.setattr(RG, "LEDGER", desk["tmp"] / "robots_set_aside.jsonl")
     monkeypatch.setattr(RG, "REPORT", desk["tmp"] / "ROBOTS_SET_ASIDE.json")
     monkeypatch.setattr(das, "_robots_verdict",
-                        lambda url: ("ACCESS_UNCLEAR", "robots.txt unreadable (TimeoutError)"))
+                        lambda url: ("ROBOTS_ABSENT", "no robots.txt (HTTP 404): no rules"))
     doc = _build(desk)
     krx = {s["dataset"]: s for s in doc["samples"]}["kr_krx_short_sale_balance"]
-    assert krx["status"] == "SAMPLED" and "unread; fetched and counted" in krx["terms_note"]
+    assert krx["status"] == "SAMPLED" and "HTTP 404" in krx["terms_note"]
     assert desk["calls"]["fetch"] == ["https://data.krx.example/short.csv"]
     line = json.loads((desk["tmp"] / "robots_set_aside.jsonl").read_text("utf-8").splitlines()[0])
-    assert line["status"] == "UNREAD_FETCHED"
+    assert line["status"] == "ABSENT_FETCHED"
 
 
 def test_a_second_pass_re_requests_nothing_until_the_value_moves_or_the_day_turns(
