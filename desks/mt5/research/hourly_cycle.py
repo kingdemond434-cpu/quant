@@ -1254,7 +1254,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
+    # THE LOAD AND SEPARATION DRILLS (ARCH-07) run just before the scorecard that grades them
+    # (`recovery_drills` rows `load` and `workload_separation`): ~8 s of one-class-lower load.
+    "ops_redundancy", "load_isolation", "recovery_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -2062,6 +2064,9 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ARCH-07 load drill: three 2 s arms plus worker start-up (~8 s measured); the cap leaves room
+    # for an interpreter cold start on a loaded box and is far below any search leg.
+    "load_isolation": 90,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6282,6 +6287,10 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    # ARCH-07: the trading path's latency under research load, and every research process's
+    # priority below the trading side's -- graded by recovery_drills.
+    lis = _costed("load_isolation", lambda: _producer(
+        "load_isolation", "research/load_isolation_drill.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
@@ -6557,7 +6566,7 @@ def main() -> None:
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "recovery_drills": rcd,
+                    "load_isolation": lis, "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,

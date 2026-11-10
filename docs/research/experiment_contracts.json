@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "load_isolation": {
+   "hypothesis": "Timing the gateway's own pure decision code hourly while one busy worker per core runs a priority class below it, with an equal-priority control arm, and censusing every research process's priority against the trading side's, turns 'experimental work is separated from trading' from a convention in task installers into a measured PASS/FAIL before research load ever starves a live placement.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "load.separated_p99_ratio",
+    "better": "down",
+    "organ": "report:LOAD_ISOLATION.json"
+   },
+   "falsifier": {
+    "metric": "load.equal_p99_ratio",
+    "op": "<=",
+    "threshold": 1.0,
+    "after": "14 days of box readings in which the equal-priority control never degrades the probe's p99: the drill cannot see starvation on this host and its PASS means nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
