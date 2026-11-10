@@ -144,6 +144,72 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
     assert opened == ["https://example.invalid/x"]
 
 
+def _checked(sid: str = "checked") -> Any:
+    return si.Sensor(sensor_id=sid, latent="global_risk_appetite", what="x",
+                     fetch_class="public_endpoint", source="x", cadence="daily",
+                     pit_lag_days=0.0, machine_use_allowed=True, licence="open", sign=1,
+                     consumers=("US500",), url="https://example.invalid/data/x", robots="checked")
+
+
+def _robots(monkeypatch: pytest.MonkeyPatch, body: str | None) -> list[str]:
+    """Serve `body` as robots.txt (None = unreadable) and record every data URL opened."""
+    opened: list[str] = []
+
+    def _read(self: Any) -> None:
+        if body is None:
+            raise si.urllib.error.URLError("robots unreachable")
+        self.parse(body.splitlines())
+
+    def _spy(req: Any, **_k: Any) -> Any:
+        opened.append(str(getattr(req, "full_url", req)))
+        raise si.urllib.error.URLError("no network in this test")
+
+    monkeypatch.setattr(si.urllib.robotparser.RobotFileParser, "read", _read)
+    monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
+    return opened
+
+
+def test_a_robots_disallow_on_the_exact_path_stops_the_fetch_and_is_set_aside(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ruling of 2026-11-10 (PR #819): a Disallow covering the exact path is not fetched. The
+    sensor is counted, with a two-sided missed-growth line and a named reopen."""
+    opened = _robots(monkeypatch, "User-agent: *\nDisallow: /data/\n")
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
+    payload, why = guard.get(_checked())
+    assert payload is None and why.startswith("SET_ASIDE") and opened == []
+    (row,) = guard.set_aside
+    assert row["sensor"] == "checked" and row["access_label"] == "DISALLOWED" and row["reopen"]
+    assert {m["side"] for m in row["missed_growth"]} == {"cost", "gain"}
+    assert all(m["verdict"] == "UNMEASURED" for m in row["missed_growth"])
+
+
+def test_an_unreadable_robots_file_is_not_a_yes(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    opened = _robots(monkeypatch, None)
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
+    assert guard.robots_ok("https://example.invalid/data/x")[0] is False
+    payload, why = guard.get(_checked())
+    assert payload is None and "UNMEASURED" in why and opened == []
+    assert guard.set_aside[0]["access_label"] == "ACCESS_UNCLEAR"
+
+
+def test_a_robots_allow_and_a_disallow_elsewhere_both_fetch(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    opened = _robots(monkeypatch, "User-agent: *\nDisallow: /private/\n")
+    guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
+    guard.get(_checked())
+    assert opened == ["https://example.invalid/data/x"] and guard.set_aside == []
+
+
+def test_no_sensor_in_the_table_is_set_aside_by_construction_today() -> None:
+    """The measured blast radius of the robots rule: which declared sensors consult robots at
+    all. A row that starts declaring `robots="checked"` changes this count on purpose."""
+    table = [s for rows in si.ENSEMBLES.values() for s in rows] + list(si.CRYPTO_SENSORS)
+    declared = [s.sensor_id for s in table if s.robots == "checked"]
+    assert table
+    assert declared == []
+
+
 def test_guard_reads_a_fixture_in_no_fetch_mode(tree: dict[str, Path]) -> None:
     sensor = next(s for s in si.CRYPTO_SENSORS if s.sensor_id == "deribit_atm_iv")
     (tree["fixtures"] / "deribit_atm_iv.json").write_text(
