@@ -307,9 +307,10 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             return extra, "ok"
 
         if family == "macro_conditional":
-            macro = inputs._macro_series(h1.index)
+            # By the cell's OWN series name, through the reader the gauntlet shares.
+            macro, why = inputs.macro_for_cell(h1.index, params)
             if macro is None:
-                return None, "macro series unavailable"
+                return None, why
             extra["macro"] = macro
             return extra, "ok"
 
@@ -376,8 +377,18 @@ def strip_identity_keys(family: str, params: dict[str, Any], *,
     family takes it as an argument. It stays in the cell's IDENTITY -- callers pass the unstripped
     params to `resolve` and to the sleeve registry -- because that is the only place it belongs.
     """
+    drop = IDENTITY_KEYS | FAMILY_CONSUMED_KEYS.get(family, frozenset())
     return {k: v for k, v in (params or {}).items()
-            if k not in IDENTITY_KEYS or (preserve_session and k == "session")}
+            if k not in drop or (preserve_session and k == "session")}
+
+
+#: Keys an input READER consumes for one family, so they must not reach that family as kwargs.
+#: `macro_conditional`'s publication lag and transform are applied by
+#: `orthogonal_sweep.macro_for_cell` when this path loads the series, so the family is handed
+#: the finished series and must not be asked to read it again (Auditor, 2026-11-10).
+FAMILY_CONSUMED_KEYS: dict[str, frozenset[str]] = {
+    "macro_conditional": frozenset({"publication_lag_d", "transform"}),
+}
 
 
 def runtime_call_params(family: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -406,4 +417,7 @@ IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
                            # valid E8 cells fail with `unexpected keyword argument 'session'`.
                            # The fill surface's vintage: it identifies WHICH map selected the
                            # cell's windows and is not an argument any family accepts.
-                           "surface_generated_at", "fx_symbol"})
+                           "surface_generated_at", "fx_symbol",
+                           # names a macro_conditional cell's conditioning series; the loaded
+                           # series is passed as `macro` (orthogonal_sweep.macro_for_cell)
+                           "macro_series"})
