@@ -25,7 +25,9 @@ host, so a drill that cannot see starvation says so (`sensitive: false`) instead
 The control is NEVER run where it would cause what it measures: when the census finds a trading
 process on this host at or below this process's own priority (or one whose priority, or this
 process's, cannot be read), the equal arm spawns nothing and is recorded as "control UNMEASURED
-on a trading host (would contend)"; the separated arm and its PASS rule are unchanged.
+on a trading host (would contend)"; the separated arm and its PASS rule are unchanged. When a
+trading process sits at or below the class ONE BELOW this process, the separated arm would land on
+it too: it spawns nothing either and the load verdict is UNMEASURED ("would contend").
 `separated` is the claim: research at a lower class must leave the trading path's p99 within
 `P99_RATIO_MAX` of its baseline. Workers end themselves at a deadline even if this process dies,
 and the whole drill costs ~3 x ARM_S seconds of the cores' idle priority once an hour.
@@ -199,10 +201,20 @@ def _arm(probe: Callable[[], None], workers: int, kwargs: dict[str, Any] | None,
                 p.wait()
 
 
-def would_contend(census: dict[str, Any], own: Any = None) -> list[dict[str, Any]]:
-    """The trading processes an equal-priority busy load in THIS process's class would contend
-    with: every trading row whose rank is at or below ours. Unreadable ranks (theirs or ours)
-    count as contending -- the control is only ever run where it provably cannot reach trading."""
+def _lower_rank(mine: int) -> int:
+    """The rank of the class the separated arm's workers run in (see `_lower_spawn_kwargs`):
+    one Windows class down, or nice +10 (capped at 19) on POSIX."""
+    if os.name == "nt":
+        return mine - 1
+    return -min(19, -mine + 10)
+
+
+def would_contend(census: dict[str, Any], own: Any = None, *,
+                  lower: bool = False) -> list[dict[str, Any]]:
+    """The trading processes a busy load would contend with: every trading row whose rank is at
+    or below the load's rank -- THIS process's class for the equal arm, or (`lower=True`) the
+    class one below it where the separated arm runs. Unreadable ranks (theirs or ours) count as
+    contending -- an arm is only ever run where it provably cannot reach trading."""
     if "trading" not in census:       # census unreadable (psutil absent): cannot rule it out
         return [{"pid": None, "why": census.get("why") or "census unreadable"}]
     trading = list(census.get("trading") or [])
@@ -211,15 +223,18 @@ def would_contend(census: dict[str, Any], own: Any = None) -> list[dict[str, Any
     mine = rank(own if own is not None else _own_nice())
     if mine is None:
         return trading
-    return [t for t in trading if t.get("rank") is None or t["rank"] <= mine]
+    load_rank = _lower_rank(mine) if lower else mine
+    return [t for t in trading if t.get("rank") is None or t["rank"] <= load_rank]
 
 
 CONTEND_WHY = "control UNMEASURED on a trading host (would contend)"
+CONTEND_LOWER_WHY = "separated arm UNMEASURED on a trading host (would contend)"
 
 
 def load_drill(probe: Callable[[], None] | None = None, *, seconds: float = ARM_S,
                workers: int | None = None,
-               contended: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+               contended: list[dict[str, Any]] | None = None,
+               contended_lower: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """The three-arm drill and its verdict. `contended` (from `would_contend`) non-empty means
     the equal-priority control is skipped: no worker is spawned at this process's priority."""
     try:
@@ -237,7 +252,14 @@ def load_drill(probe: Callable[[], None] | None = None, *, seconds: float = ARM_
             "contended_pids": [t.get("pid") for t in contended][:20]}
     else:
         equal = _arm(probe, k, _equal_spawn_kwargs(), seconds)
-    sep = _arm(probe, k, lower, seconds) if lower is not None else {"n": 0, "workers": 0}
+    if contended_lower:
+        sep: dict[str, Any] = {
+            "n": 0, "workers": 0, "verdict": UNMEASURED, "why": CONTEND_LOWER_WHY,
+            "contended_pids": [t.get("pid") for t in contended_lower][:20]}
+    elif lower is not None:
+        sep = _arm(probe, k, lower, seconds)
+    else:
+        sep = {"n": 0, "workers": 0}
     out: dict[str, Any] = {"arm_s": seconds, "workers": k, "p99_ratio_max": P99_RATIO_MAX,
                            "probe": "decision_core.atr_last + bracket_spec + entry_is_legal x2",
                            "baseline": base, "equal_priority": equal, "separated": sep,
@@ -246,6 +268,10 @@ def load_drill(probe: Callable[[], None] | None = None, *, seconds: float = ARM_
         return {**out, "verdict": UNMEASURED,
                 "why": "this process already runs at the lowest priority class: no lower class "
                        "exists to put the research load in"}
+    if contended_lower:
+        return {**out, "verdict": UNMEASURED,
+                "why": f"{CONTEND_LOWER_WHY}: a trading process sits at or below the class one "
+                       "below this process, so neither load arm can run without reaching it"}
     if not (base.get("n") and sep.get("n") and (contended or equal.get("n"))):
         return {**out, "verdict": UNMEASURED, "why": "an arm took no samples"}
     r_sep = sep["p99_ms"] / max(base["p99_ms"], 1e-6)
@@ -330,7 +356,8 @@ def build(now: datetime | None = None, *, seconds: float = ARM_S) -> dict[str, A
     now = now or datetime.now(tz=UTC)
     t0 = time.monotonic()
     census = separation_census()
-    load = load_drill(seconds=seconds, contended=would_contend(census))
+    load = load_drill(seconds=seconds, contended=would_contend(census),
+                      contended_lower=would_contend(census, lower=True))
     verdicts = (load["verdict"], census["verdict"])
     verdict = FAIL if FAIL in verdicts else PASS if verdicts == (PASS, PASS) else UNMEASURED
     return {"generated_utc": now.isoformat(timespec="seconds"), "host": os.uname().nodename

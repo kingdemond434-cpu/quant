@@ -165,3 +165,30 @@ def test_equal_arm_still_runs_where_no_trading_process_exists(
     doc = li.load_drill(lambda: None, workers=2, contended=[])
     assert (2, {"_equal_priority": True}) in calls
     assert doc["verdict"] == "PASS" and doc["equal_p99_ratio"] == 1.0
+
+
+def test_separated_arm_is_never_spawned_when_trading_sits_a_class_below(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """ARCH-07 audit should-fix: a trading process at or below the class ONE BELOW this process
+    is exactly where the separated arm's workers would run, so neither load arm spawns and the
+    load verdict is UNMEASURED ("would contend"), never PASS."""
+    calls = _spy_arms(monkeypatch)
+    census = li.separation_census([_p(11, "python desks/mt5/mt5desk/gateway.py", LOW)])
+    monkeypatch.setattr(li, "separation_census", lambda procs=None: census)
+    monkeypatch.setattr(li, "_probe", lambda: (lambda: None))
+    monkeypatch.setattr(li, "_own_nice", lambda: NORMAL)
+    doc = li.build(seconds=0.01)
+    load = doc["load"]
+    assert [w for w, _ in calls if w] == [], calls                  # no worker of either arm
+    assert load["separated"]["workers"] == 0
+    assert load["separated"]["contended_pids"] == [11]
+    assert "would contend" in load["separated"]["why"]
+    assert load["verdict"] == "UNMEASURED" and "would contend" in load["why"]
+    assert doc["verdict"] in ("UNMEASURED", "FAIL")                 # census decides FAIL only
+
+
+def test_lower_contention_is_ranked_one_class_down() -> None:
+    gw_low = li.separation_census([_p(11, "python desks/mt5/mt5desk/gateway.py", LOW)])
+    assert [t["pid"] for t in li.would_contend(gw_low, own=NORMAL, lower=True)] == [11]
+    gw = li.separation_census([_p(11, "python desks/mt5/mt5desk/gateway.py", NORMAL)])
+    assert li.would_contend(gw, own=NORMAL, lower=True) == []       # separated arm stays clear
