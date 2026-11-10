@@ -62,26 +62,38 @@ def test_a_hard_status_stops_the_pass(tmp_path):
     assert rep["hard_stop"]["code"] == 451 and not list(tmp_path.iterdir())
 
 
-def test_robots_disallow_is_a_label_and_the_fetch_proceeds(tmp_path):
-    """LAWS 5e: a Disallow labels the series PUBLIC_WITH_TERMS, redistribution withheld."""
+def test_robots_disallow_stops_that_url_and_sets_it_aside(tmp_path):
+    """A Disallow on the exact path means no fetch of that URL (ruling 2026-11-10, PR #819);
+    the allowed URLs are still fetched and the skipped ones carry a missed-growth line."""
     get, calls = _fake()
     rep = si.collect_leverage(get=get, root=tmp_path,
                               robots=lambda u: ("futures/data" not in u, "robots disallows"))
-    assert any("futures/data" in u for u in calls)
+    assert calls and not any("futures/data" in u for u in calls)
+    aside = rep["set_aside"]
+    assert len(aside) == 2 * len(si.LEVERAGE_PERPS)
+    assert {r["access_label"] for r in aside} == {"DISALLOWED"}
+    assert all(r["reopen"] and {m["side"] for m in r["missed_growth"]} == {"cost", "gain"}
+               for r in aside)
     row = rep["series"]["BTCUSDT"]
-    assert row["access_label"] == "PUBLIC_WITH_TERMS" and row["redistribute_allowed"] is False
+    assert row["access_label"] == "PUBLIC" and row["redistribute_allowed"] is False
     df = pd.read_parquet(tmp_path / "crypto_lev_btcusdt.parquet")
-    assert set(df["access_label"]) == {"PUBLIC_WITH_TERMS"} and not df["redistribute_allowed"].any()
-    again = si.collect_leverage(get=get, root=tmp_path)
-    assert again["series"]["BTCUSDT"]["access_label"] == "PUBLIC"
+    assert set(df["access_label"]) == {"PUBLIC"} and not df["redistribute_allowed"].any()
+    assert "oi_usd" not in df.columns or df["oi_usd"].isna().all()
 
 
-def test_unreadable_robots_is_access_unclear_not_a_refusal(tmp_path):
+def test_unreadable_robots_fetches_nothing_this_pass(tmp_path):
     get, calls = _fake()
     rep = si.collect_leverage(get=get, root=tmp_path,
                               robots=lambda u: (True, "robots.txt unreadable: URLError"))
-    assert rep["series"]["ETHUSDT"]["access_label"] == "ACCESS_UNCLEAR"
-    assert len(calls) == 3 * len(si.LEVERAGE_PERPS)
+    assert calls == []
+    assert {r["access_label"] for r in rep["set_aside"]} == {"ACCESS_UNCLEAR"}
+    assert rep["series"]["ETHUSDT"]["status"] == "UNMEASURED"
+
+
+def test_robots_allow_fetches_everything(tmp_path):
+    get, calls = _fake()
+    rep = si.collect_leverage(get=get, root=tmp_path, robots=lambda u: (True, "allows"))
+    assert len(calls) == 3 * len(si.LEVERAGE_PERPS) and rep["set_aside"] == []
 
 
 def test_cells_condition_the_mt5_cfd_only():

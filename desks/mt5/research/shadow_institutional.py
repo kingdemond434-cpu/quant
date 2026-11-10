@@ -1337,9 +1337,10 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
 #: stamps at the period START, so a row is available one period after its stamp. Binance keeps
 #: only ~30 days of OI and ratio history, so those series ACCRUE forward from the first pass;
 #: funding history reaches back to the perpetual's listing. 401/403/418/429/451 stop the
-#: collector for the pass and are recorded. robots.txt is READ AND LABELLED, never a veto (LAWS
-#: 5e): a Disallow labels the series PUBLIC_WITH_TERMS, an unreadable file ACCESS_UNCLEAR, both
-#: with redistribution withheld, and the fetch proceeds.
+#: collector for the pass and are recorded. robots.txt is read per URL: a Disallow on the exact
+#: path (DISALLOWED) or an unreadable file (ACCESS_UNCLEAR) means THAT URL is not fetched this
+#: pass (ruling of 2026-11-10, PR #819) and is reported set aside with its missed-growth line
+#: and what reopens it; the other URLs are still fetched. Redistribution is withheld on all.
 LEVERAGE_PERPS: dict[str, str] = {"BTCUSDT": "BTCUSD", "ETHUSDT": "ETHUSD", "SOLUSDT": "SOLUSD"}
 LEVERAGE_SERIES = DESK / "data" / "lake" / "series"
 _BDATA = "https://fapi.binance.com/futures/data"
@@ -1350,13 +1351,38 @@ LEVERAGE_LABEL_COLS = ("access_label", "redistribute_allowed")
 
 
 def robots_label(verdict: Any) -> tuple[str, str]:
-    """A robots verdict -> (access label, why). Disallow and unreadable are labels, not skips."""
+    """A robots verdict -> (access label, why). Only PUBLIC permits the fetch.
+
+    Unreadable is checked FIRST: the guard reports an unread file with ok=True, and an unread
+    policy is never a yes."""
     ok, why = (verdict if isinstance(verdict, tuple) else (bool(verdict), ""))
-    if not ok:
-        return "PUBLIC_WITH_TERMS", why or "robots.txt disallows this path for our agent"
     if "unreadable" in str(why) or "UNMEASURED" in str(why):
-        return "ACCESS_UNCLEAR", str(why)
-    return "PUBLIC", str(why)
+        return "ACCESS_UNCLEAR", "robots.txt could not be read this pass"
+    if not ok:
+        return "DISALLOWED", "robots.txt disallows this exact path for our agent"
+    return "PUBLIC", "robots allows this path for our agent"
+
+
+def leverage_set_aside(url: str, kind: str, label: str, why: str) -> dict[str, Any]:
+    """The report row for a URL NOT fetched because of its robots label: the two-sided
+    missed-growth line every brake owes (GROWTH_GOVERNANCE Rule 1), both sides UNMEASURED and
+    said so, and the named events that reopen it."""
+    return {
+        "url": url, "kind": kind, "status": "SET_ASIDE", "access_label": label, "why": why,
+        "redistribute_allowed": False,
+        "reopen": ("the next pass re-reads robots.txt and fetches as soon as it allows this "
+                   "path (or returns 404); or a permitting clause from the venue's terms is "
+                   "recorded for this sensor"),
+        "missed_growth": [
+            {"rail": "crypto_leverage.robots_set_aside", "side": "cost", "value": None,
+             "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+             "why": f"the {kind} column gets no new rows while set aside; cells conditioned "
+                    "on it judge on the history already held"},
+            {"rail": "crypto_leverage.robots_set_aside", "side": "gain", "value": None,
+             "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+             "why": "the desk does not build evidence on a path the venue asked agents not "
+                    "to read"}],
+    }
 
 
 class LeverageStop(Exception):
@@ -1431,8 +1457,7 @@ def collect_leverage(*, get: Any = None, root: Path | None = None, dry_run: bool
     import pandas as pd
     fetch = get or _lev_get
     base = Path(root) if root is not None else LEVERAGE_SERIES
-    report: dict[str, Any] = {"at": now_iso(), "series": {}, "hard_stop": None, "labels": []}
-    rank = {"PUBLIC": 0, "ACCESS_UNCLEAR": 1, "PUBLIC_WITH_TERMS": 2}
+    report: dict[str, Any] = {"at": now_iso(), "series": {}, "hard_stop": None, "set_aside": []}
     for perp, cfd in LEVERAGE_PERPS.items():
         path = base / f"crypto_lev_{perp.lower()}.parquet"
         try:
@@ -1452,14 +1477,15 @@ def collect_leverage(*, get: Any = None, root: Path | None = None, dry_run: bool
                 (f"{_BDATA}/globalLongShortAccountRatio?symbol={perp}&period=1h&limit=500",
                  "ls")]
         rows: list[dict[str, Any]] = []
+        #: every row written was fetched under a PUBLIC label; nothing else permits a fetch
         label = "PUBLIC"
         try:
             for url, kind in urls:
                 if robots is not None:
                     lab, why = robots_label(robots(url))
                     if lab != "PUBLIC":
-                        report["labels"].append({"url": url, "access_label": lab, "why": why})
-                    label = lab if rank[lab] > rank[label] else label
+                        report["set_aside"].append(leverage_set_aside(url, kind, lab, why))
+                        continue
                 payload = fetch(url)
                 if kind == "funding":
                     rows += funding_rows(payload)
