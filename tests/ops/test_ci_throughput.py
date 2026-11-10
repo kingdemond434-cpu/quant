@@ -860,3 +860,21 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     assert reruns == ["repos/o/r/actions/runs/10/rerun"]
     assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
     assert not lf.never_started([]) and lf.never_started(jobs[10])
+
+
+def test_a_newer_live_code_push_replaces_the_pending_live_run_and_never_a_started_one() -> None:
+    """2026-11-10 19:30Z: LIVE's newest code tip waited 85 min behind eight queued LIVE runs of
+    older tips, and the box adopted nothing. One group per shared branch lets GitHub replace the
+    PENDING run with the newer tip's; cancel-in-progress stays false for push and dispatch, so a
+    started LIVE run always finishes. State-only publishes start no run (the paths filter), so
+    only a newer code commit, which contains the older one, can replace a pending run."""
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    top = ci[ci.index("\nconcurrency:\n") : ci.index("\njobs:\n")]
+    both = "(github.event_name == 'push' || github.event_name == 'workflow_dispatch')"
+    group = re.search(r"^  group: (.+)$", top, flags=re.M)
+    assert group, top
+    assert group.group(1) == f"ci-${{{{ github.ref }}}}-${{{{ {both} && 'shared' || 'pr' }}}}"
+    assert "github.sha" not in group.group(1)  # no longer one group per commit
+    assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in top
+    on = ci[ci.index("\non:\n") : ci.index("\nconcurrency:\n")]
+    assert '"!desks/mt5/data/**"' in on and '"!desks/mt5/reports/**"' in on  # state starts no run
