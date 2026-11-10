@@ -1254,7 +1254,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
+    # THE EIGHT ACCEPTANCE DRILLS (ARCH-18) are graded from the scorecard just written and
+    # published as runtime proofs for the acceptance package.
+    "ops_redundancy", "recovery_drills", "acceptance_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -2062,6 +2064,8 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ARCH-18 acceptance drills: reads one scorecard and writes nine small files (<1 s measured).
+    "acceptance_drills": 60,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6284,6 +6288,11 @@ def main() -> None:
         "ops_redundancy", "research/ops_redundancy.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
+    # ARCH-18: replay, information freshness, model-to-decision, no duplicate execution,
+    # reconciliation, rollback+restore, research under load and latency without excess trading,
+    # each graded from the scorecard above and published as an acceptance runtime proof.
+    acd = _costed("acceptance_drills", lambda: _producer(
+        "acceptance_drills", "research/acceptance_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -6557,7 +6566,7 @@ def main() -> None:
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "recovery_drills": rcd,
+                    "recovery_drills": rcd, "acceptance_drills": acd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
