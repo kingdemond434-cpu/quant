@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-29T13:46:10+00:00",
+ "generated_utc": "2026-11-10T12:02:32+00:00",
  "trees": [
   "desks/mt5/research",
   "desks/mt5/mt5desk",
@@ -28,7 +28,7 @@
   "wgc_goldhub",
   "xauusd_scalp_bars"
  ],
- "readers": 68,
+ "readers": 71,
  "routed": {
   "desks/mt5/research/alt_proxies.py": [
    "gdelt"
@@ -51,6 +51,9 @@
    "cot_fx",
    "fred_macro"
   ],
+  "desks/mt5/research/futures_state.py": [
+   "cot_fx"
+  ],
   "desks/mt5/research/macro_state_engine.py": [
    "lbma_vaults",
    "sge_benchmark",
@@ -63,6 +66,9 @@
    "event_calendar",
    "fred_macro",
    "macro_state"
+  ],
+  "desks/mt5/research/paid_substitute_engine.py": [
+   "gdelt"
   ],
   "desks/mt5/research/run_edges_macro_fusion_sweep.py": [
    "cross_asset_anchors"
@@ -161,6 +167,9 @@
    ],
    "desks/mt5/research/fund_playbook.py": [
     "event_calendar"
+   ],
+   "desks/mt5/research/global_coverage_tensor.py": [
+    "gdelt"
    ],
    "desks/mt5/research/hourly_cycle.py": [
     "cross_asset_anchors",
@@ -345,14 +354,14 @@
   ]
  },
  "accounting": {
-  "readers": 68,
-  "joining": 16,
-  "joining_routed": 16,
-  "no_join_routed_in_code": 37,
+  "readers": 71,
+  "joining": 18,
+  "joining_routed": 18,
+  "no_join_routed_in_code": 38,
   "no_join_declared": 13,
   "undeclared": 2,
   "offenders": 0,
-  "routed_or_declared": 66
+  "routed_or_declared": 69
  },
  "floor": [],
  "arrived": [],
