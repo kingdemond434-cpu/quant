@@ -32,9 +32,14 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 REPORT = ROOT / "desks" / "mt5" / "reports" / "WORLD_CAUSAL_GRAPH.json"
 #: The leg is hourly; three hours is the same grace the other hourly-report fences give.
 STALE_H = 3.0
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set. UNMEASURED is only ever returned
+#: without --require-state (a clean checkout, where the leg is not scheduled).
+_PASSING = frozenset({"PASS", "UNMEASURED"})
 
 
 def _age_h(stamp: Any, now: datetime) -> float | None:
@@ -87,7 +92,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(res, indent=1, default=str))
     else:
         print(f"world causal graph fence: {res['verdict']} -- {res['why']}")
-    return 1 if res["verdict"] == "FAIL" else 0
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(res["verdict"], _PASSING, fail=1)
 
 
 if __name__ == "__main__":
