@@ -41,7 +41,11 @@ from typing import Any
 
 #: Families that need nothing beyond bars are absent here on purpose: `resolve` returning an
 #: empty dict for them is the correct answer, not a gap.
-_PEER_FAMILIES = frozenset({"relative_value", "correlation_regime"})
+#: `kalman_pair` and `copula_pair` (2026-11-10) are here so the FORWARD clock hands them the peer
+#: on the cell's own chart: `strip_identity_keys` removes `peer_symbol` before the call, so without
+#: this branch they would run peerless and fire nothing. The sealed gauntlet does not strip it, and
+#: there the family reads the same H1 peer from the store itself (`family_state_space._peer_frame`).
+_PEER_FAMILIES = frozenset({"relative_value", "correlation_regime", "kalman_pair", "copula_pair"})
 
 # Broker-native fallback frames live only for one shadow pass and stay row-bounded.  The local
 # parquet reader remains first; this cache exists for certificates whose named peer/factor has
