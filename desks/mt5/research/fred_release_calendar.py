@@ -291,11 +291,12 @@ def write_meetings(*, registry: Mapping[str, Any] | None = None, out: Path | Non
             r.update({"source": "cb_own_schedule_page", "bank": bank["bank"],
                       "instant_basis": "bank_schedule_page", "time_basis": bank["time_basis"],
                       "page": bank["source"], "page_read": bank["read"]})
-            if r["event_date"][:10] in single or any(
-                    datetime.fromisoformat(r["event_date"]).astimezone(
-                        ZoneInfo(str(bank["tz"]))).date().isoformat() == d for d in single):
+            local_day = datetime.fromisoformat(r["event_date"]).astimezone(
+                ZoneInfo(str(bank["tz"]))).date().isoformat()
+            if local_day in single:
                 r["single_day_meeting"] = True
-        b: dict[str, Any] = {"rows": len(rows), "dropped": drops, "covered": bank.get("covered", ""),
+        b: dict[str, Any] = {"rows": len(rows), "dropped": drops,
+                             "covered": bank.get("covered", ""),
                              "scheduled_ahead": sum(1 for x in rows if x["scheduled"])}
         rep["banks"][slug] = b
         if not rows:
