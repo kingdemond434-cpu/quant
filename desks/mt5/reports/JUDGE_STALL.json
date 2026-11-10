@@ -1,31 +1,33 @@
 {
- "at": "2026-11-10T21:16:04+00:00",
+ "at": "2026-11-10T21:31:01+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 1.8,
-   "why": "no new verdict for 1.8h (last 2026-11-10T19:28:02+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 2.05,
+   "why": "no new verdict for 2.0h (last 2026-11-10T19:28:02+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
-   "low": false,
+   "low": true,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 4.43,
-   "busy_other_cores": 11.34,
-   "why": "judge tree at 4.43 cores (others 11.34) with a docket pending (resident SWEEPING, queue depth None); floor 4"
+   "busy_judge_cores": 0.04,
+   "busy_other_cores": 14.5,
+   "why": "judge tree at 0.04 cores (others 14.5) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.0h (limit 1h)",
+   "low_since": "2026-11-10T21:31:25+00:00",
+   "hours": 0.0
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.5,
+   "heartbeat_age_min": 0.4,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.5 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.4 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 0.22,
+   "hours": 0.47,
    "limit_h": 25.59,
-   "why": "0.2h since the last sweep ended (2026-11-10T21:02:38+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.5h since the last sweep ended (2026-11-10T21:02:38+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -41,10 +43,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "plan",
-   "hours": 0.22,
+   "phase": "prewarm",
+   "hours": 0.25,
    "known_phase": true,
-   "why": "sweep phase plan has run 0.2h since 2026-11-10T21:02:49+00:00 (limit 4.5h)"
+   "why": "sweep phase prewarm has run 0.3h since 2026-11-10T21:15:55+00:00 (limit 4.06h)"
   },
   "host_unreadable": {
    "open": false,
@@ -89,21 +91,16 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-10T21:15:37+00:00",
+  "heartbeat_utc": "2026-11-10T21:30:38+00:00",
   "last_sweep_ended_utc": "2026-11-10T21:02:38+00:00",
   "last_rc": 0
  },
  "host": "trading box",
  "page": {
-  "sent": true,
+  "sent": false,
   "open": [],
   "opened": [],
   "reminded": [],
-  "resolved": [
-   "cores_idle"
-  ],
-  "title": "JUDGE STALL RESOLVED: cores_idle",
-  "armed": 1,
-  "delivered": 1
+  "resolved": []
  }
 }
