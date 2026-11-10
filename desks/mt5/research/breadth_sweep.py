@@ -73,11 +73,13 @@ def _macro_held(name: str) -> bool | None:
                 import orthogonal_sweep as osw  # type: ignore[no-redef]
             doc = osw._read(osw.BASE.parent.parent / "data" / "fred_macro.json")
             if not isinstance(doc, dict) or not isinstance(doc.get("series"), dict):
-                return None
-            rows = doc["series"].get(name)
-            _MACRO_HELD[name] = isinstance(rows, list) and len(rows) >= osw.MACRO_RANK_MIN_OBS
+                _MACRO_HELD[name] = None        # cached: one read per pass, not one per cell
+            else:
+                rows = doc["series"].get(name)
+                _MACRO_HELD[name] = (isinstance(rows, list)
+                                     and len(rows) >= osw.MACRO_RANK_MIN_OBS)
         except Exception:
-            return None
+            _MACRO_HELD[name] = None
     return _MACRO_HELD[name]
 
 

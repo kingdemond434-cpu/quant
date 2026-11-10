@@ -57,10 +57,10 @@ def test_the_event_index_reads_the_backfilled_history_beside_the_polled_calendar
         encoding="utf-8")
     back = tmp_path / "data" / "calendar_backfill"
     back.mkdir(parents=True)
-    rows = [{"event_date": "2015-03-06T13:30:00+00:00", "series": "PAYEMS", "backfill": True},
-            {"event_date": "2015-04-03T12:30:00+00:00", "series": "PAYEMS", "backfill": True},
+    rows = [{"event_date": "2015-03-06T13:30:00+00:00", "currency": "USD", "backfill": True},
+            {"event_date": "2015-04-03T12:30:00+00:00", "currency": "USD", "backfill": True},
             # the same instant the polled calendar holds: one event, not two
-            {"event_date": "2026-09-04T12:30:00+00:00", "series": "PAYEMS", "backfill": True}]
+            {"event_date": "2026-09-04T12:30:00+00:00", "currency": "USD", "backfill": True}]
     with gzip.open(back / "backfill_fred_usrel_payems.jsonl.gz", "wt", encoding="utf-8") as fh:
         fh.write("\n".join(json.dumps(r) for r in rows) + "\n")
     (back / "notes.txt").write_text("not a calendar", encoding="utf-8")
@@ -71,8 +71,22 @@ def test_the_event_index_reads_the_backfilled_history_beside_the_polled_calendar
     assert [t.isoformat() for t in idx] == ["2015-03-06T13:30:00+00:00",
                                             "2015-04-03T12:30:00+00:00",
                                             "2026-09-04T12:30:00+00:00"]
+    # A BACKFILLED RELEASE GOES ONLY WHERE ITS CURRENCY TRADES. The two 2015 instants are known
+    # only from the backfill and are USD; the 2026 one is also in the polled calendar, so it
+    # keeps its historical behaviour and reaches every instrument.
+    assert len(osw.EVENT_BACKFILL_CURRENCY) == 2
+    assert set(osw.EVENT_BACKFILL_CURRENCY.values()) == {frozenset({"USD"})}
+    monkeypatch.setattr(fi, "_SYMBOL_CURRENCY", {
+        "EURUSD": frozenset({"EUR", "USD"}), "AUDNZD": frozenset({"AUD", "NZD"}),
+        "GER40": frozenset({"EUR"}), "MYSTERY": frozenset()})
+    assert len(fi.events_for_symbol(idx, "EURUSD")) == 3
+    for sym in ("AUDNZD", "GER40"):
+        assert [e["at"] for e in fi.events_for_symbol(idx, sym)] == ["2026-09-04T12:30:00+00:00"]
+    assert len(fi.events_for_symbol(idx, "MYSTERY")) == 3   # unknown is not a refusal
     # no backfill directory: the polled calendar alone, exactly as before
     monkeypatch.setattr(osw, "EVENT_BACKFILL_DIR", tmp_path / "absent")
     osw._event_index.cache_clear()
     assert [t.isoformat() for t in osw._event_index()] == ["2026-09-04T12:30:00+00:00"]
+    assert osw.EVENT_BACKFILL_CURRENCY == {} and len(fi.events_for_symbol(
+        pd.DatetimeIndex(["2015-03-06 13:30"], tz="UTC"), "AUDNZD")) == 1
     osw._event_index.cache_clear()               # leave no temp-dir reading behind

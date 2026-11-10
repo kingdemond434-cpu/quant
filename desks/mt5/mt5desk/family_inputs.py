@@ -123,10 +123,58 @@ def timeframe_of(params: dict[str, Any] | None) -> str:
     return str((params or {}).get("timeframe") or "H1").upper()
 
 
+_SYMBOL_CURRENCY: dict[str, frozenset[str]] = {}
+
+
+def _symbol_currencies(symbol: str) -> frozenset[str]:
+    """The currencies an instrument is exposed to, as far as the desk can say: the registry's
+    profit currency plus the two legs of a six-letter pair. Empty = unknown."""
+    sym = str(symbol or "").upper()
+    if sym not in _SYMBOL_CURRENCY:
+        found: set[str] = set()
+        try:
+            import json
+            from pathlib import Path
+            reg = json.loads((Path(__file__).resolve().parents[1] / "data" / "universe"
+                              / "universe.json").read_text("utf-8"))
+            meta = reg.get(sym) if isinstance(reg, dict) else None
+            if isinstance(meta, dict):
+                found.update(str(meta.get(k) or "").upper()
+                             for k in ("currency_profit", "currency_base", "currency_margin"))
+        except (OSError, ValueError):
+            pass
+        if len(sym) == 6 and sym.isalpha():
+            found.update((sym[:3], sym[3:]))
+        _SYMBOL_CURRENCY[sym] = frozenset(c for c in found if len(c) == 3)
+    return _SYMBOL_CURRENCY[sym]
+
+
+def _backfill_currencies() -> dict[int, frozenset[str]]:
+    """`orthogonal_sweep.EVENT_BACKFILL_CURRENCY`, from whichever name(s) the module is loaded
+    under (the package and the bare folder import are two module objects)."""
+    import sys
+    table: dict[int, frozenset[str]] = {}
+    for name in ("research.orthogonal_sweep", "orthogonal_sweep"):
+        mod = sys.modules.get(name)
+        got = getattr(mod, "EVENT_BACKFILL_CURRENCY", None) if mod is not None else None
+        if isinstance(got, dict):
+            table.update(got)
+    return table
+
+
 def events_for_symbol(events: object, symbol: str) -> list[dict]:
     """A DatetimeIndex / iterable of stamps -> the event mappings the event_reaction family
-    reads ({symbol, at}); mappings pass through unchanged. Never raises on an odd shape."""
+    reads ({symbol, at}); mappings pass through unchanged. Never raises on an odd shape.
+
+    A BACKFILLED RELEASE IS PLACED ONLY WHERE ITS CURRENCY TRADES (2026-11-10). The backfill is
+    eleven-plus years of US releases; handed to every instrument it would test a payrolls print
+    on AUDNZD and GER40, thousands of cells of a claim nobody made. An instant known only from
+    the backfill carries its currency, and an instrument whose known currencies exclude it does
+    not receive the event. An instrument the desk knows no currency for, and every instant the
+    polled calendar holds, behave exactly as before."""
     out: list[dict] = []
+    by_instant = _backfill_currencies()
+    mine = _symbol_currencies(symbol) if by_instant else frozenset()
     try:
         it = iter(() if events is None else events)  # type: ignore[arg-type]
     except TypeError:
@@ -142,6 +190,10 @@ def events_for_symbol(events: object, symbol: str) -> list[dict]:
             continue
         if ts.tzinfo is None:
             ts = ts.tz_localize("UTC")
+        if mine:
+            theirs = by_instant.get(int(ts.as_unit("ns").value))
+            if theirs and not (theirs & mine):
+                continue
         out.append({"symbol": str(symbol), "at": ts.isoformat()})
     return out
 

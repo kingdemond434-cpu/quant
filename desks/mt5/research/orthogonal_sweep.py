@@ -690,6 +690,11 @@ def _surface_for(symbol: str) -> dict | None:
 #: Scheduled-release instants recovered from first prints (`futures_state.CALENDAR_BACKFILL`
 #: writes it; the path is restated here because this reader must not import that leg).
 EVENT_BACKFILL_DIR = BASE / "data" / "calendar_backfill"
+#: instant (epoch ns) -> the currencies of the releases at it, for instants that come ONLY from
+#: the backfill. Filled by `_event_index`; `family_inputs.events_for_symbol` reads it so a US
+#: release is not placed on an instrument with no dollar leg. An instant the polled calendar
+#: also holds is absent from here and keeps its historical behaviour (every instrument).
+EVENT_BACKFILL_CURRENCY: dict[int, frozenset[str]] = {}
 
 
 @lru_cache(maxsize=1)
@@ -718,7 +723,10 @@ def _event_index():
     if EVENT_BACKFILL_DIR.exists():
         paths += sorted(EVENT_BACKFILL_DIR.glob("*.jsonl.gz"))
     values = []
+    polled: set[int] = set()
+    backfilled: dict[int, set[str]] = {}
     for path in paths:
+        from_backfill = path.parent == EVENT_BACKFILL_DIR
         for row in _rows(path):
             if not isinstance(row, dict):
                 continue
@@ -730,8 +738,21 @@ def _event_index():
             # about the market.
             raw = next((row.get(k) for k in ("event_date", "date", "datetime", "timestamp",
                                              "time") if row.get(k)), None)
-            if raw is not None:
-                values.append(raw)
+            if raw is None:
+                continue
+            values.append(raw)
+            stamp = pd.to_datetime(raw, utc=True, errors="coerce")
+            if pd.isna(stamp):
+                continue
+            ns = int(stamp.as_unit("ns").value)
+            currency = str(row.get("currency") or row.get("country") or "").strip().upper()
+            if from_backfill and len(currency) == 3:
+                backfilled.setdefault(ns, set()).add(currency)
+            else:
+                polled.add(ns)                  # the polled calendar, or a row naming no currency
+    EVENT_BACKFILL_CURRENCY.clear()
+    EVENT_BACKFILL_CURRENCY.update({ns: frozenset(c) for ns, c in backfilled.items()
+                                    if ns not in polled})
     idx = pd.to_datetime(values, utc=True, errors="coerce")
     return pd.DatetimeIndex(idx.dropna().unique()).sort_values() if len(idx) else None
 
