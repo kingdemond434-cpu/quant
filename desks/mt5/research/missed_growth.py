@@ -1063,6 +1063,32 @@ def void_moved_cell_line() -> dict[str, Any]:
             "why": "certificates refused a clock; their E[log W] price is UNMEASURED"}
 
 
+def executable_copy_clock_line() -> dict[str, Any]:
+    """What one-clock-per-executable costs, published beside the rails.
+
+    `shadow_admission.one_clock_per_executable` withholds a forward clock from a certificate
+    only while ANOTHER certificate of the same executable (same instrument, family and every
+    param the replay reads) is enrolled in the same pass, and never from one that already has a
+    clock. The withheld copy's forward series would be the keeper's, trade for trade, so the
+    forgone E[log W] is zero by construction and the line is NOT_BINDING with the counts; it is
+    UNMEASURED when admission cannot be read."""
+    try:
+        from research import shadow_admission as sa
+        sa.authorized_runs(BASE, lanes=("h1",))
+        groups = list(sa.EXECUTABLE_COPIES)
+    except Exception as exc:
+        return {"verdict": UNMEASURED,
+                "why": f"shadow admission unreadable: {type(exc).__name__}: {exc}"}
+    return {"verdict": NOT_BINDING, "executables_held_more_than_once": len(groups),
+            "copies_not_enrolled": sum(len(g["not_enrolled"]) for g in groups),
+            "surplus_clocks_left_running": sum(len(g["surplus_clocks_left_running"])
+                                               for g in groups),
+            "enforced": sa.one_clock_per_executable_enforced(),
+            "groups": groups[:40],
+            "why": "every withheld copy's executable is forward-tested by its keeper on "
+                   "identical signals; no clock that existed was stopped"}
+
+
 #: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was
 #: every ~2.6 h measured. Like the stop-geometry gate it registers no rail (the register is
 #: sealed), so its line is PUBLISHED here beside the rails. A STANDBY row needs TWO distinct
@@ -1244,7 +1270,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
-                                    "void_moved_cell": void_moved_cell_line()},
+                                    "void_moved_cell": void_moved_cell_line(),
+                                    "executable_copy_clock": executable_copy_clock_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

@@ -272,3 +272,75 @@ def test_each_refused_moved_cell_certificate_is_billed_until_its_corrected_cell_
         assert again["cleared_by_corrected_certificate"] == 1
     finally:
         mg.BASE = old_base
+
+
+def test_one_forward_clock_per_executable_and_no_clock_is_ever_taken(tmp_path: Path,
+                                                                    monkeypatch) -> None:
+    """Box 2026-11-10: 21 carry clocks were a handful of carry rules, each certified several
+    times under a foreign `input_symbol` its replay never reads. A copy with no clock is not
+    enrolled while another copy of the same executable is; a copy that already has a clock keeps
+    it; a different rule (other params, other family) is never folded; with no readable registry
+    nothing is withheld."""
+    import shadow_admission as sa
+    from hypothesis_families import EXECUTABLE_UNREAD
+
+    assert {k: set(v) for k, v in sa.EXECUTABLE_UNREAD.items()} == {
+        k: set(v) for k, v in EXECUTABLE_UNREAD.items()}
+    gates = {name: {"passed": True} for name in GATES}
+
+    def cert(sym: str, family: str, params: dict) -> dict:
+        return {"sym": sym, "gates": gates, "status": "UNIVERSAL",
+                "shadow_spec": {"symbol": sym, "family": family, "selector": "asia",
+                                "params": params}}
+    survivors = {
+        "external.CHFNOK.carry.p=a": cert("CHFNOK", "carry", {"input_symbol": "EBAY", "k": 1}),
+        "external.CHFNOK.carry.p=b": cert("CHFNOK", "carry", {"input_symbol": "GBPJPY", "k": 1}),
+        "external.CHFNOK.carry.p=c": cert("CHFNOK", "carry", {"input_symbol": "CHFNOK", "k": 1}),
+        "external.CHFNOK.carry.p=d": cert("CHFNOK", "carry", {"input_symbol": "EBAY", "k": 2}),
+        "external.AUDCHF.carry.p=e": cert("AUDCHF", "carry", {"input_symbol": "EBAY", "k": 1}),
+        "external.EURUSD.range_reversion.p=f": cert("EURUSD", "range_reversion", {"n": 1}),
+        "external.EURUSD.range_reversion.p=g": cert("EURUSD", "range_reversion", {"n": 1}),
+    }
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 7}), encoding="utf-8")
+
+    # no registry on this host: counted, nothing withheld
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == set(survivors)
+    assert sa.EXECUTABLE_COPIES[0]["copies"] == 3
+    assert sa.EXECUTABLE_COPIES[0]["not_enrolled"] == []
+
+    # p=b already holds a clock: it keeps it, and the two clockless copies are not enrolled
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps({"sleeves": {
+        "CHFNOK.carry.asia.b": {"identity": {"symbol": "CHFNOK", "family": "carry",
+                                             "params": {"input_symbol": "GBPJPY", "k": 1}},
+                                "forward_start": "2026-10-01", "status": "LIVE"}}}),
+        encoding="utf-8")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == set(survivors) - {"external.CHFNOK.carry.p=a", "external.CHFNOK.carry.p=c"}
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=b"
+    assert sorted(group["not_enrolled"]) == ["external.CHFNOK.carry.p=a",
+                                             "external.CHFNOK.carry.p=c"]
+    assert sum("EXECUTABLE_COPY" in d["why"] for d in sa.DROPPED_CERTIFICATES) == 2
+
+    # a second copy that ALSO has a clock is left running and named, never dropped
+    reg = json.loads((tmp_path / "data" / "sleeve_registry.json").read_text("utf-8"))
+    reg["sleeves"]["CHFNOK.carry.asia.a"] = {
+        "identity": {"symbol": "CHFNOK", "family": "carry",
+                     "params": {"input_symbol": "EBAY", "k": 1}},
+        "forward_start": "2026-10-09", "status": "LIVE"}
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps(reg), encoding="utf-8")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == set(survivors) - {"external.CHFNOK.carry.p=c"}
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=b"         # the older clock
+    assert group["surplus_clocks_left_running"] == ["external.CHFNOK.carry.p=a"]
+
+    # the switch: counted, nothing withheld
+    monkeypatch.setenv("QUANT_ONE_CLOCK_PER_EXECUTABLE", "0")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == set(survivors)
+    assert sa.EXECUTABLE_COPIES[0]["would_not_enrol"] == ["external.CHFNOK.carry.p=c"]

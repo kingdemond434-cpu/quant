@@ -483,6 +483,118 @@ def void_moved_certificates(base: Path = BASE) -> dict:
             "unproven_entry_conditioned": unproven}
 
 
+#: Params a family's replay never reads (the judge supplies the row's own instrument), so two
+#: certificates differing only there are ONE executable. Mirrors
+#: `hypothesis_families.EXECUTABLE_UNREAD` (a test pins the two equal); restated to stay
+#: import-light.
+EXECUTABLE_UNREAD: dict[str, frozenset[str]] = {"carry": frozenset({"input_symbol", "symbol"})}
+#: This pass's executables held by more than one certificate: which copy keeps the clock, which
+#: copies were not enrolled, and which surplus copies already had a clock and were left running.
+EXECUTABLE_COPIES: list[dict] = []
+
+
+def one_clock_per_executable_enforced() -> bool:
+    """False under QUANT_ONE_CLOCK_PER_EXECUTABLE=0: copies are counted and all enrolled."""
+    import os
+    return os.environ.get("QUANT_ONE_CLOCK_PER_EXECUTABLE", "1").strip() != "0"
+
+
+def _executable_of(run: dict) -> str | None:
+    unread = EXECUTABLE_UNREAD.get(str(run.get("family") or ""))
+    if unread is None or run.get("lane") == "scalp":
+        return None
+    params = {k: v for k, v in (run.get("params") or {}).items() if k not in unread}
+    return json.dumps([str(run.get("symbol") or "").upper(), run.get("family"),
+                       run.get("selector"), run.get("condition"), run.get("side"), params],
+                      sort_keys=True, default=str)
+
+
+def _clocked(base: Path) -> list[tuple[str, str, dict, str]]:
+    """(symbol, family, params, forward_start) of every forward clock in the registry. An
+    unreadable registry is an empty answer, which keeps every copy."""
+    out: list[tuple[str, str, dict, str]] = []
+    rows = _read(base / "data" / "sleeve_registry.json").get("sleeves")
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    for r in rows if isinstance(rows, list) else ():
+        ident = r.get("identity") if isinstance(r, dict) else None
+        if not isinstance(ident, dict):
+            continue
+        params = ident.get("params") if isinstance(ident.get("params"), dict) else {}
+        out.append((str(ident.get("symbol") or "").upper(), str(ident.get("family") or ""),
+                    params, str(r.get("forward_start") or r.get("frozen_at") or "9999")))
+    return out
+
+
+def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
+                             enforce: bool | None = None,
+                             registry_readable: bool | None = None) -> list[dict]:
+    """One forward clock per canonical executable (box 2026-11-10: 21 carry clocks in the
+    registry were a handful of carry rules, each certified several times under a foreign
+    `input_symbol` the replay never reads).
+
+    NOTHING THAT HAS A CLOCK LOSES IT. A copy that already holds a registry clock is always
+    returned, so no accrued forward evidence is orphaned; such surplus clocks are only named.
+    A copy with NO clock is withheld only when another copy of the same executable is returned
+    in this same pass -- the executable is being forward-tested either way, on identical
+    signals, so nothing is forgone. The keeper is the copy with the earliest clock, else the
+    one whose unread params name its own instrument, else the first by certificate name. If the
+    registry cannot be read nothing is withheld."""
+    EXECUTABLE_COPIES.clear()
+    enforce = one_clock_per_executable_enforced() if enforce is None else enforce
+    if registry_readable is None:
+        registry_readable = (base / "data" / "sleeve_registry.json").exists()
+    groups: dict[str, list[dict]] = {}
+    for run in runs:
+        k = _executable_of(run)
+        if k is not None:
+            groups.setdefault(k, []).append(run)
+    if not any(len(g) > 1 for g in groups.values()):
+        return runs
+    clocked = _clocked(base) if registry_readable else []
+
+    def start(run: dict) -> str | None:
+        # A CLOCK IS RECOGNISED GENEROUSLY: same instrument and family, and every param the
+        # certificate states is on the clock's identity (which may carry more). Erring this way
+        # can only keep a copy enrolled, never take a running clock's certificate away.
+        sym, fam = str(run.get("symbol") or "").upper(), str(run.get("family") or "")
+        mine = run.get("params") or {}
+        starts = [st for s_, f_, p_, st in clocked
+                  if s_ == sym and f_ == fam and all(p_.get(k) == v for k, v in mine.items())]
+        return min(starts) if starts else None
+
+    def own(run: dict) -> bool:
+        sym = str(run.get("symbol") or "").upper()
+        unread = EXECUTABLE_UNREAD[str(run.get("family"))]
+        return all(str(v).upper() == sym for k, v in (run.get("params") or {}).items()
+                   if k in unread)
+
+    withheld: set[int] = set()
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        ranked = sorted(group, key=lambda r: (start(r) or "9999", not own(r),
+                                              str(r.get("certificate"))))
+        keeper, rest = ranked[0], ranked[1:]
+        left = [str(r.get("certificate")) for r in rest if start(r)]
+        new = [r for r in rest if not start(r)]
+        act = enforce and registry_readable
+        EXECUTABLE_COPIES.append({
+            "symbol": keeper.get("symbol"), "family": keeper.get("family"),
+            "copies": len(group), "keeps_clock": str(keeper.get("certificate")),
+            "surplus_clocks_left_running": left,
+            "not_enrolled": [str(r.get("certificate")) for r in new] if act else [],
+            "would_not_enrol": [] if act else [str(r.get("certificate")) for r in new]})
+        if act:
+            for r in new:
+                withheld.add(id(r))
+                _drop(r.get("certificate"),
+                      f"EXECUTABLE_COPY: the same executable as {keeper.get('certificate')} "
+                      f"(a {keeper.get('family')} rule on {keeper.get('symbol')}; the params "
+                      f"that differ are never read by its replay), which keeps the clock")
+    return [r for r in runs if id(r) not in withheld]
+
+
 def _drop(name: object, why: str) -> None:
     """Record and announce a ten-gate certificate that will not reach the forward engine.
 
@@ -723,6 +835,7 @@ def authorized_runs(base: Path = BASE,
     # gates, all 1,240 failed `deflated_sharpe` -- but every organ downstream counted the length
     # of this list and called the answer "certificates". The headstone above `authorized_runs`
     # carries the measurement. One lane, one number: this function returns certificates only.
+    runs = one_clock_per_executable(runs, base)
     if "scalp" in lanes:
         for candidate, row in scalp_certificates(universal).items():
             spec = row["shadow_spec"]
