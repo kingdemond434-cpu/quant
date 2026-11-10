@@ -309,7 +309,8 @@ SEAT_FILE_ALIASES: dict[str, tuple[str, str]] = {
 #: clock would read "ran ok and wrote nothing" for a source the leg never ran.
 #: tests/test_producer_yield_causes.py pins this against seed_miners.CLEAR_ACCESS.
 LEG_SEATS: dict[str, tuple[str, ...]] = {
-    "seed_miners": ("quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps"),
+    "seed_miners": ("quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps",
+                    "research_feeds", "github_depth"),
 }
 
 #: Seats clocked by a BOX TASK that is not an hourly leg, keyed by the task. run_all_miners.py is
