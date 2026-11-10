@@ -765,6 +765,11 @@ def test_one_executable_is_one_key_and_a_fresh_copy_is_refused(tmp_path) -> None
     kept, seen = hf.refuse_executable_copies(batch, fresh={hf.identity(r) for r in batch})
     assert kept == [m15, m5, asia, ny, loud] and seen["fresh_refused"] == 1
 
+    # a row naming no instrument is never keyed, so never refused as somebody's copy
+    n1 = {"symbol": "", "family": "carry", "params": {"symbol": "EURUSD"}}
+    n2 = {"symbol": "", "family": "carry", "params": {"symbol": "GBPUSD"}}
+    kept, seen = hf.refuse_executable_copies([n1, n2], fresh={hf.identity(n1), hf.identity(n2)})
+    assert kept == [n1, n2] and seen["examined"] == 0
     # the writer's own identity is the key's base, whatever it distinguishes outside params
     def wide(row: dict) -> str:
         return hf.identity(row) + "|" + str(row.get("timeframe"))

@@ -1277,7 +1277,9 @@ def refuse_executable_copies(rows: list[dict[str, Any]], fresh: set[str], *,
     keyed: list[tuple[dict[str, Any], str | None, bool]] = []
     by_key_symbol: dict[str, str] = {}
     for r in rows:
-        if not isinstance(r, dict) or _fam(r) not in EXECUTABLE_UNREAD:
+        if not isinstance(r, dict) or _fam(r) not in EXECUTABLE_UNREAD or not _sym(r):
+            # A row that names no instrument is never keyed: with `symbol` among the unread
+            # params, two such rows for different pairs would share a key.
             keyed.append((r, None, False))
             continue
         report["examined"] += 1
