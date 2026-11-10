@@ -54,12 +54,17 @@ MACRO_SERIES_SWEPT = ("DGS10", "DGS2", "T10Y2Y", "VIXCLS", "DFF", "BAMLH0A0HYM2"
                       "DFII10")
 MACRO_SERIES_NOT_SWEPT = {"DTWEXBGS": "the unnamed cells already condition on it",
                           "SOFR": "the same overnight rate as DFF, shorter history"}
-_MACRO_HELD: dict[str, bool] = {}
+_MACRO_HELD: dict[str, bool | None] = {}
+#: The docket's `macro_conditional` rows that name a non-dollar series ONLY through
+#: `input_source` (no `macro_series`), counted on every merge. The sealed gauntlet pops
+#: `input_source` before the family sees it, so such a row is still rebuilt on the dollar under
+#: another series' name until the evaluator can be re-signed. None = no merge read the docket.
+MACRO_INPUT_SOURCE_ONLY: dict[str, Any] = {"rows": None, "sample": []}
 
 
-def _macro_held(name: str) -> bool:
-    """Whether data/fred_macro.json holds enough of `name` to rank. An unreadable store refuses
-    nothing (L1.28a): the judge then files the build failure by name."""
+def _macro_held(name: str) -> bool | None:
+    """Whether data/fred_macro.json holds enough of `name` to rank; None when the store cannot
+    be read at all, which is one fact about the store and not one per series."""
     if name not in _MACRO_HELD:
         try:
             try:
@@ -68,12 +73,28 @@ def _macro_held(name: str) -> bool:
                 import orthogonal_sweep as osw  # type: ignore[no-redef]
             doc = osw._read(osw.BASE.parent.parent / "data" / "fred_macro.json")
             if not isinstance(doc, dict) or not isinstance(doc.get("series"), dict):
-                return True
+                return None
             rows = doc["series"].get(name)
             _MACRO_HELD[name] = isinstance(rows, list) and len(rows) >= osw.MACRO_RANK_MIN_OBS
         except Exception:
-            return True
+            return None
     return _MACRO_HELD[name]
+
+
+def count_macro_input_source_only(docket: list) -> dict[str, Any]:
+    """See `MACRO_INPUT_SOURCE_ONLY`. `fred:DTWEXBGS`, `macro` and `macro_state` are the dollar."""
+    hits = []
+    for row in docket:
+        if not isinstance(row, dict) or row.get("family") != "macro_conditional":
+            continue
+        p = row.get("params") or {}
+        src = str(p.get("input_source") or "").strip()
+        name = src.split(":", 1)[1] if src.lower().startswith("fred:") else src
+        if p.get("macro_series") or name.lower() in ("", "macro", "macro_state", "dtwexbgs"):
+            continue
+        hits.append({"symbol": row.get("symbol") or row.get("sym"), "input_source": src})
+    MACRO_INPUT_SOURCE_ONLY.update(rows=len(hits), sample=hits[:10])
+    return MACRO_INPUT_SOURCE_ONLY
 
 
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
@@ -368,11 +389,20 @@ def _testable(fam: str, p: dict) -> bool:
     unimportable probe refuses NOTHING (L1.28a: a missing measurement is not a verdict).
     """
     named = str(p.get("macro_series") or "") if fam == "macro_conditional" else ""
-    if named and not _macro_held(named):
-        key = f"{fam}|{p.get('timeframe') or 'H1'}|INPUT_NOT_HELD|{named}"
+    held = _macro_held(named) if named else True
+    if not held:
+        # ONE ROW FOR AN UNREADABLE STORE, not a build failure per named cell in the judge: the
+        # cells are not minted this pass and the store's state is said once (Auditor 2026-11-10).
+        verdict = "INPUT_STORE_UNREADABLE" if held is None else "INPUT_NOT_HELD"
+        key = (f"{fam}|{verdict}" if held is None
+               else f"{fam}|{p.get('timeframe') or 'H1'}|{verdict}|{named}")
         row = LAST_SET_ASIDE.setdefault(key, {
-            "family": fam, "chart": p.get("timeframe") or "H1", "verdict": "INPUT_NOT_HELD",
-            "why": f"data/fred_macro.json holds too little of {named} to rank", "cells": 0})
+            "family": fam, "chart": "*" if held is None else p.get("timeframe") or "H1",
+            "verdict": verdict,
+            "why": ("data/fred_macro.json cannot be read, so no named series is swept this pass"
+                    if held is None
+                    else f"data/fred_macro.json holds too little of {named} to rank"),
+            "cells": 0})
         row["cells"] += 1
         return False
     try:
@@ -495,6 +525,7 @@ def write_report(new: list[dict], syms: list[str], added: int | None, total: int
         "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
                                        key=lambda r: (-int(r["cells"]), r["family"])),
         "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        "macro_named_only_by_input_source": dict(MACRO_INPUT_SOURCE_ONLY),
         "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
                  "family "
                  "declares it cannot express, is set aside BY NAME and counted here -- never "
@@ -599,6 +630,7 @@ def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
         docket = []
     if not isinstance(docket, list):
         raise SystemExit(f"{DOCKET} is not a list; refusing to overwrite a docket I cannot read")
+    count_macro_input_source_only(docket)
 
     def key(r: dict) -> str:
         return json.dumps([r.get("symbol") or r.get("sym"), r.get("family"), r.get("params") or {}],

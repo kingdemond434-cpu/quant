@@ -166,6 +166,41 @@ def test_every_daily_series_is_swept_or_named_as_not(fred: dict, monkeypatch: py
     assert not bs._testable("macro_conditional", {"macro_series": "DGS2"})
     assert any(r["verdict"] == "INPUT_NOT_HELD" for r in bs.LAST_SET_ASIDE.values())
     bs.LAST_SET_ASIDE.clear()
+    # AN UNREADABLE STORE IS ONE ROW, however many named cells it set aside
+    for mod in {id(m): m for m in (osw, sys.modules.get("research.orthogonal_sweep"))
+                if m is not None}.values():
+        monkeypatch.setattr(mod, "_read", lambda p: None)
+    monkeypatch.setattr(bs, "_MACRO_HELD", {})
+    for name in bs.MACRO_SERIES_SWEPT:
+        for chart in ("H1", "H4"):
+            assert not bs._testable("macro_conditional",
+                                    {"macro_series": name, "timeframe": chart})
+    rows = [r for r in bs.LAST_SET_ASIDE.values() if r["family"] == "macro_conditional"]
+    assert len(rows) == 1 and rows[0]["verdict"] == "INPUT_STORE_UNREADABLE"
+    assert rows[0]["cells"] == 2 * len(bs.MACRO_SERIES_SWEPT)
+    bs.LAST_SET_ASIDE.clear()
+
+
+def test_a_row_naming_its_series_only_by_input_source_is_counted_by_name() -> None:
+    """The sealed gauntlet pops `input_source` before the family sees it, so such a row still
+    rebuilds on the dollar. Until the evaluator can be re-signed it is at least VISIBLE."""
+    import breadth_sweep as bs
+    docket = [
+        {"symbol": "EURUSD", "family": "macro_conditional", "params": {}},
+        {"symbol": "EURUSD", "family": "macro_conditional",
+         "params": {"input_source": "fred:DTWEXBGS", "transform": "trailing_pct_rank"}},
+        {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_source": "macro"}},
+        {"symbol": "EURUSD", "family": "macro_conditional",
+         "params": {"input_source": "fred:DGS10", "macro_series": "DGS10"}},
+        {"symbol": "XAUUSD", "family": "macro_conditional",
+         "params": {"input_source": "fred:DFII10"}},
+        {"symbol": "XAUUSD", "family": "carry", "params": {"input_source": "fred:DGS10"}},
+        "not a row",
+    ]
+    got = bs.count_macro_input_source_only(docket)
+    assert got["rows"] == 1
+    assert got["sample"] == [{"symbol": "XAUUSD", "input_source": "fred:DFII10"}]
+    bs.MACRO_INPUT_SOURCE_ONLY.update(rows=None, sample=[])
 
 
 def test_the_forward_call_drops_what_the_reader_consumed() -> None:
