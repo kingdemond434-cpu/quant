@@ -96,7 +96,7 @@ def test_one_predicate_answers_for_paths_and_seats() -> None:
     assert tf.path_fenced(desk_intel / "central_banks" / "cb_tone_series.jsonl")   # built from BIS
     assert tf.path_fenced(ROOT / "data" / "intelligence" / "bis_speeches" / "d.json")
     assert tf.path_fenced(desk_intel / "central_banks" / "official_speech_tone.jsonl") is None
-    assert tf.path_fenced(Path("/tmp/somewhere/bis_speech_tone.jsonl")) is None    # not a tree
+    assert tf.path_fenced(Path("somewhere") / "bis_speech_tone.jsonl") is None   # not a tree
     assert tf.seat_fenced("bis_speeches") and tf.seat_fenced("central_banks") is None
 
 
@@ -133,7 +133,7 @@ def test_the_bis_miner_does_not_fetch_and_says_why(tmp_path, monkeypatch) -> Non
     assert row["verdict"] == "TERMS_FENCED" and "noncommercial" in row["title"]
 
 
-def test_news_stream_and_replay_skip_the_fenced_seat(tmp_path, monkeypatch) -> None:
+def test_the_deepening_replay_skips_fenced_files(tmp_path, monkeypatch) -> None:
     from research import deepening_worker as dw
 
     a = tmp_path / "intelligence"
