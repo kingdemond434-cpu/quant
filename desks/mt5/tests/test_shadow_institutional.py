@@ -144,6 +144,14 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
     assert opened == ["https://example.invalid/x"]
 
 
+@pytest.fixture(autouse=True)
+def _robots_ledger_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test may write the desk's real robots ledger."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", tmp_path / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", tmp_path / "ROBOTS_SET_ASIDE.json")
+
+
 def _checked(sid: str = "checked") -> Any:
     return si.Sensor(sensor_id=sid, latent="global_risk_appetite", what="x",
                      fetch_class="public_endpoint", source="x", cadence="daily",
@@ -181,6 +189,7 @@ def test_a_robots_disallow_on_the_exact_path_stops_the_fetch_and_is_set_aside(
     assert row["sensor"] == "checked" and row["access_label"] == "DISALLOWED" and row["reopen"]
     assert {m["side"] for m in row["missed_growth"]} == {"cost", "gain"}
     assert all(m["verdict"] == "UNMEASURED" for m in row["missed_growth"])
+    assert row["billed"] is True and row["organ"] == "shadow_institutional"
 
 
 def test_an_unreadable_robots_file_is_not_a_yes(

@@ -219,23 +219,29 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 
 # -------------------------------------------------- the shared fetch path carries no brake
 
-def test_no_collector_still_refuses_a_fetch_on_robots() -> None:
-    """A STRUCTURAL test, because the shared fetch helper has no unit test of its own and the
-    brake lived there longest.
+def test_every_collector_stops_on_a_robots_disallow_and_bills_it() -> None:
+    """A STRUCTURAL test, because the shared fetch helper is reached from three organs.
 
-    `asia_collector._fetch` is called by `event_surprise` and `data_acquisition_scientist`, and
-    it used to set `status = "BLOCKED_BY_ROBOTS"` and return before fetching. Nothing pinned
-    that, so nothing would have caught it coming back. The reading is still taken and still
-    recorded (`robots`, `robots_disallows`, `terms_note`) -- what must never return is the
-    ASSIGNMENT of that status, so this asserts on the assignment and not on the name, which
-    still appears in prose and in the census tuple that prints old rows.
+    HISTORY. Until 2026-09-23 `asia_collector` set BLOCKED_BY_ROBOTS and returned, leaving no
+    trace beyond the status. From then until 2026-11-10 this test asserted that status was never
+    assigned: a Disallow was a label and the page was fetched. The ruling of 2026-11-10 (PR #819)
+    reverses the fetch and keeps what the label taught: a Disallow on the exact path stops the
+    fetch, AND the refusal is never silent -- it goes through `robots_gate.refuse`, which builds
+    the set-aside row (reopen, two-sided missed-growth line) and counts it per day.
+
+    So what must never return now is EITHER half alone: a collector that fetches past the gate,
+    or one that refuses without billing the refusal.
     """
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[2]
     for rel in ("desks/mt5/research/asia_collector.py",
-                "desks/mt5/research/data_acquisition_scientist.py"):
+                "desks/mt5/research/data_acquisition_scientist.py",
+                "desks/mt5/research/shadow_institutional.py"):
         src = (repo / rel).read_text("utf-8")
-        assert '"status": "BLOCKED_BY_ROBOTS"' not in src, rel
-        assert 'status="BLOCKED_BY_ROBOTS"' not in src, rel
-        assert '= "BLOCKED_BY_ROBOTS"' not in src, rel
+        assert "robots_gate" in src and ".refuse(" in src, f"{rel}: refuses without billing"
+        assert "recorded as a REDISTRIBUTION label, mined" not in src, rel
+        assert "never a skip (LAWS 5e)" not in src, rel
+    gate = (repo / "desks/mt5/research/robots_gate.py").read_text("utf-8")
+    for needle in ("def refuse(", "missed_growth_pair", "def daily_counts(", "REOPEN"):
+        assert needle in gate, needle

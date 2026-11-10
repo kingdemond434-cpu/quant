@@ -511,13 +511,13 @@ class Guard:
     def left(self) -> float:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
-    def robots_ok(self, url: str) -> tuple[bool, str]:
-        """Group-scoped robots verdict for this exact URL: (may fetch, why).
+    def robots_verdict(self, url: str) -> tuple[str, str]:
+        """Group-scoped robots verdict for this exact URL: (label, why).
 
-        True only when robots.txt allows the path for our agent or the site publishes none
-        (404, which `RobotFileParser.read` treats as allow-all). A Disallow is False. A file
-        that could not be read is False too: an unread policy is never a yes, the why says
-        UNMEASURED, and the next pass (a new Guard) reads it again.
+        PUBLIC when robots.txt allows the path for our agent or the site publishes none (a 4xx,
+        which `RobotFileParser.read` treats as allow-all). DISALLOWED on a Disallow.
+        ACCESS_UNCLEAR when the file could not be read: an unread policy is never a yes, and
+        the next pass (a new Guard) reads it again.
         """
         parts = urllib.parse.urlsplit(url)
         root = f"{parts.scheme}://{parts.netloc}"
@@ -533,32 +533,25 @@ class Guard:
                 self._robots[root] = rp
         got = self._robots[root]
         if isinstance(got, str):
-            return False, f"robots.txt {got} -- UNMEASURED, not fetched this pass"
-        ok = bool(got.can_fetch(UA, url))
-        return ok, ("robots allows this path for our agent" if ok
-                    else "robots disallows this exact path for our agent: not fetched")
+            return "ACCESS_UNCLEAR", f"robots.txt {got} -- UNMEASURED, not fetched this pass"
+        if got.can_fetch(UA, url):
+            return "PUBLIC", "robots allows this path for our agent"
+        return "DISALLOWED", "robots disallows this exact path for our agent: not fetched"
 
-    def _set_aside(self, sensor_id: str, url: str, why: str) -> dict[str, Any]:
-        """The row for a sensor NOT fetched on its robots verdict: counted, with the two-sided
-        missed-growth line every brake owes (GROWTH_GOVERNANCE Rule 1; both sides UNMEASURED
-        and said so) and the named events that reopen it."""
-        label = "ACCESS_UNCLEAR" if "unreadable" in why else "DISALLOWED"
-        row = {
-            "sensor": sensor_id, "url": url, "status": "SET_ASIDE", "access_label": label,
-            "why": why,
-            "reopen": ("the next pass re-reads robots.txt and fetches as soon as it allows this "
-                       "path (or returns 404); or a permitting clause from the publisher's "
-                       "terms is recorded on the sensor row"),
-            "missed_growth": [
-                {"rail": "shadow_institutional.robots_set_aside", "side": "cost",
-                 "value": None, "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
-                 "why": "the sensor adds no observation this pass; its latent is built from "
-                        "the sensors that remain, or reads UNMEASURED"},
-                {"rail": "shadow_institutional.robots_set_aside", "side": "gain",
-                 "value": None, "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
-                 "why": "the desk does not build evidence on a path its publisher asked "
-                        "agents not to read"}],
-        }
+    def robots_ok(self, url: str) -> tuple[bool, str]:
+        """(may fetch, why): True only for a PUBLIC verdict."""
+        label, why = self.robots_verdict(url)
+        return label == "PUBLIC", why
+
+    def _set_aside(self, sensor_id: str, url: str, label: str, why: str) -> dict[str, Any]:
+        """The row for a sensor NOT fetched on its robots verdict, built and BILLED by the
+        desk's one robots gate (`research/robots_gate.py`): the label, the reopen, the two-sided
+        missed-growth line, and a line in the daily count."""
+        try:
+            from research import robots_gate as RG
+        except ImportError:                                                  # pragma: no cover
+            import robots_gate as RG  # type: ignore[no-redef]
+        row = {"sensor": sensor_id, **RG.refuse("shadow_institutional", sensor_id, url, label, why)}
         self.set_aside.append(row)
         return row
 
@@ -592,9 +585,9 @@ class Guard:
             # A DISALLOW ON THE EXACT PATH, OR AN UNREAD robots.txt, STOPS THE FETCH (ruling of
             # 2026-11-10, PR #819). It is never silent: the sensor is set aside with its
             # missed-growth line and its reopen, so the ground is re-argued every pass.
-            ok, why = self.robots_ok(url)
-            if not ok:
-                self._set_aside(sensor.sensor_id, url, why)
+            label, why = self.robots_verdict(url)
+            if label != "PUBLIC":
+                self._set_aside(sensor.sensor_id, url, label, why)
                 return None, f"SET_ASIDE: {why}"
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:

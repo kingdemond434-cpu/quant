@@ -900,6 +900,9 @@ DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 #: canon_publication's record: the lockbox v4 re-judge parking publishes its two-sided line here
 #: (the rail register is sealed), cost and gain both UNMEASURED until priced.
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
+#: robots_gate's record: every fetch refused on a robots.txt verdict is counted per day there and
+#: its two-sided line is published on the artifact (ruling of 2026-11-10, PR #819).
+ROBOTS_SET_ASIDE = BASE / "reports" / "ROBOTS_SET_ASIDE.json"
 GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
 
 
@@ -1199,6 +1202,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         DEEPENING_GUARD),
                                     "canon_rejudge_parking": organ_published_lines(
                                         CANON_PUBLICATION),
+                                    "robots_set_aside": organ_published_lines(
+                                        ROBOTS_SET_ASIDE),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
