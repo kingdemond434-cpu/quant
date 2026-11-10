@@ -1,52 +1,52 @@
 {
- "at": "2026-11-07T12:46:01+00:00",
+ "at": "2026-11-10T22:16:01+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 3.87,
-   "why": "no new verdict for 3.9h (last 2026-11-07T08:53:55+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 2.8,
+   "why": "no new verdict for 2.8h (last 2026-11-10T19:28:02+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": true,
    "floor": 4.0,
-   "docket_depth": 1422944,
-   "busy_judge_cores": 0.98,
-   "busy_other_cores": 15.51,
-   "why": "judge tree at 0.98 cores (others 15.51) with a docket pending (resident SWEEPING, queue depth 1422944); floor 4; under the floor on every reading for 0.6h (limit 1h)",
-   "low_since": "2026-11-07T12:11:14+00:00",
-   "hours": 0.58
+   "docket_depth": 1488450,
+   "busy_judge_cores": 2.87,
+   "busy_other_cores": 14.87,
+   "why": "judge tree at 2.87 cores (others 14.87) with a docket pending (resident SWEEPING, queue depth 1488450); floor 4; under the floor on every reading for 0.7h (limit 1h)",
+   "low_since": "2026-11-10T21:31:25+00:00",
+   "hours": 0.75
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.1,
+   "heartbeat_age_min": 0.4,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.1 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.4 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 3.67,
+   "hours": 1.22,
    "limit_h": 25.59,
-   "why": "3.7h since the last sweep ended (2026-11-07T09:05:55+00:00), status SWEEPING; limit 25.59h"
+   "why": "1.2h since the last sweep ended (2026-11-10T21:02:38+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
-   "cells": 209807,
+   "cells": 105441,
    "basis": "n_judged",
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-11-07T09:05:55+00:00 judged 209807 cell(s) (n_judged)"
+   "why": "the sweep that ended 2026-11-10T21:02:38+00:00 judged 105441 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 22240,
-   "why": "sweep child pid 22240 alive"
+   "pid": 31380,
+   "why": "sweep child pid 31380 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.23,
+   "phase": "prewarm",
+   "hours": 1.0,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.2h since 2026-11-07T12:32:14+00:00 (limit 3h)"
+   "why": "sweep phase prewarm has run 1.0h since 2026-11-10T21:15:55+00:00 (limit 4.06h)"
   },
   "host_unreadable": {
    "open": false,
@@ -85,14 +85,14 @@
   "cores_gap_max_min": 15.0
  },
  "last_verdict": {
-  "at": "2026-11-07T08:53:55+00:00",
+  "at": "2026-11-10T19:28:02+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-07T12:45:56+00:00",
-  "last_sweep_ended_utc": "2026-11-07T09:05:55+00:00",
+  "heartbeat_utc": "2026-11-10T22:15:40+00:00",
+  "last_sweep_ended_utc": "2026-11-10T21:02:38+00:00",
   "last_rc": 0
  },
  "host": "trading box",
