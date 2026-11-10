@@ -861,7 +861,7 @@ def authority_clear(
     st = max(clears, key=lambda x: str(x.get("issued_at")))
     if not patch or st.get("patch_id") != patch:
         return None, "the authority CLEAR names another change (patch-id)"
-    want = {"PROTECTED": ("CONTROLLER",), "AUTO": ("AUTO",), "LOW": ("LOW", "AUTO")}
+    want = {"PROTECTED": ("CONTROLLER", "ROOT"), "AUTO": ("AUTO",), "LOW": ("LOW", "AUTO")}
     if st.get("tier") not in want.get(gate_tier, ()):
         return None, f"the authority judged class {st.get('tier')}, the gate reads {gate_tier}"
     return st, f"authority CLEAR {head[:9]} [{st.get('tier')}] ({st.get('issued_at')})"
@@ -892,6 +892,160 @@ def trusted_eval_passed(repo: str, pr: int, head: str, base: str) -> tuple[bool,
     if last.get("conclusion") != "success":
         return False, f"{TRUSTED_EVAL} {last.get('conclusion')}"
     return True, f"{TRUSTED_EVAL} passed (run {last.get('id')})"
+
+
+# THE ROOT PATH (zuck 2026-11-10 23:18Z / 23:19Z: no owner comment or paste for any merge, ever;
+# ops/release/authority/root_path.py, SEALED). A PR the authority attests as class ROOT -- the
+# merge machinery itself, never the sealed core -- merges from the box with no owner step only
+# when root_path.gate_verdict() says MERGE: the Auditor's CLEAR comment AND its synced registry
+# row for the exact head, the ROOT attestation, every ROOT job green (one automatic re-run of a
+# failed review or replay-shadow that names nothing), the base's trusted-eval, up to date, 72 h
+# since the gate's own DELIVERED notice for this head, and no earlier ROOT merge still waiting to
+# be re-pinned and adopted. The rules are read from THIS (the base's) checkout.
+ROOT_WINDOW_FILE = "root_window.json"
+#: Written when a ROOT PR merges; only the re-pin service removes it, after it re-pinned the
+#: released root digest and the box adopted that tree.
+ROOT_INFLIGHT_FILE = "ROOT_INFLIGHT.json"
+
+
+def root_dir() -> Path:
+    """Where the gate keeps its ROOT records: beside the registry, which the gate already writes
+    (its 24 h window record lives there too)."""
+    return Path(os.environ.get(REGISTRY_ENV) or "registry.jsonl").resolve().parent
+
+
+def root_attempts(
+    repo: str, runs: Iterable[Mapping[str, Any]], genuine: Callable[[Mapping[str, Any]], bool]
+) -> dict[str, list[dict[str, Any]]]:
+    """Every genuine run of each ROOT job on the head, oldest first, as root_path.jobs() reads
+    them. A failed re-runnable run's annotations are read: unreadable gives flags None (no
+    re-run), the reviewer's UNAVAILABLE mark makes it queued, not failed."""
+    rp = _authority_mod("root_path")
+    by: dict[str, list[Mapping[str, Any]]] = {}
+    for r in runs:
+        name = str(r.get("name") or "")
+        if name in rp.ROOT_JOBS and genuine(r):
+            by.setdefault(name, []).append(r)
+    out: dict[str, list[dict[str, Any]]] = {}
+    for name, rs in by.items():
+        recs: list[dict[str, Any]] = []
+        for r in sorted(rs, key=lambda x: str(x.get("started_at") or "")):
+            rec: dict[str, Any] = {"id": r.get("id"), "status": r.get("status"),
+                                   "conclusion": r.get("conclusion"), "flags": []}  # fmt: skip
+            if (r.get("status") == "completed" and r.get("conclusion") != "success"
+                    and name in rp.RERUNNABLE):  # fmt: skip
+                try:
+                    notes = _gh(f"repos/{repo}/check-runs/{r['id']}/annotations?per_page=100")
+                    notes = [a for a in notes or [] if isinstance(a, dict)]
+                    rec["unavailable"] = any(
+                        str(a.get("title") or "") == UNAVAILABLE_MARK for a in notes
+                    )
+                    rec["flags"] = rp.failure_flags(
+                        f"{a.get('title') or ''} {a.get('message') or ''}" for a in notes
+                    )
+                except (RuntimeError, KeyError, TypeError):
+                    rec["flags"] = None
+            recs.append(rec)
+        out[name] = recs
+    return out
+
+
+def root_window_record(folder: Path, pr: int) -> dict[str, Any] | None:
+    try:
+        got = json.loads((folder / ROOT_WINDOW_FILE).read_text(encoding="utf-8"))
+        rec = got.get(str(pr)) if isinstance(got, dict) else None
+        return rec if isinstance(rec, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def run_root_notify(title: str, body: str) -> tuple[int | None, str]:
+    """(exit code, stdout) of the box's ROOT notify command (root_path.NOTIFY_ENV, the same
+    channel as the registry notice); (None, "") when none is configured."""
+    import shlex
+
+    cmd = os.environ.get(_authority_mod("root_path").NOTIFY_ENV)
+    if not cmd:
+        return None, ""
+    done = subprocess.run(
+        [*shlex.split(cmd, posix=os.name != "nt"), title, body],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=GH_TIMEOUT_S, check=False,
+    )  # fmt: skip
+    return done.returncode, done.stdout or ""
+
+
+def _show(rev: str, name: str) -> str | None:
+    """`name` at `rev` as text, or None when it is not there."""
+    got = subprocess.run(["git", "show", f"{rev}:{name}"], capture_output=True, check=False)
+    return got.stdout.decode("utf-8", "replace") if got.returncode == 0 else None
+
+
+def root_notify(folder: Path, pr: int, head: str, root_files: list[str], now: datetime) -> str:
+    """Send the ROOT veto notice for `head` with the box's notify command and record it ONLY with
+    a delivery receipt (exit 0 and "delivered N", N > 0). Why, either way."""
+    rp = _authority_mod("root_path")
+    title, body = rp.notice(pr, head, root_files)
+    try:
+        rc, out = run_root_notify(title, body)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"the ROOT notice failed ({type(exc).__name__}); the next sweep retries"
+    if rc is None:
+        return "no notify command configured: no ROOT window can start"
+    got = rp.receipt(rc, out)
+    if got is None:
+        return "the ROOT notice was not delivered; the next sweep retries"
+    path = folder / ROOT_WINDOW_FILE
+    try:
+        seen = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        if not isinstance(seen, dict):
+            raise ValueError("not an object")
+        seen[str(pr)] = {"head": head, "at": now.isoformat(), "receipt": got}
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(seen, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, path)
+    except (OSError, ValueError) as exc:
+        return f"the ROOT notice record could not be written ({type(exc).__name__})"
+    return f"ROOT notice delivered for {head[:9]} ({got}): the {rp.ROOT_VETO_H:.0f} h window starts"
+
+
+def root_in_flight(folder: Path) -> str:
+    """Why an earlier ROOT merge still blocks the next one ("" when none does)."""
+    path = folder / ROOT_INFLIGHT_FILE
+    if not path.exists():
+        return ""
+    try:
+        got = json.loads(path.read_text(encoding="utf-8"))
+        return f"#{got.get('pr')} {str(got.get('head'))[:9]} is not yet re-pinned and adopted"
+    except (OSError, ValueError, AttributeError):
+        return f"{ROOT_INFLIGHT_FILE} is unreadable, so a ROOT merge is taken to be in flight"
+
+
+def mark_root_in_flight(folder: Path, pr: int, head: str, now: datetime) -> None:
+    (folder / ROOT_INFLIGHT_FILE).write_text(
+        json.dumps({"pr": pr, "head": head, "merged_at": now.isoformat()}), encoding="utf-8"
+    )
+
+
+def root_classify(
+    files: list[Mapping[str, Any]], level: str, base: str, head: str
+) -> tuple[list[str], list[str], list[str]]:
+    """(the ROOT files, classify() reasons, sealed_touch() reasons) by THIS checkout's policy and
+    root_path, reading the base and head trees with git. Any error raises."""
+    pol, rp = _authority_mod("policy"), _authority_mod("root_path")
+    names = sorted({str(n) for x in files for n in (x.get("filename"), x.get("previous_filename"))
+                    if n})  # fmt: skip
+    _git("fetch", "-q", "--no-tags", "origin", base)
+    _git("fetch", "-q", "--no-tags", "origin", head)
+
+    def reader(rev: str) -> Callable[[str], str | None]:
+        return lambda n: _show(rev, n)
+
+    policy = pol.load_policy(AUTHORITY_DIR / "ROOT_POLICY.json")
+    _cls, reasons = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head))
+    sealed = rp.sealed_touch(names, reader(f"origin/{base}"), reader(head))
+    roots = [r[len("root file ") :] for r in reasons if r.startswith("root file ")]
+    return roots, list(reasons), sealed
 
 
 BEHIND = "it is behind"
@@ -1351,13 +1505,97 @@ def run(
             return [], f"authority: attestations cannot be verified ({type(exc).__name__})"
         st, why = authority_clear(sts, head, patch_id(base, head), level)
         if st is None:
-            return [], f"authority: {why}"
+            # the authority signs a ROOT PR only once every ROOT job is green, so the ROOT path's
+            # one automatic re-run is asked for here, before any attestation exists
+            rr = root_rerun() if level == "PROTECTED" else ""
+            return [], f"authority: {why}" + (f"; {rr}" if rr else "")
+        if st["tier"] == "ROOT":
+            return root_rows(root_dir(), st, why)
         if st["tier"] == "CONTROLLER":
             ok, ewhy = trusted_eval_passed(repo, pr, head, base)
             if not ok:
                 return [], f"authority: {why}, but {ewhy}"
         # the gate's own row shape: the window, the HOLD, the up-to-date and CI rules below apply
         return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
+
+    def root_request_rerun(tries: Mapping[str, list[dict[str, Any]]], jobs: tuple) -> str:
+        last = (tries.get(str(jobs[2])) or [{}])[-1]
+        try:
+            _gh(f"repos/{repo}/actions/jobs/{last['id']}/rerun", "-X", "POST")
+        except (RuntimeError, KeyError) as exc:
+            return f"re-run not requested ({str(exc)[:120]})"
+        return f"the one automatic re-run of {jobs[2]} requested"
+
+    def root_rerun() -> str:
+        """Ask for the ROOT path's one automatic re-run, when root_path.jobs() says so, for a
+        root-file-only PR that is not the sealed core. "" when nothing was asked."""
+        rp = _authority_mod("root_path")
+        try:
+            _roots, reasons, sealed = root_classify(files, level, base, head)
+            if sealed or not rp.eligible(reasons)[0]:
+                return ""
+            pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
+                        "--slurp")  # fmt: skip
+            runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
+            tries = root_attempts(repo, runs, provenance(repo, pr, head))
+        except Exception:  # a read error asks for nothing; the next sweep looks again
+            return ""
+        jobs = rp.jobs(tries)
+        return root_request_rerun(tries, jobs) if jobs[0] == "rerun" else ""
+
+    def root_rows(
+        folder: Path, st: Mapping[str, Any], awhy: str
+    ) -> tuple[list[dict[str, Any]], str]:
+        """The ROOT path's one CLEAR row for this head, or none; why (see ROOT_WINDOW_FILE).
+        Sends the ROOT notice, or asks for the one automatic re-run, when root_path says so."""
+        rp = _authority_mod("root_path")
+        now = datetime.now(UTC)
+        try:
+            roots, reasons, sealed = root_classify(files, level, base, head)
+            found = pr_verdicts()
+            on, owhy = switches()
+            pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
+                        "--slurp")  # fmt: skip
+            runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
+            tries = root_attempts(repo, runs, provenance(repo, pr, head))
+            ok, ewhy = trusted_eval_passed(repo, pr, head, base)
+            fresh, fwhy = up_to_date(base, head)
+        except Exception as exc:  # any read error: nothing merges by the ROOT path this sweep
+            return [], f"ROOT path: not judged ({type(exc).__name__}: {str(exc)[:120]})"
+        rows, rwhy = registry_rows(os.environ.get(rp.AUDITOR_ROWS_ENV))
+        reg = rp.registry_agrees(rows, pr, head) if rows else (False, f"Auditor rows: {rwhy}")
+        done = "running" not in ewhy and "no base-run" not in ewhy
+        jobs = rp.jobs(tries)
+        g = {
+            "sealed": sealed,
+            "cls_reasons": reasons,
+            "hold": (
+                f"AUDIT HOLD {found[-1]['sha'][:9]}"
+                if found and found[-1]["verdict"] != "CLEAR"
+                else ""
+            ),
+            "deactivated": not on,
+            "in_flight": root_in_flight(folder),
+            "comment": rp.comment_clear(found, head),
+            "registry": reg,
+            "attested": (True, awhy),
+            "root_jobs": jobs,
+            "trusted_eval": ("pass" if ok else "fail" if done else "pending", ewhy),
+            "fresh": fresh,
+            "fresh_why": fwhy,
+            "window": rp.window(root_window_record(folder, pr), head, now),
+        }
+        verdict, vwhy = rp.gate_verdict(g)
+        if verdict == "NOTIFY":
+            return [], f"ROOT path: {root_notify(folder, pr, head, roots, now)}"
+        if verdict == "RERUN":
+            return [], f"ROOT path: {vwhy}; {root_request_rerun(tries, jobs)}"
+        if verdict != "MERGE":
+            if owhy and not on:
+                vwhy = f"{vwhy} ({owhy})"
+            return [], f"ROOT path: {verdict}: {vwhy}"
+        return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"],
+                 "root": True}], vwhy  # fmt: skip
 
     def registry_now(found: list[dict[str, str]], mwhy: str) -> tuple[dict[str, str] | None, str]:
         """The registry path, after zuck's path did not clear the head (see REGISTRY_ENV). With
@@ -1379,6 +1617,9 @@ def run(
         if not fresh:
             return None, f"{mwhy}; registry: {fwhy}"
         now = datetime.now(UTC)
+        if rows[0].get("root"):  # the ROOT path already ran its own 72 h delivered window
+            got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": str(rows[0]["at"])}
+            return {**got, "by": "registry", "root": "1"}, f"{REGISTRY_TITLE} {head[:9]}: {gone}"
         seen = Path(path + ".window.json")
         return registry_clear(
             rows, pr, head, lambda: registry_window(seen, pr, head, now, run_notify), now
@@ -1466,6 +1707,8 @@ def run(
             "commit_title": (
                 f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
                 if clear["verdict"] == mode.upper()
+                else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, ROOT path, from the box)"
+                if clear.get("root")
                 else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
                 if clear.get("by") == "registry"
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
@@ -1473,6 +1716,14 @@ def run(
         },
     )
     _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
+    if clear.get("root"):  # one ROOT merge at a time: the re-pin service clears this
+        try:
+            mark_root_in_flight(root_dir(), pr, head, datetime.now(UTC))
+        except OSError as exc:
+            _summary(
+                f"RED ROOT_INFLIGHT not written for #{pr} ({exc}): one-at-a-time rests on "
+                "the root pin alone"
+            )
     if box:
         return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so

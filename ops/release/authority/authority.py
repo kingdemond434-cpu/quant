@@ -214,6 +214,27 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
             else:
                 f["evidence"]["trusted-eval"] = ewhy
         f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
+    elif cls == "ROOT":
+        # THE ROOT PATH (root_path.py): the sealed core is refused before anything is read
+        rp = pol.root_path()
+        f["sealed"] = rp.sealed_touch(names, reader(f"origin/{base}"), reader(head))
+        if not f["sealed"] and rp.eligible(why)[0]:
+            pages = ag._gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
+                           "--slurp")  # fmt: skip
+            runs = [r for page in ag._flat_pages(pages) for r in (page.get("check_runs") or [])]
+            genuine = ag.provenance(repo, pr, head)
+            f["root_jobs"] = rp.jobs(ag.root_attempts(repo, runs, genuine))
+            f["evidence"] = {
+                str(r.get("name")): {"id": r.get("id"), "conclusion": r.get("conclusion")}
+                for r in runs
+                if str(r.get("name")) in rp.ROOT_JOBS and genuine(r)
+            }
+            ok, ewhy = ag.trusted_eval_passed(repo, pr, head, base)
+            done = "running" not in ewhy and "no base-run" not in ewhy
+            f["trusted_eval"] = ("pass" if ok else "fail" if done else "pending", ewhy)
+            if ok:
+                f["evidence"]["trusted-eval"] = ewhy
+            f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
     return f
 
 
@@ -304,10 +325,13 @@ def status_for(
 ) -> tuple[str, str]:
     """The commit status the LIVE ruleset requires (Level 2). success only on a CLEAR; for a
     CONTROLLER PR only once the veto has run from its FIRST signed CLEAR, so GitHub itself refuses
-    a merge inside the 24 h window even from a rewritten gate. ROOT never gets success: it goes
-    through the owner's admin pull-request bypass."""
+    a merge inside the 24 h window even from a rewritten gate. A ROOT PR gets success only on a
+    ROOT-path CLEAR (root_path.py) and only after ROOT_VETO_H (72 h) from its first signed CLEAR;
+    the gate separately counts 72 h from its own DELIVERED notice. The sealed core never does."""
     now = now or datetime.now(UTC)
-    if f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
+    if f.get("cls") == "ROOT" and verdict == "CLEAR":
+        veto_h = max(veto_h, float(pol.root_path().ROOT_VETO_H))
+    elif f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
         return "failure", f"{f.get('cls')}: the owner's path, never this status"[:140]
     if verdict == "CLEAR":
         if f.get("cls") in ("AUTO", "LOW"):

@@ -162,6 +162,11 @@ class Sandbox:
         self.folder.mkdir()
         self.registry = tmp / "registry.jsonl"
         self.registry.write_text("", encoding="utf-8")
+        # the ROOT path (root_path.py): the Auditor's synced rows and the ROOT notice channel
+        self.auditor_rows = tmp / "auditor_rows.jsonl"
+        self.auditor_rows.write_text("", encoding="utf-8")
+        self.root_notices: list[tuple[str, str]] = []
+        self.root_notify_out: tuple[int | None, str] = (0, "armed 1, delivered 1")
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import ed25519
 
@@ -187,13 +192,14 @@ class Sandbox:
     def wired(self) -> Iterator[None]:
         ag = self.ag
         names = ("_gh", "_git", "patch_id", "up_to_date", "referenced_by_code", "datetime",
-                 "run_notify")  # fmt: skip
+                 "run_notify", "_show", "run_root_notify")  # fmt: skip
         saved = {k: getattr(ag, k) for k in names}
         env = {
             ag.REGISTRY_ENV: str(self.registry),
             ag.AUTHORITY_PUBKEY_ENV: str(self.pub),
             ag.AUTHORITY_DIR_ENV: str(self.folder),
             ag.AUTHORITY_PIN_ENV: str(self.pin),
+            ag._authority_mod("root_path").AUDITOR_ROWS_ENV: str(self.auditor_rows),
         }
         old_env = {k: os.environ.get(k) for k in env}
         os.environ.update(env)
@@ -211,6 +217,14 @@ class Sandbox:
             self.notices.append(title)
             return self.deliver
 
+        def root_notify(title: str, body: str) -> tuple[int | None, str]:
+            self.root_notices.append((title, body))
+            return self.root_notify_out
+
+        def show(rev: str, name: str) -> str | None:
+            src = self.head_text if rev == self.gh.head else self.base_text
+            return src.get(name)
+
         ag._gh = self.gh
         ag._git = lambda *a: ""
         ag.patch_id = lambda base, sha: f"patch-of-{sha[:4]}"
@@ -218,6 +232,8 @@ class Sandbox:
         ag.referenced_by_code = lambda base, n: False
         ag.datetime = fake_datetime(self.clock)
         ag.run_notify = notify
+        ag.run_root_notify = root_notify
+        ag._show = show
         self.auth._git_bytes = git_bytes
         try:
             yield
@@ -242,6 +258,18 @@ class Sandbox:
                                       key=key, kid=kid, ttl_h=48, now=self.clock.t)  # fmt: skip
                 self.auth.write(self.folder, env, 41, f["head"], verdict, self.digest)
         return verdict, reasons
+
+    def audit_clear(self, head: str | None = None, comment: bool = True, row: bool = True) -> None:
+        """The Auditor's two records for `head`: its CLEAR comment and its synced registry row."""
+        head = head or self.gh.head
+        at = self.clock.t.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if comment:
+            self.gh.comments.append({"body": f"AUDIT CLEAR {head}", "created_at": at,
+                                     "updated_at": at, "author_association": "OWNER",
+                                     "performed_via_github_app": None})  # fmt: skip
+        if row:
+            with self.auditor_rows.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"pr": 41, "sha": head, "verdict": "CLEAR", "at": at}) + "\n")
 
     def gate(self) -> int:
         with self.wired():
