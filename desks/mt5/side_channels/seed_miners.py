@@ -647,6 +647,26 @@ MINERS = {
 }
 
 
+#: THE CLEAR-ACCESS SOURCES (Auditor HOLD on #602). The only seed miners that may run on a host
+#: started with --clear-access-only, which is how the trading box's hourly `seed_miners` leg starts
+#: this module. Same standard as QUANT_MINERS_ALLOW in ops/run_side_channel_miners.cmd: an
+#: official API, a central-bank feed, or local computation.
+#:   quant_se       api.stackexchange.com -- the Stack Exchange API
+#:   arxiv_qfin     export.arxiv.org/api  -- the arXiv API
+#:   bis_speeches   bis.org/doclist/cbspeeches.rss -- the BIS's published speech feed
+#:   github_topics  api.github.com        -- the GitHub REST API
+#:   broker_swaps   no request at all: reads data/universe/universe.json
+#: Every other source here reads a site's HTML pages, a third party's unofficial feed, or an
+#: archive of a site's pages, with a browser User-Agent; none has clear machine-access terms, so
+#: under the flag each is SET_ASIDE by name -- not fetched, and its wall not probed. A source is
+#: added here only with the terms that allow it; absence from this set is not a permission.
+CLEAR_ACCESS: frozenset[str] = frozenset({
+    "quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps",
+})
+SET_ASIDE_WHY = ("not in seed_miners.CLEAR_ACCESS (no clear machine-access terms; this host runs "
+                 "clear-access sources only)")
+
+
 def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: dict,
                 counted: bool = False) -> None:
     """Archive one source's rows and update the sweep tally.
@@ -669,12 +689,24 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
         summary["raw_only"] += 0 if real else 1
 
 
-def run_and_save() -> dict:
+def run_and_save(clear_access_only: bool = False) -> dict:
+    """One sweep. With `clear_access_only`, only CLEAR_ACCESS sources run; the rest are SET_ASIDE
+    by name before anything is fetched or probed, and reported so, never as a zero."""
     ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
-    results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
+    results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0,
+                            "set_aside": 0}
     st = _state()
     probes = st.setdefault("wall_probes", {})
+    set_aside: list[str] = []
     for name, fn in MINERS.items():
+        if clear_access_only and name not in CLEAR_ACCESS:
+            # No seat file is written: a set-aside source produced nothing, and a row saying so
+            # would be counted as output by anything that counts rows.
+            set_aside.append(name)
+            summary["set_aside"] += 1
+            results[name] = {"status": "SET_ASIDE", "why": SET_ASIDE_WHY}
+            print(f"  {name}: SET_ASIDE ({SET_ASIDE_WHY})")
+            continue
         wall = SOURCE_WALLS.get(name)
         if wall:
             # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
@@ -741,6 +773,9 @@ def run_and_save() -> dict:
         _write_rows(name, rows_, ts, results, summary)
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
+    st["last_sweep"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                        "clear_access_only": bool(clear_access_only),
+                        "set_aside": sorted(set_aside)}
     STATE.write_text(json.dumps(st, indent=0), "utf-8")
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
@@ -774,7 +809,8 @@ def run_and_save() -> dict:
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
     print(f"seed miners: {summary['total']} rows across {len(MINERS)} sources "
           f"(ok={summary['ok']} raw={summary['raw_only']} "
-          f"walled={summary['walled']} failed={summary['failed']})")
+          f"walled={summary['walled']} failed={summary['failed']} "
+          f"set_aside={summary['set_aside']})")
     # JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
     # sweep's output -- relationships and TIME are the corpus the sites cannot sell us.
     try:
@@ -786,4 +822,4 @@ def run_and_save() -> dict:
 
 
 if __name__ == "__main__":
-    run_and_save()
+    run_and_save(clear_access_only="--clear-access-only" in sys.argv[1:])

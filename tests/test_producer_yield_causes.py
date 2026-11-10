@@ -220,29 +220,85 @@ def main():
     assert got["organ_a"] == {"leg_a"} and got["module_a"] == {"leg_a"}
     assert got["organ_b"] == {"leg_b"} and got["module_b"] == {"leg_b"}
     real = fence.box_legs()
-    for leg in ("seed_miners", "external_miners", "proposer_rotation"):
+    for leg in ("seed_miners", "proposer_rotation"):
         assert leg in real, f"the revival leg {leg} is not in hourly_cycle"
-    assert "seed_miners" in real["seed_miners"] and "external_miners" in real["run_all_miners"]
+    assert "seed_miners" in real["seed_miners"]
+
+
+def _seed_names(const: str) -> set[str]:
+    """A top-level set constant of seed_miners.py, by AST: importing it would import requests."""
+    tree = ast.parse((DESK / "side_channels" / "seed_miners.py").read_text(encoding="utf-8"))
+    for node in tree.body:
+        tgt = (node.targets[0] if isinstance(node, ast.Assign) else
+               node.target if isinstance(node, ast.AnnAssign) else None)
+        if isinstance(tgt, ast.Name) and tgt.id == const and node.value is not None:
+            return {str(n.value) for n in ast.walk(node.value)
+                    if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+    return set()
 
 
 def test_leg_seats_match_the_code_that_writes_them() -> None:
-    # seed_miners: every MINERS key is a seat it writes (seed_miners._write_rows -> INTEL / name).
+    # The box leg runs seed_miners.py --clear-access-only, so the seats it clocks are exactly
+    # seed_miners.CLEAR_ACCESS (each a MINERS key, written by _write_rows -> INTEL / name).
+    clear = _seed_names("CLEAR_ACCESS")
+    assert clear and set(fence.LEG_SEATS["seed_miners"]) == clear
     tree = ast.parse((DESK / "side_channels" / "seed_miners.py").read_text(encoding="utf-8"))
     miners: set[str] = set()
     for node in tree.body:
         if (isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
                 and node.targets[0].id == "MINERS" and isinstance(node.value, ast.Dict)):
             miners = {k.value for k in node.value.keys if isinstance(k, ast.Constant)}
-    assert miners and miners <= set(fence.LEG_SEATS["seed_miners"])
-    # run_all_miners: every miner module it imports writes the seat its own OUTPUT constant names.
+    assert clear <= miners
+    # run_all_miners is clocked by the box task, and only its allow-listed channels fetch: the
+    # task's seats are the seats those channels write, read from the .cmd and each miner's source.
+    line = next(x for x in fence.SIDE_CHANNEL_RUNNER.read_text(encoding="utf-8").splitlines()
+                if "QUANT_MINERS_ALLOW=" in x)
+    allowed = set(line.split("=", 1)[1].strip('"').split(","))
+    assert {fence.CHANNEL_SEAT.get(c, c) for c in allowed} == set(
+        fence.TASK_SEATS["Quant-SideChannelMiners"])
     ram = (DESK / "side_channels" / "run_all_miners.py").read_text(encoding="utf-8")
     mods = re.findall(r"^from ([a-z0-9_]+) import run_and_save", ram, re.M)
     written: set[str] = set()
     for m in mods:
         src = (DESK / "side_channels" / f"{m}.py").read_text(encoding="utf-8")
         written |= set(re.findall(r'intelligence["\']\s*/\s*["\']([a-z0-9_]+)["\']', src))
-    assert written and written <= set(fence.LEG_SEATS["external_miners"]), (
-        written - set(fence.LEG_SEATS["external_miners"]))
+    assert set(fence.TASK_SEATS["Quant-SideChannelMiners"]) <= written
+
+
+def test_no_hourly_leg_runs_the_side_channel_suite_outside_its_allow_list() -> None:
+    """Auditor HOLD on #602. run_all_miners.py reads QUANT_MINERS_ALLOW from its environment and
+    fetches EVERY channel when it is unset; only ops/run_side_channel_miners.cmd sets it. So no
+    hourly leg may start it, and the seed-miner leg must pass its own clear-access switch."""
+    src = fence.HOURLY_CYCLE.read_text(encoding="utf-8")
+    assert "run_all_miners.py\"" not in src and "external_miners" not in src
+    assert "external_miners" not in fence.box_legs(src).get("run_all_miners", set())
+    call = re.search(r'_producer\(\s*"seed_miners",\s*"side_channels/seed_miners\.py"([^)]*)\)',
+                     src)
+    assert call and '"--clear-access-only"' in call.group(1)
+    assert len(re.findall(r"side_channels/seed_miners\.py", src)) == 1
+    from libs.research import layers
+    assert "external_miners" not in layers.LEG_LAYER
+
+
+def test_a_box_task_is_a_clock_on_this_host() -> None:
+    ev = _ev(clocks={"cot": {"Quant-SideChannelMiners"}})
+    got = fence.cause_of("cot", None, ev)
+    assert (got["cause"], got["cause_detail"]) == (fence.UNMEASURED_CAUSE, "BOX_TASK_UNREAD")
+    assert "Quant-SideChannelMiners" in got["cause_evidence"]
+
+
+def test_a_seat_that_was_never_written_is_unmeasured_not_dead(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """DEAD is a measured zero. A producer with no seat directory at all was never measured."""
+    doc = _isolated_audit(tmp_path, monkeypatch, {"empty_seat": 0, "alive": 5})
+    by = {r["producer"]: r for r in doc["producers"]}
+    assert by["empty_seat"]["verdict"] == "DEAD" and by["empty_seat"]["rows_in_window"] == 0
+    never = [r for r in doc["producers"] if r["rows_in_window"] is None]
+    assert never, "REPLACEMENTS names producers whose seat this fixture never wrote"
+    assert {r["verdict"] for r in never} == {"UNMEASURED"}
+    assert all(r.get("cause") in fence.CAUSES for r in never)
+    assert not [r["producer"] for r in doc["producers"]
+                if r["verdict"] == "DEAD" and r["producer"] not in ("empty_seat",)]
 
 
 def test_box_rotation_names_only_real_discovery_organs() -> None:

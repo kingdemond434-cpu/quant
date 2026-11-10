@@ -350,7 +350,8 @@ def current_fates(path: Path = LEDGER) -> dict[str, str]:
 
 
 def latest_rows(fates: frozenset[str] | set[str], path: Path = LEDGER,
-                limit: int | None = None) -> tuple[list[dict[str, Any]], set[str]]:
+                limit: int | None = None,
+                problems: list[str] | None = None) -> tuple[list[dict[str, Any]], set[str]]:
     """(the latest row of every node whose PRESENT fate is in `fates`, every node id).
 
     WHY THIS EXISTS (2026-11-03, dead-producer triage). `graveyard_resurrection` read the graph
@@ -362,12 +363,18 @@ def latest_rows(fates: frozenset[str] | set[str], path: Path = LEDGER,
     come back in file order, as `Graph.current()` returns them.
     Last row per id wins, exactly as `Graph.current()`; a line the pattern cannot explain falls
     back to `json.loads`.
+
+    AN UNREADABLE GRAPH IS NOT AN EMPTY ONE. A file that cannot be opened returns ([], set()) as
+    an empty graph does, so a caller that must tell them apart passes `problems`: the reason is
+    appended to it, and an empty list after the call means the graph was read.
     """
     want = {str(f).upper() for f in fates}
     last: dict[str, tuple[str, int]] = {}
     try:
         fh = path.open("rb")
-    except OSError:
+    except OSError as exc:
+        if problems is not None:
+            problems.append(f"{path.name} unreadable: {type(exc).__name__}: {exc}"[:240])
         return [], set()
     with fh:
         off = 0

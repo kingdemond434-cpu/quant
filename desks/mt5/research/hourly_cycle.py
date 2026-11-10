@@ -1346,9 +1346,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure",
-                     # THE VPS-ONLY SEATS, given a box clock (producer revival 2026-10-29):
-                     # seed_miners.py and run_all_miners.py, whose only clocks were VPS timers.
-                     "seed_miners", "external_miners",
+                     # seed_miners.py, given a box clock (producer revival 2026-10-29) and
+                     # run with --clear-access-only. run_all_miners.py is NOT a leg here: the
+                     # box task Quant-SideChannelMiners clocks it under its own allow-list.
+                     "seed_miners",
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
@@ -2060,13 +2061,10 @@ def _producer(name: str, script: str,
 LEG_BUDGET_SEC: dict[str, int] = {
     # THE PRODUCER REVIVAL LEGS (2026-10-29). proposer_rotation: hourly_discovery's
     # BOX_ROTATION_BUDGET_S (1,500 s, passed as --budget-s so `_self_stop_floor_s` floors it) plus
-    # its KILL_GRACE_S. seed_miners: nineteen single-page sources plus the regional hunters, each
-    # writing its own seat file as it finishes, so a cap costs only the tail. external_miners:
-    # twenty-five miners at <= QUANT_MINER_TIMEOUT_S (180 s) each, started at an hour-rotated
-    # offset so a cap never starves the same tail twice running.
+    # its KILL_GRACE_S. seed_miners: the clear-access sources of seed_miners.CLEAR_ACCESS, each
+    # writing its own seat file as it finishes, so a cap costs only the tail.
     "proposer_rotation": 1_800,
     "seed_miners": 1_500,
-    "external_miners": 1_800,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -5992,19 +5990,20 @@ def main() -> None:
         "graveyard_model", "libs/research/graveyard_model.py"))
     wc = _costed("world_crawler", lambda: _producer(
         "world_crawler", "side_channels/world_crawler.py"))
-    # THE SEATS ONLY THE VPS EVER CLOCKED (producer revival, 2026-10-29). Thirty-odd intelligence
-    # seats -- aaii, cot, central_banks, darwinex, collective2, quant_se, arxiv_qfin, youtube,
-    # github, ... -- were written ONLY by `seed_miners.py` (quant-seed-miners.timer) and
-    # `run_all_miners.py` (full-pipeline.timer) on the VPS and reached this box through the
-    # intel-ship/send transport, whose last commit is 2026-10-14T01:50Z. MT5-IntelShip still runs
-    # here (result 0) and adopts nothing new, so PRODUCER_YIELD 2026-10-29T11:43Z read every one
-    # DEAD with no cause. The same code runs here now, on the box's own clock: each source writes
-    # its own `data/intelligence/<seat>/discoveries_*.json`, robots/wall dispositions stay inside
-    # the miners (SOURCE_WALLS, fetch_error rows), and nothing is bypassed.
+    # THE SEED MINERS, ON THE BOX'S OWN CLOCK (producer revival, 2026-10-29). `seed_miners.py`
+    # was clocked only by the VPS (quant-seed-miners.timer) and reached this box through the
+    # intel-ship/send transport, which went silent, so PRODUCER_YIELD read its seats DEAD with no
+    # cause. It runs here with --clear-access-only: only the sources in seed_miners.CLEAR_ACCESS
+    # (official APIs, a central-bank feed and the terminal's own swap table) fetch; every other
+    # source, the scrapers and the walled grounds among them, is reported SET_ASIDE by name and is
+    # neither fetched nor wall-probed from the trading box.
+    #
+    # `run_all_miners.py` IS NOT A LEG HERE (Auditor HOLD on #602). It has a box clock already:
+    # the task Quant-SideChannelMiners (ops/run_side_channel_miners.cmd), which sets
+    # QUANT_MINERS_ALLOW. A leg running it with the plain task environment would have fetched
+    # every channel, the set-aside ones included, and doubled the task.
     sdm = _costed("seed_miners", lambda: _producer(
-        "seed_miners", "side_channels/seed_miners.py"))
-    exm = _costed("external_miners", lambda: _producer(
-        "external_miners", "side_channels/run_all_miners.py"))
+        "seed_miners", "side_channels/seed_miners.py", "--clear-access-only"))
     # THE PROPOSER SEAT (2026-09-23). An OPTIONAL external-model prior over which expression
     # skeletons and which mechanism names are worth a trial. It proposes candidates and never a
     # verdict: every proposal enters the population with provenance, is charged effective trials,
@@ -6560,7 +6559,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "seed_miners": sdm, "external_miners": exm,
+                    "seed_miners": sdm,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,

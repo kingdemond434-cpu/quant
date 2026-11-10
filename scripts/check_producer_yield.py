@@ -265,8 +265,9 @@ CAUSES: tuple[str, ...] = ("BACKPRESSURE_GATE", "FETCH_FAILURE", "KEY_MISSING", 
 UNMEASURED_CAUSE = "UNMEASURED_CAUSE"
 #: Bumped whenever the rule changes what a seat verdict means. 3 = seats followed through each
 #: module's SOURCE and declared file aliases, registry cells count as output, and every DEAD or
-#: UNMEASURED row carries a cause from CAUSES.
-SEAT_RULE = 3
+#: UNMEASURED row carries a cause from CAUSES. 4 = a seat that was never written reads UNMEASURED,
+#: no longer DEAD: DEAD is a measured zero in a seat that exists.
+SEAT_RULE = 4
 
 HOURLY_CYCLE = DESK / "research" / "hourly_cycle.py"
 HOURLY_DISCOVERY = DESK / "research" / "hourly_discovery.py"
@@ -300,25 +301,31 @@ SEAT_FILE_ALIASES: dict[str, tuple[str, str]] = {
 #: Seats written by a MULTI-SOURCE leg, keyed by the leg that actually runs the writer. A roster
 #: that merely LISTS a seat (scout_roster, producer_breadth) is not its clock, and the productivity
 #: census's `clock` column credits exactly those -- `amarkets` read `hourly_cycle:scout_roster`
-#: while nothing on the box had fetched it since 2026-09-12. tests/test_producer_yield_fence.py
-#: pins `seed_miners` against seed_miners.MINERS and `external_miners` against run_all_miners.
+#: while nothing on the box had fetched it since 2026-09-12.
+#:
+#: ONLY THE SEATS THE LEG WRITES ON THIS HOST. The box's `seed_miners` leg runs
+#: `seed_miners.py --clear-access-only`, so it clocks seed_miners.CLEAR_ACCESS and nothing else:
+#: every other seed source is SET_ASIDE there (no fetch, no seat row), and naming the leg as its
+#: clock would read "ran ok and wrote nothing" for a source the leg never ran.
+#: tests/test_producer_yield_causes.py pins this against seed_miners.CLEAR_ACCESS.
 LEG_SEATS: dict[str, tuple[str, ...]] = {
-    "seed_miners": (
-        "global_frontier", "regional_survivors", "mql5_survivors", "mql5_signals",
-        "myfxbook_outlook", "darwinex", "tradingview_scripts", "fxblue", "collective2",
-        "quantconnect", "forexpeacearmy", "ff_calendar_vintage", "forextsd_cdx", "quant_se",
-        "arxiv_qfin", "bis_speeches", "broker_swaps", "github_topics", "propfirm_boards",
-        # regional_survivor_hunters, called by mine_regional_survivors, writes one seat per
-        # platform plus the FBS tape (regional_survivor_hunters.py:931 and :954)
-        "amarkets", "duplitrade", "equiti_copy", "fbs_tape", "followme_cn", "hfm_pamm",
-        "instaforex_copy", "litefinance", "minfx_jp", "mylivefx_br", "octa_masters",
-        "readitrades_africa", "roboforex_copyfx", "share4you", "trading_latam"),
-    "external_miners": (
-        "youtube", "github", "mql5", "tradingview", "quantconnect", "reddit", "central_banks",
-        "forexfactory", "cot", "sec_edgar", "earnings", "aaii", "fear_greed", "investing",
-        "google_trends", "academic", "correlations", "seasonality", "weather", "shipping",
-        "china", "korea"),
+    "seed_miners": ("quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps"),
 }
+
+#: Seats clocked by a BOX TASK that is not an hourly leg, keyed by the task. run_all_miners.py is
+#: run by Quant-SideChannelMiners (ops/run_side_channel_miners.cmd), whose QUANT_MINERS_ALLOW
+#: names the only channels that fetch; these are the seats those channels write (each miner's own
+#: OUTPUT directory). A channel outside the allow-list is SET_ASIDE and has no clock on the box.
+#: The same test file pins this against the .cmd.
+TASK_SEATS: dict[str, tuple[str, ...]] = {
+    "Quant-SideChannelMiners": ("cot", "central_banks", "weather", "github", "seasonality",
+                                "correlations", "sec_edgar"),
+}
+#: run_all_miners channel name -> the seat it writes, where the two differ.
+CHANNEL_SEAT: dict[str, str] = {"central_bank": "central_banks"}
+SIDE_CHANNEL_RUNNER = ROOT / "ops" / "run_side_channel_miners.cmd"
+#: Scheduled-task name prefixes that are THIS host's clocks. `quant-` in lower case is a VPS unit.
+_BOX_TASK_PREFIX = ("MT5-", "Quant-")
 
 #: Producers that consume the desk's own bars or tape. Declared, because "reads a parquet" is
 #: not visible from outside the organ. With BARS_STATE fresh none of these fire, which is the
@@ -538,6 +545,9 @@ def cause_evidence(window_days: float, cells: dict[str, Any] | None = None) -> d
         if isinstance(r, dict) and r.get("clock"):
             clocks.setdefault(_base(str(r.get("key") or r.get("producer") or "")),
                               set()).add(str(r["clock"]))
+    for task, task_seats in TASK_SEATS.items():
+        for s in task_seats:
+            clocks.setdefault(s, set()).add(task)
     seat_leg: dict[str, set[str]] = {}
     for leg, seats in LEG_SEATS.items():
         for s in seats:
@@ -593,7 +603,7 @@ def cause_of(name: str, seat: str | None, ev: dict[str, Any]) -> dict[str, Any]:
                        *(ev["seat_legs"].get(k, set()) for k in keys))
     clocks = set().union(*(ev["clocks"].get(k, set()) for k in keys))
     off_box = sorted(c for c in clocks if c.endswith(_OFF_BOX) or c.startswith(_OFF_BOX_PREFIX))
-    box_tasks = sorted(c for c in clocks if c.startswith("MT5-"))
+    box_tasks = sorted(c for c in clocks if c.startswith(_BOX_TASK_PREFIX))
     rep = REPLACEMENTS.get(name) or (REPLACEMENTS.get(seat) if seat else None)
 
     if name in LEG_NAME_COLLISIONS:
@@ -756,7 +766,6 @@ def audit(window_days: float = 3.0, cells: dict[str, Any] | None = None,
     whose cells reached the registry read as PRODUCING, and supplies the productivity census's
     clock column to the cause classifier; `evidence` overrides `cause_evidence` (tests)."""
     seats = _seat_output(window_days)
-    any_seat = bool(seats)
     rows: list[dict[str, Any]] = []
 
     # THE PROPOSERS, from the daily cycle's own list rather than a copy of it. A list that can
@@ -785,8 +794,12 @@ def audit(window_days: float = 3.0, cells: dict[str, Any] | None = None,
     # AND THE REST ARE FOLLOWED, NOT LISTED (2026-10-29). A proposer's seat is its module's own
     # `SOURCE`: plumbing_miner donates into `plumbing/`, weak_signal_compiler into
     # `weak_signal_ensemble/`, microstructure_miner into `microstructure/`. Read by module name,
-    # ten proposers sat UNMEASURED beside the seat that records them. A proposer whose seat has
-    # never been written, on a host that has seats at all, is a measured zero (DEAD).
+    # ten proposers sat UNMEASURED beside the seat that records them.
+    #
+    # A SEAT THAT WAS NEVER WRITTEN IS UNMEASURED, NOT DEAD (Auditor HOLD on #602, L1.28a). DEAD
+    # is a measured zero: the seat exists and held no row inside the window. A seat with no
+    # directory at all was never measured -- the producer may write elsewhere, may never have run
+    # on this host, or may be new -- so it stays None and reads UNMEASURED with its cause.
     seat_for: dict[str, str] = {}
     basis: dict[str, str] = {}
     for producer, n_alias in _alias_output(window_days).items():
@@ -800,18 +813,12 @@ def audit(window_days: float = 3.0, cells: dict[str, Any] | None = None,
         if not own or producer in seat_for:
             continue
         if own == producer:
-            # Its seat IS its name and has never been written: a measured zero on a host that
-            # has seats at all, never an absence of measurement.
-            if seats.get(producer) is None and any_seat:
-                seats[producer] = 0
-            continue
+            continue                  # its seat IS its name: measured if written, else None
         seat_for[producer] = own
-        if seats.get(producer) is None or (seats.get(own) and not seats.get(producer)):
-            if own in seats:
-                seats[producer] = seats[own]
-                basis[producer] = f"seat_source:{own}"
-            elif any_seat:
-                seats[producer] = 0
+        if own in seats and (seats.get(producer) is None
+                             or (seats.get(own) and not seats.get(producer))):
+            seats[producer] = seats[own]
+            basis[producer] = f"seat_source:{own}"
 
     # CELLS ARE OUTPUT TOO. An organ that writes cells straight to the registry has an empty seat
     # by construction; the cells half measured its emission, so DEAD would be a false negative.

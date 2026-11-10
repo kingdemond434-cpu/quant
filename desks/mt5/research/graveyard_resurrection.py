@@ -306,6 +306,17 @@ def read_graph_with_ids(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], se
     return hg.latest_rows(JUDGED_FATES, GRAPH, limit)
 
 
+def read_graph_measured(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], set[str], str]:
+    """`read_graph_with_ids`, plus why the graph could not be read ('' when it was).
+
+    An unreadable graph and an empty one both give no rows; only this says which. The run reports
+    the first as UNMEASURED: a dead-cell count taken without the graph is not a count of the dead.
+    """
+    problems: list[str] = []
+    rows, ids = hg.latest_rows(JUDGED_FATES, GRAPH, limit, problems)
+    return rows, ids, "; ".join(problems)
+
+
 def read_graph(limit: int = MAX_ROWS) -> list[dict[str, Any]]:
     """The latest row of every judged node (FAILED, BURIED, CERTIFIED), in file order."""
     return read_graph_with_ids(limit)[0]
@@ -709,7 +720,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
     t0 = time.monotonic()
     stamp = PhaseStamp("graveyard_resurrection", OUT.with_name(OUT.stem + ".phase.json"))
     stamp.enter("read_graph")
-    rows, graph_ids = read_graph_with_ids(max_rows)
+    rows, graph_ids, graph_unread = read_graph_measured(max_rows)
     stamp.enter("dead_cells")
     dead = dead_cells(rows, max_rows)
     stamp.enter("siblings")
@@ -836,10 +847,15 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
             "questions_unmeasured": n_unmeasured_q, "verdicts_deferred_by_budget": deferred,
             "reclassified_no_edge_to_wrong_asset": reclassified,
             "graveyard_markdown": dnr.get("status"),
+            # The graph itself: None when it was read; otherwise why it was not, and then
+            # n_failed_cells counts only the gate ledger's and the forward clocks' dead.
+            "hypothesis_graph": (f"UNMEASURED: {graph_unread}" if graph_unread else None),
             "why": ("a gate this organ's table does not know leaves its cell UNMEASURED and spawns "
                     f"nothing; a question with fewer than {MIN_SIBLINGS} judged siblings is "
                     "UNMEASURED with its n. Neither is a zero")},
-        "sources": {"hypothesis_graph": len(graph_ids), "graph_rows_read": len(rows), "gate_ledger": str(GATE_LEDGER),
+        "sources": {"hypothesis_graph": None if graph_unread else len(graph_ids),
+                    "graph_rows_read": None if graph_unread else len(rows),
+                    "gate_ledger": str(GATE_LEDGER),
                     "forward_clocks": sum(1 for d in dead if d.origin == "forward_clock"),
                     "graveyard_markdown": dnr.get("n_entries", 0),
                     "do_not_repeat_tags": dnr.get("tags", {})},
@@ -933,6 +949,9 @@ def main(argv: list[str] | None = None) -> int:
                 max_rows=a.max_rows)
     print(f"graveyard resurrection: {doc['n_failed_cells']} dead cell(s), "
           f"{len(doc['clusters'])} cluster(s) reported, {doc['candidates_generated']} candidate(s)")
+    if doc["unmeasured"].get("hypothesis_graph"):
+        print(f"  hypothesis graph {doc['unmeasured']['hypothesis_graph']} -- the dead-cell count "
+              "above excludes every graph cell")
     print("   " + "".join(f"  {k} {v}"
                          for k, v in list(doc["by_failure_class"].items())[:12]))
     for c in doc["clusters"][:6]:

@@ -136,7 +136,7 @@ ALL_MINERS = [
 def _rotated(miners: list, hour: int | None = None) -> list:
     """The roster started at an hour-rotated offset (2026-10-29).
 
-    A caller that caps this pass (the box's `external_miners` leg) kills it partway through, and
+    A caller that caps this pass (a task time limit, a leg budget) kills it partway through, and
     with a fixed order the cap lands on the same tail every hour -- the prefix-starvation defect
     `hourly_cycle.LEG_BUDGET_FLOOR_SEC` names. Rotating the start gives every miner the front of
     the queue once per len(miners) hours; an uncapped pass still runs every miner exactly once.

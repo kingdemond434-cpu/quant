@@ -56,3 +56,13 @@ def test_latest_rows_limit_keeps_the_newest_and_returns_them_in_file_order(tmp_p
                            for i in range(6)))
     rows, ids = hg.latest_rows({"FAILED"}, p, limit=2)
     assert [r["id"] for r in rows] == ["n4", "n5"] and len(ids) == 6
+
+
+def test_latest_rows_says_when_the_graph_could_not_be_read(tmp_path: Path) -> None:
+    problems: list[str] = []
+    assert hg.latest_rows({"FAILED"}, tmp_path / "nope.jsonl", problems=problems) == ([], set())
+    assert len(problems) == 1 and problems[0].startswith("nope.jsonl unreadable: ")
+    read: list[str] = []
+    (tmp_path / "empty.jsonl").write_bytes(b"")
+    assert hg.latest_rows({"FAILED"}, tmp_path / "empty.jsonl", problems=read) == ([], set())
+    assert read == []                              # an empty graph is a measured zero

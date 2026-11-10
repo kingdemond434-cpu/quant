@@ -205,8 +205,8 @@ LEG_LAYER: dict[str, str] = {
     "alpha_evolution": "prediction",
     # The box's proposer rotation runs nine family proposers over the desk's bars (2026-10-29).
     "proposer_rotation": "prediction",
-    # The VPS-only seat miners, given a box clock (2026-10-29): public sources read for claims.
-    "seed_miners": "information", "external_miners": "information",
+    # The seed miners, given a box clock (2026-10-29): clear-access public sources read for claims.
+    "seed_miners": "information",
     "closed_loop": "meta",
     # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
     # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).

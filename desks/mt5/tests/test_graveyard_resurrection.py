@@ -447,6 +447,7 @@ def test_the_report_names_its_sources_its_rule_and_what_it_could_not_measure(des
     assert doc["unmeasured"]["reclassified_no_edge_to_wrong_asset"] == 1
     assert doc["sources"]["forward_clocks"] == 1                 # the uncertified one is not one
     assert doc["sources"]["hypothesis_graph"] == 19
+    assert doc["unmeasured"]["hypothesis_graph"] is None         # the graph was read
     assert doc["caps"]["explore_floor"] == gr.EXPLORE_FLOOR
 
 
@@ -465,3 +466,16 @@ def test_the_cli_writes_the_artifact_atomically(desk, capsys) -> None:
     assert doc["candidates_generated"] <= 6 and doc["rule"] == gr.RULE
     assert not list(desk["tmp"].glob("*.tmp"))
     assert "graveyard resurrection:" in capsys.readouterr().out
+
+
+def test_an_unreadable_graph_is_unmeasured_never_zero_dead_cells(desk, tmp_path, monkeypatch,
+                                                                 capsys) -> None:
+    """Auditor HOLD on #602: a graph that cannot be opened read as an empty graveyard."""
+    monkeypatch.setattr(gr, "GRAPH", tmp_path / "no_such_graph.jsonl")
+    doc = gr.build(max_rows=500, dry_run=True)
+    assert doc["unmeasured"]["hypothesis_graph"].startswith("UNMEASURED: no_such_graph.jsonl")
+    assert doc["sources"]["hypothesis_graph"] is None
+    assert doc["sources"]["graph_rows_read"] is None
+    monkeypatch.setattr(gr, "build", lambda **k: doc)
+    assert gr.main(["--dry-run"]) == 0
+    assert "hypothesis graph UNMEASURED" in capsys.readouterr().out
