@@ -582,13 +582,16 @@ def test_a_moved_cell_names_the_instrument_it_now_trades() -> None:
 
 
 def test_every_path_that_moves_a_cell_rewrites_its_traded_instrument() -> None:
-    """Three organs carry a cell to another instrument: the duplicate re-aim, the coverage steer
-    and the independence intake's cross_instrument fill (the one the box caught: 143
-    carry_risk_off rows on another symbol's carry side). Each must go through the one helper."""
+    """Four organs carry a cell to another instrument: the duplicate re-aim, the coverage steer,
+    the independence intake's cross_instrument fill (the one the box caught: 143 carry_risk_off
+    rows on another symbol's carry side) and rank recovery's cross_producer carry (a forced_flow
+    row on ADAUSD reading XAUUSD's fix). Each must go through the one helper."""
     research = Path(hf.__file__).resolve().parent
     for name, needle in (("hypothesis_families.py", "retarget_params(params, _sym(row), sym)"),
                          ("coverage_steer.py", "retarget_params(row.get(\"params\") or {}, "),
                          ("independence_intake.py",
+                          "retarget_params(donor[\"params\"], str(donor[\"symbol\"]), sym)"),
+                         ("rank_recovery.py",
                           "retarget_params(donor[\"params\"], str(donor[\"symbol\"]), sym)")):
         assert needle in (research / name).read_text("utf-8"), name
     # the intake's donor symbol comes from the registry in whatever case it was stored

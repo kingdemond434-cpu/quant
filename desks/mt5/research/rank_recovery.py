@@ -460,8 +460,13 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
             extra = {k: donor[k] for k in ("generator", "producer", "discovery_id", "region")
                      if donor.get(k)}
             try:
+                # THE CARRIED CELL NAMES THE INSTRUMENT IT NOW TRADES (box, 2026-11-10: a
+                # forced_flow row on ADAUSD still read `symbol: XAUUSD`, the donor's; this door
+                # is the fourth that moved a cell with its donor's params untouched).
+                from research.hypothesis_families import retarget_params
                 _id, made = enqueue_candidate(
-                    family=donor["family"], symbol=sym, params=donor["params"],
+                    family=donor["family"], symbol=sym,
+                    params=retarget_params(donor["params"], str(donor["symbol"]), sym),
                     origin=SOURCE, horizon=hor, conn=con,
                     mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
                                f"{hor} (mutation: cross_producer)"),
