@@ -1,5 +1,6 @@
-"""The one robots gate: only PUBLIC fetches, every refusal is a billed SET_ASIDE row, and the
-collectors that share it stop on a Disallow (ruling of 2026-11-10, PR #819)."""
+"""The one robots gate: a Disallow on the exact path stops the fetch and is a billed SET_ASIDE
+row; an unreadable robots.txt keeps the running collectors fetching and is counted beside the
+refusals (ruling of 2026-11-10, PR #819)."""
 from __future__ import annotations
 
 import json
@@ -58,7 +59,7 @@ def test_a_disallow_on_the_exact_path_is_disallowed() -> None:
     assert rg.read(URL, "other", opener=_serve(body))[0] == "DISALLOWED"
 
 
-def test_an_unread_policy_is_never_a_yes() -> None:
+def test_an_unread_policy_is_labelled_access_unclear() -> None:
     assert rg.read(URL, "a", opener=_fail(_http(503)))[0] == "ACCESS_UNCLEAR"
     assert rg.read(URL, "a", opener=_fail(TimeoutError()))[0] == "ACCESS_UNCLEAR"
     assert rg.read("ftp://example.invalid/x", "a", opener=_serve(""))[0] == "ACCESS_UNCLEAR"
@@ -76,8 +77,38 @@ def test_a_refusal_is_a_row_a_ledger_line_and_a_daily_count(_ledger: dict[str, P
     (day,) = doc["daily"]
     assert doc["refused_today"] == 3 and doc["daily"][day] == {
         "total": 3, "by_label": {"DISALLOWED": 2, "ACCESS_UNCLEAR": 1},
-        "by_organ": {"asia_collector": 2, "shadow_institutional": 1}, "distinct_sources": 2}
+        "by_organ": {"asia_collector": 2, "shadow_institutional": 1}, "distinct_sources": 2,
+        "unread_fetched": 0, "unread_fetched_by_organ": {}}
     assert [m["fetches_refused"] for m in doc["missed_growth"]] == [3, 3]
+
+
+def test_an_unread_fetch_is_counted_beside_the_refusals_never_among_them(
+        _ledger: dict[str, Path]) -> None:
+    assert rg.note_unread("asia_collector", "src_c", URL, "robots.txt unreadable (HTTP 503)")
+    doc = json.loads(_ledger["report"].read_text("utf-8"))
+    (day,) = doc["daily"]
+    assert doc["refused_today"] == 0 and doc["unread_fetched_today"] == 1
+    assert doc["daily"][day]["unread_fetched_by_organ"] == {"asia_collector": 1}
+    assert doc["missed_growth"] == [], "a fetch that was made is not a missed-growth line"
+    line = json.loads(_ledger["ledger"].read_text("utf-8").splitlines()[0])
+    assert line["status"] == "UNREAD_FETCHED" and line["access_label"] == "ACCESS_UNCLEAR"
+
+
+def test_one_pass_asks_a_host_for_robots_once() -> None:
+    asked: list[str] = []
+
+    def opener(url: str, agent: str, timeout: float) -> str:
+        asked.append(url)
+        return "User-agent: *\nDisallow: /private/\n"
+
+    cache: dict = {}
+    assert rg.read(URL, "a", opener=opener, cache=cache)[0] == "PUBLIC"
+    assert rg.read("https://example.invalid/private/x", "a", opener=opener,
+                   cache=cache)[0] == "DISALLOWED"
+    assert asked == ["https://example.invalid/robots.txt"]
+    unread: dict = {}
+    assert rg.read(URL, "a", opener=_fail(TimeoutError()), cache=unread)[0] == "ACCESS_UNCLEAR"
+    assert rg.read(URL, "a", opener=_serve(""), cache=unread)[0] == "ACCESS_UNCLEAR"
 
 
 def test_no_ledger_is_unmeasured_and_a_torn_line_is_counted(_ledger: dict[str, Path]) -> None:
@@ -134,11 +165,16 @@ def test_the_asia_collector_does_not_fetch_a_disallowed_path(
     assert line["organ"] == "asia_collector" and line["source"] == "src_a"
 
 
-def test_the_asia_collector_does_not_fetch_on_an_unread_robots_file(
-        monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_asia_collector_still_fetches_on_an_unread_robots_file_and_counts_it(
+        monkeypatch: pytest.MonkeyPatch, _ledger: dict[str, Path]) -> None:
+    """The ruling names a Disallow. An unreadable robots.txt was "treated as allowing" on this
+    path before and still is; what is new is that the fetch is counted."""
     rec, opened = _collect(monkeypatch, ("ACCESS_UNCLEAR", "robots.txt unreadable (HTTP 503)"))
-    assert opened == [] and rec["status"] == "BLOCKED_BY_ROBOTS"
+    assert opened == [URL] and rec["status"] == "UNREACHABLE"
     assert rec["access_label"] == "ACCESS_UNCLEAR" and rec["robots_disallows"] is False
+    assert rec["robots_counted"] is True
+    line = json.loads(_ledger["ledger"].read_text("utf-8").splitlines()[0])
+    assert line["status"] == "UNREAD_FETCHED" and line["organ"] == "asia_collector"
 
 
 def test_the_asia_collector_fetches_a_public_path(monkeypatch: pytest.MonkeyPatch,

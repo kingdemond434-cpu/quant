@@ -1,10 +1,15 @@
 """ONE ROBOTS GATE FOR EVERY FETCHER: read robots.txt, stop on a Disallow, and count what it cost.
 
 THE RULE (ruling of 2026-11-10, journalled in PR #819). A robots.txt Disallow covering the exact
-path a fetcher is about to request STOPS THAT FETCH. So does a robots.txt the site could not
-serve (a 5xx, a timeout, a refused connection): an unread policy is never a yes, and the next
-pass reads it again. A site that publishes no robots.txt (404 and the other 4xx) has disallowed
-nothing and is fetched as before.
+path a fetcher is about to request STOPS THAT FETCH. A site that publishes no robots.txt (404
+and the other 4xx) has disallowed nothing and is fetched as before.
+
+AN UNREADABLE robots.txt (a 5xx, a timeout, DNS, TLS) IS THE CALLER'S DECISION, AND IT IS COUNTED
+EITHER WAY. The ruling names a Disallow only. The running collectors (`asia_collector`,
+`data_acquisition_scientist`) therefore keep fetching on ACCESS_UNCLEAR, exactly as they did
+before, and call `note_unread` so the day's count shows how often that happened -- slow regional
+hosts time out on robots.txt routinely, and stopping on it would be a new brake of unmeasured
+size. `shadow_institutional.Guard`, where no sensor consults robots today, refuses on it.
 
 IT IS A BRAKE, SO IT IS BILLED (GROWTH_GOVERNANCE Rule 1). Every refusal is:
   * returned to the caller as a SET_ASIDE row -- the label, the reason and the named events that
@@ -43,6 +48,10 @@ REPORT = DESK / "reports" / "ROBOTS_SET_ASIDE.json"
 PUBLIC = "PUBLIC"
 DISALLOWED = "DISALLOWED"
 ACCESS_UNCLEAR = "ACCESS_UNCLEAR"
+#: Ledger statuses. SET_ASIDE = the fetch was NOT made. UNREAD_FETCHED = robots.txt could not be
+#: read and the caller fetched anyway; counted beside the refusals, never among them.
+SET_ASIDE = "SET_ASIDE"
+UNREAD_FETCHED = "UNREAD_FETCHED"
 RAIL = "robots_gate.set_aside"
 #: Days of per-day counts kept on the report. The ledger itself is never trimmed.
 REPORT_DAYS = 30
@@ -62,9 +71,12 @@ def _open(url: str, agent: str, timeout: float) -> str:
         return str(r.read(500_000).decode("utf-8", errors="replace"))
 
 
-def read(url: str, agent: str, *, opener: Opener | None = None,
-         timeout: float = 12.0) -> tuple[str, str]:
-    """(label, why) for this exact URL and this agent. Only PUBLIC permits a fetch.
+def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float = 12.0,
+         cache: dict[tuple[str, str], Any] | None = None) -> tuple[str, str]:
+    """(label, why) for this exact URL and this agent.
+
+    `cache` (a dict the caller owns for ONE pass) holds each host's parsed robots.txt, or the
+    reason it could not be read, so a pass asks a host once however many of its paths it wants.
 
     PUBLIC          robots.txt allows the path, or the site serves none (any 4xx but 401/403).
     DISALLOWED      robots.txt disallows the path; or the file itself answers 401/403, which the
@@ -75,28 +87,38 @@ def read(url: str, agent: str, *, opener: Opener | None = None,
     parts = urllib.parse.urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.netloc:
         return ACCESS_UNCLEAR, "not an http(s) URL: no robots.txt to read"
-    robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
-    try:
-        text = (opener or _open)(robots, agent, timeout)
-    except urllib.error.HTTPError as exc:
-        code = int(getattr(exc, "code", 0) or 0)
-        if code in (401, 403):
-            return DISALLOWED, f"robots.txt answers HTTP {code}: read as everything disallowed"
-        if 400 <= code < 500:
-            return PUBLIC, f"no robots.txt (HTTP {code})"
-        return ACCESS_UNCLEAR, f"robots.txt unreadable (HTTP {code})"
-    except Exception as exc:
-        return ACCESS_UNCLEAR, f"robots.txt unreadable ({type(exc).__name__})"
-    rp = RobotFileParser()
-    rp.parse(text.splitlines())
-    if rp.can_fetch(agent, url):
+    root = f"{parts.scheme}://{parts.netloc}"
+    key = (root, agent)
+    held = cache.get(key) if cache is not None else None
+    if held is None:
+        try:
+            text = (opener or _open)(f"{root}/robots.txt", agent, timeout)
+        except urllib.error.HTTPError as exc:
+            code = int(getattr(exc, "code", 0) or 0)
+            if code in (401, 403):
+                held = (DISALLOWED,
+                        f"robots.txt answers HTTP {code}: read as everything disallowed")
+            elif 400 <= code < 500:
+                held = (PUBLIC, f"no robots.txt (HTTP {code})")
+            else:
+                held = (ACCESS_UNCLEAR, f"robots.txt unreadable (HTTP {code})")
+        except Exception as exc:
+            held = (ACCESS_UNCLEAR, f"robots.txt unreadable ({type(exc).__name__})")
+        else:
+            held = RobotFileParser()
+            held.parse(text.splitlines())
+        if cache is not None:
+            cache[key] = held
+    if isinstance(held, tuple):
+        return held
+    if held.can_fetch(agent, url):
         return PUBLIC, "robots.txt allows this path for our agent"
     return DISALLOWED, "robots.txt disallows this exact path for our agent"
 
 
 def set_aside_row(organ: str, source: str, url: str, label: str, why: str) -> dict[str, Any]:
     """The row a caller returns or publishes for a fetch it did not make."""
-    return {"organ": organ, "source": source, "url": url, "status": "SET_ASIDE",
+    return {"organ": organ, "source": source, "url": url, "status": SET_ASIDE,
             "access_label": label, "why": why, "redistribute_allowed": False,
             "reopen": REOPEN, "missed_growth": missed_growth_pair(1, organ=organ)}
 
@@ -138,7 +160,8 @@ def _write_atomic(path: Path, doc: dict[str, Any]) -> None:
 
 
 def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
-    """{day: {"total", "by_label", "by_organ", "sources"}} from the ledger. Torn lines are
+    """Per day: `total` fetches REFUSED (by label, by organ, distinct sources) and, beside it,
+    `unread_fetched` -- fetches made although robots.txt could not be read. Torn lines are
     COUNTED as torn, never dropped silently."""
     path = ledger or LEDGER
     days: dict[str, dict[str, Any]] = {}
@@ -159,13 +182,20 @@ def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
             torn += 1
             continue
         d = days.setdefault(day, {"total": 0, "by_label": Counter(), "by_organ": Counter(),
-                                  "sources": set()})
+                                  "sources": set(), "unread_fetched": 0,
+                                  "unread_by_organ": Counter()})
+        if str(row.get("status") or SET_ASIDE) == UNREAD_FETCHED:
+            d["unread_fetched"] += 1
+            d["unread_by_organ"][str(row.get("organ"))] += 1
+            continue
         d["total"] += 1
         d["by_label"][str(row.get("access_label"))] += 1
         d["by_organ"][str(row.get("organ"))] += 1
         d["sources"].add(str(row.get("source")))
     out = {day: {"total": d["total"], "by_label": dict(d["by_label"]),
-                 "by_organ": dict(d["by_organ"]), "distinct_sources": len(d["sources"])}
+                 "by_organ": dict(d["by_organ"]), "distinct_sources": len(d["sources"]),
+                 "unread_fetched": d["unread_fetched"],
+                 "unread_fetched_by_organ": dict(d["unread_by_organ"])}
            for day, d in sorted(days.items())}
     return {"status": "OK", "days": out, "torn_lines": torn}
 
@@ -180,10 +210,12 @@ def publish(ledger: Path | None = None, report: Path | None = None) -> dict[str,
                                          "unreadable robots.txt, stops that fetch (PR #819)",
            "status": counts["status"], "torn_lines": counts.get("torn_lines", 0),
            "refused_today": int(today["total"]) if today else 0,
+           "unread_fetched_today": int(today["unread_fetched"]) if today else 0,
            "daily": dict(list(days.items())[-REPORT_DAYS:]), "reopen": REOPEN,
            # No line on a day nothing was refused: missed_growth reads NOT_BINDING.
            "missed_growth": (missed_growth_pair(today["total"], at=now,
-                                                by_label=today["by_label"]) if today else [])}
+                                                by_label=today["by_label"])
+                             if today and today["total"] else [])}
     if counts["status"] != "OK":
         doc["why"] = counts.get("why")
     _write_atomic(report or REPORT, doc)
@@ -196,7 +228,8 @@ def record(row: dict[str, Any], *, ledger: Path | None = None,
     Never raises: a full disk must not turn a refused fetch into a crashed collector. A False
     is carried on the caller's row (`billed`), so an unbilled refusal is visible, not silent."""
     line = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            **{k: row.get(k) for k in ("organ", "source", "url", "access_label", "why")}}
+            **{k: row.get(k) for k in ("organ", "source", "url", "status", "access_label",
+                                       "why")}}
     with _LOCK:
         try:
             _append(ledger or LEDGER, line)
@@ -217,11 +250,22 @@ def refuse(organ: str, source: str, url: str, label: str, why: str, *,
     return row
 
 
+def note_unread(organ: str, source: str, url: str, why: str, *,
+                ledger: Path | None = None, report: Path | None = None) -> bool:
+    """Count a fetch that WAS made although robots.txt could not be read. Not a refusal and
+    never billed as one: it is the measurement that says how large a stop-on-unreadable rule
+    would be, should anyone propose it."""
+    return record({"organ": organ, "source": source, "url": url, "status": UNREAD_FETCHED,
+                   "access_label": ACCESS_UNCLEAR, "why": why}, ledger=ledger, report=report)
+
+
 def main() -> int:
     doc = publish()
-    print(f"robots gate: {doc['refused_today']} fetch(es) refused today ({doc['status']})")
+    print(f"robots gate: {doc['refused_today']} fetch(es) refused today, "
+          f"{doc['unread_fetched_today']} fetched with robots.txt unread ({doc['status']})")
     for day, d in list((doc.get("daily") or {}).items())[-7:]:
-        print(f"  {day}  total={d['total']}  {d['by_label']}  {d['by_organ']}")
+        print(f"  {day}  refused={d['total']}  {d['by_label']}  {d['by_organ']}  "
+              f"unread_fetched={d['unread_fetched']}")
     return 0
 
 

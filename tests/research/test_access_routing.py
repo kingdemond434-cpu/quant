@@ -229,8 +229,12 @@ def test_every_collector_stops_on_a_robots_disallow_and_bills_it() -> None:
     fetch, AND the refusal is never silent -- it goes through `robots_gate.refuse`, which builds
     the set-aside row (reopen, two-sided missed-growth line) and counts it per day.
 
-    So what must never return now is EITHER half alone: a collector that fetches past the gate,
-    or one that refuses without billing the refusal.
+    So what must never return now is EITHER half alone: a collector that fetches past a
+    Disallow, or one that refuses without billing the refusal.
+
+    AN UNREADABLE robots.txt IS NOT A DISALLOW. The two running collectors keep fetching on it,
+    as they always did, and count the fetch (`robots_gate.note_unread`); a collector that turned
+    an unread file into a stop would be a new brake nobody has measured, and this test fails it.
     """
     from pathlib import Path
 
@@ -242,6 +246,12 @@ def test_every_collector_stops_on_a_robots_disallow_and_bills_it() -> None:
         assert "robots_gate" in src and ".refuse(" in src, f"{rel}: refuses without billing"
         assert "recorded as a REDISTRIBUTION label, mined" not in src, rel
         assert "never a skip (LAWS 5e)" not in src, rel
+    for rel in ("desks/mt5/research/asia_collector.py",
+                "desks/mt5/research/data_acquisition_scientist.py"):
+        src = (repo / rel).read_text("utf-8")
+        assert ".note_unread(" in src, f"{rel}: an unread robots.txt is not counted"
+        assert 'label != "PUBLIC"' not in src, f"{rel}: stops on an unreadable robots.txt"
     gate = (repo / "desks/mt5/research/robots_gate.py").read_text("utf-8")
-    for needle in ("def refuse(", "missed_growth_pair", "def daily_counts(", "REOPEN"):
+    for needle in ("def refuse(", "def note_unread(", "missed_growth_pair",
+                   "def daily_counts(", "REOPEN"):
         assert needle in gate, needle

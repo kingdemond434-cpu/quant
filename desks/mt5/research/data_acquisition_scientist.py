@@ -15,9 +15,9 @@ traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and
 a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
 carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
 reading was a discovery brake and is deleted. ROBOTS IS NOT A TERMS NOTE (ruling of
-2026-11-10, PR #819): a robots.txt Disallow on the exact path, or an unreadable robots.txt,
-means the sample is NOT taken -- `BLOCKED_BY_ROBOTS`, with its reopen, its missed-growth line and
-a daily count in `research/robots_gate.py`.
+2026-11-10, PR #819): a robots.txt Disallow on the exact path means the sample is NOT taken --
+`BLOCKED_BY_ROBOTS`, with its reopen, its missed-growth line and a daily count in
+`research/robots_gate.py`. An unreadable robots.txt does not stop the sample; it is counted.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
@@ -514,7 +514,7 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 # --------------------------------------------------------------------------- the sample
 def _robots_verdict(url: str) -> tuple[str, str]:
-    """(label, why) from the shared robots gate. Only PUBLIC permits the sample."""
+    """(label, why) from the shared robots gate. Only DISALLOWED stops the sample."""
     try:
         from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
@@ -554,9 +554,10 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
 
     LAWS 5e (2026-09-23): a `machine_use_allowed=false` used to return
     REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken. That brake is deleted.
-    A robots Disallow on the exact path, or an unreadable robots.txt, DOES stop the sample
-    (ruling of 2026-11-10, PR #819): the row is BLOCKED_BY_ROBOTS with its reopen and its
-    missed-growth line, and `robots_gate` counts it.
+    A robots Disallow on the exact path DOES stop the sample (ruling of 2026-11-10, PR #819):
+    the row is BLOCKED_BY_ROBOTS with its reopen and its missed-growth line, and `robots_gate`
+    counts it. An unreadable robots.txt does not: the sample is taken, as it always was, the
+    row carries ACCESS_UNCLEAR and the gate counts it as UNREAD_FETCHED.
     """
     url = str(cand.get("url") or "")
     if verdict.refused:
@@ -571,11 +572,14 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
                         f"through the existing fetch path; the request is donated unsampled")}
     label, robots_note = _robots_verdict(url)
     terms_note = verdict.terms_note or ""
-    if label != "PUBLIC":
-        try:
-            from research import robots_gate as RG
-        except ImportError:                                                  # pragma: no cover
-            import robots_gate as RG  # type: ignore[no-redef]
+    try:
+        from research import robots_gate as RG
+    except ImportError:                                                      # pragma: no cover
+        import robots_gate as RG  # type: ignore[no-redef]
+    if label == "ACCESS_UNCLEAR":
+        RG.note_unread("data_acquisition_scientist", str(cand["dataset"]), url, robots_note)
+        terms_note = f"{terms_note} | robots: {robots_note} (unread; fetched and counted)"
+    if label == "DISALLOWED":
         aside = RG.refuse("data_acquisition_scientist", str(cand["dataset"]), url, label,
                           robots_note)
         return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
