@@ -111,7 +111,13 @@ def test_a_held_log_costs_only_that_file(tmp_path: Path, monkeypatch: Any) -> No
     monkeypatch.setattr(sys, "stdout", sys.stdout)
     monkeypatch.setattr(sys, "stderr", sys.stderr)
     got = W._open_own_log(["--log", str(log)])
-    assert got is not None and got != str(log) and Path(got).parent == tmp_path
-    sys.stdout.flush()
-    assert "LOG FALLBACK" in Path(got).read_text("utf-8")
+    opened = sys.stdout
+    try:
+        assert got is not None and got != str(log) and Path(got).parent == tmp_path
+        opened.flush()
+        assert "LOG FALLBACK" in Path(got).read_text("utf-8")
+    finally:
+        # the run's own log handle: closed here, or filterwarnings=error turns the
+        # ResourceWarning at collection of the next test into an error
+        opened.close()
     assert W._open_own_log([]) is None
