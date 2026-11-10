@@ -1474,6 +1474,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # WHAT DEFECTS COST IN E[log W] (CRO question Q5): the windows a wiring
+                     # or venue defect prevented, priced. The desk measuring its own leaks: meta.
+                     "defect_loss",
                      # CULTURE PROVENANCE PER CELL: source culture, participant structure,
                      # failure-mode hypothesis and crowding prior, backfilled bounded, and the
                      # culture gap list the producers read. The machine measuring whether its
@@ -2329,6 +2332,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
     # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
     "conversion_funnel": 330,
+    "defect_loss": 120,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -6066,6 +6070,12 @@ def main() -> None:
     lc = _costed("layer_census", lambda: _producer("layer_census", "libs/research/layers.py"))
     oc = _costed("opportunity_cost", lambda: _producer(
         "opportunity_cost", "research/opportunity_cost.py"))
+    # WHAT DEFECTS COST, PRICED (2026-11-10). The CRO pass asks every day what stale inputs,
+    # costs and defects cost; the defect part had no organ. This reads the decision ledger for
+    # windows an operational refusal kept dark and prices each at the sleeve's own realised
+    # growth per trade. Three file reads, one report; it sizes and gates nothing.
+    dfl = _costed("defect_loss", lambda: _producer(
+        "defect_loss", "scripts/check_defect_loss.py"))
     # THE HOUR'S PRICES, REBUILT AND PUBLISHED (Tier-1 B27). The plan is already built lazily by
     # the first leg that asks for a budget; this leg exists so the artifact is written and
     # printed every pass even in an hour where nothing asked, and so the planned-versus-applied
@@ -6535,6 +6545,7 @@ def main() -> None:
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
+                    "defect_loss": dfl,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
