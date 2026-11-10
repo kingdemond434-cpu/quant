@@ -209,10 +209,11 @@ CANON_ALPHA101_IDS: dict[str, str] = {
 #: changes each year (8 H1 files back to 2002-2012), or a few constants (12 H1 crosses, 74-87% of
 #: the era on the first one). A formula reading that era trades the fill's steps, not a market
 #: fact; on AUDSGD the certified edge vanished when the fill was treated as missing. The era is
-#: the leading stretch made of runs of one held value at least FILL_RUN_DAYS of bars long, with no
-#: more than that many bars of anything else between them. It ends at the first such stretch of
-#: quotes, so a later held run (EURSGD and XAUUSD, 2024-26) never moves it: those are published
-#: as SUSPECT_CONSTANT_RUN by `input_fill_report` and left as they are, judged neither way.
+#: the leading stretch made of runs of one held POSITIVE value at least FILL_RUN_DAYS of bars
+#: long, with no more than that many bars of anything else between them. It ends at the first
+#: such stretch of quotes, so a later held run (EURSGD and XAUUSD, 2024-26) never moves it:
+#: those are published as SUSPECT_CONSTANT_RUN by `input_fill_report` and left as they are,
+#: judged neither way.
 #: tick_volume was clean in all 102 files and is not touched.
 FILL_RUN_DAYS = 5
 #: The floor on the run length, in bars, whatever the chart.
@@ -253,7 +254,11 @@ def leading_fill_end(values: Any, run_bars: int) -> int:
     st, ln = _value_runs(x)
     end = 0
     for s, n in zip(st.tolist(), ln.tolist()):
-        if n < run_bars:
+        # A FILL IS A POSITIVE CONSTANT. A held 0 is the venue not recording the spread, which
+        # is a different defect (box dry run 2026-11-10: on H4, 0-runs chained every few days
+        # carried AUDJPY's "era" to 2025-04-16); it never extends the era and is published as
+        # SUSPECT_CONSTANT_RUN like any later held value.
+        if n < run_bars or not x[s] > 0:
             continue
         if s - end > run_bars:
             break

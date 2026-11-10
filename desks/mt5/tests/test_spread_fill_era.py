@@ -69,6 +69,20 @@ def test_a_held_run_years_later_never_moves_the_era_and_is_published_unmasked() 
     assert masked.iloc[20900:21226].eq(2.0).all()              # judged neither way
 
 
+def test_held_zeros_never_extend_the_era_and_are_published() -> None:
+    """Box dry run 2026-11-10: H4 files whose 0-spread runs (unrecorded, not filled) recurred
+    every few days were read as one era running to 2025."""
+    zeros = np.concatenate([np.concatenate([np.full(130, 0.0), _quotes(40, 7 + i)])
+                            for i in range(20)])
+    spread = np.concatenate([np.full(900, 50.0), _quotes(60, 6), zeros, _quotes(2000, 9)])
+    assert ag.leading_fill_end(spread, R) == 900
+    rep = ag.input_fill_report(_frame(spread))
+    assert len(rep["suspect_constant_runs"]) == 20
+    assert all(r["value"] == 0.0 for r in rep["suspect_constant_runs"])
+    # a file that opens on held zeros has no fill era at all
+    assert ag.leading_fill_end(np.concatenate([np.full(900, 0.0), _quotes(500)]), R) == 0
+
+
 def test_quotes_first_and_a_column_held_throughout_are_left_as_they_are() -> None:
     quotes_first = np.concatenate([_quotes(500), np.full(900, 50.0), _quotes(500, 5)])
     assert ag.leading_fill_end(quotes_first, R) == 0
