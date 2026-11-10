@@ -57,6 +57,7 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
@@ -657,6 +658,39 @@ def release_available(released: pd.Series, at: str = "08:30") -> pd.Series:
     return local.dt.tz_convert("UTC") + RELEASE_GRACE
 
 
+#: Scheduled-release instants recovered from the first prints, for the event families. Kept OUT
+#: of `data/intelligence/`: the candidate compiler reads every row there as a donation and would
+#: mint a cell per historical release.
+CALENDAR_BACKFILL = DESK / "data" / "calendar_backfill"
+
+
+def write_release_calendar(oid: str, rel: Mapping[str, Any], prints: pd.DataFrame) -> Path | None:
+    """One JSON-lines file of this series' release instants (UTC), newest state replacing old.
+
+    The instant is the New York release time on the day ALFRED first recorded the value, with no
+    grace added: it is the event, not when a bar may use the number. `instant_basis` says so,
+    because ALFRED can record a release a day late for a series it loads late.
+    """
+    if prints.empty:
+        return None
+    hh, mm = (int(x) for x in str(rel.get("at") or "08:30").split(":"))
+    when = (pd.to_datetime(prints["released"]).dt.normalize()
+            + pd.Timedelta(hours=hh, minutes=mm)).dt.tz_localize(
+        RELEASE_TZ, nonexistent="shift_forward", ambiguous=False).dt.tz_convert("UTC")
+    lines = [json.dumps({"event_date": t.isoformat(), "currency": "USD", "country": "USD",
+                         "title": str(rel.get("title") or rel["series"]), "impact": "High",
+                         "series": str(rel["series"]), "source": "alfred_first_release",
+                         "instant_basis": "alfred_realtime_start", "backfill": True},
+                        sort_keys=True) for t in when]
+    CALENDAR_BACKFILL.mkdir(parents=True, exist_ok=True)
+    p = CALENDAR_BACKFILL / f"backfill_{oid}.jsonl.gz"
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    with gzip.open(tmp, "wt", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    _replace(tmp, p)
+    return p
+
+
 def first_release_outputs(cv: Mapping[str, Any], key: str, get: Callable[[str], Any] | None,
                           raw_dir: Path, notes: list[dict[str, Any]]
                           ) -> list[tuple[str, pd.DataFrame, dict[str, Any]]]:
@@ -681,6 +715,10 @@ def first_release_outputs(cv: Mapping[str, Any], key: str, get: Callable[[str], 
             prints = pd.read_parquet(raw)
         if len(prints) < MIN_ROWS:
             continue
+        try:
+            write_release_calendar(oid, rel, prints)
+        except OSError as exc:
+            notes.append({"source": oid, "calendar_backfill": f"{type(exc).__name__}"})
         feat = release_shock(prints, str(rel.get("transform") or "diff"),
                              int(cv.get("window", SHOCK_WINDOW)))
         at = release_available(prints["released"], str(rel.get("at") or "08:30"))

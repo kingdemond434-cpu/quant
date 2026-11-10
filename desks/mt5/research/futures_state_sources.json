@@ -1386,7 +1386,8 @@
      "weekdays": [
       3,
       4
-     ]
+     ],
+     "title": "Non-Farm Employment Change"
     },
     {
      "series": "UNRATE",
@@ -1396,19 +1397,22 @@
      "weekdays": [
       3,
       4
-     ]
+     ],
+     "title": "Unemployment Rate"
     },
     {
      "series": "CPIAUCSL",
      "at": "08:30",
      "transform": "logdiff",
-     "why": "headline CPI m/m"
+     "why": "headline CPI m/m",
+     "title": "CPI m/m"
     },
     {
      "series": "CPILFESL",
      "at": "08:30",
      "transform": "logdiff",
-     "why": "core CPI m/m, the Fed's reaction input"
+     "why": "core CPI m/m, the Fed's reaction input",
+     "title": "Core CPI m/m"
     },
     {
      "series": "ICSA",
@@ -1418,31 +1422,36 @@
      "weekdays": [
       2,
       3
-     ]
+     ],
+     "title": "Unemployment Claims"
     },
     {
      "series": "RSAFS",
      "at": "08:30",
      "transform": "logdiff",
-     "why": "advance retail sales"
+     "why": "advance retail sales",
+     "title": "Retail Sales m/m"
     },
     {
      "series": "PCEPILFE",
      "at": "08:30",
      "transform": "logdiff",
-     "why": "core PCE price index"
+     "why": "core PCE price index",
+     "title": "Core PCE Price Index m/m"
     },
     {
      "series": "INDPRO",
      "at": "09:15",
      "transform": "logdiff",
-     "why": "industrial production"
+     "why": "industrial production",
+     "title": "Industrial Production m/m"
     },
     {
      "series": "JTSJOL",
      "at": "10:00",
      "transform": "diff",
-     "why": "JOLTS job openings"
+     "why": "JOLTS job openings",
+     "title": "JOLTS Job Openings"
     }
    ]
   }

@@ -75,6 +75,7 @@ def _fake_get(markets: dict[str, list[dict]], refuse: set[str] | None = None):
 def tmp_desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(fs, "RAW", tmp_path / "raw")
     monkeypatch.setattr(fs, "SERIES", tmp_path / "series")
+    monkeypatch.setattr(fs, "CALENDAR_BACKFILL", tmp_path / "calendar_backfill")
     return tmp_path
 
 
@@ -593,3 +594,23 @@ def test_off_schedule_and_weekend_releases_are_dropped_and_counted() -> None:
 def test_release_shock_mints_two_columns_only() -> None:
     p = fs.alfred_first_prints("PAYEMS", "k", _alfred_get(_alfred_rows(60)))
     assert list(fs.release_shock(p).columns) == ["first_chg", "shock_z"]
+
+
+def test_release_calendar_backfill_is_written_outside_the_donation_tree(tmp_desk: Path,
+                                                                        monkeypatch) -> None:
+    import gzip
+    import json
+    monkeypatch.setenv("FRED_API_KEY", "k")
+    reg = {"sources": [{"id": "fred_rates", "adapter": "fred", "terms": "OPEN",
+                        "key_env": ["FRED_API_KEY"]}],
+           "fred_sets": [{"id": "usrel", "mode": "first_release", "targets": ["XAUUSD"],
+                          "releases": [{"series": "PAYEMS", "at": "08:30",
+                                        "title": "Non-Farm Employment Change"}]}]}
+    fs.build_market_series(reg, get=_alfred_get(_alfred_rows(60)), state={}, bars=lambda s: None)
+    p = tmp_desk / "calendar_backfill" / "backfill_fred_usrel_payems.jsonl.gz"
+    rows = [json.loads(x) for x in gzip.open(p, "rt", encoding="utf-8").read().splitlines()]
+    assert len(rows) == 60
+    assert rows[0]["event_date"] == "2018-02-02T13:30:00+00:00"      # 08:30 New York, winter
+    assert {r["impact"] for r in rows} == {"High"} and rows[0]["currency"] == "USD"
+    # the compiler reads every row under data/intelligence as a donation; this must not be there
+    assert "intelligence" not in fs.CALENDAR_BACKFILL.parts
