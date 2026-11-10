@@ -12,19 +12,24 @@ WHAT IT STORES. Lexicon COUNTS per speech (the same hawkish/dovish phrases `bis_
 uses), the speech's URL and title, and the reuse clause it was read under. Never the body: the
 desk needs the reading, not a copy of the text.
 
-POINT-IN-TIME. `available_time` is the feed's own publication stamp when the speech came from a
-feed. A speech found on a year index has only its delivery DATE, so it is stamped at the end of
-the NEXT day (UTC): late on purpose, never early.
+POINT-IN-TIME. `published_utc` is the feed's own publication instant when the speech came from a
+feed. A speech found on a year index has only its delivery DATE; then `published_utc` is that
+bare date, and the contract with the reader (`cb_tone_event`) is that a bare date is knowable
+only from 00:00 UTC of the NEXT day. The series this module writes applies the same rule.
 
 POLITENESS. One request per host at a time through `libs.data.polite_fetch` (shared host gate),
 an honest User-Agent, a hard per-pass page budget, and every page fetched once in its life
 (`state.json`). robots.txt is read and recorded as a label (LAWS 5e); 401/403/429/451 stops that
 host and is recorded, never retried in the pass and never routed around.
 
-OUTPUT (outside `data/intelligence/`, which the candidate compiler reads as donations):
-    desks/mt5/data/cb_speeches/own_site_speech_tone.jsonl   one row per speech, append-only
-    desks/mt5/data/cb_speeches/own_site_tone_series.jsonl   one row per (date, currency)
-    desks/mt5/reports/CB_OWN_SITE_SPEECHES.json             coverage, labels, stops, backlog
+OUTPUT.
+    desks/mt5/data/intelligence/central_banks/official_speech_tone.jsonl
+        one row per speech, append-only; the file `cb_tone_event` reads. It sits beside
+        `bis_speech_tone.jsonl`, whose rows the candidate compiler already reads as event
+        donations; identical specs share one genome id, so more rows mint no more cells.
+    desks/mt5/data/cb_speeches/state.json, official_tone_series.jsonl
+        this module's own state and a (date, currency) series, kept out of the donation tree
+    desks/mt5/reports/CB_OWN_SITE_SPEECHES.json   coverage, labels, stops, backlog
 """
 from __future__ import annotations
 
@@ -50,6 +55,7 @@ for _p in (str(ROOT), str(DESK)):
 
 SOURCES = Path(__file__).with_name("cb_speech_sources.json")
 OUT = DESK / "data" / "cb_speeches"
+SPEECH_ROWS = DESK / "data" / "intelligence" / "central_banks" / "official_speech_tone.jsonl"
 REPORT = DESK / "reports" / "CB_OWN_SITE_SPEECHES.json"
 
 #: Speech pages fetched per pass, all banks together. The history is ~100 pages a year per bank;
@@ -138,12 +144,17 @@ def index_links(raw: str, bank: Mapping[str, Any]) -> list[dict[str, str]]:
     return [{"url": u, "date": d} for u, d in sorted(seen.items())]
 
 
-def available_time(published: str | None, day: str) -> str:
-    """The feed's stamp when there is one; otherwise the end of the day AFTER delivery (UTC)."""
-    if published:
+def published_utc(published: str | None, day: str) -> str:
+    """The feed's publication instant, or the bare delivery date when no instant is known."""
+    return published or day
+
+
+def knowable_from(published: str) -> str:
+    """When a row may first be used: its instant, or 00:00 UTC of the day AFTER a bare date."""
+    if len(published) > 10:
         return published
-    d = date.fromisoformat(day) + timedelta(days=1)
-    return datetime(d.year, d.month, d.day, 23, 59, tzinfo=UTC).isoformat(timespec="seconds")
+    d = date.fromisoformat(published) + timedelta(days=1)
+    return datetime(d.year, d.month, d.day, tzinfo=UTC).isoformat(timespec="seconds")
 
 
 def robots_label(robots_text: str | None, url: str, agent: str) -> dict[str, str]:
@@ -181,22 +192,22 @@ def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     agg: dict[tuple[str, str], dict[str, Any]] = defaultdict(
         lambda: {"n": 0, "hawk": 0, "dove": 0, "banks": set(), "avail": "", "terms": set()})
     for r in rows:
-        a = agg[(r["date"], r["currency"])]
+        a = agg[(str(r.get("delivered") or r["published_utc"])[:10], r["currency"])]
         a["n"] += 1
         a["hawk"] += int(r["hawk"])
         a["dove"] += int(r["dove"])
         a["banks"].add(r["bank"])
         a["terms"].add(r["terms"])
-        a["avail"] = max(a["avail"], str(r["available_time"]))
+        a["avail"] = max(a["avail"], knowable_from(str(r["published_utc"])))
     out = []
     for (day, ccy), a in sorted(agg.items()):
         tot = a["hawk"] + a["dove"]
         out.append({"date": day, "currency": ccy, "banks": sorted(a["banks"]),
                     "n_speeches": a["n"], "hawk": a["hawk"], "dove": a["dove"],
                     "net_tone": round((a["hawk"] - a["dove"]) / tot, 4) if tot else None,
-                    "available_time": a["avail"], "source": "own_site",
-                    # a day is PERMITTED only if every speech in it was read under such terms
-                    "terms": "PERMITTED" if a["terms"] == {"PERMITTED"} else "RESEARCH_ONLY"})
+                    "available_time": a["avail"],
+                    # a day is permitted only if every speech in it was read under such terms
+                    "terms": "permitted" if a["terms"] == {"permitted"} else "unverified"})
     return out
 
 
@@ -213,7 +224,8 @@ def _polite_fetch(agent: str) -> Fetch:
 
 
 def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = None,
-            out: Path | None = None, report: Path | None = None, today: date | None = None,
+            out: Path | None = None, report: Path | None = None,
+            speech_rows: Path | None = None, today: date | None = None,
             max_pages: int = MAX_PAGES_PER_PASS, max_index: int = MAX_INDEX_PER_PASS
             ) -> dict[str, Any]:
     """One pass: discover speeches (feeds first, then a few year indexes), score a bounded number
@@ -232,7 +244,8 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
     known: dict[str, dict[str, str]] = state.setdefault("known", {})
     idx_done: dict[str, str] = state.setdefault("index_done", {})
     stops: dict[str, Any] = state.setdefault("hard_stops", {})
-    per_speech = out / "own_site_speech_tone.jsonl"
+    per_speech = speech_rows or SPEECH_ROWS
+    per_speech.parent.mkdir(parents=True, exist_ok=True)
     rep: dict[str, Any] = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
                            "banks": {}, "pages_fetched": 0, "index_fetched": 0}
     index_budget, page_budget = max_index, max_pages
@@ -333,12 +346,15 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
             hawk, dove = score_tone(text)
             lab = robots_label(robots_text, url, agent)
             new_rows.append({
-                "date": day, "available_time": available_time(k.get("published"), day),
-                "bank": name, "currency": bank["currency"], "hawk": hawk, "dove": dove,
-                "chars": len(text), "url": url,
+                "source": str(bank["source"]), "terms": str(bank["terms"]),
+                "terms_basis": f"{bank.get('terms_clause', '')} ({bank.get('terms_url', '')}, "
+                               f"read {bank.get('terms_read', '')})",
+                "bank": name, "currency": str(bank["currency"]).upper(),
+                "published_utc": published_utc(k.get("published"), day), "delivered": day,
+                "hawk": hawk, "dove": dove, "chars": len(text), "url": url,
                 "title": (k.get("title") or page_title(raw))[:300],
-                "source": "own_site", "terms": bank["terms"], "access": lab["access"],
-                "access_note": lab["note"], "attribution": bank.get("attribution", ""),
+                "access": lab["access"], "access_note": lab["note"],
+                "attribution": bank.get("attribution", ""),
             })
             done[url] = day
             b["scored_this_pass"] += 1
@@ -357,16 +373,18 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
             except ValueError:
                 continue
     series = aggregate(rows)
-    tmp = out / "own_site_tone_series.jsonl.tmp"
+    tmp = out / "official_tone_series.jsonl.tmp"
     tmp.write_text("".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n"
                            for r in series), "utf-8")
-    os.replace(tmp, out / "own_site_tone_series.jsonl")
+    os.replace(tmp, out / "official_tone_series.jsonl")
     _write_json(out / "state.json", state)
     by_ccy: dict[str, dict[str, Any]] = {}
     for r in rows:
-        c = by_ccy.setdefault(r["currency"], {"speeches": 0, "first": r["date"], "last": r["date"]})
+        day = str(r.get("delivered") or r["published_utc"])[:10]
+        c = by_ccy.setdefault(r["currency"], {"speeches": 0, "first": day, "last": day,
+                                              "terms": r["terms"]})
         c["speeches"] += 1
-        c["first"], c["last"] = min(c["first"], r["date"]), max(c["last"], r["date"])
+        c["first"], c["last"] = min(c["first"], day), max(c["last"], day)
     rep.update({"speeches_total": len(rows), "series_rows": len(series), "coverage": by_ccy,
                 "uncovered_note": "a currency absent from coverage is UNMEASURED, never neutral",
                 "research_only_elsewhere": "BIS speeches.zip (noncommercial terms)"})

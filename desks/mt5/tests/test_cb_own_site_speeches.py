@@ -74,10 +74,10 @@ def test_index_links_read_the_date_from_the_url() -> None:
     assert [r["date"] for r in rba] == ["2025-12-16", "2026-11-09"]
 
 
-def test_a_speech_with_only_a_date_is_available_late_never_early() -> None:
-    assert cb.available_time(None, "2025-12-15") == "2025-12-16T23:59:00+00:00"
-    assert cb.available_time("2026-10-15T02:55:00+00:00", "2026-10-15") == \
-        "2026-10-15T02:55:00+00:00"
+def test_a_bare_date_is_knowable_only_from_the_next_day() -> None:
+    assert cb.published_utc(None, "2025-12-15") == "2025-12-15"
+    assert cb.knowable_from("2025-12-15") == "2025-12-16T00:00:00+00:00"
+    assert cb.knowable_from("2026-10-15T02:55:00+00:00") == "2026-10-15T02:55:00+00:00"
 
 
 def test_page_text_drops_scripts_and_site_chrome() -> None:
@@ -92,16 +92,20 @@ def test_refresh_scores_once_labels_terms_and_stores_no_body(tmp_path: Path) -> 
     fetch = _site({"https://www.federalreserve.gov/robots.txt": (200, "User-agent: *\nAllow: /"),
                    FED["feeds"][0]: (200, FED_FEED), url: (200, SPEECH)})
     kw = dict(fetch=fetch, registry=_one_bank(bank), out=tmp_path / "o",
-              report=tmp_path / "r.json", today=date(2026, 11, 10))
+              report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+              today=date(2026, 11, 10))
     rep = cb.refresh(**kw)
     assert rep["banks"]["Fed"]["scored_this_pass"] == 1 and rep["speeches_total"] == 1
-    row = json.loads((tmp_path / "o" / "own_site_speech_tone.jsonl").read_text().splitlines()[0])
-    assert row["terms"] == "PERMITTED" and row["access"] == "PUBLIC" and row["currency"] == "USD"
+    row = json.loads((tmp_path / "rows.jsonl").read_text().splitlines()[0])
+    assert row["terms"] == "permitted" and row["source"] == "fed_board"
+    assert row["access"] == "PUBLIC" and row["currency"] == "USD"
+    assert "public domain" in row["terms_basis"] and "disclaimer.htm" in row["terms_basis"]
+    assert set(row) >= {"published_utc", "delivered", "hawk", "dove", "chars", "url", "title"}
     assert row["hawk"] > 0 and row["dove"] == 1            # the body's one "rate cut", not the chrome
-    assert row["available_time"] == "2026-10-15T02:55:00+00:00"
+    assert row["published_utc"] == "2026-10-15T02:55:00+00:00" and row["delivered"] == "2026-10-15"
     assert "restrictive" not in json.dumps(row)            # counts only, never the text
-    series = json.loads((tmp_path / "o" / "own_site_tone_series.jsonl").read_text().splitlines()[0])
-    assert series["terms"] == "PERMITTED" and series["net_tone"] > 0
+    series = json.loads((tmp_path / "o" / "official_tone_series.jsonl").read_text().splitlines()[0])
+    assert series["terms"] == "permitted" and series["net_tone"] > 0
     cb.refresh(**kw)
     assert fetch.calls.count(url) == 1                     # a page is read once in its life
 
@@ -111,7 +115,8 @@ def test_a_refusal_stops_the_host_and_is_named_as_missed_growth(tmp_path: Path) 
     fetch = _site({"https://www.federalreserve.gov/robots.txt": (200, ""),
                    FED["feeds"][0]: (403, "")})
     kw = dict(fetch=fetch, registry=_one_bank(bank), out=tmp_path / "o",
-              report=tmp_path / "r.json", today=date(2026, 11, 10))
+              report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+              today=date(2026, 11, 10))
     rep = cb.refresh(**kw)
     assert rep["banks"]["Fed"]["hard_stop"]["code"] == 403
     n = len(fetch.calls)
@@ -130,13 +135,19 @@ def test_page_budget_bounds_a_pass_and_a_disallow_is_a_label(tmp_path: Path) -> 
         pages[f"https://www.federalreserve.gov/newsevents/speech/x202601{d:02d}a.htm"] = (200, SPEECH)
     bank = {**FED, "index_from_year": 2026}
     rep = cb.refresh(fetch=_site(pages), registry=_one_bank(bank), out=tmp_path / "o",
-                     report=tmp_path / "r.json", today=date(2026, 11, 10), max_pages=4)
+                     report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
+                     today=date(2026, 11, 10), max_pages=4)
     assert rep["pages_fetched"] == 4 and rep["banks"]["Fed"]["backlog"] == 6
     rows = [json.loads(x) for x in
-            (tmp_path / "o" / "own_site_speech_tone.jsonl").read_text().splitlines()]
+            (tmp_path / "rows.jsonl").read_text().splitlines()]
     assert {r["access"] for r in rows} == {"PUBLIC_WITH_TERMS"}     # labelled, still read (5e)
-    assert rows[0]["available_time"].endswith("T23:59:00+00:00")
+    assert len(rows[0]["published_utc"]) == 10                      # a bare date, no invented hour
 
 
-def test_output_is_outside_the_donation_tree() -> None:
+def test_rba_rows_stay_unverified_and_state_stays_out_of_the_donation_tree() -> None:
+    assert RBA["terms"] == "unverified" and FED["terms"] == "permitted" == BOC["terms"]
+    assert {b["source"] for b in REG["banks"]} == {"fed_board", "boc", "rba"}
+    # the compiler reads every .json/.jsonl under data/intelligence as donations: only the
+    # per-speech rows belong there, never this module's own state or series
     assert "intelligence" not in cb.OUT.parts
+    assert cb.SPEECH_ROWS.name == "official_speech_tone.jsonl"
