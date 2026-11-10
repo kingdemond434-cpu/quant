@@ -149,9 +149,15 @@ def _symbol_currencies(symbol: str) -> frozenset[str]:
     return _SYMBOL_CURRENCY[sym]
 
 
-def _backfill_currencies() -> dict[int, frozenset[str]]:
-    """`orthogonal_sweep.EVENT_BACKFILL_CURRENCY`, from whichever name(s) the module is loaded
-    under (the package and the bare folder import are two module objects)."""
+#: What `events_for_symbol` did in THIS process, so "the currency filter is active in the judge's
+#: workers" is a number read off the box and not a claim: calls made, calls that found no
+#: backfill table at all, times the table had to be loaded here because the caller's process
+#: never built the index, backfill-only instants seen, and instants withheld from an instrument.
+EVENT_PLACEMENT: dict[str, int] = {"calls": 0, "table_empty_calls": 0, "table_self_loaded": 0,
+                                   "backfill_instants_seen": 0, "instants_filtered": 0}
+
+
+def _loaded_backfill_tables() -> dict[int, frozenset[str]]:
     import sys
     table: dict[int, frozenset[str]] = {}
     for name in ("research.orthogonal_sweep", "orthogonal_sweep"):
@@ -159,6 +165,39 @@ def _backfill_currencies() -> dict[int, frozenset[str]]:
         got = getattr(mod, "EVENT_BACKFILL_CURRENCY", None) if mod is not None else None
         if isinstance(got, dict):
             table.update(got)
+    return table
+
+
+def _backfill_currencies() -> dict[int, frozenset[str]]:
+    """`orthogonal_sweep.EVENT_BACKFILL_CURRENCY`, from whichever name(s) the module is loaded
+    under (the package and the bare folder import are two module objects).
+
+    THE TABLE IS BUILT HERE WHEN THE CALLER'S PROCESS NEVER BUILT IT (audit of a93a35352f2a).
+    It is a module global that `_event_index` fills as a side effect. A worker handed an event
+    index built in ANOTHER process (a spawned pool on Windows inherits nothing) would see it
+    empty, the filter would switch itself off without a word, and every instrument would receive
+    eleven years of US releases. So an empty table is never taken at its word: the index is read
+    once in this process (it is cached; a second call costs nothing) and the table re-read."""
+    table = _loaded_backfill_tables()
+    if table:
+        return table
+    import sys
+    try:
+        loaded = [m for m in (sys.modules.get(n) for n in ("research.orthogonal_sweep",
+                                                           "orthogonal_sweep")) if m is not None]
+        if not loaded:                       # never a second module object beside a loaded one
+            try:
+                from research import orthogonal_sweep as inputs
+            except ImportError:
+                import orthogonal_sweep as inputs  # type: ignore[no-redef]
+            loaded = [inputs]
+        for mod in loaded:
+            mod._event_index()
+    except Exception:
+        return table
+    table = _loaded_backfill_tables()
+    if table:
+        EVENT_PLACEMENT["table_self_loaded"] += 1
     return table
 
 
@@ -175,6 +214,9 @@ def events_for_symbol(events: object, symbol: str) -> list[dict]:
     out: list[dict] = []
     by_instant = _backfill_currencies()
     mine = _symbol_currencies(symbol) if by_instant else frozenset()
+    EVENT_PLACEMENT["calls"] += 1
+    if not by_instant:
+        EVENT_PLACEMENT["table_empty_calls"] += 1
     try:
         it = iter(() if events is None else events)  # type: ignore[arg-type]
     except TypeError:
@@ -190,9 +232,11 @@ def events_for_symbol(events: object, symbol: str) -> list[dict]:
             continue
         if ts.tzinfo is None:
             ts = ts.tz_localize("UTC")
-        if mine:
-            theirs = by_instant.get(int(ts.as_unit("ns").value))
-            if theirs and not (theirs & mine):
+        theirs = by_instant.get(int(ts.as_unit("ns").value)) if by_instant else None
+        if theirs:
+            EVENT_PLACEMENT["backfill_instants_seen"] += 1
+            if mine and not (theirs & mine):
+                EVENT_PLACEMENT["instants_filtered"] += 1
                 continue
         out.append({"symbol": str(symbol), "at": ts.isoformat()})
     return out

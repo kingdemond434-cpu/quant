@@ -83,10 +83,25 @@ def test_the_event_index_reads_the_backfilled_history_beside_the_polled_calendar
     for sym in ("AUDNZD", "GER40"):
         assert [e["at"] for e in fi.events_for_symbol(idx, sym)] == ["2026-09-04T12:30:00+00:00"]
     assert len(fi.events_for_symbol(idx, "MYSTERY")) == 3   # unknown is not a refusal
+    # A WORKER HANDED THE INDEX BUILT ELSEWHERE STILL FILTERS (audit of a93a35352f2a). The table
+    # is a module global `_event_index` fills; a spawned worker inherits neither it nor the
+    # cache. An empty table is never taken at its word: the index is read here and the filter
+    # holds, and the counters say so by name.
+    osw._event_index.cache_clear()
+    osw.EVENT_BACKFILL_CURRENCY.clear()
+    monkeypatch.setattr(fi, "EVENT_PLACEMENT", dict.fromkeys(fi.EVENT_PLACEMENT, 0))
+    assert [e["at"] for e in fi.events_for_symbol(idx, "AUDNZD")] == ["2026-09-04T12:30:00+00:00"]
+    assert fi.EVENT_PLACEMENT == {"calls": 1, "table_empty_calls": 0, "table_self_loaded": 1,
+                                  "backfill_instants_seen": 2, "instants_filtered": 2}
+    assert len(fi.events_for_symbol(idx, "EURUSD")) == 3
+    assert fi.EVENT_PLACEMENT["table_self_loaded"] == 1 and fi.EVENT_PLACEMENT["calls"] == 2
+    assert fi.EVENT_PLACEMENT["backfill_instants_seen"] == 4
+    assert fi.EVENT_PLACEMENT["instants_filtered"] == 2
     # no backfill directory: the polled calendar alone, exactly as before
     monkeypatch.setattr(osw, "EVENT_BACKFILL_DIR", tmp_path / "absent")
     osw._event_index.cache_clear()
     assert [t.isoformat() for t in osw._event_index()] == ["2026-09-04T12:30:00+00:00"]
     assert osw.EVENT_BACKFILL_CURRENCY == {} and len(fi.events_for_symbol(
         pd.DatetimeIndex(["2015-03-06 13:30"], tz="UTC"), "AUDNZD")) == 1
+    assert fi.EVENT_PLACEMENT["table_empty_calls"] == 1      # named, never silent
     osw._event_index.cache_clear()               # leave no temp-dir reading behind
