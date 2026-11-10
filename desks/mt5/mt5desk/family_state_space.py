@@ -36,6 +36,13 @@ ITEM 58 (added after the five above, same conventions):
                      length-scale chosen per calendar block by marginal likelihood; trades the
                      forecast drift measured in its own posterior sd.
 
+HOW THE TWO ITEM-58 DEFAULTS WERE SET, ON THE RECORD. `particle_regime`'s `drift_vol` and
+`gp_forecast`'s `amp` were first written as 0.1. A first smoke on EURUSD H1 (54,205 bars) gave 37
+and 81 signals in eight years, too few for the judge's 60-day observations gate, and both were
+moved to 0.2 (251 and 416 signals on the first cut). The choice was made on SIGNAL COUNT, with
+no return, R or Sharpe looked at -- but it was made after seeing data, and is written here so
+nobody reads the defaults as priors that were fixed blind. Both remain on the sweep grid.
+
 EVERY ESTIMATE IS CAUSAL. Parameters are fitted on a trailing window that ends at the bar being
 labelled (GARCH refits on blocks it could not see; the rolling statistics end at bar i), the
 signal at bar i uses only bar i's close, and the engine fills at the next bar's open
@@ -933,7 +940,11 @@ def gp_forecast_path(r: pd.Series, window: int, horizon: int, amp: float
     if not len(starts) or amp <= 0 or k < 1 or n < w:
         return pd.Series(tstat, index=r.index), pd.Series(used, index=r.index)
     models = [_gp_weights(w, k, float(amp), ell) for ell in GP_LENGTHS]
-    view = sliding_window_view(x, w)             # view[i - w + 1] = x[i - w + 1 .. i]
+    # THE FORECAST READS WHAT THE LENGTH-SCALE WAS CHOSEN ON: z, each bar over the sd of the
+    # window ending at it. The first cut forecast from raw returns over the END bar's sd while
+    # the marginal likelihood was scored on z -- two standardisations of one model (audit
+    # should-fix 2026-11-10). One series now feeds both.
+    view = sliding_window_view(z, w)             # view[i - w + 1] = z[i - w + 1 .. i]
     ends = np.append(starts[1:], n)
     for s0, e in zip(starts, ends, strict=True):
         y = z[s0 - w:s0]
@@ -946,8 +957,8 @@ def gp_forecast_path(r: pd.Series, window: int, horizon: int, amp: float
             if ll > best_ll:
                 best, best_ll = m, ll
         wts, psd, _ = models[best]
-        with np.errstate(divide="ignore", invalid="ignore"):
-            mean = (view[s0 - w + 1:e - w + 1] @ wts) / sd[s0:e]
+        with np.errstate(invalid="ignore"):
+            mean = view[s0 - w + 1:e - w + 1] @ wts     # NaN where the window holds an undefined z
         tstat[s0:e] = mean / psd
         used[s0:e] = GP_LENGTHS[best]
     return pd.Series(tstat, index=r.index), pd.Series(used, index=r.index)

@@ -245,6 +245,37 @@ def test_particle_filter_is_the_same_filter_twice():
     assert a.notna().sum() > 1000 and a.equals(b)
 
 
+def test_particle_count_moves_the_signals_by_a_stated_share():
+    """The filter is Monte Carlo: the particle count is not a cell axis, so its effect is a
+    number. Measured 2026-11-10 on three GJR series at 128 vs 256 particles: signal counts within
+    3-8% of each other, 58-71% of the 128-particle signals identical in bar and side."""
+    d = _frame(1.2 * np.exp(np.cumsum(_gjr(8000, seed=21))))
+    a = {(s.time, s.side) for s in fs.family_particle_regime(d, n_particles=128)}
+    b = {(s.time, s.side) for s in fs.family_particle_regime(d, n_particles=256)}
+    assert len(a) > 30 and len(b) > 30
+    assert abs(len(a) - len(b)) / max(len(a), len(b)) < 0.15
+    assert len(a & b) / len(a) >= 0.5
+
+
+def test_gp_forecast_reads_the_series_its_length_scale_was_chosen_on():
+    """Scaling every return by a constant changes neither the standardised series nor the
+    forecast; the first cut divided raw returns by the end bar's sd only."""
+    rng = np.random.default_rng(41)
+    n = 2500
+    idx = pd.date_range("2020-01-01", periods=n, freq="h", tz="UTC")
+    vol = np.where((np.arange(n) // 300) % 2 == 0, 1.0, 4.0)        # sd changes inside windows
+    x = pd.Series(1e-3 * vol * rng.standard_normal(n), index=idx)
+    t1, e1 = fs.gp_forecast_path(x, 240, 8, 0.2)
+    t2, e2 = fs.gp_forecast_path(1000.0 * x, 240, 8, 0.2)
+    ok = t1.notna().to_numpy()
+    assert ok.sum() > 1500 and np.array_equal(ok, t2.notna().to_numpy())
+    assert np.allclose(t1[ok], t2[ok], rtol=1e-9, atol=1e-12) and e1.equals(e2)
+    z = x / x.rolling(240, min_periods=240).std()
+    i = int(np.flatnonzero(ok)[-1])
+    wts, psd, _ = fs._gp_weights(240, 8, 0.2, float(e1.iloc[i]))
+    assert t1.iloc[i] == pytest.approx(float(z.iloc[i - 239:i + 1].to_numpy() @ wts) / psd)
+
+
 def test_gp_forecast_tracks_a_smooth_drift_and_says_little_about_noise():
     n = 4000
     rng = np.random.default_rng(41)
