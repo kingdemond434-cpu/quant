@@ -849,8 +849,10 @@ def sweep(budget_s: float | None = None) -> dict:
             "correlation_regime": {"peer": peer_df},
             # The quant-framework pair families (2026-11-10): the same structural peer, named by
             # value -- they read its H1 closes themselves and are declared H1-only.
-            "kalman_pair": {"pair_symbol": peer_sym},
-            "copula_pair": {"pair_symbol": peer_sym},
+            # `pair_symbol` is REQUIRED on both, so with no structural peer the entry is empty and
+            # `_unsuppliable` names the gap instead of emitting a cell that could never fire.
+            "kalman_pair": {"pair_symbol": peer_sym} if peer_sym else {},
+            "copula_pair": {"pair_symbol": peer_sym} if peer_sym else {},
             "cross_asset_residual": {"factors": factor_dfs},
             # NEVER PASSED BEFORE. Absent from this map, `pca_residual` ran with factors=None,
             # hit its own `len(factors) < 4` refusal and returned [] on every symbol in the

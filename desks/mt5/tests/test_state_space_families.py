@@ -99,7 +99,7 @@ def test_bracket_is_anchored_on_the_signal_bars_own_close(name):
         assert px == pytest.approx(float(d["close"].loc[s.time]), rel=1e-12)
 
 
-def _pair(n: int = 3000) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _pair(n: int = 4000) -> tuple[pd.DataFrame, pd.DataFrame]:
     rng = np.random.default_rng(13)
     common = np.cumsum(0.001 * rng.standard_normal(n))
     spread = _ou(n, hl=10.0, seed=14)
@@ -131,7 +131,10 @@ def test_a_named_pair_with_no_bars_is_a_named_failure(name, monkeypatch):
     a, _b = _pair()
     with pytest.raises(ValueError, match="no H1 bars"):
         fs.FAMILIES[name](a, pair_symbol="NOSUCH")
-    assert fs.FAMILIES[name](a) == []            # no pair named: nothing to trade, no error
+    with pytest.raises(TypeError):               # no pair named: a failed build, never a zero
+        fs.FAMILIES[name](a)
+    with pytest.raises(ValueError, match="no pair_symbol"):
+        fs.FAMILIES[name](a, pair_symbol="")
 
 
 @pytest.mark.parametrize("name", ["kalman_pair", "copula_pair"])
@@ -141,6 +144,32 @@ def test_pair_families_refuse_a_chart_the_store_cannot_match(name, monkeypatch):
     four_hour = a.iloc[::4]
     with pytest.raises(ValueError, match="H1 only"):
         fs.FAMILIES[name](four_hour, pair_symbol="PEER")
+
+
+@pytest.mark.parametrize("name", ["garch_shock", "kalman_trend", "ou_reversion",
+                                  "kalman_pair", "copula_pair"])
+def test_a_frame_that_starts_later_trades_the_same_rule(name, monkeypatch):
+    """The forward clock's frame is shorter than the gauntlet's; the certificate must not move."""
+    a, b = _pair(6000)
+    _store(monkeypatch, b)
+    kw = {"pair_symbol": "PEER"} if name in fs.PEER_FAMILIES else {}
+    if name == "garch_shock":
+        kw.update(entry_z=2.0)
+    fn = fs.FAMILIES[name]
+    late = a.index[4500]
+    full = [(s.time, s.side, round(s.stop, 9), round(s.target, 9))
+            for s in fn(a, **kw) if s.time >= late]
+    for shift in (1, 137):
+        cut = [(s.time, s.side, round(s.stop, 9), round(s.target, 9))
+               for s in fn(a.iloc[shift:], **kw) if s.time >= late]
+        assert full and cut == full, (name, shift)
+
+
+def test_garch_refit_blocks_are_cut_by_the_calendar():
+    idx = pd.date_range("2020-01-01", periods=3000, freq="h", tz="UTC")
+    full = idx[fs._refit_starts(idx, 1000, 250)]
+    shifted = idx[7:][fs._refit_starts(idx[7:], 1000, 250)]
+    assert len(full) >= 7 and set(shifted) <= set(full) and set(full[1:]) <= set(shifted)
 
 
 def test_the_sealed_gauntlet_can_build_every_family():

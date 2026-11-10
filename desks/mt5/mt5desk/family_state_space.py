@@ -143,33 +143,56 @@ def fit_gjr_garch(r: np.ndarray) -> tuple[float, float, float, float] | None:
     return om * s * s, a, g, b
 
 
+def _refit_starts(index: pd.DatetimeIndex, window: int, refit: int) -> np.ndarray:
+    """Bar positions where a new fit begins, anchored to the CALENDAR, not to the frame's start.
+
+    A block boundary is the first bar of each period of `refit` bar-steps counted from the epoch,
+    so the gauntlet's frame and a forward clock's shorter frame cut the same blocks and a
+    certificate trades the rule it was judged on. Anchoring at the frame's first bar (`k = window,
+    window + refit, ...`) was prefix-invariant but moved every fit when the frame started one bar
+    later. Only boundaries with a full trailing `window` behind them are used.
+    """
+    n = len(index)
+    if n < 2:
+        return np.array([], dtype=int)
+    idx = index if index.tz is None else index.tz_convert(None)
+    ns = idx.as_unit("ns").asi8
+    step = int(np.median(np.diff(ns)))
+    if step <= 0:
+        return np.array([], dtype=int)
+    period = ns // (step * int(refit))
+    starts = np.flatnonzero(np.diff(period, prepend=period[0]) != 0)
+    return starts[starts >= window]
+
+
 def garch_sigma_path(r: pd.Series, window: int, refit: int) -> tuple[pd.Series, pd.Series]:
     """Walk-forward conditional sigma_{t|t-1} and the variance ratio sigma^2_{t+1|t} / long-run.
 
-    The block [k, k+refit) is labelled with parameters fitted on r[k-window:k] -- returns the fit
-    never saw are the only ones it labels. The recursion is warmed up over that same trailing
-    window, so each block's first forecast is not an arbitrary initial value.
+    Each block (see `_refit_starts`) is labelled with parameters fitted on the `window` returns
+    before its first bar -- returns the fit never saw are the only ones it labels. The recursion
+    is warmed up over that same trailing window from its sample variance, so a block's forecasts
+    depend on nothing earlier than `window` bars before it: the path is the same whatever bar the
+    frame happens to start on.
     """
     x = r.to_numpy(dtype=float)
     n = x.size
     sig = np.full(n, np.nan)
     ratio = np.full(n, np.nan)
-    k = window
-    while k < n:
+    starts = _refit_starts(pd.DatetimeIndex(r.index), int(window), int(refit))
+    for j, k in enumerate(starts):
+        end = int(starts[j + 1]) if j + 1 < len(starts) else n
         hist = x[k - window:k]
         fit = fit_gjr_garch(hist)
-        end = min(n, k + refit)
-        if fit is not None:
-            om, a, g, b = fit
-            pers = a + b + 0.5 * g
-            lr = om / (1.0 - pers) if pers < 1 else np.nan
-            seg = np.nan_to_num(x[k - window:end] - np.nanmean(hist))
-            v = _gjr_var_path(seg, om, a, g, b, float(np.nanvar(hist)))
-            off = window
-            sig[k:end] = np.sqrt(v[off:off + (end - k)])
-            if math.isfinite(lr) and lr > 0:
-                ratio[k:end] = v[off + 1:off + 1 + (end - k)] / lr
-        k = end
+        if fit is None:
+            continue
+        om, a, g, b = fit
+        pers = a + b + 0.5 * g
+        lr = om / (1.0 - pers) if pers < 1 else np.nan
+        seg = np.nan_to_num(x[k - window:end] - np.nanmean(hist))
+        v = _gjr_var_path(seg, om, a, g, b, float(np.nanvar(hist)))
+        sig[k:end] = np.sqrt(v[window:window + (end - k)])
+        if math.isfinite(lr) and lr > 0:
+            ratio[k:end] = v[window + 1:window + 1 + (end - k)] / lr
     return pd.Series(sig, index=r.index), pd.Series(ratio, index=r.index)
 
 
@@ -224,7 +247,7 @@ def family_garch_shock(
     if side_mode not in {"fade", "follow"} or vol_state not in {"any", "calm", "stressed"}:
         return []
     d = _h1(df)
-    if len(d) < window + refit:
+    if len(d) < window + 2:
         return []
     lc = pd.Series(_log_close(d), index=d.index)
     r = lc.diff()
@@ -355,7 +378,7 @@ def family_kalman_trend(
     return out
 
 
-def _peer_frame(family: str, d: pd.DataFrame, pair_symbol: str | None) -> pd.DataFrame | None:
+def _peer_frame(family: str, d: pd.DataFrame, pair_symbol: str) -> pd.DataFrame:
     """The peer's H1 closes on THIS cell's stamps, read from the bar store by `pair_symbol`.
 
     THE FAMILY LOADS ITS OWN SECOND LEG, the class books' and `families_specialist`'s contract
@@ -370,10 +393,12 @@ def _peer_frame(family: str, d: pd.DataFrame, pair_symbol: str | None) -> pd.Dat
     instead of pairing a fresh close with a stale one. H1 only, declared in `FAMILY_TIMEFRAMES`:
     the store holds the peer at H1, and an H1 close joined onto an M5 cell is the chart mismatch
     `family_inputs` documents. A named peer that cannot be read RAISES, so the judge files a
-    build failure by name rather than a cell that "never fires".
+    build failure by name rather than a cell that "never fires". `pair_symbol` is a REQUIRED
+    keyword on both families for the same reason: a cell that names no second leg is a failed
+    build (TypeError), and the orthogonal sweep files it as unsuppliable instead of calling it.
     """
     if not pair_symbol:
-        return None
+        raise ValueError(f"{family}: no pair_symbol on the cell")
     step = pd.Series(d.index).diff().median()
     if step != pd.Timedelta(hours=1):
         raise ValueError(f"{family}: pair_symbol={pair_symbol!r} on a {step} chart; the peer is "
@@ -432,11 +457,12 @@ def kalman_hedge_path(a: np.ndarray, b: np.ndarray, delta: float, lam: float = 0
 def family_kalman_pair(
     df: pd.DataFrame,
     *,
-    pair_symbol: str | None = None,
+    pair_symbol: str,
     delta: float = 1e-4,
     entry_z: float = 2.0,
     target_frac: float = 1.0,
-    warmup: int = 500,
+    min_target_atr: float = 0.5,
+    warmup: int = 1000,
     atr_n: int = 20,
     stop_atr: float = 2.5,
     ttl_bars: int = 48,
@@ -446,13 +472,17 @@ def family_kalman_pair(
     Single-leg proxy, exactly as `relative_value` states for itself: the engine holds one
     position, so the signal trades THIS instrument against the dislocation. The target is the
     price at which `target_frac` of the innovation has closed; the stop is ATR-based.
+
+    `min_target_atr` refuses a dislocation too small to trade: z can be large only because the
+    predicted variance is small, and a target a fraction of the spread away is a cost, not an
+    edge. `warmup` is long because the hedge ratio's memory is ~1/sqrt(delta) bars: by then the
+    filter has forgotten which bar the frame started on, so the gauntlet's frame and a forward
+    clock's shorter one trade the same rule.
     """
     if not (0 < delta < 1):
         return []
     d = _h1(df)
     p = _peer_frame("kalman_pair", d, pair_symbol)
-    if p is None:
-        return []
     j = d[["close"]].join(p[["close"]], how="inner", rsuffix="_peer").dropna()
     if len(j) < warmup + 100:
         return []
@@ -471,9 +501,12 @@ def family_kalman_pair(
                 continue
             side = -1 if z[i] > 0 else 1
             px = float(close[i])
+            target = px * math.exp(-target_frac * float(e[i]))
+            if abs(target - px) < min_target_atr * atr[i]:
+                continue
             out.append(Signal(time=j.index[i], side=side, stop=px - side * stop_atr * atr[i],
-                              target=px * math.exp(-target_frac * float(e[i])),
-                              ttl_bars=ttl_bars, tag="kalman_pair", trigger=None, wait_bars=1))
+                              target=target, ttl_bars=ttl_bars, tag="kalman_pair",
+                              trigger=None, wait_bars=1))
     out.sort(key=lambda s: s.time)
     return out
 
@@ -502,12 +535,11 @@ def copula_mispricing(ra: pd.Series, rb: pd.Series, window: int, kind: str, nu: 
         xa = pd.Series(stats.norm.ppf(ua), index=ra.index)
         xb = pd.Series(stats.norm.ppf(ub), index=ra.index)
     rho = xa.rolling(n, min_periods=n).corr(xb).clip(-0.995, 0.995)
-    one = np.sqrt(1 - rho * rho)
     if kind == "t":
         scale = np.sqrt((nu + xb * xb) * (1 - rho * rho) / (nu + 1))
         h = pd.Series(stats.t.cdf((xa - rho * xb) / scale, nu + 1), index=ra.index)
     else:
-        h = pd.Series(stats.norm.cdf((xa - rho * xb) / one), index=ra.index)
+        h = pd.Series(stats.norm.cdf((xa - rho * xb) / np.sqrt(1 - rho * rho)), index=ra.index)
     h = h.where(np.isfinite(rho))
     m = (h - 0.5).rolling(int(cum_bars), min_periods=int(cum_bars)).sum()
     return m, rho
@@ -516,7 +548,7 @@ def copula_mispricing(ra: pd.Series, rb: pd.Series, window: int, kind: str, nu: 
 def family_copula_pair(
     df: pd.DataFrame,
     *,
-    pair_symbol: str | None = None,
+    pair_symbol: str,
     window: int = 500,
     kind: str = "t",
     nu: float = 4.0,
@@ -538,8 +570,6 @@ def family_copula_pair(
         return []
     d = _h1(df)
     p = _peer_frame("copula_pair", d, pair_symbol)
-    if p is None:
-        return []
     j = d[["close"]].join(p[["close"]], how="inner", rsuffix="_peer").dropna()
     if len(j) < 2 * window + cum_bars:
         return []
@@ -602,6 +632,7 @@ def family_ou_reversion(
     hl_max: float = 96.0,
     hold_mult: float = 2.0,
     target_frac: float = 0.5,
+    min_target_atr: float = 0.5,
     atr_n: int = 20,
     stop_atr: float = 2.5,
     max_ttl: int = 240,
@@ -633,9 +664,12 @@ def family_ou_reversion(
             side = -1 if z[i] > 0 else 1
             px = float(close[i])
             ttl = int(min(max_ttl, math.ceil(hold_mult * hv[i])))
+            target = px * math.exp(-target_frac * (xv[i] - mv[i]))
+            if abs(target - px) < min_target_atr * atr[i]:
+                continue                         # a reversion smaller than its own cost
             out.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * atr[i],
-                              target=px * math.exp(-target_frac * (xv[i] - mv[i])),
-                              ttl_bars=ttl, tag="ou_reversion", trigger=None, wait_bars=1))
+                              target=target, ttl_bars=ttl, tag="ou_reversion",
+                              trigger=None, wait_bars=1))
     out.sort(key=lambda s: s.time)
     return out
 

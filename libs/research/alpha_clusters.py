@@ -202,6 +202,8 @@ FAMILY_CLUSTER: dict[str, str] = {
     "correlation_regime": "relative_value",
     "triangle": "relative_value",
     "rv_triangle": "relative_value",
+    "kalman_pair": "relative_value",
+    "copula_pair": "relative_value",
     # -- fixing, roll and calendar
     "dow_effect": "fixing_roll_calendar",
     "turn_of_month": "fixing_roll_calendar",
@@ -214,13 +216,16 @@ FAMILY_CLUSTER: dict[str, str] = {
     "vol_mean_reversion": "volatility_transition",
     "momentum_volgate": "volatility_transition",
     "regime_transition": "volatility_transition",
+    "garch_shock": "volatility_transition",
     # -- trend
     "asia_momentum": "trend",
     "london_close_momentum": "trend",
     "multi_speed_trend": "trend",
+    "kalman_trend": "trend",
     "trend": "trend",
     # -- mean reversion and liquidity provision
     "overnight_gap_decay": "mean_reversion",
+    "ou_reversion": "mean_reversion",
     "failed_breakout": "mean_reversion",
     "fair_value_gap": "mean_reversion",
     "m15_anti_breakout": "mean_reversion",
