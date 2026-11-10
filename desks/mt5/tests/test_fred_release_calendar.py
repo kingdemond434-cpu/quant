@@ -100,7 +100,7 @@ def test_a_release_that_is_really_daily_loads_writes_nothing(tmp_path: Path) -> 
     assert rep["unmeasured"] == ["fomc"] and "not used" in rep["releases"]["fomc"]["status"]
     assert not (tmp_path / "cal" / "backfill_fredrel_fomc.jsonl.gz").exists()
     gone = rep["removed"][0]                                 # the drop is named, with its size
-    assert gone["release"] == "fomc" and gone["rows_removed"] == 16
+    assert gone["release"] == "fomc" and gone["rows_removed"] == fomc["rows"] > 0
     assert gone["date"] == "2026-11-11" and rep["rows_total"] == 0
 
 
