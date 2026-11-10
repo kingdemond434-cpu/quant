@@ -93,3 +93,25 @@ def test_trial_coordinates_and_the_grid_census() -> None:
     assert ok["per_axis_distinct"]["asset"] == 2
     assert ig.grid_census(rows, charged=1)["verdict"] == "UNDER_CHARGED"
     assert ig.grid_census([], charged=0)["verdict"] == "UNMEASURED"
+
+
+def test_alt_proxies_trial_grid_counts_direct_and_conditioned_trials() -> None:
+    import sys
+    from pathlib import Path
+    desk = str(Path(__file__).resolve().parents[2] / "desks" / "mt5")
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from research import alt_proxies as A
+    gains = {"s|a|EURUSD": {"verdict": "FAIL", "trial": A._trial("s", "a", "EURUSD")},
+             "s|a|XAUUSD": {"verdict": "PASS", "trial": A._trial("s", "a", "XAUUSD")},
+             "s|a|USDJPY": {"verdict": "UNMEASURED", "why": "no bars"}}
+    gates = [{"cell": "XAUUSD.asia|alt:lake_x:pace:gt:0", "family": "srb", "parent": "p1",
+              "n_trials": 2},
+             {"cell": "XAUUSD.asia|alt:lake_x:pace:lt:0", "family": "srb", "parent": "p1",
+              "n_trials": 2}]
+    g = A.trial_grid(gains, gates)
+    assert g["direct"]["distinct_coordinates"] == 2 and g["direct"]["charged"] == 3
+    assert g["direct"]["verdict"] == "CHARGED"
+    assert g["conditioned"]["distinct_coordinates"] == 2
+    assert g["conditioned"]["verdict"] == "CHARGED"
+    assert g["direct"]["per_axis_distinct"]["asset"] == 2
