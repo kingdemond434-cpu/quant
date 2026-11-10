@@ -17,7 +17,7 @@
  "uptime_s": 1164288.8,
  "last_sweep_ended_utc": "2026-11-10T04:05:58+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-10T07:34:59+00:00",
+ "heartbeat_utc": "2026-11-10T07:49:59+00:00",
  "sweep_phase": {
   "pid": 30464,
   "sweep_started_utc": "2026-11-10T04:06:13+00:00",
@@ -251,42 +251,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 120,
+     "samples": 204,
      "top": [
       {
        "stack": "preregistration.py:spec_index:286 < hypothesis_graph.py:record_gauntlet_verdicts:837 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170 < external_gauntlet.py:main:3960 < external_gauntlet.py:run_sharded:4844",
-       "n": 89,
-       "share": 0.742
+       "n": 168,
+       "share": 0.824
       },
       {
        "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
        "n": 4,
-       "share": 0.033
+       "share": 0.02
+      },
+      {
+       "stack": "hypothesis_graph.py:<genexpr>:810 < hypothesis_graph.py:_fold_fates:774 < hypothesis_graph.py:_fate_index:810 < hypothesis_graph.py:record_gauntlet_verdicts:846 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170",
+       "n": 3,
+       "share": 0.015
       },
       {
        "stack": "_axis_nan_policy.py:_broadcast_shapes:100 < _axis_nan_policy.py:_broadcast_arrays:55 < _axis_nan_policy.py:axis_nan_policy_wrapper:541 < dsr.py:probabilistic_sharpe_ratio:35 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
        "n": 2,
-       "share": 0.017
+       "share": 0.01
       },
       {
        "stack": "_function_base_impl.py:place:2149 < _distn_infrastructure.py:ppf:2340 < dsr.py:expected_max_sharpe:49 < dsr.py:deflated_sharpe_ratio:84 < external_gauntlet.py:run_gauntlet:3184 < external_gauntlet.py:main:3883",
        "n": 2,
-       "share": 0.017
-      },
-      {
-       "stack": "_linalg.py:eigvalsh:1359 < trial_ledger.py:participation_ratio:239 < trial_ledger.py:family_census:260 < trial_ledger.py:census:275 < external_gauntlet.py:structural_trial_census:2226 < external_gauntlet.py:<lambda>:3341",
-       "n": 2,
-       "share": 0.017
+       "share": 0.01
       }
      ],
      "process": {
-      "cpu_s": 442.3,
-      "page_faults": 15451772.0,
-      "read_bytes": 4208333494.0,
-      "write_bytes": 981230820.0,
-      "sampled_s": 1190.0,
+      "cpu_s": 586.4,
+      "page_faults": 16743772.0,
+      "read_bytes": 8529389466.0,
+      "write_bytes": 981398991.0,
+      "sampled_s": 2030.0,
       "rss_mb_max": 5603.5,
-      "cpu_share_of_wall": 0.372
+      "cpu_share_of_wall": 0.289
      }
     }
    }
