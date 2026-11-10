@@ -67,6 +67,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+try:
+    from research import decay_regime
+except ImportError:  # run as a script from desks/mt5/research
+    import decay_regime  # type: ignore[no-redef]
+
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
@@ -291,6 +296,15 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
                               f"inside the band; fades stand as they are")
         out[key] = {**s, "verdict": v, "why": why, "sleeves": sorted(names)}
     return out
+
+
+def _regime(name: str, rs: list[float]) -> tuple[dict | None, str | None]:
+    """decay_regime.classify for one sleeve, or (None, why) when it cannot run. A detector that
+    fails leaves the ladder's verdict exactly as it was: it adds evidence, never removes a rail."""
+    try:
+        return decay_regime.classify(rs), None
+    except Exception as exc:  # noqa: BLE001 -- the ladder stands; the failure is reported
+        return None, f"UNMEASURED: regime detectors failed ({type(exc).__name__}: {exc})"
 
 
 def queue_close(names: list[str], path: Path | None = None) -> None:
@@ -594,9 +608,21 @@ def main(write_queue: bool = True) -> int:
     live = {k: v for k, v in sleeves.items()
             if isinstance(v, dict) and str(v.get("status") or "LIVE").upper() == "LIVE"}
     for name, row in live.items():
-        s = stats([float(t["r_multiple"]) for t in sleeve_trades(name)])
+        rs = [float(t["r_multiple"]) for t in sleeve_trades(name)]
+        s = stats(rs)
         v, why = verdict(s)
-        report[name] = {**s, "verdict": v, "why": why,
+        ladder = v
+        # REGIME-AWARE (principal 2026-10-29; decay_regime.py): a change-point and a switching
+        # model move the ladder ONE step, two-sided -- a bad stretch is not a dead edge (a t-rule
+        # RETIRE becomes FADE), a break is caught before n=20 (HEALTHY becomes FADE). The DD
+        # rail and the pooled verdicts are never moved; gold_asia is exempt.
+        regime, step = _regime(name, rs)
+        if regime is not None:
+            v, why, step = decay_regime.adjust(name, v, why, s, regime)
+        report[name] = {**s, "verdict": v, "why": why, "ladder_verdict": ladder,
+                        "regime_class": (regime or {}).get("class", "UNMEASURED"),
+                        "regime_why": (regime or {}).get("why", step),
+                        "regime_step": step if regime is not None else None,
                         "risk_frac": row.get("risk_frac")}
         # THE FLAG IS THE FADE (gap-fixer 2026-08-29). This block used to HALVE `risk_frac`
         # in the row as well. `mt5desk.sizing.clamp_risk_frac` floors at BASE_RISK_FRAC=0.03,
