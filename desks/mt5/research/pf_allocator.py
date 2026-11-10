@@ -2961,6 +2961,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     # building the matrix took ~5 s of each candidate's 8 s budget (2026-11-10 19:26Z: 190
     # re-solves stopped at 0 iterations), so the budget bought setup instead of ascent.
     corr_m = _corr_abs(ev)
+    restarted_names: list[str] = []
     rank = order or {}
     pref = set(prefer or ())
     cand_names.sort(key=lambda n: (n not in pref, -float(rank.get(n, 0.0)), n))
@@ -3010,6 +3011,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
             # ascent never accepts a step that lowers the score, so re-solving from it can only
             # reach a book at least as good as the incumbent.
             restarted = True
+            restarted_names.append(name)
             ws = {**base_heat, name: 0.0}
             deadline = (time.time() + float(budget_s)) if budget_s and budget_s > 0 else None
             try:
@@ -3094,6 +3096,10 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     doc["n_admitted"] = len(doc["admitted"])
     doc["n_unscored"] = len(doc["unscored"])
     doc["n_partial"] = len(doc["partial"])
+    # A RESTART SPENDS A SECOND PER-CANDIDATE BUDGET, so a scan can take up to twice as long;
+    # the count is published so a slow scan is explained, not guessed at (Auditor SF, #873).
+    doc["n_restarted_from_incumbent"] = len(restarted_names)
+    doc["restarted_from_incumbent"] = sorted(restarted_names)
     doc["elapsed_s"] = round(time.time() - t0, 1)
     doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
     doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)

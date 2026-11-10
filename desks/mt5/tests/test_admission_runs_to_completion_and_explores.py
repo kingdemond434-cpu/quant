@@ -302,6 +302,8 @@ def test_a_ruinous_carried_start_is_re_solved_from_the_incumbent_not_refused() -
                                 budget_s=-1.0, **common)
     row = doc["candidates"][crashy.name]
     assert row["restarted_from_incumbent"] is True and row["warm_started_from_last_pass"] is True
+    assert doc["n_restarted_from_incumbent"] == 1
+    assert doc["restarted_from_incumbent"] == [crashy.name]
     assert "wiped out" not in row["why"] and row["delta_elogw_per_day"] is not None
     cold = pa.marginal_admission(ev, worlds, cfg, budget_s=-1.0, **common)
     assert cold["candidates"][crashy.name]["restarted_from_incumbent"] is False
