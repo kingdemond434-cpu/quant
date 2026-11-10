@@ -3042,3 +3042,102 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ---------------------------- #844 follow-up: a red merge whose parent's run was replaced
+
+
+def _rm(sha: str, parent: str, n: int = 9) -> dict[str, Any]:
+    msg = f"Merge #{n} ({ag.REGISTRY_TITLE} aaaaaaaaa, from the box)"
+    return {"sha": sha, "commit": {"message": msg}, "parents": [{"sha": parent}]}
+
+
+def test_a_red_merge_with_an_unmeasured_parent_is_listed_and_never_reverted() -> None:
+    red, parent, other = "1" * 40, "2" * 40, "3" * 40
+    commits = [_rm(red, parent), _rm(other, parent, 8)]
+    for pci in ([], ["cancelled"], ["cancelled", "cancelled"]):
+        ci = {red: ["failure"], other: ["success"], parent: pci}
+        assert ag.unmeasured_parents(commits, ci) == [(red, parent)]
+        assert ag.to_revert(commits, ci) == []  # never a revert on a guess
+    # a parent with a verdict is to_revert()'s business, not this one's
+    for pci in (["success"], ["failure"], ["cancelled", "success"]):
+        assert ag.unmeasured_parents(commits, {red: ["failure"], parent: pci}) == []
+    reverted = [
+        *commits,
+        {"sha": "4" * 40, "commit": {"message": f"x\n\nThis reverts commit {red}."}},
+    ]
+    assert ag.unmeasured_parents(reverted, {red: ["failure"], parent: []}) == []
+
+
+def _runs_gh(runs: dict[str, list[dict[str, Any]]], calls: list[str]) -> Any:
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        calls.append(" ".join([path, *a]))
+        if "status=success" in path:
+            return {"workflow_runs": [{"head_sha": "9" * 40}]}
+        for sha, rs in runs.items():
+            if f"head_sha={sha}" in path:
+                return {"workflow_runs": rs}
+        return None
+
+    return gh
+
+
+def _ci_run(i: int, concl: str | None, status: str = "completed") -> dict[str, Any]:
+    return {"id": i, "name": "ci", "status": status, "conclusion": concl,
+            "created_at": f"2026-11-10T1{i}:00:00Z"}  # fmt: skip
+
+
+def test_the_parents_replaced_run_is_rerun_once_recorded_before_the_call(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    red, parent = "1" * 40, "2" * 40
+    state = tmp_path / "reg.jsonl.revert.json"
+    calls: list[str] = []
+    sent: list[tuple[str, str]] = []
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.endswith("/rerun"):
+            assert json.loads(state.read_text())[red]["rerun"] == 5  # recorded BEFORE the call
+        return _runs_gh({parent: [_ci_run(3, "cancelled"), _ci_run(5, "cancelled")]}, calls)(
+            path, *a
+        )
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    notify = lambda t, b: sent.append((t, b)) or True  # noqa: E731
+    assert ag.measure_parents("o/r", ag.LIVE, [(red, parent)], state, notify) == 0
+    assert [c for c in calls if "/rerun" in c] == ["repos/o/r/actions/runs/5/rerun -X POST"]
+    assert sent == []
+    # the re-run is still running: nothing more is done
+    calls.clear()
+    monkeypatch.setattr(ag, "_gh", _runs_gh({parent: [_ci_run(5, None, "queued")]}, calls))
+    assert ag.measure_parents("o/r", ag.LIVE, [(red, parent)], state, notify) == 0
+    assert not any("/rerun" in c for c in calls) and sent == []
+
+
+def test_a_rerun_replaced_again_or_no_run_alerts_once_with_the_range_and_never_reruns_twice(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    red, parent = "1" * 40, "2" * 40
+    state = tmp_path / "reg.jsonl.revert.json"
+    state.write_text(json.dumps({red: {"parent": parent, "rerun": 5, "at": "x"}}))
+    calls: list[str] = []
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr(ag, "_gh", _runs_gh({parent: [_ci_run(5, "cancelled")]}, calls))
+    notify = lambda t, b: sent.append((t, b)) or True  # noqa: E731
+    for _ in range(2):
+        assert ag.measure_parents("o/r", ag.LIVE, [(red, parent)], state, notify) == 0
+    assert not any("/rerun" in c for c in calls)  # never a second re-run
+    assert len(sent) == 1 and f"{'9' * 9}..{red[:9]}" in sent[0][1]  # once, naming the range
+    assert "replaced again" in sent[0][1]
+    # a parent with no run at all: alert once, never a re-run
+    other = tmp_path / "other.revert.json"
+    sent.clear()
+    calls.clear()
+    monkeypatch.setattr(ag, "_gh", _runs_gh({parent: []}, calls))
+    undelivered = lambda t, b: False  # noqa: E731
+    assert ag.measure_parents("o/r", ag.LIVE, [(red, parent)], other, undelivered) == 0
+    assert "alerted" not in ag._load_json(other).get(red, {})  # not delivered: retried next sweep
+    for _ in range(2):
+        assert ag.measure_parents("o/r", ag.LIVE, [(red, parent)], other, notify) == 0
+    assert len(sent) == 1 and "no run to re-run" in sent[0][1]
+    assert not any("/rerun" in c for c in calls)

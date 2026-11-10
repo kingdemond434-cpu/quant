@@ -1502,6 +1502,131 @@ def _ci_conclusions(repo: str, sha: str) -> list[str]:
     ]
 
 
+def unmeasured_parents(
+    commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]
+) -> list[tuple[str, str]]:
+    """(merge, first parent) for each registry merge on the base whose LIVE ci FAILED, that no
+    listed commit reverts, and whose first parent has NO completed verdict (only cancelled runs or
+    none). Since #844 a LIVE run still pending is replaced by a newer code push, so in a burst the
+    parent of a red merge can be unmeasured; to_revert() then cannot tell whether the merge broke
+    LIVE or inherited a red base, and reverts nothing. The Auditor's ruling (#844, 11-10 20:08Z):
+    re-run the parent's own replaced run once and decide when it reads; never revert on a guess."""
+    reverted = {
+        m.group(1)
+        for c in commits
+        for m in re.finditer(r"This reverts commit ([0-9a-f]{40})", str(c["commit"]["message"]))
+    }
+    out = []
+    for c in commits:
+        msg, sha = str(c["commit"]["message"]), str(c["sha"])
+        parents = [str(x.get("sha")) for x in c.get("parents") or []]
+        first = parents[0] if parents else ""
+        done = set(ci.get(first, [])) - {"cancelled"}
+        if (
+            is_registry_merge(msg)
+            and first
+            and "failure" in ci.get(sha, [])
+            and not done
+            and sha not in reverted
+        ):
+            out.append((sha, first))
+    return out
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    try:
+        got = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def _save_json(path: Path, data: Mapping[str, Any]) -> bool:
+    try:
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(data, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        return False
+    return True
+
+
+def measure_parents(
+    repo: str,
+    base: str,
+    pairs: list[tuple[str, str]],
+    state_path: Path,
+    notify: Callable[[str, str], bool],
+    now: datetime | None = None,
+) -> int:
+    """For each (red merge, unmeasured parent): re-run the parent's newest replaced (cancelled)
+    ci run ONCE, recorded in `state_path` BEFORE the call so it is never re-run twice. When the
+    parent has no run to re-run, or its one re-run was replaced again, alert once per (merge,
+    reason) naming the range last-green..red, and wait. Nothing here reverts: a revert still
+    needs to_revert(), i.e. the parent reading success and the merge reading red. rc 1 on any
+    failed call, else 0."""
+    now = now or datetime.now(UTC)
+    state = _load_json(state_path)
+    rc = 0
+    for merge, parent in pairs:
+        rec = state.get(merge) if isinstance(state.get(merge), dict) else None
+        try:
+            runs = (_gh(f"repos/{repo}/actions/runs?head_sha={parent}&per_page=20") or {}).get(
+                "workflow_runs"
+            ) or []
+            runs = [r for r in runs if r.get("name") == "ci"]
+            if any(r.get("status") != "completed" for r in runs):
+                _summary(f"AUTO-REVERT: {merge[:9]} is red; its parent {parent[:9]} is being run")
+                continue
+            replaced = sorted(
+                (r for r in runs if r.get("conclusion") == "cancelled"),
+                key=lambda r: str(r.get("created_at") or ""),
+            )
+            if (rec is None or "rerun" not in rec) and replaced:
+                run_id = int(replaced[-1]["id"])
+                state[merge] = {**(rec or {}), "parent": parent, "rerun": run_id}
+                state[merge]["at"] = now.isoformat()
+                if not _save_json(state_path, state):
+                    _summary(f"AUTO-REVERT: the re-run record for {merge[:9]} was not written")
+                    rc = 1
+                    continue
+                _gh(f"repos/{repo}/actions/runs/{run_id}/rerun", "-X", "POST")
+                _summary(
+                    f"AUTO-REVERT: {merge[:9]} is red and its parent {parent[:9]} unmeasured; "
+                    f"re-ran the parent's replaced run {run_id} once"
+                )
+                continue
+            reason = "rerun-replaced" if rec and "rerun" in rec else "no-run"
+            rec = rec or {"parent": parent}
+            if rec.get("alerted") == reason:
+                continue
+            green = (
+                _gh(f"repos/{repo}/actions/runs?branch={base}&status=success&per_page=1") or {}
+            ).get("workflow_runs") or []
+            last = str(green[0].get("head_sha"))[:9] if green else "unknown"
+            why = (
+                "its one re-run was replaced again"
+                if reason == "rerun-replaced"
+                else "it has no run to re-run"
+            )
+            title = f"LIVE red at {merge[:9]}: auto-revert waits, a person must look"
+            body = (
+                f"Registry merge {merge[:9]} turned LIVE ci red, but its parent {parent[:9]} "
+                f"has no ci verdict ({why}), so the culprit can be any merge in "
+                f"{last}..{merge[:9]}. Nothing was reverted; nothing is released while LIVE is red."
+            )
+            if notify(title, body):
+                rec["alerted"] = reason
+                state[merge] = rec
+                if not _save_json(state_path, state):
+                    rc = 1
+            _summary(f"AUTO-REVERT: {title}; range {last}..{merge[:9]}")
+        except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, ValueError) as exc:
+            _summary(f"AUTO-REVERT: measuring the parent of {merge[:9]} failed: {exc}")
+            rc = 1
+    return rc
+
+
 def auto_revert(repo: str, base: str) -> int:
     """AUTO-REVERT (journal D-20261103-005): a registry merge that turned LIVE ci red is reverted
     on the base by the box, so the tree goes back to the one LIVE ran green before it. Any
@@ -1519,10 +1644,14 @@ def auto_revert(repo: str, base: str) -> int:
                     first = str(parents[0].get("sha"))
                     ci[first] = _ci_conclusions(repo, first)
         bad = to_revert(commits, ci)
+        pairs = unmeasured_parents(commits, ci)
     except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, AttributeError) as exc:
         _summary(f"AUTO-REVERT failed, nothing reverted: {exc}")
         return 1
     rc = 0
+    reg = os.environ.get(REGISTRY_ENV)
+    if pairs and reg:
+        rc = measure_parents(repo, base, pairs, Path(reg + ".revert.json"), run_notify)
     for sha in bad:
         try:
             _git("fetch", "-q", "--no-tags", "origin", base)
