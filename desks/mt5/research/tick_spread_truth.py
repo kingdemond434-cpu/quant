@@ -382,6 +382,13 @@ def measure(root: Path, symbols: list[str] | None = None,
         return rows_out
 
     fills_below, fills_above = _fills(True), _fills(False)
+    # A fills charge on a symbol whose tape centre is 0 cannot be compared by ratio and cannot
+    # be replaced (a zero is never written). It is still a disagreement, and is named as one.
+    fills_zero_tape = [
+        {"symbol": s, "fills_value": r.get("old"), "tape_p50": 0.0, "sleeves": book.get(s, {})}
+        for s, r in sorted(out_rows.items())
+        if r.get("held_source") == "realized_fills" and r.get("tape_p50") == 0
+        and (r.get("old") or 0) > 0]
     return {
         "status": MEASURED,
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -405,6 +412,8 @@ def measure(root: Path, symbols: list[str] | None = None,
             # an execution estimate nobody can count from the registry.
             "n_fills_below_tape": len(fills_below), "fills_below_tape": fills_below,
             "n_fills_above_tape": len(fills_above), "fills_above_tape": fills_above,
+            "n_fills_against_zero_tape": len(fills_zero_tape),
+            "fills_against_zero_tape": fills_zero_tape,
             "sleeve_join": ("data/sleeve_registry.json and data/sleeves.json, by symbol and "
                             "status" if book else "ABSENT: neither roster was readable"),
         },

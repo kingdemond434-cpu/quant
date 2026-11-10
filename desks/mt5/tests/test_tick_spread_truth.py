@@ -249,3 +249,56 @@ def test_no_tape_refuses_the_ticks_source_rather_than_writing(tmp_path, monkeypa
     r = rus.run(apply=True, write=True, source="ticks")
     assert r["status"] == "UNMEASURED" and "tick measurement refused" in r["why"]
     assert json.loads(rus.REGISTRY.read_text("utf-8"))["SYM"]["median_spread_pts"] == 1.0
+
+
+def test_a_fills_charge_far_from_the_tape_loses_on_either_side(tmp_path, monkeypatch):
+    """Auditor must-fix, measured on the box 2026-11-10: GBPCHF realized_fills 154 against a
+    1-point tape and CADCHF 119 against 0. `realized_fills` ranks above the tape, so without a
+    refusal the bad value would still win. Above the tape the 3x rule repairs it; below it, past
+    5x, the tape repairs it; on a zero-centred tape it cannot be replaced and is NAMED."""
+    days = _days(tst.MIN_FULL_DAYS + 1)
+    fills = {"_provenance": {"median_spread_pts": {"source": "realized_fills"}}}
+    root = _root(tmp_path, {"GBPCHF": {"median_spread_pts": 154.0, **fills},
+                            "CADCHF": {"median_spread_pts": 119.0, **fills},
+                            "LOWFIL": {"median_spread_pts": 1.0, **fills},
+                            "OKFILL": {"median_spread_pts": 3.0, **fills}})
+    _write_tape(root, "GBPCHF", days, [[1.0]] * 60)
+    _write_tape(root, "CADCHF", days, [[0.0, 0.0, 1.0]] * 60)
+    _write_tape(root, "LOWFIL", days, [[6.0]] * 60)        # fills 6x below the tape
+    _write_tape(root, "OKFILL", days, [[12.0]] * 60)       # 4x below: inside 5x, stands
+    monkeypatch.setattr(rus, "ROOT", root)
+    monkeypatch.setattr(rus, "REGISTRY", root / "desks/mt5/data/universe/universe.json")
+    monkeypatch.setattr(rus, "REPORT", tmp_path / "SPREAD_PROVENANCE.json")
+    monkeypatch.setattr(rus, "TICK_REPORT", tmp_path / "TICK_SPREAD_TRUTH.json")
+    r = rus.run(apply=True, write=True, source="ticks")
+    doc = json.loads(rus.REGISTRY.read_text("utf-8"))
+    assert doc["GBPCHF"]["median_spread_pts"] == 1.0
+    assert doc["LOWFIL"]["median_spread_pts"] == 6.0
+    assert doc["LOWFIL"]["_provenance"]["median_spread_pts"]["source"] == "tick_tape_median"
+    assert doc["OKFILL"]["median_spread_pts"] == 3.0
+    assert doc["CADCHF"]["median_spread_pts"] == 119.0         # a zero is never written ...
+    assert [e["symbol"] for e in r["fills_against_zero_tape"]] == ["CADCHF"]   # ... but named
+    sides = {e["symbol"]: e.get("side", "above_tape") for e in r["fills_overridden"]}
+    assert sides == {"GBPCHF": "above_tape", "LOWFIL": "below_tape"}
+    tick = json.loads(rus.TICK_REPORT.read_text("utf-8"))["impact"]
+    assert [e["symbol"] for e in tick["fills_against_zero_tape"]] == ["CADCHF"]
+
+
+def test_the_below_tape_refusal_belongs_to_the_tick_source_only(tmp_path, monkeypatch):
+    """A bar column is the bar's minimum, so a fills value below it proves nothing: the M1 and
+    H1 sources keep the one-sided rule they always had."""
+    reg = {"LOWFIL": {"median_spread_pts": 1.0,
+                      "_provenance": {"median_spread_pts": {"source": "realized_fills"}}}}
+    p = tmp_path / "universe.json"
+    p.write_text(json.dumps(reg), "utf-8")
+    monkeypatch.setattr(rus, "REGISTRY", p)
+    monkeypatch.setattr(rus, "REPORT", tmp_path / "SPREAD_PROVENANCE.json")
+    monkeypatch.setattr(rus, "TICK_REPORT", tmp_path / "TICK_SPREAD_TRUTH.json")
+    monkeypatch.setattr(rus, "load_tape", lambda write=True: {"status": "MEASURED",
+                                                              "by_symbol": {}})
+    monkeypatch.setattr(rus, "load_ticks", lambda write=True, budget_s=None: {
+        "status": "MEASURED", "by_symbol": {}, "impact": {}})
+    monkeypatch.setattr(rus, "tape_spread", lambda sym: (6.0, "m1", {"n_priced": 1000}))
+    r = rus.run(apply=True, write=True, source="tape")
+    assert json.loads(p.read_text("utf-8"))["LOWFIL"]["median_spread_pts"] == 1.0
+    assert r["kept_realized_fills"] == ["LOWFIL"]

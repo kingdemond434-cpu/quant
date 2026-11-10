@@ -127,6 +127,14 @@ TICK_REPORT = BASE / "reports" / "TICK_SPREAD_TRUTH.json"
 #: multiple is the gauntlet's own, mirrored from `libs.portfolio.fusion_cost`.
 FILLS_IMPLAUSIBLE_ABOVE_BARS = 3.0
 
+#: THE OTHER SIDE, AGAINST THE TICK TAPE ONLY (2026-11-10, Auditor must-fix). A fills value
+#: further than this BELOW the tape median is not used either. Bars could not support this side
+#: -- a bar column is the bar's minimum, so a fills value below it proves nothing -- but the tick
+#: tape is the book an order meets, and a charge a fifth of it certifies cost nobody pays. The
+#: multiple is the Auditor's, wider than the 3x above on purpose: it overrules an execution
+#: estimate only where no plausible fill pattern explains the gap.
+FILLS_IMPLAUSIBLE_BELOW_TICKS = 5.0
+
 #: A correction this large is reported as SUSPECT rather than applied silently. Not a cap -- the
 #: value is still written under --apply -- but a 50x move in the number every certificate is
 #: priced against is a thing a person should see named, not discover later in a P&L.
@@ -341,6 +349,9 @@ def run(apply: bool = False, write: bool = True,
     #: bars. Named and counted separately: this is the one place the repair overrules a
     #: measurement with an inference, and a reviewer must be able to find every instance.
     fills_overridden: list[dict[str, Any]] = []
+    #: `realized_fills` rows the tick tape prices at a 0-point median: not replaceable (a zero
+    #: is never written) and not confirmed. Named so the gap cannot read as agreement.
+    fills_against_zero_tape: list[dict[str, Any]] = []
     unmeasured: dict[str, str] = {}
     #: Corrections refused because no live quote verified them. Named, never silent.
     skipped_unverified: list[str] = []
@@ -373,8 +384,46 @@ def run(apply: bool = False, write: bool = True,
             old_val = float(old_raw) if isinstance(old_raw, (int, float)) else None
             implausible = (probe is not None and old_val is not None and probe > 0
                            and old_val > probe * FILLS_IMPLAUSIBLE_ABOVE_BARS)
-            if not implausible:
+            # MEASURED 2026-11-10 on the box: GBPCHF realized_fills 154 against a 1-point tick
+            # tape, CADCHF 119 against 0. `cost_truth` already records the 165.0 as taken "on a
+            # symbol this account has NEVER traded", and no organ in this tree writes the stamp,
+            # so the source cannot be repaired -- only refused where the tape contradicts it.
+            below = (source == "ticks" and probe is not None and old_val is not None
+                     and old_val > 0 and probe > old_val * FILLS_IMPLAUSIBLE_BELOW_TICKS)
+            if source == "ticks" and probe is None and (old_val or 0) > 0 \
+                    and (_TICKS.get(sym) or {}).get("tape_p50") == 0:
+                # The tape's centre is 0, which is never written, so the fills value cannot be
+                # replaced -- and it is not confirmed either. Named, never silently kept.
+                fills_against_zero_tape.append({
+                    "symbol": sym, "fills_value": old_val, "tape_p50": 0.0,
+                    "why": ("the tick tape's median is 0 points, so there is nothing honest to "
+                            "write in its place; the fills value stands UNCONFIRMED")})
+            if not (implausible or below):
                 kept_better.append(sym)
+                continue
+            if below:
+                fills_overridden.append({"symbol": sym, "old": old_val, "new": probe,
+                                "source_was": "realized_fills", "side": "below_tape",
+                                "under_tape": round(probe / old_val, 2), **pdetail,
+                                "why": (f"a fills-derived {old_val} pts against a tick-tape "
+                                        f"median of {probe} is {probe / old_val:.1f}x BELOW it "
+                                        f"-- past the {FILLS_IMPLAUSIBLE_BELOW_TICKS}x this "
+                                        "source refuses. Repaired from the tape")})
+                got, why, detail = probe, _why, pdetail
+                entry = {"symbol": sym, "old": old_val, "new": got, **detail}
+                corrected.append(entry)
+                if verified is not None and sym not in verified:
+                    skipped_unverified.append(sym)
+                    continue
+                if apply and (not widening_only or got > old_val):
+                    row["median_spread_pts"] = got
+                    prov = row.setdefault("_provenance", {})
+                    prov["median_spread_pts"] = {
+                        "at": now, "source": stamp, "was": old_val,
+                        "mode": "widening_only" if widening_only else "full",
+                        "dispersion": detail.get("dispersion"), "window": detail.get("window"),
+                        "detail": "desks/mt5/reports/TICK_SPREAD_TRUTH.json"}
+                    applied_syms.append(sym)
                 continue
             # ITS OWN LIST, NOT `suspect`. That one means "a >50x move" and is read as such;
             # folding a different finding into it would make both counts mean neither.
@@ -529,6 +578,8 @@ def run(apply: bool = False, write: bool = True,
         "kept_realized_fills": sorted(kept_better),
         "n_fills_overridden": len(fills_overridden),
         "fills_overridden": fills_overridden,
+        "n_fills_against_zero_tape": len(fills_against_zero_tape),
+        "fills_against_zero_tape": fills_against_zero_tape,
         "rule": (f"median_spread_pts is recomputed from source={source!r} and stamped "
                  f"{stamp!r}. The tape source is the symbol's own M1 spread column over TICKED "
                  "bars on full-session days, by cost_surface's exclusions, with zero-spread bars "
@@ -594,7 +645,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  FILLS OVERRULED (implausible against their own bars): "
               f"{r['n_fills_overridden']}")
         for e in r["fills_overridden"]:
-            print(f"    {e['symbol']:12s} {e['old']} -> {e['new']}  ({e['over_bars']}x bars)")
+            side = (f"{e['under_tape']}x under the tape" if e.get("side") == "below_tape"
+                    else f"{e['over_bars']}x bars")
+            print(f"    {e['symbol']:12s} {e['old']} -> {e['new']}  ({side})")
     print(f"  would make CHEAPER: {r['n_made_cheaper']}"
           + (f"  {[c['symbol'] for c in r['made_cheaper'][:12]]}" if r["made_cheaper"] else ""))
     print(f"  suspect (>{SUSPECT_RATIO:.0f}x move): {r['n_suspect']}")
