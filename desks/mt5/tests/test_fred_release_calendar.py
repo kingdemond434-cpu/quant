@@ -141,3 +141,26 @@ def test_no_key_is_unmeasured_and_the_registry_does_not_repeat_first_print_relea
     # from first prints; a second row per release would double the event
     assert not {10, 50, 54, 9, 13, 180, 192} & {int(r["rid"]) for r in REG["releases"]}
     assert "intelligence" not in frc.CALENDAR_BACKFILL.parts
+
+
+def test_central_bank_meeting_days_from_their_own_pages(tmp_path: Path) -> None:
+    from datetime import datetime as dt
+    reg = json.loads(frc.MEETINGS.read_text("utf-8"))
+    rep = frc.write_meetings(registry=reg, out=tmp_path, today=date(2026, 11, 10))
+    assert rep["banks"]["boj"]["status"] == "ok" and rep["banks"]["boe"]["status"] == "ok"
+    assert [u["bank"] for u in rep["unmeasured"]] == ["ECB"]          # nothing written for it
+    assert not list(tmp_path.glob("*ecb*"))
+    boj = _rows(tmp_path / "backfill_cbmeet_boj.jsonl.gz")
+    per_year: dict[int, int] = {}
+    for r in boj:
+        per_year[int(r["event_date"][:4])] = per_year.get(int(r["event_date"][:4]), 0) + 1
+        assert dt.fromisoformat(r["event_date"]).weekday() < 5 and r["currency"] == "JPY"
+    assert all(per_year[y] in (8, 9) for y in range(2016, 2028))       # 2020 had extra meetings
+    assert boj[0]["event_date"] == "2015-01-21T03:00:00+00:00"          # 12:00 Tokyo, no DST
+    assert sum(1 for r in boj if r.get("single_day_meeting")) == 4
+    boe = _rows(tmp_path / "backfill_cbmeet_boe.jsonl.gz")
+    stamps = {r["event_date"][:10]: r["event_date"][11:16] for r in boe}
+    assert stamps["2026-06-18"] == "11:00" and stamps["2026-12-17"] == "12:00"  # BST vs GMT
+    assert all("12 noon" in r["time_basis"] for r in boe)
+    assert all(r["timing_only"] and r["page_read"] == "2026-11-10" for r in boj + boe)
+    assert rep["banks"]["boj"]["scheduled_ahead"] == 9                  # Dec 2026 + all 2027

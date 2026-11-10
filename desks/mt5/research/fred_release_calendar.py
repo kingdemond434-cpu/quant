@@ -45,6 +45,8 @@ for _p in (str(ROOT), str(DESK)):
 REGISTRY = Path(__file__).with_name("fred_release_calendar.json")
 CALENDAR_BACKFILL = DESK / "data" / "calendar_backfill"
 REPORT = DESK / "reports" / "FRED_RELEASE_CALENDAR.json"
+#: Policy decision days other central banks publish on their own schedule pages (no API).
+MEETINGS = Path(__file__).with_name("cb_meeting_dates.json")
 API = "https://api.stlouisfed.org/fred"
 HARD_STOP = frozenset({401, 403, 429, 451})
 UA = "quant-desk-research/1.0 (release calendar)"
@@ -266,11 +268,60 @@ def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None
     return rep
 
 
+def write_meetings(*, registry: Mapping[str, Any] | None = None, out: Path | None = None,
+                   today: date | None = None) -> dict[str, Any]:
+    """Each bank's decision days from `cb_meeting_dates.json` -> backfill_cbmeet_<slug>.jsonl.gz.
+
+    The dates were read off the bank's own page and copied into the registry with that page and
+    the day it was read; nothing here fetches. A bank listed under `unmeasured` writes nothing and
+    is reported, and so is any year a bank's `covered` note leaves out."""
+    reg = registry if registry is not None else json.loads(MEETINGS.read_text("utf-8"))
+    out = out or CALENDAR_BACKFILL
+    today = today or datetime.now(UTC).date()
+    rep: dict[str, Any] = {"banks": {}, "unmeasured": list(reg.get("unmeasured") or [])}
+    for bank in reg.get("banks") or []:
+        slug = str(bank["slug"])
+        single = set(bank.get("single_day") or [])
+        rows, drops = event_rows(
+            {"rid": 0, "tz": bank["tz"], "at": bank["at"], "currency": bank["currency"],
+             "title": bank["title"], "impact": bank.get("impact", "High")},
+            [str(d) for d in bank.get("dates") or []], today)
+        for r in rows:
+            r.pop("release_id", None)
+            r.update({"source": "cb_own_schedule_page", "bank": bank["bank"],
+                      "instant_basis": "bank_schedule_page", "time_basis": bank["time_basis"],
+                      "page": bank["source"], "page_read": bank["read"]})
+            if r["event_date"][:10] in single or any(
+                    datetime.fromisoformat(r["event_date"]).astimezone(
+                        ZoneInfo(str(bank["tz"]))).date().isoformat() == d for d in single):
+                r["single_day_meeting"] = True
+        b: dict[str, Any] = {"rows": len(rows), "dropped": drops, "covered": bank.get("covered", ""),
+                             "scheduled_ahead": sum(1 for x in rows if x["scheduled"])}
+        rep["banks"][slug] = b
+        if not rows:
+            b["status"] = "UNMEASURED: no usable dates"
+            continue
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / f"backfill_cbmeet_{slug}.jsonl.gz"
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        with gzip.open(tmp, "wt", encoding="utf-8") as fh:
+            fh.write("\n".join(json.dumps(x, sort_keys=True) for x in rows) + "\n")
+        _replace(tmp, path)
+        b.update({"status": "ok", "file": path.name, "first": rows[0]["event_date"],
+                  "last": rows[-1]["event_date"]})
+    return rep
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--once", action="store_true", help="one pass (the default)")
     ap.parse_args(argv)
     rep = refresh()
+    try:
+        rep["central_bank_meetings"] = write_meetings()
+    except (OSError, ValueError, KeyError) as exc:
+        rep["central_bank_meetings"] = {"status": f"UNMEASURED: {type(exc).__name__}"}
+    _write_json(REPORT, rep)
     print(json.dumps({"rows_total": rep["rows_total"], "requests": rep["requests"],
                       "stale": rep["stale"], "unmeasured": rep["unmeasured"]}, sort_keys=True))
     return 0
