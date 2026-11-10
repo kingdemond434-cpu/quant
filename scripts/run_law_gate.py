@@ -1009,6 +1009,10 @@ ROTATION_FENCE_TIMEOUT_S: float = 600.0
 #: fence it cannot let finish.
 _ROTATION_FLOOR_S: float = 120.0
 
+#: A fence cut short by the budget this many passes running is recorded FAILED: a deferral that
+#: keeps repeating is a fence that no longer fits the battery, and that must be seen, not carried.
+ROTATION_MAX_BUDGET_CUTS: int = 3
+
 
 def _run_fence(root: Path, script: str, extra: tuple[str, ...],
                timeout: float) -> dict[str, Any]:
@@ -1019,7 +1023,10 @@ def _run_fence(root: Path, script: str, extra: tuple[str, ...],
     try:
         r = subprocess.run([sys.executable, str(p), *extra], capture_output=True,
                            text=True, timeout=timeout, cwd=root)
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except subprocess.TimeoutExpired as exc:
+        return {"fence": script, "ok": False, "timed_out": True, "timeout_s": round(timeout, 1),
+                "detail": f"unrunnable: {exc} -- counts as FAILED, never skipped"}
+    except OSError as exc:
         return {"fence": script, "ok": False,
                 "detail": f"unrunnable: {exc} -- counts as FAILED, never skipped"}
     tail = (r.stdout or r.stderr or "").strip().splitlines()
@@ -1033,6 +1040,16 @@ def _record_age_s(row: dict[str, Any], now: datetime) -> float:
         return (now - datetime.fromisoformat(str(row.get("ran_at")))).total_seconds()
     except (TypeError, ValueError):
         return float("inf")
+
+
+def _expected_s(row: dict[str, Any]) -> float:
+    """How long this fence is expected to take, from its own last pass. A fence with no
+    measured pass is assumed short (the first rotation measured 18 fences in 120 s)."""
+    try:
+        last = float(row.get("elapsed_s"))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return _ROTATION_FLOOR_S
+    return min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, 1.25 * last + 10.0))
 
 
 def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
@@ -1055,6 +1072,17 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
 
       NOTHING IS EVER SKIPPED FOR BEING SLOW.  Oldest-first ordering means a slow fence cannot
       be starved by fast ones: it only ever climbs the queue.
+
+    A FENCE IS NEVER STARTED ON A CLOCK IT CANNOT FINISH IN (Desk health, 2026-11-06 00:47Z:
+    passes ran 1,800-2,027 s against the 1,800 s budget and five fences were recorded FAILED as
+    "unrunnable ... timed out" -- verdicts about the budget, not about the desk). After the
+    first fence of a pass, a fence starts only when the budget left covers its own expected time
+    (its last measured pass, plus a margin); one that does not fit is DEFERRED and stays at the
+    head of the queue, so the next pass starts with it on the full per-fence clock. Faster fences
+    still use the rest of this pass. A fence cut short by the BUDGET (its timeout was below the
+    full ROTATION_FENCE_TIMEOUT_S) gets no verdict this pass: its last real verdict, with its own
+    `ran_at`, is kept and ages out inside the window as before. A fence that times out on the
+    FULL per-fence clock still FAILS, exactly as before. No fence is dropped and no bar moves.
     """
     root = root or _ROOT
     t0 = now or datetime.now(tz=UTC)
@@ -1074,6 +1102,7 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
         prior = {}
     due = sorted(declared, key=lambda n: (-_record_age_s(prior.get(n, {}), t0), n))
     ran: list[str] = []
+    deferred: list[str] = []
     for name in due:
         left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
         # A FENCE IS NEVER JUDGED ON A TRUNCATED CLOCK. Measured on the first rotation pass:
@@ -1083,14 +1112,36 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
         # queue for the next one.
         if ran and left < _ROTATION_FLOOR_S:
             break
+        first = not ran and not deferred
+        if not first and _expected_s(prior.get(name, {})) > left:
+            deferred.append(name)
+            continue
         started = datetime.now(tz=UTC)
-        rows = [_run_fence(root, name, extra,
-                           min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, left)))
-                for extra in declared[name]]
+        rows = []
+        for extra in declared[name]:
+            left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
+            # The first fence of a pass gets the full per-fence clock on EVERY argument set (Auditor
+            # SF1 on 6c98f5ff9), so the head of the queue is never cut by the budget.
+            clock = ROTATION_FENCE_TIMEOUT_S if first else min(ROTATION_FENCE_TIMEOUT_S, left)
+            rows.append(_run_fence(root, name, extra, max(clock, 1.0)))
+        cut = any(r.get("timed_out") and r.get("timeout_s", 0) < ROTATION_FENCE_TIMEOUT_S
+                  for r in rows)
+        cuts = int(prior.get(name, {}).get("budget_cuts") or 0) + 1 if cut else 0
+        if cut and cuts < ROTATION_MAX_BUDGET_CUTS:
+            # Cut short by the budget: no verdict, first in line next pass. The count is kept so
+            # the deferral cannot repeat silently (Auditor SF2 on 6c98f5ff9).
+            prior[name] = {**prior.get(name, {}), "budget_cuts": cuts}
+            deferred.append(name)
+            continue
+        if cut:
+            rows = [{"fence": name, "ok": False, "timed_out": True,
+                     "detail": f"cut short by the rotation budget {cuts} passes running -- "
+                               "counts as FAILED, never carried"}]  # fmt: skip
         bad = [r for r in rows if not r["ok"]]
         row = dict(bad[0] if bad else rows[0])
         row["ok"] = not bad
-        row["n_invocations"] = len(rows)
+        row["n_invocations"] = len(declared[name])
+        row["budget_cuts"] = cuts
         row["ran_at"] = started.isoformat()
         row["elapsed_s"] = round((datetime.now(tz=UTC) - started).total_seconds(), 1)
         prior[name] = row
@@ -1111,7 +1162,8 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
             "n_failed": len(failures), "failures": failures, "results": results,
             "fences": fences,
             "rotation": {"window_h": ROTATION_WINDOW_H, "budget_s": budget_s,
-                         "ran_this_pass": ran, "n_recorded": len(fences),
+                         "ran_this_pass": ran, "deferred_this_pass": deferred,
+                         "n_recorded": len(fences),
                          "n_declared": len(declared), "never_recorded": missing,
                          "oldest_ran_at": min((str(r.get("ran_at")) for r in results),
                                               default=None)},

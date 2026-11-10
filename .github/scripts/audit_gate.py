@@ -165,6 +165,9 @@ PROTECTED = (
     "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
     "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
     ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+    # the box runner of this gate: it sets the authority's key, folder and pin paths, so an AUTO
+    # merge of it could point the gate at another key (ops/release/authority/ROOT_POLICY.json)
+    "ops/box/workflow_gate.ps1",
 )  # fmt: skip
 #: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
 SECRETS = ("data/secrets/*", "*/data/secrets/*")
@@ -207,6 +210,7 @@ CI_APP = "github-actions"
 #: branch, or any App, can post a check run with any name on any sha).
 WORKFLOW_OF = {
     **dict.fromkeys(("quality", "mt5-money-path", "coverage-floor"), ".github/workflows/ci.yml"),
+    "trusted-eval": ".github/workflows/trusted-eval.yml",
     **dict.fromkeys(
         ("risk-invariants", "replay-shadow", "independent-review"),
         ".github/workflows/release-gates.yml",
@@ -738,6 +742,134 @@ def registry_clear(
     return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
 
 
+# THE AUTHORITY PATH (zuck 2026-11-03 19:11Z, "Eliminate manual protected-PR registry approvals";
+# ops/release/authority/ONE_TIME_AUTHORISATION.md). Once zuck sets QUANT_AUTHORITY_PUBKEY on the
+# box, the registry path reads NO unsigned row at all: a PR's CLEAR is an Ed25519-signed
+# attestation from the release authority (a separate service, account, key and read-only GitHub
+# App), verified here against the public key in a box file no PR can write. It must name this
+# repo, this PR, the EXACT head, the change's byte patch-id, a class consistent with the gate's
+# own tier, and the root policy digest that this checkout has AND that zuck pinned on the box. A
+# verified HOLD for the head -- alone or beside a CLEAR (a conflict) -- is a veto. A CONTROLLER-
+# class PR (one that changes a check) also needs a passing base-run trusted-eval for the exact
+# head. Everything else is the registry path above, unchanged: zuck's path first, switches, no
+# AUDIT HOLD, up to date, the gate's own delivered veto notice, REGISTRY_HOLD_H by the gate's
+# clock, every gating and AUTO job, the merge pinned to the head, auto-revert.
+AUTHORITY_PUBKEY_ENV = "QUANT_AUTHORITY_PUBKEY"
+AUTHORITY_DIR_ENV = "QUANT_AUTHORITY_ATTESTATIONS"
+AUTHORITY_PIN_ENV = "QUANT_AUTHORITY_ROOT_PIN"
+TRUSTED_EVAL = "trusted-eval"
+#: Emergency stop: this file in the attestations folder switches the authority path off at once
+#: (the authority signs nothing, the gate merges nothing by it). Remove it to resume.
+AUTHORITY_KILL = "DEACTIVATE"
+AUTHORITY_DIR = Path(__file__).resolve().parents[2] / "ops" / "release" / "authority"
+
+
+def _authority_mod(name: str) -> Any:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(f"_gate_{name}", AUTHORITY_DIR / f"{name}.py")
+    if spec is None or spec.loader is None:
+        raise ImportError(name)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def gate_root_digest() -> str | None:
+    """The root digest of THIS checkout (the base's, trusted), or None on any error."""
+    try:
+        pol = _authority_mod("policy")
+        top = Path(__file__).resolve().parents[2]
+        # from the COMMIT, not the working tree: the box's gate clone is sparse, and a dirty
+        # file must never change what is pinned
+        names = subprocess.run(
+            ["git", "-C", str(top), "ls-tree", "-r", "--name-only", "HEAD"],
+            capture_output=True, text=True, check=True,
+        ).stdout.splitlines()  # fmt: skip
+
+        def read(n: str) -> bytes | None:
+            got = subprocess.run(
+                ["git", "-C", str(top), "show", f"HEAD:{n}"], capture_output=True, check=False
+            )
+            return got.stdout if got.returncode == 0 else None
+
+        policy = json.loads(read("ops/release/authority/ROOT_POLICY.json") or b"")
+        return str(pol.root_digest(read, names, policy))
+    except Exception:
+        return None
+
+
+def authority_verdicts(
+    folder: str, pr: int, repo: str, pub_path: str, digest: str, now: datetime
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """(verified statements for `pr`, why each other file was rejected)."""
+    att = _authority_mod("attestation")
+    public, kid = att.load_public(pub_path)
+    good: list[dict[str, Any]] = []
+    bad: list[str] = []
+    for f in sorted(Path(folder).glob(f"pr{pr}-*.json")):
+        try:
+            env = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            bad.append(f"{f.name}: unreadable")
+            continue
+        st, why = att.verify(env, public, kid, now, policy_digest=digest, repo=repo)
+        if st is None or st.get("pr") != pr:
+            bad.append(f"{f.name}: {why if st is None else 'names another PR'}")
+            continue
+        good.append(st)
+    return good, bad
+
+
+def authority_clear(
+    statements: list[dict[str, Any]], head: str, patch: str | None, gate_tier: str
+) -> tuple[dict[str, Any] | None, str]:
+    """(the verified CLEAR statement for `head`, or None; why). Pure."""
+    mine = [st for st in statements if st.get("head_sha") == head]
+    if not mine:
+        return None, f"no verified authority attestation for {head[:9]}"
+    holds = [st for st in mine if st.get("verdict") == "HOLD"]
+    clears = [st for st in mine if st.get("verdict") == "CLEAR"]
+    if holds and clears:
+        return None, f"conflicting authority verdicts for {head[:9]}: HOLD wins"
+    if holds:
+        return None, f"authority HOLD {head[:9]}: {'; '.join(holds[-1].get('reasons') or [])}"
+    st = max(clears, key=lambda x: str(x.get("issued_at")))
+    if not patch or st.get("patch_id") != patch:
+        return None, "the authority CLEAR names another change (patch-id)"
+    want = {"PROTECTED": ("CONTROLLER",), "AUTO": ("AUTO",), "LOW": ("LOW", "AUTO")}
+    if st.get("tier") not in want.get(gate_tier, ()):
+        return None, f"the authority judged class {st.get('tier')}, the gate reads {gate_tier}"
+    return st, f"authority CLEAR {head[:9]} [{st.get('tier')}] ({st.get('issued_at')})"
+
+
+def trusted_eval_passed(repo: str, pr: int, head: str, base: str) -> tuple[bool, str]:
+    """Did the BASE's trusted-eval.yml (pull_request_target: the base's file, never the PR's)
+    succeed for this PR at this exact head? Its run-name carries the PR and head it checked out,
+    from the base's own file; any read error is a no."""
+    want = f"{TRUSTED_EVAL} {pr} {head}"
+    try:
+        got = _gh(f"repos/{repo}/actions/workflows/trusted-eval.yml/runs"
+                  f"?event=pull_request_target&per_page=100")  # fmt: skip
+    except RuntimeError as exc:
+        return False, f"trusted-eval runs unreadable ({str(exc)[:120]})"
+    runs = [
+        r for r in (got or {}).get("workflow_runs") or []
+        if str(r.get("display_title") or "") == want
+        and str(r.get("path") or "").endswith(WORKFLOW_OF[TRUSTED_EVAL])
+        and str(r.get("head_branch") or "") == base
+        and str(r.get("event") or "") == "pull_request_target"
+    ]  # fmt: skip
+    if not runs:
+        return False, f"no base-run {TRUSTED_EVAL} for {head[:9]}"
+    last = max(runs, key=lambda r: str(r.get("created_at") or ""))
+    if last.get("status") != "completed":
+        return False, f"{TRUSTED_EVAL} still running"
+    if last.get("conclusion") != "success":
+        return False, f"{TRUSTED_EVAL} {last.get('conclusion')}"
+    return True, f"{TRUSTED_EVAL} passed (run {last.get('id')})"
+
+
 BEHIND = "it is behind"
 
 
@@ -791,13 +923,21 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
         if state is None:
             return False, f"it is behind {base_ref} (merge {base_ref} in first)"
         lag = f" but for {state} box-state path(s)"
+    # The base must have gained no .github change the head lacks (#455 audit MF1: a stale branch
+    # runs older checks under the same job names). Compared from the merge-base, so a PR's OWN
+    # .github change is not "stale" (2026-11-03: compared head-to-base, every PR that changes a
+    # workflow read as stale forever, so the registry path could never merge one).
+    try:
+        fork = _git("merge-base", f"origin/{base_ref}", head)
+    except subprocess.CalledProcessError:
+        return False, "no merge-base with the base"
     same = subprocess.run(
-        ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
+        ["git", "diff", "--quiet", fork, f"origin/{base_ref}", "--", ".github"],
         capture_output=True,
         check=False,
     )
     if same.returncode != 0:
-        return False, f"its .github differs from {base_ref}"
+        return False, f"{base_ref} changed .github since it forked (merge {base_ref} in first)"
     return True, f"up to date{lag}"
 
 
@@ -1156,10 +1296,49 @@ def run(
             return None, why
         return registry_now(found, why)
 
+    def authority_rows() -> tuple[list[dict[str, Any]], str]:
+        """The authority path's one CLEAR row for this head, or none; why (see AUTHORITY_*)."""
+        pub = os.environ.get(AUTHORITY_PUBKEY_ENV) or ""
+        folder = os.environ.get(AUTHORITY_DIR_ENV) or ""
+        pin_path = os.environ.get(AUTHORITY_PIN_ENV) or ""
+        if not (folder and pin_path):
+            return [], "authority: no attestations folder or root pin configured"
+        if (Path(folder) / AUTHORITY_KILL).exists():
+            return [], f"authority: {AUTHORITY_KILL} file present, the path is off"
+        legacy, _ = registry_rows(os.environ.get(REGISTRY_ENV))
+        mine = [r for r in legacy if r.get("pr") == pr]
+        if mine and mine[-1].get("verdict") == "HOLD":  # a pasted HOLD row is still a veto
+            return [], "authority: a HOLD row in the registry stands"
+        digest = gate_root_digest()
+        try:
+            pin = json.loads(Path(pin_path).read_text(encoding="utf-8-sig")).get("digest")
+        except (OSError, ValueError, AttributeError):
+            pin = None
+        if digest is None or pin != digest:
+            return [], "authority: LIVE's root digest is not the pinned one, so the path is off"
+        try:
+            sts, _bad = authority_verdicts(folder, pr, repo, pub, digest, datetime.now(UTC))
+        except Exception as exc:  # no key, no cryptography, unreadable folder: nothing verifies
+            return [], f"authority: attestations cannot be verified ({type(exc).__name__})"
+        st, why = authority_clear(sts, head, patch_id(base, head), level)
+        if st is None:
+            return [], f"authority: {why}"
+        if st["tier"] == "CONTROLLER":
+            ok, ewhy = trusted_eval_passed(repo, pr, head, base)
+            if not ok:
+                return [], f"authority: {why}, but {ewhy}"
+        # the gate's own row shape: the window, the HOLD, the up-to-date and CI rules below apply
+        return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
+
     def registry_now(found: list[dict[str, str]], mwhy: str) -> tuple[dict[str, str] | None, str]:
-        """The registry path, after zuck's path did not clear the head (see REGISTRY_ENV)."""
+        """The registry path, after zuck's path did not clear the head (see REGISTRY_ENV). With
+        AUTHORITY_PUBKEY_ENV set, only a verified authority attestation counts: no unsigned row is
+        read at all."""
         path = os.environ.get(REGISTRY_ENV) or ""
-        rows, gone = registry_rows(path)
+        if os.environ.get(AUTHORITY_PUBKEY_ENV):
+            rows, gone = authority_rows()
+        else:
+            rows, gone = registry_rows(path)
         if not rows:
             return None, f"{mwhy}; registry: {gone or 'no rows'}"
         if found and found[-1]["verdict"] != "CLEAR":  # a HOLD (or an edit) on the PR wins
