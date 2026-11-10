@@ -1,6 +1,9 @@
 """THE RELEASE AUTHORITY'S POLICY -- a pure, deterministic decision over facts the authority
-gathered itself. No model, no session, no comment text decides here; the same facts always give
-the same verdict, so the decision can be re-derived by anyone from the evidence it names.
+gathered itself. No model and no session decides here; the same facts always give the same
+verdict, so the decision can be re-derived by anyone from the evidence it names. ONE comment is
+read as a fact beside the AUDIT HOLD: the Auditor's `AUDIT CLEAR` of the exact head, which
+(with the Auditor's registry agreeing) adjudicates a failed or unavailable independent-review on
+an AUTO or LOW change and nothing else (audit_gate.ADJUDICABLE, zuck 2026-11-10).
 
 CLASSES (strictest file wins):
   ROOT        -- a file in ROOT_POLICY.json root_files (or in enforced_root_files while GitHub
@@ -178,7 +181,8 @@ def decide(f: Mapping[str, Any]) -> tuple[str, list[str]]:
     "pending" | "fail", why) over every job the class requires, provenance-checked; review_queued:
     the reviewer ended UNAVAILABLE; hold: a trusted AUDIT HOLD stands on the PR (why);
     deactivated: merges are switched off; fresh/fresh_why: up_to_date(); patch_id: the change's
-    byte identity (None: unreadable)."""
+    byte identity (None: unreadable); adjudication: {jobs, why, checks} when the Auditor's CLEAR
+    adjudicates the reviewer -- `checks` is then the state over every other required job."""
     if not (f.get("open") and f.get("same_repo") and f.get("base_ok")):
         return "WAIT", ["not an open same-repo PR into LIVE"]
     cls = f.get("cls")
@@ -193,12 +197,26 @@ def decide(f: Mapping[str, Any]) -> tuple[str, list[str]]:
     if not f.get("patch_id"):
         return "WAIT", ["the change's patch-id could not be computed"]
     state, why = f.get("checks") or ("pending", "no checks read")
-    if state == "fail" and f.get("review_queued"):
+    adj = f.get("adjudication") or {}
+    note = ""
+    if state == "fail" and cls in ("AUTO", "LOW") and adj.get("jobs"):
+        # The Auditor CLEARed this exact head after the reviewer ran, and its registry agrees
+        # (audit_gate.adjudicated): the verdict is read over every OTHER required job.
+        state, why = adj.get("checks") or ("pending", "no checks read")
+        note = f"; {adj.get('why')}"
+        if state == "pass":
+            if not f.get("fresh"):
+                return "WAIT", [f"not up to date: {f.get('fresh_why')}"]
+            return "CLEAR", [f"{cls}: every other required check passed on the exact head "
+                             f"({why}){note}"]  # fmt: skip
+    if state == "fail" and f.get("review_queued") and not note:
         return "WAIT", ["independent-review queued: no free reviewer answered (never a pass)"]
     if state == "fail":
         # not signed: a re-run may pass on the same head, and the gate refuses a failed check
         # by itself. Only a verdict that no later evidence can change is signed as HOLD.
-        return "FAIL", [f"a required check failed: {why}"]
+        return "FAIL", [f"a required check failed: {why}"
+                        + (f" (not adjudicated: {adj['why']})" if adj.get("why") and not note
+                           else note)]  # fmt: skip
     if state != "pass":
         return "WAIT", [f"checks not finished: {why}"]
     if not f.get("fresh"):

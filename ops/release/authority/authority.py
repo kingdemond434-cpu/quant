@@ -199,6 +199,15 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
         genuine = ag.provenance(repo, pr, head)
         f["checks"] = ag.checks(runs, need, genuine)
         f["review_queued"] = ag.queued_review(repo, runs, genuine) is not None
+        if cls in ("AUTO", "LOW") and f["checks"][0] == "fail":
+            # the Auditor's CLEAR of this exact head may adjudicate the robot reviewer
+            # (audit_gate.ADJUDICABLE): the gate's own rule, read here by the same function
+            excused, awhy = ag.adjudicated(pr, found, head, runs, genuine, names)
+            f["adjudication"] = {
+                "jobs": list(excused),
+                "why": awhy,
+                "checks": ag.checks(runs, tuple(j for j in need if j not in excused), genuine),
+            }
         f["evidence"] = {
             str(r.get("name")): {"id": r.get("id"), "conclusion": r.get("conclusion")}
             for r in runs

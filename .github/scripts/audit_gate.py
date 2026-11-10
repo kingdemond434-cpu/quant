@@ -110,6 +110,12 @@ keys. When no free model answers, the review ends UNAVAILABLE: the PR is QUEUED 
 no quarantine) and the review is re-run later by whichever gate run looks next (the box sweep or
 a new event), never merged without it.
 
+THE AUDITOR ADJUDICATES THE REVIEWER (2026-11-10, zuck: "Auditor sign-off is enough"). On the
+registry / authority path only, a failed or unavailable independent-review does not block a
+head the Auditor CLEARed after that review finished, when the box's copy of the Auditor's
+registry agrees and no changed path is protected. The veto notice and window still run, every
+other job still binds, and zuck's own path is unchanged (see ADJUDICABLE).
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -742,6 +748,151 @@ def registry_clear(
     return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
 
 
+# THE AUDITOR ADJUDICATES THE ROBOT REVIEWER (zuck 2026-11-10 16:05Z "Auditor sign-off is
+# enough", 16:07Z "change the design n do them for me"; journal D-20261110-001; Auditor ruling
+# 16:16Z). The registry / authority path needs every AUTO job, and independent-review -- a 7b
+# model on a hosted CPU -- fails or times out on changes the Auditor has read and CLEARed, which
+# sent those PRs back to zuck's comment. Now a failed or unavailable independent-review does not
+# block THAT path when ALL of these hold:
+#   * the PR's latest trusted verdict is `AUDIT CLEAR` naming the EXACT head (no patch-id
+#     carry-over, never an edited comment), posted AFTER the review run it adjudicates finished,
+#     so the Auditor has seen that run's findings;
+#   * no changed path is PROTECTED, formerly protected or in ops/release/protected_paths.txt
+#     (the checks, the release machinery, rails, kill switches, signing, hooks): those keep
+#     zuck's typed path, and so does this file;
+#   * the Auditor's own registry, as synced to the box (AUDITOR_ROWS_ENV), is fresh and its
+#     latest row for the PR is a CLEAR of the same head. Two independent records must agree;
+#     an absent, stale or disagreeing copy is a wait, never a pass.
+# Nothing else moves: gating jobs, risk-invariants and replay-shadow are never adjudicated; a
+# HOLD (comment or row), a DEACTIVATE or a new push still vetoes; the gate's own delivered veto
+# notice and REGISTRY_HOLD_H by its own clock still run first; zuck's CLEAR + APPROVE path is
+# still tried first and is never replaced.
+# WHAT THIS DOES NOT PROVE. Every Claude session posts through one GitHub identity, so GitHub
+# cannot tell the Auditor's comment from an author's. The second record stops an accidental
+# self-CLEAR; it is not proof against a deliberate forge of both. An authenticated Auditor
+# channel is the follow-up that closes that.
+ADJUDICABLE: tuple[str, ...] = ("independent-review",)
+#: The box file holding the Auditor's registry rows ({"pr", "sha", "verdict", "at"}), copied
+#: from the Auditor's lane. Unset, nothing is ever adjudicated.
+AUDITOR_ROWS_ENV = "QUANT_AUDITOR_ROWS"
+#: A copy older than this may be missing a HOLD row, so it adjudicates nothing.
+AUDITOR_ROWS_MAX_AGE_H = 6.0
+
+
+def _when(text: object) -> datetime | None:
+    try:
+        at = datetime.fromisoformat(str(text or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return at if at.tzinfo is not None else None
+
+
+def never_adjudicated(names: Iterable[str]) -> str | None:
+    """Why this change can never have a check adjudicated, or None. Unreadable is never."""
+    extra = protected_patterns()
+    if extra is None:
+        return "ops/release/protected_paths.txt is unreadable"
+    listed = [str(n) for n in names]
+    if not listed:
+        return "the changed files could not be listed"
+    pats = [p.lower() for p in (*PROTECTED, *FORMERLY_PROTECTED, *extra, *SECRETS)]
+    for name in listed:
+        if any(fnmatch.fnmatchcase(name.lower(), p) for p in pats):
+            return f"{name} is a protected path: it keeps zuck's typed path"
+    return None
+
+
+def review_adjudicated(
+    found: list[dict[str, str]],
+    head: str,
+    runs: Iterable[Mapping[str, Any]],
+    genuine: Callable[[Mapping[str, Any]], bool],
+    names: Iterable[str],
+) -> tuple[bool, str]:
+    """(does the Auditor's CLEAR comment adjudicate this head's failed or unavailable
+    independent-review?, why). The comment side only; `auditor_row_agrees` is the second record."""
+    if not found or found[-1]["verdict"] != "CLEAR":
+        return False, "no standing AUDIT CLEAR"
+    last = found[-1]
+    if last["sha"] != head:
+        return False, f"the AUDIT CLEAR names {last['sha'][:9]}, not the exact head"
+    never = never_adjudicated(names)
+    if never:
+        return False, never
+    newest: Mapping[str, Any] | None = None
+    for r in runs:
+        if str(r.get("name") or "") != REVIEWER or not genuine(r):
+            continue
+        if newest is None or str(r.get("started_at") or "") >= str(newest.get("started_at") or ""):
+            newest = r
+    if newest is None or newest.get("status") != "completed":
+        return False, f"{REVIEWER} has not finished on this head"
+    if newest.get("conclusion") in OK_CONCLUSIONS:
+        return False, f"{REVIEWER} did not fail"
+    done, said = _when(newest.get("completed_at")), _when(last["at"])
+    if done is None or said is None:
+        return False, "the review run or the CLEAR has no readable time"
+    if said <= done:
+        return False, (
+            f"the AUDIT CLEAR ({last['at']}) is not newer than the {REVIEWER} run it would "
+            f"adjudicate ({newest.get('completed_at')}): the Auditor has not seen its findings"
+        )
+    return True, (
+        f"the Auditor's CLEAR of {head[:9]} ({last['at']}) adjudicates {REVIEWER} "
+        f"({newest.get('conclusion')}, run {newest.get('id')})"
+    )
+
+
+def auditor_row_agrees(
+    pr: int, head: str, path: str | None = None, now: datetime | None = None
+) -> tuple[bool, str]:
+    """(does the box's copy of the Auditor's registry CLEAR this exact head?, why)."""
+    path = path if path is not None else os.environ.get(AUDITOR_ROWS_ENV) or ""
+    if not path:
+        return False, "no synced Auditor registry is configured on this host"
+    now = now or datetime.now(UTC)
+    try:
+        age_h = (now.timestamp() - Path(path).stat().st_mtime) / 3600.0
+    except OSError as exc:
+        return False, f"the synced Auditor registry is unreadable ({type(exc).__name__})"
+    if not 0 <= age_h <= AUDITOR_ROWS_MAX_AGE_H:
+        return False, (
+            f"the synced Auditor registry is stale ({age_h:.1f} h, limit "
+            f"{AUDITOR_ROWS_MAX_AGE_H:.0f} h): it may be missing a HOLD"
+        )
+    rows, gone = registry_rows(path)
+    mine = [r for r in rows if r.get("pr") == pr]
+    if not mine:
+        return False, f"the synced Auditor registry has no row for #{pr}" + (
+            f" ({gone})" if gone else ""
+        )
+    last = mine[-1]
+    if last.get("verdict") != "CLEAR" or last.get("sha") != head:
+        return False, (
+            f"the Auditor registry's latest row for #{pr} is {last.get('verdict')} "
+            f"{str(last.get('sha'))[:9]}, not a CLEAR of the exact head"
+        )
+    return True, f"the Auditor registry agrees (CLEAR {head[:9]}, copy {age_h:.1f} h old)"
+
+
+def adjudicated(
+    pr: int,
+    found: list[dict[str, str]],
+    head: str,
+    runs: Iterable[Mapping[str, Any]],
+    genuine: Callable[[Mapping[str, Any]], bool],
+    names: Iterable[str],
+) -> tuple[tuple[str, ...], str]:
+    """(the AUTO jobs the Auditor adjudicates for this head -- ADJUDICABLE or none; why)."""
+    ok, why = review_adjudicated(found, head, runs, genuine, names)
+    if not ok:
+        return (), why
+    agrees, rwhy = auditor_row_agrees(pr, head)
+    if not agrees:
+        return (), f"{why}, but {rwhy}: waiting"
+    return ADJUDICABLE, f"{why}; {rwhy}"
+
+
 # THE AUTHORITY PATH (zuck 2026-11-03 19:11Z, "Eliminate manual protected-PR registry approvals";
 # ops/release/authority/ONE_TIME_AUTHORISATION.md). Once zuck sets QUANT_AUTHORITY_PUBKEY on the
 # box, the registry path reads NO unsigned row at all: a PR's CLEAR is an Ed25519-signed
@@ -1208,6 +1359,14 @@ def run(
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
         return verdicts(_flat(pages))
 
+    names = sorted(
+        {str(n) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n}
+    )
+
+    def head_runs() -> list[Mapping[str, Any]]:
+        pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
+        return [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
+
     # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
     # A standing HOLD, or a CLEAR zuck approved, sends an audited PR to the manual path (pinned).
     mode = "manual"
@@ -1217,6 +1376,12 @@ def run(
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
         elif pin := pinned(audited := pr_verdicts()):
             twhy = f"{twhy}, but {pin}: it takes the CLEAR + APPROVE path"
+        elif audited and review_adjudicated(audited, head, head_runs(), _from_ci_app, names)[0]:
+            # The reviewer failed and the Auditor CLEARed this exact head afterwards: only the
+            # registry path, with its delivered veto notice and window, may merge it. The
+            # no-comment AUTO path merges at once and would quarantine it instead.
+            twhy = (f"{twhy}, but {REVIEWER} failed and the Auditor CLEARed this head: it takes "
+                    "the registry path and its veto window")  # fmt: skip
         else:
             fresh, fwhy = up_to_date(base, head)
             auto_on = bool(boards) and activated(boards[-1], ACTIVATE_AUTO)[0]
@@ -1380,6 +1545,10 @@ def run(
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         genuine = provenance(repo, pr, head) if low else _from_ci_app
         need = required + (AUTO_JOBS if clear.get("by") == "registry" else ())
+        if clear.get("by") == "registry":  # see ADJUDICABLE: only this path, only that job
+            excused, exwhy = adjudicated(pr, pr_verdicts(), head, runs, genuine, names)
+            need = tuple(j for j in need if j not in excused)
+            _summary(f"#{pr} @ {head[:9]}: {exwhy}")
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
