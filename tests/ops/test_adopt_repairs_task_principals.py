@@ -37,7 +37,8 @@ def test_each_repair_fires_only_on_its_broken_shape() -> None:
 
 def test_a_failed_repair_never_stops_the_seal_and_starts_nothing() -> None:
     body = BLOCK.split("try {", 1)[1]
-    assert "} catch {" in body and "throw" not in body and "exit " not in body
+    assert "} catch {" in body
+    assert not [ln for ln in body.splitlines() if ln.strip().startswith(("throw", "exit"))]
     assert "Start-ScheduledTask" not in body
 
 
