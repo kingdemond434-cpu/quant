@@ -425,3 +425,18 @@ def test_the_summary_is_written_beside_the_artifact_and_keeps_every_total(tmp_pa
     assert group["n"] == 5000 and group["listed"] == len(group["rows"]) <= 5000
     assert group["by_family"] == {"fam": 5000} and s["collisions"] == 1
     assert "ok" not in {r["certificate"] for r in group["rows"]}
+
+
+def test_a_locked_summary_keeps_the_full_artifact_and_does_not_fail_the_leg(tmp_path,
+                                                                            monkeypatch) -> None:
+    """Windows refuses os.replace while the sync holds the summary open: the leg logs it,
+    keeps the full artifact it already wrote, and the next pass republishes the summary."""
+    def locked(src, dst):
+        raise PermissionError(13, "file in use", str(dst))
+
+    monkeypatch.setattr(law.os, "replace", locked)
+    doc = {"at": "t", "ok": True, "verdict": "OK", "counts": {}, "n_certificates": 0,
+           "certificates": []}
+    full = law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
+    assert json.loads(full.read_text())["verdict"] == "OK"
+    assert not (tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json").exists()

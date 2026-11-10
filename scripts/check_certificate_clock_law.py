@@ -708,7 +708,13 @@ def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     summary = path.with_name(path.stem + "_SUMMARY.json")
     tmp = summary.with_name(summary.name + ".tmp")
     tmp.write_text(text + "\n", encoding="utf-8")
-    os.replace(tmp, summary)
+    try:
+        os.replace(tmp, summary)
+    except OSError as exc:
+        # Windows refuses the replace while the sync holds the summary open. The full artifact
+        # is already written, so the leg keeps it and the next pass republishes the summary.
+        print(f"clock law: summary not replaced this pass ({exc}); full artifact kept at {path}",
+              file=sys.stderr)
     return path
 
 
