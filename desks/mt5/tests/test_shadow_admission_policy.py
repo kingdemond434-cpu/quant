@@ -298,12 +298,20 @@ def test_one_forward_clock_per_executable_and_no_clock_is_ever_taken(tmp_path: P
         "external.CHFNOK.carry.p=c": cert("CHFNOK", "carry", {"input_symbol": "CHFNOK", "k": 1}),
         "external.CHFNOK.carry.p=d": cert("CHFNOK", "carry", {"input_symbol": "EBAY", "k": 2}),
         "external.AUDCHF.carry.p=e": cert("AUDCHF", "carry", {"input_symbol": "EBAY", "k": 1}),
+        # the same params on another chart is another rule: by name, and by the spec's chart
+        "external.CHFNOK.carry@M15.p=h": cert("CHFNOK", "carry", {"input_symbol": "EBAY",
+                                                                  "k": 1}),
+        "external.CHFNOK.carry.p=i": {**cert("CHFNOK", "carry", {"input_symbol": "EBAY", "k": 1}),
+                                      "shadow_spec": {"symbol": "CHFNOK", "family": "carry",
+                                                      "selector": "asia", "chart": "M5",
+                                                      "params": {"input_symbol": "EBAY",
+                                                                 "k": 1}}},
         "external.EURUSD.range_reversion.p=f": cert("EURUSD", "range_reversion", {"n": 1}),
         "external.EURUSD.range_reversion.p=g": cert("EURUSD", "range_reversion", {"n": 1}),
     }
     (tmp_path / "reports").mkdir()
     (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
-        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 7}), encoding="utf-8")
+        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 9}), encoding="utf-8")
 
     # no registry on this host: counted, nothing withheld
     names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
@@ -322,6 +330,8 @@ def test_one_forward_clock_per_executable_and_no_clock_is_ever_taken(tmp_path: P
     assert names == set(survivors) - {"external.CHFNOK.carry.p=a", "external.CHFNOK.carry.p=c"}
     (group,) = sa.EXECUTABLE_COPIES
     assert group["keeps_clock"] == "external.CHFNOK.carry.p=b"
+    assert group["keeper_names_its_own_instrument"] is False     # a foreign label, and said so
+    assert {"external.CHFNOK.carry@M15.p=h", "external.CHFNOK.carry.p=i"} <= names
     assert sorted(group["not_enrolled"]) == ["external.CHFNOK.carry.p=a",
                                              "external.CHFNOK.carry.p=c"]
     assert sum("EXECUTABLE_COPY" in d["why"] for d in sa.DROPPED_CERTIFICATES) == 2

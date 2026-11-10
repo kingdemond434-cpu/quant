@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections.abc import Iterable
 from pathlib import Path
@@ -499,13 +500,27 @@ def one_clock_per_executable_enforced() -> bool:
     return os.environ.get("QUANT_ONE_CLOCK_PER_EXECUTABLE", "1").strip() != "0"
 
 
+#: certificate name -> the chart its `shadow_spec` states outside params, filled by
+#: `authorized_runs` each pass (the run row itself has never carried it).
+_SPEC_CHART: dict[str, str] = {}
+_NAME_CHART = re.compile(r"@([A-Za-z]{1,3}\d{1,3})\b")
+
+
 def _executable_of(run: dict) -> str | None:
+    """EVERY DIMENSION THE RUN CARRIES IS IN THE KEY (chart on the row, in the spec or in the
+    certificate's own name; session; lane): an @M15 carry certificate beside an H1 one is a
+    different rule. An extra dimension can only keep a copy enrolled."""
     unread = EXECUTABLE_UNREAD.get(str(run.get("family") or ""))
     if unread is None or run.get("lane") == "scalp":
         return None
     params = {k: v for k, v in (run.get("params") or {}).items() if k not in unread}
+    name = str(run.get("certificate") or "")
+    named = _NAME_CHART.search(name)
     return json.dumps([str(run.get("symbol") or "").upper(), run.get("family"),
-                       run.get("selector"), run.get("condition"), run.get("side"), params],
+                       run.get("selector"), run.get("condition"), run.get("side"), params,
+                       run.get("timeframe"), run.get("chart"), run.get("session"),
+                       run.get("lane"), _SPEC_CHART.get(name),
+                       named.group(1).upper() if named else None],
                       sort_keys=True, default=str)
 
 
@@ -582,6 +597,7 @@ def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
         EXECUTABLE_COPIES.append({
             "symbol": keeper.get("symbol"), "family": keeper.get("family"),
             "copies": len(group), "keeps_clock": str(keeper.get("certificate")),
+            "keeper_names_its_own_instrument": own(keeper),
             "surplus_clocks_left_running": left,
             "not_enrolled": [str(r.get("certificate")) for r in new] if act else [],
             "would_not_enrol": [] if act else [str(r.get("certificate")) for r in new]})
@@ -730,6 +746,7 @@ def authorized_runs(base: Path = BASE,
     EVICTED_CERTIFICATES.clear()
     VOID_MOVED_CERTIFICATES.clear()
     UNPROVEN_ENTRY_CONDITIONED.clear()
+    _SPEC_CHART.clear()
     universal, canon_from = _canon(base)
     evicted = _evicted_keys(base)
     if not is_exact_policy(universal.get("gate_policy")):
@@ -792,6 +809,8 @@ def authorized_runs(base: Path = BASE,
             _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
                         f"unrunnable without guessing the parameterization that passed")
             continue
+        _SPEC_CHART[str(name)] = str(spec.get("chart") or spec.get("timeframe")
+                                     or spec.get("session") or "")
         void = void_moved_cell(row, spec, params)
         if void == "UNPROVEN":
             UNPROVEN_ENTRY_CONDITIONED.append(str(name))      # named, and enrolled
