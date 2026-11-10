@@ -70,8 +70,8 @@ def test_clear_access_only_runs_the_allow_list_and_sets_the_rest_aside(sweep, tm
 def test_every_walled_and_every_scraped_source_is_outside_the_allow_list() -> None:
     assert set(sm.MINERS) >= sm.CLEAR_ACCESS
     assert not (sm.CLEAR_ACCESS & set(sm.SOURCE_WALLS))
-    assert {"quant_se", "arxiv_qfin", "bis_speeches", "github_topics",
-                               "broker_swaps"} == sm.CLEAR_ACCESS
+    assert {"quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps",
+            "research_feeds", "github_depth"} == sm.CLEAR_ACCESS
 
 
 def test_without_the_switch_the_sweep_is_unchanged(sweep) -> None:
