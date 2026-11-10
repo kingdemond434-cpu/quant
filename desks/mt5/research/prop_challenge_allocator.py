@@ -597,47 +597,36 @@ def door_block(cert_key: str) -> str | None:
         return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
 
 
-#: A FORMULA CERTIFICATE THAT READS THE SPREAD OR THE TICK COUNT IS UNMEASURED EVIDENCE
-#: (Auditor, box read 2026-11-10 18:08Z, formula_spread_zero_measure_AUDSGD): 5,702 of 5,757
-#: `formula` certificates read `spread`, `activity` or `flow` (flow = sign(body) x activity), and
-#: on AUDSGD the certified edge disappears once the bars whose spread was never recorded (stored
-#: as zero) are treated as missing. The stored verdict of such a certificate therefore measures
-#: the recording gap, not the rule, so it funds nothing here until the Judge re-judges it. This is
-#: evidence invalidity, never a risk cut: no other column, cap or fraction changes, and the
-#: refusal is named per column on the report (rail `ftmo_formula_unmeasured`).
-#: RELEASE: the Judge lists a re-judged certificate key in `FORMULA_REJUDGED` ("certificates":
-#: [...]); a listed key is admitted again on its new verdict. This module never writes that file.
-FORMULA_UNRECORDED_TERMINALS = frozenset({"spread", "activity", "flow"})
-FORMULA_REJUDGED = BASE / "data" / "FORMULA_REJUDGED.json"
+def formula_unmeasured(cert_key: str) -> str | None:
+    """Why `cert_key`'s stored verdict funds nothing here, or None.
 
-
-def formula_unmeasured(spec: dict[str, Any] | None, cert_key: str,
-                       path: Path | None = None) -> str | None:
-    """Why `cert_key`'s stored verdict is UNMEASURED, or None. Only the `formula` family; an
-    expression that cannot be read is UNMEASURED too (absence never resolves to a clean
-    verdict)."""
-    if not isinstance(spec, dict) or str(spec.get("family") or "").lower() != "formula":
+    A FORMULA CERTIFICATE THAT READS THE SPREAD OR THE TICK COLUMNS IS UNMEASURED EVIDENCE
+    (Auditor + Judge, box read 2026-11-10 18:08Z): 5,702 of 5,757 `formula` certificates read
+    spread/activity/flow, and on AUDSGD the certified edge disappears once unrecorded (zero)
+    spread bars are read as missing. THE RULE IS NOT THIS MODULE'S: the one answer for the
+    enrolment door and both allocators is `shadow_admission.formula_input_unmeasured(name, row)`,
+    which lifts per certificate on its own re-gate at or after FORMULA_INPUT_RULE_EFFECTIVE_UTC.
+    This module holds no copy of it and no release file. Evidence invalidity, never a risk cut:
+    no other column, cap or fraction changes, and each refusal is named on the report (rail
+    `ftmo_formula_unmeasured`). FAIL CLOSED: a formula certificate whose row or whose shared test
+    cannot be read is UNMEASURED too (absence never resolves to a clean verdict)."""
+    store = _read_json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    if not store.get("survivors"):
+        store = _read_json(BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    row = (store.get("survivors") or {}).get(cert_key)
+    spec = row.get("shadow_spec") if isinstance(row, dict) else None
+    fam = str((spec or {}).get("family") or "") if isinstance(spec, dict) else ""
+    if fam != "formula" and ".formula." not in str(cert_key):
         return None
-    doc = _read_json(path or FORMULA_REJUDGED)
-    if isinstance(doc, dict) and cert_key in {str(k) for k in (doc.get("certificates") or [])}:
-        return None
-    params = spec.get("params") if isinstance(spec.get("params"), dict) else {}
-    inner = params.get("params") if isinstance(params.get("params"), dict) else {}
-    expr = params.get("expr", inner.get("expr", spec.get("expr")))
+    if not isinstance(row, dict):
+        return (f"UNMEASURED: formula certificate {cert_key} is not readable in the store, so "
+                f"its spread/tick dependence cannot be ruled out")
     try:
-        from libs.research.alpha_grammar import TERMINALS, from_str, terminals_in
-        tree = from_str(expr) if isinstance(expr, str) and "(" in expr else expr
-        if not isinstance(tree, (str, list, tuple)) or not tree or (
-                isinstance(tree, str) and tree not in TERMINALS):
-            raise ValueError("no expression on the certificate")
-        reads = sorted(terminals_in(tree) & FORMULA_UNRECORDED_TERMINALS)
+        import shadow_admission as sa
+        return sa.formula_input_unmeasured(cert_key, row)
     except Exception as exc:
-        return (f"UNMEASURED: formula expression unreadable ({type(exc).__name__}); its "
-                f"spread/tick dependence cannot be ruled out")
-    if not reads:
-        return None
-    return (f"UNMEASURED: formula reads {', '.join(reads)}, whose unrecorded (zero) bars the "
-            f"stored verdict counted as data; awaiting the Judge's re-judgement")
+        return (f"UNMEASURED: the shared formula input test is unavailable "
+                f"({type(exc).__name__}); no capital on a formula certificate without it")
 
 
 def build_universe(seed: int = 0) -> dict[str, Any]:
@@ -723,7 +712,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
-        elif (unm := formula_unmeasured(sleeve_spec(cert_key)[0], cert_key)):
+        elif (unm := formula_unmeasured(cert_key)):
             reason = unm
             formula_held.append(col)
         else:

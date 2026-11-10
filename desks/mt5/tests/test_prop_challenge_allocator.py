@@ -518,46 +518,58 @@ def test_a_column_the_executors_door_blocks_takes_no_solve_heat(tmp_path, monkey
     assert "replication MISMATCH" in row["why"]
 
 
-_FORMULA_SCREEN = [{"certificate": "external.EURUSD.formula.p=1", "column": "EURUSD_x_asia",
-                    "symbol": "EURUSD"}]
+_FKEY = "external.EURUSD.formula.p=1"
+_FORMULA_SCREEN = [{"certificate": _FKEY, "column": "EURUSD_x_asia", "symbol": "EURUSD"}]
 
 
-def _formula_world(tmp_path: Path, monkeypatch, expr: object, rejudged: list[str]) -> dict:
-    p = tmp_path / "FORMULA_REJUDGED.json"
-    p.write_text(json.dumps({"certificates": rejudged}), encoding="utf-8")
-    monkeypatch.setattr(pca, "FORMULA_REJUDGED", p)
-    real = pca.formula_unmeasured
-    spec = {"symbol": "EURUSD", "family": "formula", "key": "external.EURUSD.formula.p=1",
-            "params": {"params": {"expr": expr}}}
-    monkeypatch.setattr(pca, "formula_unmeasured", lambda _s, key, path=None: real(spec, key))
-    return _roster_world(tmp_path, monkeypatch, tier_s={}, screen=_FORMULA_SCREEN)
+def _formula_store(tmp_path: Path, monkeypatch, expr: object, shared) -> None:
+    """A store holding one formula certificate, and `shared` as the Judge's one shared test."""
+    import types
+    (tmp_path / "reports").mkdir(exist_ok=True)
+    row = {"gated_at": "2026-11-01T00:00:00Z",
+           "shadow_spec": {"symbol": "EURUSD", "family": "formula", "params": {"expr": expr}}}
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(
+        json.dumps({"survivors": {_FKEY: row}}), encoding="utf-8")
+    monkeypatch.setattr(pca, "BASE", tmp_path)
+    mod = types.ModuleType("shadow_admission")
+    if shared is not None:
+        mod.formula_input_unmeasured = shared          # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "shadow_admission", mod)
 
 
-def test_a_spread_reading_formula_certificate_funds_nothing_until_rejudged(tmp_path,
-                                                                          monkeypatch) -> None:
-    """Auditor 2026-11-10: the stored verdict of a formula that reads the spread counted
-    unrecorded (zero) bars as data. UNMEASURED evidence takes no solve heat and is named."""
-    uni = _formula_world(tmp_path, monkeypatch, "zscore(div(spread, atr), 48)", [])
+def test_a_formula_the_shared_test_holds_funds_nothing_and_is_named(tmp_path, monkeypatch) -> None:
+    """Auditor 2026-11-10: a formula certificate reading spread/tick columns is UNMEASURED until
+    re-gated. The verdict is the Judge's one shared test; the allocator only obeys and names it."""
+    seen: list[tuple] = []
+
+    def shared(name, row):
+        seen.append((name, row["shadow_spec"]["params"]["expr"], row["gated_at"]))
+        return "FORMULA_INPUT_UNMEASURED: reads spread"
+    _formula_store(tmp_path, monkeypatch, "zscore(div(spread, atr), 48)", shared)
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=_FORMULA_SCREEN)
+    assert seen == [(_FKEY, "zscore(div(spread, atr), 48)", "2026-11-01T00:00:00Z")]
     assert uni["status"] == "NO_ADMISSIBLE_SLEEVE"
     assert uni["formula_unmeasured"] == ["EURUSD_x_asia"]
     row = uni["columns"]["EURUSD_x_asia"]
     assert row["admitted"] is False and row["rail"] == "ftmo_formula_unmeasured"
-    assert "UNMEASURED" in row["why"] and "spread" in row["why"]
+    assert "FORMULA_INPUT_UNMEASURED" in row["why"]
 
 
-def test_a_price_only_formula_and_a_rejudged_one_are_admitted(tmp_path, monkeypatch) -> None:
-    """Evidence invalidity, not a family ban: a formula on recorded bars is untouched, and the
-    Judge's re-judgement list releases a spread reader on its new verdict."""
-    uni = _formula_world(tmp_path, monkeypatch, ["zscore", ["sub", "close", "open"], 20], [])
+def test_a_formula_the_shared_test_passes_is_admitted(tmp_path, monkeypatch) -> None:
+    """Not a family ban: price-only or re-gated (the shared test returns None) is untouched."""
+    _formula_store(tmp_path, monkeypatch, ["zscore", ["sub", "close", "open"], 20],
+                   lambda name, row: None)
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=_FORMULA_SCREEN)
     assert uni["status"] == "OK" and uni["formula_unmeasured"] == []
-    uni = _formula_world(tmp_path, monkeypatch, ["ts_rank", "activity", 48],
-                         ["external.EURUSD.formula.p=1"])
-    assert uni["status"] == "OK" and uni["cols"] == ["EURUSD_x_asia"]
 
 
-def test_an_unreadable_formula_expression_is_unmeasured_and_other_families_pass() -> None:
-    why = pca.formula_unmeasured({"family": "formula", "params": {}}, "k")
-    assert why and "unreadable" in why
-    assert pca.formula_unmeasured({"family": "carry", "params": {"expr": "spread"}}, "k") is None
-    flow = pca.formula_unmeasured({"family": "formula", "params": {"expr": "flow"}}, "k")
-    assert flow and "flow" in flow
+def test_a_formula_without_the_shared_test_or_its_row_is_unmeasured(tmp_path,
+                                                                   monkeypatch) -> None:
+    """Fail closed: this module carries no copy of the rule, so a missing shared test (or an
+    unreadable row) never resolves to a clean verdict. Other families never reach the test."""
+    _formula_store(tmp_path, monkeypatch, "close", None)
+    why = pca.formula_unmeasured(_FKEY)
+    assert why and "shared formula input test is unavailable" in why
+    gone = pca.formula_unmeasured("external.EURUSD.formula.p=2")
+    assert gone and "not readable in the store" in gone
+    assert pca.formula_unmeasured("external.EURUSD.carry.p=1") is None
