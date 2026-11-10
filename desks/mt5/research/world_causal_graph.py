@@ -63,6 +63,7 @@ from libs.research import causal_graph as cg  # noqa: E402
 from libs.research.information_decay import REGISTRY, decay  # noqa: E402
 
 SOURCE = "world_causal_graph"
+UNMEASURED_VERDICT = "UNMEASURED"
 UNI = _DESK / "data" / "universe"
 UNIVERSE_JSON = UNI / "universe.json"
 GRAPH = _DESK / "data" / "world_causal_graph.json"
@@ -82,6 +83,13 @@ MIN_REPORTS = 52
 #: purpose: a screened pair is a statistical finding, a hand-written chain is a mechanism.
 PLAUSIBILITY_CROSS_ASSET = {"CAUSAL_ROLE": 0.5, "STATISTICAL": 0.2}
 PLAUSIBILITY_CLAIM = 0.3
+#: An economic-driver pair (`mt5desk.economic_drivers`): a declared role, the same standing the
+#: cross-asset screen gives its CAUSAL_ROLE pairs.
+PLAUSIBILITY_DRIVER = 0.5
+#: Consecutive passes that measured edges while the graph holds none admitted before the report
+#: reads RED. Two passes can be the luck of the order; a third says the inputs or the estimator
+#: cannot produce an admitted edge and somebody has to look.
+ZERO_ADMISSION_RED_AFTER = 2
 #: Horizon words in the claims -> the clock the edge is measured on.
 HORIZON_CLOCK: tuple[tuple[tuple[str, ...], str], ...] = (
     (("week", "weekly", "周", "週", "month", "monthly", "月", "quarter", "季"), "W1"),
@@ -472,6 +480,108 @@ def cross_asset_candidates(doc: dict[str, Any], universe: set[str]) -> list[cg.E
     return out
 
 
+def driver_candidates(meta: dict[str, Any], have: set[str]) -> tuple[list[cg.Edge], str]:
+    """Every hypothesis-lane instrument against its DECLARED economic drivers, as candidates.
+
+    THE GRAPH ONLY EVER LOOKED AT 33 OF THE UNIVERSE'S INSTRUMENTS, because its candidates were
+    the hand-seeded chains, the pairs a community post happened to name, and a cross-asset
+    screen that covers twelve book symbols. This is the universe-wide source: for each
+    instrument, the drivers `mt5desk.economic_drivers.driver_sets` declares for its class --
+    the dollar, the rate term, risk appetite, the commodity a currency exports, the two dollar
+    legs of a cross, the majors a crypto CFD follows. Declared roles, not all pairs: pairing
+    every symbol with every other would be an N-squared search, and each (pair, lag) cell here
+    is charged to the ledger once, like every other candidate.
+
+    Equities are routed to the event lane (`universe_policy`) and mint no candidate here.
+    Returns the edges and the basis, so "none" from an unreadable policy is not read as "none".
+    """
+    try:
+        from mt5desk.economic_drivers import driver_sets
+    except Exception as exc:
+        return [], f"UNAVAILABLE: economic_drivers not importable ({type(exc).__name__})"
+    try:
+        from research import universe_policy as up
+        may = up.may_hypothesise
+    except Exception:
+        def may(symbol: str, family: object = None) -> bool:
+            return True
+    out: list[cg.Edge] = []
+    seen: set[tuple[str, str]] = set()
+    for target in sorted(have):
+        if target not in meta or not may(target):
+            continue
+        try:
+            sets = driver_sets(target, meta, have)
+        except Exception:
+            continue
+        for ds in sets:
+            for d in ds.drivers:
+                if not d or d == target or d not in have or (d, target) in seen:
+                    continue
+                seen.add((d, target))
+                out.append(cg.Edge(src=d, dst=target, lag=1, plausibility=PLAUSIBILITY_DRIVER,
+                                   decay_cls="bar_H1", clock="H1",
+                                   evidence={"prior_source": "economic_drivers",
+                                             "prior_driver_set": str(getattr(ds, "name", ""))}))
+    return out, "MEASURED"
+
+
+def zero_admission(previous: dict[str, Any], *, measured: int, admitted_total: int,
+                   not_admitted: list[cg.Edge], bar_z: float | None,
+                   sources: dict[str, int]) -> dict[str, Any]:
+    """Has the graph been fed and admitted nothing, pass after pass? RED when it has.
+
+    AN ORGAN THAT MEASURES EVERY HOUR AND ADMITS NOTHING FOR TWO MONTHS LOOKED HEALTHY. It ran,
+    it wrote, its counts were non-zero -- and it handed the state builder no conditioning hint
+    at all (0 of 96, measured 2026-09-08 and unchanged on 2026-11-10). The streak counts passes
+    that MEASURED at least one edge while the graph holds none admitted; a pass that measured
+    nothing leaves it where it was (no inputs is a different defect, named by `status`).
+
+    RED ASKS FOR A DIAGNOSIS; IT LOWERS NOTHING. The admission rule is untouched. The block
+    carries what a reader needs to tell "the inputs are noise" from "the inputs never arrive":
+    how close the nearest edge came to the deflated bar, and how many candidates each source
+    supplied.
+    """
+    prev = previous.get("zero_admission") if isinstance(previous, dict) else None
+    runs = int((prev or {}).get("runs") or 0) if isinstance(prev, dict) else 0
+    if admitted_total > 0:
+        runs = 0
+    elif measured > 0:
+        runs += 1
+    nearest: dict[str, Any] | None = None
+    for e in not_admitted:
+        best = (e.evidence.get("xcorr") or {}).get("best") or {}
+        try:
+            sd = float(best.get("sd_boot") or 0.0)
+            z = abs(float(best.get("corr") or 0.0)) / sd if sd > 0 else 0.0
+        except (TypeError, ValueError):
+            continue
+        if nearest is None or z > nearest["abs_z"]:
+            nearest = {"edge": f"{e.src}->{e.dst}@{e.lag}", "abs_z": round(z, 3), "n": e.n,
+                       "prior_source": e.evidence.get("prior_source")}
+    if admitted_total > 0:
+        verdict = "OK"
+    elif runs > ZERO_ADMISSION_RED_AFTER:
+        verdict = "RED"
+    elif runs > 0:
+        verdict = "WATCH"
+    else:
+        verdict = UNMEASURED_VERDICT
+    why = ""
+    if verdict == "RED":
+        why = (f"{runs} consecutive passes measured edges and the graph holds none admitted; "
+               f"nearest edge reached |z|={nearest['abs_z'] if nearest else 'UNMEASURED'} "
+               f"against a deflated bar of {bar_z if bar_z is not None else 'UNMEASURED'}. "
+               "Either the candidate sources carry no lead-lag at this clock or an input is "
+               "not arriving -- read candidate_sources and cross_asset_basis")
+    return {"verdict": verdict, "runs": runs, "red_after": ZERO_ADMISSION_RED_AFTER,
+            "admitted_total": admitted_total, "measured_this_pass": measured,
+            "bar_z_deflated": bar_z, "nearest": nearest, "candidate_sources": sources,
+            "why": why,
+            "rule": "passes that measured >= 1 edge while the graph holds 0 admitted; RED past "
+                    "red_after; the admission rule is unchanged"}
+
+
 def _measured_at(graph: cg.CausalGraph, e: cg.Edge) -> str:
     have = graph.measured_edge(e.src, e.dst)
     return have.measured_at if have is not None else ""
@@ -662,15 +772,17 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
     # A candidate is a PAIR: the lag on it is a hint and the measurement lands at the lag the
     # data chooses, so two rows for one pair would be the same hypothesis measured twice.
     seeded = [e for e in graph.edges.values() if e.status != cg.STRUCTURAL]
+    have_bars = {p.name[:-len("_H1.parquet")] for p in UNI.glob("*_H1.parquet")}
+    driver_edges, _driver_basis = driver_candidates(_read_json(UNIVERSE_JSON), have_bars)
     candidates: list[cg.Edge] = []
     seen: set[tuple[str, str]] = set()
-    for e in [*seeded, *cross_edges, *claim_edges]:
+    for e in [*seeded, *cross_edges, *driver_edges, *claim_edges]:
         if (e.src, e.dst) in seen:
             continue
         seen.add((e.src, e.dst))
         candidates.append(e)
     # every candidate is in the graph, measured or not, so the report shows what is waiting
-    for e in [*cross_edges, *claim_edges]:
+    for e in [*cross_edges, *driver_edges, *claim_edges]:
         for nid in (e.src, e.dst):
             if nid not in graph.nodes and nid in universe:
                 graph.add_node(universe[nid])
@@ -775,6 +887,18 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
         # WHY THAT COUNT IS WHAT IT IS. Zero from a screen that found nothing and zero from a
         # screen that publishes no edge list are the same number and different facts.
         "cross_asset_basis": _cross_basis,
+        # the universe-wide source: each hypothesis-lane instrument against its declared drivers
+        "economic_driver_edges": len(driver_edges),
+        "economic_driver_basis": _driver_basis,
+        "instruments_with_a_candidate": len({n for e in candidates for n in (e.src, e.dst)
+                                             if n in universe}),
+        "instruments_in_universe": len(universe),
+        "zero_admission": zero_admission(
+            previous, measured=len(measured), admitted_total=len(admitted),
+            not_admitted=not_adm, bar_z=_bar_z(measured),
+            sources={"seeded": len(seeded), "cross_asset_graph": len(cross_edges),
+                     "economic_drivers": len(driver_edges),
+                     "deep_forest_claims": len(claim_edges)}),
         "skipped": skipped, "seed_notes": graph.seed_notes,
         "consumer": "research/state_vector_build.py reads conditioning_hints; the allocator "
                     "reads the state vector; nothing here sizes or trades",
@@ -783,6 +907,15 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
     return report
+
+
+def _bar_z(measured: list[cg.Edge]) -> float | None:
+    """The deflated z this pass's edges faced, as the estimator recorded it; None if none ran."""
+    for e in measured:
+        z = (e.evidence.get("xcorr") or {}).get("z_deflated")
+        if z is not None:
+            return float(z)
+    return None
 
 
 def _edge_key(row: dict[str, Any]) -> str:

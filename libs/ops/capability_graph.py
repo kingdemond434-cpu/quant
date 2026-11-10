@@ -521,6 +521,7 @@ NODES: tuple[Node, ...] = (
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/CROSS_ASSET_GRAPH.json",
+                 "desks/mt5/reports/CROSS_ASSET_PROPOSER.json",
                  "desks/mt5/data/intelligence/cross_asset_graph/")),
     Node("tail_alpha_search", "desks/mt5/research/tail_alpha_search.py",
          reads=("desks/mt5/data/universe/", "backups/moat/shadow_ledgers/"),
