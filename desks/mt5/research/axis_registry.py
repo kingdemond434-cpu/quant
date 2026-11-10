@@ -630,6 +630,23 @@ def instruments_by_class() -> dict[str, list[str]]:
     return {k: [s for _, s in sorted(v)] for k, v in out.items()}
 
 
+def rule_only_families() -> frozenset[str]:
+    """The `mass_screen_*` grammars: families that are only ever a specific screened rule.
+
+    Their constructor has no defaults for `feat`, `op`, `thr`, `direction`, `hold` and `stop_atr`
+    on purpose (`mass_screen_rules.family_mass_screen_rule`: "a default-parameter sweep must set
+    this family aside"). A picker that assigns a family to a region or a mechanism has no rule to
+    give one, so the cell it mints builds to nothing and sits on the docket unjudged for ever
+    (measured 2026-11-10: 416 `mass_screen_carry` rows whose params were sensor descriptors, 0
+    judged). Pickers skip them; `mass_screen.py`, which emits the real rule, is untouched.
+    """
+    try:
+        from mt5desk.mass_screen_rules import MASS_SCREEN_FAMILIES
+    except Exception:
+        return frozenset()
+    return frozenset(MASS_SCREEN_FAMILIES)
+
+
 def family_for(mechanism: str, information_source: str, families: frozenset[str],
                prefer: frozenset[str], salt: str = "") -> str | None:
     """A registered, unbanned family that implements this region, or None.
@@ -642,7 +659,7 @@ def family_for(mechanism: str, information_source: str, families: frozenset[str]
     """
     pool = sorted(f for f, (m, i, _) in FAMILY_TABLE.items()
                   if m == mechanism and i == information_source and f in families
-                  and not _banned(f))
+                  and not _banned(f) and f not in rule_only_families())
     if not pool:
         return None
     head = [f for f in pool if f in prefer] or pool

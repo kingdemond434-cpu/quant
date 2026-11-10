@@ -423,3 +423,14 @@ def test_the_donation_is_capped_at_sixty_however_large_the_flag(desk):
     assert len(proposals) <= ar.MAX_PROPOSALS
     _report, _cells, four = ar.build(max_proposals=4)
     assert len(four) <= 4
+
+
+def test_pickers_never_assign_a_rule_only_family():
+    """A mass-screen grammar has no defaults: assigned to a bare region it builds to nothing."""
+    rule_only = ar.rule_only_families()
+    assert "mass_screen_carry" in rule_only and "carry" not in rule_only
+    fams = ar.registered_families()
+    for salt in map(str, range(40)):
+        for mech, info in {(m, i) for m, i, _ in ar.FAMILY_TABLE.values()}:
+            got = ar.family_for(mech, info, fams, frozenset(), salt)
+            assert got not in rule_only
