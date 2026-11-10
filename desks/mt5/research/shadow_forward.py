@@ -21,6 +21,7 @@ import stat
 import sys
 import time
 import traceback
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -951,6 +952,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     today = datetime.now(UTC).date().isoformat()
 
     h1_cache = {}
+    prof = PassProfile()
+    memo = ReplayMemo()
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
     # here automatically -- the same day they are written -- with their clock stamped below.
     # Grandfathered rows are long by construction -- they predate the side field entirely --
@@ -981,7 +984,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
             state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
             state["engine_pass"] = {"started_at": pass_started, "rows_reached": i_row,
-                                    "rows": len(enrolled), "complete": False}
+                                    "rows": len(enrolled), "complete": False,
+                                    "profile": prof.report()}
             try:
                 _persist_state(state_path, state, final=False)
             except Exception as exc:          # a failed checkpoint never stops the pass
@@ -999,6 +1003,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         if key in seen:
             continue
         seen.add(key)
+        prof.row(key, fam, timeframe_of(params))
         # THE BANNED FAMILY DOOR, on the shadow clock store (principal 2026-09-22: "Discovered is
         # banned now btw remember permanently banned ... N clocks of discovery"). The state row is
         # created three lines below by `state.get(key, {...})`, so THIS is the line at which a
@@ -1149,9 +1154,11 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             sleeve_tf = timeframe_of(params)
             if cached_symbol != sym:
                 h1_cache.clear()
+                memo.clear()          # its entries pin this symbol's frames; release them together
                 cached_symbol = sym
             if (sym, sleeve_tf) not in h1_cache:
-                h1_cache[(sym, sleeve_tf)] = fetch_h1(sym, sleeve_tf)
+                with prof.phase("fetch"):
+                    h1_cache[(sym, sleeve_tf)] = fetch_h1(sym, sleeve_tf)
             bars = h1_cache[(sym, sleeve_tf)]
             if bars is None:
                 # NO BARS IS A NAMED STATE, NOT A SILENT SKIP (2026-09-05). Four certified
@@ -1207,7 +1214,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # family_call.signals, not the family constructor, owns the session filter. The
             # gauntlet already applies it; dropping this key here made all forward session
             # variants replay the same unrestricted trades.
-            extra, why = resolve(sym, fam, params, h1)
+            with prof.phase("resolve"):
+                extra, why = resolve(sym, fam, params, h1)
             if extra is None:
                 # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,
                 # which reads as "this mechanism never fires" rather than "nobody gave it what it
@@ -1291,7 +1299,15 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # the shape decides whether a short runs short, and a divergence would show up only as
             # a sleeve trading differently live than it was certified.
             _short = str(side).upper() == "SHORT"
-            sigs = family_signals(fam_fn, h1, side=-1 if _short else 1, params=call_params)
+            _sig_key = memo.signal_key(fam, sleeve_tf, _short, call_params, h1, extra)
+            sigs = memo.get(_sig_key)
+            if sigs is None:
+                with prof.phase("signals"):
+                    sigs = family_signals(fam_fn, h1, side=-1 if _short else 1,
+                                          params=call_params)
+                memo.put(_sig_key, sigs, h1, extra)
+            else:
+                prof.hit("signals")
             # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
             # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
             # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
@@ -1330,7 +1346,14 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             if _ensure_session_window(key, params, st, ledger=ledger):
                 slog(f"{key}: session filter corrected; prior state archived and a "
                      f"NEW forward window begins at {st['forward_start']}")
-            res = run_backtest(h1, sigs, costs)
+            _bt_key = memo.backtest_key(_sig_key, costs)
+            res = memo.get(_bt_key)
+            if res is None:
+                with prof.phase("backtest"):
+                    res = run_backtest(h1, sigs, costs)
+                memo.put(_bt_key, res, h1, extra)
+            else:
+                prof.hit("backtest")
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
             # Trades before that boundary were available while the cell was being SELECTED,
@@ -1704,11 +1727,148 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     state["gate_blocked_sleeves"] = 0
     state["engine_pass"] = {"started_at": pass_started, "rows_reached": len(enrolled),
                             "rows": len(enrolled), "complete": True,
-                            "finished_at": state["updated_at"]}
+                            "finished_at": state["updated_at"],
+                            "profile": prof.report()}
     _persist_state(state_path, state, final=True)
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     _enrolment_watermark(len(enrolled), ledger)
+
+
+class PassProfile:
+    """Where one shadow pass spends its wall clock (2026-11-05).
+
+    The pass took 2.6 h against a 1 h trigger with nothing on the box saying why: `seconds` in
+    shadow_health was the only number. This times the four expensive phases (bar fetch, input
+    resolution, family signals, the trade simulation) and every row's whole cost, and publishes
+    totals by phase, by family and by chart plus the slowest rows on `engine_pass.profile`, so
+    the next cut is chosen from a measurement rather than a guess. Reuse hits from `ReplayMemo`
+    are counted beside the phases they skipped.
+    """
+
+    TOP = 15
+
+    def __init__(self) -> None:
+        self.started = time.monotonic()
+        self.phases: dict[str, float] = {}
+        self.calls: dict[str, int] = {}
+        self.hits: dict[str, int] = {}
+        self.by_family: dict[str, float] = {}
+        self.by_chart: dict[str, float] = {}
+        self.rows: list[tuple[float, str]] = []
+        self._open: tuple[float, str, str, str] | None = None
+
+    @contextlib.contextmanager
+    def phase(self, name: str) -> Iterator[None]:
+        t = time.monotonic()
+        try:
+            yield
+        finally:
+            self.phases[name] = self.phases.get(name, 0.0) + (time.monotonic() - t)
+            self.calls[name] = self.calls.get(name, 0) + 1
+
+    def hit(self, name: str) -> None:
+        self.hits[name] = self.hits.get(name, 0) + 1
+
+    def _close(self, now: float) -> None:
+        if self._open is None:
+            return
+        t0, key, fam, chart = self._open
+        dt = now - t0
+        self.by_family[fam] = self.by_family.get(fam, 0.0) + dt
+        self.by_chart[chart] = self.by_chart.get(chart, 0.0) + dt
+        self.rows.append((dt, key))
+        self._open = None
+
+    def row(self, key: str, family: str, chart: str) -> None:
+        now = time.monotonic()
+        self._close(now)
+        self._open = (now, key, str(family), str(chart))
+
+    def report(self) -> dict:
+        """Totals so far. A checkpoint reads it mid-pass; the open row stays open."""
+        now = time.monotonic()
+        by_family, by_chart, rows = dict(self.by_family), dict(self.by_chart), list(self.rows)
+        if self._open is not None:
+            t0, key, fam, chart = self._open
+            by_family[fam] = by_family.get(fam, 0.0) + (now - t0)
+            by_chart[chart] = by_chart.get(chart, 0.0) + (now - t0)
+            rows.append((now - t0, key))
+        top = sorted(rows, reverse=True)[: self.TOP]
+        return {"seconds": round(now - self.started, 1), "rows_timed": len(rows),
+                "phase_seconds": {k: round(v, 1) for k, v in sorted(self.phases.items())},
+                "phase_calls": dict(sorted(self.calls.items())),
+                "reused": dict(sorted(self.hits.items())),
+                "family_seconds": {k: round(v, 1) for k, v in
+                                   sorted(by_family.items(), key=lambda kv: -kv[1])},
+                "chart_seconds": {k: round(v, 1) for k, v in
+                                  sorted(by_chart.items(), key=lambda kv: -kv[1])},
+                "slowest_rows": [{"key": k, "seconds": round(dt, 2)} for dt, k in top]}
+
+
+class ReplayMemo:
+    """Reuse a replay whose inputs are IDENTICAL to one already computed this pass.
+
+    Measured 2026-11-05 on the box's shadow_state: 226 of 893 replayed rows produced results
+    identical to another row's (GBPCHF formula: 17 keys, one result). Identical OUTPUTS do not
+    prove identical inputs, so the saving is whatever share of those were the same runtime call
+    (identity-only keys are stripped before the family is called); the pass profile measures it.
+    A hit requires the same family, chart, side and canonical runtime parameters, the SAME bar
+    frame object and the same resolved inputs, compared structurally: containers element by
+    element, JSON-native scalars by value, and every other leaf (frames included, however
+    deeply nested) by identity. The simulation also requires the same costs. Entries hold
+    references to every object they key on by identity, so an id can never be recycled into a
+    false hit, and the memo is cleared with the bar cache whenever the symbol changes. Every row
+    still runs its own bookkeeping, ledger, identity checks and verdict; only the computation
+    of an identical answer is shared.
+    """
+
+    def __init__(self) -> None:
+        self._store: dict[tuple, tuple] = {}
+        self._refs: dict[tuple, list] = {}
+
+    def clear(self) -> None:
+        self._store.clear()
+        self._refs.clear()
+
+    @classmethod
+    def _fingerprint(cls, value: object, refs: list) -> object:
+        """A structural key: containers element by element, JSON-native scalars by value, and
+        EVERY other leaf -- a frame, a series, an array, any object -- by identity, with the
+        object appended to `refs` so the entry can pin it (audit 2026-11-05: a frame nested in
+        `extra["drivers"]` or `extra["factors"]` must never be compared by its truncated repr)."""
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return ("val", type(value).__name__, value)
+        if isinstance(value, dict):
+            return ("dict", tuple(sorted((str(k), cls._fingerprint(v, refs))
+                                         for k, v in value.items())))
+        if isinstance(value, (list, tuple)):
+            return (type(value).__name__, tuple(cls._fingerprint(v, refs) for v in value))
+        refs.append(value)
+        return ("obj", id(value))
+
+    def signal_key(self, family: str, chart: str, short: bool, call_params: dict,
+                   bars: object, extra: dict | None) -> tuple:
+        refs: list = []
+        key = ("sig", str(family), str(chart), bool(short),
+               self._fingerprint(call_params, refs), id(bars),
+               self._fingerprint(dict(extra or {}), refs))
+        self._refs[key] = refs
+        return key
+
+    @staticmethod
+    def backtest_key(signal_key: tuple, costs: object) -> tuple:
+        return ("bt", signal_key, repr(costs))
+
+    def get(self, key: tuple) -> object | None:
+        hit = self._store.get(key)
+        return None if hit is None else hit[0]
+
+    def put(self, key: tuple, value: object, bars: object, extra: dict | None) -> None:
+        # The entry pins the bar frame and every object leaf its key was built on (from
+        # `signal_key`), so no id inside a stored key can be recycled while the entry lives.
+        sig = key[1] if key and key[0] == "bt" else key
+        self._store[key] = (value, bars, dict(extra or {}), tuple(self._refs.get(sig, ())))
 
 
 def _enrolment_watermark(enrolled: int, ledger: str) -> None:
