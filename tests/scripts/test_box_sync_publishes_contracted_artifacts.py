@@ -48,16 +48,11 @@ KNOWN_UNPUBLISHED = frozenset({
     "desks/mt5/reports/AXIS_INGEST.json",
     "desks/mt5/reports/CEO_DOCKET.json",
     "desks/mt5/reports/NEVER_STALE.json",
-    "desks/mt5/data/moat_coverage.json",
     "desks/mt5/reports/TAPE_RECORDER.json",
     "desks/mt5/reports/FRONTIER_INTELLIGENCE.json",
-    "desks/mt5/data/moat_miner_state.json",
-    "desks/mt5/reports/QQUANT_GATES.json",
     "desks/mt5/data/terminal_boot_ok.json",
     "desks/mt5/reports/RESEARCH_REPORT_CLOCK.json",
-    "desks/mt5/data/fusion_deadman_state.json",
     "desks/mt5/reports/DIST_SHIFT.json",
-    "desks/mt5/data/forward_reconcile.json",
     "desks/mt5/reports/CERTIFICATE_HYGIENE.json",
     "desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json",
     "desks/mt5/reports/MOAT_CAPTURE.json",
@@ -165,4 +160,4 @@ def test_the_debt_only_shrinks() -> None:
     contracted = _contracted()
     paid = sorted(a for a in KNOWN_UNPUBLISHED
                   if a in listed or _reaches_origin_otherwise(a) or a not in contracted)
-    assert not paid, f"published or no longer contracted; delete from KNOWN_UNPUBLISHED: {paid}"
+    assert not paid, f"published or no longer contracted, so remove from KNOWN_UNPUBLISHED: {paid}"
