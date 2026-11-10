@@ -13,9 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = (ROOT / "desks" / "mt5" / "scripts" / "Adopt-And-Seal.ps1").read_text("utf-8")
-BLOCK = SRC.split("# ------------------------------------- 1c.", 1)[1].split(
-    "# only when data/secrets/release_signing.key exists", 1
-)[0]
+BLOCK = SRC.split("# ------------------------------------- 1c.", 1)[1].split("\n# ----", 1)[0]
 
 
 def test_the_repairs_run_after_the_ensure_list_and_before_the_seal() -> None:
