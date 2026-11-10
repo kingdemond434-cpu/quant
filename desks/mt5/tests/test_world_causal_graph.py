@@ -314,15 +314,24 @@ def test_a_recorded_diagnosis_holds_a_red_as_watch_only_for_the_set_it_covered(
     assert (red["bar_z_deflated_previous"], red["bar_z_deflated"]) == (3.9, 4.2)
     assert (red["cells_charged_previous"], red["cells_charged"]) == (516, 2100)
     # no report yet: a diagnosis of nothing in particular is refused
-    assert w.record_diagnosis("candidates carry no lead-lag at H1") == {}
+    assert w.record_diagnosis("candidates carry no lead-lag at H1", by="world-sensor") == {}
     w.REPORT.parent.mkdir(parents=True, exist_ok=True)
     w.REPORT.write_text(json.dumps({"zero_admission": red}), "utf-8")
-    assert w.record_diagnosis("  ") == {}
-    doc = w.record_diagnosis("candidates carry no lead-lag at H1")
+    assert w.record_diagnosis("  ", by="world-sensor") == {}
+    # an unsigned reading is refused: nobody could be asked about it later
+    assert w.record_diagnosis("candidates carry no lead-lag at H1") == {}
+    doc = w.record_diagnosis("candidates carry no lead-lag at H1", by=" world-sensor ")
+    assert doc["by"] == "world-sensor"
     assert doc["candidate_fingerprint"] == fp and doc["nearest_abs_z"] == 3.4
     held = w.zero_admission(prev, fingerprint=fp, diagnosis=w._read_json(w.DIAGNOSIS), **kw)
     assert held["verdict"] == "WATCH" and held["runs"] == 6
     assert "no lead-lag at H1" in held["why"] and held["diagnosed"]["at"] == doc["at"]
+    assert held["diagnosed"]["by"] == "world-sensor" and "by world-sensor" in held["why"]
+    # the block counts the passes one reading has held the red back
+    assert held["diagnosed"]["passes_held"] == 1
+    again = w.zero_admission({"zero_admission": held}, fingerprint=fp,
+                             diagnosis=w._read_json(w.DIAGNOSIS), **kw)
+    assert again["verdict"] == "WATCH" and again["diagnosed"]["passes_held"] == 2
     # the candidate set changes: the reading no longer covers it and RED returns
     other = w.candidate_fingerprint([("EURUSD", "USDJPY")])
     back = w.zero_admission(prev, fingerprint=other, diagnosis=w._read_json(w.DIAGNOSIS), **kw)

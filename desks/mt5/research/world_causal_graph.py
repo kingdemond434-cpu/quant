@@ -594,13 +594,21 @@ def zero_admission(previous: dict[str, Any], *, measured: int, admitted_total: i
     if verdict == "RED" and isinstance(diagnosis, dict) and fingerprint \
             and diagnosis.get("candidate_fingerprint") == fingerprint \
             and str(diagnosis.get("diagnosis") or "").strip() and diagnosis.get("at"):
-        diagnosed = {k: diagnosis.get(k) for k in ("at", "diagnosis", "nearest_abs_z",
+        diagnosed = {k: diagnosis.get(k) for k in ("at", "by", "diagnosis", "nearest_abs_z",
                                                     "candidate_fingerprint")}
+        # how many passes this one reading has held the red back, so a diagnosis that has been
+        # leaned on for weeks shows its age in the block rather than only in its date
+        was = (prev or {}).get("diagnosed") if isinstance(prev, dict) else None
+        same = isinstance(was, dict) and was.get("candidate_fingerprint") == fingerprint \
+            and was.get("at") == diagnosed["at"] and was.get("diagnosis") == diagnosed["diagnosis"]
+        held = was.get("passes_held") if same and isinstance(was, dict) else 0
+        diagnosed["passes_held"] = (held if isinstance(held, int) else 0) + 1
         verdict = "WATCH"
     why = ""
     if diagnosed is not None:
-        why = (f"{runs} consecutive passes with no admitted edge, read on {diagnosed['at']}: "
-               f"{diagnosed['diagnosis']}. Holds while the candidate set is unchanged")
+        why = (f"{runs} consecutive passes with no admitted edge, read on {diagnosed['at']} "
+               f"by {diagnosed.get('by') or 'UNMEASURED'}: {diagnosed['diagnosis']}. Held for "
+               f"{diagnosed['passes_held']} pass(es); holds while the candidate set is unchanged")
     if verdict == "RED":
         why = (f"{runs} consecutive passes measured edges and the graph holds none admitted; "
                f"nearest edge reached |z|={nearest['abs_z'] if nearest else 'UNMEASURED'} "
@@ -983,16 +991,18 @@ def _edge_row(e: cg.Edge) -> dict[str, Any]:
             "conditional": e.evidence.get("conditional")}
 
 
-def record_diagnosis(text: str, now: datetime | None = None) -> dict[str, Any]:
+def record_diagnosis(text: str, by: str = "", now: datetime | None = None) -> dict[str, Any]:
     """Record a reading of the CURRENT red, bound to the candidate set the last pass measured.
 
-    Refuses (returns {}) with no text, or when the last report carries no fingerprint -- a
-    diagnosis of nothing in particular would hold against everything."""
+    Refuses (returns {}) with no text, with no named writer (`by`: the session or person who
+    read it -- an unsigned reading cannot be asked about later), or when the last report carries
+    no fingerprint -- a diagnosis of nothing in particular would hold against everything."""
     block = _read_json(REPORT).get("zero_admission")
     fp = str((block or {}).get("candidate_fingerprint") or "") if isinstance(block, dict) else ""
-    if not text.strip() or not fp:
+    if not text.strip() or not by.strip() or not fp:
         return {}
-    doc = {"at": (now or datetime.now(tz=UTC)).date().isoformat(), "diagnosis": text.strip(),
+    doc = {"at": (now or datetime.now(tz=UTC)).date().isoformat(), "by": by.strip()[:200],
+           "diagnosis": text.strip(),
            "candidate_fingerprint": fp,
            "nearest_abs_z": ((block or {}).get("nearest") or {}).get("abs_z"),
            "bar_z_deflated": (block or {}).get("bar_z_deflated")}
@@ -1008,11 +1018,13 @@ def main() -> int:
     ap.add_argument("--diagnose", default=None, metavar="TEXT",
                     help="record a dated reading of the current RED (holds as WATCH until the "
                          "candidate set changes) and exit; measures nothing")
+    ap.add_argument("--by", default="", metavar="WHO",
+                    help="who is recording the --diagnose reading (session or person); required")
     a = ap.parse_args()
     if a.diagnose is not None:
-        doc = record_diagnosis(a.diagnose)
+        doc = record_diagnosis(a.diagnose, by=a.by)
         print(f"diagnosis recorded: {doc}" if doc else
-              "diagnosis REFUSED: no text, or the last report names no candidate set")
+              "diagnosis REFUSED: no text, no --by, or the last report names no candidate set")
         return 0 if doc else 1
     rep = run(symbols=a.symbol, budget_s=a.budget_s)
     c = rep["counts"]
