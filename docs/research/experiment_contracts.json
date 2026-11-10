@@ -280,6 +280,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no unplaced word clears the floor (3 grounds, 20 rows), so the intake's unknown pile teaches the desk nothing"
    }
+  },
+  "contradiction_miner": {
+   "hypothesis": "Setting two sources that disagree about one instrument's direction or regime side by side, and donating the follow and fade cells that settle the split, gives the gauntlet cells no single source would have proposed, because a split field is a mechanism neither side has priced as settled.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "contradictions",
+    "better": "up",
+    "organ": "report:CONTRADICTIONS.json"
+   },
+   "falsifier": {
+    "metric": "contradictions",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no instrument carries claims from distinct sources on opposite sides, so the deep forest's claims never disagree in a way the desk can test"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

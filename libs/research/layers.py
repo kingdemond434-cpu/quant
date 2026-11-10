@@ -277,7 +277,7 @@ LEG_LAYER: dict[str, str] = {
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information",
     "residual_search": "information", "unseen_frontier": "information",
-    "vocabulary_proposer": "information",
+    "vocabulary_proposer": "information", "contradiction_miner": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",
