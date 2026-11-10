@@ -56,7 +56,7 @@ def _one_bank(bank: dict) -> dict:
 
 def test_feed_items_keep_the_publication_stamp_and_drop_undated_rows() -> None:
     items = cb.feed_items(FED_FEED, FED)
-    assert [i["url"][-22:] for i in items] == ["bowman20261014a.htm"[-22:]]
+    assert [i["url"].rsplit("/", 1)[-1] for i in items] == ["bowman20261014a.htm"]
     assert items[0]["published"] == "2026-10-15T02:55:00+00:00"
     boc = cb.feed_items(BOC_FEED, BOC)
     assert boc[0]["published"] == "2026-11-05T10:30:59+00:00"
