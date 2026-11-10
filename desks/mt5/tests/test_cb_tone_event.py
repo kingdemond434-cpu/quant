@@ -1,7 +1,9 @@
 """`cb_tone_event`: central-bank speech tone as a dated event the sealed gauntlet can judge.
 
-  1. a speech is keyed on its PUBLICATION date (the BIS review URL stamp), never its delivery
-     date, and a stamp that cannot be trusted drops the row;
+  0. only a row from a source whose own terms allow trading use is read: the BIS extract is
+     noncommercial and a row shaped like it is refused and counted;
+  1. a speech is keyed on its PUBLICATION day (`published_utc`), never its delivery date, and
+     a stamp that cannot be trusted drops the row;
   2. no entry can precede the day after publication plus the largest broker offset;
   3. the surprise basis reads each day against the bank's own PRIOR language only;
   4. an absent corpus is a named refusal through the sealed builder, not a never-firing cell;
@@ -35,14 +37,18 @@ def _bars(n: int = 6000, end: str = "2026-06-30 23:00") -> pd.DataFrame:
 
 
 def _speech(delivered: str, stamp: str, hawk: int, dove: int, ccy: str = "USD",
-            ext: str = "htm") -> dict:
-    return {"date": delivered, "bank": "Fed", "currency": ccy, "hawk": hawk, "dove": dove,
-            "chars": 9000, "url": f"https://www.bis.org/review/r{stamp}a.{ext}", "title": "t"}
+            source: str = "fed_board", terms: str = "permitted") -> dict:
+    """One speech row; `stamp` is the publication day as YYMMDD."""
+    return {"source": source, "terms": terms, "terms_basis": "clause read on the bank's page",
+            "bank": "Fed", "currency": ccy, "delivered": delivered,
+            "published_utc": f"20{stamp[:2]}-{stamp[2:4]}-{stamp[4:6]}T14:30:00+00:00",
+            "hawk": hawk, "dove": dove, "chars": 9000,
+            "url": "https://www.federalreserve.gov/newsevents/speech/x.htm", "title": "t"}
 
 
 @pytest.fixture
 def corpus(tmp_path, monkeypatch):
-    path = tmp_path / "bis_speech_tone.jsonl"
+    path = tmp_path / "official_speech_tone.jsonl"
 
     def write(rows: list[dict]) -> Path:
         path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
@@ -54,17 +60,38 @@ def corpus(tmp_path, monkeypatch):
     F._tone_days.cache_clear()
 
 
-def test_the_publication_date_is_read_from_the_review_url():
-    assert F.published_on("https://www.bis.org/review/r260624c.htm", "2026-06-19") == \
-        pd.Timestamp("2026-06-24", tz="UTC")
-    assert F.published_on("https://www.bis.org/review/r970211c.pdf", "1996-09-10") == \
-        pd.Timestamp("1997-02-11", tz="UTC")
-    assert F.published_on("https://www.bis.org/review/r970819.pdf", "1997-08-12") == \
-        pd.Timestamp("1997-08-19", tz="UTC")
-    # no stamp, a seven-digit typo, or a stamp BEFORE delivery: not placeable, never guessed
-    assert F.published_on("https://www.bis.org/speeches/sp1.htm", "2020-01-01") is None
-    assert F.published_on("https://www.bis.org/review/r1607014a.htm", "2016-07-12") is None
-    assert F.published_on("https://www.bis.org/review/r250710i.htm", "2027-07-09") is None
+def test_the_publication_day_is_the_banks_own_stamp_or_the_row_is_dropped():
+    row = _speech("2026-06-19", "260624", 1, 0)
+    assert F.published_day(row) == pd.Timestamp("2026-06-24", tz="UTC")
+    # a bare date and a non-UTC instant both land on the UTC day
+    assert F.published_day({"published_utc": "2026-06-24"}) == pd.Timestamp("2026-06-24", tz="UTC")
+    assert F.published_day({"published_utc": "2026-06-24T22:30:00-05:00"}) == \
+        pd.Timestamp("2026-06-25", tz="UTC")
+    # no stamp, an unreadable one, or public BEFORE it was spoken: not placeable, never guessed
+    assert F.published_day({"delivered": "2026-06-19"}) is None
+    assert F.published_day({"published_utc": "soon"}) is None
+    assert F.published_day({"published_utc": "2026-06-18", "delivered": "2026-06-19"}) is None
+
+
+def test_only_a_permitted_row_from_a_registered_source_is_ever_read(corpus):
+    bis_shaped = {"date": "2026-05-04", "bank": "Fed", "currency": "USD", "hawk": 9, "dove": 0,
+                  "chars": 9000, "url": "https://www.bis.org/review/r260505a.htm", "title": "t"}
+    corpus([bis_shaped,
+            _speech("2026-05-04", "260505", 9, 0, terms="research_only"),
+            _speech("2026-05-04", "260505", 9, 0, terms="unverified", source="rba"),
+            _speech("2026-05-04", "260505", 9, 0, source="bis"),        # labelled, unregistered
+            _speech("2026-05-04", "260505", 9, 0, source="snb")])
+    assert F.tone_days("USD") is None
+    assert F.LAST_DROPPED == {"terms_not_permitted": 3, "source_not_registered": 2}
+    with pytest.raises(F.CbToneUnavailable, match=F.NO_PERMITTED_CORPUS):
+        F.family_cb_tone_event(_bars(), currency="USD", tone="hawk", direction="long")
+    # two keys: the registry holds only sources someone read the terms of, and never the BIS
+    assert set(F.PERMITTED_SOURCES) == {"fed_board", "boc"}
+    assert F.refusal(_speech("2026-05-04", "260505", 1, 0)) is None
+    # neither the family nor its proposer opens the BIS extract
+    for rel in ("mt5desk/family_cb_tone.py", "research/cb_tone_proposer.py"):
+        assert "bis_speech_tone" not in (DESK / rel).read_text("utf-8")
+    assert F.SPEECHES.name == "official_speech_tone.jsonl"
 
 
 def test_no_entry_precedes_the_day_after_publication_plus_the_broker_offset(corpus):
@@ -182,7 +209,9 @@ def test_the_proposer_reports_unmeasured_without_a_corpus(corpus, tmp_path, monk
     monkeypatch.setattr(P, "REPORT", tmp_path / "CB_TONE_PROPOSER.json")
     r = P.run(budget_s=5, donate=False)
     assert r["status"] == "UNMEASURED" and r["tests_run"] == "UNMEASURED"
-    assert "no central-bank tone corpus" in r["why"]
+    assert "no permitted central-bank tone corpus" in r["why"]
+    assert r["parked_reason"] == "bis_terms_noncommercial"
+    assert isinstance(r["symbols_parked"], int)
     assert json.loads((tmp_path / "CB_TONE_PROPOSER.json").read_text("utf-8"))["status"] == \
         "UNMEASURED"
 

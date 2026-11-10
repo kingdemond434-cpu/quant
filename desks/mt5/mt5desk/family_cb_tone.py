@@ -13,35 +13,44 @@ real USD rates, equity indices against the policy path), reprice over the days t
 the language is read, translated and absorbed. The claim is falsifiable per cell: it fails when
 days of one-sided central-bank language carry no forward return net of cost.
 
-THE EVENT CLOCK IS PUBLICATION, NOT DELIVERY (2026-11-10). The tone corpus stamps each speech
-with its DELIVERY date, and `research/cb_tone_screen` read it two trading days later. Measured
-on the desk's own corpus, the BIS publishes a speech a median 2 days after delivery, 14 days at
-the 90th percentile and 52 at the 99th -- so a fixed two-day lag reads roughly half the corpus
-before it existed. Every BIS review URL carries its publication date (`/review/rYYMMDD<x>`), so
-each speech is keyed HERE on that date. A row whose URL carries no readable stamp, or a stamp
-earlier than the delivery date (the corpus has dated typos), cannot be placed and is dropped --
-counted in `LAST_DROPPED`, never guessed.
+THE CORPUS IS THE BANKS' OWN PAGES, AND ONLY WHERE THEIR TERMS ALLOW IT (2026-11-10). The first
+version of this family read the BIS speech extract. The BIS offers that extract "for
+noncommercial purposes" (its download page, read 2026-11-10), so it may inform research and may
+never be a trading input. This family does not open it. It reads
+`data/intelligence/central_banks/official_speech_tone.jsonl`: one row per speech, fetched from the
+issuing bank's own site, each carrying the `source` it came from and the `terms` verdict someone
+read on that site. A row is used only when its `terms` is "permitted" AND its `source` is in
+`PERMITTED_SOURCES` below -- two keys, so neither a mislabelled row nor an unregistered source
+gets through alone. Everything else is dropped and counted in `LAST_DROPPED`
+(`terms_not_permitted`, `source_not_registered`); with nothing left the family refuses by name
+(`bis_terms_noncommercial`), it never falls back to the BIS file.
 
-THE BAR CLOCK. The publication stamp is a DATE with no hour, so the speech is taken as knowable
-from 00:00 UTC of the FOLLOWING day. The bar index is broker time, measured at UTC+2 in winter
-and UTC+3 in summer; the entry bar must be labelled at or after that instant plus
-`BROKER_MAX_OFFSET_H` (3h), which is on or after the knowable instant in BOTH seasons. It is at
-most one hour late in winter and never early, so no event is dropped for want of a measured
-clock and none is placed on a bar that opened before the news.
+THE EVENT CLOCK IS PUBLICATION, NOT DELIVERY. Each row is keyed on `published_utc`, the day the
+bank made the text public; a row without a readable one, or with one earlier than its delivery
+date, cannot be placed and is dropped -- counted, never guessed. (Measured on the BIS copy
+before it was set aside: publication trailed delivery by a median 2 days, 14 at the 90th
+percentile and 52 at the 99th, so a clock keyed on delivery reads speeches before they existed.)
+
+THE BAR CLOCK. Speeches are pooled per publication DAY, so a speech is taken as knowable from
+00:00 UTC of the FOLLOWING day whatever hour it was posted. The bar index is broker time,
+measured at UTC+2 in winter and UTC+3 in summer; the entry bar must be labelled at or after that
+instant plus `BROKER_MAX_OFFSET_H` (3h), which is on or after the knowable instant in BOTH
+seasons. It is at most one hour late in winter and never early.
 
 TWO BASES, KEPT AS SEPARATE HYPOTHESES. The lexicon counts far more dovish than hawkish hits
 (USD: 1,156 dovish published days against 280 hawkish), so the LEVEL's sign mostly says "a
 speech happened". The SURPRISE basis reads each day against the same bank's own recent language
 -- the mean of its previous `SURPRISE_OBS` published days, each day against its own past only --
-which is the part a reader could not already have expected.
+which is the part a reader could not already have expected. (The USD counts quoted are from the
+research copy; the permitted corpus is re-measured by the proposer's report on every pass.)
 
-THE INPUT IS NAMED ON THE RECIPE (`currency`) and loaded HERE from the tracked per-speech file
-(`data/intelligence/central_banks/bis_speech_tone.jsonl`), so the sweep, the sealed gauntlet's
+THE INPUT IS NAMED ON THE RECIPE (`currency`) and loaded HERE from the per-speech file
+(`data/intelligence/central_banks/official_speech_tone.jsonl`), so the sweep, the sealed gauntlet's
 `build_cell` and the forward clock rebuild the same signals from the same identity.
 
 AN ABSENT INPUT IS A NAMED REFUSAL, NOT A CELL THAT NEVER FIRES (L1.28a): no tone file, or no
-placeable speech at all for the currency, raises `CbToneUnavailable`. It is also a TypeError on
-purpose -- the sealed builder catches only TypeError on its first family call and names the
+permitted, placeable speech at all for the currency, raises `CbToneUnavailable`. It is also a
+TypeError on purpose -- the sealed builder catches only TypeError on its first family call and names the
 failure on its retry, so the refusal goes through the builder's own door.
 
 REFUSES (returns []) on an unknown tone side or direction, or too few bars.
@@ -49,7 +58,6 @@ REFUSES (returns []) on an unknown tone side or direction, or too few bars.
 from __future__ import annotations
 
 import json
-import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -59,7 +67,22 @@ from mt5desk.families import Signal
 from mt5desk.family_event_reaction import family_event_reaction
 
 DESK = Path(__file__).resolve().parents[1]
-SPEECHES = DESK / "data" / "intelligence" / "central_banks" / "bis_speech_tone.jsonl"
+SPEECHES = DESK / "data" / "intelligence" / "central_banks" / "official_speech_tone.jsonl"
+
+#: Sources whose OWN terms were read and allow reuse, with the clause. A source is added here by
+#: a person who read its terms page, in a diff; a row's own `terms` label is necessary and not
+#: sufficient. Read 2026-11-10 (Global data). NOT here, on purpose: the BIS extract, the SNB and
+#: the BoE's general pages (noncommercial); the ECB and the BoJ (unverified); the RBA (its CC-BY
+#: sentence does not name speeches).
+PERMITTED_SOURCES: dict[str, str] = {
+    "fed_board": "federalreserve.gov: \"information on Board's website is in the public domain "
+                 "and may be copied and distributed without permission\" (citation requested)",
+    "boc": "bankofcanada.ca: \"the Bank permits you to freely use, copy, distribute and "
+           "transmit its website content\", with attribution and its request-rate limits",
+}
+TERMS_PERMITTED = "permitted"
+#: The reason a host with no permitted corpus is parked under, by name.
+NO_PERMITTED_CORPUS = "bis_terms_noncommercial"
 
 DIRECTIONS = {"long": 1, "short": -1}
 TONES = ("hawk", "dove")
@@ -69,36 +92,53 @@ SURPRISE_OBS = 20
 #: The largest measured broker-time offset from UTC (summer). Adding it to a UTC instant gives a
 #: bar label that is on or after that instant in both seasons.
 BROKER_MAX_OFFSET_H = 3
-#: `/review/r260624c.htm`, `/review/r970211c.pdf`, `/review/r970819.pdf`: six digits, YYMMDD.
-_STAMP = re.compile(r"/review/r(\d{6})(?!\d)")
 _EVENT_SYMBOL = "CB_TONE"
 
-#: What the last load could not place, by reason. A shrinking sample is never silent.
+#: What the last load could not use, by reason. A shrinking sample is never silent.
 LAST_DROPPED: dict[str, int] = {}
 
 
 class CbToneUnavailable(LookupError, TypeError):
-    """The recipe names a currency this host holds no placeable central-bank tone for."""
+    """The recipe names a currency this host holds no permitted, placeable tone for."""
 
 
-def published_on(url: str, delivered: str) -> pd.Timestamp | None:
-    """The BIS publication DATE in the review URL, or None when it cannot be trusted."""
-    m = _STAMP.search(str(url or ""))
-    if m is None:
+def published_day(row: dict[str, Any]) -> pd.Timestamp | None:
+    """The UTC day the bank made the speech public, or None when it cannot be trusted."""
+    raw = str(row.get("published_utc") or "").strip()
+    if not raw:
         return None
     try:
-        pub = pd.Timestamp(year=int(m.group(1)[:2]) + (1900 if int(m.group(1)[:2]) >= 90 else 2000),
-                           month=int(m.group(1)[2:4]), day=int(m.group(1)[4:6]), tz="UTC")
-        day = pd.Timestamp(delivered, tz="UTC")
+        pub = pd.Timestamp(raw)
+        pub = (pub.tz_localize("UTC") if pub.tzinfo is None else pub.tz_convert("UTC")).normalize()
     except (TypeError, ValueError):
         return None
-    return pub if pub >= day else None
+    delivered = str(row.get("delivered") or "").strip()
+    if delivered:
+        try:
+            if pub < pd.Timestamp(delivered[:10], tz="UTC"):
+                return None                   # public before it was spoken: a typo, not a clock
+        except (TypeError, ValueError):
+            return None
+    return pub
+
+
+def refusal(row: dict[str, Any]) -> str | None:
+    """Why this row may not be a trading input; None when both keys turn."""
+    if str(row.get("terms") or "") != TERMS_PERMITTED:
+        return "terms_not_permitted"
+    if str(row.get("source") or "") not in PERMITTED_SOURCES:
+        return "source_not_registered"
+    return None
 
 
 @lru_cache(maxsize=4)
 def _tone_days(path: str, mtime_ns: int) -> tuple[dict[str, pd.Series], dict[str, int]]:
-    """{currency: net tone per PUBLICATION day} and what could not be placed."""
+    """{currency: net tone per PUBLICATION day} over permitted rows, and what was dropped."""
     dropped: dict[str, int] = {}
+
+    def drop(why: str) -> None:
+        dropped[why] = dropped.get(why, 0) + 1
+
     acc: dict[tuple[str, pd.Timestamp], list[int]] = {}
     with open(path, encoding="utf-8") as fh:
         for line in fh:
@@ -108,19 +148,31 @@ def _tone_days(path: str, mtime_ns: int) -> tuple[dict[str, pd.Series], dict[str
             try:
                 row = json.loads(line)
             except ValueError:
-                dropped["unreadable_row"] = dropped.get("unreadable_row", 0) + 1
+                drop("unreadable_row")
                 continue
-            pub = published_on(row.get("url", ""), row.get("date", ""))
+            if not isinstance(row, dict):
+                drop("unreadable_row")
+                continue
+            why = refusal(row)
+            if why is not None:
+                drop(why)
+                continue
+            pub = published_day(row)
             if pub is None:
-                dropped["no_publication_stamp"] = dropped.get("no_publication_stamp", 0) + 1
+                drop("no_publication_stamp")
                 continue
-            cell = acc.setdefault((str(row.get("currency") or ""), pub), [0, 0])
-            cell[0] += int(row.get("hawk") or 0)
-            cell[1] += int(row.get("dove") or 0)
+            try:
+                hawk, dove = int(row.get("hawk") or 0), int(row.get("dove") or 0)
+            except (TypeError, ValueError):
+                drop("unreadable_row")
+                continue
+            cell = acc.setdefault((str(row.get("currency") or "").upper(), pub), [0, 0])
+            cell[0] += hawk
+            cell[1] += dove
     out: dict[str, dict[pd.Timestamp, float]] = {}
     for (ccy, pub), (hawk, dove) in acc.items():
         if hawk + dove == 0:              # no directional language is not neutral language
-            dropped["no_directional_language"] = dropped.get("no_directional_language", 0) + 1
+            drop("no_directional_language")
             continue
         out.setdefault(ccy, {})[pub] = (hawk - dove) / (hawk + dove)
     return {c: pd.Series(v).sort_index() for c, v in out.items()}, dropped
@@ -183,9 +235,10 @@ def family_cb_tone_event(
     times = event_times(str(currency), str(tone), float(min_abs), str(basis))
     if times is None:
         raise CbToneUnavailable(
-            f"no placeable central-bank tone for {currency} on this host "
-            f"({SPEECHES.name} absent, or no speech of that currency carries a publication "
-            "stamp); the input is missing, the cell is unjudged")
+            f"{NO_PERMITTED_CORPUS}: no permitted central-bank tone for {currency} on this host "
+            f"({SPEECHES.name} absent, or it holds no speech of that currency from a source "
+            "whose terms allow trading use); the BIS extract is noncommercial and is never "
+            "read here, so the input is missing and the cell is unjudged")
     events: list[dict[str, Any]] = [{"symbol": _EVENT_SYMBOL, "at": ts} for ts in times]
     out = family_event_reaction(
         df, events=events, symbol=_EVENT_SYMBOL, mode="drift", side=flip,

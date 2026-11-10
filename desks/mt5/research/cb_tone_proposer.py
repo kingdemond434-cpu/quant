@@ -1,16 +1,19 @@
 """Mint `cb_tone_event` cells from the central-bank tone corpus -- the corpus's judged consumer.
 
-`side_channels/bis_speech_tone` scores every central-banker speech the BIS has collected since
-1996 and `research/cb_tone_screen` sorts the result, but a screen has no promotion authority and
-nothing carried the tone to the judge: it ran on no cycle and no family read it. This proposer
-turns it into judged cells. For each hypothesis-lane symbol (a rotating cursor, so the whole
-universe is reached over hours) and each tone currency the symbol is priced in -- both legs of an
-FX pair, the profit currency of a metal, index, energy, soft or crypto CFD, so gold reads the Fed
--- it runs `family_cb_tone_event` over a small declared grid (basis x tone side x direction x
-hold), screens every variant net of the round trip with the shared proposer screen, deflates by
-everything it tried, and donates one best variant per (symbol, currency) through
+The tone corpus this reads is the banks' OWN speech pages, from sources whose terms allow
+trading use (`mt5desk.family_cb_tone.PERMITTED_SOURCES`); the BIS extract is noncommercial and
+is not read here or by the family. For each hypothesis-lane symbol (a rotating cursor, so the
+whole universe is reached over hours) and each tone currency the symbol is priced in -- both legs
+of an FX pair, the profit currency of a metal, index, energy, soft or crypto CFD, so gold reads
+the Fed -- it runs `family_cb_tone_event` over a small declared grid (basis x tone side x
+direction x hold), screens every variant net of the round trip with the shared proposer screen,
+deflates by everything it tried, and donates one best variant per (symbol, currency) through
 `proposer_common.donate`. The sealed gauntlet judges it via `ORTHOGONAL_FAMILIES`; the family
-reloads the corpus from `currency` on the recipe, keyed on each speech's PUBLICATION date.
+reloads the corpus from `currency` on the recipe, keyed on each speech's PUBLICATION day.
+
+WITH NO PERMITTED CORPUS IT PARKS, BY NAME AND BY COUNT: status UNMEASURED, `parked_reason`
+`bis_terms_noncommercial`, and `symbols_parked` -- the hypothesis-lane symbols that would have
+been swept. Nothing is screened and nothing is donated.
 
 The screen is not the gauntlet: it only keeps the gauntlet from being handed every variant.
 
@@ -85,7 +88,8 @@ def corpus_state() -> dict[str, Any]:
         s = F.tone_days(ccy)
         if s is not None and len(s):
             held[ccy] = {"published_days": len(s), "last_published": str(s.index.max().date())}
-    return {"currencies": held, "dropped": dict(F.LAST_DROPPED)}
+    return {"currencies": held, "dropped": dict(F.LAST_DROPPED),
+            "permitted_sources": sorted(F.PERMITTED_SOURCES)}
 
 
 def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
@@ -106,8 +110,14 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
     syms = [s for s in _symbols(meta) if currencies_for(s, meta[s], held)]
     if not held or not syms:
         rep.update({"status": UNMEASURED, "tests_run": UNMEASURED, "cells_proposed": UNMEASURED,
-                    "why": ("no central-bank tone corpus on this host" if not held else
+                    "why": ("no permitted central-bank tone corpus on this host: "
+                            f"{F.SPEECHES.name} is absent or holds no row from a source whose "
+                            "terms allow trading use (the BIS extract is noncommercial and is "
+                            "not read)" if not held else
                             "no hypothesis-lane symbol is priced in a tone currency")})
+        if not held:
+            rep["parked_reason"] = F.NO_PERMITTED_CORPUS
+            rep["symbols_parked"] = len(_symbols(meta))
         _write(REPORT, rep)
         return rep
     start = int(_read(REPORT).get("cursor_next", 0)) % len(syms)

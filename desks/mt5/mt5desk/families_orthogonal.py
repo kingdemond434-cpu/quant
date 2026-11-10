@@ -1728,7 +1728,7 @@ from mt5desk.family_cb_tone import family_cb_tone_event  # noqa: E402
 ORTHOGONAL_FAMILIES["cb_tone_event"] = family_cb_tone_event
 FAMILY_INPUTS["cb_tone_event"] = ("one currency's central-bank speech tone (currency on the "
                                   "recipe)",
-                                  "data/intelligence/central_banks/bis_speech_tone.jsonl")
+                                  "data/intelligence/central_banks/official_speech_tone.jsonl")
 
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
