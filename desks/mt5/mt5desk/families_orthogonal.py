@@ -1719,6 +1719,17 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
+# CENTRAL-BANK LANGUAGE AS A DATED EVENT (2026-11-10): the bars after a currency's published
+# central-bank speeches lean hawkish or dovish, each speech keyed on its PUBLICATION date. The
+# currency is named on the recipe and the tone corpus is loaded by the family itself, so every
+# caller rebuilds the same cell from the same identity without an input resolver.
+from mt5desk.family_cb_tone import family_cb_tone_event  # noqa: E402
+
+ORTHOGONAL_FAMILIES["cb_tone_event"] = family_cb_tone_event
+FAMILY_INPUTS["cb_tone_event"] = ("one currency's central-bank speech tone (currency on the "
+                                  "recipe)",
+                                  "data/intelligence/central_banks/bis_speech_tone.jsonl")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
@@ -2054,6 +2065,10 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a "
         "Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong "
         "eigenvalues"),
+    "cb_tone_event": (
+        ("H1", "H4", "D1"),
+        "the event is a speech keyed on a publication DATE with no hour, entered from the day "
+        "after; a sub-hourly entry asserts a timing precision the input does not carry"),
     "world_macro_state": (
         ("H1", "H4", "D1"),
         "the conditioning variable is an official statistic printed daily at best and usually "
