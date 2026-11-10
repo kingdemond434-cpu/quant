@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import itertools
 import json
 import sys
 from pathlib import Path
@@ -36,14 +37,20 @@ def _bars(n: int = 6000, end: str = "2026-06-30 23:00") -> pd.DataFrame:
                          "low": close - 0.001, "close": close, "tick_volume": 100.0}, index=idx)
 
 
+_N = itertools.count()
+
+
 def _speech(delivered: str, stamp: str, hawk: int, dove: int, ccy: str = "USD",
-            source: str = "fed_board", terms: str = "permitted") -> dict:
+            source: str = "fed_board", terms: str = "permitted", access: str = "PUBLIC",
+            url: str = "") -> dict:
     """One speech row; `stamp` is the publication day as YYMMDD."""
-    return {"source": source, "terms": terms, "terms_basis": "clause read on the bank's page",
+    return {"source": source, "terms": terms, "access": access,
+            "terms_basis": "clause read on the bank's page",
             "bank": "Fed", "currency": ccy, "delivered": delivered,
             "published_utc": f"20{stamp[:2]}-{stamp[2:4]}-{stamp[4:6]}T14:30:00+00:00",
             "hawk": hawk, "dove": dove, "chars": 9000,
-            "url": "https://www.federalreserve.gov/newsevents/speech/x.htm", "title": "t"}
+            "url": url or f"https://www.federalreserve.gov/newsevents/speech/"
+                          f"{next(_N)}.htm", "title": "t"}
 
 
 @pytest.fixture
@@ -63,8 +70,8 @@ def corpus(tmp_path, monkeypatch):
 def test_the_publication_day_is_the_banks_own_stamp_or_the_row_is_dropped():
     row = _speech("2026-06-19", "260624", 1, 0)
     assert F.published_day(row) == pd.Timestamp("2026-06-24", tz="UTC")
-    # a bare date and a non-UTC instant both land on the UTC day
-    assert F.published_day({"published_utc": "2026-06-24"}) == pd.Timestamp("2026-06-24", tz="UTC")
+    # a bare date has no hour: it may be a US-evening speech, so it is placed a day later
+    assert F.published_day({"published_utc": "2026-06-24"}) == pd.Timestamp("2026-06-25", tz="UTC")
     assert F.published_day({"published_utc": "2026-06-24T22:30:00-05:00"}) == \
         pd.Timestamp("2026-06-25", tz="UTC")
     # no stamp, an unreadable one, or public BEFORE it was spoken: not placeable, never guessed
@@ -83,6 +90,8 @@ def test_only_a_permitted_row_from_a_registered_source_is_ever_read(corpus):
             _speech("2026-05-04", "260505", 9, 0, source="snb")])
     assert F.tone_days("USD") is None
     assert F.LAST_DROPPED == {"terms_not_permitted": 3, "source_not_registered": 2}
+    corpus([_speech("2026-05-04", "260505", 9, 0, access="LOGIN")])
+    assert F.tone_days("USD") is None and F.LAST_DROPPED == {"access_not_public": 1}
     with pytest.raises(F.CbToneUnavailable, match=F.NO_PERMITTED_CORPUS):
         F.family_cb_tone_event(_bars(), currency="USD", tone="hawk", direction="long")
     # two keys: the registry holds only sources someone read the terms of, and never the BIS
@@ -92,6 +101,23 @@ def test_only_a_permitted_row_from_a_registered_source_is_ever_read(corpus):
     for rel in ("mt5desk/family_cb_tone.py", "research/cb_tone_proposer.py"):
         assert "bis_speech_tone" not in (DESK / rel).read_text("utf-8")
     assert F.SPEECHES.name == "official_speech_tone.jsonl"
+
+
+def test_a_speech_listed_twice_is_counted_once_and_a_bare_date_waits_a_day_longer(corpus):
+    u = "https://www.federalreserve.gov/newsevents/speech/dup.htm"
+    bare = _speech("2026-05-11", "260511", hawk=4, dove=0)
+    bare["published_utc"] = "2026-05-11"
+    corpus([_speech("2026-05-04", "260505", hawk=6, dove=0, url=u),
+            _speech("2026-05-04", "260505", hawk=0, dove=60, url=u),     # second copy: ignored
+            bare])
+    s = F.tone_days("USD")
+    assert s is not None and list(s.index) == [pd.Timestamp("2026-05-05", tz="UTC"),
+                                               pd.Timestamp("2026-05-12", tz="UTC")]
+    assert s.iloc[0] == 1.0 and F.LAST_DROPPED == {"duplicate_url": 1}
+    times = F.event_times("USD", "hawk", 0.5)
+    # full instant on D: knowable D+1 00:00 (+3h broker); bare date D: D+2 00:00 (+3h)
+    assert times == [pd.Timestamp("2026-05-06 03:00", tz="UTC"),
+                     pd.Timestamp("2026-05-13 03:00", tz="UTC")]
 
 
 def test_no_entry_precedes_the_day_after_publication_plus_the_broker_offset(corpus):

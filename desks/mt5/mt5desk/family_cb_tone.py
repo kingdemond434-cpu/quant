@@ -19,10 +19,11 @@ noncommercial purposes" (its download page, read 2026-11-10), so it may inform r
 never be a trading input. This family does not open it. It reads
 `data/intelligence/central_banks/official_speech_tone.jsonl`: one row per speech, fetched from the
 issuing bank's own site, each carrying the `source` it came from and the `terms` verdict someone
-read on that site. A row is used only when its `terms` is "permitted" AND its `source` is in
-`PERMITTED_SOURCES` below -- two keys, so neither a mislabelled row nor an unregistered source
-gets through alone. Everything else is dropped and counted in `LAST_DROPPED`
-(`terms_not_permitted`, `source_not_registered`); with nothing left the family refuses by name
+read on that site. A row is used only when its `terms` is "permitted", its `access` is
+"PUBLIC" AND its `source` is in `PERMITTED_SOURCES` below -- separate keys, so neither a
+mislabelled row nor an unregistered source gets through alone. Everything else is dropped and
+counted in `LAST_DROPPED` (`terms_not_permitted`, `access_not_public`,
+`source_not_registered`); with nothing left the family refuses by name
 (`bis_terms_noncommercial`), it never falls back to the BIS file.
 
 THE EVENT CLOCK IS PUBLICATION, NOT DELIVERY. Each row is keyed on `published_utc`, the day the
@@ -30,6 +31,11 @@ bank made the text public; a row without a readable one, or with one earlier tha
 date, cannot be placed and is dropped -- counted, never guessed. (Measured on the BIS copy
 before it was set aside: publication trailed delivery by a median 2 days, 14 at the 90th
 percentile and 52 at the 99th, so a clock keyed on delivery reads speeches before they existed.)
+
+A BARE DATE IS NOT AN INSTANT. A `published_utc` that is only a date (a speech found on a year
+index, with no hour) could be a US-evening speech, spoken after 00:00 UTC of the next day; it is
+therefore placed on the day AFTER the one it names. A full instant (from the bank's feed) is
+placed on its own UTC day. A speech listed twice (same `url`) is counted once, first row wins.
 
 THE BAR CLOCK. Speeches are pooled per publication DAY, so a speech is taken as knowable from
 00:00 UTC of the FOLLOWING day whatever hour it was posted. The bar index is broker time,
@@ -81,6 +87,7 @@ PERMITTED_SOURCES: dict[str, str] = {
            "transmit its website content\", with attribution and its request-rate limits",
 }
 TERMS_PERMITTED = "permitted"
+ACCESS_PUBLIC = "PUBLIC"
 #: The reason a host with no permitted corpus is parked under, by name.
 NO_PERMITTED_CORPUS = "bis_terms_noncommercial"
 
@@ -112,6 +119,10 @@ def published_day(row: dict[str, Any]) -> pd.Timestamp | None:
         pub = (pub.tz_localize("UTC") if pub.tzinfo is None else pub.tz_convert("UTC")).normalize()
     except (TypeError, ValueError):
         return None
+    if len(raw) <= 10:
+        # a date with no hour: the speech may have been given in the US evening, which is the
+        # NEXT UTC day, so the day it names is not yet a day the text was public throughout
+        pub += pd.Timedelta(days=1)
     delivered = str(row.get("delivered") or "").strip()
     if delivered:
         try:
@@ -123,9 +134,11 @@ def published_day(row: dict[str, Any]) -> pd.Timestamp | None:
 
 
 def refusal(row: dict[str, Any]) -> str | None:
-    """Why this row may not be a trading input; None when both keys turn."""
+    """Why this row may not be a trading input; None when every key turns."""
     if str(row.get("terms") or "") != TERMS_PERMITTED:
         return "terms_not_permitted"
+    if str(row.get("access") or "") != ACCESS_PUBLIC:
+        return "access_not_public"
     if str(row.get("source") or "") not in PERMITTED_SOURCES:
         return "source_not_registered"
     return None
@@ -140,6 +153,7 @@ def _tone_days(path: str, mtime_ns: int) -> tuple[dict[str, pd.Series], dict[str
         dropped[why] = dropped.get(why, 0) + 1
 
     acc: dict[tuple[str, pd.Timestamp], list[int]] = {}
+    seen: set[str] = set()
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
@@ -157,6 +171,11 @@ def _tone_days(path: str, mtime_ns: int) -> tuple[dict[str, pd.Series], dict[str
             if why is not None:
                 drop(why)
                 continue
+            url = str(row.get("url") or "")
+            if url and url in seen:
+                drop("duplicate_url")
+                continue
+            seen.add(url)
             pub = published_day(row)
             if pub is None:
                 drop("no_publication_stamp")
