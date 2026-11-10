@@ -72,7 +72,7 @@ def test_the_gateway_folds_before_sizing_and_logs_alias_folded() -> None:
     assert "_aliases = fold_book_aliases(" in src
     i = src.index("_aliases = fold_book_aliases(")
     j = src.index('_s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]')
-    k = src.index('log(f"ALIAS_FOLDED')
+    k = src.index('log(f"ALIAS_FOLDED', j)        # the priced alias's log, after its zero
     assert i < j < k
     # the alias stays sized by the book: allocator sovereignty sends no order at 0
     assert dc.promoted_lot(10_000.0, 500, dist_usd=0.005, symbol="EURUSD",

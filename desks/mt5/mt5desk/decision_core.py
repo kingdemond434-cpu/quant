@@ -1665,16 +1665,54 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
-def fold_book_aliases(keys: Mapping[str, str | None]) -> dict[str, str]:
+def cell_key(s: Mapping[str, Any]) -> str | None:
+    """A roster row's canonical cell AND timeframe, `cell:symbol|family|selector|tf` lower-cased,
+    or None when the row names no symbol or family (the gold windows, which the book keys by
+    name). The cell is the roster's own `canonical_identity` rule (symbol|family|selector); the
+    timeframe comes from the row, else an `@M15`-style tag in its name, else H1.
+
+    WHY (the Judge, 2026-11-10): carry certificates and forward clocks exist as COPIES of one
+    executable under different names (`input_symbol=GBPJPY` and `=eBay` are the same rule: the
+    family takes no such parameter) -- 43 canon certificates across 8 pairs, 197 carry clocks.
+    A copy the allocator has not priced joins no book key, so each LIVE copy took the base
+    fraction and the same bet was sized once per name. One cell on one timeframe is one bet.
+    Different timeframes stay different bets (different bars, different signals)."""
+    sym = str(s.get("symbol") or "").strip().lower()
+    fam = str(s.get("family") or "").strip().lower()
+    if not (sym and fam):
+        return None
+    tf = str(s.get("timeframe") or "").strip().lower()
+    if not tf:
+        m = re.search(r"@([mh]\d+)", str(s.get("name") or ""), re.IGNORECASE)
+        tf = m.group(1).lower() if m else "h1"
+    return f"cell:{sym}|{fam}|{str(s.get('selector') or '').strip().lower()}|{tf}"
+
+
+def carrier_rank(s: Mapping[str, Any]) -> tuple[str, float]:
+    """Which row of one bet carries it: the OLDEST certificate, then the LONGEST forward clock
+    (the Judge's rule for collapsing copies). Rows without either sort last; ties fall to name."""
+    cert = s.get("certificate")
+    gated = str(cert.get("gated_at") or "") if isinstance(cert, Mapping) else ""
+    try:
+        days = float(s.get("shadow_days") or 0.0)
+    except (TypeError, ValueError):
+        days = 0.0
+    return (gated or "9999", -days)
+
+
+def fold_book_aliases(keys: Mapping[str, str | None],
+                      rank: Mapping[str, tuple[str, float]] | None = None) -> dict[str, str]:
     """ONE ORDER PER BOOK KEY (hourly pass / Auditor MUST-FIX, 2026-11-04). The allocator prices a
     (symbol, family, window) CELL once; every roster row that `_book_key` folds onto that cell
     would otherwise send the cell's whole fraction, so k LIVE variants of one cell sent k times
     its risk and `cap_by_heat` only trims the total. Given {row name: book key or None}, returns
-    {alias row name: the row that carries the key}: the carrier is the first name in sorted order
-    (deterministic across passes), every other row on the key is an ALIAS that sends nothing."""
+    {alias row name: the row that carries the key}: the carrier is the best `rank` (see
+    `carrier_rank`), then the first name in sorted order (deterministic across passes); every
+    other row on the key is an ALIAS that sends nothing."""
     carrier: dict[str, str] = {}
     folded: dict[str, str] = {}
-    for name in sorted(keys):
+    worst = ("9999", 0.0)
+    for name in sorted(keys, key=lambda n: ((rank or {}).get(n, worst), n)):
         k = keys[name]
         if k is None:
             continue

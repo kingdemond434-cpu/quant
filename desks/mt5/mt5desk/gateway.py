@@ -65,6 +65,8 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    carrier_rank,
+    cell_key,
     fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
@@ -5266,9 +5268,25 @@ def main() -> None:
     # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
     # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
     # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
-    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
-                                                    else _book_key(_s, _book))
-                                  for _s in sleeves})
+    # ONE BET PER CELL, PRICED OR NOT (the Judge, 2026-11-10): a row the book has not priced
+    # joins no book key, so copies of one executable each took the base fraction. Such rows fold
+    # on their own cell and timeframe (`cell_key`); the oldest certificate, then the longest
+    # clock, carries (`carrier_rank`).
+    _fold_keys = {str(_s["name"]): (None if cert_book_zero(_s.get("name"))
+                                    else (_book_key(_s, _book) or cell_key(_s)))
+                  for _s in sleeves}
+    _aliases = fold_book_aliases(_fold_keys,
+                                 {str(_s["name"]): carrier_rank(_s) for _s in sleeves})
+    # An UNPRICED alias is removed outright (it has no book fraction to zero, and the base ramp
+    # would size it); a priced alias stays on the roster at 0, as before.
+    for _s in sleeves:
+        _n = str(_s["name"])
+        if _n in _aliases and str(_fold_keys.get(_n) or "").startswith("cell:"):
+            log(f"ALIAS_FOLDED {_n} -> {_aliases[_n]} on {_fold_keys[_n]}: one bet per cell "
+                f"and timeframe; this copy sends nothing")
+    sleeves = [_s for _s in sleeves
+               if not (str(_s["name"]) in _aliases
+                       and str(_fold_keys.get(str(_s["name"])) or "").startswith("cell:"))]
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
