@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-10T00:15:02.525298+00:00",
+  "swept_at": "2026-11-10T00:30:03.108309+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1406,7 +1406,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7608,
+      "shadow_exp_r": -0.7635,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
@@ -1417,7 +1417,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 41,
-      "shadow_exp_r": 0.4143,
+      "shadow_exp_r": 0.4171,
       "woke_on_shadow": false
     },
     "EURILS|macro_conditional_asia": {
@@ -3210,7 +3210,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5208,
+      "shadow_exp_r": -0.5192,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3671,8 +3671,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.5302,
+      "shadow_n": 50,
+      "shadow_exp_r": 0.0824,
       "woke_on_shadow": false
     },
     "USCOCOA|pca_residual_continuous": {
