@@ -400,14 +400,32 @@ def _evicted_keys(base: Path) -> set[str]:
 #: Families whose cell, once MOVED to another instrument with its donor's params, tests a rule
 #: nobody wrote. Mirrors `hypothesis_families.MOVED_CELL_FAMILIES` (a test pins the two equal);
 #: restated because this module is imported by the forward engine and must stay import-light.
-MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow",
-                                 "event_reaction"})
+#: `carry` and `event_reaction` are absent on purpose: the judge supplies the row's instrument
+#: for both, so a stale name there changed nothing that ran.
+MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow"})
 #: Certificates refused this pass as VOID_MOVED_CELL, by name (also in DROPPED_CERTIFICATES).
 VOID_MOVED_CERTIFICATES: list[str] = []
+#: entry_conditioned certificates naming another instrument whose BASE family could not be shown
+#: to read `symbol`: left enrolled (an honest certificate is not refused on a guess), by name.
+UNPROVEN_ENTRY_CONDITIONED: list[str] = []
+
+
+def _base_reads_symbol(base_family: str) -> bool | None:
+    """Does `base_family`'s constructor take `symbol`? None when it cannot be resolved."""
+    try:
+        import inspect
+
+        from mt5desk.families import get_family_func
+        fn = get_family_func(str(base_family))
+        return None if fn is None else "symbol" in inspect.signature(fn).parameters
+    except Exception:
+        return None
 
 
 def void_moved_cell(row: dict, spec: dict, params: dict) -> str | None:
-    """The reason a certificate is VOID_MOVED_CELL, or None.
+    """The reason a certificate is VOID_MOVED_CELL, or None. `"UNPROVEN"` is returned for an
+    entry_conditioned certificate whose base family is not shown to read `symbol`: the caller
+    names it and ENROLS it.
 
     Box 2026-11-10: two carry_risk_off certificates (GBPSEK and NOKSEK) passed all ten gates
     with `params.symbol: USDSGD` -- a cell carried to another instrument with its donor's
@@ -415,8 +433,12 @@ def void_moved_cell(row: dict, spec: dict, params: dict) -> str | None:
     The mechanism the certificate states (gate one) is not the rule that was run. The certificate
     is kept and named, and it does not advance; the corrected cell is judged as a new trial by
     the docket's moved-cell repair and earns its own certificate or does not. Decided from the
-    row alone, so it needs no join and cannot go stale. `carry` is absent on purpose: the judge
-    supplies the row's instrument for it, so a stale name there changed nothing."""
+    row alone, so it needs no join and cannot go stale.
+
+    entry_conditioned only forwards `symbol` to its base family, and only a base that takes one
+    reads it (`families_specialist.family_entry_conditioned`). So it is refused only where the
+    base family's own signature has `symbol`; anything else ran the rule its certificate states
+    and stays enrolled."""
     family = str(spec.get("family") or row.get("family") or "")
     if family not in MOVED_CELL_FAMILIES:
         return None
@@ -427,10 +449,38 @@ def void_moved_cell(row: dict, spec: dict, params: dict) -> str | None:
     named = named.strip().upper() if isinstance(named, str) else ""
     if not sym or not named or named == sym:
         return None
+    if family == "entry_conditioned":
+        base = str(params.get("base_family") or "")
+        if _base_reads_symbol(base) is not True:
+            return "UNPROVEN"
+        family = f"entry_conditioned[{base}]"
     return (f"VOID_MOVED_CELL: a {family} certificate on {sym} whose params name {named} as the "
             f"traded instrument -- it was judged on {sym}'s bars with {named}'s terms, a rule "
             f"nobody wrote. Kept and named, not enrolled; the corrected cell is re-judged as a "
             f"new trial (data/hypotheses/moved_cell_void.json)")
+
+
+def void_moved_certificates(base: Path = BASE) -> dict:
+    """DRY RUN: every ten-gate certificate the VOID_MOVED_CELL door refuses on the canon as it
+    stands, and every entry_conditioned one it leaves enrolled as unproven. Reads only."""
+    universal, source = _canon(base)
+    refused, unproven = [], []
+    for name, row in (universal.get("survivors") or {}).items():
+        if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
+            continue
+        spec = row.get("shadow_spec")
+        params = spec.get("params") if isinstance(spec, dict) else None
+        if not isinstance(params, dict):
+            continue
+        why = void_moved_cell(row, spec, params)
+        if why == "UNPROVEN":
+            unproven.append(str(name))
+        elif why:
+            refused.append({"certificate": str(name), "family": str(spec.get("family") or ""),
+                            "symbol": str(spec.get("symbol") or row.get("sym") or ""),
+                            "named": params.get("symbol"), "why": why})
+    return {"source": source, "refused": refused, "n_refused": len(refused),
+            "unproven_entry_conditioned": unproven}
 
 
 def _drop(name: object, why: str) -> None:
@@ -567,6 +617,7 @@ def authorized_runs(base: Path = BASE,
     DROPPED_CERTIFICATES.clear()
     EVICTED_CERTIFICATES.clear()
     VOID_MOVED_CERTIFICATES.clear()
+    UNPROVEN_ENTRY_CONDITIONED.clear()
     universal, canon_from = _canon(base)
     evicted = _evicted_keys(base)
     if not is_exact_policy(universal.get("gate_policy")):
@@ -630,7 +681,9 @@ def authorized_runs(base: Path = BASE,
                         f"unrunnable without guessing the parameterization that passed")
             continue
         void = void_moved_cell(row, spec, params)
-        if void:
+        if void == "UNPROVEN":
+            UNPROVEN_ENTRY_CONDITIONED.append(str(name))      # named, and enrolled
+        elif void:
             VOID_MOVED_CERTIFICATES.append(str(name))
             _drop(name, void)
             continue

@@ -1028,14 +1028,16 @@ def retarget_params(params: Mapping[str, Any], old: str, new: str) -> dict[str, 
 #: Families the sealed judge hands the ROW's instrument whatever params say
 #: (`external_gauntlet.build_cell` sets `call_params["symbol"] = sym`): a stale name in their
 #: params is wrong on paper only, so their rows are counted and never rewritten.
-JUDGE_SUPPLIES_SYMBOL = frozenset({"carry"})
+JUDGE_SUPPLIES_SYMBOL = frozenset({"carry", "event_reaction"})
 #: The families whose mismatched rows were LOOKED AT on the box (2026-11-10) and found to be a
 #: moved cell reading its donor's instrument. Only these are rewritten. A mismatch in any other
 #: family is counted `unreviewed_family` and left exactly as stored: it may be a cell that names
 #: a second instrument on purpose, and rewriting that would destroy a valid rule and void honest
 #: verdicts. Adding a family here is a reviewed one-line change after its rows are read.
-MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow",
-                                 "event_reaction"})
+#: `event_reaction` is NOT here (audit of 9ce2549d6ea9): the judge sets its `symbol` itself
+#: (`external_gauntlet.build_cell`, the event_reaction branch), exactly as for carry, so its one
+#: mismatched row ran on its own instrument and is wrong on paper only.
+MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow"})
 #: Families that return NO ORDERS unless told which instrument they trade, and that the sealed
 #: judge does not tell (it supplies `symbol` for carry and event_reaction only). A row of one of
 #: these with no `symbol` in params can never fire: box 2026-11-10, 144 carry_risk_off rows from

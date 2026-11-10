@@ -1021,6 +1021,48 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
             "why": "measured cost in its own units; the E[log W] price is UNMEASURED"}
 
 
+def void_moved_cell_line() -> dict[str, Any]:
+    """What refusing VOID_MOVED_CELL certificates costs, as a published line per certificate.
+
+    `shadow_admission.void_moved_cell` withholds a forward clock from a ten-gate certificate
+    whose cell was carried to another instrument with its donor's params (box 2026-11-10: two
+    carry_risk_off certificates). That is a refusal at capital's intake, so it is billed: one
+    line per refused certificate. The price is UNMEASURED and says so -- the certificate never
+    had a clock, so there is no forward return to forgo a measured amount of -- and the line
+    clears itself the pass the corrected cell (same instrument and family, naming its OWN
+    instrument) holds a ten-gate certificate. No refusal -> NOT_BINDING. Unreadable -> UNMEASURED.
+    """
+    try:
+        from research.gate_policy import all_ten_pass
+        from research.shadow_admission import void_moved_certificates
+        found = void_moved_certificates(BASE)
+        surv = _json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json").get("survivors") or {}
+    except Exception as exc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": f"shadow admission unreadable: {type(exc).__name__}: {exc}"}
+    corrected = set()
+    for row in surv.values() if isinstance(surv, dict) else ():
+        spec = row.get("shadow_spec") if isinstance(row, dict) else None
+        params = spec.get("params") if isinstance(spec, dict) else None
+        if isinstance(params, dict) and all_ten_pass(row.get("gates")):
+            sym = str(spec.get("symbol") or "").upper()
+            if sym and str(params.get("symbol") or "").upper() == sym:
+                corrected.add((sym, str(spec.get("family") or "")))
+    lines = [{"certificate": r["certificate"], "verdict": UNMEASURED, "named": r["named"],
+              "why": "refused a forward clock as VOID_MOVED_CELL; never had one, so the forgone "
+                     "E[log W] is unmeasured until the corrected cell is judged"}
+             for r in found["refused"]
+             if (str(r["symbol"]).upper(), r["family"]) not in corrected]
+    out = {"source": found.get("source"), "lines": lines, "n_lines": len(lines),
+           "cleared_by_corrected_certificate": found["n_refused"] - len(lines),
+           "unproven_entry_conditioned_enrolled": len(found["unproven_entry_conditioned"])}
+    if not lines:
+        return {"verdict": NOT_BINDING, **out,
+                "why": "no certificate is refused as a moved cell: the door costs nothing"}
+    return {"verdict": UNMEASURED, **out,
+            "why": "certificates refused a clock; their E[log W] price is UNMEASURED"}
+
+
 #: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was
 #: every ~2.6 h measured. Like the stop-geometry gate it registers no rail (the register is
 #: sealed), so its line is PUBLISHED here beside the rails. A STANDBY row needs TWO distinct
@@ -1201,7 +1243,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "void_moved_cell": void_moved_cell_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

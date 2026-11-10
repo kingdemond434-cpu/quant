@@ -198,18 +198,77 @@ def test_a_certificate_on_a_moved_cell_is_named_void_and_does_not_enrol(tmp_path
         "external.EURUSD.carry_risk_off.p=aaaa": cert("EURUSD", "carry_risk_off",
                                                       {"symbol": "EURUSD", "mode": "harvest"}),
         "external.CHFNOK.carry.p=cccc": cert("CHFNOK", "carry", {"symbol": "GBPJPY"}),
+        # the judge supplies event_reaction's instrument itself: paper only, never refused
+        "external.EURUSD.event_reaction.p=eeee": cert("EURUSD", "event_reaction",
+                                                      {"symbol": "USDJPY"}),
+        # entry_conditioned is refused only where its BASE family reads `symbol`
+        "external.ADAUSD.entry_conditioned.p=1111": cert(
+            "ADAUSD", "entry_conditioned",
+            {"symbol": "XTIUSD", "base_family": "range_reversion", "cond_symbol": "USDJPY"}),
+        "external.ADAUSD.entry_conditioned.p=2222": cert(
+            "ADAUSD", "entry_conditioned",
+            {"symbol": "USDSGD", "base_family": "carry_risk_off", "cond_symbol": "USDJPY"}),
     }
     (tmp_path / "reports").mkdir()
     (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
-        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 3}), encoding="utf-8")
+        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 6}), encoding="utf-8")
+    dry = sa.void_moved_certificates(tmp_path)                    # reads only
+    assert [r["certificate"] for r in dry["refused"]] == [
+        "external.GBPSEK.carry_risk_off.p=b5bb", "external.ADAUSD.entry_conditioned.p=2222"]
+    assert dry["unproven_entry_conditioned"] == ["external.ADAUSD.entry_conditioned.p=1111"]
     runs = sa.authorized_runs(tmp_path, lanes=("h1",))
     names = {r["certificate"] for r in runs}
     assert "external.GBPSEK.carry_risk_off.p=b5bb" not in names
-    assert sa.VOID_MOVED_CERTIFICATES == ["external.GBPSEK.carry_risk_off.p=b5bb"]
+    assert sa.VOID_MOVED_CERTIFICATES == ["external.GBPSEK.carry_risk_off.p=b5bb",
+                                          "external.ADAUSD.entry_conditioned.p=2222"]
+    assert sa.UNPROVEN_ENTRY_CONDITIONED == ["external.ADAUSD.entry_conditioned.p=1111"]
     dropped = [d for d in sa.DROPPED_CERTIFICATES if d["why"].startswith("VOID_MOVED_CELL")]
-    assert len(dropped) == 1 and "USDSGD" in dropped[0]["why"]
+    assert len(dropped) == 2 and "USDSGD" in dropped[0]["why"]
+    assert "entry_conditioned[carry_risk_off]" in dropped[1]["why"]
     # nothing else is refused by this door
     assert not any(n in {d["certificate"] for d in sa.DROPPED_CERTIFICATES
                          if d["why"].startswith("VOID_MOVED_CELL")}
                    for n in ("external.EURUSD.carry_risk_off.p=aaaa",
-                             "external.CHFNOK.carry.p=cccc"))
+                             "external.CHFNOK.carry.p=cccc",
+                             "external.EURUSD.event_reaction.p=eeee",
+                             "external.ADAUSD.entry_conditioned.p=1111"))
+
+
+def test_each_refused_moved_cell_certificate_is_billed_until_its_corrected_cell_certifies(
+        tmp_path: Path) -> None:
+    """The VOID_MOVED_CELL door refuses at capital's intake, so it publishes a missed-growth
+    line per refused certificate: UNMEASURED (it never had a clock), cleared the pass the
+    corrected cell holds its own ten-gate certificate."""
+    import missed_growth as mg
+
+    gates = {name: {"passed": True} for name in GATES}
+
+    def cert(sym: str, family: str, params: dict) -> dict:
+        return {"sym": sym, "gates": gates, "status": "UNIVERSAL",
+                "shadow_spec": {"symbol": sym, "family": family, "selector": "asia",
+                                "params": params}}
+
+    def publish(survivors: dict) -> None:
+        (tmp_path / "reports").mkdir(exist_ok=True)
+        (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+            {"gate_policy": ATTESTATION, "survivors": survivors}), encoding="utf-8")
+    survivors = {"external.EURUSD.carry.p=cccc": cert("EURUSD", "carry", {"symbol": "GBPJPY"})}
+    old_base = mg.BASE
+    mg.BASE = tmp_path
+    try:
+        publish(survivors)
+        assert mg.void_moved_cell_line()["verdict"] == mg.NOT_BINDING
+        survivors["external.GBPSEK.carry_risk_off.p=b5bb"] = cert(
+            "GBPSEK", "carry_risk_off", {"symbol": "USDSGD"})
+        publish(survivors)
+        line = mg.void_moved_cell_line()
+        assert line["verdict"] == mg.UNMEASURED and line["n_lines"] == 1
+        assert line["lines"][0]["certificate"] == "external.GBPSEK.carry_risk_off.p=b5bb"
+        survivors["external.GBPSEK.carry_risk_off.p=fixd"] = cert(
+            "GBPSEK", "carry_risk_off", {"symbol": "GBPSEK"})
+        publish(survivors)
+        again = mg.void_moved_cell_line()
+        assert again["verdict"] == mg.NOT_BINDING
+        assert again["cleared_by_corrected_certificate"] == 1
+    finally:
+        mg.BASE = old_base
