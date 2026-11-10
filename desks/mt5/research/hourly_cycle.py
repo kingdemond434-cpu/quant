@@ -1342,6 +1342,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
+                     # Index-driven address discovery (Common Crawl CDX, OpenAlex, EU open data,
+                     # declared sitemaps). Its only clock was the VPS timer chain that died
+                     # 2026-11-01/03, so the seat went dark; this is its box clock.
+                     "index_discovery",
                      # Tier-1 B6/B8/B9: the tree, the residual map that aims the exogenous
                      # search, and the docket the sealed gauntlet orders its sweep by.
                      "research_tree", "residual_map", "frontier_ceo",
@@ -2061,6 +2065,12 @@ def _producer(name: str, script: str,
 #: BROKEN, and it looks identical to slow on every dashboard. Either the pass must finish, or it
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
+#: The index_discovery routes the box clock runs, as CLI args. See the leg for why two are off.
+INDEX_DISCOVERY_ROUTES: tuple[str, ...] = ("commoncrawl_cdx", "openalex", "eu_open_data",
+                                           "sitemaps")
+INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
+    a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
+
 LEG_BUDGET_SEC: dict[str, int] = {
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
@@ -2143,6 +2153,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE SWEEP THE BASKET JUDGE READS stops building legs at --budget-s 480 and carries the rest
     # from its previous pass; on the 23 hours a day its artifact is fresh it exits in a second.
     "srb_uncorrelated_sweep": 600,
+    # Four public index routes, one request per host or query at a 15-25 s transport timeout:
+    # about 800 s if every request times out, seconds when they answer. It writes only at the
+    # end, so the cap must sit above that worst case or a slow hour kills it before it donates.
+    "index_discovery": 900,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -2600,13 +2614,30 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
                 "stderr_tail": (r.stderr or "")[-1200:],
                 "budget_s": budget, "at": datetime.now(UTC).isoformat()}
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        # THE LAST WORDS OF A KILLED LEG ARE KEPT. The tree runner hands back what the child had
+        # printed when the cap hit; dropping it made every capped leg look identical. Measured
+        # 2026-11-10 (box LEG_ROTATION): discovery_compiler, graveyard_resurrection,
+        # axis_registry and qd_frontier each ran to their 720 s cap and wrote nothing, and not
+        # one record said which phase they were in when they were stopped.
         return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
+                "tail": _text_tail(exc.output, 300),
+                "stderr_tail": _text_tail(exc.stderr, 1200),
                 "at": datetime.now(UTC).isoformat()}
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
+
+
+def _text_tail(raw: object, n: int) -> str:
+    """The last `n` characters of a child's captured output, whether it came back as str, bytes
+    or nothing at all. Never raises: a record about a killed leg must not itself fail."""
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8", errors="replace")
+    return str(raw)[-n:]
 
 
 def execution_twin() -> dict:
@@ -5878,6 +5909,13 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # INDEX-DRIVEN DISCOVERY (seat data/intelligence/index_discovery/): addresses, never page
+    # fetches. Restricted to the routes built for machine queries. google_patents is an
+    # undocumented web endpoint and sec_edgar sends a User-Agent without the contact SEC's
+    # fair-access policy asks for, so both stay off the box clock (fail-closed) until fixed.
+    idx = _costed("index_discovery", lambda: _producer(
+        "index_discovery", "research/index_discovery.py",
+        *INDEX_DISCOVERY_ROUTES_ARGS))
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
     cem = _costed("cell_emitter", cell_emitter)
@@ -6519,7 +6557,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
-                    "cell_emitter": cem,
+                    "cell_emitter": cem, "index_discovery": idx,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

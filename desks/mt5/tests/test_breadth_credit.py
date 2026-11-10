@@ -267,3 +267,38 @@ def test_the_bandit_still_writes_a_budget_when_the_credit_is_unavailable() -> No
     assert set(doc["shares"]) == set(bandit.ARMS)
     assert math.isclose(sum(doc["shares"].values()), 1.0, abs_tol=0.01)
     assert "breadth_credit" in doc
+
+
+def test_one_bandit_run_parses_the_hypothesis_graph_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The graph is the bandit's biggest input. `run` and `breadth_credit` each parsed all of it,
+    so the step cost two full reads; on the box that step held MT5-Daily for nine hours
+    (2026-11-09, killed at PT10H). One run, one parse, and the credit sees the same rows."""
+    from libs.research import hypothesis_graph as hg
+    calls = {"n": 0}
+    real = hg.Graph.rows
+
+    def counted(self):  # type: ignore[no-untyped-def]
+        calls["n"] += 1
+        return real(self)
+
+    monkeypatch.setattr(hg.Graph, "rows", counted)
+    doc = bandit.run(seed=0, write=False)
+    assert calls["n"] == 1
+    assert "breadth_credit" in doc
+
+
+def test_breadth_credit_still_reads_the_graph_when_called_alone(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research import hypothesis_graph as hg
+    calls = {"n": 0}
+
+    def counted(self):  # type: ignore[no-untyped-def]
+        calls["n"] += 1
+        return []
+
+    monkeypatch.setattr(hg.Graph, "rows", counted)
+    bandit.breadth_credit()
+    assert calls["n"] == 1
+    calls["n"] = 0
+    bandit.breadth_credit([])
+    assert calls["n"] == 0

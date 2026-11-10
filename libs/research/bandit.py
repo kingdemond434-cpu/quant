@@ -1043,7 +1043,7 @@ def _cluster_of(row: Mapping[str, Any]) -> str | None:
     return None
 
 
-def breadth_credit() -> dict[str, Any]:
+def breadth_credit(rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Per-arm portfolio dE[log W] credit, measured where the graph allows and declared elsewhere.
 
     THE ARM THAT CAN RAISE BREADTH WAS THE ARM BEING STARVED. `new_mechanism` owns
@@ -1054,8 +1054,13 @@ def breadth_credit() -> dict[str, Any]:
     """
     try:
         from libs.research.breadth_credit import credits, occupied_shares
-        from libs.research.hypothesis_graph import Graph
-        rows = [r for r in Graph().rows() if isinstance(r, dict)]
+        # THE GRAPH IS PARSED ONCE PER RUN. `run` already holds every row; a second `Graph()`
+        # here parsed the whole ledger again, which doubled the cost of the one step that the
+        # daily chain sat inside for nine hours on 2026-11-09 (MT5-Daily killed at PT10H).
+        if rows is None:
+            from libs.research.hypothesis_graph import Graph
+            rows = Graph().rows()
+        rows = [r for r in rows if isinstance(r, dict)]
         state = None
         try:
             from libs.research.breadth_credit import book_state
@@ -1305,7 +1310,7 @@ def run(seed: int = 0, write: bool = True,
               * float((ccred.get("by_arm") or {}).get(a, 1.0))
               for a in set(rcred.get("by_arm") or {}) | set(ccred.get("by_arm") or {})}
     ev = evidence(rows, marginal, measured=mc, credit=credit or None)
-    bc = breadth_credit()
+    bc = breadth_credit(rows)
     audit: dict[str, Any] = {}
     shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed),
                       credit=bc.get("credit"), audit=audit)
