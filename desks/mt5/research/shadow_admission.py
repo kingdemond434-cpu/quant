@@ -397,6 +397,42 @@ def _evicted_keys(base: Path) -> set[str]:
     return {str(k) for k in ev} if isinstance(ev, list) else set()
 
 
+#: Families whose cell, once MOVED to another instrument with its donor's params, tests a rule
+#: nobody wrote. Mirrors `hypothesis_families.MOVED_CELL_FAMILIES` (a test pins the two equal);
+#: restated because this module is imported by the forward engine and must stay import-light.
+MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow",
+                                 "event_reaction"})
+#: Certificates refused this pass as VOID_MOVED_CELL, by name (also in DROPPED_CERTIFICATES).
+VOID_MOVED_CERTIFICATES: list[str] = []
+
+
+def void_moved_cell(row: dict, spec: dict, params: dict) -> str | None:
+    """The reason a certificate is VOID_MOVED_CELL, or None.
+
+    Box 2026-11-10: two carry_risk_off certificates (GBPSEK and NOKSEK) passed all ten gates
+    with `params.symbol: USDSGD` -- a cell carried to another instrument with its donor's
+    params, so the family traded one instrument's bars on ANOTHER's carry side and swap terms.
+    The mechanism the certificate states (gate one) is not the rule that was run. The certificate
+    is kept and named, and it does not advance; the corrected cell is judged as a new trial by
+    the docket's moved-cell repair and earns its own certificate or does not. Decided from the
+    row alone, so it needs no join and cannot go stale. `carry` is absent on purpose: the judge
+    supplies the row's instrument for it, so a stale name there changed nothing."""
+    family = str(spec.get("family") or row.get("family") or "")
+    if family not in MOVED_CELL_FAMILIES:
+        return None
+    sym = str(spec.get("symbol") or row.get("sym") or row.get("symbol") or "").strip().upper()
+    named = params.get("symbol")
+    if isinstance(named, list) and len(named) == 1:
+        named = named[0]
+    named = named.strip().upper() if isinstance(named, str) else ""
+    if not sym or not named or named == sym:
+        return None
+    return (f"VOID_MOVED_CELL: a {family} certificate on {sym} whose params name {named} as the "
+            f"traded instrument -- it was judged on {sym}'s bars with {named}'s terms, a rule "
+            f"nobody wrote. Kept and named, not enrolled; the corrected cell is re-judged as a "
+            f"new trial (data/hypotheses/moved_cell_void.json)")
+
+
 def _drop(name: object, why: str) -> None:
     """Record and announce a ten-gate certificate that will not reach the forward engine.
 
@@ -530,6 +566,7 @@ def authorized_runs(base: Path = BASE,
     # pass's findings. This list always describes the run that just happened, never a backlog.
     DROPPED_CERTIFICATES.clear()
     EVICTED_CERTIFICATES.clear()
+    VOID_MOVED_CERTIFICATES.clear()
     universal, canon_from = _canon(base)
     evicted = _evicted_keys(base)
     if not is_exact_policy(universal.get("gate_policy")):
@@ -591,6 +628,11 @@ def authorized_runs(base: Path = BASE,
             # that is absent or not a mapping lands here.
             _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
                         f"unrunnable without guessing the parameterization that passed")
+            continue
+        void = void_moved_cell(row, spec, params)
+        if void:
+            VOID_MOVED_CERTIFICATES.append(str(name))
+            _drop(name, void)
             continue
         # {} is NOT "lost parameters": it is the complete parameterization "family defaults",
         # byte-exactly what the gauntlet executed (build_cell with params={}) and what the

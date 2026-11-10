@@ -174,3 +174,42 @@ def test_every_hunt_uses_the_same_calibrated_cost_and_trial_policy() -> None:
     assert "pd.DataFrame(cols).sort_index().fillna(0.0)" in source
     assert '"curve_compendium"' in source
     assert "stress_x3_return" in source
+
+
+def test_a_certificate_on_a_moved_cell_is_named_void_and_does_not_enrol(tmp_path: Path) -> None:
+    """Box 2026-11-10: GBPSEK and NOKSEK carry_risk_off passed all ten gates with
+    `params.symbol: USDSGD`. The rule that ran is not the mechanism the certificate states, so
+    the certificate is kept, named VOID_MOVED_CELL and not enrolled; the same family naming its
+    own instrument, and a carry row with a stale name (the judge supplies its instrument),
+    enrol as before."""
+    import shadow_admission as sa
+    from hypothesis_families import MOVED_CELL_FAMILIES
+
+    assert sa.MOVED_CELL_FAMILIES == MOVED_CELL_FAMILIES
+    gates = {name: {"passed": True} for name in GATES}
+
+    def cert(sym: str, family: str, params: dict) -> dict:
+        return {"sym": sym, "gates": gates, "status": "UNIVERSAL",
+                "shadow_spec": {"symbol": sym, "family": family, "selector": "asia",
+                                "params": params}}
+    survivors = {
+        "external.GBPSEK.carry_risk_off.p=b5bb": cert("GBPSEK", "carry_risk_off",
+                                                      {"symbol": "USDSGD", "mode": "harvest"}),
+        "external.EURUSD.carry_risk_off.p=aaaa": cert("EURUSD", "carry_risk_off",
+                                                      {"symbol": "EURUSD", "mode": "harvest"}),
+        "external.CHFNOK.carry.p=cccc": cert("CHFNOK", "carry", {"symbol": "GBPJPY"}),
+    }
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 3}), encoding="utf-8")
+    runs = sa.authorized_runs(tmp_path, lanes=("h1",))
+    names = {r["certificate"] for r in runs}
+    assert "external.GBPSEK.carry_risk_off.p=b5bb" not in names
+    assert sa.VOID_MOVED_CERTIFICATES == ["external.GBPSEK.carry_risk_off.p=b5bb"]
+    dropped = [d for d in sa.DROPPED_CERTIFICATES if d["why"].startswith("VOID_MOVED_CELL")]
+    assert len(dropped) == 1 and "USDSGD" in dropped[0]["why"]
+    # nothing else is refused by this door
+    assert not any(n in {d["certificate"] for d in sa.DROPPED_CERTIFICATES
+                         if d["why"].startswith("VOID_MOVED_CELL")}
+                   for n in ("external.EURUSD.carry_risk_off.p=aaaa",
+                             "external.CHFNOK.carry.p=cccc"))
