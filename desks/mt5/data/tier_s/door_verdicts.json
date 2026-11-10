@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-10T14:55:42.536728+00:00",
+ "generated_utc": "2026-11-10T15:55:32.840008+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -79935,6 +79935,51 @@
    "verdict": "FAILED",
    "review_failed": [],
    "family": "exit_operated",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.GBPSEK.carry_risk_off.p=b5bba2d59e210e94": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "carry_risk_off",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.NOKSEK.carry_risk_off.p=b5bba2d59e210e94": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "carry_risk_off",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFDKK.entry_conditioned.p=3ebe78a6f835b710": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "entry_conditioned",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFDKK.entry_conditioned.p=e2506e8f9f29d7fb": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "entry_conditioned",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.EURNOK.entry_conditioned.p=6cc8b8648ceab85a": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "entry_conditioned",
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
