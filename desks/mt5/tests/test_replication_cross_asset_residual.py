@@ -81,21 +81,21 @@ def test_the_rule_signals_where_the_family_and_its_modifiers_do(world, case) -> 
     orders = rc._build_cross_asset_residual(bars, p)
     assert sig, "the planted residual must fire"
     assert [(int(s.time.value), s.side) for s in sig] == [(o.t_ns, o.side) for o in orders]
-    # Stop and target too: the certified family measures them from the previous joined row's
-    # close (Auditor/CRO ruling 2026-11-04), and the default reference reproduces it.
+    # Stop and target too: the family measures them from the signal bar's own close (LIVE,
+    # 2026-11-06), and the default reference reproduces it.
     assert [s.ttl_bars for s in sig] == [o.ttl_bars for o in orders]
     np.testing.assert_allclose([(s.stop, s.target) for s in sig],
                                [(o.stop, o.target) for o in orders], rtol=1e-12, atol=0)
 
 
-def test_signal_close_is_the_corrected_reference_and_any_other_stands_aside(world) -> None:
+def test_signal_close_is_the_default_reference_and_any_other_stands_aside(world) -> None:
     _dfs, bars = world
     base = {"lookback": 240, "entry_z": 2.0, "ttl_bars": 8, "side_mode": "revert",
             "factor_symbols": ["FA", "FB"]}
-    p, _ = rc.resolve_spec("cross_asset_residual", base, "asia", None)
-    q, _ = rc.resolve_spec("cross_asset_residual", {**base, "reference": "signal_close"},
+    p, _ = rc.resolve_spec("cross_asset_residual", {**base, "reference": "prev_row"},
                            "asia", None)
-    assert p is not None and q is not None and p["reference"] == "prev_row"
+    q, _ = rc.resolve_spec("cross_asset_residual", base, "asia", None)
+    assert p is not None and q is not None and q["reference"] == "signal_close"
     prev, close = rc._build_cross_asset_residual(bars, p), rc._build_cross_asset_residual(bars, q)
     assert prev and [(o.t_ns, o.side) for o in prev] == [(o.t_ns, o.side) for o in close]
     pos = np.searchsorted(bars.t, [o.t_ns for o in close])
