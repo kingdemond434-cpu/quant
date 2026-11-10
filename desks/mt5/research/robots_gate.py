@@ -14,6 +14,12 @@ THE RULE (Governance rulings of 2026-11-10, journalled in PR #819; RFC 9309, str
                                                                   scheduled pass asks again --
                                                                   never a retry loop
 
+A PUBLISHER'S PERMIT REOPENS A REFUSAL, AND ONLY A REFUSAL (Governance ruling 2026-11-10 20:24Z).
+A ROBOTS_REFUSED source whose `research/robots_permits.json` row quotes the publisher's own
+clause permitting machine reading is PERMITTED: fetched on the documented endpoint with the
+honest agent and its own key, counted as PERMIT_FETCHED. If the data endpoint itself answers
+401/403/429/451, that pass stops as ROBOTS_REFUSED (`data_refused`), with no retry.
+
 The rule matching itself (`*`, `$`, longest match wins, Allow wins a tie, our agent's group else
 `*`) and the status table above (`classify_robots_status`) are `libs/data/robots_gate.py`, the
 desk's one reader; this module adds the desk's labels for fetchers and the bill. Every caller
@@ -59,12 +65,19 @@ ROBOTS_ABSENT = "ROBOTS_ABSENT"
 DISALLOWED = "DISALLOWED"
 ROBOTS_REFUSED = "ROBOTS_REFUSED"
 ROBOTS_UNREACHABLE = "ROBOTS_UNREACHABLE"
+#: A ROBOTS_REFUSED source reopened by a publisher's documented permit (robots_permits.json).
+PERMITTED = "PERMITTED"
 #: The labels that stop a fetch. Every caller asks `stops(label)`; none keeps its own list.
 STOP_LABELS = frozenset({DISALLOWED, ROBOTS_REFUSED, ROBOTS_UNREACHABLE})
 #: Ledger statuses. SET_ASIDE = the fetch was NOT made. ABSENT_FETCHED = the site serves no
 #: robots.txt and the fetch was made; counted beside the refusals, never among them.
 SET_ASIDE = "SET_ASIDE"
 ABSENT_FETCHED = "ABSENT_FETCHED"
+PERMIT_FETCHED = "PERMIT_FETCHED"
+#: Statuses on the DATA endpoint that end a permitted fetch for the pass (Governance condition 4):
+#: the permit covers a refusal of robots.txt, never a refusal of the data itself.
+DATA_REFUSAL = frozenset({401, 403, 429, 451})
+PERMITS = Path(__file__).resolve().with_name("robots_permits.json")
 RAIL = "robots_gate.set_aside"
 #: Days of per-day counts kept on the report. The ledger itself is never trimmed.
 REPORT_DAYS = 30
@@ -89,9 +102,34 @@ def stops(label: str) -> bool:
     return label in STOP_LABELS
 
 
+def permit_for(source: str, url: str, path: Path | None = None) -> dict[str, Any] | None:
+    """The ACTIVE machine_read_permit for this source (or its parent, for a derived
+    `<id>__ep<hash>` source) whose host is this URL's host, else None. A permit that is
+    inactive, incomplete or for another host is no permit: the source stays stopped."""
+    try:
+        rows = json.loads((path or PERMITS).read_text("utf-8")).get("permits") or {}
+    except (OSError, ValueError, AttributeError):
+        return None
+    row = rows.get(source) or rows.get(str(source).split("__ep", 1)[0])
+    if not isinstance(row, dict) or row.get("active") is not True:
+        return None
+    if not all(str(row.get(k) or "").strip() for k in ("host", "doc_url", "clause", "licence",
+                                                       "recorded_at")):
+        return None
+    if urllib.parse.urlsplit(url).netloc.lower() != str(row["host"]).lower():
+        return None
+    return row
+
+
 def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float = 12.0,
-         cache: dict[tuple[str, str], Any] | None = None) -> tuple[str, str]:
+         cache: dict[tuple[str, str], Any] | None = None,
+         source: str | None = None) -> tuple[str, str]:
     """(label, why) for this exact URL and this agent; see the table in the module docstring.
+
+    `source` names the registry source. When robots.txt REFUSES (401/403/429/451) and that
+    source holds an active `machine_read_permit` for this host, the label is PERMITTED: the
+    publisher's own written terms reopen it (Governance ruling 2026-11-10 20:24Z). A permit
+    never reopens DISALLOWED or ROBOTS_UNREACHABLE.
 
     `cache` (a dict the caller owns for ONE pass) holds each host's parsed rules, or the label
     it earned instead, so a pass asks a host once however many of its paths it wants. An
@@ -127,6 +165,12 @@ def read(url: str, agent: str, *, opener: Opener | None = None, timeout: float =
         if cache is not None:
             cache[key] = held
     if isinstance(held, tuple):
+        if held[0] == ROBOTS_REFUSED and source:
+            permit = permit_for(source, url)
+            if permit is not None:
+                return PERMITTED, (f"{held[1]}; reopened by the publisher's terms "
+                                   f"({permit['doc_url']}): fetched on the documented endpoint, "
+                                   f"counted as {PERMIT_FETCHED}")
         return held
     if robots_allows(held, url):
         return PUBLIC, "robots.txt allows this path for our agent"
@@ -200,7 +244,12 @@ def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
             continue
         d = days.setdefault(day, {"total": 0, "by_label": Counter(), "by_organ": Counter(),
                                   "sources": set(), "absent_fetched": 0,
-                                  "absent_by_organ": Counter()})
+                                  "absent_by_organ": Counter(), "permit_fetched": 0,
+                                  "permit_by_source": Counter()})
+        if str(row.get("status") or SET_ASIDE) == PERMIT_FETCHED:
+            d["permit_fetched"] += 1
+            d["permit_by_source"][str(row.get("source"))] += 1
+            continue
         if str(row.get("status") or SET_ASIDE) == ABSENT_FETCHED:
             d["absent_fetched"] += 1
             d["absent_by_organ"][str(row.get("organ"))] += 1
@@ -212,7 +261,9 @@ def daily_counts(ledger: Path | None = None) -> dict[str, Any]:
     out = {day: {"total": d["total"], "by_label": dict(d["by_label"]),
                  "by_organ": dict(d["by_organ"]), "distinct_sources": len(d["sources"]),
                  "absent_fetched": d["absent_fetched"],
-                 "absent_fetched_by_organ": dict(d["absent_by_organ"])}
+                 "absent_fetched_by_organ": dict(d["absent_by_organ"]),
+                 "permit_fetched": d["permit_fetched"],
+                 "permit_fetched_by_source": dict(d["permit_by_source"])}
            for day, d in sorted(days.items())}
     return {"status": "OK", "days": out, "torn_lines": torn}
 
@@ -229,6 +280,7 @@ def publish(ledger: Path | None = None, report: Path | None = None) -> dict[str,
            "status": counts["status"], "torn_lines": counts.get("torn_lines", 0),
            "refused_today": int(today["total"]) if today else 0,
            "absent_fetched_today": int(today["absent_fetched"]) if today else 0,
+           "permit_fetched_today": int(today["permit_fetched"]) if today else 0,
            "daily": dict(list(days.items())[-REPORT_DAYS:]), "reopen": REOPEN,
            # No line on a day nothing was refused: missed_growth reads NOT_BINDING.
            "missed_growth": (missed_growth_pair(today["total"], at=now,
@@ -274,6 +326,23 @@ def note_absent(organ: str, source: str, url: str, why: str, *,
     never billed as one: it says how often the desk reads a site that states no rules."""
     return record({"organ": organ, "source": source, "url": url, "status": ABSENT_FETCHED,
                    "access_label": ROBOTS_ABSENT, "why": why}, ledger=ledger, report=report)
+
+
+def note_permit(organ: str, source: str, url: str, why: str, *,
+                ledger: Path | None = None, report: Path | None = None) -> bool:
+    """Count a fetch made on a machine_read_permit. Beside the refusals, never among them."""
+    return record({"organ": organ, "source": source, "url": url, "status": PERMIT_FETCHED,
+                   "access_label": PERMITTED, "why": why}, ledger=ledger, report=report)
+
+
+def data_refused(organ: str, source: str, url: str, code: int, *,
+                 ledger: Path | None = None, report: Path | None = None) -> dict[str, Any]:
+    """A permitted source whose DATA endpoint refused or rate-limited: the pass falls back to
+    ROBOTS_REFUSED, billed, with no retry (Governance condition 4)."""
+    return refuse(organ, source, url, ROBOTS_REFUSED,
+                  f"the data endpoint answered HTTP {code} on a permitted fetch: the permit "
+                  f"covers a refusal of robots.txt only, so this pass stops (no retry)",
+                  ledger=ledger, report=report)
 
 
 def main() -> int:

@@ -162,7 +162,7 @@ def _collect(monkeypatch: pytest.MonkeyPatch, verdict: tuple[str, str]) -> tuple
         opened.append(getattr(req, "full_url", req))
         raise urllib.error.URLError("no network in this test")
 
-    monkeypatch.setattr(acol, "_robots_verdict", lambda url, agent="x": verdict)
+    monkeypatch.setattr(acol, "_robots_verdict", lambda url, agent="x", source=None: verdict)
     monkeypatch.setattr(acol.urllib.request, "urlopen", _spy)
     rec = acol.collect_one({"id": "src_a", "plane": "p", "url": URL, "expect": "csv",
                             "access": "public"})
@@ -219,3 +219,71 @@ def test_the_asia_collector_fetches_a_public_path(monkeypatch: pytest.MonkeyPatc
     rec, opened = _collect(monkeypatch, ("PUBLIC", "robots.txt allows this path"))
     assert opened == [URL] and rec["status"] == "UNREACHABLE"
     assert not _ledger["ledger"].exists(), "an allowed fetch is not billed"
+
+
+def _permits(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **row: Any) -> None:
+    base = {"host": "example.invalid", "doc_url": "https://example.invalid/terms",
+            "clause": "machine use permitted", "licence": "CC BY 4.0",
+            "recorded_at": "2026-11-10", "active": True}
+    path = tmp_path / "permits.json"
+    path.write_text(json.dumps({"permits": {"src_a": {**base, **row}}}), "utf-8")
+    monkeypatch.setattr(rg, "PERMITS", path)
+
+
+def test_a_permit_reopens_a_refused_robots_file_and_nothing_else(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Governance ruling 2026-11-10 20:24Z: condition 1."""
+    _permits(tmp_path, monkeypatch)
+    label, why = rg.read(URL, "a", opener=_fail(_http(403)), source="src_a")
+    assert label == "PERMITTED" and not rg.stops(label) and "example.invalid/terms" in why
+    assert rg.read(URL, "a", opener=_fail(_http(403)), source="other")[0] == "ROBOTS_REFUSED"
+    assert rg.read(URL, "a", opener=_fail(_http(403)))[0] == "ROBOTS_REFUSED"
+    # derived sources inherit their parent's permit
+    assert rg.read(URL, "a", opener=_fail(_http(403)), source="src_a__ep1234abcd")[0] == "PERMITTED"
+    # never a Disallow, never an unreachable file
+    assert rg.read(URL, "a", opener=_serve("User-agent: *\nDisallow: /\n"),
+                   source="src_a")[0] == "DISALLOWED"
+    assert rg.read(URL, "a", opener=_fail(_http(503)), source="src_a")[0] == "ROBOTS_UNREACHABLE"
+
+
+@pytest.mark.parametrize("bad", [{"active": False}, {"clause": ""}, {"doc_url": ""},
+                                 {"host": "elsewhere.invalid"}])
+def test_an_inactive_incomplete_or_foreign_permit_is_no_permit(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, bad: dict[str, Any]) -> None:
+    _permits(tmp_path, monkeypatch, **bad)
+    assert rg.read(URL, "a", opener=_fail(_http(403)), source="src_a")[0] == "ROBOTS_REFUSED"
+
+
+def test_the_shipped_permits_are_whole_and_rba_waits_for_its_verbatim_clause() -> None:
+    rows = json.loads(rg.PERMITS.read_text("utf-8"))["permits"]
+    assert set(rows) == {"eia_energy", "abs_trade", "rba_tables"}
+    assert rows["rba_tables"]["active"] is False
+    for sid in ("eia_energy", "abs_trade"):
+        row = rows[sid]
+        assert rg.permit_for(sid, f"https://{row['host']}/x") is not None, sid
+
+
+def test_a_permitted_fetch_is_counted_and_a_data_refusal_stops_the_pass(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _ledger: dict[str, Path]) -> None:
+    """Conditions 4 and 5: counted as PERMIT_FETCHED; a 403 on the DATA URL falls back to
+    ROBOTS_REFUSED, billed, and the URL is asked once."""
+    _permits(tmp_path, monkeypatch)
+    opened: list[Any] = []
+
+    def _spy(req: Any, **_k: Any) -> Any:
+        opened.append(getattr(req, "full_url", req))
+        raise urllib.error.HTTPError(URL, 403, "x", None, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(acol, "_robots_verdict",
+                        lambda url, agent="x", source=None: rg.read(
+                            url, agent, opener=_fail(_http(403)), source=source))
+    monkeypatch.setattr(acol.urllib.request, "urlopen", _spy)
+    rec = acol.collect_one({"id": "src_a", "plane": "p", "url": URL, "expect": "csv",
+                            "access": "public"})
+    assert opened == [URL]
+    assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["access_label"] == "ROBOTS_REFUSED"
+    assert rec["http"] == 403 and rec["billed"] is True and "robots.txt only" in rec["why"]
+    lines = [json.loads(x) for x in _ledger["ledger"].read_text("utf-8").splitlines()]
+    assert [x["status"] for x in lines] == ["PERMIT_FETCHED", "SET_ASIDE"]
+    doc = json.loads(_ledger["report"].read_text("utf-8"))
+    assert doc["permit_fetched_today"] == 1 and doc["refused_today"] == 1

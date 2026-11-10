@@ -1,0 +1,38 @@
+{
+ "note": "machine_read_permit rows (Governance ruling 2026-11-10 20:24Z). A permit reopens a source whose robots.txt answers 401/403/429/451 (ROBOTS_REFUSED) and NOTHING else: never a Disallow, never an unreachable robots.txt. It quotes the publisher's own clause from doc_url; the Auditor checks the quote against the live page before CLEAR. The fetch uses the collector's honest agent, the documented endpoint and the source's own key; if the data endpoint itself refuses or rate-limits, that pass falls back to ROBOTS_REFUSED with no retry. A row with active=false is recorded and does nothing. Keyed by source id; derived sources (<id>__ep<hash>) inherit their parent's permit. Code-side on purpose: desks/mt5/data/ is box state.",
+ "permits": {
+  "eia_energy": {
+   "host": "api.eia.gov",
+   "doc_url": "https://www.eia.gov/opendata/terms-of-service.php",
+   "clause": "You may use the EIA API to develop a service to search, display, analyze, retrieve, view",
+   "licence": "US government work, public domain: 'U.S. government publications are in the public domain and are not subject to copyright protection.' (https://www.eia.gov/about/copyrights_reuse.php)",
+   "endpoint_doc": "https://www.eia.gov/opendata/documentation.php",
+   "key": "EIA_API_KEY (free registration, https://www.eia.gov/opendata/register.php)",
+   "rate_limit": "EIA throttles per second and per hour and suspends a key on excess; the collector asks once per weekly cadence",
+   "recorded_at": "2026-11-10",
+   "active": true
+  },
+  "abs_trade": {
+   "host": "data.api.abs.gov.au",
+   "doc_url": "https://www.abs.gov.au/website-privacy-copyright-and-disclaimer",
+   "clause": "All material presented on this website is provided under a Creative Commons Attribution 4.0 International licence",
+   "licence": "CC BY 4.0 (commercial use and redistribution with attribution)",
+   "endpoint_doc": "https://www.abs.gov.au/about/data-services/application-programming-interfaces-apis/data-api-user-guide",
+   "key": "none: 'The Data API is freely accessible without the need for an API key.'",
+   "rate_limit": "no published limit found; the collector asks once per monthly cadence",
+   "recorded_at": "2026-11-10",
+   "active": true
+  },
+  "rba_tables": {
+   "host": "www.rba.gov.au",
+   "doc_url": "https://www.rba.gov.au/copyright/",
+   "clause": "UNVERIFIED PARAPHRASE of copyright notice section 5 (Financial Data): use, reproduction and publication permitted for personal or commercial purposes with attribution. Not active until the verbatim sentence is read from the live page.",
+   "licence": "RBA Financial Data terms (excluded from CC BY 4.0), attribution 'Source: RBA [year]'",
+   "endpoint_doc": "https://www.rba.gov.au/statistics/tables/ (CSV files under /statistics/tables/csv/)",
+   "key": "none",
+   "rate_limit": "no published limit found; the collector asks once per daily cadence",
+   "recorded_at": "2026-11-10",
+   "active": false
+  }
+ }
+}

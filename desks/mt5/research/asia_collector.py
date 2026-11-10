@@ -169,7 +169,8 @@ _ROBOTS_CACHE_TTL_S = 900.0
 _ROBOTS_CACHE_BORN = [0.0]
 
 
-def _robots_verdict(url: str, agent: str = "quant-desk-collector") -> tuple[str, str]:
+def _robots_verdict(url: str, agent: str = "quant-desk-collector",
+                    source: str | None = None) -> tuple[str, str]:
     """(label, why) from the desk's one robots gate, read through this collector's TLS context."""
     try:
         from research import robots_gate as RG
@@ -178,7 +179,7 @@ def _robots_verdict(url: str, agent: str = "quant-desk-collector") -> tuple[str,
     if time.monotonic() - _ROBOTS_CACHE_BORN[0] > _ROBOTS_CACHE_TTL_S:
         _ROBOTS_CACHE.clear()
         _ROBOTS_CACHE_BORN[0] = time.monotonic()
-    return RG.read(url, agent, opener=_robots_open, cache=_ROBOTS_CACHE)
+    return RG.read(url, agent, opener=_robots_open, cache=_ROBOTS_CACHE, source=source)
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -373,7 +374,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # the fetch. The refusal is a named state with its reopen and its missed-growth line, and
     # `robots_gate` counts it by label, so the cost of the rule is measured every day. A site
     # serving no robots.txt is fetched and counted as ROBOTS_ABSENT.
-    label, why_robots = _robots_verdict(url)
+    label, why_robots = _robots_verdict(url, source=sid)
     rec["robots"] = why_robots
     rec["robots_disallows"] = label == "DISALLOWED"
     rec["access_label"] = label
@@ -383,6 +384,8 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         import robots_gate as RG  # type: ignore[no-redef]
     if label == RG.ROBOTS_ABSENT:
         rec["robots_counted"] = RG.note_absent("asia_collector", sid, url, why_robots)
+    if label == RG.PERMITTED:
+        rec["robots_counted"] = RG.note_permit("asia_collector", sid, url, why_robots)
     if RG.stops(label):
         aside = RG.refuse("asia_collector", sid, url, label, why_robots)
         rec.update({"status": "BLOCKED_BY_ROBOTS", "access_label": label, "why": why_robots,
@@ -423,6 +426,13 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                         "why": ("the source has not changed since the last fetch (conditional "
                                 "GET). The vault's newest blob is still current -- nothing new, "
                                 "which is not the same as nothing fetched.")})
+            return rec
+        if label == RG.PERMITTED and code in RG.DATA_REFUSAL:
+            aside = RG.data_refused("asia_collector", sid, url, code)
+            rec.update({"status": "BLOCKED_BY_ROBOTS", "http": code,
+                        "access_label": RG.ROBOTS_REFUSED, "why": aside["why"],
+                        "reopen": aside["reopen"], "missed_growth": aside["missed_growth"],
+                        "billed": aside["billed"]})
             return rec
         rec.update({"status": "HTTP_ERROR", "http": code,
                     "why": (f"HTTP {code}" if code not in (401, 403)
