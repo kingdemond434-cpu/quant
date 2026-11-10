@@ -16,6 +16,16 @@ import pytest
 
 from libs.ops import leg_rotation as LR
 
+
+@pytest.fixture(autouse=True)
+def _fresh_door_inputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unless a test says otherwise, the due-by-age legs' door inputs are fresh, so their clock
+    is the run age alone; the artifact clock has its own tests below."""
+    monkeypatch.setattr(LR, "_artifact_age_h", lambda leg, now, desk=None: 0.0)
+
+
+_REAL_ARTIFACT_AGE_H = LR._artifact_age_h
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -198,3 +208,113 @@ def test_fence_fails_on_a_never_run_leg_and_on_an_absent_record(tmp_path: Path) 
     rec.write_text(json.dumps({"generated": stale.isoformat(), "never_run": [],
                                "outside_window": [], "window_h": 24.0}), encoding="utf-8")
     assert not mod.check(rec)["ok"], "a stale record means the cycle is not running on its clock"
+
+
+def _att_aged(runs: dict[str, int], ages_h: dict[str, float], costs: dict[str, float],
+              now: datetime) -> LR.Attendance:
+    att = _att(runs, costs=costs)
+    for leg, h in ages_h.items():
+        att.last_at[leg] = (now - timedelta(hours=h)).isoformat()
+    return att
+
+
+def test_due_by_age_leg_is_forced_once_soft_age_is_reached() -> None:
+    """A heavy fresh-within-6h leg is forced when due and never yielded on overrun."""
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    soft, _hard = LR.DUE_BY_AGE_H["tier_s"]
+    att = _att_aged({"tier_s": 5, "filler": 5}, {"tier_s": soft + 0.1, "filler": 9.0},
+                    {"tier_s": 9_000.0, "filler": 1.0}, now)
+    dec = LR.plan_pass(["tier_s", "filler"], att, plan="core", budget_s=1.0, now=now)
+    assert "tier_s" in dec.admitted and "tier_s" in dec.forced
+    ok, _ = dec.should_run("tier_s", att, elapsed_s=10_000.0)
+    assert ok
+
+
+def test_due_by_age_leg_below_soft_age_rotates_and_frees_the_pass() -> None:
+    """Below its soft age the heavy leg competes like any other: stale legs run first."""
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    att = _att_aged({"tier_s": 5, "governance": 5}, {"tier_s": 1.0, "governance": 20.0},
+                    {"tier_s": 1_500.0, "governance": 100.0}, now)
+    dec = LR.plan_pass(["tier_s", "governance"], att, plan="core", budget_s=1_000.0, now=now)
+    assert "governance" in dec.admitted
+    assert "tier_s" in dec.deferred and "tier_s" not in dec.forced
+
+
+def test_only_one_due_leg_is_forced_on_the_soft_rule_per_pass() -> None:
+    """Two heavy due legs do not land on the same hour unless one reaches its hard age."""
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    soft, hard = LR.DUE_BY_AGE_H["tier_s"]
+    att = _att_aged({"tier_s": 5, "replication_civilization": 5},
+                    {"tier_s": soft + 0.5, "replication_civilization": soft + 0.2},
+                    {"tier_s": 1_500.0, "replication_civilization": 1_000.0}, now)
+    dec = LR.plan_pass(["tier_s", "replication_civilization"], att, plan="core",
+                       budget_s=100.0, now=now)
+    assert dec.forced == {"tier_s"}, "the older due leg is forced; the other waits an hour"
+    att.last_at["replication_civilization"] = (now - timedelta(hours=hard)).isoformat()
+    dec = LR.plan_pass(["tier_s", "replication_civilization"], att, plan="core",
+                       budget_s=100.0, now=now)
+    assert dec.forced == {"tier_s", "replication_civilization"}, "hard age forces regardless"
+
+
+def test_never_run_due_leg_is_forced() -> None:
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    att = _att({"tier_s": 0}, costs={"tier_s": 1_500.0})
+    dec = LR.plan_pass(["tier_s"], att, plan="core", budget_s=10.0, now=now)
+    assert "tier_s" in dec.forced
+
+
+def test_a_timed_out_run_with_a_stale_door_input_is_forced_again(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor MF1: the run reset attendance, but REPLICATION.json kept aging; still forced."""
+    now = datetime(2026, 11, 5, 12, 0, tzinfo=UTC)
+    _soft, hard = LR.DUE_BY_AGE_H["replication_civilization"]
+    monkeypatch.setattr(LR, "_artifact_age_h", lambda leg, n, desk=None: hard + 0.5)
+    att = _att_aged({"replication_civilization": 5}, {"replication_civilization": 0.9},
+                    {"replication_civilization": 1_035.0}, now)
+    dec = LR.plan_pass(["replication_civilization"], att, plan="core", budget_s=1.0, now=now)
+    assert "replication_civilization" in dec.forced
+
+
+def test_artifact_age_reads_the_oldest_input_and_absent_is_infinite(tmp_path: Path) -> None:
+    now = datetime(2026, 11, 5, 12, 0, tzinfo=UTC)
+    assert _REAL_ARTIFACT_AGE_H("tier_s", now, tmp_path) == float("inf")
+    (tmp_path / "reports" / "tier_s").mkdir(parents=True)
+    (tmp_path / "data" / "tier_s").mkdir(parents=True)
+    (tmp_path / "reports/tier_s/ONLINE_FDR_ROWS.json").write_text(
+        json.dumps({"generated_utc": (now - timedelta(hours=1)).isoformat()}))
+    (tmp_path / "data/tier_s/PROMOTION_FREEZE.json").write_text(
+        json.dumps({"at": (now - timedelta(hours=3)).isoformat()}))
+    assert abs(_REAL_ARTIFACT_AGE_H("tier_s", now, tmp_path) - 3.0) < 1e-6
+    (tmp_path / "data/tier_s/PROMOTION_FREEZE.json").write_text("{}")
+    assert _REAL_ARTIFACT_AGE_H("tier_s", now, tmp_path) == float("inf")
+
+
+def test_due_artifacts_are_the_files_and_stamps_the_door_reads() -> None:
+    from libs.tiers import promotion_authority as PA
+    door = {(PA.REPLICATION, "at"), (PA.FDR_ROWS, "generated_utc"), (PA.FREEZE, "at")}
+    ours = {(LR.DESK / rel, key) for arts in LR.DUE_ARTIFACTS.values() for rel, key in arts}
+    assert ours == door
+    assert set(LR.DUE_ARTIFACTS) == set(LR.DUE_BY_AGE_H)
+
+
+def test_a_leg_that_can_never_fit_is_named_unschedulable_not_told_it_leads() -> None:
+    """prop_challenge_allocator (722 s) behind always-run legs leaving 640 s: deferred forever."""
+    now = datetime(2026, 11, 5, 16, 0, tzinfo=UTC)
+    always = sorted(LR.ALWAYS_RUN)[0]
+    att = _att_aged({always: 5, "prop_challenge_allocator": 5, "small": 5},
+                    {always: 1.0, "prop_challenge_allocator": 30.0, "small": 2.0},
+                    {always: 2_000.0, "prop_challenge_allocator": 722.0, "small": 10.0}, now)
+    dec = LR.plan_pass([always, "prop_challenge_allocator", "small"], att, plan="core",
+                       budget_s=2_640.0, now=now)
+    assert "prop_challenge_allocator" in dec.deferred
+    assert dec.unschedulable["prop_challenge_allocator"] == 82.0
+    assert "UNSCHEDULABLE" in dec.why["prop_challenge_allocator"]
+    assert "small" in dec.admitted and "small" not in dec.unschedulable
+
+
+def test_a_leg_that_fits_the_room_is_only_deferred() -> None:
+    now = datetime(2026, 11, 5, 16, 0, tzinfo=UTC)
+    att = _att_aged({"a": 5, "b": 5}, {"a": 9.0, "b": 8.0}, {"a": 600.0, "b": 600.0}, now)
+    dec = LR.plan_pass(["a", "b"], att, plan="core", budget_s=1_000.0, now=now)
+    assert dec.deferred == {"b"} and not dec.unschedulable
+    assert "leads the next pass" in dec.why["b"]
