@@ -663,7 +663,7 @@ def _build_hunt16_cell(b: Bars, p: dict[str, Any]) -> list[Order]:
     base = str(p.get("base_family") or "")
     builder = HUNT16_RULES.get(base)
     if builder is None:
-        return []
+        return _cannot_build(f"no written rule for hunt16 base family {base!r}")
     return _keep_hour_state(b, builder(b, _direction(p)), p.get("signal_at"), p.get("day_state"))
 
 
@@ -700,19 +700,33 @@ def swap_terms(symbol: str, terms_dir: Path | None = None) -> dict[str, Any] | N
     return latest
 
 
+#: Why the LAST `rebuild` could not build its rule at all (a missing input, never a rule
+#: outcome); empty when it could. Read by `replicate_forward` straight after `rebuild`, so an
+#: empty rebuild is told apart from a rule that fired zero times (Auditor on r6, 2026-11-10).
+_STOOD_ASIDE: list[str] = []
+
+
+def _cannot_build(why: str) -> list[Order]:
+    _STOOD_ASIDE.append(why)
+    return []
+
+
 def _build_carry(b: Bars, p: dict[str, Any]) -> list[Order]:
-    terms = swap_terms(str(p.get("symbol") or p.get("_symbol") or ""))
+    sym = str(p.get("symbol") or p.get("_symbol") or "")
+    terms = swap_terms(sym)
     if not terms:
-        return []
+        return _cannot_build(f"no recorded contract terms for {sym or 'an unnamed symbol'}")
     try:
         mode = int(terms["swap_mode"])
         point = float(terms.get("point") or 0.0)
         contract = float(terms.get("contract_size") or 0.0)
         lo_sw, sh_sw = float(terms["swap_long"]), float(terms["swap_short"])
     except (KeyError, TypeError, ValueError):
-        return []
-    if mode != SWAP_MODE_POINTS or point <= 0 or contract <= 0:
-        return []
+        return _cannot_build(f"{sym} contract terms unreadable (swap_mode / swap / point)")
+    if mode != SWAP_MODE_POINTS:
+        return _cannot_build(f"{sym} swap_mode {mode} is not POINTS")
+    if point <= 0 or contract <= 0:
+        return _cannot_build(f"{sym} contract terms carry no point or contract size")
     lo_m, sh_m = lo_sw * point * contract, sh_sw * point * contract
     side = 1 if lo_m > sh_m else -1
     if abs(lo_m - sh_m) < float(p["min_edge_bp_per_day"]):
@@ -940,6 +954,7 @@ HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
             ) -> tuple[list[Order], list[Fill]]:
+    _STOOD_ASIDE.clear()
     orders = SPEC_BOOK[family].build(bars, dict(p))
     side = int(p.get("_side") or 0)
     if side:
@@ -975,8 +990,8 @@ def judge_certificate(recorded_sharpe: float | None, ours: float | None, n_fills
 
 
 def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], bar_minutes: int,
-                  cost_ours: CostSpec, cost_theirs: Mapping[str, Any] | None
-                  ) -> tuple[str, list[str], dict[str, Any]]:
+                  cost_ours: CostSpec, cost_theirs: Mapping[str, Any] | None,
+                  stood_aside: str | None = None) -> tuple[str, list[str], dict[str, Any]]:
     """Fills, per-trade R, summed P&L, position state and cost terms, compared.
 
     THREE THINGS A VERDICT HERE MUST NOT DO (Auditor HOLD on #830, 2026-11-10; a REPLICATED
@@ -995,10 +1010,21 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
         return UNMEASURED, ["the forward ledger holds no trade with an R to compare"], div
     thin = len(theirs) < MIN_FORWARD_TRADES
     if not fills:
+        # TWO DIFFERENT EMPTIES (box run 2, 2026-11-10: 115 keys, mostly carry.asia with 300+
+        # ledger trades, rebuilt nothing). A builder that NAMED why it could not build (no
+        # recorded swap terms, a swap_mode the written rule cannot price, no written rule) is a
+        # lane that cannot build here: REBUILD_EMPTY, UNMEASURED, the reason in the why. A rule
+        # the lane DID build that fired zero times against the ledger is the strongest mismatch
+        # there is and stays MISMATCH (Auditor on r6). Both are listed by name.
+        div["rebuild_empty"] = "STOOD_ASIDE" if stood_aside else "BUILT_FIRED_NONE"
         if thin:
             return UNMEASURED, [f"too few forward trades to replicate: {len(theirs)} ledger "
                                 f"trade(s), the rebuild produced none, and "
                                 f"{MIN_FORWARD_TRADES} are needed"], div
+        if stood_aside:
+            return UNMEASURED, [f"REBUILD_EMPTY: this lane could not build the rule here "
+                                f"({stood_aside}), against {len(theirs)} ledger trade(s); "
+                                f"that says nothing about the ledger"], div
         return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger "
                           f"trade(s)"], div
     why: list[str] = []
@@ -1223,6 +1249,7 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
         return out
     cost = cost_spec(meta)
     _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    stood_aside = "; ".join(_STOOD_ASIDE) or None
     start = str(row.get("forward_start") or "")
     try:
         t0 = int(np.datetime64(start.replace(" ", "T").split("+")[0], "ns").astype("int64"))
@@ -1240,27 +1267,52 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     # compared whole, as before.
     forward_ledger, hist_last = _forward_phase(ledger)
     n_hist = len(ledger) - len(forward_ledger)
-    dropped, late_history = 0, False
+    dropped, late_history, orphans = 0, False, 0
     if hist_last is not None:
         kept = [f for f in window if f.entry_t > hist_last]
-        dropped, window = len(window) - len(kept), kept
+        gone = [f for f in window if f.entry_t <= hist_last]
+        dropped, window = len(gone), kept
         # A row tagged historical more than a day after forward_start is not the broker-clock
-        # offset: it would hide rebuilt fills that have no ledger twin, so it is named.
+        # offset: it could hide rebuilt fills that have no ledger twin. So each rebuilt fill it
+        # sets aside is looked for among the HISTORICAL rows (same side, within MATCH_BARS); the
+        # verdict is demoted only when one has no twin there (box run 2, 2026-11-10: five gold
+        # and USDJPY keys fully matched were demoted on the boundary alone).
         late_history = hist_last - t0 > 86_400_000_000_000
+        if late_history and gone:
+            tol = MATCH_BARS * bars.minutes * 60_000_000_000
+            hist = []
+            for r in ledger:
+                if str(r.get("phase") or "").lower() != "historical":
+                    continue
+                try:
+                    hist.append((int(np.datetime64(str(r.get("entry_time")).replace(" ", "T")
+                                                   .replace("+00:00", ""), "ns")
+                                     .astype("int64")), int(r.get("side") or 0)))
+                except (ValueError, TypeError):
+                    continue
+            orphans = sum(1 for f in gone
+                          if not any(abs(t - int(f.entry_t)) <= tol
+                                     and (not sd or sd == int(f.side)) for t, sd in hist))
     if n_hist and not forward_ledger:
         out["why"] = [f"the ledger holds {n_hist} historical trade(s) and no forward one yet"]
         out["divergence"] = {"n_ledger_historical_set_aside": n_hist}
         return out
     verdict, reasons, div = judge_forward(forward_ledger, window, bars.minutes, cost,
-                                          row.get("cost_fields"))
+                                          row.get("cost_fields"), stood_aside)
     div["n_ledger_historical_set_aside"] = n_hist
     div["n_rebuilt_dropped_at_boundary"] = dropped
     if late_history:
-        reasons = [*reasons, f"a ledger row tagged historical is more than a day AFTER "
-                             f"forward_start; {dropped} rebuilt fill(s) before it were not "
-                             f"compared"]
-        if verdict == REPLICATED:
-            verdict = UNMEASURED
+        div["n_rebuilt_set_aside_without_historical_twin"] = orphans
+        if orphans:
+            reasons = [*reasons, f"a ledger row tagged historical is more than a day AFTER "
+                                 f"forward_start; {orphans} of the {dropped} rebuilt fill(s) "
+                                 f"before it have no historical ledger twin"]
+            if verdict == REPLICATED:
+                verdict = UNMEASURED
+        else:
+            reasons = [*reasons, f"a ledger row tagged historical is more than a day AFTER "
+                                 f"forward_start; each of the {dropped} rebuilt fill(s) before "
+                                 f"it has a historical ledger twin"]
     out.update(verdict=verdict, why=reasons, divergence=div,
                ours={"n_fills": len(window), "pnl_R": round(sum(f.r for f in window), 3),
                      "cost": {"spread_per_lot": cost.spread_per_lot,
@@ -1504,6 +1556,12 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "unmeasured": [{"what": r["key"], "why": "; ".join(r["why"])} for r in rows
                        if r["verdict"] == UNMEASURED],
         "forward_thin_unmeasured": forward_thin_unmeasured(fbook, fwd),
+        # EMPTY REBUILDS BY NAME, both kinds: rules this lane could not build at all this pass
+        # (UNMEASURED, a lane defect to fix) and rules it built that fired zero times (MISMATCH).
+        "rebuild_empty": {kind: sorted(str(r.get("key")) for r in rows
+                                       if (r.get("divergence") or {}).get("rebuild_empty")
+                                       == kind)
+                          for kind in ("STOOD_ASIDE", "BUILT_FIRED_NONE")},
         "forward_coverage": {"promotable_rows": len(promotable),
                              "promotable_judged_this_pass": judged_promotable,
                              "share": (round(judged_promotable / len(promotable), 4)

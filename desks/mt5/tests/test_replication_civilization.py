@@ -193,14 +193,22 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
     late = rc.replicate_forward(row, meta=META, bars=bars, ledger=shifted)
     assert late["verdict"] == rc.REPLICATED, late
     assert late["divergence"]["n_rebuilt_dropped_at_boundary"] == 1
-    # ...but a "historical" row days into the forward window is a mis-tag, not a clock offset:
-    # the fills it hides are counted and the clock is not called replicated on the remainder
+    # ...a "historical" row days into the forward window is a mis-tag, not a clock offset, so
+    # every rebuilt fill it sets aside is looked for among the historical rows: all have a twin
+    # here, so nothing is hidden and the verdict stands (box run 2: five fully matched keys)
     k = len(honest_ledger) // 2
     mistag = ([dict(r, phase="historical") for r in honest_ledger[:k]]
               + [dict(r, phase="forward") for r in honest_ledger[k:]])
-    hid = rc.replicate_forward(row, meta=META, bars=bars, ledger=mistag)
+    twin = rc.replicate_forward(row, meta=META, bars=bars, ledger=mistag)
+    assert twin["divergence"]["n_rebuilt_dropped_at_boundary"] == k
+    assert twin["divergence"]["n_rebuilt_set_aside_without_historical_twin"] == 0
+    assert twin["verdict"] == rc.REPLICATED
+    assert any("has a historical ledger twin" in w for w in twin["why"])
+    # ...and when one set-aside fill has NO historical twin the clock is not called replicated
+    hidden = mistag[1:]
+    hid = rc.replicate_forward(row, meta=META, bars=bars, ledger=hidden)
     assert hid["verdict"] == rc.UNMEASURED and hid["divergence"][
-        "n_rebuilt_dropped_at_boundary"] == k
+        "n_rebuilt_set_aside_without_historical_twin"] == 1
     assert any("more than a day AFTER" in w for w in hid["why"])
     only_history = rc.replicate_forward(
         row, meta=META, bars=bars, ledger=[dict(r, phase="historical") for r in honest_ledger])
@@ -242,6 +250,18 @@ def test_a_forward_verdict_needs_enough_trades_one_sign_and_both_sides_matched()
     assert v == rc.UNMEASURED and "too few forward trades" in why[0] and div["thin"] is True
     # ...and a thin ledger the rebuild simply has nothing for is not a mismatch either
     assert judge([led(f) for f in thin], [fill(40)])[0] == rc.UNMEASURED
+    # an empty rebuild whose builder NAMED why it could not build is REBUILD_EMPTY...
+    v, why, div = rc.judge_forward([led(f) for f in full], [], 60, cost, None,
+                                   "no recorded contract terms for CHFNOK")
+    assert v == rc.UNMEASURED and why[0].startswith("REBUILD_EMPTY") and "CHFNOK" in why[0]
+    assert div["rebuild_empty"] == "STOOD_ASIDE"
+    # ...but a rule the lane built that fired NONE of the ledger's trades is a mismatch
+    v, why, div = judge([led(f) for f in full], [])
+    assert v == rc.MISMATCH and div["rebuild_empty"] == "BUILT_FIRED_NONE"
+    # and the carry builder names its stand-aside when the venue's terms are absent
+    rc._STOOD_ASIDE.clear()
+    assert rc._build_carry(None, {"symbol": "ZZZNOK"}) == []  # type: ignore[arg-type]
+    assert rc._STOOD_ASIDE and "ZZZNOK" in rc._STOOD_ASIDE[0]
     # but a contradiction is a mismatch at any n: the same bar on the OTHER side...
     v, why, div = judge([led(f, side=-1) for f in thin[:2]], thin[:2])
     assert v == rc.MISMATCH and div["wrong_side"] == 2 and "OTHER side" in why[0]
