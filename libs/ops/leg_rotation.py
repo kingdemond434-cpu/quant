@@ -131,6 +131,15 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # for a week after #527, so its RED (no noon pass since 10-21) existed nowhere. One ledger
     # read, capped at 60 s; it runs on the meta department plan, which is not the core budget.
     "cro_noon_freshness",
+    # CHEAP FENCES THAT GATE MONEY OR HEALTH, PINNED (2026-11-05, overlay 27d "pin cheap readers
+    # (<60 s) that gate money or promotion"). With always-run cost above the 2640 s core budget,
+    # greedy admission had no room left, so these sat in LEG_ROTATION's never_run/outside_window
+    # for days: decay_live.json 55 h stale (last decay_monitor run 11-02, 3.87 s), and the
+    # placement interlock -- "a silent halt costs a window an hour" -- unread. Each reads a few
+    # small files and writes one report, so pinning them costs seconds, not the research legs.
+    # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
+    # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
+    "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
 })
 
 
