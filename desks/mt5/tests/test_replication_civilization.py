@@ -330,6 +330,88 @@ def test_a_thin_forward_clock_is_published_by_name_and_the_standing_quarantine_h
     assert any("thin forward clocks" in line for line in rc.render(doc))
 
 
+def test_promotable_forward_rows_are_judged_first_stalest_first(tmp_path: Path) -> None:
+    """Auditor ruling (L1.49): the door acts only on LIVE and STANDBY rows and reads only this
+    pass's verdicts, so they go ahead of every other row and the report says how many."""
+    def clock(name: str, status: str) -> dict[str, Any]:
+        return {"key": name, "status": status,
+                "identity": {"family": "overnight_gap_decay", "symbol": "TESTFX",
+                             "direction": "LONG", "timeframe": "H1", "selector": "asia",
+                             "params": {}}}
+
+    loads: list[str] = []
+
+    def loader(sym: str, tf: str) -> Any:
+        loads.append(sym)
+        return None
+
+    fwd = [clock("r1", "RETIRED"), clock("r2", "RETIRED"), clock("live_old", "LIVE"),
+           clock("standby_new", "STANDBY"), clock("live_never", "LIVE")]
+    (tmp_path / "verdicts.json").write_text(json.dumps({"forward": {
+        "live_old": {"verdict": rc.UNMEASURED, "at": "2026-11-01T00:00:00+00:00"},
+        "standby_new": {"verdict": rc.UNMEASURED, "at": "2026-11-09T00:00:00+00:00"}}}), "utf-8")
+    kw: dict[str, Any] = {"certificates": [], "universe_meta": {}, "forward": fwd,
+                          "bars_loader": loader, "ledger_loader": lambda key, ident: [],
+                          "cursor_path": tmp_path / "cursor.json",
+                          "quarantine_path": tmp_path / "quarantine.json",
+                          "report": tmp_path / "REPLICATION.json"}
+    # a budget already spent past the fill share: the count floor (1) is all that runs
+    doc = rc.build(budget_s=1.0, dry_run=True, conn=None, max_per_pass=2,
+                   **{**kw, "ledger_loader": lambda key, ident: (_spend(), [])[1]})
+    assert [r["key"] for r in doc["verdicts"]] == ["live_never"]
+    assert any("forward rows left" in n for n in doc["notes"])
+    assert doc["forward_coverage"]["promotable_rows"] == 3
+    # with budget in hand the floor is not a ceiling: every row is reached, promotable first
+    doc = rc.build(budget_s=60, dry_run=True, conn=None, max_per_pass=2, **kw)
+    assert [r["key"] for r in doc["verdicts"]] == ["live_never", "live_old", "standby_new",
+                                                   "r1", "r2"]
+    assert doc["forward_coverage"]["promotable_judged_this_pass"] == 3
+    assert doc["forward_coverage"]["share"] == 1.0
+    assert loads == ["TESTFX", "TESTFX"]        # one read per pass, not one per clock
+    assert doc["forward_coverage"]["other_rows_judged_this_pass"] == 2
+    assert any("promotable forward rows judged this pass: 3/3" in x for x in rc.render(doc))
+
+
+def test_the_forward_cursor_resumes_at_the_next_unjudged_row_between_promotable_ones(
+        tmp_path: Path) -> None:
+    """Auditor should-fix: with LIVE rows interleaved, the cursor is the index IN fwd of the last
+    non-promotable row judged plus one, so no other row is skipped or judged twice."""
+    def clock(name: str, status: str) -> dict[str, Any]:
+        return {"key": name, "status": status,
+                "identity": {"family": "overnight_gap_decay", "symbol": "TESTFX",
+                             "direction": "LONG", "timeframe": "H1", "selector": "asia",
+                             "params": {}}}
+
+    fwd = [clock("L0", "LIVE"), clock("a", "RETIRED"), clock("L1", "LIVE"),
+           clock("b", "RETIRED"), clock("L2", "LIVE"), clock("c", "RETIRED"),
+           clock("d", "RETIRED")]
+    seen: list[str] = []
+
+    def ledger(key: str, ident: Any) -> list[Any]:
+        seen.append(key)
+        if len(seen) >= 5:
+            _spend()
+        return []
+
+    kw: dict[str, Any] = {"certificates": [], "universe_meta": {}, "forward": fwd,
+                          "bars_loader": lambda s, t: None, "ledger_loader": ledger,
+                          "cursor_path": tmp_path / "cursor.json",
+                          "quarantine_path": tmp_path / "quarantine.json",
+                          "report": tmp_path / "REPLICATION.json"}
+    doc = rc.build(budget_s=1.0, dry_run=False, conn=_NoRegistry(), max_per_pass=2, **kw)
+    assert seen == ["L0", "L1", "L2", "a", "b"]
+    assert doc["cursor"]["forward"] == 4                  # fwd index of "b" is 3
+    assert doc["forward_coverage"]["promotable_judged_this_pass"] == 3
+    seen.clear()
+    rc.build(budget_s=1.0, dry_run=True, conn=None, max_per_pass=2, **kw)
+    assert seen[3:] == ["c", "d"]                         # resumes after "b", skips nothing
+
+
+def _spend() -> None:
+    import time as _t
+    _t.sleep(1.1)
+
+
 def test_the_lane_never_imports_the_original_implementation() -> None:
     src = (DESK / "research" / "replication_civilization.py").read_text("utf-8")
     imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", src, re.M)

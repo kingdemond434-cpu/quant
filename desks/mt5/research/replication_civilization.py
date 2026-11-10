@@ -74,6 +74,11 @@ BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
+#: The forward lane's count is a FLOOR: after it, rows are judged until this share of the pass
+#: budget is spent (the rest is the margin under the hourly leg's own cap).
+FORWARD_FILL = 0.8
+#: Bars held in one pass, so clocks on one symbol do not each re-read its file.
+BARS_MEMO = 6
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -1443,17 +1448,43 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                           bars=bars_loader(sym, tf)))
         if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
-    for k in range(min(per_lane, len(fwd))):
-        if time.monotonic() > deadline:
+    # PROMOTABLE ROWS FIRST, STALEST FIRST (Auditor ruling 2026-11-10, L1.49). The promotion door
+    # can act only on LIVE and STANDBY rows and reads only this pass's verdicts; a blind cursor
+    # over every row reached each one once in ~235 passes (box: 16 of 1,879 a pass). So those
+    # rows are judged ahead of any other, the never-judged and the longest-unjudged first, and
+    # the count is a floor: the forward lane goes on until FORWARD_FILL of the budget is spent.
+    def _age(r: Mapping[str, Any]) -> str:
+        return str((fbook.get(str(r.get("key") or "")) or {}).get("at") or "")
+    promotable = sorted((r for r in fwd if str(r.get("status") or "") in PROMOTABLE_STATUS),
+                        key=_age)
+    # the rest keep the old cursor, by their index IN fwd, so a promotable row between two of
+    # them never shifts where the next pass resumes
+    rest_idx = [(fi + k) % len(fwd) for k in range(len(fwd))] if fwd else []
+    rest_idx = [i for i in rest_idx
+                if str(fwd[i].get("status") or "") not in PROMOTABLE_STATUS]
+    rest = [fwd[i] for i in rest_idx]
+    fill_until = t0 + FORWARD_FILL * max(1.0, float(budget_s))
+    bars_memo: dict[tuple[str, str], Bars | None] = {}
+    judged_promotable = 0
+    for k, row in enumerate(promotable + rest):
+        now = time.monotonic()
+        if now > deadline or (k >= per_lane and now > fill_until):
             notes.append("budget: forward rows left for the next pass")
             break
-        row = fwd[(fi + k) % len(fwd)]
         ident = row.get("identity") or {}
         sym, tf = str(ident.get("symbol") or ""), str(ident.get("timeframe") or "H1")
+        if (sym, tf) not in bars_memo:
+            if len(bars_memo) >= BARS_MEMO:
+                bars_memo.pop(next(iter(bars_memo)))
+            bars_memo[(sym, tf)] = bars_loader(sym, tf)
         rows.append(replicate_forward(row, meta=dict(meta_all.get(sym) or {}),
-                                      bars=bars_loader(sym, tf),
+                                      bars=bars_memo[(sym, tf)],
                                       ledger=ledger_loader(str(row.get("key") or ""), ident)))
-        cursor["forward"] = (fi + k + 1) % len(fwd)
+        # counted only once its verdict is in `rows`: the share is of rows actually judged
+        if k < len(promotable):
+            judged_promotable += 1
+        else:
+            cursor["forward"] = (rest_idx[k - len(promotable)] + 1) % len(fwd)
     recorded = record(rows, conn=conn, dry_run=dry_run, quarantine_path=quarantine_path)
     for r in rows:
         if r.get("lane") == "forward" and r.get("key"):
@@ -1473,6 +1504,14 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "unmeasured": [{"what": r["key"], "why": "; ".join(r["why"])} for r in rows
                        if r["verdict"] == UNMEASURED],
         "forward_thin_unmeasured": forward_thin_unmeasured(fbook, fwd),
+        "forward_coverage": {"promotable_rows": len(promotable),
+                             "promotable_judged_this_pass": judged_promotable,
+                             "share": (round(judged_promotable / len(promotable), 4)
+                                       if promotable else None),
+                             "other_rows_judged_this_pass":
+                                 sum(1 for r in rows if r.get("lane") == "forward")
+                                 - judged_promotable,
+                             "order": "LIVE and STANDBY first, longest-unjudged first"},
         "standing_quarantine": standing_quarantine(quarantine_path),
         "recorded": recorded, "cursor": cursor, "notes": notes,
         "independence": {"forbidden_imports": list(FORBIDDEN_IMPORTS),
@@ -1511,6 +1550,9 @@ def render(doc: Mapping[str, Any]) -> list[str]:
                  f"UNMEASURED, NOT held by the door): {thin.get('n', 0)} LIVE/STANDBY of "
                  f"{thin.get('forward_rows_with_a_verdict', 0)} judged; "
                  f"{thin.get('forward_rows_never_reached', 0)} never reached")
+    cov = doc.get("forward_coverage") or {}
+    lines.append(f"  promotable forward rows judged this pass: "
+                 f"{cov.get('promotable_judged_this_pass', 0)}/{cov.get('promotable_rows', 0)}")
     sq = doc.get("standing_quarantine") or {}
     lines.append(f"  standing quarantine: {sq.get('n', 0)} row(s) {sq.get('by_lane') or {}}")
     for note in doc.get("notes") or []:
