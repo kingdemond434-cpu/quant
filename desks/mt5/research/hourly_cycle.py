@@ -1413,6 +1413,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "event_surprise", "cross_asset_graph", "transmission_engine",
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
+                     # the HMM-regime-conditioned E[log W] shadow (pass item 54)
+                     "hmm_regime_elog_shadow",
                      # the Alpha Capture substitute: public analyst views -> PIT events
                      "alpha_capture"), "macro"),
     # execution: the execution research command
@@ -2732,6 +2734,14 @@ def macro_conditioned_sweep() -> dict:
     only; `reports/macro_conditioned_sweep.json` carries `pit` counts of what the old join admitted
     before the print was knowable, and the `tier_s` data-OS organ publishes them."""
     return _producer("macro_conditioned_sweep", "research/run_macro_conditioned_sweep.py")
+
+
+def hmm_regime_elog_shadow() -> dict:
+    """`hmm_regime_elog_shadow` (pass item 54): the Gaussian HMM filtered regime posterior as a
+    conditioning input to the per-sleeve E[log W] solve, scored walk-forward against the plain
+    solve over the trade ledger. SHADOW ONLY -- `reports/hmm_regime_elog_shadow.json` carries
+    the win rate and a verdict; it never changes live sizing and never auto-promotes."""
+    return _producer("hmm_regime_elog_shadow", "research/hmm_regime_elog_shadow.py")
 
 
 #: THE UNKNOWN-SHARE CENSUS'S ARTIFACT, the one its own `OUT` names (CRO D3 reads it). Read here
@@ -5795,6 +5805,7 @@ def main() -> None:
     nlab = _costed("null_lab", null_lab)
     rlid = _costed("research_live_identity", research_live_identity)
     mcsw = _costed("macro_conditioned_sweep", macro_conditioned_sweep)
+    hmms = _costed("hmm_regime_elog_shadow", hmm_regime_elog_shadow)
     # Once per UTC day (the leg gates itself on the document's `utc_day`); meta department.
     ucen = _costed("unknown_census", unknown_census)
     tiers = _costed("tier_s", tier_s)
@@ -6483,7 +6494,8 @@ def main() -> None:
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
-                    "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
+                    "macro_conditioned_sweep": mcsw,
+                    "hmm_regime_elog_shadow": hmms, "unknown_census": ucen,
                     "tier_s_door": tdoor, "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,
