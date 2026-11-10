@@ -1382,13 +1382,21 @@
      "series": "PAYEMS",
      "at": "08:30",
      "transform": "diff",
-     "why": "nonfarm payrolls: the largest scheduled USD and gold mover"
+     "why": "nonfarm payrolls: the largest scheduled USD and gold mover",
+     "weekdays": [
+      3,
+      4
+     ]
     },
     {
      "series": "UNRATE",
      "at": "08:30",
      "transform": "diff",
-     "why": "unemployment rate, released with payrolls"
+     "why": "unemployment rate, released with payrolls",
+     "weekdays": [
+      3,
+      4
+     ]
     },
     {
      "series": "CPIAUCSL",
@@ -1406,7 +1414,11 @@
      "series": "ICSA",
      "at": "08:30",
      "transform": "diff",
-     "why": "weekly initial jobless claims"
+     "why": "weekly initial jobless claims",
+     "weekdays": [
+      2,
+      3
+     ]
     },
     {
      "series": "RSAFS",

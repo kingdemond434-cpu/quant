@@ -566,3 +566,30 @@ def test_first_release_set_mints_exogenous_cells(tmp_desk: Path, monkeypatch) ->
     assert (f["available_time"] > f["event_time"]).all()
     plan = fs.cell_plan(built, frames, frozenset({"XAUUSD"}))
     assert any(c == "shock_z" for _s, c, _t, _y, _ch in plan)
+
+
+def test_first_chg_is_nan_across_a_missing_period() -> None:
+    p = fs.alfred_first_prints("PAYEMS", "k", _alfred_get(_alfred_rows(60)))
+    gap = p.drop(index=30).reset_index(drop=True)
+    sh = fs.release_shock(gap)
+    assert np.isnan(sh["first_chg"].iloc[30])            # the period after the hole
+    assert sh["first_chg"].iloc[31] == pytest.approx(gap["value"].iloc[31] - gap["value"].iloc[30])
+
+
+def test_off_schedule_and_weekend_releases_are_dropped_and_counted() -> None:
+    rows = _alfred_rows(40)
+    sat = pd.Timestamp(rows[20]["realtime_start"]) + pd.Timedelta(days=1)
+    assert sat.weekday() == 5
+    rows[20] = dict(rows[20], realtime_start=sat.strftime("%Y-%m-%d"))   # a Saturday
+    rows[25] = dict(rows[25], realtime_start=(pd.Timestamp(rows[25]["realtime_start"])
+                                              - pd.Timedelta(days=3)).strftime("%Y-%m-%d"))
+    counts: dict[str, int] = {}
+    p = fs.alfred_first_prints("PAYEMS", "k", _alfred_get(rows), [3, 4], counts)
+    assert counts["dropped_bulk_load"] == 12
+    assert counts["dropped_off_schedule"] == 2
+    assert len(p) == 38 and set(p["released"].dt.weekday) <= {3, 4}
+
+
+def test_release_shock_mints_two_columns_only() -> None:
+    p = fs.alfred_first_prints("PAYEMS", "k", _alfred_get(_alfred_rows(60)))
+    assert list(fs.release_shock(p).columns) == ["first_chg", "shock_z"]
