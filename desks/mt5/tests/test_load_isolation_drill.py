@@ -114,3 +114,54 @@ def test_recovery_drills_grades_both_halves(tmp_path: Path,
     assert sep["verdict"] == "FAIL" and "pf_allocator" in sep["why"]
     ids = {d for d, _, _ in rd.DRILLS}
     assert {"load", "workload_separation"} <= ids
+
+
+def _spy_arms(monkeypatch: pytest.MonkeyPatch) -> list[tuple[int, object]]:
+    calls: list[tuple[int, object]] = []
+    equal_marker = {"_equal_priority": True}
+    lower_marker = {"_lower_priority": True}
+
+    def arm(probe: object, workers: int, kwargs: object, seconds: float) -> dict:
+        calls.append((workers, kwargs))
+        return {"n": 9, "p99_ms": 1.0, "workers": workers}
+    monkeypatch.setattr(li, "_arm", arm)
+    monkeypatch.setattr(li, "_equal_spawn_kwargs", lambda: equal_marker)
+    monkeypatch.setattr(li, "_lower_spawn_kwargs", lambda: lower_marker)
+    return calls
+
+
+def test_equal_arm_is_never_spawned_beside_a_contending_trading_process(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """ARCH-07 audit must-fix: on a trading host where a trading process sits at or below this
+    process's priority, the equal-priority control would cause the contention it measures on the
+    live path -- so it spawns nothing and is recorded UNMEASURED; the separated arm still runs."""
+    calls = _spy_arms(monkeypatch)
+    census = li.separation_census([_p(11, "python desks/mt5/mt5desk/gateway.py", NORMAL)])
+    monkeypatch.setattr(li, "separation_census", lambda procs=None: census)
+    monkeypatch.setattr(li, "_probe", lambda: (lambda: None))
+    monkeypatch.setattr(li, "_own_nice", lambda: NORMAL)
+    doc = li.build(seconds=0.01)
+    load = doc["load"]
+    assert not any(k == {"_equal_priority": True} for _, k in calls), calls
+    assert [w for w, _ in calls if w] == [load["workers"]]          # only the separated arm
+    assert load["equal_priority"]["workers"] == 0
+    assert load["equal_priority"]["why"] == "control UNMEASURED on a trading host (would contend)"
+    assert load["equal_priority"]["contended_pids"] == [11]
+    assert "equal_p99_ratio" not in load and load["sensitive"] is None
+    assert load["verdict"] == "PASS" and load["separated_p99_ratio"] == 1.0
+
+
+def test_would_contend_ranks_against_this_process() -> None:
+    gw = li.separation_census([_p(11, "python desks/mt5/mt5desk/gateway.py", NORMAL)])
+    assert [t["pid"] for t in li.would_contend(gw, own=NORMAL)] == [11]     # same class
+    assert li.would_contend(gw, own=LOW) == []                              # we sit below it
+    assert li.would_contend({"trading": []}, own=NORMAL) == []              # build box / CI
+    assert li.would_contend({"verdict": "UNMEASURED", "why": "psutil absent"}, own=NORMAL)
+
+
+def test_equal_arm_still_runs_where_no_trading_process_exists(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _spy_arms(monkeypatch)
+    doc = li.load_drill(lambda: None, workers=2, contended=[])
+    assert (2, {"_equal_priority": True}) in calls
+    assert doc["verdict"] == "PASS" and doc["equal_p99_ratio"] == 1.0

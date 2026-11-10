@@ -22,6 +22,10 @@ is timed three ways for `ARM_S` seconds each:
 
 `equal` is the control: it shows what unseparated research does to the trading path on this
 host, so a drill that cannot see starvation says so (`sensitive: false`) instead of passing.
+The control is NEVER run where it would cause what it measures: when the census finds a trading
+process on this host at or below this process's own priority (or one whose priority, or this
+process's, cannot be read), the equal arm spawns nothing and is recorded as "control UNMEASURED
+on a trading host (would contend)"; the separated arm and its PASS rule are unchanged.
 `separated` is the claim: research at a lower class must leave the trading path's p99 within
 `P99_RATIO_MAX` of its baseline. Workers end themselves at a deadline even if this process dies,
 and the whole drill costs ~3 x ARM_S seconds of the cores' idle priority once an hour.
@@ -195,9 +199,29 @@ def _arm(probe: Callable[[], None], workers: int, kwargs: dict[str, Any] | None,
                 p.wait()
 
 
+def would_contend(census: dict[str, Any], own: Any = None) -> list[dict[str, Any]]:
+    """The trading processes an equal-priority busy load in THIS process's class would contend
+    with: every trading row whose rank is at or below ours. Unreadable ranks (theirs or ours)
+    count as contending -- the control is only ever run where it provably cannot reach trading."""
+    if "trading" not in census:       # census unreadable (psutil absent): cannot rule it out
+        return [{"pid": None, "why": census.get("why") or "census unreadable"}]
+    trading = list(census.get("trading") or [])
+    if not trading:
+        return []
+    mine = rank(own if own is not None else _own_nice())
+    if mine is None:
+        return trading
+    return [t for t in trading if t.get("rank") is None or t["rank"] <= mine]
+
+
+CONTEND_WHY = "control UNMEASURED on a trading host (would contend)"
+
+
 def load_drill(probe: Callable[[], None] | None = None, *, seconds: float = ARM_S,
-               workers: int | None = None) -> dict[str, Any]:
-    """The three-arm drill and its verdict."""
+               workers: int | None = None,
+               contended: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """The three-arm drill and its verdict. `contended` (from `would_contend`) non-empty means
+    the equal-priority control is skipped: no worker is spawned at this process's priority."""
     try:
         probe = probe or _probe()
     except Exception as exc:          # the probe could not be built: nothing was measured
@@ -207,7 +231,12 @@ def load_drill(probe: Callable[[], None] | None = None, *, seconds: float = ARM_
     k = workers if workers is not None else min(MAX_WORKERS, os.cpu_count() or 1)
     lower = _lower_spawn_kwargs()
     base = _arm(probe, 0, {}, seconds)
-    equal = _arm(probe, k, _equal_spawn_kwargs(), seconds)
+    if contended:
+        equal: dict[str, Any] = {
+            "n": 0, "workers": 0, "verdict": UNMEASURED, "why": CONTEND_WHY,
+            "contended_pids": [t.get("pid") for t in contended][:20]}
+    else:
+        equal = _arm(probe, k, _equal_spawn_kwargs(), seconds)
     sep = _arm(probe, k, lower, seconds) if lower is not None else {"n": 0, "workers": 0}
     out: dict[str, Any] = {"arm_s": seconds, "workers": k, "p99_ratio_max": P99_RATIO_MAX,
                            "probe": "decision_core.atr_last + bracket_spec + entry_is_legal x2",
@@ -217,19 +246,24 @@ def load_drill(probe: Callable[[], None] | None = None, *, seconds: float = ARM_
         return {**out, "verdict": UNMEASURED,
                 "why": "this process already runs at the lowest priority class: no lower class "
                        "exists to put the research load in"}
-    if not (base.get("n") and equal.get("n") and sep.get("n")):
+    if not (base.get("n") and sep.get("n") and (contended or equal.get("n"))):
         return {**out, "verdict": UNMEASURED, "why": "an arm took no samples"}
-    r_eq = equal["p99_ms"] / max(base["p99_ms"], 1e-6)
     r_sep = sep["p99_ms"] / max(base["p99_ms"], 1e-6)
-    out.update(equal_p99_ratio=round(r_eq, 3), separated_p99_ratio=round(r_sep, 3),
-               sensitive=r_eq > r_sep)
+    out["separated_p99_ratio"] = round(r_sep, 3)
+    if contended:
+        r_eq_txt = CONTEND_WHY
+        out["sensitive"] = None
+    else:
+        r_eq = equal["p99_ms"] / max(base["p99_ms"], 1e-6)
+        r_eq_txt = f"equal-priority control {r_eq:.2f}x"
+        out.update(equal_p99_ratio=round(r_eq, 3), sensitive=r_eq > r_sep)
     if r_sep > P99_RATIO_MAX:
         return {**out, "verdict": FAIL,
                 "why": f"research load one class below the trading path raised its p99 "
                        f"{r_sep:.2f}x (> {P99_RATIO_MAX}x): priority does not protect it here"}
     return {**out, "verdict": PASS,
             "why": f"{k} research workers one class lower: trading-path p99 {r_sep:.2f}x baseline "
-                   f"(equal-priority control {r_eq:.2f}x)"}
+                   f"({r_eq_txt})"}
 
 
 # ------------------------------------------------------------------------------- census
@@ -296,7 +330,7 @@ def build(now: datetime | None = None, *, seconds: float = ARM_S) -> dict[str, A
     now = now or datetime.now(tz=UTC)
     t0 = time.monotonic()
     census = separation_census()
-    load = load_drill(seconds=seconds)
+    load = load_drill(seconds=seconds, contended=would_contend(census))
     verdicts = (load["verdict"], census["verdict"])
     verdict = FAIL if FAIL in verdicts else PASS if verdicts == (PASS, PASS) else UNMEASURED
     return {"generated_utc": now.isoformat(timespec="seconds"), "host": os.uname().nodename
