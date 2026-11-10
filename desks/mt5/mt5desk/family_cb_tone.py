@@ -50,8 +50,8 @@ THE INPUT IS NAMED ON THE RECIPE (`currency`) and loaded HERE from the per-speec
 
 AN ABSENT INPUT IS A NAMED REFUSAL, NOT A CELL THAT NEVER FIRES (L1.28a): no tone file, or no
 permitted, placeable speech at all for the currency, raises `CbToneUnavailable`. It is also a
-TypeError on purpose -- the sealed builder catches only TypeError on its first family call and names the
-failure on its retry, so the refusal goes through the builder's own door.
+TypeError on purpose -- the sealed builder catches only TypeError on its first family call and
+names the failure on its retry, so the refusal goes through the builder's own door.
 
 REFUSES (returns []) on an unknown tone side or direction, or too few bars.
 """
