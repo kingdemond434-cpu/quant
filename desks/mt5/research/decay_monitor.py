@@ -61,6 +61,7 @@ fades, resizes or delays anything.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 from datetime import UTC, datetime, timedelta
@@ -296,6 +297,69 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
                               f"inside the band; fades stand as they are")
         out[key] = {**s, "verdict": v, "why": why, "sleeves": sorted(names)}
     return out
+
+
+#: Append-only ledger of every regime step that changed a verdict, and what it was worth. Kept
+#: BESIDE the roster this run judges (as queue_close does), so a test that redirects
+#: SLEEVES_FILE never writes into the desk's real data directory.
+REGIME_STEPS_NAME = "decay_regime_steps.jsonl"
+
+
+def _steps_path() -> Path:
+    return SLEEVES_FILE.parent / REGIME_STEPS_NAME
+
+
+def _regime_step_rows() -> list[dict]:
+    rows = []
+    try:
+        for line in _steps_path().read_text("utf-8").splitlines():
+            with contextlib.suppress(ValueError):
+                rows.append(json.loads(line))
+    except OSError:
+        return []
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def _log_regime_step(name: str, step: str, ladder: str, verdict_now: str, now: str,
+                     s: dict) -> dict:
+    """One row per sleeve per CHANGE of step (a step that holds across passes is one episode,
+    priced from its first pass). Returns the row this pass stands on."""
+    last = next((r for r in reversed(_regime_step_rows()) if r.get("sleeve") == name), None)
+    if last and last.get("step") == step and not last.get("ended_at"):
+        return last
+    row = {"at": now, "sleeve": name, "step": step, "ladder": ladder, "verdict": verdict_now,
+           "n_at_step": s.get("n"), "cum_r_at_step": s.get("cum_r")}
+    with contextlib.suppress(OSError), _steps_path().open("a", encoding="utf-8") as f:
+        f.write(json.dumps(row) + "\n")
+    return row
+
+
+def regime_step_values() -> dict:
+    """Realised value of every logged step from the sleeve's trades closed after it (R at full
+    risk), summed per step kind: the missed-growth / avoided-loss line the governance asks of
+    every risk modifier."""
+    per: dict[str, dict] = {}
+    for r in _regime_step_rows():
+        try:
+            at = datetime.fromisoformat(str(r.get("at")))
+        except ValueError:
+            continue
+        after = [float(t["r_multiple"]) for t in sleeve_trades(str(r.get("sleeve")))
+                 if (ts := _row_time(t)) is not None and ts > at]
+        v = decay_regime.step_value(str(r.get("step")), after, FADE_FACTOR)
+        agg = per.setdefault(str(r.get("step")), {"episodes": 0, "measured": 0, "value_r": 0.0})
+        agg["episodes"] += 1
+        if v["status"] == "MEASURED":
+            agg["measured"] += 1
+            agg["value_r"] = round(agg["value_r"] + v["value_r"], 4)
+    return per
+
+
+def _safe_step_values() -> dict:
+    try:
+        return regime_step_values()
+    except Exception as exc:  # noqa: BLE001 -- a report field, never a reason to fail the pass
+        return {"status": f"UNMEASURED: {type(exc).__name__}: {exc}"}
 
 
 def _regime(name: str, rs: list[float]) -> tuple[dict | None, str | None]:
@@ -604,6 +668,7 @@ def main(write_queue: bool = True) -> int:
     # removes the row from whichever container holds it.
     sleeves = roster_rows(doc)
     report, actions, changed = {}, [], False
+    regime_steps: list[dict] = []
 
     live = {k: v for k, v in sleeves.items()
             if isinstance(v, dict) and str(v.get("status") or "LIVE").upper() == "LIVE"}
@@ -618,7 +683,9 @@ def main(write_queue: bool = True) -> int:
         # rail and the pooled verdicts are never moved; gold_asia is exempt.
         regime, step = _regime(name, rs)
         if regime is not None:
-            v, why, step = decay_regime.adjust(name, v, why, s, regime)
+            v, why, step = decay_regime.adjust(name, v, why, s, regime, dd_hard_r=DD_HARD_R)
+            if step:
+                regime_steps.append(_log_regime_step(name, step, ladder, v, now, s))
         report[name] = {**s, "verdict": v, "why": why, "ladder_verdict": ladder,
                         "regime_class": (regime or {}).get("class", "UNMEASURED"),
                         "regime_why": (regime or {}).get("why", step),
@@ -751,6 +818,15 @@ def main(write_queue: bool = True) -> int:
         "roster_state": source, "roster_why": source_why,
         "roster_rows_seen": len(rows_seen), "roster_shape_note": shape_note,
         "verdicts": report, "actions_taken": actions,
+        # REGIME-AWARE STEPS this pass (count per kind, so a threshold drift shows) and their
+        # realised value to date from decay_regime_steps.jsonl (Rules 1 and 2).
+        "regime_steps": {
+            "this_pass": {k: sum(1 for r in report.values() if r.get("regime_step") == k)
+                          for k in ("RETIRE->FADE", "HEALTHY->FADE")},
+            "classes": {c: sum(1 for r in report.values() if r.get("regime_class") == c)
+                        for c in ("STRUCTURAL_BREAK", "PERSISTENT_BAD_REGIME",
+                                  "TRANSIENT_REGIME", "STABLE", "UNMEASURED")},
+            "value_to_date": _safe_step_values()},
         "decay_model": models, "successor_hunts": hunts, "queue": queue,
         "model_rule": (
             f"half_life_days = ln 2 / lambda from a log-linear fit of the rolling expectancy "

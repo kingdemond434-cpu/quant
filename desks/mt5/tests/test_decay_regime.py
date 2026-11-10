@@ -133,3 +133,34 @@ def test_the_monitor_falls_back_to_the_ladder_when_a_detector_raises(
     monkeypatch.setattr(D, "classify", boom)
     rc, why = M._regime("s", [WIN] * 20)
     assert rc is None and why is not None and why.startswith("UNMEASURED")
+
+
+def test_the_rail_is_passed_in_not_duplicated() -> None:
+    rc = _rc("TRANSIENT_REGIME")
+    assert D.adjust("s", "RETIRE", "r", {"max_dd_r": -12.0}, rc, dd_hard_r=-10.0)[0] == "RETIRE"
+    assert D.adjust("s", "RETIRE", "r", {"max_dd_r": -12.0}, rc, dd_hard_r=-25.0)[0] == "FADE"
+
+
+def test_step_value_prices_both_directions() -> None:
+    assert D.step_value("RETIRE->FADE", [1.0, 1.0])["value_r"] == pytest.approx(1.0)
+    assert D.step_value("HEALTHY->FADE", [-1.0, -1.0])["value_r"] == pytest.approx(1.0)
+    assert D.step_value("HEALTHY->FADE", [1.5])["value_r"] == pytest.approx(-0.75)
+    assert D.step_value("RETIRE->FADE", [])["status"] == "UNMEASURED"
+
+
+def test_a_held_step_is_one_episode_and_lands_beside_the_roster(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(M, "SLEEVES_FILE", tmp_path / "sleeves.json")
+    s = {"n": 30, "cum_r": -3.0}
+    M._log_regime_step("x", "RETIRE->FADE", "RETIRE", "FADE", "2026-11-10T00:00:00+00:00", s)
+    M._log_regime_step("x", "RETIRE->FADE", "RETIRE", "FADE", "2026-11-11T00:00:00+00:00", s)
+    M._log_regime_step("x", "HEALTHY->FADE", "HEALTHY", "FADE", "2026-11-12T00:00:00+00:00", s)
+    rows = M._regime_step_rows()
+    assert [r["step"] for r in rows] == ["RETIRE->FADE", "HEALTHY->FADE"]
+    assert (tmp_path / M.REGIME_STEPS_NAME).exists()
+    t = [{"time": "2026-11-11T05:00:00+00:00", "r_multiple": 1.5},
+         {"time": "2026-11-13T05:00:00+00:00", "r_multiple": -1.0}]
+    monkeypatch.setattr(M, "sleeve_trades", lambda _n: t)
+    v = M.regime_step_values()
+    assert v["RETIRE->FADE"]["value_r"] == pytest.approx(0.25)
+    assert v["HEALTHY->FADE"]["value_r"] == pytest.approx(0.5)

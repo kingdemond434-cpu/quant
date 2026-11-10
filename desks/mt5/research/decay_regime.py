@@ -314,13 +314,15 @@ def classify(rs: list[float]) -> dict[str, Any]:
     return out
 
 
-def adjust(name: str, verdict: str, why: str, s: dict[str, Any], rc: dict[str, Any]
-           ) -> tuple[str, str, str | None]:
-    """(verdict, why, the step taken or None). One step, two-sided; see the module docstring."""
+def adjust(name: str, verdict: str, why: str, s: dict[str, Any], rc: dict[str, Any],
+           dd_hard_r: float = -25.0) -> tuple[str, str, str | None]:
+    """(verdict, why, the step taken or None). One step, two-sided; see the module docstring.
+    `dd_hard_r` is the ladder's survival rail; decay_monitor passes its own DD_HARD_R so the
+    two can never drift apart."""
     if _is_exempt(name):
         return verdict, why, None
     cls = rc.get("class")
-    dd_rail = float(s.get("max_dd_r") or 0.0) <= -25.0      # decay_monitor.DD_HARD_R
+    dd_rail = float(s.get("max_dd_r") or 0.0) <= dd_hard_r
     if cls == "TRANSIENT_REGIME" and verdict == "RETIRE" and not dd_rail:
         return "FADE", (f"regime-aware: {rc['why']} -- the t-rule RETIRE ({why}) is a bad "
                         f"stretch, not a dead edge; half risk, not zero"), "RETIRE->FADE"
@@ -328,3 +330,25 @@ def adjust(name: str, verdict: str, why: str, s: dict[str, Any], rc: dict[str, A
         return "FADE", (f"regime-aware: {cls.lower()}: {rc['why']}; half risk until the record "
                         f"turns (the ladder alone: {why})"), "HEALTHY->FADE"
     return verdict, why, None
+
+
+# --------------------------------------------------------------------------- what a step was worth
+def step_value(step: str, r_after: list[float], fade_factor: float = 0.5) -> dict[str, Any]:
+    """The realised value of one step, in R at the sleeve's full risk, from the trades it closed
+    AFTER the step (GROWTH_GOVERNANCE Rules 1 and 2: a risk modifier proves itself or is billed).
+
+    RETIRE->FADE kept `fade_factor` of the risk the ladder would have zeroed: worth
+    fade_factor * sum(R after) (positive = growth kept, negative = loss taken).
+    HEALTHY->FADE removed (1 - fade_factor) of the risk: worth -(1 - fade_factor) * sum(R after)
+    (positive = loss avoided, negative = growth forgone). Fewer than one trade after: UNMEASURED.
+    """
+    if not r_after:
+        return {"value_r": None, "n_after": 0, "status": "UNMEASURED"}
+    tot = sum(r_after)
+    if step == "RETIRE->FADE":
+        v = fade_factor * tot
+    elif step == "HEALTHY->FADE":
+        v = -(1.0 - fade_factor) * tot
+    else:
+        return {"value_r": None, "n_after": len(r_after), "status": "UNKNOWN_STEP"}
+    return {"value_r": round(v, 4), "n_after": len(r_after), "status": "MEASURED"}
