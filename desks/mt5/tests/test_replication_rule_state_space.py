@@ -72,9 +72,11 @@ def _bars(df: pd.DataFrame) -> rc.Bars:
 
 
 def _same(orig: list, ours: list) -> bool:
+    """Order for order. Prices to 1e-7 on a ~1.0 instrument: a filter written twice agrees to
+    rounding, not to the bit (the widest gap measured here is 1.1e-9, on a Kalman target)."""
     return len(orig) == len(ours) and all(
         pd.Timestamp(o.time).value == q.t_ns and int(o.side) == q.side
-        and abs(float(o.stop) - q.stop) < 1e-9 and abs(float(o.target) - q.target) < 1e-9
+        and abs(float(o.stop) - q.stop) < 1e-7 and abs(float(o.target) - q.target) < 1e-7
         and int(o.ttl_bars) == q.ttl_bars for o, q in zip(orig, ours, strict=True))
 
 
@@ -112,7 +114,11 @@ def test_every_framework_family_has_a_written_rule_that_sets_its_own_side() -> N
         taken = set(inspect.signature(fss.FAMILIES[name]).parameters) - {"df"}
         assert set(spec.defaults) == taken, (name, set(spec.defaults) ^ taken)
         for key, value in spec.defaults.items():
-            assert inspect.signature(fss.FAMILIES[name]).parameters[key].default == value
+            default = inspect.signature(fss.FAMILIES[name]).parameters[key].default
+            if key == "pair_symbol":             # required by the family: no default to mirror
+                assert default is inspect.Parameter.empty and value is None
+            else:
+                assert default == value, (name, key)
 
 
 @pytest.mark.parametrize("params", [
@@ -139,8 +145,8 @@ def test_ou_reversion_matches_the_registered_family(params: dict) -> None:
 
 
 @pytest.mark.parametrize("params", [
-    {}, {"delta": 1e-3, "entry_z": 1.5, "target_frac": 0.5},
-    {"warmup": 200, "atr_n": 14, "stop_atr": 1.5, "ttl_bars": 12},
+    {"min_target_atr": 0.0}, {"delta": 1e-3, "entry_z": 1.5, "target_frac": 0.5},
+    {"warmup": 200, "atr_n": 14, "stop_atr": 1.5, "ttl_bars": 12, "min_target_atr": 0.2},
 ])
 def test_kalman_pair_matches_the_registered_family(params: dict,
                                                    monkeypatch: pytest.MonkeyPatch) -> None:
@@ -193,16 +199,61 @@ def test_they_stand_aside_where_the_families_do(monkeypatch: pytest.MonkeyPatch)
     cases = (("kalman_trend", {"side_mode": "drift"}), ("kalman_trend", {"q_slope": 0.0}),
              ("kalman_trend", {"warmup": 5000}), ("ou_reversion", {"hl_min": 50.0, "hl_max": 10.0}),
              ("ou_reversion", {"hold_mult": 0.5}), ("ou_reversion", {"window": 2000}),
-             ("kalman_pair", {}), ("kalman_pair", {"pair_symbol": "PEERFX", "delta": 1.0}),
-             ("copula_pair", {}), ("copula_pair", {"pair_symbol": "PEERFX", "nu": 2.0}),
+             ("kalman_pair", {"pair_symbol": "PEERFX", "delta": 1.0}),
+             ("kalman_pair", {"pair_symbol": "PEERFX", "warmup": 5000}),
+             ("copula_pair", {"pair_symbol": "PEERFX", "nu": 2.0}),
              ("copula_pair", {"pair_symbol": "PEERFX", "kind": "clayton"}),
              ("garch_shock", {"side_mode": "drift"}), ("garch_shock", {"vol_state": "wild"}),
              ("garch_shock", {"window": 5000}))
     for family, params in cases:
         assert fss.FAMILIES[family](df, **params) == [], (family, params)
         assert _ours(family, df, params) == [], (family, params)
-    # a named peer with no bars: the family raises (a build failure by name), the lane has no
-    # second leg to rebuild from and emits nothing
-    with pytest.raises(ValueError, match="no H1 bars"):
-        fss.family_kalman_pair(df, pair_symbol="PEERFX2")
-    assert _ours("kalman_pair", df, {"pair_symbol": "PEERFX2"}) == []
+    # WHERE THE FAMILY RAISES (a build failure by name) the lane has no second leg to rebuild
+    # from and emits nothing: no peer named, a peer with no bars, a peer store fallen behind.
+    for family in ("kalman_pair", "copula_pair"):
+        with pytest.raises(TypeError, match="pair_symbol"):
+            fss.FAMILIES[family](df)
+        with pytest.raises(ValueError, match="no pair_symbol"):
+            fss.FAMILIES[family](df, pair_symbol="")
+        with pytest.raises(ValueError, match="no H1 bars"):
+            fss.FAMILIES[family](df, pair_symbol="PEERFX2")
+        for params in ({}, {"pair_symbol": ""}, {"pair_symbol": "PEERFX2"}):
+            assert _ours(family, df, params) == [], (family, params)
+    _wire_peer(monkeypatch, peer[peer.index <= df.index[-8]])
+    with pytest.raises(ValueError, match="bars before this cell's last bar"):
+        fss.family_kalman_pair(df, pair_symbol="PEERFX")
+    assert _ours("kalman_pair", df, {"pair_symbol": "PEERFX"}) == []
+    # ...and six bars behind is still a live peer, on both sides
+    _wire_peer(monkeypatch, peer[peer.index <= df.index[-7]])
+    params = {"pair_symbol": "PEERFX", "min_target_atr": 0.0}
+    orig = fss.family_kalman_pair(df, **params)
+    assert orig and _same(orig, _ours("kalman_pair", df, params))
+
+
+def test_a_value_exactly_at_the_threshold_signals() -> None:
+    """THE TIE SIDE IS WRITTEN, NOT LEFT TO THE LAST BIT: every rule says ">=" and "<=", so a
+    statistic exactly at the threshold signals, and one a hair inside it does not."""
+    v = np.array([0.0, 2.0, 2.0, 0.0, np.nan, -2.0, -1.9999999999, 2.0000000001, np.nan, 2.0])
+    up, down = rc._crossings(v, 2.0)
+    assert up.tolist() == [1, 7, 9] and down.tolist() == [5]
+    inside = np.nextafter(2.0, 0.0)
+    up, down = rc._crossings(np.array([0.0, inside, -inside]), 2.0)
+    assert up.size == 0 and down.size == 0
+
+
+def test_the_blocks_are_cut_by_the_calendar_not_by_the_first_bar() -> None:
+    """A frame that starts later cuts the same blocks, so a forward clock's shorter frame trades
+    the rule the certificate was judged on -- and the lane's cut is the family's own."""
+    df = _trending()
+    stamps = df.index.as_unit("ns").asi8
+    for back, every in ((500, 500), (1000, 250), (200, 500)):
+        ours = rc._calendar_blocks(stamps, back, every)
+        assert [k for k, _ in ours] == fss._refit_starts(df.index, back, every).tolist()
+        assert ours and ours[-1][1] == len(df) and all(k >= back for k, _ in ours)
+        late = rc._calendar_blocks(stamps[137:], back, every)
+        assert {stamps[137 + k] for k, _ in late} <= {stamps[k] for k, _ in ours}
+    full = _ours("kalman_trend", df, {"warmup": 200})
+    tail = _ours("kalman_trend", df.iloc[700:], {"warmup": 200})
+    cut = df.index.as_unit("ns").asi8[700 + 200 + 500]
+    assert tail and {(o.t_ns, o.side) for o in tail if o.t_ns >= cut} == {
+        (o.t_ns, o.side) for o in full if o.t_ns >= cut}
