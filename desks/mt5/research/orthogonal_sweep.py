@@ -687,6 +687,11 @@ def _surface_for(symbol: str) -> dict | None:
     return got if isinstance(got, dict) and got else None
 
 
+#: Scheduled-release instants recovered from first prints (`futures_state.CALENDAR_BACKFILL`
+#: writes it; the path is restated here because this reader must not import that leg).
+EVENT_BACKFILL_DIR = BASE / "data" / "calendar_backfill"
+
+
 @lru_cache(maxsize=1)
 def _event_index():
     """Recover point-in-time event timestamps already persisted by the calendar miner."""
@@ -700,9 +705,20 @@ def _event_index():
     # the calendar holds from 2026-08-23. A one-week calendar can never give an event family 60
     # fire days. Every vintage is read now, JSON and JSON lines alike; the index is de-duplicated
     # by instant, so overlapping snapshots add no event twice.
+    # AND THE BACKFILLED HISTORY (2026-11-10). The vintage directory holds only what this desk
+    # polled itself: 896 events from 2026-08-23, twelve weeks. A family needs 60 fire days across
+    # the CPCV folds, so 25,683 event_reaction specs sat parked `never_fires`, 6,298
+    # `short_history_after_cut`, and not one was ever judged. Global data recovers the scheduled
+    # release instants of the US first prints from ALFRED into `EVENT_BACKFILL_DIR` -- a sibling
+    # directory on purpose: the candidate compiler reads every calendar-shaped row under
+    # `data/intelligence/**` as a donation and would mint a cell per historical release. Same
+    # row shape, same `event_date` key, de-duplicated by instant with the polled calendar.
     root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
+    paths = sorted(root.glob("*.json*")) if root.exists() else []
+    if EVENT_BACKFILL_DIR.exists():
+        paths += sorted(EVENT_BACKFILL_DIR.glob("*.jsonl.gz"))
     values = []
-    for path in sorted(root.glob("*.json*")) if root.exists() else []:
+    for path in paths:
         for row in _rows(path):
             if not isinstance(row, dict):
                 continue

@@ -35,3 +35,44 @@ def test_mappings_pass_through_and_odd_shapes_never_raise():
     assert fi.events_for_symbol(42, "EURUSD") == []
     assert fi.events_for_symbol(["not a date", "2026-09-10"], "EURUSD") == [
         {"symbol": "EURUSD", "at": "2026-09-10T00:00:00+00:00"}]
+
+
+def test_the_event_index_reads_the_backfilled_history_beside_the_polled_calendar(
+        tmp_path, monkeypatch):
+    """2026-11-10: the polled calendar is twelve weeks long, so no event_reaction spec could
+    reach 60 fire days and none was ever judged. The backfill lives in a sibling directory (the
+    compiler mints a cell per row under data/intelligence) and the index must read both."""
+    import gzip
+    import json
+
+    for extra in (str(DESK / "research"),):
+        if extra not in sys.path:
+            sys.path.insert(0, extra)
+    import orthogonal_sweep as osw
+
+    polled = tmp_path / "data" / "intelligence" / "ff_calendar_vintage"
+    polled.mkdir(parents=True)
+    (polled / "discoveries_1.json").write_text(json.dumps([
+        {"event_date": "2026-09-04T08:30:00-04:00", "title": "Non-Farm Employment Change"}]),
+        encoding="utf-8")
+    back = tmp_path / "data" / "calendar_backfill"
+    back.mkdir(parents=True)
+    rows = [{"event_date": "2015-03-06T13:30:00+00:00", "series": "PAYEMS", "backfill": True},
+            {"event_date": "2015-04-03T12:30:00+00:00", "series": "PAYEMS", "backfill": True},
+            # the same instant the polled calendar holds: one event, not two
+            {"event_date": "2026-09-04T12:30:00+00:00", "series": "PAYEMS", "backfill": True}]
+    with gzip.open(back / "backfill_fred_usrel_payems.jsonl.gz", "wt", encoding="utf-8") as fh:
+        fh.write("\n".join(json.dumps(r) for r in rows) + "\n")
+    (back / "notes.txt").write_text("not a calendar", encoding="utf-8")
+    monkeypatch.setattr(osw, "BASE", tmp_path)
+    monkeypatch.setattr(osw, "EVENT_BACKFILL_DIR", back)
+    osw._event_index.cache_clear()               # one reading per process, by design
+    idx = osw._event_index()
+    assert [t.isoformat() for t in idx] == ["2015-03-06T13:30:00+00:00",
+                                            "2015-04-03T12:30:00+00:00",
+                                            "2026-09-04T12:30:00+00:00"]
+    # no backfill directory: the polled calendar alone, exactly as before
+    monkeypatch.setattr(osw, "EVENT_BACKFILL_DIR", tmp_path / "absent")
+    osw._event_index.cache_clear()
+    assert [t.isoformat() for t in osw._event_index()] == ["2026-09-04T12:30:00+00:00"]
+    osw._event_index.cache_clear()               # leave no temp-dir reading behind
