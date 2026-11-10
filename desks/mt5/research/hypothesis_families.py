@@ -1025,6 +1025,127 @@ def retarget_params(params: Mapping[str, Any], old: str, new: str) -> dict[str, 
     return out
 
 
+#: Families the sealed judge hands the ROW's instrument whatever params say
+#: (`external_gauntlet.build_cell` sets `call_params["symbol"] = sym`): a stale name in their
+#: params is wrong on paper only, so their rows are counted and never rewritten.
+JUDGE_SUPPLIES_SYMBOL = frozenset({"carry"})
+MOVED_VOID = HYP / "moved_cell_void.json"
+
+
+def _named(value: Any) -> str:
+    if isinstance(value, list) and len(value) == 1:
+        value = value[0]
+    return value.strip().upper() if isinstance(value, str) else ""
+
+
+def repair_moved_cells(rows: list[dict[str, Any]], *,
+                       identity_fn: Callable[[dict[str, Any]], str] | None = None,
+                       now: datetime | None = None
+                       ) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
+    """Stored cells that still name ANOTHER instrument as the one they trade -> (rows, census,
+    void entries).
+
+    WHY (box read 2026-11-10 16:05Z). Four doors moved a cell to a new instrument with its
+    donor's params untouched; they are fixed, but 7,462 stored rows still carry the old name.
+    For `carry` (6,189) the sealed judge supplies the row's instrument, so nothing ran wrong.
+    For every other family (1,273: entry_conditioned, carry_risk_off, forced_flow,
+    event_reaction) the family was handed the donor's instrument on the new one's bars, and
+    every verdict on those specs is VOID. This pass rewrites `params.symbol` to the row's own
+    instrument (and `input_symbol` / `fx_symbol` only where they repeated that same stale name:
+    an input that names something else is the cell's second leg). The corrected cell has a new
+    identity, so it is preregistered and judged as a NEW trial; the old spec's verdicts stay in
+    the ledger and its trials stay charged -- nothing is deleted, nothing is un-counted. The
+    old spec is returned as a void entry so certificates, clocks and sleeves built on it can be
+    named. A corrected cell identical to one already in the docket is the same executable twice
+    and is merged into it (counted), exactly as the docket's own dedup would.
+
+    SELECTED BY THE MISMATCH, NEVER BY ORIGIN, and the census is by origin and family and by
+    the day each row was first seen: a count that grows for any origin after the four fixes are
+    on the box is a fifth door. Idempotent: a second pass finds nothing to rewrite."""
+    ident = identity_fn or identity
+    stamp = (now or datetime.now(tz=UTC)).isoformat()
+    census: dict[str, Any] = {"rows": len(rows), "mismatched": 0, "rewritten": 0,
+                              "merged_into_existing": 0, "skipped_judge_supplies_symbol": 0,
+                              "repaired_earlier": 0, "by_family_origin": {},
+                              "by_first_seen_day": {}, "by_origin_skipped": {}}
+    present = {ident(r) for r in rows if isinstance(r, dict)}
+    out: list[dict[str, Any]] = []
+    void: list[dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            out.append(r)
+            continue
+        params = r.get("params")
+        sym = _sym(r)
+        stale = _named(params.get("symbol")) if isinstance(params, dict) else ""
+        if not stale or not sym or stale == sym.upper():
+            if r.get("moved_cell_repair"):
+                census["repaired_earlier"] += 1
+            out.append(r)
+            continue
+        fam, origin = _fam(r), str(r.get("origin") or r.get("source") or "unknown")
+        census["mismatched"] += 1
+        if fam in JUDGE_SUPPLIES_SYMBOL:
+            census["skipped_judge_supplies_symbol"] += 1
+            census["by_origin_skipped"][origin] = census["by_origin_skipped"].get(origin, 0) + 1
+            out.append(r)
+            continue
+        key = f"{fam}|{origin}"
+        census["by_family_origin"][key] = census["by_family_origin"].get(key, 0) + 1
+        day = str(r.get("first_seen") or "unknown")[:10]
+        census["by_first_seen_day"][day] = census["by_first_seen_day"].get(day, 0) + 1
+        old_identity = ident(r)
+        fixed = dict(params)
+        for k in TRADED_SYMBOL_KEYS:
+            if _named(fixed.get(k)) == stale:
+                fixed[k] = [sym] if isinstance(fixed[k], list) else sym
+        void.append({"spec_id": r.get("spec_id"), "symbol": sym, "family": fam,
+                     "named": stale, "origin": origin, "candidate_id": r.get("candidate_id"),
+                     "identity_sha": hashlib.sha256(old_identity.encode()).hexdigest()[:16],
+                     "first_recorded": stamp})
+        candidate = {**r, "params": fixed}
+        new_identity = ident(candidate)
+        if new_identity in present:
+            census["merged_into_existing"] += 1
+            continue
+        present.discard(old_identity)
+        present.add(new_identity)
+        r["params"] = fixed
+        r["moved_cell_repair"] = {"at": stamp, "named": stale, "void_spec_id": r.get("spec_id")}
+        for k in ("spec_id", "prereg_hash", "prereg_status", "dup_status"):
+            r.pop(k, None)                  # stamps of the OLD executable; the writer re-derives
+        census["rewritten"] += 1
+        out.append(r)
+    return out, census, void
+
+
+def record_moved_void(void: list[dict[str, Any]], path: Path | None = None) -> dict[str, Any]:
+    """Add this pass's void specs to the standing list (keyed by the old identity, first
+    recording kept). Never raises; an unwritable file is named, not hidden."""
+    p = path or MOVED_VOID
+    doc = _read(p)
+    known = {str(e.get("identity_sha")): e for e in (doc.get("void") if isinstance(doc, dict)
+                                                     else None) or [] if isinstance(e, dict)}
+    added = 0
+    for e in void:
+        if str(e["identity_sha"]) not in known:
+            known[str(e["identity_sha"])] = e
+            added += 1
+    by_family: dict[str, int] = {}
+    for e in known.values():
+        by_family[str(e.get("family"))] = by_family.get(str(e.get("family")), 0) + 1
+    ok = True
+    if added or not p.exists():
+        ok = _atomic_write(p, json.dumps({
+            "what": "specs judged with another instrument named as the traded one; every "
+                    "verdict, certificate, clock or sleeve resting on one is VOID until its "
+                    "corrected cell is judged. Trials stay charged.",
+            "n": len(known), "by_family": by_family,
+            "void": sorted(known.values(), key=lambda e: str(e.get("identity_sha")))},
+            indent=1, default=str))
+    return {"added": added, "n": len(known), "by_family": by_family, "written": ok}
+
+
 _SAFE = ("source", "producer", "origin", "title", "url", "source_title", "source_url",
          "mechanism", "mechanism_status", "mechanism_note", "timeframe", "chart")
 
@@ -1192,6 +1313,8 @@ class Pending:
         self.report_path = report_path
         self.ledger_path = ledger_path
         self.identity_fn = identity_fn
+        self.moved_void: list[dict[str, Any]] = []
+        self.void_path: Path | None = None
 
     def commit(self, written: Iterable[dict[str, Any]], *, publish_report: bool = True
                ) -> dict[str, Any]:
@@ -1204,7 +1327,9 @@ class Pending:
         lines = 0
         if report_ok and durable:
             lines = append_reaim_ledger(durable, self.ledger_path)
-        return {"children": len(self.children), "durable": len(durable),
+        voided = ({"moved_void": record_moved_void(self.moved_void, self.void_path)}
+                  if self.moved_void else {})
+        return {"children": len(self.children), "durable": len(durable), **voided,
                 "report_written": report_ok, "ledger_lines": lines,
                 "why": None if report_ok else "report write failed: ledger NOT written"}
 
@@ -1266,8 +1391,14 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
         syms = {_sym(r).upper() for r in rows} - {""}
         clusters, cmeta = load_clusters(
             syms, path=(hyp_dir / CLUSTERS.name) if hyp_dir is not None else None)
+        # REPAIR FIRST: the census and the re-aim must see the cell each row actually is.
+        void: list[dict[str, Any]] = []
+        moved: dict[str, Any] = {"status": "UNMEASURED"}
+        if os.environ.get("QUANT_MOVED_CELL_REPAIR", "1") != "0":
+            rows, moved, void = repair_moved_cells(rows, identity_fn=identity_fn, now=now)
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
                               clusters=clusters, done=reaimed_parents(ledger), now=now)
+        rep["moved_cells"] = moved
         # THE REVERT PATH, not a throttle: QUANT_FAMILY_REAIM=0 keeps the check, the stamps and
         # the census and mints no descendant (the duplicates were never removed either way).
         if os.environ.get("QUANT_FAMILY_REAIM", "1") == "0":
@@ -1279,7 +1410,10 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
             rep["reaim_enabled"] = True
         out = rows + children
         doc = build(out, clusters=clusters, cluster_meta=cmeta, reaim_report=rep)
-        return out, summary(doc), Pending(children, doc, report_path, ledger, identity_fn)
+        pending = Pending(children, doc, report_path, ledger, identity_fn)
+        pending.moved_void = void
+        pending.void_path = (hyp_dir / MOVED_VOID.name) if hyp_dir is not None else MOVED_VOID
+        return out, summary(doc), pending
     except Exception as exc:
         return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
     finally:
@@ -1342,7 +1476,7 @@ def summary(doc: Mapping[str, Any]) -> dict[str, Any]:
     out["daily_trend"] = (doc.get("daily") or {}).get("trend")
     out["intake"] = {k: (doc.get("intake") or {}).get(k) for k in
                      ("checked", "by_status", "duplicate_share", "reaimed",
-                      "no_lawful_empty_target")}
+                      "no_lawful_empty_target", "moved_cells")}
     out["report"] = "desks/mt5/reports/HYPOTHESIS_FAMILIES.json"
     return out
 

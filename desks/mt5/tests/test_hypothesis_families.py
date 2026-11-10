@@ -597,3 +597,54 @@ def test_every_path_that_moves_a_cell_rewrites_its_traded_instrument() -> None:
     # the intake's donor symbol comes from the registry in whatever case it was stored
     assert hf.retarget_params({"symbol": "USDSGD", "risk_symbol": "JPN225"}, "usdsgd",
                               "ADAUSD") == {"symbol": "ADAUSD", "risk_symbol": "JPN225"}
+
+
+def test_stored_moved_cells_are_repaired_counted_and_named_void(tmp_path) -> None:
+    """Box 2026-11-10: 7,462 stored rows name another instrument as the traded one. carry is
+    left alone (the sealed judge supplies the row's instrument); every other family is rewritten
+    to its own instrument, judged as a NEW cell, and its old spec is named void. Nothing is
+    un-charged and the pass is idempotent."""
+    rows = [
+        {"symbol": "ADAUSD", "family": "carry_risk_off", "origin": "independence_intake",
+         "params": {"symbol": "USDSGD", "risk_symbol": "JPN225", "mode": "harvest"},
+         "spec_id": "aef9", "prereg_hash": "x", "prereg_status": "PREREGISTERED",
+         "first_seen": "2026-11-05T15:44:21+00:00"},
+        {"symbol": "ADAUSD", "family": "forced_flow", "origin": "rank_recovery",
+         "params": {"symbol": ["XAUUSD"], "input_symbol": "XAUUSD", "fx_symbol": "USDJPY"},
+         "spec_id": "9f3d"},
+        {"symbol": "CHFDKK", "family": "carry", "origin": "independence_intake",
+         "params": {"symbol": "EURUSD"}, "spec_id": "c1"},
+        {"symbol": "EURUSD", "family": "carry_risk_off", "params": {"symbol": "EURUSD"}},
+        {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_symbol": "DXY"}},
+        # its corrected twin is already in the docket: the same executable twice
+        {"symbol": "EURUSD", "family": "carry_risk_off", "origin": "x",
+         "params": {"symbol": "GBPUSD"}, "spec_id": "dup"},
+        {"symbol": "GER40", "family": "carry_risk_off", "params": {"mode": "harvest"}},
+    ]
+    out, census, void = hf.repair_moved_cells(rows)
+    assert census["mismatched"] == 4 and census["rewritten"] == 2
+    assert census["skipped_judge_supplies_symbol"] == 1 and census["merged_into_existing"] == 1
+    assert census["by_family_origin"] == {"carry_risk_off|independence_intake": 1,
+                                          "forced_flow|rank_recovery": 1, "carry_risk_off|x": 1}
+    assert census["by_first_seen_day"]["2026-11-05"] == 1
+    assert len(out) == 6 and [v["spec_id"] for v in void] == ["aef9", "9f3d", "dup"]
+    a, b, c = out[0], out[1], out[2]
+    assert a["params"] == {"symbol": "ADAUSD", "risk_symbol": "JPN225", "mode": "harvest"}
+    assert "spec_id" not in a and "prereg_hash" not in a          # re-derived by the writer
+    assert a["moved_cell_repair"]["named"] == "USDSGD"
+    assert a["moved_cell_repair"]["void_spec_id"] == "aef9"
+    # the second leg that names something else is the cell's own and is left alone
+    assert b["params"] == {"symbol": ["ADAUSD"], "input_symbol": "ADAUSD", "fx_symbol": "USDJPY"}
+    assert c["params"] == {"symbol": "EURUSD"} and c["spec_id"] == "c1"
+    assert out[4]["params"] == {"input_symbol": "DXY"}            # an input, never a mismatch
+    assert out[5]["params"] == {"mode": "harvest"}                # no key: not this pass's
+    again, census2, void2 = hf.repair_moved_cells(out)
+    assert census2["rewritten"] == 0 and census2["mismatched"] == 1 and void2 == []
+    assert census2["repaired_earlier"] == 2 and again == out
+    # the void list is standing, keyed by the old executable, and a re-run adds nothing
+    path = tmp_path / "moved_cell_void.json"
+    first = hf.record_moved_void(void, path)
+    assert first == {"added": 3, "n": 3, "written": True,
+                     "by_family": {"carry_risk_off": 2, "forced_flow": 1}}
+    assert hf.record_moved_void(void, path)["added"] == 0
+    assert len(json.loads(path.read_text("utf-8"))["void"]) == 3
