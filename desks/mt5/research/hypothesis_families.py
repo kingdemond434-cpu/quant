@@ -1258,29 +1258,41 @@ def refuse_executable_copies(rows: list[dict[str, Any]], fresh: set[str], *,
     key first, so a new copy never displaces an old row; among fresh copies the first is kept.
     Each copy that was judged was charged as a trial and stays charged; a refused copy is
     never judged, so it is never charged -- it was never a distinct test. `refuse=False`
-    (QUANT_EXECUTABLE_DEDUP=0) counts and removes nothing."""
+    (QUANT_EXECUTABLE_DEDUP=0) counts and removes nothing.
+
+    THE INTAKE KEY IS THE ROW'S OWN IDENTITY WITH ONLY THE UNREAD PARAMS REMOVED (audit of
+    c6329f7faf93). Anything the docket's identity distinguishes -- a chart, a session, a side,
+    a condition, wherever the writer keeps it -- stays distinct by construction, and only an
+    `input_symbol` / `symbol` alias can collapse. A narrower key would refuse real hypotheses
+    as copies, which is breadth destroyed. The first 50 refused rows are named so a wrong
+    refusal can be seen."""
     ident = identity_fn or identity
     out: list[dict[str, Any]] = []
     held: dict[str, int] = {}
     report: dict[str, Any] = {"families": sorted(EXECUTABLE_UNREAD), "examined": 0,
                               "executables": 0, "stored_copies": 0, "fresh_refused": 0,
                               "refuse_enabled": bool(refuse), "refused_by_origin": {},
+                              "refused_first_50": [],
                               "stored_copies_by_symbol": {}}
     keyed: list[tuple[dict[str, Any], str | None, bool]] = []
+    by_key_symbol: dict[str, str] = {}
     for r in rows:
         if not isinstance(r, dict) or _fam(r) not in EXECUTABLE_UNREAD:
             keyed.append((r, None, False))
             continue
         report["examined"] += 1
-        key = executable_key(_sym(r), _fam(r), r.get("params"))
+        unread = EXECUTABLE_UNREAD[_fam(r)]
+        params = r.get("params") if isinstance(r.get("params"), dict) else {}
+        key = ident({**r, "params": {k: v for k, v in params.items() if k not in unread}})
         is_fresh = ident(r) in fresh
         keyed.append((r, key, is_fresh))
+        by_key_symbol.setdefault(key, _sym(r).upper())
         if not is_fresh:
             held[key] = held.get(key, 0) + 1
     for key, n in held.items():
         if n > 1:
             report["stored_copies"] += n - 1
-            sym = json.loads(key)["symbol"]
+            sym = by_key_symbol.get(key, "")
             report["stored_copies_by_symbol"][sym] = (
                 report["stored_copies_by_symbol"].get(sym, 0) + n - 1)
     for r, key, is_fresh in keyed:
@@ -1291,6 +1303,10 @@ def refuse_executable_copies(rows: list[dict[str, Any]], fresh: set[str], *,
             report["fresh_refused"] += 1
             who = str(r.get("origin") or r.get("producer") or r.get("source") or "unknown")
             report["refused_by_origin"][who] = report["refused_by_origin"].get(who, 0) + 1
+            if len(report["refused_first_50"]) < 50:
+                report["refused_first_50"].append({
+                    "symbol": _sym(r), "family": _fam(r), "params": r.get("params"),
+                    "origin": who, "candidate_id": r.get("candidate_id")})
             if refuse:
                 continue
             out.append(r)

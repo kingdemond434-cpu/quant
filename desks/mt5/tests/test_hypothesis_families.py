@@ -748,6 +748,34 @@ def test_one_executable_is_one_key_and_a_fresh_copy_is_refused(tmp_path) -> None
     g = {"symbol": "USDZAR", "family": "carry", "params": {}}
     h = {"symbol": "USDZAR", "family": "carry", "params": {"input_symbol": "eBay"}}
     assert hf.refuse_executable_copies([g, h], fresh={hf.identity(g), hf.identity(h)})[0] == [g]
+    assert rep["refused_first_50"] == [{"symbol": "CHFNOK", "family": "carry", "origin": "moat",
+                                        "params": c["params"], "candidate_id": None}]
+    # ANYTHING IDENTITY DISTINGUISHES STAYS DISTINCT: a chart, a session, any read param. Only
+    # an unread alias collapses. Refusing these would delete real hypotheses.
+    m15 = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15"}}
+    m5 = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M5"}}
+    asia = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15",
+                                                              "session": "asia"}}
+    ny = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15", "session": "ny"}}
+    loud = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15",
+                                                              "require_quiet": False}}
+    alias = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15",
+                                                               "input_symbol": "GBPJPY"}}
+    batch = [m15, m5, asia, ny, loud, alias]
+    kept, seen = hf.refuse_executable_copies(batch, fresh={hf.identity(r) for r in batch})
+    assert kept == [m15, m5, asia, ny, loud] and seen["fresh_refused"] == 1
+
+    # the writer's own identity is the key's base, whatever it distinguishes outside params
+    def wide(row: dict) -> str:
+        return hf.identity(row) + "|" + str(row.get("timeframe"))
+    x = {"symbol": "EURNOK", "family": "carry", "params": {}, "timeframe": "H1"}
+    y = {"symbol": "EURNOK", "family": "carry", "params": {"input_symbol": "eBay"},
+         "timeframe": "M15"}
+    z = {"symbol": "EURNOK", "family": "carry", "params": {"input_symbol": "eBay"},
+         "timeframe": "H1"}
+    kept, _ = hf.refuse_executable_copies([x, y, z], fresh={wide(x), wide(y), wide(z)},
+                                          identity_fn=wide)
+    assert kept == [x, y]
 
     # the stores, grouped: certificates, clocks and sleeves, each copy by its own name
     gates = {"cpcv": {"passed": True}}
