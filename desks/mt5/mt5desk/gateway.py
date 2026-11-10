@@ -55,7 +55,7 @@ from mt5desk.decision_core import (
     CLOSE_HOUR,
     GOLD_SYMBOL,
     MAX_TOTAL_REJECTIONS,
-    PROMOTED_MIN_EQUITY,
+    FUSION_RUIN_FLOOR_EUR,
     REJECTION_STREAK_WINDOW_H,
     addon_desc,
     addon_entries,
@@ -5200,10 +5200,13 @@ def main() -> None:
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
-    if equity < PROMOTED_MIN_EQUITY:
+    # THE RUIN LINE, NOT THE OLD SIZE LINE (zuck 2026-11-05, D-20261105-042): below EUR 300 the
+    # promoted sleeves used to go dormant wholesale; each order is now judged on its own size
+    # (sovereignty, the 10% per-trade rail), so only below the ruin floor do they stand down.
+    if equity < FUSION_RUIN_FLOOR_EUR:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():
-            log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
+            log(f"equity {equity:.0f} < {FUSION_RUIN_FLOOR_EUR:.0f}: promoted sleeves dormant")
     # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
     # trade. Deferred sleeves are named in the log rather than dropped quietly.
     #

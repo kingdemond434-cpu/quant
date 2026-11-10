@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-11-04T21:01:26+00:00",
+ "at": "2026-11-10T17:00:25+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -19,12 +19,12 @@
  },
  "ops_redundancy": {
   "state": "FAIL",
-  "at": "2026-10-31T19:09:51+00:00",
+  "at": "2026-11-09T13:17:08+00:00",
   "offbox_restore_drill": "PASS"
  },
  "reboot_drill": {
   "state": "PASS",
-  "at": "2026-11-04T04:31:39+00:00",
+  "at": "2026-11-10T04:30:12+00:00",
   "n_failures": 0
  },
  "moat": {
@@ -36,8 +36,8 @@
    "n_absent": 3
   },
   "restore_drill": {
-   "state": "PASS",
-   "at": "2026-11-04T11:24:50+00:00"
+   "state": "FAIL",
+   "at": "2026-11-07T02:52:22+00:00"
   }
  },
  "key_backup": {
