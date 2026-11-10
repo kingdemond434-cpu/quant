@@ -66,6 +66,7 @@ def test_the_statement_is_stamped_in_new_york_time_through_both_seasons(tmp_path
     assert fomc["dropped"] == {"before_from": 1, "weekend": 1, "unreadable": 0,
                                "past_no_data": 0}
     assert all(r["time_basis"].startswith("unverified convention") for r in rows)
+    assert {r["window_h"] for r in rows} == {1.0}
     assert fomc["rows"] == 3 and fomc["scheduled_ahead"] == 1 and rep["unmeasured"] == []
 
 
@@ -164,3 +165,5 @@ def test_central_bank_meeting_days_from_their_own_pages(tmp_path: Path) -> None:
     assert all("12 noon" in r["time_basis"] for r in boe)
     assert all(r["timing_only"] and r["page_read"] == "2026-11-10" for r in boj + boe)
     assert rep["banks"]["boj"]["scheduled_ahead"] == 9                  # Dec 2026 + all 2027
+    assert {r["window_h"] for r in boj} == {3.0} and {r["window_h"] for r in boe} == {0.0}
+    assert all(r["transcribed"] for r in boj + boe)

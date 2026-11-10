@@ -1,5 +1,5 @@
 {
- "note": "Central bank policy decision days read off each bank's OWN schedule page, for the event families' calendar backfill (timing only: no decision, no surprise). Dates are facts copied from the page named in `source` on `read`; a year a bank does not list is UNMEASURED and reported, never a year with no meetings. `at`/`tz` is the announcement time: `time_basis` says whether the page stated it or it is an unverified convention. Add a year by reading the bank's page and appending dates here, never in code.",
+ "note": "Central bank policy decision days read off each bank's OWN schedule page, for the event families' calendar backfill (timing only: no decision, no surprise). Dates are facts copied from the page named in `source` on `read`; a year a bank does not list is UNMEASURED and reported, never a year with no meetings. `at`/`tz` is the announcement time: `time_basis` says whether the page stated it or it is an unverified convention. Add a year by reading the bank's page and appending dates here, never in code. `window_h` is the +/- hours a reader must widen around the stamp (0 when the bank states the time). `transcribed: true` means the dates were copied by a reading agent, not parsed from the page by code; it stays true until a run re-reads the page and matches.",
  "banks": [
   {
    "bank": "BoJ",
@@ -127,7 +127,9 @@
     "2027-09-22",
     "2027-10-29",
     "2027-12-17"
-   ]
+   ],
+   "window_h": 3,
+   "transcribed": true
   },
   {
    "bank": "BoE",
@@ -158,7 +160,9 @@
     "2027-09-16",
     "2027-11-04",
     "2027-12-16"
-   ]
+   ],
+   "window_h": 0,
+   "transcribed": true
   }
  ],
  "unmeasured": [

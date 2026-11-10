@@ -224,6 +224,8 @@ def refresh(*, get: Get | None = None, registry: Mapping[str, Any] | None = None
         phantom = sorted(d for d in calendar - with_data if d <= iso)
         dates = sorted({d for d in with_data if d <= iso} | {d for d in calendar if d > iso})
         rows, drops = event_rows(rel, dates, today)
+        for x in rows:                       # a reader widens by this number, not by prose
+            x["window_h"] = float(rel.get("window_h", reg.get("window_h", 1)))
         drops["past_no_data"] = len(phantom)
         if not rows:
             _stale(r, f"no usable dates (HTTP {st})", path, today)
@@ -290,7 +292,9 @@ def write_meetings(*, registry: Mapping[str, Any] | None = None, out: Path | Non
             r.pop("release_id", None)
             r.update({"source": "cb_own_schedule_page", "bank": bank["bank"],
                       "instant_basis": "bank_schedule_page", "time_basis": bank["time_basis"],
-                      "page": bank["source"], "page_read": bank["read"]})
+                      "page": bank["source"], "page_read": bank["read"],
+                      "window_h": float(bank.get("window_h", 3)),
+                      "transcribed": bool(bank.get("transcribed", True))})
             local_day = datetime.fromisoformat(r["event_date"]).astimezone(
                 ZoneInfo(str(bank["tz"]))).date().isoformat()
             if local_day in single:
