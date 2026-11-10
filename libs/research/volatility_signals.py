@@ -153,19 +153,24 @@ def ewma_variance(returns: np.ndarray, *, lam: float = EWMA_LAMBDA) -> np.ndarra
     `out[i]` is the variance forecast FOR bar i, built only from returns strictly before it. The
     off-by-one here is the difference between a forecast and a description, and getting it wrong
     produces a spectacular backtest that is simply reading the answer.
+
+    THE RECURSION UPDATES BEFORE IT ASSIGNS (fixed 2026-11-10). It used to assign `out[i]` and
+    only then fold in `r[i-1]`, so the forecast for bar i was built from returns through i-2: a
+    shock at bar 150 first appeared in the forecast for bar 152. Not a lookahead -- the opposite,
+    a forecast one bar staler than the information available -- but it handicapped every EWMA
+    baseline measured with it. The seed was also the variance of the FIRST TWENTY returns (or of
+    the whole series when those were flat), which put future returns into the earliest
+    forecasts; the recursion now starts from the first finite squared return it has seen.
     """
     r = np.asarray(returns, dtype="float64")
     out = np.full(len(r), np.nan)
-    if len(r) < 2:
-        return out
-    var = float(np.nanvar(r[:min(20, len(r))]))
-    if not np.isfinite(var) or var <= 0:
-        var = float(np.nanvar(r[np.isfinite(r)])) if np.isfinite(r).any() else 0.0
+    var: float | None = None
     for i in range(1, len(r)):
-        out[i] = var                                    # forecast for i, from data before i
         prev = r[i - 1]
         if np.isfinite(prev):
-            var = lam * var + (1.0 - lam) * prev * prev
+            var = prev * prev if var is None else lam * var + (1.0 - lam) * prev * prev
+        if var is not None:
+            out[i] = var                                # forecast for i, from returns through i-1
     return out
 
 
