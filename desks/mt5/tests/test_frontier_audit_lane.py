@@ -87,3 +87,21 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
     assert adopt.index('$adoptExit "adopt-release-partial"') < hook
     assert hook < adopt.index("release.seal(by='Adopt-And-Seal')")
     assert "-IfMissing" in adopt[hook:hook + 800]
+
+
+def test_every_flag_the_runner_passes_is_one_its_organ_accepts() -> None:
+    """Measured 2026-11-05: world_model, meta_rnd and quantbench were called with `--apply`,
+    which none of them declares, so argparse exited 2 every day and the lane read FAILING while
+    those three never ran. A flag the organ does not declare is a dead call."""
+    lines = _code_lines(RUNNER.read_text("utf-8"))
+    bad: list[str] = []
+    for ln in _main_body(lines):
+        m = re.match(r'call :run "([^"]+\.py)"(.*)$', ln)
+        if not m:
+            continue
+        script = ROOT / m.group(1).replace("\\", "/")
+        src = script.read_text("utf-8", errors="replace")
+        for flag in re.findall(r"(?<!\S)(--[a-z][a-z0-9-]*)", m.group(2)):
+            if f'"{flag}"' not in src and f"'{flag}'" not in src:
+                bad.append(f"{m.group(1)} {flag}")
+    assert not bad, f"flags their organs do not declare: {bad}"
