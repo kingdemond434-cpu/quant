@@ -147,12 +147,12 @@ def test_page_budget_bounds_a_pass(tmp_path: Path) -> None:
 
 
 def test_a_robots_disallow_is_never_fetched_and_is_counted(tmp_path: Path) -> None:
-    pages, bank = _ten_speeches("User-agent: *\nDisallow: /newsevents/speech/")
+    pages, bank = _ten_speeches("User-agent: *\nDisallow: /newsevents/speech/x")
     fetch = _site(pages)
     rep = cb.refresh(fetch=fetch, registry=_one_bank(bank), out=tmp_path / "o",
                      report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
                      today=date(2026, 11, 10))
-    assert not [u for u in fetch.calls if "/newsevents/speech/" in u]
+    assert not [u for u in fetch.calls if "/newsevents/speech/x" in u]
     fed = rep["banks"]["Fed"]
     assert rep["pages_fetched"] == 0 and rep["speeches_total"] == 0
     assert fed["robots_skipped"] == 10 and fed["backlog"] == 10     # still owed, not written off
