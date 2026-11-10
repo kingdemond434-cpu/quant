@@ -1,5 +1,5 @@
 {
- "at": "2026-11-10T20:57:34+00:00",
+ "at": "2026-11-10T21:55:51+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -11,7 +11,7 @@
    "24h": 29689,
    "7d": 240550,
    "build_step_lo": 29689,
-   "build_step_hi": 5489
+   "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
@@ -19,7 +19,7 @@
    "24h": 13394,
    "7d": 112341,
    "build_step_lo": 13394,
-   "build_step_hi": 4628
+   "build_step_hi": 0
   },
   "first_terminal_cells": 719845,
   "first_terminal_per_hour": {
@@ -36,12 +36,12 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 16436,
-   "7d": 279767
+   "24h": 13396,
+   "7d": 279984
   },
   "per_hour": {
-   "24h": 684.833,
-   "7d": 1665.28
+   "24h": 558.167,
+   "7d": 1666.571
   }
  },
  "verdicts_per_hour": 1237.042,
@@ -50,7 +50,7 @@
  "first_judged_per_day": 13394.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 16436.0,
+ "created_per_day": 13396.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -58,11 +58,11 @@
   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
  "workers_planned": 15,
- "workers_last_sweep": "UNMEASURED",
+ "workers_last_sweep": 15,
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-10T20:56:44+00:00",
-  "pid": 1500
+  "started_at": "2026-11-10T21:55:38+00:00",
+  "pid": 6968
  }
 }
