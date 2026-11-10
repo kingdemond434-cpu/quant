@@ -51,6 +51,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import sys
 from collections.abc import Container, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -307,6 +309,46 @@ def region_key(symbol: str, family: str, params: dict[str, Any]) -> str:
     return f"{str(symbol).upper()}.{family}{{{parts}}}"
 
 
+_FATE_ID = re.compile(rb'^\{"id": "([^"\\]*)"')
+_FATE_FATE = re.compile(rb', "fate": "([A-Za-z_]*)"')
+
+
+def current_fates(path: Path = LEDGER) -> dict[str, str]:
+    """`node id -> its present fate` (last row wins), WITHOUT materialising the rows.
+
+    WHY THIS EXISTS (CRO noon 2026-09-30: `descendants` timed out every pass and moved nothing).
+    A caller that needs only fates used `Graph.current()`, which parses every row into a dict and
+    keeps them all: measured on the 108,189-line checkout it took 8.2 s and 392 MB peak, and the
+    box's graph is ~5.7M lines -- ~50x that, before the organ's own budget clock had started.
+
+    Rows are written by `Node.to_row` through `json.dumps`, so `id` is the first key and `fate` a
+    top-level string; both are read by pattern and any line the pattern does not fully explain
+    (a second "fate", an escaped id, a torn append) falls back to `json.loads`. Measured on the
+    same checkout: 0.22 s, and identical to `Graph.current()` on every id.
+    """
+    out: dict[str, str] = {}
+    try:
+        fh = path.open("rb")
+    except OSError:
+        return out
+    with fh:
+        for ln in fh:
+            m = _FATE_ID.match(ln)
+            f = _FATE_FATE.findall(ln) if m else None
+            if m and f is not None and len(f) == 1:
+                out[m.group(1).decode("utf-8", "replace")] = f[0].decode() or BORN
+                continue
+            if not ln.strip():
+                continue
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                out[str(r.get("id"))] = str(r.get("fate") or BORN)
+    return out
+
+
 class Graph:
     """The ledger with a read cache keyed on (mtime, size): the backfilled graph holds ~47,000
     rows, and the deepening worker asks `prior_failures` once per queued task, so re-parsing
@@ -337,6 +379,22 @@ class Graph:
             fh.write(json.dumps(row, default=str) + "\n")
         self._stamp = None
         return row
+
+    def append_rows(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """`append` for a batch of `Node.to_row()` rows: same order, ONE open of the ledger.
+
+        A sweep that records ~1M first fates paid a mkdir, an open and a close per row -- about
+        60 s of the judge's single merging core measured 2026-10-07 on a 1.44M-row docket.
+        """
+        if self._snapshot:
+            raise RuntimeError("a hypothesis graph snapshot is read-only")
+        if not rows:
+            return rows
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as fh:
+            fh.write("".join(json.dumps(r, default=str) + "\n" for r in rows))
+        self._stamp = None
+        return rows
 
     def rows(self) -> list[dict[str, Any]]:
         if self._snapshot:
@@ -584,7 +642,8 @@ def seed_key_of(c: Mapping[str, Any]) -> str:
     by `lead_schema.compiler_parent_key` -- the ONLY deterministic join from a mined row to the
     cells it became, which is why it is kept in its own field rather than overwritten.
     """
-    return hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
+    from libs.research.source_provenance import seed_url_of
+    return hashlib.sha256(json.dumps({"u": seed_url_of(c), "t": c.get("source_title"),
                                       "s": c.get("source")}, sort_keys=True,
                                      default=str).encode()).hexdigest()[:16]
 
@@ -695,6 +754,64 @@ def _verdict_fate(v: Mapping[str, Any]) -> str | None:
     return JUDGED if isinstance(stages, Mapping) and stages else None
 
 
+def _fate_key(r: Mapping[str, Any]) -> tuple[Any, Any, Any]:
+    """The three fields `record_gauntlet_verdicts` compares, interned: one tuple per node."""
+    def _i(x: Any) -> Any:
+        return sys.intern(x) if type(x) is str else x
+    return (_i(r.get("fate")), _i(r.get("prereg_status")), _i(r.get("terminal_gate")))
+
+
+#: "No non-object row seen yet". A private object, never None: a JSON `null` row parses to
+#: None and must raise like any other non-object row (audit of 2a0ad049).
+_NOBAD: Any = object()
+
+
+def _fold_fates(rows: Iterable[Any]) -> tuple[dict[str, tuple[Any, Any, Any]], dict[str, str]]:
+    """`Graph.current()` reduced to `_fate_key` per node id, plus the earliest judged `at`."""
+    cur: dict[str, tuple[Any, Any, Any]] = {}
+    earliest: dict[str, str] = {}
+    bad: Any = _NOBAD
+    for r in rows:
+        if not isinstance(r, dict):
+            if bad is _NOBAD:
+                bad = r
+            continue
+        rid = str(r.get("id"))
+        cur[rid] = _fate_key(r)
+        if r.get("fate") in (FAILED, CERTIFIED, JUDGED) and r.get("at"):
+            rat = str(r["at"])
+            if rid not in earliest or rat < earliest[rid]:
+                earliest[rid] = rat
+    if bad is not _NOBAD:
+        bad.get("id")   # a row that is not an object raises here, as `Graph.current()` raises
+    return cur, earliest
+
+
+def _fate_index(g: Graph) -> tuple[dict[str, tuple[Any, Any, Any]], dict[str, str]]:
+    """What `record_gauntlet_verdicts` reads from the graph, in ONE streamed pass.
+
+    THE MERGE HELD THE WHOLE GRAPH TO READ THREE FIELDS (2026-10-20). `g.current()` parses
+    every ledger row into a dict and keeps them all -- 2.7-2.9 KB a row, measured up to 1M
+    lines -- so the box's 5.74M-line graph (2026-10-03) extrapolates to ~16 GB inside the
+    judge's single merging process, beside the sweep's own ~1M verdict rows. This reads the
+    same file once and keeps a tuple per node (~160 B a line measured: ~47 MB at 300k lines,
+    so ~1 GB at 5.7M). The answers are the full read's: a missing, unreadable or torn ledger
+    reads as empty, and a row that is not an object (`null` included) raises once the whole
+    file has parsed. A snapshot, or a graph whose rows are already cached, is folded from
+    memory exactly as before."""
+    if g._snapshot or g._stamp is not None:
+        return _fold_fates(g.rows())
+    try:
+        g.path.stat()
+    except OSError:
+        return {}, {}
+    try:
+        with g.path.open(encoding="utf-8") as ledger:
+            return _fold_fates(json.loads(ln) for ln in ledger if ln.strip())
+    except (OSError, ValueError):
+        return {}, {}
+
+
 def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
                              specs_by_cell: Mapping[str, Mapping[str, Any]] | None = None, *,
                              first_judged: Mapping[str, str] | None = None,
@@ -721,19 +838,16 @@ def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
     now = at or datetime.now(tz=UTC).isoformat()
     first = first_judged or {}
     specs = specs_by_cell or {}
-    cur = g.current()
     # THE EARLIEST JUDGEMENT THE GRAPH ALREADY KNOWS, per node. A card written after a cell was
     # first judged must never make a LATER re-judgement read as pre-registered, and the judge's
     # own first-seen stamps only begin on 2026-09-12 -- the graph's buried rows go back further.
-    earliest: dict[str, str] = {}
-    for r in g.rows():
-        if r.get("fate") in (FAILED, CERTIFIED, JUDGED) and r.get("at"):
-            rid, rat = str(r.get("id")), str(r["at"])
-            if rid not in earliest or rat < earliest[rid]:
-                earliest[rid] = rat
+    # Read with the latest (fate, prereg_status, terminal_gate) per node in ONE streamed pass
+    # (`_fate_index`): the only three fields the change test below compares.
+    cur, earliest = _fate_index(g)
     out: dict[str, Any] = {"verdicts": 0, "stamped": 0, "recorded": 0, "unchanged": 0,
                            "not_a_verdict": 0, "no_spec": 0,
                            pr.PREREGISTERED: 0, pr.POST_HOC: 0}
+    pending: list[dict[str, Any]] = []
     for v in verdicts:
         if not isinstance(v, dict):
             continue
@@ -776,13 +890,16 @@ def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
                     terminal_gate=str(v.get("terminal_gate") or ""),
                     edges=edges_for(sym, params), at=vat,
                     prereg_hash=v.get("prereg_hash"), prereg_status=str(v["prereg_status"]))
-        prev = cur.get(node.id) or {}
-        if (prev.get("fate") == fate and prev.get("prereg_status") == node.prereg_status
-                and str(prev.get("terminal_gate") or "") == node.terminal_gate):
+        prev = cur.get(node.id) or (None, None, None)
+        if (prev[0] == fate and prev[1] == node.prereg_status
+                and str(prev[2] or "") == node.terminal_gate):
             out["unchanged"] += 1
             continue
-        cur[node.id] = g.append(node)
+        row = node.to_row()
+        cur[node.id] = _fate_key(row)
+        pending.append(row)
         out["recorded"] += 1
+    g.append_rows(pending)
     judged = out[pr.PREREGISTERED] + out[pr.POST_HOC]
     out["join_rate"] = (out[pr.PREREGISTERED] / judged) if judged else None
     return out

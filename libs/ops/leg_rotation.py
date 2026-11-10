@@ -123,6 +123,19 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     "judging_throughput",
     # Discovery must hand existing rules to the judge before generating more work.
     "intake_catchup",
+    # THE ONLY OFF-BOX EVIDENCE THAT THE BAR AND TICK FEED IS ALIVE (2026-10-21). Bars never
+    # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
+    # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
+    "bars_state",
+    # CHEAP FENCES THAT GATE MONEY OR HEALTH, PINNED (2026-11-05, overlay 27d "pin cheap readers
+    # (<60 s) that gate money or promotion"). With always-run cost above the 2640 s core budget,
+    # greedy admission had no room left, so these sat in LEG_ROTATION's never_run/outside_window
+    # for days: decay_live.json 55 h stale (last decay_monitor run 11-02, 3.87 s), and the
+    # placement interlock -- "a silent halt costs a window an hour" -- unread. Each reads a few
+    # small files and writes one report, so pinning them costs seconds, not the research legs.
+    # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
+    # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
+    "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
 })
 
 
