@@ -25139,6 +25139,34 @@
    "measured_at": "2026-10-01T10:54:15+00:00"
   },
   {
+   "organ": "leg:hmm_regime_elog_shadow",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/hmm_regime_elog_shadow.py"
+   ],
+   "clock": "hourly_cycle:hmm_regime_elog_shadow",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "born 2026-11-10 with PR #797 (shadow leg; no host has run it yet): no artifact and no run record, UNMEASURED until the box adopts and attests it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/hmm_regime_elog_shadow.json",
+   "artifact_declared": "desks/mt5/reports/hmm_regime_elog_shadow.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "the Allocator and Auditor promotion path reads verdict / win_rate_vs_plain; nothing on the trading path reads it (shadow)",
+   "measured_on": "UNMEASURED",
+   "measured_on_machine_id": "UNMEASURED",
+   "measured_at": "UNMEASURED"
+  },
+  {
    "organ": "leg:null_lab",
    "kind": "leg",
    "code": [
