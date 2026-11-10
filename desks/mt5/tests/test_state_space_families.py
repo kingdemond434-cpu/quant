@@ -18,7 +18,7 @@ from mt5desk import family_state_space as fs  # noqa: E402
 
 def _frame(close: np.ndarray, seed: int = 0) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    idx = pd.date_range("2020-01-01", periods=close.size, freq="h")
+    idx = pd.date_range("2020-01-01", periods=close.size, freq="h", tz="UTC")
     wig = np.abs(rng.normal(0, 1e-4, close.size)) * close
     o = np.concatenate(([close[0]], close[:-1]))
     return pd.DataFrame({"open": o, "high": np.maximum(o, close) + wig,
