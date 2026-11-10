@@ -132,9 +132,9 @@ def roles(root: Path) -> dict[str, str]:
     return out
 
 
-def zero_weight(path: Path = ZERO_WEIGHT) -> dict[str, dict[str, Any]]:
+def zero_weight(path: Path | None = None) -> dict[str, dict[str, Any]]:
     try:
-        doc = json.loads(path.read_text("utf-8"))
+        doc = json.loads((path or ZERO_WEIGHT).read_text("utf-8"))
     except (OSError, ValueError):
         return {}
     rows = doc.get("components") if isinstance(doc, dict) else None
