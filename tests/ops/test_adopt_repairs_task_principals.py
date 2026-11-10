@@ -35,6 +35,25 @@ def test_each_repair_fires_only_on_its_broken_shape() -> None:
     assert BLOCK.index("Export-ScheduledTask") < BLOCK.index("Unregister-ScheduledTask")
 
 
+def test_nothing_is_removed_unless_its_xml_was_kept_and_read_back() -> None:
+    """The script runs with ErrorActionPreference Continue: without -ErrorAction Stop a failed
+    export would fall through to the unregister (#801 audit MF1)."""
+    assert '$ErrorActionPreference = "Continue"' in SRC  # why the explicit Stops matter
+    export = BLOCK.split("Export-ScheduledTask", 1)[1].split("Unregister-ScheduledTask", 1)[0]
+    assert export.count("-ErrorAction Stop") == 2  # the export and the write
+    assert "(Get-Item -LiteralPath $xml).Length -gt 0" in export
+    assert "left registered" in BLOCK
+
+
+def test_the_contract_terms_log_reports_what_the_principal_is_not_what_was_wanted() -> None:
+    """#801 audit MF2, SF4, SF5."""
+    part = BLOCK.split('"MT5-ContractTerms" -ErrorAction Stop', 1)[1].split("$noon =", 1)[0]
+    assert part.index("} catch {") < part.index("$now = Get-ScheduledTask")
+    assert "is now $is" in part
+    assert "-RunLevel $gw.Principal.RunLevel" in part and "-RunLevel Highest" not in BLOCK
+    assert '$gwLogon -ne "Interactive"' in BLOCK
+
+
 def test_a_failed_repair_never_stops_the_seal_and_starts_nothing() -> None:
     body = BLOCK.split("try {", 1)[1]
     assert "} catch {" in body

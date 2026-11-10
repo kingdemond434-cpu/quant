@@ -589,16 +589,28 @@ foreach ($ensure in @(
 try {
     $gw = Get-ScheduledTask -TaskName "MT5-Gateway" -ErrorAction SilentlyContinue
     $gwUser = if ($gw) { [string]$gw.Principal.UserId } else { "" }
+    $gwLogon = if ($gw) { [string]$gw.Principal.LogonType } else { "" }
     $isSystem = { param($u) ("$u" -match '(^|\\)(SYSTEM|LOCAL SYSTEM)$') -or ("$u" -eq 'S-1-5-18') }
-    if (-not $gwUser -or (& $isSystem $gwUser)) {
-        Log "repair-task: MT5-Gateway names no interactive account ('$gwUser'); nothing repaired"
+    # Only a gateway that is itself a named account running Interactive is a known-good shape to
+    # copy (audit SF5); anything else repairs nothing.
+    if (-not $gwUser -or (& $isSystem $gwUser) -or $gwLogon -ne "Interactive") {
+        Log "repair-task: MT5-Gateway is not a named Interactive account ('$gwUser'/'$gwLogon'); nothing repaired"
     } else {
         $ct = Get-ScheduledTask -TaskName "MT5-ContractTerms" -ErrorAction SilentlyContinue
         if ($ct -and ("$($ct.Principal.LogonType)" -ne "Interactive" -or (& $isSystem $ct.Principal.UserId))) {
             $was = "{0}/{1}" -f $ct.Principal.UserId, $ct.Principal.LogonType
-            Set-ScheduledTask -TaskName "MT5-ContractTerms" -Principal (
-                New-ScheduledTaskPrincipal -UserId $gwUser -LogonType Interactive -RunLevel Highest) | Out-Null
-            Log "repair-task: MT5-ContractTerms principal $was -> $gwUser/Interactive (session 0 cannot reach the terminal)"
+            try {
+                # the gateway's own run level, never a higher one (audit SF4)
+                Set-ScheduledTask -TaskName "MT5-ContractTerms" -ErrorAction Stop -Principal (
+                    New-ScheduledTaskPrincipal -UserId $gwUser -LogonType Interactive -RunLevel $gw.Principal.RunLevel) | Out-Null
+            } catch {
+                Log ("repair-task: MT5-ContractTerms Set-ScheduledTask failed: {0}" -f $_.Exception.Message)
+            }
+            # what the registration IS now, read back: a repair that did not happen is never
+            # reported as done (audit MF2)
+            $now = Get-ScheduledTask -TaskName "MT5-ContractTerms" -ErrorAction SilentlyContinue
+            $is = if ($now) { "{0}/{1}" -f $now.Principal.UserId, $now.Principal.LogonType } else { "unreadable" }
+            Log "repair-task: MT5-ContractTerms principal was $was, is now $is (wanted $gwUser/Interactive: session 0 cannot reach the terminal)"
         }
         $noon = Get-ScheduledTask -TaskName "MT5-CycleNoon" -ErrorAction SilentlyContinue
         $cro = Join-Path $desk "scripts\install_cro_cycle_tasks.ps1"
@@ -611,11 +623,20 @@ try {
     $orphan = Get-ScheduledTask -TaskName "MT5-DeepenUniverse" -ErrorAction SilentlyContinue
     $gone = Join-Path $RepoRoot "ops\run_deepen_universe.cmd"
     if ($orphan -and -not (Test-Path $gone) -and ((@($orphan.Actions | ForEach-Object { "$($_.Execute) $($_.Arguments)" }) -join ' ') -match 'run_deepen_universe\.cmd')) {
+        # The XML is written and READ BACK before anything is removed: this file runs with
+        # ErrorActionPreference Continue, so a failed export would otherwise fall through to the
+        # unregister and delete the task with nothing kept (audit MF1).
         $keep = Join-Path $env:ProgramData "QuantBox"
-        New-Item -ItemType Directory -Force -Path $keep | Out-Null
-        Export-ScheduledTask -TaskName "MT5-DeepenUniverse" | Out-File -FilePath (Join-Path $keep "MT5-DeepenUniverse.xml") -Encoding unicode
-        Unregister-ScheduledTask -TaskName "MT5-DeepenUniverse" -Confirm:$false
-        Log "repair-task: MT5-DeepenUniverse unregistered (its action file is gone since 09-30; XML kept in $keep)"
+        $xml = Join-Path $keep "MT5-DeepenUniverse.xml"
+        New-Item -ItemType Directory -Force -Path $keep -ErrorAction Stop | Out-Null
+        Export-ScheduledTask -TaskName "MT5-DeepenUniverse" -ErrorAction Stop |
+            Out-File -FilePath $xml -Encoding unicode -ErrorAction Stop
+        if ((Test-Path -LiteralPath $xml) -and (Get-Item -LiteralPath $xml).Length -gt 0) {
+            Unregister-ScheduledTask -TaskName "MT5-DeepenUniverse" -Confirm:$false -ErrorAction Stop
+            Log "repair-task: MT5-DeepenUniverse unregistered (its action file is gone since 09-30; XML kept at $xml)"
+        } else {
+            Log "repair-task: MT5-DeepenUniverse left registered: its XML could not be kept at $xml"
+        }
     }
 } catch {
     Log ("repair-task: failed: {0}" -f $_.Exception.Message)
