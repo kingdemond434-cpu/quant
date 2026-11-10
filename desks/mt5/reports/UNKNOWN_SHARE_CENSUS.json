@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "building",
+  "stage": "carving",
   "utc_day": "2026-11-10",
   "started_at": "2026-11-10T15:23:19+00:00",
-  "written_at": "2026-11-10T15:48:02+00:00",
+  "written_at": "2026-11-10T16:02:19+00:00",
   "cells_planned": 6001,
-  "cells_visited": 1490,
+  "cells_visited": 6001,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 58877,
     "rss_cap_mb": 14719,
-    "peak_rss_mb": 871
+    "peak_rss_mb": 346
   },
-  "lockbox_cut": "2022-10-08",
+  "lockbox_cut": "2022-09-17",
   "lockbox_frac": 0.2,
-  "cells_carved_at_own_tail": 213,
-  "elapsed_s": 1470.4,
+  "cells_carved_at_own_tail": 285,
+  "elapsed_s": 2327.0,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 12,
@@ -41,136 +41,136 @@
     }
   },
   "sampled_cells": {
-    "cells": 1490,
+    "cells": 6000,
     "gate0_rejected": {
       "symbol_eligibility": 5,
       "economic_prior": 1
     },
-    "preflight_refused": 733,
+    "preflight_refused": 2897,
     "build_failed": 1,
     "build_failed_by_reason": {
       "family_raised:TypeError": 1
     },
-    "deferred": 0,
-    "judged_built": 750,
-    "unknown": 128,
-    "unknown_share_of_judged": 0.1707,
+    "deferred": 2156,
+    "judged_built": 940,
+    "unknown": 168,
+    "unknown_share_of_judged": 0.1787,
     "wilson95": [
-      0.1454,
-      0.1993
+      0.1556,
+      0.2045
     ],
     "unknown_by_reason": {
-      "no_signals": 90,
-      "too_rare": 20,
-      "short_history_after_cut": 11,
-      "lockbox_consumed_history": 7
+      "no_signals": 122,
+      "too_rare": 22,
+      "short_history_after_cut": 13,
+      "lockbox_consumed_history": 11
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "formula": 28,
-      "orderflow_imbalance": 28,
-      "session_range_breakout": 19,
-      "regime_transition": 7,
-      "htf_anchor_trend": 5,
-      "exogenous_conditioner": 5,
+      "formula": 39,
+      "orderflow_imbalance": 32,
+      "session_range_breakout": 22,
+      "overnight_drift": 9,
+      "regime_transition": 9,
+      "exogenous_conditioner": 7,
+      "htf_anchor_trend": 6,
       "multi_speed_trend": 5,
-      "overnight_drift": 4,
+      "vol_mean_reversion": 3,
       "forced_flow": 3,
+      "joint_genome": 3,
       "exit_operated": 3,
+      "jump": 3,
       "vol_transition": 3,
-      "ensemble": 2,
-      "vol_mean_reversion": 2,
-      "joint_genome": 2,
-      "lead_lag_class_catchup": 1
+      "ensemble": 2
     },
     "unknown_by_chart": {
-      "H1": 71,
-      "M5": 16,
-      "M30": 13,
-      "M15": 9,
-      "H4": 9,
-      "D1": 7,
+      "H1": 95,
+      "M30": 17,
+      "M5": 17,
+      "M15": 13,
+      "H4": 13,
+      "D1": 10,
       "M1": 3
     },
     "judged_by_chart": {
-      "H1": 346,
-      "M30": 138,
-      "M15": 121,
-      "M5": 104,
-      "H4": 25,
-      "D1": 11,
-      "M1": 5
+      "H1": 431,
+      "M30": 166,
+      "M15": 157,
+      "M5": 132,
+      "H4": 32,
+      "D1": 15,
+      "M1": 7
     }
   },
   "sampled_plus_siblings": {
-    "cells": 1490,
+    "cells": 6001,
     "gate0_rejected": {
       "symbol_eligibility": 5,
       "economic_prior": 1
     },
-    "preflight_refused": 733,
+    "preflight_refused": 2897,
     "build_failed": 1,
     "build_failed_by_reason": {
       "family_raised:TypeError": 1
     },
-    "deferred": 0,
-    "judged_built": 750,
-    "unknown": 128,
-    "unknown_share_of_judged": 0.1707,
+    "deferred": 2157,
+    "judged_built": 940,
+    "unknown": 168,
+    "unknown_share_of_judged": 0.1787,
     "wilson95": [
-      0.1454,
-      0.1993
+      0.1556,
+      0.2045
     ],
     "unknown_by_reason": {
-      "no_signals": 90,
-      "too_rare": 20,
-      "short_history_after_cut": 11,
-      "lockbox_consumed_history": 7
+      "no_signals": 122,
+      "too_rare": 22,
+      "short_history_after_cut": 13,
+      "lockbox_consumed_history": 11
     },
     "unknown_by_cause": {},
     "unknown_by_family": {
-      "formula": 28,
-      "orderflow_imbalance": 28,
-      "session_range_breakout": 19,
-      "regime_transition": 7,
-      "htf_anchor_trend": 5,
-      "exogenous_conditioner": 5,
+      "formula": 39,
+      "orderflow_imbalance": 32,
+      "session_range_breakout": 22,
+      "overnight_drift": 9,
+      "regime_transition": 9,
+      "exogenous_conditioner": 7,
+      "htf_anchor_trend": 6,
       "multi_speed_trend": 5,
-      "overnight_drift": 4,
+      "vol_mean_reversion": 3,
       "forced_flow": 3,
+      "joint_genome": 3,
       "exit_operated": 3,
+      "jump": 3,
       "vol_transition": 3,
-      "ensemble": 2,
-      "vol_mean_reversion": 2,
-      "joint_genome": 2,
-      "lead_lag_class_catchup": 1
+      "ensemble": 2
     },
     "unknown_by_chart": {
-      "H1": 71,
-      "M5": 16,
-      "M30": 13,
-      "M15": 9,
-      "H4": 9,
-      "D1": 7,
+      "H1": 95,
+      "M30": 17,
+      "M5": 17,
+      "M15": 13,
+      "H4": 13,
+      "D1": 10,
       "M1": 3
     },
     "judged_by_chart": {
-      "H1": 346,
-      "M30": 138,
-      "M15": 121,
-      "M5": 104,
-      "H4": 25,
-      "D1": 11,
-      "M1": 5
+      "H1": 431,
+      "M30": 166,
+      "M15": 157,
+      "M5": 132,
+      "H4": 32,
+      "D1": 15,
+      "M1": 7
     }
   },
   "siblings_only": {
-    "cells": 0,
+    "cells": 1,
     "gate0_rejected": {},
     "preflight_refused": 0,
     "build_failed": 0,
     "build_failed_by_reason": {},
-    "deferred": 0,
+    "deferred": 1,
     "judged_built": 0,
     "unknown": 0,
     "unknown_share_of_judged": null,
