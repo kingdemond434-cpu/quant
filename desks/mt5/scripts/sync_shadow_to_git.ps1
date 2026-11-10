@@ -892,7 +892,11 @@ $reportPaths = @(
     # data/daily_cycle_state.json is a PER-BOX stamp and stays gitignored (see .gitignore: a
     # research box's stamp pulled onto this box would skip the day's only real run). Its mirror
     # below is written by this script from the box's own stamp and is read, never obeyed.
-    "desks/mt5/reports/DAILY_CYCLE_STATE.json"
+    "desks/mt5/reports/DAILY_CYCLE_STATE.json",
+    # the box watchdog's own reading (MT5-StallWatch): tracked, but no wire carried it, so origin
+    # held a 2026-09-16 `checked_at` while the watchdog ran every few minutes on the box. Being
+    # tracked is not being published; only this list publishes.
+    "desks/mt5/data/stall_watch.json"
 )
 # Mirror the per-box daily-cycle stamp under reports/, so readers off the box see when the
 # operating chain last ran without the stamp itself ever crossing the wire.

@@ -37,6 +37,8 @@ REQUIRED = frozenset({
     "desks/mt5/reports/pf_allocation.json",
     # the read-only mirror of the per-box stamp data/daily_cycle_state.json (which stays ignored)
     "desks/mt5/reports/DAILY_CYCLE_STATE.json",
+    # tracked, yet stale on origin since 2026-09-16: tracking alone carries nothing off the box
+    "desks/mt5/data/stall_watch.json",
 })
 
 #: Contracted artifacts that did not reach origin on 2026-11-10 and are not yet published. This is
