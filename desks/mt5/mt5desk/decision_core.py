@@ -1688,8 +1688,13 @@ def executable_copy_keys(groups: object) -> dict[str, str]:
                         if isinstance(m, Mapping) and m.get("name")})
         if len(names) < 2:
             continue
-        key = f"exe:{str(g.get('symbol') or '').lower()}|{str(g.get('family') or '').lower()}" \
-              f"|{names[0]}"
+        # The Judge's own group key when the artifact carries one (a 16-hex digest of the
+        # executable key, stable within the sleeves store); until then symbol, family and the
+        # first member name are the join, as the Judge specified.
+        gk = g.get("key")
+        key = (f"exe:{gk}" if isinstance(gk, str) and gk else
+               f"exe:{str(g.get('symbol') or '').lower()}|{str(g.get('family') or '').lower()}"
+               f"|{names[0]}")
         for n in names:
             if n in out:
                 twice.add(n)
@@ -1728,9 +1733,39 @@ def executable_copies(path: Path | None = None,
           if isinstance(doc, dict) and isinstance(doc.get("intake"), dict) else None)
     if not isinstance(sl, dict) or "groups" not in sl:
         return {}, f"executable copies UNMEASURED ({p.name} publishes no sleeve groups yet)"
-    keys = executable_copy_keys(sl.get("groups"))
+    groups = sl.get("groups")
+    keys = executable_copy_keys(groups)
+    # The artifact lists the 40 largest groups and 25 members of each; `copies` is the true
+    # count. A member past the cap is not listed and so folds with nothing: counted, not hidden.
+    cut = sum(1 for g in (groups if isinstance(groups, list) else ())
+              if isinstance(g, Mapping) and isinstance(g.get("members"), list)
+              and isinstance(g.get("copies"), int) and g["copies"] > len(g["members"]))
     return keys, (f"executable copies from {p.name}: {len(keys)} row(s) in "
-                  f"{len(set(keys.values()))} copy group(s)")
+                  f"{len(set(keys.values()))} copy group(s)"
+                  + (f"; {cut} group(s) list fewer members than their copies (capped)"
+                     if cut else ""))
+
+
+def copy_fold_keys(pairs: Mapping[str, tuple[str | None, str | None]]) -> dict[str, str | None]:
+    """{row: fold key} from {row: (book key or None, copy-group key or None)}.
+
+    A priced row folds on its BOOK key (#708). An unpriced copy folds on the book key of a
+    priced member of its copy group when there is one (#823 audit SF: otherwise the unpriced
+    copy still took the base fraction beside the priced bet), else on its copy-group key. A row
+    with neither folds with nothing."""
+    group_book: dict[str, str] = {}
+    for _name, (bk, ek) in sorted(pairs.items()):
+        if bk and ek:
+            group_book.setdefault(ek, bk)
+    return {name: (bk or (group_book.get(ek) if ek else None) or ek)
+            for name, (bk, ek) in pairs.items()}
+
+
+def priced_first(rank: tuple[str, float], priced: bool) -> tuple[str, float]:
+    """`carrier_rank` with a PRICED row ahead of every unpriced one: the carrier of a key the book
+    prices must be a row the book prices, or the cell's fraction would be replaced by the base
+    ramp of an unpriced copy."""
+    return (("0|" if priced else "1|") + rank[0], rank[1])
 
 
 def carrier_ties(keys: Mapping[str, str | None],

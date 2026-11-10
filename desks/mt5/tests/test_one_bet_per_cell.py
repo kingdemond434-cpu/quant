@@ -121,3 +121,36 @@ def test_an_alias_stays_on_the_roster_with_its_entry_suppressed() -> None:
                            risk_frac=0.0, from_book=True) == 0.0
     assert 'st["alias_folded"] = {' in src and '"ties_decided_by_name"' in src
 
+def test_an_unpriced_copy_of_a_priced_bet_folds_onto_the_priced_row() -> None:
+    """#823 audit SF: one PRICED row and one UNPRICED copy of the same executable. The copy takes
+    the priced row's book key, and the priced row carries whatever its certificate's age."""
+    copies = dc.executable_copy_keys(GROUPS)
+    pairs = {GBPJPY: (None, copies[GBPJPY]),                 # unpriced copy, oldest certificate
+             EBAY: ("CHFDKK_carry_asia", copies[EBAY]),      # the row the book prices
+             VARIANT: (None, None), OTHER: (None, None)}
+    keys = dc.copy_fold_keys(pairs)
+    assert keys == {GBPJPY: "CHFDKK_carry_asia", EBAY: "CHFDKK_carry_asia",
+                    VARIANT: None, OTHER: None}
+    ranks = {GBPJPY: dc.priced_first(("2026-08-01", -90.0), False),
+             EBAY: dc.priced_first(("2026-09-20", -5.0), True)}
+    assert dc.fold_book_aliases(keys, ranks) == {GBPJPY: EBAY}
+    # with no priced member the copies fold on their own group key, as before
+    alone = dc.copy_fold_keys({GBPJPY: (None, copies[GBPJPY]), OWN: (None, copies[OWN])})
+    assert alone[GBPJPY] == alone[OWN] == copies[GBPJPY]
+    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    assert '"unpriced_copies_onto_priced": _onto_priced,' in src
+
+
+def test_the_judges_own_group_key_is_used_when_published_and_caps_are_counted(tmp_path) -> None:
+    keyed = [{**GROUPS[0], "key": "0123456789abcdef"}]
+    assert set(dc.executable_copy_keys(keyed).values()) == {"exe:0123456789abcdef"}
+    art = tmp_path / "HYPOTHESIS_FAMILIES.json"
+    capped = [{**GROUPS[0], "copies": 31}]                   # 31 copies, 3 members listed
+    art.write_text(json.dumps(
+        {"intake": {"executable_groups": {"sleeves": {"groups": capped}}}}), "utf-8")
+    assert "1 group(s) list fewer members than their copies" in dc.executable_copies(art)[1]
+    # the Judge's UNMEASURED block (no sleeves.json) carries no groups key: unmeasured, not zero
+    art.write_text(json.dumps({"intake": {"executable_groups": {"sleeves": {
+        "status": "UNMEASURED", "why": "no sleeves.json"}}}}), "utf-8")
+    keys, why = dc.executable_copies(art)
+    assert keys == {} and "UNMEASURED" in why

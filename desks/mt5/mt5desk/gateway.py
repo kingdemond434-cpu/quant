@@ -67,6 +67,7 @@ from mt5desk.decision_core import (
     book_from_allocation,
     carrier_rank,
     carrier_ties,
+    copy_fold_keys,
     executable_copies,
     fold_book_aliases,
     bracket_deadline,
@@ -320,6 +321,7 @@ from mt5desk.decision_core import (
     EXECUTABLE_COPIES_FILE as EXECUTABLE_COPIES_FILE,
     EXECUTABLE_COPIES_MAX_AGE_S as EXECUTABLE_COPIES_MAX_AGE_S,
     executable_copy_keys as executable_copy_keys,
+    priced_first as priced_first,
 )
 from mt5desk.decision_core import (
     FUSION_DEADMAN_MAX_AGE_S as FUSION_DEADMAN_MAX_AGE_S,
@@ -5278,17 +5280,25 @@ def main() -> None:
     # variant, a family outside the Judge's table and a row with no certificate fold with
     # nothing. The oldest certificate, then the longest clock, carries (`carrier_rank`).
     _copies, _copies_why = executable_copies()
-    _fold_keys = {str(_s["name"]): (None if cert_book_zero(_s.get("name"))
-                                    else (_book_key(_s, _book) or _copies.get(str(_s["name"]))))
-                  for _s in sleeves}
-    _ranks = {str(_s["name"]): carrier_rank(_s) for _s in sleeves}
+    _pairs = {str(_s["name"]): ((None, None) if cert_book_zero(_s.get("name"))
+                                else (_book_key(_s, _book), _copies.get(str(_s["name"]))))
+              for _s in sleeves}
+    # An unpriced copy of a PRICED bet folds onto the priced row's book key, and a priced row
+    # always outranks an unpriced one as carrier (`copy_fold_keys`, `priced_first`).
+    _fold_keys = copy_fold_keys(_pairs)
+    _ranks = {str(_s["name"]): priced_first(carrier_rank(_s),
+                                            _pairs[str(_s["name"])][0] is not None)
+              for _s in sleeves}
     _aliases = fold_book_aliases(_fold_keys, _ranks)
+    _onto_priced = sorted(n for n in _aliases
+                          if _pairs[n][0] is None and _pairs[_aliases[n]][0] is not None)
     # THE PASS REPORT: how many rows were folded onto how many carriers, and which keys' carrier
     # was decided by name because two rows ranked equal. Saved with the gateway's own state.
     st["alias_folded"] = {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "n_folded": len(_aliases), "n_carriers": len(set(_aliases.values())),
         "ties_decided_by_name": carrier_ties(_fold_keys, _ranks),
+        "unpriced_copies_onto_priced": _onto_priced,
         "aliases": dict(sorted(_aliases.items())), "executable_copies": _copies_why}
     if _aliases:
         log(f"ALIAS_FOLDED summary: {len(_aliases)} row(s) folded onto "
