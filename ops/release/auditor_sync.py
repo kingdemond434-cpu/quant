@@ -11,12 +11,18 @@ Auditor pushes its registry to one ref on origin and this script, on a schedule,
 
 WHAT IT REFUSES (each leaves the old copy untouched, so it ages and the gate waits):
   * the ref or the file cannot be fetched;
-  * any line that is not {"pr": int, "sha": 40 hex, "verdict": "CLEAR"|"HOLD", "at": time};
+  * any line that is not exactly {"pr": int, "sha": 40 hex, "verdict": "CLEAR"|"HOLD",
+    "at": time with a zone} -- a missing key or an extra one refuses the whole registry;
   * a registry that is not the old copy plus appended rows. The record is append-only: a row
     that vanished could be a HOLD, so a rewritten history is never accepted here. Repairing
     one is a person's act at the box (delete the copy; the next run takes the ref whole);
   * an output path that is the gate's own owner-appended registry (QUANT_AUDIT_REGISTRY):
     that file is the owner's, and nothing automatic ever writes it.
+
+WHAT IT TOUCHES IN THE CHECKOUT. One ref of its own, refs/auditor-sync/registry, and the
+objects behind it. It never writes FETCH_HEAD (the adopter reads the one already on disk), the
+index, the work tree, HEAD or any branch, so it takes no index or work-tree lock and does not
+need the box's git-writer mutex: a ref update is atomic in git, and nothing else reads this ref.
 
 WHAT A GOOD RUN DOES. Writes the copy atomically and stamps it now, also when nothing changed:
 the stamp says "as of now the Auditor's registry holds no row this copy lacks", which is what
@@ -42,6 +48,10 @@ from pathlib import Path
 
 REF = "refs/heads/audit-registry"
 FILE = "REGISTRY_ROWS.jsonl"
+#: Where the fetched tip is kept in the checkout: a ref of this script's own, outside heads,
+#: remotes and tags, so no branch, no adopter and no gate ever reads it.
+LOCAL_REF = "refs/auditor-sync/registry"
+KEYS = frozenset({"pr", "sha", "verdict", "at"})
 OWNER_REGISTRY_ENV = "QUANT_AUDIT_REGISTRY"
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 GIT_TIMEOUT_S = 120
@@ -63,6 +73,8 @@ def check_rows(text: str) -> int:
             raise Refused(f"line {i} is not JSON") from exc
         if not isinstance(r, dict):
             raise Refused(f"line {i} is not an object")
+        if set(r) != KEYS:
+            raise Refused(f"line {i}: keys are not exactly {sorted(KEYS)}")
         pr, at = r.get("pr"), str(r.get("at") or "")
         if isinstance(pr, bool) or not isinstance(pr, int) or pr <= 0:
             raise Refused(f"line {i}: pr is not a positive integer")
@@ -81,8 +93,14 @@ def check_rows(text: str) -> int:
 
 
 def fetch(repo_dir: Path, ref: str = REF, name: str = FILE) -> str:
-    """The registry file at the ref's tip on origin, as text."""
-    for args in (("fetch", "-q", "--no-tags", "origin", ref), ("show", f"FETCH_HEAD:{name}")):
+    """The registry file at the ref's tip on origin, as text. FETCH_HEAD is never written: the
+    box adopter reads "the FETCH_HEAD already on disk" of the same checkout, and a sync landing
+    in between would hand it this one-file tree (Auditor, #818). The tip goes to LOCAL_REF."""
+    steps = (
+        ("fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", f"+{ref}:{LOCAL_REF}"),
+        ("show", f"{LOCAL_REF}:{name}"),
+    )
+    for args in steps:
         try:
             done = subprocess.run(["git", "-C", str(repo_dir), *args], capture_output=True,
                                   timeout=GIT_TIMEOUT_S, check=False)  # fmt: skip

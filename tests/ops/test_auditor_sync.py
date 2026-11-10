@@ -52,6 +52,8 @@ def test_a_valid_registry_is_written_and_stamped_even_when_unchanged(tmp_path: P
     _row(verdict="PASS"),
     _row(at="yesterday"),
     _row(at="2026-11-10T16:00:00"),
+    _row(by="someone"),
+    json.dumps({"pr": 41, "sha": H1, "verdict": "CLEAR"}),
 ])  # fmt: skip
 def test_one_bad_line_refuses_the_whole_registry_and_keeps_the_old_copy(
     tmp_path: Path, bad: str
@@ -104,12 +106,25 @@ def test_main_copies_the_ref_from_origin_and_refuses_a_missing_one(
     _git(origin, "add", sy.FILE)
     _git(origin, "commit", "-q", "-m", "rows")
     subprocess.run(["git", "clone", "-q", str(origin), str(box)], check=True, capture_output=True)
+    # the adopter's pre-fetched FETCH_HEAD and the checkout itself must not move (Auditor, #818)
+    _git(box, "fetch", "-q", "origin", "audit-registry")
+    fetch_head = (box / ".git" / "FETCH_HEAD").read_bytes()
+    before = subprocess.run(["git", "-C", str(box), "rev-parse", "HEAD"], check=True,
+                            capture_output=True).stdout  # fmt: skip
+    (origin / sy.FILE).write_text(_text(_row(), _row(verdict="HOLD")), encoding="utf-8")
+    _git(origin, "commit", "-q", "-am", "a hold")
     out = tmp_path / "rows.jsonl"
     assert sy.main(["--repo-dir", str(box), "--out", str(out)]) == 0
-    assert out.read_text(encoding="utf-8") == _text(_row())
+    assert out.read_text(encoding="utf-8") == _text(_row(), _row(verdict="HOLD"))
+    assert (box / ".git" / "FETCH_HEAD").read_bytes() == fetch_head
+    after = subprocess.run(["git", "-C", str(box), "rev-parse", "HEAD"], check=True,
+                           capture_output=True).stdout  # fmt: skip
+    status = subprocess.run(["git", "-C", str(box), "status", "--porcelain"], check=True,
+                            capture_output=True).stdout  # fmt: skip
+    assert after == before and status == b""
     assert sy.main(["--repo-dir", str(box), "--out", str(out), "--ref", "refs/heads/nope"]) == 1
     assert "REFUSED" in capsys.readouterr().out
-    assert out.read_text(encoding="utf-8") == _text(_row())
+    assert out.read_text(encoding="utf-8") == _text(_row(), _row(verdict="HOLD"))
 
 
 def test_the_copy_it_writes_is_one_the_gate_accepts(tmp_path: Path) -> None:
@@ -123,3 +138,9 @@ def test_the_copy_it_writes_is_one_the_gate_accepts(tmp_path: Path) -> None:
     sy.sync(_text(_row()), out, owner_registry="")
     rows, why = ag.registry_rows(str(out))
     assert why == "" and rows == [json.loads(_row())]
+
+
+def test_the_fetch_never_writes_fetch_head() -> None:
+    src = (ROOT / "ops/release/auditor_sync.py").read_text(encoding="utf-8")
+    assert '"--no-write-fetch-head"' in src and '"FETCH_HEAD:' not in src
+    assert sy.LOCAL_REF.startswith("refs/auditor-sync/")
