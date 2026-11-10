@@ -127,7 +127,8 @@ def test_liveness_check_goes_red_when_unwired_or_blind_and_is_in_the_law_gate(tm
                      flag=tmp_path / "none")
     assert off["verdict"] == "UNMEASURED" and not off["red"]
     rep = tmp_path / "E8_GOLD.json"
-    rep.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(), "status": "OK"}), "utf-8")
+    rep.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(), "status": "OK",
+                               "news_fence_patch": "e8_news_fence/v1"}), "utf-8")
     out = chk.assess(today=date(2026, 10, 2), report=rep, flag=tmp_path / "none")
     assert any(r.startswith("SILENT") for r in out["red"])
     gate = (_ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
@@ -356,3 +357,33 @@ def test_late_windows_skips_a_window_the_fence_deferred() -> None:
     marked = [n for n, _ in g.late_windows(hour, {**base, "news_deferred": ["afternoon"]})]
     assert "afternoon" in late and "afternoon" not in marked
     assert set(late) - {"afternoon"} == set(marked) - {"afternoon"}
+
+
+def test_liveness_reads_a_pre_fence_report_unmeasured_and_a_stamped_one_strictly(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The box adopts late and the VPS copies its reports: a fresh OK report from a release that
+    predates the fence is UNMEASURED (exit 0), never a RED that blocks every host's push."""
+    from prop import e8_gold
+    from scripts import check_news_fence_liveness as chk
+    rep = tmp_path / "E8_GOLD.json"
+    now = datetime.now(tz=UTC).isoformat()
+    day = date(2026, 10, 2)
+    rep.write_text(json.dumps({"at": now, "status": "OK", "actions": []}), "utf-8")
+    out = chk.assess(today=day, report=rep, flag=tmp_path / "none")
+    assert out["verdict"] == "UNMEASURED" and not out["red"]
+    assert any("release without the fence" in u for u in out["unmeasured"])
+    monkeypatch.setattr(chk, "assess", lambda: out)
+    assert chk.main([]) == 0
+    monkeypatch.undo()
+    good = nf.verdict(datetime(2026, 10, 2, 9, 0, tzinfo=UTC)).as_dict()
+    assert all(k in good for k in chk.VERDICT_FIELDS)
+    stamped = {"at": now, "status": "OK", "news_fence_patch": e8_gold.NEWS_PATCH}
+    rep.write_text(json.dumps({**stamped, "news_fence": good}), "utf-8")
+    assert not chk.assess(today=day, report=rep, flag=tmp_path / "none")["red"]
+    for bad in (stamped, {**stamped, "news_fence": None}, {**stamped, "news_fence": {"why": "x"}},
+                {"at": now, "status": "OK", "news_fence": {}}):
+        rep.write_text(json.dumps(bad), "utf-8")
+        red = chk.assess(today=day, report=rep, flag=tmp_path / "none")["red"]
+        assert any(r.startswith("SILENT") for r in red), bad
+    src = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
+    assert '"news_fence_patch": NEWS_PATCH}' in src      # stamped at doc creation, every pass

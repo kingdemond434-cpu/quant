@@ -1107,6 +1107,11 @@ def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side:
 
 NEWS_RAIL = "e8_news_fence"
 NEWS_SHADOW = "SHADOW_FENCE"
+#: Stamped on EVERY pass report as `news_fence_patch`, before the fence is asked. A report without
+#: it was written by a release that predates the fence (the box adopts late and the VPS copies
+#: its reports), so scripts/check_news_fence_liveness.py reads that UNMEASURED, and keeps RED for
+#: a report that carries the stamp and no usable `news_fence` verdict.
+NEWS_PATCH = "e8_news_fence/v1"
 
 
 class _NewsFailedOpen:
@@ -1148,7 +1153,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     venue = order_door.guard_venue(venue, caller="e8_gold", log=log)
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
-                           "symbol": SYMBOL, "placed": [], "actions": [], "skipped": []}
+                           "symbol": SYMBOL, "placed": [], "actions": [], "skipped": [],
+                           "news_fence_patch": NEWS_PATCH}
     tick = mt5.symbol_info_tick(SYMBOL)
     rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_H1, 0, 400)
     if tick is None or rates is None or len(rates) < 60:

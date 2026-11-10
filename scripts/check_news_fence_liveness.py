@@ -11,14 +11,19 @@ nothing:
   * BLIND    -- the fence is ON and the calendar refuses this year or holds no date for a
                 monthly tier-1 family (CPI, PPI, PCE, GDP, NFP) in this or next WHOLE month: a gap is a
                 release the fence cannot see, never a quiet month;
-  * SILENT   -- the lane's last completed (status OK) report, under 1h old, carries no
-                `news_fence` verdict, i.e. a pass ran the old code (NO_BARS / a failed pass
-                return before the fence is asked and are not SILENT);
+  * SILENT   -- the lane's last completed (status OK) report, under 1h old, was PROVABLY
+                written by code that holds the fence (it carries the `news_fence_patch` stamp
+                e8_gold.run puts on every report, or a `news_fence` key) and yet has no usable
+                `news_fence` verdict (NO_BARS / a failed pass return before the fence is asked
+                and are not SILENT);
   * FAILED OPEN -- that report's verdict carries an `error`: the fence could not be asked and
                 the pass ran unfenced.
 
 With the fence OFF a calendar gap is UNMEASURED (printed, exit 0): the shadow journal still runs
 and the gap is published, but nothing is being relied on. No report on this host is UNMEASURED.
+So is a report with neither the stamp nor the block: a release that predates the fence wrote it
+(the box adopts hourly and the VPS copies the box's reports), which is not a silent fence and
+must not turn every host's law gate RED until the box adopts.
 
     python scripts/check_news_fence_liveness.py [--json]
 """
@@ -40,6 +45,8 @@ for _p in (str(ROOT), str(DESK)):
 LANE = DESK / "prop" / "e8_gold.py"
 REPORT = DESK / "reports" / "E8_GOLD.json"
 REPORT_MAX_AGE_H = 1.0
+#: The fields every verdict (`Verdict.as_dict` and the fail-open stand-in) publishes.
+VERDICT_FIELDS = ("enabled", "blocks", "calendar_ok")
 
 
 def assess(*, today: date | None = None, lane: Path = LANE, report: Path = REPORT,
@@ -73,9 +80,20 @@ def assess(*, today: date | None = None, lane: Path = LANE, report: Path = REPOR
             age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
             fresh = age_h <= REPORT_MAX_AGE_H
             # A NO_BARS or failed pass returns before the fence is asked: not SILENT (v2).
-            if fresh and doc.get("status") == "OK" and "news_fence" not in doc:
-                red.append(f"SILENT: {report.name} ({age_h:.2f}h old) has no news_fence verdict")
-            err = (doc.get("news_fence") or {}).get("error") if fresh else None
+            nfv = doc.get("news_fence")
+            err = nfv.get("error") if fresh and isinstance(nfv, dict) else None
+            if fresh and doc.get("status") == "OK" and not err:
+                if "news_fence_patch" not in doc and "news_fence" not in doc:
+                    unmeasured.append(
+                        f"{report.name} ({age_h:.2f}h old) was written by a release without "
+                        f"the fence (no news_fence_patch stamp): this host's lane has not "
+                        f"adopted it")
+                elif not isinstance(nfv, dict):
+                    red.append(f"SILENT: {report.name} ({age_h:.2f}h old) carries the fence "
+                               f"stamp and no news_fence verdict")
+                elif [k for k in VERDICT_FIELDS if k not in nfv]:
+                    red.append(f"SILENT: {report.name} ({age_h:.2f}h old) news_fence verdict "
+                               f"lacks {', '.join(k for k in VERDICT_FIELDS if k not in nfv)}")
             if err:
                 red.append(f"FAILED OPEN: the lane's last pass could not ask the fence ({err})")
         except (OSError, ValueError, TypeError) as exc:
