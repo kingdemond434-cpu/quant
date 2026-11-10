@@ -165,6 +165,19 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _set_aside_ledger_in_tmp(tmp_path_factory, monkeypatch):
+    """THE SET-ASIDE LEDGER NEVER LANDS IN THE CHECKOUT FROM A TEST. `libs.research.set_aside`
+    appends to `desks/mt5/reports/SET_ASIDE_LEDGER.json` by default; under xdist one worker's
+    organ test rewrote it while another worker's no-desk-write test was comparing mtimes
+    (test_hypothesis_families end-to-end merge, CI 2026-11-10). A test that passes its own
+    `path=` is untouched; the default is a fresh tmp file."""
+    from libs.research import set_aside
+    monkeypatch.setattr(set_aside, "PATH",
+                        tmp_path_factory.mktemp("set_aside") / "SET_ASIDE_LEDGER.json")
+    yield
+
+
 #: The judge pre-build screen's two reports (`research/judge_prescreen`). Every `order_docket`
 #: pass with `publish=True` writes the intake report, and the hourly leg writes the main one.
 PRESCREEN_REPORTS = ("INTAKE_REPORT", "REPORT")
