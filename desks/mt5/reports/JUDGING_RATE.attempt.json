@@ -1,51 +1,57 @@
 {
  "schema": 1,
- "started_at": "2026-11-10T05:38:40+00:00",
- "pid": 27472,
- "phase": "written",
- "phase_at": "2026-11-10T05:44:15+00:00",
- "done": false,
+ "started_at": "2026-11-10T06:41:56+00:00",
+ "pid": 18776,
+ "phase": "applied",
+ "phase_at": "2026-11-10T06:45:29+00:00",
+ "done": true,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-11-10T05:38:40+00:00",
+   "at": "2026-11-10T06:41:56+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-11-10T05:38:40+00:00",
+   "at": "2026-11-10T06:41:56+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "queue",
-   "at": "2026-11-10T05:41:24+00:00",
-   "elapsed_s": 163.8
+   "at": "2026-11-10T06:43:10+00:00",
+   "elapsed_s": 74.4
   },
   {
    "phase": "plan",
-   "at": "2026-11-10T05:41:24+00:00",
-   "elapsed_s": 163.8
+   "at": "2026-11-10T06:43:10+00:00",
+   "elapsed_s": 74.4
   },
   {
    "phase": "rate",
-   "at": "2026-11-10T05:41:24+00:00",
-   "elapsed_s": 163.8
+   "at": "2026-11-10T06:43:10+00:00",
+   "elapsed_s": 74.4
   },
   {
    "phase": "rate_written",
-   "at": "2026-11-10T05:44:10+00:00",
-   "elapsed_s": 329.1
+   "at": "2026-11-10T06:43:56+00:00",
+   "elapsed_s": 119.8
   },
   {
    "phase": "task_limit",
-   "at": "2026-11-10T05:44:12+00:00",
-   "elapsed_s": 331.4
+   "at": "2026-11-10T06:43:58+00:00",
+   "elapsed_s": 121.9
   },
   {
    "phase": "written",
-   "at": "2026-11-10T05:44:15+00:00",
-   "elapsed_s": 334.9
+   "at": "2026-11-10T06:43:58+00:00",
+   "elapsed_s": 122.4
+  },
+  {
+   "phase": "applied",
+   "at": "2026-11-10T06:45:29+00:00",
+   "elapsed_s": 212.8
   }
  ],
- "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
+ "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason",
+ "seconds": 212.8
 }
