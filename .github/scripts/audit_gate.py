@@ -431,9 +431,7 @@ def standing(level: str, board: Iterable[Mapping[str, Any]]) -> bool:
     return level in ("LOW", "AUTO") and activated(board)[0]
 
 
-def approved(
-    clear: Mapping[str, str], at: str | None, stands: bool = False
-) -> tuple[bool, str]:
+def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> tuple[bool, str]:
     """Does zuck's latest approval cover this CLEAR? A CLEAR given BEFORE it, always; a later
     one only when the approval is standing (`stands`, and typed at or after STANDING_FROM)."""
     if at is None:
@@ -1226,9 +1224,11 @@ def run(
         # the CLEAR names this change: its head, or the same diff carried over (as cleared() reads
         # it), so a rebased identical change zuck approved keeps his override (#537 audit S1)
         ours = last["sha"] == head or same_change(last["sha"])
-        if ours and boards and approved(
-            last, approval_at(boards[-1]), standing(level, boards[-1])
-        )[0]:
+        if (
+            ours
+            and boards
+            and approved(last, approval_at(boards[-1]), standing(level, boards[-1]))[0]
+        ):
             return "zuck approved its CLEAR of this head"
         return None
 
