@@ -594,6 +594,13 @@ def test_every_path_that_moves_a_cell_rewrites_its_traded_instrument() -> None:
                          ("rank_recovery.py",
                           "retarget_params(donor[\"params\"], str(donor[\"symbol\"]), sym)")):
         assert needle in (research / name).read_text("utf-8"), name
+    # and both carrying doors ask the judge's own buildability before minting
+    for name in ("independence_intake.py", "rank_recovery.py"):
+        text = (research / name).read_text("utf-8")
+        assert "mint_refusal(donor[\"family\"], carried)" in text, name
+        assert "set_aside_by_family_reason" in text, name
+    moat = (research / "moat_candidate_compiler.py").read_text("utf-8")
+    assert "mint_refusal(fam, params)" in moat and "set_aside_by_family_reason" in moat
     # the intake's donor symbol comes from the registry in whatever case it was stored
     assert hf.retarget_params({"symbol": "USDSGD", "risk_symbol": "JPN225"}, "usdsgd",
                               "ADAUSD") == {"symbol": "ADAUSD", "risk_symbol": "JPN225"}
@@ -823,3 +830,22 @@ def test_one_executable_is_one_key_and_a_fresh_copy_is_refused(tmp_path) -> None
     assert doc["sleeves"]["groups"][0]["members"][0] == {"name": "s1",
                                                          "state": "RETIRED risk_frac=0.03"}
     assert doc["reports_survivors"]["status"] == "UNMEASURED"
+
+
+def test_a_cell_the_judge_cannot_build_as_claimed_is_refused_before_minting() -> None:
+    """Box 2026-11-10: the carrying doors minted cells the judge returns NOT_RUN on -- variant
+    keys the replay refuses by name -- and cells with a required param missing. `mint_refusal`
+    asks the judge's own two questions; a plain buildable cell is never refused."""
+    from research.gauntlet_buildability import mint_refusal
+
+    assert mint_refusal("event_reaction", {"mode": "fade", "hold_bars": 1}) is None
+    assert mint_refusal("event_reaction", {"mode": "fade", "regime": "high_vol"}) is None
+    why = mint_refusal("event_reaction", {"mode": "fade", "residual": "gold"})
+    assert why and why.startswith("MODIFIER_REFUSED") and "residual" in why
+    why = mint_refusal("event_reaction", {"mode": "drift", "regime": "risk_off"})
+    assert why and "no desk definition" in why
+    why = mint_refusal("event_reaction", {"execution_style": "limit"})
+    assert why and "fill" in why
+    why = mint_refusal("clock_transition", {})
+    assert why and why.startswith("MISSING_PARAMS")
+    assert mint_refusal("no_such_family_anywhere", {}) is not None

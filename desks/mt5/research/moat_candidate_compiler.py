@@ -316,11 +316,24 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
     except Exception as exc:                                   # pragma: no cover - import guard
         out["status"] = f"INTAKE_UNAVAILABLE: {type(exc).__name__}: {exc}"
         return out
+    # ASKED BEFORE MINTING (box 2026-11-10): 3,367 event_reaction variant rows reached the docket
+    # from this door carrying a modifier the replay refuses by name. A cell the judge cannot
+    # build as claimed is set aside and counted here, never donated; a fault in the question
+    # refuses nothing.
+    try:
+        from research.gauntlet_buildability import mint_refusal
+    except Exception:                                          # pragma: no cover - import guard
+        mint_refusal = None  # type: ignore[assignment]
+    set_aside: Counter[str] = Counter()
     cands: list[dict[str, Any]] = []
     for r in claimed:
         params = _read_params(r.get("params_json"))
         fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
         if not fam or not sym:
+            continue
+        why_not = mint_refusal(fam, params) if mint_refusal is not None else None
+        if why_not:
+            set_aside[f"{fam}|{why_not.split(':', 1)[0]}"] += 1
             continue
         mark = provenance_mark(r)
         cand = pc.candidate(
@@ -343,6 +356,8 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
     out["donated"] = int(pc.donation_counts().get("donated") or 0) if cands else 0
     out["donation_path"] = str(path) if path else None
     out["refusals"] = pc.donation_counts()
+    out["set_aside_unbuildable"] = int(sum(set_aside.values()))
+    out["set_aside_by_family_reason"] = dict(sorted(set_aside.items()))
     return out
 
 

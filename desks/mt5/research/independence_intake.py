@@ -526,6 +526,7 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     targeted = existing = failed = frontier_hits = 0
     by_operator: Counter[str] = Counter()
     by_producer: Counter[str] = Counter()
+    set_aside: Counter[str] = Counter()
     stopped = "list exhausted"
     try:
         con = connect()
@@ -550,10 +551,20 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
                 # THE CARRIED CELL NAMES THE INSTRUMENT IT NOW TRADES (box, 2026-11-10: 143
                 # carry_risk_off rows were ADAUSD-and-others with `symbol: USDSGD` in params,
                 # judged on the new bars with the donor's carry side).
-                from research.hypothesis_families import retarget_params
+                from research.gauntlet_buildability import mint_refusal
+                from research.hypothesis_families import retarget_params, with_row_symbol
+                carried = with_row_symbol(
+                    donor["family"], sym,
+                    retarget_params(donor["params"], str(donor["symbol"]), sym))
+                # A CELL THE JUDGE CANNOT BUILD AS CLAIMED IS NOT MINTED (box, 2026-11-10: 110
+                # world_macro_state rows naming no series came through this door). Set aside
+                # and counted by reason; the coordinate stays empty and is named as such.
+                why_not = mint_refusal(donor["family"], carried)
+                if why_not:
+                    set_aside[f"{donor['family']}|{why_not.split(':', 1)[0]}"] += 1
+                    continue
                 _id, made = enqueue_candidate(
-                    family=donor["family"], symbol=sym,
-                    params=retarget_params(donor["params"], str(donor["symbol"]), sym),
+                    family=donor["family"], symbol=sym, params=carried,
                     origin=SOURCE, horizon=hor, conn=con,
                     mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
                                f"{hor} (mutation: {op})"),
@@ -582,6 +593,8 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
         "cells_created_in_empty_cells": len(created),
         "frontier_cells_created": frontier_hits,
         "already_present": existing, "failed": failed,
+        "set_aside_unbuildable": sum(set_aside.values()),
+        "set_aside_by_family_reason": dict(set_aside.most_common(60)),
         "by_operator": dict(by_operator),
         # WHOSE RULE WENT WHERE. The transplant carries the donor's attribution because the cell
         # is that producer's rule on new ground; this organ keeps `origin`. A single key here

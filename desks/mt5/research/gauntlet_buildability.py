@@ -271,6 +271,39 @@ def cell_verdict(family: str, params: dict[str, Any] | None = None,
     return BUILDABLE, why
 
 
+def mint_refusal(family: str, params: dict[str, Any] | None = None,
+                 timeframe: str | None = None) -> str | None:
+    """Why a producer must NOT mint this cell, or None when the judge can build it as claimed.
+
+    ASKED BEFORE MINTING, BY THE DOORS THAT CARRY A RULE ELSEWHERE (box 2026-11-10). The
+    independence intake and rank recovery copy a donor's cell onto another coordinate without
+    asking whether the judge can build it: 1,059 world_macro_state rows naming no series, and
+    thousands of variant rows whose modifier the replay refuses by name (`residual`, a risk-on
+    regime with no desk definition, a limit fill with no fill model). Each such row occupies a
+    grid cell, is preregistered, reaches the judge and comes back NOT_RUN or never-fires --
+    breadth on paper and judge wall spent on nothing.
+
+    Two questions, both the judge's own: `cell_verdict` (the family resolves, its chart is
+    allowed, its required params are present) and `cell_modifiers.refusal` on exactly the keys
+    `split` would move out of the call. A reason that depends on a series being on THIS box is
+    answered where this runs. Never raises: a fault is no refusal, so an error here can only
+    let a cell through, never hold one back."""
+    try:
+        verdict, why = cell_verdict(family, params, timeframe)
+        if verdict != BUILDABLE:
+            return f"{verdict}: {why}"
+        from mt5desk import cell_modifiers as cm
+        from mt5desk.families import get_family_func
+        fn = get_family_func(str(family))
+        if fn is None:
+            return None
+        _kwargs, mods = cm.split(fn, dict(params or {}))
+        reason = cm.refusal(mods) if mods else None
+        return f"MODIFIER_REFUSED: {reason}" if reason else None
+    except Exception:
+        return None
+
+
 def census() -> dict[str, dict[str, str]]:
     """Every family the gauntlet can resolve, with its verdict -- the table producers read."""
     out: dict[str, dict[str, str]] = {}

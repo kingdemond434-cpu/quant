@@ -443,6 +443,7 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
     case = _symbol_case()
     created = existing = failed = 0
     by_producer: Counter[str] = Counter()
+    set_aside: Counter[str] = Counter()
     made_rows: list[tuple[str, str]] = []
     stopped = "plan exhausted"
     try:
@@ -463,10 +464,19 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
                 # THE CARRIED CELL NAMES THE INSTRUMENT IT NOW TRADES (box, 2026-11-10: a
                 # forced_flow row on ADAUSD still read `symbol: XAUUSD`, the donor's; this door
                 # is the fourth that moved a cell with its donor's params untouched).
-                from research.hypothesis_families import retarget_params
+                from research.gauntlet_buildability import mint_refusal
+                from research.hypothesis_families import retarget_params, with_row_symbol
+                carried = with_row_symbol(
+                    donor["family"], sym,
+                    retarget_params(donor["params"], str(donor["symbol"]), sym))
+                # A CELL THE JUDGE CANNOT BUILD AS CLAIMED IS NOT MINTED: it would credit a
+                # producer with rank for a row that comes back NOT_RUN. Counted by reason.
+                why_not = mint_refusal(donor["family"], carried)
+                if why_not:
+                    set_aside[f"{donor['family']}|{why_not.split(':', 1)[0]}"] += 1
+                    continue
                 _id, made = enqueue_candidate(
-                    family=donor["family"], symbol=sym,
-                    params=retarget_params(donor["params"], str(donor["symbol"]), sym),
+                    family=donor["family"], symbol=sym, params=carried,
                     origin=SOURCE, horizon=hor, conn=con,
                     mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
                                f"{hor} (mutation: cross_producer)"),
@@ -488,6 +498,8 @@ def deepen(plan: list[tuple[str, dict[str, Any]]], *, budget_s: float = 120.0,
                 "producer's rule as a NEW candidate. Nothing is capped, dropped or removed"),
         "planned": len(plan), "cells_created": created, "already_present": existing,
         "failed": failed, "producers_credited": len(by_producer),
+        "set_aside_unbuildable": sum(set_aside.values()),
+        "set_aside_by_family_reason": dict(set_aside.most_common(60)),
         "by_producer": dict(by_producer.most_common(40)),
         "created_rows": made_rows,
         "stopped_because": stopped,
