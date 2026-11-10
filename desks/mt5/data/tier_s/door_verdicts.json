@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-10T10:59:22.796307+00:00",
+ "generated_utc": "2026-11-10T11:39:59.603826+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -7,9 +7,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
@@ -18,9 +18,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -29,9 +29,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFNOK.carry.p=98d776f3e210d3e2": {
@@ -51,9 +51,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
@@ -62,9 +62,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
@@ -73,9 +73,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
@@ -84,9 +84,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -95,9 +95,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -106,9 +106,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
@@ -117,9 +117,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
@@ -161,9 +161,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
@@ -172,9 +172,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
@@ -227,9 +227,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -238,9 +238,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -249,9 +249,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -260,9 +260,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CADCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -271,9 +271,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -282,9 +282,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -293,9 +293,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -304,9 +304,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFNOK.carry.p=44136fa355b3678a": {
@@ -5448,9 +5448,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURZAR.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -5459,9 +5459,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPCHF.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -5470,9 +5470,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -5481,9 +5481,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -5492,9 +5492,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURZAR.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -5503,9 +5503,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -5514,9 +5514,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -5525,9 +5525,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURILS.formula.p=673857a649d3c271": {
@@ -9094,9 +9094,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDPLN@M5.macro_conditional.p=15cd1e1d3ea4ca2e": {
@@ -9259,9 +9259,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -9270,9 +9270,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=5c21beb6db4ddd6d": {
@@ -9281,9 +9281,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -9292,9 +9292,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -9303,9 +9303,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK@M30.cross_asset_residual.p=f166d10e252f8592": {
@@ -9589,9 +9589,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=44136fa355b3678a": {
@@ -9600,9 +9600,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -9611,9 +9611,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -9622,9 +9622,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -9633,9 +9633,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -9644,9 +9644,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -9655,9 +9655,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -9666,9 +9666,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -9677,9 +9677,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -9688,9 +9688,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -9699,9 +9699,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -9710,9 +9710,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -9721,9 +9721,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -9732,9 +9732,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -9743,9 +9743,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -9754,9 +9754,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -9765,9 +9765,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -9776,9 +9776,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -9787,9 +9787,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=b5ae6cc03c9ae8a4": {
@@ -9798,9 +9798,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=5c21beb6db4ddd6d": {
@@ -9809,9 +9809,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=5c21beb6db4ddd6d": {
@@ -9820,9 +9820,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -9831,9 +9831,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.clock_transition.p=d416e1eebe081eac": {
@@ -11497,9 +11497,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11508,9 +11508,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11519,9 +11519,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -11530,9 +11530,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11541,9 +11541,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11552,9 +11552,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11563,9 +11563,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -11574,9 +11574,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11585,9 +11585,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -11596,9 +11596,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11607,9 +11607,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11618,9 +11618,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11629,9 +11629,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -11640,9 +11640,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11651,9 +11651,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=44136fa355b3678a": {
@@ -11662,9 +11662,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11673,9 +11673,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -11684,9 +11684,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11695,9 +11695,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=44136fa355b3678a": {
@@ -11706,9 +11706,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11717,9 +11717,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=44136fa355b3678a": {
@@ -11728,9 +11728,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11739,9 +11739,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.overnight_gap_decay.p=44136fa355b3678a": {
@@ -11750,9 +11750,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11761,9 +11761,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -11772,9 +11772,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -11783,9 +11783,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -11794,9 +11794,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDJPY@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -11805,9 +11805,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M30.overnight_gap_decay.p=bc2f691d5996fb65": {
@@ -11816,9 +11816,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD@M30.overnight_gap_decay.p=bc2f691d5996fb65": {
@@ -11827,9 +11827,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.overnight_gap_decay.p=bc2f691d5996fb65": {
@@ -11838,9 +11838,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDJPY@M30.overnight_gap_decay.p=bc2f691d5996fb65": {
@@ -11849,9 +11849,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -11860,9 +11860,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11871,9 +11871,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -11882,9 +11882,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11893,9 +11893,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11904,9 +11904,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11915,9 +11915,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -11926,9 +11926,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11937,9 +11937,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -11948,9 +11948,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -11959,9 +11959,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11970,9 +11970,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -11981,9 +11981,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -11992,9 +11992,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -12003,9 +12003,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -12014,9 +12014,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -12025,9 +12025,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -12036,9 +12036,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -12047,9 +12047,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -12058,9 +12058,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -12069,9 +12069,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=4d96b1ebe6d26711": {
@@ -12080,9 +12080,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12091,9 +12091,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12102,9 +12102,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12113,9 +12113,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12124,9 +12124,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12135,9 +12135,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12146,9 +12146,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=30ab3dd5ee95b097": {
@@ -12157,9 +12157,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.overnight_gap_decay.p=30ab3dd5ee95b097": {
@@ -12168,9 +12168,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.overnight_gap_decay.p=aac0f7d701141aa8": {
@@ -12179,9 +12179,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=69e3f4baa606c55a": {
@@ -12190,9 +12190,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=ba414addef550ea9": {
@@ -12201,9 +12201,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12212,9 +12212,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12223,9 +12223,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12234,9 +12234,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12245,9 +12245,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12256,9 +12256,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12267,9 +12267,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12278,9 +12278,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12289,9 +12289,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12300,9 +12300,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12311,9 +12311,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12322,9 +12322,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12333,9 +12333,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12344,9 +12344,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12355,9 +12355,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12366,9 +12366,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12377,9 +12377,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12388,9 +12388,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12399,9 +12399,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12410,9 +12410,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12421,9 +12421,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12432,9 +12432,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12443,9 +12443,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12454,9 +12454,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12465,9 +12465,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12476,9 +12476,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12487,9 +12487,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12498,9 +12498,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12509,9 +12509,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12520,9 +12520,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12531,9 +12531,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12542,9 +12542,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12553,9 +12553,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12564,9 +12564,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -12575,9 +12575,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12586,9 +12586,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12597,9 +12597,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12608,9 +12608,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=0dfa3f66cade1630": {
@@ -12619,9 +12619,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=b5ae6cc03c9ae8a4": {
@@ -12630,9 +12630,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=5c32f658b2d0b2ab": {
@@ -12641,9 +12641,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=3088664d633bb32d": {
@@ -12652,9 +12652,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=c9c5e7428f709c87": {
@@ -12663,9 +12663,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.overnight_gap_decay.p=5c32f658b2d0b2ab": {
@@ -12674,9 +12674,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD.overnight_gap_decay.p=c9c5e7428f709c87": {
@@ -12685,9 +12685,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=5c21beb6db4ddd6d": {
@@ -12696,9 +12696,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -12707,9 +12707,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -12718,9 +12718,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD.overnight_gap_decay.p=5c21beb6db4ddd6d": {
@@ -12729,9 +12729,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -12740,9 +12740,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=5c21beb6db4ddd6d": {
@@ -12751,9 +12751,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=ffe6d0c6c590042e": {
@@ -12762,9 +12762,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -12773,9 +12773,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=931687e6633f8f8b": {
@@ -12784,9 +12784,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -12795,9 +12795,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=de9ed752775ac9b5": {
@@ -12806,9 +12806,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURCHF@M30.clock_transition.p=d416e1eebe081eac": {
@@ -15282,9 +15282,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURMXN.overnight_gap_decay.p=c9c5e7428f709c87": {
@@ -15293,9 +15293,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=c9c5e7428f709c87": {
@@ -15304,9 +15304,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=5c32f658b2d0b2ab": {
@@ -15315,9 +15315,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=3088664d633bb32d": {
@@ -15326,9 +15326,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=c9c5e7428f709c87": {
@@ -15337,9 +15337,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=4e5d71761a63c8d0": {
@@ -15348,9 +15348,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=4e3e7963cfc9ce12": {
@@ -15359,9 +15359,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF@M15.clock_transition.p=693864be674c5810": {
@@ -15465,9 +15465,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDSGD@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -15476,9 +15476,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=036315af6f3a4b09": {
@@ -15487,9 +15487,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=fa049d05ce61b04e": {
@@ -15498,9 +15498,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPDKK.overnight_gap_decay.p=84fa6aa1d195ad43": {
@@ -15509,9 +15509,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSEK.cross_asset_residual.p=f012230023a3e1d5": {
@@ -54225,9 +54225,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=313f59603b15c7e8": {
@@ -54236,9 +54236,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=313f59603b15c7e8": {
@@ -54247,9 +54247,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=313f59603b15c7e8": {
@@ -54258,9 +54258,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=313f59603b15c7e8": {
@@ -54269,9 +54269,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURNOK@M30.formula.p=e4a914e66cde608c": {
@@ -55094,9 +55094,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPCAD@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -55105,9 +55105,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -55116,9 +55116,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=f7a60fcae2cb97a4": {
@@ -55127,9 +55127,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=f5fa6bd9a24ceaf6": {
@@ -55138,9 +55138,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=7cc1602fa87fea60": {
@@ -55149,9 +55149,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=7cc1602fa87fea60": {
@@ -55160,9 +55160,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=7cc1602fa87fea60": {
@@ -55171,9 +55171,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=7cc1602fa87fea60": {
@@ -55182,9 +55182,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=056133e952ff00f6": {
@@ -55193,9 +55193,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=195b12e2d1374f5c": {
@@ -55204,9 +55204,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=84fa6aa1d195ad43": {
@@ -55215,9 +55215,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=413988747595dc9c": {
@@ -55226,9 +55226,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCHF.overnight_gap_decay.p=413988747595dc9c": {
@@ -55237,9 +55237,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK.overnight_gap_decay.p=413988747595dc9c": {
@@ -55248,9 +55248,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=413988747595dc9c": {
@@ -55259,9 +55259,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURZAR.overnight_gap_decay.p=413988747595dc9c": {
@@ -55270,9 +55270,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN.overnight_gap_decay.p=413988747595dc9c": {
@@ -55281,9 +55281,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPNOK.overnight_gap_decay.p=413988747595dc9c": {
@@ -55292,9 +55292,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=413988747595dc9c": {
@@ -55303,9 +55303,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=413988747595dc9c": {
@@ -55314,9 +55314,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=413988747595dc9c": {
@@ -55325,9 +55325,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCHF.overnight_gap_decay.p=413988747595dc9c": {
@@ -55336,9 +55336,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.SGDJPY.overnight_gap_decay.p=413988747595dc9c": {
@@ -55347,9 +55347,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=413988747595dc9c": {
@@ -55358,9 +55358,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSEK.overnight_gap_decay.p=413988747595dc9c": {
@@ -55369,9 +55369,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=413988747595dc9c": {
@@ -55380,9 +55380,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M15.clock_transition.p=e9ea8f301dbaf4cb": {
@@ -66622,9 +66622,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -66633,9 +66633,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURNZD@M30.overnight_gap_decay.p=e15216860f665dd7": {
@@ -66644,9 +66644,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD.overnight_gap_decay.p=413988747595dc9c": {
@@ -66655,9 +66655,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDSGD.overnight_gap_decay.p=413988747595dc9c": {
@@ -66666,9 +66666,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDJPY@M15.clock_transition.p=c3f9722b441ed329": {
@@ -78029,9 +78029,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFDKK@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78040,9 +78040,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFJPY@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78051,9 +78051,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.CHFSGD@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78062,9 +78062,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURSGD@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78073,9 +78073,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPMXN@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78084,9 +78084,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSEK@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78095,9 +78095,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPSGD@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78106,9 +78106,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.GBPZAR@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78117,9 +78117,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDSGD@M30.overnight_gap_decay.p=62b19010a137a703": {
@@ -78128,9 +78128,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=a7abf0d8d6da430a": {
@@ -78139,9 +78139,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=bc0745005669e674": {
@@ -78150,9 +78150,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=a7abf0d8d6da430a": {
@@ -78161,9 +78161,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDNZD.overnight_gap_decay.p=bc0745005669e674": {
@@ -78172,9 +78172,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.EURZAR.overnight_gap_decay.p=dca5551cfcf24489": {
@@ -78183,9 +78183,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.NZDCAD.overnight_gap_decay.p=f4aecd1a55aa0ddd": {
@@ -78194,9 +78194,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=a7abf0d8d6da430a": {
@@ -78205,9 +78205,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDMXN.overnight_gap_decay.p=bc0745005669e674": {
@@ -78216,9 +78216,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=bc0745005669e674": {
@@ -78227,9 +78227,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDNOK.overnight_gap_decay.p=413988747595dc9c": {
@@ -78238,9 +78238,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.AUDCAD@M15.clock_transition.p=693864be674c5810": {
@@ -79888,9 +79888,9 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
    }
   },
   "external.USDZAR.overnight_gap_decay.p=a7abf0d8d6da430a": {
@@ -79899,9 +79899,45 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 16,
-    "confidence": 0.1053,
-    "sd": 0.0491,
-    "status": "REFUTED"
+    "confidence": 0.3421,
+    "sd": 0.076,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDCAD.exit_operated.p=336be2abe491a8ba": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "exit_operated",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.AUDNZD.exit_operated.p=336be2abe491a8ba": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "exit_operated",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFDKK.exit_operated.p=336be2abe491a8ba": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "exit_operated",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFSGD.exit_operated.p=336be2abe491a8ba": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "exit_operated",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   }
  },
