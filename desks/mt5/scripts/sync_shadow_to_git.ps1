@@ -635,6 +635,13 @@ function Publish-StateOnto {
         $msg = "mt5 box state $stampNow (published onto origin; inbound code left to MT5-AdoptRelease)"
         $commit = "$(Git-Lines @("commit-tree", $tree, "-p", $base, "-m", $msg) | Select-Object -First 1)".Trim()
         if (-not $commit) { Write-SyncLog "publish: commit-tree failed"; return $false }
+        # THE STATE PUBLISHER'S SOURCE (Level 2, ops/release/publisher/publish.py). Once the LIVE
+        # ruleset is on, only quant-state-publisher may push LIVE; it reads exactly this fenced
+        # one-parent commit from the box's .git and pushes the same paths onto LIVE. Never HEAD:
+        # the box commits no state there, so HEAD lags LIVE by tens of thousands of paths
+        # (measured 2026-11-05). Until the ruleset is on, this pass also pushes it itself.
+        $refRc = Git-In-Repo @("update-ref", "refs/publish/pending", $commit)
+        if ($refRc -ne 0) { Write-SyncLog "publish: update-ref refs/publish/pending failed rc=$refRc (the state publisher keeps the previous one)" }
         $remote = "origin"
         $rc = Push-Logged @("push", "--no-verify", $remote,
                              ("{0}:refs/heads/{1}" -f $commit, $Branch))
