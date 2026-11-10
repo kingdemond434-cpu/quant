@@ -47,7 +47,9 @@ def zoo():
 # --------------------------------------------------------------------------- contract
 def _ok(fc, **over):
     base = {"model_id": "m1", "subject": "XAUUSD/up", "kind": "PROBABILITY", "value": 0.62,
-            "horizon_s": 3600, "at": "2026-09-06T02:00:00+00:00"}
+            "horizon_s": 3600, "at": "2026-09-06T02:00:00+00:00",
+            # ARCH-11: the handoff fields every belief now carries to the next hop
+            "instrument_id": "XAUUSD", "unit": "probability", "gross_or_net": "not_applicable"}
     return fc.Belief(**(base | over))
 
 
@@ -65,6 +67,9 @@ def test_a_well_formed_belief_is_accepted(fc) -> None:
     ({"value": 1.4}, "[0, 1]"),
     ({"value": "yes"}, "[0, 1]"),
     ({"confidence": 3.0}, "confidence"),
+    ({"instrument_id": ""}, "instrument_id"),
+    ({"unit": "percent"}, "unit"),
+    ({"gross_or_net": ""}, "gross_or_net"),
 ])
 def test_every_unscoreable_belief_is_named_and_refused(fc, over, must_mention) -> None:
     """Each of these makes the belief ungradeable. None may pass silently."""
