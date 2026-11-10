@@ -165,6 +165,32 @@ def _refit_starts(index: pd.DatetimeIndex, window: int, refit: int) -> np.ndarra
     return starts[starts >= window]
 
 
+#: Bars per calendar block for the Kalman families (see `_blocked`).
+KALMAN_BLOCK = 500
+
+
+def _blocked(index: pd.DatetimeIndex, warmup: int, block: int, n_out: int,
+             run) -> list[np.ndarray]:
+    """Run a recursive filter per CALENDAR block, each from `warmup` bars before the block.
+
+    A Kalman filter has infinite memory, so run once from the frame's first bar it is not the same
+    rule on a frame that starts later -- the difference decays but never reaches zero, and a
+    certificate judged on eight years would trade a slightly different number on a forward
+    clock's 400 days. Restarting the filter `warmup` bars before each calendar-anchored block
+    (`_refit_starts`) makes every labelled bar a function of at most `warmup + block` bars before
+    it, whatever the frame's first bar is. `run(lo, hi)` returns `n_out` arrays over [lo, hi).
+    """
+    n = len(index)
+    outs = [np.full(n, np.nan) for _ in range(n_out)]
+    starts = _refit_starts(index, int(warmup), int(block))
+    for j, k in enumerate(starts):
+        end = int(starts[j + 1]) if j + 1 < len(starts) else n
+        lo = int(k) - int(warmup)
+        for o, part in zip(outs, run(lo, end), strict=True):
+            o[k:end] = part[k - lo:]
+    return outs
+
+
 def garch_sigma_path(r: pd.Series, window: int, refit: int) -> tuple[pd.Series, pd.Series]:
     """Walk-forward conditional sigma_{t|t-1} and the variance ratio sigma^2_{t+1|t} / long-run.
 
@@ -353,13 +379,13 @@ def family_kalman_trend(
     if side_mode not in {"follow", "fade"} or q_slope <= 0 or q_level < 0:
         return []
     d = _h1(df)
-    if len(d) < warmup + 100:
+    if len(d) < warmup + 2:
         return []
     y = _log_close(d)
-    slope, sd = kalman_trend_path(y, q_level, q_slope)
+    slope, sd = _blocked(d.index, warmup, KALMAN_BLOCK, 2,
+                         lambda lo, hi: kalman_trend_path(y[lo:hi], q_level, q_slope))
     with np.errstate(divide="ignore", invalid="ignore"):
         tstat = slope / sd
-    tstat[:warmup] = np.nan
     up = np.isfinite(tstat) & (tstat >= entry_t)
     dn = np.isfinite(tstat) & (tstat <= -entry_t)
     atr = _atr(d, atr_n).to_numpy()
@@ -475,23 +501,23 @@ def family_kalman_pair(
 
     `min_target_atr` refuses a dislocation too small to trade: z can be large only because the
     predicted variance is small, and a target a fraction of the spread away is a cost, not an
-    edge. `warmup` is long because the hedge ratio's memory is ~1/sqrt(delta) bars: by then the
-    filter has forgotten which bar the frame started on, so the gauntlet's frame and a forward
-    clock's shorter one trade the same rule.
+    edge. The filter is restarted `warmup` bars before each calendar block (`_blocked`), so the
+    gauntlet's frame and a forward clock's shorter one trade exactly the same rule; `warmup` is
+    long because the hedge ratio needs ~1/sqrt(delta) bars to settle.
     """
     if not (0 < delta < 1):
         return []
     d = _h1(df)
     p = _peer_frame("kalman_pair", d, pair_symbol)
     j = d[["close"]].join(p[["close"]], how="inner", rsuffix="_peer").dropna()
-    if len(j) < warmup + 100:
+    if len(j) < warmup + 2:
         return []
     a = np.log(j["close"].astype(float).to_numpy())
     b = np.log(j["close_peer"].astype(float).to_numpy())
-    e, Q = kalman_hedge_path(a, b, delta)
+    e, Q = _blocked(j.index, warmup, KALMAN_BLOCK, 2,
+                    lambda lo, hi: kalman_hedge_path(a[lo:hi], b[lo:hi], delta))
     with np.errstate(divide="ignore", invalid="ignore"):
         z = e / np.sqrt(Q)
-    z[:warmup] = np.nan
     atr = _atr(d, atr_n).reindex(j.index).to_numpy()
     close = j["close"].astype(float).to_numpy()
     out: list[Signal] = []
