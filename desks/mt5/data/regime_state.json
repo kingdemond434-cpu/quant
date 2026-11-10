@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-10T19:30:09.900464+00:00",
+  "swept_at": "2026-11-10T19:45:03.584608+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2407,7 +2407,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3504,
+      "shadow_exp_r": -0.3576,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -4057,7 +4057,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6273,
+      "shadow_exp_r": -0.5997,
       "woke_on_shadow": false
     },
     "USDPLN|formula_asia": {
@@ -4079,7 +4079,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3141,
+      "shadow_exp_r": -0.3286,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
