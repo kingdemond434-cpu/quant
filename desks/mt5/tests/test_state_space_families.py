@@ -2,11 +2,18 @@
 from __future__ import annotations
 
 import math
+import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
-from mt5desk import family_state_space as fs
+
+_DESK = Path(__file__).resolve().parents[1]
+if str(_DESK) not in sys.path:
+    sys.path.insert(0, str(_DESK))
+
+from mt5desk import family_state_space as fs  # noqa: E402
 
 
 def _frame(close: np.ndarray, seed: int = 0) -> pd.DataFrame:
