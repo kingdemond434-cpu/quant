@@ -2993,12 +2993,39 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
         except ValueError as exc:
             doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
             continue
+        restarted = False
+        if carried and not math.isfinite(float(ext.mean_log_growth)):
+            # A CARRIED START CAN BE RUINOUS ON THIS PASS'S WORLDS. It was a finite book on the
+            # last pass's sample; re-sampled, one world can wipe it out, and an exact-heat solve
+            # cannot ascend off -inf (no gradient, no back-off), so it came back ruinous with zero
+            # iterations. Measured on the box 2026-11-10 19:26Z: 170 of 196 scored candidates
+            # were refused that way, every one warm-started, budget hit, 0 iterations. The
+            # incumbent with the candidate at zero is finite by construction (g_base), and the
+            # ascent never accepts a step that lowers the score, so re-solving from it can only
+            # reach a book at least as good as the incumbent.
+            restarted = True
+            ws = {**base_heat, name: 0.0}
+            deadline = (time.time() + float(budget_s)) if budget_s and budget_s > 0 else None
+            try:
+                ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
+                               max_per_sleeve=_ub(allowed_base | {name}),
+                               warm_start=ws, iterations=iterations, deadline=deadline)
+            except ValueError as exc:
+                doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
+                continue
         solve_s.append(time.time() - t_c)
         row.update({"solve_s": round(solve_s[-1], 3), "iterations": int(ext.iterations),
                     "budget_hit": bool(ext.budget_hit),
-                    "warm_started_from_last_pass": bool(carried)})
+                    "warm_started_from_last_pass": bool(carried),
+                    "restarted_from_incumbent": restarted})
         got = float(ext.heat.get(name, 0.0))
         g_ext = float(ext.mean_log_growth)
+        if not math.isfinite(g_ext) and int(ext.iterations) == 0:
+            # No ascent ran, so the reading is the START, not the candidate: never a refusal.
+            doc["unscored"][name] = (
+                "the solve stopped before its first step on a ruinous start; NOT a verdict -- "
+                "the next pass solves it from the incumbent")
+            continue
         if not math.isfinite(g_ext):
             row.update({"delta_elogw_per_day": None, "heat_earned": round(got, 6),
                         "admit": False, "converged": bool(ext.converged),
