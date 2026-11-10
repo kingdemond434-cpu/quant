@@ -402,3 +402,32 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     """Most-recent would be minutes old on an hourly cadence and could never show a freeze."""
     n, at = law._prior_sample(_samples((300, 1), (200, 2), (1, 9)), "K", NOW, 100.0)
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
+
+
+# ------------------------------------------------- a late START is a breach for a week, then history
+def test_a_late_start_older_than_the_window_is_history_not_a_standing_breach() -> None:
+    """The box 2026-11-07: 423 LATE_CLOCKs that began 09-17..11-05 held BREACH with nothing left
+    to fix. Latency is two frozen stamps, so without a window it can never clear."""
+    began = NOW - timedelta(hours=law.LATE_WINDOW_H + 5)
+    cert = _cert(certified_at=(began - timedelta(hours=40)).isoformat())
+    row = _row(n=5, enrolled_at=began.isoformat(), forward_start=began.isoformat())
+    e = law.judge(cert, "K", row, _samples((30, 1), (1, 5)), 100.0, "why", NOW)
+    assert e["latency_h"] == pytest.approx(40.0), "the latency itself is still measured"
+    assert e["late"] is False and e["late_history"] is True
+    assert "latency_breach" not in e and "40.00h" in e["latency_history"]
+    assert e["verdict"] == "ACCUMULATING" and e["breach"] is False
+
+
+def test_a_late_start_inside_the_window_still_breaches() -> None:
+    began = NOW - timedelta(hours=law.LATE_WINDOW_H - 5)
+    cert = _cert(certified_at=(began - timedelta(hours=40)).isoformat())
+    row = _row(n=5, enrolled_at=began.isoformat(), forward_start=began.isoformat())
+    e = law.judge(cert, "K", row, _samples((30, 1), (1, 5)), 100.0, "why", NOW)
+    assert e["late"] is True and e["breach"] is True and "late_history" not in e
+
+
+def test_the_window_never_hides_a_certificate_with_no_clock() -> None:
+    """History applies only to a clock that EXISTS; a clockless certificate breaches however old."""
+    cert = _cert(certified_at=(NOW - timedelta(days=60)).isoformat())
+    e = law.judge(cert, "K", None, [], 100.0, "why", NOW)
+    assert e["verdict"] == "NO_CLOCK" and e["breach"] is True

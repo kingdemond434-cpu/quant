@@ -96,6 +96,17 @@ ALERT_ID = "certificate_clock_law"
 #: the breach line, not the goal.
 LATENCY_BREACH_H = 1.0
 
+#: How long a late START stays a standing breach. Latency is certified_at -> clock_began_at, two
+#: stamps that never change once the clock exists, so without a window a clock that began late
+#: once is late FOREVER: measured on the box 2026-11-07, 423 LATE_CLOCKs (27-549 h, started
+#: 09-17 to 11-05) held the verdict at BREACH with nothing left that any organ could do -- an
+#: alarm that can never clear stops being read, and then it hides the next late enrolment too.
+#: A late start inside this window is a live defect of the enrolment path and FAILS; an older
+#: one is history, counted in `n_late_history` and listed in the notes, never dropped. A week
+#: covers a weekend plus a full re-enrolment cycle, so a lateness is always seen while it can
+#: still be traced to the pass that caused it.
+LATE_WINDOW_H = 7 * 24.0
+
 #: How many measured inter-observation gaps a clock may miss before its frozen row count is a
 #: breach rather than a quiet market.
 FROZEN_MULTIPLE = 3.0
@@ -405,6 +416,14 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
         entry["latency_h"] = round(lat, 3)
         entry["clock_began_at"] = began.isoformat()
         late = lat > LATENCY_BREACH_H
+        if late and (now - began).total_seconds() / 3600.0 > LATE_WINDOW_H:
+            # Late, and long enough ago that nothing can now make it punctual: HISTORY.
+            late = False
+            entry["late_history"] = True
+            entry["latency_history"] = (
+                f"{lat:.2f}h from certification to a ticking clock that began "
+                f"{began.isoformat()}, more than {LATE_WINDOW_H:g}h ago: recorded, not a "
+                f"standing breach")
         if late:
             entry["latency_breach"] = (
                 f"BREACH: {lat:.2f}h from certification to a ticking clock, past the "
@@ -567,6 +586,12 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
     late = [e for e in judged if e.get("late")]
     for e in late:
         problems.append(f"LATE_CLOCK {e['certificate']} ({e['family']}): {e['latency_breach']}")
+    late_history = [e for e in judged if e.get("late_history")]
+    if late_history:
+        notes.append(f"{len(late_history)} clock(s) began late more than {LATE_WINDOW_H:g}h ago "
+                     f"(history, not a standing breach): "
+                     + ", ".join(sorted(e["certificate"] for e in late_history)[:20])
+                     + (" ..." if len(late_history) > 20 else ""))
 
     latencies = [e["latency_h"] for e in judged if isinstance(e.get("latency_h"), (int, float))]
     notes.append(f"{len(certs)} certificate(s), {len(set(keys.values()))} distinct clock key(s), "
@@ -599,6 +624,8 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         "n_clock_rows": len(rows),
         "counts": counts,
         "n_late": len(late),
+        "n_late_history": len(late_history),
+        "late_window_h": LATE_WINDOW_H,
         "latency_breach_h": LATENCY_BREACH_H,
         "family_gap_hours": {k: round(v, 3) for k, v in sorted(gaps.items())},
         "collisions": collisions,
