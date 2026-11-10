@@ -43,8 +43,16 @@ from mt5desk.families import Signal, _atr, _h1
 DIRECTIONS = {"long": 1, "short": -1}
 
 
-class WorldSeriesUnavailable(LookupError):
-    """The recipe names a world series this host's store does not hold."""
+class WorldSeriesUnavailable(LookupError, TypeError):
+    """The recipe names a world series this host's store does not hold.
+
+    ALSO A TypeError, ON PURPOSE. The sealed builder (`external_gauntlet.build_cell`) calls a
+    family as `fn(h1, side=side, **params)` and catches ONLY TypeError there, retrying without
+    `side` under a catch-all that names the failure. Any other exception from the first call
+    escapes `build_cell` into the sweep. Being a TypeError routes this refusal through the
+    builder's own named door (`_build_failed("world_macro_state raised WorldSeriesUnavailable:
+    ...")`) without touching the immutable evaluator.
+    """
 
 
 def _series(series_key: str):
