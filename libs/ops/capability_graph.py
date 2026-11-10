@@ -995,6 +995,10 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/HOURLY_DISCOVERY.json", "desks/mt5/data/hourly_discovery_state.json",
     "desks/mt5/reports/alpha_evolution.json", "desks/mt5/reports/style_premia_sweep.json",
     "desks/mt5/reports/CROSS_ASSET_GRAPH.json", "desks/mt5/reports/tail_alpha_search.json",
+    # The cross-asset proposer's run summary (its edge list stays CROSS_ASSET_GRAPH.json; the two
+    # were one file on the case-insensitive box): its donations reach decisions through the
+    # compiler (data/intelligence/cross_asset_graph/), this report is what a person reads.
+    "desks/mt5/reports/CROSS_ASSET_PROPOSER.json",
     "desks/mt5/reports/ANOMALY_FACTORY.json", "desks/mt5/reports/SURVIVOR_DISTILLER.json",
     "desks/mt5/reports/COEVOLUTION.json", "desks/mt5/reports/REPO_MINER.json",
     "desks/mt5/reports/DEEP_FOREST.json", "desks/mt5/reports/REVIVAL.json",
