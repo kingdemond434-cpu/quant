@@ -30,10 +30,15 @@
 # the settings, use the XML route in patches/judge_cachewarm_fix/v1.1/README.md. It uses
 # schtasks.exe, not CIM, because CIM has hung on the trading box.
 
-$action = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument (
-  '/d /s /c cd /d C:\opt\quant\desks\mt5 && ' +
-  '"C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe" -u -W ignore ' +
-  'scripts\warm_gauntlet_cache.py >> C:\opt\quant\desks\mt5\logs\MT5-CacheWarm.log 2>&1')
+# NO cmd, NO `>>` (2026-11-10). An orphaned warmer held the redirect's handle on
+# MT5-CacheWarm.log for eight days, and cmd refused every later run before python started (Last
+# Result 1, nothing logged). Python now opens its own log (`--log`); a held file costs only that
+# file (the run falls back to MT5-CacheWarm.<pid>.log and says so), and research/warm_reaper.py
+# ends an orphan at the next judge sweep or warmer start.
+$action = New-ScheduledTaskAction `
+  -Execute 'C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe' `
+  -Argument '-u -W ignore scripts\warm_gauntlet_cache.py --log logs\MT5-CacheWarm.log' `
+  -WorkingDirectory 'C:\opt\quant\desks\mt5'
 
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
              -RepetitionInterval (New-TimeSpan -Hours 1)

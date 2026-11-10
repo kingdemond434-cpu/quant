@@ -3618,6 +3618,13 @@ def _sweep_once() -> int:
         # EQUAL TO THE MINERS, NEVER ABOVE (judge_cpu_fair_share): before any shard starts, so
         # every shard inherits the class. Never raises.
         _publish_priority("child", _equalise_self())
+        # AN ORPHANED CACHE WARMER IS REAPED HERE (2026-11-10): one held MT5-CacheWarm's log for
+        # eight days and every warmer run died before python started, so this sweep did the
+        # warming itself. The sweep runs whether or not the warmer can; the rule is in
+        # research/warm_reaper.py and touches nothing but a warm_gauntlet_cache.py past its hour.
+        with contextlib.suppress(Exception):
+            from research.warm_reaper import reap
+            reap(by="run_sharded_gauntlet")
         _phase("plan")
         rc = _sweep_logged()
         return rc
