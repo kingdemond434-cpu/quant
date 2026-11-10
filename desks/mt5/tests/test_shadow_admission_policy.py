@@ -354,3 +354,62 @@ def test_one_forward_clock_per_executable_and_no_clock_is_ever_taken(tmp_path: P
     names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
     assert names == set(survivors)
     assert sa.EXECUTABLE_COPIES[0]["would_not_enrol"] == ["external.CHFNOK.carry.p=c"]
+
+
+def test_a_certificate_whose_engine_key_is_a_running_clock_is_never_refused(tmp_path: Path) -> None:
+    """Box 2026-11-10, cross-check v2: external.CHFNOK.carry.p=b56bcfef9a4a010c states
+    timeframe=H1; the engine's key drops it, so its key CHFNOK.carry.asia#input_symbol=CHFNOK
+    was a running clock (46 observations) while the door, matching params literally against an
+    identity that keeps the chart outside params, saw no clock and would have refused it in
+    favour of a copy with a different key. The copy that owns the clock keeps it."""
+    import shadow_admission as sa
+
+    gates = {name: {"passed": True} for name in GATES}
+
+    def cert(params: dict) -> dict:
+        return {"sym": "CHFNOK", "gates": gates, "status": "UNIVERSAL",
+                "shadow_spec": {"symbol": "CHFNOK", "family": "carry", "selector": "asia",
+                                "params": params}}
+    survivors = {
+        # sorts FIRST by name and names its own instrument: the old tie-break made it keeper
+        "external.CHFNOK.carry.p=9": cert({"input_symbol": "CHFNOK", "symbol": "CHFNOK",
+                                           "timeframe": "H1"}),
+        "external.CHFNOK.carry.p=b": cert({"input_symbol": "CHFNOK", "timeframe": "H1"}),
+    }
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": survivors, "n": 2}), encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps({"sleeves": {
+        "CHFNOK.carry.asia#input_symbol=CHFNOK": {
+            "identity": {"symbol": "CHFNOK", "family": "carry", "timeframe": "H1",
+                         "params": {"input_symbol": "CHFNOK"}},
+            "forward_start": "2026-09-30T03:50:30+00:00", "status": "LIVE"}}}), encoding="utf-8")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert "external.CHFNOK.carry.p=b" in names                  # its key is the running clock
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=b"
+    assert group["not_enrolled"] == ["external.CHFNOK.carry.p=9"]
+
+    # a clock on ANOTHER chart is not this certificate's clock
+    reg = {"sleeves": {"CHFNOK.carry.asia@M15#input_symbol=CHFNOK": {
+        "identity": {"symbol": "CHFNOK", "family": "carry", "timeframe": "M15",
+                     "params": {"input_symbol": "CHFNOK"}},
+        "forward_start": "2026-09-30T03:50:30+00:00", "status": "LIVE"}}}
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps(reg), encoding="utf-8")
+    sa.authorized_runs(tmp_path, lanes=("h1",))
+    (group,) = sa.EXECUTABLE_COPIES
+    assert group["keeps_clock"] == "external.CHFNOK.carry.p=9"   # no clock: own label, by name
+
+    # two certificates that enrol onto ONE registry row: both returned, named, none refused
+    same = {"external.CHFNOK.carry.p=b": survivors["external.CHFNOK.carry.p=b"],
+            "external.CHFNOK.carry.p=c": cert({"input_symbol": "CHFNOK", "timeframe": "H1"})}
+    (tmp_path / "reports" / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps(
+        {"gate_policy": ATTESTATION, "survivors": same, "n": 2}), encoding="utf-8")
+    names = {r["certificate"] for r in sa.authorized_runs(tmp_path, lanes=("h1",))}
+    assert names == set(same)
+    (group,) = sa.EXECUTABLE_COPIES
+    if sa._engine_key({"symbol": "CHFNOK", "selector": "asia", "family": "carry",
+                       "params": {}}) is not None:               # the engine imports here
+        assert group["sharing_keepers_key"] == ["external.CHFNOK.carry.p=c"]
+        assert group["not_enrolled"] == []

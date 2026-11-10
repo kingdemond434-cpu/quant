@@ -500,7 +500,8 @@ def one_clock_per_executable_enforced() -> bool:
     return os.environ.get("QUANT_ONE_CLOCK_PER_EXECUTABLE", "1").strip() != "0"
 
 
-#: certificate name -> the chart its `shadow_spec` states outside params, filled by
+#: certificate name -> the (chart, timeframe, session) its `shadow_spec` states outside params,
+#: each kept apart so a chart can never stand in for a session; filled by
 #: `authorized_runs` each pass (the run row itself has never carried it).
 _SPEC_CHART: dict[str, str] = {}
 _NAME_CHART = re.compile(r"@([A-Za-z]{1,3}\d{1,3})\b")
@@ -524,21 +525,36 @@ def _executable_of(run: dict) -> str | None:
                       sort_keys=True, default=str)
 
 
-def _clocked(base: Path) -> list[tuple[str, str, dict, str]]:
-    """(symbol, family, params, forward_start) of every forward clock in the registry. An
+def _clocked(base: Path) -> tuple[list[tuple[str, str, dict, str, str]], dict[str, str]]:
+    """Every forward clock in the registry, twice: (symbol, family, params, chart, forward_start)
+    rows for the generous match, and {registry key: forward_start} for the exact one. An
     unreadable registry is an empty answer, which keeps every copy."""
-    out: list[tuple[str, str, dict, str]] = []
+    out: list[tuple[str, str, dict, str, str]] = []
+    keys: dict[str, str] = {}
     rows = _read(base / "data" / "sleeve_registry.json").get("sleeves")
-    if isinstance(rows, dict):
-        rows = list(rows.values())
-    for r in rows if isinstance(rows, list) else ():
+    items = list(rows.items()) if isinstance(rows, dict) else [
+        (str(r.get("key") or ""), r) for r in (rows if isinstance(rows, list) else ())
+        if isinstance(r, dict)]
+    for key, r in items:
         ident = r.get("identity") if isinstance(r, dict) else None
         if not isinstance(ident, dict):
             continue
         params = ident.get("params") if isinstance(ident.get("params"), dict) else {}
+        st = str(r.get("forward_start") or r.get("frozen_at") or "9999")
         out.append((str(ident.get("symbol") or "").upper(), str(ident.get("family") or ""),
-                    params, str(r.get("forward_start") or r.get("frozen_at") or "9999")))
-    return out
+                    params, str(ident.get("timeframe") or "").upper(), st))
+        if key:
+            keys[str(key)] = st
+    return out, keys
+
+
+def _engine_key(run: dict) -> str | None:
+    """The registry key the ENROLMENT path would write for this run, from the engine's own
+    builder. None when the engine cannot be imported here; the generous match still answers."""
+    try:
+        return run_key(run)
+    except Exception:
+        return None
 
 
 def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
@@ -552,7 +568,8 @@ def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
     returned, so no accrued forward evidence is orphaned; such surplus clocks are only named.
     A copy with NO clock is withheld only when another copy of the same executable is returned
     in this same pass -- the executable is being forward-tested either way, on identical
-    signals, so nothing is forgone. The keeper is the copy with the earliest clock, else the
+    signals, so nothing is forgone. A copy whose engine key is a registry row, or equals the
+    keeper's key, is never withheld. The keeper is the copy with the earliest clock, else the
     one whose unread params name its own instrument, else the first by certificate name. If the
     registry cannot be read nothing is withheld."""
     EXECUTABLE_COPIES.clear()
@@ -566,16 +583,29 @@ def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
             groups.setdefault(k, []).append(run)
     if not any(len(g) > 1 for g in groups.values()):
         return runs
-    clocked = _clocked(base) if registry_readable else []
+    clocked, by_key = _clocked(base) if registry_readable else ([], {})
 
     def start(run: dict) -> str | None:
-        # A CLOCK IS RECOGNISED GENEROUSLY: same instrument and family, and every param the
-        # certificate states is on the clock's identity (which may carry more). Erring this way
-        # can only keep a copy enrolled, never take a running clock's certificate away.
+        # A CLOCK IS RECOGNISED TWICE OVER, and either is enough.
+        # (1) EXACTLY: the key the engine would write for this run is a registry row. Box
+        #     2026-11-10: external.CHFNOK.carry.p=b56bcfef9a4a010c states timeframe=H1, the
+        #     engine's key drops it, and its key CHFNOK.carry.asia#input_symbol=CHFNOK was a
+        #     running clock with 46 observations that rule (2) alone did not recognise.
+        # (2) GENEROUSLY: same instrument and family, and every param the certificate states is
+        #     on the clock's identity (which may carry more); `timeframe` is read against the
+        #     identity's own chart, where the registry keeps it.
+        # Erring either way can only keep a copy enrolled, never take a clock's certificate away.
+        key = _engine_key(run)
+        exact = by_key.get(key) if key else None
         sym, fam = str(run.get("symbol") or "").upper(), str(run.get("family") or "")
-        mine = run.get("params") or {}
-        starts = [st for s_, f_, p_, st in clocked
-                  if s_ == sym and f_ == fam and all(p_.get(k) == v for k, v in mine.items())]
+        mine = dict(run.get("params") or {})
+        chart = str(mine.pop("timeframe", "") or "").upper()
+        starts = [st for s_, f_, p_, tf_, st in clocked
+                  if s_ == sym and f_ == fam and all(p_.get(k) == v for k, v in mine.items())
+                  and (not chart or chart == (tf_ or "H1")
+                       or str(p_.get("timeframe") or "").upper() == chart)]
+        if exact:
+            starts.append(exact)
         return min(starts) if starts else None
 
     def own(run: dict) -> bool:
@@ -591,6 +621,11 @@ def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
         ranked = sorted(group, key=lambda r: (start(r) or "9999", not own(r),
                                               str(r.get("certificate"))))
         keeper, rest = ranked[0], ranked[1:]
+        # A copy whose engine key IS the keeper's key is not a second clock at all: the two
+        # certificates enrol onto one registry row. It is always returned and only named.
+        k_key = _engine_key(keeper)
+        same = [r for r in rest if k_key is not None and _engine_key(r) == k_key]
+        rest = [r for r in rest if all(r is not x for x in same)]
         left = [str(r.get("certificate")) for r in rest if start(r)]
         new = [r for r in rest if not start(r)]
         act = enforce and registry_readable
@@ -599,6 +634,7 @@ def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
             "copies": len(group), "keeps_clock": str(keeper.get("certificate")),
             "keeper_names_its_own_instrument": own(keeper),
             "surplus_clocks_left_running": left,
+            "sharing_keepers_key": [str(r.get("certificate")) for r in same],
             "not_enrolled": [str(r.get("certificate")) for r in new] if act else [],
             "would_not_enrol": [] if act else [str(r.get("certificate")) for r in new]})
         if act:
@@ -809,8 +845,8 @@ def authorized_runs(base: Path = BASE,
             _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
                         f"unrunnable without guessing the parameterization that passed")
             continue
-        _SPEC_CHART[str(name)] = str(spec.get("chart") or spec.get("timeframe")
-                                     or spec.get("session") or "")
+        _SPEC_CHART[str(name)] = json.dumps([spec.get("chart"), spec.get("timeframe"),
+                                             spec.get("session")], default=str)
         void = void_moved_cell(row, spec, params)
         if void == "UNPROVEN":
             UNPROVEN_ENTRY_CONDITIONED.append(str(name))      # named, and enrolled
