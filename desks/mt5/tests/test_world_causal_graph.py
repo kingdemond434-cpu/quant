@@ -296,3 +296,36 @@ def test_fed_and_admitting_nothing_turns_red_after_the_third_pass_and_lowers_not
     cold = w.zero_admission({}, measured=0, admitted_total=0, not_admitted=[], bar_z=None,
                             sources={})
     assert cold["verdict"] == "UNMEASURED" and cold["nearest"] is None
+
+
+def test_a_recorded_diagnosis_holds_a_red_as_watch_only_for_the_set_it_covered(
+        tmp_path, monkeypatch) -> None:
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(w, "DIAGNOSIS", tmp_path / "data" / "world_causal_graph_diagnosis.json")
+    fp = w.candidate_fingerprint([("EURUSD", "USDJPY"), ("XAUUSD", "XAGUSD")])
+    assert fp == w.candidate_fingerprint([("XAUUSD", "XAGUSD"), ("EURUSD", "USDJPY")])
+    assert fp != w.candidate_fingerprint([("EURUSD", "USDJPY")])
+    prev = {"zero_admission": {"runs": 5, "bar_z_deflated": 3.9, "cells_charged": 516}}
+    kw = {"measured": 5, "admitted_total": 0, "not_admitted": [_noise_edge(3.4)],
+          "bar_z": 4.2, "sources": {"seeded": 4}, "cells_charged": 2100}
+    red = w.zero_admission(prev, fingerprint=fp, diagnosis={}, **kw)
+    assert red["verdict"] == "RED" and red["diagnosed"] is None
+    # the cost of widening is on the block: the bar and the cell count, before and after
+    assert (red["bar_z_deflated_previous"], red["bar_z_deflated"]) == (3.9, 4.2)
+    assert (red["cells_charged_previous"], red["cells_charged"]) == (516, 2100)
+    # no report yet: a diagnosis of nothing in particular is refused
+    assert w.record_diagnosis("candidates carry no lead-lag at H1") == {}
+    w.REPORT.parent.mkdir(parents=True, exist_ok=True)
+    w.REPORT.write_text(json.dumps({"zero_admission": red}), "utf-8")
+    assert w.record_diagnosis("  ") == {}
+    doc = w.record_diagnosis("candidates carry no lead-lag at H1")
+    assert doc["candidate_fingerprint"] == fp and doc["nearest_abs_z"] == 3.4
+    held = w.zero_admission(prev, fingerprint=fp, diagnosis=w._read_json(w.DIAGNOSIS), **kw)
+    assert held["verdict"] == "WATCH" and held["runs"] == 6
+    assert "no lead-lag at H1" in held["why"] and held["diagnosed"]["at"] == doc["at"]
+    # the candidate set changes: the reading no longer covers it and RED returns
+    other = w.candidate_fingerprint([("EURUSD", "USDJPY")])
+    back = w.zero_admission(prev, fingerprint=other, diagnosis=w._read_json(w.DIAGNOSIS), **kw)
+    assert back["verdict"] == "RED" and back["diagnosed"] is None
+    # a diagnosis never turns anything into OK and never clears the streak
+    assert held["admitted_total"] == 0

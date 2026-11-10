@@ -41,6 +41,7 @@ the same sixty priors is not a yield, and a pass that learned nothing reads as z
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -68,6 +69,9 @@ UNI = _DESK / "data" / "universe"
 UNIVERSE_JSON = UNI / "universe.json"
 GRAPH = _DESK / "data" / "world_causal_graph.json"
 REPORT = _DESK / "reports" / "WORLD_CAUSAL_GRAPH.json"
+#: A person's (or a session's) recorded reading of a RED: what they found, when, and the
+#: candidate set it was found on. Written only by `--diagnose`; see `zero_admission`.
+DIAGNOSIS = _DESK / "data" / "world_causal_graph_diagnosis.json"
 CLAIMS = _DESK / "data" / "deep_forest_claims.jsonl"
 CROSS = _DESK / "reports" / "CROSS_ASSET_GRAPH.json"
 
@@ -526,9 +530,17 @@ def driver_candidates(meta: dict[str, Any], have: set[str]) -> tuple[list[cg.Edg
     return out, "MEASURED"
 
 
+def candidate_fingerprint(pairs: list[tuple[str, str]]) -> str:
+    """One short id for a candidate SET (order-free), so a diagnosis can name what it covered."""
+    blob = "\n".join(sorted(f"{a}>{b}" for a, b in pairs))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def zero_admission(previous: dict[str, Any], *, measured: int, admitted_total: int,
                    not_admitted: list[cg.Edge], bar_z: float | None,
-                   sources: dict[str, int]) -> dict[str, Any]:
+                   sources: dict[str, int], cells_charged: int | None = None,
+                   fingerprint: str = "",
+                   diagnosis: dict[str, Any] | None = None) -> dict[str, Any]:
     """Has the graph been fed and admitted nothing, pass after pass? RED when it has.
 
     AN ORGAN THAT MEASURES EVERY HOUR AND ADMITS NOTHING FOR TWO MONTHS LOOKED HEALTHY. It ran,
@@ -536,6 +548,17 @@ def zero_admission(previous: dict[str, Any], *, measured: int, admitted_total: i
     at all (0 of 96, measured 2026-09-08 and unchanged on 2026-11-10). The streak counts passes
     that MEASURED at least one edge while the graph holds none admitted; a pass that measured
     nothing leaves it where it was (no inputs is a different defect, named by `status`).
+
+    A RED THAT HAS BEEN READ STOPS BEING RED, UNTIL THE INPUTS CHANGE. "The candidates carry no
+    lead-lag at H1" is an honest finding, and a fence that can only be cleared by an admitted
+    edge would stay red on a true null forever and be switched off. A recorded, dated diagnosis
+    (`--diagnose`, stored with the fingerprint of the candidate set it was made on) reads WATCH
+    while the candidate set is the one it covered; any change to the set voids it and RED
+    returns. The diagnosis admits nothing and changes no bar.
+
+    THE BAR MOVES WITH THE COUNT, AND THE BLOCK SHOWS IT. More candidates mean more cells
+    charged and a higher deflated bar for every edge, seeded ones included; the previous pass's
+    bar and cell count ride beside this pass's so the cost of widening is read, not assumed.
 
     RED ASKS FOR A DIAGNOSIS; IT LOWERS NOTHING. The admission rule is untouched. The block
     carries what a reader needs to tell "the inputs are noise" from "the inputs never arrive":
@@ -567,7 +590,17 @@ def zero_admission(previous: dict[str, Any], *, measured: int, admitted_total: i
         verdict = "WATCH"
     else:
         verdict = UNMEASURED_VERDICT
+    diagnosed: dict[str, Any] | None = None
+    if verdict == "RED" and isinstance(diagnosis, dict) and fingerprint \
+            and diagnosis.get("candidate_fingerprint") == fingerprint \
+            and str(diagnosis.get("diagnosis") or "").strip() and diagnosis.get("at"):
+        diagnosed = {k: diagnosis.get(k) for k in ("at", "diagnosis", "nearest_abs_z",
+                                                    "candidate_fingerprint")}
+        verdict = "WATCH"
     why = ""
+    if diagnosed is not None:
+        why = (f"{runs} consecutive passes with no admitted edge, read on {diagnosed['at']}: "
+               f"{diagnosed['diagnosis']}. Holds while the candidate set is unchanged")
     if verdict == "RED":
         why = (f"{runs} consecutive passes measured edges and the graph holds none admitted; "
                f"nearest edge reached |z|={nearest['abs_z'] if nearest else 'UNMEASURED'} "
@@ -576,7 +609,14 @@ def zero_admission(previous: dict[str, Any], *, measured: int, admitted_total: i
                "not arriving -- read candidate_sources and cross_asset_basis")
     return {"verdict": verdict, "runs": runs, "red_after": ZERO_ADMISSION_RED_AFTER,
             "admitted_total": admitted_total, "measured_this_pass": measured,
-            "bar_z_deflated": bar_z, "nearest": nearest, "candidate_sources": sources,
+            "bar_z_deflated": bar_z,
+            "bar_z_deflated_previous": (prev or {}).get("bar_z_deflated")
+            if isinstance(prev, dict) else None,
+            "cells_charged": cells_charged,
+            "cells_charged_previous": (prev or {}).get("cells_charged")
+            if isinstance(prev, dict) else None,
+            "nearest": nearest, "candidate_sources": sources,
+            "candidate_fingerprint": fingerprint, "diagnosed": diagnosed,
             "why": why,
             "rule": "passes that measured >= 1 edge while the graph holds 0 admitted; RED past "
                     "red_after; the admission rule is unchanged"}
@@ -896,6 +936,9 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
         "zero_admission": zero_admission(
             previous, measured=len(measured), admitted_total=len(admitted),
             not_admitted=not_adm, bar_z=_bar_z(measured),
+            cells_charged=int(graph.counts().get("multiplicity_charged") or 0),
+            fingerprint=candidate_fingerprint([(e.src, e.dst) for e in candidates]),
+            diagnosis=_read_json(DIAGNOSIS),
             sources={"seeded": len(seeded), "cross_asset_graph": len(cross_edges),
                      "economic_drivers": len(driver_edges),
                      "deep_forest_claims": len(claim_edges)}),
@@ -940,11 +983,37 @@ def _edge_row(e: cg.Edge) -> dict[str, Any]:
             "conditional": e.evidence.get("conditional")}
 
 
+def record_diagnosis(text: str, now: datetime | None = None) -> dict[str, Any]:
+    """Record a reading of the CURRENT red, bound to the candidate set the last pass measured.
+
+    Refuses (returns {}) with no text, or when the last report carries no fingerprint -- a
+    diagnosis of nothing in particular would hold against everything."""
+    block = _read_json(REPORT).get("zero_admission")
+    fp = str((block or {}).get("candidate_fingerprint") or "") if isinstance(block, dict) else ""
+    if not text.strip() or not fp:
+        return {}
+    doc = {"at": (now or datetime.now(tz=UTC)).date().isoformat(), "diagnosis": text.strip(),
+           "candidate_fingerprint": fp,
+           "nearest_abs_z": ((block or {}).get("nearest") or {}).get("abs_z"),
+           "bar_z_deflated": (block or {}).get("bar_z_deflated")}
+    DIAGNOSIS.parent.mkdir(parents=True, exist_ok=True)
+    DIAGNOSIS.write_text(json.dumps(doc, indent=1), "utf-8")
+    return doc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--symbol", action="append", default=None)
     ap.add_argument("--budget-s", type=float, default=DEFAULT_BUDGET_S)
+    ap.add_argument("--diagnose", default=None, metavar="TEXT",
+                    help="record a dated reading of the current RED (holds as WATCH until the "
+                         "candidate set changes) and exit; measures nothing")
     a = ap.parse_args()
+    if a.diagnose is not None:
+        doc = record_diagnosis(a.diagnose)
+        print(f"diagnosis recorded: {doc}" if doc else
+              "diagnosis REFUSED: no text, or the last report names no candidate set")
+        return 0 if doc else 1
     rep = run(symbols=a.symbol, budget_s=a.budget_s)
     c = rep["counts"]
     print(f"WORLD CAUSAL GRAPH  {rep['status']}  nodes={c['nodes']} edges={c['edges']} "
