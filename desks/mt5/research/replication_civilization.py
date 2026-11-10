@@ -40,7 +40,7 @@ import os
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -146,6 +146,9 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: The broker's own per-bar columns when the file carries them (`spread`, `tick_volume`),
+    #: aligned to `t`. Only the rules that read the venue's state use them.
+    cols: dict[str, np.ndarray] = field(default_factory=dict)
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -164,7 +167,7 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, cols: Mapping[str, np.ndarray] | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
@@ -173,7 +176,12 @@ def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.nda
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000),
+                {k: np.asarray(v, dtype="float64")[order] for k, v in dict(cols or {}).items()})
+
+
+#: The broker's per-bar columns the lane carries beside OHLC when a file holds them.
+VENUE_COLUMNS = ("spread", "tick_volume")
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -221,11 +229,14 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = {k: frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 for k in VENUE_COLUMNS if k in cols and cols[k] in frame.columns}
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), arrs[0], arrs[1], arrs[2], arrs[3],
+                            cols=extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -286,6 +297,13 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The rule itself decides each order's side (a fade reverses the move it reads), so the
+    #: certificate's single `side` field must not filter its orders.
+    rule_sets_side: bool = False
+    #: The session is the certificate's own `session` PARAMETER, never its selector: the desk
+    #: builds these cells with no window (`_selector` stamps them "continuous", and older rows
+    #: carry the "asia" fallback the gauntlet records as a lie for families with no session).
+    session_in_params: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -746,6 +764,307 @@ SPEC_BOOK.update({
 })
 
 
+#: The plumbing moments a clock_transition certificate may name. The lane reads the STAMP HOUR the
+#: certificate carries, never a time-zone conversion, so only the names are needed here.
+CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_equity_close",
+                          "comex_settle", "tokyo_open", "london_open", "ny_open",
+                          "broker_rollover"})
+CLOCK_MODES = ("into", "out_of", "fade")
+
+
+def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
+    label, mode = str(p.get("label") or ""), str(p.get("mode") or "")
+    side, hour = int(p.get("side") or 0), int(p.get("stamp_hour", -1))
+    if label not in CLOCK_LABELS or mode not in CLOCK_MODES or side not in (1, -1):
+        return []
+    if not 0 <= hour <= 23 or len(b) < max(1, 1440 // max(1, b.minutes)) * 60:
+        return []
+    at = np.flatnonzero(b.hour == hour)
+    if at.size < 40:
+        return []
+    lead, hold = int(p["lead_bars"]), int(p["hold_bars"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    a = atr(b, int(p["atr_n"]))
+    out: list[Order] = []
+    for i in at:
+        if mode == "into":
+            entry, ttl, s = int(i) - lead, lead, side
+            if entry < 1:
+                continue
+        elif mode == "out_of":
+            entry, ttl, s = int(i), hold, side
+        else:
+            j = int(i) - lead
+            if j < 1:
+                continue
+            move = float(b.c[i] - b.c[j])
+            if move == 0.0:
+                continue
+            entry, ttl, s = int(i), hold, (-1 if move > 0 else 1) * side
+        ai = float(a[entry])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[entry])
+        out.append(Order(int(b.t[entry]), s, px - s * stop_atr * ai,
+                         px + s * stop_atr * ai * rr, max(1, ttl)))
+    return out
+
+
+SPEC_BOOK["clock_transition"] = RuleSpec(
+    "clock_transition",
+    "One named plumbing moment (label: london_fix, ny_option_cut, cme_fx_close, "
+    "cash_equity_close, comex_settle, tokyo_open, london_open, ny_open, broker_rollover) at the "
+    "broker STAMP hour the certificate names (stamp_hour). Stands aside on fewer than 60 days of "
+    "bars or fewer than 40 bars at that hour. At every bar i stamped at that hour: into -- signal "
+    "at bar i - lead_bars on `side`, time exit after lead_bars; out_of -- signal at bar i on "
+    "`side`, time exit after hold_bars; fade -- signal at bar i against the sign of close[i] - "
+    "close[i - lead_bars] (times `side`; no move, no signal), time exit after hold_bars. Stop "
+    "stop_atr x ATR(atr_n) and target rr x that from the signal close, entry next open; ATR "
+    "is the trailing mean true range, fewer bars allowed at the start.",
+    {"label": "", "stamp_hour": -1, "mode": "out_of", "side": 1, "lead_bars": 2,
+     "hold_bars": 4, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+    _build_clock_transition, rule_sets_side=True)
+
+
+#: Where a factor's bars come from. `load_bars` on the desk's universe store, the same chart the
+#: target is read from; a test hands in its own frames here.
+FACTOR_BARS: Callable[[str, str], Bars | None] = load_bars
+RESIDUAL_SIDE_MODES = frozenset({"revert", "continue"})
+
+
+def _causal_ols_residual(y: np.ndarray, x: np.ndarray, win: int) -> np.ndarray:
+    """eps[t] = y[t] - (a + x[t] . b), with (a, b) the least-squares fit on rows t-win .. t-1
+    only; NaN before row `win`. Written as the plain loop on purpose: this lane is the second
+    implementation, so it does not borrow the desk's cumulative-sum solver."""
+    n, k = x.shape
+    eps = np.full(n, np.nan)
+    if win < k + 2:
+        return eps
+    for t in range(win, n):
+        z = np.column_stack([np.ones(win), x[t - win:t]])
+        coef, *_ = np.linalg.lstsq(z, y[t - win:t], rcond=None)
+        eps[t] = y[t] - float(coef[0] + x[t] @ coef[1:])
+    return eps
+
+
+def _trailing_z(v: np.ndarray, n: int) -> np.ndarray:
+    """(v - mean) / sd (ddof 1) over the trailing n values; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    if n < 2 or v.size < n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n)
+    full = np.isfinite(w).all(axis=1)
+    mu = np.where(full, np.nanmean(np.where(np.isfinite(w), w, 0.0), axis=1), np.nan)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        sd = np.where(full, np.std(np.where(np.isfinite(w), w, 0.0), axis=1, ddof=1), np.nan)
+        out[n - 1:] = (v[n - 1:] - mu) / sd
+    return out
+
+
+def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
+    names = [str(s) for s in (p.get("factor_symbols") or []) if str(s)]
+    mode = str(p.get("side_mode") or "")
+    if not names or mode not in RESIDUAL_SIDE_MODES:
+        return []
+    tf = str(p.get("timeframe") or "H1")
+    loaded = [FACTOR_BARS(s, tf) for s in names]
+    factors = [f for f in loaded if f is not None]
+    if len(factors) != len(loaded):
+        return []                               # a partial basket is a different model
+    lookback = int(p["lookback"])
+    bwin = int(p.get("beta_win") or 0) or lookback
+    # the bars every leg printed: the target's stamps, intersected with each factor's
+    common = np.unique(b.t)
+    for f in factors:
+        common = np.intersect1d(common, f.t)
+    yc = b.c[np.searchsorted(b.t, common)]
+    xc = np.column_stack([f.c[np.searchsorted(f.t, common)] for f in factors])
+    keep = np.isfinite(yc) & np.isfinite(xc).all(axis=1)
+    common, yc, xc = common[keep], yc[keep], xc[keep]
+    if len(common) < bwin + lookback * 2:
+        return []
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ry = np.concatenate([[np.nan], np.diff(np.log(yc))])
+        rx = np.vstack([np.full((1, xc.shape[1]), np.nan), np.diff(np.log(xc), axis=0)])
+    ok = np.isfinite(ry) & np.isfinite(rx).all(axis=1)
+    if int(ok.sum()) < bwin + lookback * 2:
+        return []
+    t_ok = common[ok]
+    eps = _causal_ols_residual(ry[ok], rx[ok], bwin)
+    cum = np.where(np.isfinite(eps), np.cumsum(np.where(np.isfinite(eps), eps, 0.0)), np.nan)
+    z = _trailing_z(cum, lookback)
+    a = atr(b, int(p["atr_n"]))[np.searchsorted(b.t, t_ok)]
+    hours = {int(h) for h in p["active_hours"]} if p.get("active_hours") else None
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    for i in range(bwin + lookback, len(cum) - 1):
+        zi = float(z[i])
+        if not np.isfinite(zi) or abs(zi) < float(p["entry_z"]):
+            continue
+        if hours is not None and int((t_ok[i] // 3_600_000_000_000) % 24) not in hours:
+            continue
+        if not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
+        # THE ANCHOR IS ROW i OF THE JOINED FRAME, NOT OF THE RETURN SERIES, as the family
+        # indexes it: the first joined row has no return, so this is the close one row BEFORE
+        # the signal row. Mirrored, not corrected: the certificates were minted on it.
+        px, sd = float(yc[i]), stop_atr * float(a[i])
+        out.append(Order(int(t_ok[i]), side, px - side * sd, px + side * sd * rr, ttl))
+    return out
+
+
+SPEC_BOOK["cross_asset_residual"] = RuleSpec(
+    "cross_asset_residual",
+    "The target's close and each named factor's close (factor_symbols, same chart) on the bars "
+    "every leg printed. Log returns bar to bar; the residual at row t is the target's return "
+    "less an intercept and the factors' returns weighted by a least-squares fit on rows "
+    "t - beta_win .. t - 1 only (beta_win defaults to lookback). Cumulative residual, z-scored "
+    "over the trailing lookback rows (sample sd). Stands aside on a missing factor, an unknown "
+    "side_mode, or fewer than beta_win + 2 x lookback rows. From row beta_win + lookback on, "
+    "|z| >= entry_z on a stamp hour in active_hours (every hour when none) signals: revert "
+    "fades the sign of z, continue follows it. Stop stop_atr x ATR(atr_n) (at the signal row) "
+    "and target rr x that from the close of joined row i -- the row before the signal row, as "
+    "the family indexes it -- entry next open, time exit after ttl_bars. The session is the "
+    "certificate's `session` parameter, never its selector.",
+    {"factor_symbols": [], "timeframe": "H1", "lookback": 240, "beta_win": None,
+     "entry_z": 2.0, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72,
+     "side_mode": "revert", "active_hours": None},
+    _build_cross_asset_residual, rule_sets_side=True, session_in_params=True)
+
+
+SPREAD_MODES = frozenset({"spike_reversion", "calm_continuation"})
+
+
+def _ffill(v: np.ndarray) -> np.ndarray:
+    """Each NaN takes the last finite value before it; leading NaNs stay NaN."""
+    ok = np.isfinite(v)
+    pos = np.where(ok, np.arange(v.size), -1)
+    np.maximum.accumulate(pos, out=pos)
+    return np.where(pos >= 0, v[np.maximum(pos, 0)], np.nan)
+
+
+def _trailing_rank(v: np.ndarray, n: int) -> np.ndarray:
+    """At row i >= n: the share of the n values before row i that are <= the value at row i
+    (a NaN compares false, so it counts in the denominator only); NaN before row n."""
+    out = np.full(v.size, np.nan)
+    if v.size <= n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n + 1)
+    with np.errstate(invalid="ignore"):
+        out[n:] = (w[:, :-1] <= w[:, -1:]).mean(axis=1)
+    return out
+
+
+def _build_spread_state(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, nw = str(p.get("mode") or ""), int(p["norm_window"])
+    if mode not in SPREAD_MODES or "spread" not in b.cols or len(b) < nw * 3:
+        return []
+    spread = _ffill(b.cols["spread"])
+    fin = spread[np.isfinite(spread)]
+    if fin.size == 0 or not (fin.size > 1 and float(np.std(fin, ddof=1)) > 0):
+        return []
+    ret = np.concatenate([[np.nan], np.diff(b.c)])
+    a = atr(b, int(p["atr_n"]))
+    sp_rank = _trailing_rank(spread, nw)
+    has_vol = "tick_volume" in b.cols
+    act_rank = _trailing_rank(_ffill(b.cols["tick_volume"]), nw) if has_vol else None
+    hold, min_mv = int(p["hold_bars"]), float(p["min_move_atr"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    last = -10 ** 9
+    for i in range(nw, len(b) - 1):
+        if i - last < hold or not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        mv = float(ret[i])
+        if not np.isfinite(mv) or abs(mv) < min_mv * a[i] or not np.isfinite(sp_rank[i]):
+            continue
+        if mode == "spike_reversion":
+            if sp_rank[i] < float(p["spike_pct"]):
+                continue
+            side = -1 if mv > 0 else 1
+        else:
+            if sp_rank[i] > float(p["calm_pct"]):
+                continue
+            if act_rank is not None and not (np.isfinite(act_rank[i])
+                                             and act_rank[i] >= float(p["active_pct"])):
+                continue
+            side = 1 if mv > 0 else -1
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * sd * rr, hold))
+        last = i
+    return out
+
+
+SPEC_BOOK["spread_state"] = RuleSpec(
+    "spread_state",
+    "The broker's own per-bar spread (forward-filled over gaps) and, when the file has it, "
+    "tick_volume. Each is ranked at row i as the share of the norm_window values before it at "
+    "or below it. Stands aside with no spread column, a flat spread, an unknown mode, or fewer "
+    "than 3 x norm_window bars. From row norm_window on, a bar whose close-to-close move is at "
+    "least min_move_atr x ATR(atr_n) signals -- spike_reversion: spread rank >= spike_pct, "
+    "against the move; calm_continuation: spread rank <= calm_pct and (with volume) activity "
+    "rank >= active_pct, with the move -- then nothing for hold_bars bars. Stop stop_atr x ATR "
+    "and target rr x that from the signal close, entry next open, time exit after hold_bars.",
+    {"mode": "spike_reversion", "norm_window": 240, "spike_pct": 0.95, "calm_pct": 0.20,
+     "active_pct": 0.80, "min_move_atr": 0.5, "hold_bars": 6, "atr_n": 20, "stop_atr": 2.0,
+     "rr": 1.5},
+    _build_spread_state, rule_sets_side=True, session_in_params=True)
+
+
+def _trailing_mean(v: np.ndarray, n: int) -> np.ndarray:
+    """Mean of rows i-n+1 .. i; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    if n < 1 or v.size < n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n)
+    full = np.isfinite(w).all(axis=1)
+    out[n - 1:] = np.where(full, np.where(np.isfinite(w), w, 0.0).mean(axis=1), np.nan)
+    return out
+
+
+def _build_jump(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, lb, atr_n = str(p.get("mode") or ""), int(p["lookback"]), int(p["atr_n"])
+    if mode not in ("continue", "revert") or lb < 4 or len(b) < lb + atr_n + 3:
+        return []
+    with np.errstate(invalid="ignore", divide="ignore"):
+        r = np.concatenate([[np.nan], np.diff(np.log(b.c))])
+        absr = np.abs(r)
+        bip = _trailing_mean(absr * np.concatenate([[np.nan], absr[:-1]]), lb)
+        sigma = np.sqrt(np.concatenate([[np.nan], bip[:-1]]) * (np.pi / 2.0))
+        stat = absr / sigma
+    a = atr(b, atr_n)
+    flip = 1 if mode == "continue" else -1
+    k, cool = float(p["jump_k"]), int(p["cooldown_bars"])
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    last = -(10 ** 9)
+    for i in range(lb + 1, len(b) - 1):
+        if not (np.isfinite(stat[i]) and stat[i] >= k and np.isfinite(r[i]) and r[i] != 0.0
+                and np.isfinite(a[i]) and a[i] > 0) or i - last < cool:
+            continue
+        last = i
+        side = flip * (1 if r[i] > 0 else -1)
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * sd * rr, ttl))
+    return out
+
+
+SPEC_BOOK["jump"] = RuleSpec(
+    "jump",
+    "Log close-to-close returns r. At bar i the jump statistic is |r_i| / sigma_i, with "
+    "sigma_i^2 = (pi/2) x the mean of |r_j||r_j-1| over the lookback bars ending at i - 1 "
+    "(bipower variation, bar i excluded; NaN unless every term exists). Stands aside on an "
+    "unknown mode, lookback < 4, or fewer than lookback + atr_n + 3 bars. From bar lookback + 1, "
+    "a statistic >= jump_k on a non-zero return with a positive ATR(atr_n) signals -- continue "
+    "with the return's sign, revert against it -- and no further signal for cooldown_bars "
+    "bars. Stop stop_atr x ATR and target rr x that from the signal close, entry next open, "
+    "time exit after ttl_bars. The session is the certificate's parameter.",
+    {"mode": "continue", "lookback": 48, "jump_k": 4.0, "cooldown_bars": 8, "atr_n": 20,
+     "stop_atr": 1.5, "rr": 1.5, "ttl_bars": 8},
+    _build_jump, rule_sets_side=True, session_in_params=True)
+
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
@@ -906,6 +1225,8 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
     if family in HUNT16_FAMILIES:
         p["_session"] = None
+    if spec.session_in_params:
+        p["_session"] = SESSIONS.get(str(dict(params or {}).get("session") or "").lower())
     return p, "ok"
 
 
@@ -916,7 +1237,7 @@ HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
             ) -> tuple[list[Order], list[Fill]]:
     orders = SPEC_BOOK[family].build(bars, dict(p))
-    side = int(p.get("_side") or 0)
+    side = 0 if SPEC_BOOK[family].rule_sets_side else int(p.get("_side") or 0)
     if side:
         orders = [o for o in orders if o.side == side]
     win = p.get("_session")
