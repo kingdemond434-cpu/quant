@@ -1,0 +1,20 @@
+{
+  "_doc": "Access rows for regional_survivor_hunters. ROWS, NEVER CODE. terms: UNREAD (default; fetched under robots.txt and the hard stops, and the read is owed) | NO_BAR (read; nothing forbids automated or commercial use) | FORBIDS (fail-closed: never fetched). auth: LOGIN_REQUIRED means the listing is behind a login and is never fetched. Each value carries the evidence and date it was read. Governance ruling 2026-11-10.",
+  "sources": {
+    "equiti_copy": {"terms": "UNREAD", "terms_evidence": "2026-11-10 cloud read: www.equiti.com/terms-and-conditions/ did not load; no terms link in the served home page. copy-ratings.equiti.com/ served a 400-character 'Widgets' stub (client-rendered); its robots.txt did not load from the cloud."},
+    "octa_masters": {"terms": "UNREAD", "auth": "LOGIN_REQUIRED", "auth_evidence": "2026-11-10 cloud read: my.octabroker.com/copy-trading/rating/ serves 'Log in to your Profile -- Octa' logged out. The rating is behind a login; the desk does not log in."},
+    "hfm_pamm": {"terms": "UNREAD", "terms_evidence": "2026-11-10 cloud read: www.hfm.com did not load. pamm.hfm.com/robots.txt is 'User-agent: * / Allow: /'. The listing path did not load from the cloud; a 403 on the box is a hard stop."},
+    "followme_cn": {"terms": "UNREAD", "terms_evidence": "2026-11-10 cloud read: www.followme.com/terms did not load; cn.followme.com robots.txt and /trade/rank did not load. A 403 on the box is a hard stop."},
+    "minfx_jp": {"terms": "UNREAD", "terms_evidence": "2026-11-10 cloud read: no site-terms link on min-fx.jp (footer has company, risk, solicitation policy, privacy). robots.txt Disallow list does not match /systre/. /systre/strategy/ did not load (the listing moved or the service ended)."},
+    "trading_latam": {"terms": "UNREAD"},
+    "litefinance": {"terms": "UNREAD"},
+    "duplitrade": {"terms": "UNREAD"},
+    "share4you": {"terms": "UNREAD"},
+    "instaforex_copy": {"terms": "UNREAD"},
+    "roboforex_copyfx": {"terms": "UNREAD"},
+    "amarkets": {"terms": "UNREAD"},
+    "mylivefx_br": {"terms": "UNREAD"},
+    "readitrades_africa": {"terms": "UNREAD"},
+    "fbs_tape": {"terms": "UNREAD"}
+  }
+}

@@ -21,7 +21,10 @@ rem correlations (local), and sec_edgar when QUANT_EDGAR_UA is set. Every other 
 rem scrapers and youtube among them, is reported SET_ASIDE by name in latest_discoveries.json.
 rem The box never contacts YouTube.
 setlocal
-set "QUANT_MINERS_ALLOW=cot,central_bank,weather,github,seasonality,correlations,sec_edgar"
+rem regional_survivors (2026-11-10) is the one page-reading channel: it is allowed because the
+rem hunters enforce access themselves (robots.txt read before every fetch, 401/403/429/451 a hard
+rem stop, no login, and regional_hunter_access.json bars a ground whose terms forbid the use).
+set "QUANT_MINERS_ALLOW=cot,central_bank,weather,github,seasonality,correlations,sec_edgar,regional_survivors"
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\Quant-SideChannelMiners.log"
 set "PY=C:\Program Files\Python314\python.exe"

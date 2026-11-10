@@ -41,12 +41,16 @@ def test_sec_edgar_without_a_declared_user_agent_is_set_aside(monkeypatch) -> No
     assert ram.run_all_miners()["sec_edgar"]["count"] == 1
 
 
-def test_the_box_runner_allows_no_scraper_and_no_youtube() -> None:
+def test_the_box_runner_allows_no_ungated_scraper_and_no_youtube() -> None:
     text = RUNNER.read_text("utf-8")
-    line = next(x for x in text.splitlines() if "QUANT_MINERS_ALLOW=" in x)
+    line = next(x for x in text.splitlines()
+                if x.startswith("set ") and "QUANT_MINERS_ALLOW=" in x)
     allowed = set(line.split("=", 1)[1].strip('"').split(","))
+    # regional_survivors reads pages, and is allowed only because it carries its own access gate
+    # (tests/test_regional_hunter_access.py pins robots, hard stops, terms and login rows).
     assert allowed == {"cot", "central_bank", "weather", "github", "seasonality",
-                       "correlations", "sec_edgar"}
+                       "correlations", "sec_edgar", "regional_survivors"}
+    assert "youtube" not in allowed
 
 
 def test_latest_discoveries_is_written_atomically_even_over_a_read_only_file(tmp_path) -> None:

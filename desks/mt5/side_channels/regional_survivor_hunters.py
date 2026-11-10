@@ -29,8 +29,11 @@ the RESOLUTION CHAIN `mine_source` walks before it gives up on a page:
 * `error:HTTPError` 404 (share4you, minfx_jp): the listing MOVED. `resolve_listing` walks the
   source's alternates and the site root's own links for a rating/leader/strategy page and
   REMEMBERS the one that yielded, so the next run starts there.
-* `error:HTTPError` 403 (hfm_pamm, followme_cn): alternates on sibling hosts, a Referer from the
-  site root and a JSON Accept for API routes; a 429/5xx is retried with backoff.
+* 401/403/429/451 (hfm_pamm, followme_cn): A REFUSAL, AND IT STANDS (2026-11-10). The old
+  remedy here -- sibling hosts, a Referer from the site root, retries -- routed around a venue
+  that had said no. `AccessGate` now stops the host for the run and for a cooldown, reads
+  robots.txt before every fetch, sends our own User-Agent, and `regional_hunter_access.json`
+  bars a ground whose terms forbid the use or whose listing is behind a login.
 * `error:SSLError` (readitrades_africa): certifi-backed trust (`polite_fetch.ssl_context`), then
   the bare-host variant. Verification is never turned off.
 
@@ -59,6 +62,7 @@ for _p in (str(Path(__file__).resolve().parent), str(BASE), str(_REPO)):
         sys.path.insert(0, _p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data.robots_gate import ALLOWED, HARD_STOP, RobotsGate  # noqa: E402
 
 INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "regional_hunters_state.json"
@@ -69,7 +73,18 @@ COVERAGE = INTEL / "coverage_registry.json"
 RUNS = BASE / "data" / "alt_fetch_runs.jsonl"
 YIELD_OUT = BASE / "reports" / "ALT_DATA_YIELD.json"
 LEG = "regional_survivor_hunters"
-HEADERS = {"User-Agent": pf.BROWSER_UA,
+#: Reviewed access rows, beside the code (never under data/, which is the box's state): what each
+#: ground's published terms say and whether its listing sits behind a login.
+ACCESS_ROWS = Path(__file__).resolve().parent / "regional_hunter_access.json"
+#: We say who we are. A venue that refuses this client has refused the desk.
+UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; regional_survivor_hunters)"
+#: A refusal stands this long before ONE polite re-probe is allowed; a second refusal re-arms it.
+HARD_STOP_COOLDOWN_H = 168.0
+LOGIN_WALL = re.compile(
+    r"(log\s*in to your (profile|account)|sign in to your [^<]{0,40}(profile|account)"
+    r"|please\s+log\s*in|log\s*in\s+or\s+register|login required|members only"
+    r"|ログインしてください|请登录|请先登录)", re.I)
+HEADERS = {"User-Agent": UA,
            "Accept-Language": "en-US,en;q=0.8,ru;q=0.6,zh;q=0.5,ja;q=0.5,ar;q=0.4,es;q=0.4"}
 NUM = r"[-+]?\d[\d\s,]*\.?\d*"
 #: Sources worked at once. Politeness is per HOST (`polite_fetch.GATE`), so this buys coverage
@@ -107,20 +122,118 @@ class FetchError(Exception):
 _DEADLINE: dict[str, float | None] = {"at": None}
 
 
-def fetch(url: str, timeout: float = REQUEST_TIMEOUT_S, *, referer: str = "",
-          accept_json: bool = False) -> str:
-    """One polite GET: per-host spacing, bounded retries on 429/5xx/transport, certifi-backed
-    TLS, charset-aware decoding. Raises FetchError on failure."""
+def _raw_get(url: str, timeout: float = REQUEST_TIMEOUT_S,
+             accept_json: bool = False) -> tuple[int | None, str, str]:
+    """(status, body, error) for one GET with our own UA and NO retries. Tests replace this."""
     hdr = dict(HEADERS)
-    if referer:
-        hdr["Referer"] = referer
     if accept_json:
         hdr["Accept"] = "application/json, text/plain, */*"
-        hdr["X-Requested-With"] = "XMLHttpRequest"
-    r = pf.get(url, headers=hdr, timeout=timeout, retries=2, leg=LEG, deadline=_DEADLINE["at"])
-    if not r.ok:
-        raise FetchError(url, r.status, r.error or f"HTTP {r.status}")
-    return r.text
+    r = pf.get(url, headers=hdr, timeout=timeout, retries=0, leg=LEG, deadline=_DEADLINE["at"])
+    return r.status, r.text or "", r.error or ""
+
+
+class AccessGate:
+    """THE ACCESS RULES, IN ONE PLACE (Governance ruling 2026-11-10; Auditor MF1 on #773).
+
+    * robots.txt Disallow on the exact path stops that fetch; an unreadable robots.txt (anything
+      but a 404) stops it too, because an unread policy is not a yes.
+    * 401/403/429/451 is a refusal by the HOST: nothing more is fetched from it this run, and the
+      stop is kept in the state file for HARD_STOP_COOLDOWN_H before one re-probe is allowed.
+      No retry, no changed headers, no sibling host.
+    Counts are kept per reason so a dark seat reads as its cause, never as a zero.
+    """
+
+    def __init__(self, stops: dict[str, Any] | None = None) -> None:
+        self.stops: dict[str, Any] = dict(stops or {})
+        self.counts: dict[str, int] = {}
+        self._lock = threading.Lock()
+        self.robots = RobotsGate(lambda u: _raw_get(u, 15.0)[:2])
+
+    def _count(self, key: str) -> None:
+        with self._lock:
+            self.counts[key] = self.counts.get(key, 0) + 1
+
+    def stopped(self, host: str, now: datetime | None = None) -> bool:
+        e = self.stops.get(host)
+        if not e:
+            return False
+        try:
+            age_h = ((now or datetime.now(tz=UTC))
+                     - datetime.fromisoformat(str(e.get("at")))).total_seconds() / 3600.0
+        except (TypeError, ValueError):
+            return True
+        return age_h < HARD_STOP_COOLDOWN_H
+
+    def refuse(self, host: str, status: int, url: str) -> None:
+        with self._lock:
+            prev = self.stops.get(host) or {}
+            self.stops[host] = {"code": status, "url": url,
+                                "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                "refusals": int(prev.get("refusals") or 0) + 1}
+
+    def get(self, url: str, timeout: float, accept_json: bool) -> str:
+        host = urlparse(url).netloc.lower()
+        if self.stopped(host):
+            self._count("hard_stopped")
+            raise FetchError(url, None, f"HARD_STOPPED: {host} refused this client "
+                                        f"(HTTP {self.stops[host].get('code')})")
+        verdict = self.robots.check(url)
+        if host in self.stops and self.stopped(host):     # robots.txt itself was refused
+            self._count("hard_stopped")
+            raise FetchError(url, None, f"HARD_STOPPED: {host} refused robots.txt")
+        if verdict != ALLOWED:
+            self._count(f"robots_{verdict.lower()}")
+            raise FetchError(url, None, f"ROBOTS_{verdict}: not fetched")
+        status, body, err = _raw_get(url, timeout, accept_json)
+        self._count("fetched")
+        if status in HARD_STOP:
+            self.refuse(host, int(status), url)
+            self._count(f"http_{status}")
+            raise FetchError(url, status, f"HARD_STOP: HTTP {status}")
+        if status is None or not 200 <= status < 400 or err:
+            raise FetchError(url, status, err or f"HTTP {status}")
+        return body
+
+
+_GATE: dict[str, AccessGate | None] = {"gate": None}
+
+
+def gate() -> AccessGate:
+    g = _GATE["gate"]
+    if g is None:
+        g = _GATE["gate"] = AccessGate((_read(STATE, {}) or {}).get("_hard_stops"))
+    return g
+
+
+def fetch(url: str, timeout: float = REQUEST_TIMEOUT_S, *, referer: str = "",
+          accept_json: bool = False) -> str:
+    """One honest GET through the access gate: our own UA, per-host spacing, no retries, robots
+    read first, a refusal recorded and never routed around. `referer` is accepted for the old
+    call sites and IGNORED: we do not dress a request up as a click. Raises FetchError."""
+    del referer
+    return gate().get(url, timeout, accept_json)
+
+
+def access_rows() -> dict[str, Any]:
+    doc = _read(ACCESS_ROWS, {}) or {}
+    rows = doc.get("sources") if isinstance(doc, dict) else None
+    return rows if isinstance(rows, dict) else {}
+
+
+def access_bar(name: str, rows: dict[str, Any] | None = None) -> tuple[str, str]:
+    """(state, why) when a ground must NOT be fetched at all, else ("", "").
+
+    TERMS_FORBID: its published terms forbid machine or commercial use (fail-closed).
+    BLOCKED_AUTH: its listing is behind a login; the desk does not log in.
+    Unread terms do not bar a ground -- they are named in the row and in the coverage registry so
+    the read is owed work -- but robots.txt and a refusal still stop every fetch."""
+    r = (access_rows() if rows is None else rows).get(name) or {}
+    terms = str(r.get("terms") or "UNREAD").upper()
+    if terms == "FORBIDS":
+        return "terms_forbid", str(r.get("terms_evidence") or "published terms forbid this use")
+    if str(r.get("auth") or "").upper() == "LOGIN_REQUIRED":
+        return "blocked_auth", str(r.get("auth_evidence") or "the listing is behind a login")
+    return "", ""
 
 
 _WRITE_LOCK = threading.Lock()
@@ -570,8 +683,8 @@ def diagnose_page(html: str, status: int | None = None) -> tuple[str, str]:
     """
     if status and status >= 400:
         return ("HTTP_BLOCKED",
-                f"HTTP {status} -- the listing moved (404) or the host refuses this client "
-                f"(403); resolve_listing tried the alternates and the site root's own links")
+                f"HTTP {status} -- the listing moved; the declared alternates of the same "
+                f"venue and the site root's own links were tried")
     low = html.lower()
     js_markers = ("__next_data__", "data-reactroot", "ng-version", "data-beasties",
                   "window.__nuxt", "muirtl", "_app-", "runtime.")
@@ -742,18 +855,29 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
         [resolved, primary, *(ALTERNATES.get(name, ()) if explore else ())]) if u]
     tried: list[dict[str, Any]] = []
     last_html, last_status, last_err = "", None, ""
-    for i, u in enumerate(urls):
+    for u in urls:
         try:
-            html = fetch(u, referer=base_url if i else "")
+            html = fetch(u)
         except FetchError as exc:
             tried.append({"url": u, "status": exc.status, "error": exc.error[:120]})
             last_status, last_err = exc.status, exc.error
+            if exc.error.startswith("HARD_STOP"):
+                # THE VENUE SAID NO. No alternate, no sibling host, no site-root walk.
+                return {"rows": [], "url": u, "via": "", "tried": tried, "state": "hard_stop",
+                        "error": exc.error, "diagnosis": "HARD_STOP",
+                        "fix_hint": "the host refused this client; nothing is retried until "
+                                    f"the {HARD_STOP_COOLDOWN_H:g}h cooldown allows one re-probe"}
             continue
         rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
         tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how})
         if rows_:
             return {"rows": rows_, "url": u, "via": how, "tried": tried, "state": "ok",
                     "error": ""}
+        if LOGIN_WALL.search(html[:20000]):
+            return {"rows": [], "url": u, "via": "", "tried": tried, "state": "blocked_auth",
+                    "error": "login wall", "diagnosis": "BLOCKED_AUTH",
+                    "fix_hint": "the listing is behind a login; the desk does not log in. Set "
+                                "auth=LOGIN_REQUIRED on its row in regional_hunter_access.json"}
         last_html, last_status, last_err = html, 200, ""
     # Nothing on the declared URLs: the listing may have moved. The site root's own links say
     # where it went.
@@ -766,9 +890,11 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
             if u in urls:
                 continue
             try:
-                html = fetch(u, referer=root)
+                html = fetch(u)
             except FetchError as exc:
                 tried.append({"url": u, "status": exc.status, "error": exc.error[:120]})
+                if exc.error.startswith("HARD_STOP"):
+                    break
                 continue
             rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
             tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how,
@@ -782,6 +908,10 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
     elif last_status:
         code, todo = diagnose_page("", last_status)
         state = "error:HTTPError"
+    elif last_err.startswith("ROBOTS_"):
+        code = last_err.split(":")[0]
+        todo = "robots.txt bars this path (or could not be read); the fetch was not made"
+        state = code.lower()
     else:
         code = "FETCH_ERROR"
         todo = "transport failed on every URL (timeout / TLS / DNS) -- see `tried`"
@@ -870,6 +1000,11 @@ def _work_source(name: str, spec: tuple, st: dict[str, Any]) -> dict[str, Any]:
     the host gate and the source's own pagination stay polite."""
     npages = int(spec[6])
     cur = int(st.get(name, 0) or 0)
+    bar, why = access_bar(name)
+    if bar:
+        return {"name": name, "resolved": "", "cursor": cur, "pages": [{
+            "rows": [], "url": spec[3](1), "via": "", "tried": [], "state": bar, "error": why,
+            "diagnosis": bar.upper(), "fix_hint": why, "page": 0}]}
     pages = [((cur + k) % npages) + 1 for k in range(min(PAGES_PER_RUN, npages))]
     resolved = str((st.get("_resolved") or {}).get(name) or "")
     results = []
@@ -899,6 +1034,8 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
     _DEADLINE["at"] = t0 + budget_s
     pf.reset_stats(LEG)
     st = _read(STATE, {})
+    g = _GATE["gate"] = AccessGate(st.get("_hard_stops"))
+    rows_doc = access_rows()
     results: dict[str, Any] = {}
     total_real = 0
     out = pf.run_concurrently(list(SOURCES.items()),
@@ -950,6 +1087,9 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
               f"[{state}{' via ' + ok_page['via'] if ok_page else ''}]")
     # FBS tape rides along
     try:
+        bar, why = access_bar("fbs_tape", rows_doc)
+        if bar:
+            raise FetchError("https://fbs.com/top-trades", None, f"{bar}: {why}")
         tape = mine_fbs_tape()
         d = INTEL / "fbs_tape"
         d.mkdir(parents=True, exist_ok=True)
@@ -962,6 +1102,7 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
         print(f"  fbs_tape: {len(tape)} rows")
     except Exception as exc:
         print(f"  fbs_tape: {exc}")
+    st["_hard_stops"] = g.stops
     _atomic_write(STATE, json.dumps(st, indent=0, ensure_ascii=False))
     latest_p = INTEL / "latest_discoveries.json"
     latest = _read(latest_p, {})
@@ -973,6 +1114,10 @@ def run_and_save(*, budget_s: float = RUN_BUDGET_S, workers: int = WORKERS) -> d
                  "workers": workers, "sources": len(SOURCES), "rows": total_real,
                  "sources_yielded": sum(1 for k, v in results.items()
                                         if k != "fbs_tape" and v["count"]),
+                 "access": dict(sorted(g.counts.items())), "hard_stops": sorted(g.stops),
+                 "terms_unread": sorted(n for n in SOURCES
+                                        if str((rows_doc.get(n) or {}).get("terms")
+                                               or "UNREAD").upper() == "UNREAD"),
                  **s, "fetches_per_s": round(s["fetches"] / secs, 3) if secs > 0 else None})
     _DEADLINE["at"] = None
     with contextlib.suppress(Exception):
