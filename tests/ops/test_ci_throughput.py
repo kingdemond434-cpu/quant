@@ -860,3 +860,19 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     assert reruns == ["repos/o/r/actions/runs/10/rerun"]
     assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
     assert not lf.never_started([]) and lf.never_started(jobs[10])
+
+
+def test_the_box_sweep_copies_the_auditor_registry_down_before_the_gates_read_it() -> None:
+    """#816/#818 (2026-11-10): the gate's second record and memecoin_gate's registry are copies of
+    the Auditor's files, made in the same sweep before either gate runs, with no machine variable
+    and no separate task; a variable the box set itself wins."""
+    ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    sync = ps.index("$syncPy = Join-Path")
+    assert sync < ps.index('".github\\scripts\\audit_gate.py"') < ps.index("memecoin_gate.py")
+    assert "if (Test-Path -LiteralPath $syncPy)" in ps  # absent until #818 is on LIVE: no-op
+    assert "if (-not $env:QUANT_AUDITOR_ROWS)" in ps
+    assert "if (-not $env:MEMECOIN_AUDIT_REGISTRY)" in ps
+    assert "--out $env:QUANT_AUDITOR_ROWS --memecoin-out $env:MEMECOIN_AUDIT_REGISTRY" in ps
+    assert "[Environment]::SetEnvironmentVariable" not in ps[sync - 2000 : sync + 2000]
+    block = ps[sync : sync + 1200]
+    assert "catch {" in block and 'Say "auditor-sync failed' in block  # never stops the sweep

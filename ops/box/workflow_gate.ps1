@@ -136,6 +136,26 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "git checkout failed ($LASTEXITCODE)" }
     $at = (& git -C $Clone rev-parse --short=9 HEAD)
 
+    # THE AUDITOR'S REGISTRY, COPIED DOWN (#816/#818, 2026-11-10). The gate's second record
+    # (QUANT_AUDITOR_ROWS) and memecoin_gate's registry (MEMECOIN_AUDIT_REGISTRY) are copies of the
+    # Auditor's own files on refs/heads/audit-registry, made by ops/release/auditor_sync.py (exact
+    # rows, append-only; a refusal keeps the old copy, which ages, so the gates wait). It runs here,
+    # in the sweep that reads them, so no separate task or machine variable is needed: each
+    # variable is set for this process only, and only when the box has not set it already. Until
+    # #818 is on LIVE the script is absent and nothing here runs. A failure never stops the sweep.
+    $AuditDir = "C:\opt\audit_registry"
+    $syncPy = Join-Path $Clone "ops\release\auditor_sync.py"
+    if (Test-Path -LiteralPath $syncPy) {
+        try {
+            if (-not $env:QUANT_AUDITOR_ROWS) { $env:QUANT_AUDITOR_ROWS = Join-Path $AuditDir "auditor_rows.jsonl" }
+            if (-not $env:MEMECOIN_AUDIT_REGISTRY) { $env:MEMECOIN_AUDIT_REGISTRY = Join-Path $AuditDir "memecoin_registry.jsonl" }
+            & $Python -I -u $syncPy --repo-dir $Clone --out $env:QUANT_AUDITOR_ROWS --memecoin-out $env:MEMECOIN_AUDIT_REGISTRY 2>&1 | ForEach-Object { Say "auditor-sync@$at $_" }
+            Say "auditor-sync rc=$LASTEXITCODE"
+        } catch {
+            Say "auditor-sync failed: $($_.Exception.Message)"
+        }
+    }
+
     # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
     # are cancelled and re-run behind it, and runs on moved heads are cancelled. A failure here is
     # logged and never stops the sweep.
