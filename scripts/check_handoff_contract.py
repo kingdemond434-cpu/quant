@@ -168,7 +168,11 @@ def measure(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, Any]
                            f"code landed, with no handoff block")
             else:
                 row.update(status="UNMEASURED",
-                           why="artifact predates the producer's stamping code")
+                           why=f"artifact is not more than {GRACE_S / 3600:.0f}h newer than its "
+                               "producer's code, so it may predate the stamping. Ages come "
+                               "from file mtimes: on a fresh checkout (CI) every mtime is the "
+                               "checkout time, so this reads UNMEASURED there by construction "
+                               "and only a host that writes the artifact can measure it")
                 continue
         for b in stamped:
             for d in HC.field_defects(b, now=now):
