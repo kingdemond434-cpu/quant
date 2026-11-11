@@ -53,10 +53,12 @@ UNMEASURED never moves budget or retires anything (L1.28a).
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import os
 import sys
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -117,6 +119,16 @@ SHARE_FLOOR = 0.02
 #: fixtures over 40 seeds, 2026-09-30: 0-2.5% per seat).
 FALSE_ALARM_CEILING = 0.10
 PER_SUBJECT_S = 30.0
+#: SELF-STOP INSIDE THE CAP (MR7 2026-11-11: 39 straight kills at the 420 s leg cap against a
+#: 300 s budget, no artifact ever written). The budget used to be checked only BETWEEN subjects,
+#: so one seat on a slow gauntlet cell, or a slow pool load, ran on until the cycle killed the
+#: tree. Every pool load and every examination now runs under a wall-clock bound, and the
+#: committees stop with POST_MARGIN_S (at most a fifth of the budget) left so
+#: the bookkeeping and the writes always land.
+#: Nothing is dropped: a subject that is not examined stays due and is examined next pass, and
+#: one that overran is recorded and ordered last so it can never starve the queue.
+POST_MARGIN_S = 60.0
+EXAMINE_GRACE_S = 15.0
 MAX_SUBJECTS = {SCIENTIFIC: 3000, FORENSIC: 400, PORTFOLIO: 4, EXECUTION: 200, DATA: 40,
                 META: 2}
 #: A subject is re-examined on unchanged evidence once this old, so calibration keeps settling.
@@ -1711,6 +1723,34 @@ def _trigger(s: ce.Subject, state: Mapping[str, Any], queued: Mapping[str, int],
 _TRIGGER_RANK = {"queued": 0, "new": 1, "changed": 2, "due": 3}
 
 
+def _phase(label: str, t0: float) -> None:
+    """One progress line on stderr. The cycle keeps a killed leg's stderr tail, so these lines
+    are what says where the time went when a pass does not finish."""
+    print(f"PHASE {label} +{time.monotonic() - t0:.1f}s", file=sys.stderr, flush=True)
+
+
+def _bounded(fn: Callable[[], Any], timeout_s: float) -> tuple[bool, Any]:
+    """Run `fn` with a wall-clock bound: (True, value) when it returned in time, (False, None)
+    when it did not. An overrunning call is abandoned on a daemon thread, which the interpreter
+    does not wait for at exit, so the pass still writes. Its exception, if any, is re-raised."""
+    box: dict[str, Any] = {}
+
+    def go() -> None:
+        try:
+            box["v"] = fn()
+        except BaseException as exc:  # re-raised on the caller's thread
+            box["e"] = exc
+
+    th = threading.Thread(target=go, daemon=True)
+    th.start()
+    th.join(max(0.0, timeout_s))
+    if th.is_alive():
+        return False, None
+    if "e" in box:
+        raise box["e"]
+    return True, box.get("v")
+
+
 def _examine_committee(name: str, subjects: list[ce.Subject], state: dict[str, Any],
                        budget_s: float, now_ts: float) -> tuple[list[dict[str, Any]],
                                                                 dict[str, int]]:
@@ -1719,7 +1759,8 @@ def _examine_committee(name: str, subjects: list[ce.Subject], state: dict[str, A
               for e in state.get("queue") or [] if e.get("committee") == name}
     todo = []
     counts = {"population": len(subjects), "queued": 0, "new": 0, "changed": 0, "due": 0,
-              "examined": 0, "deferred": 0}
+              "examined": 0, "deferred": 0, "overran": 0}
+    overran = state.setdefault("overran", {})
     for s in subjects:
         t = _trigger(s, state, queued, now_ts)
         if t is None:
@@ -1727,14 +1768,26 @@ def _examine_committee(name: str, subjects: list[ce.Subject], state: dict[str, A
         s.trigger = t
         counts[t] += 1
         todo.append(s)
-    todo.sort(key=lambda s: (_TRIGGER_RANK[s.trigger], -s.level))
+    # A subject that overran its bound before goes LAST, so it cannot hold the queue every pass.
+    todo.sort(key=lambda s: (int(overran.get(f"{name}|{s.key}", 0)),
+                             _TRIGGER_RANK[s.trigger], -s.level))
     deadline = time.monotonic() + budget_s
     examined: list[dict[str, Any]] = []
     for s in todo[:MAX_SUBJECTS.get(name, 100)]:
         left = deadline - time.monotonic()
         if left <= 0:
             break
-        examined.append(ce.examine(s, seats, state, min(PER_SUBJECT_S, left)))
+        cap = min(PER_SUBJECT_S, left)
+        done, ex = _bounded(functools.partial(ce.examine, s, seats, state, cap),
+                            cap + EXAMINE_GRACE_S)
+        if not done:
+            # One seat ran past the subject's bound (a slow cell build, a blocking read). The
+            # thread is abandoned; the subject is recorded and re-examined later, last in line.
+            k = f"{name}|{s.key}"
+            overran[k] = int(overran.get(k, 0)) + 1
+            counts["overran"] += 1
+            break
+        examined.append(ex)
     counts["examined"] = len(examined)
     counts["deferred"] = len(todo) - len(examined)
     for ex in examined:
@@ -1897,7 +1950,38 @@ def _run_committee(name: str, subjects: Mapping[str, list[ce.Subject]] | None,
                traps: Any, examined_all: list[dict[str, Any]], state: dict[str, Any],
                share_s: float, now_ts: float, bank: Any
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """One committee's pass: its subject pool, then its seats. Raises; run() isolates."""
+    """One committee's pass: its subject pool, then its seats. Raises; run() isolates.
+
+    The pool load only READS, so it is the part that may be abandoned when the pass's own stop
+    (set by run()) arrives first; the examination writes state and stays on this thread, bounded
+    subject by subject. An abandoned load raises _PoolOverran, which run() records as
+    DEFERRED_BUDGET."""
+    stop_at = _PASS_STOP_AT[0]
+    if stop_at is None:
+        pool = _committee_pool(name, subjects, traps, examined_all, bank)
+    else:
+        seen = list(examined_all)
+        done, pool = _bounded(lambda: _committee_pool(name, subjects, traps, seen, bank),
+                              max(1.0, stop_at - time.monotonic()))
+        if not done:
+            raise _PoolOverran(name)
+        share_s = min(share_s, max(1.0, stop_at - time.monotonic()))
+    _phase(f"{name} pool={len(pool)}", _PASS_T0[0] or time.monotonic())
+    return _examine_pool(name, pool, subjects, state, share_s, now_ts)
+
+
+class _PoolOverran(Exception):
+    """A committee's subject pool did not load before the pass's own stop."""
+
+
+#: The running pass's self-stop and start (monotonic), set by run(); None outside a pass.
+_PASS_STOP_AT: list[float | None] = [None]
+_PASS_T0: list[float | None] = [None]
+
+
+def _committee_pool(name: str, subjects: Mapping[str, list[ce.Subject]] | None, traps: Any,
+                    examined_all: list[dict[str, Any]], bank: Any) -> list[ce.Subject]:
+    """The committee's subject pool. Reads only, so it can be run under a wall-clock bound."""
     if subjects is not None:
         pool = list(subjects.get(name) or [])
     elif name == SCIENTIFIC:
@@ -1916,6 +2000,12 @@ def _run_committee(name: str, subjects: Mapping[str, list[ce.Subject]] | None,
         if subjects is None:
             bank = _bank_census()
         pool = meta_subjects(traps, ov_now, bank)
+    return pool
+
+
+def _examine_pool(name: str, pool: list[ce.Subject],
+                  subjects: Mapping[str, list[ce.Subject]] | None, state: dict[str, Any],
+                  share_s: float, now_ts: float) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     ex, ints = _examine_committee(name, pool, state, share_s, now_ts)
     counts: dict[str, Any] = dict(ints)
     if name == FORENSIC and subjects is None:
@@ -1928,7 +2018,19 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         subjects: Mapping[str, list[ce.Subject]] | None = None,
         fates: Mapping[str, Any] | None = None, now_ts: float | None = None
         ) -> dict[str, Any]:
+    try:
+        return _run_pass(budget_s=budget_s, write=write, subjects=subjects, fates=fates,
+                         now_ts=now_ts)
+    finally:
+        _PASS_STOP_AT[0] = _PASS_T0[0] = None
+
+
+def _run_pass(*, budget_s: float, write: bool, subjects: Mapping[str, list[ce.Subject]] | None,
+              fates: Mapping[str, Any] | None, now_ts: float | None) -> dict[str, Any]:
     t0 = time.monotonic()
+    stop_at = t0 + float(budget_s) - min(POST_MARGIN_S, 0.2 * float(budget_s))
+    _PASS_STOP_AT[0], _PASS_T0[0] = stop_at, t0
+    _phase("start", t0)
     now_ts = time.time() if now_ts is None else now_ts
     state: dict[str, Any] = _json(STATE, {}) if write else {}
     if not state:
@@ -1936,6 +2038,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
     seed = int(now_ts // 3600)
     day = datetime.fromtimestamp(now_ts, tz=UTC).date().isoformat()
     traps = ce.run_traps(SEATS, seed)
+    _phase("traps", t0)
     shares = dict(state.get("shares") or BASE_SHARE)
     retired_c = set(state.get("retired_committees") or {})
     examined_all: list[dict[str, Any]] = []
@@ -1945,9 +2048,27 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         c0 = time.monotonic()
         share = SHARE_FLOOR if name in retired_c else float(shares.get(name, BASE_SHARE[name]))
         share_s = max(1.0, float(budget_s) * share)
+        left = stop_at - c0
+        if left <= 1.0:
+            # Out of pass time before this committee's turn: deferred whole, measured nothing.
+            # It moves no budget, counts toward no retirement, and runs first-in-turn next pass.
+            per[name] = {"status": "DEFERRED_BUDGET", "budget_s": round(share_s, 2),
+                         "measured": 0, "fails": 0, "unmeasured": UNMEASURED,
+                         "why": "the pass reached its own stop before this committee's turn",
+                         "seconds": 0.0}
+            _phase(f"{name} deferred", t0)
+            continue
+        share_s = min(share_s, left)
         try:
             ex, counts = _run_committee(name, subjects, traps, examined_all, state, share_s,
                                         now_ts, bank)
+        except _PoolOverran:
+            per[name] = {"status": "DEFERRED_BUDGET", "budget_s": round(share_s, 2),
+                         "measured": 0, "fails": 0, "unmeasured": UNMEASURED,
+                         "why": "its subject pool did not load inside the pass's time",
+                         "seconds": round(time.monotonic() - c0, 3)}
+            _phase(f"{name} pool overran", t0)
+            continue
         except Exception as exc:
             # ONE COMMITTEE'S DEFECT IS NOT SIX COMMITTEES' SILENCE (audit, 2026-10-06). The
             # error is published on the committee's own row as ERROR -- never a clean zero and
@@ -1971,6 +2092,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
             "subjects_fail": sum(1 for e in ex if e["verdict"] == FAIL),
             "saved_s": round(sum(sum(e["saved_s"].values()) for e in ex), 3),
         }
+        _phase(f"{name} examined={len(ex)} pool={counts.get('population')}", t0)
     ov = ce.overlap(examined_all, SEATS)
     for name in COMMITTEES:
         if per[name].get("status") in ("RAN", "RETIRED_PROBE"):
@@ -2147,7 +2269,9 @@ def health_doc(state: Mapping[str, Any], roi: Mapping[str, Mapping[str, Any]],
                         if isinstance(v["false_alarm_rate"], float)
                         and v["false_alarm_rate"] > FALSE_ALARM_CEILING)
         p = per.get(c) or {}
-        if p.get("status") == "RETIRED_PROBE":
+        if p.get("status") == "DEFERRED_BUDGET":
+            verdict, why = UNMEASURED, str(p.get("why"))
+        elif p.get("status") == "RETIRED_PROBE":
             verdict, why = "RETIRED", str(((state.get("retired_committees") or {}).get(c)
                                            or {}).get("why"))
         elif broken or alarms:
