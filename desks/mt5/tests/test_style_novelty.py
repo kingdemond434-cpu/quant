@@ -212,3 +212,35 @@ def test_the_judge_labels_each_familys_novelty_source(monkeypatch) -> None:
     assert rows["carry"]["novelty_source"] == "GENEALOGY"
     assert rows["zz_unclassified_style"]["novelty_source"] == "UNMEASURED"
     assert rows["zz_unclassified_style"]["novelty_factor"] == 1.0
+
+
+def test_a_measurement_inside_the_refresh_window_is_kept_so_a_big_canon_completes(tmp_path) -> None:
+    # Box, 2026-11-10: 7,458 certificates re-measured every hour in a 300 s budget never
+    # completed. A young measurement is carried, only the new certificate is built, and the
+    # report completes (which is what lets the weekly snapshot and the 20 h stand-down fire).
+    certs = tmp_path / "certs.json"
+    certs.write_text(json.dumps({"survivors": {
+        k: {"shadow_spec": {"symbol": "EURUSD", "family": "carry"}} for k in ("a", "b")}}),
+        "utf-8")
+    now = time.time()
+    young = sn.datetime.fromtimestamp(now - 3600, sn.UTC).isoformat()
+    kept = {"status": "MEASURED", "novelty": 0.2, "novel": False, "family": "carry",
+            "measured_at": young}
+    rep, wk = tmp_path / "r.json", tmp_path / "w.json"
+    rep.write_text(json.dumps({"generated_utc": young, "complete": False,
+                               "per_certificate": {"a": kept}}), "utf-8")
+    built: list[str] = []
+
+    def build(sym, family, params, meta, **_k):
+        built.append(sym)
+        return None
+
+    doc = sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep,
+                 weekly_path=wk, universe=tmp_path / "u.json", build=build, now=now)
+    assert len(built) == 1                         # only "b" was built
+    assert doc["per_certificate"]["a"] == kept and doc["complete"] is True
+    assert wk.exists()
+    forced = sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep,
+                    weekly_path=wk, universe=tmp_path / "u.json", build=build, force=True,
+                    now=now)
+    assert len(built) == 3 and forced["complete"] is True   # --force re-measures both
