@@ -128,10 +128,11 @@ def _opened(row: dict) -> pd.Timestamp | None:
 
 
 def _closed_inside(row: dict, last_bar: pd.Timestamp) -> bool:
-    """A trade whose exit is the final bar of the data may be a cut-off, not an exit."""
+    """A trade whose exit is the final bar of the data may be a cut-off, not an exit; a row with
+    no exit at all has not closed, and an appended row is permanent."""
     raw = row.get("closed_at")
     if not raw:
-        return True
+        return False
     try:
         return pd.Timestamp(str(raw)) < last_bar
     except (ValueError, TypeError):

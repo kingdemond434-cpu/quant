@@ -36,7 +36,8 @@ def test_shadow_replay_preserves_frozen_clock_and_records_first_trade(
     monkeypatch.setattr(scalp_shadow.families, "_session_mask", lambda index, _s: np.ones(len(index), dtype=bool))
     monkeypatch.setattr(scalp_shadow.families, "_cfg", lambda *_: object())
     monkeypatch.setattr(scalp_shadow.core, "simulate", lambda *_args, **_kwargs: [
-        {"entry_time": "2026-08-24T00:05:00+00:00", "r": 0.4}])
+        {"entry_time": "2026-08-24T00:05:00+00:00", "closed_at": "2026-08-24T00:10:00+00:00",
+         "r": 0.4}])
 
     result = scalp_shadow.run(datetime(2026, 8, 24, 1, tzinfo=UTC))
 
@@ -180,3 +181,9 @@ def test_an_unreadable_ledger_is_never_overwritten(tmp_path: Path, monkeypatch) 
     row = scalp_shadow.run(datetime(2026, 11, 8, 12, tzinfo=UTC))["sleeves"]["candidate"]
     assert row["status"] == "LEDGER_UNREADABLE"
     assert ledger.read_text() == "{torn"
+
+
+def test_a_row_with_no_exit_is_not_appended() -> None:
+    open_row = {"opened_at": "2026-11-03T14:00:00+00:00", "r": 0.2}
+    merged, drift = scalp_shadow.append_only([], [open_row], pd.Timestamp("2026-11-05T00:00:00Z"))
+    assert merged == [] and drift["appended"] == 0
