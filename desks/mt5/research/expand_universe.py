@@ -274,8 +274,10 @@ def min_bars(timeframe: str) -> int:
 # So every run writes the whole list, disabled symbols included, to `symbols_snapshot.json` and
 # appends one line per change against the previous snapshot to `symbols_changes.jsonl`. The pure
 # logic (rows, diff, registry merge) takes plain objects and is tested without MetaTrader5.
-SNAPSHOT = UNIVERSE / "symbols_snapshot.json"
-CHANGES = UNIVERSE / "symbols_changes.jsonl"
+#: File names under UNIVERSE, resolved at call time so a caller that repoints UNIVERSE (every
+#: test of `main`) never writes the real data directory.
+SNAPSHOT_NAME = "symbols_snapshot.json"
+CHANGES_NAME = "symbols_changes.jsonl"
 SNAPSHOT_SCHEMA = "symbols_snapshot/1"
 CHANGE_KINDS = ("listed", "delisted", "disabled", "enabled", "expiry_changed")
 
@@ -393,8 +395,8 @@ def write_symbols_snapshot(symbols, now: datetime, *, snapshot: Path | None = No
     read as "everything is new". An empty symbol list writes nothing -- a terminal that listed
     nothing must not be recorded as the broker delisting everything.
     """
-    snapshot = snapshot or SNAPSHOT
-    changes = changes or CHANGES
+    snapshot = snapshot or (UNIVERSE / SNAPSHOT_NAME)
+    changes = changes or (UNIVERSE / CHANGES_NAME)
     rows = snapshot_rows(symbols)
     at = now.isoformat(timespec="seconds")
     if not rows:

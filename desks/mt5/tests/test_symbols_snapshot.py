@@ -116,12 +116,11 @@ def test_main_writes_snapshot_and_keeps_disabled_registry_row(tmp_path, monkeypa
     monkeypatch.setattr(E, "UNIVERSE", universe)
     monkeypatch.setattr(E, "REGISTRY", reg)
     monkeypatch.setattr(E, "REPORT", tmp_path / "report.json")
-    monkeypatch.setattr(E, "SNAPSHOT", universe / "symbols_snapshot.json")
-    monkeypatch.setattr(E, "CHANGES", universe / "symbols_changes.jsonl")
     monkeypatch.setattr(E, "_traded_symbols", lambda: set())
     assert E.main() == 0
     snap = json.loads((universe / "symbols_snapshot.json").read_text())
     assert [r["name"] for r in snap["symbols"]] == ["UST10Y"]
+    assert (universe / "symbols_changes.jsonl").exists()
     out = json.loads(reg.read_text())
     assert set(out) == {"UST10Y", "EURUSD"}
     assert out["UST10Y"]["quoted"] is False and out["UST10Y"]["trade_mode"] == 3
