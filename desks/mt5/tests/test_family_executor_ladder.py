@@ -45,30 +45,37 @@ def _closed(*stamps: str) -> pd.DataFrame:
     return pd.DataFrame({"close": [1.0] * len(idx)}, index=idx)
 
 
+def _due(frame: pd.DataFrame, hour: int) -> pd.Timestamp | None:
+    """`family_bar_due` on a LIVE feed: the clock one minute after the last closed bar's open.
+    The clock is an argument since 2026-09-30, so these fixtures from a fixed date pass the
+    moment they describe rather than today's (which would read them as a stale frame)."""
+    return dc.family_bar_due(frame, hour, now=frame.index[-1] + pd.Timedelta(minutes=1))
+
+
 class TestTheEntryRuleIsOnePerDayOnEveryChart:
     def test_h1_is_unchanged(self) -> None:
         """Every H1 bar begins on the hour, so the added `minute == 0` test is always true there
         and cannot alter a single decision any existing certificate has ever made."""
         for hour in range(24):
             frame = _closed(f"2026-09-04T{hour:02d}:00:00")
-            assert dc.family_bar_due(frame, hour) is not None
-            assert dc.family_bar_due(frame, (hour + 1) % 24) is None
+            assert _due(frame, hour) is not None
+            assert _due(frame, (hour + 1) % 24) is None
 
     @pytest.mark.parametrize(("minute", "due"), [(0, True), (5, False), (30, False), (55, False)])
     def test_only_the_bar_that_starts_the_hour_is_due_on_m5(self, minute: int, due: bool) -> None:
         """THE DEFECT, directly: on M5 an hour holds twelve bars and the bare hour test made all
         twelve due. Twelve entries for a strategy certified to take one."""
         frame = _closed(f"2026-09-04T09:{minute:02d}:00")
-        assert (dc.family_bar_due(frame, 9) is not None) is due
+        assert (_due(frame, 9) is not None) is due
 
     def test_an_m1_hour_yields_exactly_one_due_bar_out_of_sixty(self) -> None:
         due = [m for m in range(60)
-               if dc.family_bar_due(_closed(f"2026-09-04T09:{m:02d}:00"), 9) is not None]
+               if _due(_closed(f"2026-09-04T09:{m:02d}:00"), 9) is not None]
         assert due == [0], f"expected one due bar in the hour, got {len(due)}"
 
     def test_the_wrong_hour_is_never_due_whatever_the_minute(self) -> None:
         for minute in (0, 5, 30):
-            assert dc.family_bar_due(_closed(f"2026-09-04T08:{minute:02d}:00"), 9) is None
+            assert _due(_closed(f"2026-09-04T08:{minute:02d}:00"), 9) is None
 
 
 class TestTheExecutorRunsTheWholeLadder:

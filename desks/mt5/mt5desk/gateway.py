@@ -68,6 +68,7 @@ from mt5desk.decision_core import (
     fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
+    closed_bar_is_current,
     closed_trade_r,
     diagnose,
     entry_is_legal,
@@ -3645,6 +3646,17 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     return call_params, ""
 
 
+def _venue_clock(st: dict) -> pd.Timestamp | None:
+    """This pass's venue clock in the bars' convention: the broker wall-clock tick `main` stamps
+    as `placement_tick_broker` (naive). None when absent or unreadable, which reads the current
+    UTC time downstream -- on a server ahead of UTC that can only look fresher, never refuse."""
+    try:
+        stamp = st.get("placement_tick_broker")
+        return pd.Timestamp(str(stamp)) if stamp else None
+    except (ValueError, TypeError):
+        return None
+
+
 def resolve_family_order(st: dict, s: dict, equity: float,
                          pending: dict[str, float] | None = None) -> dict:
     """The order this family sleeve would send THIS pass, priced -- read-only, no state written.
@@ -3698,12 +3710,21 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     frame = h1_frame(h1)
     closed = frame.iloc[:-1]
     call_params: dict | None = None
+    # THE VENUE'S CLOCK, NOT AN IMPLICIT ONE: this pass's broker wall-clock tick time
+    # (`placement_tick_broker`, the bars' own convention), so a frame whose "forming" bar had
+    # already closed is refused as stale rather than acted on hours late (`closed_bar_is_current`).
+    _venue_now = _venue_clock(st)
+    _tf_min = int(_BAR_MINUTES.get(tf, 60))
     if population == "hunt16":
         # ONE DECISION A DAY AT THE CERTIFIED HOUR.
-        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]))
+        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]),
+                                  now=_venue_now, bar_minutes=_tf_min)
     else:
         # NO HOUR FILTER, BECAUSE THE CLOCK APPLIES NONE -- the family itself owns when it fires.
         last_bar = closed.index[-1] if len(closed) else None
+        if last_bar is not None and not closed_bar_is_current(last_bar, now=_venue_now,
+                                                              bar_minutes=_tf_min):
+            last_bar = None
     # THE MARK IS READ BEFORE THE INPUTS ARE REBUILT (2026-09-16). Input reconstruction is the
     # expensive step -- peer bars, factor bars, primitives -- and it was paid on every pass for
     # every sleeve whether or not the bar had already been considered: 64 sleeves at 2-5 s each
