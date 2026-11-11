@@ -284,10 +284,15 @@ def test_every_enrolled_substitute_feeds_all_three_uses(
     rows = ws["paid_substitutes"]["series"]
     assert {r["dataset_id"] for r in rows} == ids
     assert all(isinstance(r["z_lagged"], float) for r in rows)
-    # idempotent: a second pass enqueues nothing new
+    # idempotent: a second pass enqueues nothing new -- on a FRESH registry, as before the
+    # leak fix, so idempotence is proved by the enrolment state, not by the first pass's rows
     n = len(door.calls)
-    pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-            registry_conn=registry_conn)
+    second = sqlite3.connect(":memory:")
+    try:
+        pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
+                registry_conn=second)
+    finally:
+        second.close()
     assert len(door.calls) == n
 
 
