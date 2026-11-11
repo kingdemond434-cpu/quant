@@ -55,11 +55,40 @@ _WALL_MARKERS: Final[tuple[str, ...]] = (
     "ログインしてください", "로그인이 필요", "請登入", "请登录",
 )
 
+#: THE DESK'S HONEST AGENT STRING (Auditor HOLD on #660, 2026-11-11). It was a spoofed Chrome
+#: string; a collector that disguises itself is evading the site's own controls. This is the
+#: same agent `libs/data/robots_gate` matches robots.txt groups against.
+AGENT: Final[str] = "quant-research"
 _UA: Final[dict[str, str]] = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "User-Agent": AGENT,
     "Accept": "application/json, text/html, */*",
 }
+
+#: PER-VENUE TERMS, FAIL-CLOSED (Auditor HOLD on #660, 2026-11-11). A venue is fetched ONLY when
+#: its terms were READ and permit automated collection for this desk's use, which is commercial.
+#: Read 2026-11-11 (quotes in desks/mt5/research/grounds/crowd_venues.json):
+#:   niconico  -- Snapshot API terms 1-2: "本API及び本ドキュメントを、営利目的に利用することはできません"
+#:   discourse -- TradingQnA and ValuePickr license user content CC BY-NC-SA 3.0 (non-commercial)
+#:   fivech    -- "コンテンツの無断複写、転載を禁じます" and robots.txt disallows *.dat
+#:   yahoo_jp_board / naver_board / guba / tieba -- terms could not be loaded: UNREAD
+#: Nothing here is ALLOWED today, so these fetchers make no request. A venue moves to ALLOWED
+#: only with its permitting clause cited here and in the venue registry.
+TERMS: Final[dict[str, tuple[str, str]]] = {
+    "niconico": ("BLOCKED_TERMS", "Snapshot API terms forbid commercial use (第1条2項)"),
+    "discourse": ("BLOCKED_TERMS", "user content is CC BY-NC-SA 3.0: non-commercial only"),
+    "fivech": ("BLOCKED_TERMS", "unauthorised copying prohibited; robots.txt disallows *.dat"),
+    "yahoo_jp_board": ("BLOCKED_TERMS", "UNREAD: Yahoo! JAPAN terms could not be loaded"),
+    "naver_board": ("BLOCKED_TERMS", "UNREAD: Naver terms and robots.txt could not be loaded"),
+    "guba": ("BLOCKED_TERMS", "UNREAD: Eastmoney legal terms could not be loaded"),
+    "tieba": ("BLOCKED_TERMS", "UNREAD: Baidu user agreement could not be loaded"),
+}
+
+
+def terms_allow(source: str) -> tuple[bool, str]:
+    """Fail-closed: only a venue whose terms were read and permit it is fetched."""
+    verdict, why = TERMS.get(source.split(":")[0], ("BLOCKED_TERMS", "UNREAD: no terms entry"))
+    return verdict == "ALLOWED", why
+
 
 _LAST: dict[str, float] = {}
 _STOPPED: dict[str, str] = {}
@@ -118,7 +147,12 @@ def _get(url: str, *, referer: str = "", lang: str = "", default_enc: str = "utf
 
 
 def _fetch(source: str, url: str, **kw: Any) -> tuple[str | None, str | None]:
-    """Paced GET with the two stop rules: HTTP 429 and an access wall both stop the source."""
+    """Terms gate, then a paced GET with the two stop rules: HTTP 429 and an access wall both
+    stop the source. A venue whose terms do not permit this desk's use is never requested."""
+    ok, why = terms_allow(source)
+    if not ok:
+        _stop(source, f"BLOCKED_TERMS ({why}) -- not requested")
+        return None, f"{source}: BLOCKED_TERMS ({why}); not requested"
     _pace(source)
     try:
         body = _get(url, **kw)

@@ -708,7 +708,9 @@ def test_crowd_venue_registry_names_only_real_grounds_and_never_mines_a_blocked_
     names = {g["name"] for g in _SRC["grounds"]}
     for country, venues in reg["countries"].items():
         for v in venues:
-            assert v["status"] in ("BUILT", "SEARCH", "BLOCKED_AUTH", "TODO"), v
+            assert v["status"] in ("BUILT", "SEARCH", "BLOCKED_AUTH", "BLOCKED_TERMS", "TODO"), v
+            if v["status"] == "BLOCKED_TERMS":
+                assert v.get("why") and not v.get("ground"), v
             g = v.get("ground", "")
             if v["status"] == "BUILT" and g and not g.startswith("existing"):
                 assert g in names, f"{country}: {g} is not a ground"
@@ -740,4 +742,9 @@ def test_committed_ground_packs_merge_and_the_main_file_wins_a_name_clash(tmp_pa
     got = dfm.queued_grounds({"dup"}, packs)
     assert [g["name"] for g in got] == ["fresh"]
     real = dfm.queued_grounds(set(), Path(dfm.__file__).resolve().parent / "grounds")
-    assert {g["fn"] for g in real if g["route"] == "crowd"} <= dfm.CROWD_FNS and len(real) >= 11
+    assert {g["fn"] for g in real if g["route"] == "crowd"} <= dfm.CROWD_FNS and len(real) >= 3
+    # Fail-closed terms (Auditor HOLD on #660): no committed ground mines a terms-blocked venue.
+    from libs.data import crowd_sources
+    for g in real:
+        if g["route"] == "crowd":
+            assert crowd_sources.terms_allow(g["fn"])[0], g["name"]

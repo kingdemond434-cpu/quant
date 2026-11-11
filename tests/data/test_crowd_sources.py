@@ -16,6 +16,10 @@ from libs.data import crowd_sources as C
 def _fresh(monkeypatch: pytest.MonkeyPatch) -> None:
     C.reset()
     monkeypatch.setattr(C.time, "sleep", lambda s: None)
+    # The parser tests stand in for a venue whose terms WERE read and permit it; the real table
+    # is fail-closed and is pinned by its own test below.
+    for name in C.TERMS:
+        monkeypatch.setitem(C.TERMS, name, ("ALLOWED", "test stand-in"))
 
 
 def _stub(monkeypatch: pytest.MonkeyPatch, body: str) -> list[str]:
@@ -96,3 +100,22 @@ def test_http_429_stops_the_source_and_never_touches_another(monkeypatch) -> Non
 def test_charset_decoding_handles_shift_jis_and_euc_kr() -> None:
     assert C._decode("金".encode("cp932"), "text/html; charset=Shift_JIS") == "金"
     assert C._decode("금".encode("cp949"), "text/html; charset=EUC-KR") == "금"
+
+
+def test_the_real_terms_table_is_fail_closed_and_a_blocked_venue_is_never_requested(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor HOLD on #660: a venue is fetched only when its terms were read and permit this
+    desk's (commercial) automated use. Today none does, so no fetcher may make a request."""
+    import importlib
+    real = importlib.reload(C)
+    calls = _stub(monkeypatch, "{}")
+    assert real.TERMS and all(v[0] == "BLOCKED_TERMS" for v in real.TERMS.values())
+    for name, fn in real.CROWD_FNS.items():
+        arts, err = fn("x")
+        assert arts == [] and err and "BLOCKED_TERMS" in err, name
+    assert calls == []
+    assert real.terms_allow("unknown_venue")[0] is False
+
+
+def test_the_agent_string_is_honest() -> None:
+    assert C._UA["User-Agent"] == C.AGENT == "quant-research"
