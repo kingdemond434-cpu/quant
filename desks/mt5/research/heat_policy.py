@@ -591,9 +591,12 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     """
     # NO CURVE, NO LICENCE ABOVE THE FALLBACK (#303 v3 audit SF): the default ceiling is the
     # measured-free HEAT_HARD_CEILING (1.00) only when a growth curve is in hand to choose inside
-    # it; with no curve it is HEAT_UNMEASURED_FALLBACK, the 20% target.
+    # it; with no curve it is HEAT_UNMEASURED_FALLBACK, the 20% target. "In hand" is MEASURED: the
+    # same three points the target rule below requires (#896 audit SF), since one or two points
+    # cannot say where growth stops paying, and an unmeasured curve must not open the licence.
+    unmeasured_ceiling = hard_ceiling is None and len(curve or {}) < 3
     if hard_ceiling is None:
-        hard_ceiling = HEAT_HARD_CEILING if curve else HEAT_UNMEASURED_FALLBACK
+        hard_ceiling = HEAT_UNMEASURED_FALLBACK if unmeasured_ceiling else HEAT_HARD_CEILING
     reasons: list[str] = []
     override, bad = catastrophe_override(**integrity) if integrity else (None, ())
     if override is not None:
@@ -692,8 +695,13 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
                        "tolerance. This bar is measured every pass and moves in both directions.")
         h, binding = float(surv), "survival_ceiling"
     if h > hard_ceiling:
-        reasons.append(f"GROWTH CEILING: growth wanted {h:.2%}, clipped to {hard_ceiling:.2%} "
-                       "-- past here the curve stops paying for exposure")
+        reasons.append(
+            f"UNMEASURED-CURVE FALLBACK: growth wanted {h:.2%}, held at {hard_ceiling:.2%} -- "
+            f"fewer than three curve points cannot say where growth stops paying (principal "
+            f"2026-10-29: the fallback is 20% when the curve is unmeasured)"
+            if unmeasured_ceiling else
+            f"GROWTH CEILING: growth wanted {h:.2%}, clipped to {hard_ceiling:.2%} "
+            "-- past here the curve stops paying for exposure")
         h, binding = hard_ceiling, "ceiling"
     if h > eff_cap + 1e-12:
         reasons.append(f"EFFECTIVE-HEAT CEILING BINDS: nominal {h:.2%} wanted, "

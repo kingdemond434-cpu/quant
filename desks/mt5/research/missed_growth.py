@@ -186,6 +186,17 @@ def measure_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     if heat.get("binding") != "ceiling":
         return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True}
     curve = _curve(alloc)
+    if len(curve) < 3:
+        # THE UNMEASURED-CURVE FALLBACK (heat_policy.resolve, #896 audit SF): the ceiling is the
+        # 20% fallback because the curve cannot place one. The heat it held back is named; its
+        # growth cost cannot be priced on a curve that does not exist, which is the measurement.
+        forgone = max(0.0, float(heat.get("free_optimum", 0.0))
+                      - float(heat.get("hard_ceiling", 0.0)))
+        return {"verdict": UNMEASURED, "forgone_heat": round(forgone, 6),
+                "curve_points": len(curve),
+                "why": "the curve has fewer than three points, so the ceiling is the 20% "
+                       "unmeasured fallback; the growth it held back is priced once the curve "
+                       "is measured"}
     g_free = _growth_at(curve, float(heat.get("free_optimum", 0.0)))
     g_cap = _growth_at(curve, float(heat.get("hard_ceiling", 0.0)))
     if g_free is None or g_cap is None:
