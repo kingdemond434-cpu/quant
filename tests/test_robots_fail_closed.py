@@ -269,7 +269,7 @@ def test_a_keyed_source_request_is_never_sent_without_the_gate(
     def get(req: ks.Request) -> bytes:
         got.append(req.url)
         raise AssertionError("fetched")
-    with pytest.raises(K.Blocked, match="^REFUSED_ROBOTS_UNREAD$"):
+    with pytest.raises(K.Blocked, match=r"^REFUSED_ROBOTS_UNREAD$"):
         K.collect(_ks_row(), get=get, now=NOW, paths=K.Paths(), start=None,
                   environ={"EIA_API_KEY": "SECRET-EIA"})
     assert got == [] and net.calls == []
