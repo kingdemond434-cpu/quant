@@ -27,6 +27,10 @@ RED when any of these holds:
                     Auditor CLEAR: the reviewer is blocking what the audit passed
     LIVE_CI_QUEUED  a push run on LIVE itself has been queued over 30 min: the box cannot adopt
                     (Adopt-And-Seal waits for green) and the gate cannot see LIVE green
+    NO_MERGE_24H    no PR merged into LIVE for 24 h while an open PR's gating jobs (quality,
+                    mt5-money-path, coverage-floor) are green on its head (10-30 to 11-03: four
+                    days with nothing merged, and every rule above stayed quiet, because no CLEAR
+                    sat on a PR comment and the AUTO path never went fully green)
     SIGN_TRAIN_*    the sign train's heartbeat (logs/sign_train.json) is unread, over 30 min old,
                     failed past two runs in a row, found its mutex held past two (#541 MF3), or
                     has waited on one open sign PR over 2 h
@@ -54,6 +58,8 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "MERGE_PIPELINE.json"
 QUEUED_RED_MIN = 30.0
 CLEAR_RED_H = 2.0
 LIVE_RED_H = 6.0
+NO_MERGE_RED_H = 24.0
+GATING = ("quality", "mt5-money-path", "coverage-floor")
 #: REVIEWER_FP: of the open heads the independent reviewer FAILed, the share an Auditor CLEARed
 #: (the human-grade audit read the same head and found nothing): a proxy false-positive rate.
 REVIEWER_FP_MIN_FAILS = 3
@@ -124,10 +130,12 @@ def assess(
     sign_beat: Mapping[str, Any] | None = None,
     sign_expected: bool = False,
     base: str = LIVE,
+    merged: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The report, from already-fetched data (pure: the tests drive this). `ready`: PR -> when
     its last required check went green, for heads the gate has marked mergeable (audit/clear
-    success). `beat`: the box sweep's heartbeat (logs/workflow_gate.json), when it is read."""
+    success). `beat`: the box sweep's heartbeat (logs/workflow_gate.json), when it is read.
+    `merged`: recently closed PRs into the base (None: not read, so NO_MERGE_24H is not judged)."""
     ready = ready or {}
     heads = {str(p["head"]["ref"]): str(p["head"]["sha"]) for p in prs}
     stale = [
@@ -163,6 +171,13 @@ def assess(
                 "clear_at": cat,
                 "clear_age_h": None if cage is None else round(cage / 60.0, 2),
                 "review": review,
+                "gating_green": all(
+                    any(
+                        c.get("name") == k and c.get("conclusion") == "success"
+                        for c in checks.get(head, [])
+                    )
+                    for k in GATING
+                ),
                 "green_since": rat,
             }
         )
@@ -189,6 +204,17 @@ def assess(
     if waiting and (code_age is None or code_age / 60.0 > LIVE_RED_H):
         hours = "an unknown number of" if code_age is None else f"{code_age / 60.0:.1f}"
         red.append(f"LIVE_STALLED: no code on LIVE for {hours} h while mergeable work waits")
+    last_merge = max(
+        (str(m["merged_at"]) for m in merged or [] if m.get("merged_at")), default=None
+    )
+    merge_age = _age_min(now, last_merge)
+    green = [r["pr"] for r in rows if r["gating_green"]]
+    if merged is not None and green and (merge_age is None or merge_age / 60.0 > NO_MERGE_RED_H):
+        hours = "over the read window's" if merge_age is None else f"{merge_age / 60.0:.1f}"
+        red.append(
+            f"NO_MERGE_24H: no PR merged into LIVE for {hours} h while {len(green)} open "
+            f"PR(s) are green on the gating jobs ({', '.join(f'#{n}' for n in green[:8])})"
+        )
     live_q = [
         a
         for a in (
@@ -256,12 +282,15 @@ def assess(
             "last_code_commit": None if code is None else str(code["sha"])[:9],
             "last_code_at": code_at,
             "hours_since_code": None if code_age is None else round(code_age / 60.0, 2),
+            "last_merge_at": last_merge,
+            "hours_since_merge": None if merge_age is None else round(merge_age / 60.0, 2),
         },
         "prs": sorted(rows, key=lambda r: -(r["oldest_queued_min"] or 0.0)),
         "thresholds": {
             "queued_red_min": QUEUED_RED_MIN,
             "clear_red_h": CLEAR_RED_H,
             "live_red_h": LIVE_RED_H,
+            "no_merge_red_h": NO_MERGE_RED_H,
         },
     }
 
@@ -332,9 +361,12 @@ def collect(
     queued = _runs(repo, "queued")
     running = len(_runs(repo, "in_progress", pages=1))
     live = _gh(f"repos/{repo}/commits?sha={base}&per_page=100")
+    merged = _gh(
+        f"repos/{repo}/pulls?state=closed&base={base}&sort=updated&direction=desc&per_page=100"
+    )
     return assess(
         now, prs, checks, clears, queued, running, live, ready, _beat(heartbeat),
-        heartbeat is not None, _beat(sign_beat), sign_beat is not None, base,
+        heartbeat is not None, _beat(sign_beat), sign_beat is not None, base, merged,
     )  # fmt: skip
 
 
