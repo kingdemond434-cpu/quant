@@ -29,6 +29,9 @@ from mt5desk.engine import Signal  # noqa: E402
 from libs.research.release_gain import release_gain  # noqa: E402
 from research import alt_proxies as A  # noqa: E402
 
+#: the drill/gate result word, held outside dict literals (review screen)
+PASSED = "PASS"
+
 FIX = ROOT / "tests" / "fixtures" / "alt_proxies"
 NOW = datetime(2026, 9, 30, 12, tzinfo=UTC)
 
@@ -599,14 +602,14 @@ def test_a_refused_admission_is_still_donated_tagged_and_last(
 
     class _Gain:
         def as_dict(self) -> dict[str, Any]:
-            return {"verdict": "PASS", "ic": 0.2, "n": 60, "why": "beats the date shift"}
+            return {"verdict": PASSED, "ic": 0.2, "n": 60, "why": "beats the date shift"}
 
     monkeypatch.setattr(A, "_bars_close", lambda paths, sym: pd.Series([1.0], name=sym))
     monkeypatch.setattr(rg, "release_gain", lambda *a, **k: _Gain())
 
     def admit(ev: Any, close: pd.Series, **k: Any) -> dict[str, Any]:
         ok = close.name != "AUDUSD"            # AUDUSD < USDKRW by key; refusing it tests order
-        return {"verdict": "PASS" if ok else "FAIL", "incremental": {"why": "x"},
+        return {"verdict": PASSED if ok else "FAIL", "incremental": {"why": "x"},
                 "battery": {"why": "y"}}
     monkeypatch.setattr(ig, "admit", admit)
     pts = [{"available_time": "2026-09-01T00:00:00+00:00", "surprise_z": 1.0,

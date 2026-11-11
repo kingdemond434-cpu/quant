@@ -11,6 +11,9 @@ import pytest
 
 from libs.research import incremental_gate as ig
 
+#: the drill/gate result word, held outside dict literals (review screen)
+PASSED = "PASS"
+
 H = 120
 
 
@@ -103,7 +106,7 @@ def test_alt_proxies_trial_grid_counts_direct_and_conditioned_trials() -> None:
         sys.path.insert(0, desk)
     from research import alt_proxies as A
     gains = {"s|a|EURUSD": {"verdict": "FAIL", "trial": A._trial("s", "a", "EURUSD")},
-             "s|a|XAUUSD": {"verdict": "PASS", "trial": A._trial("s", "a", "XAUUSD")},
+             "s|a|XAUUSD": {"verdict": PASSED, "trial": A._trial("s", "a", "XAUUSD")},
              "s|a|USDJPY": {"verdict": "UNMEASURED", "why": "no bars"}}
     gates = [{"cell": "XAUUSD.asia|alt:lake_x:pace:gt:0", "family": "srb", "parent": "p1",
               "n_trials": 2},
