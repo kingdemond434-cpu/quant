@@ -283,7 +283,13 @@ def test_the_sentinel_clearance_carries_a_url_and_a_verbatim_quote():
     row = doc["geoint:sentinel2_l2a"]
     assert row["status"] == "CLEARED" and row["terms_url"].startswith("https://")
     assert row["terms_quote"].startswith("Access to Sentinel data is free, full and open")
-    assert "owed" in row      # the Copernicus legal notice itself is still owed a read
+    # the Copernicus Sentinel Data Legal Notice itself, read verbatim on the box 2026-11-11
+    assert "owed" not in row
+    notice = row["legal_notice"]
+    assert notice["url"].endswith("/Sentinel_Data_Legal_Notice")
+    assert "free, full and open access to Copernicus Sentinel Data" in notice["quote"]
+    assert "sha256" in notice["record"] and "sha256" in notice["read"]
+    assert row["attribution"] == "Contains modified Copernicus Sentinel data {year}"
 
 
 # ------------------------------------------------------------------ the ceiling
