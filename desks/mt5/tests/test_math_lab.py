@@ -190,10 +190,20 @@ def test_the_judge_deadline_costs_an_object_its_score_never_its_donation(lab, mo
         return real(*a, **k)
 
     monkeypatch.setattr(ML.B, "judge", _slow)
-    # a deadline already in the past for every object after the first two
-    monkeypatch.setattr(ML.time, "monotonic",
-                        _clock_that_expires_after(2, ML.time.monotonic))
-    report = ML.run(budget_s=40.0, traditions=list(FAST), permutations=20)
+    # a deadline already in the past for every object after the first two: the pass's clock is
+    # injected (it governs the scientists' stop too, so patching `time.monotonic` globally would
+    # starve the scientists rather than the judge)
+    now = {"t": 0.0}
+
+    def _judge_then_expire(*a, **k):
+        out = _slow(*a, **k)
+        if calls["n"] >= 2:
+            now["t"] = 1e9
+        return out
+
+    monkeypatch.setattr(ML.B, "judge", _judge_then_expire)
+    report = ML.run(budget_s=40.0, traditions=list(FAST), permutations=20,
+                    clock=lambda: now["t"])
 
     assert report["objects"]["admitted"] > 0, "the deadline emptied the lab"
     unranked = [u for u in report["unmeasured"] if "carry no internal burden score" in u]
@@ -201,17 +211,6 @@ def test_the_judge_deadline_costs_an_object_its_score_never_its_donation(lab, mo
         assert "donated unranked anyway" in unranked[0], unranked[0]
     assert report["registry"]["discoveries"] == report["objects"]["admitted"], (
         "an object the clock reached first must still be QUEUED in the registry")
-
-
-def _clock_that_expires_after(n_ok: int, real):
-    """A monotonic clock that jumps past any deadline once `n_ok` readings have been taken."""
-    state = {"n": 0, "t0": real()}
-
-    def _clock() -> float:
-        state["n"] += 1
-        return state["t0"] + (0.0 if state["n"] <= n_ok + 6 else 1e9)
-
-    return _clock
 
 
 def test_dry_run_writes_nothing(lab):
@@ -281,3 +280,49 @@ def test_an_empty_panel_set_reports_unmeasured_and_never_idles_silently(lab, mon
     assert any("no target produced" in u for u in report["unmeasured"])
     assert any("residual store" in u for u in report["unmeasured"])
     assert ML.OUT.exists()
+
+
+def test_traditions_not_reached_by_the_science_stop_run_first_next_pass(lab, monkeypatch):
+    """The box: 720.4 s against `--budget-s 600`, FAILED TIMEOUT, no MATH_LAB.json -- the
+    scientists had no wall stop. Now a tradition dequeued after SCIENCE_SHARE does nothing and
+    says NOT_REACHED, the pass still writes its report marked partial, the evaluated traditions
+    are still charged, and the cursor puts the unreached ones at the FRONT of the next pass."""
+    monkeypatch.setattr(ML, "max_workers", lambda: (1, {"workers": 1}))
+    now = {"t": 0.0}
+    order: list[list[str]] = [[]]
+    real = ML._run_tradition
+
+    def _spy(tradition, *a, **k):
+        order[-1].append(tradition)
+        out = real(tradition, *a, **k)
+        now["t"] = 1e9                          # the science stop passes after one tradition
+        return out
+
+    monkeypatch.setattr(ML, "_run_tradition", _spy)
+    chosen = list(FAST[:3])
+    report = ML.run(budget_s=20.0, traditions=chosen, permutations=10, cursor={},
+                    clock=lambda: now["t"])
+    not_reached = report["resume"]["traditions_not_reached"]
+    assert report["partial"] is True and not_reached == chosen[1:]
+    assert all(report["per_tradition"][t]["status"] == ML.NOT_REACHED for t in not_reached)
+    assert all(report["per_tradition"][t]["evaluated"] == 0 for t in not_reached)
+    assert report["per_tradition"][chosen[0]]["evaluated"] > 0, "what ran is still charged"
+    on_disk = json.loads(ML.OUT.read_text("utf-8"))
+    assert on_disk["partial"] is True
+    cursor = json.loads(ML.cursor_path().read_text("utf-8"))
+    assert cursor["not_reached"] == chosen[1:]
+
+    order.append([])
+    now["t"] = 0.0
+    monkeypatch.setattr(ML, "_run_tradition", lambda t, *a, **k: order[-1].append(t) or real(
+        t, *a, **k))
+    second = ML.run(budget_s=20.0, traditions=chosen, permutations=10, clock=lambda: 0.0)
+    assert order[-1] == [*chosen[1:], chosen[0]], "the unreached traditions go first"
+    assert second["resume"]["traditions_not_reached"] == []
+    assert json.loads(ML.cursor_path().read_text("utf-8"))["not_reached"] == []
+
+
+def test_math_lab_budget_never_exceeds_the_cycles_kill_cap():
+    assert ML.leg_budget_s(600.0, env={"QUANT_LEG_BUDGET_S": "720"}) == 600.0
+    assert ML.leg_budget_s(3000.0, env={"QUANT_LEG_BUDGET_S": "720"}) == 720.0
+    assert ML.leg_budget_s(None, env={}) == 3000.0

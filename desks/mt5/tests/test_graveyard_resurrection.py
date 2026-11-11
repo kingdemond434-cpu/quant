@@ -462,3 +462,106 @@ def test_the_cli_writes_the_artifact_atomically(desk, capsys) -> None:
     assert doc["candidates_generated"] <= 6 and doc["rule"] == gr.RULE
     assert not list(desk["tmp"].glob("*.tmp"))
     assert "graveyard resurrection:" in capsys.readouterr().out
+
+
+# ------------------------------------------------------- 6. the budget, the cursor, the resume
+class _Tick:
+    """A fake monotonic clock: one second per reading, plus whatever a test adds to `jump`."""
+
+    def __init__(self) -> None:
+        self.t, self.jump = 0.0, 0.0
+
+    def __call__(self) -> float:
+        self.t += 1.0
+        return self.t + self.jump
+
+
+def test_a_pass_out_of_clock_writes_partial_and_the_next_one_resumes_where_it_stopped(
+        desk, monkeypatch) -> None:
+    """The box: 720.9 s against a 240 s budget, FAILED TIMEOUT, nothing written, the seat folder
+    1,203 h stale. A pass that runs out of clock now writes its report marked partial, persists
+    where each phase stopped, and the next pass starts at those points -- verdict marks and
+    clusters both -- instead of the same prefix again."""
+    marked: list[list[str]] = [[]]
+    real_mark = gr.reg.mark_candidate
+    monkeypatch.setattr(gr.reg, "mark_candidate",
+                        lambda cell, *a, **k: marked[-1].append(cell) or real_mark(cell, *a,
+                                                                                    **k))
+    asked: list[list[str]] = [[]]
+    real_q = gr.questions
+
+    def _q(deaths, *a, **k):
+        d = deaths[0]
+        asked[-1].append(f"{gr._family_root(d.family)}|{d.axes.get('mechanism', ar.UNKNOWN)}|"
+                         f"{d.failure_class}")
+        return real_q(deaths, *a, **k)
+
+    monkeypatch.setattr(gr, "questions", _q)
+    doc = gr.build(max_rows=500, budget_s=10.0, clock=_Tick())
+    cursor = doc.pop("_cursor")
+    assert doc["partial"] is True and doc["caps"]["budget_stop"] is True
+    assert doc["resume"]["cluster_next"] and doc["resume"]["verdict_marks_deferred"] > 0
+    first_marks, first_asked = list(marked[-1]), list(asked[-1])
+    assert first_marks and cursor["classify_offset"] == len(first_marks)
+
+    marked.append([])
+    asked.append([])
+    doc2 = gr.build(max_rows=500, budget_s=1e6, cursor=cursor, clock=_Tick())
+    assert doc2["partial"] is False
+    assert marked[-1][0] not in first_marks, "the marks restart where the last pass stopped"
+    assert asked[-1][0] == cursor["cluster_next"], "the clusters restart at the one not reached"
+    assert set(asked[-1]) >= set(first_asked)
+
+
+def test_registry_writes_past_the_stop_are_deferred_never_lost_or_repeated(
+        desk, monkeypatch) -> None:
+    """Each accepted candidate is six commits on the desk's shared write lock. Past the stop they
+    are DEFERRED: the donation (the seat's output) still goes out whole, the cursor remembers
+    which rows reached the registry, and the next pass writes the rest -- never the same twice."""
+    clock = _Tick()
+    registered: list[str] = []
+    real_register = gr._register
+
+    def _register(p, conn):
+        registered.append(R.content_hash(str(p["family"]), str(p["symbol"]), p.get("params")))
+        real_register(p, conn)
+        if len(registered) == 2:
+            clock.jump = 1e9                       # the clock runs out after the second row
+
+    monkeypatch.setattr(gr, "_register", _register)
+    doc = gr.build(max_rows=500, budget_s=1e6, clock=clock)
+    n = doc["candidates_generated"]
+    assert n > 2, "the fixture must generate more candidates than the clock lets through"
+    assert doc["partial"] is True
+    writes = doc["resume"]["registry_writes"]
+    assert writes["registered"] == 2 and writes["deferred"] == n - 2
+    assert len(desk["donated"]) == n, "a partial pass still donates every accepted candidate"
+    cursor = doc.pop("_cursor")
+    assert len(cursor["written"]) == 2
+
+    doc2 = gr.build(max_rows=500, budget_s=1e6, cursor=cursor, clock=_Tick())
+    w2 = doc2["resume"]["registry_writes"]
+    assert w2 == {"registered": n - 2, "already_registered": 2, "deferred": 0}
+    assert len(registered) == n and len(set(registered)) == n
+
+
+def test_the_wrong_asset_reclassification_is_a_lookup_not_a_scan_per_death() -> None:
+    """Same verdict as the old `any(...)` over every sibling, without deaths x siblings."""
+    sibs = [gr.Sibling("GBPUSD", "gap_decay", {}, "CERTIFIED", {}),
+            gr.Sibling("EURUSD", "gap_decay_v2", {}, "FAILED", {})]
+    dead = [gr._dead(f"c{i}", sym, "gap_decay", {}, "deflated_sharpe", "gate_ledger", "", {})
+            for i, sym in enumerate(("EURUSD", "GBPUSD", "XAUUSD"))]
+    for d in dead:
+        d.failure_class = "no_edge"
+    by_cls = gr.Counter({"no_edge": 3})
+    assert gr._reclassify_wrong_asset(dead, sibs, by_cls) == 2
+    assert [d.failure_class for d in dead] == ["wrong_asset", "no_edge", "wrong_asset"]
+    assert by_cls == {"no_edge": 1, "wrong_asset": 2}
+
+
+def test_the_cli_persists_the_cursor_after_the_report(desk, capsys) -> None:
+    assert gr.main(["--max-rows", "500"]) == 0
+    doc = json.loads(desk["out"].read_text("utf-8"))
+    assert "partial" in doc and "_cursor" not in doc
+    assert gr.cursor_path().exists()
+    assert "written" in json.loads(gr.cursor_path().read_text("utf-8"))

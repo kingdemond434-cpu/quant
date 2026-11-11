@@ -1678,11 +1678,16 @@ def _auto_leg(entry: dict, leg: str | None = None) -> dict:
         # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
         # The write-or-explain contract reports the last lines of stderr on a failure, and it can
         # only do that if they survive to here.
-        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
-                "stderr_tail": (r.stderr or "")[-1200:],
-                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
-    except subprocess.TimeoutExpired:
+        res = {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+               "stderr_tail": (r.stderr or "")[-1200:],
+               "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+        if r.returncode != 0:
+            res["stdout_tail"] = _text_tail(r.stdout)
+            res["stderr_tail"] = _text_tail(r.stderr)
+        return res
+    except subprocess.TimeoutExpired as exc:
         return {"exit_code": None, "timeout_s": budget, "status": "TIMEOUT",
+                "stdout_tail": _text_tail(exc.stdout), "stderr_tail": _text_tail(exc.stderr),
                 "at": datetime.now(UTC).isoformat()}
 
 
@@ -1928,8 +1933,10 @@ def _costed(name: str, fn):
             outcome = _exit_outcome(name, _code)
             if ":" in outcome:
                 print(f"  LEG FAILED {name}: {outcome}", flush=True)
-    _close(outcome, outputs=_leg_artifacts(name))
-    _emit_leg(name, outcome)
+    # A FAILED LEG SAYS WHERE IT WAS: its output tails ride on the ledger row and the event.
+    _tails = _fail_tails(out) if outcome != "ok" else {}
+    _close(outcome, outputs=_leg_artifacts(name), **_tails)
+    _emit_leg(name, outcome, **_tails)
     _advance_watermark(name, outcome)
     _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,
                verdict_exits=VERDICT_EXITS.get(name, ()))
@@ -1994,14 +2001,38 @@ def _advance_watermark(name: str, outcome: str) -> None:
         print(f"  watermark for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
-def _emit_leg(name: str, outcome: str) -> None:
+#: How much of a failed leg's stdout and stderr survives into its LEG_FAILED event and its
+#: compute-ledger row. A timed-out leg's captured output was DISCARDED (2026-11-11): five hourly
+#: legs ended FAILED TIMEOUT for days and the box could not say where any of them stalled.
+FAIL_TAIL_CHARS = 2000
+
+
+def _text_tail(value: object, n: int = FAIL_TAIL_CHARS) -> str:
+    """The last `n` characters of captured output, whether it arrived as str, bytes or None."""
+    if value is None:
+        return ""
+    if isinstance(value, bytes | bytearray):
+        value = bytes(value[-4 * n:]).decode("utf-8", errors="replace")
+    return str(value)[-n:]
+
+
+def _fail_tails(out: object) -> dict[str, str]:
+    """The output tails a failed leg's result carries, for its event and its ledger row."""
+    if not isinstance(out, dict):
+        return {}
+    return {k: str(out[k])[-FAIL_TAIL_CHARS:] for k in ("stdout_tail", "stderr_tail")
+            if out.get(k)}
+
+
+def _emit_leg(name: str, outcome: str, **fields: object) -> None:
     """THE EVENT LOG (Tier-1 item I2, 2026-09-09): every leg's end is an event, and the legs
     that mark a domain transition (DATA_UPDATED, GAUNTLET_SWEPT, ALLOCATION_DECIDED, ...)
     emit that transition too, so a consumer can ask what happened since it last looked instead
-    of inferring it from the clock. Never fails the leg; an absent `libs` means no event."""
+    of inferring it from the clock. Never fails the leg; an absent `libs` means no event.
+    `fields` (a failed leg's output tails) ride on the event row."""
     try:
         from libs.ops.events import leg_events
-        leg_events(name, outcome)
+        leg_events(name, outcome, **fields)
     except Exception as exc:
         print(f"  event for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
@@ -2597,13 +2628,20 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
         # The write-or-explain contract reports the last lines of stderr on a failure, and it can
         # only do that if they survive to here.
-        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
-                "stderr_tail": (r.stderr or "")[-1200:],
-                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
-    except subprocess.TimeoutExpired:
+        res = {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+               "stderr_tail": (r.stderr or "")[-1200:],
+               "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+        if r.returncode != 0:
+            res["stdout_tail"] = _text_tail(r.stdout)
+            res["stderr_tail"] = _text_tail(r.stderr)
+        return res
+    except subprocess.TimeoutExpired as exc:
+        # THE KILLED CHILD'S OUTPUT IS KEPT. `proctree.run` hands it over on the exception; it
+        # was dropped here, so a leg killed at its cap every hour never said where it was.
         return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
+                "stdout_tail": _text_tail(exc.stdout), "stderr_tail": _text_tail(exc.stderr),
                 "at": datetime.now(UTC).isoformat()}
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}

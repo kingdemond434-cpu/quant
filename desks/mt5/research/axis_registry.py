@@ -48,7 +48,9 @@ import hashlib
 import json
 import os
 import sys
+import time
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -74,6 +76,14 @@ INTAKE = BASE / "data" / "intelligence" / "axis_registry"
 #: dozen resident python processes; the report says TOO_LARGE rather than pretending it was absent.
 MAX_INPUT_BYTES = 64 * 1024 * 1024
 MAX_LEDGER_LINES = 500_000
+#: THE PASS STOPS ITSELF INSIDE ITS BUDGET AND WRITES WHAT IT HAS (2026-11-11). On the trading box
+#: this leg ended FAILED TIMEOUT at its 720 s wall cap (11-08), so the report, the cell ledger and
+#: the intake donation were never written and the seat folder went stale for days. The expensive
+#: loop -- the ~1M-row gate ledger, one axis derivation per row -- now stops at STOP_SHARE of the
+#: budget and resumes next pass from a persisted byte cursor (see `fold_ledger`).
+STOP_SHARE = 0.85
+#: The budget when neither `--budget-s` nor the cycle's exported cap names one (a manual run).
+DEFAULT_BUDGET_S = 600.0
 MAX_PROPOSALS = 60
 PROPOSAL_SYMBOLS = 3
 EMPTY_REGIONS = 50
@@ -303,6 +313,122 @@ def _read_jsonl(path: Path, note: dict[str, str]) -> list[dict[str, Any]]:
     return rows
 
 
+# ------------------------------------------------------------------ the budget and the cursor
+def leg_budget_s(cli: float | None = None, default: float = DEFAULT_BUDGET_S,
+                 env: dict[str, str] | None = None) -> float:
+    """The seconds this pass may spend: its own `--budget-s`, never past the cycle's kill cap.
+
+    `hourly_cycle._producer_impl` exports the PRICED cap it will kill this process at as
+    `QUANT_LEG_BUDGET_S`; the pricer moves it hourly, so a budget read off a constant can sit
+    above the kill and lose the whole pass. The smaller of the two governs."""
+    env = os.environ if env is None else env
+    try:
+        cap = float(env.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    own = float(cli) if cli and float(cli) > 0 else (cap if cap > 0 else float(default))
+    return min(own, cap) if cap > 0 else own
+
+
+def _head_hash(path: Path, n: int) -> str:
+    try:
+        with path.open("rb") as fh:
+            return hashlib.blake2s(fh.read(max(0, int(n))), digest_size=8).hexdigest()
+    except OSError:
+        return ""
+
+
+def fold_ledger(path: Path, state: dict[str, Any] | None,
+                fold: Callable[[dict[str, Any], dict[str, Any]], None], stop_at: float | None,
+                note: dict[str, str], clock: Callable[[], float] | None = None
+                ) -> dict[str, Any]:
+    """Fold an APPEND-ONLY jsonl ledger into `state["cells"]` from a persisted byte cursor.
+
+    WHY A CURSOR AND NOT A CAP. The gate ledger is ~1M rows on the box and grows hourly; every
+    pass re-derived ten axes for every row from byte 0, and the old `MAX_LEDGER_LINES` ceiling
+    simply never read the tail. Each fold here is a MAX (strongest state, deepest gate, first
+    family), so the accumulation is exact across passes: a pass reads only what was appended
+    since the last one, and a pass stopped at `stop_at` resumes at the byte it stopped on --
+    nothing is read twice and nothing is skipped for ever.
+
+    A ledger that SHRANK, or whose head bytes changed, was rewritten rather than appended to: the
+    cursor resets and the fold starts again from byte 0 (named in `note`). An incomplete last
+    line (a writer mid-append) is left for the next pass. Returns the new state, with
+    `complete` False when the clock stopped the fold before the end of the file.
+    """
+    clock = clock or time.monotonic
+    st = dict(state or {})
+    cells: dict[str, Any] = st.get("cells") if isinstance(st.get("cells"), dict) else {}
+    offset, head_len = int(st.get("offset") or 0), int(st.get("head_len") or 0)
+    try:
+        size = path.stat().st_size
+    except OSError:
+        note[path.name] = "ABSENT"
+        return {**st, "cells": cells, "complete": True, "rows_this_pass": 0}
+    reset = ""
+    if st.get("ledger") not in (None, str(path)):
+        reset = "another ledger"
+    elif size < offset:
+        reset = f"ledger shrank {offset} -> {size} bytes"
+    elif head_len and _head_hash(path, head_len) != st.get("head"):
+        reset = "ledger head changed"
+    if reset:
+        cells, offset, st["rows_total"] = {}, 0, 0
+    rows_this, complete = 0, True
+    try:
+        with path.open("rb") as fh:
+            fh.seek(offset)
+            for raw in fh:
+                if not raw.endswith(b"\n"):
+                    break                       # a writer mid-append: next pass reads it whole
+                if stop_at is not None and clock() >= stop_at:
+                    complete = False
+                    break
+                line = raw[3:] if offset == 0 and raw.startswith(b"\xef\xbb\xbf") else raw
+                offset += len(raw)
+                try:
+                    row = json.loads(line.decode("utf-8", errors="replace").strip() or "null")
+                except ValueError:
+                    continue
+                if isinstance(row, dict):
+                    fold(cells, row)
+                    rows_this += 1
+    except OSError:
+        note[path.name] = "UNREADABLE(OSError)"
+        return {**st, "cells": cells, "complete": False, "rows_this_pass": rows_this}
+    head_len = min(offset, 4096)
+    note[path.name] = "READ" if complete else f"PARTIAL({offset}/{size} bytes)"
+    return {"ledger": str(path), "offset": offset, "size_at_stop": size,
+            "head_len": head_len, "head": _head_hash(path, head_len),
+            "rows_total": int(st.get("rows_total") or 0) + rows_this,
+            "rows_this_pass": rows_this, "complete": complete,
+            "reset": reset or None, "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "cells": cells}
+
+
+def load_cursor(path: Path) -> dict[str, Any]:
+    """A persisted cursor, or a fresh one: an unreadable cursor restarts the fold, never stops."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def save_cursor(path: Path, state: dict[str, Any]) -> None:
+    _atomic_write(path, json.dumps(state, default=str))
+
+
+def cursor_path() -> Path:
+    """Beside the report (reports/ is untracked), so a test that redirects the report moves it."""
+    return OUT_REPORT.with_name(OUT_REPORT.stem + ".ledger_cursor.json")
+
+
+def cursor_summary(state: dict[str, Any]) -> dict[str, Any]:
+    """The cursor as the report states it: everything but the folded cells."""
+    return {k: v for k, v in state.items() if k != "cells"}
+
+
 # ------------------------------------------------------------------ axis derivation
 def _tok(value: Any) -> str:
     return "_".join(str(value or "").strip().lower().replace("-", " ").replace("_", " ").split())
@@ -489,8 +615,23 @@ def _add(cells: dict[str, dict[str, Any]], axes: dict[str, str], state: str, sou
         row["state"] = state
 
 
-def collect_cells(note: dict[str, str] | None = None) -> dict[str, dict[str, Any]]:
-    """Every cell the desk has judged, certified, run forward or traded, on ten axes."""
+def _fold_gate_row(cells: dict[str, Any], row: dict[str, Any]) -> None:
+    """One gate-verdict row into the ledger's own cells (the fold `fold_ledger` persists)."""
+    parsed = parse_shadow_key(str(row.get("cell") or ""))
+    _add(cells, axis_cell(row.get("sym") or parsed["symbol"],
+                          row.get("family") or parsed["family"], None,
+                          session=parsed["session"], regime_hint=parsed["regime"]),
+         "CERTIFIED" if row.get("passed") else "MEASURED_FAIL", "gate_verdict_ledger")
+
+
+def collect_cells(note: dict[str, str] | None = None, *,
+                  ledger_state: dict[str, Any] | None = None, stop_at: float | None = None,
+                  ledger_out: dict[str, Any] | None = None,
+                  clock: Callable[[], float] | None = None) -> dict[str, dict[str, Any]]:
+    """Every cell the desk has judged, certified, run forward or traded, on ten axes.
+
+    The gate ledger is folded from `ledger_state`'s cursor (None: from byte 0, the whole file)
+    until `stop_at`; the new cursor is copied into `ledger_out` for the caller to persist."""
     note = note if note is not None else {}
     cells: dict[str, dict[str, Any]] = {}
 
@@ -509,12 +650,21 @@ def collect_cells(note: dict[str, str] | None = None) -> dict[str, dict[str, Any
         _add(cells, axis_cell(row.get("symbol") or (row.get("params") or {}).get("symbol"),
                               row.get("family"), row.get("params")), state, "research_queue")
 
-    for row in _read_jsonl(GATE_LEDGER, note):
-        parsed = parse_shadow_key(str(row.get("cell") or ""))
-        _add(cells, axis_cell(row.get("sym") or parsed["symbol"],
-                              row.get("family") or parsed["family"], None,
-                              session=parsed["session"], regime_hint=parsed["regime"]),
-             "CERTIFIED" if row.get("passed") else "MEASURED_FAIL", "gate_verdict_ledger")
+    ledger = fold_ledger(GATE_LEDGER, ledger_state, _fold_gate_row, stop_at, note,
+                         clock or time.monotonic)
+    if ledger_out is not None:
+        ledger_out.clear()
+        ledger_out.update(ledger)
+    for cid, row in ledger["cells"].items():
+        known = cells.get(cid)
+        if known is None:
+            cells[cid] = {**row, "sources": list(row["sources"])}
+            continue
+        for src in row["sources"]:
+            if src not in known["sources"]:
+                known["sources"].append(src)
+        if STATE_RANK[row["state"]] > STATE_RANK[known["state"]]:
+            known["state"] = row["state"]
 
     universal = _read_json(UNIVERSAL_SURVIVORS, note)
     survivors = universal.get("survivors") if isinstance(universal, dict) else None
@@ -836,12 +986,21 @@ def select(cells: dict[str, dict[str, Any]], model: dict[str, Any], regions: lis
 
 
 # ------------------------------------------------------------------ build and write
-def build(max_proposals: int = MAX_PROPOSALS) -> tuple[dict[str, Any], dict[str, dict[str, Any]],
-                                                       list[dict[str, Any]]]:
-    """(report, cells, proposals). Reads everything tolerantly; never raises on a missing input."""
+def build(max_proposals: int = MAX_PROPOSALS, *, budget_s: float | None = None,
+          ledger_state: dict[str, Any] | None = None, clock: Callable[[], float] | None = None
+          ) -> tuple[dict[str, Any], dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """(report, cells, proposals). Reads everything tolerantly; never raises on a missing input.
+
+    `ledger_state` is the persisted gate-ledger cursor (None reads the ledger whole, as before);
+    the fold stops at STOP_SHARE of `budget_s`, and a pass that stopped early says so in
+    `partial` and carries its cursor in `report["ledger_cursor"]` / `report["_ledger_state"]`."""
+    clock = clock or time.monotonic
     note: dict[str, str] = {}
     max_proposals = min(int(max_proposals), MAX_PROPOSALS)   # the ceiling is structural, not a flag
-    cells = collect_cells(note)
+    stop_at = clock() + STOP_SHARE * budget_s if budget_s else None
+    ledger: dict[str, Any] = {}
+    cells = collect_cells(note, ledger_state=ledger_state, stop_at=stop_at, ledger_out=ledger,
+                          clock=clock)
     model, prior_source = fit_prior(cells)
     families = registered_families()
     regions = empty_regions(cells, model, families)
@@ -861,7 +1020,16 @@ def build(max_proposals: int = MAX_PROPOSALS) -> tuple[dict[str, Any], dict[str,
                         "global": model.get("global"), "why": model.get("why")},
               "families_registered": len(families), "family_table_size": len(FAMILY_TABLE),
               "candidate_regions": len(candidate_regions(cells, families)),
-              "why_no_proposals": why_none}
+              "why_no_proposals": why_none,
+              # A PARTIAL PASS IS NEVER A FULL ONE. The ledger fold stopped at the budget, so the
+              # occupancy above is every source plus the ledger up to the cursor; the next pass
+              # resumes at that byte. Proposals carry the flag too.
+              "partial": not ledger.get("complete", True),
+              "ledger_cursor": cursor_summary(ledger), "budget_s": budget_s}
+    if report["partial"]:
+        for p in proposals:
+            p["partial_pass"] = True
+    report["_ledger_state"] = ledger
     return report, cells, proposals
 
 
@@ -874,7 +1042,9 @@ def _atomic_write(path: Path, text: str) -> None:
 
 def write(report: dict[str, Any], cells: dict[str, dict[str, Any]],
           proposals: list[dict[str, Any]]) -> Path:
-    """Report, cell ledger and the intake donation -- all three atomic, in that order."""
+    """Report, cell ledger and the intake donation -- all three atomic, in that order -- and
+    then the ledger cursor, LAST, so a pass killed mid-write resumes from the previous cursor."""
+    ledger = report.pop("_ledger_state", None)
     _atomic_write(OUT_REPORT, json.dumps(report, indent=1, default=str))
     lines = [json.dumps({"cell_id": r["cell_id"], **{a: r[a] for a in AXES},
                          "state": r["state"], "sources": sorted(r["sources"])}, default=str)
@@ -882,6 +1052,8 @@ def write(report: dict[str, Any], cells: dict[str, dict[str, Any]],
     _atomic_write(OUT_CELLS, "\n".join(lines) + ("\n" if lines else ""))
     donation = INTAKE / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
     _atomic_write(donation, json.dumps(proposals, indent=1, default=str))
+    if isinstance(ledger, dict) and ledger.get("ledger"):
+        save_cursor(cursor_path(), ledger)
     return donation
 
 
@@ -909,8 +1081,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="print the summary, write nothing")
     ap.add_argument("--max-proposals", type=int, default=MAX_PROPOSALS,
                     help=f"cap the intake donation (default and hard ceiling {MAX_PROPOSALS})")
+    ap.add_argument("--budget-s", type=float, default=None,
+                    help="seconds this pass may spend (default: the cycle's exported cap, else "
+                         f"{DEFAULT_BUDGET_S:.0f}); the ledger fold stops at {STOP_SHARE:.0%}")
     args = ap.parse_args(argv)
-    report, cells, proposals = build(min(int(args.max_proposals), MAX_PROPOSALS))
+    report, cells, proposals = build(min(int(args.max_proposals), MAX_PROPOSALS),
+                                     budget_s=leg_budget_s(args.budget_s),
+                                     ledger_state=load_cursor(cursor_path()))
     target = "DRY RUN (nothing written)" if args.dry_run else str(
         write(report, cells, proposals))
     for line in summary(report, proposals, target):

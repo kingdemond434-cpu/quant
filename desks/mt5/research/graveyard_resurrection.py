@@ -50,6 +50,7 @@ stops one loud family eating the hour.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -90,6 +91,22 @@ EXPLORE_FLOOR = nk.EXPLORE_FLOOR
 MAX_CANDIDATES = 60
 MAX_FAMILY_SHARE = 0.5
 BUDGET_S = 240.0
+#: WHERE THE PASS STOPS, AS SHARES OF ITS BUDGET (2026-11-11). On the trading box this leg ended
+#: FAILED TIMEOUT at 720.9 s against a 240 s `--budget-s` (11-10 22:44Z), so the report and the
+#: donation were never written and its seat folder went 1,203 h stale. The budget bound only the
+#: cluster loop; three phases had none -- the wrong-asset reclassification (one scan of every
+#: sibling per no-edge death, quadratic in the graph), the verdict marks and the per-candidate
+#: registry writes, each a commit that waits up to 30 s on the shared registry's write lock.
+#: Every phase now has a stop: verdict marks to CLASSIFY_SHARE, clusters to LOOP_SHARE, registry
+#: writes to STOP_SHARE; whatever a phase did not reach is DEFERRED to the next pass through a
+#: persisted cursor (`cursor_path`), and the report says `partial`.
+CLASSIFY_SHARE = 0.40
+LOOP_SHARE = 0.65
+STOP_SHARE = 0.85
+#: Registry keys remembered as written, so a resumed pass writes the rows it did NOT reach rather
+#: than re-writing the same prefix every hour. Bounded: the oldest are forgotten first, and a
+#: forgotten key only costs one idempotent re-write.
+MAX_WRITTEN_KEYS = 20_000
 #: Judged siblings a question needs before its answer is a measurement; below it, UNMEASURED with n.
 MIN_SIBLINGS = 3
 #: Identical deaths in one cluster before the desk stops repairing and writes a counter-hypothesis.
@@ -652,20 +669,57 @@ def _acceptable(p: dict[str, Any], known: set[str], names: list[str]) -> str:
     return ""
 
 
-def _classify_all(dead: list[Dead], conn: Any, t0: float, budget_s: float
+def cursor_path() -> Path:
+    """Beside the report (reports/ is untracked), so a test that redirects OUT moves it too."""
+    return OUT.with_name(OUT.stem + ".cursor.json")
+
+
+def load_cursor(path: Path | None = None) -> dict[str, Any]:
+    try:
+        doc = json.loads((path or cursor_path()).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _batched(conn: Any) -> Any:
+    """`reg.batch` when there is a connection: one write-lock acquisition per chunk instead of
+    one per row, which is what the box's contended registry charges for (0.72 rows/s measured)."""
+    return reg.batch(conn, every=200) if conn is not None else contextlib.nullcontext()
+
+
+def _classify_all(dead: list[Dead], conn: Any, t0: float, budget_s: float,
+                  cursor: dict[str, Any] | None = None, clock: Any = None
                   ) -> tuple[Counter[str], int, int]:
+    """Classify every death (cheap, all of them) and mark the verdicts (a registry write each)
+    until CLASSIFY_SHARE of the budget. The marks ROTATE: they start where the last pass's
+    stopped (`cursor["classify_offset"]`), so a deferred verdict is reached on a later pass
+    instead of the same newest prefix being re-marked every hour. Updates `cursor` in place."""
+    clock = clock or time.monotonic
+    cursor = cursor if cursor is not None else {}
     by_cls: Counter[str] = Counter()
     marked = deferred = 0
-    for d in sorted(dead, key=lambda x: x.at, reverse=True):
+    order = sorted(dead, key=lambda x: x.at, reverse=True)
+    for d in order:
         d.failure_class = classify_failure(d.terminal_gate, d.evidence)
         by_cls[d.failure_class] += 1
-        if d.failure_class == "UNMEASURED" or conn is None:
-            continue
-        if time.monotonic() - t0 > budget_s * 0.4:
-            deferred += 1
-            continue
-        marked += int(reg.mark_candidate(d.cell, "judged", failure_class=d.failure_class,
-                                         conn=conn))
+    todo = [d for d in order if d.failure_class != "UNMEASURED"]
+    if conn is None or not todo:
+        return by_cls, marked, deferred
+    start = int(cursor.get("classify_offset") or 0) % len(todo)
+    done = 0
+    try:
+        with _batched(conn):
+            for d in todo[start:] + todo[:start]:
+                if clock() - t0 > budget_s * CLASSIFY_SHARE:
+                    break
+                marked += int(reg.mark_candidate(d.cell, "judged",
+                                                 failure_class=d.failure_class, conn=conn))
+                done += 1
+    except Exception as exc:                 # a locked registry defers; it never kills the pass
+        cursor["classify_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    deferred = len(todo) - done
+    cursor["classify_offset"] = (start + done) % len(todo)
     return by_cls, marked, deferred
 
 
@@ -674,11 +728,16 @@ def _reclassify_wrong_asset(dead: list[Dead], sibs: list[Sibling], by_cls: Count
     WRONG ASSET. Measured from the cluster, never assumed: this is the only reclassification this
     organ makes, and it is what unlocks the transfer."""
     alive = {_family_root(s.family) for s in sibs if s.fate == "CERTIFIED"}
+    # ONE SET, NOT ONE SCAN PER DEATH. This was `any(...)` over every sibling for every no-edge
+    # death -- deaths x graph rows, ~10^10 comparisons on the box's ledger and graph, and the
+    # phase had no budget check at all. The same (symbol, family root) test, as a lookup.
+    alive_here = {(s.symbol.upper(), _family_root(s.family)) for s in sibs
+                  if s.fate == "CERTIFIED"}
     n = 0
     for d in dead:
-        if d.failure_class == "no_edge" and _family_root(d.family) in alive and not any(
-                s.fate == "CERTIFIED" and s.symbol.upper() == d.symbol.upper()
-                and _family_root(s.family) == _family_root(d.family) for s in sibs):
+        root = _family_root(d.family)
+        if d.failure_class == "no_edge" and root in alive and (
+                d.symbol.upper(), root) not in alive_here:
             d.failure_class, n = "wrong_asset", n + 1
             by_cls["no_edge"] -= 1
             by_cls["wrong_asset"] += 1
@@ -686,8 +745,13 @@ def _reclassify_wrong_asset(dead: list[Dead], sibs: list[Sibling], by_cls: Count
 
 
 def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
-          dry_run: bool = False, max_rows: int = MAX_ROWS) -> dict[str, Any]:
-    t0 = time.monotonic()
+          dry_run: bool = False, max_rows: int = MAX_ROWS,
+          cursor: dict[str, Any] | None = None, clock: Any = None) -> dict[str, Any]:
+    """One pass. `cursor` is the persisted resume state (`load_cursor`); it is updated in place
+    and returned in the report as `_cursor` for `main` to persist after the report is written."""
+    clock = clock or time.monotonic
+    cursor = dict(cursor or {})
+    t0 = clock()
     rows = read_graph(max_rows)
     dead = dead_cells(rows, max_rows)
     sibs = _siblings(rows)
@@ -696,7 +760,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
     fam_cap = max(1, int(max_candidates * MAX_FAMILY_SHARE))
     conn = None if dry_run else reg.connect()
     try:
-        by_cls, marked, deferred = _classify_all(dead, conn, t0, budget_s)
+        by_cls, marked, deferred = _classify_all(dead, conn, t0, budget_s, cursor, clock)
         reclassified = _reclassify_wrong_asset(dead, sibs, by_cls)
 
         fam_sibs: dict[str, list[Sibling]] = {}
@@ -733,10 +797,23 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
         n_unmeasured_q = 0
         budget_stop = False
 
-        for (fam, mech, cls), deaths in sorted(clusters.items(), key=lambda kv: -len(kv[1])):
-            if time.monotonic() - t0 > budget_s:
+        # THE CLUSTER LOOP RESUMES WHERE THE LAST ONE STOPPED. Largest first, but a pass that ran
+        # out of clock starts the next one at the first cluster it did not reach, so the small
+        # clusters at the tail are interrogated eventually rather than never.
+        ordered = sorted(clusters.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        resume = cursor.get("cluster_next")
+        keys = ["|".join(k) for k, _v in ordered]
+        if isinstance(resume, str) and resume in keys:
+            i = keys.index(resume)
+            ordered = ordered[i:] + ordered[:i]
+        cursor["cluster_next"] = None
+        clusters_reached = 0
+        for (fam, mech, cls), deaths in ordered:
+            if clock() - t0 > budget_s * LOOP_SHARE:
                 budget_stop = True
+                cursor["cluster_next"] = f"{fam}|{mech}|{cls}"
                 break
+            clusters_reached += 1
             qs = questions(deaths, fam_sibs.get(fam, []), mech_sibs.get(mech, []),
                            fam_deaths.get(fam, []))
             n_unmeasured_q += sum(1 for v in qs.values() if v.get("answer") == "UNMEASURED")
@@ -752,7 +829,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                 for d in sorted(deaths, key=lambda x: x.cell):
                     if len(accepted) >= max_candidates or per_family[fam] >= fam_cap:
                         break
-                    if time.monotonic() - t0 > budget_s:
+                    if clock() - t0 > budget_s * LOOP_SHARE:
                         budget_stop = True
                         break
                     props, ref = proposals_for(d, qs, pool)
@@ -788,16 +865,29 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                                   f"{mech} but {alt}")})
             cluster_rows.append({"family": fam, "mechanism": mech, "failure_class": cls,
                                  "n": len(deaths), "questions": qs, "resurrections": made})
-        donated = 0 if dry_run or not accepted else _write(accepted, conn, refusals)
+        stop_at = t0 + budget_s * STOP_SHARE
+        writes: dict[str, int] = {"registered": 0, "already_registered": 0, "deferred": 0}
+        donated = 0 if dry_run or not accepted else _write(
+            accepted, conn, refusals, stop_at=stop_at, cursor=cursor, writes=writes, clock=clock)
+        prior_rows = sorted(priors.values(), key=lambda r: -r["n_failed"])
+        memory = {"written": 0, "unchanged": 0, "deferred": 0}
+        if not dry_run:
+            _remember_all(prior_rows, counters, conn, stop_at=stop_at, cursor=cursor,
+                          tally=memory, clock=clock)
     finally:
         if conn is not None:
             conn.close()
 
-    prior_rows = sorted(priors.values(), key=lambda r: -r["n_failed"])
-    if not dry_run:
-        _lower_priors(prior_rows)
-        _remember_counters(counters)
+    partial = bool(budget_stop or deferred or writes["deferred"] or memory["deferred"])
     return {
+        # A PARTIAL PASS IS NEVER A FULL ONE: it names what it deferred and where it resumes.
+        "partial": partial,
+        "resume": {"cluster_next": cursor.get("cluster_next"),
+                   "clusters_reached": clusters_reached, "clusters_total": len(clusters),
+                   "verdict_marks_deferred": deferred,
+                   "classify_offset": cursor.get("classify_offset"),
+                   "registry_writes": writes, "memory_writes": memory},
+        "_cursor": cursor,
         "at": _now(), "n_failed_cells": len(dead), "by_failure_class": dict(by_cls.most_common()),
         "clusters": sorted(cluster_rows, key=lambda r: -r["n"])[:60],
         "candidates_generated": len(accepted), "candidates_donated": donated,
@@ -817,37 +907,37 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
         "caps": {"max_candidates": max_candidates, "max_per_family": fam_cap,
                  "max_family_share": MAX_FAMILY_SHARE, "budget_s": budget_s,
                  "budget_stop": budget_stop, "explore_floor": EXPLORE_FLOOR,
-                 "elapsed_s": round(time.monotonic() - t0, 2)},
+                 "stop_shares": {"classify": CLASSIFY_SHARE, "clusters": LOOP_SHARE,
+                                 "writes": STOP_SHARE},
+                 "elapsed_s": round(clock() - t0, 2)},
         "verdicts_written": {"marked_judged": marked, "deferred": deferred},
         "refusals": refusals[:40], "rule": RULE}
 
 
-def _write(accepted: list[dict[str, Any]], conn: Any, refusals: list[dict[str, str]]) -> int:
-    """Discovery -> candidate -> donation, in that order, for every accepted resurrection."""
+def _write(accepted: list[dict[str, Any]], conn: Any, refusals: list[dict[str, str]], *,
+           stop_at: float | None = None, cursor: dict[str, Any] | None = None,
+           writes: dict[str, int] | None = None, clock: Any = None) -> int:
+    """Donation, then discovery -> candidate in the registry, for every accepted resurrection.
+
+    THE DONATION GOES FIRST NOW. It is one file and it is the seat's output; the registry rows
+    are six commits per candidate on a write lock the whole desk shares. Those stop at `stop_at`
+    and the ones not reached are DEFERRED: their keys are not in `cursor["written"]`, so the next
+    pass -- which regenerates the same candidates -- writes them first. A key already written is
+    not re-written (every door here is an upsert, so that is the same row, not a lost one).
+    The `generated` yield is charged for every accepted candidate on every pass, as before."""
+    clock = clock or time.monotonic
+    cursor = cursor if cursor is not None else {}
+    writes = writes if writes is not None else {}
+    for k in ("registered", "already_registered", "deferred"):
+        writes.setdefault(k, 0)
+    written = list(cursor.get("written") or [])
+    seen_written = set(written)
     rows: list[dict[str, Any]] = []
     per_gen: Counter[str] = Counter()
     for p in accepted:
         gen = f"{SOURCE}:{p['kind']}"
         fam, sym, mech = str(p.get("family")), str(p.get("symbol")), str(p.get("mechanism") or "")
         params = p.get("params") if isinstance(p.get("params"), dict) else {}
-        did, _ = reg.record_discovery(
-            source_id=SOURCE, source_type="graveyard", mechanism=mech, origin="MOAT",
-            generator=gen, parent_ids=[p["parent"]], assets=[sym],
-            exact_rule=json.dumps({"family": fam, "params": params}, sort_keys=True, default=str),
-            economic_rationale=str(p.get("why"))[:300], novelty=p.get("novelty_vs_graveyard"),
-            falsifier=(f"the {p['kind']} variant fails the same gate as its parent "
-                       f"({p['failure_class']})"), conn=conn)
-        for state, cnt in (("EXPANDED", {"possible_cells": 1, "generated_cells": 1}),
-                           ("COMPILED", {"compiled_cells": 1}), ("QUEUED", {"queued_cells": 1})):
-            reg.set_discovery_state(did, state, conn=conn, **cnt)
-        reg.enqueue_candidate(
-            family=fam, symbol=sym, params=params, origin="MOAT", mechanism=mech, generator=gen,
-            status="queued", source_id=SOURCE, discovery_id=did, transformation=p["kind"],
-            parent_ids=[p["parent"]], trial_family=p["trial_family"],
-            novelty_vs_graveyard=p["novelty_vs_graveyard"], chart=str(p.get("chart") or ""),
-            regime=str(p.get("regime") or ""), causal_rationale=str(p.get("why"))[:300],
-            failure_class=p["failure_class"], conn=conn)
-        reg.generator_yield_update(gen, generated=1, conn=conn)
         per_gen[gen] += 1
         row = pc.candidate(SOURCE, sym, fam, params, mech,
                            f"resurrection[{p['kind']}/{p['variant']}] {fam} on {sym}",
@@ -859,17 +949,96 @@ def _write(accepted: list[dict[str, Any]], conn: Any, refusals: list[dict[str, s
         rows.append(row)
     path = pc.donate(SOURCE, rows, tests_run=len(accepted))
     donated = int(pc.donation_counts().get("donated") or 0)
-    if path is not None and donated == len(rows):
-        for gen, n in per_gen.items():
-            reg.generator_yield_update(gen, donated=n, conn=conn)
-    elif donated != len(rows):
+    try:
+        with _batched(conn):
+            for gen, n in per_gen.items():
+                reg.generator_yield_update(gen, generated=n, conn=conn)
+            for p in accepted:
+                key = reg.content_hash(str(p.get("family") or ""), str(p.get("symbol") or ""),
+                                       p.get("params"))
+                if key in seen_written:
+                    writes["already_registered"] += 1
+                    continue
+                if stop_at is not None and clock() >= stop_at:
+                    writes["deferred"] += 1
+                    continue
+                _register(p, conn)
+                written.append(key)
+                seen_written.add(key)
+                writes["registered"] += 1
+            if path is not None and donated == len(rows):
+                for gen, n in per_gen.items():
+                    reg.generator_yield_update(gen, donated=n, conn=conn)
+    except Exception as exc:                 # a locked registry defers; it never kills the pass
+        writes["deferred"] = max(1, len(accepted) - writes["registered"]
+                                 - writes["already_registered"])
+        refusals.append({"cell": "registry", "why": f"registry writes deferred to the next pass: "
+                                                    f"{type(exc).__name__}: {str(exc)[:160]}"})
+    cursor["written"] = written[-MAX_WRITTEN_KEYS:]
+    if donated != len(rows):
         refusals.append({"cell": "donation",
                          "why": (f"{donated} of {len(rows)} rows reached the intake; "
                                  f"per-generator donation counts UNMEASURED for this run")})
     return donated
 
 
-def _lower_priors(rows: list[dict[str, Any]]) -> None:
+def _register(p: dict[str, Any], conn: Any) -> None:
+    """One accepted resurrection into the registry: discovery, its states, its candidate."""
+    gen = f"{SOURCE}:{p['kind']}"
+    fam, sym, mech = str(p.get("family")), str(p.get("symbol")), str(p.get("mechanism") or "")
+    params = p.get("params") if isinstance(p.get("params"), dict) else {}
+    did, _ = reg.record_discovery(
+        source_id=SOURCE, source_type="graveyard", mechanism=mech, origin="MOAT",
+        generator=gen, parent_ids=[p["parent"]], assets=[sym],
+        exact_rule=json.dumps({"family": fam, "params": params}, sort_keys=True, default=str),
+        economic_rationale=str(p.get("why"))[:300], novelty=p.get("novelty_vs_graveyard"),
+        falsifier=(f"the {p['kind']} variant fails the same gate as its parent "
+                   f"({p['failure_class']})"), conn=conn)
+    for state, cnt in (("EXPANDED", {"possible_cells": 1, "generated_cells": 1}),
+                       ("COMPILED", {"compiled_cells": 1}), ("QUEUED", {"queued_cells": 1})):
+        reg.set_discovery_state(did, state, conn=conn, **cnt)
+    reg.enqueue_candidate(
+        family=fam, symbol=sym, params=params, origin="MOAT", mechanism=mech, generator=gen,
+        status="queued", source_id=SOURCE, discovery_id=did, transformation=p["kind"],
+        parent_ids=[p["parent"]], trial_family=p["trial_family"],
+        novelty_vs_graveyard=p["novelty_vs_graveyard"], chart=str(p.get("chart") or ""),
+        regime=str(p.get("regime") or ""), causal_rationale=str(p.get("why"))[:300],
+        failure_class=p["failure_class"], conn=conn)
+
+
+def _remember_all(prior_rows: list[dict[str, Any]], counters: list[dict[str, Any]], conn: Any,
+                  *, stop_at: float | None, cursor: dict[str, Any], tally: dict[str, int],
+                  clock: Any = None) -> None:
+    """The lowered priors and the counter-hypotheses, until `stop_at`. Each is an upsert keyed
+    by `memory_key`; one whose numbers have not moved since it was last written is not written
+    again (`cursor["remembered"]`), so the clock goes to the rows that changed and a deferred row
+    is reached next pass. Never raises: a locked registry defers."""
+    clock = clock or time.monotonic
+    seen: dict[str, Any] = dict(cursor.get("remembered") or {})
+    jobs: list[tuple[str, Any, Any, dict[str, Any]]] = [
+        (f"prior:{r['mechanism']}", r["n_failed"], _lower_priors, r) for r in prior_rows]
+    jobs += [(f"counter:{c['family']}:{c['mechanism']}:{c['failure_class']}", c["n"],
+              _remember_counters, c) for c in counters]
+    try:
+        with _batched(conn):
+            for key, n, fn, row in jobs:
+                if seen.get(key) == n:
+                    tally["unchanged"] += 1
+                    continue
+                if stop_at is not None and clock() >= stop_at:
+                    tally["deferred"] += 1
+                    continue
+                fn([row], conn=conn)
+                seen[key] = n
+                tally["written"] += 1
+    except Exception as exc:
+        tally["deferred"] += max(1, len(jobs) - tally["written"] - tally["unchanged"]
+                                 - tally["deferred"])
+        cursor["memory_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    cursor["remembered"] = seen
+
+
+def _lower_priors(rows: list[dict[str, Any]], conn: Any = None) -> None:
     for r in rows:
         dominant = max(r["classes"].items(), key=lambda kv: kv[1])[0]
         reg.remember(
@@ -880,17 +1049,18 @@ def _lower_priors(rows: list[dict[str, Any]]) -> None:
             kind="mechanism_prior", memory_key=f"prior:{r['mechanism']}", result="lowered",
             failure_cause=dominant, failure_stage="gauntlet",
             metrics={"n_failed": r["n_failed"], "class": dominant},
-            payload={"classes": r["classes"], "families": r["families"][:20]})
+            payload={"classes": r["classes"], "families": r["families"][:20]}, conn=conn)
 
 
-def _remember_counters(counters: list[dict[str, Any]]) -> None:
+def _remember_counters(counters: list[dict[str, Any]], conn: Any = None) -> None:
     for c in counters:
         reg.remember("failure_cluster", c["statement"], kind="counter_hypothesis",
                      memory_key=f"counter:{c['family']}:{c['mechanism']}:{c['failure_class']}",
                      failure_cause=c["failure_class"],
                      metrics={"n": c["n"], "class": c["failure_class"]},
                      payload={"alternative_mechanism": c["alternative_mechanism"],
-                              "alternative_expression": c["alternative_expression"]})
+                              "alternative_expression": c["alternative_expression"]},
+                     conn=conn)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -900,8 +1070,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-rows", type=int, default=MAX_ROWS)
     ap.add_argument("--dry-run", action="store_true", help="measure and print; write nothing")
     a = ap.parse_args(argv)
-    doc = build(max_candidates=a.max_candidates, budget_s=a.budget_s, dry_run=a.dry_run,
-                max_rows=a.max_rows)
+    doc = build(max_candidates=a.max_candidates, budget_s=ar.leg_budget_s(a.budget_s, BUDGET_S),
+                dry_run=a.dry_run, max_rows=a.max_rows, cursor=load_cursor())
+    cursor = doc.pop("_cursor", {})
     print(f"graveyard resurrection: {doc['n_failed_cells']} dead cell(s), "
           f"{len(doc['clusters'])} cluster(s) reported, {doc['candidates_generated']} candidate(s)")
     print("   " + "".join(f"  {k} {v}"
@@ -917,7 +1088,10 @@ def main(argv: list[str] | None = None) -> int:
         print("  --dry-run: nothing written")
         return 0
     _atomic_json(OUT, doc)
-    print(f"  donated {doc['candidates_donated']}\n-> {OUT}")
+    # THE CURSOR LAST: a pass killed after the report but before this resumes from the old one.
+    _atomic_json(cursor_path(), cursor)
+    print(f"  donated {doc['candidates_donated']}{' (PARTIAL pass)' if doc['partial'] else ''}"
+          f"\n-> {OUT}")
     return 0
 
 

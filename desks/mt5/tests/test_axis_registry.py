@@ -443,3 +443,80 @@ def test_an_unreadable_rule_only_set_is_unmeasured_never_an_empty_ok(monkeypatch
     got = ar.rule_only_status()
     assert got["status"] == "UNMEASURED" and got["families"] == [] and "NOT excluding" in got["why"]
     assert ar.rule_only_families() == frozenset()
+
+
+# ------------------------------------------------------------------ the budget and the cursor
+class _Tick:
+    """A fake monotonic clock: every reading is one second after the last."""
+
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        self.t += 1.0
+        return self.t
+
+
+_LEDGER_ROWS = [{"cell": f"{sym}.{fam}.asia", "sym": sym, "family": fam, "passed": i == 4,
+                 "terminal_gate": "deflated_sharpe"}
+                for i, (sym, fam) in enumerate([
+                    ("EURUSD", "carry"), ("GBPUSD", "carry"), ("XAUUSD", "carry"),
+                    ("XAGUSD", "session_range_breakout"), ("USDJPY", "overnight_gap_decay"),
+                    ("EURUSD", "mean_reversion_rsi")])]
+
+
+def _ledger(path: Path, rows: list[dict[str, Any]], mode: str = "w") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open(mode, encoding="utf-8") as fh:
+        for r in rows:
+            fh.write(json.dumps(r) + "\n")
+
+
+def test_the_ledger_fold_stops_at_its_budget_writes_a_partial_pass_and_resumes(desk):
+    """The leg died at its 720 s cap re-reading the whole gate ledger every hour and wrote
+    nothing. A pass now stops its fold at STOP_SHARE of its budget, WRITES the report, the cell
+    ledger and the donation marked partial, and the next pass reads only the rows it had not."""
+    _ledger(desk["GATE_LEDGER"], _LEDGER_ROWS)
+    whole, whole_cells, _p = ar.build()          # no budget: the whole ledger in one pass
+    assert whole["partial"] is False
+
+    # start = 1, stop_at = 1 + 0.85 * B = 4.5: rows read at clock 2, 3, 4; stopped at 5.
+    budget = 3.5 / ar.STOP_SHARE
+    report, cells, proposals = ar.build(budget_s=budget, clock=_Tick())
+    assert report["partial"] is True
+    assert report["ledger_cursor"]["rows_this_pass"] == 3
+    assert report["ledger_cursor"]["complete"] is False
+    assert report["inputs"]["gate_verdict_ledger.jsonl"].startswith("PARTIAL(")
+    assert all(p.get("partial_pass") is True for p in proposals)
+    donation = ar.write(report, cells, proposals)
+    on_disk = json.loads(desk["OUT_REPORT"].read_text("utf-8"))
+    assert on_disk["partial"] is True and "_ledger_state" not in on_disk
+    assert desk["OUT_CELLS"].exists() and donation.exists(), "a partial pass still writes"
+    cursor = ar.load_cursor(ar.cursor_path())
+    assert 0 < cursor["offset"] < desk["GATE_LEDGER"].stat().st_size
+
+    # The next pass resumes at the byte it stopped on: three rows, never the first three again.
+    report2, cells2, _p2 = ar.build(budget_s=1000.0, ledger_state=cursor, clock=_Tick())
+    assert report2["partial"] is False
+    assert report2["ledger_cursor"]["rows_this_pass"] == 3
+    assert report2["ledger_cursor"]["rows_total"] == len(_LEDGER_ROWS)
+    assert {k: v["state"] for k, v in cells2.items()} == \
+        {k: v["state"] for k, v in whole_cells.items()}, "two passes must equal one whole read"
+    ar.write(report2, cells2, _p2)
+
+    # Appended rows are the only rows the pass after reads; a rewritten ledger starts over.
+    _ledger(desk["GATE_LEDGER"], [{"cell": "GBPUSD.carry.london", "sym": "GBPUSD",
+                                   "family": "carry", "passed": True}], mode="a")
+    report3, _c3, _p3 = ar.build(budget_s=1000.0, ledger_state=ar.load_cursor(ar.cursor_path()))
+    assert report3["ledger_cursor"]["rows_this_pass"] == 1
+    _ledger(desk["GATE_LEDGER"], _LEDGER_ROWS[:2])
+    report4, _c4, _p4 = ar.build(budget_s=1000.0, ledger_state=report3["_ledger_state"])
+    assert report4["ledger_cursor"]["reset"] and report4["ledger_cursor"]["rows_this_pass"] == 2
+
+
+def test_the_budget_is_the_smaller_of_the_flag_and_the_cycles_kill_cap():
+    assert ar.leg_budget_s(None, 600.0, env={}) == 600.0
+    assert ar.leg_budget_s(None, 600.0, env={"QUANT_LEG_BUDGET_S": "720"}) == 720.0
+    assert ar.leg_budget_s(900.0, 600.0, env={"QUANT_LEG_BUDGET_S": "720"}) == 720.0
+    assert ar.leg_budget_s(240.0, 600.0, env={"QUANT_LEG_BUDGET_S": "720"}) == 240.0
+    assert ar.leg_budget_s(240.0, 600.0, env={"QUANT_LEG_BUDGET_S": "junk"}) == 240.0
