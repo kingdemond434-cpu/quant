@@ -125,3 +125,58 @@ def test_red_fence_pages_even_when_the_box_was_already_failing(
     assert len(sent) == 2
     hb.run(out=out, secrets=sec, reading=reading(["disk", "silent"], ["leg:y"]))
     assert len(sent) == 3
+def test_the_report_is_written_whole_and_survives_a_read_only_destination(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    out.write_text('{"old": true}')
+    calls: list[int] = []
+    real = os.replace
+
+    def replace_once_refused(src: object, dst: object) -> None:
+        calls.append(1)
+        if len(calls) == 1:          # what Windows does onto a read-only file (WinError 5)
+            raise PermissionError(13, "Access is denied")
+        real(src, dst)              # type: ignore[arg-type]
+
+    monkeypatch.setattr(hb.os, "replace", replace_once_refused)
+    hb._write_atomic(out, json.dumps({"verdict": "OK"}))
+    assert json.loads(out.read_text()) == {"verdict": "OK"}
+    assert len(calls) == 2 and not (tmp_path / "BOX_HEARTBEAT.json.tmp").exists()
+
+
+def test_a_second_refusal_raises_and_leaves_no_temp_file(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    out.write_text('{"old": true}')
+
+    def refuse(src: object, dst: object) -> None:
+        raise PermissionError(13, "Access is denied")
+
+    monkeypatch.setattr(hb.os, "replace", refuse)
+    with pytest.raises(PermissionError):
+        hb._write_atomic(out, "{}")
+    assert json.loads(out.read_text()) == {"old": True}
+    assert not (tmp_path / "BOX_HEARTBEAT.json.tmp").exists()
+
+
+def test_the_heartbeat_and_its_sibling_reports_are_published_off_the_box() -> None:
+    """2026-10-13 (#361, adopted 2026-11-11): whether the box's outside alarm is ARMED, why the
+    box is or is not adopting, judging burndown and the LLM lab's inputs could not be read off
+    the box; each was written and never published. The URL never enters the report."""
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from mt5desk import release_identity
+
+    from libs.ops import release
+    assert hb.OUT.as_posix().endswith("desks/mt5/reports/BOX_HEARTBEAT.json")
+    ignore = (ROOT / ".gitignore").read_text("utf-8").splitlines()
+    sync = (ROOT / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8", errors="ignore")
+    block = sync.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
+    for rel in ("desks/mt5/reports/BOX_HEARTBEAT.json", "desks/mt5/reports/JUDGING_BURNDOWN.json",
+                "desks/mt5/reports/WORLD_LAB.json", "desks/mt5/reports/EXPRESSION_FACTORY.json",
+                "desks/mt5/reports/RELEASE_GATE.json",
+                "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
+                "desks/mt5/reports/ADOPTION_STATE.json", "desks/mt5/data/stall_watch.json",
+                "desks/mt5/data/world_causal_graph.json"):
+        assert rel.startswith("desks/mt5/data/") or f"!{rel}" in ignore, rel
+        assert f'"{rel}"' in block, rel
+        assert rel in release.NON_CODE and rel in release_identity.NON_CODE, rel
