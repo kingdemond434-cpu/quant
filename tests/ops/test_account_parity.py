@@ -242,21 +242,42 @@ def test_it_never_imports_a_lane_or_metatrader(box: Path) -> None:
     tree = ast.parse((ROOT / "desks/mt5/scripts/account_parity.py").read_text("utf-8"))
     mods = {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
     mods |= {str(n.module) for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
-    assert mods <= {"__future__", "contextlib", "json", "os", "re", "time", "collections.abc",
-                    "datetime", "pathlib", "typing"}, mods
+    assert mods <= {"__future__", "argparse", "contextlib", "json", "os", "re", "time",
+                    "collections.abc", "datetime", "pathlib", "typing"}, mods
     before = "MetaTrader5" in sys.modules
     _measure(box)
     assert ("MetaTrader5" in sys.modules) == before
 
 
-def test_the_heartbeat_refreshes_it_and_survives_a_crash(monkeypatch) -> None:
-    import box_heartbeat as hb
-    monkeypatch.setattr(ap, "refresh", lambda now=None: {"verdict": "RED", "red": [1, 2]})
-    assert hb.account_parity_refresh()["verdict"] == "RED"
-    monkeypatch.setattr(ap, "refresh", lambda now=None: 1 / 0)
-    assert hb.account_parity_refresh() == {"verdict": "UNMEASURED", "error": "ZeroDivisionError"}
-    assert "account_parity_refresh()" in (ROOT / "desks/mt5/scripts/box_heartbeat.py").read_text(
-        "utf-8")
+def test_the_hourly_cycle_runs_it_on_the_core_plan() -> None:
+    cycle = (ROOT / "desks/mt5/research/hourly_cycle.py").read_text("utf-8")
+    assert '_costed("account_parity"' in cycle
+    assert '"scripts/account_parity.py"' in cycle
+    import ast
+    core = next(n.value for n in ast.parse(cycle).body if isinstance(n, ast.AnnAssign)
+                and getattr(n.target, "id", None) == "CORE_LEGS")
+    assert "account_parity" in {c.value for c in ast.walk(core) if isinstance(c, ast.Constant)}
+    from libs.research.layers import LEG_LAYER
+    assert LEG_LAYER["account_parity"] == "meta"
+
+
+def test_the_heartbeat_does_not_carry_it() -> None:
+    # box_heartbeat.py is a money-closure file: the report rides the hourly cycle, not it.
+    hb = (ROOT / "desks/mt5/scripts/box_heartbeat.py").read_text("utf-8")
+    assert "account_parity" not in hb
+
+
+def test_main_refreshes_and_always_exits_zero(monkeypatch, capsys) -> None:
+    seen = {}
+
+    def fake(now=None, *, force=False):
+        seen["force"] = force
+        return {"verdict": "RED", "red": [1, 2], "measured_at": "x"}
+
+    monkeypatch.setattr(ap, "refresh", fake)
+    assert ap.main(["--force"]) == 0
+    assert seen == {"force": True}
+    assert json.loads(capsys.readouterr().out) == {"verdict": "RED", "red": 2, "measured_at": "x"}
 
 
 def test_the_report_is_published_and_not_ignored() -> None:

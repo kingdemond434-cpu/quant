@@ -871,7 +871,7 @@ $reportPaths = @(
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
     # every live account against every mechanism (2026-11-03, scripts/account_parity.py, on
-    # MT5-BoxHeartbeat): present / last_fired / evidence per cell and the firm caps that may
+    # the hourly cycle's account_parity leg): present / last_fired / evidence per cell and the firm caps that may
     # differ; read-only towards trading, no account number in it
     "desks/mt5/reports/ACCOUNT_PARITY.json",
     "desks/mt5/data/tape/tape_state.json",

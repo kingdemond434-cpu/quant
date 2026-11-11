@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Does every live account run the same mechanisms? A read-only census, never a decision.
 
-A LIBRARY, NOT AN EXECUTABLE: its one clock is MT5-BoxHeartbeat, which imports it. By hand:
-    python -c "import sys; sys.path.insert(0, 'desks/mt5/scripts'); import account_parity as a; \
-print(a.refresh(force=True)['verdict'])"
+Its one clock is the hourly research cycle (leg `account_parity`, MT5-HourlyCore), which runs
+`python scripts/account_parity.py`; it re-measures at most every REMEASURE_MIN and always exits 0
+(a report, not a check). By hand, forcing a re-measure:
+    python desks/mt5/scripts/account_parity.py --force
 
 WHY (zuck, 2026-11-03). Every live account -- E8, FTMO, Fusion, and any future one -- must run
 IDENTICAL mechanisms. Only the firm's caps may differ (loss limits, profit caps, lot caps), and a
@@ -66,7 +67,8 @@ BASE = Path(__file__).resolve().parents[1]
 ROOT = BASE.parent.parent
 
 OUT = BASE / "reports" / "ACCOUNT_PARITY.json"
-#: The heartbeat runs every 5 minutes; the grid is re-measured at most this often.
+#: The grid is re-measured at most this often (the hourly cycle always clears it; a by-hand run
+#: inside it returns the last report).
 REMEASURE_MIN = 15.0
 #: The whole measurement rides a 5-minute task with a 2-minute limit, next to other checks.
 BUDGET_S = 8.0
@@ -632,3 +634,19 @@ def refresh(now: float | None = None, *, out: Path = OUT, root: Path = ROOT,
     with contextlib.suppress(OSError):
         write(doc, out)
     return doc
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Refresh the report, print its verdict line. A REPORT, NOT A CHECK: always exits 0."""
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--force", action="store_true", help="re-measure inside REMEASURE_MIN")
+    a = ap.parse_args(argv)
+    res = refresh(force=a.force)
+    print(json.dumps({"verdict": res.get("verdict"), "red": len(res.get("red") or []),
+                      "measured_at": res.get("measured_at")}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
