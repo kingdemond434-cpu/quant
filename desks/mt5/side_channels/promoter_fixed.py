@@ -47,7 +47,8 @@ from gate_classification import (  # noqa: E402
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LOG = BASE / "logs" / "promoter.log"
 
 PROMOTED_LOT = 0.01

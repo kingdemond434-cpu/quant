@@ -38,6 +38,7 @@ def _publish(kind, monkeypatch, tmp_path):
     bank = tmp_path/'bank.json'
     if kind == 'converter':
         monkeypatch.setattr(lc, 'DOCKET', bank)
+        monkeypatch.setattr(lc, 'FEED_STATUS', tmp_path / 'feed_status.json')
         return bank, lambda: lc.feed_docket([
             {'symbols': ['EURUSD'], 'family': 'carry', 'source': 'owned fixture'}])
     monkeypatch.setattr(sce, 'DOCKET', bank)
@@ -61,33 +62,32 @@ def test_refused_shared_writer_lane_preserves_bank(kind, monkeypatch, tmp_path):
         yield False
 
     monkeypatch.setattr(job_lock, 'exclusive_job', refused)
-    # Both writers DEFER rather than raising: the bank is untouched and the rows wait on disk
-    # for the next pass of ANY docket writer instead of being lost.
-    if kind == 'chart':
+    if kind == 'converter':
+        # The converter STANDS DOWN after its retries instead of raising (2026-11-04): a
+        # refused admission is "not now", and the next hourly run feeds the same candidates.
+        waits: list[float] = []
+        monkeypatch.setattr(lc, '_sleep', waits.append)
+        monkeypatch.setattr(lc, 'FEED_STATUS', tmp_path / 'feed_status.json')
+        assert publish() == (0, -1)
+        assert waits == list(lc.FEED_RETRY_WAITS_S)
+        status = json.loads((tmp_path / 'feed_status.json').read_text())
+        assert status['status'] == 'STOOD_DOWN' and status['added'] == 0
+        assert status['attempts'] == len(lc.FEED_RETRY_WAITS_S) + 1 and status['candidates'] == 1
+    else:
+        # The chart writer DEFERS rather than raising: the rows wait on disk for the next pass
+        # of ANY docket writer instead of being lost.
         assert publish() == 0
         assert [c['family'] for c in mh.read_deferred('session_chart_equivalents')] == ['carry']
-    else:
-        assert publish() == (0, -1)
-        assert [c['family'] for c in mh.read_deferred('local_converter')] == ['carry']
     assert bank.read_bytes() == b'[]'
 
 
 def test_any_writer_holding_the_lane_drains_every_other_writers_deferral(monkeypatch, tmp_path):
-    """local_converter runs only from intel_ship_adopt.ps1; its deferral must not wait for it."""
     from research import breadth_sweep, job_lock
 
-    bank, _ = _publish('converter', monkeypatch, tmp_path)
+    bank = tmp_path / 'bank.json'
     monkeypatch.setattr(sce, 'DOCKET', bank)
     monkeypatch.setattr(breadth_sweep, 'DOCKET', bank)
     bank.write_text('[]', encoding='utf-8')
-
-    @contextmanager
-    def refused(*args, **kwargs):
-        yield False
-
-    monkeypatch.setattr(job_lock, 'exclusive_job', refused)
-    assert lc.feed_docket([{'symbols': ['GBPUSD'], 'family': 'carry'}]) == (0, -1)
-    assert sce._merge_locked is not None
     mh._write_deferred('session_chart_equivalents',
                        [{'symbol': 'AUDUSD', 'family': 'carry', 'params': {'session': 'asia'}}])
 
@@ -98,18 +98,17 @@ def test_any_writer_holding_the_lane_drains_every_other_writers_deferral(monkeyp
     monkeypatch.setattr(job_lock, 'exclusive_job', owned)
     assert breadth_sweep.apply([{'symbol': 'EURUSD', 'family': 'carry', 'params': {}}]) == (1, 1)
     syms = sorted(r['symbol'] for r in json.loads(bank.read_text()))
-    assert syms == ['AUDUSD', 'EURUSD', 'GBPUSD']
+    assert syms == ['AUDUSD', 'EURUSD']
     drained = mh.LAST_MERGE['breadth_sweep']['drained_for_others']
-    assert drained['local_converter']['drained'] == 1
     assert drained['session_chart_equivalents']['drained'] == 1
-    assert not mh.deferred_path('local_converter').exists()
     assert not mh.deferred_path('session_chart_equivalents').exists()
 
 
 def test_a_drain_that_fails_keeps_the_other_writers_rows(monkeypatch, tmp_path):
-    from research import job_lock
+    from research import breadth_sweep, job_lock
 
-    bank, _ = _publish('converter', monkeypatch, tmp_path)
+    bank = tmp_path / 'bank.json'
+    monkeypatch.setattr(breadth_sweep, 'DOCKET', bank)
     bank.write_text('[]', encoding='utf-8')
     mh._write_deferred('session_chart_equivalents', [{'symbol': 'AUDUSD', 'family': 'carry'}])
     monkeypatch.setattr(sce, 'DOCKET', tmp_path / 'unreadable.json')
@@ -120,8 +119,8 @@ def test_a_drain_that_fails_keeps_the_other_writers_rows(monkeypatch, tmp_path):
         yield True
 
     monkeypatch.setattr(job_lock, 'exclusive_job', owned)
-    lc.feed_docket([{'symbols': ['EURUSD'], 'family': 'carry'}])
-    assert 'why' in mh.LAST_MERGE['local_converter']['drained_for_others'][
+    breadth_sweep.apply([{'symbol': 'EURUSD', 'family': 'carry', 'params': {}}])
+    assert 'why' in mh.LAST_MERGE['breadth_sweep']['drained_for_others'][
         'session_chart_equivalents']
     assert mh.read_deferred('session_chart_equivalents') == [
         {'symbol': 'AUDUSD', 'family': 'carry'}]
@@ -136,32 +135,25 @@ def test_quarantine_receipts_and_deferrals_are_box_state():
         assert is_state_path(rel), rel
 
 
-def test_converter_deferral_is_merged_first_on_the_next_pass(monkeypatch, tmp_path):
+def test_converter_feeds_once_admission_clears_on_a_retry(monkeypatch, tmp_path):
     from research import job_lock
 
-    bank, _ = _publish('converter', monkeypatch, tmp_path)
-    bank.write_text('[]', encoding='utf-8')
+    bank, publish = _publish('converter', monkeypatch, tmp_path)
+    bank.write_bytes(b'[]')
+    answers = iter([False, True])
 
     @contextmanager
-    def refused(*args, **kwargs):
-        yield False
+    def flaky(*args, **kwargs):
+        yield next(answers)
 
-    monkeypatch.setattr(job_lock, 'exclusive_job', refused)
-    held = {'symbols': ['GBPUSD'], 'family': 'carry', 'converted_at': 't0'}
-    assert lc.feed_docket([held]) == (0, -1)
-    # The same candidate minted again next hour with a new timestamp is ONE deferred cell.
-    assert lc.feed_docket([{**held, 'converted_at': 't1'}]) == (0, -1)
-    assert len(mh.read_deferred('local_converter')) == 1
-
-    @contextmanager
-    def owned(name, **kwargs):
-        yield True
-
-    monkeypatch.setattr(job_lock, 'exclusive_job', owned)
-    added, total = lc.feed_docket([{'symbols': ['EURUSD'], 'family': 'carry'}])
-    assert (added, total) == (2, 2)
-    assert {r['symbol'] for r in json.loads(bank.read_text())} == {'GBPUSD', 'EURUSD'}
-    assert mh.read_deferred('local_converter') == []
+    monkeypatch.setattr(job_lock, 'exclusive_job', flaky)
+    monkeypatch.setattr(lc, '_sleep', lambda s: None)
+    monkeypatch.setattr(lc, 'FEED_STATUS', tmp_path / 'feed_status.json')
+    added, total = publish()
+    assert added == 1 and total == 1
+    status = json.loads((tmp_path / 'feed_status.json').read_text())
+    assert status['status'] == 'FED' and status['attempts'] == 2 and status['added'] == 1
+    assert json.loads(bank.read_text())[0]['symbol'] == 'EURUSD'
 
 
 def test_chart_rechecks_identity_under_the_shared_writer_lane(monkeypatch, tmp_path):

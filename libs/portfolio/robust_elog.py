@@ -1194,7 +1194,8 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
 
 
 def score_book(ev: Sequence[SleeveEvidence], heat: Mapping[str, float], *,
-               cfg: WorldConfig | None = None, worlds: Worlds | None = None) -> dict[str, float]:
+               cfg: WorldConfig | None = None, worlds: Worlds | None = None,
+               corr_abs: np.ndarray | None = None) -> dict[str, float]:
     """Growth of a GIVEN book on the world population -- no optimisation, no reweighting.
 
     This is what a rebalance must be measured against. Comparing a proposed book to the FREE
@@ -1205,7 +1206,7 @@ def score_book(ev: Sequence[SleeveEvidence], heat: Mapping[str, float], *,
     cfg = cfg or WorldConfig()
     w_pop = worlds if worlds is not None else sample_worlds(ev, cfg)
     h = np.array([float(heat.get(n, 0.0)) for n in w_pop.names])
-    score, _grad, g_w = _objective(w_pop, h, _corr_abs(ev), cfg)
+    score, _grad, g_w = _objective(w_pop, h, _corr_abs(ev) if corr_abs is None else corr_abs, cfg)
     finite = g_w[np.isfinite(g_w)]
     mean_g = float(finite.mean()) if finite.size else float("-inf")
     n_tail = max(1, round(cfg.cvar_alpha * max(finite.size, 1)))
