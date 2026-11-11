@@ -85,27 +85,36 @@ def kendall_tau(y: Sequence[float]) -> float:
     n = len(v)
     if n < 8:
         return float("nan")
-    s = 0
-    for i in range(n - 1):
-        s += int(np.sign(v[i + 1:] - v[i]).sum())
-    return float(2.0 * s / (n * (n - 1)))
+    s = float(np.triu(np.sign(v[None, :] - v[:, None]), k=1).sum())
+    return 2.0 * s / (n * (n - 1))
 
 
 def rolling_indicators(returns: Sequence[float], window: int = WINDOW
                        ) -> dict[str, np.ndarray]:
-    """Each indicator on every trailing window end; index i uses returns[i-window+1 .. i]."""
+    """Each indicator on every trailing window end; index i uses returns[i .. i+window-1].
+
+    Vectorised over windows (the surrogate test calls this a hundred times per instrument).
+    A flat window reads nan for every indicator except its zero variance.
+    """
     r = np.asarray([x for x in returns if math.isfinite(x)], dtype=float)
-    n = len(r) - window + 1
-    out = {k: np.full(max(n, 0), np.nan) for k in INDICATORS}
-    for i in range(max(n, 0)):
-        x = r[i:i + window]
-        x = x - x.mean()                    # trailing detrend: the window's own mean
-        var, skew, kurt = _moments(x)
-        out["ar1"][i] = _ar1(x)
-        out["variance"][i] = var
-        out["skew_abs"][i] = abs(skew) if math.isfinite(skew) else float("nan")
-        out["bimodality"][i] = bimodality_coefficient(skew, kurt, len(x))
-    return out
+    if len(r) < window:
+        return {k: np.full(0, np.nan) for k in INDICATORS}
+    w = np.lib.stride_tricks.sliding_window_view(r, window)
+    d = w - w.mean(axis=1, keepdims=True)          # trailing detrend: the window's own mean
+    var = (d * d).mean(axis=1)
+    ok = var > 0
+    safe = np.where(ok, var, 1.0)
+    skew = np.where(ok, (d ** 3).mean(axis=1) / safe ** 1.5, np.nan)
+    kurt = np.where(ok, (d ** 4).mean(axis=1) / safe ** 2 - 3.0, np.nan)
+    a, b = d[:, :-1], d[:, 1:]
+    am, bm = a - a.mean(axis=1, keepdims=True), b - b.mean(axis=1, keepdims=True)
+    den = np.sqrt((am * am).sum(axis=1) * (bm * bm).sum(axis=1))
+    ar1 = np.where(den > 0, (am * bm).sum(axis=1) / np.where(den > 0, den, 1.0), np.nan)
+    n = window
+    bden = kurt + 3.0 * (n - 1) ** 2 / ((n - 2) * (n - 3))
+    bc = np.where(np.isfinite(skew) & (bden > 0),
+                  (skew * skew + 1.0) / np.where(bden > 0, bden, 1.0), np.nan)
+    return {"ar1": ar1, "variance": var, "skew_abs": np.abs(skew), "bimodality": bc}
 
 
 def surrogate_p(returns: Sequence[float], taus: dict[str, float], window: int = WINDOW,

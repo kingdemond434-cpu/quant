@@ -101,3 +101,17 @@ def test_the_leg_is_on_a_clock_with_a_layer_and_a_budget() -> None:
     assert hc.department_of("critical_slowing") == "macro"
     assert hc.in_plan("critical_slowing", "heavy")
     assert layers.LEG_LAYER["critical_slowing"] == "information"
+
+
+def test_the_vectorised_windows_match_the_scalar_definitions() -> None:
+    r = np.random.default_rng(11).normal(0, 1, 90)
+    ind = cs.rolling_indicators(list(r), 60)
+    for i in (0, 13, 30):
+        x = r[i:i + 60] - r[i:i + 60].mean()
+        var, skew, kurt = cs._moments(x)
+        assert np.isclose(ind["ar1"][i], cs._ar1(x))
+        assert np.isclose(ind["variance"][i], var)
+        assert np.isclose(ind["skew_abs"][i], abs(skew))
+        assert np.isclose(ind["bimodality"][i], cs.bimodality_coefficient(skew, kurt, 60))
+    flat = cs.rolling_indicators([0.0] * 70, 60)
+    assert np.all(flat["variance"] == 0) and np.all(np.isnan(flat["ar1"]))
