@@ -179,7 +179,8 @@ def _flow_cells(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
             ("japan_fiscal_year_end", "fiscal_year_end", {"window_before_min": [1440, 4320]}),
             ("dividend_reinvestment", "dividend_reinvestment", {}),
             ("post_holiday_drift", "post_holiday", {}),
-            ("index_review_flow", "index_rebalance", {})):
+            ("index_review_flow", "index_rebalance", {}),
+            ("index_review_flow", "index_review_apac", {})):
         if _named(kind, sym):
             out.append((mechanism, "forced_flow",
                         _grid({"event_kind": [kind], "clock": ["utc"], "symbol": [sym],
@@ -192,7 +193,9 @@ def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     hedge: list[tuple[str, str, list[dict[str, Any]]]] = []
     if usd_selling_side(sym) and home_equity(sym):
         hedge.append(("fx_hedge_rebalance", "forced_flow",
-                      _grid({"event_kind": ["month_end", "quarter_end"], "clock": ["utc"],
+                      # month_end ONLY: every quarter end is a month end, so a quarter_end
+                      # arm would re-test the same windows and grow the trial census (Auditor).
+                      _grid({"event_kind": ["month_end"], "clock": ["utc"],
                              "symbol": [sym], "mode": ["hedge_into_fix", "hedge_post_fix_fade"],
                              "min_rel": [0.0, 0.01]})))
     return hedge + _flow_cells(sym) + [

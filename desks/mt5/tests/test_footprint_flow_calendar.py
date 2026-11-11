@@ -86,13 +86,13 @@ def test_post_holiday_is_the_first_session_back():
 
 
 def test_index_reviews_for_nikkei_hang_seng_and_asx():
-    e = _one("index_rebalance", "nikkei225_review_202504", date(2025, 3, 1), date(2025, 4, 30))
+    e = _one("index_review_apac", "nikkei225_review_202504", date(2025, 3, 1), date(2025, 4, 30))
     assert e.date == date(2025, 3, 31) and e.window_start_utc == _utc(2025, 3, 31, 6, 0)
-    e = _one("index_rebalance", "nikkei225_review_202404", date(2024, 3, 1), date(2024, 4, 30))
+    e = _one("index_review_apac", "nikkei225_review_202404", date(2024, 3, 1), date(2024, 4, 30))
     assert e.window_start_utc == _utc(2024, 3, 29, 5, 30)    # the 15:00 close, pre-2024-11-05
-    e = _one("index_rebalance", "hsi_quarterly_202503", date(2025, 2, 1), date(2025, 3, 31))
+    e = _one("index_review_apac", "hsi_quarterly_202503", date(2025, 2, 1), date(2025, 3, 31))
     assert e.date == date(2025, 2, 28)                       # the Friday before 3 March
-    e = _one("index_rebalance", "asx200_quarterly_202503", date(2025, 3, 1), date(2025, 3, 31))
+    e = _one("index_review_apac", "asx200_quarterly_202503", date(2025, 3, 1), date(2025, 3, 31))
     assert e.date == date(2025, 3, 21) and e.instruments == ("AUS200",)
 
 
@@ -226,3 +226,42 @@ def test_every_new_cell_is_buildable_by_the_sealed_gauntlet():
             for params in grid:
                 verdict, why = gb.cell_verdict("forced_flow", params, "H1")
                 assert verdict == "BUILDABLE", (sym, m, params, why)
+
+
+# ------------------------------------------------------------------ Auditor should-fixes (#679)
+
+def test_into_fix_decides_on_a_bar_that_has_closed_before_the_window(store):
+    sigs = ff.family_forced_flow(store["EURUSD"], event_kind="month_end", mode="hedge_into_fix",
+                                 symbol="EURUSD", clock="bars")
+    idx = store["EURUSD"].index
+    windows = ff.calendar_windows("month_end", idx[0].date(), idx[-1].date())
+    starts = [w[0] for w in windows]
+    assert sigs
+    for s in sigs:
+        t = pd.Timestamp(s.time)
+        nxt = min(w for w in starts if w > t)
+        assert t + pd.Timedelta(hours=1) <= nxt
+
+
+def test_the_rules_fill_every_day_the_file_does_not_cover(tmp_path, monkeypatch):
+    import json as _json
+    path = tmp_path / "forced_flow_calendar.json"
+    path.write_text(_json.dumps({"range": {"start": "2025-01-01", "end": "2025-12-31"},
+                                 "events": [e.to_json() for e in cal.events(date(2025, 1, 1),
+                                                                         date(2025, 12, 31))]}))
+    monkeypatch.setattr(ff, "CALENDAR_PATH", path)
+    rows = ff.calendar_windows("month_end", date(2023, 1, 1), date(2025, 12, 31))
+    years = {r[0].year for r in rows}
+    assert {2023, 2024, 2025} <= years
+    assert len([r for r in rows if r[0].year == 2023]) >= 11
+
+
+def test_the_hedge_arm_tests_each_month_end_window_once():
+    grid = _plan("EURUSD", "fx")["fx_hedge_rebalance"]
+    assert {g["event_kind"] for g in grid} == {"month_end"}
+
+
+def test_apac_reviews_never_widen_an_index_rebalance_cell():
+    rows = cal.events(date(2025, 1, 1), date(2025, 12, 31))
+    assert not [e for e in rows if e.kind == "index_rebalance"
+                and e.name.startswith(("nikkei225_review", "hsi_quarterly", "asx200_quarterly"))]

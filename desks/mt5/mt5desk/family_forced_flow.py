@@ -198,6 +198,16 @@ def _rows_from_disk(kind: str, lo: date, hi: date) -> list[dict[str, Any]] | Non
     return out
 
 
+def _disk_span() -> tuple[date, date] | None:
+    """The [start, end] the artifact was built over (its `range`), or None if it does not say."""
+    try:
+        doc = json.loads(CALENDAR_PATH.read_text(encoding="utf-8"))
+        span = doc.get("range") or {}
+        return date.fromisoformat(str(span["start"])), date.fromisoformat(str(span["end"]))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
 def _rows_computed(kind: str, lo: date, hi: date) -> list[dict[str, Any]]:
     module = _calendar_module()
     if module is None:
@@ -221,6 +231,17 @@ def calendar_windows(kind: str, lo: date, hi: date) -> list[tuple[pd.Timestamp, 
     rows = _rows_from_disk(kind, lo, hi)
     if not rows:
         rows = _rows_computed(kind, lo, hi)
+    else:
+        # THE FILE COVERS ONLY ITS OWN SPAN (Auditor, #679). `build(days_back=400)` writes about
+        # 400 days, so a cell backtested further back read almost no events from it -- and its
+        # zero was still charged to the trial census. The rules fill every day the file does not.
+        covered = _disk_span()
+        if covered is not None:
+            first, last = covered
+            if lo < first:
+                rows = _rows_computed(kind, lo, first - timedelta(days=1)) + rows
+            if hi > last:
+                rows = rows + _rows_computed(kind, last + timedelta(days=1), hi)
     out: list[tuple[pd.Timestamp, pd.Timestamp, tuple[str, ...]]] = []
     for row in rows:
         try:
@@ -432,6 +453,7 @@ def _hedge_signals(bars: pd.DataFrame, side: int, *, event_kind: str, mode: str,
     close = d["close"].astype(float).to_numpy()
     want = str(symbol).strip().upper()
     months = 3 if event_kind == "quarter_end" else 1
+    bar = pd.Timedelta(np.median(np.diff(index.asi8))) if len(index) > 1 else pd.Timedelta(0)
     signals: list[Signal] = []
     for start_utc, end_utc, instruments in windows:
         if want and instruments and want not in instruments:
@@ -441,7 +463,9 @@ def _hedge_signals(bars: pd.DataFrame, side: int, *, event_kind: str, mode: str,
         if start is None or end is None:
             continue
         if mode == "hedge_into_fix":
-            i = int(index.searchsorted(start, side="left")) - 1
+            # The last bar that has CLOSED before the window opens: a bar stamped t closes at
+            # t + one bar, so it qualifies only when t + bar <= start (Auditor, #679).
+            i = int(index.searchsorted(start - bar, side="right")) - 1
         else:
             i = int(index.searchsorted(end, side="right"))
         if i < int(atr_n) or i >= len(d) - 1:

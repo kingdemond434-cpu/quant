@@ -109,6 +109,10 @@ KINDS = (
     "month_end", "quarter_end", "index_rebalance", "futures_roll", "option_expiry",
     "bond_auction", "central_bank", "fixing", "inventory", "usda", "holiday_liquidity",
     "em_fixing", "dividend_reinvestment", "fiscal_year_end", "post_holiday",
+    # The Nikkei, Hang Seng and ASX reviews are their OWN kind, never `index_rebalance`: adding
+    # them there would widen what an already-certified `event_kind=index_rebalance` cell trades
+    # without changing its spec hash (Auditor, #679).
+    "index_review_apac",
 )
 
 
@@ -625,7 +629,7 @@ def _index_rebalance_events(year: int, month: int) -> list[Event]:
         day = add_business_days(eff, -1)
         close = (15, 30) if day >= date(2024, 11, 5) else (15, 0)
         rows.append(_event(
-            day, "index_rebalance", f"nikkei225_review_{year:04d}{month:02d}",
+            day, "index_review_apac", f"nikkei225_review_{year:04d}{month:02d}",
             _around(day, close[0], close[1], "Asia/Tokyo", 30, 10), _keep(("JPN225",)), actor,
             mech, "Nikkei 225 periodic review: effective the first business day of Apr/Oct, "
             "traded at the TSE close the business day before (15:00 Asia/Tokyo until "
@@ -636,7 +640,7 @@ def _index_rebalance_events(year: int, month: int) -> list[Event]:
         monday = nth_weekday(year, month, 0, 1)
         friday_before = monday - timedelta(days=3)
         rows.append(_event(
-            friday_before, "index_rebalance", f"hsi_quarterly_{year:04d}{month:02d}",
+            friday_before, "index_review_apac", f"hsi_quarterly_{year:04d}{month:02d}",
             _around(friday_before, 16, 10, "Asia/Hong_Kong", 20, 10),
             _keep(("HK50", "CHINAH")), actor, mech,
             "Hang Seng quarterly review: effective the first Monday of Mar/Jun/Sep/Dec, "
@@ -645,7 +649,7 @@ def _index_rebalance_events(year: int, month: int) -> list[Event]:
         # S&P/ASX 200 quarterly rebalance: effective after the close of the third Friday.
         friday = nth_weekday(year, month, FRIDAY, 3)
         rows.append(_event(
-            friday, "index_rebalance", f"asx200_quarterly_{year:04d}{month:02d}",
+            friday, "index_review_apac", f"asx200_quarterly_{year:04d}{month:02d}",
             _around(friday, 16, 10, "Australia/Sydney", 20, 10), _keep(("AUS200",)), actor,
             mech, "S&P/ASX 200 quarterly rebalance: effective after the close of the third "
             "Friday of Mar/Jun/Sep/Dec, ASX closing single price auction ~16:10 "
