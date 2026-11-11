@@ -1,4 +1,4 @@
-"""Tokens per accepted row, per box LLM job: the hourly pass's token-waste measure."""
+"""Tokens per accepted row, per box LLM job: the hourly cycle's token-waste measure."""
 from __future__ import annotations
 
 import json
