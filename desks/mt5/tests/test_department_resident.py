@@ -136,3 +136,74 @@ def test_main_once_exits_with_the_pass_result(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "free_phys_mb", lambda: None)
     assert dr.main(["--dept", "intel", "--once"]) == 0
     assert (tmp_path / "logs" / "department_resident.log").exists()
+
+
+# ---------------------------------------------------- supervised restart-on-exit (BACKLOG 09-29)
+def _isolate(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+
+
+def test_supervisor_restarts_the_worker_on_every_exit_without_waiting_for_the_trigger(
+        monkeypatch, tmp_path):
+    """A recycle used to leave the department dead until the next ten-minute keep-alive."""
+    _isolate(monkeypatch, tmp_path)
+    exits = iter([0, 0, 0])
+    naps: list[float] = []
+    n = dr.supervise("intel", spawn=lambda _d: next(exits), sleep=naps.append,
+                     digest=lambda: "same", max_workers=3)
+    assert n == 0
+    assert naps == [dr.RESPAWN_S] * 3 and dr.RESPAWN_S < 60
+    # the supervisor held the department for its whole life and released it at the end
+    assert dr.claim_singleton("intel") is not None
+
+
+def test_supervisor_refuses_a_second_copy_of_the_department(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    held = dr.claim_singleton("intel")
+    assert held is not None
+    spawned: list[str] = []
+    assert dr.supervise("intel", spawn=lambda d: spawned.append(d) or 0, sleep=lambda _s: None,
+                        digest=lambda: "same", max_workers=1) == 0
+    assert spawned == []
+    held.close()
+
+
+def test_crash_backoff_is_bounded_and_resets_after_a_healthy_life():
+    delay, deaths = dr.respawn_delay(1, 5.0, 0)
+    assert (delay, deaths) == (dr.CRASH_BACKOFF_S, 1)
+    for _ in range(20):
+        delay, deaths = dr.respawn_delay(1, 5.0, deaths)
+    assert delay == dr.CRASH_BACKOFF_MAX_S
+    # never slower than the ten-minute keep-alive it replaces
+    assert dr.CRASH_BACKOFF_MAX_S < 600
+    assert dr.respawn_delay(1, dr.YOUNG_DEATH_S + 1, deaths) == (dr.CRASH_BACKOFF_S, 1)
+    assert dr.respawn_delay(0, 5.0, deaths) == (dr.RESPAWN_S, 0)
+    assert dr.respawn_delay(dr.WORKER_BUSY_RC, 1.0, 2) == (dr.WORKER_BUSY_WAIT_S, 2)
+
+
+def test_an_orphaned_worker_is_never_doubled(monkeypatch, tmp_path):
+    """A killed supervisor can leave its worker alive; the next one's worker must step aside."""
+    _isolate(monkeypatch, tmp_path)
+    orphan = dr.claim_worker("intel")
+    assert orphan is not None
+    assert dr.main(["--dept", "intel", "--worker"]) == dr.WORKER_BUSY_RC
+    orphan.close()
+    # the worker lock sits outside the dept_*.lock glob the moat registry reads as departments
+    assert not list((tmp_path / "locks").glob("dept_*.lock"))
+
+
+def test_supervisor_exits_when_its_own_code_is_adopted(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    digests = iter(["old", "new"])
+    spawned: list[str] = []
+    assert dr.supervise("intel", spawn=lambda d: spawned.append(d) or 0, sleep=lambda _s: None,
+                        digest=lambda: next(digests), max_workers=5) == 0
+    assert spawned == ["intel"]
+
+
+def test_the_task_entrypoint_is_the_supervisor(monkeypatch):
+    called: list[str] = []
+    monkeypatch.setattr(dr, "supervise", lambda d: called.append(d) or 0)
+    assert dr.main(["--dept", "Intel"]) == 0
+    assert called == ["intel"]

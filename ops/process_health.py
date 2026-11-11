@@ -35,6 +35,7 @@ import io
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -107,6 +108,88 @@ STATE_LIVE = STATE_RUNNING | frozenset({
     "pronto", "abilitato", "in coda", "ativado",
     "gereed", "ingeschakeld", "gotowe", "włączone", "готово", "включено",
 })
+
+
+#: THE TWO RESULTS THAT MEASURE A RUN LONGER THAN ITS TRIGGER (BACKLOG 2026-09-29, "a ~44-minute
+#: gauntlet job on a 5-minute trigger"). Under MultipleInstances=IgnoreNew a trigger that fires
+#: while the previous instance is still alive is REFUSED and the task's Last Result becomes
+#: 0x800710E0 (or SCHED_E_ALREADY_RUNNING): the scheduler itself measured a run longer than the
+#: interval. 0x41306 is the other half: the run outlived its ExecutionTimeLimit and was KILLED
+#: mid-run. For a 24/7 resident the refusal is the keep-alive working (a no-op while it lives), so
+#: residents are reported apart; a kill is an overrun for everyone.
+REFUSED_STILL_RUNNING = frozenset({2147946720, 2147750687})
+KILLED_AT_LIMIT = 267014
+MANIFEST = ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest"
+_MANIFEST_ROW = re.compile(r'^TASK\s+name="([^"]+)"\s+trigger="([^"]*)"')
+
+
+def resident_tasks(path: Path | None = None) -> frozenset[str]:
+    """Tasks the box manifest declares as 24/7 residents behind a keep-alive trigger."""
+    try:
+        text = (path or MANIFEST).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return frozenset()
+    out: set[str] = set()
+    for line in text.splitlines():
+        m = _MANIFEST_ROW.match(line.strip())
+        if m and re.search(r"resident|keep-alive", m.group(2), re.I):
+            out.add(m.group(1))
+    return frozenset(out)
+
+
+def repeat_minutes(every: str) -> int | None:
+    """schtasks' `Repeat: Every` ("0 Hour(s), 10 Minute(s)") in minutes; None when not stated."""
+    hours = minutes = 0
+    for part in str(every or "").split(","):
+        digits = "".join(ch for ch in part if ch.isdigit())
+        if not digits:
+            continue
+        if "hour" in part.lower():
+            hours = int(digits)
+        elif "minute" in part.lower():
+            minutes = int(digits)
+    return (hours * 60 + minutes) or None
+
+
+def cadence_overruns(rows: list[dict[str, Any]], residents: frozenset[str],
+                     run_history_read: bool) -> dict[str, Any]:
+    """Every scheduled task whose MEASURED run exceeded its trigger interval or its time limit.
+
+    The evidence is the scheduler's own: a refused trigger (the previous run was still alive when
+    the next one fired) or a kill at the ExecutionTimeLimit. A run history that was not read is
+    UNMEASURED, never a clean list (L1.28a). Report-only: nothing here changes a trigger.
+    """
+    if not run_history_read:
+        return {"status": "UNMEASURED", "why": "the verbose scheduler read (last result) did "
+                "not land this pass", "overruns": [], "n_overruns": 0,
+                "resident_keepalive": []}
+    overruns: list[dict[str, Any]] = []
+    keepalive: list[str] = []
+    for r in rows:
+        code = r.get("last_result_code")
+        name = str(r.get("name") or "")
+        if code is None or r.get("state") in ("COMPONENT", "ABSENT", "UNMEASURED"):
+            continue
+        if code in REFUSED_STILL_RUNNING:
+            if name in residents:
+                keepalive.append(name)
+                continue
+            evidence = ("REFUSED_STILL_RUNNING: a trigger fired while the previous run was "
+                        "still alive, so the run is longer than the trigger interval")
+        elif code == KILLED_AT_LIMIT:
+            evidence = ("KILLED_AT_LIMIT: the run outlived its ExecutionTimeLimit and was "
+                        "terminated mid-run")
+        else:
+            continue
+        overruns.append({"name": name, "evidence": evidence,
+                         "repeat_every_min": r.get("repeat_every_min"),
+                         "resident": name in residents, "last_run": r.get("last_run")})
+    return {"status": "MEASURED",
+            "rule": "a task's measured run must fit inside its trigger interval and time limit; "
+                    "a 24/7 resident is exempt from the interval (its trigger is a keep-alive) "
+                    "but never from a kill",
+            "n_overruns": len(overruns), "overruns": overruns,
+            "resident_keepalive": sorted(keepalive)}
 
 
 class SchtasksUnreadable(ValueError):
@@ -560,6 +643,7 @@ def build() -> dict[str, Any]:
             "purpose": purpose or None,
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
+            "repeat_every_min": repeat_minutes(str(t.get("Repeat: Every") or "")),
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
@@ -654,6 +738,9 @@ def build() -> dict[str, Any]:
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
         "scheduler_retry": {"state": "NOT_NEEDED"} if not TIMEOUTS else {"state": "PENDING"},
+        # RUN LONGER THAN ITS TRIGGER (BACKLOG 2026-09-29): the fence for the scheduling class
+        # "a long job on a short trigger". Report-only; residents' keep-alive refusals listed apart.
+        "cadence_overruns": cadence_overruns(rows, resident_tasks(), run_history_read),
         "processes": rows,
     }
 

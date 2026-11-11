@@ -18,7 +18,23 @@ win the CPU. (4) A memory guard: a pass does not start while free physical memor
 MIN_FREE_MB. (5) A floor between passes (MIN_CYCLE_S) so an empty department does not spin.
 (6) The loop's own memory is tiny; it recycles itself after RECYCLE_PASSES passes anyway.
 
-    python department_resident.py --dept discovery       # loop until stopped
+SUPERVISED, RESTART-ON-EXIT (BACKLOG 2026-09-29, "22 daemons on a 10-minute trigger"). The
+department and forest tasks are 24/7 residents whose Windows trigger is a ten-minute keep-alive.
+Until this change the loop process WAS the task, so every recycle (and every crash) left the
+department dead until the next keep-alive slot: up to ten minutes of no passes, every RECYCLE_PASSES
+passes, on 22 tasks. The task now starts a tiny SUPERVISOR that holds the department lock for its
+whole life and runs the loop as a `--worker` child; when the worker exits -- recycled, crashed or
+killed -- the supervisor starts the next one within RESPAWN_S, with a bounded backoff only for a
+worker that keeps dying young. The keep-alive trigger is then only the supervisor's own watchdog,
+and the 0x800710E0 refusals it records are that watchdog finding the supervisor alive. A worker
+holds its own `deptworker_<name>.lock` (outside the `dept_*.lock` glob the registry reads), so a
+worker orphaned by a killed supervisor is never doubled by the next one: the new supervisor waits
+for it to finish instead. No trigger and no task
+registration changes, so adoption alone rolls it out -- each running loop is replaced by a
+supervisor the first time it recycles.
+
+    python department_resident.py --dept discovery       # supervise the loop until stopped
+    python department_resident.py --dept discovery --worker   # the loop itself (the supervisor's child)
     python department_resident.py --dept intel --once    # one pass (tests, probes)
 """
 from __future__ import annotations
@@ -92,8 +108,18 @@ def free_phys_mb() -> float | None:
 
 def claim_singleton(dept: str):
     """Hold data/locks/dept_<name>.lock for the life of this process; None when another holds it."""
+    return _claim_lock(f"dept_{dept}.lock")
+
+
+def claim_worker(dept: str):
+    """Hold data/locks/deptworker_<name>.lock for the worker's life; None when a worker -- an
+    orphan of a killed supervisor, say -- is still running this department."""
+    return _claim_lock(f"deptworker_{dept}.lock")
+
+
+def _claim_lock(name: str):
     LOCKS.mkdir(parents=True, exist_ok=True)
-    path = LOCKS / f"dept_{dept}.lock"
+    path = LOCKS / name
     try:
         fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held for the process lifetime
     except OSError:
@@ -351,18 +377,103 @@ def heartbeat(dept: str, passes: int, status: str = "running", done_inc: int = 0
         pass
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--dept", required=True)
-    ap.add_argument("--once", action="store_true", help="one pass, then exit")
-    a = ap.parse_args(argv)
-    dept = a.dept.strip().lower()
+#: A worker that recycled cleanly is replaced after this many seconds -- not after the next
+#: keep-alive slot, which was up to ten minutes of a dead department.
+RESPAWN_S = int(os.environ.get("DEPT_RESPAWN_S", "5"))
+#: A worker that dies younger than this counts toward the crash backoff; one that lived longer
+#: resets it. The backoff doubles from CRASH_BACKOFF_S and never exceeds CRASH_BACKOFF_MAX_S, so a
+#: department broken by a bad adoption retries at least every five minutes -- faster than the old
+#: keep-alive -- without spinning a crash loop on the box that trades.
+YOUNG_DEATH_S = 600
+CRASH_BACKOFF_S = 15
+CRASH_BACKOFF_MAX_S = 300
+#: The worker's exit code when another worker of this department is still alive.
+WORKER_BUSY_RC = 3
+#: How long to wait for an orphaned worker before asking again.
+WORKER_BUSY_WAIT_S = 60
+
+
+def _source_digest() -> str:
+    try:
+        import hashlib
+        return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _spawn_worker(dept: str) -> int:
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--dept", dept, "--worker"],
+                       cwd=str(DESK), check=False)
+    return int(r.returncode)
+
+
+def respawn_delay(rc: int | None, lived_s: float, young_deaths: int) -> tuple[float, int]:
+    """(seconds before the next worker, the updated young-death count). Pure, so it is pinned."""
+    if rc == WORKER_BUSY_RC:
+        return float(WORKER_BUSY_WAIT_S), young_deaths
+    if rc == 0:
+        return float(RESPAWN_S), 0
+    deaths = young_deaths + 1 if lived_s < YOUNG_DEATH_S else 1
+    return float(min(CRASH_BACKOFF_MAX_S, CRASH_BACKOFF_S * 2 ** (deaths - 1))), deaths
+
+
+def supervise(dept: str, *, spawn=None, sleep=time.sleep, clock=time.monotonic,
+              digest=None, max_workers: int | None = None) -> int:
+    """Hold the department and keep exactly one worker running, restarting it on every exit.
+
+    Returns only when this file changed on disk (an adoption), so the keep-alive trigger starts a
+    supervisor of the new code, or when `max_workers` (tests) is reached.
+    """
+    spawn = spawn or _spawn_worker
+    digest = digest or _source_digest
+    started_digest = digest()
     handle = claim_singleton(dept)
     if handle is None:
         print(f"dept[{dept}]: another resident holds the slot; exiting", flush=True)
         return 0
-    log(dept, f"resident started pid {os.getpid()}; pass timeout {PASS_TIMEOUT_S}s, "
-              f"min cycle {MIN_CYCLE_S}s, recycle after {RECYCLE_PASSES} passes")
+    log(dept, f"supervisor started pid {os.getpid()}: restarts the worker on exit "
+              f"(respawn {RESPAWN_S}s, crash backoff {CRASH_BACKOFF_S}-{CRASH_BACKOFF_MAX_S}s)")
+    workers = deaths = 0
+    try:
+        while max_workers is None or workers < max_workers:
+            workers += 1
+            t0 = clock()
+            try:
+                rc: int | None = spawn(dept)
+            except OSError as exc:
+                log(dept, f"worker failed to start: {type(exc).__name__}: {exc}")
+                rc = None
+            lived = clock() - t0
+            delay, deaths = respawn_delay(rc, lived, deaths)
+            log(dept, f"worker {workers} exited rc={rc} after {lived:.0f}s; next in {delay:.0f}s")
+            if started_digest and digest() not in ("", started_digest):
+                log(dept, "supervisor source changed on disk: exiting so the keep-alive starts "
+                          "the adopted code")
+                return 0
+            sleep(delay)
+        return 0
+    finally:
+        with contextlib.suppress(OSError):
+            handle.close()
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--dept", required=True)
+    ap.add_argument("--once", action="store_true", help="one pass, then exit")
+    ap.add_argument("--worker", action="store_true",
+                    help="run the loop itself (the supervisor's child); recycles by exiting")
+    a = ap.parse_args(argv)
+    dept = a.dept.strip().lower()
+    if not a.once and not a.worker:
+        return supervise(dept)
+    handle = claim_worker(dept) if a.worker else claim_singleton(dept)
+    if handle is None:
+        print(f"dept[{dept}]: another {'worker' if a.worker else 'resident'} holds the slot; "
+              "exiting", flush=True)
+        return WORKER_BUSY_RC if a.worker else 0
+    log(dept, f"{'worker' if a.worker else 'resident'} started pid {os.getpid()}; pass timeout "
+              f"{PASS_TIMEOUT_S}s, min cycle {MIN_CYCLE_S}s, recycle after {RECYCLE_PASSES} passes")
     passes = 0
     heartbeat(dept, 0)
     try:
@@ -385,7 +496,7 @@ def main(argv: list[str] | None = None) -> int:
             if a.once:
                 return 0 if res["status"] == "ok" else 1
             if passes >= RECYCLE_PASSES:
-                log(dept, "recycling: the keep-alive trigger restarts a fresh resident")
+                log(dept, "recycling: the supervisor starts a fresh worker")
                 return 0
             elapsed = time.monotonic() - started
             floor, why = cycle_floor_s()
