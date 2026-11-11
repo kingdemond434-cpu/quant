@@ -457,11 +457,27 @@ def refetch(*, budget_s: float, dry_run: bool) -> dict[str, Any]:
         return {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"[:300]}
 
 
+def recheck(*, dry_run: bool) -> dict[str, Any]:
+    """THE RE-CHECK HOOK (#238 audit, 2026-11-11). The release labels this family reads moved
+    later under the LIVE `EURUSD.cot_positioning` certificate; `research/certificate_recheck.py`
+    keeps it marked RECHECK_REQUIRED until the sealed gauntlet re-judges it in reproduction mode
+    (no certificate written), running that reproduction at most once per 6 h until it reports.
+    A failure is recorded, never raised: this leg's own pass is never lost to it."""
+    try:
+        from research import certificate_recheck as cr
+        doc = cr.run(dry_run=dry_run)
+        return {"status": "RAN", "n_required": doc.get("n_required"),
+                "rechecks": {e["id"]: e["status"] for e in doc.get("rechecks") or []}}
+    except Exception as exc:
+        return {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
 def run(*, budget_s: float = 300.0, dry_run: bool = False, out: Path | None = None
         ) -> dict[str, Any]:
     fetched = refetch(budget_s=REFETCH_BUDGET_S, dry_run=dry_run)
     doc = report(seed(budget_s=budget_s, dry_run=dry_run))
     doc["refetch"] = fetched
+    doc["certificate_recheck"] = recheck(dry_run=dry_run)
     target = out or OUT
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")

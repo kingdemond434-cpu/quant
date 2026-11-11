@@ -803,6 +803,86 @@ def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
     return rp.can_fetch(UA, url)
 
 
+#: `robots_verdict` outcomes. Only ALLOWED fetches; the other three are a recorded NO.
+ROBOTS_ALLOWED, ROBOTS_DISALLOWED = "ALLOWED", "DISALLOWED"
+ROBOTS_REFUSED, ROBOTS_UNMEASURED = "REFUSED", "UNMEASURED"
+#: A robots.txt that is gone says nothing: no rules (RFC 9309 2.3.1.3, "unavailable").
+ROBOTS_NO_RULES = frozenset({404, 410})
+_CHALLENGE = ("<html", "<!doctype", "cf-chl", "captcha", "just a moment", "challenge-platform")
+
+
+class RobotsRefused(Exception):
+    """A fetch `robots_verdict` did not allow. Carries the verdict; nothing is requested."""
+
+    def __init__(self, verdict: str, url: str, why: str):
+        super().__init__(f"{verdict}: {why}")
+        self.verdict, self.url, self.why = verdict, url, why
+
+
+def robots_verdict(url: str, get_text: Callable[[str], str] | None = None) -> tuple[str, str]:
+    """(verdict, why) for fetching `url`: a THIN WRAP of `robots_allow` that keeps its rule (read
+    with our own UA; an unread policy is never a yes) and names the outcomes it folds together:
+
+      * 401/403/429/451 on robots.txt (`HARD_STOP`)      -> REFUSED (the host said no);
+      * 404 or 410                                         -> no rules, so `robots_allow` decides
+        (it reads 404 as allow already; 410 is the same "unavailable" and is treated alike);
+      * a 5xx, a network error, or a body that is an HTML/challenge page instead of rules
+                                                           -> UNMEASURED;
+      * otherwise the file's own rules                     -> ALLOWED or DISALLOWED.
+    Only ALLOWED may fetch."""
+    seen: dict[str, Any] = {}
+    reader = get_text or fetch_text
+
+    def recording(u: str) -> str:
+        try:
+            text = reader(u)
+        except HardStop as exc:
+            seen["code"] = exc.code
+            raise
+        except (urllib.error.HTTPError, FetchError) as exc:
+            seen["code"] = getattr(exc, "code", None)
+            if seen["code"] == 410:
+                return ""                              # unavailable: no rules, as 404
+            raise
+        except Exception as exc:                       # network: no status at all
+            seen["code"], seen["error"] = None, f"{type(exc).__name__}: {exc}"[:160]
+            raise FetchError(None, u, seen["error"]) from exc
+        head = str(text or "")[:2048].lower()
+        if any(m in head for m in _CHALLENGE):
+            seen["challenge"] = True
+            raise FetchError(200, u, "robots.txt answered with an HTML/challenge page")
+        return text
+
+    try:
+        ok = robots_allow(url, recording)
+    except HardStop as exc:
+        return ROBOTS_REFUSED, f"robots.txt answered HTTP {exc.code}"
+    code = seen.get("code")
+    if seen.get("challenge"):
+        return ROBOTS_UNMEASURED, "robots.txt answered with an HTML/challenge page"
+    if code in HARD_STOP:
+        return ROBOTS_REFUSED, f"robots.txt answered HTTP {code}"
+    if "code" in seen and code not in ROBOTS_NO_RULES:
+        return ROBOTS_UNMEASURED, (seen.get("error") or f"robots.txt unreadable (HTTP {code})")
+    if ok:
+        return ROBOTS_ALLOWED, (f"no robots.txt (HTTP {code}): no rules" if "code" in seen
+                                else "robots.txt allows this path for our UA")
+    return ROBOTS_DISALLOWED, "robots.txt disallows this path for our UA"
+
+
+def gated_urlopen(url: str, timeout: float, *, context: Any = None,
+                  verdict: Callable[[str], tuple[str, str]] | None = None) -> Any:
+    """`urllib.request.urlopen` for a desk fetcher that is not on `polite_fetch` yet: our honest
+    `UA`, and only after `robots_verdict` says ALLOWED. Anything else raises `RobotsRefused`
+    BEFORE a request is made. (The CFTC fetchers `fetch_tff`, `fetch_cot`, `fetch_cot_disagg`
+    use it; `libs/data/robots_gate.py` (#831) is the intended single home once it lands.)"""
+    got, why = (verdict or robots_verdict)(url)
+    if got != ROBOTS_ALLOWED:
+        raise RobotsRefused(got, url, why)
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    return urllib.request.urlopen(req, timeout=timeout, context=context)
+
+
 def mof_sign(pair: str) -> float:
     """+1 when the yen was BOUGHT (support), -1 when sold, 0 for an operation not against yen."""
     p = pair.lower()

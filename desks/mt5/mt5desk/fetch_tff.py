@@ -31,7 +31,6 @@ import io
 import json
 import ssl
 import sys
-import urllib.request
 import zipfile
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -78,9 +77,12 @@ ctx = ssl.create_default_context()
 
 def load_year(year: int) -> pd.DataFrame | None:
     url = f"https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    # Our own UA and robots.txt first (`futures_state.gated_urlopen`): a REFUSED, DISALLOWED or
+    # UNMEASURED robots answer means no request, and the year reads as failed.
+    from research.futures_state import gated_urlopen
     try:
-        data = urllib.request.urlopen(req, timeout=180, context=ctx).read()
+        with gated_urlopen(url, 180, context=ctx) as resp:
+            data = resp.read()
     except Exception:
         return None
     z = zipfile.ZipFile(io.BytesIO(data))

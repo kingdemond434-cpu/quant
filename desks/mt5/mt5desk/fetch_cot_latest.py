@@ -205,7 +205,11 @@ def _socrata(family: str, data: Path, deadline: float,
                 if df is not None:
                     break
         except Exception as exc:
-            out[slug] = f"FETCH_FAILED {type(exc).__name__}"
+            # A robots refusal names its verdict (REFUSED / DISALLOWED / UNMEASURED): no request
+            # was made, which is not the same fact as a download that failed.
+            verdict = getattr(exc, "verdict", None)
+            out[slug] = (f"NOT_FETCHED_ROBOTS_{verdict}" if verdict
+                         else f"FETCH_FAILED {type(exc).__name__}")
             continue
         out[slug] = write_if_not_less(data / DIRS[family] / f"{slug}.parquet", df)
     if family == "legacy" and out.get("gold") == "WRITTEN":
