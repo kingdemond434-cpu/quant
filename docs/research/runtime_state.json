@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 826,
-  "UNMEASURED": 43
+  "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1050,
+  "attested": 1051,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -38,7 +38,7 @@
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
   "wall_s": 1.39,
-  "summaries_trimmed": 0,
+  "summaries_trimmed": 1,
   "only_missing_appended": [
    {
     "at": "2026-09-30T19:54:02+00:00",
@@ -686,6 +686,16 @@
      "executable:scripts/extract_video_cells.py",
      "executable:scripts/mine_channel_transcripts.py",
      "executable:scripts/video_transcript_vault.py"
+    ]
+   },
+   {
+    "at": "2026-11-11T07:52:01+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:fraction_staleness_cost"
     ]
    }
   ]
@@ -3990,7 +4000,7 @@
     "_": "UNMEASURED (not a readable JSON object)"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/miner_candidate_compiler.py \u2192 desks/mt5/data/hypotheses/miner"
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py → desks/mt5/data/hypotheses/miner"
   },
   {
    "organ": "leg:state_admission",
@@ -4459,7 +4469,7 @@
     "outcome": "exit_code=1"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning \u2192 StateVector.co"
+   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.co"
   },
   {
    "organ": "leg:dead_architecture",
@@ -4619,7 +4629,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "libs/research/bandit SOURCE_ARM \u2192 exit_improvement budget share; nothing reads e"
+   "consumer": "libs/research/bandit SOURCE_ARM → exit_improvement budget share; nothing reads e"
   },
   {
    "organ": "leg:experiment_cache",
@@ -4912,7 +4922,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) \u2014 the repres"
+   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) — the repres"
   },
   {
    "organ": "leg:model_league",
@@ -4937,7 +4947,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) \u2014 a"
+   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) — a"
   },
   {
    "organ": "leg:model_skill",
@@ -5070,7 +5080,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "promoter.allocation_view \u2192 admission_of \u2192 capital_verdict \u2192 reconcile_capital \u2192 "
+   "consumer": "promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → "
   },
   {
    "organ": "leg:promoter",
@@ -27643,6 +27653,36 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-03T23:44:49+00:00"
+  },
+  {
+   "organ": "leg:fraction_staleness_cost",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/fraction_staleness_cost.py"
+   ],
+   "clock": "hourly_cycle:fraction_staleness_cost",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FRACTION_STALENESS_COST.json",
+   "artifact_declared": "desks/mt5/reports/FRACTION_STALENESS_COST.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 48,
+   "artifact_bytes": 1474,
+   "artifact_sha256": "af5e88dde8ee12032fd18af39d5bf6d029c3eb6aaa0f25efc04d4126397faecd",
+   "summary": {
+    "_": "UNMEASURED (trimmed to hold the file under 800 KB)"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-11T07:52:01+00:00"
   }
  ],
  "ratchet": {

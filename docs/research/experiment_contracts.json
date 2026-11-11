@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "fraction_staleness_cost": {
+   "hypothesis": "The allocator's published per-sleeve fractions drift between solves enough that sizing on a 15/60/180-minute-old solve costs a measurable share of the book's E[log W]/day; the modelled cost by lag fixes how tight the KELLY/E8 freshness contract must be.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "snapshots",
+    "better": "up",
+    "organ": "report:FRACTION_STALENESS_COST.json"
+   },
+   "falsifier": {
+    "metric": "snapshots",
+    "op": "<",
+    "threshold": 2,
+    "after": "7 days on the trading box: fewer than two fraction snapshots, so no drift can be seen and the cost stays UNMEASURED"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
