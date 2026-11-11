@@ -134,3 +134,53 @@ def test_a_rewritten_day_is_aggregated_again(rig: Path) -> None:
 def test_no_tape_is_none(rig: Path) -> None:
     idx = pd.date_range("2026-10-01", periods=3, freq="60min", tz="UTC")
     assert ow._tape_series(SYM, idx, "H1") == (None, None)
+
+
+def test_both_naming_eras_are_read_in_day_order(rig: Path) -> None:
+    """The box carries `YYYY-MM-DD.parquet` (older) and `YYYYMMDD.parquet` (newer). A lexical
+    sort puts every dashed name first, so the order and the open day must come from the DAY."""
+    days = [str(d.date()) for d in pd.date_range("2026-10-01", periods=4)]
+    _write_days(rig, days)
+    index = pd.date_range("2026-10-01", "2026-10-04 23:00", freq="60min", tz="UTC")
+    before = ow._tape_series(SYM, index, "H1")
+    for day in days[2:]:                                   # the newer era: compact names
+        src = rig / SYM / f"{day}.parquet"
+        src.rename(src.with_name(day.replace("-", "") + ".parquet"))
+    for f in (ow.TAPE_AGG / SYM).glob("*.parquet"):
+        f.unlink()
+    ow._tape_minutes.cache_clear()
+    after = ow._tape_series(SYM, index, "H1")
+    for a, b in zip(before, after, strict=True):
+        pd.testing.assert_series_equal(a, b)
+    cached = {p.name.split(".")[0] for p in (ow.TAPE_AGG / SYM).glob("*.parquet")}
+    assert "20261004" not in cached, "the newest DAY is the open one, whatever its name form"
+    assert ow.TAPE_READ_STATS[SYM] == {"days": 4, "archived_days": 0, "undateable_files": 0,
+                                       "split_minutes": 0}
+
+
+def test_a_renamed_day_is_not_read_twice(rig: Path) -> None:
+    """A day cached under its dashed name and now resident under its compact name is one day."""
+    days = ["2026-10-01", "2026-10-02", "2026-10-03"]
+    _write_days(rig, days)
+    index = pd.date_range("2026-10-01", "2026-10-03 23:00", freq="60min", tz="UTC")
+    before = ow._tape_series(SYM, index, "H1")
+    src = rig / SYM / "2026-10-01.parquet"
+    src.rename(src.with_name("20261001.parquet"))          # its old aggregate stays cached
+    ow._tape_minutes.cache_clear()
+    after = ow._tape_series(SYM, index, "H1")
+    for a, b in zip(before, after, strict=True):
+        pd.testing.assert_series_equal(a, b)
+    assert ow.TAPE_READ_STATS[SYM]["archived_days"] == 0
+
+
+def test_a_minute_split_across_two_files_is_counted(rig: Path) -> None:
+    _write_days(rig, ["2026-10-01", "2026-10-02"])
+    late = pd.DataFrame({"ts": [pd.Timestamp("2026-10-01 23:59:59.5", tz="UTC")],
+                         "bid": [1.1], "ask": [1.10001]})
+    p = rig / SYM / "2026-10-02.parquet"
+    pd.concat([late, pd.read_parquet(p)], ignore_index=True).to_parquet(p)
+    ow._tape_series(SYM, pd.date_range("2026-10-01", periods=48, freq="60min", tz="UTC"), "H1")
+    first = pd.read_parquet(rig / SYM / "2026-10-01.parquet")
+    last_minute = pd.to_datetime(first["ts"], utc=True).max().floor("min")
+    expected = int(last_minute == pd.Timestamp("2026-10-01 23:59", tz="UTC"))
+    assert ow.TAPE_READ_STATS[SYM]["split_minutes"] == expected

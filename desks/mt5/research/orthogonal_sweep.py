@@ -289,6 +289,26 @@ def _day_minutes(src: Path, *, cache: bool):
     return agg
 
 
+def _tape_day(stem: str) -> str | None:
+    """A day file's UTC day as `YYYY-MM-DD`, from either name form the tape carries, or None.
+
+    THE TAPE HAS TWO NAMING ERAS (measured on the box 2026-11-11): older partitions are
+    `YYYY-MM-DD.parquet`, newer ones `YYYYMMDD.parquet`. A lexical sort puts every dashed name
+    before every compact one, so file order is not day order and a name is not a day key."""
+    if len(stem) == 10 and stem[4] == "-" and stem[7] == "-" and (stem[:4] + stem[5:7]
+                                                                  + stem[8:]).isdigit():
+        return stem
+    if len(stem) == 8 and stem.isdigit():
+        return f"{stem[:4]}-{stem[4:6]}-{stem[6:]}"
+    return None
+
+
+#: What the last `_tape_minutes` read found, per symbol: days read, of which archived (from the
+#: aggregate cache alone), undateable files, and `split_minutes` -- minutes present in two files,
+#: each of which loses the one mid step between its halves. Measured, never assumed zero.
+TAPE_READ_STATS: dict[str, dict[str, int]] = {}
+
+
 @lru_cache(maxsize=1)
 def _tape_minutes(symbol: str):
     """This symbol's WHOLE recorded tape as one per-minute frame, or None. ONE symbol resident.
@@ -296,37 +316,49 @@ def _tape_minutes(symbol: str):
     Read once per SYMBOL rather than once per (symbol, chart): the aggregation is
     chart-independent, only the resample rule differs. Columns: `spread_sum`, `n` (ticks) and
     `flow` (the net sign of every mid step whose LATER tick falls in the minute -- exactly the
-    steps the old full-tick reader summed)."""
+    steps the old full-tick reader summed). Files are ordered by their DAY, never their name."""
     import numpy as np
     import pandas as pd
     d = TAPE / symbol
-    files = sorted(d.glob("*.parquet")) if d.exists() else []
-    parts = [_day_minutes(f, cache=i < len(files) - 1) for i, f in enumerate(files)]
+    files = list(d.glob("*.parquet")) if d.exists() else []
+    keyed = sorted(((_tape_day(f.stem) or "", f.name, f) for f in files))
+    newest = max((k for k, _n, _f in keyed if k), default="")
+    # the newest DAY is still growing and is never cached; an undateable file is read, never
+    # cached, and counted
+    parts = [(k, _day_minutes(f, cache=bool(k) and k != newest)) for k, _n, f in keyed]
+    stats = {"days": len({k for k, _n, _f in keyed if k}), "archived_days": 0,
+             "undateable_files": sum(1 for k, _n, _f in keyed if not k), "split_minutes": 0}
     # A DAY WHOSE TICKS LEFT THE BOX KEEPS ITS MINUTES. `scripts/archive_tape.py` ships day files
     # older than its KEEP_DAYS off the box; the aggregate built while the file was resident stays
     # under TAPE_AGG and is read here, so archiving never shortens the history the judge sees.
-    resident = {f.stem for f in files}
+    resident = {k for k, _n, _f in keyed if k}
     agg_dir = TAPE_AGG / symbol
     if agg_dir.exists():
         tag = f".v{TAPE_AGG_VERSION}.parquet"
+        archived: dict[str, Path] = {}
         for a in sorted(agg_dir.glob(f"*{tag}")):
-            day = a.name[: -len(tag)].rsplit(".", 1)[0]
-            if day in resident:
-                continue
+            day = _tape_day(a.name[: -len(tag)].rsplit(".", 1)[0])
+            if day and day not in resident:
+                archived.setdefault(day, a)
+        for day, a in sorted(archived.items()):
             try:
                 got = pd.read_parquet(a)
             except Exception:
                 continue
             if tuple(got.columns) == TAPE_AGG_COLUMNS:
-                parts.append(got)
-                resident.add(day)
-    parts = [p for p in parts if p is not None and not p.empty]
-    if not parts:
+                parts.append((day, got))
+                stats["archived_days"] += 1
+    frames = [p for _k, p in sorted(parts, key=lambda kp: kp[0])
+              if p is not None and not p.empty]
+    TAPE_READ_STATS[symbol] = stats
+    if not frames:
         return None
-    m = pd.concat(parts)
+    m = pd.concat(frames)
     if not m.index.is_unique:
         # one minute split across two files: sum what adds, keep the earliest first mid and the
-        # latest last mid (the one step between the two halves is the only thing lost)
+        # latest last mid (the one step between the two halves is the only thing lost -- and it
+        # is counted)
+        stats["split_minutes"] = int(m.index.duplicated().sum())
         g = m.groupby(level=0, sort=True)
         m = pd.DataFrame({"spread_sum": g["spread_sum"].sum(), "n": g["n"].sum(),
                           "flow_in": g["flow_in"].sum(), "first_mid": g["first_mid"].first(),
