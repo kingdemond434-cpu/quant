@@ -20,6 +20,7 @@ from research import execution_reconcile as xr  # noqa: E402
 from research import recovery_drills as rd  # noqa: E402
 
 NOW = datetime(2026, 10, 7, 12, tzinfo=UTC)
+DRILL_PASSED = "PASS"
 
 
 def _sent(**kw: Any) -> dict[str, Any]:
@@ -137,7 +138,7 @@ def test_recovery_drills_grades_the_reconciliation(tmp_path: Path,
     p = tmp_path / "EXECUTION_RECONCILE.json"
     monkeypatch.setattr(rd, "RECONCILE", p)
     assert rd._reconciliation(NOW)["verdict"] == rd.UNMEASURED
-    base = {"generated_utc": NOW.isoformat(), "drill": {"verdict": "PASS", "passed": 12, "n": 12},
+    base = {"generated_utc": NOW.isoformat(), "drill": {"verdict": DRILL_PASSED, "passed": 12, "n": 12},
             "live": {"verdict": "UNMEASURED", "absent": ["data/order_door_ledger.jsonl"]}}
     p.write_text(json.dumps(base))
     assert rd._reconciliation(NOW)["verdict"] == rd.UNMEASURED     # live unread: never PASS

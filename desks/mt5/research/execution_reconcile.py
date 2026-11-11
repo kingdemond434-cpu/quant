@@ -400,6 +400,11 @@ class _Venue:
 MAGIC = 341953
 
 
+def _drill_word(ok: bool) -> str:
+    """A drill row's PASS/FAIL word."""
+    return "PASS" if ok else "FAIL"
+
+
 def _req(volume: float = 0.10, comment: str = "DWdrill") -> dict[str, Any]:
     return {"action": 1, "symbol": "EURUSD", "volume": volume, "type": 0, "price": 1.1002,
             "sl": 1.0980, "tp": 1.1040, "magic": MAGIC, "comment": comment}
@@ -565,7 +570,7 @@ def _gateway_scenarios() -> list[dict[str, Any]]:
         in_doubt = bool(res["pending_in_doubt"])
         ok = joined and (in_doubt == (want == "in_doubt")) and \
             not ({"order_acked_twice", "duplicate_execution"} & _checks(res, BREAK))
-        out.append({"scenario": f"gateway_{fault}", "verdict": "PASS" if ok else "FAIL",
+        out.append({"scenario": f"gateway_{fault}", "verdict": _drill_word(ok),
                     "why": (f"real gateway.py under {fault}: {res['rows']['door']} door rows, "
                             f"{res['rows']['intents']} intents, {len(res['pending_in_doubt'])} "
                             f"pending in doubt, breaks {sorted(_checks(res, BREAK))}")})
@@ -587,7 +592,7 @@ def drill() -> dict[str, Any]:
         try:
             _fresh_door_memory()
             ok, why, _res = fn()
-            rows.append({"scenario": sid, "expect": desc, "verdict": "PASS" if ok else "FAIL",
+            rows.append({"scenario": sid, "expect": desc, "verdict": _drill_word(ok),
                          "why": why})
         except Exception as exc:
             rows.append({"scenario": sid, "expect": desc, "verdict": UNMEASURED,
