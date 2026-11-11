@@ -27,8 +27,14 @@ and the fetcher refuses it exactly as it refused unknown symbols before. Differe
 are never bridged by "close enough": China A50 is not the Hang Seng China Enterprises index, the
 30-year T-bond is not the 5- or 10-year note, and NY cocoa is not London cocoa.
 
-    python research/build_dukascopy_instruments.py                 # fetch the pinned file
-    python research/build_dukascopy_instruments.py --meta FILE      # offline, from a local copy
+A GENERATOR, NOT AN ORGAN: its output is fully determined by the pinned commit and the registry,
+so it has no clock and deliberately no script entry point (the component-registry and
+birth-obligation fences count every such file as an executable that must be scheduled). The
+hourly backfill's coverage report names any registry symbol the map does not cover yet, which is
+the signal to regenerate. From desks/mt5:
+
+    python -c "from research.build_dukascopy_instruments import main; main()"
+    python -c "from research.build_dukascopy_instruments import main; main(['--meta', 'FILE'])"
 """
 
 from __future__ import annotations
@@ -36,7 +42,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -220,13 +225,13 @@ def build(universe: dict[str, Any], meta: dict[str, dict[str, Any]]) -> dict[str
     }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--meta", type=Path, default=None,
                     help="local copy of the pinned instrument-meta-data.json (offline build)")
     ap.add_argument("--universe", type=Path, default=UNIVERSE)
     ap.add_argument("--out", type=Path, default=OUT)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     universe = json.loads(args.universe.read_text(encoding="utf-8"))
     doc = build(universe, _load_meta(args.meta))
     tmp = args.out.with_suffix(args.out.suffix + ".partial")
@@ -235,7 +240,3 @@ def main() -> int:
     os.replace(tmp, args.out)
     print(f"{len(doc['mapped'])} mapped, {len(doc['unmapped'])} unmapped -> {args.out}")
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
