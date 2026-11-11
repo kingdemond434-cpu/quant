@@ -285,16 +285,17 @@ def stop_distance(want: Any, intent: dict, deal: dict) -> tuple[float | None, st
     $3.84 from its trigger and $0.10 from its stop read as -44.3R and alone turned the book mean
     from -0.009R into -0.20R. A slip in R is the slip over the distance the trade was SIZED on:
     the intended entry to the stop the intent sent (the position's stop when the intent has
-    none). `risk_quote` stays only as the last resort for rows that carry neither stop, and the
-    row says so.
+    none). A row that carries neither stop has no slip in R at all; it keeps its quote slip and
+    is counted by `risk_basis`, outside every R mean, median and breakdown.
     """
     w = _num(want)
     for src, row in (("intent_sl", intent), ("position_sl", deal)):
         sl = _num(row.get("sl"))
         if w and sl and sl > 0 and sl != w:
             return abs(w - sl), src
-    rq = _num(deal.get("risk_quote"))
-    return (rq, "risk_quote") if rq and rq > 0 else (None, "none")
+    # `risk_quote` is money, never a price distance: a row with no stop gets NO R figure and is
+    # counted under its basis, so one stopless row cannot repeat the -44R distortion.
+    return None, ("risk_quote_only" if _num(deal.get("risk_quote")) else "none")
 
 
 def _median(xs: list[float]) -> float | None:

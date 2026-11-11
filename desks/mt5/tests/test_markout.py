@@ -57,7 +57,7 @@ def test_a_favourable_fill_is_negative_slip():
 
 def test_slippage_is_reported_in_R_because_that_is_the_unit_of_every_gate():
     """0.5 quote on a 19.1 stop distance is 0.0262R -- against a +0.159R edge, 16% of it."""
-    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.5, BUY, risk=19.1)])
+    m = compute([{**_intent(1, 2000.0), "sl": 2000.0 - 19.1}], [_deal(1, 2000.5, BUY, risk=19.1)])
     assert m.mean_slip_r == pytest.approx(0.5 / 19.1, rel=1e-6)
     assert m.edge_share == pytest.approx((0.5 / 19.1) / 0.159, rel=1e-6)
 
@@ -91,7 +91,8 @@ def test_no_fills_yet_is_not_a_clean_bill_of_health():
 
 def test_the_report_escalates_when_slippage_eats_the_edge():
     """0.10R average against a 0.159R edge is 63% of everything the book earns."""
-    m = compute([_intent(1, 2000.0)], [_deal(1, 2000.0 + 1.91, BUY, risk=19.1)])
+    m = compute([{**_intent(1, 2000.0), "sl": 2000.0 - 19.1}],
+                [_deal(1, 2000.0 + 1.91, BUY, risk=19.1)])
     assert m.mean_slip_r == pytest.approx(0.10, abs=0.001)
     out = render(m)
     assert "eating the edge" in out
@@ -230,3 +231,16 @@ def test_slippage_splits_by_sleeve_and_symbol_beside_realised_R():
     assert m.by_symbol["EURUSD"]["better"] == 1
     assert m.median_slip_r == pytest.approx(0.0)
     assert "by sleeve" in render(m)
+
+
+def test_a_row_with_no_stop_gets_no_R_and_never_moves_the_R_mean():
+    """`risk_quote` is account money. A stopless row keeps its quote slip, is counted under
+    `risk_quote_only`, and stays out of the R mean, median and every breakdown."""
+    intents = [{**_intent(1, 2000.0), "sl": 1990.0}, _intent(2, 2000.0)]
+    deals = [_deal(1, 2000.5, BUY), _deal(2, 2003.0, BUY, risk=0.05)]
+    m = compute(intents, deals)
+    bases = {r["risk_basis"]: r["slip_r"] for r in m.rows}
+    assert bases == {"intent_sl": pytest.approx(0.05), "risk_quote_only": None}
+    assert m.mean_slip_r == pytest.approx(0.05)
+    assert m.by_sleeve["gold_asia"]["mean_slip_r"] == pytest.approx(0.05)
+    assert m.mean_slip_quote == pytest.approx(1.75)

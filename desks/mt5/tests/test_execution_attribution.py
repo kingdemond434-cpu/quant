@@ -29,7 +29,10 @@ UNMEASURED = attr.UNMEASURED
 
 
 def _intent(ticket: int, intended: float, side: str = "buy_stop") -> dict:
-    return {"ticket": ticket, "intended": intended, "side": side, "sleeve": "S", "symbol": "XAUUSD"}
+    # A stop 10 points away: slip in R is over the intended stop distance, never `risk_quote`.
+    sl = intended - 10.0 if "buy" in side else intended + 10.0
+    return {"ticket": ticket, "intended": intended, "side": side, "sleeve": "S", "symbol": "XAUUSD",
+            "sl": sl}
 
 
 def _deal(ticket: int, fill: float, risk: float = 10.0, login: int = 1,
