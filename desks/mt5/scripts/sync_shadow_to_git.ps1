@@ -899,7 +899,12 @@ $reportPaths = @(
     "desks/mt5/data/stall_watch.json",
     # the box's disk census (#880, hourly leg disk_census): what fills C:, and its trend
     "desks/mt5/reports/DISK_CENSUS.json",
-    "desks/mt5/reports/DISK_CENSUS_HISTORY.jsonl"
+    "desks/mt5/reports/DISK_CENSUS_HISTORY.jsonl",
+    # the per-source idea-to-certificate yield the hourly pass scores (2026-11-11)
+    "desks/mt5/reports/RESEARCH_PNL.json",
+    "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
+    "desks/mt5/reports/MATH_LAB.json",
+    "desks/mt5/data/miner_conversion.json"
 )
 # Mirror the per-box daily-cycle stamp under reports/, so readers off the box see when the
 # operating chain last ran without the stamp itself ever crossing the wire.

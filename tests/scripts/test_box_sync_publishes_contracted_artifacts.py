@@ -39,6 +39,11 @@ REQUIRED = frozenset({
     "desks/mt5/reports/DAILY_CYCLE_STATE.json",
     # tracked, yet stale on origin since 2026-09-16: tracking alone carries nothing off the box
     "desks/mt5/data/stall_watch.json",
+    # the per-source idea-to-certificate yield (2026-11-11)
+    "desks/mt5/reports/RESEARCH_PNL.json",
+    "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
+    "desks/mt5/reports/MATH_LAB.json",
+    "desks/mt5/data/miner_conversion.json",
 })
 
 #: Contracted artifacts that did not reach origin on 2026-11-10 and are not yet published. This is
