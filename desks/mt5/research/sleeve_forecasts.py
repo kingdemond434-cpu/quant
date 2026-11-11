@@ -290,7 +290,8 @@ def judge(scored: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     bets = {n: [float(r["pit"]) for r in non_overlapping(rs)] for n, rs in rows_by.items()}
     evals = {n: e_value(p) for n, p in bets.items() if len(p) >= MIN_SCORED}
     rejected = set(e_bh(evals))
-    per = {n: {"n_scored": len(p), "n_bets": len(bets.get(n, [])), "e_value": round(evals[n], 4) if n in evals else None,
+    per = {n: {"n_scored": len(p), "n_bets": len(bets.get(n, [])),
+               "e_value": round(evals[n], 4) if n in evals else None,
                "mean_pit": round(float(np.mean(p)), 4),
                "verdict": ("WORSE_THAN_FORECAST" if n in rejected else
                            "CONSISTENT" if n in evals else "UNMEASURED")}
