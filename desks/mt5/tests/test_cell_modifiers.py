@@ -211,14 +211,29 @@ def test_apply_keeps_a_signal_only_in_its_own_risk_state(monkeypatch) -> None:
     assert [s.time for s in cm.apply(sigs, bars, {"regime": "risk_off"})] == [bars.index[390]]
 
 
-def test_a_tz_naive_bar_index_reads_the_same_state() -> None:
+def test_mixed_clocks_are_refused_never_guessed() -> None:
+    """A naive bar index beside a tz-aware risk index (or the reverse) cannot say which wall it
+    carries; converting would read the state hours early. Refused both ways, loudly."""
     bars = _bars()
     naive = bars.copy()
     naive.index = naive.index.tz_convert(None)
-    a = cm.risk_state(bars, _index()).to_numpy()
-    b = cm.risk_state(naive, _index()).to_numpy()
-    assert (a == b).all()
+    with pytest.raises(ValueError, match="mixed clocks"):
+        cm.risk_state(naive, _index())
+    ix = _index()
+    naive_ix = pd.Series(ix.to_numpy(), index=ix.index.tz_convert(None))
+    with pytest.raises(ValueError, match="mixed clocks"):
+        cm.risk_state(bars, naive_ix)
 
+
+def test_one_clock_on_both_sides_reads_the_same_state() -> None:
+    bars = _bars()
+    naive = bars.copy()
+    naive.index = naive.index.tz_convert(None)
+    ix = _index()
+    naive_ix = pd.Series(ix.to_numpy(), index=ix.index.tz_convert(None))
+    a = cm.risk_state(bars, ix).to_numpy()
+    b = cm.risk_state(naive, naive_ix).to_numpy()
+    assert (a == b).all()
 
 
 def test_the_risk_state_is_computed_once_per_index_frame(monkeypatch) -> None:

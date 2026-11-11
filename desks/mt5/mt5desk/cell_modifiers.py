@@ -254,11 +254,17 @@ def risk_state(bars: pd.DataFrame, series: pd.Series | None = None) -> pd.Series
         sign = sign.copy()  # type: ignore[union-attr]
     else:
         sign = _risk_sign(series)
-    tz = getattr(bars.index, "tz", None)
-    if tz is None and getattr(sign.index, "tz", None) is not None:
-        sign.index = sign.index.tz_convert(None)
-    elif tz is not None and getattr(sign.index, "tz", None) is None:
-        sign.index = sign.index.tz_localize("UTC").tz_convert(tz)
+    # ONE CLOCK OR NONE. Both producers (`families._h1` for the target, `load_peer` for the
+    # index) label broker stamps tz-aware UTC, so the frames share a clock and compare as is. A
+    # tz-naive frame beside a tz-aware one cannot say which wall it carries: read as UTC wall
+    # against broker-time bars it would put the state two to three hours EARLY (lookahead). So a
+    # mixed pair is refused, loudly, and the cell's build fails with this reason on its record.
+    tz_bars, tz_sign = getattr(bars.index, "tz", None), getattr(sign.index, "tz", None)
+    if (tz_bars is None) != (tz_sign is None):
+        raise ValueError(f"risk_state: mixed clocks (bars tz={tz_bars}, risk index tz={tz_sign});"
+                         " refusing rather than guess the broker offset")
+    if tz_bars is not None and str(tz_bars) != str(tz_sign):
+        sign.index = sign.index.tz_convert(tz_bars)
     known = sign.reindex(bars.index, method="ffill",
                          tolerance=pd.Timedelta(hours=RISK_STALE_H))
     return known.fillna(0).astype(int)
