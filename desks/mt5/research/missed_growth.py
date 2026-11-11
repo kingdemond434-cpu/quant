@@ -468,6 +468,44 @@ def measure_causal_invariance(r: Any, _alloc: dict[str, Any],
                     f"yet. No candidate was refused: the rail can only cost queue position.")}
 
 
+def measure_lab_style_hold(r: Any, _alloc: dict[str, Any],
+                           _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the LLM lab's style hold DEFERS, read from reports/LAB_STYLE_HOLDS.json (#385).
+
+    THE RAIL, PRECISELY. `research/lab_style.screen` keeps back a lab cell whose dominant style
+    already dominates at least 10% of the desk's certificates and whose novelty is below the
+    certificate threshold. It REFUSES NOTHING: every held row is donated when its style stops
+    being saturated or after MAX_HOLD_DAYS, so the rail can only cost time-to-verdict.
+
+    NOT_BINDING is a real zero: nothing held and nothing released this pass deferred nothing.
+    Otherwise the cost is certified k_eff x days waited (`keff_days_deferred`), which is in
+    effective-bet-days, not log-wealth; pricing it needs dE[log W] per unit of k_eff, which no
+    artifact carries yet. So a binding hold is UNMEASURED with its counts, never an invented
+    number -- an invented zero would make a rail that defers trials look free.
+    """
+    doc = _json(BASE / "reports" / "LAB_STYLE_HOLDS.json") or {}
+    if not doc:
+        return {"verdict": UNMEASURED,
+                "why": ("no reports/LAB_STYLE_HOLDS.json on this host: the lab's style screen "
+                        "has not run here, so nothing is known to be held")}
+    held = int(doc.get("held") or 0)
+    freed = int(doc.get("released_this_pass") or 0) + int(doc.get("expired_this_pass") or 0)
+    judged = int(doc.get("held_then_judged") or 0)
+    certified = int(doc.get("held_then_certified") or 0)
+    keff_days = float(doc.get("keff_days_deferred") or 0.0)
+    counts = {"n_held": held, "n_released": freed, "held_then_judged": judged,
+              "held_then_certified": certified, "keff_days_deferred": keff_days,
+              "oldest_hold_days": doc.get("oldest_hold_days")}
+    if not held and not freed and not certified:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True, **counts,
+                "why": "the style hold kept nothing back and released nothing this pass"}
+    return {"verdict": UNMEASURED, **counts,
+            "why": (f"{held} cell(s) held, {freed} released this pass; of held cells judged "
+                    f"since, {certified}/{judged} certified for {keff_days} k_eff-days deferred. "
+                    f"Pricing that in log-wealth needs dE[log W] per unit k_eff on the live "
+                    f"book, which no artifact publishes yet.")}
+
+
 def measure_tier_s_block(r: Any, alloc: dict[str, Any],
                          _fv: dict[str, Any]) -> dict[str, Any]:
     """What the Tier S promotion door withheld, priced by the forward expectancy it carried.
