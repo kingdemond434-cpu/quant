@@ -1,17 +1,18 @@
 {
  "schema": "tape_freshness/2",
- "generated_at": "2026-11-07T09:37:57+00:00",
+ "generated_at": "2026-11-10T05:37:56+00:00",
  "max_age_h": 2.0,
  "status": "RED",
  "red": [
-  "bronze"
+  "bronze",
+  "silver"
  ],
- "n_red": 1,
+ "n_red": 2,
  "n_unmeasured": 1,
  "cause": "the terminal link is up and the recorder reports no pause: it is not running or not advancing -- read desks/mt5/logs/MT5-TickRecorder.log",
  "terminal_link": {
   "status": "UP",
-  "last_ok": "2026-11-07T09:30:03.691252+00:00",
+  "last_ok": "2026-11-10T05:30:04.698292+00:00",
   "age_h": 0.13,
   "why": ""
  },
@@ -40,94 +41,792 @@
     "Walgreens"
    ],
    "counts": {
-    "CLOSED": 230,
-    "FRESH": 13
+    "CLOSED": 115,
+    "FRESH": 125,
+    "STALE": 3
    },
-   "newest_tick_venue": "2026-11-07T11:36:55.903000",
-   "stale": [],
+   "newest_tick_venue": "2026-11-10T07:37:10.987000",
+   "stale": [
+    "RobinhoodMarkets",
+    "S&PGlobal",
+    "USDINR"
+   ],
    "unmeasured": [],
    "symbols": {
     "ADAUSD": {
-     "last_tick_ms": 1794051415040,
+     "last_tick_ms": 1794296221730,
      "age_h": 0.02,
      "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "AUDCAD": {
+     "last_tick_ms": 1794296229897,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUDCHF": {
+     "last_tick_ms": 1794296227464,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUDHUF": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUDJPY": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUDNZD": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUDSGD": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUDUSD": {
+     "last_tick_ms": 1794296228720,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "AUS200": {
+     "last_tick_ms": 1794295784080,
+     "age_h": 0.14,
+     "open_age_h": 0.14,
      "status": "FRESH"
     },
     "AVAXUSD": {
-     "last_tick_ms": 1794051415465,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794296226234,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "BCHUSD": {
-     "last_tick_ms": 1794051415193,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794296229963,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "BNBUSD": {
-     "last_tick_ms": 1794051402756,
+     "last_tick_ms": 1794296221231,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "BTCUSD": {
-     "last_tick_ms": 1794051414018,
+     "last_tick_ms": 1794296230681,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CADCHF": {
+     "last_tick_ms": 1794296226581,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CADJPY": {
+     "last_tick_ms": 1794296228641,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFDKK": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFHUF": {
+     "last_tick_ms": 1794296230527,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFJPY": {
+     "last_tick_ms": 1794296229897,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFNOK": {
+     "last_tick_ms": 1794296229851,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFPLN": {
+     "last_tick_ms": 1794296228641,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFSEK": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CHFSGD": {
+     "last_tick_ms": 1794296229897,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "CORN": {
+     "last_tick_ms": 1794296220094,
      "age_h": 0.02,
      "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "COTTON": {
+     "last_tick_ms": 1794296225097,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "DOGEUSD": {
-     "last_tick_ms": 1794051415093,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794296225366,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "DOTUSD": {
-     "last_tick_ms": 1794051415493,
+     "last_tick_ms": 1794296221143,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
     "ETHUSD": {
-     "last_tick_ms": 1794051415903,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794296230927,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURAUD": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURCAD": {
+     "last_tick_ms": 1794296230023,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURCHF": {
+     "last_tick_ms": 1794296230148,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURCZK": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURDKK": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURGBP": {
+     "last_tick_ms": 1794296229772,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURHKD": {
+     "last_tick_ms": 1794296229817,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURHUF": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURILS": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURJPY": {
+     "last_tick_ms": 1794296230148,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURMXN": {
+     "last_tick_ms": 1794296229598,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURNOK": {
+     "last_tick_ms": 1794296229957,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURNZD": {
+     "last_tick_ms": 1794296228767,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURPLN": {
+     "last_tick_ms": 1794296184344,
+     "age_h": 0.03,
+     "open_age_h": 0.03,
+     "status": "FRESH"
+    },
+    "EURSEK": {
+     "last_tick_ms": 1794296229357,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURSGD": {
+     "last_tick_ms": 1794296228643,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURTRY": {
+     "last_tick_ms": 1794296229601,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURUSD": {
+     "last_tick_ms": 1794296229599,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EURZAR": {
+     "last_tick_ms": 1794296230060,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "EUSTX50": {
+     "last_tick_ms": 1794296225138,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPAUD": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPCAD": {
+     "last_tick_ms": 1794296230148,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPCHF": {
+     "last_tick_ms": 1794296229901,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPDKK": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPHUF": {
+     "last_tick_ms": 1794296230527,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPJPY": {
+     "last_tick_ms": 1794296229772,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPMXN": {
+     "last_tick_ms": 1794296227359,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPNOK": {
+     "last_tick_ms": 1794296229852,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPNZD": {
+     "last_tick_ms": 1794296229774,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPPLN": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPSEK": {
+     "last_tick_ms": 1794296230164,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPSGD": {
+     "last_tick_ms": 1794296229772,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPTRY": {
+     "last_tick_ms": 1794296225260,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPUSD": {
+     "last_tick_ms": 1794296225324,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GBPZAR": {
+     "last_tick_ms": 1794296225181,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "GER40": {
+     "last_tick_ms": 1794296230620,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "HKDJPY": {
+     "last_tick_ms": 1794296229220,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "JPN225": {
+     "last_tick_ms": 1794296230808,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "LNKUSD": {
-     "last_tick_ms": 1794051415125,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794296230337,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "LTCUSD": {
-     "last_tick_ms": 1794051414387,
-     "age_h": 0.02,
-     "open_age_h": 0.02,
+     "last_tick_ms": 1794296229435,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "MATICUSD": {
-     "last_tick_ms": 1794051408628,
+     "last_tick_ms": 1794296220952,
      "age_h": 0.02,
      "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "MXNJPY": {
+     "last_tick_ms": 1794296225228,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NAS100": {
+     "last_tick_ms": 1794296230843,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NOKJPY": {
+     "last_tick_ms": 1794296229847,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NOKSEK": {
+     "last_tick_ms": 1794296229726,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NZDCAD": {
+     "last_tick_ms": 1794296228767,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NZDCHF": {
+     "last_tick_ms": 1794296229647,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NZDHUF": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NZDJPY": {
+     "last_tick_ms": 1794296228891,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NZDSGD": {
+     "last_tick_ms": 1794296228767,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "NZDUSD": {
+     "last_tick_ms": 1794296230085,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "RobinhoodMarkets": {
+     "last_tick_ms": 1794265199279,
+     "age_h": 8.63,
+     "open_age_h": 8.63,
+     "status": "STALE",
+     "why": "no tick for 8.63 h of its own open session"
+    },
+    "S&PGlobal": {
+     "last_tick_ms": 1794265199781,
+     "age_h": 8.63,
+     "open_age_h": 8.63,
+     "status": "STALE",
+     "why": "no tick for 8.63 h of its own open session"
+    },
+    "SEKJPY": {
+     "last_tick_ms": 1794296225482,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "SGDJPY": {
+     "last_tick_ms": 1794296228892,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
      "status": "FRESH"
     },
     "SOLUSD": {
-     "last_tick_ms": 1794051407267,
+     "last_tick_ms": 1794296228969,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "SOYBEAN": {
+     "last_tick_ms": 1794296220094,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
     },
-    "XLMUSD": {
-     "last_tick_ms": 1794051415862,
+    "UK100": {
+     "last_tick_ms": 1794296230603,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "US2000": {
+     "last_tick_ms": 1794296229836,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "US30": {
+     "last_tick_ms": 1794296230562,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "US500": {
+     "last_tick_ms": 1794296229941,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDCAD": {
+     "last_tick_ms": 1794296230022,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDCHF": {
+     "last_tick_ms": 1794296229645,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDCNH": {
+     "last_tick_ms": 1794296223601,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDCZK": {
+     "last_tick_ms": 1794296230150,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDDKK": {
+     "last_tick_ms": 1794296228641,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDHKD": {
+     "last_tick_ms": 1794296199107,
      "age_h": 0.02,
      "open_age_h": 0.02,
      "status": "FRESH"
+    },
+    "USDHUF": {
+     "last_tick_ms": 1794296230148,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDIDR": {
+     "last_tick_ms": 1794296198020,
+     "age_h": 0.02,
+     "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "USDILS": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDINR": {
+     "last_tick_ms": 1794265194645,
+     "age_h": 8.63,
+     "open_age_h": 2.63,
+     "status": "STALE",
+     "why": "no tick for 2.63 h of its own open session"
+    },
+    "USDJPY": {
+     "last_tick_ms": 1794296229222,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDKRW": {
+     "last_tick_ms": 1794296230987,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDMXN": {
+     "last_tick_ms": 1794296220105,
+     "age_h": 0.02,
+     "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "USDNOK": {
+     "last_tick_ms": 1794296229973,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDPLN": {
+     "last_tick_ms": 1794296225178,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDRUB": {
+     "last_tick_ms": 1794295323274,
+     "age_h": 0.26,
+     "open_age_h": 0.26,
+     "status": "FRESH"
+    },
+    "USDSEK": {
+     "last_tick_ms": 1794296229722,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDSGD": {
+     "last_tick_ms": 1794296225732,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDTHB": {
+     "last_tick_ms": 1794296229269,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDTRY": {
+     "last_tick_ms": 1794296229348,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDX": {
+     "last_tick_ms": 1794296229977,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "USDZAR": {
+     "last_tick_ms": 1794296220408,
+     "age_h": 0.02,
+     "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "WHEAT": {
+     "last_tick_ms": 1794296221606,
+     "age_h": 0.02,
+     "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "XAGEUR": {
+     "last_tick_ms": 1794296230702,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XAGUSD": {
+     "last_tick_ms": 1794296230692,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XALUSD": {
+     "last_tick_ms": 1794296230245,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XAUAUD": {
+     "last_tick_ms": 1794296230903,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XAUEUR": {
+     "last_tick_ms": 1794296230903,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XAUUSD": {
+     "last_tick_ms": 1794296230903,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XBRUSD": {
+     "last_tick_ms": 1794296229224,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XCUUSD": {
+     "last_tick_ms": 1794296228982,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XLMUSD": {
+     "last_tick_ms": 1794296229558,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XNGUSD": {
+     "last_tick_ms": 1794296230184,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XNIUSD": {
+     "last_tick_ms": 1794296225040,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XPBUSD": {
+     "last_tick_ms": 1794296207733,
+     "age_h": 0.02,
+     "open_age_h": 0.02,
+     "status": "FRESH"
+    },
+    "XPDUSD": {
+     "last_tick_ms": 1794296230152,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XPTUSD": {
+     "last_tick_ms": 1794296230905,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XTIUSD": {
+     "last_tick_ms": 1794296229472,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "XZNUSD": {
+     "last_tick_ms": 1794296224976,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
+    },
+    "ZARJPY": {
+     "last_tick_ms": 1794296225077,
+     "age_h": 0.01,
+     "open_age_h": 0.01,
+     "status": "FRESH"
     }
    },
-   "status": "FRESH",
-   "why": ""
+   "status": "STALE",
+   "why": "3 of 128 open symbol(s) have no tick within 2 h of their own session"
   }
  ]
 }
