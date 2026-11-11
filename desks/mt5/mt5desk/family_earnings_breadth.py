@@ -44,7 +44,8 @@ INPUTS, NO NETWORK, NO NEW SOURCE.
 
 THE CLOCK (copied from `family_macro_fair_value`'s broker-offset handling). Bars are labelled in
 broker time, UTC+2 in winter and UTC+3 in summer.
-  - An acceptance INSTANT (UTC) is placed in the bar frame twice: its LATEST possible bar-frame
+  - An acceptance INSTANT (EDGAR's US Eastern wall time, converted to UTC: see `EDGAR_TZ`)
+    is placed in the bar frame twice: its LATEST possible bar-frame
     label (+`BROKER_MAX_OFFSET_H`) bounds the reaction window's END, its EARLIEST
     (+`BROKER_MIN_OFFSET_H`) bounds the pre-release close. Either way no window straddles the
     release in either season.
@@ -220,6 +221,21 @@ def _is_share(symbol: str) -> bool:
     return bool(is_equity(symbol))
 
 
+#: EDGAR stamps acceptanceDateTime in US Eastern wall time, and writes a trailing "Z" that does
+#: NOT mean UTC (e.g. "2026-02-10T16:05:00.000Z" is 16:05 ET = 21:05 UTC). Read as UTC it would
+#: put an after-the-close release four or five hours EARLY -- inside the session it reacts in.
+EDGAR_TZ = "America/New_York"
+
+
+def acceptance_utc(raw: str, ts: pd.Timestamp) -> pd.Timestamp:
+    """An EDGAR acceptance stamp as a UTC instant: naive or "Z" -> US Eastern wall time; an
+    explicit numeric offset (only a row this desk wrote itself can carry one) is honoured."""
+    if ts.tzinfo is None or raw.rstrip().upper().endswith("Z"):
+        wall = ts.tz_localize(None) if ts.tzinfo is not None else ts
+        return wall.tz_localize(EDGAR_TZ).tz_convert("UTC")
+    return ts.tz_convert("UTC")
+
+
 def release_bounds(row: Mapping[str, Any]) -> tuple[pd.Timestamp, pd.Timestamp] | None:
     """(earliest, latest) release instant in the BAR frame, or None when unreadable."""
     acc = str(row.get("accepted") or "")
@@ -229,7 +245,7 @@ def release_bounds(row: Mapping[str, Any]) -> tuple[pd.Timestamp, pd.Timestamp] 
         except (ValueError, TypeError):
             ts = None
         if ts is not None:
-            ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+            ts = acceptance_utc(acc, ts)
             return (ts + pd.Timedelta(hours=BROKER_MIN_OFFSET_H),
                     ts + pd.Timedelta(hours=BROKER_MAX_OFFSET_H))
     day = str(row.get("filed") or acc)[:10]

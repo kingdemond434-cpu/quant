@@ -117,8 +117,8 @@ def test_fires_long_on_a_positive_breadth_day_and_short_on_a_negative_one(book):
 
 def test_a_reaction_runs_from_the_last_close_before_to_the_first_full_session_after():
     f = _reporter(pd.Timestamp("2026-02-10"), 0.05)
-    # an acceptance instant after the US close (21:05 UTC): the next session is the first full
-    early, late = F.release_bounds({"accepted": "2026-02-10T21:05:00Z"})
+    # an acceptance after the US close (16:05 ET = 21:05 UTC): the next session is the first full
+    early, late = F.release_bounds({"accepted": "2026-02-10T16:05:00Z"})
     r, closed = F.reaction(f, early, late)
     assert np.isclose(r, 0.05) and closed == pd.Timestamp("2026-02-11 23:00", tz="UTC")
     # a pre-market acceptance that day: its own session (16:00 broker) opens after it
@@ -129,6 +129,27 @@ def test_a_reaction_runs_from_the_last_close_before_to_the_first_full_session_af
     early, late = F.release_bounds({"filed": "2026-02-10"})
     assert late == pd.Timestamp("2026-02-11 03:00", tz="UTC")
     assert early < pd.Timestamp("2026-02-10", tz="UTC")
+
+
+def test_edgar_acceptance_is_eastern_wall_time_even_with_a_trailing_z():
+    # winter (EST, UTC-5): 16:05 ET is 21:05 UTC, never 16:05 UTC
+    early, late = F.release_bounds({"accepted": "2026-02-10T16:05:00.000Z"})
+    t = pd.Timestamp("2026-02-10 21:05", tz="UTC")
+    assert (early, late) == (t + pd.Timedelta(hours=F.BROKER_MIN_OFFSET_H),
+                             t + pd.Timedelta(hours=F.BROKER_MAX_OFFSET_H))
+    # summer (EDT, UTC-4): 16:05 ET is 20:05 UTC; a naive stamp reads the same way
+    for raw in ("2026-07-15T16:05:00Z", "2026-07-15 16:05:00"):
+        early, _ = F.release_bounds({"accepted": raw})
+        assert early == pd.Timestamp("2026-07-15 20:05", tz="UTC") + pd.Timedelta(
+            hours=F.BROKER_MIN_OFFSET_H)
+    # an explicit numeric offset is honoured as written
+    early, _ = F.release_bounds({"accepted": "2026-07-15T16:05:00+00:00"})
+    assert early == pd.Timestamp("2026-07-15 16:05", tz="UTC") + pd.Timedelta(
+        hours=F.BROKER_MIN_OFFSET_H)
+    # a 16:05 ET release reacts in the NEXT session, never the one it was released after
+    f = _reporter(pd.Timestamp("2026-02-10"), 0.05)
+    _, closed = F.reaction(f, *F.release_bounds({"accepted": "2026-02-10T16:05:00Z"}))
+    assert closed == pd.Timestamp("2026-02-11 23:00", tz="UTC")
 
 
 # ------------------------------------------------------------------------ 1. named refusal
@@ -163,7 +184,7 @@ def test_reads_both_cache_shapes(tmp_path, monkeypatch):
     assert rows == [{"tickers": ["AAPL"], "cik": "0000320193", "filed": "2026-02-10",
                      "accepted": ""}]
     own = {"hits": [{"form": "8-K", "filed": "2026-02-10", "items": ["2.02"], "ticker": "msft",
-                     "accepted": "2026-02-10T21:05:00Z"},
+                     "accepted": "2026-02-10T16:05:00Z"},
                     {"form": "8-K", "filed": "2026-02-10", "items": ["2.02"]}]}   # no ticker
     assert [r["tickers"] for r in F.filing_rows(own)] == [["MSFT"]]
     assert F.ticker_cfd()["AAPL"] == "Apple"
