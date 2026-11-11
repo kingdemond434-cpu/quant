@@ -57,7 +57,7 @@ LEDGER = BASE / "data" / "ftmo_pacing_ledger.jsonl"
 ACCOUNT_STATE = BASE / "reports" / "FTMO_ACCOUNT_STATE.json"
 ALLOCATOR = BASE / "reports" / "FTMO_ALLOCATOR.json"
 #: The account state is the venue reader's (every five minutes): two missed passes and more is
-#: not "now". The allocator plan is hourly (MT5-FTMO-Allocator at :50): three hours, its own bound.
+#: not "now". The allocator plan is hourly (the FTMO allocator at :50): three hours, its own bound.
 STATE_MAX_AGE_S = 15 * 60
 PLAN_MAX_AGE_S = 3 * 3600
 #: AHEAD / BEHIND past this share either side of the pace compared against.
