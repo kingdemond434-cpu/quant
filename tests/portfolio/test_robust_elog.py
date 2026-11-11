@@ -202,3 +202,18 @@ def test_world_population_respects_the_memory_budget() -> None:
     w = sample_worlds(ev, WorldConfig(n_worlds=256, n_rows=384, max_elements=200_000, seed=1))
     assert w.r.size <= 200_000
     assert "trimmed" in w.note
+
+
+def test_a_measured_hedge_is_not_charged_as_duplication() -> None:
+    """|corr| charged a hedge exactly like a copy of one bet; only positive co-movement is."""
+    import numpy as _np
+
+    from libs.portfolio.robust_elog import SleeveEvidence, _corr_abs
+    rng = _np.random.default_rng(7)
+    a = rng.normal(0.02, 1.0, 400)
+    ev = [SleeveEvidence("a", a, family="f1", symbol="S1"),
+          SleeveEvidence("b", -a + rng.normal(0, 0.1, 400), family="f2", symbol="S2"),
+          SleeveEvidence("c", a + rng.normal(0, 0.1, 400), family="f3", symbol="S3")]
+    c = _corr_abs(ev)
+    assert c[0, 2] > 0.8, "a near-copy is still charged as duplication"
+    assert c[0, 1] < 0.2, "a hedge must not be charged as duplication"

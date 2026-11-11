@@ -110,7 +110,7 @@ def test_the_four_heat_breadth_reaches_the_heat_law_not_just_a_report() -> None:
     spread = {"nominal": 0.28, "covariance": 0.09, "factor": 0.10, "tail": 0.08}
     assert effective_ceiling(one_bet)[0] == HEAT_TARGET, (
         "four expressions of one factor must not earn the room four bets earn")
-    assert effective_ceiling(spread)[0] == HEAT_HARD_CEILING
+    assert effective_ceiling(spread)[0] > 0.30, "spread bets earn past the retired 30%"
     # An unusable measurement NEVER widens the budget past the standing bar -- the same property
     # this file already pins for the currency decomposition.
     assert effective_ceiling(None)[0] <= HEAT_HARD_CEILING

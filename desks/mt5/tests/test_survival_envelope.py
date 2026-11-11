@@ -38,6 +38,7 @@ from mt5desk.decision_core import (  # noqa: E402
     MAX_HEAT_CEILING,
     live_heat_ceiling,
 )
+from mt5desk.gateway_config_fallback import HEAT_UNMEASURED_FALLBACK  # noqa: E402
 from libs.portfolio.kelly_surface import (  # noqa: E402
     MAX_MARGIN_USE,
     MEASURED,
@@ -63,7 +64,7 @@ def test_a_book_that_survives_forty_percent_is_bounded_at_forty_percent() -> Non
     e = envelope(HEALTHY, alpha=ALPHA, fallback=MAX_HEAT_CEILING)
     assert e["status"] == MEASURED
     assert e["ceiling"] == pytest.approx(0.40)
-    assert e["ceiling"] > MAX_HEAT_CEILING, "the recorded constant no longer bounds a measurement"
+    assert e["ceiling"] > 0.30, "the retired 30% constant no longer bounds a measurement"
     assert "p_ruin" in e["stopped_by"]
 
 
@@ -183,23 +184,23 @@ def test_the_gateway_falls_back_to_the_constant_without_an_envelope() -> None:
                  {"envelope": {"survival": {"status": MEASURED},
                                "operative_ceiling": float("inf")}}):
         cap, why = live_heat_ceiling(heat)
-        assert cap == pytest.approx(MAX_HEAT_CEILING), (heat, why)
+        assert cap == pytest.approx(HEAT_UNMEASURED_FALLBACK), (heat, why)   # "fallback 20%"
 
 
 def test_the_gateway_honours_a_measured_envelope_above_the_constant() -> None:
     cap, why = live_heat_ceiling({"envelope": {"survival": {"status": MEASURED},
                                                "operative_ceiling": 0.38}})
     assert cap == pytest.approx(0.38)
-    assert cap > MAX_HEAT_CEILING
+    assert cap > 0.30
     assert "measured envelope" in why
 
 
 def test_the_gateway_honours_a_measured_envelope_below_the_constant() -> None:
     cap, why = live_heat_ceiling({"envelope": {"survival": {"status": MEASURED,
-                                                            "why": "ruin at 22%"},
-                                               "operative_ceiling": 0.21}})
-    assert cap == pytest.approx(0.21)
-    assert "BELOW" in why and "ruin at 22%" in why
+                                                            "why": "ruin at 18%"},
+                                               "operative_ceiling": 0.17}})
+    assert cap == pytest.approx(0.17)
+    assert "BELOW" in why and "ruin at 18%" in why
 
 
 def test_the_gateway_never_deploys_a_heat_nobody_sampled() -> None:
@@ -293,7 +294,7 @@ def test_the_artifact_block_the_allocator_writes_is_the_one_the_gateway_reads() 
     cap, why = live_heat_ceiling(heat_block)
     assert cap == pytest.approx(0.40), why
     assert heat_block["total"] <= cap + 1e-12, "the gateway would refuse the book it was handed"
-    assert cap > MAX_HEAT_CEILING, "the constant no longer bounds a measured pass"
+    assert cap > 0.30, "the retired 30% constant no longer bounds a measured pass"
 
 
 def test_a_pass_that_bound_on_survival_is_accepted_by_the_gateway_at_that_bar() -> None:

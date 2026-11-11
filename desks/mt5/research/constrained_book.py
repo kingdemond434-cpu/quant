@@ -48,6 +48,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk.gateway_config_fallback import HEAT_UNMEASURED_FALLBACK  # noqa: E402
+
 ALLOCATION = BASE / "reports" / "pf_allocation.json"
 WORLDS = BASE / "data" / "pf_allocator_cache" / "worlds.npz"
 CAPACITY = BASE / "reports" / "CAPACITY.json"
@@ -244,7 +246,8 @@ def _build(base: dict[str, Any], now: datetime, *, seed: int, t0: float) -> dict
     off_universe = sorted(k for k in art["book"] if k not in names)
     paths = sample_paths(None, n_paths=N_PATHS, horizon=HORIZON, worlds=worlds, seed=seed)
     heat = art.get("heat") or {}
-    ceiling = _num(heat.get("hard_ceiling")) or 0.30
+    # An artifact with no ceiling is unmeasured: the 20% fallback, never the retired 30% cap.
+    ceiling = _num(heat.get("hard_ceiling")) or HEAT_UNMEASURED_FALLBACK
     floor = _num(heat.get("target")) or 0.20
     floor = min(floor, ceiling)
     terminal, term_why = _terminal_account()

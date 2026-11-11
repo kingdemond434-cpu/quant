@@ -638,10 +638,18 @@ def audit() -> dict[str, Any]:
 
     # THE MANDATE'S OWN CI CONDITIONS, each one checked rather than described.
     floor = _read("desks/mt5/research/heat_policy.py")
-    if "floor = target if mandate else 0.0" not in floor:
+    # THE TWO-SIDED HEAT TARGET (principal 2026-10-29 18:24Z, "use 10 6 one abandone the 20 flat
+    # floor 24 7 mandatory one simple"; ALLOC-11 of 2026-10-06, D-20261007-001). The 20% target
+    # holds the book up WHENEVER the measured growth curve certifies it free (or the curve is
+    # unmeasured), and cash is legal only when the curve says the target gives up growth. Any
+    # other floor expression -- a scaled one, or a target dropped on anything but that verdict --
+    # is still a breach. The flat `floor = target if mandate` of 2026-09-04 is retired.
+    if "floor = target if (mandate and (ok or unmeasured)) else 0.0" not in floor:
         problems.append(
-            "the 20% nominal heat floor is no longer flat in heat_policy.resolve -- the "
-            "principal's ONE fixed policy. Whatever mechanism now scales it must be removed.")
+            "the 20% heat target in heat_policy.resolve is no longer the principal's two-sided "
+            "law (held whenever the measured growth curve certifies it free or is unmeasured; "
+            "cash only when the curve says the target costs growth). Whatever mechanism now "
+            "scales or drops it must be removed.")
     if re.search(r"floor\s*=\s*[^\n]*readiness", floor):
         problems.append("readiness appears in the floor expression -- it may gate composition "
                         "and authority ABOVE the floor, never the floor itself")

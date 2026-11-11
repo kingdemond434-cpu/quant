@@ -243,9 +243,13 @@ def _confirm(moved: dict[str, str]) -> bool:
 
 
 def _commit_holds(head: str, moved: dict[str, str], commit: str = "HEAD") -> bool:
-    """The new commit carries both files and every new QB-002 "to" (a hook may unstage one)."""
+    """The new commit carries the manifest, and quantbench.py with every new QB-002 "to" whenever
+    a moved file has a rotation (a hook may unstage one). A sign of files with NO rotation
+    constant leaves quantbench.py byte-identical, so git has nothing of it to commit and it is
+    not required (2026-10-30: #303's three heat-law files refused for exactly that)."""
     files = set(_git("show", "--name-only", "--format=", commit).splitlines())
-    if _git("rev-parse", f"{commit}~1") != head or not {MANIFEST, QUANTBENCH} <= files:
+    need = {MANIFEST} | ({QUANTBENCH} if any(rel in ROTATIONS for rel in moved) else set())
+    if _git("rev-parse", f"{commit}~1") != head or not need <= files:
         return False
     bench = _git("show", f"{commit}:{QUANTBENCH}")
     return all(sha in bench for rel, sha in moved.items() if rel in ROTATIONS)

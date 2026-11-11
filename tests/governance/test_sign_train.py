@@ -186,3 +186,23 @@ def test_the_audit_signs_only_cleared_bytes() -> None:
     assert expect == {"x.py": a}
     assert st.binding_problems({"x.py": a, "y.py": b}, expect) != []
     assert st.binding_problems({"x.py": a}, expect) == []
+
+
+def test_a_sign_with_no_rotation_needs_only_the_manifest(monkeypatch: pytest.MonkeyPatch) -> None:
+    """2026-10-30: heat_policy, gateway_config_fallback and check_growth_governance have no QB-002
+    rotation, so their sign leaves quantbench.py unchanged and the commit holds the manifest
+    alone. That is a whole sign; a moved file WITH a rotation still needs quantbench.py."""
+    files = {"name-only": st.MANIFEST}
+
+    def fake_git(*args: str) -> str:
+        if args[0] == "show" and "--name-only" in args:
+            return files["name-only"]
+        if args[0] == "rev-parse":
+            return "parent"
+        return "QB source without the new sha"
+    monkeypatch.setattr(st, "_git", fake_git)
+    assert st._commit_holds("parent", {"desks/mt5/research/heat_policy.py": "a" * 64})
+    rotated = next(iter(st.ROTATIONS))
+    assert not st._commit_holds("parent", {rotated: "b" * 64})
+    files["name-only"] = f"{st.MANIFEST}\n{st.QUANTBENCH}"
+    assert not st._commit_holds("parent", {rotated: "b" * 64})       # the re-pin is missing

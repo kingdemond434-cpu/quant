@@ -64,7 +64,7 @@ def test_an_unmeasured_curve_is_never_permission() -> None:
     """A monitoring gap must not read as 'unlimited'. That is how it becomes a margin call."""
     for curve in ({}, {0.2: 0.001}, {0.2: 0.001, 0.3: 0.002}):
         ceiling, why = hp.measured_ceiling(curve)
-        assert ceiling == pytest.approx(hp.HEAT_HARD_CEILING)
+        assert ceiling == pytest.approx(hp.HEAT_UNMEASURED_FALLBACK) == pytest.approx(0.20)
         assert "UNMEASURED" in why and "not permission" in why
 
 
@@ -121,7 +121,7 @@ class TestTheSamplerNoLongerCapsTheCeilingAtThirty:
 
     def test_the_grid_samples_past_the_old_constant(self) -> None:
         pfa = pytest.importorskip("research.pf_allocator")
-        assert max(pfa.CURVE_GRID) > hp.HEAT_HARD_CEILING, (
+        assert max(pfa.CURVE_GRID) > 0.30, (
             "the growth curve cannot be measured above the old cap, so no evidence could ever "
             "license a heat above it -- the removal would be inert")
         assert pfa.CURVE_SAMPLE_MAX >= max(pfa.CURVE_GRID), (
@@ -131,7 +131,12 @@ class TestTheSamplerNoLongerCapsTheCeilingAtThirty:
         """The two must stay separate constants. Collapsing them would make widening the sampler
         look like raising the risk bound, and the whole safety argument here is that it is not."""
         pfa = pytest.importorskip("research.pf_allocator")
-        assert pfa.CURVE_SAMPLE_MAX != hp.HEAT_HARD_CEILING
+        src = (Path(pfa.__file__)).read_text(encoding="utf-8")
+        # its OWN assignment, never an alias of the policy constant
+        flat = src.replace(chr(13), "")
+        assert chr(10) + "CURVE_SAMPLE_MAX = " in flat
+        assert "CURVE_SAMPLE_MAX = HEAT_HARD_CEILING" not in flat
+        assert pfa.CURVE_SAMPLE_MAX >= hp.HEAT_HARD_CEILING     # the sampler covers the account
 
 
 class TestExtendingTheSamplerCannotRaiseTodaysHeat:
@@ -161,7 +166,7 @@ class TestExtendingTheSamplerCannotRaiseTodaysHeat:
     def test_an_unreadable_curve_still_falls_back_to_the_recorded_constant(self) -> None:
         """Widening the sampler must not turn a monitoring gap into permission for 45%."""
         ceiling, why = hp.measured_ceiling({})
-        assert ceiling == pytest.approx(hp.HEAT_HARD_CEILING)
+        assert ceiling == pytest.approx(hp.HEAT_UNMEASURED_FALLBACK)
         assert "UNMEASURED" in why and "not permission" in why
 
     def test_a_genuinely_richer_book_now_earns_what_it_could_not_express(self) -> None:
@@ -170,3 +175,22 @@ class TestExtendingTheSamplerCannotRaiseTodaysHeat:
                  (0.10, 0.20, 0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)}
         ceiling, _ = hp.measured_ceiling(curve)
         assert ceiling == pytest.approx(0.45)
+
+
+def test_the_posterior_challenger_is_bounded_by_the_operative_ceiling() -> None:
+    """#303 v3 audit MF1: with HEAT_HARD_CEILING at 1.00 the posterior challenger (which passes no
+    target) must be bounded by the ceiling the heat law resolved, never by the retired cap; and
+    the published unmeasured fallback is the 20% target (MF2)."""
+    src = (Path(__file__).resolve().parents[1] / "research" / "pf_allocator.py").read_text(
+        encoding="utf-8")
+    assert "_post_ceiling = max(float(verdict.effective_ceiling or 0.0)" in src
+    assert "max(HEAT_HARD_CEILING, float(verdict.total_heat))" not in src
+    assert '"unmeasured_fallback": HEAT_HARD_CEILING' not in src
+    assert src.count('"unmeasured_fallback": HEAT_UNMEASURED_FALLBACK') == 2
+
+
+def test_resolve_with_no_curve_defaults_to_the_fallback_not_the_open_ceiling() -> None:
+    from mt5desk.gateway_config_fallback import HEAT_UNMEASURED_FALLBACK
+    v = hp.resolve(0.9)
+    assert v.hard_ceiling == HEAT_UNMEASURED_FALLBACK
+    assert v.total_heat <= HEAT_UNMEASURED_FALLBACK + 1e-12

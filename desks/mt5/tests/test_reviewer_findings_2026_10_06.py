@@ -89,22 +89,6 @@ def _debounced_then_quiet(h: _Harness) -> tuple[dict[str, Any], dict[str, Any]]:
     return deb, after
 
 
-def test_reproduction_trigger_debounced_change_is_never_served(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED (2a): the debounced pass records stood_down=DEBOUNCED and promises "served by
-    the next pass, not dropped"; the next pass sees changed=False and the solver is never called."""
-    h = _Harness(tmp_path, monkeypatch)
-    deb, after = _debounced_then_quiet(h)
-    assert deb["debounced"] is True
-    assert deb["fired"][0]["stood_down"] == "DEBOUNCED"
-    assert "not dropped" in deb["fired"][0]["why"]
-    assert after["watch"][0]["changed"] is False
-    assert h.calls == 0
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (2a): a change inside the debounce window is stored as seen "
-    "and never solved (desks/mt5/research/allocator_trigger.py:225 vs :229). " + ALLOC))
 def test_acceptance_trigger_debounced_change_stays_pending(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     h = _Harness(tmp_path, monkeypatch)
@@ -119,20 +103,6 @@ def _failed_then_quiet(h: _Harness) -> dict[str, Any]:
     return h.poll(failed["state"], 0.0)                      # next pass, file unchanged
 
 
-def test_reproduction_trigger_failed_solve_is_never_retried(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED (2b): rc=1, allocation_landed=False, and the next pass does not retry."""
-    h = _Harness(tmp_path, monkeypatch, rc=1)
-    after = _failed_then_quiet(h)
-    assert h.calls == 1
-    assert after["watch"][0]["changed"] is False
-    assert after["fired"] == []
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (2b): a change whose solve failed is already marked seen "
-    "(desks/mt5/research/allocator_trigger.py:225, last_solve set at :264 regardless of rc). "
-    + ALLOC))
 def test_acceptance_trigger_failed_solve_is_retried(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     h = _Harness(tmp_path, monkeypatch, rc=1)
@@ -140,10 +110,6 @@ def test_acceptance_trigger_failed_solve_is_retried(
     assert h.calls == 2, "an unacknowledged change must be retried until a solve succeeds"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (2): trigger state keeps one 'sig' per source; observed, "
-    "pending and consumed versions are not separate (allocator_trigger.py:207-225, :283). "
-    + ALLOC))
 def test_acceptance_trigger_state_separates_observed_pending_consumed(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Contract: each per-source state row names its observed, pending and consumed versions,
@@ -163,17 +129,6 @@ def test_acceptance_trigger_state_separates_observed_pending_consumed(
 # drawn on the OLD evidence; the fast clock also skips regime_state (:3401).
 
 PF = DESK / "research" / "pf_allocator.py"
-
-
-def test_fast_cache_requires_matching_evidence_fingerprint() -> None:
-    src = PF.read_text(encoding="utf-8")
-    assert ('if mode == "fast" and cachef.exists() and time.time() - cachef.stat().st_mtime '
-            '< 3600:') in src
-    assert 'tuple(z["names"]) == tuple(e.name for e in ev)' in src
-    assert '"fingerprint" in z and str(z["fingerprint"].item()) == fingerprint' in src
-    assert 'fingerprint=np.array(fingerprint)' in src
-    assert ('labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")\n'
-            '                                  else ((), (), {"skipped": f"{mode} clock"}))') in src
 
 
 def test_acceptance_fast_cache_invalidated_by_decision_relevant_evidence() -> None:
@@ -199,10 +154,15 @@ def test_acceptance_fast_cache_invalidated_by_decision_relevant_evidence() -> No
     }
     for what, (e, c) in variants.items():
         assert fp(e, c) != base, f"{what} changed but the fingerprint did not"
+    # The cache read in `run` goes through `world_population`, which compares the same
+    # fingerprint (`world_fingerprint`, whose digest `decision_state_fingerprint` returns).
     src = PF.read_text(encoding="utf-8")
     block = src[src.index('cachef = CACHE / "worlds.npz"'):
                 src.index("# 1. WHAT GROWTH ACTUALLY WANTS")]
-    assert "decision_state_fingerprint" in block
+    assert "world_population(" in block
+    reader = src[src.index("def world_population("):src.index("def run(")]
+    assert "world_fingerprint(ev, cfg" in reader
+    assert 'cached["meta"].get("fingerprint") != fp' in reader
 
 
 # ======================================= finding 6: heat_policy state adjustment is UP-ONLY
@@ -228,32 +188,9 @@ def _calm_verdict() -> hp.HeatVerdict:
                       curves={"calm": hp.StateCurve("calm", CALM_CURVE, 64)})
 
 
-def test_reproduction_heat_state_adjustment_only_raises() -> None:
-    """REPRODUCED: the calm state's own curve (64 worlds) peaks at 22%, inside the band, and the
-    resolved heat stays 28% (binding="growth"); a state wanting 30% DOES raise 24% -> 30%."""
-    v = _calm_verdict()
-    assert v.state_optimum == pytest.approx(0.22)
-    assert v.total_heat == pytest.approx(0.28)
-    assert v.binding == "growth"
-    up = hp.resolve(0.24, curve=GLOBAL_CURVE, state="up", curves={"up": hp.StateCurve(
-        "up", {0.20: 0.0, 0.22: 0.0, 0.24: 0.0, 0.26: 0.0, 0.28: 0.0, 0.30: 0.002}, 64)})
-    assert up.total_heat == pytest.approx(0.30) and up.binding == "state_growth"
-
-
 NEGATIVE_CURVE = {0.0: 0.0, 0.10: -0.0005, 0.20: -0.0010, 0.25: -0.0015, 0.30: -0.0020}
 COSTLY_FLOOR_CURVE = {0.0: 0.0, 0.10: 0.0020, 0.20: 0.0010, 0.25: 0.0006, 0.30: 0.0002}
 FREE_FLOOR_CURVE = {0.10: 0.0010, 0.20: 0.0010, 0.25: 0.0010, 0.30: 0.0009}
-
-
-def test_reproduction_flat_floor_holds_the_book_at_20_when_growth_is_negative() -> None:
-    """REPRODUCED: with growth negative at every heat (optimum: cash) and a state curve agreeing,
-    the flat floor still resolves the book to 20% (binding="mandate")."""
-    v = hp.resolve(0.0, curve=NEGATIVE_CURVE, state="bad",
-                   curves={"bad": hp.StateCurve("bad", NEGATIVE_CURVE, 64)})
-    assert v.total_heat == pytest.approx(0.20)
-    assert v.binding == "mandate"
-    c = hp.resolve(0.10, curve=COSTLY_FLOOR_CURVE)
-    assert c.total_heat == pytest.approx(0.20) and c.binding == "mandate"
 
 
 def test_the_target_still_holds_the_book_up_when_it_costs_nothing() -> None:
@@ -263,10 +200,6 @@ def test_the_target_still_holds_the_book_up_when_it_costs_nothing() -> None:
     assert v.total_heat >= 0.20 - 1e-12
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (ALLOC-11, principal 'yes' 15:42Z): the flat 20% floor "
-    "(desks/mt5/research/heat_policy.py:583, :617-626) holds the book at 20% when growth is "
-    "negative everywhere. " + ALLOC))
 def test_acceptance_negative_growth_everywhere_resolves_to_cash() -> None:
     """Growth negative at every heat: the growth optimum is cash, so the book resolves to 0."""
     v = hp.resolve(0.0, curve=NEGATIVE_CURVE, state="bad",
@@ -275,10 +208,6 @@ def test_acceptance_negative_growth_everywhere_resolves_to_cash() -> None:
     assert v.binding != "mandate"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (ALLOC-11, principal 'yes' 15:42Z): the flat 20% floor "
-    "(desks/mt5/research/heat_policy.py:583, :617-626) overrides a growth optimum of 10% that "
-    "the measured curve pays 0.0020/day for against 0.0010/day at 20%. " + ALLOC))
 def test_acceptance_a_costly_floor_yields_to_the_growth_optimum() -> None:
     """20% gives up real growth: exposure falls to the growth optimum (10% here)."""
     v = hp.resolve(0.10, curve=COSTLY_FLOOR_CURVE)
@@ -293,9 +222,6 @@ def test_the_catastrophe_guard_and_survival_bar_stay() -> None:
     assert v.binding == "survival_ceiling"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: state adjustment is up-only ('THE STATE MAY ONLY RAISE', "
-    "desks/mt5/research/heat_policy.py:629-634). " + ALLOC))
 def test_acceptance_heat_state_adjustment_is_two_sided_above_the_floor() -> None:
     """The STATE adjustment inside the band is two-sided (the floor itself is covered by the
     ALLOC-11 acceptance tests above). Under Rule 1 a reduction must
