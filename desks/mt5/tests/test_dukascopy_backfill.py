@@ -5,8 +5,15 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from research import dukascopy_backfill as db
+
+
+@pytest.fixture(autouse=True)
+def _robots_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Offline: the host's robots.txt answer is supplied, never fetched."""
+    monkeypatch.setattr(db, "robots_gate", lambda: {"verdict": "ALLOWED", "why": "test"})
 
 
 def test_transient_failure_does_not_advance_cursor(tmp_path: Path, monkeypatch) -> None:

@@ -14,6 +14,12 @@ from research import build_dukascopy_instruments as builder
 from research import dukascopy_backfill as db
 from research import fetch_dukascopy as fd
 
+
+@pytest.fixture(autouse=True)
+def _robots_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Offline: the host's robots.txt answer is supplied, never fetched."""
+    monkeypatch.setattr(db, "robots_gate", lambda: {"verdict": "ALLOWED", "why": "test"})
+
 MAP = json.loads(fd.INSTRUMENTS.read_text(encoding="utf-8"))
 
 # One or more per asset class: Fusion symbol -> (vendor code, decimal factor), as published by

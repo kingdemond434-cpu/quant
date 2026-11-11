@@ -168,7 +168,7 @@ def broker_reference(symbol: str, day: date, universe_dir: Path = UNIVERSE_DIR) 
     return float(near.median()) if len(near) else None
 
 
-def fetch_day(symbol: str, day: date, root: Path, *, pause: float = 0.05,
+def fetch_day(symbol: str, day: date, root: Path, *, pause: float = 0.25,
               refetch_empty: bool = False,
               universe_dir: Path = UNIVERSE_DIR) -> dict[str, Any]:
     """Fetch one complete UTC day.  A partial download is never published as complete."""
@@ -279,10 +279,17 @@ def coverage(root: Path, state: dict[str, Any], *,
 
 
 def run(*, root: Path = DATA, state_path: Path = STATE, report_path: Path = REPORT,
-        symbol_days: int = 8, pause: float = 0.05, now: datetime | None = None) -> dict[str, Any]:
+        symbol_days: int = 8, pause: float = 0.25, now: datetime | None = None,
+        robots: dict[str, Any] | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     newest = now.date() - timedelta(days=1)  # never publish the still-forming UTC day
     state = _load_state(state_path, newest=newest)
+    # The host's own rules are read before any history request, every pass. Anything but
+    # ALLOWED fetches nothing and says why in the artifact.
+    robots = robots if robots is not None else robots_gate()
+    stopped: str | None = None
+    if robots.get("verdict") != "ALLOWED":
+        symbol_days = 0
     start_rotation = state["rotation"] % len(SYMBOLS)
     live = [s for s in SYMBOLS if s not in state["refused"]] or list(SYMBOLS)
     results: list[dict[str, Any]] = []
@@ -298,7 +305,12 @@ def run(*, root: Path = DATA, state_path: Path = STATE, report_path: Path = REPO
         day = date.fromisoformat(state["next_date"][symbol])
         floor = state["requeue_empty_after"].get(symbol)
         requeue = bool(floor) and day > date.fromisoformat(floor)
-        result = fetch_day(symbol, day, root, pause=pause, refetch_empty=requeue)
+        try:
+            result = fetch_day(symbol, day, root, pause=pause, refetch_empty=requeue)
+        except FeedSaysStop as e:
+            # The vendor asked us to slow down: stop the pass, keep the cursor, say so.
+            stopped = str(e)
+            break
         results.append(result)
         if floor and not requeue:
             state["requeue_empty_after"].pop(symbol, None)
@@ -320,6 +332,8 @@ def run(*, root: Path = DATA, state_path: Path = STATE, report_path: Path = REPO
         "generated_at": now.isoformat(),
         "authority": "RESEARCH_DEPTH_ONLY",
         "venue_cost_authority": "Fusion-native quotes and fills",
+        "client": {"user_agent": USER_AGENT, "min_interval_s": max(0.25, pause),
+                   "robots": robots, "stopped_by_vendor": stopped},
         "supported_symbols": len(SYMBOLS),
         "attempted_symbol_days": len(results),
         "written": sum(r["status"] == "WRITTEN" for r in results),
@@ -354,7 +368,7 @@ def _claim(lock: Path, *, now: datetime) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--symbol-days", type=int, default=8)
-    parser.add_argument("--pause", type=float, default=0.05)
+    parser.add_argument("--pause", type=float, default=0.25)
     parser.add_argument("--out", type=Path, default=DATA)
     parser.add_argument("--state", type=Path, default=STATE)
     parser.add_argument("--report", type=Path, default=REPORT)

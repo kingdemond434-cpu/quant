@@ -64,6 +64,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import urllib.robotparser
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -71,6 +72,66 @@ from typing import Any
 
 UTC = UTC
 BASE = "https://datafeed.dukascopy.com/datafeed"
+ROBOTS_URL = "https://datafeed.dukascopy.com/robots.txt"
+
+# AN HONEST CLIENT NAME. It says what is asking and where its code lives, so the vendor can see
+# who is pulling and why. Never a browser string, and no personal contact (nothing the owner
+# did not choose to publish).
+USER_AGENT = ("quant-desk-research/1.0 "
+              "(+https://github.com/kingdemond434-cpu/quant; research history backfill)")
+
+# POLITENESS: one request at a time, at least this long between them, and the whole pass stops
+# on the first 429 or 503 rather than backing off and continuing. A free feed is a courtesy.
+MIN_INTERVAL_S = 0.25
+STOP_CODES = (429, 503)
+
+
+class FeedSaysStop(RuntimeError):
+    """The vendor asked us to slow down (429/503). The pass ends; the cursor stays where it was."""
+
+
+def robots_gate(fetch: Any = None) -> dict[str, Any]:
+    """May this client fetch the history path? Read the host's robots.txt and answer.
+
+    ALLOWED / DISALLOWED come from the file itself. A 404 or 410 means the host publishes no rules,
+    which the robots convention reads as allowed. Anything else (a network error, a 5xx, a 401 or
+    403 on robots.txt) is UNREACHABLE, and the caller fetches nothing that pass: an unread rule is
+    not permission.
+    """
+    probe = BASE + "/EURUSD/2024/00/02/10h_ticks.bi5"
+    try:
+        if fetch is not None:
+            code, text = fetch(ROBOTS_URL)
+        else:
+            req = urllib.request.Request(ROBOTS_URL, headers={"User-Agent": USER_AGENT})
+            try:
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    code, text = r.status, r.read().decode("utf-8", "replace")
+            except urllib.error.HTTPError as e:
+                code, text = e.code, ""
+    except Exception as e:  # pragma: no cover - exercised only with a live network
+        return {"verdict": "UNREACHABLE", "url": ROBOTS_URL, "why": type(e).__name__}
+    if code in (404, 410):
+        return {"verdict": "ALLOWED", "url": ROBOTS_URL, "why": f"http {code}: no rules published"}
+    if code != 200:
+        return {"verdict": "UNREACHABLE", "url": ROBOTS_URL, "why": f"http {code}"}
+    parser = urllib.robotparser.RobotFileParser()
+    parser.parse(text.splitlines())
+    ok = parser.can_fetch(USER_AGENT, probe)
+    return {"verdict": "ALLOWED" if ok else "DISALLOWED", "url": ROBOTS_URL,
+            "why": "robots.txt permits the history path" if ok
+            else "robots.txt disallows the history path for this client"}
+
+
+_last_request = 0.0
+
+
+def _polite_wait(min_interval: float) -> None:
+    global _last_request
+    gap = time.monotonic() - _last_request
+    if gap < min_interval:
+        time.sleep(min_interval - gap)
+    _last_request = time.monotonic()
 REC = struct.Struct(">IIIff")          # big-endian: ms, ask, bid, askvol, bidvol
 
 # THE POINT FACTOR IS THE VENDOR'S, NOT THE BROKER'S -- and conflating them is a silent 10x.
@@ -247,16 +308,17 @@ def fetch_hour(symbol: str, t: datetime, timeout: float = 30.0,
     last = "unknown"
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "aurum/1.0"})
+            _polite_wait(max(MIN_INTERVAL_S, pause))
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 blob = r.read()
-            if pause:
-                time.sleep(pause)
             return decode_hour(blob, symbol, t)
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return [], "missing"          # weekend/holiday — expected
             last = f"http {e.code}"
+            if e.code in STOP_CODES:
+                raise FeedSaysStop(f"{url}: http {e.code}") from e
             if e.code in (400, 401, 403):
                 return [], last               # not transient; do not hammer
         except Exception as e:
