@@ -58,13 +58,24 @@ SEALED_SORT_KEY_SOURCE = (
 INTRADAY = ("M1", "M5", "M15", "M30")
 
 
-def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
+def sealed_docket(G: Any, meta: dict, memo: dict | None = None, *,
+                  live_ttl_s: float = 3600.0) -> tuple[list[dict], dict[str, int]]:
     """The sweep's eligible cells, derived exactly as `external_gauntlet.main` derives them.
 
     Streaming read, the point-in-time ratchet (`stamped_only` once any row is stamped), the
     row-level timeframe fold, first-row-wins de-duplication, the economic-prior partition WITH
     `meta`, and the modifier preflight. Returns (eligible specs, census). Each spec carries `tf`.
     A fake `G` without the streaming helpers (tests) falls back to a whole-file read.
+
+    `memo` (2026-10-28, the cache-warmer stall): {memo_key(cell key): outcome} from an earlier
+    pass made under the SAME inputs. A cell already in it skips the sealed partition and preflight
+    -- on the box those load an intraday frame per non-H1 cell, for 1.65M rows, and that serial
+    pass ran at IDLE priority for hours. Cells not in it go through the sealed functions exactly
+    as before and are added to it. The result is the same list, in the same order, with the same
+    census (`tests/test_warm_docket_memo.py` proves it on a docket where every outcome occurs).
+    Its validity is the caller's: `warm_gauntlet_cache` stamps it with the inputs those two
+    functions read and a TTL. The judge never reads it; a stale memo can only change which
+    cells are WARMED, never a verdict.
     """
     surv_file = Path(G.HYP) / "external_survivors.json"
     census = {"rows": 0, "stamped": 0, "unstamped": 0, "cells": 0, "eligible": 0,
@@ -110,6 +121,8 @@ def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
                           "mechanism_note": h.get("mechanism_note"),
                           "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags")))}
     census["cells"] = len(cells)
+    if memo is not None:
+        return _partition_memoised(G, meta, cells, memo, census, live_ttl_s=live_ttl_s)
     eligible, rejected = G.partition_at_economic_prior(list(cells.values()), meta)
     census["rejected_at_prior"] = len(rejected)
     pre = getattr(G, "modifier_preflight", None)
@@ -129,6 +142,115 @@ def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
         sp["tf"] = G.timeframe_of(sp.get("params"), str(sp.get("family") or ""))
     census["eligible"] = len(eligible)
     return list(eligible), census
+
+
+def memo_key(cell_key: str, spec: dict | None = None) -> str:
+    """The memo key of one de-duplicated cell: 20 hex chars of a sha1 (1.65M cells ~ 40MB).
+
+    It hashes the cell key AND every field of the spec the sealed partition reads besides
+    symbol, family and params: `mechanism_status` and `mechanism_note` (both read by
+    `frontier_identity.economic_prior`). So a row whose mechanism changes is re-decided, never
+    served the old outcome (v1.1, audit of 6ea07bdf2).
+    """
+    import hashlib
+    extra = ""
+    if spec is not None:
+        extra = "\x1f" + json.dumps([spec.get("mechanism_status"), spec.get("mechanism_note")],
+                                    sort_keys=True, default=str)
+    return hashlib.sha1((cell_key + extra).encode("utf-8")).hexdigest()[:20]
+
+
+#: Memo outcomes. An eligible cell also records its CANONICAL symbol and chart, because the sealed
+#: partition rewrites `sym` to the registry's spelling and a memo hit must hand back the same spec.
+MEMO_REJECTED = "R"
+MEMO_MODIFIER = "M"
+MEMO_ELIGIBLE = "E"
+
+#: Outcomes that depended on the LIVE TERMINAL (the cell's H1 or own-chart parquet is absent, so
+#: the sealed partition asked `_live_frame`) carry the hour they were decided, `@L<hour>`, and are
+#: re-decided after `live_ttl_s` -- terminal availability is not a file the memo stamp can see.
+LIVE_MARK = "@L"
+
+
+def _live_dependent(G: Any, sp: dict, tf: str) -> bool:
+    uni = getattr(G, "UNI", None)
+    if uni is None:
+        return False
+    sym = str(sp.get("sym") or "")
+    try:
+        if not (Path(uni) / f"{sym}_H1.parquet").exists():
+            return True
+        return tf != "H1" and not (Path(uni) / f"{sym}_{tf}.parquet").exists()
+    except OSError:
+        return True
+
+
+def _memo_fresh(out: str, now_h: int, live_ttl_h: float) -> bool:
+    if LIVE_MARK not in out:
+        return True
+    try:
+        born = int(out.rsplit(LIVE_MARK, 1)[1])
+    except ValueError:
+        return False
+    return (now_h - born) < live_ttl_h
+
+
+def _partition_memoised(G: Any, meta: dict, cells: dict[str, dict], memo: dict,
+                        census: dict[str, int], *, now: float | None = None,
+                        live_ttl_s: float = 3600.0) -> tuple[list[dict], dict[str, int]]:
+    """`sealed_docket`'s partition + preflight, with outcomes already known read from `memo`."""
+    import time as _time
+
+    now_h = int((now if now is not None else _time.time()) // 3600)
+    live_ttl_h = max(0.0, live_ttl_s / 3600.0)
+    hashed = [(memo_key(k, sp), sp) for k, sp in cells.items()]
+    for h, _sp in hashed:
+        out = memo.get(h)
+        if out is not None and not _memo_fresh(str(out), now_h, live_ttl_h):
+            del memo[h]
+    todo = [sp for h, sp in hashed if h not in memo]
+    census["memo_hits"] = len(hashed) - len(todo)
+    census["memo_new"] = len(todo)
+    if todo:
+        fresh, _rejected = G.partition_at_economic_prior(todo, meta)
+        ok = {id(sp) for sp in fresh}
+        pre = getattr(G, "modifier_preflight", None)
+        for h, sp in hashed:
+            if h in memo:
+                continue
+            tf = G.timeframe_of(sp.get("params"), str(sp.get("family") or ""))
+            mark = f"{LIVE_MARK}{now_h}" if _live_dependent(G, sp, tf) else ""
+            if id(sp) not in ok:
+                memo[h] = MEMO_REJECTED + mark
+                continue
+            why = None
+            if pre is not None:
+                try:
+                    why = pre(sp)
+                except Exception:
+                    why = None
+            if why:
+                memo[h] = MEMO_MODIFIER + mark
+            else:
+                memo[h] = f"{MEMO_ELIGIBLE}|{sp['sym']}|{tf}{mark}"
+    eligible: list[dict] = []
+    for h, sp in hashed:
+        out = str(memo.get(h) or MEMO_REJECTED).split(LIVE_MARK, 1)[0]
+        if out == MEMO_REJECTED:
+            census["rejected_at_prior"] += 1
+        elif out == MEMO_MODIFIER:
+            census["modifier_refused"] += 1
+        else:
+            _e, sym, tf = [*out.split("|", 2), "", ""][:3]
+            sp["sym"] = sym or sp["sym"]
+            sp["tf"] = tf or G.timeframe_of(sp.get("params"), str(sp.get("family") or ""))
+            eligible.append(sp)
+    census["eligible"] = len(eligible)
+    # The memo is left holding exactly this docket's cells, so it never outgrows the docket.
+    current = {h for h, _sp in hashed}
+    for h in [h for h in memo if h not in current]:
+        del memo[h]
+    return eligible, census
 
 
 def stamp_new(G: Any, specs: list[dict]) -> int:
