@@ -191,7 +191,7 @@ def test_the_heartbeat_and_backup_are_contracted_and_the_backup_self_registers()
     assert spec is not None and spec.loader is not None
     oc = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(oc)
-    CONTRACTS = oc.CONTRACTS  # noqa: N806
+    CONTRACTS = oc.CONTRACTS
     assert CONTRACTS["MT5-BoxHeartbeat"][0] == "desks/mt5/reports/DESK_ALERTS.json"
     assert CONTRACTS["MT5-OffsiteBackup"][0] == "desks/mt5/reports/OFFSITE_BACKUP.json"
     adopt = (ROOT / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text("utf-8", errors="ignore")
