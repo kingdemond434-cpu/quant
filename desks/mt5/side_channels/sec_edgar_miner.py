@@ -21,8 +21,24 @@ OUT.mkdir(parents=True, exist_ok=True)
 # QUANT_EDGAR_UA (or SEC_EDGAR_USER_AGENT / SEC_EDGAR_UA, every name the desk has used for this one
 # contact string, libs/data/credentials.py); run_all_miners sets this channel aside when all are absent.
 EDGAR_UA_NAMES = ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
-HEADERS = {"User-Agent": next((os.environ[n] for n in EDGAR_UA_NAMES if os.environ.get(n)),
-                              "QuantResearch quant@example.com")}
+
+
+def edgar_ua() -> str:
+    """The first EDGAR contact string set anywhere read_key looks (process env, then the
+    machine and user registry, so a `setx /M` value is seen without a new shell); the process
+    environment alone when libs is unreachable. Empty when none is set."""
+    try:
+        import sys
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.append(root)
+        from libs.ops.env_keys import read_key
+        return next((v for v in map(read_key, EDGAR_UA_NAMES) if v), "")
+    except Exception:
+        return next((os.environ[n] for n in EDGAR_UA_NAMES if os.environ.get(n)), "")
+
+
+HEADERS = {"User-Agent": edgar_ua() or "QuantResearch quant@example.com"}
 
 # Top hedge funds to track
 FUND_CIKS = {

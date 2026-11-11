@@ -7,7 +7,9 @@
 For each key in libs/ops/env_keys_catalog.json it reports where the value lives: the process
 environment, the Windows machine environment (setx /M), the current user's (setx), or another
 user's hive. `read_key` reaches all four, so a key present anywhere is usable by the desk.
-Exit status is 0 always: a missing key is information, not a failure.
+A missing key is information, not a failure. Exit status is 1 only when the catalog itself is
+broken (a duplicate name, a row without its name, group or machine, or a group no reader knows),
+because then every count above, and keys_needed's alerts, read a list that is wrong.
 """
 
 from __future__ import annotations
@@ -37,11 +39,35 @@ def _row(name: str, aliases: list[str] | None = None) -> dict[str, Any]:
     return {"name": name, "present": bool(where), "length": length, "where": where}
 
 
+#: Every group a reader of the catalog interprets (env_keys.REFUSED_GROUPS, keys_needed's ASK and
+#: NEVER_ASK sets). A row outside them is asked for by nothing and refused by nothing.
+KNOWN_GROUPS = frozenset({"free_data", "free_llm", "free_infra", "account_free", "official_api",
+                          "unavailable", "paid_blocked", "paid_llm", "banned", "legacy",
+                          "not_built", "infra"})
+
+
+def catalog_defects(rows: tuple[dict[str, Any], ...]) -> list[str]:
+    """What is wrong with the catalog itself, one line each; empty when it is sound."""
+    out, seen = [], set()
+    for i, k in enumerate(rows):
+        name = str(k.get("name") or "")
+        for field in ("name", "group", "machine"):
+            if not k.get(field):
+                out.append(f"row {i} ({name or '?'}): no {field}")
+        if k.get("group") and k["group"] not in KNOWN_GROUPS:
+            out.append(f"{name}: unknown group {k['group']!r}")
+        if name in seen:
+            out.append(f"{name}: listed twice")
+        seen.add(name)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--names", action="store_true")
     a = ap.parse_args(argv)
+    defects = catalog_defects(catalog())
     rows = []
     for k in catalog():
         r = _row(str(k["name"]), list(k.get("aliases") or []))
@@ -49,10 +75,10 @@ def main(argv: list[str] | None = None) -> int:
         rows.append(r)
     if a.names:
         print("\n".join(str(r["name"]) for r in rows))
-        return 0
+        return 1 if defects else 0
     if a.json:
         print(json.dumps(rows, indent=1))
-        return 0
+        return 1 if defects else 0
     print(f"{'KEY':26} {'STATUS':8} {'LEN':>4}  {'WHERE':30} {'GROUP':13} MACHINE")
     for r in rows:
         status = "present" if r["present"] else "MISSING"
@@ -73,7 +99,9 @@ def main(argv: list[str] | None = None) -> int:
            for r in rows):
         print("Some keys are set in the registry but not in this shell: open a NEW PowerShell, "
               "or rely on read_key, which reads the registry directly.")
-    return 0
+    for d in defects:
+        print(f"CATALOG DEFECT: {d}")
+    return 1 if defects else 0
 
 
 if __name__ == "__main__":

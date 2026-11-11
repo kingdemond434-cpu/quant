@@ -468,11 +468,29 @@ class TokenResult:
 # HTTP seam (tests replace `_http`; nothing here ever puts a body or URL into a message)
 # ---------------------------------------------------------------------------------------------
 
+#: An honest client name (honest-UA rule); urllib's default "Python-urllib" names no one.
+USER_AGENT = "quant-token-refresh/1 (+https://github.com/kingdemond434-cpu/quant)"
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A token mint never follows a redirect: urllib would re-send the bearer header, and a GET
+    login carries its password in the query, to whatever host the 30x names. The 30x comes back
+    as an HTTPError status instead, which the caller reads as a failed mint."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> None:
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
 def _http(method: str, url: str, data: bytes | None, headers: dict[str, str],
           timeout: float) -> tuple[int, bytes]:
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT, **headers},
+                                 method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with _OPENER.open(req, timeout=timeout) as r:
             return int(getattr(r, "status", 200) or 200), r.read(1_000_000)
     except urllib.error.HTTPError as e:
         return int(e.code or 0), b""

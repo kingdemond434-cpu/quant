@@ -593,3 +593,20 @@ def test_jquants_v2_key_attaches_to_the_real_api_call(monkeypatch: pytest.Monkey
     # a pasted JQUANTS_TOKEN that is not a JWT is a V2 key too
     k = T.get_token("JQUANTS_TOKEN", environ={"JQUANTS_TOKEN": "opaque-key"}, now=NOW)
     assert k.ok and k.apply == "x-api-key"
+
+
+def test_a_mint_never_follows_a_redirect_and_names_itself() -> None:
+    """Security audit of #218: a 30x would re-send the bearer (or a GET login's password) to the
+    host it names; the mint reads it as a failed status instead, and sends an honest UA."""
+    import io
+    import urllib.request
+    from email.message import Message
+
+    from libs.ops import token_refresh as tr
+
+    msg = Message()
+    msg["Location"] = "https://elsewhere.example/x"
+    req = urllib.request.Request("https://api.jquants.com/v1/token/auth_user")
+    assert tr._NoRedirect().redirect_request(req, io.BytesIO(), 302, "Found", msg,
+                                             "https://elsewhere.example/x") is None
+    assert "Python-urllib" not in tr.USER_AGENT and tr.USER_AGENT

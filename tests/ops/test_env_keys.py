@@ -100,3 +100,24 @@ def test_every_built_credential_registry_var_is_in_the_catalog() -> None:
     built = {v["env"] for v in reg["vars"] if str(v.get("built")) == "BUILT"}
     assert built, "credential registry has no BUILT var: the scan rotted"
     assert built <= known, sorted(built - known)
+
+
+def test_check_keys_fails_only_on_a_broken_catalog() -> None:
+    """Audit of #201: the battery entry could never fail. It fails on the catalog, not on a key."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "check_keys", Path(__file__).resolve().parents[2] / "scripts" / "check_keys.py")
+    assert spec and spec.loader
+    ck = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ck)
+    from libs.ops.env_keys import catalog
+    assert ck.catalog_defects(catalog()) == []
+    bad = ({"name": "A", "group": "free_data", "machine": "box"},
+           {"name": "A", "group": "free_data", "machine": "box"},
+           {"name": "B", "group": "nonsense", "machine": "box"},
+           {"name": "C", "group": "free_data"})
+    got = ck.catalog_defects(bad)
+    assert any("listed twice" in d for d in got)
+    assert any("unknown group" in d for d in got)
+    assert any("no machine" in d for d in got)
