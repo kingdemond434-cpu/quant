@@ -102,8 +102,8 @@ def test_a_run_writes_report_growth_and_history(tmp_path: Path, monkeypatch) -> 
 
 
 def test_wired_as_core_hourly_leg() -> None:
-    from research import hourly_cycle as hc
     from libs.research.layers import LEG_LAYER
+    from research import hourly_cycle as hc
 
     assert "disk_census" in hc.CORE_LEGS
     assert LEG_LAYER["disk_census"] == "meta"

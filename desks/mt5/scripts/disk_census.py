@@ -35,6 +35,7 @@ import shutil
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 REPO = BASE.parent.parent
@@ -197,7 +198,7 @@ def report_age_h(now: datetime, report: Path = REPORT) -> float | None:
     return None if t is None else (now - t).total_seconds() / 3600
 
 
-def read_history(path: Path = HISTORY) -> list[dict]:
+def read_history(path: Path = HISTORY) -> list[dict[str, Any]]:
     try:
         lines = path.read_text("utf-8").splitlines()
     except OSError:
@@ -214,24 +215,27 @@ def read_history(path: Path = HISTORY) -> list[dict]:
 
 
 def history_row(at: str, used_gb: float, free_gb: float, by_class: dict[str, float],
-                rows: list[dict]) -> dict:
+                rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {"at": at, "used_gb": used_gb, "free_gb": free_gb, "by_class_gb": by_class,
             "top": {r["path"]: r["gb"] for r in rows[:HISTORY_TOP]}}
 
 
-def growth(history: list[dict], now_row: dict, hours: float) -> dict:
+def growth(history: list[dict[str, Any]], now_row: dict[str, Any],
+           hours: float) -> dict[str, Any]:
     """Used-GB and per-directory growth against the newest entry at least `hours` old.
 
     A directory absent from the old entry counts from 0 (it was under the top-N or did not
     exist), so a NEW 50 GB tree is named as a grower rather than silently skipped.
     """
     now_t = _parse(now_row["at"])
-    base = None
+    base: dict[str, Any] | None = None
+    base_t: datetime | None = None
     for row in history:
         t = _parse(row.get("at"))
-        if t is not None and now_t is not None and (now_t - t).total_seconds() >= hours * 3600:
-            if base is None or t > _parse(base["at"]):
-                base = row
+        if t is None or now_t is None or (now_t - t).total_seconds() < hours * 3600:
+            continue
+        if base_t is None or t > base_t:
+            base, base_t = row, t
     if base is None:
         return {"status": "UNMEASURED", "why": f"no census at least {hours:g} h old yet"}
     old = base.get("top") or {}
@@ -242,8 +246,8 @@ def growth(history: list[dict], now_row: dict, hours: float) -> dict:
             "top_growers": [{"path": p, "gb_delta": d} for p, d in growers[:10] if d > 0]}
 
 
-def append_history(row: dict, path: Path = HISTORY) -> None:
-    rows = read_history(path)[-(HISTORY_KEEP - 1):] + [row]
+def append_history(row: dict[str, Any], path: Path = HISTORY) -> None:
+    rows = [*read_history(path)[-(HISTORY_KEEP - 1):], row]
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".jsonl.tmp")
     tmp.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), "utf-8")
