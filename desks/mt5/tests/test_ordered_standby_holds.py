@@ -117,3 +117,22 @@ def test_the_promoters_own_standby_is_still_restored_on_evidence(monkeypatch) ->
     row = _reconcile(monkeypatch, {"name": "x", "status": "STANDBY", "risk_frac": 0.0,
                                    "demote_reason": "the optimiser gives it 0.0000% heat"})
     assert (row["status"], row["risk_frac"]) == ("LIVE", 0.03)
+
+
+def test_a_legacy_hold_is_migrated_not_lapsed_on_landing(monkeypatch) -> None:
+    # Audit 2026-11-11: the stop-the-bleed rows on the box carry standby_reason alone. Landing
+    # the bounded-hold rule must not lift them; they get an orderer and a 14-day expiry.
+    row = _reconcile(monkeypatch, {"name": "audchf_gap", "status": "STANDBY", "risk_frac": 0.0,
+                                   "standby_reason": _HOLD})
+    assert (row["status"], row["risk_frac"]) == ("STANDBY", 0.0)
+    assert _HOLD in row["standby_ordered_by"]
+    assert row["standby_until"] == (_NOW + timedelta(days=14)).isoformat(timespec="seconds")
+    assert len(row["hold_missed_growth"]) == 1 and "hold_lapsed" not in row
+    # Fifteen days on, the expiry ends it and the admitted row promotes.
+    monkeypatch.setattr(promoter, "capital_verdict", lambda *a, **k: {
+        "status": "LIVE", "risk_frac": 0.03, "streak": 2, "delta_elogw_per_day": 0.0004,
+        "why": "funded"})
+    promoter.reconcile_capital([row], {"fresh": True, "at": "2026-10-29T00:00:00+00:00",
+                                       "admission_at": "2026-10-29T01:00:00+00:00"},
+                               now=_NOW + timedelta(days=15))
+    assert row["status"] == "LIVE" and "expired" in row["hold_lapsed"]["why"]

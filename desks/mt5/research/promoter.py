@@ -1941,6 +1941,26 @@ def _after(a: str, b: str) -> bool:
 HOLD_LINES_KEPT = 48
 
 
+#: The term a pre-existing hold is given when the bounded-hold rule lands (audit 2026-11-11):
+#: the expiry, not the deploy, ends an order already standing on the box.
+LEGACY_HOLD_DAYS = 14
+
+
+def migrate_legacy_hold(row: dict, *, now: datetime | None = None) -> bool:
+    """ONE-TIME: a hold written before holds were bounded carries `standby_reason` alone. Stamp
+    it with its orderer (the recorded reason names the order) and a LEGACY_HOLD_DAYS expiry,
+    so landing this rule never silently reverses a recorded order. A row that already has
+    either field is not legacy and is left to `ordered_hold`. Returns True when it stamped."""
+    reason = str(row.get("standby_reason") or "").strip()
+    if not reason or "standby_ordered_by" in row or "standby_until" in row:
+        return False
+    t = now or datetime.now(tz=UTC)
+    row["standby_ordered_by"] = f"recorded order (legacy hold): {reason[:160]}"
+    row["standby_until"] = (t + timedelta(days=LEGACY_HOLD_DAYS)).isoformat(timespec="seconds")
+    row["standby_migrated_at"] = t.isoformat(timespec="seconds")
+    return True
+
+
 def ordered_hold(row: dict, *, now: datetime | None = None) -> tuple[bool, str]:
     """(holds, why_not). An ordered STANDBY binds only with a reason, a named orderer and an
     unexpired `standby_until`. A row with no `standby_reason` is not a hold at all (why_not is
@@ -2052,6 +2072,9 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             # reason stands on it so the gap is visible rather than silent.
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
+        if status == "STANDBY" and migrate_legacy_hold(s, now=now):
+            plog(f"MIGRATED legacy hold on {s['name']}: bounded until {s['standby_until']} "
+                 f"(ordered by: {s['standby_ordered_by'][:120]})")
         hold, hold_why = ordered_hold(s, now=now)
         if cap["status"] == "LIVE" and status == "STANDBY" and hold:
             # A STANDBY SOMEONE ORDERED IS NOT THE PROMOTER'S TO LIFT -- UNTIL IT EXPIRES
