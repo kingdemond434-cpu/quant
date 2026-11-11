@@ -122,6 +122,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "
         "detect missed hourly refreshes before its six-hour evidence expiry"),
+    "MT5-HourlyCore (merge flow)": (
+        "desks/mt5/reports/MERGE_FLOW.json", 180,
+        "the release train's SLO: CLEARed work reaching LIVE, the merge sweep's heartbeat and the "
+        "box login, paged on its own clock (scripts/merge_flow.py)"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
