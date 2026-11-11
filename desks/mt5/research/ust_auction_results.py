@@ -325,7 +325,8 @@ def run(*, fetch_now: bool = True, get: Any = None, now: datetime | None = None,
         "status": "MEASURED" if rows else UNMEASURED,
         "why": None if rows else (fetched.get("why") or "no auction result held on this host"),
         "raw_rows": len(raw), "coupon_results": len(rows), "series_rows": series_rows,
-        "series_path": str(SERIES.relative_to(BASE)) if rows else None,
+        "series_path": (str(SERIES.relative_to(BASE)) if SERIES.is_relative_to(BASE)
+                        else str(SERIES)) if rows else None,
         "counts": counts, "fields_missing": missing,
         "columns": {
             "tail_bp": {"tail_kind": "high_minus_median",
