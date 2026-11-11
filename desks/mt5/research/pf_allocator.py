@@ -3855,8 +3855,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                 for k, v in list(hazard_meta["applied"].items())[:5])
             _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted ({_tilted})")
     else:
-        decay_meta = apply_decay_posterior(
-            ev, _haz, _blanket, world_rows=WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT)
+        _rows = WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT
+        decay_meta = apply_decay_posterior(ev, _haz, _blanket,
+                                           world_rows=_rows)
         hazard_meta = {"applied": {}, "n_shrunk": 0, "mode": HAZARD_MODE,
                        "superseded_by": "decay_posterior",
                        "rule": ("the hazard enters as each sleeve's own decay probability "
