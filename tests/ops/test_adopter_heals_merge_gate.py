@@ -30,7 +30,8 @@ def test_the_clone_is_removed_only_on_three_clone_failures_with_the_mutex_free()
     assert "Global\\QuantBox-WorkflowGate" in HEAL and "WaitOne(0)" in HEAL
     assert "ReparsePoint" in HEAL
     # it removes the clone and nothing else
-    removes = [ln for ln in HEAL.splitlines() if "Remove-Item" in ln]
+    code = [ln for ln in HEAL.splitlines() if not ln.lstrip().startswith("#")]
+    removes = [ln for ln in code if "Remove-Item" in ln]
     assert removes == [ln for ln in removes if "$gateRepo" in ln] and len(removes) == 1
 
 
