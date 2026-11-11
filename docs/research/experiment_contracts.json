@@ -265,6 +265,36 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "health_lab": {
+   "hypothesis": "Scoring the desk's decay detectors (t-rule baseline, EWMA, BOCPD, regime classifier) on synthetic paths with known truth tells which one retires broken edges sooner without retiring healthy ones, so the live ladder can be upgraded on evidence instead of belief.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_detectors_measured",
+    "better": "up",
+    "organ": "report:HEALTH_LAB.json"
+   },
+   "falsifier": {
+    "metric": "n_detectors_measured",
+    "op": "<",
+    "threshold": 1,
+    "after": "72h window: no detector was ever scored against the baseline"
+   }
+  },
+  "drift_monitor": {
+   "hypothesis": "Refreshing the drift monitor's per-sleeve break hazard every four hours instead of daily keeps the allocator's decay posterior on current evidence, so healthy sleeves get their relief and breaking ones lose it sooner.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "hazard_summary.n_measured",
+    "better": "up",
+    "organ": "report:DRIFT.json"
+   },
+   "falsifier": {
+    "metric": "hazard_summary.n_measured",
+    "op": "<",
+    "threshold": 1,
+    "after": "72h window: the four-hourly refresh never produced a measured sleeve hazard"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

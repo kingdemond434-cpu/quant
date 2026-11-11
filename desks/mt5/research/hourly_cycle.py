@@ -1767,6 +1767,19 @@ def _leg_artifacts(name: str) -> list[Path]:
     return list(_LEG_ARTIFACTS.get(name, []))
 
 
+#: Refresh `drift_monitor` when DRIFT.json is older than this. Derived: 4 x 3600 s, one pass
+#: in four, keeps the hazard within a quarter of the allocator's 26 h drift expiry.
+DRIFT_REFRESH_S = 4 * 3600
+
+
+def _file_age_s(path: Path) -> float:
+    """Seconds since `path` was written; infinity when it is absent or unreadable."""
+    try:
+        return time.time() - path.stat().st_mtime
+    except OSError:
+        return float("inf")
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -5804,6 +5817,21 @@ def main() -> None:
     # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
     dmo = _costed("decay_monitor", lambda: _producer(
         "decay_monitor", "research/decay_monitor.py"))
+    # STRATEGY HEALTH ON THE HOURLY CLOCK (DECAY-12, mandate 2026-10-06). `drift_monitor` -- the
+    # hazard the allocator's decay posterior reads -- had one clock, MT5-Daily, so its 90-day
+    # hazard was up to a day old when a pass read it. It now runs here whenever DRIFT.json is
+    # older than DRIFT_REFRESH_S (one pass in four; derived: 4 x 3600 s keeps the hazard inside
+    # a quarter of the allocator's 26 h drift expiry at a quarter of the compute).
+    drm = _costed("drift_monitor", lambda: (
+        _producer("drift_monitor", "research/drift_monitor.py", "--budget-s", "300")
+        if _file_age_s(BASE / "reports" / "DRIFT.json") > DRIFT_REFRESH_S
+        else {"skipped": f"DRIFT.json fresher than {DRIFT_REFRESH_S}s"}))
+    # DO THE DECAY DETECTORS BEAT A SIMPLE BASELINE? (DECAY-06, DECAY-13). Synthetic paths with
+    # known truth -- stable, noisy, gradual, abrupt, temporary, cost-impaired, recovering, shared
+    # failure -- scored for detection delay, false retirements and reinstatement errors. Daily
+    # inside the script; a measurement with no authority.
+    hlb = _costed("health_lab", lambda: _producer(
+        "health_lab", "research/health_lab.py", "--budget-s", "300"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -6640,6 +6668,7 @@ def main() -> None:
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
                     "promoter": pr,
+                    "drift_monitor": drm, "health_lab": hlb,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8", newline="\n")
