@@ -151,6 +151,21 @@ def _stamped(axes: str, sid: str, mtime_ns: int) -> bool:
 
 
 @lru_cache(maxsize=16)
+def _first_published(axes: str, sid: str, mtime_ns: int) -> tuple[tuple[str, float], ...]:
+    """(first-publication day `k`, value) for every point of a first_release FRED series, when
+    the axis stamps `k` (ALFRED realtime_start) on ALL of them; () otherwise. Keying on `k` puts a
+    holiday-delayed H.4.1 on the day it was really published, never on observation + 1 day."""
+    try:
+        doc = json.loads((Path(axes) / "fred.json").read_text(encoding="utf-8-sig"))
+        pts = doc["series"][sid]["points"]
+        out = tuple((str(p["k"])[:10], float(p.get("v") if p.get("v") is not None
+                                             else p["value"])) for p in pts)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return ()
+    return out if out and all(len(k) == 10 for k, _v in out) else ()
+
+
+@lru_cache(maxsize=16)
 def _vintage(axes: str, sid: str, mtime_ns: int) -> str:
     """The FRED axis's declared `vintage` for `sid` ("" when it declares none)."""
     try:
@@ -162,12 +177,14 @@ def _vintage(axes: str, sid: str, mtime_ns: int) -> str:
 
 def axis_series(name: str, series: str) -> pd.Series | None:
     """{knowable day (UTC midnight): value} for one axis series, or None when absent."""
-    pts = _points(str(AXES), name, series, _mtime(name))
+    first = _first_published(str(AXES), series, _mtime(name)) if name == "fred" else ()
+    pts = first or _points(str(AXES), name, series, _mtime(name))
     if not pts:
         return None
     s = pd.Series({pd.Timestamp(d, tz="UTC"): v for d, v in pts if len(d) == 10}, dtype=float)
     s = s[np.isfinite(s.to_numpy())].sort_index()
-    if name == "fred" and not _stamped(str(AXES), series, _mtime(name)):
+    s = s[~s.index.duplicated(keep="last")]
+    if name == "fred" and not first and not _stamped(str(AXES), series, _mtime(name)):
         s.index = s.index + pd.Timedelta(days=FRED_PUBLICATION_LAG_D)
     return s if len(s) else None
 

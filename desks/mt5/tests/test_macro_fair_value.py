@@ -40,6 +40,7 @@ def axes(tmp_path, monkeypatch):
     F._points.cache_clear()
     F._stamped.cache_clear()
     F._vintage.cache_clear()
+    F._first_published.cache_clear()
 
     def write(name: str, doc: dict) -> Path:
         path = tmp_path / f"{name}.json"
@@ -47,11 +48,13 @@ def axes(tmp_path, monkeypatch):
         F._points.cache_clear()
         F._stamped.cache_clear()
         F._vintage.cache_clear()
+        F._first_published.cache_clear()
         return path
     yield write
     F._points.cache_clear()
     F._stamped.cache_clear()
     F._vintage.cache_clear()
+    F._first_published.cache_clear()
 
 
 # ------------------------------------------------------------------------- net liquidity
@@ -83,7 +86,7 @@ def _fred(stamped: bool, spike: float = 400_000.0, after: float = 0.0) -> dict:
 def test_net_liquidity_fires_on_a_constructed_injection_after_the_thursday_print(axes):
     axes("fred", _fred(stamped=True))
     nl = F.net_liquidity()
-    # RRP is in billions: 7.0m - 0.7m - 100bn*1000 per print, keyed on Thursday
+    # WALCL - WTREGEN per print, keyed on Thursday
     assert nl.index[0] == _WEDS[0] + pd.Timedelta(days=1)
     sig = F.family_macro_fair_value(_bars(), basis="net_liquidity", move="up", min_abs=3.0,
                                     direction="long", window=20, hold_bars=24)
@@ -331,3 +334,22 @@ def test_the_proposer_parks_absent_bases_by_name_and_writes_its_report(axes, tmp
     rep = P.run(budget_s=30, donate=False)
     assert rep["status"] == "UNMEASURED" and rep["tests_run"] == "UNMEASURED"
     assert rep["bases"]["terms_of_trade"]["parked_reason"] == F.ABSENT_TOT
+
+
+def test_a_first_release_point_is_keyed_on_its_publication_day_k(axes):
+    """#761 stamps each first_release point with `k`, its ALFRED first-publication day. A release
+    delayed past observation + 1 day (a holiday week) must be read on `k`, never earlier."""
+    doc = _fred(stamped=False)
+    late = pd.Timedelta(days=6)
+    for sid in ("WALCL", "WTREGEN"):
+        for p in doc["series"][sid]["points"]:
+            d = pd.Timestamp(p["d"])
+            p["k"] = str((d + (late if d == _SPIKE.tz_localize(None) else pd.Timedelta(days=1)))
+                         .date())
+    axes("fred", doc)
+    nl = F.net_liquidity()
+    spike_day = (_SPIKE + late).normalize()
+    assert spike_day in nl.index and (_SPIKE + pd.Timedelta(days=1)) not in nl.index
+    sig = F.family_macro_fair_value(_bars(), basis="net_liquidity", move="up", min_abs=3.0,
+                                    direction="long", window=20)
+    assert len(sig) == 1 and sig[0].time >= spike_day + pd.Timedelta(days=1, hours=3)
