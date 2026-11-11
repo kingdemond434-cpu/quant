@@ -36,11 +36,11 @@ REPORT = BASE / "reports" / "CERT_BOOK_DOOR.json"
 REVERT_SWITCH = BASE / "data" / "GOLD_ASIA_ONLY_ENABLED"
 
 #: The principal orders that release pins, by journal row, and exactly which pins each releases.
-#: zuck 2026-11-05 "all accounts trade everything", journalled by #953 (Max-growth), retires the
+#: zuck 2026-11-05 "all accounts trade everything", journalled by #954 (Max-growth; #953 re-ided), retires the
 #: gold-asia-only pin on Fusion and E8.
 RELEASES: tuple[dict[str, Any], ...] = (
-    {"journal_id": "D-20261111-001", "title_starts": "All accounts trade everything",
-     "order": "zuck 2026-11-05: all accounts trade everything (#953)",
+    {"journal_id": "D-20261111-071", "title_starts": "All accounts trade everything",
+     "order": "zuck 2026-11-05: all accounts trade everything (#954)",
      "pins": {"fusion": ("gold_london_am", "gold_afternoon"),
               "e8": ("gold_london_am", "gold_afternoon")}},
 )

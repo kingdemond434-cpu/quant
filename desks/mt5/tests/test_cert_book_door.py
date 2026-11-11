@@ -17,7 +17,7 @@ BOOK = {"enabled": True, "rule": "a key not named keeps the allocator's fraction
         "fusion": {"gold_london_am": 0.0, "gold_afternoon": 0.0, "AUDCHF_x": 0.0},
         "e8": {"gold_asia": 0.006, "gold_london_am": 0.0, "gold_afternoon": 0.004},
         "ftmo": {"gold_asia": 0.0033}}
-ORDER = {"id": "D-20261111-001", "title": "All accounts trade everything: the gold-asia-only pin"}
+ORDER = {"id": "D-20261111-071", "title": "All accounts trade everything: the gold-asia-only pin"}
 
 
 def _desk(tmp: Path, journal: list[dict] | None, book: dict | None = BOOK) -> dict[str, Path]:
@@ -48,7 +48,7 @@ def test_the_order_releases_exactly_its_zero_pins_and_nothing_else(tmp_path: Pat
 
 
 def test_it_fails_closed_every_way(tmp_path: Path) -> None:
-    impostor = {"id": "D-20261111-001", "title": "some other decision minted with the same id"}
+    impostor = {"id": "D-20261111-071", "title": "some other decision minted with the same id"}
     for i, (journal, book, switch, want) in enumerate((
             ([impostor], BOOK, False, "NO_CHANGE"),        # right id, wrong order
             ([], BOOK, False, "NO_CHANGE"),                # no order at all
