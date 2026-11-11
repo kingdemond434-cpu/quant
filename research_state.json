@@ -1,150 +1,122 @@
 {
-  "generated": "2026-08-29T03:50:13.811152+00:00",
+  "generated": "2026-10-13T15:35:03.281326+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
-  "deployed": {},
-  "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
+  "universe": "MT5/Fusion only (docs/LAWS.md \u00a71); crypto-exchange ground is never hunted",
+  "authority": {
+    "deployed": "desks/mt5/data/sleeves.json",
+    "bottlenecks": "desks/mt5/reports/TIER1_SCORECARD.json",
+    "decisions": "python scripts/context.py show"
+  },
+  "deployed": {
+    "sleeves": [
+      "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+      "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+      "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    ],
+    "n_live": 3,
+    "source": "desks/mt5/data/sleeves.json"
+  },
+  "binding_constraint": "pit_compliance_pct: 0.0 pct against a first target of 100.0",
   "bottleneck_rankings": [
     {
       "rank": 1,
-      "bottleneck": "calendar-time data accumulation",
-      "evidence": [
-        {
-          "edge": "oi_divergence",
-          "have_days": 4,
-          "needs_days": 40
-        },
-        {
-          "edge": "ls_contrarian",
-          "have_days": 4,
-          "needs_days": 40
-        },
-        {
-          "edge": "liquidation_reversal",
-          "have_days": 4,
-          "needs_days": 40
-        }
-      ],
-      "lever": "keep the flywheel alive + verify archives append; cannot be engineered away"
+      "bottleneck": "pit_compliance_pct",
+      "evidence": "0.0 pct against a first target of 100.0 (measured 2026-10-11T21:43:29.942101+00:00)",
+      "basis": "desks/mt5/reports/PIT_CENSUS.json canaries.green=None, census.stamped/sidecars + desks/mt5/reports/LAKE_PROMOTION.json silver_share; binding=lake silver_share"
     },
     {
       "rank": 2,
-      "bottleneck": "single deployed edge (concentration)",
-      "evidence": "0 deployed sleeve(s)",
-      "lever": "decorrelated survivors -- blocked on #1 (need forward data to validate)"
+      "bottleneck": "silent_scheduled_failures",
+      "evidence": "11.0 organs against a first target of 0.0 (measured 2026-10-12T04:45:07+00:00)",
+      "basis": "desks/mt5/reports/process_health.json counts.FAILING+NOT_SCHEDULED + desks/mt5/data/sync_marker.json legs LEG_FAILED/TIMEOUT (legs=0)"
     },
     {
       "rank": 3,
-      "bottleneck": "flywheel reliability (PC sleep / reboot)",
-      "evidence": "watchdog enabled; run-logged-off pending",
-      "lever": "archive_integrity_ok"
+      "bottleneck": "research_conversion_backlog",
+      "evidence": "668927.0 candidates against a first target of 0.0 (measured 2026-10-11T23:54:00+00:00)",
+      "basis": "desks/mt5/reports/CANDIDATE_CONSERVATION.json n_waiting=664774 + n_lost=4153"
+    },
+    {
+      "rank": 4,
+      "bottleneck": "proprietary_moat_days",
+      "evidence": "54.0 days against a first target of 365.0 (measured 2026-10-12T04:36:22+00:00)",
+      "basis": "desks/mt5/data/tape/ticks/*/YYYY-MM-DD.parquet distinct dates over 249 symbol dir(s); desks/mt5/data/moat_coverage.json newest_tape_write=2026-10-11T23:02:44+00:00, desks/mt5/reports/TAPE_RECORDER.json state=PAUSED"
+    },
+    {
+      "rank": 5,
+      "bottleneck": "effective_breadth_n_eff",
+      "evidence": "2.513 bets against a first target of 15.0 (measured 2026-10-12T04:51:22.850118+00:00)",
+      "basis": "desks/mt5/reports/EFFECTIVE_BREADTH.json effective.effective_breadth (n_nominal=453, binding=realised_returns)"
+    },
+    {
+      "rank": 6,
+      "bottleneck": "certified_chart_session_axes",
+      "evidence": "7.0 cells against a first target of 20.0 (measured 2026-10-12T02:30:58+00:00)",
+      "basis": "desks/mt5/reports/TIMEFRAME_COVERAGE.json + desks/mt5/reports/SESSION_CHART_EXPANSION.json + desks/mt5/data/sleeves.json + desks/mt5/reports/UNIVERSAL_SURVIVORS.json: distinct (timeframe, session) over certified rows; charts_hunted=7, cells_without_both_axes=1083"
+    },
+    {
+      "rank": 7,
+      "bottleneck": "cost_model_maturity",
+      "evidence": "1.0 ordinal 0-3 against a first target of 2.0 (measured 2026-10-12T02:21:34+00:00)",
+      "basis": "desks/mt5/data/cost_surface.json symbols[*].hours=True, size/regime/order_type dims=ABSENT, per-alpha distribution=ABSENT"
+    },
+    {
+      "rank": 8,
+      "bottleneck": "macro_intelligence",
+      "evidence": "1.0 ordinal 0-3 against a first target of 2.0 (measured 2026-10-12T03:58:38.041326+00:00)",
+      "basis": "desks/mt5/data/macro_state.json series=22, per-country blocks=False (differentials=1), desks/mt5/data/state_vector.json sensitivities=True"
+    },
+    {
+      "rank": 9,
+      "bottleneck": "allocator_maturity",
+      "evidence": "1.0 ordinal 0-3 against a first target of 2.0 (measured 2026-10-12T04:10:20.448878+00:00)",
+      "basis": "desks/mt5/reports/pf_allocation.json proof: passed=False, hysteresis=True, desks/mt5/reports/pf_allocation.json posterior fields=True"
+    },
+    {
+      "rank": 10,
+      "bottleneck": "live_trade_attribution_pct",
+      "evidence": "80.78 pct against a first target of 99.0 (measured 2026-10-12T02:13:11+00:00)",
+      "basis": "desks/mt5/reports/ATTRIBUTION_RECONCILE.json attributed_pct (206/255 by exact name, unique prefix or tp/sl geometry); the exact-name join alone reads 17.65%"
+    },
+    {
+      "rank": 11,
+      "bottleneck": "mechanism_clusters_occupied",
+      "evidence": "9.0 clusters against a first target of 10.0 (measured 2026-10-08T21:44:18+00:00)",
+      "basis": "desks/mt5/reports/BREADTH_MANDATE.json occupied (declared_clusters=15)"
+    },
+    {
+      "rank": 12,
+      "bottleneck": "backtest_forward_lineage_pct",
+      "evidence": "99.89 pct against a first target of 100.0 (measured 2026-10-11T23:03:00.761457+00:00)",
+      "basis": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json survivors x desks/mt5/reports/shadow/shadow_state.json clock keys (symbol+selector, credit_assignment join): 873/874"
     }
   ],
+  "unmeasured_dimensions": [],
   "retirement_candidates": [
     {
-      "sleeve": "taker_flow",
-      "marginal_sharpe": -0.06
-    },
-    {
-      "sleeve": "ts_trend",
-      "marginal_sharpe": -0.01
+      "sleeve": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
+      "delta_elogw_per_day": -6e-10
     }
   ],
-  "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
-  "architecture_review_due": true,
-  "cycles_logged": 105,
-  "completed_this_cycle": [
-    "watchdog_run_logged_off",
-    "honest_deployed_sharpe",
-    "single_portfolio_object",
-    "trade_logging",
-    "state_files_infra",
-    "cashcarry_capacity_sizing",
-    "bayesian_roi_calibration",
-    "dynamic_leverage",
-    "combined_perp_carry",
-    "execution_maker_carry",
-    "hedge_reconcile",
-    "growth_positive_risk_controls",
-    "test_suite_ci",
-    "stress_harness",
-    "stablecoin_flows_archiver",
-    "alpha_economics_gate",
-    "institutional_knowledge_base",
-    "reconcile_limit_fallback",
-    "root_cause_engine",
-    "decision_ledger",
-    "data_registry",
-    "executive_kpis",
-    "black_swan_library",
-    "growth_audit_engine",
-    "carry_crowding_monitor",
-    "autodiscovery_crypto_throughput"
-  ],
-  "engineering_backlog_top": [
-    {
-      "id": "archive_integrity_ok",
-      "roi": 0.51,
-      "effort_h": 1.0
-    },
-    {
-      "id": "execution_tca_fill_log",
-      "roi": 0.128,
-      "effort_h": 3.0
-    },
-    {
-      "id": "live_connector_prebuild",
-      "roi": 0.09,
-      "effort_h": 4.0
-    },
-    {
-      "id": "cross_venue_funding_study",
-      "roi": 0.064,
-      "effort_h": 3.0
-    },
-    {
-      "id": "funding_decay_predictor",
-      "roi": 0.037,
-      "effort_h": 4.0
-    }
-  ],
-  "research_backlog": [
-    {
-      "edge": "oi_divergence",
-      "status": "data-blocked 4/40d",
-      "info_value": "positive but not yet actionable"
-    },
-    {
-      "edge": "ls_contrarian",
-      "status": "data-blocked 4/40d",
-      "info_value": "positive but not yet actionable"
-    },
-    {
-      "edge": "liquidation_reversal",
-      "status": "data-blocked 4/40d",
-      "info_value": "positive but not yet actionable"
-    }
-  ],
-  "decisions_log": [
-    "REJECT ls_contrarian for deployment: Sharpe 10+ artifact, fails DSR (correct).",
-    "PIVOT executed book to delta-neutral cash-and-carry; perp L/S -> shadow.",
-    "DEFER new-hypothesis generation: lower marginal ROI than protecting the data clock.",
-    "DEFER heavy external paper search: info value < top backlog item this cycle."
-  ],
+  "retirement_note": "SIGNAL ONLY: the promoter re-judges every LIVE sleeve hourly and retires on persistent evidence; this list never retires anything.",
+  "architecture_review_due": false,
+  "cycles_logged": 0,
+  "engineering_backlog": "engineering_backlog.json (crypto-era task list, not the MT5 desk's priorities; 17 open)",
   "forecast_calibration": {
-    "n_resolved": 394,
-    "n_eligible": 523,
+    "n_resolved": 475,
+    "n_eligible": 560,
     "n_excluded": {
       "retrospective": 30,
-      "duplicate_claim": 1,
+      "duplicate_claim": 19,
       "non_sizing_kind": 16,
       "voided": 1
     },
     "status": "calibrated",
-    "brier": 0.2828,
-    "reliability": 0.7172,
-    "bias": 0.066,
+    "brier": 0.3018,
+    "reliability": 0.6982,
+    "bias": 0.148,
     "bias_label": "over-confident",
-    "hit_rate_posterior": 0.356,
+    "hit_rate_posterior": 0.31,
     "note": "Brier lower=better; reliability=1-Brier; bias>0 means forecasts were too high. Applied as a shrinkage on future p_success when |bias| is material."
   }
 }
