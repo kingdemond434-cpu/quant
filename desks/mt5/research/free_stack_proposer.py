@@ -172,6 +172,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     t0 = time.monotonic()
+    # Before reading anything: fenced frames leave the series dir (kept, hashed, ledgered), so a
+    # source harvested before its fence closed stops feeding the exogenous conditioner.
+    try:
+        quarantined: Any = terms_fences.quarantine_fenced_frames(SERIES)
+    except OSError as exc:
+        quarantined = f"SWEEP_FAILED: {exc}"
     columns = _read(COLUMNS, {}) or {}
     roster = roster_rows()
     grid, skipped = build_grid(columns, roster)
@@ -179,7 +185,10 @@ def main(argv: list[str] | None = None) -> int:
                            "writer": "research/free_stack_proposer.py", "seat": SEAT,
                            "sources_with_columns": len(columns), "skipped": skipped,
                            "grid_total": len(grid),
-                           "cn_exchange": cn_exchange_block(grid, roster, columns, skipped)}
+                           "cn_exchange": cn_exchange_block(grid, roster, columns, skipped),
+                           "terms_quarantine": (
+                               {"moved_this_pass": len(quarantined), "lines": quarantined}
+                               if isinstance(quarantined, list) else {"error": quarantined})}
     if not grid:
         doc.update({"built": 0, "minted": 0, "status": "NO_SERIES" if columns else "NO_COLUMNS",
                     "why": ("no free-stack source has published a series on this host yet; "

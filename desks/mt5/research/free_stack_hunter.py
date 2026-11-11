@@ -53,6 +53,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from desks.mt5.research import terms_fences  # noqa: E402
+
 from libs.data import free_stack as fs  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -553,6 +554,14 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     store = store or Store()
     fetch = fetch or fs.http_fetch
     now = now or _now()
+    # FIRST, BEFORE ANYTHING IS READ: frames a source published before its terms fence closed
+    # are moved out of the series dir the exogenous conditioner reads (kept, hashed, ledgered).
+    try:
+        quarantined: Any = terms_fences.quarantine_fenced_frames(
+            store.series, store.root / "terms_quarantine",
+            store.root / "terms_quarantine.jsonl", now)
+    except OSError as exc:
+        quarantined = f"SWEEP_FAILED: {exc}"
     rows, complaints = load_roster(roster)
     cursor = read_json(store.cursor, {}) or {}
     columns: dict[str, Any] = read_json(store.columns, {}) or {}
@@ -631,6 +640,10 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     alloc = build_alt_state(store, columns, now)
     report = build_report(rows, complaints, cursor, columns, ran, store, now,
                           seconds=time.monotonic() - t0, alloc=alloc, live=live)
+    report["terms_quarantine"] = (
+        {"moved_this_pass": len(quarantined), "lines": quarantined,
+         "ledger": str(store.root / "terms_quarantine.jsonl")}
+        if isinstance(quarantined, list) else {"error": quarantined})
     write_json(store.report, report)
     return report
 

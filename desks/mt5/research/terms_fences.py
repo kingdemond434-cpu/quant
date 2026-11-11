@@ -114,3 +114,110 @@ def fence_for(rel: PurePath | str, fences: list[dict[str, Any]]) -> dict[str, An
         if any(fnmatch.fnmatchcase(s, str(pat).lower()) for pat in f.get("match") or []):
             return f
     return None
+
+
+# ------------------------------------------------------------------ the quarantine sweep ----
+#: Where the free-stack hunter publishes `fs_<seat>` frames and the exogenous conditioner reads
+#: them (`family_exogenous_conditioner.SERIES_DIR`; named here from this file's location so the
+#: research side never imports the money path to find it).
+DESK = Path(__file__).resolve().parents[1]
+SERIES_DIR = DESK / "data" / "lake" / "series"
+#: Outside the series dir, under the hunter's own (gitignored) store: a frame parked here can no
+#: longer be found by any reader that looks for `fs_<seat>` in SERIES_DIR.
+QUARANTINE_DIR = DESK / "data" / "free_stack" / "terms_quarantine"
+QUARANTINE_LEDGER = DESK / "data" / "free_stack" / "terms_quarantine.jsonl"
+_FRAME_SUFFIXES = (".parquet", ".csv")
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _frame_columns(path: Path) -> list[str]:
+    """The frame's signal columns, best effort, for the missed-growth line. Never raises."""
+    stamp = {"event_time", "published_time", "available_time", "revision_time",
+             "retrieval_time", "ingested_time", "source_id", "vintage_id", "period_end",
+             "first_seen"}
+    cols: list[str] = []
+    try:
+        if path.suffix == ".csv":
+            with path.open("r", encoding="utf-8", errors="replace") as fh:
+                cols = [c.strip() for c in fh.readline().strip().split(",") if c.strip()]
+        else:
+            import pyarrow.parquet as pq
+            cols = [str(c) for c in pq.read_schema(path).names]
+    except Exception:
+        return []
+    return [c for c in cols if c not in stamp]
+
+
+def _free_destination(qdir: Path, name: str) -> Path:
+    """A destination that does not exist yet: never overwrite (and so never meet a read-only
+    destination on Windows); a collision keeps both, the newcomer with a numbered suffix."""
+    dest = qdir / name
+    n = 1
+    while dest.exists():
+        p = PurePath(name)
+        dest = qdir / f"{p.stem}.q{n}{p.suffix}"
+        n += 1
+    return dest
+
+
+def quarantine_fenced_frames(series_dir: Path | None = None, quarantine_dir: Path | None = None,
+                             ledger_path: Path | None = None, now: Any = None,
+                             fences: list[dict[str, Any]] | None = None
+                             ) -> list[dict[str, Any]]:
+    """Move every `fs_<seat>` frame whose seat is behind a closed fence OUT of the series dir.
+
+    Data harvested before a fence closed must stop feeding the exogenous conditioner, which reads
+    the series dir by name and does not consult the fence itself. The frame is RENAMED, never
+    deleted (its bytes and sha256 are kept, and the ledger says where it went), so reopening the
+    fence is a move back. One append-only ledger line per frame, with the fence's reason and the
+    conditioned arms that lost an input (`missed_growth`). Idempotent: once the series dir holds
+    no fenced frame, a run moves nothing and writes nothing. Never touches an unfenced or a
+    non-`fs_` frame. Returns the ledger lines it wrote.
+    """
+    import os
+    from datetime import UTC, datetime
+    sdir = Path(series_dir or SERIES_DIR)
+    qdir = Path(quarantine_dir or QUARANTINE_DIR)
+    ledger = Path(ledger_path or QUARANTINE_LEDGER)
+    when = now or datetime.now(UTC)
+    stamp = when.isoformat(timespec="seconds") if hasattr(when, "isoformat") else str(when)
+    fs_now = current() if fences is None else fences
+    if not sdir.is_dir():
+        return []
+    wrote: list[dict[str, Any]] = []
+    for p in sorted(sdir.iterdir()):
+        if not (p.is_file() and p.name.startswith("fs_") and p.suffix in _FRAME_SUFFIXES):
+            continue
+        fence = seat_fenced(p.stem[3:], fs_now)
+        if fence is None:
+            continue
+        digest = _sha256(p)
+        cols = _frame_columns(p)
+        qdir.mkdir(parents=True, exist_ok=True)
+        dest = _free_destination(qdir, p.name)
+        os.replace(p, dest)
+        line = {"at_utc": stamp, "path": str(p), "quarantined_to": str(dest), "sha256": digest,
+                "bytes": dest.stat().st_size, "fence": str(fence.get("id", "")),
+                "reason": str(fence.get("reason", "")),
+                "missed_growth": {
+                    "arms_lost_input": [f"exogenous_conditioner:{p.stem}"]
+                    + [f"exogenous_conditioner:{p.stem}:{c}" for c in cols],
+                    "what": str(fence.get("missed_growth", "")),
+                    "reading": "those arms read UNMEASURED and emit nothing until the fence "
+                               "is reopened and the frame moved back"},
+                "reopen": "terms_fences.json: open=true with the permitting clause pasted, "
+                          "then move quarantined_to back to path (sha256 above)"}
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(line, sort_keys=True) + "\n")
+        wrote.append(line)
+    return wrote
+

@@ -204,13 +204,200 @@ def test_the_free_stack_proposer_mints_nothing_from_a_fenced_source(monkeypatch)
                         for r in grid)
 
 
-def test_a_fenced_free_stack_frame_already_on_disk_is_never_read(tmp_path) -> None:
+def _frame(path: Path, n: int = 60) -> None:
+    """A real conditioner input: a PIT stamp and a signal column at an extreme."""
+    lines = ["available_time,net_all"]
+    lines += [f"2026-01-{1 + i // 24:02d}T{i % 24:02d}:00:00Z,{(i % 7) * 10.0}" for i in range(n)]
+    path.write_text("\n".join(lines) + "\n", "utf-8")
+
+
+def _congress_roster_machine_use_true(tmp_path: Path) -> Path:
+    """The money-path roster is no longer edited: its congress_trades row may say
+    machine_use_allowed TRUE. The research-side fence must refuse it anyway."""
+    path = _congress_roster(tmp_path)
+    doc = json.loads(path.read_text("utf-8"))
+    for r in doc["sources"]:
+        r["machine_use_allowed"] = True
+        r.pop("terms_note", None)
+    path.write_text(json.dumps(doc), "utf-8")
+    return path
+
+
+def test_hunter_refuses_congress_even_when_the_roster_allows_machine_use(tmp_path,
+                                                                         monkeypatch) -> None:
+    from research import free_stack_hunter as fh
+
+    def no_fetch(*_a, **_k):  # pragma: no cover - reaching it is the failure
+        raise AssertionError("a fenced source was fetched")
+
+    roster = _congress_roster_machine_use_true(tmp_path)
+    row = fh.load_roster(roster)[0][0]
+    assert row["machine_use_allowed"] is True and fh.access(row)["mined"]  # the roster says go
+    monkeypatch.setattr(fh, "run_source", no_fetch)
+    store = fh.Store(tmp_path)
+    fh.run(store=store, roster=roster, fetch=no_fetch, only=["congress_trades"], live=False)
+    st = json.loads(store.cursor.read_text("utf-8"))["congress_trades"]
+    assert st["last_status"] == "REFUSED_TERMS" and "13107" in st["last_error"]
+
+
+def test_proposer_mints_nothing_from_congress_whose_roster_row_allows_machine_use(
+        tmp_path, monkeypatch) -> None:
+    from research import free_stack_proposer as fp
+    roster_doc = json.loads(_congress_roster_machine_use_true(tmp_path).read_text("utf-8"))
+    roster = {r["id"]: r for r in roster_doc["sources"]}
+    assert roster["congress_trades"]["machine_use_allowed"] is True
+    monkeypatch.setattr(fp, "series_exists", lambda sid: True)
+    grid, skipped = fp.build_grid({"congress_trades": {"net_all": {"hypothesis": ["US500"]}}},
+                                  roster)
+    assert grid == [] and "terms fence congress_trades" in skipped["congress_trades"]
+
+
+def test_compiler_donates_nothing_from_congress_harvests(roots) -> None:
+    a, b = roots
+    p1 = _write(a, "congress_trades/discoveries_1.json", [{"title": "congress buy"}])
+    p2 = _write(b, "free_stack/congress_trades_net.jsonl", [{"title": "congress net"}])
+    _write(a, "world/discoveries_1.json", [{"title": "other", "symbol": "XAUUSD"}])
+    assert _titles() == {"other"}
+    parked = mc._LAST_INTAKE["terms_fenced"]["congress_trades"]
+    assert parked["files_parked"] == 2 and "13107" in parked["reason"]
+    assert p1.exists() and p2.exists()
+
+
+def test_the_registry_carries_congress_with_its_statute() -> None:
+    doc = json.loads(tf.REGISTRY.read_text("utf-8"))
+    row = next(f for f in doc["fences"] if f["id"] == "congress_trades")
+    assert "13107(c)" in row["reason"] and row["open"] is False and not row["permit_clause"]
+    assert "congress_trades" in row["seats"] and row["missed_growth"]
+
+
+def _sweep_dirs(tmp_path: Path) -> tuple[Path, Path, Path]:
+    series = tmp_path / "lake" / "series"
+    series.mkdir(parents=True)
+    return series, tmp_path / "quarantine", tmp_path / "quarantine.jsonl"
+
+
+def test_sweep_moves_fenced_frames_only_keeping_bytes_and_sha(tmp_path) -> None:
+    import hashlib
+    from datetime import UTC, datetime
+    series, q, ledger = _sweep_dirs(tmp_path)
+    _frame(series / "fs_congress_trades.csv")
+    (series / "fs_congress_trades.parquet").write_bytes(b"PAR1-not-really")
+    _frame(series / "fs_other_src.csv")
+    _frame(series / "congress_trades.csv")                    # not an fs_ frame: untouched
+    (series / "fs_congress_trades.txt").write_text("x", "utf-8")  # not a frame: untouched
+    before = {p.name: (p.read_bytes(), hashlib.sha256(p.read_bytes()).hexdigest())
+              for p in series.glob("fs_congress_trades.*") if p.suffix in (".csv", ".parquet")}
+    now = datetime(2026, 11, 11, 12, tzinfo=UTC)
+    lines = tf.quarantine_fenced_frames(series, q, ledger, now)
+    assert sorted(Path(x["path"]).name for x in lines) == sorted(before)
+    assert sorted(p.name for p in series.iterdir()) == [
+        "congress_trades.csv", "fs_congress_trades.txt", "fs_other_src.csv"]
+    for x in lines:
+        dest = Path(x["quarantined_to"])
+        assert dest.parent == q and dest.exists()
+        raw, sha = before[Path(x["path"]).name]
+        assert dest.read_bytes() == raw and x["sha256"] == sha
+        assert x["fence"] == "congress_trades" and "13107" in x["reason"]
+        assert x["at_utc"].startswith("2026-11-11T12:00:00")
+    on_disk = [json.loads(s) for s in ledger.read_text("utf-8").splitlines()]
+    assert on_disk == lines
+    csv_line = next(x for x in lines if x["path"].endswith(".csv"))
+    assert "exogenous_conditioner:fs_congress_trades" in csv_line["missed_growth"][
+        "arms_lost_input"]
+    assert "exogenous_conditioner:fs_congress_trades:net_all" in csv_line["missed_growth"][
+        "arms_lost_input"]
+
+
+def test_sweep_is_idempotent_and_never_overwrites(tmp_path) -> None:
+    series, q, ledger = _sweep_dirs(tmp_path)
+    _frame(series / "fs_congress_trades.csv")
+    assert len(tf.quarantine_fenced_frames(series, q, ledger)) == 1
+    size = ledger.stat().st_size
+    assert tf.quarantine_fenced_frames(series, q, ledger) == []      # second run: nothing
+    assert ledger.stat().st_size == size
+    # the hunter republishes a frame before the fence was noticed: both copies are kept
+    (series / "fs_congress_trades.csv").write_text("available_time,net_all\nnew,1\n", "utf-8")
+    lines = tf.quarantine_fenced_frames(series, q, ledger)
+    assert len(lines) == 1
+    assert Path(lines[0]["quarantined_to"]).name == "fs_congress_trades.q1.csv"
+    assert sorted(p.name for p in q.iterdir()) == ["fs_congress_trades.csv",
+                                                   "fs_congress_trades.q1.csv"]
+    assert "new,1" in (q / "fs_congress_trades.q1.csv").read_text("utf-8")
+    assert len(ledger.read_text("utf-8").splitlines()) == 2
+
+
+def test_sweep_on_a_missing_series_dir_does_nothing(tmp_path) -> None:
+    assert tf.quarantine_fenced_frames(tmp_path / "nope", tmp_path / "q",
+                                       tmp_path / "l.jsonl") == []
+    assert not (tmp_path / "q").exists() and not (tmp_path / "l.jsonl").exists()
+
+
+def test_the_default_sweep_paths_are_outside_the_series_dir_and_gitignored() -> None:
+    import subprocess
+
     from mt5desk import family_exogenous_conditioner as fec
-    for name in ("fs_congress_trades", "fs_other_src"):
-        (tmp_path / f"{name}.csv").write_text("available_time,x\n", "utf-8")
-    assert fec.series_path("fs_congress_trades", tmp_path) is None
-    assert fec.series_path("fs_other_src", tmp_path) == tmp_path / "fs_other_src.csv"
-    assert fec.conditioner("fs_congress_trades", "net_all", "raw", root=tmp_path) is None
+    assert tf.SERIES_DIR == fec.SERIES_DIR
+    assert fec.SERIES_DIR not in tf.QUARANTINE_DIR.parents
+    for p in (tf.QUARANTINE_DIR / "fs_congress_trades.parquet", tf.QUARANTINE_LEDGER):
+        r = subprocess.run(["git", "check-ignore", "-q", str(p)], cwd=ROOT, check=False)
+        assert r.returncode in (0, 128), p                  # 128: not a git checkout
+        if r.returncode == 128:
+            break
+
+
+def test_the_hunter_sweeps_before_it_reads_anything(tmp_path, monkeypatch) -> None:
+    from research import free_stack_hunter as fh
+    store = fh.Store(tmp_path)
+    store.series.mkdir(parents=True)
+    _frame(store.series / "fs_congress_trades.csv")
+    _frame(store.series / "fs_other_src.csv")
+    order: list[str] = []
+    real = fh.load_roster
+    monkeypatch.setattr(fh, "load_roster", lambda *a, **k: (
+        order.append("roster" if not (store.series / "fs_congress_trades.csv").exists()
+                     else "roster-before-sweep"), real(*a, **k))[1])
+    rep = fh.run(store=store, roster=_congress_roster_machine_use_true(tmp_path),
+                 fetch=lambda *a, **k: None, only=["congress_trades"], live=False)
+    assert order == ["roster"]
+    assert rep["terms_quarantine"]["moved_this_pass"] == 1
+    assert (store.root / "terms_quarantine" / "fs_congress_trades.csv").exists()
+    assert (store.series / "fs_other_src.csv").exists()
+
+
+def test_the_proposer_sweeps_at_the_start_of_its_pass(tmp_path, monkeypatch) -> None:
+    from research import free_stack_proposer as fp
+    series, q, ledger = _sweep_dirs(tmp_path)
+    _frame(series / "fs_congress_trades.csv")
+    monkeypatch.setattr(fp, "SERIES", series)
+    monkeypatch.setattr(tf, "QUARANTINE_DIR", q)
+    monkeypatch.setattr(tf, "QUARANTINE_LEDGER", ledger)
+    monkeypatch.setattr(fp, "COLUMNS", tmp_path / "columns.json")    # absent: NO_COLUMNS
+    monkeypatch.setattr(fp, "REPORT", tmp_path / "report.json")
+    assert fp.main(["--once", "--dry-run"]) == 0
+    doc = json.loads((tmp_path / "report.json").read_text("utf-8"))
+    assert doc["terms_quarantine"]["moved_this_pass"] == 1
+    assert not (series / "fs_congress_trades.csv").exists() and (q / "fs_congress_trades.csv"
+                                                                 ).exists()
+
+
+def test_the_conditioner_reads_unmeasured_once_the_frame_is_quarantined(tmp_path) -> None:
+    """The money-path conditioner is NOT edited: it reads the series dir by name. After the sweep
+    the fenced frame is absent, and absence is UNMEASURED -- no crash, no zero signal, nothing."""
+    import pandas as pd
+    from mt5desk import family_exogenous_conditioner as fec
+    series, q, ledger = _sweep_dirs(tmp_path)
+    _frame(series / "fs_congress_trades.csv", n=24 * 20)
+    _frame(series / "fs_other_src.csv", n=24 * 20)
+    assert fec.conditioner("fs_congress_trades", "net_all", "delta", root=series) is not None
+    tf.quarantine_fenced_frames(series, q, ledger)
+    assert fec.series_path("fs_congress_trades", series) is None
+    assert fec.conditioner("fs_congress_trades", "net_all", "delta", root=series) is None
+    assert fec.conditioner("fs_other_src", "net_all", "delta", root=series) is not None
+    idx = pd.date_range("2026-01-01", periods=24 * 30, freq="h", tz="UTC")
+    bars = pd.DataFrame({"open": 1.0, "high": 1.01, "low": 0.99, "close": 1.0}, index=idx)
+    assert fec.family_exogenous_conditioner(
+        bars, source="fs_congress_trades", signal="net_all", transform="delta",
+        threshold=0.0, series_root=series) == []
 
 
 def test_alt_state_does_not_publish_a_fenced_source(tmp_path, monkeypatch) -> None:
