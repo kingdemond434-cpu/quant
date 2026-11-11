@@ -21,8 +21,8 @@ was and returns why.
 
 Every python runner on a lane="money" or lane="prop" row of desks/mt5/ops/box_tasks.manifest
 calls it (tests/ops/test_money_priority.py enforces that), except the two canon watchers that
-must stay byte-identical to the box originals (CANON_EXEMPT). Wrap those, or any other command,
-with the CLI:
+must stay byte-identical to the box originals (CANON_EXEMPT) and the deadman rails, which are
+never modified autonomously (RAIL_EXEMPT). Wrap those, or any other command, with the CLI:
 
     python -m libs.ops.money_priority -- <command> [args...]
 """
@@ -38,6 +38,11 @@ from typing import Any
 ABOVE_NORMAL_PRIORITY_CLASS = 0x00008000
 #: JOBOBJECT_BASIC_LIMIT_INFORMATION.LimitFlags: enforce PriorityClass on every process in the job.
 JOB_OBJECT_LIMIT_PRIORITY_CLASS = 0x00000020
+#: ...and let a child that asks to leave the job (CREATE_BREAKAWAY_FROM_JOB, e.g. terminal64.exe
+#: started by mt5.initialize) do so instead of failing with access denied.
+JOB_OBJECT_LIMIT_BREAKAWAY_OK = 0x00000800
+#: The ONLY limits this module ever sets (tests pin it: no cap can be added here).
+LIMIT_FLAGS = JOB_OBJECT_LIMIT_PRIORITY_CLASS | JOB_OBJECT_LIMIT_BREAKAWAY_OK
 #: JOBOBJECTINFOCLASS: JobObjectExtendedLimitInformation.
 _EXTENDED_LIMIT_INFORMATION = 9
 
@@ -47,6 +52,13 @@ CANON_EXEMPT = (
     "desks/mt5/scripts/watchers/ftmo_follow.py",
     "desks/mt5/scripts/watchers/e8_window_guard.py",
 )
+#: The deadman / ruin rails, which are never modified autonomously (docs/LAWS.md): same, the CLI
+#: wrapper at task registration instead.
+RAIL_EXEMPT = (
+    "scripts/run_deadman_switch.py",
+    "desks/mt5/proposals/fusion_deadman.py",
+)
+EXEMPT = CANON_EXEMPT + RAIL_EXEMPT
 
 _STATE: dict[str, str] = {}
 
@@ -89,7 +101,7 @@ def limits() -> Any:
     """The extended-limit structure this module sets: only the priority-class limit."""
     ext_t, _ = _job_limits()
     info = ext_t()
-    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_PRIORITY_CLASS
+    info.BasicLimitInformation.LimitFlags = LIMIT_FLAGS
     info.BasicLimitInformation.PriorityClass = ABOVE_NORMAL_PRIORITY_CLASS
     return info
 

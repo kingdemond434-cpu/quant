@@ -34,11 +34,17 @@ def test_the_manifest_has_money_runners() -> None:
 
 @pytest.mark.parametrize("name,script", _money_runners())
 def test_every_money_runner_enters_the_money_job(name: str, script: str) -> None:
-    if script in mp.CANON_EXEMPT:
-        pytest.skip("canon copy of a box original: wrapped by the CLI instead")
+    if script in mp.EXEMPT:
+        pytest.skip("canon copy or deadman rail: wrapped by the CLI at registration instead")
     src = (ROOT / script).read_text(encoding="utf-8")
     assert "from libs.ops.money_priority import enter" in src, f"{name} ({script})"
     assert "_money_priority()" in src, f"{name} ({script})"
+
+
+def test_the_deadman_rails_are_untouched_and_exempt() -> None:
+    for script in mp.RAIL_EXEMPT:
+        assert "money_priority" not in (ROOT / script).read_text(encoding="utf-8"), script
+    assert set(mp.EXEMPT) == set(mp.CANON_EXEMPT) | set(mp.RAIL_EXEMPT)
 
 
 def test_the_canon_exemptions_are_real_canon_copies() -> None:
@@ -50,7 +56,7 @@ def test_the_canon_exemptions_are_real_canon_copies() -> None:
 def test_the_job_limit_is_the_priority_class_and_nothing_else() -> None:
     info = mp.limits()
     basic = info.BasicLimitInformation
-    assert basic.LimitFlags == mp.JOB_OBJECT_LIMIT_PRIORITY_CLASS == 0x20
+    assert basic.LimitFlags == mp.LIMIT_FLAGS == 0x20 | 0x800  # priority class + breakaway, ONLY
     assert basic.PriorityClass == mp.ABOVE_NORMAL_PRIORITY_CLASS == 0x8000
     assert basic.ActiveProcessLimit == 0 and basic.Affinity == 0  # no cap, no core pinning
     assert info.ProcessMemoryLimit == 0 and info.JobMemoryLimit == 0
