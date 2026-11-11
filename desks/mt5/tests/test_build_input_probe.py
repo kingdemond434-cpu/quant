@@ -165,7 +165,9 @@ def test_the_input_appearing_turns_the_answer_present(uni, monkeypatch, row, lab
     (_row("EURGBP", "relative_value", {"peer_symbol": "AUDNZD", "timeframe": "M5"}), "gate 0"),
     ({**_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD"}),
       "mechanism_status": "STATISTICAL_ONLY"}, "gate 0"),
-    (_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD", "regime": "risk_on"}),
+    # A modifier the desk still cannot apply (risk_on/off are defined since 2026-11-11 and would
+    # pass whenever a RISK index is on disk, AUS200_H1 included).
+    (_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD", "execution_style": "limit"}),
      "preflight conserves"),
 ])
 def test_what_the_probe_cannot_prove_is_unmeasured(uni, row, why) -> None:

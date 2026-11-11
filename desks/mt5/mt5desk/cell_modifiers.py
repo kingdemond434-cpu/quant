@@ -64,6 +64,19 @@ VOL_REGIMES = {"high_vol": "high_vol", "high_volatility": "high_vol", "low_vol":
 CALENDAR_REGIMES = frozenset({"month_end", "quarter_end"})
 NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
 
+#: RISK-ON / RISK-OFF, DEFINED ONCE (2026-11-11). Until now `risk_on`/`risk_off` were refused as
+#: "no desk definition", and the NOT_RUN census of 2026-11-11 counted 98,000 cells (50.7k / 47.1k)
+#: stopped on exactly that. The definition is the desk's own RISK role
+#: (`economic_drivers.ROLES["RISK"]`: US500, then NAS100, then AUS200 -- the first whose H1 bars
+#: are on this box): RISK-ON while that index's trailing RISK_LOOKBACK_BARS log return is above
+#: zero, RISK-OFF while it is below. Point in time: the state at a bar is read from index bars
+#: that CLOSED by that bar's open (shifted one bar), carried forward at most RISK_STALE_H so a
+#: dead index feed reads as "no state", never as an old one. The two states partition every bar
+#: that has a state, so both children of a parent are measured, never just the convenient one.
+RISK_REGIMES = {"risk_on": 1, "risk_off": -1}
+RISK_LOOKBACK_BARS = 120          # ~one trading week of H1 bars
+RISK_STALE_H = 72.0               # covers a weekend; a feed older than this has no state
+
 SIDE_MODES = frozenset({"", "follow", "revert", "long", "short"})
 
 #: THE ONE CONDITIONER FORM THAT IS APPLIED, NOT REFUSED (2026-09-30). A second information axis
@@ -164,10 +177,13 @@ def refusal(mods: dict[str, Any]) -> str | None:
             return (f"selector={mods.get('selector')!r}: no declared session window; refusing "
                     "rather than running the cell across all hours")
     regime = _s(mods.get("regime"))
+    if regime in RISK_REGIMES and _risk_series() is None:
+        return (f"regime={mods.get('regime')!r}: no RISK-role index "
+                f"({', '.join(_risk_symbols())}) has H1 bars on this box (UNMEASURED)")
     if regime not in NO_OP_REGIMES and regime not in VOL_REGIMES \
-            and regime not in CALENDAR_REGIMES:
-        return (f"regime={mods.get('regime')!r} has no desk definition (volatility and month/"
-                "quarter-end are defined; a risk-on/off state needs a named risk series first)")
+            and regime not in CALENDAR_REGIMES and regime not in RISK_REGIMES:
+        return (f"regime={mods.get('regime')!r} has no desk definition (volatility, month/"
+                "quarter-end and risk-on/off are defined)")
     side = _s(mods.get("side_mode"))
     if side not in SIDE_MODES:
         return f"side_mode={mods.get('side_mode')!r} has no declared meaning"
@@ -182,9 +198,54 @@ def refusal(mods: dict[str, Any]) -> str | None:
     return None
 
 
+def _risk_symbols() -> tuple[str, ...]:
+    try:
+        from mt5desk.economic_drivers import ROLES
+        return tuple(ROLES.get("RISK") or ())
+    except ImportError:
+        return ("US500", "NAS100", "AUS200")
+
+
+def _risk_series() -> tuple[str, pd.Series] | None:
+    """(symbol, close) of the first RISK-role index with H1 bars here, else None."""
+    from mt5desk.family_learned_propagation import load_peer
+
+    for sym in _risk_symbols():
+        df = load_peer(sym)
+        if df is not None and len(df) > RISK_LOOKBACK_BARS:
+            return sym, df["close"].astype(float).sort_index()
+    return None
+
+
+def risk_state(bars: pd.DataFrame, series: pd.Series | None = None) -> pd.Series:
+    """+1 risk-on, -1 risk-off, 0 no state, on `bars`' own index (see RISK_REGIMES)."""
+    import numpy as np
+
+    if series is None:
+        got = _risk_series()
+        if got is None:
+            return pd.Series(0, index=bars.index, dtype=int)
+        series = got[1]
+    s = series[~series.index.duplicated(keep="last")].sort_index()
+    ret = np.log(s).diff(RISK_LOOKBACK_BARS)
+    # The index bar stamped t closes at t + 1 bar; shifting one bar means the state stamped at t
+    # was fully known at t, the open of a target bar stamped t.
+    sign = np.sign(ret).shift(1)
+    tz = getattr(bars.index, "tz", None)
+    if tz is None and getattr(sign.index, "tz", None) is not None:
+        sign.index = sign.index.tz_convert(None)
+    elif tz is not None and getattr(sign.index, "tz", None) is None:
+        sign.index = sign.index.tz_localize("UTC").tz_convert(tz)
+    known = sign.reindex(bars.index, method="ffill",
+                         tolerance=pd.Timedelta(hours=RISK_STALE_H))
+    return known.fillna(0).astype(int)
+
+
 def _regime_mask(bars: pd.DataFrame, regime: str) -> pd.Series:
     from mt5desk.family_generic import _CONTEXTS
 
+    if regime in RISK_REGIMES:
+        return risk_state(bars) == RISK_REGIMES[regime]
     if regime in VOL_REGIMES:
         mask = _CONTEXTS[VOL_REGIMES[regime]](bars)
     else:
@@ -218,7 +279,7 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
     if not mods or not out:
         return out
     regime = _s(mods.get("regime"))
-    if regime in VOL_REGIMES or regime in CALENDAR_REGIMES:
+    if regime in VOL_REGIMES or regime in CALENDAR_REGIMES or regime in RISK_REGIMES:
         mask = _regime_mask(bars, regime)
         out = [s for s in out if bool(mask.get(s.time, False))]
     spec = alt_conditioner(mods.get("conditioner")) if "conditioner" in mods else None
