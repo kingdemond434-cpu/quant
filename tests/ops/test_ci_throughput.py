@@ -869,9 +869,9 @@ def test_the_gate_clone_fetches_before_it_checks_out_and_logs_git() -> None:
     fetch comes first, git's own lines are logged, and a failed refresh re-clones once."""
     ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
     body = ps[ps.index("function Refresh-GateClone") :]
-    assert "sparse-checkout set" not in ps
+    assert "& git -C $Clone sparse-checkout" not in ps
     fetch, checkout = body.index("fetch -q"), body.index("checkout -q -f --detach")
-    assert body.index("info/sparse-checkout".replace("/", "\\")) < fetch < checkout
+    assert body.index('"sparse-checkout"') < fetch < checkout
     assert 'Say "fetch: $_"' in body and 'Say "checkout: $_"' in body
     retry = ps[ps.index("$why = Refresh-GateClone") :]
     assert "Remove-Item -LiteralPath $Clone" in retry and retry.count("Refresh-GateClone") == 2
