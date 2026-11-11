@@ -1369,6 +1369,22 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                         st.pop("identity_drift", None)
                         st["cost_rebased_why"] = _why
                         slog(f"{key}: COST REBASED -- {_why}")
+                # THE ENGINE'S OWN EPOCH IS NOT A STRATEGY CHANGE (box read CL3, 2026-11-11).
+                # `session_runtime_window.ensure` restarted clocks onto a new runtime epoch and
+                # the registry was never stamped, so this line re-broke ten clocks every pass
+                # and the healer resumed them every 30 minutes, ~650-1,600 times each.
+                # `adopt_runtime_version` stamps the registry only when runtime_version is the
+                # SOLE drift and the registry's version is one this state already moved past.
+                if _drift == ["runtime_version"]:
+                    _prior = [w.get("version") for w in (st.get("runtime_windows_before") or [])
+                              if isinstance(w, dict)]
+                    _why = _reg.adopt_runtime_version(
+                        key, _ident, forward_start=st.get("forward_start"),
+                        prior_versions=_prior, replayed=not st.get("order_authority"))
+                    if _why:
+                        _drift = []
+                        st["runtime_adopted_why"] = _why
+                        slog(f"{key}: RUNTIME EPOCH ADOPTED -- {_why}")
                 if _drift:
                     _reason = f"{', '.join(_drift)} changed after the clock froze"
                     _reg.mark(key, "IDENTITY_BROKEN", _reason)
