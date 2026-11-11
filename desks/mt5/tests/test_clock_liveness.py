@@ -359,3 +359,18 @@ class TestAnUnreadableSchedulerIsUnmeasuredNeverDisabled:
             host="host_unmeasured", host_why="the scheduler could not be read")
         assert row["verdict"] == cl.UNMEASURED
         assert row["expected_bars"] is None and row["actual_bars"] is None
+
+
+def test_free_text_is_scrubbed_before_it_is_published() -> None:
+    """Exception and lane-error text can name a trade server, a login or a balance (Auditor,
+    2026-11-11): `public_text` withholds them and keeps the words the lane checks read."""
+    import clock_liveness as cl
+
+    raw = ("IPC timeout to FusionMarkets-Live2.mt5srv.com:443 login=51234567 balance 102345.67 "
+           "at 10.0.0.12; no bars in desks/mt5/data/universe/XAUUSD_H1.parquet")
+    out = cl.public_text(raw)
+    for leak in ("mt5srv.com", "51234567", "102345.67", "10.0.0.12", "FusionMarkets-Live2"):
+        assert leak not in out, leak
+    assert "IPC" in out and "no bars" in out and "XAUUSD_H1.parquet" in out
+    assert cl.public_text(None) == "None"
+    assert len(cl.public_text("x" * 900, cap=400)) == 400

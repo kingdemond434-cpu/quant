@@ -70,6 +70,7 @@ import io
 import json
 import math
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -81,6 +82,38 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
+
+#: FREE TEXT LEAVES HERE SCRUBBED (Auditor, 2026-11-11). The report is published to a public
+#: branch, and four fields carry text this module did not write: an exception's message (three
+#: sites) and a lane's own `errors` strings. A terminal error can name a trade server, a login
+#: or an account figure, so every such string passes `public_text` before it is stored.
+_HOSTLIKE = re.compile(r"\b[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?::\d+)?\b")
+_IPLIKE = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b")
+_LONGNUM = re.compile(r"\b\d[\d,]{4,}(?:\.\d+)?\b")
+_DECIMAL = re.compile(r"\b\d+\.\d{2,}\b")
+_SERVER_KV = re.compile(r"(?i)\b(server|login|account|balance|equity|margin|host)\s*[=:]\s*\S+")
+
+
+def public_text(text: Any, cap: int | None = None) -> str:
+    """`text` with secrets paths and key shapes (agent_denials.scrub), hosts and addresses, long
+    numbers, money-shaped decimals and `server=`-style pairs replaced. Never raises."""
+    s = " ".join(str(text).split())
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops.agent_denials import scrub
+        s = scrub(s)
+    except Exception:
+        pass
+    s = _SERVER_KV.sub(lambda m: f"{m.group(1)}=[withheld]", s)
+    s = _IPLIKE.sub("[addr]", s)
+    s = _HOSTLIKE.sub(lambda m: m.group(0) if m.group(0).endswith((".py", ".json", ".ps1",
+                                                                    ".md", ".parquet", ".jsonl",
+                                                                    ".csv", ".txt", ".exe"))
+                      else "[host]", s)
+    s = _LONGNUM.sub("[n]", s)
+    s = _DECIMAL.sub("[x]", s)
+    return s if cap is None or len(s) <= cap else s[:cap]
 for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -256,7 +289,8 @@ class SessionCalendar:
             self._source = "libs/research/market_constitution.py venue_fusion()"
         except Exception as exc:  # pragma: no cover - the import failing IS the measurement
             self._mc = None
-            self._source = f"UNMEASURED: market constitution unimportable ({exc!r})"
+            self._source = ("UNMEASURED: market constitution unimportable "
+                            f"({public_text(repr(exc))})")
         doc = read_json(constraints or CONSTRAINTS)
         rows = doc.get("symbols") if isinstance(doc, dict) else None
         if isinstance(rows, list):
@@ -472,7 +506,8 @@ def engine_roster() -> tuple[set[str] | None, str]:
             keys.add(sf.sleeve_key(row[0], row[1], row[2], fam, side))
         return keys, f"shadow_forward.certified_sleeves() -> {len(keys)} key(s)"
     except Exception as exc:
-        return None, f"UNMEASURED: shadow_forward roster unreadable ({type(exc).__name__}: {exc})"
+        return None, ("UNMEASURED: shadow_forward roster unreadable "
+                      f"({type(exc).__name__}: {public_text(exc)})")
     finally:
         os.chdir(cwd)
 
@@ -643,7 +678,7 @@ def scheduled_tasks() -> dict[str, dict[str, Any]]:
         _TASKS_STATUS = "TIMEOUT after 90s: the scheduler query did not return in time"
         return {}
     except (OSError, subprocess.SubprocessError) as exc:
-        _TASKS_STATUS = f"READ_FAILED: {type(exc).__name__}: {exc}"
+        _TASKS_STATUS = f"READ_FAILED: {type(exc).__name__}: {public_text(exc)}"
         return {}
     rows = list(csv.reader(io.StringIO(raw)))
     if not rows:
@@ -733,7 +768,8 @@ def lane_health(lanes: Sequence[Lane],
                 if ln.name in name or not any(o in name for o in others):
                     errs[k] = v
         if errs:
-            joined = " | ".join(f"{k}: {v}" for k, v in errs.items())
+            raw = " | ".join(f"{k}: {v}" for k, v in errs.items())
+            joined = public_text(raw)
             row["lane_errors"] = joined[:400]
             if "IPC" in joined or "no MT5 history source" in joined or "no bars" in joined:
                 row["bars_down"] = True
