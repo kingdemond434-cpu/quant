@@ -904,7 +904,12 @@ $reportPaths = @(
     "desks/mt5/reports/RESEARCH_PNL.json",
     "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
     "desks/mt5/reports/MATH_LAB.json",
-    "desks/mt5/data/miner_conversion.json"
+    "desks/mt5/data/miner_conversion.json",
+    # what the hourly pass's staleness check reads (2026-11-11): the research marginal, the
+    # conversion ledger and the live certificate book. The axes/*.json files ride the loop below.
+    "desks/mt5/data/research_marginal.json",
+    "desks/mt5/data/conversion_ledger.json",
+    "desks/mt5/reports/CERT_BOOK_LIVE.json"
 )
 # Mirror the per-box daily-cycle stamp under reports/, so readers off the box see when the
 # operating chain last ran without the stamp itself ever crossing the wire.
@@ -930,6 +935,19 @@ foreach ($rel in $reportPaths) {
         continue
     }
     $existing += $rel
+}
+# EVERY MACRO AXIS FILE (2026-11-11), by glob so a new axis is carried with no edit here, under
+# the same per-file cap: an axis bigger than the cap (bis.json is ~80 MB) is skipped and logged.
+$axesDir = Join-Path $RepoRoot "desks\mt5\data\axes"
+if (Test-Path -LiteralPath $axesDir -PathType Container) {
+    foreach ($f in @(Get-ChildItem -LiteralPath $axesDir -Filter "*.json" -File)) {
+        $rel = "desks/mt5/data/axes/" + $f.Name
+        if ($f.Length -gt $ReportCapBytes) {
+            Write-SyncLog ("SKIP axis {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $f.Length, $ReportCapBytes)
+            continue
+        }
+        $existing += $rel
+    }
 }
 # PULL FIRST, ALWAYS, BEFORE ANY EARLY EXIT (2026-09-06).
 #
