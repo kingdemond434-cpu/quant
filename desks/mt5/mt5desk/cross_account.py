@@ -453,6 +453,41 @@ def _prop_registry() -> tuple[list[Any], list[str]]:
     return _pa.load(XACCT_DIR.parent)
 
 
+def _errors_that_can_hide_an_account(errors: list[str]) -> list[str]:
+    """The registry errors the fence must fail closed on (Auditor SF on #590): one refused row
+    must not fence Fusion, E8 and FTMO when it cannot name an account that may hold positions.
+    Fail closed on an unreadable registry, a refused row with no readable id, or a refused id
+    that has left a trace on disk (`_disk_prop_names`, which also fences it as a peer). A refused
+    row that names no trace is a typo in a file nothing has traded from: logged, never blocking."""
+    if not errors:
+        return []
+    from mt5desk import prop_accounts as _pa
+    try:
+        unreadable, refused = _pa.refusals(XACCT_DIR.parent)
+    except Exception as exc:
+        return [f"registry refusals unreadable ({type(exc).__name__})", *errors]
+    if unreadable:
+        return list(errors)
+    traced = _disk_prop_names() | _disk_trace_dirs()
+    if any(r is None or PROP_PREFIX + str(r) in traced or str(r) in traced for r in refused):
+        return list(errors)
+    return []
+
+
+def _disk_trace_dirs() -> set[str]:
+    """Raw folder names under data/prop/ holding a declaration or an arm file, whatever their
+    name (a refused id may not match ID_RE, so `_disk_prop_names` would not list it)."""
+    out: set[str] = set()
+    try:
+        for d in (XACCT_DIR.parent / "prop").iterdir():
+            if d.is_dir() and ((d / "ACCOUNT.json").exists() or
+                               (d / "EXECUTOR_ARMED").exists()):
+                out.add(d.name)
+    except OSError:
+        pass
+    return out
+
+
 def _prop_accounts() -> list[Any]:
     return _prop_registry()[0]
 
@@ -801,14 +836,15 @@ def prop_block(symbol: object, side: object, *, now: datetime | None = None,
     if sym and any(same_instrument(sym, g) for g in FTMO_FENCE_SKIPS):
         return None
     _, errors = _prop_registry()
-    if errors:
-        # A refused row or an unreadable registry may be an account holding positions that no
-        # trace on disk names yet: fail closed until the registry reads clean (audit MF1).
-        # This blocks every non-gold entry on every lane, so it is never silent: it pages RED
-        # and bills each blocked entry to the missed-growth ledger (audit of 08525399).
-        why = (f"cross-account fence: the prop account registry has errors ({errors[0]}"
-               f"{'' if len(errors) == 1 else f' +{len(errors) - 1} more'}); fail closed")
-        registry_block_seen(errors, symbol, side, now=now)
+    hiding = _errors_that_can_hide_an_account(errors)
+    if hiding:
+        # An unreadable registry, or a refused row that may be an account holding positions
+        # (an unreadable id, or an id with a trace on disk), fails closed until the registry
+        # reads clean (audit MF1). This blocks every non-gold entry on every lane, so it is never
+        # silent: it pages RED and bills each blocked entry to missed growth (audit of 08525399).
+        why = (f"cross-account fence: the prop account registry has errors ({hiding[0]}"
+               f"{'' if len(hiding) == 1 else f' +{len(hiding) - 1} more'}); fail closed")
+        registry_block_seen(hiding, symbol, side, now=now)
         return why
     registry_clean_seen()
     skip = set(exclude)

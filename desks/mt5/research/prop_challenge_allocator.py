@@ -91,10 +91,12 @@ solve dropped is never left funded.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
 import sys
+import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1306,10 +1308,17 @@ class RunLock:
     """An exclusive-create lock file, refreshed by its holder (`beat`); one not refreshed for
     LOCK_STALE_S is a dead run's. Breaking it is an atomic RENAME to a name unique to the breaker,
     so of two processes that both judge it stale only one takes it away; the other's rename finds
-    nothing and it retries the exclusive create like any contender."""
+    nothing and it retries the exclusive create like any contender.
+
+    THE STALE-BREAK RACE (Auditor SF on #590): two breakers can both read the dead lock as stale,
+    the first renames it away and creates a FRESH lock, and the second's rename then takes that
+    fresh lock. So a breaker re-reads what it renamed: if it is fresh it was a live holder's, and
+    it is put back with os.link (atomic, refuses to overwrite) and this contender stands down. And
+    a holder releases only a lock carrying its own token, never one another run now holds."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
+        self.token = f"{os.getpid()}.{time.monotonic_ns()}"
 
     def __enter__(self) -> RunLock:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -1323,31 +1332,43 @@ class RunLock:
                     continue
                 if age < LOCK_STALE_S:
                     raise Busy(f"{self.path.name} held ({age:.0f}s)") from None
-                dead = self.path.with_name(f"{self.path.name}.stale.{os.getpid()}")
+                dead = self.path.with_name(f"{self.path.name}.stale.{self.token}")
                 try:
                     os.replace(self.path, dead)
-                    dead.unlink()
                 except OSError:
-                    pass
+                    continue
+                try:
+                    dead_age = datetime.now(tz=UTC).timestamp() - dead.stat().st_mtime
+                except OSError:
+                    dead_age = float("inf")
+                if dead_age < LOCK_STALE_S:
+                    # We took a live holder's fresh lock: put it back, never overwriting.
+                    with contextlib.suppress(OSError):
+                        os.link(dead, self.path)
+                    with contextlib.suppress(OSError):
+                        dead.unlink()
+                    raise Busy(f"{self.path.name} was re-taken while breaking it") from None
+                with contextlib.suppress(OSError):
+                    dead.unlink()
                 continue
             with os.fdopen(fd, "w") as fh:
-                fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}\n")
+                fh.write(f"{self.token} {datetime.now(tz=UTC).isoformat()}\n")
             return self
         raise Busy(f"{self.path.name} could not be taken")
 
     def beat(self) -> None:
         """Refresh the lock's mtime: the holder is alive."""
-        try:
+        with contextlib.suppress(OSError):
             os.utime(self.path)
-        except OSError:
-            pass
 
     def __exit__(self, *exc: object) -> None:
         try:
-            self.path.unlink()
+            mine = self.path.read_text(encoding="utf-8").split(" ", 1)[0] == self.token
         except OSError:
-            pass
-
+            return
+        if mine:
+            with contextlib.suppress(OSError):
+                self.path.unlink()
 
 LOCK = BASE / "reports" / "prop" / "ALLOCATOR.lock"
 

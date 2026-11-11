@@ -52,6 +52,16 @@ LEGACY_PROGRAM = "ftmo_2step"
 #: import the follower; a test pins the two equal).
 LEGACY_TERMINAL = r"C:\Program Files\FTMO Global Markets MT5 Terminal\terminal64.exe"
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,23}$")
+#: Ids an account may never take (Auditor SF on #590): `firm_*` is a firm's shared venue folder
+#: under data/prop/, and "refused" is REFUSED's folder, where nothing is ever armed.
+RESERVED_IDS = frozenset({"refused"})
+RESERVED_PREFIXES = ("firm_",)
+
+
+def valid_id(aid: object) -> bool:
+    """An account id: [a-z0-9_], 1-24 chars, and none of the reserved folder names."""
+    return isinstance(aid, str) and bool(ID_RE.match(aid)) and aid not in RESERVED_IDS \
+        and not aid.startswith(RESERVED_PREFIXES)
 FIRM_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,31}$")
 
 
@@ -254,8 +264,9 @@ def load(data: Path | None = None) -> tuple[list[Account], list[str]]:
         if aid == LEGACY:
             continue
         firm, program, term = row.get("firm"), row.get("program"), row.get("terminal_path")
-        if not isinstance(aid, str) or not ID_RE.match(aid):
-            errors.append(f"row {i}: id {aid!r} is not [a-z0-9_], 1-24 chars")
+        if not valid_id(aid):
+            errors.append(f"row {i}: id {aid!r} is not [a-z0-9_], 1-24 chars, or is reserved "
+                          f"(firm_*, refused)")
             continue
         if aid in seen_ids:
             errors.append(f"row {i}: id {aid!r} is registered twice")
@@ -279,6 +290,31 @@ def load(data: Path | None = None) -> tuple[list[Account], list[str]]:
         out.append(Account(id=aid, firm=firm, program=program, terminal_path=term.strip(),
                            enabled=row.get("enabled", True) is not False))
     return out, errors
+
+
+def refusals(data: Path | None = None) -> tuple[bool, list[object]]:
+    """(the registry as a whole is unreadable, [the id named by each refused row]). A row with no
+    readable id contributes None. Used by the cross-account fence to fail closed only where an
+    error can hide an account (Auditor SF on #590), never on every row error."""
+    data = data or DATA
+    try:
+        doc = json.loads((data / REGISTRY_NAME).read_text(encoding="utf-8-sig"))
+    except FileNotFoundError:
+        return False, []
+    except (OSError, ValueError):
+        return True, []
+    rows = doc.get("accounts") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return True, []
+    good = {a.id for a in load(data)[0]}
+    out: list[object] = []
+    for row in rows:
+        aid = row.get("id") if isinstance(row, dict) else None
+        if aid == LEGACY or (isinstance(aid, str) and aid in good):
+            continue
+        out.append(aid if isinstance(aid, str) else None)
+    # an id registered twice is refused on its second row but is a good account: not a refusal
+    return False, out
 
 
 def get(account_id: str, data: Path | None = None) -> Account:

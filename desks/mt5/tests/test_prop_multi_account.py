@@ -162,13 +162,40 @@ def test_unarmed_prop_book_fences_at_any_age(data: Path) -> None:
     assert "prop_a" in (xa.prop_block("GBPUSD", "buy", now=NOW) or "")
 
 
+def _trace(data: Path, aid: str) -> None:
+    """An account that has left a trace on disk: its declaration under data/prop/<id>/."""
+    (data / "prop" / aid).mkdir(parents=True, exist_ok=True)
+    (data / "prop" / aid / "ACCOUNT.json").write_text("{}")
+
+
+def test_a_refused_row_with_no_trace_does_not_fence_every_lane(data: Path) -> None:
+    """Auditor SF on #590: one refused row that names nothing on disk is a typo in a file
+    nothing traded from; it must not refuse every non-gold entry on Fusion, E8 and FTMO."""
+    _registry(data, [_row("a"), _row("BAD"), {"firm": "x"}])
+    assert pa.refusals(data) == (False, ["BAD", None])
+    _registry(data, [_row("a"), _row("BAD")])
+    assert xa.prop_block("EURUSD", "buy", now=NOW) is None
+    assert xa.ftmo_block("EURUSD", "buy", now=NOW) is None
+
+
 def test_a_registry_error_fails_the_fence_closed(data: Path) -> None:
     _registry(data, [_row("a"), _row("BAD")])
+    _trace(data, "BAD")                       # the refused id may hold positions
     hit = xa.prop_block("EURUSD", "buy", now=NOW) or ""
     assert "registry has errors" in hit and "fail closed" in hit
     assert "registry has errors" in (xa.ftmo_block("EURUSD", "buy", now=NOW) or "")
     (data / pa.REGISTRY_NAME).write_text("{not json")
     assert "fail closed" in (xa.prop_block("EURUSD", "buy", now=NOW) or "")
+    _registry(data, [_row("a"), {"firm": "x"}])            # a row whose id cannot be read
+    assert "fail closed" in (xa.prop_block("EURUSD", "buy", now=NOW) or "")
+
+
+def test_reserved_folder_names_are_never_account_ids(data: Path) -> None:
+    """Auditor SF on #590: `firm_*` is a firm's venue folder and `refused` is REFUSED's."""
+    _registry(data, [_row("firm_firmx"), _row("refused"), _row("ok")])
+    accts, errors = pa.load(data)
+    assert [a.id for a in accts] == ["ftmo", "ok"]
+    assert len(errors) == 2 and all("reserved" in e for e in errors)
 
 
 def test_a_registry_block_pages_red_and_is_billed(data: Path, monkeypatch) -> None:
@@ -178,6 +205,7 @@ def test_a_registry_block_pages_red_and_is_billed(data: Path, monkeypatch) -> No
     monkeypatch.setattr(xa, "_REG_ALERT", {})
     monkeypatch.setattr(xa, "_alert_ledger_path", lambda: data / "alerts.json")
     _registry(data, [_row("BAD")])
+    _trace(data, "BAD")
     assert xa.prop_block("EURUSD", "buy", now=NOW)
     assert xa.prop_block("GBPUSD", "sell", now=NOW)
     assert pages == [(xa.REGISTRY_ALERT_ID, "OPEN")]           # paged once, not per entry
@@ -466,3 +494,32 @@ def test_fleet_runs_each_non_legacy_account_alone(data: Path) -> None:
     assert all(c[1].endswith("ftmo_executor.py") for c in calls)
     assert doc["status"] == "CHILD_FAILED" and doc["failed"] == ["b"]
     assert "killed" in [r for r in doc["accounts"] if r["account"] == "b"][0]["tail"]
+
+
+def test_a_breaker_that_takes_a_fresh_lock_puts_it_back(tmp_path: Path, monkeypatch) -> None:
+    """Auditor SF on #590 (stale-break race): if, between judging the lock stale and renaming it,
+    another breaker replaced it with a FRESH lock, the rename takes the live one. The breaker
+    must restore it and stand down, and a holder releases only its own token."""
+    import os as _os
+    lock = tmp_path / "ALLOCATOR.lock"
+    winner = pca.RunLock(lock).__enter__()            # the other breaker's fresh lock
+    real_stat = type(lock).stat
+    calls = {"n": 0}
+
+    def stale_once(self, *a, **k):                    # the loser read the OLD lock's mtime
+        st = real_stat(self, *a, **k)
+        if self == lock and calls["n"] == 0:
+            calls["n"] += 1
+            old = st.st_mtime - pca.LOCK_STALE_S - 10
+            return _os.stat_result((*st[:8], old, old))
+        return st
+    monkeypatch.setattr(type(lock), "stat", stale_once)
+    with pytest.raises(pca.Busy):
+        pca.RunLock(lock).__enter__()
+    assert lock.exists() and lock.read_text().split(" ")[0] == winner.token
+    assert not list(tmp_path.glob("ALLOCATOR.lock.stale.*"))
+    other = pca.RunLock(lock)
+    other.__exit__(None, None, None)                  # not its token: the lock stays
+    assert lock.exists()
+    winner.__exit__(None, None, None)
+    assert not lock.exists()

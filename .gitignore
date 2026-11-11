@@ -603,6 +603,12 @@ desks/mt5/data/FTMO_ALLOCATOR_ARMED
 desks/mt5/data/FTMO_COPY_PRINCIPAL.json
 # The FTMO sleeve executor's arming marker (prop/ftmo_executor.py): box-local, the principal's step.
 desks/mt5/data/FTMO_EXECUTOR_ARMED
+# Every added prop account (mt5desk/prop_accounts.py, #590): the registry names logins' terminals
+# and data/prop/<id>/ holds each account's declaration (login, server), arm files and state.
+# Box-local, the principal's: never committed (Auditor MF on #590 -- box-repair.ps1 runs
+# `git add -A desks/mt5/data`, which would otherwise push them to the public origin).
+desks/mt5/data/prop/
+desks/mt5/data/prop_accounts.json*
 desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
