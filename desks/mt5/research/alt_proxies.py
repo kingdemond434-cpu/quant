@@ -3184,6 +3184,94 @@ CONFIG_DEFAULTS: dict[str, str] = {
 }
 
 
+#: THE BOX'S KEYS, LOADED BY NAME AT RUNTIME (coordinator decision 2026-11-11). The leg runs under
+#: MT5-Dept-Data as SYSTEM, which does not inherit the keys the principal set in Administrator's
+#: User scope, so ALT_PROXIES.json read every key False while the keys sat on the box. Each
+#: declared `key_env` NOT already in the process environment is looked up, in order, in
+#: data/secrets/alt_keys.json ({"NAME": "value"}, gitignored with all of data/secrets/) and then in
+#: the Environment key of each user hive Windows has loaded under HKEY_USERS. Values land in this
+#: process's os.environ only: never printed, logged, written or committed. The report carries the
+#: SOURCE of each name ("env" / "secrets_file" / "registry_user" / absent), never a value.
+BOX_KEYS_FILE = DESK / "data" / "secrets" / "alt_keys.json"
+
+
+def _registry_user_env(names: set[str]) -> dict[str, str]:
+    """Values for `names` from loaded user hives (HKEY_USERS\\<sid>\\Environment). Windows only;
+    {} anywhere else or on any error. Hives of logged-off users are not loaded and are skipped."""
+    if not names or sys.platform != "win32":
+        return {}
+    out: dict[str, str] = {}
+    with contextlib.suppress(Exception):
+        import winreg  # type: ignore[import-not-found,unused-ignore]
+        root: Any = winreg.HKEY_USERS
+        i = 0
+        while True:
+            try:
+                sid = winreg.EnumKey(root, i)
+            except OSError:
+                break
+            i += 1
+            if not sid.startswith("S-1-5-21-") or sid.endswith("_Classes"):
+                continue
+            with contextlib.suppress(OSError), winreg.OpenKey(root, sid + "\\Environment") as k:
+                for name in names - set(out):
+                    with contextlib.suppress(OSError):
+                        val, _typ = winreg.QueryValueEx(k, name)
+                        if isinstance(val, str) and val.strip():
+                            out[name] = val.strip()
+    return out
+
+
+#: Keys other lanes read straight from a box secrets file, reported here by PRESENCE only (True /
+#: False, never a value) so an absent entry shows on the state wire instead of as a silent
+#: UNMEASURED downstream (coordinator 2026-11-11: #980 reads banxico_token from latam_apis.json).
+SECRETS_PRESENCE = (("latam_apis.json", "banxico_token"),)
+
+
+def secrets_presence(secrets_dir: Path | None = None) -> dict[str, bool]:
+    """{"<file>:<key>": present} for SECRETS_PRESENCE and for every declared key_env in
+    alt_keys.json. A file that is absent or unreadable reads False for each of its keys."""
+    d = secrets_dir or BOX_KEYS_FILE.parent
+    out: dict[str, bool] = {}
+    wanted = list(SECRETS_PRESENCE) + [(BOX_KEYS_FILE.name, k)
+                                       for k in sorted({s.key_env for s in SOURCES if s.key_env})]
+    for fname, key in wanted:
+        held = _read_json(d / fname, {})
+        val = held.get(key) if isinstance(held, dict) else None
+        out[f"{fname}:{key}"] = isinstance(val, str) and bool(val.strip())
+    return out
+
+
+def load_box_keys(environ: Any = None, keys_file: Path | None = None,
+                  registry: Callable[[set[str]], dict[str, str]] | None = None) -> dict[str, str]:
+    """Fill each declared key_env missing from `environ` (default os.environ) from the box's
+    secrets file, then from loaded user hives. Returns {name: source}, never a value."""
+    env: Any = os.environ if environ is None else environ
+    wanted = sorted({s.key_env for s in SOURCES if s.key_env})
+    source: dict[str, str] = {}
+    missing: set[str] = set()
+    for name in wanted:
+        if str(env.get(name) or "").strip():
+            source[name] = "env"
+        else:
+            missing.add(name)
+    if missing:
+        held = _read_json(keys_file or BOX_KEYS_FILE, {})
+        if isinstance(held, dict):
+            for name in sorted(missing):
+                val = held.get(name)
+                if isinstance(val, str) and val.strip():
+                    env[name] = val.strip()
+                    source[name] = "secrets_file"
+        missing -= set(source)
+    if missing:
+        for name, val in (registry or _registry_user_env)(set(missing)).items():
+            if name in missing:
+                env[name] = val
+                source[name] = "registry_user"
+    return source
+
+
 def config_value(name: str, environ: Any = None) -> str:
     """The env override if set, else the documented default, else ''."""
     env: Any = os.environ if environ is None else environ
@@ -4364,7 +4452,7 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
 
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = True,
         fixtures: Path | None = None, dry_run: bool = False, donate: bool = True,
-        now: datetime | None = None) -> dict[str, Any]:
+        now: datetime | None = None, key_source: dict[str, str] | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     deadline = time.monotonic() + budget_s * 0.6
     state = _read_json(paths.state, {})
@@ -4440,6 +4528,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
         "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
+        # where each present key was found (env / secrets_file / registry_user), never its value
+        "key_source": dict(sorted((key_source or {}).items())),
+        "secrets_presence": secrets_presence(),
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
@@ -4657,8 +4748,9 @@ def main(argv: list[str] | None = None) -> int:
         for fp in write_rosters():
             print(f"wrote {fp}")
         return 0
+    key_source = {} if a.fixtures else load_box_keys()
     rep = run(budget_s=a.budget_s, fetch=not a.no_fetch, fixtures=a.fixtures,
-              dry_run=a.dry_run, donate=not a.no_donate)
+              dry_run=a.dry_run, donate=not a.no_donate, key_source=key_source)
     print(f"alt_proxies ({rep['mode']}): {len(rep['sources'])} sources, "
           f"{rep['n_cells_tested']}/{rep['n_cells_total']} cells gain-tested, "
           f"direct {rep['direct_cells']['n']}, indirect {rep['indirect_cells']['n']}")
