@@ -155,7 +155,9 @@ def test_supervisor_restarts_the_worker_on_every_exit_without_waiting_for_the_tr
     assert n == 0
     assert naps == [dr.RESPAWN_S] * 3 and dr.RESPAWN_S < 60
     # the supervisor held the department for its whole life and released it at the end
-    assert dr.claim_singleton("intel") is not None
+    again = dr.claim_singleton("intel")
+    assert again is not None
+    again.close()
 
 
 def test_supervisor_refuses_a_second_copy_of_the_department(monkeypatch, tmp_path):
