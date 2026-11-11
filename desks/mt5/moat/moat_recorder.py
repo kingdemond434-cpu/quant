@@ -30,6 +30,13 @@ from pathlib import Path
 
 import MetaTrader5 as mt5
 
+_DESK = Path(__file__).resolve().parents[1]
+if str(_DESK) not in sys.path:
+    sys.path.insert(0, str(_DESK))
+from research.mt5_session import attach_or_initialize, venue_refusal  # noqa: E402
+
+#: The desk's execution terminal (mt5desk/config.py TERMINAL_FILE; broker_switch writes it).
+TERMINAL_FILE = _DESK / "data" / "terminal_path.txt"
 BRONZE = Path(os.environ.get("MOAT_BRONZE", r"C:\moat\bronze"))
 CHECKPOINTS = Path(os.environ.get("MOAT_CHECKPOINTS", r"C:\moat\checkpoints"))
 LOCK = Path(os.environ.get("MOAT_LOCK", r"C:\moat\recorder.lock"))
@@ -105,6 +112,19 @@ def single_instance() -> bool:
             f"{LOCK.parent}; standing down")
         return False
     return True
+
+
+#: Exit code for "attached to a terminal that is not the desk's": a refusal, not a crash.
+EXIT_WRONG_VENUE = 3
+
+
+def terminal_path() -> str | None:
+    """The configured terminal64.exe, or None when the file is missing or empty."""
+    try:
+        p = TERMINAL_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return p or None
 
 
 def disk_free_gb() -> float:
@@ -258,6 +278,13 @@ class Recorder:
         if was_paused:
             self.health_row(event="RESUMED")
         if mono - self.last["universe"] >= UNIVERSE_REFRESH_S or not self.universe:
+            # The attached terminal can be logged into another account while this runs; every
+            # universe refresh proves it is still the desk's before another tick is filed.
+            why = venue_refusal(mt5, terminal_path())
+            if why is not None:
+                self.health_row(event="wrong_venue", why=why)
+                log(f"REFUSED mid-run: {why} -- exiting; the next trigger re-attaches by path")
+                raise SystemExit(EXIT_WRONG_VENUE)
             self.refresh_universe()
             self.last["universe"] = mono
         if mono - self.last["ticks"] >= TICK_INTERVAL_S:
@@ -277,9 +304,18 @@ def main() -> int:
     if not single_instance():
         log("another recorder instance is alive -- exiting (single-instance lock)")
         return 0
-    if not mt5.initialize():
-        log(f"mt5.initialize FAILED: {mt5.last_error()}")
+    # PINNED TO THE DESK'S TERMINAL (2026-11-11). This was `mt5.initialize()` with no path: the
+    # box runs Fusion and FTMO logged in side by side, and a bare attach takes whichever the
+    # bridge sees first, so restart order decided which broker the moat tape recorded.
+    terminal = terminal_path()
+    if not attach_or_initialize(mt5, path=terminal, timeout=15000):
+        log(f"mt5 attach FAILED ({terminal or 'no terminal_path.txt'}): {mt5.last_error()}")
         return 1
+    why = venue_refusal(mt5, terminal)
+    if why is not None:
+        log(f"REFUSED: {why} -- recording nothing; the next trigger retries")
+        mt5.shutdown()
+        return EXIT_WRONG_VENUE
     rec = Recorder()
     rec.health_row(event="recorder_start", once=once, backfill_h=BACKFILL_H)
     log(f"moat recorder up: bronze={BRONZE} universe pending, backfill={BACKFILL_H}h")
