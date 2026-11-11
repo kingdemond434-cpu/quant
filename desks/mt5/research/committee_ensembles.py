@@ -122,7 +122,7 @@ PER_SUBJECT_S = 30.0
 #: 300 s budget, no artifact ever written). The budget used to be checked only BETWEEN subjects,
 #: so one seat on a slow gauntlet cell, or a slow pool load, ran on until the cycle killed the
 #: tree. Every pool load and every examination now runs under a wall-clock bound, and the
-#: committees stop with POST_MARGIN_S left so the bookkeeping and the writes always land.
+#: committees stop with POST_MARGIN_S (at most a fifth of the budget) left so the bookkeeping and the writes always land.
 #: Nothing is dropped: a subject that is not examined stays due and is examined next pass, and
 #: one that overran is recorded and ordered last so it can never starve the queue.
 POST_MARGIN_S = 60.0
@@ -1993,7 +1993,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         fates: Mapping[str, Any] | None = None, now_ts: float | None = None
         ) -> dict[str, Any]:
     t0 = time.monotonic()
-    stop_at = t0 + max(0.0, float(budget_s) - POST_MARGIN_S)
+    stop_at = t0 + float(budget_s) - min(POST_MARGIN_S, 0.2 * float(budget_s))
     _phase("start", t0)
     now_ts = time.time() if now_ts is None else now_ts
     state: dict[str, Any] = _json(STATE, {}) if write else {}

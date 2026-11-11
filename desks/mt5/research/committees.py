@@ -785,7 +785,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         meta: Mapping[str, Any] | None = None, fates: Mapping[str, Any] | None = None,
         subjects: Mapping[str, Sequence[Subject]] | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
-    deadline = t0 + max(0.0, float(budget_s) - POST_MARGIN_S)
+    deadline = t0 + float(budget_s) - min(POST_MARGIN_S, 0.3 * float(budget_s))
     _phase("start", t0)
     state = _json(STATE, {}) if write else {}
     prior = _jsonl(CONTRACTS)
