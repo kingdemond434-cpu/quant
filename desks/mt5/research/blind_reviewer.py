@@ -278,16 +278,25 @@ def resolve_family(family: str) -> tuple[Any, str | None]:
 
 
 def call_params(spec: dict[str, Any], bars: Any) -> tuple[dict[str, Any] | None, str]:
-    """The keyword params this cell is called with -- `family_inputs`, the gateway's own call."""
+    """The keyword params this cell is called with -- `family_inputs`, the gateway's own call.
+
+    THE SESSION STAYS IN (2026-11-11, BR1). `session` is an identity key the family never takes
+    as an argument, but it is NOT inert: `build_cell` pops it and applies `session_filter` to the
+    family's signals, and `family_call.signals` does the same for the forward clock and the live
+    executor. This used `strip_identity_keys`, which deletes it, so every session-certified cell
+    was re-tested on the family's ALL-HOURS signals: on the box's BR1 run, four CHFNOK carry
+    certificates per chart (asia/london/ny/none) reproduced one bit-identical trade set and were
+    vetoed for a rule nobody certified. `runtime_call_params` is the shared shadow/Fusion call
+    shape -- input keys out, the session kept for `family_call.signals` to filter by."""
     params = spec.get("params")
     if not isinstance(params, dict):
         return None, "shadow_spec.params was never recorded; this certificate is unrunnable"
     try:
-        from mt5desk.family_inputs import resolve, strip_identity_keys
+        from mt5desk.family_inputs import resolve, runtime_call_params
     except Exception as exc:                           # pragma: no cover - import environment
         return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
     try:
-        call = strip_identity_keys(str(spec.get("family") or ""), params)
+        call = runtime_call_params(str(spec.get("family") or ""), params)
         extra, why = resolve(str(spec.get("symbol") or ""), str(spec.get("family") or ""),
                              params, bars)
     except Exception as exc:

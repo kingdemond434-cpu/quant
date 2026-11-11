@@ -334,3 +334,30 @@ def test_the_replay_backend_is_named_and_choosable():
     assert br.replay_backend()[0] == "engine.run_backtest"
     assert br.replay_backend("replay2")[0] == "replay2"
     assert br.replay_backend("minimal_replay")[0] == "minimal_replay"
+
+
+# ---------------------------------------------- BR1: the certified session is re-tested, not lost
+
+def test_the_session_reaches_the_reproduction_and_filters_it():
+    """BR1 (2026-11-11): four CHFNOK carry certificates per chart, certified in different
+    sessions, reproduced ONE bit-identical trade set because `call_params` dropped `session`.
+    The judge filters a session cell's signals (`build_cell` -> `session_filter`); so must the
+    reviewer, or it vetoes a rule nobody certified."""
+    from mt5desk.family_call import session_window
+    from mt5desk.family_call import signals as family_signals
+
+    idx = pd.date_range("2026-01-05", periods=24 * 5, freq="h", tz="UTC")
+    bars = pd.DataFrame({"open": 1.0, "high": 1.01, "low": 0.99, "close": 1.0}, index=idx)
+
+    def every_hour(df, side=1, rr=2.0):
+        return [Signal(time=t, side=1, stop=0.98, target=1.04, ttl_bars=2, tag="br1")
+                for t in df.index]
+
+    spec = {"symbol": SYMBOL, "family": FAMILY, "params": {"rr": 2.0, "session": "ny"}}
+    call, why = br.call_params(spec, bars)
+    assert why == "ok" and call is not None and call.get("session") == "ny"
+    kept = family_signals(every_hour, bars, side=1, params=dict(call))
+    lo, hi = session_window("ny")
+    assert kept and all(lo <= s.time.hour < hi for s in kept)
+    unfiltered, _ = br.call_params({**spec, "params": {"rr": 2.0}}, bars)
+    assert len(family_signals(every_hour, bars, side=1, params=dict(unfiltered))) > len(kept)
