@@ -147,13 +147,69 @@ def check(ceilings: dict[str, Any], read: Any, read_base: Any = None) -> list[st
             bad.append(f"{path}: missing or unparseable")
             continue
         for name, want in pins.items():
-            pinned = ast.dump(ast.parse(want, mode="eval").body)
+            # {"any_of": [...], "until_pr": N} pins a knob to one of several exact, reviewed
+            # expressions: the base's and the one pending PR #N moves it to (a pin must hold the
+            # live tree AND that PR's head, since the ceilings are read from the base). It
+            # expires: stale_any_of_pins() fails once the live tree has moved, see there.
+            wants = pin_expressions(want)
+            if not wants:
+                bad.append(f"{path}: {name} has a malformed pin {want!r}")
+                continue
+            pinned = {ast.dump(ast.parse(w, mode="eval").body) for w in wants}
             given = found.get(name)
             if not given:
                 if _base_has(path, name, literal=False):
                     bad.append(f"{path}: {name} is gone")
-            elif any(g != pinned for g in given):
-                bad.append(f"{path}: {name} is no longer exactly `{want}`")
+            elif any(g not in pinned for g in given):
+                shown = " or ".join(f"`{w}`" for w in wants)
+                bad.append(f"{path}: {name} is no longer exactly {shown}")
+    return bad
+
+
+def pin_expressions(want: Any) -> list[str]:
+    """The exact expressions a source pin allows: a string, or an `any_of` pin that names the
+    PR it waits on. A bare list (no expiry) or anything else is malformed: []."""
+    if isinstance(want, str):
+        return [want]
+    if (
+        isinstance(want, dict)
+        and set(want) == {"any_of", "until_pr"}
+        and isinstance(want["until_pr"], int)
+        and isinstance(want["any_of"], list)
+        and len(want["any_of"]) >= 2
+        and all(isinstance(w, str) for w in want["any_of"])
+    ):
+        return list(want["any_of"])
+    return []
+
+
+def stale_any_of_pins(ceilings: dict[str, Any], read: Any) -> list[str]:
+    """An `any_of` pin whose PR has landed: the tree `read` gives every value of the knob as the
+    PR's expression (the last entry) and none as the old one, so the old expression would live
+    on as a silent second allowance (#590 audit should-fix). Collapse it to a plain string."""
+    bad: list[str] = []
+    for path, pins in ceilings.get("source", {}).items():
+        stale = {
+            name: want for name, want in pins.items() if isinstance(want, dict) and "any_of" in want
+        }
+        if not stale:
+            continue
+        src = read(path)
+        try:
+            found = {} if src is None else _rs.knobs(src)
+        except SyntaxError:
+            continue
+        for name, want in stale.items():
+            exprs = pin_expressions(want)
+            given = set(found.get(name) or ())
+            if not exprs or not given:
+                continue
+            landed = ast.dump(ast.parse(exprs[-1], mode="eval").body)
+            if given == {landed}:
+                bad.append(
+                    f"{path}: {name} waits on #{want['until_pr']}, which has landed; pin it to "
+                    f"`{exprs[-1]}` alone"
+                )
     return bad
 
 
