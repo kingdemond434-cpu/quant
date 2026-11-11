@@ -138,6 +138,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/cross_sectional_breadth.py"),
     ("alt_equity_handoff", "desks/mt5/reports/ALT_EQUITY_HANDOFF.json", 3600,
      "research/alt_equity_handoff.py"),
+    # The cell-conversion audit: a stale report means no organ is checking that every idea,
+    # seat and data source still reaches the gauntlet (principal 2026-11-11).
+    ("cell_conversion_audit", "desks/mt5/reports/CELL_CONVERSION_AUDIT.json", 3600,
+     "research/cell_conversion_audit.py"),
     # The silent-organ census reads two small JSON files; its own clock here means the fence
     # still runs when a slow earlier leg ends the hourly pass before it is reached.
     ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
@@ -453,9 +457,32 @@ def silent_organ_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+CELL_CONVERSION_AUDIT = "desks/mt5/reports/CELL_CONVERSION_AUDIT.json"
+
+
+def cell_conversion_issues(root: Path | None = None) -> list[Issue]:
+    """THE CELL-CONVERSION AUDIT'S GAPS, ON THE BOARD (2026-11-11). The audit writes every
+    NOT_WIRED / PARTIAL source and every STALLED funnel stage as an issue row in this module's
+    own `Issue` shape; the board collects them rather than re-deriving them, so the audit stays
+    the single authority on conversion. None is auto-repairable: the fix is the producer's."""
+    r = root or ROOT
+    try:
+        doc = json.loads((r / CELL_CONVERSION_AUDIT).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    out: list[Issue] = []
+    for row in (doc.get("issues") or []) if isinstance(doc, dict) else []:
+        if not isinstance(row, dict) or not row.get("key"):
+            continue
+        out.append(Issue(str(row["key"]), str(row.get("severity") or "DEGRADED"),
+                         str(row.get("what") or ""), str(row.get("detail") or "")[:400],
+                         repair=row.get("repair"), auto=False))
+    return out
+
+
 def collect(root: Path | None = None) -> list[Issue]:
     return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
-            + silent_organ_issues(root))
+            + silent_organ_issues(root) + cell_conversion_issues(root))
 
 
 def repair_budget_s() -> float | None:
