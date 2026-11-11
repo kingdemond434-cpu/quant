@@ -269,8 +269,8 @@ def test_robots_refusal_is_unmeasured_and_writes_no_series(monkeypatch, tmp_path
 def test_event_stance_fires_once_per_value_inside_its_window(tmp_path):
     n = 60
     stamps = pd.date_range("2025-06-02 17:30", periods=n, freq="7D", tz="UTC")
-    vals = np.r_[np.zeros(n - 3), [5.0, -5.0, 0.0]]
-    vals[: n - 3] = np.random.default_rng(1).normal(0, 0.1, n - 3)
+    # a quiet alternating history (|z| ~ 1), then one very high, one very low, one ordinary
+    vals = np.r_[np.resize([0.1, -0.1], n - 3), [5.0, -5.0, 0.0]]
     pd.DataFrame({"available_time": stamps.astype(str), "tail_bp": vals}).to_csv(
         tmp_path / "ust_auction_results.csv", index=False)
     idx = pd.date_range(pd.Timestamp("2025-05-01", tz="UTC"), stamps[-1] + pd.Timedelta(days=5),
