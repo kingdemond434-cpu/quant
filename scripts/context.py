@@ -164,11 +164,27 @@ def _check_pointer(p: str) -> str:
 def verify(path: Path = JOURNAL) -> tuple[bool, list[str]]:
     problems: list[str] = []
     ids: set[str] = set()
-    for r in read_journal(path):
+    rows = read_journal(path)
+    # AN EVIDENCE AMENDMENT (2026-11-03, D-20261103-004 was written with evidence []): the journal
+    # is a protected, append-only ledger, so a missing pointer is corrected by a LATER row naming
+    # the row it amends ("amends": ID, "amend": "evidence"). Its evidence counts toward the target
+    # here; no row is ever edited. Any other amend kind, or an amendment of an unknown or later
+    # row, is a problem.
+    amended: dict[str, list[str]] = {}
+    for r in rows:
+        if r.get("amends") and r.get("amend") == "evidence":
+            amended.setdefault(str(r["amends"]), []).extend(r.get("evidence") or [])
+    for r in rows:
         if "_bad" in r:
             problems.append(r["_bad"])
             continue
         rid = str(r.get("id"))
+        if r.get("amends"):
+            if r.get("amend") != "evidence":
+                problems.append(f"{rid}: unknown amend kind {r.get('amend')!r}")
+            if r["amends"] not in ids:
+                problems.append(f"{rid}: amends unknown or later id {r['amends']}")
+        r = {**r, "evidence": [*(r.get("evidence") or []), *amended.get(rid, [])]}
         miss = [k for k in REQUIRED if not r.get(k)]
         if miss:
             problems.append(f"{rid}: missing {miss}")

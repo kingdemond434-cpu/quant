@@ -1484,6 +1484,11 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             fresh_limit = task_time_limit_s()
         except Exception:          # the budget ran out: the published limit stands
             fresh_limit = None
+        finally:
+            # DISARMED HERE, not only by the `apply` block below: a dry run never reaches that
+            # block, and a deadline left armed made every later `_sub_timeout` in the process
+            # raise once APPLY_BUDGET_S had passed (red CI on an xdist worker, 2026-11-05).
+            _APPLY_DEADLINE[:] = []
         if fresh_limit is not None:
             decision["task_time_limit_basis"] = "schtasks"
             if fresh_limit != _limit:
