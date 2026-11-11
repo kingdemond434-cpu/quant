@@ -142,7 +142,7 @@ def score_symbol(returns: np.ndarray, holdout: int = HOLDOUT_DAYS) -> dict[str, 
 
     r = np.asarray(returns, dtype="float64")
     if len(r) < MIN_TRAIN_DAYS + holdout:
-        return {"verdict": UNMEASURED, "n_days": int(len(r)),
+        return {"verdict": UNMEASURED, "n_days": len(r),
                 "why": f"{len(r)} daily returns < {MIN_TRAIN_DAYS + holdout} needed"}
     test = r[-holdout:]
     ew = ewma_variance(r)
@@ -152,7 +152,7 @@ def score_symbol(returns: np.ndarray, holdout: int = HOLDOUT_DAYS) -> dict[str, 
     ew_next = EWMA_LAMBDA * float(ew[-1]) + (1.0 - EWMA_LAMBDA) * float(r[-1]) ** 2
     q_ewma = qlike(ew_hold, test)
     g = garch_holdout(r, holdout)
-    row: dict[str, Any] = {"n_days": int(len(r)), "holdout_days": holdout,
+    row: dict[str, Any] = {"n_days": len(r), "holdout_days": holdout,
                            "qlike_ewma": None if q_ewma is None else round(q_ewma, 6),
                            "ewma_next_day_vol": (round(math.sqrt(ew_next), 8)
                                                  if ew_next > 0 else None)}

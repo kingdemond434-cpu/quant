@@ -102,7 +102,7 @@ class Fetcher:
         req = urllib.request.Request(url, headers={"User-Agent": self.ua,
                                                    "Accept-Encoding": "identity"})
         try:
-            with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310 (https only)
+            with urllib.request.urlopen(req, timeout=30) as r:
                 return bytes(r.read())
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
@@ -202,10 +202,9 @@ def parse_filing(raw: str) -> list[dict[str, Any]]:
     # No DTD and no entities in a Form 4; refusing them makes ElementTree safe on this input.
     if "<!DOCTYPE" in body or "<!ENTITY" in body:
         return []
-    filed = datetime.strptime(m.group(1), "%Y%m%d%H%M%S")
-    # EDGAR stamps acceptance in US Eastern time; -5h (EST) is the conservative (later) reading
-    # in summer too, so a cluster is never dated before it was public.
-    filed_utc = (filed + timedelta(hours=5)).replace(tzinfo=UTC)
+    # EDGAR stamps acceptance in US Eastern time; reading it as EST (UTC-5) is the conservative
+    # (later) reading in summer too, so a cluster is never dated before it was public.
+    filed_utc = datetime.strptime(m.group(1) + "-0500", "%Y%m%d%H%M%S%z").astimezone(UTC)
     try:
         doc = ET.fromstring(body)
     except ET.ParseError:

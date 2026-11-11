@@ -165,14 +165,15 @@ def test_garch_vol_short_history_is_unmeasured() -> None:
     assert out["verdict"] == gv.UNMEASURED and "needed" in out["why"]
 
 
-_IDX = """Description:           Daily Index of EDGAR Dissemination Feed by Form Type
-Form Type   Company Name                                                  CIK         Date Filed  File Name
----------------------------------------------------------------------------------------------------------------------------------------------
-4           APPLE INC                                                     320193      20261102    edgar/data/320193/0001-26-000001.txt
-4           COOK TIMOTHY D                                                1214156     20261102    edgar/data/320193/0001-26-000001.txt
-4/A         APPLE INC                                                     320193      20261102    edgar/data/320193/0001-26-000002.txt
-10-K        OTHER CO                                                      999         20261102    edgar/data/999/x.txt
-"""
+_IDX = "\n".join([
+    "Description:           Daily Index of EDGAR Dissemination Feed by Form Type",
+    "Form Type   Company Name        CIK         Date Filed  File Name",
+    "-" * 80,
+    "4           APPLE INC           320193      20261102    edgar/data/320193/0001-26-000001.txt",
+    "4           COOK TIMOTHY D      1214156     20261102    edgar/data/320193/0001-26-000001.txt",
+    "4/A         APPLE INC           320193      20261102    edgar/data/320193/0001-26-000002.txt",
+    "10-K        OTHER CO            999         20261102    edgar/data/999/x.txt",
+])
 
 
 def _filing(name: str, title: str, code: str, day: str, accept: str) -> str:
