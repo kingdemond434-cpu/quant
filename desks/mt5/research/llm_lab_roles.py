@@ -342,8 +342,9 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
                 "certified_cells": len(certified),
                 "ranking_rule": "NOVEL certified incremental k_eff per call: each certificate's "
                                 "k_eff x (1 + bonus x w), w = 1 NOVEL, 0 KNOWN_STYLE, the lab's "
-                                "measured novel share if UNMEASURED; novelty counts are NOT a "
-                                "ranking input",
+                                "measured novel share if UNMEASURED; raw novelty COUNTS are "
+                                "not an input, the novelty WEIGHT w is (it scales the credit "
+                                "the Thompson draw ranks on)",
                 "style_hold_cost": hold_cost,
                 "feedback": {k: v[-8:] for k, v in feedback.items()}})
     _write_json(path, doc)

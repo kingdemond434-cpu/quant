@@ -281,11 +281,11 @@ def test_re_screening_a_held_cell_keeps_one_key_and_its_clock(wired: Path) -> No
     after = json.loads(held.read_text())
     assert list(after) == ["p"] and first != after["p"]["style_screen"]["held_at"]
     assert after["p"]["style_screen"]["held_at"] == "2026-01-01T00:00:00+00:00"
-    # A DIFFERENT row under the same id still gets a key of its own.
+    # A different row for the same cell is still ONE hold (audit SF2 on #385).
     other = _row("p", 0.1, "passive_window")
     other["params"]["extra"] = 1
     ls.screen([other], report=rep, held_path=held, sn=_fake_sn())
-    assert len(json.loads(held.read_text())) == 2
+    assert list(json.loads(held.read_text())) == ["p"]
 
 
 def test_held_rows_count_in_the_labs_novel_share(tmp_path: Path,
@@ -390,3 +390,100 @@ def test_the_screen_reads_the_constitutions_held_out_share(monkeypatch: pytest.M
     monkeypatch.setattr(tk, "gauntlet_thresholds",
                         lambda *_a, **_k: {"lockbox_min_fraction": LOCKBOX_FRAC - 0.1})
     assert ls._lockbox_frac() == pytest.approx(LOCKBOX_FRAC), "never looser than the policy"
+
+
+def test_the_screen_holds_out_a_margin_and_honours_a_known_campaign_cut(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit SF1 on #385: the campaign cut is not knowable at screen time, so the screen holds
+    out SCREEN_MARGIN x the lockbox share; a cut that IS known only ever moves it earlier."""
+    import pandas as pd
+    from research.gate_policy import LOCKBOX_FRAC
+    idx = pd.date_range("2024-01-01", periods=24 * 400, freq="h", tz="UTC")
+    df = pd.DataFrame({"close": 1.0}, index=idx)
+    _monkey_ls(monkeypatch, tmp_path)
+    nb = tmp_path / "no_bars"
+    cut = ls._before_lockbox(df, nb)
+    frac = min(0.5, max(LOCKBOX_FRAC, ls._lockbox_frac()) * ls.SCREEN_MARGIN)
+    assert cut.index[-1] < idx[int(len(idx) * (1 - frac))]
+    early = ls._before_lockbox(df, nb, cut="2024-06-01")
+    assert early.index[-1] < pd.Timestamp("2024-06-01", tz="UTC")
+    late = ls._before_lockbox(df, nb, cut="2030-01-01")
+    assert len(late) == len(cut), "a later campaign cut never widens what the screen reads"
+
+
+def test_a_re_screened_cell_keeps_one_key_and_its_first_hold_time(wired: Path) -> None:
+    """Audit SF2 on #385: the same cell held twice is one row, held since the first time."""
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    ls.screen([_row("c1", 0.1, "passive_window")], report=rep, held_path=held, sn=_fake_sn())
+    first = json.loads(held.read_text())["c1"]["style_screen"]["held_at"]
+    again = _row("c1", 0.15, "passive_window")
+    again["params"]["extra"] = 1                       # a different row for the same cell
+    ls.screen([again], report=rep, held_path=held, sn=_fake_sn())
+    store = json.loads(held.read_text())
+    assert list(store) == ["c1"] and store["c1"]["style_screen"]["held_at"] == first
+
+
+def test_a_forget_between_read_and_write_is_not_undone(wired: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit SF3 on #385: the screen merges onto the hold as it is on disk at write time."""
+    rep, held = _report(wired / "s.json", COUNTS), wired / "held.json"
+    ls.screen([_row("old", 0.1, "passive_window")], report=rep, held_path=held, sn=_fake_sn())
+    real = ls._read_json
+    calls = {"n": 0}
+
+    def read_then_forget(path: Path, default: Any) -> Any:
+        doc = real(path, default)
+        if path == held and calls["n"] == 0:
+            calls["n"] += 1
+            held.write_text("{}")                     # another pass donated and forgot "old"
+        return doc
+
+    monkeypatch.setattr(ls, "_read_json", read_then_forget)
+    ls.screen([_row("new", 0.1, "passive_window")], report=rep, held_path=held, sn=_fake_sn())
+    assert sorted(json.loads(held.read_text())) == ["new"]
+    assert not list(wired.glob("*.tmp")) and not list(wired.glob("*.lock"))
+
+
+def test_a_held_target_is_raised_never_written_in_place(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+    p = tmp_path / "h.json"
+    p.write_text('{"keep": 1}')
+
+    def refuse(a: object, b: object) -> None:
+        raise PermissionError(5, "Access is denied")
+
+    monkeypatch.setattr(os, "replace", refuse)
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    with pytest.raises(OSError, match="kept at"):
+        ls._write_json(p, {"new": 1})
+    assert json.loads(p.read_text()) == {"keep": 1}
+
+
+def test_screen_hold_release_donate_end_to_end(wired: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit SF4 on #385: through llm_lab's own wrappers. A saturated cell is held by
+    style_screened, and release_restyled donates it (evidence date first, then the donation,
+    then the hold forgets it) once its style stops being saturated."""
+    import llm_lab as lab
+    monkeypatch.setattr(lab, "STATE_DIR", wired / "state")
+    monkeypatch.setattr(lab, "DONATE_DIR", wired / "seat")
+    monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
+    monkeypatch.setattr(ls, "HELD", wired / "state" / "style_held.json")
+    monkeypatch.setattr(ls, "REPORT", _report(wired / "s.json", COUNTS))
+    monkeypatch.setattr(ls, "HOLDS_REPORT", wired / "holds.json")
+    real_screen = ls.screen
+    monkeypatch.setattr(ls, "screen", lambda rows, **kw: real_screen(rows, sn=_fake_sn(), **kw))
+    row = _row("c1", 0.1, "passive_window")
+    row["lookahead_guard"] = {"evidence_from": "2024-03-01"}
+    out, summary = lab.style_screened([row, _row("c2", 0.9, "trend_20d")])
+    assert [r["cell_id"] for r in out] == ["c2"] and summary["held"] == 1
+    assert lab.release_restyled()["released"] == 0, "still saturated: nothing moves"
+    _report(ls.REPORT, {"trend_20d": 20, "passive_window": 1})
+    got = lab.release_restyled()
+    assert got["released"] == 1 and got["still_held"] == 0
+    dons = list((wired / "seat").glob("discoveries_restyled_*.json"))
+    assert len(dons) == 1 and json.loads(dons[0].read_text())["discoveries"][0]["cell_id"] == "c1"
+    assert json.loads(ls.HELD.read_text()) == {}
+    ev = json.loads((wired / "state" / "evidence_start.json").read_text())
+    assert ev["c1"]["from"] == "2024-03-01"

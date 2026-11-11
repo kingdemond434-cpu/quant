@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
+from mt5desk import families_vector as _vec
 from mt5desk.build_memo import Memo, args_key, frame_fingerprint
 from mt5desk.families import Signal, _atr, _h1, bars_per_day
 
@@ -157,6 +157,17 @@ def family_regime_transition(
         return []
 
     atr = _atr(d, atr_n)
+    if _vec.enabled():
+        # Speed only: the same signals read by position (families_vector).
+        try:
+            fast = _vec.regime_transition_emit(
+                d=d, p_leave=p_leave, age=age, move=move, atr=atr, entry_p_leave=entry_p_leave,
+                min_age=min_age, side_mode=side_mode, stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars)
+        except Exception as exc:
+            _vec.fell_back("regime_transition", exc)
+            fast = None
+        if fast is not None:
+            return fast
     # THE LAST BAR OF THE DAY, NOT THE FIRST. The hazard for day t is computed from day t's
     # CLOSE, so the first bar strictly after day t's first bar is still inside day t -- entering
     # there trades a number that will not exist for another twenty-three hours. Caught by

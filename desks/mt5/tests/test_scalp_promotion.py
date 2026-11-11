@@ -388,7 +388,10 @@ def _fake_mt5(bars: pd.DataFrame, *, positions: list | None = None) -> SimpleNam
         TIMEFRAME_M15=15, TRADE_ACTION_DEAL=1, TRADE_ACTION_SLTP=6, ORDER_TYPE_BUY=0,
         ORDER_TYPE_SELL=1, POSITION_TYPE_BUY=0, sent=sent,
         copy_rates_from_pos=lambda symbol, tf, start, count: rows,
-        symbol_info_tick=lambda symbol: SimpleNamespace(bid=2011.8, ask=2012.1),
+        # A venue tick carries its server time; the gold direction lock dates the send by it
+        # and refuses an undated XAU send (OCO v2s MF-A), so the fake carries one too.
+        symbol_info_tick=lambda symbol: SimpleNamespace(bid=2011.8, ask=2012.1,
+                                                        time=rows[-1]["time"]),
         symbol_info=lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01),
         positions_get=lambda symbol=None: list(positions or []),
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, order=7,
@@ -447,6 +450,9 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
                   "MIN_STOP_SPREAD_MULT",
                   # ...and caps same-side exposure per symbol before pricing the lot.
                   "same_side_count", "MAX_SAME_SIDE_PER_SYMBOL",
+                  # ...and asks the gold direction lock before every XAU send (OCO v2s MF-A).
+                  "gold_oco_send_refusal", "gold_oco_after_send", "bill_gold_oco_send",
+                  "_order_risk_usd",
                   # ...and reads `last_error` through `_send_error` when a send comes back empty.
                   "_send_error"), ns)
 

@@ -87,7 +87,7 @@ def test_verdicts_rank_labs_by_certified_keff_per_call(tmp_roles: Path) -> None:
     assert a["gates"] == {"deflated_sharpe": 3} and doc["judged_cells"] == 4
     assert k["keff_per_call"] > a["keff_per_call"] == 0.0
     assert any("died at deflated_sharpe" in ln for ln in doc["feedback"]["A"])
-    assert "novelty counts are NOT a ranking input" in doc["ranking_rule"]
+    assert "novelty COUNTS are not an input" in doc["ranking_rule"]
     rng = random.Random(1)  # noqa: S311 - not crypto
     first = [roles.thompson(doc["labs"], ["A", "K"], rng)[0] for _ in range(300)]
     assert first.count("K") > 200, "the lab that certified ranks first most of the time"

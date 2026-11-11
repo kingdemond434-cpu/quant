@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +31,54 @@ HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
 
 
+#: THE RENAME WAITS OUT A READER (2026-11-05). On Windows `os.replace` onto a file another process
+#: holds open raises PermissionError [WinError 5]. Measured on the box: MT5-MergeDocket.log carried
+#: 28 such failures at this rename, external_survivors.json stayed frozen at 11-02 22:43Z for 54 h
+#: while the run that produced it kept going, and each failed run's 1-2 GB staging file was left
+#: beside it. The judge reads the 2 GB docket for minutes at a time, so the rename now retries with
+#: backoff for up to DOCKET_REPLACE_BUDGET_S before it gives up exactly as it did before.
+DOCKET_REPLACE_BUDGET_S = float(os.environ.get("DOCKET_REPLACE_BUDGET_S", "900"))
+DOCKET_REPLACE_FIRST_WAIT_S = 0.5
+DOCKET_REPLACE_MAX_WAIT_S = 30.0
+#: A staging file this old belongs to a writer that died (a write takes minutes, and its mtime
+#: moves while it streams); it is removed at the next write so dead runs stop holding disk.
+DOCKET_ORPHAN_AGE_S = 6 * 3600.0
+
+
+def _replace_waiting_for_readers(src: str | Path, dst: Path,
+                                 budget_s: float | None = None) -> int:
+    """`os.replace(src, dst)`, retrying PermissionError with backoff inside `budget_s`. Returns the
+    retries it needed; re-raises the last PermissionError once the budget is spent."""
+    budget = DOCKET_REPLACE_BUDGET_S if budget_s is None else float(budget_s)
+    deadline = time.monotonic() + max(0.0, budget)
+    wait, tries = DOCKET_REPLACE_FIRST_WAIT_S, 0
+    while True:
+        try:
+            os.replace(src, dst)
+            return tries
+        except PermissionError:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise
+            tries += 1
+            time.sleep(min(wait, left))
+            wait = min(wait * 2, DOCKET_REPLACE_MAX_WAIT_S)
+
+
+def _sweep_dead_staging(path: Path, now: float | None = None) -> int:
+    """Remove `.<name>.*.tmp` staging files a dead writer left beside `path`. Never raises."""
+    cutoff = (time.time() if now is None else now) - DOCKET_ORPHAN_AGE_S
+    removed = 0
+    for p in path.parent.glob(f".{path.name}.*.tmp"):
+        try:
+            if p.stat().st_mtime < cutoff:
+                p.unlink()
+                removed += 1
+        except OSError:
+            continue
+    return removed
+
+
 def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, Any]) -> None:
     """Stream the large docket without a second, multi-gigabyte JSON string.
 
@@ -37,6 +86,7 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
     docket.  A failed write must also leave the previous judge input intact.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
+    _sweep_dead_staging(path)
     fd, pending = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
@@ -56,7 +106,17 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
                 stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(pending, path)
+        started = time.monotonic()
+        try:
+            tries = _replace_waiting_for_readers(pending, path)
+        except PermissionError:
+            print(f"   docket replace FAILED: {path.name} still locked by a reader after "
+                  f"{time.monotonic() - started:.0f}s of retries (budget "
+                  f"{DOCKET_REPLACE_BUDGET_S:.0f}s); previous docket kept")
+            raise
+        if tries:
+            print(f"   docket replace: {path.name} waited out a reader, {tries} retr"
+                  f"{'y' if tries == 1 else 'ies'} over {time.monotonic() - started:.0f}s")
     finally:
         if os.path.exists(pending):
             os.unlink(pending)
@@ -111,9 +171,11 @@ def live_banned_families() -> frozenset[str]:
 def judged_by_family(path: Path | None = None, tail: int = GATE_LEDGER_TAIL) -> dict[str, int]:
     """How many judgements each family has already consumed, from the gate ledger's tail."""
     out: dict[str, int] = {}
+    from libs.ops.tail_read import tail_lines
     try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()[-tail:]
+        # READ FROM THE END (2026-11-04): `readlines()[-tail:]` held the whole ~1.4M-row ledger,
+        # 13.7 GB of commit on the box, to keep 200,000 rows. Same lines, memory of the tail.
+        lines = tail_lines(path or GATE_LEDGER, tail)
     except OSError:
         return out
     for line in lines:
@@ -222,6 +284,31 @@ def _family_counts(rows: list[dict]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def novelty_family_values() -> tuple[dict[str, float], str]:
+    """Per-FAMILY novelty in [0, 1] from `research/style_novelty`, and the basis.
+
+    A family with measured certificates carries their mean novelty (the share of each one's P&L
+    no known style reproduces, scaled by its mechanism class); any other family carries its
+    declared genealogy (0 textbook, 0.5 adjacent, 1.0 discovered/generic/learned, and a neutral 0
+    for a family the registry does not classify). Every family therefore has a value with or without the report. A failure to import returns {}:
+    every family then reads 0.0 and the order is exactly the pre-novelty order."""
+    try:
+        from research import style_novelty as sn
+        measured = sn.family_values()
+        return measured, (
+            f"{len(measured)} measured families from {sn.REPORT.name}; genealogy for the rest")
+    except Exception as exc:
+        return {}, f"style_novelty unavailable: {type(exc).__name__}: {exc}"
+
+
+def _novelty_of(fam: str, measured: dict[str, float]) -> float:
+    try:
+        from research import style_novelty as sn
+        return sn.family_novelty(fam, measured)
+    except Exception:
+        return 0.0
+
+
 def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
 
@@ -240,8 +327,16 @@ def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
         fam = str(row.get("family") or "")
         docket[fam] = docket.get(fam, 0) + 1
 
+    # THE NOVELTY TILT (principal 2026-10-13: "hunt tons of unknown styles"). A family's spend
+    # is divided by (1 + its novelty), so a family whose certificates no known style explains --
+    # or, unmeasured, whose mechanism class is not textbook -- is judged as though less of its
+    # docket had been spent. It RE-ORDERS families only: no row leaves the docket, no bar moves,
+    # and every row that reaches the judge is charged and judged exactly as before.
+    nov_measured, _nov_why = novelty_family_values()
+    nov = {fam: _novelty_of(fam, nov_measured) for fam in docket}
+
     def spend(fam: str) -> float:
-        return judged.get(fam, 0) / max(docket.get(fam, 1), 1)
+        return judged.get(fam, 0) / max(docket.get(fam, 1), 1) / (1.0 + nov.get(fam, 0.0))
 
     # G4's CONSUMER. Breadth still decides the TIER -- an unjudged family outranks a re-judged
     # one, and that ratchet is untouched -- but families that have been spent on equally are no
@@ -313,6 +408,13 @@ SOURCES = (
     # whether a recovered mechanism has ever earned a certificate -- a question that could not
     # previously be ASKED, because no certificate could descend from a row that never arrived.
     ("deepened_candidates.json", "candidates"),
+    # THE LOCAL-LANGUAGE CORPUS, READ HERE RATHER THAN PUSHED (2026-11-05). `local_converter`
+    # used to reach the docket only by taking this same writer lane itself, and this run holds
+    # the lane for its whole life -- ~27h measured on the box -- so every hourly push was
+    # refused and 18,211 converted rows waited a day. Its `docket_rows` are already in the
+    # docket's own shape and PIT-stamped; they face the identical routing, tradeable filter,
+    # family-less drop and identity dedupe as every row above.
+    ("local_candidates.json", "docket_rows"),
 )
 
 
@@ -674,6 +776,31 @@ def main() -> int:
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
     intake_stamped: dict[str, int] = {}
+    # STEERED BEFORE IT IS BANKED (principal 2026-10-28: "stop miners from producing them ...
+    # same breadth hunts js differently directed ... without reducing quantity"). Every source's
+    # fresh rows pass `research/coverage_steer` against the shared coverage map the last merge
+    # wrote: a row repeating an already-mined structural rule in numeric thresholds only is moved,
+    # here, to the nearest lawful empty instrument/chart/session/regime of the same mechanism.
+    # One row out per row in, so no producer's count moves; a producer that already steered
+    # itself (the compiler) arrives stamped and passes through. A fault costs the steer, never a
+    # row. QUANT_COVERAGE_STEER=0 is the revert path (measured, nothing moved).
+    steerer: Any = None
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import coverage_steer as _cs
+        _cmap = _cs.CoverageMap.load(HYP / _cs.MAP.name)
+        steerer = _cs.Steerer(
+            _cmap, now=now, hyp_dir=HYP,
+            tradeable=(None if not tradeable
+                       else (lambda s, _t=tradeable: s.upper() in _t)))
+        if os.environ.get("QUANT_COVERAGE_STEER", "1") == "0":
+            steerer.closed.append("QUANT_COVERAGE_STEER=0 (revert path)")
+    except Exception as exc:
+        print(f"   coverage steer unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+        steerer = None
 
     for name, key in SOURCES:
         source_path = HYP / name
@@ -694,6 +821,11 @@ def main() -> int:
             per_source[name] = 0
             source_state[name] = "MALFORMED_OR_EMPTY"
             continue
+        if steerer is not None:
+            try:
+                rows = steerer.steer(rows, name)
+            except Exception as exc:
+                print(f"   coverage steer failed on {name} ({type(exc).__name__}); unchanged")
         kept = 0
         for row in rows:
             if not isinstance(row, dict):
@@ -831,12 +963,19 @@ def main() -> int:
     # counted as a fresh discovery; freshness still governs provenance, never capacity.
     banked = _read(TARGET)
     readmitted = 0
+    # WHAT THIS PASS'S PRODUCERS EMITTED, before the bank is unioned in: an identity the bank
+    # already holds is an EXACT re-proposal (collapsed below, and until 2026-10-28 counted by
+    # nothing); the rest is fresh. `hypothesis_families` checks both against what was mined.
+    produced_now = set(merged)
+    reproposed: set[str] = set()
     if isinstance(banked, list):
         for row in banked:
             if not isinstance(row, dict):
                 continue
             ident = _identity(row)
             if ident in merged:
+                if ident in produced_now:
+                    reproposed.add(ident)
                 merged[ident].setdefault("first_seen", row.get("first_seen")
                                          or row.get("merged_at") or now.isoformat())
                 continue
@@ -968,6 +1107,36 @@ def main() -> int:
         print(f"   study bank: {len(study)} row(s) of banned families "
               f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
               f"deleted) -> {STUDY_BANK.name}")
+
+    # BREADTH IN INDEPENDENT FAMILIES, AND DUPLICATES RE-AIMED (principal 2026-10-28: "avoid
+    # duplicates already mined or similar ... millions of independent cells edges instead of
+    # same"). Every fresh row is checked against what was mined before it (EXACT / NEAR rule /
+    # same correlation-cluster FAMILY / NOVEL); a duplicate is KEPT and a re-aimed descendant is
+    # minted beside it on the thinnest lawful instrument whose cluster holds none of its rule, so
+    # the mint rate can only rise. The census (raw cells vs rules vs families vs k_eff, the daily
+    # new-independent metric, mechanism coverage, steering) goes to reports/HYPOTHESIS_FAMILIES.
+    # Runs AFTER the lane router, so a re-aim target is an instrument the same family already
+    # runs on in the judging lane. A fault costs the census and the re-aim, never a row.
+    families: dict[str, Any] = {"status": "UNAVAILABLE"}
+    families_pending: Any = None
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import hypothesis_families as _hf
+        rows_out, families, families_pending = _hf.apply(
+            rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
+            identity_fn=_identity, now=now, hyp_dir=HYP,
+            report_path=(None if HYP == BASE / "data" / "hypotheses"
+                         else HYP / _hf.REPORT.name))
+        _in = families.get("intake") or {}
+        print(f"   families: {families.get('raw_cells')} cells -> {families.get('l1_rules')} "
+              f"rules -> {families.get('l2_families')} families, k_eff {families.get('k_eff')}; "
+              f"intake {_in.get('by_status')} -> {_in.get('reaimed')} re-aimed (0 removed)")
+    except Exception as exc:
+        families = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   families census unavailable ({type(exc).__name__}: {exc}); rows unchanged")
 
     # ORDER IS SELECTION: the gauntlet takes this file in order under a bar budget, so a family
     # at the tail is not "lower priority", it is never judged at all.
@@ -1107,6 +1276,19 @@ def main() -> int:
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
+    # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
+    # only for children that survived into the rows just written (order_docket can filter some).
+    # The ledger is the one memory of "re-aimed once, ever"; it must never claim a child that the
+    # written docket does not hold.
+    if families_pending is not None:
+        try:
+            families["commit"] = families_pending.commit(rows_out)
+        except Exception as exc:
+            families["commit"] = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+    # THE SHARED COVERAGE MAP AND THE NOVELTY REPORT -- only after the docket is durable, so the
+    # map every producer reads next pass describes exactly the docket that exists, and the steer
+    # ledger never names a child the written docket does not hold.
+    steer_block = publish_steering(steerer, rows_out)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
@@ -1165,6 +1347,8 @@ def main() -> int:
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
+        "hypothesis_families": families,
+        "coverage_steer": steer_block,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
@@ -1180,6 +1364,49 @@ def main() -> int:
         fam[str(r.get("family"))] = fam.get(str(r.get("family")), 0) + 1
     print(f"   families going to the gauntlet: {fam}")
     return 0
+
+
+def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, Any]:
+    """Ledger, map, report, in that order, after the docket write. Never raises."""
+    if steerer is None:
+        return {"status": "UNAVAILABLE"}
+    try:
+        from research import coverage_steer as _cs
+        # Every durable steered child, the compiler's and this merge's alike, once per parent.
+        ledger = _cs.load_ledger(HYP / _cs.LEDGER.name)
+        lines = _cs.append_ledger(_cs.ledger_lines_for(rows_out, ledger, _identity),
+                                  HYP / _cs.LEDGER.name)
+        try:
+            from research.hypothesis_families import CLUSTERS, load_clusters
+            clusters, _meta = load_clusters({str(r.get("symbol") or r.get("sym") or "").upper()
+                                             for r in rows_out} - {""},
+                                            path=HYP / CLUSTERS.name,
+                                            refresh=False)   # read only: never a 2nd writer
+        except Exception:
+            clusters = {}
+        cmap = _cs.CoverageMap.from_rows(rows_out, clusters, identity_fn=_identity,
+                                         steered=_cs.load_ledger(HYP / _cs.LEDGER.name))
+        map_ok = cmap.save(HYP / _cs.MAP.name)
+        rep = steerer.report()
+        rep["fence"] = _cs.fence(rep)
+        rep["ledger_lines"] = lines
+        rep["map_written"] = map_ok
+        rep["map_after"] = cmap.summary()
+        rep["novel_by_day"] = _cs.novelty_by_day(cmap)
+        report_path = (BASE / "reports" / _cs.REPORT.name if HYP == BASE / "data" / "hypotheses"
+                       else HYP / _cs.REPORT.name)
+        _cs.write_report(rep, report_path)
+        tot = rep.get("total") or {}
+        print(f"   coverage steer: {tot.get('emitted', 0)} emitted, {tot.get('duplicate_in', 0)} "
+              f"repeats in -> {tot.get('steered', 0)} steered to empty ground, "
+              f"{tot.get('unsteerable', 0)} unsteerable; duplicate share "
+              f"{tot.get('duplicate_share_in')} -> {tot.get('duplicate_share_out')}; "
+              f"fence {rep['fence']['status']}")
+        return {k: rep.get(k) for k in ("at", "version", "fail_closed", "total",
+                                         "steered_by_axis", "fence", "ledger_lines",
+                                         "map_written", "map_after")}
+    except Exception as exc:
+        return {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
 
 
 def run_cli() -> int:

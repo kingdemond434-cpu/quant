@@ -26,6 +26,7 @@ import hashlib
 import json
 import math
 import re
+import threading
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -105,6 +106,12 @@ class _Ledger:
 #: would be quadratic. An append by THIS process updates the cache in place; an append by
 #: another process changes the stamp and forces a re-read.
 _CACHE: dict[str, _Ledger] = {}
+#: ONE PARSE AT A TIME (2026-10-20). The deepening worker's seat lane calls `prompt_context` from
+#: up to twelve threads at once, and on a cold or invalidated cache EVERY thread parsed and
+#: tokenised every ledger itself -- twelve full copies of the memory in flight, then eleven
+#: thrown away. The rebuild is serialised and re-checked under the lock, so the first thread
+#: parses and the rest reuse its result.
+_CACHE_LOCK = threading.Lock()
 
 
 def _stamp(path: Path) -> tuple[float, int] | None:
@@ -124,21 +131,30 @@ def _ledger(kind: str, memory_dir: Path | None) -> _Ledger:
     hit = _CACHE.get(str(path))
     if hit is not None and hit.stamp == stamp:
         return hit
-    led = _Ledger(stamp=stamp)
-    try:
-        for ln in path.read_text("utf-8").splitlines():
-            if not ln.strip():
-                continue
-            try:
-                row = _as_dict(json.loads(ln))
-            except ValueError:
-                continue
-            if row.get("id"):
-                led.add(row)
-    except OSError:
-        return _Ledger(stamp=None)
-    _CACHE[str(path)] = led
-    return led
+    with _CACHE_LOCK:
+        stamp = _stamp(path)
+        if stamp is None:
+            _CACHE.pop(str(path), None)
+            return _Ledger(stamp=None)
+        hit = _CACHE.get(str(path))
+        if hit is not None and hit.stamp == stamp:
+            return hit                      # another thread parsed it while this one waited
+        led = _Ledger(stamp=stamp)
+        try:
+            with path.open(encoding="utf-8") as fh:   # a line at a time, never the whole text
+                for ln in fh:
+                    if not ln.strip():
+                        continue
+                    try:
+                        row = _as_dict(json.loads(ln))
+                    except ValueError:
+                        continue
+                    if row.get("id"):
+                        led.add(row)
+        except OSError:
+            return _Ledger(stamp=None)
+        _CACHE[str(path)] = led
+        return led
 
 
 def _load(kind: str, memory_dir: Path | None) -> tuple[list[dict[str, Any]], list[set[str]]]:

@@ -38,10 +38,11 @@ one gauntlet judges every donated row.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import sys
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -84,10 +85,65 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, doc: Any) -> None:
+    """Replace `path` whole through a temp name unique to this writer (audit SF3 on #385): a
+    fixed `.tmp` let two writers clobber each other's half-written file, and a held target on
+    Windows (WinError 5) is retried, then RAISED with the new body kept -- never written in
+    place. #332's libs/ops/atomic_json carries the same contract for the other lab organs."""
+    import os
+    import threading
+    import time
+    import uuid
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}."
+                         f"{uuid.uuid4().hex[:8]}.tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    tmp.replace(path)
+    for i in range(5):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            time.sleep(0.05 * (i + 1))
+    raise OSError(f"could not replace {path}; the new body is kept at {tmp}")
+
+
+STALE_LOCK_S = 120.0
+
+
+@contextlib.contextmanager
+def _locked(path: Path, timeout_s: float = 30.0) -> Iterator[None]:
+    """Hold `<path>.lock` for a read-modify-write of the hold (audit SF3 on #385): a screen and a
+    forget in two passes would otherwise each write their own view and drop the other's rows.
+    A dead holder's lock (older than STALE_LOCK_S) is renamed away; only the rename winner
+    retries, so two waiters never both break it."""
+    import os
+    import time
+    import uuid
+    lock = path.with_name(path.name + ".lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout_s
+    while True:
+        try:
+            os.close(os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+            break
+        except FileExistsError:
+            try:
+                stale = time.time() - lock.stat().st_mtime > STALE_LOCK_S
+            except OSError:
+                continue
+            if stale:
+                grave = lock.with_name(f"{lock.name}.{uuid.uuid4().hex[:8]}.stale")
+                with contextlib.suppress(OSError):
+                    os.rename(lock, grave)
+                    grave.unlink(missing_ok=True)
+                    continue
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"{lock} held past {timeout_s}s") from None
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        with contextlib.suppress(OSError):
+            lock.unlink(missing_ok=True)
 
 
 def saturation(report: Path | None = None) -> dict[str, Any]:
@@ -130,6 +186,18 @@ def _bars(sym: str, bars_dir: Path) -> Any:
 
 #: Campaign-calendar cache: the union of every H1 chart's days, re-read once per UTC day.
 CALENDAR = STATE_DIR / "lockbox_calendar.json"
+
+#: The screen reads less than the gauntlet will keep (audit SF1 on #385). The campaign lockbox
+#: (gate_policy.lockbox_cut) is cut on the UNION calendar of every cell in a campaign's TRADE
+#: days, which the screen cannot see when it runs. So the screen stops at the EARLIEST of: the
+#: union-of-charts estimate of that cut (#392), its own tail held out at SCREEN_MARGIN x the
+#: lockbox share (never under SCREEN_MARGIN x the lockbox floor), and any campaign cut passed in.
+#: It records that basis and the last day it read (`read_until`) on every reading.
+SCREEN_MARGIN = 2.0
+LOCKBOX_BASIS = ("earliest of the union-of-charts campaign cut and the own H1 bar days held out "
+                 "at SCREEN_MARGIN x the constitution's lockbox share (at least SCREEN_MARGIN x "
+                 "LOCKBOX_MIN_DAYS); the trade-day campaign cut is UNMEASURED at screen time, so "
+                 "read_until is stamped for the gauntlet to fail closed on")
 
 
 def _union_days(bars_dir: Path) -> list[Any]:
@@ -204,14 +272,37 @@ def _dev_end(df: Any, bars_dir: Path | None = None) -> Any:
     return min(cuts)
 
 
-def _before_lockbox(df: Any, bars_dir: Path | None = None) -> Any:
-    """The bars before the gauntlet's lockbox: the screen never reads a window it will judge."""
+def _before_lockbox(df: Any, bars_dir: Path | None = None, cut: Any = None) -> Any:
+    """The bars the screen may read: before the union-calendar campaign estimate (`_dev_end`),
+    never after the margin-widened tail of the cell's own days, and before `cut` when a campaign
+    cut is known. A tail that cannot be located is UNMEASURED and nothing is read."""
     try:
+        import math as _m
+
         import pandas as pd
-        cut = _dev_end(df, bars_dir)
-        if cut is None:
+
+        from research.gate_policy import LOCKBOX_MIN_DAYS
+        idx = pd.DatetimeIndex(df.index)
+        days = idx.normalize().unique()
+        dev = _dev_end(df, bars_dir)
+        if dev is None:
             return df.iloc[0:0]
-        return df[pd.DatetimeIndex(df.index).normalize() < cut]
+        frac = min(0.5, _lockbox_frac() * SCREEN_MARGIN)
+        tail = max(_m.ceil(int(LOCKBOX_MIN_DAYS) * SCREEN_MARGIN), _m.ceil(len(days) * frac))
+        if tail >= len(days):
+            return df.iloc[0:0]
+        stops = [pd.Timestamp(days[-tail]), pd.Timestamp(dev)]
+        if cut is not None:
+            stops.append(pd.Timestamp(cut))
+        tz = idx.tz
+        norm = []
+        for c in stops:
+            if c.tzinfo is None and tz is not None:
+                c = c.tz_localize(tz)
+            elif c.tzinfo is not None and tz is None:
+                c = c.tz_convert(None)
+            norm.append(c)
+        return df[idx < min(norm)]
     except Exception:
         return df.iloc[0:0]       # a lockbox that cannot be located is UNMEASURED, never read
 
@@ -247,7 +338,7 @@ def measure(row: Mapping[str, Any], *, bars_dir: Path | None = None,
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:80]}"}
     if proj.get("status") != "MEASURED":
         return {"status": UNMEASURED, "why": str(proj.get("why") or "projection unmeasured")}
-    return {"status": "MEASURED", "n": proj.get("n"),
+    return {"status": "MEASURED", "n": proj.get("n"), "lockbox_basis": LOCKBOX_BASIS,
             "novelty_return": proj.get("novelty_return"),
             "dominant_style": proj.get("dominant_style"),
             "residual_t": proj.get("residual_t"),
@@ -280,6 +371,7 @@ def screen(rows: Iterable[dict[str, Any]], *, deadline: float | None = None,
     sat = saturation(report)
     out: list[dict[str, Any]] = []
     store = _read_json(held_path or HELD, {}) or {}
+    fresh_keys: set[str] = set()
     tally = {"screened": 0, "NOVEL": 0, "KNOWN_STYLE": 0, UNMEASURED: 0, "held": 0,
              "not_reached": 0}
     for i, r in enumerate(rows):
@@ -296,16 +388,33 @@ def screen(rows: Iterable[dict[str, Any]], *, deadline: float | None = None,
                                    "saturated_styles": list(sat.get("saturated") or [])}}
         if held(reading, sat):
             tally["held"] += 1
+            # ONE ROW PER CELL, HELD SINCE ITS FIRST HOLD (audit SF2 on #385, must-fix 2 on
+            # #392): the key ignores the moving reading, so a re-screen of the same cell lands on
+            # the same key, and its MAX_HOLD_DAYS clock keeps the EARLIEST held_at.
             key = _hold_key(r, store)
-            prior = (store.get(key) or {}).get("style_screen") or {}
-            # A re-screen of a row already held keeps its key AND its hold clock (should-fix E):
-            # resetting held_at would let a re-proposed cell be deferred forever.
-            r["style_screen"]["held_at"] = prior.get("held_at") or r["style_screen"]["at"]
+            prev = (store.get(key) or {}).get("style_screen") or {}
+            first = str(prev.get("held_at") or "")
+            now_at = str(r["style_screen"]["at"])
+            r["style_screen"]["held_at"] = min(first, now_at) if first else now_at
             store[key] = r
+            fresh_keys.add(key)
             continue
         out.append(r)
     if tally["held"]:
-        _write_json(held_path or HELD, store)
+        hp = held_path or HELD
+        with _locked(hp):
+            # Merge onto what is on disk NOW: a forget that ran since the read above must not
+            # be undone, and a row another pass held must not be dropped.
+            disk = _read_json(hp, {}) or {}
+            for k in fresh_keys:
+                v = store[k]
+                old_at = str(((disk.get(k) or {}).get("style_screen") or {}).get("held_at")
+                             or "")
+                if old_at and old_at < str(v["style_screen"].get("held_at") or "~"):
+                    v["style_screen"]["held_at"] = old_at
+                disk[k] = v
+            _write_json(hp, disk)
+            store = disk
     return out, {**tally, "saturation": {k: sat.get(k) for k in ("status", "saturated",
                                                                    "n_measured", "why")},
                  "held_total": len(store)}
@@ -325,14 +434,15 @@ def _content(r: Mapping[str, Any]) -> str:
 
 
 def _hold_key(r: Mapping[str, Any], store: Mapping[str, Any]) -> str:
-    """cell_id, or cell_id plus a content hash when a DIFFERENT row already holds that id. The
-    same content always maps to the same key, so re-screening never adds a second one."""
+    """ONE KEY PER CELL (audit SF2 on #385): the cell_id alone, so a re-proposal of the same cell
+    with different params never starts a second hold or a second clock. A row with no cell_id is
+    keyed on its PROPOSER content (`_content`), never on the moving reading (must-fix 2 on #392).
+    `store` is kept in the signature for callers that pass it."""
     import hashlib
     cid = str(r.get("cell_id") or "")
-    body = _content(r)
-    if cid and (cid not in store or _content(store[cid]) == body):
+    if cid:
         return cid
-    return (cid or "anon") + "_" + hashlib.sha256(body.encode()).hexdigest()[:12]
+    return "anon_" + hashlib.sha256(_content(r).encode()).hexdigest()[:12]
 
 
 def _age_days(stamp: Any, now: datetime) -> float | None:
@@ -390,9 +500,10 @@ def forget(keys: Iterable[str], *, held_path: Path | None = None) -> None:
     """Drop donated rows from the hold. Called only after their donation file is on disk."""
     path = held_path or HELD
     gone = set(keys)
-    store = _read_json(path, {}) or {}
-    if gone & set(store):
-        _write_json(path, {k: v for k, v in store.items() if k not in gone})
+    with _locked(path):
+        store = _read_json(path, {}) or {}
+        if gone & set(store):
+            _write_json(path, {k: v for k, v in store.items() if k not in gone})
 
 
 def held_rows(held_path: Path | None = None) -> list[dict[str, Any]]:
@@ -454,5 +565,6 @@ def prompt_line(report: Path | None = None) -> str:
     owned = ", ".join(f"{s} ({counts.get(s)})" for s in sat.get("saturated") or [])
     return ("styles the book already owns (certificates dominated by each): "
             + (owned or "none above the saturation share")
-            + ". A cell whose direction choice reduces to one of these is held, not judged; "
+            + ". A cell whose direction choice reduces to one of these is deferred (held up to "
+              f"{MAX_HOLD_DAYS:g} days, then judged); "
               "propose information the price path cannot reproduce.")

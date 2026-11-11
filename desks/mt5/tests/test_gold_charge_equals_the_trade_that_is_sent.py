@@ -60,6 +60,22 @@ SLEEVE = {"name": "gold_london_am", "symbol": "XAUUSD", "lot": "auto", "rng": No
           "sig_hour": 13}
 
 
+@pytest.fixture(autouse=True)
+def _no_cert_book_pins(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """This file prices the charge against the send, not the principal's book: the committed
+    CERT_BOOK_LIVE.json pins gold_london_am at 0.0 (zuck 2026-10-20 21:52Z), which sends nothing
+    by design (test_fusion_minlot_book.test_a_cert_book_zero_sends_nothing_on_either_path)."""
+    from mt5desk import decision_core as _dc
+    from mt5desk import kelly_sizing
+    monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "no_cert_book.json")
+    # The same pin lives in code since r6 (decision_core.PRINCIPAL_ZERO): lifted here for the
+    # same reason; test_fusion_book_r6.py pins that it holds.
+    monkeypatch.setitem(_dc.PRINCIPAL_ZERO, "fusion", frozenset())
+    # And the late-gold-send rule (GOLD_SEND_GRACE_MIN, r6): this file resolves at clocks past
+    # the 5-minute grace; test_fusion_book_r6.py pins the rule.
+    monkeypatch.setattr(_dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
+
+
 class _GoldInfo:
     """XAUUSD as a Fusion five-digit CFD feed reports it. `trade_tick_value / trade_tick_size`
     is the only current answer for EUR per price unit, and it is 86.41 for gold."""
@@ -305,7 +321,7 @@ def test_the_bracket_is_resolved_before_the_heat_cap_runs() -> None:
 def test_the_charge_site_bills_at_the_resolved_stop_and_the_live_symbol_info() -> None:
     block = _GW_SRC.split("from_book = _key is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
-    assert 'resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())' in block, (
+    assert 'resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date()' in block, (
         "the charge must ask about the same day the placement loop will, or the two sites can "
         "disagree across midnight and the charge site silently becomes the trading rule")
     assert '_s, equity, _pend["dist"], _pend["sym"]' in block, (
