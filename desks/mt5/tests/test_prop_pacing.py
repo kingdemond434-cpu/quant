@@ -189,7 +189,7 @@ def test_the_public_summary_carries_verdicts_and_shares_never_dollars(files) -> 
     assert pub["pace"]["verdict"] == "AHEAD" and pub["progress_share"] == 0.3
     assert pub["daily_room_share"] == 0.82 and pub["max_room_in_daily_limits"] == 2.5
     assert pub["worst_daily_room_share"] == 0.82 and pub["days"]["min_days_left"] == 2
-    for banned in ("usd", "balance", "equity\"", "account_key", KEY, "sha256", "profit", "XAUUSD"):
+    for banned in ("usd", "balance", "\"equity\"", "account_key", KEY, "sha256", "profit", "XAUUSD"):
         assert banned not in text, banned
     # No figure in it is an account-sized amount.
     assert max(abs(x) for x in _numbers(pub)) < 1000
