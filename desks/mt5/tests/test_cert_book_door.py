@@ -35,8 +35,9 @@ def _desk(tmp: Path, journal: list[dict] | None, book: dict | None = BOOK) -> di
     return p
 
 
-def _run(p: dict[str, Path]) -> dict:
-    return door.run(p["book"], p["journal"], p["report"], p["switch"], p["backups"])
+def _run(p: dict[str, Path], e8_open: bool = False) -> dict:
+    return door.run(p["book"], p["journal"], p["report"], p["switch"], p["backups"],
+                    e8_door=lambda: e8_open)
 
 
 def test_the_order_releases_fusion_zero_pins_and_reports_e8_as_needing_a_size(
@@ -58,6 +59,27 @@ def test_the_order_releases_fusion_zero_pins_and_reports_e8_as_needing_a_size(
     assert not any(f.name.startswith("CERT_BOOK_LIVE.json.bak") for f in tmp_path.iterdir())
     again = _run(p)                                                   # idempotent
     assert again["status"] == "NEEDS_SIZE" and len(again["history"]) == 1
+
+
+def test_e8_zeros_are_released_only_while_its_absent_key_door_is_open(tmp_path: Path) -> None:
+    """#958 (Max-growth) makes e8_gold read an absent key as the allocator's fraction behind
+    `absent_key_door_open()`; only while that answers True may the door delete the e8 zeros."""
+    p = _desk(tmp_path, [ORDER])
+    doc = _run(p, e8_open=True)
+    assert sorted((r["venue"], r["key"]) for r in doc["removed"]) == [
+        ("e8", "gold_afternoon"), ("e8", "gold_london_am"),
+        ("fusion", "gold_afternoon"), ("fusion", "gold_london_am")]
+    assert not doc.get("needs_size")
+    book = json.loads(p["book"].read_text("utf-8"))
+    assert book["e8"] == {"gold_asia": 0.006}                        # a SIZE is never touched
+    assert "released_by research/cert_book_door.py" in book["e8_by"]
+    # shut (or a tree without #958): E8 waits, reported, untouched
+    q = _desk(tmp_path / "shut", [ORDER]) if (tmp_path / "shut").mkdir() is None else None
+    assert q is not None
+    shut = _run(q, e8_open=False)
+    assert {r["venue"] for r in shut["removed"]} == {"fusion"}
+    assert json.loads(q["book"].read_text("utf-8"))["e8"] == BOOK["e8"]
+    assert door.e8_absent_key_door_open() in (True, False)           # never raises
 
 
 def test_it_fails_closed_every_way(tmp_path: Path) -> None:

@@ -46,7 +46,9 @@ BACKUPS = BASE / "reports" / "cert_book_door_backups"
 #: (`prop/e8_gold.window_risk`: a window absent from the e8 block "stands aside" at 0), so
 #: deleting its zero sends nothing either -- reporting that as RELEASED would be a lie. E8's
 #: windows are reported NEEDS_SIZE until e8_gold reads an absent key as "the allocator's
-#: fraction" (Max-growth's separate PROTECTED PR).
+#: fraction": Max-growth's #958 adds `prop.e8_gold.absent_key_door_open()`, and only while it
+#: answers True are the e8 zeros released too. Feature-detected, so a tree without #958 (or a
+#: door that raises) reads as SHUT and nothing on E8 moves.
 RELEASES: tuple[dict[str, Any], ...] = (
     {"journal_id": "D-20261111-071", "title_starts": "All accounts trade everything",
      "order": "zuck 2026-11-05: all accounts trade everything (#954)",
@@ -104,6 +106,35 @@ def released(book: dict[str, Any], ids: dict[str, str],
     return out, removed
 
 
+def e8_absent_key_door_open() -> bool:
+    """`prop.e8_gold.absent_key_door_open()` when the tree carries it (#958), else False. Any
+    import or call failure is a shut door."""
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        from prop import e8_gold
+        fn = getattr(e8_gold, "absent_key_door_open", None)
+        return bool(fn()) if callable(fn) else False
+    except Exception:
+        return False
+
+
+def with_open_doors(releases: tuple[dict[str, Any], ...],
+                    open_venues: set[str]) -> tuple[dict[str, Any], ...]:
+    """`releases` with each NEEDS_SIZE venue whose sizing door is open moved into its pins."""
+    out = []
+    for rel in releases:
+        pins = {v: tuple(k) for v, k in rel["pins"].items()}
+        waiting = {}
+        for venue, keys in (rel.get("needs_size") or {}).items():
+            if venue in open_venues:
+                pins[venue] = tuple(keys)
+            else:
+                waiting[venue] = tuple(keys)
+        out.append({**rel, "pins": pins, "needs_size": waiting})
+    return tuple(out)
+
+
 def needs_size(book: dict[str, Any], ids: dict[str, str],
                releases: tuple[dict[str, Any], ...] = RELEASES) -> list[dict[str, Any]]:
     """The pins a principal order released on a venue whose cert book cannot yet be released by
@@ -124,7 +155,8 @@ def needs_size(book: dict[str, Any], ids: dict[str, str],
 
 
 def run(book_path: Path = BOOK, journal_path: Path = JOURNAL, report_path: Path = REPORT,
-        revert_switch: Path = REVERT_SWITCH, backups: Path = BACKUPS) -> dict[str, Any]:
+        revert_switch: Path = REVERT_SWITCH, backups: Path = BACKUPS,
+        e8_door: Any = e8_absent_key_door_open) -> dict[str, Any]:
     now = datetime.now(UTC).isoformat(timespec="seconds")
     doc: dict[str, Any] = {"at": now, "removed": [], "status": "NO_CHANGE"}
     if revert_switch.exists():
@@ -143,8 +175,9 @@ def run(book_path: Path = BOOK, journal_path: Path = JOURNAL, report_path: Path 
     if not isinstance(book, dict) or book.get("enabled") is False:
         doc.update(status="NO_CHANGE", why="cert book disabled or not an object")
         return _report(doc, report_path)
-    new, removed = released(book, ids)
-    pending = needs_size(book, ids)
+    releases = with_open_doors(RELEASES, {"e8"} if e8_door() else set())
+    new, removed = released(book, ids, releases)
+    pending = needs_size(book, ids, releases)
     if pending:
         doc.update(needs_size=pending)
         if not removed:
