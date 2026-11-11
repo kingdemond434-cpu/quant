@@ -1514,6 +1514,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
     # breadth-first page per dataset per visit -- a global layer, like the forests above.
     "world_dataset_hunt": "regions", "world_macro_proposer": "regions",
+    # earnings reaction breadth (8-K 2.02 x share-CFD bars -> index CFDs): its judged consumer
+    "earnings_breadth_proposer": "regions",
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
     # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
@@ -2086,6 +2088,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
     # --budget-s 900; a symbol cursor carries the sweep across hours.
     "world_macro_proposer": 1_020,
+    # THE EARNINGS BREADTH PROPOSER stops itself at --budget-s 600 (four index symbols, eight
+    # variants each); the cap sits above.
+    "earnings_breadth_proposer": 700,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
     # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
@@ -5161,6 +5166,13 @@ def main() -> None:
     # reports/WORLD_MACRO_PROPOSER.json.
     wmp = _costed("world_macro_proposer", lambda: _producer(
         "world_macro_proposer", "research/world_macro_proposer.py", "--once", "--budget-s", "900"))
+    # EARNINGS BREADTH: mints `earnings_breadth` cells on the US index CFDs from the breadth of
+    # the day's 8-K 2.02 reactions (share CFDs read as an aggregate only, never a cell) and
+    # donates the screened ones. An absent EDGAR cache or share bars parks by name
+    # (earnings_breadth_absent). Writes reports/EARNINGS_BREADTH_PROPOSER.json.
+    ebp = _costed("earnings_breadth_proposer", lambda: _producer(
+        "earnings_breadth_proposer", "research/earnings_breadth_proposer.py", "--once",
+        "--budget-s", "600"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
     # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
     # runs after the country OS so newly declared regional sources enter the census in the same
@@ -6501,6 +6513,7 @@ def main() -> None:
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
+                    "earnings_breadth_proposer": ebp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
