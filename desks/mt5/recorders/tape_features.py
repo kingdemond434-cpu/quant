@@ -521,6 +521,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
     syms = sorted(syms, key=lambda s: (float(done_at.get(s, 0.0)), s))
     budget_hit = False
     backlog: list[str] = []
+    backlog_uncached = 0
     cutoff = ""
     if days_back:
         cutoff = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=int(days_back))).date().isoformat()
@@ -573,6 +574,8 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
                 cached = _cached_cells(sym, day)
                 if cached is not None:
                     cells.extend(cached)
+                else:
+                    backlog_uncached += 1
                 continue
             point = _point_for(sym, store, day, registry)
             res = build_day(store, sym, day, point)
@@ -646,6 +649,9 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
         "budget_exhausted": budget_hit,
         "backlog_symbol_days": len(backlog),
         "backlog_sample": backlog[:20],
+        # BACKLOG DAYS NEVER BUILT BEFORE have no cached cells, so they are ABSENT from both
+        # surfaces this pass, not merely stale: a non-zero count means the surfaces are partial.
+        "backlog_uncached_days": backlog_uncached,
         # NAMED, NOT IMPLIED. A feature nobody reads is the failure mode this module exists to
         # avoid, so every artifact says who is supposed to read it and what happens if nobody does.
         "consumers": CONSUMERS,

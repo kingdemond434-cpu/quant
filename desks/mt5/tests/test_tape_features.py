@@ -382,7 +382,7 @@ def test_a_pass_out_of_budget_builds_nothing_more_but_still_writes_both_surfaces
     monkeypatch.setattr(tf, "_mono", lambda: clock["t"])
     out = tf.run(rig, ["EURUSD"], days_back=0, deadline=50.0)  # already past the deadline
     assert out["symbol_days_built"] == 0 and out["budget_exhausted"] is True
-    assert out["backlog_symbol_days"] == len(rig_days)
+    assert out["backlog_symbol_days"] == len(rig_days) and out["backlog_uncached_days"] == 0
     assert _surface_hours(tf.COST_OUT) == first, "cached cells still reach the surface"
     clock["t"] = 0.0
     done = tf.run(rig, ["EURUSD"], days_back=0, deadline=50.0)
@@ -408,6 +408,8 @@ def test_the_next_pass_starts_with_the_symbols_the_last_one_did_not_finish(
     monkeypatch.setattr(tf, "_mono", lambda: clock["mono"])
     first = tf.run(rig, ["EURUSD", "GBPUSD"], days_back=0, deadline=50.0)
     assert first["budget_exhausted"] is True
+    # GBPUSD was never built, so its three days are absent from the surfaces, not stale.
+    assert first["backlog_uncached_days"] == 1 + len(DAYS)
     state = json.loads(tf.STATE.read_text("utf-8"))
     assert "EURUSD" not in state[tf._SYMBOL_DONE] and "GBPUSD" not in state[tf._SYMBOL_DONE]
     built_first = {k for k in state if k.startswith(("EURUSD/", "GBPUSD/"))}
