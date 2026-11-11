@@ -100,7 +100,7 @@ STANDDOWN = BASE / "reports" / "ALLOCATOR_STANDDOWN.json"
 #: against its contract while every fast pass exited 0). Written on every stand-down; HOLD when
 #: the standing allocation is past ALLOCATION_CONTRACT_S, FRESH once a pass publishes.
 ALLOCATION_HOLD = BASE / "reports" / "PF_ALLOCATION_HOLD.json"
-#: The book's freshness contract: ops/organ_contract.py's MT5-AllocatorFast row, 90 minutes, for
+#: The book's freshness contract, derived from ops/organ_contract.py's MT5-AllocatorFast row (90 min) for
 #: "the book the gateway sizes from".
 ALLOCATION_CONTRACT_S = 90 * 60
 #: The change-point report `research/drift_monitor.py` writes. Read by the crisis overlay below;
