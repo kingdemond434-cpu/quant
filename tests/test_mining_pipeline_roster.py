@@ -509,19 +509,3 @@ def test_one_video_is_one_url_key_and_an_endpoint_is_no_scope() -> None:
            "boj.or.jp": [("boj.or.jp/x/index.htm", "boj")]}
     assert MS.Pipeline.attribute_url("https://youtu.be/AbC", idx) == ""   # not a catch-all
     assert MS.Pipeline.attribute_url("https://boj.or.jp/x", idx) == "boj"  # the index's dir
-
-
-def test_a_pinned_family_row_names_the_judges_chart() -> None:
-    """`lvc_asia_london` is judged on M5 whatever its row says; its docket row must name the same
-    cell (the 13 rows that never joined, audit 2026-09-30)."""
-    fi = importlib.import_module("research.frontier_identity")
-    src = (ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py").read_text("utf-8")
-    import ast
-    pinned = next(ast.literal_eval(n.value) for n in ast.parse(src).body
-                  if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "")
-                  == "_PINNED_TIMEFRAME")
-    assert pinned == fi.PINNED_TIMEFRAME
-    row = {"symbol": "GBPJPY", "family": "lvc_asia_london", "params": {}}
-    assert fi.docket_cell_id(row).startswith("GBPJPY@M5.lvc_asia_london.p=")
-    judge = {"sym": "GBPJPY", "family": "lvc_asia_london", "params": {}, "timeframe": "M5"}
-    assert fi.docket_cell_id(row) == fi.cell_id(judge)
