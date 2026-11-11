@@ -1,404 +1,356 @@
 {
-  "at": "2026-11-11T08:30:07+00:00",
+  "at": "2026-11-11T10:15:27+00:00",
   "status": "RED",
   "red": [
-    "CI_QUEUED #966: a check queued 33 min on afae127d9",
-    "CI_QUEUED #965: a check queued 34 min on f650f8d97",
-    "CI_QUEUED #964: a check queued 89 min on 3906e1b82",
-    "CI_QUEUED #963: a check queued 86 min on 56c9163e4",
-    "CI_QUEUED #962: a check queued 94 min on 6db45b10c",
-    "CI_QUEUED #961: a check queued 128 min on ebc915456",
-    "CI_QUEUED #960: a check queued 135 min on b4e4456a9",
-    "CI_QUEUED #959: a check queued 126 min on 99e669eda",
-    "CI_QUEUED #958: a check queued 154 min on 17f8fc9a2",
-    "CI_QUEUED #957: a check queued 176 min on 7d35e5542",
-    "CI_QUEUED #956: a check queued 134 min on 96493392d",
-    "CI_QUEUED #955: a check queued 186 min on eea143cc2",
-    "CI_QUEUED #954: a check queued 191 min on 116fd9a2d",
-    "CI_QUEUED #952: a check queued 218 min on 7f14b9226",
-    "CI_QUEUED #951: a check queued 244 min on 7277b3739",
-    "CI_QUEUED #950: a check queued 252 min on ab191f197",
-    "CI_QUEUED #949: a check queued 258 min on 3dc274248",
-    "CI_QUEUED #948: a check queued 265 min on 0c5414e23",
-    "CI_QUEUED #947: a check queued 265 min on d97e42757",
-    "CI_QUEUED #946: a check queued 258 min on d2943dc30",
-    "CI_QUEUED #945: a check queued 268 min on 4d028553a",
-    "CI_QUEUED #944: a check queued 281 min on ca106e5e2",
-    "CI_QUEUED #943: a check queued 261 min on 71487e6af",
-    "CI_QUEUED #942: a check queued 318 min on d5fb48305",
-    "CI_QUEUED #941: a check queued 308 min on ab5b243c1",
-    "CI_QUEUED #940: a check queued 270 min on 81d960469",
-    "CI_QUEUED #939: a check queued 336 min on 9a7ce0619",
-    "CI_QUEUED #938: a check queued 340 min on 96d98f4d2",
-    "CI_QUEUED #937: a check queued 310 min on 6f88deb33",
-    "CI_QUEUED #936: a check queued 333 min on 7951794a6",
-    "CI_QUEUED #935: a check queued 350 min on 807bc058d",
-    "CI_QUEUED #934: a check queued 356 min on d9ad18a33",
-    "CI_QUEUED #933: a check queued 359 min on a7deb73ed",
-    "CI_QUEUED #932: a check queued 364 min on 8f1cceab9",
-    "CI_QUEUED #931: a check queued 372 min on c0b9561f3",
-    "CI_QUEUED #930: a check queued 383 min on 2eaf77a22",
-    "CI_QUEUED #929: a check queued 384 min on 46ff74d49",
-    "CI_QUEUED #928: a check queued 393 min on da202aa5e",
-    "CI_QUEUED #927: a check queued 303 min on 7c695e121",
-    "CI_QUEUED #926: a check queued 369 min on 43b5e9b21",
-    "CI_QUEUED #925: a check queued 396 min on 3bbb8d62b",
-    "CI_QUEUED #924: a check queued 396 min on b366a0483",
-    "CI_QUEUED #923: a check queued 405 min on 2560cabb0",
-    "CI_QUEUED #922: a check queued 403 min on 053ffe8db",
-    "CI_QUEUED #921: a check queued 407 min on 655e45fec",
-    "CI_QUEUED #920: a check queued 411 min on 40b0f5648",
-    "CI_QUEUED #919: a check queued 412 min on 2f3b1065f",
-    "CI_QUEUED #918: a check queued 413 min on f9b1bd386",
-    "CI_QUEUED #917: a check queued 416 min on b94f3b627",
-    "CI_QUEUED #916: a check queued 420 min on 92d2602cd",
-    "CI_QUEUED #915: a check queued 420 min on 662327918",
-    "CI_QUEUED #914: a check queued 423 min on 5ff28ed3d",
-    "CI_QUEUED #913: a check queued 426 min on 96b259818",
-    "CI_QUEUED #912: a check queued 415 min on 6fbfabbe5",
-    "CI_QUEUED #911: a check queued 428 min on 69b72398c",
-    "CI_QUEUED #910: a check queued 431 min on ef8edae8a",
-    "CI_QUEUED #909: a check queued 433 min on 6d8b63cb6",
-    "CI_QUEUED #908: a check queued 436 min on f204da4b4",
-    "CI_QUEUED #907: a check queued 436 min on e44c3474b",
-    "CI_QUEUED #906: a check queued 419 min on 8405e1008",
-    "CI_QUEUED #905: a check queued 419 min on d623e88fd",
-    "CI_QUEUED #904: a check queued 419 min on d6df9de40",
-    "CI_QUEUED #903: a check queued 431 min on c64bb734d",
-    "CI_QUEUED #902: a check queued 445 min on 27ed98c21",
-    "CI_QUEUED #901: a check queued 445 min on bd7dd0e1b",
-    "CI_QUEUED #900: a check queued 380 min on 11ea9d520",
-    "CI_QUEUED #899: a check queued 449 min on 866c102de",
-    "CI_QUEUED #898: a check queued 458 min on fafcd5f4c",
-    "CI_QUEUED #897: a check queued 463 min on 0ac560388",
-    "CI_QUEUED #896: a check queued 386 min on 4baf3f45c",
-    "CI_QUEUED #895: a check queued 352 min on cc510f5e7",
-    "CI_QUEUED #894: a check queued 466 min on 4b7bf6f54",
-    "CI_QUEUED #893: a check queued 476 min on 3b3b91b2c",
-    "CI_QUEUED #892: a check queued 480 min on 92b8d40ec",
-    "CI_QUEUED #891: a check queued 480 min on 3e044d44d",
-    "CI_QUEUED #890: a check queued 458 min on 29ee228fb",
-    "CI_QUEUED #889: a check queued 458 min on 607934395",
-    "CI_QUEUED #888: a check queued 451 min on 617bb79ad",
-    "CI_QUEUED #887: a check queued 488 min on b6f0a048d",
-    "CI_QUEUED #886: a check queued 488 min on 564ed7ca1",
-    "CI_QUEUED #885: a check queued 497 min on 7a3841840",
-    "CI_QUEUED #884: a check queued 493 min on 30309ff7d",
-    "CI_QUEUED #883: a check queued 498 min on 51d869541",
-    "CI_QUEUED #882: a check queued 476 min on 296c34144",
-    "CI_QUEUED #880: a check queued 483 min on 974696114",
-    "CI_QUEUED #879: a check queued 504 min on f6725fff6",
-    "CI_QUEUED #878: a check queued 508 min on dc4179bc4",
-    "CI_QUEUED #877: a check queued 509 min on 4df052e8b",
-    "CI_QUEUED #876: a check queued 513 min on 94d3a4bf4",
-    "CI_QUEUED #875: a check queued 429 min on 18e0358f9",
-    "CI_QUEUED #874: a check queued 430 min on 4327c3931",
-    "CI_QUEUED #873: a check queued 519 min on f480285a2",
-    "CI_QUEUED #871: a check queued 491 min on c34051484",
-    "CI_QUEUED #870: a check queued 544 min on 5df352d2c",
-    "CI_QUEUED #869: a check queued 548 min on 3606f5cac",
-    "CI_QUEUED #868: a check queued 550 min on efadbf4c1",
-    "CI_QUEUED #866: a check queued 617 min on cbe8278c5",
-    "CI_QUEUED #865: a check queued 158 min on 5313d6712",
-    "CI_QUEUED #864: a check queued 155 min on 07cb74e19",
-    "CI_QUEUED #863: a check queued 630 min on 1dfaeedb5",
-    "CI_QUEUED #862: a check queued 630 min on d3d4b6fc3",
-    "CI_QUEUED #861: a check queued 630 min on c6759a888",
-    "CI_QUEUED #860: a check queued 653 min on ccaeca132",
-    "CI_QUEUED #859: a check queued 683 min on 3299b2b2c",
-    "CI_QUEUED #858: a check queued 683 min on 9572f10ca",
-    "CI_QUEUED #857: a check queued 686 min on 7a1312282",
-    "CI_QUEUED #856: a check queued 270 min on d9e946c33",
-    "CI_QUEUED #855: a check queued 269 min on 0ca026732",
-    "CI_QUEUED #854: a check queued 300 min on 18d55fde2",
-    "CI_QUEUED #853: a check queued 318 min on f2fda5917",
-    "CI_QUEUED #852: a check queued 258 min on 00d45b909",
-    "CI_QUEUED #851: a check queued 313 min on 148bbbd0f",
-    "CI_QUEUED #850: a check queued 305 min on 62b756990",
-    "CI_QUEUED #849: a check queued 444 min on 05c702423",
-    "CI_QUEUED #848: a check queued 458 min on 8fefdb160",
-    "CI_QUEUED #847: a check queued 470 min on 1b9b6b1cb",
-    "CI_QUEUED #846: a check queued 489 min on ded98f2f4",
-    "CI_QUEUED #845: a check queued 363 min on 87c9aeefe",
-    "CI_QUEUED #842: a check queued 576 min on 430d1742a",
-    "CI_QUEUED #840: a check queued 407 min on 0b653500f",
-    "CI_QUEUED #839: a check queued 318 min on 13de4c6f3",
-    "CI_QUEUED #838: a check queued 454 min on ab9b8b2f3",
-    "CLEAR_WAITING #836: CLEARed 10.5 h ago, still open",
-    "CI_QUEUED #835: a check queued 631 min on 9f2575e8e",
-    "CI_QUEUED #825: a check queued 484 min on 92f713bb5",
-    "CI_QUEUED #822: a check queued 691 min on 241c9f53b",
-    "CI_QUEUED #821: a check queued 502 min on c77efc5e7",
-    "CI_QUEUED #819: a check queued 452 min on 30764b00f",
-    "CI_QUEUED #818: a check queued 547 min on d3ac7a32b",
-    "CI_QUEUED #817: a check queued 509 min on 89b065ffd",
-    "CI_QUEUED #816: a check queued 209 min on d79fdf5a0",
-    "CI_QUEUED #814: a check queued 489 min on 7f58fed93",
-    "CI_QUEUED #812: a check queued 691 min on 3148b8745",
-    "CI_QUEUED #809: a check queued 512 min on 6139da7c6",
-    "CI_QUEUED #807: a check queued 629 min on 8e79865c6",
-    "CLEAR_WAITING #807: CLEARed 16.2 h ago, still open",
-    "CI_QUEUED #806: a check queued 516 min on 72939f97b",
-    "CI_QUEUED #805: a check queued 518 min on cf0f56135",
-    "CLEAR_WAITING #801: CLEARed 9.4 h ago, still open",
-    "CLEAR_WAITING #797: CLEARed 8.9 h ago, still open",
-    "CI_QUEUED #794: a check queued 476 min on 343f98c4f",
-    "CI_QUEUED #793: a check queued 628 min on a1441f46f",
-    "CI_QUEUED #787: a check queued 479 min on fe83fedce",
-    "CI_QUEUED #784: a check queued 642 min on d832eb326",
-    "CI_QUEUED #782: a check queued 686 min on 699c64d61",
-    "CI_QUEUED #772: a check queued 500 min on b07b73b25",
-    "CI_QUEUED #761: a check queued 409 min on 60407e1d1",
-    "CI_QUEUED #760: a check queued 626 min on c674fc4d8",
-    "CI_QUEUED #758: a check queued 606 min on 78d5cf688",
-    "CI_QUEUED #756: a check queued 160 min on deacf27f2",
-    "CI_QUEUED #750: a check queued 507 min on a715af16e",
-    "CI_QUEUED #745: a check queued 508 min on b34a6ed45",
-    "CI_QUEUED #744: a check queued 294 min on d5cb89c7d",
-    "CI_QUEUED #743: a check queued 272 min on 6014f5cf5",
-    "CLEAR_WAITING #737: CLEARed 8.5 h ago, still open",
-    "CI_QUEUED #728: a check queued 250 min on 2029d4d43",
-    "CI_QUEUED #726: a check queued 345 min on 8d9882379",
-    "CI_QUEUED #724: a check queued 492 min on c3f0dc7ad",
-    "CI_QUEUED #723: a check queued 485 min on d5516fecf",
-    "CI_QUEUED #722: a check queued 488 min on c1a22fbb7",
-    "CI_QUEUED #721: a check queued 509 min on 5939d16db",
-    "CI_QUEUED #717: a check queued 490 min on bc71f00b6",
-    "CI_QUEUED #715: a check queued 479 min on a282f62ab",
-    "CI_QUEUED #714: a check queued 506 min on 34287999c",
-    "CI_QUEUED #713: a check queued 507 min on 7ceab892b",
-    "CI_QUEUED #712: a check queued 507 min on 94f0d0288",
-    "CI_QUEUED #706: a check queued 491 min on 68b7d85cd",
-    "CI_QUEUED #701: a check queued 125 min on 354ef707b",
-    "CI_QUEUED #679: a check queued 486 min on 55e139155",
-    "CI_QUEUED #676: a check queued 510 min on a72657c3f",
-    "CI_QUEUED #675: a check queued 505 min on eebaf9263",
-    "CI_QUEUED #672: a check queued 501 min on e2a19e46e",
-    "CI_QUEUED #671: a check queued 487 min on 15513e329",
-    "CI_QUEUED #670: a check queued 473 min on d087c5889",
-    "CI_QUEUED #667: a check queued 507 min on 620b9eedf",
-    "CI_QUEUED #660: a check queued 504 min on 997a462bc",
-    "CI_QUEUED #659: a check queued 507 min on 17827a20e",
-    "CI_QUEUED #657: a check queued 506 min on 2349b395a",
-    "CI_QUEUED #656: a check queued 493 min on 32dba2c36",
-    "CI_QUEUED #646: a check queued 448 min on 4ec154f03",
-    "CI_QUEUED #644: a check queued 507 min on b3c825d44",
-    "CI_QUEUED #636: a check queued 507 min on 5386686b3",
-    "CI_QUEUED #635: a check queued 338 min on 9765512ca",
-    "CI_QUEUED #634: a check queued 386 min on aa1551821",
-    "CI_QUEUED #633: a check queued 370 min on 3c2ac5598",
-    "CI_QUEUED #632: a check queued 375 min on 024541b5b",
-    "CI_QUEUED #631: a check queued 305 min on 95ff9954f",
-    "CI_QUEUED #628: a check queued 510 min on 72cad02aa",
-    "CI_QUEUED #625: a check queued 506 min on 87a99148c",
-    "CI_QUEUED #624: a check queued 367 min on 8b392c4b0",
-    "CI_QUEUED #621: a check queued 454 min on 9d0c6f9cb",
-    "CI_QUEUED #620: a check queued 492 min on 4efdc1e0a",
-    "CI_QUEUED #619: a check queued 506 min on 79e82c1e5",
-    "CI_QUEUED #618: a check queued 507 min on c4bc066b9",
-    "CI_QUEUED #616: a check queued 488 min on 0f9cffaf1",
-    "CI_QUEUED #614: a check queued 508 min on f3fce23ea",
-    "CI_QUEUED #613: a check queued 488 min on d138de696",
-    "CI_QUEUED #609: a check queued 474 min on 71a13bd4b",
-    "CI_QUEUED #608: a check queued 488 min on 7b028e3ea",
-    "CI_QUEUED #607: a check queued 488 min on 3dad5651a",
-    "CI_QUEUED #605: a check queued 347 min on 8ea373351",
-    "CI_QUEUED #604: a check queued 507 min on b638fe845",
-    "CI_QUEUED #602: a check queued 230 min on 25253493e",
-    "CI_QUEUED #601: a check queued 504 min on f8f363dd5",
-    "CI_QUEUED #599: a check queued 494 min on ef6f5010a",
-    "CI_QUEUED #590: a check queued 474 min on b613f7117",
-    "CI_QUEUED #589: a check queued 506 min on 2ad1f8c5e",
-    "CI_QUEUED #587: a check queued 434 min on 5cdf852c8",
-    "CI_QUEUED #586: a check queued 437 min on 557213925",
-    "CI_QUEUED #582: a check queued 505 min on a1187084f",
-    "CI_QUEUED #543: a check queued 480 min on 50f4cf895",
-    "CI_QUEUED #540: a check queued 472 min on 279d61e64",
-    "CI_QUEUED #536: a check queued 496 min on dc189d829",
-    "CI_QUEUED #533: a check queued 489 min on 4f4ff10c5",
-    "CI_QUEUED #530: a check queued 467 min on a08fff2b1",
-    "CI_QUEUED #522: a check queued 159 min on 7428e9e10",
-    "CI_QUEUED #520: a check queued 510 min on dcd7d5f2a",
-    "CI_QUEUED #517: a check queued 473 min on 1dbf656f4",
-    "CI_QUEUED #515: a check queued 510 min on 1754406ac",
-    "CI_QUEUED #507: a check queued 375 min on c4e759858",
-    "CI_QUEUED #505: a check queued 98 min on 966e7ce4a",
-    "CI_QUEUED #501: a check queued 510 min on 21cd546ca",
-    "CI_QUEUED #486: a check queued 375 min on 8701b315c",
-    "CI_QUEUED #477: a check queued 375 min on 5ca0a4647",
-    "CI_QUEUED #476: a check queued 442 min on 99f1e2379",
-    "CI_QUEUED #475: a check queued 439 min on d7c7671e9",
-    "CLEAR_WAITING #473: CLEARed 15.9 h ago, still open",
-    "CI_QUEUED #462: a check queued 483 min on 3c7a93634",
-    "CI_QUEUED #406: a check queued 486 min on 1d63db762",
-    "CI_QUEUED #397: a check queued 475 min on cfdd617ba",
-    "CI_QUEUED #396: a check queued 486 min on 375546f94",
-    "CI_QUEUED #395: a check queued 488 min on a972aa7f2",
-    "CI_QUEUED #393: a check queued 490 min on 8821e45c6",
-    "CI_QUEUED #392: a check queued 458 min on 5f3ae2c9e",
-    "CI_QUEUED #391: a check queued 468 min on 6aeb6a8b2",
-    "CI_QUEUED #389: a check queued 474 min on b35d9e412",
-    "CI_QUEUED #388: a check queued 505 min on 61259818a",
-    "CI_QUEUED #387: a check queued 488 min on 1945a5d65",
-    "CI_QUEUED #385: a check queued 482 min on e97a66758",
-    "CI_QUEUED #371: a check queued 375 min on 4eae5c2cf",
-    "CI_QUEUED #351: a check queued 375 min on a2c5ce83e",
-    "CI_QUEUED #341: a check queued 505 min on a5bc618c2",
-    "CI_QUEUED #332: a check queued 484 min on 2146fa2e8",
-    "CI_QUEUED #331: a check queued 425 min on 0c0a7b7b2",
-    "CI_QUEUED #285: a check queued 489 min on 37fda6c5a",
-    "CI_QUEUED #278: a check queued 496 min on e8f940ff1",
-    "CI_QUEUED #273: a check queued 458 min on 91b8c434e",
-    "CI_QUEUED #270: a check queued 466 min on cdb0177c4",
-    "CI_QUEUED #263: a check queued 312 min on 7f7bbec93",
-    "CI_QUEUED #260: a check queued 358 min on c20f83513",
-    "CI_QUEUED #259: a check queued 399 min on 080ace6ed",
-    "CI_QUEUED #256: a check queued 375 min on 75b5361f8",
-    "CI_QUEUED #249: a check queued 329 min on 19f475c4b",
-    "CI_QUEUED #247: a check queued 322 min on 125b08fdf",
-    "CI_QUEUED #245: a check queued 332 min on 5bd322ef7",
-    "CI_QUEUED #238: a check queued 441 min on 3ca1ccade",
-    "CI_QUEUED #236: a check queued 375 min on 5d04c64bc",
-    "CI_QUEUED #235: a check queued 419 min on f12195936",
-    "CI_QUEUED #233: a check queued 375 min on d14370c67",
-    "CI_QUEUED #232: a check queued 375 min on 803bda5a7",
-    "CI_QUEUED #230: a check queued 375 min on f2270c551",
-    "CI_QUEUED #222: a check queued 480 min on e0541979a",
-    "CI_QUEUED #218: a check queued 436 min on 342477528",
-    "CI_QUEUED #204: a check queued 460 min on 472625169",
-    "CI_QUEUED #201: a check queued 454 min on 3d2ffd653",
-    "CI_QUEUED #199: a check queued 367 min on 69bab68ef",
-    "CI_QUEUED #195: a check queued 477 min on 10ee27161",
-    "CI_QUEUED #172: a check queued 407 min on b50c82ac0",
-    "CI_QUEUED #166: a check queued 375 min on ea5641664",
-    "CI_QUEUED #159: a check queued 439 min on b8b261482",
-    "CI_QUEUED #139: a check queued 362 min on 07c0daa97",
-    "CI_QUEUED #133: a check queued 481 min on 6b6cb06ba",
-    "SIGN_TRAIN_FAILING: 57 runs in a row failed"
+    "CI_QUEUED #983: a check queued 48 min on 08c0ad1d6",
+    "CI_QUEUED #982: a check queued 53 min on fb28dbe03",
+    "CI_QUEUED #981: a check queued 56 min on 24f99ca99",
+    "CI_QUEUED #980: a check queued 59 min on 5e505bf32",
+    "CI_QUEUED #979: a check queued 49 min on 47302cd89",
+    "CI_QUEUED #978: a check queued 66 min on 3a9b5d3ed",
+    "CI_QUEUED #977: a check queued 63 min on c3ff7cf74",
+    "CI_QUEUED #976: a check queued 74 min on 96e8752c5",
+    "CI_QUEUED #975: a check queued 73 min on 33afa4276",
+    "CI_QUEUED #974: a check queued 82 min on e431f46e4",
+    "CI_QUEUED #973: a check queued 102 min on e820f947d",
+    "CI_QUEUED #972: a check queued 112 min on 466afcd92",
+    "CI_QUEUED #971: a check queued 107 min on 29901c4bb",
+    "CI_QUEUED #970: a check queued 118 min on 3e1b9da9c",
+    "CI_QUEUED #969: a check queued 124 min on fd98fc4e2",
+    "CI_QUEUED #968: a check queued 132 min on 03fb76235",
+    "CI_QUEUED #967: a check queued 127 min on 1318c8939",
+    "CI_QUEUED #966: a check queued 138 min on afae127d9",
+    "CI_QUEUED #965: a check queued 139 min on f650f8d97",
+    "CI_QUEUED #964: a check queued 194 min on 3906e1b82",
+    "CI_QUEUED #963: a check queued 191 min on 56c9163e4",
+    "CI_QUEUED #962: a check queued 199 min on 6db45b10c",
+    "CI_QUEUED #961: a check queued 233 min on ebc915456",
+    "CI_QUEUED #960: a check queued 240 min on b4e4456a9",
+    "CI_QUEUED #959: a check queued 232 min on 99e669eda",
+    "CI_QUEUED #958: a check queued 259 min on 17f8fc9a2",
+    "CI_QUEUED #957: a check queued 282 min on 7d35e5542",
+    "CI_QUEUED #956: a check queued 240 min on 96493392d",
+    "CI_QUEUED #955: a check queued 292 min on eea143cc2",
+    "CI_QUEUED #954: a check queued 297 min on 116fd9a2d",
+    "CI_QUEUED #952: a check queued 323 min on 7f14b9226",
+    "CI_QUEUED #951: a check queued 349 min on 7277b3739",
+    "CI_QUEUED #950: a check queued 357 min on ab191f197",
+    "CI_QUEUED #949: a check queued 363 min on 3dc274248",
+    "CI_QUEUED #948: a check queued 371 min on 0c5414e23",
+    "CI_QUEUED #947: a check queued 370 min on d97e42757",
+    "CI_QUEUED #946: a check queued 364 min on d2943dc30",
+    "CI_QUEUED #945: a check queued 373 min on 4d028553a",
+    "CI_QUEUED #944: a check queued 386 min on ca106e5e2",
+    "CI_QUEUED #943: a check queued 366 min on 71487e6af",
+    "CI_QUEUED #942: a check queued 423 min on d5fb48305",
+    "CI_QUEUED #941: a check queued 414 min on ab5b243c1",
+    "CI_QUEUED #940: a check queued 375 min on 81d960469",
+    "CI_QUEUED #939: a check queued 442 min on 9a7ce0619",
+    "CI_QUEUED #938: a check queued 446 min on 96d98f4d2",
+    "CI_QUEUED #937: a check queued 415 min on 6f88deb33",
+    "CI_QUEUED #936: a check queued 438 min on 7951794a6",
+    "CI_QUEUED #935: a check queued 455 min on 807bc058d",
+    "CI_QUEUED #934: a check queued 461 min on d9ad18a33",
+    "CI_QUEUED #933: a check queued 464 min on a7deb73ed",
+    "CI_QUEUED #932: a check queued 470 min on 8f1cceab9",
+    "CI_QUEUED #931: a check queued 478 min on c0b9561f3",
+    "CI_QUEUED #930: a check queued 489 min on 2eaf77a22",
+    "CI_QUEUED #929: a check queued 92 min on 93eaf2a50",
+    "CI_QUEUED #928: a check queued 498 min on da202aa5e",
+    "CI_QUEUED #927: a check queued 408 min on 7c695e121",
+    "CI_QUEUED #926: a check queued 475 min on 43b5e9b21",
+    "CI_QUEUED #925: a check queued 501 min on 3bbb8d62b",
+    "CI_QUEUED #924: a check queued 501 min on b366a0483",
+    "CI_QUEUED #923: a check queued 510 min on 2560cabb0",
+    "CI_QUEUED #922: a check queued 508 min on 053ffe8db",
+    "CI_QUEUED #921: a check queued 512 min on 655e45fec",
+    "CI_QUEUED #920: a check queued 516 min on 40b0f5648",
+    "CI_QUEUED #919: a check queued 518 min on 2f3b1065f",
+    "CI_QUEUED #918: a check queued 518 min on f9b1bd386",
+    "CI_QUEUED #917: a check queued 521 min on b94f3b627",
+    "CI_QUEUED #916: a check queued 525 min on 92d2602cd",
+    "CI_QUEUED #915: a check queued 525 min on 662327918",
+    "CI_QUEUED #914: a check queued 528 min on 5ff28ed3d",
+    "CI_QUEUED #913: a check queued 532 min on 96b259818",
+    "CI_QUEUED #912: a check queued 520 min on 6fbfabbe5",
+    "CI_QUEUED #911: a check queued 534 min on 69b72398c",
+    "CI_QUEUED #910: a check queued 536 min on ef8edae8a",
+    "CI_QUEUED #909: a check queued 538 min on 6d8b63cb6",
+    "CI_QUEUED #908: a check queued 541 min on f204da4b4",
+    "CI_QUEUED #907: a check queued 541 min on e44c3474b",
+    "CI_QUEUED #906: a check queued 524 min on 8405e1008",
+    "CI_QUEUED #905: a check queued 524 min on d623e88fd",
+    "CI_QUEUED #904: a check queued 524 min on d6df9de40",
+    "CI_QUEUED #903: a check queued 537 min on c64bb734d",
+    "CI_QUEUED #902: a check queued 550 min on 27ed98c21",
+    "CI_QUEUED #901: a check queued 551 min on bd7dd0e1b",
+    "CI_QUEUED #900: a check queued 486 min on 11ea9d520",
+    "CI_QUEUED #899: a check queued 555 min on 866c102de",
+    "CI_QUEUED #898: a check queued 564 min on fafcd5f4c",
+    "CI_QUEUED #897: a check queued 568 min on 0ac560388",
+    "CI_QUEUED #896: a check queued 491 min on 4baf3f45c",
+    "CI_QUEUED #895: a check queued 457 min on cc510f5e7",
+    "CI_QUEUED #894: a check queued 572 min on 4b7bf6f54",
+    "CI_QUEUED #893: a check queued 582 min on 3b3b91b2c",
+    "CI_QUEUED #892: a check queued 585 min on 92b8d40ec",
+    "CI_QUEUED #891: a check queued 585 min on 3e044d44d",
+    "CI_QUEUED #890: a check queued 563 min on 29ee228fb",
+    "CI_QUEUED #889: a check queued 564 min on 607934395",
+    "CI_QUEUED #888: a check queued 556 min on 617bb79ad",
+    "CI_QUEUED #887: a check queued 593 min on b6f0a048d",
+    "CI_QUEUED #886: a check queued 594 min on 564ed7ca1",
+    "CI_QUEUED #885: a check queued 602 min on 7a3841840",
+    "CI_QUEUED #884: a check queued 599 min on 30309ff7d",
+    "CI_QUEUED #883: a check queued 604 min on 51d869541",
+    "CI_QUEUED #882: a check queued 581 min on 296c34144",
+    "CI_QUEUED #880: a check queued 588 min on 974696114",
+    "CI_QUEUED #879: a check queued 609 min on f6725fff6",
+    "CI_QUEUED #878: a check queued 613 min on dc4179bc4",
+    "CI_QUEUED #877: a check queued 614 min on 4df052e8b",
+    "CI_QUEUED #876: a check queued 618 min on 94d3a4bf4",
+    "CI_QUEUED #875: a check queued 534 min on 18e0358f9",
+    "CI_QUEUED #874: a check queued 535 min on 4327c3931",
+    "CI_QUEUED #873: a check queued 624 min on f480285a2",
+    "CI_QUEUED #871: a check queued 597 min on c34051484",
+    "CI_QUEUED #870: a check queued 649 min on 5df352d2c",
+    "CI_QUEUED #869: a check queued 654 min on 3606f5cac",
+    "CI_QUEUED #868: a check queued 656 min on efadbf4c1",
+    "CI_QUEUED #866: a check queued 722 min on cbe8278c5",
+    "CI_QUEUED #865: a check queued 263 min on 5313d6712",
+    "CI_QUEUED #864: a check queued 260 min on 07cb74e19",
+    "CI_QUEUED #863: a check queued 735 min on 1dfaeedb5",
+    "CI_QUEUED #862: a check queued 735 min on d3d4b6fc3",
+    "CI_QUEUED #861: a check queued 735 min on c6759a888",
+    "CI_QUEUED #860: a check queued 758 min on ccaeca132",
+    "CI_QUEUED #859: a check queued 788 min on 3299b2b2c",
+    "CI_QUEUED #858: a check queued 320 min on 9572f10ca",
+    "CI_QUEUED #857: a check queued 321 min on 7a1312282",
+    "CI_QUEUED #856: a check queued 376 min on d9e946c33",
+    "CI_QUEUED #855: a check queued 375 min on 0ca026732",
+    "CI_QUEUED #854: a check queued 405 min on 18d55fde2",
+    "CI_QUEUED #853: a check queued 423 min on f2fda5917",
+    "CI_QUEUED #852: a check queued 363 min on 00d45b909",
+    "CI_QUEUED #851: a check queued 419 min on 148bbbd0f",
+    "CI_QUEUED #850: a check queued 411 min on 62b756990",
+    "CI_QUEUED #849: a check queued 550 min on 05c702423",
+    "CI_QUEUED #848: a check queued 563 min on 8fefdb160",
+    "CI_QUEUED #847: a check queued 576 min on 1b9b6b1cb",
+    "CI_QUEUED #846: a check queued 595 min on ded98f2f4",
+    "CI_QUEUED #845: a check queued 469 min on 87c9aeefe",
+    "CI_QUEUED #842: a check queued 681 min on 430d1742a",
+    "CI_QUEUED #840: a check queued 513 min on 0b653500f",
+    "CI_QUEUED #839: a check queued 423 min on 13de4c6f3",
+    "CI_QUEUED #838: a check queued 559 min on ab9b8b2f3",
+    "CI_QUEUED #835: a check queued 737 min on 9f2575e8e",
+    "CI_QUEUED #825: a check queued 589 min on 92f713bb5",
+    "CI_QUEUED #822: a check queued 359 min on 241c9f53b",
+    "CI_QUEUED #821: a check queued 608 min on c77efc5e7",
+    "CI_QUEUED #819: a check queued 558 min on 30764b00f",
+    "CI_QUEUED #818: a check queued 652 min on d3ac7a32b",
+    "CI_QUEUED #817: a check queued 615 min on 89b065ffd",
+    "CI_QUEUED #816: a check queued 314 min on d79fdf5a0",
+    "CI_QUEUED #814: a check queued 595 min on 7f58fed93",
+    "CI_QUEUED #812: a check queued 359 min on 3148b8745",
+    "CI_QUEUED #809: a check queued 617 min on 6139da7c6",
+    "CI_QUEUED #807: a check queued 734 min on 8e79865c6",
+    "CLEAR_WAITING #807: CLEARed 18.0 h ago, still open",
+    "CI_QUEUED #806: a check queued 622 min on 72939f97b",
+    "CI_QUEUED #805: a check queued 623 min on cf0f56135",
+    "CLEAR_WAITING #801: CLEARed 11.1 h ago, still open",
+    "CLEAR_WAITING #797: CLEARed 10.7 h ago, still open",
+    "CI_QUEUED #794: a check queued 582 min on 343f98c4f",
+    "CI_QUEUED #793: a check queued 734 min on a1441f46f",
+    "CI_QUEUED #787: a check queued 584 min on fe83fedce",
+    "CI_QUEUED #784: a check queued 748 min on d832eb326",
+    "CI_QUEUED #782: a check queued 340 min on 699c64d61",
+    "CI_QUEUED #772: a check queued 605 min on b07b73b25",
+    "CI_QUEUED #761: a check queued 515 min on 60407e1d1",
+    "CI_QUEUED #760: a check queued 732 min on c674fc4d8",
+    "CI_QUEUED #758: a check queued 712 min on 78d5cf688",
+    "CI_QUEUED #756: a check queued 266 min on deacf27f2",
+    "CI_QUEUED #750: a check queued 613 min on a715af16e",
+    "CI_QUEUED #745: a check queued 613 min on b34a6ed45",
+    "CI_QUEUED #744: a check queued 399 min on d5cb89c7d",
+    "CI_QUEUED #743: a check queued 377 min on 6014f5cf5",
+    "CLEAR_WAITING #737: CLEARed 10.3 h ago, still open",
+    "CI_QUEUED #728: a check queued 355 min on 2029d4d43",
+    "CI_QUEUED #726: a check queued 451 min on 8d9882379",
+    "CI_QUEUED #724: a check queued 598 min on c3f0dc7ad",
+    "CI_QUEUED #723: a check queued 590 min on d5516fecf",
+    "CI_QUEUED #722: a check queued 593 min on c1a22fbb7",
+    "CI_QUEUED #721: a check queued 615 min on 5939d16db",
+    "CI_QUEUED #717: a check queued 595 min on bc71f00b6",
+    "CI_QUEUED #715: a check queued 584 min on a282f62ab",
+    "CI_QUEUED #714: a check queued 611 min on 34287999c",
+    "CI_QUEUED #713: a check queued 613 min on 7ceab892b",
+    "CI_QUEUED #712: a check queued 612 min on 94f0d0288",
+    "CI_QUEUED #706: a check queued 597 min on 68b7d85cd",
+    "CI_QUEUED #701: a check queued 230 min on 354ef707b",
+    "CI_QUEUED #679: a check queued 592 min on 55e139155",
+    "CI_QUEUED #676: a check queued 615 min on a72657c3f",
+    "CI_QUEUED #675: a check queued 610 min on eebaf9263",
+    "CI_QUEUED #672: a check queued 606 min on e2a19e46e",
+    "CI_QUEUED #671: a check queued 592 min on 15513e329",
+    "CI_QUEUED #670: a check queued 578 min on d087c5889",
+    "CI_QUEUED #667: a check queued 613 min on 620b9eedf",
+    "CI_QUEUED #660: a check queued 610 min on 997a462bc",
+    "CI_QUEUED #659: a check queued 612 min on 17827a20e",
+    "CI_QUEUED #657: a check queued 611 min on 2349b395a",
+    "CI_QUEUED #656: a check queued 598 min on 32dba2c36",
+    "CI_QUEUED #646: a check queued 553 min on 4ec154f03",
+    "CI_QUEUED #644: a check queued 613 min on b3c825d44",
+    "CI_QUEUED #639: a check queued 119 min on ec2a2117a",
+    "CI_QUEUED #636: a check queued 613 min on 5386686b3",
+    "CI_QUEUED #635: a check queued 443 min on 9765512ca",
+    "CI_QUEUED #634: a check queued 491 min on aa1551821",
+    "CI_QUEUED #633: a check queued 475 min on 3c2ac5598",
+    "CI_QUEUED #632: a check queued 480 min on 024541b5b",
+    "CI_QUEUED #631: a check queued 410 min on 95ff9954f",
+    "CI_QUEUED #628: a check queued 616 min on 72cad02aa",
+    "CI_QUEUED #625: a check queued 612 min on 87a99148c",
+    "CI_QUEUED #624: a check queued 472 min on 8b392c4b0",
+    "CI_QUEUED #621: a check queued 559 min on 9d0c6f9cb",
+    "CI_QUEUED #620: a check queued 598 min on 4efdc1e0a",
+    "CI_QUEUED #619: a check queued 611 min on 79e82c1e5",
+    "CI_QUEUED #618: a check queued 613 min on c4bc066b9",
+    "CI_QUEUED #616: a check queued 593 min on 0f9cffaf1",
+    "CI_QUEUED #614: a check queued 613 min on f3fce23ea",
+    "CI_QUEUED #613: a check queued 593 min on d138de696",
+    "CI_QUEUED #611: a check queued 130 min on 19a761a88",
+    "CI_QUEUED #609: a check queued 579 min on 71a13bd4b",
+    "CI_QUEUED #608: a check queued 593 min on 7b028e3ea",
+    "CI_QUEUED #607: a check queued 593 min on 3dad5651a",
+    "CI_QUEUED #605: a check queued 453 min on 8ea373351",
+    "CI_QUEUED #604: a check queued 613 min on b638fe845",
+    "CI_QUEUED #602: a check queued 336 min on 25253493e",
+    "CI_QUEUED #601: a check queued 609 min on f8f363dd5",
+    "CI_QUEUED #599: a check queued 600 min on ef6f5010a",
+    "CI_QUEUED #590: a check queued 580 min on b613f7117",
+    "CI_QUEUED #589: a check queued 611 min on 2ad1f8c5e",
+    "CI_QUEUED #587: a check queued 540 min on 5cdf852c8",
+    "CI_QUEUED #586: a check queued 542 min on 557213925",
+    "CI_QUEUED #582: a check queued 610 min on a1187084f",
+    "CI_QUEUED #543: a check queued 586 min on 50f4cf895",
+    "CI_QUEUED #540: a check queued 578 min on 279d61e64",
+    "CI_QUEUED #536: a check queued 601 min on dc189d829",
+    "CI_QUEUED #533: a check queued 595 min on 4f4ff10c5",
+    "CI_QUEUED #530: a check queued 573 min on a08fff2b1",
+    "CI_QUEUED #522: a check queued 264 min on 7428e9e10",
+    "CI_QUEUED #520: a check queued 615 min on dcd7d5f2a",
+    "CI_QUEUED #517: a check queued 578 min on 1dbf656f4",
+    "CI_QUEUED #515: a check queued 615 min on 1754406ac",
+    "CI_QUEUED #507: a check queued 480 min on c4e759858",
+    "CI_QUEUED #505: a check queued 204 min on 966e7ce4a",
+    "CI_QUEUED #501: a check queued 615 min on 21cd546ca",
+    "CI_QUEUED #486: a check queued 480 min on 8701b315c",
+    "CI_QUEUED #477: a check queued 480 min on 5ca0a4647",
+    "CI_QUEUED #476: a check queued 547 min on 99f1e2379",
+    "CI_QUEUED #475: a check queued 545 min on d7c7671e9",
+    "CLEAR_WAITING #473: CLEARed 17.7 h ago, still open",
+    "CI_QUEUED #462: a check queued 588 min on 3c7a93634",
+    "CI_QUEUED #406: a check queued 591 min on 1d63db762",
+    "CI_QUEUED #397: a check queued 580 min on cfdd617ba",
+    "CI_QUEUED #396: a check queued 591 min on 375546f94",
+    "CI_QUEUED #395: a check queued 593 min on a972aa7f2",
+    "CI_QUEUED #393: a check queued 596 min on 8821e45c6",
+    "CI_QUEUED #392: a check queued 563 min on 5f3ae2c9e",
+    "CI_QUEUED #391: a check queued 574 min on 6aeb6a8b2",
+    "CI_QUEUED #389: a check queued 579 min on b35d9e412",
+    "CI_QUEUED #388: a check queued 610 min on 61259818a",
+    "CI_QUEUED #387: a check queued 593 min on 1945a5d65",
+    "CI_QUEUED #385: a check queued 587 min on e97a66758",
+    "CI_QUEUED #371: a check queued 480 min on 4eae5c2cf",
+    "CI_QUEUED #351: a check queued 480 min on a2c5ce83e",
+    "CI_QUEUED #332: a check queued 590 min on 2146fa2e8",
+    "CI_QUEUED #331: a check queued 530 min on 0c0a7b7b2",
+    "CI_QUEUED #285: a check queued 594 min on 37fda6c5a",
+    "CI_QUEUED #278: a check queued 602 min on e8f940ff1",
+    "CI_QUEUED #273: a check queued 564 min on 91b8c434e",
+    "CI_QUEUED #270: a check queued 571 min on cdb0177c4",
+    "CI_QUEUED #263: a check queued 418 min on 7f7bbec93",
+    "CI_QUEUED #260: a check queued 463 min on c20f83513",
+    "CI_QUEUED #259: a check queued 505 min on 080ace6ed",
+    "CI_QUEUED #256: a check queued 480 min on 75b5361f8",
+    "CI_QUEUED #249: a check queued 434 min on 19f475c4b",
+    "CI_QUEUED #247: a check queued 427 min on 125b08fdf",
+    "CI_QUEUED #245: a check queued 438 min on 5bd322ef7",
+    "CI_QUEUED #238: a check queued 546 min on 3ca1ccade",
+    "CI_QUEUED #236: a check queued 480 min on 5d04c64bc",
+    "CI_QUEUED #235: a check queued 524 min on f12195936",
+    "CI_QUEUED #233: a check queued 480 min on d14370c67",
+    "CI_QUEUED #232: a check queued 480 min on 803bda5a7",
+    "CI_QUEUED #230: a check queued 480 min on f2270c551",
+    "CI_QUEUED #222: a check queued 585 min on e0541979a",
+    "CI_QUEUED #218: a check queued 542 min on 342477528",
+    "CI_QUEUED #204: a check queued 565 min on 472625169",
+    "CI_QUEUED #201: a check queued 560 min on 3d2ffd653",
+    "CI_QUEUED #199: a check queued 473 min on 69bab68ef",
+    "CI_QUEUED #195: a check queued 582 min on 10ee27161",
+    "CI_QUEUED #172: a check queued 513 min on b50c82ac0",
+    "CI_QUEUED #166: a check queued 480 min on ea5641664",
+    "CI_QUEUED #159: a check queued 544 min on b8b261482",
+    "CI_QUEUED #139: a check queued 467 min on 07c0daa97",
+    "CI_QUEUED #133: a check queued 586 min on 6b6cb06ba",
+    "SIGN_TRAIN_FAILING: 68 runs in a row failed"
   ],
   "queue": {
     "queued_runs": 500,
-    "in_progress_runs": 13,
-    "oldest_queued_min": 412.7,
-    "superseded_queued_runs": 3,
+    "in_progress_runs": 14,
+    "oldest_queued_min": 474.6,
+    "superseded_queued_runs": 14,
     "superseded_run_ids": [
-      42987978838,
+      43004238558,
+      43003890890,
+      43003888580,
+      43003888385,
+      43002694456,
+      43002694815,
+      43002689924,
+      43002689860,
+      43002331831,
+      43002331823,
+      43002328510,
+      43002328320,
       42947040515,
       42947040272
     ]
   },
   "reviewer": {
-    "fails": 145,
+    "fails": 153,
     "cleared_fails": [
-      836,
       807,
       801,
       797,
       737,
       473
     ],
-    "fp_rate": 0.04
+    "fp_rate": 0.03
   },
   "sweep": {
-    "at": "2026-11-11T08:30:06.8004764Z",
+    "at": "2026-11-11T10:15:27.3899368Z",
     "age_min": 0.0,
     "rc": 1,
     "note": "FAILED: sparse-checkout failed (128)",
     "mutex_held_runs": 0
   },
   "sign_train": {
-    "at": "2026-11-11T08:40:01.7282117Z",
-    "age_min": -9.9,
+    "at": "2026-11-11T10:30:04.1370498Z",
+    "age_min": -14.6,
     "rc": 1,
     "note": "FAILED: no desk Python at C:\\opt\\quant\\.venv\\Scripts\\python.exe",
-    "fail_runs": 57,
+    "fail_runs": 68,
     "mutex_held_runs": 0,
     "waiting_on": null,
     "waiting_min": null
   },
   "live": {
-    "last_code_commit": "cd0b93bce",
-    "last_code_at": "2026-11-11T04:52:07Z",
-    "hours_since_code": 3.63,
-    "last_merge_at": "2026-11-10T23:21:12Z",
-    "hours_since_merge": 9.15
+    "last_code_commit": "00c1474f6",
+    "last_code_at": "2026-11-11T09:59:11Z",
+    "hours_since_code": 0.27,
+    "last_merge_at": "2026-11-11T09:59:11Z",
+    "hours_since_merge": 0.27
   },
   "prs": [
-    {
-      "pr": 822,
-      "head": "241c9f53b",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 691.3,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "success",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 812,
-      "head": "3148b8745",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 690.7,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "success",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 782,
-      "head": "699c64d61",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 686.5,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 857,
-      "head": "7a1312282",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 685.8,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 858,
-      "head": "9572f10ca",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 682.8,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "success",
-      "gating_green": false,
-      "green_since": null
-    },
     {
       "pr": 859,
       "head": "3299b2b2c",
@@ -407,7 +359,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 682.6,
+      "oldest_queued_min": 787.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -422,7 +374,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 652.7,
+      "oldest_queued_min": 758.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -437,7 +389,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 642.1,
+      "oldest_queued_min": 747.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -451,10 +403,25 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 631.3,
+      "oldest_queued_min": 736.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 861,
+      "head": "c6759a888",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor",
+        "gate"
+      ],
+      "oldest_queued_min": 735.2,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -466,7 +433,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 629.8,
+      "oldest_queued_min": 735.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -481,22 +448,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 629.8,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 861,
-      "head": "c6759a888",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 629.8,
+      "oldest_queued_min": 735.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -510,9 +462,9 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 628.7,
+      "oldest_queued_min": 734.0,
       "clear_at": "2026-11-10T16:16:21Z",
-      "clear_age_h": 16.23,
+      "clear_age_h": 17.98,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -525,7 +477,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 628.5,
+      "oldest_queued_min": 733.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -540,7 +492,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 626.2,
+      "oldest_queued_min": 731.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -555,7 +507,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 616.9,
+      "oldest_queued_min": 722.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -570,7 +522,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 606.3,
+      "oldest_queued_min": 711.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -585,7 +537,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 575.8,
+      "oldest_queued_min": 681.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -600,7 +552,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 550.3,
+      "oldest_queued_min": 655.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -615,7 +567,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 548.4,
+      "oldest_queued_min": 653.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -630,7 +582,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 546.9,
+      "oldest_queued_min": 652.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -645,7 +597,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 543.8,
+      "oldest_queued_min": 649.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -660,7 +612,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 518.9,
+      "oldest_queued_min": 624.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -674,7 +626,7 @@
       "queued_checks": [
         "gate"
       ],
-      "oldest_queued_min": 517.9,
+      "oldest_queued_min": 623.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -689,10 +641,10 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 516.3,
+      "oldest_queued_min": 621.7,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -704,7 +656,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 513.1,
+      "oldest_queued_min": 618.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -719,7 +671,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 511.5,
+      "oldest_queued_min": 616.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -734,22 +686,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 510.2,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 515,
-      "head": "1754406ac",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor",
-        "gate"
-      ],
-      "oldest_queued_min": 510.0,
+      "oldest_queued_min": 615.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -764,7 +701,22 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 509.9,
+      "oldest_queued_min": 615.3,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 515,
+      "head": "1754406ac",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor",
+        "gate"
+      ],
+      "oldest_queued_min": 615.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -779,7 +731,7 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 509.9,
+      "oldest_queued_min": 615.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -794,24 +746,10 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 509.8,
+      "oldest_queued_min": 615.1,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 721,
-      "head": "5939d16db",
-      "draft": true,
-      "queued_checks": [
-        "gate"
-      ],
-      "oldest_queued_min": 509.4,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "success",
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -823,10 +761,24 @@
         "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 509.3,
+      "oldest_queued_min": 614.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 721,
+      "head": "5939d16db",
+      "draft": true,
+      "queued_checks": [
+        "gate"
+      ],
+      "oldest_queued_min": 614.7,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -835,9 +787,10 @@
       "head": "4df052e8b",
       "draft": true,
       "queued_checks": [
+        "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 509.1,
+      "oldest_queued_min": 614.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -849,9 +802,10 @@
       "head": "dc4179bc4",
       "draft": true,
       "queued_checks": [
+        "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 508.1,
+      "oldest_queued_min": 613.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -863,9 +817,10 @@
       "head": "b34a6ed45",
       "draft": true,
       "queued_checks": [
+        "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 508.1,
+      "oldest_queued_min": 613.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -877,12 +832,28 @@
       "head": "f3fce23ea",
       "draft": true,
       "queued_checks": [
+        "coverage-floor",
         "gate"
       ],
-      "oldest_queued_min": 507.8,
+      "oldest_queued_min": 613.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 750,
+      "head": "a715af16e",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor",
+        "gate"
+      ],
+      "oldest_queued_min": 612.6,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -891,11 +862,10 @@
       "head": "7ceab892b",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.3,
+      "oldest_queued_min": 612.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -907,15 +877,10 @@
       "head": "620b9eedf",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.3,
+      "oldest_queued_min": 612.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -927,10 +892,10 @@
       "head": "b3c825d44",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.3,
+      "oldest_queued_min": 612.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -942,17 +907,13 @@
       "head": "5386686b3",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.3,
+      "oldest_queued_min": 612.6,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -961,10 +922,10 @@
       "head": "c4bc066b9",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.3,
+      "oldest_queued_min": 612.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -976,33 +937,10 @@
       "head": "b638fe845",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.3,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 750,
-      "head": "a715af16e",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 507.2,
+      "oldest_queued_min": 612.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1014,18 +952,13 @@
       "head": "94f0d0288",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 507.0,
+      "oldest_queued_min": 612.3,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1034,15 +967,10 @@
       "head": "17827a20e",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 506.8,
+      "oldest_queued_min": 612.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1054,18 +982,13 @@
       "head": "87a99148c",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 506.5,
+      "oldest_queued_min": 611.8,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1074,18 +997,12 @@
       "head": "79e82c1e5",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "gate"
       ],
-      "oldest_queued_min": 506.1,
+      "oldest_queued_min": 611.4,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1094,18 +1011,12 @@
       "head": "34287999c",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "gate"
       ],
-      "oldest_queued_min": 505.7,
+      "oldest_queued_min": 611.1,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1114,18 +1025,13 @@
       "head": "2ad1f8c5e",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 505.7,
+      "oldest_queued_min": 611.0,
       "clear_at": null,
       "clear_age_h": null,
-      "review": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1134,35 +1040,10 @@
       "head": "2349b395a",
       "draft": true,
       "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
+        "coverage-floor",
+        "gate"
       ],
-      "oldest_queued_min": 505.5,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 341,
-      "head": "a5bc618c2",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 504.8,
+      "oldest_queued_min": 610.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1175,34 +1056,9 @@
       "draft": true,
       "queued_checks": [
         "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 504.7,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 582,
-      "head": "a1187084f",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 504.6,
+      "oldest_queued_min": 610.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1215,14 +1071,24 @@
       "draft": true,
       "queued_checks": [
         "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 504.6,
+      "oldest_queued_min": 610.0,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 582,
+      "head": "a1187084f",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 609.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1236,13 +1102,10 @@
       "queued_checks": [
         "gate",
         "independent-review",
-        "mt5-money-path",
-        "quality",
         "replay-shadow",
-        "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 504.4,
+      "oldest_queued_min": 609.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1262,7 +1125,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 503.7,
+      "oldest_queued_min": 609.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1282,7 +1145,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 503.6,
+      "oldest_queued_min": 609.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1296,7 +1159,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 502.5,
+      "oldest_queued_min": 607.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -1316,7 +1179,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 500.8,
+      "oldest_queued_min": 606.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1336,7 +1199,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 499.7,
+      "oldest_queued_min": 605.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1356,7 +1219,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 498.3,
+      "oldest_queued_min": 603.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1376,7 +1239,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 497.0,
+      "oldest_queued_min": 602.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1396,7 +1259,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 496.2,
+      "oldest_queued_min": 601.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1416,7 +1279,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 495.9,
+      "oldest_queued_min": 601.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1436,7 +1299,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 494.2,
+      "oldest_queued_min": 599.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1456,7 +1319,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 493.4,
+      "oldest_queued_min": 598.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1476,7 +1339,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 493.2,
+      "oldest_queued_min": 598.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1496,7 +1359,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 492.5,
+      "oldest_queued_min": 597.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1516,7 +1379,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 492.3,
+      "oldest_queued_min": 597.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1536,7 +1399,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 491.4,
+      "oldest_queued_min": 596.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1556,7 +1419,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 491.3,
+      "oldest_queued_min": 596.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1576,7 +1439,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 490.2,
+      "oldest_queued_min": 595.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1596,7 +1459,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 489.7,
+      "oldest_queued_min": 595.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1610,11 +1473,25 @@
       "queued_checks": [
         "independent-review"
       ],
-      "oldest_queued_min": 489.4,
+      "oldest_queued_min": 594.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
       "gating_green": true,
+      "green_since": null
+    },
+    {
+      "pr": 846,
+      "head": "ded98f2f4",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor"
+      ],
+      "oldest_queued_min": 594.6,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "failure",
+      "gating_green": false,
       "green_since": null
     },
     {
@@ -1630,24 +1507,10 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 489.3,
+      "oldest_queued_min": 594.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 846,
-      "head": "ded98f2f4",
-      "draft": true,
-      "queued_checks": [
-        "coverage-floor"
-      ],
-      "oldest_queued_min": 489.2,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -1658,31 +1521,11 @@
       "queued_checks": [
         "independent-review"
       ],
-      "oldest_queued_min": 488.7,
+      "oldest_queued_min": 594.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
       "gating_green": true,
-      "green_since": null
-    },
-    {
-      "pr": 887,
-      "head": "b6f0a048d",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 488.1,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
       "green_since": null
     },
     {
@@ -1698,7 +1541,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 488.1,
+      "oldest_queued_min": 593.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1706,8 +1549,8 @@
       "green_since": null
     },
     {
-      "pr": 722,
-      "head": "c1a22fbb7",
+      "pr": 887,
+      "head": "b6f0a048d",
       "draft": true,
       "queued_checks": [
         "gate",
@@ -1718,7 +1561,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 593.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1738,7 +1581,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 592.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1758,7 +1601,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 592.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1778,7 +1621,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 592.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1798,7 +1641,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 592.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1818,7 +1661,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 592.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1838,7 +1681,27 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 487.5,
+      "oldest_queued_min": 592.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 722,
+      "head": "c1a22fbb7",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 592.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1852,7 +1715,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 486.7,
+      "oldest_queued_min": 592.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -1872,7 +1735,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 486.2,
+      "oldest_queued_min": 591.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1892,7 +1755,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 485.7,
+      "oldest_queued_min": 591.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1912,7 +1775,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 485.7,
+      "oldest_queued_min": 591.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1932,7 +1795,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 485.2,
+      "oldest_queued_min": 590.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1952,7 +1815,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 484.5,
+      "oldest_queued_min": 589.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1972,7 +1835,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 483.9,
+      "oldest_queued_min": 589.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -1992,7 +1855,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 483.1,
+      "oldest_queued_min": 588.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2012,7 +1875,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 482.8,
+      "oldest_queued_min": 588.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2032,7 +1895,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 481.7,
+      "oldest_queued_min": 587.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2052,7 +1915,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 480.6,
+      "oldest_queued_min": 585.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2072,7 +1935,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 480.5,
+      "oldest_queued_min": 585.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2092,27 +1955,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 479.8,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 892,
-      "head": "92b8d40ec",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 479.7,
+      "oldest_queued_min": 585.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2132,7 +1975,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 479.7,
+      "oldest_queued_min": 585.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2140,8 +1983,8 @@
       "green_since": null
     },
     {
-      "pr": 715,
-      "head": "a282f62ab",
+      "pr": 892,
+      "head": "92b8d40ec",
       "draft": true,
       "queued_checks": [
         "gate",
@@ -2152,7 +1995,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 479.0,
+      "oldest_queued_min": 585.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2172,7 +2015,27 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 478.9,
+      "oldest_queued_min": 584.3,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 715,
+      "head": "a282f62ab",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 584.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2192,7 +2055,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 477.1,
+      "oldest_queued_min": 582.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2212,7 +2075,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 476.5,
+      "oldest_queued_min": 581.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2232,7 +2095,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 476.1,
+      "oldest_queued_min": 581.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2252,7 +2115,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 476.0,
+      "oldest_queued_min": 581.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2272,7 +2135,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 474.6,
+      "oldest_queued_min": 579.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2292,7 +2155,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 474.3,
+      "oldest_queued_min": 579.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2312,7 +2175,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 474.1,
+      "oldest_queued_min": 579.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2332,7 +2195,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 473.8,
+      "oldest_queued_min": 579.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2352,7 +2215,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 473.1,
+      "oldest_queued_min": 578.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2372,7 +2235,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 472.6,
+      "oldest_queued_min": 578.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2392,7 +2255,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 472.4,
+      "oldest_queued_min": 577.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2412,7 +2275,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 470.2,
+      "oldest_queued_min": 575.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2432,7 +2295,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 468.5,
+      "oldest_queued_min": 573.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2452,7 +2315,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 467.3,
+      "oldest_queued_min": 572.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2472,7 +2335,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 466.4,
+      "oldest_queued_min": 571.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2492,7 +2355,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 466.0,
+      "oldest_queued_min": 571.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2512,7 +2375,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 462.7,
+      "oldest_queued_min": 568.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2532,7 +2395,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 459.9,
+      "oldest_queued_min": 565.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2552,7 +2415,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 458.5,
+      "oldest_queued_min": 563.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2572,7 +2435,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 458.4,
+      "oldest_queued_min": 563.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2592,7 +2455,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 458.2,
+      "oldest_queued_min": 563.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2612,7 +2475,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 458.0,
+      "oldest_queued_min": 563.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2632,7 +2495,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 457.9,
+      "oldest_queued_min": 563.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2647,7 +2510,7 @@
         "coverage-floor",
         "independent-review"
       ],
-      "oldest_queued_min": 457.7,
+      "oldest_queued_min": 563.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2667,7 +2530,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 454.5,
+      "oldest_queued_min": 559.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2681,7 +2544,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 453.9,
+      "oldest_queued_min": 559.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -2701,7 +2564,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 453.6,
+      "oldest_queued_min": 558.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2715,7 +2578,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 452.2,
+      "oldest_queued_min": 557.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -2735,7 +2598,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 451.0,
+      "oldest_queued_min": 556.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2755,7 +2618,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 449.3,
+      "oldest_queued_min": 554.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2775,27 +2638,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 447.6,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 902,
-      "head": "27ed98c21",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 445.2,
+      "oldest_queued_min": 552.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2815,7 +2658,27 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 445.2,
+      "oldest_queued_min": 550.6,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 902,
+      "head": "27ed98c21",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 550.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2829,7 +2692,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 444.3,
+      "oldest_queued_min": 549.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -2849,7 +2712,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 441.8,
+      "oldest_queued_min": 547.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2869,7 +2732,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 441.1,
+      "oldest_queued_min": 546.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2889,7 +2752,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 439.3,
+      "oldest_queued_min": 544.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2909,7 +2772,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 439.0,
+      "oldest_queued_min": 544.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2929,7 +2792,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 436.8,
+      "oldest_queued_min": 542.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2949,7 +2812,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 436.3,
+      "oldest_queued_min": 541.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2969,7 +2832,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 435.7,
+      "oldest_queued_min": 541.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -2989,7 +2852,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 435.5,
+      "oldest_queued_min": 540.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3009,7 +2872,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 434.2,
+      "oldest_queued_min": 539.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3029,7 +2892,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 432.6,
+      "oldest_queued_min": 538.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3049,7 +2912,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 431.2,
+      "oldest_queued_min": 536.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3069,7 +2932,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 430.8,
+      "oldest_queued_min": 536.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3089,7 +2952,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 429.9,
+      "oldest_queued_min": 535.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3109,7 +2972,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 428.9,
+      "oldest_queued_min": 534.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3129,7 +2992,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 428.3,
+      "oldest_queued_min": 533.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3149,7 +3012,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 426.3,
+      "oldest_queued_min": 531.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3169,7 +3032,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 425.1,
+      "oldest_queued_min": 530.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3189,7 +3052,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 422.6,
+      "oldest_queued_min": 527.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3209,7 +3072,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 419.8,
+      "oldest_queued_min": 525.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3229,7 +3092,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 419.7,
+      "oldest_queued_min": 525.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3249,7 +3112,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 419.2,
+      "oldest_queued_min": 524.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3269,7 +3132,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 419.2,
+      "oldest_queued_min": 524.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3289,7 +3152,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 418.8,
+      "oldest_queued_min": 524.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3303,7 +3166,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 418.7,
+      "oldest_queued_min": 524.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -3323,7 +3186,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 415.9,
+      "oldest_queued_min": 521.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3343,7 +3206,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 414.8,
+      "oldest_queued_min": 520.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3363,7 +3226,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 412.7,
+      "oldest_queued_min": 518.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3383,7 +3246,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 412.5,
+      "oldest_queued_min": 517.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3403,7 +3266,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 411.0,
+      "oldest_queued_min": 516.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3423,27 +3286,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 409.4,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 921,
-      "head": "655e45fec",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 407.2,
+      "oldest_queued_min": 514.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3463,7 +3306,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 407.2,
+      "oldest_queued_min": 512.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3483,7 +3326,27 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 407.2,
+      "oldest_queued_min": 512.6,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 921,
+      "head": "655e45fec",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 512.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3503,7 +3366,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 405.0,
+      "oldest_queued_min": 510.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3523,7 +3386,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 402.7,
+      "oldest_queued_min": 508.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3537,7 +3400,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 399.2,
+      "oldest_queued_min": 504.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -3557,7 +3420,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 395.8,
+      "oldest_queued_min": 501.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3577,7 +3440,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 395.8,
+      "oldest_queued_min": 501.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3597,7 +3460,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 393.1,
+      "oldest_queued_min": 498.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3617,7 +3480,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 385.7,
+      "oldest_queued_min": 491.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3631,30 +3494,10 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 385.7,
+      "oldest_queued_min": 491.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 929,
-      "head": "46ff74d49",
-      "draft": true,
-      "queued_checks": [
-        "gate",
-        "independent-review",
-        "mt5-money-path",
-        "quality",
-        "replay-shadow",
-        "risk-invariants",
-        "trusted-eval"
-      ],
-      "oldest_queued_min": 383.8,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": null,
       "gating_green": false,
       "green_since": null
     },
@@ -3671,7 +3514,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 383.3,
+      "oldest_queued_min": 488.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3691,7 +3534,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 380.2,
+      "oldest_queued_min": 485.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3706,7 +3549,7 @@
         "gate",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3726,7 +3569,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3746,7 +3589,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3766,7 +3609,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3786,7 +3629,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3806,7 +3649,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3826,7 +3669,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3846,7 +3689,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3866,7 +3709,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3886,7 +3729,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3906,7 +3749,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 375.1,
+      "oldest_queued_min": 480.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3920,7 +3763,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 374.7,
+      "oldest_queued_min": 480.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -3940,7 +3783,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 372.3,
+      "oldest_queued_min": 477.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3954,7 +3797,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 370.1,
+      "oldest_queued_min": 475.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -3974,7 +3817,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 369.2,
+      "oldest_queued_min": 474.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -3988,7 +3831,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 367.4,
+      "oldest_queued_min": 472.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4002,7 +3845,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 366.7,
+      "oldest_queued_min": 472.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4022,7 +3865,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 364.2,
+      "oldest_queued_min": 469.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4042,7 +3885,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 363.4,
+      "oldest_queued_min": 468.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4056,7 +3899,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 361.8,
+      "oldest_queued_min": 467.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4076,7 +3919,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 358.6,
+      "oldest_queued_min": 463.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4090,7 +3933,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 357.6,
+      "oldest_queued_min": 462.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4110,7 +3953,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 355.6,
+      "oldest_queued_min": 460.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4130,7 +3973,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 351.7,
+      "oldest_queued_min": 457.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4150,7 +3993,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 350.0,
+      "oldest_queued_min": 455.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4165,7 +4008,7 @@
         "gate",
         "trusted-eval"
       ],
-      "oldest_queued_min": 347.3,
+      "oldest_queued_min": 452.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4179,7 +4022,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 345.4,
+      "oldest_queued_min": 450.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4199,7 +4042,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 340.5,
+      "oldest_queued_min": 445.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4219,7 +4062,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 337.9,
+      "oldest_queued_min": 443.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4239,7 +4082,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 336.5,
+      "oldest_queued_min": 441.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4259,7 +4102,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 332.7,
+      "oldest_queued_min": 438.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4273,7 +4116,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 332.5,
+      "oldest_queued_min": 437.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4288,7 +4131,7 @@
         "coverage-floor",
         "independent-review"
       ],
-      "oldest_queued_min": 328.8,
+      "oldest_queued_min": 434.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4302,7 +4145,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 321.6,
+      "oldest_queued_min": 426.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4322,7 +4165,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 318.0,
+      "oldest_queued_min": 423.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4342,7 +4185,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 317.8,
+      "oldest_queued_min": 423.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4362,7 +4205,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 317.6,
+      "oldest_queued_min": 423.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4376,7 +4219,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 313.4,
+      "oldest_queued_min": 418.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -4390,7 +4233,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 312.3,
+      "oldest_queued_min": 417.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4410,7 +4253,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 310.0,
+      "oldest_queued_min": 415.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4430,7 +4273,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 308.3,
+      "oldest_queued_min": 413.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4444,7 +4287,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 305.2,
+      "oldest_queued_min": 410.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4458,7 +4301,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 304.7,
+      "oldest_queued_min": 410.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4478,7 +4321,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 302.9,
+      "oldest_queued_min": 408.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4498,7 +4341,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 300.0,
+      "oldest_queued_min": 405.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4512,7 +4355,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 294.0,
+      "oldest_queued_min": 399.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -4532,7 +4375,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 281.0,
+      "oldest_queued_min": 386.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4546,7 +4389,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 272.0,
+      "oldest_queued_min": 377.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4560,7 +4403,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 270.2,
+      "oldest_queued_min": 375.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
@@ -4580,7 +4423,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 269.8,
+      "oldest_queued_min": 375.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4600,7 +4443,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 269.3,
+      "oldest_queued_min": 374.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4620,7 +4463,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 267.9,
+      "oldest_queued_min": 373.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4640,7 +4483,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 265.4,
+      "oldest_queued_min": 370.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4660,7 +4503,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 264.8,
+      "oldest_queued_min": 370.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4680,7 +4523,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 261.0,
+      "oldest_queued_min": 366.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4700,7 +4543,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 258.2,
+      "oldest_queued_min": 363.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4720,7 +4563,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 258.1,
+      "oldest_queued_min": 363.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4740,10 +4583,38 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 257.7,
+      "oldest_queued_min": 363.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 812,
+      "head": "3148b8745",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor"
+      ],
+      "oldest_queued_min": 359.4,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "success",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 822,
+      "head": "241c9f53b",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor"
+      ],
+      "oldest_queued_min": 358.6,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -4760,7 +4631,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 251.8,
+      "oldest_queued_min": 357.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4780,7 +4651,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 249.9,
+      "oldest_queued_min": 355.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4800,10 +4671,24 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 243.8,
+      "oldest_queued_min": 349.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 782,
+      "head": "699c64d61",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor"
+      ],
+      "oldest_queued_min": 339.5,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -4820,7 +4705,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 230.3,
+      "oldest_queued_min": 335.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4840,10 +4725,38 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 218.0,
+      "oldest_queued_min": 323.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 857,
+      "head": "7a1312282",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor"
+      ],
+      "oldest_queued_min": 320.7,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 858,
+      "head": "9572f10ca",
+      "draft": true,
+      "queued_checks": [
+        "coverage-floor"
+      ],
+      "oldest_queued_min": 319.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "success",
       "gating_green": false,
       "green_since": null
     },
@@ -4854,7 +4767,7 @@
       "queued_checks": [
         "coverage-floor"
       ],
-      "oldest_queued_min": 208.9,
+      "oldest_queued_min": 314.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
@@ -4874,7 +4787,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 191.3,
+      "oldest_queued_min": 296.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4894,7 +4807,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 186.4,
+      "oldest_queued_min": 291.8,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4914,7 +4827,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 176.2,
+      "oldest_queued_min": 281.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4934,7 +4847,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 160.1,
+      "oldest_queued_min": 265.5,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4954,7 +4867,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 159.0,
+      "oldest_queued_min": 264.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4974,7 +4887,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 158.0,
+      "oldest_queued_min": 263.4,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -4994,7 +4907,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 154.9,
+      "oldest_queued_min": 260.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5014,7 +4927,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 153.7,
+      "oldest_queued_min": 259.1,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5034,7 +4947,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 134.6,
+      "oldest_queued_min": 240.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5054,7 +4967,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 134.4,
+      "oldest_queued_min": 239.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5074,7 +4987,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 127.6,
+      "oldest_queued_min": 232.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5094,7 +5007,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 126.3,
+      "oldest_queued_min": 231.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5114,7 +5027,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 124.8,
+      "oldest_queued_min": 230.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5134,7 +5047,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 98.3,
+      "oldest_queued_min": 203.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5154,7 +5067,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 93.6,
+      "oldest_queued_min": 198.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5174,7 +5087,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 88.9,
+      "oldest_queued_min": 194.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5194,7 +5107,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 85.9,
+      "oldest_queued_min": 191.2,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5214,7 +5127,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 33.6,
+      "oldest_queued_min": 138.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5234,7 +5147,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 32.7,
+      "oldest_queued_min": 138.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5254,7 +5167,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 26.3,
+      "oldest_queued_min": 131.6,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5274,7 +5187,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 24.4,
+      "oldest_queued_min": 129.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5294,7 +5207,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 21.6,
+      "oldest_queued_min": 126.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5314,7 +5227,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 18.5,
+      "oldest_queued_min": 123.9,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5334,7 +5247,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 13.4,
+      "oldest_queued_min": 118.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5354,7 +5267,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 12.7,
+      "oldest_queued_min": 118.0,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5374,7 +5287,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 6.9,
+      "oldest_queued_min": 112.3,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5382,8 +5295,8 @@
       "green_since": null
     },
     {
-      "pr": 973,
-      "head": "1ef8997a3",
+      "pr": 971,
+      "head": "29901c4bb",
       "draft": true,
       "queued_checks": [
         "gate",
@@ -5394,7 +5307,7 @@
         "risk-invariants",
         "trusted-eval"
       ],
-      "oldest_queued_min": 3.2,
+      "oldest_queued_min": 106.7,
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
@@ -5402,8 +5315,403 @@
       "green_since": null
     },
     {
-      "pr": 971,
-      "head": "29901c4bb",
+      "pr": 973,
+      "head": "e820f947d",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 102.0,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 929,
+      "head": "93eaf2a50",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 91.8,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 974,
+      "head": "e431f46e4",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 81.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 976,
+      "head": "96e8752c5",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 74.0,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 975,
+      "head": "33afa4276",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 73.3,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 978,
+      "head": "3a9b5d3ed",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 66.0,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 977,
+      "head": "c3ff7cf74",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 63.3,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 980,
+      "head": "5e505bf32",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 59.0,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 981,
+      "head": "24f99ca99",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 56.4,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 982,
+      "head": "fb28dbe03",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 52.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 979,
+      "head": "47302cd89",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 48.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 983,
+      "head": "08c0ad1d6",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 47.6,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 984,
+      "head": "6d7fdea8b",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 25.8,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 985,
+      "head": "18ac49f48",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 22.7,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 824,
+      "head": "27991e662",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 20.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 820,
+      "head": "b58bbfff3",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 20.4,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 986,
+      "head": "74193b4b3",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 13.1,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 987,
+      "head": "ed6d65038",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 9.7,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 989,
+      "head": "2ae1f7754",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "independent-review",
+        "mt5-money-path",
+        "quality",
+        "replay-shadow",
+        "risk-invariants",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 2.9,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 988,
+      "head": "a35d6de08",
+      "draft": true,
+      "queued_checks": [
+        "gate",
+        "trusted-eval"
+      ],
+      "oldest_queued_min": 2.3,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 990,
+      "head": "13adee9f1",
       "draft": true,
       "queued_checks": [
         "gate",
@@ -5470,18 +5778,6 @@
       "green_since": null
     },
     {
-      "pr": 836,
-      "head": "102f58c2f",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": "2026-11-10T22:02:33Z",
-      "clear_age_h": 10.46,
-      "review": "failure",
-      "gating_green": true,
-      "green_since": null
-    },
-    {
       "pr": 834,
       "head": "b7faae418",
       "draft": true,
@@ -5542,30 +5838,6 @@
       "green_since": null
     },
     {
-      "pr": 824,
-      "head": "4c311b2c8",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "success",
-      "gating_green": true,
-      "green_since": null
-    },
-    {
-      "pr": 820,
-      "head": "4a6976ef2",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "success",
-      "gating_green": true,
-      "green_since": null
-    },
-    {
       "pr": 815,
       "head": "8b5f6bcf1",
       "draft": true,
@@ -5620,7 +5892,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:07:29Z",
-      "clear_age_h": 9.38,
+      "clear_age_h": 11.13,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5644,7 +5916,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:33:12Z",
-      "clear_age_h": 8.95,
+      "clear_age_h": 10.71,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5812,7 +6084,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:59:15Z",
-      "clear_age_h": 8.51,
+      "clear_age_h": 10.27,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6892,7 +7164,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T16:34:20Z",
-      "clear_age_h": 15.93,
+      "clear_age_h": 17.68,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -7242,6 +7514,18 @@
       "clear_at": null,
       "clear_age_h": null,
       "review": null,
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 341,
+      "head": "a5bc618c2",
+      "draft": true,
+      "queued_checks": [],
+      "oldest_queued_min": null,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "cancelled",
       "gating_green": false,
       "green_since": null
     },
