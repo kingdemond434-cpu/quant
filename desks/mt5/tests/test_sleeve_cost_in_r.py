@@ -53,6 +53,8 @@ def _setup(monkeypatch: pytest.MonkeyPatch, tmp: Path, *, p50: float = 10.0,
     monkeypatch.setattr(sc, "CORPUS", tmp / "none2.jsonl")
     monkeypatch.setattr(sc, "DATA", tmp)
     monkeypatch.setattr(sc, "OUT", tmp / "SLEEVE_COST_IN_R.json")
+    monkeypatch.setattr(sc, "SM1", tmp / "no_sm1.json")
+    monkeypatch.setattr(sc, "SM1_LOCAL", tmp / "no_sm1_local.json")
 
 
 def _row(doc: dict[str, Any], name: str = "eurusd_srb") -> dict[str, Any]:
@@ -138,3 +140,82 @@ def test_write_is_atomic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
     sc.write(sc.build(NOW), sc.OUT)
     assert json.loads(sc.OUT.read_text(encoding="utf-8"))["schema"] == sc.SCHEMA
     assert not list(tmp_path.glob("*.tmp"))
+
+
+def _spike_surface(tmp: Path, spikes: dict[str, object] | None) -> None:
+    doc = json.loads(sc.SURFACE.read_text(encoding="utf-8"))
+    sym = doc["symbols"]["EURUSD"]
+    sym["hours"]["1"] = {"status": "MEASURED", "p50": 2.0, "zero_frac": 0.0}
+    if spikes is not None:
+        sym["tick_hours"] = {"spike_minutes": spikes}
+    sc.SURFACE.write_text(json.dumps(doc), encoding="utf-8")
+
+
+def _gap_sleeve(monkeypatch: pytest.MonkeyPatch, tmp: Path, status: str = "LIVE") -> None:
+    sleeves = {"sleeves": [{"name": "eurusd_gap", "status": status, "symbol": "EURUSD",
+                            "family": "overnight_gap_decay",
+                            "certificate": {"cell": "external.EURUSD.srb"}}]}
+    sc.SLEEVES.write_text(json.dumps(sleeves), encoding="utf-8")
+
+
+def test_rollover_minute_30x_flips_a_live_sleeve(monkeypatch: pytest.MonkeyPatch,
+                                                  tmp_path: Path) -> None:
+    # Hour 01 quotes 2 pts; the 01:00 minute quotes 60 (30x). Edge positive at the hour,
+    # gone at the minute: FLIPS_AT_MINUTE, and the LIVE sleeve reaches the CRO's list.
+    _setup(monkeypatch, tmp_path)
+    _gap_sleeve(monkeypatch, tmp_path)
+    _spike_surface(tmp_path, {"01:00": {"p50": 60.0, "n_ticks": 40, "n_days": 5}})
+    doc = sc.build(NOW)
+    f = _row(doc, "eurusd_gap")["venues"]["fusion"]
+    assert f["net_edge_R"] > 0 >= f["net_R_minute"]
+    assert f["minute"]["spike_share"] == 1.0
+    assert "FLIPS_AT_MINUTE" in f["flags"]
+    assert doc["live_flips"] == ["eurusd_gap"]
+
+
+def test_minute_only_raises_and_absent_spikes_are_unmeasured(monkeypatch: pytest.MonkeyPatch,
+                                                             tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path)
+    _gap_sleeve(monkeypatch, tmp_path, status="STANDBY")
+    _spike_surface(tmp_path, {"01:00": {"p50": 1.0}})  # cheaper than its hour: ignored
+    f = _row(sc.build(NOW), "eurusd_gap")["venues"]["fusion"]
+    assert f["cost_R_minute"] == pytest.approx(f["cost_R_measured"]["total_R"], abs=1e-5)
+    _setup(monkeypatch, tmp_path)
+    _gap_sleeve(monkeypatch, tmp_path)
+    _spike_surface(tmp_path, None)
+    doc = sc.build(NOW)
+    f = _row(doc, "eurusd_gap")["venues"]["fusion"]
+    assert f["cost_R_minute"] == sc.UNMEASURED_MINUTE
+    assert f["net_R_minute"] == sc.UNMEASURED_MINUTE
+    assert doc["live_flips"] == []
+
+
+def test_spec_fill_minute_is_next_bar_open() -> None:
+    item = {"session": "asia", "spec": {"timeframe": "M15"}}
+    assert sc.entry_minutes(item, [])["fills"] == [(7, 15)]
+
+
+def test_sm1_is_the_authority_for_covered_keys(monkeypatch: pytest.MonkeyPatch,
+                                               tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path)
+    _spike_surface(tmp_path, {})  # key present, minute not listed: MEASURED, no spike
+    sm1 = {"top10_gt0": [{"cell": "external.EURUSD.srb", "exp_registry": 0.3,
+                          "exp_fill_minute": -0.1, "spike_share": 0.8,
+                          "spike_minutes": {"01:00": 8}, "spread_fill_weighted": 60.0}]}
+    sc.SM1.write_text(json.dumps(sm1), encoding="utf-8")
+    r = _row(sc.build(NOW))
+    assert r["minute_source"] == "sm1" and "not_in_sm1" not in r
+    assert r["venues"]["fusion"]["net_R_minute"] == -0.1
+    assert "FLIPS_AT_MINUTE" in r["flags"]
+
+
+def test_unlisted_minute_is_measured_not_a_spike(monkeypatch: pytest.MonkeyPatch,
+                                                 tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path)
+    _gap_sleeve(monkeypatch, tmp_path)
+    _spike_surface(tmp_path, {"05:00": {"p50": 99.0}})
+    r = _row(sc.build(NOW), "eurusd_gap")
+    f = r["venues"]["fusion"]
+    assert r["not_in_sm1"] is True
+    assert f["minute"]["spike_share"] == 0.0
+    assert f["cost_R_minute"] == pytest.approx(f["cost_R_measured"]["total_R"], abs=1e-5)

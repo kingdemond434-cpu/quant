@@ -69,11 +69,17 @@ UNIVERSE = DATA / "universe" / "universe.json"
 LEDGER = DATA / "live_ledger.jsonl"
 CORPUS = DATA / "fill_corpus.jsonl"
 SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
+#: The Judge's SM1 spike-minute sweep: the AUTHORITY for every certificate key it covers.
+SM1 = Path("/mnt/project-files/reports/box_reads/spike_minute_sweep_SM1_slice_2026-11-11.json")
+SM1_LOCAL = REPORTS / "box_reads" / "spike_minute_sweep_SM1_slice.json"
 OUT = REPORTS / "SLEEVE_COST_IN_R.json"
 
 SCHEMA = "sleeve-cost-in-r-1"
 UNMEASURED = "UNMEASURED"
 UNMEASURED_BASIS = "UNMEASURED_BASIS"
+UNMEASURED_MINUTE = "UNMEASURED_MINUTE"
+#: Chart minutes per timeframe label, for the engine's fill rule (open of the next bar).
+TF_MINUTES: dict[str, int] = {"M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H4": 240}
 #: engine.Costs.commission_per_lot -- measured on the live Fusion account, per lot per SIDE.
 COMMISSION_PER_LOT_SIDE = 2.00
 #: universal_gate: baseline crosses the spread twice, stress (COST_SCENARIO 3) three times.
@@ -197,6 +203,70 @@ def entry_hours(item: dict[str, Any], entries: list[dict[str, Any]]) -> dict[str
     return _um(f"no live entries and no known session window ({sess or 'none'})")
 
 
+def entry_minutes(item: dict[str, Any], entries: list[dict[str, Any]]) -> dict[str, Any]:
+    """Broker (hour, minute) of each fill. Ledger entries first; otherwise the spec's entry rule
+    read the way the engine fills (PR #1077, `cost_surface.fill_minutes`): a market signal fills
+    at the OPEN of the bar after its signal bar, never signal + wait_bars."""
+    spec0 = item.get("spec") or {}
+    resting = bool(spec0.get("window")) or "pending" in str(spec0.get("exec") or "")
+    fills: list[tuple[int, int]] = []
+    for r in entries:
+        ts = _parse_ts(r.get("entry_time"))
+        if ts:
+            fills.append((-1, -1) if resting else (broker_hour(ts), ts.minute))
+    if fills:
+        return {"fills": fills, "source": "live_ledger"}
+    spec = item.get("spec") or {}
+    fam = str(spec.get("family") or "")
+    for key, hour in FAMILY_HOURS.items():
+        if key in fam or key in str(item.get("cell") or ""):
+            return {"fills": [(hour, 0)], "source": f"family_fill_minute:{key}"}
+    sess = str(item.get("session") or "")
+    if sess in WINDOW_HOURS:
+        rawp = spec.get("params")
+        params: dict[str, Any] = rawp if isinstance(rawp, dict) else {}
+        tf = TF_MINUTES.get(str(spec.get("timeframe") or params.get("timeframe") or "H1"), 60)
+        m = WINDOW_HOURS[sess] * 60 + tf
+        return {"fills": [((m // 60) % 24, m % 60)],
+                "source": f"spec: open of the bar after the {sess} signal bar"}
+    return _um("no live entries and no spec entry rule")
+
+
+def minute_spread_pts(ssym: dict[str, Any], fills: list[tuple[int, int]]
+                      ) -> dict[str, Any]:
+    """Fill-weighted charge where each fill pays max(its hour's p50, its minute's spike p50).
+    Only RAISES a charge. No published spike_minutes -> UNMEASURED_MINUTE, never the hour."""
+    raw = ssym.get("tick_hours")
+    th: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    spikes = th.get("spike_minutes")
+    if not isinstance(spikes, dict):
+        return {"status": UNMEASURED_MINUTE,
+                "why": "surface publishes no tick_hours.spike_minutes (PR #1077 not landed)"}
+    hrs = ssym.get("hours") or {}
+    total, hit, n = 0.0, 0, 0
+    minutes: dict[str, int] = {}
+    for h, m in fills:
+        if h < 0:  # trigger / resting order: fills intrabar at a price, never a spike
+            continue
+        n += 1
+        base = _num((hrs.get(str(h)) or {}).get("p50"))
+        if base is None or (hrs.get(str(h)) or {}).get("status") != "MEASURED":
+            return {"status": UNMEASURED_MINUTE, "why": f"hour {h} not MEASURED"}
+        key = f"{h:02d}:{m:02d}"
+        sp = _num((spikes.get(key) or {}).get("p50"))
+        if sp is not None and sp > base:
+            hit += 1
+            minutes[key] = minutes.get(key, 0) + 1
+            total += sp
+        else:
+            total += base
+    if not n:
+        return {"status": "NO_MARKET_FILLS", "spike_share": 0.0, "minutes": {},
+                "why": "every fill is a trigger/resting order: the hour's charge stands"}
+    return {"spread_pts": total / n, "spike_share": round(hit / n, 4), "minutes": minutes,
+            "n_fills": n}
+
+
 def spread_at(surface_sym: dict[str, Any], hours: dict[int, int], ts: float
               ) -> tuple[float | None, str]:
     """Entry-weighted p50 spread in PRICE units over the sleeve's entry hours."""
@@ -278,7 +348,7 @@ def slippage_r(name: str, corpus: list[dict[str, Any]]) -> dict[str, Any]:
 # ----------------------------------------------------------------------------- per sleeve
 def audit_venue(item: dict[str, Any], surface: dict[str, Any] | None, meta: dict[str, Any],
                 hours: dict[str, Any], stop: dict[str, Any], cert: dict[str, Any],
-                slip: dict[str, Any]) -> dict[str, Any]:
+                slip: dict[str, Any], mins: dict[str, Any] | None = None) -> dict[str, Any]:
     sym = str(item.get("symbol") or "")
     out: dict[str, Any] = {}
     if surface is None:
@@ -317,6 +387,21 @@ def audit_venue(item: dict[str, Any], surface: dict[str, Any] | None, meta: dict
                               "slippage_R": slip.get("median_R") if slip_ok else UNMEASURED,
                               "total_R": round(measured, 5),
                               "kind": "TOTAL" if slip_ok else "FLOOR (slippage UNMEASURED)"}
+    if mins is None or mins.get("status") == UNMEASURED:
+        minute: dict[str, Any] = {"status": UNMEASURED_MINUTE,
+                                  "why": "entry minute " + (mins or {}).get("why", "unknown")}
+    else:
+        minute = minute_spread_pts(ssym, mins["fills"])
+    if "spread_pts" in minute:
+        extra = max(0.0, minute["spread_pts"] * ts - spread) / stop_px
+        minute = {**minute, "spread_pts": round(minute["spread_pts"], 4)}
+        out["cost_R_minute"] = round(measured + extra, 5)
+    elif minute.get("status") == "NO_MARKET_FILLS":
+        out["cost_R_minute"] = round(measured, 5)
+    else:
+        out["cost_R_minute"] = UNMEASURED_MINUTE
+    out["minute"] = minute
+    out["net_R_minute"] = UNMEASURED_MINUTE
     if cert.get("status") == UNMEASURED:
         out["cost_R_charged"] = _um(cert["why"])
         out["gross_edge_R"] = out["net_edge_R"] = UNMEASURED
@@ -343,6 +428,11 @@ def audit_venue(item: dict[str, Any], surface: dict[str, Any] | None, meta: dict
         flags.append("UNDERCHARGED")
     if suspect:
         flags.append("SURFACE_SUSPECT")
+    if isinstance(out["cost_R_minute"], float):
+        net_m = gross - out["cost_R_minute"]
+        out["net_R_minute"] = round(net_m, 5)
+        if net > 0 >= net_m:
+            flags.append("FLIPS_AT_MINUTE")
     out["flags"] = flags
     return out
 
@@ -364,6 +454,49 @@ def stop_distance(item: dict[str, Any], entries: list[dict[str, Any]], cert: dic
     return _um("no live entries, no recoverable certificate charge, no H1 stop_atr spec")
 
 
+def sm1_rows() -> dict[str, dict[str, Any]]:
+    """SM1 rows by certificate key (its per-cell lists: `rows` when present, else `top10_gt0`)."""
+    out: dict[str, dict[str, Any]] = {}
+    for path in (SM1_LOCAL, SM1):
+        doc = _load(path)
+        if not isinstance(doc, dict):
+            continue
+        for key in ("rows", "top10_gt0"):
+            for r in doc.get(key) or []:
+                if isinstance(r, dict) and r.get("cell"):
+                    out.setdefault(str(r["cell"]), {**r, "sm1_file": str(path)})
+    return out
+
+
+def apply_minute_authority(row: dict[str, Any], sm1: dict[str, dict[str, Any]]) -> None:
+    """SM1 wins where the sleeve's spec is a covered certificate key. Otherwise LIVE/STANDBY rows
+    keep this module's own minute pricing, flagged not_in_sm1; certified-only rows outside SM1
+    are UNMEASURED_MINUTE (the sweep, not this report, prices certificates)."""
+    f = row["venues"]["fusion"]
+    hit = sm1.get(str(row.get("cell") or ""))
+    if hit is not None:
+        exp_reg, exp_m = _num(hit.get("exp_registry")), _num(hit.get("exp_fill_minute"))
+        row["minute_source"] = "sm1"
+        f["minute"] = {k: hit.get(k) for k in ("spike_share", "spike_minutes",
+                                               "spread_fill_weighted", "exp_registry",
+                                               "exp_fill_minute")}
+        f["net_R_minute"] = exp_m if exp_m is not None else UNMEASURED_MINUTE
+        f["cost_R_minute"] = "see sm1 (exp_fill_minute is net per-trade R)"
+        flags = [x for x in f.get("flags", []) if x != "FLIPS_AT_MINUTE"]
+        if exp_reg is not None and exp_m is not None and exp_reg > 0 >= exp_m:
+            flags.append("FLIPS_AT_MINUTE")
+        f["flags"] = flags
+    elif row["status"] in ("LIVE", "STANDBY"):
+        row["minute_source"] = "self"
+        row["not_in_sm1"] = True
+    else:
+        row["minute_source"] = None
+        f["cost_R_minute"] = f["net_R_minute"] = UNMEASURED_MINUTE
+        f["minute"] = {"status": UNMEASURED_MINUTE, "why": "certificate key outside SM1 coverage"}
+        f["flags"] = [x for x in f.get("flags", []) if x != "FLIPS_AT_MINUTE"]
+    row["flags"] = sorted({x for v in row["venues"].values() for x in v.get("flags", [])})
+
+
 def build(now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     sleeves, survivors = _load(SLEEVES), _load(SURVIVORS)
@@ -374,6 +507,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
         surfaces[v] = _load(DATA / f"cost_surface_{v}.json")
     ledger, corpus = _jsonl(LEDGER), _jsonl(CORPUS)
     surv = (survivors or {}).get("survivors") if isinstance(survivors, dict) else {}
+    sm1 = sm1_rows()
     rows = []
     for item in population(sleeves, survivors):
         sym = str(item.get("symbol") or "")
@@ -383,21 +517,29 @@ def build(now: datetime | None = None) -> dict[str, Any]:
         cert = cert_terms((surv or {}).get(item["cell"]) if item.get("cell") else None)
         fus = ((surfaces["fusion"] or {}).get("symbols") or {}).get(sym)
         hours = entry_hours(item, entries)
+        mins = entry_minutes(item, entries)
         stop = stop_distance(item, entries, cert, meta, fus)
         slip = slippage_r(str(item["name"]), corpus)
-        venues = {v: audit_venue(item, surfaces[v], meta, hours, stop, cert, slip)
+        venues = {v: audit_venue(item, surfaces[v], meta, hours, stop, cert, slip, mins)
                   for v in VENUES}
         rows.append({"sleeve": item["name"], "status": item["status"], "symbol": sym,
                      "session": item.get("session"), "cell": item.get("cell"),
                      "entry_hours_broker": hours, "stop": stop, "certificate": cert,
                      "slippage": slip, "venues": venues,
                      "flags": sorted({f for v in venues.values() for f in v.get("flags", [])})})
+    for r in rows:
+        apply_minute_authority(r, sm1)
     fusion_rows = [r["venues"]["fusion"] for r in rows]
     summary = {
         "n_sleeves": len(rows),
         "cost_eats_edge": [r["sleeve"] for r in rows if "COST_EATS_EDGE" in r["flags"]],
         "undercharged": [r["sleeve"] for r in rows if "UNDERCHARGED" in r["flags"]],
         "surface_suspect": [r["sleeve"] for r in rows if "SURFACE_SUSPECT" in r["flags"]],
+        "flips_at_minute": [r["sleeve"] for r in rows if "FLIPS_AT_MINUTE" in r["flags"]],
+        "n_minute_from_sm1": sum(1 for r in rows if r.get("minute_source") == "sm1"),
+        "not_in_sm1": [r["sleeve"] for r in rows if r.get("not_in_sm1")],
+        "n_minute_unmeasured": sum(1 for v in fusion_rows
+                                   if v.get("cost_R_minute") == UNMEASURED_MINUTE),
         "n_fusion_measured": sum(1 for v in fusion_rows if "cost_R_measured" in v),
         "n_fusion_net_edge_measured": sum(1 for v in fusion_rows
                                           if isinstance(v.get("net_edge_R"), float)),
@@ -417,6 +559,9 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             "idea": 656, "status": "OK" if rows else "NO_SLEEVES",
             "tolerances": {"undercharged_if_measured_over_charged_gt": 1.0 + UNDERCHARGE_TOL},
             "n_fusion_net_edge_measured": summary["n_fusion_net_edge_measured"],
+            # For the CRO: LIVE sleeves whose edge is positive at the hour and gone at the minute.
+            "live_flips": [r["sleeve"] for r in rows
+                           if r["status"] == "LIVE" and "FLIPS_AT_MINUTE" in r["flags"]],
             "summary": summary, "sleeves": rows}
 
 
