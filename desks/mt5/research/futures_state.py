@@ -317,6 +317,45 @@ def cftc_available(report_date: pd.Series, calendar: Mapping[str, Any] | None = 
     return pd.Series(pd.to_datetime(out, utc=True), index=report_date.index)
 
 
+#: CFTC publishes at 15:30 New York time on the release day.
+CFTC_RELEASE_NY: tuple[int, int] = (15, 30)
+NEW_YORK = "America/New_York"
+#: The MT5 bar index is BROKER wall time under a UTC tzinfo, and the broker clock is New York
+#: wall time + 7 h in both DST regimes (UTC+2 in winter, UTC+3 in summer).
+BAR_CLOCK_NY_OFFSET_H = 7
+
+
+def cftc_calendar() -> dict[str, Any]:
+    """The registry's `cftc_release_calendar` (closures, exact catch-up releases, windows)."""
+    cal = (_read(REGISTRY, {}) or {}).get("cftc_release_calendar")
+    return cal if isinstance(cal, dict) else {}
+
+
+def cot_usable_from(report_day: Any, calendar: Mapping[str, Any] | None = None,
+                    holidays: frozenset[pd.Timestamp] | None = None) -> pd.Timestamp:
+    """THE ONE RELEASE INSTANT: the true-UTC moment a COT report dated `report_day` was public,
+    15:30 New York on `cftc_release_day` (19:30 UTC in summer, 20:30 UTC in winter).
+
+    `calendar=None` reads the registry's own calendar, so a caller that passes nothing still gets
+    the closures and the shutdown catch-ups. This is a TRUE instant: anything that places it on
+    MT5 bars must go through `to_bar_clock` first, because the bar index is not UTC."""
+    cal = cftc_calendar() if calendar is None else calendar
+    day = pd.Timestamp(cftc_release_day(pd.Timestamp(report_day), cal, holidays)).normalize()
+    hh, mm = CFTC_RELEASE_NY
+    local = (day + pd.Timedelta(hours=hh, minutes=mm)).tz_localize(NEW_YORK)
+    return local.tz_convert("UTC")
+
+
+def to_bar_clock(ts_utc: Any) -> pd.Timestamp:
+    """A true UTC instant as the MT5 bar index stamps it: New York wall time + 7 h under a UTC
+    tzinfo. A naive input is read as UTC. Comparing a true-UTC release against bar labels
+    WITHOUT this reads the release 2 h (winter) or 3 h (summer) early."""
+    t = pd.Timestamp(ts_utc)
+    t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+    wall = t.tz_convert(NEW_YORK).tz_localize(None) + pd.Timedelta(hours=BAR_CLOCK_NY_OFFSET_H)
+    return wall.tz_localize("UTC")
+
+
 def daily_available(day: pd.Series) -> pd.Series:
     """A daily close is public the next BUSINESS day (FRED posts Friday's H.15 on Monday)."""
     d = pd.to_datetime(day, utc=True, errors="coerce").dt.tz_localize(None).dt.normalize()

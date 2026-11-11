@@ -20,8 +20,8 @@ family to carry change/flow logic moved its code and behaviour hashes, which the
 and this organ never calls it. The new family loads its own point-in-time frame from the cell's
 `cot_symbol` (the sealed `build_cell` has a COT branch for `cot_positioning` only), so the
 gauntlet, the forward clock and this proposer rebuild the same frame with nobody supplying it.
-Its trials are this organ's own: the whole grid is the donation's `tests_run`, and the orthogonal
-sweep does not enumerate the family (`orthogonal_sweep.NOT_SOURCED_HERE`).
+Its trials are this organ's own, charged ONCE per cell identity (see CHARGE-ONCE below), and the
+orthogonal sweep does not enumerate the family (`orthogonal_sweep.NOT_SOURCED_HERE`).
 
 WHAT A PASS DOES:
   1. For every MT5 symbol with a CFTC contract (`mt5desk.cot_frames.SOURCES`: the seven USD
@@ -31,16 +31,28 @@ WHAT A PASS DOES:
      (flow).
   2. Build the cell's signals exactly as the sealed gauntlet will: the family loads its own frame
      (`mt5desk.cot_frames.frame(cot_symbol)`, point-in-time: a Tuesday report is first usable on the
-     Monday after its Friday 15:30 ET release, or after its TRUE release when a holiday or a
-     shutdown delayed it -- `mt5desk.cot_frames.release_schedule`) and count its firing. A
+     Monday after its Friday 15:30 New York release, or the first bar-clock hour after its TRUE
+     release when a holiday or a shutdown delayed it -- `mt5desk.cot_frames.release_schedule`,
+     built on `research.futures_state.cot_usable_from`) and count its firing. A
      cell under SEED_FLOOR trade days is HELD BACK and counted -- the gauntlet would drop it
      under 60 days as UNKNOWN.
   3. Donate the rest through `proposer_common.donate` (two-lane filter, point-in-time stamp,
      preregistration, canonical registry) into `data/intelligence/cot_positioning_flow/`, which
      `miner_candidate_compiler` compiles as EXACT_RECIPE into the docket the gauntlet judges.
-     `tests_run` is the whole grid, so the screen's own looks are charged, not only survivors.
+     `tests_run` is the number of cell identities this donation charges for the FIRST time.
   4. Write `reports/COT_POSITIONING_FLOW.json`: cells per symbol and column, held back, donated,
      and the gauntlet's verdicts on them (UNMEASURED with the reason until it has judged one).
+
+CHARGE-ONCE (#238 audit, 2026-11-11). A cell identity is one trial and is charged exactly once in
+its life. The state file's `charged` ledger holds every identity already paid for; a donation's
+`tests_run` is the count of identities it charges for the first time -- every cell this organ has
+LOOKED AT (measured: the screen's own looks, survivors and held-back alike) that is not in the
+ledger yet -- and those are written to the ledger only when the contract file was written. A pass
+with nothing new donates nothing and charges 0. Before this fix every donating pass charged
+`len(grid)` = 82 again, so a cell that cleared the floor a week late re-charged the 81 others.
+A held-back cell that later clears is donated on trials already paid: its donation charges only
+what is new. Looks with no donation to carry them are reported as `charge_pending` and ride on
+the next contract; they are never dropped and never charged twice.
 
 ADDITIVE ONLY: no other miner is capped, reordered or slowed. A cell is measured at most once per
 day and donated once (the state file carries both).
@@ -154,10 +166,29 @@ def _load_state() -> dict[str, Any]:
     doc = _read(STATE)
     state = (doc if isinstance(doc, dict) and isinstance(doc.get("cells"), dict)
              else {"cells": {}})
+    if not isinstance(state.get("charged"), dict):
+        state["charged"] = {}
     for ident, at in _seat_donated().items():
         row = state["cells"].setdefault(ident, {})
         row.setdefault("donated_at", at)
+        # A cell in a seat file left through a contract that carried its charge.
+        state["charged"].setdefault(ident, at)
+    for ident, row in state["cells"].items():
+        # A state file written before the ledger existed: a donated cell was charged then.
+        if isinstance(row, dict) and row.get("donated_at"):
+            state["charged"].setdefault(ident, str(row["donated_at"]))
     return state
+
+
+def uncharged(state: dict[str, Any], cands: list[dict[str, Any]]) -> list[str]:
+    """Identities a donation made now must charge: every cell this organ has LOOKED AT (it
+    carries a measurement) or is about to donate, that the `charged` ledger does not hold.
+    Sorted, so the count is the same whatever order the cells were measured in."""
+    charged = state.get("charged") or {}
+    looked = {i for i, v in (state.get("cells") or {}).items()
+              if isinstance(v, dict) and v.get("day")}
+    looked.update(str(c["ident"]) for c in cands)
+    return sorted(i for i in looked if i not in charged)
 
 
 def _save_state(state: dict[str, Any]) -> None:
@@ -228,6 +259,7 @@ def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
                           "firing": {k: prior.get(k) for k in ("signal_days", "trade_days_lb")}})
 
     donated = 0
+    tests_run = 0
     donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
     if cands and not dry_run:
         from research import proposer_common as pc
@@ -244,10 +276,13 @@ def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
                 {"firing": c["firing"], "seed_floor": SEED_FLOOR, "target_cluster": CLUSTER,
                  "cot_report": report, "trader_class": cls,
                  "release_clock": ("report usable from the later of the Monday after its "
-                                   "nominal Friday release and the first hour after its TRUE "
-                                   "release (holiday and shutdown delays: "
-                                   "mt5desk.cot_frames.release_schedule)")}))
-        path = pc.donate(SOURCE, rows, len(plan))
+                                   "nominal Friday release and the first bar-clock hour after "
+                                   "its TRUE release (holiday and shutdown delays: "
+                                   "mt5desk.cot_frames.release_schedule, on "
+                                   "research.futures_state.cot_usable_from)")}))
+        # CHARGE-ONCE: only identities the ledger does not hold yet, never the whole grid again.
+        to_charge = uncharged(state, cands)
+        path = pc.donate(SOURCE, rows, len(to_charge))
         counts = pc.donation_counts()
         donated = int(counts.get("donated") or 0)
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
@@ -259,6 +294,11 @@ def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
             at = _now()
             for c in cands:
                 cells_state[c["ident"]]["donated_at"] = at
+            # The contract file exists, so its tests_run is spent: record exactly those identities.
+            for ident in to_charge:
+                state["charged"][ident] = at
+            tests_run = len(to_charge)
+        donation["tests_run"] = tests_run
     if not dry_run:
         _save_state(state)
     donated_total = sum(1 for v in cells_state.values() if v.get("donated_at"))
@@ -272,6 +312,8 @@ def seed(*, budget_s: float = 300.0, dry_run: bool = False) -> dict[str, Any]:
         "cells_by_series": {k: dict(v) for k, v in sorted(by_series.items())},
         "candidates_this_pass": len(cands), "donated_this_pass": donated,
         "donated_total": donated_total, "donation": donation,
+        "tests_run_this_pass": tests_run, "charged_total": len(state["charged"]),
+        "charge_pending": len(uncharged(state, [])),
         "held_back": sorted(f"{v.get('symbol')}.{(v.get('params') or {}).get('series')}."
                             f"{(v.get('params') or {}).get('mode')}"
                             f" ({v.get('trade_days_lb')}d)"
@@ -385,8 +427,10 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
         "target_cluster": CLUSTER, "sealed_gauntlet_buildability": build,
         "rule": ("one construction for every symbol and trader class, fixed before any verdict; "
                  f"a cell is donated once its lower-bound trade days clear {SEED_FLOOR} (the "
-                 f"sealed gauntlet drops a series under {FIRE_FLOOR} days as UNKNOWN); the whole "
-                 "grid is the donation's tests_run. Additive: no other miner is touched"),
+                 f"sealed gauntlet drops a series under {FIRE_FLOOR} days as UNKNOWN); a "
+                 "cell identity is charged once in its life (tests_run = identities a donation "
+                 "charges for the first time; a pass with nothing new charges 0). Additive: no "
+                 "other miner is touched"),
         "seeding": seeded,
         "verdicts": verdicts(),
         "offbox_reproduction": _offbox(),

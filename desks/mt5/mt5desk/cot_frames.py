@@ -13,18 +13,30 @@ This module turns the in-git parquets into the columns the family reads. It is a
 fetches nothing and writes nothing.
 
 THE CLOCK. A report is as of TUESDAY (Monday when Tuesday is a holiday) and normally published
-the same week's FRIDAY at 15:30 ET. Its label is the LATER of two instants: the Monday 00:00 UTC
-after that Friday (`orthogonal_sweep.COT_RELEASE_LAG_DAYS`, the label the cache has always used,
-so a normal week is labelled exactly as before), and the first whole hour after the report's TRUE
-release (`release_schedule`). The second only binds when the CFTC published late:
+the same week's FRIDAY at 15:30 New York. Its label is the LATER of two instants ON THE BAR CLOCK:
+the Monday 00:00 after that Friday (`orthogonal_sweep.COT_RELEASE_LAG_DAYS`, the label the cache
+has always used, so a normal week is labelled exactly as before), and the first whole hour after
+the report's TRUE release (`release_schedule`). The second only binds when the CFTC published
+late:
 
-  * a federal holiday or office closure on the Wednesday, Thursday or Friday between the as-of
-    date and the release moves the release to the next business day (CFTC 2026 schedule: Jun 19,
-    Jul 3, Nov 11, Thanksgiving and Dec 25 weeks all release on the Monday; a MONDAY holiday
-    before the as-of Tuesday moves nothing, and a Tuesday holiday moves the as-of date to Monday
-    with the Friday release kept -- CFTC announcement of 2018-12-21);
-  * the 2013, 2018-19 and 2025 appropriation lapses, whose catch-up releases are tabled in
-    `SHUTDOWN_RELEASES` from the CFTC's own announcements.
+  * a federal holiday or office closure between the as-of date and the Friday moves the release
+    to the next business day (CFTC 2026 schedule: Jun 19, Jul 3, Nov 11, Thanksgiving and Dec 25
+    weeks all release on the Monday; a MONDAY holiday before the as-of Tuesday moves nothing);
+  * the 2013, 2018-19 and 2025 appropriation lapses.
+
+ONE RELEASE HELPER, AND THE BAR CLOCK IS NOT UTC (#238 audit, 2026-11-11). The release instant is
+`research.futures_state.cot_usable_from` (15:30 New York on `cftc_release_day`, with the
+registry's closures, catch-up dates and windows) -- the desk's one release rule -- and it is
+converted with `futures_state.to_bar_clock` before it is compared with anything, because the bars
+this label is searched against are stamped in BROKER wall time (New York + 7 h) under a UTC
+tzinfo. Until this fix `_label_for` returned the release in TRUE UTC: a Monday 15:30 New York
+release was labelled 20:00 or 21:00, while the bar that opens at the release reads 22:30, so
+every holiday-week report was readable 1.5 h (summer) to 2.5 h (winter) BEFORE it existed. This
+module's own tables (`EXTRA_CLOSURES`, `SHUTDOWN_RELEASES`) are kept as a FLOOR only: the label is
+the later of the shared helper's instant and the one they derive, so it is never earlier than
+either. Where the shared rule is later than the old derivation (a Tuesday holiday with a Monday
+as-of date; the 2013 and 2018-19 windows the registry holds to their catch-up end) the label
+moves LATER, which is never look-ahead.
 
 Before 2026-10-07 every report was labelled the Monday after its NOMINAL Friday, which read a
 holiday-week report about 20 hours early and a shutdown report weeks early (the audit measured
@@ -192,13 +204,44 @@ def release_date(friday: pd.Timestamp):
     return d, False
 
 
-def _label_for(friday: pd.Timestamp) -> pd.Timestamp:
+@lru_cache(maxsize=1)
+def _shared_release():
+    """(futures_state module, registry calendar, holiday set) -- the desk's one release rule.
+    An import or registry failure RAISES: callers fail closed, never back to a nominal lag."""
+    from research import futures_state as fs
+    cal = fs.cftc_calendar()
+    return fs, cal, fs._us_holidays(tuple(str(c) for c in (cal.get("closures") or ())))
+
+
+def true_release(friday: pd.Timestamp) -> pd.Timestamp:
+    """The TRUE-UTC instant the report of the week ending `friday` was public: the later of
+    `futures_state.cot_usable_from` and this module's own derivation (a floor, never a lead).
+
+    The shared helper is keyed on the as-of DAY, and a W-FRI week holds one: Tuesday, or Monday
+    when Tuesday is a closure. Any weekday the registry tables an exact catch-up date for is
+    asked too, so a tabled release is found whatever day it was dated."""
     fri = _week_friday(friday)
-    nominal = fri + pd.Timedelta(days=release_lag_days())
     day, tabled = release_date(fri)
     clock = "23:59" if tabled else RELEASE_ET
-    released = pd.Timestamp(f"{day} {clock}").tz_localize(ET).tz_convert("UTC")
-    return max(nominal, released.ceil("h"))
+    own = pd.Timestamp(f"{day} {clock}").tz_localize(ET).tz_convert("UTC")
+    fs, cal, hol = _shared_release()
+    week = [fri.tz_localize(None) - pd.Timedelta(days=k) for k in (4, 3, 2, 1, 0)]  # Mon..Fri
+    mon, tue = week[0], week[1]
+    exact = cal.get("releases") or {}
+    asof = [mon if tue.date() in _closures() else tue]
+    asof += [d for d in week if d.date().isoformat() in exact]
+    shared = max(fs.cot_usable_from(d, cal, hol) for d in asof)
+    return max(own, shared)
+
+
+def _label_for(friday: pd.Timestamp) -> pd.Timestamp:
+    """The first whole BAR-CLOCK hour at or after the true release, never before the nominal
+    Monday. The bar index is broker wall time (New York + 7 h) under a UTC tzinfo, so the true
+    instant is converted with `futures_state.to_bar_clock` before it is compared."""
+    fri = _week_friday(friday)
+    nominal = fri + pd.Timedelta(days=release_lag_days())
+    fs = _shared_release()[0]
+    return max(nominal, fs.to_bar_clock(true_release(fri)).ceil("h"))
 
 
 @lru_cache(maxsize=1)
