@@ -159,7 +159,7 @@ def test_the_superseded_mean_shrink_rail_reads_not_binding() -> None:
 
 def test_run_bills_the_pair_on_the_published_book_and_not_on_a_cached_population() -> None:
     src = inspect.getsource(pa.run)
-    i_bind = src.index("book, funded = bind_verdict(nt, prev_book, held, book, funded)")
+    i_bind = src.index("book, funded = bind_verdict(nt, prev_book, held, book, funded,")
     i_bill = src.index('decay_meta["growth_with"]')
     assert i_bind < i_bill, "the pair must be scored on the PUBLISHED book"
     assert '"cached" in str(worlds.note)' in src
