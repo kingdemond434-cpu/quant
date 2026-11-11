@@ -132,14 +132,14 @@ def garch_vol_ratio(r: Sequence[float], horizon: int = 5) -> tuple[float | None,
     if not s2 > 0:
         return None, {"status": "UNMEASURED", "why": "no variance"}
     from scipy.optimize import minimize
-    best = None
+    best_fun, best_x = math.inf, np.zeros(2)
     for a0, b0 in ((0.05, 0.90), (0.10, 0.80), (0.02, 0.97)):
         res = minimize(_garch_nll, np.array([a0, b0]), args=(e, s2), method="Nelder-Mead",
                        options={"xatol": 1e-5, "fatol": 1e-7, "maxiter": 400})
-        if best is None or res.fun < best.fun:
-            best = res
-    a, b = float(best.x[0]), float(best.x[1])
-    if best.fun >= 1e12 or a < 0 or b < 0 or a + b >= MAX_PERSISTENCE:
+        if float(res.fun) < best_fun:
+            best_fun, best_x = float(res.fun), np.asarray(res.x, dtype=float)
+    a, b = float(best_x[0]), float(best_x[1])
+    if best_fun >= 1e12 or a < 0 or b < 0 or a + b >= MAX_PERSISTENCE:
         return None, {"status": "UNMEASURED", "why": "no stationary fit"}
     w = s2 * (1.0 - a - b)
     h = s2
