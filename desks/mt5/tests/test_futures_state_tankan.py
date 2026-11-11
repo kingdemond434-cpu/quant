@@ -106,9 +106,10 @@ def _src(**over: Any) -> dict[str, Any]:
     return {**row, **over}
 
 
-def test_registry_row_is_open_low_frequency_and_names_no_code() -> None:
+def test_registry_row_is_held_low_frequency_and_names_no_code() -> None:
+    """HELD until a box read records the BoJ API notice verbatim: unread terms fail closed."""
     row = _src()
-    assert row["terms"] == "OPEN" and row["adapter"] == "boj_tankan"
+    assert row["terms"] == "HELD" and row["adapter"] == "boj_tankan"
     assert row["series_code"] is None, "the code is found by name on the box, never typed"
     assert row["refresh_hours"] >= 24
     assert row["transforms"] == ["level_z"] and "H1" not in row["charts"]
@@ -171,20 +172,20 @@ def test_collect_reads_once_a_day_through_robots(tmp_desk: Path) -> None:
     state: dict[str, Any] = {}
     notes: list[dict[str, Any]] = []
     now = pd.Timestamp("2026-11-11 10:00", tz="UTC").to_pydatetime()
-    a, _r, f = fs.tankan_collect(_src(), get, get_text, state, notes, now)
+    a, _r, f = fs.tankan_collect(_src(terms="OPEN"), get, get_text, state, notes, now)
     assert len(a) == 40 and state["boj_tankan"]["code"] == CODE
     assert any(c.endswith("/robots.txt") for c in calls)
     assert f["next_release"].startswith("UNMEASURED")
     n = len(calls)
     later = pd.Timestamp("2026-11-11 20:00", tz="UTC").to_pydatetime()
-    a2, _r, _f = fs.tankan_collect(_src(), get, get_text, state, notes, later)
+    a2, _r, _f = fs.tankan_collect(_src(terms="OPEN"), get, get_text, state, notes, later)
     assert len(calls) == n and len(a2) == 40, "a second read inside refresh_hours fetches nothing"
 
 
 def test_robots_refusal_fetches_nothing_and_is_unmeasured(tmp_desk: Path) -> None:
     get, get_text, calls = _getters(40, robots="User-agent: *\nDisallow: /\n")
     notes: list[dict[str, Any]] = []
-    a, _r, _f = fs.tankan_collect(_src(), get, get_text, {}, notes)
+    a, _r, _f = fs.tankan_collect(_src(terms="OPEN"), get, get_text, {}, notes)
     assert a.empty and not any("getMetadata" in c or "getDataCode" in c for c in calls)
     assert any(n.get("why") == "robots disallows" for n in notes)
 
@@ -194,13 +195,13 @@ def test_hard_stop_is_recorded(tmp_desk: Path) -> None:
         raise fs.HardStop(429, url)
 
     state: dict[str, Any] = {}
-    fs.tankan_collect(_src(), get, lambda u: "User-agent: *\nAllow: /\n", state, [])
+    fs.tankan_collect(_src(terms="OPEN"), get, lambda u: "User-agent: *\nAllow: /\n", state, [])
     assert state["hard_stops"]["boj_tankan"]["code"] == 429
 
 
 def test_tankan_mints_few_distinct_signed_exogenous_cells(tmp_desk: Path) -> None:
     get, get_text, _calls = _getters(40)
-    reg = {"sources": [_src()]}
+    reg = {"sources": [_src(terms="OPEN")]}
     built, frames, _notes = fs.build_market_series(
         reg, get=get, state={}, bars=lambda s: _bars() if s == "USDJPY" else None,
         get_text=get_text)
@@ -227,7 +228,7 @@ def test_tankan_mints_few_distinct_signed_exogenous_cells(tmp_desk: Path) -> Non
 
 
 def test_no_history_is_unmeasured_not_silent(tmp_desk: Path) -> None:
-    reg = {"sources": [_src()]}
+    reg = {"sources": [_src(terms="OPEN")]}
     built, _frames, notes = fs.build_market_series(reg, get=None, state={},
                                                    bars=lambda s: None)
     assert not any(k.startswith("boj_tankan") for k in built)
@@ -239,8 +240,20 @@ def test_the_conditioner_reads_the_lake_series(tmp_desk: Path) -> None:
     from mt5desk.family_exogenous_conditioner import conditioner
     get, get_text, _c = _getters(40)
     _built, frames, _n = fs.build_market_series(
-        {"sources": [_src()]}, get=get, state={}, bars=lambda s: _bars(), get_text=get_text)
+        {"sources": [_src(terms="OPEN")]}, get=get, state={}, bars=lambda s: _bars(), get_text=get_text)
     for sid, f in frames.items():
         fs._write_series(sid, f)
     s = conditioner("boj_tankan_usdjpy_gap", "gap_pct", "level_z", root=fs.SERIES)
     assert s is not None and len(s) > 100
+
+
+def test_a_held_row_fetches_nothing(tmp_desk: Path) -> None:
+    calls: list[str] = []
+
+    def get(url: str) -> Any:
+        calls.append(url)
+        raise AssertionError("a HELD source must not be fetched")
+
+    notes: list[dict[str, Any]] = []
+    fs.tankan_collect(_src(), get, lambda u: calls.append(u) or "", {}, notes)
+    assert calls == []
