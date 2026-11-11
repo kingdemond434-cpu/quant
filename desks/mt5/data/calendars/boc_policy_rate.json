@@ -1,0 +1,29 @@
+{
+ "name": "boc_policy_rate",
+ "tz": "America/Toronto",
+ "note": "Bank of Canada fixed announcement dates for the policy interest rate, at the Bank's own local time. Read by desks/mt5/mt5desk/local_clock.calendar_mask: a family given calendar='boc_policy_rate' fires ONLY on these dates. 2025: the Bank's 2025 schedule release (09:45 ET). 2026: the Bank's key-interest-rate page (Jan-Sep) and its 2027 schedule release / announcement pages for the time (09:45 ET); 28 Oct and 9 Dec are scheduled, not yet held on 2026-09-30. 2024 and earlier are NOT listed: the 2024 schedule release states 10:00 ET and a procedure change effective 2024 whose time was not verified, so those dates wait for a verified time rather than being guessed. Append new years from the Bank's annual schedule release.",
+ "sources": [
+  "https://www.bankofcanada.ca/2024/08/bank-canada-publishes-2025-schedule-policy-interest-rate-announcements-other-major-publications/",
+  "https://www.bankofcanada.ca/core-functions/monetary-policy/key-interest-rate/",
+  "https://www.bankofcanada.ca/2026/07/bank-canada-publishes-2027-schedule-policy-interest-rate-announcements-other-major-publications/"
+ ],
+ "verified_at": "2026-09-30",
+ "dates": {
+  "2025-01-29": "09:45",
+  "2025-03-12": "09:45",
+  "2025-04-16": "09:45",
+  "2025-06-04": "09:45",
+  "2025-07-30": "09:45",
+  "2025-09-17": "09:45",
+  "2025-10-29": "09:45",
+  "2025-12-10": "09:45",
+  "2026-01-28": "09:45",
+  "2026-03-18": "09:45",
+  "2026-04-29": "09:45",
+  "2026-06-10": "09:45",
+  "2026-07-15": "09:45",
+  "2026-09-02": "09:45",
+  "2026-10-28": "09:45",
+  "2026-12-09": "09:45"
+ }
+}
