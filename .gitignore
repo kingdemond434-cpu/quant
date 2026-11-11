@@ -281,6 +281,9 @@ secrets/
 # them is committed and they are reproducible from it; an 18 MB parquet cache in
 # git history is a mistake that cannot be taken back.
 desks/*/data/**/*.parquet
+# tape_features' per symbol-day hour-cell cache (2026-11-06): derived from the tape, box-local,
+# one small JSON per symbol-day; publishing it would churn thousands of files a day.
+desks/mt5/data/tape/cell_cache/
 desks/*/data/hunt_candidates.json
 desks/*/data/recover_candidates.json
 

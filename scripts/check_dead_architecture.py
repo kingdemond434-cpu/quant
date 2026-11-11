@@ -126,6 +126,7 @@ def _module_name(root: Path, path: Path) -> str:
 _CONST_BIND = re.compile(r"\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::[^=]+)?=")
 _WRITE_LINE = re.compile(r"write_text|write_bytes|json\.dump\(|open\([^)]*['\"][wa]|mkstemp|"
                          r"fh\.write\(|write_report|stamp_sidecar|os\.replace|to_parquet\(")
+_WRITE_WORDS = ("write", "dump", "open(", "mkstemp", "stamp_sidecar", "replace", "to_parquet")
 
 
 #: ONE HOP OF ALIASING, because the desk's own organs take an override argument:
@@ -135,24 +136,57 @@ _WRITE_LINE = re.compile(r"write_text|write_bytes|json\.dump\(|open\([^)]*['\"][
 #: idiom this repository actually uses without becoming a dataflow analysis that would start
 #: claiming writes nobody performs.
 _ALIAS = r"^([^=\n<>!+\-*/]+?)\s*=\s*([^=\n].*)$"
+_ALIAS_RE = re.compile(_ALIAS)
+_IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
-def _writes_through(src: str, const: str) -> bool:
+def _alias_lines(src: str) -> list[tuple[str, str]]:
+    """(target, value) of every assignment-shaped line, computed ONCE per module.
+
+    SPEED, NOT SCOPE (Desk health 2026-11-06: this fence ran past its 600 s clock on the box).
+    `_writes_through` re-split and re-matched the whole module for every constant it was asked
+    about; the lines are the same each time, so they are matched once here."""
+    out = []
+    for line in src.splitlines():
+        m = _ALIAS_RE.match(line)
+        if m:
+            out.append((m.group(1), m.group(2)))
+    return out
+
+
+#: The three write shapes `_writes_through` asks about, as ONE pass over the module that
+#: collects every name each shape writes through. Asking "does NAME appear in a write?" of that
+#: set is the same question the per-name search asked of the whole source, without rescanning
+#: the module once per name (Desk health 2026-11-06: that rescan was most of this fence's time).
+#:   NAME.write_text / .write_bytes / .open('w|a|x') / .parent.mkdir
+_SITE_ATTR = re.compile(
+    r"\b(\w+)(?=\s*\.\s*(?:write_text|write_bytes|open\(\s*['\"][wax]|parent\.mkdir))")
+#:   write_report(...NAME...) and friends: every word inside the call's first parenthesis run
+_SITE_CALL = re.compile(r"(?:write_report|stamp_sidecar|_atomic_write|os\.replace|json\.dump)"
+                        r"\(([^)]*)")
+#:   .to_json(NAME / .to_csv(NAME / .to_parquet(NAME
+_SITE_TO = re.compile(r"\bto_(?:json|csv|parquet)\(\s*(\w+)")
+_WORD = re.compile(r"\w+")
+
+
+def _write_sites(src: str) -> frozenset[str]:
+    """Every name the module writes through, in any of the three shapes."""
+    names = set(_SITE_ATTR.findall(src)) | set(_SITE_TO.findall(src))
+    for run in _SITE_CALL.findall(src):
+        names.update(_WORD.findall(run))
+    return frozenset(names)
+
+
+def _writes_through(src: str, const: str,
+                    aliases: list[tuple[str, str]] | None = None,
+                    sites: frozenset[str] | None = None) -> bool:
     """Does the module ever write through the constant `const`, or a one-hop alias of it?"""
     names = {const}
-    for line in src.splitlines():
-        m = re.match(_ALIAS, line)
-        if not m or not re.search(rf"\b{re.escape(const)}\b", m.group(2)):
-            continue
-        names |= set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", m.group(1)))
-    for name in names:
-        nm = re.escape(name)
-        if re.search(
-            rf"\b{nm}\s*\.\s*(?:write_text|write_bytes|open\(\s*['\"][wax]|parent\.mkdir)"
-            rf"|(?:write_report|stamp_sidecar|_atomic_write|os\.replace|json\.dump)\([^)]*\b{nm}\b"
-            rf"|\bto_(?:json|csv|parquet)\(\s*{nm}\b", src):
-            return True
-    return False
+    word = re.compile(rf"\b{re.escape(const)}\b")
+    for target, value in (_alias_lines(src) if aliases is None else aliases):
+        if const in value and word.search(value):  # substring first: the regex only confirms
+            names |= set(_IDENT.findall(target))
+    return not names.isdisjoint(_write_sites(src) if sites is None else sites)
 
 
 def artifacts_and_reads(path: Path) -> tuple[set[str], set[str]]:
@@ -172,19 +206,54 @@ def artifacts_and_reads(path: Path) -> tuple[set[str], set[str]]:
     named = {n for n in _ARTIFACT.findall(src) if n not in _GENERIC}
     writes: set[str] = set()
     for i, line in enumerate(lines):
-        if not _WRITE_LINE.search(line):
+        # Every _WRITE_LINE alternative contains one of these words, so a line without any of
+        # them cannot match: the cheap substring test spares the regex on most lines.
+        if not any(k in line for k in _WRITE_WORDS) or not _WRITE_LINE.search(line):
             continue
         window = "\n".join(lines[max(0, i - 8):i + 3])
         writes |= {n for n in _ARTIFACT.findall(window) if n not in _GENERIC}
+    aliases: list[tuple[str, str]] | None = None
+    sites: frozenset[str] | None = None
+    through: dict[str, bool] = {}  # one answer per constant per module
     for m in _ARTIFACT.finditer(src):
         name = m.group(1)
         if name in _GENERIC or name in writes:
             continue
         head = src[src.rfind("\n", 0, m.start()) + 1: m.start()]
         bind = _CONST_BIND.match(head)
-        if bind and _writes_through(src, bind.group(1)):
+        if not bind:
+            continue
+        const = bind.group(1)
+        if const not in through:
+            if aliases is None:
+                aliases = _alias_lines(src)
+            if sites is None:
+                sites = _write_sites(src)
+            through[const] = _writes_through(src, const, aliases, sites)
+        if through[const]:
             writes.add(name)
     return writes, named - writes
+
+
+_BLOCKS = (ast.stmt, ast.excepthandler, ast.match_case)
+
+
+def _statements(tree: ast.AST) -> list[ast.AST]:
+    """Every statement in the module, at any depth, without walking expressions.
+
+    An import is a statement, and statements only ever sit in the statement lists of other
+    statements (bodies, else/finally blocks, except handlers, match cases), so this finds every
+    import `ast.walk` finds while skipping the expression trees that are most of a module's nodes
+    (Desk health 2026-11-06: ast.walk was half this fence's time)."""
+    out: list[ast.AST] = []
+    todo: list[ast.AST] = [tree]
+    while todo:
+        node = todo.pop()
+        out.append(node)
+        for value in vars(node).values():
+            if isinstance(value, list):
+                todo.extend(v for v in value if isinstance(v, _BLOCKS))
+    return out
 
 
 def imports_of(path: Path, root: Path) -> set[str]:
@@ -194,7 +263,7 @@ def imports_of(path: Path, root: Path) -> set[str]:
     except (OSError, SyntaxError, ValueError):
         return set()
     dotted: set[str] = set()
-    for node in ast.walk(tree):
+    for node in _statements(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             dotted.add(node.module)
             dotted |= {f"{node.module}.{a.name}" for a in node.names}
