@@ -31,8 +31,7 @@ def test_the_leg_rewrites_a_stale_ledger_and_reports_the_drift(monkeypatch, tmp_
              "judged_cells": 4, "screened_cells": 5, "by_family": {"a": 9}}
 
     def fake_lifetime(write: bool = True):
-        assert write is True, "the leg exists to WRITE the ledger"
-        out.write_text(json.dumps(fresh), "utf-8")
+        assert write is False, "the leg writes it itself, atomically, after the drop check"
         return fresh
 
     monkeypatch.setattr(el, "lifetime", fake_lifetime)
@@ -44,7 +43,7 @@ def test_the_leg_rewrites_a_stale_ledger_and_reports_the_drift(monkeypatch, tmp_
     assert json.loads(out.read_text("utf-8"))["generated_utc"] == fresh["generated_utc"]
 
 
-def test_a_failed_write_exits_one(monkeypatch, tmp_path):
+def test_a_failed_count_exits_one(monkeypatch, tmp_path):
     monkeypatch.setattr(el, "OUT", tmp_path / "missing" / "x.json")
 
     def broken(write: bool = True):
@@ -52,6 +51,31 @@ def test_a_failed_write_exits_one(monkeypatch, tmp_path):
 
     monkeypatch.setattr(el, "lifetime", broken)
     assert w.main([]) == 1
+
+
+def test_a_graph_read_failure_never_lowers_the_ledger(monkeypatch, tmp_path):
+    """`_graph_counts` returns (0, {}) on an OSError; the file must keep the higher count."""
+    out = tmp_path / "EXPERIMENT_LEDGER.json"
+    before = {"generated_utc": "2026-09-20T23:23:46+00:00", "lifetime_trials": 26728834,
+              "by_family": {"macro_conditional": 38293}}
+    out.write_text(json.dumps(before), "utf-8")
+    raw = out.read_bytes()
+    monkeypatch.setattr(el, "OUT", out)
+    monkeypatch.setattr(el, "_graph_counts", lambda: (0, {}))
+    monkeypatch.setattr(el, "_prescreen_counts", lambda: (0, {}))
+    monkeypatch.setattr(el, "_proposer_counts", lambda: (5, {"macro_conditional": 5}))
+    monkeypatch.setattr(el, "_mass_screen_counts", lambda: (0, {}))
+    monkeypatch.setattr(el, "_claim_selection_counts", lambda: (0, {}))
+    monkeypatch.setattr(el, "_prereg_counts", lambda: 0)
+    assert w.main([]) == 1
+    assert out.read_bytes() == raw
+
+
+def test_one_family_falling_refuses_the_write_even_when_the_total_rises():
+    prev = {"lifetime_trials": 10, "by_family": {"a": 6, "b": 4}}
+    doc = {"lifetime_trials": 50, "by_family": {"a": 49, "b": 1}}
+    assert set(w.drops(prev, doc)) == {"family:b"}
+    assert w.drops(prev, {"lifetime_trials": 12, "by_family": {"a": 6, "b": 6}}) == {}
 
 
 def test_the_hourly_cycle_runs_the_writer_every_hour():
