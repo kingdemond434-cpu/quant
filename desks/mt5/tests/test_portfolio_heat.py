@@ -151,18 +151,19 @@ def test_the_slide_is_a_tolerance_and_never_a_new_budget():
 
 
 def test_the_slide_can_never_lift_the_book_past_the_hard_bar():
-    """THE 30% CEILING IS ABSOLUTE. The slide is applied against min(budget + slide, ceiling),
-    so no future widening of it can reach the bar the principal set."""
-    assert NS["heat_budget"]() + NS["HEAT_SLIDE"] <= NS["MAX_HEAT_CEILING"] + 1e-12
+    """NO CAP, FALLBACK 20% (principal, 2026-10-29). There is no constant bar above a measured
+    book any more; on the DERIVED (unmeasured) budget the book is bounded by the 20% fallback plus
+    the rounding slide, whatever breadth is claimed."""
+    assert NS["MAX_HEAT_CEILING"] == pytest.approx(NS["HEAT_TARGET"])
     for k_eff in (None, 2.26, 5.12, 9.0, 40.0):
         admitted, _ = NS["cap_by_heat"](_sleeves(80), 1684.0, k_eff=k_eff)
         used = len(admitted) * NS["realised_q"](1684.0)
-        assert used <= NS["MAX_HEAT_CEILING"] + 1e-9, f"k_eff={k_eff} breached the hard bar"
+        assert used <= NS["HEAT_TARGET"] + NS["HEAT_SLIDE"] + 1e-9, f"k_eff={k_eff} breached"
 
 
 def test_the_note_names_the_slide_so_the_band_is_never_invisible():
     _admitted, note = NS["cap_by_heat"](_sleeves(60), 1684.0)
-    assert note and "slide" in note and "ceiling" in note
+    assert note and "slide" in note and "no cap" in note
 
 
 def test_a_small_account_gets_fewer_sleeves_not_more_risk():
@@ -221,22 +222,14 @@ def test_the_cap_is_actually_applied_in_the_trading_path():
 
 
 def test_a_flat_budget_would_cap_the_book_forever():
-    """WHY THE BUDGET IS NOT A CONSTANT. realised_q converges to Q_OPT once equity clears the
-    0.01-lot floor, so a fixed budget admits the same sleeve count at EUR 25,000 and at EUR
-    100,000 -- and at a million. The book would stop widening permanently, the opposite of safe
-    aggressive growth.
-
-    Both equities are taken well ABOVE the floor deliberately. Near it, lot rounding dominates:
-    EUR 2,343 rounds 1.69 lots-of-0.01 UP to 2 and realises 1.50% against Q_OPT's 1.27%, so a
-    comparison there measures the rounding grain rather than the plateau it means to show."""
-    q_big = NS["realised_q"](100_000.0)
-    q_mid = NS["realised_q"](25_000.0)
-    assert q_mid == pytest.approx(q_big, abs=5e-4), "premise: realised_q has converged by here"
-    flat = NS["heat_budget"](2.26)
-    assert int(flat / q_big) == int(flat / q_mid), (
-        "premise changed: a flat budget no longer plateaus")
-    # with correlation-awareness, more independent bets buy more room at the SAME equity
-    assert int(NS["heat_budget"](5.12) / q_big) > int(NS["heat_budget"](2.26) / q_big)
+    """SUPERSEDED IN PART (principal, 2026-10-29: "no cap", fallback 20%). The derived budget is
+    the path the gateway takes when the allocator has NOT measured the book (stale or absent
+    artifact), and there the principal's answer is a flat 20%. Breadth still buys heat -- in the
+    allocator, where `heat_policy.effective_ceiling` scales the bar with measured N_eff inside the
+    measured growth and survival bars -- so the book does not stop widening; the unmeasured
+    fallback simply no longer claims room nobody measured."""
+    for k_eff in (None, 2.26, 5.12, 9.0, 40.0):
+        assert NS["heat_budget"](k_eff) == pytest.approx(NS["HEAT_TARGET"], rel=1e-9)
 
 
 def test_heat_scales_with_independence_not_sleeve_count():
@@ -265,7 +258,7 @@ def test_unmeasured_correlation_gets_the_BASE_budget_never_the_ceiling():
     base = NS["heat_budget"](2.26)
     for bad in (None, float("nan"), 0.0, 0.9):
         assert NS["heat_budget"](bad) == pytest.approx(base, abs=1e-9)
-        assert NS["heat_budget"](bad) < NS["MAX_HEAT_CEILING"]
+        assert NS["heat_budget"](bad) <= NS["MAX_HEAT_CEILING"] + 1e-12
 
 
 def test_the_ceiling_binds_however_good_diversification_looks():
