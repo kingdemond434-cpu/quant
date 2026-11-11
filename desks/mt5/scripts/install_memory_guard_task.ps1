@@ -5,8 +5,9 @@
 # process. This registers ops/memory_guard.py as a SYSTEM task every two minutes. It only ever
 # acts on research python (never a terminal, never the money path, never a non-python process):
 # a single research process over a quarter of physical memory, or the largest one when the box
-# is under pressure, is stopped and re-queued; when headroom returns it is run again inside a
-# memory-capped job object, at most twice a day. A healthy box is a report and nothing else.
+# is under pressure, or one a day old burning no CPU, is stopped and re-queued; when headroom
+# returns its OWN scheduled task is re-run (schtasks /Run), never its command line as SYSTEM, at
+# most twice a day. A healthy box is a report and nothing else.
 # See the module docstring for the rules.
 #
 # IDEMPOTENT. With -IfMissing it does nothing when the task exists -- the form Adopt-And-Seal.ps1
