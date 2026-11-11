@@ -210,6 +210,8 @@ NON_REGIONAL_NAMES: frozenset[str] = frozenset({
     "loss_learner",
     "alpha_evolution", "representation_discovery", "math_lab", "physics_lab",
     "world_frontier", "hypothesis_factory", "combination_lab", "dislocation_lab",
+    # B3 / B10: the venue's own tape, swaps and crowd, and the CFD basis -- no regional ground
+    "broker_signal_cells", "basis_cells",
 })
 
 #: Producer tokens that name nobody. Treated as absent so a placeholder never reads as a producer.
