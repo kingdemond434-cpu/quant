@@ -179,3 +179,67 @@ def test_the_expression_factory_evaluates_panels_with_peer_groups(monkeypatch, t
     fac.evaluate(["xzscore", ["delta", "close", 4]], "EURUSD")
     assert seen["groups"] == {"EURUSD": "fx_usd", "EURGBP": "fx_cross"}
     assert seen["truncation"] is XF.PANEL_TRUNCATION
+
+
+def test_the_panel_setting_rides_each_cell_and_splits_its_dedupe_key(monkeypatch):
+    """The Auditor's should-fix on #1028: the same AST under market z-scoring and under group
+    neutralisation are two computations, so the setting is on the cell's own row, its campaign
+    row, its registry params and its donation provenance, and in the dedupe/twin key."""
+    from research import expression_factory as XF
+    z_expr = ["xzscore", ["delta", "close", 4]]
+    single = ["delta", "close", 4]
+    rank_only = ["xrank", ["delta", "close", 4]]
+
+    monkeypatch.setattr(XF, "PANEL_NEUTRALIZATION", "market")
+    monkeypatch.setattr(XF, "PANEL_TRUNCATION", None)
+    market = XF.Cell(expr=z_expr, symbol="EURUSD", hold=6)
+    market_key = market.key
+    assert market.as_dict()["panel_settings"] == {"xzscore_neutralization": "market"}
+    # the pre-setting computation keeps its bare key, so an old seen.json still dedupes it
+    assert market_key.endswith(XF.dsl.canonical_key(z_expr))
+
+    monkeypatch.setattr(XF, "PANEL_NEUTRALIZATION", "group")
+    group = XF.Cell(expr=z_expr, symbol="EURUSD", hold=6)
+    assert group.key != market_key
+    assert group.as_dict()["panel_settings"] == {"xzscore_neutralization": "group"}
+
+    monkeypatch.setattr(XF, "PANEL_TRUNCATION", 0.25)
+    capped = XF.Cell(expr=z_expr, symbol="EURUSD", hold=6)
+    assert capped.key not in (market_key, group.key)
+    ps = capped.as_dict()["panel_settings"]
+    assert ps == {"xzscore_neutralization": "group", "truncation": 0.25}
+
+    # a single-series or xrank-only cell carries no setting and its key never changes
+    for e in (single, rank_only):
+        c = XF.Cell(expr=e, symbol="EURUSD", hold=6)
+        assert c.as_dict()["panel_settings"] == {}
+        assert c.key.endswith(XF.dsl.canonical_key(e))
+
+    # the duplicate-AST check: a seen market-z key does not block the group cell
+    seen = {market_key}
+    assert group.key not in seen
+
+    # campaign row, registry params and donation provenance all carry it
+    camp = XF.Campaign.__new__(XF.Campaign)
+    camp.rows, camp.pass_counts = {}, dict.fromkeys(XF.CAMPAIGN_STATES, 0)
+    assert camp.propose(capped)["panel_settings"] == ps
+    row = capped.as_dict()
+    assert XF._panel_params(row) == {"panel_settings": ps}
+    assert XF._panel_params(XF.Cell(expr=single, symbol="EURUSD", hold=6).as_dict()) == {}
+
+    fac = XF.Factory.__new__(XF.Factory)
+    fac.counts = {"survivors": [{"cell": row, "t1": {"side_mode": "follow"}, "t2": {},
+                                 "orthogonality": 1.0, "falsifier": "f"}]}
+    fac.lake = XF.Lake(XF.Paths(Path("/nonexistent")), meta={})
+    fac.lake.worlds = {}
+    cand = fac._candidates()[0]
+    assert cand["panel_settings"] == ps
+    assert cand["params"]["panel_settings"] == ps
+    assert cand["exact_rule"]["params"]["panel_settings"] == ps
+
+    class _Credits:
+        def op_weight(self, op: str, klass: str) -> float:
+            return 1.0
+
+    fac.credits = _Credits()
+    assert fac._provenance(row, "", None, None)["panel_settings"] == ps
