@@ -448,11 +448,11 @@ def test_the_ecb_axis_maps_to_eur_symbols() -> None:
             return None
 
     orig = UR.urlopen
-    UR.urlopen = lambda *a, **k: R(body)  # type: ignore[assignment]
+    UR.urlopen = lambda *a, **k: R(body)
     try:
         doc = AI.ingest_ecb(universe=_UNIVERSE)
     finally:
-        UR.urlopen = orig  # type: ignore[assignment]
+        UR.urlopen = orig
     assert doc["n_series"] == 3 and doc["n_symbols"] == 4
     assert all(s["vintage"] == "vintage_stable" for s in doc["series"].values())
 
