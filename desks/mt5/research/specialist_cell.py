@@ -177,11 +177,44 @@ AUCTION_PARAMS: dict[str, Any] = {"transform": "level_z", "threshold": 1.0, "lag
                                   "event_window_hours": 12, "ttl_bars": 24}
 
 
+#: A holiday region whose calendar the family can see holds fewer event days than SEED_FLOOR
+#: can NEVER clear it, so its cells are PARKED, not measured: measuring them would charge the
+#: trial census for hypotheses that cannot be judged (Auditor, 2026-11-11). The count is what
+#: `family_forced_flow.calendar_windows` returns -- the window the family itself reads -- so the
+#: region un-parks on its own once official rows or the calendar's span reach the floor.
+HOLIDAY_LOOKBACK_YEARS = 10
+_REGION_DAYS: dict[str, int] = {}
+PARKED_UNDER_FLOOR: dict[str, dict[str, Any]] = {}
+
+
+def holiday_region_event_days(region: str) -> int:
+    """Distinct UTC dates the family can see inside this region's holiday windows."""
+    if region not in _REGION_DAYS:
+        import pandas as pd
+        from mt5desk.family_forced_flow import calendar_windows
+        hi = datetime.now(tz=UTC).date()
+        lo = hi.replace(year=hi.year - HOLIDAY_LOOKBACK_YEARS)
+        days: set[Any] = set()
+        for start, end, _syms in calendar_windows("holiday_liquidity", lo, hi,
+                                                  f"{region}_holiday_"):
+            days.update(pd.date_range(start.normalize(), end, freq="D").date)
+        _REGION_DAYS[region] = len(days)
+    return _REGION_DAYS[region]
+
+
 def _holiday_cells(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     from research import forced_flow_calendar as ffc
     out: list[tuple[str, str, list[dict[str, Any]]]] = []
     for region, mech in HOLIDAY_MECHANISMS.items():
         if sym.upper() in ffc.holiday_region_instruments(region):
+            n_days = holiday_region_event_days(region)
+            if n_days < SEED_FLOOR:
+                row = PARKED_UNDER_FLOOR.setdefault(mech, {
+                    "region": region, "event_days_visible": n_days, "seed_floor": SEED_FLOOR,
+                    "symbols": [], "why": "fewer event days than the seed floor: no cell can "
+                                          "clear it, so none is measured or charged"})
+                row["symbols"].append(sym)
+                continue
             out.append((mech, "forced_flow",
                         _grid({"event_kind": ["holiday_liquidity"], "clock": ["utc"],
                                "symbol": [sym], "event_prefix": [f"{region}_holiday_"],
@@ -450,6 +483,8 @@ def plan(symbols_by_class: dict[str, list[str]] | None = None) -> list[dict[str,
     """Every (class, mechanism, symbol, family, params) the catalogue names, lane-filtered."""
     from research import universe_policy as up
     by_class = symbols_by_class if symbols_by_class is not None else class_symbols()
+    PARKED_UNDER_FLOOR.clear()
+    _REGION_DAYS.clear()
     out: list[dict[str, Any]] = []
     for klass, (gen, priors) in SPECIALISTS.items():
         for sym in by_class.get(klass, []):
@@ -729,7 +764,7 @@ def _unmeasured_inputs() -> dict[str, Any]:
     """The inputs the B11 and B13 mechanisms read, said out loud where they are absent: holiday
     years with no official row (Diwali and Ramadan/Eid have none at all yet), and whether the
     Treasury auction series is on this host."""
-    out: dict[str, Any] = {}
+    out: dict[str, Any] = {"parked_under_floor": dict(PARKED_UNDER_FLOOR)}
     try:
         from research import forced_flow_calendar as ffc
         today = datetime.now(tz=UTC).date()

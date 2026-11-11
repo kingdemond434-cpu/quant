@@ -291,8 +291,10 @@ def test_event_stance_fires_once_per_value_inside_its_window(tmp_path):
 
 
 # ------------------------------------------------------------------------- the catalogue ---
-def test_catalogue_mints_all_three_buildable_with_their_priors():
+def test_catalogue_mints_all_three_buildable_with_their_priors(monkeypatch):
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
+    # a calendar deep enough for every holiday region to reach the seed floor
+    monkeypatch.setattr(sc, "holiday_region_event_days", lambda region: sc.SEED_FLOOR)
     cells = sc.plan({"fx": ["EURUSD", "USDJPY", "USDHKD"], "indices": ["US500", "HK50",
                                                                        "JPN225"]})
     by = {(c["symbol"], c["mechanism"]): c for c in cells}
@@ -322,6 +324,20 @@ def test_catalogue_mints_all_three_buildable_with_their_priors():
     assert all(c["prior"] for c in new)
     idents = [sc.identity(c["symbol"], c["family"], c["params"]) for c in new]
     assert len(idents) == len(set(idents))                      # no duplicate hypothesis
+
+
+def test_a_holiday_region_under_the_seed_floor_is_parked_not_measured(monkeypatch):
+    """Two official Lunar New Year years cannot reach 66 trade days: its cells are parked and
+    named, never measured, so they charge no trials they cannot be judged on."""
+    monkeypatch.setattr(sc, "holiday_region_event_days", lambda region: sc.SEED_FLOOR - 1)
+    cells = sc.plan({"fx": ["USDHKD", "USDJPY"], "indices": ["HK50", "JPN225"]})
+    mechs = {c["mechanism"] for c in cells}
+    assert not mechs & {"lunar_new_year_liquidity", "golden_week_liquidity"}
+    assert "session_handoff_gap" in mechs                    # nothing else is parked
+    parked = sc._unmeasured_inputs()["parked_under_floor"]
+    assert set(parked) == {"lunar_new_year_liquidity", "golden_week_liquidity"}
+    assert set(parked["lunar_new_year_liquidity"]["symbols"]) == {"USDHKD", "HK50"}
+    assert parked["golden_week_liquidity"]["event_days_visible"] == sc.SEED_FLOOR - 1
 
 
 def test_the_fetch_is_an_hourly_leg_with_a_budget_and_a_layer():
