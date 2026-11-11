@@ -2950,6 +2950,34 @@ def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
 
 
+def test_a_registry_clear_carries_across_a_byte_identical_update_branch_only() -> None:
+    """#756 (2026-11-11): update-branch moved a CLEARed head with the same diff and the row went
+    dead. It now carries when, and only when, the exact-bytes patch-id says it is the same change,
+    and the window it waits is the NEW head's (the caller keys it there), never the old one's."""
+    new = "b" * 40
+    asked: list[str] = []
+
+    def same(sha: str) -> bool:
+        asked.append(sha)
+        return sha == _H
+
+    got, why = ag.registry_clear([_row()], 9, new, _win(), _NOW, same)
+    assert got is not None and got["sha"] == new and "carried from" in why and asked == [_H]
+    # a different change (conflict resolution, a new commit) does not carry
+    assert ag.registry_clear([_row()], 9, new, _win(), _NOW, lambda s: False)[0] is None
+    # without the comparison there is no carry at all
+    assert ag.registry_clear([_row()], 9, new, _win(), _NOW)[0] is None
+    # the carried CLEAR still waits the full window and still yields to a later HOLD
+    young = ag.datetime(2026, 11, 5, 0, 0, tzinfo=ag.UTC)
+    assert ag.registry_clear([_row()], 9, new, _win(young), _NOW, same)[0] is None
+    held = [_row(), _row(verdict="HOLD")]
+    assert ag.registry_clear(held, 9, new, _win(), _NOW, same)[0] is None
+    # a malformed sha is never handed to git
+    asked.clear()
+    assert ag.registry_clear([_row(sha="HEAD~1")], 9, new, _win(), _NOW, same)[0] is None
+    assert asked == []
+
+
 def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
     # #591 audit MF3: the row says 2020, but the window starts when the gate's notice went out
     sent: list[str] = []
