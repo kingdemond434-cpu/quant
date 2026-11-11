@@ -38,6 +38,15 @@ def test_unmeasured_facts_pass_and_say_so(tmp_path: Path) -> None:
     assert rep["rows"] and all(r["state"] == "UNMEASURED" for r in rep["rows"])
 
 
+
+def test_absent_facts_file_is_unmeasured_not_a_crash(tmp_path: Path) -> None:
+    root = _root(tmp_path, None)
+    (root / drift.FACTS_REL).unlink()
+    assert drift.main(["--root", str(root)]) == 0
+    rep = json.loads((root / drift.OUT_REL).read_text("utf-8"))
+    assert rep["facts_status"] == "UNMEASURED" and rep["breaches"] == 0
+    assert rep["rows"] and all(r["state"] == "UNMEASURED" for r in rep["rows"])
+
 def test_agreeing_published_terms_pass(tmp_path: Path) -> None:
     d = _declared()
     root = _root(tmp_path, {"a": {"source_id": "prop_rules",

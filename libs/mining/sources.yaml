@@ -34,6 +34,7 @@ external_rosters:
   - path: desks/mt5/data/source_rosters/*.json
   - {path: desks/mt5/data/source_rosters/*.jsonl, optional: true}
   - {path: desks/mt5/data/source_rosters/*.yaml, optional: true}
+  - path: libs/mining/rosters/*.json                            # mining's own registered rows
   - path: libs/mining/rosters/asia_thread_sources.yaml          # Asian quant practices thread
     defaults: {fetcher: owned, owner: asia_gap_thread}
   - path: desks/mt5/data/cell_emitter_sources.json              # breadth cell_emitter (#116)
