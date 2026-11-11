@@ -4129,6 +4129,66 @@ def world_population(mode: str, ev: Sequence[SleeveEvidence], cfg: WorldConfig, 
     return worlds, report
 
 
+def apply_garch_vol(ev: list[SleeveEvidence], mode: str,
+                    live: bool | None = None) -> tuple[list[SleeveEvidence], dict[str, Any]]:
+    """The GARCH(1,1) dispersion scale for `ev` and, ONLY when `live` (default
+    GARCH_SIZING_LIVE), the evidence rescaled by it; otherwise `ev` is returned untouched and
+    the scale is published as a shadow reading. Never raises."""
+    _live = GARCH_SIZING_LIVE if live is None else bool(live)
+    ev = list(ev)
+    # GARCH VOLATILITY FORECAST (ALLOC-13): each sleeve's dispersion is scaled to its GARCH(1,1)
+    # forecast over the next week relative to its sample vol -- DEVIATIONS only, never the mean
+    # (decision role VOLATILITY_SCALE + UNCERTAINTY_WIDTH, `research.model_roles`). A calm
+    # forecast is only credited up to the fit's own upper band, so uncertainty never adds risk.
+    # Fitting costs ~0.3 s a sleeve, so the fast clock reuses the last normal/heavy fit (a model
+    # output, not a re-fit per trigger) and says so; a missing fit scales nothing.
+    #
+    # SHADOW ONLY UNTIL IT WINS OUT OF SAMPLE (standing order: GARCH/HMM and LLM sizing stay
+    # shadow-only; an input reaches money the moment it beats the plain solve OOS, never before).
+    # With GARCH_SIZING_LIVE False the fit runs, the per-sleeve scale is published under
+    # `garch_vol.scale` with `applied: false`, and the evidence the book is solved on is untouched.
+    garch_meta: dict[str, Any] = {"status": "UNMEASURED", "applied": False,
+                                  "shadow": not _live}
+    try:
+        from dataclasses import replace as _gv_replace
+
+        from libs.portfolio.garch_vol import apply_vol_scale, vol_scale_by_sleeve
+        _gv_path = CACHE / "garch_vol.json"
+        _vscale: dict[str, float] = {}
+        if mode == "fast":
+            try:
+                _gv = json.loads(_gv_path.read_text("utf-8"))
+                if time.time() - float(_gv.get("t", 0.0)) < 26 * 3600:
+                    _vscale = {str(k): float(v) for k, v in (_gv.get("scale") or {}).items()}
+                    garch_meta = {"status": "REUSED", "fitted_at": _gv.get("t")}
+            except (OSError, ValueError, TypeError):
+                garch_meta = {"status": "UNMEASURED", "why": "no fit cached for the fast clock"}
+        else:
+            _vscale, _vdiag = vol_scale_by_sleeve(ev, horizon_days=int(NO_TRADE_HORIZON_DAYS))
+            garch_meta = {"status": "MEASURED", "diagnostics": _vdiag}
+            try:
+                _gv_path.parent.mkdir(parents=True, exist_ok=True)
+                _atomic_write_text(_gv_path, json.dumps({"t": time.time(), "scale": _vscale}))
+            except OSError:
+                pass
+        garch_meta["applied"], garch_meta["shadow"] = False, not _live
+        if _vscale:
+            if _live:
+                for _i, _e in enumerate(ev):
+                    _r = float(_vscale.get(_e.name, 1.0))
+                    if abs(_r - 1.0) > 1e-12:
+                        ev[_i] = _gv_replace(_e, daily_r=apply_vol_scale(_e.daily_r, _r))
+                garch_meta["applied"] = True
+            garch_meta["scale"] = {k: round(v, 4) for k, v in _vscale.items()}
+            _log(f"garch vol scale: {sum(1 for v in _vscale.values() if v > 1)} up, "
+                 f"{sum(1 for v in _vscale.values() if v < 1)} down ({garch_meta['status']}; "
+                 f"{'APPLIED' if garch_meta['applied'] else 'shadow, not applied'})")
+    except Exception as exc:
+        garch_meta = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
+                      "applied": False, "shadow": not _live}
+    return ev, garch_meta
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -4170,56 +4230,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if culture_meta.get("relabelled"):
         _log(f"culture labels: {culture_meta['merged']} merged, {culture_meta['split']} split "
              f"({culture_meta['why']})")
-    # GARCH VOLATILITY FORECAST (ALLOC-13): each sleeve's dispersion is scaled to its GARCH(1,1)
-    # forecast over the next week relative to its sample vol -- DEVIATIONS only, never the mean
-    # (decision role VOLATILITY_SCALE + UNCERTAINTY_WIDTH, `research.model_roles`). A calm
-    # forecast is only credited up to the fit's own upper band, so uncertainty never adds risk.
-    # Fitting costs ~0.3 s a sleeve, so the fast clock reuses the last normal/heavy fit (a model
-    # output, not a re-fit per trigger) and says so; a missing fit scales nothing.
-    #
-    # SHADOW ONLY UNTIL IT WINS OUT OF SAMPLE (standing order: GARCH/HMM and LLM sizing stay
-    # shadow-only; an input reaches money the moment it beats the plain solve OOS, never before).
-    # With GARCH_SIZING_LIVE False the fit runs, the per-sleeve scale is published under
-    # `garch_vol.scale` with `applied: false`, and the evidence the book is solved on is untouched.
-    garch_meta: dict[str, Any] = {"status": "UNMEASURED", "applied": False,
-                                  "shadow": not GARCH_SIZING_LIVE}
-    try:
-        from dataclasses import replace as _gv_replace
-
-        from libs.portfolio.garch_vol import apply_vol_scale, vol_scale_by_sleeve
-        _gv_path = CACHE / "garch_vol.json"
-        _vscale: dict[str, float] = {}
-        if mode == "fast":
-            try:
-                _gv = json.loads(_gv_path.read_text("utf-8"))
-                if time.time() - float(_gv.get("t", 0.0)) < 26 * 3600:
-                    _vscale = {str(k): float(v) for k, v in (_gv.get("scale") or {}).items()}
-                    garch_meta = {"status": "REUSED", "fitted_at": _gv.get("t")}
-            except (OSError, ValueError, TypeError):
-                garch_meta = {"status": "UNMEASURED", "why": "no fit cached for the fast clock"}
-        else:
-            _vscale, _vdiag = vol_scale_by_sleeve(ev, horizon_days=int(NO_TRADE_HORIZON_DAYS))
-            garch_meta = {"status": "MEASURED", "diagnostics": _vdiag}
-            try:
-                _gv_path.parent.mkdir(parents=True, exist_ok=True)
-                _atomic_write_text(_gv_path, json.dumps({"t": time.time(), "scale": _vscale}))
-            except OSError:
-                pass
-        garch_meta["applied"], garch_meta["shadow"] = False, not GARCH_SIZING_LIVE
-        if _vscale:
-            if GARCH_SIZING_LIVE:
-                for _i, _e in enumerate(ev):
-                    _r = float(_vscale.get(_e.name, 1.0))
-                    if abs(_r - 1.0) > 1e-12:
-                        ev[_i] = _gv_replace(_e, daily_r=apply_vol_scale(_e.daily_r, _r))
-                garch_meta["applied"] = True
-            garch_meta["scale"] = {k: round(v, 4) for k, v in _vscale.items()}
-            _log(f"garch vol scale: {sum(1 for v in _vscale.values() if v > 1)} up, "
-                 f"{sum(1 for v in _vscale.values() if v < 1)} down ({garch_meta['status']}; "
-                 f"{'APPLIED' if garch_meta['applied'] else 'shadow, not applied'})")
-    except Exception as exc:
-        garch_meta = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
-                      "applied": False, "shadow": not GARCH_SIZING_LIVE}
+    ev, garch_meta = apply_garch_vol(ev, mode)
     dd = worst_dd_r(daily)
     # THE MACRO TILTS THIS PASS APPLIES, MEASURED ONCE FOR THE ARTIFACT. `_posterior_mu` is the
     # only place the contrast is formed; asking it with `diag` returns exactly the tilts the

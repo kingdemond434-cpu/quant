@@ -99,7 +99,36 @@ def test_the_gateway_reads_holders_from_positions_and_orders(monkeypatch) -> Non
     def _boom() -> list:
         raise RuntimeError("terminal gone")
     venue.positions_get = _boom
-    assert gw._rows_holding(names) == frozenset()                           # seeds nobody
+    assert gw._rows_holding(names) is None                    # UNMEASURED, never "none held"
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     assert "_carried: dict[str, str] = held_carriers(_carry_order, _holding)" in src
-    assert src.index("_holding = (_hold_fn(") < src.index("_carriers = book_carriers(")
+    assert src.index("_held = (_hold_fn(") < src.index("_carriers = book_carriers(")
+    # every row with a book key is read, joined or not, and a blocked key sends nothing
+    assert "_hold_fn([n for n, k in _raw_key.items() if k is not None])" in src
+    assert "_blocked = blocked_book_keys(_raw_key, dict(_joins), _held)" in src
+    assert 'if _key in _blocked and _blocked[_key] != _s["name"]:' in src
+
+
+def test_a_key_held_by_a_zeroed_row_is_blocked_for_every_other_row() -> None:
+    """#896 audit MF: a1 holds the cell's position, then cert_book_zero / DECAY_ZERO keeps it out
+    of the joins. The walk cannot see it, so without the block b2 would carry and open a second
+    position on the same key."""
+    raw = {"chfnok_carry_asia_p_a1": KEY, "chfnok_carry_asia_p_b2": KEY,
+           "eurusd_trend_ny": "EURUSD_trend_ny"}
+    joined = {"chfnok_carry_asia_p_a1": None, "chfnok_carry_asia_p_b2": KEY,
+              "eurusd_trend_ny": "EURUSD_trend_ny"}
+    blocked = dc.blocked_book_keys(raw, joined, {"chfnok_carry_asia_p_a1"})
+    assert blocked == {KEY: "chfnok_carry_asia_p_a1"}
+    # the walk alone (a1 not joined) would hand the key to b2: the block is what stops it
+    alone = [(n, k) for n, k in joined.items()]
+    assert dc.book_carriers(alone, EVIDENCE, set())["chfnok_carry_asia_p_b2"] ==         "chfnok_carry_asia_p_b2"
+    # a joined holder is not blocked (it carries); nothing held blocks nothing
+    assert dc.blocked_book_keys(raw, dict(raw), {"chfnok_carry_asia_p_a1"}) == {}
+    assert dc.blocked_book_keys(raw, joined, set()) == {}
+
+
+def test_an_unreadable_venue_blocks_every_shared_key_and_no_other() -> None:
+    """#896 audit SF2: who holds what is UNMEASURED, never "nothing held"."""
+    raw = {"chfnok_carry_asia_p_a1": KEY, "chfnok_carry_asia_p_b2": KEY,
+           "eurusd_trend_ny": "EURUSD_trend_ny", "off_book": None}
+    assert dc.blocked_book_keys(raw, dict(raw), None) == {KEY: "venue unreadable"}

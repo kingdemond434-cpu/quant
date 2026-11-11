@@ -3057,6 +3057,25 @@ def book_carriers(joins: Iterable[tuple[str, str | None]],
     return {n: order[k][0] for n, k in rows}
 
 
+def blocked_book_keys(raw_keys: Mapping[str, str | None], joined: Mapping[str, str | None],
+                      holding: Iterable[str] | None) -> dict[str, str]:
+    """{book key: why no row may open on it this pass} (#896 audit MF and SF2).
+
+    A KEY HELD BY A ZEROED ROW: a row that cert_book_zero or DECAY_ZERO keeps out of the joins
+    (`joined[n]` is None) but whose own position or order is on the venue still holds the cell;
+    its zero sends nothing, and no other row may open a second position beside it.
+    AN UNREADABLE VENUE (`holding` None) blocks every key more than one row reaches: who holds
+    what is UNMEASURED, which is never "nothing held". A key only one row reaches is unaffected."""
+    if holding is None:
+        reach: dict[str, int] = {}
+        for k in raw_keys.values():
+            if k:
+                reach[str(k)] = reach.get(str(k), 0) + 1
+        return {k: "venue unreadable" for k, c in sorted(reach.items()) if c > 1}
+    return {str(raw_keys[n]): n for n in sorted(holding)
+            if raw_keys.get(n) and joined.get(n) is None}
+
+
 def held_carriers(order: Mapping[str, Sequence[str]], holding: Iterable[str]) -> dict[str, str]:
     """{key: the row that already holds it} for every shared key one of whose rows holds a
     position or bracket. The gateway seeds its walk with these, so the fallback can never hand a

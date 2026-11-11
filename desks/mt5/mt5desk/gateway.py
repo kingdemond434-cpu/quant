@@ -87,6 +87,7 @@ from mt5desk.decision_core import (
     family_ttl_until,
     h1_frame,
     held_carriers,
+    blocked_book_keys,
     hibernated,
     placement_verdict,
     ramped_fraction,
@@ -3743,10 +3744,10 @@ def _carrier_walk_order(sleeves: list[dict], joins: list[tuple[str, str | None]]
     return out
 
 
-def _rows_holding(names: list[str]) -> frozenset[str]:
+def _rows_holding(names: list[str]) -> frozenset[str] | None:
     """The rows among `names` that hold an open position or a resting order of their own on the
-    venue (this desk's MAGIC, matched by `owned_tags`). An unreadable venue reads as holding
-    nothing, which leaves the walk exactly as it was, and is logged."""
+    venue (this desk's MAGIC, matched by `owned_tags`). None when the venue cannot be read: that
+    is UNMEASURED, never "nothing held" (#896 audit SF2), and the caller fails closed on it."""
     if not names:
         return frozenset()
     try:
@@ -3754,8 +3755,9 @@ def _rows_holding(names: list[str]) -> frozenset[str]:
                 for x in list(mt5.positions_get() or ()) + list(mt5.orders_get() or ())
                 if int(getattr(x, "magic", 0) or 0) == MAGIC}
     except Exception as exc:
-        log(f"carrier walk: venue unreadable ({type(exc).__name__}); no holder seeded")
-        return frozenset()
+        log(f"carrier walk: venue unreadable ({type(exc).__name__}); shared keys send nothing "
+            f"this pass")
+        return None
     return frozenset(n for n in names if owned_tags(n) & tags)
 
 
@@ -6219,9 +6221,15 @@ def main() -> None:
     # THE HOLDER CARRIES (#896 audit MF2): a row with its own open position or resting bracket
     # on a shared key is that key's carrier this pass and the walk is seeded with it, so no
     # other row on the key sends -- two rows could otherwise each hold a position on one cell.
+    # The venue is read for EVERY row with a book key, joined or not (#896 audit MF): a row that
+    # cert_book_zero or DECAY_ZERO keeps out of `_joins` may still hold the cell's position, and
+    # a walk that cannot see it would let a second row open another one on the same key.
+    _raw_key = {str(_r.get("name") or ""): _book_key(_r, _book) for _r in sleeves}
     _hold_fn = globals().get("_rows_holding")
-    _holding = (_hold_fn([n for n, k in _joins if k is not None and int(_shares.get(n, 1)) > 1])
-                if _hold_fn else frozenset())
+    _held = (_hold_fn([n for n, k in _raw_key.items() if k is not None])
+             if _hold_fn else frozenset())
+    _holding = frozenset() if _held is None else _held
+    _blocked = blocked_book_keys(_raw_key, dict(_joins), _held)
     _carriers = book_carriers(_joins, _evidence, _holding)
     _carry_order = book_carrier_order(_joins, _evidence, _holding)
     if _walk_fn:
@@ -6265,6 +6273,10 @@ def main() -> None:
             _s["risk_frac"] = float(_book[_key]) if _carrier == _s["name"] else 0.0
             _s["sized_by"] = "allocator_book"
             _s["book_key"] = _key
+            if _key in _blocked and _blocked[_key] != _s["name"]:
+                _s["risk_frac"], _s["book_key_blocked_by"] = 0.0, _blocked[_key]
+                log(f"BOOK KEY HELD {_s['name']}: key {_key} is held by {_blocked[_key]}; no "
+                    f"second position on one cell")
             if _n_share > 1:
                 _s["book_key_shared_by"] = _n_share
                 _s["book_key_carrier"] = _carrier
