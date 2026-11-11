@@ -81,31 +81,36 @@ def test_it_fails_closed_every_way(tmp_path: Path) -> None:
 
 def test_the_real_fusion_sizing_reads_the_allocator_fraction_after_the_door(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """#956 audit M1: run the door, then the gateway's own book, and assert what it would send.
-    With #954's code pins (gold windows no longer in PRINCIPAL_ZERO['fusion']) the released
-    window takes the allocator's earned fraction; with today's pins it still sends 0 -- the
-    door alone never opens a window the code still pins."""
+    """#956 audit M1: run the door, then the gateway's own `allocator_book`, and assert what it
+    would send -- through the REAL switch, never a patched constant. With #954 on the tree the
+    gold-asia-only pin is `decision_core.GOLD_ASIA_ONLY_FILE`: absent, the released windows take
+    the allocator's fraction; present, they send 0 whatever the cert book says. Without #954 the
+    code pin binds and both read 0 -- the door alone never opens a window the code still pins."""
     pytest.importorskip("MetaTrader5")
+    from mt5desk import decision_core as dc
     from mt5desk import gateway as gw
     from mt5desk import kelly_sizing
     p = _desk(tmp_path, [ORDER])
     alloc = {"gold_london_am": 0.031, "gold_afternoon": 0.012, "AUDCHF_x": 0.02}
     monkeypatch.setattr(gw, "_allocator_book", lambda: (dict(alloc), "fixture"))
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", p["book"])
-    post_954 = {**gw.PRINCIPAL_ZERO,
-                "fusion": frozenset(k for k in gw.PRINCIPAL_ZERO["fusion"]
-                                    if k not in ("gold_london_am", "gold_afternoon"))}
-    monkeypatch.setattr(gw, "PRINCIPAL_ZERO", post_954)
+    switch = tmp_path / "GOLD_ASIA_ONLY_ENABLED"
+    has_switch = hasattr(dc, "GOLD_ASIA_ONLY_FILE")
+    if has_switch:
+        monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", switch)
     before, _ = gw.allocator_book()
     assert before["gold_london_am"] == 0.0 and before["gold_afternoon"] == 0.0
-    _run(p)
+    assert _run(p)["status"] == "RELEASED"
     after, _ = gw.allocator_book()
-    assert after["gold_london_am"] == 0.031 and after["gold_afternoon"] == 0.012
     assert after["AUDCHF_x"] == 0.0                                  # its pin stands
-    monkeypatch.setattr(gw, "PRINCIPAL_ZERO", {**post_954, "fusion": frozenset(
-        {*post_954["fusion"], "gold_london_am", "gold_afternoon"})})
+    if not has_switch:
+        # pre-#954: the code pin binds; the door released the book, the gateway still sends 0
+        assert after["gold_london_am"] == 0.0 and after["gold_afternoon"] == 0.0
+        return
+    assert after["gold_london_am"] == 0.031 and after["gold_afternoon"] == 0.012
+    switch.write_text("", "utf-8")                                   # the principal's revert
     still, _ = gw.allocator_book()
-    assert still["gold_london_am"] == 0.0, "a code pin still binds whatever the cert book says"
+    assert still["gold_london_am"] == 0.0 and still["gold_afternoon"] == 0.0
 
 
 def test_it_runs_on_the_hourly_clock_and_writes_no_number() -> None:
