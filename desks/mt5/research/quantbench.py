@@ -82,6 +82,18 @@ GAUNTLET_SEAL_ROTATION = {
                   "canonically; policy and record seals preserved"),
 }
 
+# Session phase on the venue clock (Breadth; Auditor CLEAR 1d1aa3446, PROTECTED): each trade is
+# labelled on its own declared timestamp basis, so `Trade` carries `basis`. Re-sealed on zuck's
+# own words 2026-11-11 01:30Z ("re-seal state_admission for the venue clock fix"); the historical
+# pin stays intact and any later byte change still reads REGRESSED.
+STATE_ADMISSION_SEAL_ROTATION = {
+    "path": "libs/regime/state_admission.py",
+    "from": "1fc3e4878041db7a146cf228a6bc72d51b7a393c302769f30ff88f26610b730a",
+    "to": "7e6891e762a88c6587b31d56699b0b7d0da068a3432bda229b68b83491e5faa0",
+    "signed_by": ("principal (zuck 2026-11-11 01:30Z: "
+                  "re-seal state_admission for the venue clock fix)"),
+}
+
 
 def _sha(path: Path) -> str | None:
     # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
@@ -135,7 +147,7 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
     except (OSError, ValueError):
         manifest = {}
     for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION,
-                     GAUNTLET_SEAL_ROTATION):
+                     GAUNTLET_SEAL_ROTATION, STATE_ADMISSION_SEAL_ROTATION):
         path = rotation["path"]
         if pinned.get(path) != rotation["from"] or now.get(path) != rotation["to"]:
             continue
