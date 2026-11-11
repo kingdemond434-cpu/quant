@@ -88,7 +88,7 @@ def charge(rows: list[dict[str, Any]], grid: int) -> list[dict[str, Any]]:
     grid ran, never fewer than the rows -- the bar only ever rises. The rule that marks a row
     proposed is the shared one, re-applied on the larger charge."""
     from research.multiplicity import deflate_t
-    rows = charge(rows, grid)
+    rows = pc.deflate(rows)
     for r in rows:
         n = max(int(grid), int(r["n_tests_sweep"]))
         extra = n - int(r["n_tests_sweep"])
