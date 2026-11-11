@@ -18,6 +18,25 @@ BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
 STALE_SECONDS = 45 * 60
 
+#: THE LEASE (idea 614, 2026-11-11). Every lock now carries `max_hold_s`: how long its holder may
+#: keep it before it must CHECKPOINT AND YIELD. Measured the night of 11-10/11: heavy pf_allocator
+#: held its lock 3 h 18 m, research_bandit ran 6 h 20 m, TapeFeatures was killed by its task limit
+#: every hour and the gauntlet pre-warm ran 2.6 h against a 45 min budget. Each holder was ALIVE
+#: and beating, so liveness (rightly) never let a waiter reclaim it -- and nothing ever told the
+#: holder that its time was up. The lease is that signal. It is COOPERATIVE: a waiter never robs
+#: a living, beating holder (the 2026-08-28 rule stands); the HOLDER calls `checkpoint(name)` at
+#: its safe points and, once the lease is spent, saves what it has and returns. A holder that
+#: never checkpoints is still named: refusals carry `over_lease_s`, and `lease_overruns()` lists
+#: every held lock past its lease for the pagers.
+#: The default applies to every lock that does not declare its own; `JOB_LOCK_MAX_HOLD_S_<NAME>`
+#: (name upper-cased) overrides one job, `JOB_LOCK_MAX_HOLD_S` the default.
+DEFAULT_MAX_HOLD_S = 2 * 3600.0
+#: Per-job leases where the default is wrong for the job's cadence.
+LEASES: dict[str, float] = {
+    # hourly; must hand back before its own next trigger and the task's time limit
+    "tape_features": 50 * 60.0,
+}
+
 #: How long a job that does not fit will WAIT for a neighbour to exit before standing down.
 #: Bounded well under the hourly trigger so a waiting job can never overlap its own next run.
 ADMIT_PATIENCE_SECONDS = 12 * 60
@@ -397,6 +416,85 @@ HEARTBEAT_EVERY_S = 15.0
 LAST_REFUSAL: dict[str, dict[str, Any]] = {}
 
 
+def max_hold_s(name: str, declared: float | None = None) -> float:
+    """The lease for `name`: env override, else the caller's declaration, else LEASES, else the
+    default. Always positive: a zero or negative value would make every holder yield at once."""
+    for key in (f"JOB_LOCK_MAX_HOLD_S_{name.upper()}", None):
+        raw = os.environ.get(key) if key else None
+        if raw:
+            with suppress(ValueError):
+                if float(raw) > 0:
+                    return float(raw)
+    if declared is not None and float(declared) > 0:
+        return float(declared)
+    if name in LEASES:
+        return LEASES[name]
+    with suppress(ValueError):
+        if float(os.environ.get("JOB_LOCK_MAX_HOLD_S") or 0) > 0:
+            return float(os.environ["JOB_LOCK_MAX_HOLD_S"])
+    return DEFAULT_MAX_HOLD_S
+
+
+#: name -> the wall-clock time the lease of the lock this process holds runs out.
+_LEASE_UNTIL: dict[str, float] = {}
+_YIELD_SAID: set[str] = set()
+
+
+def lease_left_s(name: str) -> float | None:
+    """Seconds left on the lease of the `name` lock THIS process holds; None when it holds none."""
+    until = _LEASE_UNTIL.get(name)
+    return None if until is None or name not in _HELD else until - time.time()
+
+
+def checkpoint(name: str) -> bool:
+    """Call at a safe point of a long job. Beats (rate-limited, like `heartbeat`) and answers
+    whether the lease is SPENT: True means save what you have and return, so the lock is handed
+    back and the next trigger resumes. A process that holds no `name` lock always gets False.
+    """
+    heartbeat(name)
+    left = lease_left_s(name)
+    if left is None or left > 0:
+        return False
+    if name not in _YIELD_SAID:
+        _YIELD_SAID.add(name)
+        print(f"{name}: LEASE SPENT -- held past its {max_hold_s(name) / 60:.0f} min lease; "
+              f"checkpointing and yielding the lock (the next run resumes).", flush=True)
+    return True
+
+
+def _lease_over_s(row: dict[str, Any], now: float | None = None) -> float | None:
+    until = row.get("lease_until")
+    if not isinstance(until, (int, float)):
+        return None
+    over = (time.time() if now is None else now) - float(until)
+    return round(over, 1) if over > 0 else None
+
+
+def lease_overruns(root: Path | None = None) -> list[dict[str, Any]]:
+    """Every lock under `root` held past its lease: name, pid, held minutes and overrun. Read-only.
+    For the pagers: a holder that never checkpoints is the one this lists."""
+    out: list[dict[str, Any]] = []
+    now = time.time()
+    for path in sorted((root or LOCK_ROOT).glob("*.json")):
+        try:
+            row = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(row, dict):
+            continue
+        over = _lease_over_s(row, now)
+        if over is None:
+            continue
+        held_min = None
+        with suppress(ValueError):
+            held_min = round((now - datetime.fromisoformat(str(row.get("started_at")))
+                              .timestamp()) / 60.0, 1)
+        out.append({"name": path.stem, "pid": row.get("pid"), "host": row.get("host"),
+                    "max_hold_s": row.get("max_hold_s"), "held_min": held_min,
+                    "over_lease_s": over})
+    return out
+
+
 def _own_create_time() -> float | None:
     try:
         import psutil
@@ -496,7 +594,8 @@ def orphan_stale(path: Path, heartbeat_stale_s: float) -> str | None:
 @contextmanager
 def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                   deadline_s: float | None = None, evsi: float | None = None,
-                  heartbeat_stale_s: float | None = None) -> Iterator[bool]:
+                  heartbeat_stale_s: float | None = None,
+                  max_hold: float | None = None) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
@@ -584,12 +683,16 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     LOCK_ROOT.mkdir(parents=True, exist_ok=True)
     path = LOCK_ROOT / f"{name}.json"
     token = uuid.uuid4().hex
+    lease = max_hold_s(name, max_hold)
+    taken = time.time()
     payload = json.dumps({
         "token": token, "pid": os.getpid(), "host": socket.gethostname(),
         "started_at": datetime.now(UTC).isoformat(),
         # create_time proves the pid is still THIS process (Windows reuses pids); heartbeat_at
         # is refreshed by `heartbeat` at every stage of a job that opts in.
-        "create_time": _own_create_time(), "heartbeat_at": time.time(),
+        "create_time": _own_create_time(), "heartbeat_at": taken,
+        # THE LEASE (idea 614): the holder checkpoints and yields once `lease_until` passes.
+        "max_hold_s": lease, "lease_until": taken + lease,
     })
     owned = False
     for _attempt in range(2):
@@ -631,6 +734,13 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                                       "heartbeat_age_s": (None if hb_age is None
                                                           else round(hb_age, 1)),
                                       "owner": state}
+                over = _lease_over_s(held_row)
+                if over is not None:
+                    # Never a reclaim: a living holder is not robbed. It is NAMED, so the stand-
+                    # down record and the pagers say whose lease ran out and by how much.
+                    LAST_REFUSAL[name]["over_lease_s"] = over
+                    print(f"{name}: the holder is {over / 60:.0f} min past its lease and has not "
+                          f"yielded -- not reclaiming a living holder; named for the pagers")
             except (OSError, ValueError, AttributeError):
                 LAST_REFUSAL[name] = {"owner": state, "lock": "unreadable"}
             yield False
@@ -640,6 +750,8 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                 handle.write(payload)
             owned = True
             _HELD[name] = (path, token)
+            _LEASE_UNTIL[name] = taken + lease
+            _YIELD_SAID.discard(name)
             break
     if not owned:
         print(f"{name}: REFUSED writer; stale lock could not be recovered")
@@ -662,6 +774,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
         # without `getrusage` permanently unrankable.
         record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
         _HELD.pop(name, None)
+        _LEASE_UNTIL.pop(name, None)
         # Never delete a successor's lock after a stale-owner race.
         try:
             current = json.loads(path.read_text("utf-8"))
