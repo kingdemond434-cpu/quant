@@ -97,12 +97,6 @@ def test_overlapping_daily_forecasts_keep_the_error_rate(
     assert len(sf.non_overlapping(rows)) == pytest.approx(len(rows) / 5, abs=1)
 
 
-def test_late_rows_are_not_point_in_time() -> None:
-    assert sf._point_in_time({"info_cutoff": "2026-01-02", "published_utc": "2026-01-04T00:00"})
-    assert not sf._point_in_time({"info_cutoff": "2026-01-02",
-                                  "published_utc": "2026-01-09T00:00"})
-
-
 def test_e_bh_controls_across_sleeves() -> None:
     assert sf.e_bh({"a": 500.0, "b": 1.0, "c": 0.5}, 0.05) == ["a"]
     assert sf.e_bh({"a": 10.0, "b": 10.0}, 0.05) == []

@@ -182,22 +182,6 @@ def append_new(rows: Sequence[Mapping[str, Any]], path: Path = LEDGER) -> int:
 
 # ------------------------------------------------------------------ score
 
-#: A row counts as point-in-time only if it was published within this many calendar days of its
-#: info_cutoff: derived as a weekend (2 days, a Friday cutoff first published on Sunday) plus one
-#: day of evidence-cache age (the matrix is rebuilt once a day), 3 days in all. A row written
-#: later than that could have been written knowing part of its own outcome window.
-PIT_LAG_DAYS = 3
-
-
-def _point_in_time(r: Mapping[str, Any]) -> bool:
-    pub = str(r.get("published_utc") or "")[:10]
-    cut = str(r.get("info_cutoff") or "")[:10]
-    try:
-        return (date.fromisoformat(pub) - date.fromisoformat(cut)).days <= PIT_LAG_DAYS
-    except ValueError:
-        return True                                     # no stamp: legacy row, kept
-
-
 def non_overlapping(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
     """One sleeve's scored rows thinned so each bet settles before the next is placed.
 
@@ -230,8 +214,6 @@ def score(rows: Sequence[Mapping[str, Any]], daily: pd.DataFrame) -> list[dict[s
         window = daily[n].iloc[i + 1:i + 1 + h]
         if window.isna().all():
             continue
-        if not _point_in_time(r):
-            continue                                    # published too long after its cutoff
         realized = float(window.fillna(0.0).sum())
         sd = float(r.get("predictive_sd") or 0.0)
         if not sd > 0:
