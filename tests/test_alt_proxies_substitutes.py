@@ -351,12 +351,22 @@ def test_reviewed_terms_carry_evidence() -> None:
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
         assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
+    # the KR/HK (#239) and JP (#251) plane rows were read on their own dates and carry their
+    # evidence in the planes' tables; every confirmed row has evidence in exactly one place
+    plane_ev = {**A.KR_HK_TERMS_EVIDENCE, **A.JP_TERMS_EVIDENCE}
+    plane = {sid for sid in plane_ev if sid in A.TERMS and A.TERMS[sid][0] == "confirmed"}
+    for sid in plane:
+        assert plane_ev[sid]["terms_url"].startswith("https://") and plane_ev[sid][
+            "terms_quote"], sid
+    assert not reviewed & plane
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
-    assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
+    assert reviewed | plane == confirmed >= (
+        {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"})
     assert "za_statssa_retail" not in confirmed and "TO_CONFIRM" in (
         A.TERMS_EVIDENCE["za_statssa_retail"]["judgement"])          # mirror-only: fails closed
     for sid in confirmed:
-        assert not A.TERMS_EVIDENCE[sid]["terms_quote"].startswith("(not"), sid
+        ev = A.TERMS_EVIDENCE.get(sid) or plane_ev[sid]
+        assert not ev["terms_quote"].startswith("(not"), sid
 
 
 def test_estat_rows_carry_the_api_terms_and_the_credit_line() -> None:
@@ -849,8 +859,12 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
         assert r["status"] == A.status_of(A.BY_ID[sid], {}), sid
         assert list(r)[:3] == ["class", "paid", "free"]      # the engine finds columns by word
         assert bool(r["free"]) == (sid in A.SUBSTITUTED_BY), sid
-        assert r["status"].startswith("BLOCKED_NO_SUBSTITUTE:UNVERIFIED="), sid
-        assert "UNVERIFIED" in r["substitute_check"] and r["unsubstituted_because"], sid
+        if sid in A.SUBSTITUTED_BY:                # candidates named, none measured yet
+            assert r["status"].startswith("BLOCKED_NO_SUBSTITUTE:UNVERIFIED="), sid
+            assert "UNVERIFIED" in r["substitute_check"] and r["unsubstituted_because"], sid
+        else:                                       # no candidate: fenced, and says why
+            assert r["status"] == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}", sid
+            assert not r["substitute_check"] and r["unsubstituted_because"], sid
     assert "za_statssa_retail" not in rows["za_beti"]["evidence"]   # unconfirmed: no evidence
     lib = {r["id"] for r in doc["library_rows"]}
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
