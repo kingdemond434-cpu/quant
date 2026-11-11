@@ -209,7 +209,7 @@ def test_revision_math_and_pit_series(tmp_path: Path) -> None:
     assert df["new_england_hdd_rev"].iloc[1] == 3
     assert df["conus_hdd_rev"].iloc[1] == 0
     assert df["new_england_hdd_lvl"].tolist() == [154, 157]
-    assert df["new_england_hdd_nov"].iloc[1] == 6               # six shared days
+    assert df["new_england_hdd_nov"].iloc[1] == 7       # the stub reissue keeps all 7 days
 
     # the conditioner reads it through its own loader, on its own available_time clock
     from mt5desk.family_exogenous_conditioner import conditioner, series_path
