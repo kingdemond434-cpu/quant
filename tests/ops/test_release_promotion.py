@@ -393,7 +393,8 @@ def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
     # the promotion -- nothing on LIVE is skipped or weakened by the fold
     cov = _job(ci, "coverage-floor")
     end_cov = "check_coverage_floors.py --report coverage.json"
-    cov_steps = cov[cov.index('      - run: pip install -e ".[dev]"'):cov.index(end_cov) + len(end_cov)]
+    start_cov = cov.index('      - run: pip install -e ".[dev]"')
+    cov_steps = cov[start_cov:cov.index(end_cov) + len(end_cov)]
     end_seal = 'echo "::error::could not push the seal after 3 attempts"; exit 1'
     seal_steps = seal[seal.index("      - name: Seal the tested release"):
                       seal.index(end_seal) + len(end_seal)]
