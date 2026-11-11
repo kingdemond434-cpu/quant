@@ -180,6 +180,72 @@
    "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. SNB sells francs (buys euros) on fast franc strength. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
   },
   {
+   "id": "cn_night_session",
+   "class": "retail",
+   "region": "CN",
+   "adapter": "session_window",
+   "tz": "Asia/Shanghai",
+   "start_hour": 21,
+   "end_hour": 2,
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 19,
+   "window": 252,
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XPTUSD"
+   ],
+   "why": "China's commodity night session (21:00-02:30 Beijing; SHFE gold, silver and copper trade it) is where its retail-heavy futures crowd meets the global contract. The direct exchange data is refused or blocked (row cn_dce_czce_gfex_cffex), so this reads the same hours on the desk's own bars: the window's return, its share of the day's movement and of the day's tick volume. H1 bars, so the window is 21:00-02:00. Question for the gauntlet: does a night session that carried an unusual share of the day continue or reverse in Asia and London the next day?"
+  },
+  {
+   "id": "jp_tokyo_fix_window",
+   "class": "corporate_hedger",
+   "region": "JP",
+   "adapter": "session_window",
+   "tz": "Asia/Tokyo",
+   "start_hour": 9,
+   "end_hour": 10,
+   "symbols": [
+    "USDJPY"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 2,
+   "window": 252,
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "AUDJPY"
+   ],
+   "why": "The Tokyo fix (nakane, 09:55 Tokyo) is where Japanese importers, exporters and investment trusts transact dollars; demand bunches on gotobi days. The 09:00-10:00 bar's return and its share of the day's movement and volume is that crowd's footprint on the desk's own bars."
+  },
+  {
+   "id": "uk_london_fix_window",
+   "class": "institutional",
+   "region": "UK",
+   "adapter": "session_window",
+   "tz": "Europe/London",
+   "start_hour": 15,
+   "end_hour": 16,
+   "symbols": [
+    "EURUSD",
+    "GBPUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 17,
+   "window": 252,
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDX"
+   ],
+   "why": "The WM/Refinitiv 4pm London fix is where index funds and asset managers execute benchmark FX orders, heaviest at month end. The hour into the fix (15:00-16:00 London, DST-aware) on the desk's own bars is their footprint: return, share of the day's movement, share of volume."
+  },
+  {
    "id": "snb_sight",
    "class": "central_bank",
    "region": "CH",
@@ -256,7 +322,7 @@
    "class": "retail",
    "region": "CN",
    "adapter": "none",
-   "blocked_by": "Read from the box 2026-11-03 23:13Z (/mnt/project-files/flow/CN_EXCHANGE_TERMS.md): CFFEX 版权声明 requires written authorisation for any non-private or commercial use (REFUSED; licensing via 中金所数据有限公司). DCE and CZCE answer HTTP 412 anti-bot challenges and GFEX 520 to an honest client, from the cloud and the box alike: never bypassed, so their data is unreachable as well as unread. SHFE/INE refused (non-commercial only). Fetcher libs/data/free_stack_cnx.py stays fail-closed. Lawful substitutes in use: Chinese retail forum chatter (cn_weibo/xueqiu/guba, local-language content thread) and the China night-session window (21:00-02:30 BJT = 13:00-18:30 UTC) tested on the desk's own XCUUSD/XAUUSD/XAGUSD/SOYBEAN/CORN/COTTON/SUGAR bars.",
+   "blocked_by": "Read from the box 2026-11-03 23:13Z (/mnt/project-files/flow/CN_EXCHANGE_TERMS.md): CFFEX 版权声明 requires written authorisation for any non-private or commercial use (REFUSED; licensing via 中金所数据有限公司). DCE and CZCE answer HTTP 412 anti-bot challenges and GFEX 520 to an honest client, from the cloud and the box alike: never bypassed, so their data is unreachable as well as unread. SHFE/INE refused (non-commercial only). Fetcher libs/data/free_stack_cnx.py stays fail-closed. Lawful substitutes in use: Chinese retail forum chatter (cn_weibo/xueqiu/guba, local-language content thread) and the China night-session window (21:00-02:30 BJT = 13:00-18:30 UTC) tested on the desk's own XCUUSD/XAUUSD/XAGUSD/SOYBEAN/CORN/COTTON/SUGAR bars. The night-session substitute is live as row cn_night_session.",
    "why": "China's retail-dominated commodity futures (iron ore, rebar, coking coal, soy meal, palm oil, rubber, copper) and their night session lead the global contracts the desk trades."
   },
   {

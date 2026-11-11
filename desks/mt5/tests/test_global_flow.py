@@ -176,7 +176,7 @@ def test_shipped_registry_is_valid_and_gaps_are_named():
         if s["adapter"] == "none":
             assert s.get("blocked_by"), s["id"]
         else:
-            assert s["adapter"] in {*gf.PARSERS, "nse_daily", "cb_hazard"}, s["id"]
+            assert s["adapter"] in {*gf.PARSERS, "nse_daily", "cb_hazard", "session_window"}, s["id"]
             assert s["targets"] and s.get("why")
     cov = gf.coverage(reg)
     assert cov["n_gaps"] == sum(1 for s in reg["sources"] if s["adapter"] == "none")
@@ -244,3 +244,72 @@ def test_cb_hazard_runs_offline_from_desk_bars(tmp_raw):
     assert "usdjpy_hazard" in f.columns
     assert (pd.to_datetime(f["available_time"], utc=True)
             > pd.to_datetime(f["event_time"], utc=True)).all()
+
+
+def _h1(start: str, days: int, seed: int = 7) -> pd.DataFrame:
+    """Broker-stamped H1 bars (New York + 7 h under a UTC label), weekends included."""
+    idx = pd.date_range(start, periods=24 * days, freq="h", tz="UTC")
+    rng = np.random.default_rng(seed)
+    close = 100 * np.exp(np.cumsum(rng.normal(0, 0.001, len(idx))))
+    return pd.DataFrame({"open": np.r_[100.0, close[:-1]], "close": close,
+                         "tick_volume": rng.integers(50, 500, len(idx)).astype(float)},
+                        index=idx)
+
+
+@pytest.mark.parametrize("start", ["2024-01-08", "2024-07-08"])      # US winter and summer
+def test_session_window_reads_the_markets_own_clock(start):
+    from libs.regime import session_clock
+    h1 = _h1(start, 30)
+    w = gf.session_window(h1, "Asia/Shanghai", 21, 2)
+    # Beijing has no DST: 21:00-02:00 there is 13:00-18:00 UTC on every date, whichever
+    # offset the broker stamp carries that week.
+    assert set(w["win_close_utc"].dt.hour) == {18}
+    last = w.index[-1]
+    utc = session_clock.server_to_utc(h1.index).tz_localize(None)
+    inside = (utc >= last + pd.Timedelta(hours=13)) & (utc < last + pd.Timedelta(hours=18))
+    assert inside.sum() == 5
+    seg = h1[inside]
+    assert w["win_ret"].iloc[-1] == pytest.approx(
+        np.log(seg["close"].iloc[-1] / seg["open"].iloc[0]))
+    assert 0 < w["win_path_share"].iloc[-1] < 1 and 0 < w["win_vol_share"].iloc[-1] < 1
+
+
+def test_session_window_follows_local_dst_and_is_causal():
+    h1 = _h1("2024-01-08", 300)
+    w = gf.session_window(h1, "Europe/London", 15, 16)
+    hours = w["win_close_utc"].dt.hour
+    assert set(hours[w.index < "2024-03-25"]) == {16}        # GMT: 16:00 London = 16:00 UTC
+    assert set(hours[(w.index > "2024-04-07") & (w.index < "2024-10-20")]) == {15}    # BST
+    cut = gf.session_window(h1.iloc[: 24 * 200], "Europe/London", 15, 16)
+    both = cut.index.intersection(w.index)
+    pd.testing.assert_frame_equal(cut.loc[both], w.loc[both])     # later bars change nothing
+
+
+def test_session_window_source_is_stamped_after_the_window_closes(tmp_raw):
+    h1 = _h1("2024-01-08", 200)
+    src = {"id": "cn_night_session", "class": "retail", "adapter": "session_window",
+           "tz": "Asia/Shanghai", "start_hour": 21, "end_hour": 2, "symbols": ["XAUUSD", "NOPE"],
+           "targets": ["XAUUSD"], "avail_lag_days": 0, "avail_hour_utc": 19}
+    notes: list = []
+    _, frames = gf.collect(get=None, state={}, notes=notes, registry={"sources": [src]},
+                           bars=lambda s: h1 if s == "XAUUSD" else None,
+                           now=datetime(2024, 11, 1, tzinfo=UTC))
+    f = frames["flow_cn_night_session"]
+    assert {"xauusd_win_ret", "xauusd_win_path_share", "xauusd_win_vol_share"} <= set(f.columns)
+    assert not any("win_close_utc" in c for c in f.columns)
+    lead = pd.to_datetime(f["available_time"], utc=True) - pd.to_datetime(f["event_time"], utc=True)
+    assert (lead >= pd.Timedelta(hours=19)).all()            # the window closed at 18:00 UTC
+    assert {"source": "cn_night_session", "symbol": "NOPE", "status": "NO_BARS"} in notes
+
+
+def test_shipped_session_windows_are_stamped_after_their_close():
+    from zoneinfo import ZoneInfo
+    reg = json.loads(gf.REGISTRY.read_text(encoding="utf-8"))
+    rows = [s for s in reg["sources"] if s["adapter"] == "session_window"]
+    assert {s["id"] for s in rows} >= {"cn_night_session"}
+    for s in rows:
+        assert s["avail_lag_days"] == 0
+        for day in ("2024-01-15", "2024-07-15"):                  # both DST states
+            end = datetime.fromisoformat(f"{day}T{int(s['end_hour']):02d}:00").replace(
+                tzinfo=ZoneInfo(s["tz"])).astimezone(UTC)
+            assert s["avail_hour_utc"] > end.hour, s["id"]
