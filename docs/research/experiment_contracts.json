@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "asia_completion_audit": {
+   "hypothesis": "Re-deriving every ASIA directive requirement's rung on the 13-state ladder from what the organs actually wrote (pack cells, alt-proxy gain tests, free-stack yield, collector, runtime attestation) turns the directive's progress from the audit's word into a measured census, so the rows still UNMEASURED fall as their evidence artifacts land.",
+   "metric": {
+    "gain": "PRODUCTIVITY",
+    "metric": "census.UNMEASURED",
+    "better": "down",
+    "organ": "report:ASIA_COMPLETION_AUDIT.json"
+   },
+   "falsifier": {
+    "metric": "n_items",
+    "op": "==",
+    "threshold": 0,
+    "after": "48h on the trading box: no requirement was graded (the vendored requirement file is absent or malformed), so the audit measures nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
