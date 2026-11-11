@@ -740,7 +740,10 @@ def _graph_state(families: set[str] | None = None
     fams = {f for f in (families or set()) if f}
     if not fams:
         return set(), {}, "no live family to read the graph for"
-    keys = [json.dumps(f).encode("utf-8") for f in sorted(fams)]
+    # Both spellings of the quoted name: json.dumps escapes non-ASCII by default, a writer with
+    # ensure_ascii=False does not. The parsed-row check below is what decides; this only skips.
+    keys = sorted({k for f in fams for k in (json.dumps(f).encode("utf-8"),
+                                             json.dumps(f, ensure_ascii=False).encode("utf-8"))})
     existing: set[str] = set()
     grid: dict[str, dict[str, set[float]]] = {}
     seen = parsed = 0

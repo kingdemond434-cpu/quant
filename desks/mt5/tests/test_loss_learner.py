@@ -435,3 +435,22 @@ def test_the_graph_is_streamed_for_live_families_only(
     assert grid == {"breakout": {"rr": [1.5, 2.0], "ttl_bars": [8.0]}}
     assert note.startswith("5 graph rows streamed, 2 parsed")
     assert LL._graph_state(set())[0] == set()
+
+
+def test_streamed_graph_state_equals_the_full_load_for_a_family(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research.hypothesis_graph import Graph
+    from research import survivor_distiller as sd
+    rows = [{"id": f"n{i}", "family": fam, "params": {"rr": 1.0 + i % 4, "stop_atr": 0.5 * i}}
+            for i, fam in enumerate(["breakout", "carry", "breakout", "\u00e9t\u00e9", "breakout"])]
+    g = tmp_path / "graph.jsonl"
+    # the non-ASCII family is written raw (ensure_ascii=False), the rest escaped
+    g.write_text("\n".join(json.dumps(r, ensure_ascii=(i != 3)) for i, r in enumerate(rows))
+                 + "\n", "utf-8")
+    monkeypatch.setattr(sd, "GRAPH", g)
+    full = Graph(g).rows()
+    for fam in ("breakout", "\u00e9t\u00e9"):
+        mine = [r for r in full if r.get("family") == fam]
+        existing, grid, _ = LL._graph_state({fam})
+        assert existing == set(sd._current(mine))
+        assert grid == sd.grid_values(mine)
