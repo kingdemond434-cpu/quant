@@ -1,6 +1,6 @@
 {
- "generated_utc": "2026-11-11T09:05:03+00:00",
- "at": "2026-11-11T09:05:03+00:00",
+ "generated_utc": "2026-11-11T10:59:25+00:00",
+ "at": "2026-11-11T10:59:25+00:00",
  "host": "vmi3571445",
  "trading_host": "vmi3571445",
  "machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
@@ -148,7 +148,7 @@
   "S20": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "age_h": 0.17,
+   "age_h": 0.09,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -169,7 +169,7 @@
   "S23": {
    "ok": true,
    "artifact": "desks/mt5/reports/EXECUTION_SCIENCE.json",
-   "age_h": 1.55,
+   "age_h": 1.73,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -224,7 +224,7 @@
   "S32": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "age_h": 0.17,
+   "age_h": 0.09,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -263,7 +263,7 @@
   "S38": {
    "ok": true,
    "artifact": "desks/mt5/reports/REPLICATION.json",
-   "age_h": 2.38,
+   "age_h": 4.28,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -328,19 +328,19 @@
   "ONLINE_FDR_ROWS": {
    "exists": true,
    "bytes": 3021463,
-   "sha256": "a4cde3d0a9d2574c299a1210c060e7665cbe6243b05929ff046cb3c50702534c",
-   "stamp": "2026-11-11T08:06:36+00:00",
+   "sha256": "fb37d6ba5b29c44fb5e7e58cb2ecd8ed808a179c461f595b11f0666091b460d4",
+   "stamp": "2026-11-11T10:01:26+00:00",
    "head": {
-    "generated_utc": "2026-11-11T08:06:36.125930+00:00",
+    "generated_utc": "2026-11-11T10:01:26.928806+00:00",
     "n_over_budget": 500,
     "n_certified": 7459
    }
   },
   "IMMUNE": {
    "exists": true,
-   "bytes": 8176,
-   "sha256": "9bed6f48f7fa7cda98424b074bf025a97ba4546a08ce1335bbcacd48b8d1ca92",
-   "stamp": "2026-11-11T08:06:36+00:00",
+   "bytes": 8284,
+   "sha256": "354e4c5d62af9935751a4717908821577434894fd74a71319056cd9a330c8185",
+   "stamp": "2026-11-11T10:01:26+00:00",
    "head": {
     "n_score": 6,
     "n_production": 11,
@@ -352,8 +352,8 @@
     "floor": 0.9,
     "n_validator": 20,
     "n_metric": 9,
-    "generated_utc": "2026-11-11T08:06:36.125930+00:00",
-    "seconds": 66.877
+    "generated_utc": "2026-11-11T10:01:26.928806+00:00",
+    "seconds": 64.796
    }
   },
   "allocator_tilts": {
@@ -377,12 +377,12 @@
   },
   "door_verdicts": {
    "exists": true,
-   "bytes": 1849385,
-   "sha256": "df2a366655079684f4207ee06d073f0d0204b62ae8f54ee018487a118de3ca2f",
-   "stamp": "2026-11-11T08:55:05+00:00",
+   "bytes": 1850411,
+   "sha256": "29c3ddbd9deedbbcf2dd7a501fb10bfc693708373588d69d833f5c3a0f457548",
+   "stamp": "2026-11-11T10:54:18+00:00",
    "head": {
-    "generated_utc": "2026-11-11T08:55:05.187860+00:00",
-    "n_rows": 7459,
+    "generated_utc": "2026-11-11T10:54:18.739579+00:00",
+    "n_rows": 7463,
     "consumer": "libs/tiers/promotion_authority.py block()"
    }
   },
@@ -392,10 +392,10 @@
   "live_door": {
    "exists": true,
    "bytes": 185,
-   "sha256": "1832cf4a92c0a52022c751a4c48e7d92112b995f0696b3a17e3316793ce7f785",
-   "stamp": "2026-11-11T08:55:05+00:00",
+   "sha256": "2d51a0c3d2bd32c96b62f21453a643d0e123dfe537cf100202dd47a3f8e2e823",
+   "stamp": "2026-11-11T10:54:18+00:00",
    "head": {
-    "generated_utc": "2026-11-11T08:55:05.187860+00:00",
+    "generated_utc": "2026-11-11T10:54:18.739579+00:00",
     "n_live": 0,
     "n_rows": 0,
     "consumer": "research/promoter.py automatic retirement (desktop batch: promoter.py is sealed)"
@@ -404,12 +404,12 @@
   "PROMOTION_FREEZE": {
    "exists": true,
    "bytes": 389,
-   "sha256": "186e4eccbd5dd589acffb9df597871b1598a8b19a31bb7cb072f59ba9a95c375",
-   "stamp": "2026-11-11T08:12:16+00:00",
+   "sha256": "59a25077529457bfc279db93582788c0bcfaed221936f058a537f6cc841993cb",
+   "stamp": "2026-11-11T10:04:28+00:00",
    "head": {
     "verdict": "OK",
     "why": null,
-    "at": "2026-11-11T08:06:36.125930+00:00",
+    "at": "2026-11-11T10:01:26.928806+00:00",
     "judge": "production:f56bc72fc5532a67",
     "consumer": "research/promoter.py tier_s_block (libs/tiers/promotion_authority.py): a production-judged DROP withholds new live rows",
     "immune_score": 1.0,
