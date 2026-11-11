@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "executable_book": {
+   "hypothesis": "Scoring the venue-executable book (lots rounded to the venue grid, sub-minimum targets dropped) against the continuous book shows how much E[log W] the lot grid costs, and labels heat, notional, margin and reserved heat as distinct quantities.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_booked",
+    "better": "up",
+    "organ": "report:EXECUTABLE_BOOK.json"
+   },
+   "falsifier": {
+    "metric": "n_booked",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days: the leg never measured a booked sleeve on the trading box"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
