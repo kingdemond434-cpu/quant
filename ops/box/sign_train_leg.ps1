@@ -188,7 +188,7 @@ try {
     # Every branch tip, once: a head is signed only while a branch still points at it.
     $tips = (& git ls-remote "https://github.com/$Repo.git" 'refs/heads/*' 2>$null)
     if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed ($LASTEXITCODE)" }
-    $pick = $null; $prBranch = $null
+    $pick = $null; $prBranch = $null; $carrierTip = $null
     foreach ($h in $heads) {
         $branch = "claude/sign-train-$($h.Substring(0, 12))"
         if ((GhCount @('pr', 'list', '-R', $Repo, '--head', $branch, '--state', 'closed', '--json', 'mergedAt', '--jq', '[.[] | select(.mergedAt == null)] | length')) -ne 0) {
@@ -202,17 +202,52 @@ try {
             if ((GhLines @('pr', 'list', '-R', $Repo, '--head', $b, '--base', $Live, '--state', 'open', '--json', 'headRefOid', '--jq', '.[].headRefOid')) -contains $h) { $pick = $h; $prBranch = $b; break }
         }
         if ($pick) { break }
-        Say "no open PR into LIVE points at $($h.Substring(0, 9)) any more; skipped"
+        # SEAL CARRIER (Auditor ruling 13:12Z): the pre-push gate keeps unsigned sealed bytes off
+        # every branch, so a cleared head may ride claude/seal-carrier-<h12> as a bundle + patch.
+        # Its open PR into LIVE must point at the carrier's exact tip; it never merges.
+        $cb = "claude/seal-carrier-$($h.Substring(0, 12))"
+        foreach ($t in $tips) {
+            if ("$t" -notmatch '^([0-9a-f]{40})\s+refs/heads/([A-Za-z0-9._/-]+)$' -or $Matches[2] -ne $cb) { continue }
+            $ct = $Matches[1]
+            if ((GhLines @('pr', 'list', '-R', $Repo, '--head', $cb, '--base', $Live, '--state', 'open', '--json', 'headRefOid', '--jq', '.[].headRefOid')) -contains $ct) { $pick = $h; $prBranch = $cb; $carrierTip = $ct }
+            break
+        }
+        if ($pick) { break }
+        Say "no open PR into LIVE points at $($h.Substring(0, 9)) or carries it any more; skipped"
     }
     if (-not $pick) { Beat 0 "live@${liveShort}: $($heads.Count) cleared head(s), none still a PR head"; exit 0 }
     $head = $pick
     $short = $head.Substring(0, 9)
     $branch = "claude/sign-train-$($head.Substring(0, 12))"
 
-    # G10: the PR head by its branch ref, never refs/pull/*/merge.
+    # G10: the PR head (or its carrier) by its branch ref, never refs/pull/*/merge.
+    $watch = $head; if ($carrierTip) { $watch = $carrierTip }
     & git -C $Clone fetch -q --no-tags origin "+refs/heads/${prBranch}:refs/remotes/pr/${prBranch}" 2>&1 | ForEach-Object { Say "fetch pr: $_" }
     if ($LASTEXITCODE -ne 0) { throw "git fetch of the PR branch failed ($LASTEXITCODE)" }
-    if ((& git -C $Clone rev-parse "refs/remotes/pr/$prBranch").Trim() -ne $head) { Wait $branch "the PR branch moved off $short while fetched; next run"; exit 0 }
+    if ((& git -C $Clone rev-parse "refs/remotes/pr/$prBranch").Trim() -ne $watch) { Wait $branch "the PR branch moved off $($watch.Substring(0, 9)) while fetched; next run"; exit 0 }
+
+    # G2 for every child: no App token and no App header; only LIVE's code runs.
+    $savedTok = $env:GH_TOKEN; $savedCount = $env:GIT_CONFIG_COUNT
+    if ($carrierTip) {
+        # The carrier is re-judged by LIVE's train with LIVE's proven record, the same checks
+        # as the push fence, and only then is its head fetched (refs/carriers/<head>).
+        Remove-Item -LiteralPath env:GH_TOKEN -ErrorAction SilentlyContinue
+        $env:GIT_CONFIG_COUNT = $ownConfig
+        $carried = $null
+        Push-Location -LiteralPath $Clone
+        try {
+            & $Python -I -B -u "scripts\sign_train.py" --carrier $carrierTip 2>&1 | ForEach-Object {
+                $l = "$_".Trim()
+                if ($l -match '^[0-9a-f]{40}$') { $carried = $l } elseif ($l) { Say "carrier@$short $l" }
+            }
+            $rc = $LASTEXITCODE
+        } finally {
+            Pop-Location
+            if ($savedTok) { $env:GH_TOKEN = $savedTok }
+            $env:GIT_CONFIG_COUNT = $savedCount
+        }
+        if ($rc -ne 0 -or $carried -ne $head) { Beat 2 "carrier@$short refused (rc=$rc)"; exit 2 }
+    }
 
     # The PR head as DATA: a fresh detached worktree, replaced every run.
     if (Test-Path -LiteralPath $PrDir) {
@@ -224,7 +259,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "git worktree add failed ($LASTEXITCODE)" }
 
     # G2: the train's child holds no App token and no App header; it runs only LIVE's code.
-    $savedTok = $env:GH_TOKEN; $savedCount = $env:GIT_CONFIG_COUNT
     Remove-Item -LiteralPath env:GH_TOKEN -ErrorAction SilentlyContinue
     $env:GIT_CONFIG_COUNT = $ownConfig
     Push-Location -LiteralPath $Clone
@@ -261,7 +295,7 @@ try {
             if ($Matches[2] -eq $prBranch) { $nowPr = $Matches[1] } elseif ($Matches[2] -eq $Live) { $nowLive = $Matches[1] }
         }
     }
-    if ($nowPr -ne $head) { Wait $branch "the PR branch moved off $short before the push; nothing pushed"; exit 0 }
+    if ($nowPr -ne $watch) { Wait $branch "the PR branch moved off $short before the push; nothing pushed"; exit 0 }
     if ($nowLive -ne $live) { Wait $branch "LIVE moved off $liveShort before the push; nothing pushed, next run"; exit 0 }
 
     # The lease is the branch as git listed it at the start, or absent (v3 SF): a branch that
@@ -276,6 +310,18 @@ try {
     $pr = (& $Gh pr create -R $Repo --base $Live --head $branch --title "Sign train at $($head.Substring(0, 12))" --body-file $bodyFile 2>&1 | Out-String)
     if ($LASTEXITCODE -ne 0) { throw "gh pr create failed: $($pr.Trim())" }
     Say "opened $($pr.Trim())"
+    if ($carrierTip) {
+        # The carrier's job is done: H+1 is signed and has its own PR. Close the carrier (it
+        # never merges) and write the ledger row. Numbers only reach gh's argv.
+        $err = Join-Path $LogDir "sign_train_gh.err"
+        $nums = @((& $Gh pr list -R $Repo --head $prBranch --base $Live --state open --json number --jq '.[].number' 2>$err | Out-String) -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' })
+        foreach ($n in $nums) {
+            & $Gh pr close $n -R $Repo 2>&1 | ForEach-Object { Say "close carrier #${n}: $_" }
+            if ($LASTEXITCODE -ne 0) { Say "carrier #$n not closed ($LASTEXITCODE); the CI fence still refuses its merge" }
+        }
+        $row = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); head = $head; carrier_branch = $prBranch; carrier_tip = $carrierTip; carrier_prs = @($nums); sign_branch = $branch; live = $live }
+        [System.IO.File]::AppendAllText((Join-Path $LogDir "seal_carriers.jsonl"), (($row | ConvertTo-Json -Compress) + "`n"), (New-Object System.Text.UTF8Encoding($false)))
+    }
     Beat 0 "signed PR head $short ($prBranch): $($pr.Trim())"
     exit 0
 } catch {

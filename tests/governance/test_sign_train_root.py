@@ -205,3 +205,129 @@ def test_static_qb002_reads_the_rotation_rule() -> None:
     assert st.static_qb002(src, after, {GAUNTLET: A}, st.AUDITOR, wrong_signer) != []
     lost_from = after.replace(st._constants(src)["GAUNTLET_SEAL_ROTATION"]["from"], "0" * 64)
     assert st.static_qb002(src, lost_from, {GAUNTLET: A}, st.AUDITOR, good) != []
+
+
+# ------------------------------------------------------------------ seal carriers
+CSPEC = importlib.util.spec_from_file_location(
+    "check_seal_carriers", ROOT / "scripts" / "check_seal_carriers.py"
+)
+assert CSPEC and CSPEC.loader
+fence = importlib.util.module_from_spec(CSPEC)
+CSPEC.loader.exec_module(fence)
+
+
+def _carrier(repo: dict[str, object]) -> tuple[Path, str, bytes, bytes]:
+    """LIVE with the head's CLEAR row landed, the head as bundle bytes and patch bytes."""
+    live, head, sha, base = repo["live"], repo["head"], repo["sha"], repo["base"]
+    assert isinstance(live, Path) and isinstance(head, str) and isinstance(sha, str)
+    assert isinstance(base, str)
+    _land_row(live, _row(sha, head))
+    out = live.parent / "c.bundle"
+    _git(live, "bundle", "create", str(out), "claude/judge", f"^{base}")
+    return live, head, out.read_bytes(), st.carrier_patch(live, head)
+
+
+def _fresh_clone(repo: dict[str, object], name: str) -> Path:
+    """A clone that has LIVE but has never seen the judge branch (the pusher's or the box's)."""
+    live = repo["live"]
+    assert isinstance(live, Path)
+    dst = live.parent / name
+    _git(
+        live.parent,
+        "clone",
+        "-q",
+        "--no-local",
+        "--single-branch",
+        "-b",
+        "LIVE",
+        str(live),
+        str(dst),
+    )
+    for k, v in (("user.name", "t"), ("user.email", "t@t.invalid"), ("core.autocrlf", "false")):
+        _git(dst, "config", k, v)
+    return dst
+
+
+def test_a_good_carrier_holds_and_fetches_only_when_asked(repo: dict[str, object]) -> None:
+    _live, head, bundle, patch = _carrier(repo)
+    clone = _fresh_clone(repo, "pusher")
+    tip = _git(clone, "rev-parse", "HEAD")
+    clears = (clone / st.SEAL_CLEARS).read_text("utf-8")
+    assert st.carrier_problems(clone, bundle, patch, head, tip, clears) == []
+    assert subprocess.run(("git", "cat-file", "-e", head), cwd=clone).returncode != 0
+    assert st.carrier_problems(clone, bundle, patch, head, tip, clears, keep=clone) == []
+    assert _git(clone, "rev-parse", f"refs/carriers/{head}") == head
+
+
+@pytest.mark.parametrize("flaw", ["patch", "row", "bytes", "tip", "train_file"])
+def test_a_flawed_carrier_is_refused(repo: dict[str, object], flaw: str) -> None:
+    live, head, bundle, patch = _carrier(repo)
+    clone = _fresh_clone(repo, "pusher")
+    tip = _git(clone, "rev-parse", "HEAD")
+    clears = (clone / st.SEAL_CLEARS).read_text("utf-8")
+    if flaw == "patch":
+        patch = patch + b"\n"
+    elif flaw == "row":
+        clears = ""
+    elif flaw == "bytes":
+        clears = _row(A, head)
+    elif flaw == "tip":
+        head = "0" * 40
+    elif flaw == "train_file":
+        pr = repo["pr"]
+        assert isinstance(pr, Path)
+        with (pr / st.QUANTBENCH).open("a", encoding="utf-8") as fh:
+            fh.write("# planted\n")
+        _git(pr, "commit", "-q", "-am", "touch quantbench")
+        h2 = _git(pr, "rev-parse", "HEAD")
+        _git(live, "update-ref", "refs/heads/claude/judge2", h2)
+        out = live.parent / "c2.bundle"
+        _git(live, "bundle", "create", str(out), "claude/judge2", f"^{head}")
+        bundle, head = out.read_bytes(), h2
+        _git(clone, "fetch", "-q", str(live), "claude/judge")  # its parent is then present
+        patch = st.carrier_patch(live, h2)
+        clears = _row(str(repo["sha"]), h2)
+    assert st.carrier_problems(clone, bundle, patch, head, tip, clears) != []
+
+
+def test_the_fence_judges_carriers_and_refuses_them_under_ci(repo: dict[str, object]) -> None:
+    _live, head, bundle, patch = _carrier(repo)
+    clone = _fresh_clone(repo, "pusher")
+    _git(clone, "update-ref", f"refs/remotes/origin/{fence.LIVE}", _git(clone, "rev-parse", "HEAD"))
+    assert fence.judge(clone, ci=False)["verdict"] == "PASS"
+    folder = clone / st.CARRIERS
+    folder.mkdir(parents=True)
+    (folder / f"{head}.bundle").write_bytes(bundle)
+    (folder / f"{head}.patch").write_bytes(patch)
+    assert fence.judge(clone, ci=False)["verdict"] == "PASS"
+    assert fence.judge(clone, ci=True)["verdict"] == "BREACH"
+    (folder / f"{head}.patch").write_bytes(patch + b"x")
+    assert fence.judge(clone, ci=False)["verdict"] == "BREACH"
+    (folder / f"{head}.patch").unlink()
+    assert fence.judge(clone, ci=False)["verdict"] == "BREACH"  # a bundle alone is refused
+    _git(clone, "update-ref", "-d", f"refs/remotes/origin/{fence.LIVE}")
+    (folder / f"{head}.patch").write_bytes(patch)
+    assert fence.judge(clone, ci=False)["verdict"] == "BREACH"  # no LIVE ref: unjudged
+
+
+def test_the_leg_reads_a_carrier_commit_and_signs_its_head(repo: dict[str, object]) -> None:
+    live, head, bundle, patch = _carrier(repo)
+    box = _fresh_clone(repo, "box")
+    # the carrier branch: LIVE plus the two data files, committed in another clone
+    _git(live, "checkout", "-q", "-b", "claude/seal-carrier")
+    folder = live / st.CARRIERS
+    folder.mkdir(parents=True)
+    (folder / f"{head}.bundle").write_bytes(bundle)
+    (folder / f"{head}.patch").write_bytes(patch)
+    _git(live, "add", st.CARRIERS)
+    _git(live, "commit", "-q", "-m", "carrier")
+    carrier = _git(live, "rev-parse", "HEAD")
+    _git(live, "checkout", "-q", "LIVE")
+    _git(box, "fetch", "-q", "origin", "claude/seal-carrier")
+    r = _train(box, "--carrier", carrier)
+    assert r.returncode == 0 and r.stdout.strip() == head, r.stdout + r.stderr
+    pr = box.parent / "box-pr"
+    _git(box, "worktree", "add", "-q", "--detach", str(pr), head)
+    s = _train(box, "--root", str(pr), "--target", head)
+    assert s.returncode == 0, s.stdout + s.stderr
+    assert st.train_commit_problems(pr, head, _git(pr, "rev-parse", "HEAD")) == []

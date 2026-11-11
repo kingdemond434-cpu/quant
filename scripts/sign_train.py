@@ -35,6 +35,7 @@ and a train that signs only LIVE's head never has anything to sign. `--root <che
 PR head instead, with every guard of that read:
 
     python scripts/sign_train.py --list-heads                       # heads LIVE's rows name
+    python scripts/sign_train.py --write-carrier <one-tip bundle>   # a seal carrier, as data
     python scripts/sign_train.py --root <pr checkout> --target <40-hex PR head>
 
   G1  This file and check_immutable_evaluator.py run from LIVE's checkout (this file's own
@@ -553,6 +554,224 @@ def sign_root(root: Path, target: str, live_head: str) -> int:
     return 0
 
 
+# ------------------------------------------------------------------ seal carriers
+#: A CLEARED HEAD THAT NO BRANCH CAN HOLD (2026-11-11, Auditor ruling 13:12Z). The pre-push law
+#: gate refuses unsigned sealed bytes from every clone, so a cleared head H can never reach a
+#: branch for the train to find. A CARRIER does: a branch commits H as a git bundle (one tip, H)
+#: plus `git format-patch` of H, here. The bytes are inert data in the tree, the law fence
+#: (scripts/check_seal_carriers.py) judges the carrier itself on every push, the leg re-checks it
+#: with LIVE's code before G1-G10 run unchanged, and the carrier never merges: under CI the same
+#: fence refuses any tree that holds one, so LIVE never does.
+CARRIERS = "desks/mt5/data/seal_carriers"
+CARRIER_NAME = re.compile(r"([0-9a-f]{40})\.(bundle|patch)")
+#: `git format-patch` pinned so two hosts produce the same bytes for the same commit.
+_PATCH_ARGS = (
+    "-c", "core.quotePath=true", "-c", "diff.noprefix=false", "-c", "diff.mnemonicPrefix=false",
+    "-c", "diff.relative=false", "-c", "diff.algorithm=myers", "-c", "diff.renames=false",
+    "-c", "format.signature=", "-c", "i18n.logOutputEncoding=UTF-8",
+    "format-patch", "-1", "--stdout", "-p", "--no-signature", "--full-index", "--binary",
+    "--no-renames", "-U3", "--encoding=UTF-8",
+)  # fmt: skip
+
+
+def carrier_patch(cwd: Path, head: str) -> bytes:
+    """The exact bytes a carrier's <H>.patch must hold."""
+    return subprocess.run(
+        ("git", *_PATCH_ARGS, head), cwd=cwd, capture_output=True, check=True
+    ).stdout
+
+
+def carrier_heads(names: list[str]) -> tuple[list[str], list[str]]:
+    """(heads with both files, problems) from the file names in the carriers folder."""
+    seen: dict[str, set[str]] = {}
+    problems = []
+    for n in sorted(names):
+        m = CARRIER_NAME.fullmatch(n)
+        if not m:
+            problems.append(f"{CARRIERS}/{n} is not <40-hex>.bundle or <40-hex>.patch")
+            continue
+        seen.setdefault(m.group(1), set()).add(m.group(2))
+    for h, kinds in seen.items():
+        if kinds != {"bundle", "patch"}:
+            problems.append(f"{CARRIERS}/{h}: wants both .bundle and .patch, has {sorted(kinds)}")
+    return sorted(h for h, kinds in seen.items() if kinds == {"bundle", "patch"}), problems
+
+
+def _objects_dir(cwd: Path) -> Path:
+    common = Path(_git_in(cwd, "rev-parse", "--git-common-dir"))
+    return (common if common.is_absolute() else (cwd / common)).resolve() / "objects"
+
+
+def carrier_problems(
+    cwd: Path,
+    bundle: bytes,
+    patch: bytes,
+    head: str,
+    live: str,
+    clears_text: str,
+    keep: Path | None = None,
+) -> list[str]:
+    """Why this carrier of `head` is refused; empty when every condition holds.
+
+    1. The bundle has exactly one tip, and it is `head`; `head` has one parent, an ancestor of
+       `live`. 2. SEAL_CLEARS rows (LIVE's, `clears_text`) name `head`, and the sealed paths
+       `head` changes are exactly those rows, each blob's full sha256 equal to its row (G4,
+       DENIED and NO_ROTATION too); the train's own files are untouched. 3. The patch is
+       byte-identical to `git format-patch` of `head`. The bundle is unpacked into a scratch
+       repository borrowing `cwd`'s objects, so `cwd` gains nothing unless `keep` is given:
+       then `head` is fetched into `cwd` as refs/carriers/<head> once every check holds.
+    """
+    import shutil
+    import tempfile
+
+    if not HEX40.fullmatch(head):
+        return [f"{head!r} is not a 40-hex head"]
+    tmp = Path(tempfile.mkdtemp(prefix="seal-carrier-"))
+    try:
+        bfile = tmp / f"{head}.bundle"
+        bfile.write_bytes(bundle)
+        heads = subprocess.run(
+            ("git", "bundle", "list-heads", str(bfile)),
+            cwd=cwd, capture_output=True, text=True, check=False,
+        )  # fmt: skip
+        tips = [ln.split() for ln in heads.stdout.splitlines() if ln.strip()]
+        if heads.returncode != 0 or len(tips) != 1 or tips[0][0] != head or len(tips[0]) != 2:
+            return [f"the bundle must hold exactly one tip, {head[:12]}: {heads.stdout.strip()!r}"]
+        repo = tmp / "repo"
+        nohooks = tmp / "nohooks"  # no git call here runs a hook, in the scratch repo or `keep`
+        nohooks.mkdir()
+        hooks_off = f"core.hooksPath={nohooks.as_posix()}"
+        _git_in(tmp, "-c", hooks_off, "init", "-q", "--bare", str(repo))
+        (repo / "objects" / "info" / "alternates").write_text(
+            str(_objects_dir(cwd)) + "\n", "utf-8"
+        )
+        got = subprocess.run(
+            ("git", "-c", hooks_off, "fetch", "-q", "--no-tags", str(bfile),
+             f"{tips[0][1]}:refs/carrier"),
+            cwd=repo, capture_output=True, text=True, check=False,
+        )  # fmt: skip
+        if got.returncode != 0:
+            return [
+                f"the bundle does not unpack here (is its parent on LIVE?): {got.stderr.strip()}"
+            ]
+        if _git_in(repo, "rev-parse", "refs/carrier") != head:
+            return ["the bundle's tip is not the named head"]
+        parents = _git_in(repo, "rev-list", "--parents", "-n", "1", head).split()[1:]
+        if len(parents) != 1:
+            return [f"{head[:12]} has {len(parents)} parents, not one"]
+        if not _is_ancestor(repo, parents[0], live):
+            return [
+                f"{head[:12]}'s parent {parents[0][:12]} is not an ancestor of LIVE {live[:12]}"
+            ]
+        problems = []
+        changed = _git_in(
+            repo, "diff", "--name-only", "--no-renames", parents[0], head
+        ).splitlines()
+        owned = sorted(set(changed) & set(TRAIN_OWNED))
+        if owned:
+            problems.append(f"{head[:12]} changes the train's own files: {owned}")
+        sealed = json.loads(_git_in(repo, "show", f"{live}:{MANIFEST}")).get("files") or {}
+        moved = {}
+        for rel in changed:
+            if rel not in sealed:
+                continue
+            blob = subprocess.run(
+                ("git", "cat-file", "blob", f"{head}:{rel}"), cwd=repo, capture_output=True,
+                check=False,
+            )  # fmt: skip
+            moved[rel] = (
+                hashlib.sha256(blob.stdout.replace(b"\r\n", b"\n")).hexdigest()
+                if blob.returncode == 0
+                else "<absent>"
+            )
+        if not moved:
+            problems.append(f"{head[:12]} moves no sealed file: nothing to carry")
+        problems += [f"{p} has no QB-002 rotation constant" for p in moved if p in NO_ROTATION]
+        try:
+            rows = head_clears(clears_text, head)
+        except ValueError as exc:
+            return [str(exc)]
+        if not rows:
+            problems.append(f"no SEAL_CLEARS row on LIVE names head {head[:12]}")
+        problems += binding_problems(moved, rows)
+        if carrier_patch(repo, head) != patch:
+            problems.append(f"{head}.patch is not byte-identical to `git format-patch` of the head")
+        if not problems and keep is not None:
+            r = subprocess.run(
+                ("git", "-c", hooks_off, "fetch", "-q", "--no-tags", str(bfile),
+                 f"{tips[0][1]}:refs/carriers/{head}"),
+                cwd=keep, capture_output=True, text=True, check=False,
+            )  # fmt: skip
+            if r.returncode != 0:
+                problems.append(f"the checked carrier could not be fetched: {r.stderr.strip()}")
+        return problems
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def make_carrier(bundle_file: Path) -> str:
+    """Write CARRIERS/<H>.bundle and <H>.patch into this tree from a one-tip bundle; returns H.
+
+    The writer of a carrier, so its patch is made by the same pinned `git format-patch` the
+    fence compares against. It does not judge the carrier: the push fence does that.
+    """
+    import shutil
+    import tempfile
+
+    out = _git("bundle", "list-heads", str(bundle_file)).splitlines()
+    tips = [ln.split() for ln in out if ln.strip()]
+    if len(tips) != 1 or len(tips[0]) != 2 or not HEX40.fullmatch(tips[0][0]):
+        raise ValueError(f"the bundle must hold exactly one tip: {out}")
+    head, ref = tips[0]
+    tmp = Path(tempfile.mkdtemp(prefix="seal-carrier-"))
+    try:
+        nohooks = tmp / "nohooks"
+        nohooks.mkdir()
+        hooks_off = f"core.hooksPath={nohooks.as_posix()}"
+        repo = tmp / "repo"
+        _git_in(tmp, "-c", hooks_off, "init", "-q", "--bare", str(repo))
+        (repo / "objects" / "info" / "alternates").write_text(
+            str(_objects_dir(ROOT)) + "\n", "utf-8"
+        )
+        _git_in(repo, "-c", hooks_off, "fetch", "-q", "--no-tags", str(bundle_file.resolve()),
+                f"{ref}:refs/carrier")  # fmt: skip
+        patch = carrier_patch(repo, head)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    folder = ROOT / CARRIERS
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / f"{head}.bundle").write_bytes(bundle_file.read_bytes())
+    (folder / f"{head}.patch").write_bytes(patch)
+    return head
+
+
+def carrier_at(commit: str, live: str) -> tuple[str | None, list[str]]:
+    """The leg's re-check of the carrier committed at `commit` (LIVE's code, LIVE's proven
+    record): (head, problems). On success `head` is fetched as refs/carriers/<head>."""
+    names = [
+        Path(n).name
+        for n in _git("ls-tree", "--name-only", f"{commit}:{CARRIERS}").splitlines()
+        if n.strip()
+    ]
+    heads, problems = carrier_heads(names)
+    if problems or len(heads) != 1:
+        return None, problems or [f"a carrier commit holds exactly one head, not {len(heads)}"]
+    head = heads[0]
+
+    def blob(ext: str) -> bytes:
+        return subprocess.run(
+            ("git", "cat-file", "blob", f"{commit}:{CARRIERS}/{head}.{ext}"),
+            cwd=ROOT, capture_output=True, check=True,
+        ).stdout  # fmt: skip
+
+    try:
+        clears = _committed_clears(live)
+    except ValueError as exc:
+        return None, [str(exc)]
+    bad = carrier_problems(ROOT, blob("bundle"), blob("patch"), head, live, clears, keep=ROOT)
+    return (None, bad) if bad else (head, [])
+
+
 def list_heads(live_head: str) -> list[str]:
     """PR heads LIVE's record clears that LIVE does not already contain (G3)."""
     text = _committed_clears(live_head)
@@ -591,6 +810,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     if argv is None:
         argv = sys.argv[1:]
+    if "--write-carrier" in argv:
+        i = argv.index("--write-carrier")
+        try:
+            h = make_carrier(Path(argv[i + 1]))
+        except (IndexError, ValueError, subprocess.CalledProcessError) as exc:
+            print(f"REFUSED: {exc}")
+            return 2
+        print(
+            f"wrote {CARRIERS}/{h}.bundle and .patch; commit them on claude/seal-carrier-{h[:12]}"
+        )
+        return 0
+    if "--carrier" in argv:
+        i = argv.index("--carrier")
+        commit = argv[i + 1] if i + 1 < len(argv) else ""
+        if not HEX40.fullmatch(commit):
+            print("REFUSED: --carrier wants the carrier branch's 40-hex tip")
+            return 2
+        head, bad = carrier_at(commit, _git("rev-parse", "HEAD"))
+        if head is None:
+            print("REFUSED: carrier at " + commit[:12] + ":\n  " + "\n  ".join(bad))
+            return 2
+        print(head)
+        return 0
     if "--list-heads" in argv:
         live = _git("rev-parse", "HEAD")
         try:

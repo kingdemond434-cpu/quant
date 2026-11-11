@@ -761,6 +761,10 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert "is not empty; no git call runs" in ps
     assert 'Wait $branch "the PR branch moved off $short before the push' in ps  # G5
     assert "Python314" in ps and ".venv" not in ps  # BH2
+    # SEAL CARRIER (Auditor 13:12Z): re-judged by LIVE's train before G1-G10, then closed + ledgered
+    assert '"claude/seal-carrier-$($h.Substring(0, 12))"' in ps
+    assert ps.index("--carrier $carrierTip") < ps.index("--root $PrDir --target $head")
+    assert "$gh pr close $n" in ps.replace("& $Gh", "$gh") and "seal_carriers.jsonl" in ps
 
 
 def test_live_first_stops_at_its_budget_and_loses_nothing(

@@ -178,6 +178,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # this runs the train's own parser and append-only check so a garbled row or a dropped HOLD
     # fails the push that commits it. A shallow clone reads UNMEASURED and passes.
     ("check_seal_clears.py", ()),
+    # THE SEAL CARRIER (Auditor ruling 2026-11-11 13:12Z). A cleared head with unsigned sealed
+    # bytes rides a branch only as data, desks/mt5/data/seal_carriers/<H>.bundle + <H>.patch, and
+    # this judges each one with the sign train's own check on every push. Under CI any carrier
+    # fails, so one can never merge and LIVE never holds one.
+    ("check_seal_carriers.py", ()),
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h, principal 2026-09-17). The PORTABLE half:
     # the roster, the vocabularies, the sandbox policy, the packet contract that cannot carry
     # a verdict, and the admission rule that collapses a fork storm into one lineage. The
