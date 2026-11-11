@@ -59,3 +59,37 @@ def test_sweep_names_the_earliest_as_original(monkeypatch):
 
 def test_no_survivors_file_is_unmeasured():
     assert cd.sweep(None)["status"] == cd.UNMEASURED
+
+
+def test_a_family_that_takes_session_keeps_every_session_distinct() -> None:
+    """Auditor HOLD 2026-11-11: `family_scalp` and the joint-window families read `session`
+    themselves; new_york, overlap and all must never collapse onto the all-hours identity, and
+    their london is not the shared table's (8, 16)."""
+    from research.cert_duplicates import executable_identity
+
+    def scalp(symbol: str = "", session: str = "all", lookback: int = 5) -> None:
+        return None
+
+    def joint(symbol: str = "", session: str = "any") -> None:
+        return None
+
+    ids = {s: executable_identity("EURUSD", "scalp", {"session": s}, fn=scalp)
+           for s in ("all", "london", "new_york", "overlap")}
+    assert len(set(ids.values())) == 4
+    assert (executable_identity("EURUSD", "joint", {"session": "london"}, fn=joint)
+            != executable_identity("EURUSD", "joint", {"session": "any"}, fn=joint))
+    assert '"session":["kwarg","london"]' in ids["london"]
+
+
+def test_a_session_name_outside_the_shared_table_is_kept_raw() -> None:
+    from research.cert_duplicates import executable_identity
+
+    def plain(symbol: str = "", lookback: int = 20) -> None:
+        return None
+
+    overlap = executable_identity("EURUSD", "plain", {"session": "overlap"}, fn=plain)
+    allh = executable_identity("EURUSD", "plain", {"session": "all"}, fn=plain)
+    none = executable_identity("EURUSD", "plain", {}, fn=plain)
+    ny = executable_identity("EURUSD", "plain", {"session": "ny"}, fn=plain)
+    assert allh == none != overlap != ny
+    assert '"session":[14,22]' in ny

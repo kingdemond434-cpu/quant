@@ -10,7 +10,8 @@ twice: the survivor count, the allocator's breadth and the forward roster all se
 where there is one.
 
 WHAT THIS DOES. `executable_identity` reduces a cell to what decides its trades:
-symbol, chart, family, session window, side, the family's keyword arguments with the
+symbol, chart, family, session (a `family_call.SESSIONS` window, the raw name for any other name,
+or the family's own `session` keyword verbatim), side, the family's keyword arguments with the
 signature's defaults filled in, and the modifiers `cell_modifiers` would apply. It drops only
 what provably changes nothing: an `input_symbol` equal to the cell's own symbol, label keys
 (`cell_modifiers.LABEL_KEYS`), a no-op regime, and the fill-surface vintage stamp. Anything it
@@ -41,7 +42,6 @@ GROUP_SAMPLE = 200
 
 #: Keys that only stamp WHEN or FROM WHICH MAP a cell was selected; no family or filter reads them.
 _VINTAGE_KEYS = frozenset({"surface_generated_at"})
-_SESSIONS = {"asia": (0, 8), "london": (8, 16), "ny": (14, 22)}
 _NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
 
 
@@ -74,7 +74,30 @@ def _signature(fn: Any) -> tuple[dict[str, Any], bool] | None:
     varkw = any(p.kind is inspect.Parameter.VAR_KEYWORD for p in ps.values())
     defaults = {k: p.default for k, p in ps.items()
                 if p.default is not inspect.Parameter.empty and k not in ("side",)}
+    if "session" in ps and "session" not in defaults:
+        defaults["session"] = None
     return defaults, varkw
+
+
+def _session_identity(session: str, raw: Any,
+                      sig: tuple[dict[str, Any], bool] | None) -> Any:
+    """The session as far as it can be reduced WITHOUT inventing a duplicate.
+
+    Only the names `family_call.SESSIONS` defines map to a window, and only `all` (or no session)
+    reduces to None. A family that takes `session` as its own keyword (the joint-window families,
+    `family_scalp`) means something else by london/new_york/overlap, so its raw value is kept;
+    so is any name the shared table does not define."""
+    if sig is not None and ("session" in sig[0]):
+        return None if raw is None else ["kwarg", _norm(raw)]
+    if session == "all":
+        return None
+    try:
+        from mt5desk.family_call import SESSIONS
+    except Exception:
+        return ["name", session]
+    if session in SESSIONS and SESSIONS[session] is not None:
+        return list(SESSIONS[session])  # type: ignore[arg-type]
+    return ["name", session]
 
 
 def executable_identity(symbol: str, family: str, params: dict[str, Any] | None, *,
@@ -83,8 +106,8 @@ def executable_identity(symbol: str, family: str, params: dict[str, Any] | None,
     sym = str(symbol or "").upper()
     p = dict(params or {})
     tf = str(p.pop("timeframe", None) or "H1").upper()
-    session = str(p.pop("session", None) or "all").strip().lower()
-    window = _SESSIONS.get(session)            # unknown / all -> None: no filter, as session_window
+    raw_session = p.pop("session", None)
+    session = str(raw_session or "all").strip().lower()
     if str(p.get("input_symbol") or "").upper() == sym:
         p.pop("input_symbol")
     for k in _VINTAGE_KEYS:
@@ -102,6 +125,7 @@ def executable_identity(symbol: str, family: str, params: dict[str, Any] | None,
         p.pop("regime", None)
     fn = _family_fn(family) if fn is None else fn
     sig = _signature(fn) if fn is not None else None
+    session_key = _session_identity(session, raw_session, sig)
     kwargs: dict[str, Any] = {}
     mods: dict[str, Any] = {}
     other: dict[str, Any] = {}
@@ -118,8 +142,9 @@ def executable_identity(symbol: str, family: str, params: dict[str, Any] | None,
             else:
                 other[k] = v                    # the judge would refuse it; keep it visible
         kwargs.pop("symbol", None)              # the cell's own symbol is passed by the judge
+        kwargs.pop("session", None)             # carried once, in `session`, never twice
     return json.dumps(_norm({"symbol": sym, "chart": tf, "family": str(family),
-                             "session": list(window) if window else None,
+                             "session": session_key,
                              "side": None if side is None else str(side).upper(),
                              "kwargs": kwargs, "modifiers": mods, "unreduced": other}),
                       sort_keys=True, separators=(",", ":"))
