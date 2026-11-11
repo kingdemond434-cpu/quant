@@ -136,7 +136,9 @@ FAMILIES: dict[str, FamilySpec] = {s.family: s for s in (
     FamilySpec("garch_vol", _f(R.VOLATILITY_SCALE, R.UNCERTAINTY_WIDTH, R.VETO_STALENESS),
                1 * DAY, 2 * DAY, True, True,
                "libs/research/volatility_signals.py (EWMA/Garman-Klass, no GARCH fit)",
-               "NO: no GARCH model reaches the allocator; volatility_signals feeds research only",
+               "SHADOW: libs/portfolio/garch_vol.py is fitted every normal/heavy pass and "
+               "published as pf_allocation garch_vol.scale (applied=false); it moves no sizing "
+               "until pf_allocator.GARCH_SIZING_LIVE is earned out of sample",
                "Volatility sizes a bet; it never signs one."),
     FamilySpec("change_point", _f(R.DECAY_HAZARD, R.UNCERTAINTY_WIDTH, R.VETO_STALENESS),
                1 * DAY, 1 * DAY, True, True,

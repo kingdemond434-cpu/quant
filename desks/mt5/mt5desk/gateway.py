@@ -86,6 +86,7 @@ from mt5desk.decision_core import (
     family_signal_step,
     family_ttl_until,
     h1_frame,
+    held_carriers,
     hibernated,
     placement_verdict,
     ramped_fraction,
@@ -3742,6 +3743,22 @@ def _carrier_walk_order(sleeves: list[dict], joins: list[tuple[str, str | None]]
     return out
 
 
+def _rows_holding(names: list[str]) -> frozenset[str]:
+    """The rows among `names` that hold an open position or a resting order of their own on the
+    venue (this desk's MAGIC, matched by `owned_tags`). An unreadable venue reads as holding
+    nothing, which leaves the walk exactly as it was, and is logged."""
+    if not names:
+        return frozenset()
+    try:
+        tags = {str(getattr(x, "comment", "") or "")
+                for x in list(mt5.positions_get() or ()) + list(mt5.orders_get() or ())
+                if int(getattr(x, "magic", 0) or 0) == MAGIC}
+    except Exception as exc:
+        log(f"carrier walk: venue unreadable ({type(exc).__name__}); no holder seeded")
+        return frozenset()
+    return frozenset(n for n in names if owned_tags(n) & tags)
+
+
 def _row_fires(s: dict) -> bool:
     """Did this row's resolution produce an order this pass (so it may carry a shared key)?
     A market lane fires when its plan resolved with a positive size; a bracket when its window
@@ -6160,8 +6177,12 @@ def main() -> None:
     # the optimiser's h for it, so the pass deploys exactly what it solved (`book_shares`).
     # A row the principal zeroed BY ITS OWN NAME joins no key (#708 audit SF), so it is never
     # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
+    # A row DECAY_ZERO names by its own name joins no key either (#540; looked up, absent
+    # until #540 lands): were it the carrier, its zero would leave the key sending nothing.
+    _dz0 = globals().get("decay_zero")
     _joins = [(str(_r.get("name") or ""),
-               None if cert_book_zero(_r.get("name")) else _book_key(_r, _book))
+               None if (cert_book_zero(_r.get("name")) or (_dz0 and _dz0(_r.get("name"))))
+               else _book_key(_r, _book))
               for _r in sleeves]
     _shares = book_shares(_joins)
     # SNAP THE TOTAL, THEN SPLIT: the key's whole h goes through ONE carrier row, so the lot
@@ -6195,11 +6216,17 @@ def main() -> None:
         _n = str(_r.get("name") or "")
         if _n in _shared_rows and _r.get("minlot_override") is True and _n in _override_names:
             _evidence[_n] = (float("inf"),) * 3
-    _carriers = book_carriers(_joins, _evidence)
-    _carry_order = book_carrier_order(_joins, _evidence)
+    # THE HOLDER CARRIES (#896 audit MF2): a row with its own open position or resting bracket
+    # on a shared key is that key's carrier this pass and the walk is seeded with it, so no
+    # other row on the key sends -- two rows could otherwise each hold a position on one cell.
+    _hold_fn = globals().get("_rows_holding")
+    _holding = (_hold_fn([n for n, k in _joins if k is not None and int(_shares.get(n, 1)) > 1])
+                if _hold_fn else frozenset())
+    _carriers = book_carriers(_joins, _evidence, _holding)
+    _carry_order = book_carrier_order(_joins, _evidence, _holding)
     if _walk_fn:
         sleeves = _walk_fn(sleeves, _joins, _carry_order)
-    _carried: dict[str, str] = {}
+    _carried: dict[str, str] = held_carriers(_carry_order, _holding)
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number

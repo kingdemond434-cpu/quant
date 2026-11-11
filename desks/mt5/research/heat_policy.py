@@ -591,9 +591,12 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     """
     # NO CURVE, NO LICENCE ABOVE THE FALLBACK (#303 v3 audit SF): the default ceiling is the
     # measured-free HEAT_HARD_CEILING (1.00) only when a growth curve is in hand to choose inside
-    # it; with no curve it is HEAT_UNMEASURED_FALLBACK, the 20% target.
+    # it; with no curve it is HEAT_UNMEASURED_FALLBACK, the 20% target. "In hand" means MEASURED,
+    # the same three points the target rule below requires (#896 audit SF): one or two points
+    # cannot place an optimum, so they must not open the 1.00 licence either.
     if hard_ceiling is None:
-        hard_ceiling = HEAT_HARD_CEILING if curve else HEAT_UNMEASURED_FALLBACK
+        hard_ceiling = (HEAT_HARD_CEILING if len(curve or {}) >= 3
+                        else HEAT_UNMEASURED_FALLBACK)
     reasons: list[str] = []
     override, bad = catastrophe_override(**integrity) if integrity else (None, ())
     if override is not None:

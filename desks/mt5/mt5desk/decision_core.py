@@ -2996,8 +2996,8 @@ def book_shares(joins: Iterable[tuple[str, str | None]]) -> dict[str, int]:
 
 
 def book_carrier_order(joins: Iterable[tuple[str, str | None]],
-                       evidence: Mapping[str, Sequence[float]] | None = None
-                       ) -> dict[str, list[str]]:
+                       evidence: Mapping[str, Sequence[float]] | None = None,
+                       holding: Iterable[str] | None = None) -> dict[str, list[str]]:
     """Per book key, the rows that may carry it, BEST-EVIDENCED FIRST.
 
     WHY EVIDENCE AND NOT ROSTER ORDER (#261 re-audit, 2026-10-06). `book_carriers` handed a
@@ -3013,9 +3013,15 @@ def book_carrier_order(joins: Iterable[tuple[str, str | None]],
     An EXACT owner (name == key) is first on its key whatever the evidence: it owns the key by
     name, and a `_v2` that falls back onto it is the same solved h. The list after the first
     is the FALLBACK order the gateway walks when the carrier's window or entry does not fire.
+
+    A ROW THAT ALREADY HOLDS THE KEY CARRIES IT (#896 audit MF2). A row in `holding` -- one with
+    an open position or a resting bracket of its own on the venue -- is first on its key, ahead
+    of the exact owner and of any better-evidenced twin: handing the key to another row while
+    the holder's position is still open would put two positions on one cell across passes.
     """
     rows = [(str(n), k) for n, k in joins if k is not None]
     ev = dict(evidence or {})
+    held = {str(n) for n in (holding or ())}
     order: dict[str, list[tuple[int, str]]] = {}
     for i, (n, k) in enumerate(rows):
         order.setdefault(k, []).append((i, n))
@@ -3023,14 +3029,15 @@ def book_carrier_order(joins: Iterable[tuple[str, str | None]],
     def rank(item: tuple[int, str], key: str) -> tuple:
         i, n = item
         e = tuple(-float(x) for x in (ev.get(n) or ()))
-        return (0 if n == key else 1, e, i)
+        return (0 if n in held else 1, 0 if n == key else 1, e, i)
 
     return {k: [n for _, n in sorted(v, key=lambda it, k=k: rank(it, k))]
             for k, v in order.items()}
 
 
 def book_carriers(joins: Iterable[tuple[str, str | None]],
-                  evidence: Mapping[str, Sequence[float]] | None = None) -> dict[str, str]:
+                  evidence: Mapping[str, Sequence[float]] | None = None,
+                  holding: Iterable[str] | None = None) -> dict[str, str]:
     """For each row on a SHARED fallback key, the one row that carries the key's whole h.
 
     SNAP THE KEY'S TOTAL, THEN SPLIT (audit of PR #261, 2026-10-06). `book_shares` divided h by
@@ -3046,8 +3053,17 @@ def book_carriers(joins: Iterable[tuple[str, str | None]],
     same order and hands h to the next row when this one's window or entry does not fire.
     """
     rows = [(str(n), k) for n, k in joins if k is not None]
-    order = book_carrier_order(rows, evidence)
+    order = book_carrier_order(rows, evidence, holding)
     return {n: order[k][0] for n, k in rows}
+
+
+def held_carriers(order: Mapping[str, Sequence[str]], holding: Iterable[str]) -> dict[str, str]:
+    """{key: the row that already holds it} for every shared key one of whose rows holds a
+    position or bracket. The gateway seeds its walk with these, so the fallback can never hand a
+    held key to a second row this pass: the holder carries it whether or not it fires again."""
+    held = {str(n) for n in holding}
+    return {k: next(n for n in rows if n in held)
+            for k, rows in order.items() if len(rows) > 1 and any(n in held for n in rows)}
 
 
 def sleeve_from_comment(comment: str, unattributed: str = "") -> str:

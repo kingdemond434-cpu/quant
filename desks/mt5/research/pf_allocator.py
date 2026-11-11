@@ -2879,6 +2879,11 @@ def state_book(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
 #: candidate re-solve is ~1.2 s on the desk's 110-sleeve population; 8 s is headroom for one
 #: that starts far from the incumbent, not a cap on the scan. Zero or negative means unbounded.
 ADMISSION_CANDIDATE_BUDGET_S = 8.0
+#: GARCH(1,1) dispersion scaling (ALLOC-13) moves sizing only when this is True. It is False:
+#: the scale is fitted and published as a shadow reading until `input_ablation` shows the scaled
+#: book beating the plain solve out of sample (standing order: GARCH/HMM and LLM sizing stay
+#: shadow-only until they win OOS; never loosen the test to let one through).
+GARCH_SIZING_LIVE = False
 #: Share of the book's TOTAL heat that may be lent to exploration among candidates whose
 #: dE[log W] sits INSIDE the admission margin -- the ambiguous ones, which the criterion could
 #: neither admit nor refuse on evidence and which were parked at zero for ever. Lent from
@@ -4171,7 +4176,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # forecast is only credited up to the fit's own upper band, so uncertainty never adds risk.
     # Fitting costs ~0.3 s a sleeve, so the fast clock reuses the last normal/heavy fit (a model
     # output, not a re-fit per trigger) and says so; a missing fit scales nothing.
-    garch_meta: dict[str, Any] = {"status": "UNMEASURED"}
+    #
+    # SHADOW ONLY UNTIL IT WINS OUT OF SAMPLE (standing order: GARCH/HMM and LLM sizing stay
+    # shadow-only; an input reaches money the moment it beats the plain solve OOS, never before).
+    # With GARCH_SIZING_LIVE False the fit runs, the per-sleeve scale is published under
+    # `garch_vol.scale` with `applied: false`, and the evidence the book is solved on is untouched.
+    garch_meta: dict[str, Any] = {"status": "UNMEASURED", "applied": False,
+                                  "shadow": not GARCH_SIZING_LIVE}
     try:
         from dataclasses import replace as _gv_replace
 
@@ -4194,16 +4205,21 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 _atomic_write_text(_gv_path, json.dumps({"t": time.time(), "scale": _vscale}))
             except OSError:
                 pass
+        garch_meta["applied"], garch_meta["shadow"] = False, not GARCH_SIZING_LIVE
         if _vscale:
-            for _i, _e in enumerate(ev):
-                _r = float(_vscale.get(_e.name, 1.0))
-                if abs(_r - 1.0) > 1e-12:
-                    ev[_i] = _gv_replace(_e, daily_r=apply_vol_scale(_e.daily_r, _r))
+            if GARCH_SIZING_LIVE:
+                for _i, _e in enumerate(ev):
+                    _r = float(_vscale.get(_e.name, 1.0))
+                    if abs(_r - 1.0) > 1e-12:
+                        ev[_i] = _gv_replace(_e, daily_r=apply_vol_scale(_e.daily_r, _r))
+                garch_meta["applied"] = True
             garch_meta["scale"] = {k: round(v, 4) for k, v in _vscale.items()}
             _log(f"garch vol scale: {sum(1 for v in _vscale.values() if v > 1)} up, "
-                 f"{sum(1 for v in _vscale.values() if v < 1)} down ({garch_meta['status']})")
+                 f"{sum(1 for v in _vscale.values() if v < 1)} down ({garch_meta['status']}; "
+                 f"{'APPLIED' if garch_meta['applied'] else 'shadow, not applied'})")
     except Exception as exc:
-        garch_meta = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        garch_meta = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
+                      "applied": False, "shadow": not GARCH_SIZING_LIVE}
     dd = worst_dd_r(daily)
     # THE MACRO TILTS THIS PASS APPLIES, MEASURED ONCE FOR THE ARTIFACT. `_posterior_mu` is the
     # only place the contrast is formed; asking it with `diag` returns exactly the tilts the
