@@ -1,32 +1,24 @@
 {
- "ok": false,
- "running_sha": "42e1b226ae89e14680cdc94be633cbcaf95e3b19",
- "release_sha": "a39f8ea8d878209140d5fedbf0593e5277f7ac0e",
- "reason": "running 42e1b226ae89 carries 7 path(s) the sealed release a39f8ea8d878 never named: ['desks/mt5/ops/box_tasks.manifest', 'desks/mt5/scripts/install_deepseek_brain_task.ps1', 'libs/ops/deepseek_cycle.py', 'libs/ops/deepseek_packet.py', 'ops/run_deepseek_windows.ps1', 'scripts/run_deepseek_cycle.py']",
- "age_h": 62.744,
+ "ok": true,
+ "running_sha": "eea4447a279913f2a33745e95646e3839bb1bc2d",
+ "release_sha": "bb527d650cfa11b0f152f7915951d8d6c188b12e",
+ "reason": "running eea4447a2799 is the sealed code bb527d650cfa plus seal/state commits only (1 path(s))",
+ "age_h": 7.103,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
  "source": "git",
- "release_id": "a6e71071bb16",
- "changed_paths": [
-  "desks/mt5/ops/box_tasks.manifest",
-  "desks/mt5/scripts/install_deepseek_brain_task.ps1",
-  "libs/ops/deepseek_cycle.py",
-  "libs/ops/deepseek_packet.py",
-  "ops/run_deepseek_windows.ps1",
-  "scripts/run_deepseek_cycle.py",
-  "tests/ops/test_deepseek_packet.py"
- ],
+ "release_id": "f33df7bc018c",
+ "changed_paths": [],
  "drift": [],
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-20T14:36:28+00:00",
+ "at": "2026-11-10T23:30:34+00:00",
  "tested_sha": "UNMEASURED",
  "tested_gates": "UNMEASURED",
- "allocator_certificate": "9794f6c4f07aedd4@2026-10-20T13:33:03.000292+00:00 proof=FAILED book=multiperiod",
+ "allocator_certificate": "3d0d32cea60a98e8@2026-11-10T22:43:58.396765+00:00 proof=FAILED book=multiperiod",
  "ci_run_id": "UNMEASURED",
- "allows_new_risk": false,
- "verdict": "REFUSED"
+ "allows_new_risk": true,
+ "verdict": "OK"
 }

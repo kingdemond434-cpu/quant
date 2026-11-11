@@ -66,7 +66,10 @@ BLOCKED = ("BLOCKED_SLEEVE_ERROR", "BLOCKED_POWER_UNCURED", "BLOCKED_UNIVERSAL_G
            # from BLOCKED_SLEEVE_ERROR on purpose: that means "this raised", while this means
            # "this was reached and had nothing to run with" -- a wiring gap, and the two need
            # different fixes.
-           "BLOCKED_INPUTS_UNAVAILABLE")
+           "BLOCKED_INPUTS_UNAVAILABLE",
+           # Written when the family's constructor cannot be resolved on this tree (2026-09-30);
+           # before, the engine skipped such a row without writing it at all.
+           "BLOCKED_FAMILY_UNBUILDABLE")
 
 #: `ModuleNotFoundError: No module named 'x.y'` -- the one root cause that is unambiguous enough
 #: to fix without a human, because the fix is "put the committed file where it belongs".

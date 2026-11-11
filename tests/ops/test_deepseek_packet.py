@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from libs.ops.deepseek_cycle import research_packet
 from libs.ops.deepseek_packet import build
 
@@ -90,3 +92,26 @@ def test_an_unreadable_tree_is_unavailable_not_empty(tmp_path: Path) -> None:
     assert packet["status"] in {"PARTIAL", "UNAVAILABLE"}
     assert packet.get("why") or packet.get("sections")
     assert packet.get("sections") is not None
+
+
+def test_allocator_book_rows_count_a_dict_book_and_zero_otherwise(tmp_path: Path) -> None:
+    root = _fixture(tmp_path)
+    assert build(root)["sections"]["portfolio_opportunity_state"]["allocator"]["book_rows"] == 1
+    _write(root / "desks" / "mt5" / "reports" / "pf_allocation.json",
+           {"mode": "LIVE", "book": ["not", "a", "dict"]})
+    assert build(root)["sections"]["portfolio_opportunity_state"]["allocator"]["book_rows"] == 0
+
+
+def test_resource_state_measures_ram_or_says_unmeasured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sys
+
+    root = _fixture(tmp_path)
+    measured = build(root)["sections"]["resource_state"]
+    assert "ram_total_gb" in measured or str(measured.get("ram", "")).startswith("UNMEASURED")
+    monkeypatch.setitem(sys.modules, "psutil", None)
+    dark = build(root)["sections"]["resource_state"]
+    assert "ram_total_gb" not in dark
+    assert dark["ram"].startswith("UNMEASURED: ")
+    assert dark["cpu_count"] == measured["cpu_count"]
