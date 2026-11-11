@@ -1344,6 +1344,7 @@ def test_an_unreadable_door_ledger_cancels_every_copy_blind_and_bills_it(mirror)
 
 def test_a_leg_the_door_never_acknowledged_is_not_mirrored(mirror) -> None:
     Path(ff.E8_INTENTS).unlink()
+    door.ledger_path().unlink()
     _e8_sent(E8_BUY, "buy_stop")
     _e8_sent(E8_SELL, "sell_stop", confirm=False)                 # journal says SENT, door not
     mt5 = _MT5()
@@ -1369,7 +1370,7 @@ def test_a_crossed_level_places_no_mirror_and_the_late_follow_is_the_fallback(mi
 
 def test_the_loss_guard_holds_with_both_legs_filled(mirror) -> None:
     acct = json.loads(mirror.acct.read_text("utf-8"))
-    acct["daily_loss_frac"] = 0.03       # 3,000: one leg's 1,986 fits, both legs' 3,972 do not
+    acct["account_type"] = "1-step"      # 3,000: one leg's 1,986 fits, both legs' 3,972 do not
     mirror.acct.write_text(json.dumps(acct), "utf-8")
     mt5 = _MT5()
     doc = _pass(mt5)
