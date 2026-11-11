@@ -569,6 +569,9 @@ LEG_LAYER: dict[str, str] = {
     # the plain solve out of sample: evidence about how the book is composed, so it bills to the
     # same layer as the allocator it judges.
     "input_ablation": "portfolio",
+    # `bl_challengers` builds the Black-Litterman / MVO challenger books and perturbs the
+    # allocator's inputs: evidence about the book's composition, billed with the allocator.
+    "bl_challengers": "portfolio",
     # The balance-sheet layer and the Allocator-V2 evidence: what the book costs to carry and
     # what each sleeve is worth to it -- a question about the book's composition, not about
     # how an order reaches the venue.

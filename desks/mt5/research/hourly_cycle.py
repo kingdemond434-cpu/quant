@@ -5912,6 +5912,13 @@ def main() -> None:
     # backlog shrinks each hour and an hour with no new window costs a few cache reads.
     iab = _costed("input_ablation", lambda: _producer(
         "input_ablation", "research/input_ablation.py", "--budget-s", "600"))
+    # BLACK-LITTERMAN / MVO CHALLENGERS AND THE PERTURBATION TEST (mandate D15, BACKLOG W0).
+    # Seven books (allocator, + BL prior, + certified views, + own world-state views, BL only,
+    # MVO, shuffled-view control) measured now, walk-forward on realised returns, and against
+    # small input moves. Authority none: challenger, never primary. Same 600 s self-stop and
+    # per-window cache as input_ablation.
+    blc = _costed("bl_challengers", lambda: _producer(
+        "bl_challengers", "research/bl_challengers.py", "--budget-s", "600"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -6600,6 +6607,7 @@ def main() -> None:
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "bl_challengers": blc,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
