@@ -16,12 +16,16 @@ WHAT IT DOES, every two minutes (MT5-MemoryGuard, SYSTEM):
      command line names the money path (gateway, allocator, executor, deadman, OCO, order door,
      E8, FTMO, tape and tick recorders, bridge). MT5 terminals, the bridge and every non-python
      process are out of scope by construction.
-  2. STOP AT MOST ONE JOB A PASS, and only when one of two rules holds:
+  2. STOP AT MOST ONE JOB A PASS, and only when one of three rules holds:
        HARD CAP  one research process holds more than HARD_CAP_FRAC of physical memory. That is
                  a leak, not a workload: nothing on this desk legitimately needs a quarter of
                  the box, and the fix is streaming, not more RAM.
        PRESSURE  available memory is under the floor (or commit is near its limit), in which
                  case the LARGEST research process above MIN_STOP_MB is stopped.
+       STALLED   a research process older than STALL_AGE_H that used under STALL_CPU_S of CPU
+                 between two passes. That is a job stuck on a lock or a dead handle (the
+                 merge_hypotheses pass that sat 43 h holding 15 GB of commit and an inherited
+                 log handle, 2026-11-11), not a slow one: a working job burns CPU every pass.
      A stop is terminate, a grace period, then kill, for the process and its children only.
      Its parent (the cmd that runs a lane of organs) is untouched, so the lane moves on to its
      next organ instead of losing the whole pass.
@@ -58,6 +62,7 @@ DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "MEMORY_GUARD.json"
 QUEUE = DESK / "data" / "MEMORY_GUARD_QUEUE.json"
 REQUEUE_LOG = DESK / "logs" / "MT5-MemoryGuard-requeue.log"
+SEEN = DESK / "data" / "MEMORY_GUARD_SEEN.json"
 
 MB = 1024 * 1024
 HARD_CAP_FRAC = 0.25        # one research process above this share of physical RAM is a leak
@@ -66,6 +71,9 @@ COMMIT_LINE = 0.90          # commit above this share of the commit limit is pre
 MIN_STOP_MB = 2048          # under pressure a smaller job is never the cause, so never stopped
 MAX_ATTEMPTS = 2            # re-runs per command line per UTC day
 GRACE_S = 10.0
+STALL_AGE_H = 24.0          # a research job this old ...
+STALL_CPU_S = 1.0           # ... that used less CPU than this between two passes is stuck
+STALL_MIN_GAP_S = 60.0      # the two readings must be at least this far apart
 
 PYTHON_NAMES = frozenset({"python.exe", "pythonw.exe", "python", "python3", "py.exe"})
 MONEY_PATH = re.compile(
@@ -121,8 +129,23 @@ def headroom(snap: dict[str, Any], th: dict[str, float | None]) -> bool:
                 and commit > th["commit_line_mb"])
 
 
+def stalled(p: dict[str, Any], prev: dict[str, Any], now_ts: float) -> float | None:
+    """CPU seconds this process used since the last pass when it is old enough to judge and that
+    reading is comparable (same process instance, far enough apart); None otherwise."""
+    started, cpu = p.get("started"), p.get("cpu_s")
+    if started is None or cpu is None or now_ts - float(started) < STALL_AGE_H * 3600:
+        return None
+    seen = prev.get(str(p.get("pid")))
+    if not isinstance(seen, dict) or seen.get("started") != started:
+        return None
+    if now_ts - float(seen.get("at_ts") or now_ts) < STALL_MIN_GAP_S:
+        return None
+    return float(cpu) - float(seen.get("cpu_s") or 0.0)
+
+
 def plan(snap: dict[str, Any], procs: list[dict[str, Any]],
-         own_pids: set[int]) -> dict[str, Any]:
+         own_pids: set[int], prev: dict[str, Any] | None = None,
+         now_ts: float | None = None) -> dict[str, Any]:
     """Pure decision: which one process (if any) to stop and why."""
     th = thresholds(snap)
     cands = sorted((p for p in procs if is_candidate(p, own_pids)),
@@ -140,6 +163,17 @@ def plan(snap: dict[str, Any], procs: list[dict[str, Any]],
                 return {"stop": p, "rule": "PRESSURE", "thresholds": th, "pressure": under,
                         "why": (f"{'; '.join(under)}; pid {p['pid']} is the largest research "
                                 f"job at {round(p['private_mb'])} MB")}
+    if prev and now_ts is not None:
+        for p in cands:
+            used = stalled(p, prev, now_ts)
+            if used is not None and used < STALL_CPU_S:
+                age_h = (now_ts - float(p["started"])) / 3600
+                return {"stop": p, "rule": "STALLED", "thresholds": th, "pressure": under,
+                        "why": (f"pid {p['pid']} has run {age_h:.1f} h and used {used:.2f} s of "
+                                f"CPU since the last pass while holding "
+                                f"{round(float(p.get('private_mb') or 0))} MB: it is stuck, not "
+                                f"working")}
+    if under:
         return {"stop": None, "rule": "PRESSURE_NO_CANDIDATE", "thresholds": th,
                 "pressure": under,
                 "why": ("memory is under pressure but no research job is large enough to be "
@@ -236,10 +270,12 @@ def _processes() -> list[dict[str, Any]]:
         try:
             mi = p.memory_info()
             private = float(getattr(mi, "private", None) or getattr(mi, "vms", 0) or 0)
+            ct = _safe(p.cpu_times)
             out.append({"pid": p.info["pid"], "name": p.info["name"],
                         "private_mb": private / MB, "rss_mb": mi.rss / MB,
                         "cmdline": p.cmdline(), "cwd": _safe(p.cwd),
-                        "started": p.info.get("create_time")})
+                        "started": p.info.get("create_time"),
+                        "cpu_s": (ct.user + ct.system) if ct is not None else None})
         except Exception:
             continue
     return out
@@ -367,6 +403,24 @@ def _process_health() -> Any:
     return mod
 
 
+def _load_seen() -> dict[str, Any]:
+    try:
+        doc = json.loads(SEEN.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _save_seen(procs: list[dict[str, Any]], own: set[int], now_ts: float) -> None:
+    """The CPU each research process had used at this pass, for the next pass's STALLED rule."""
+    doc = {str(p["pid"]): {"started": p.get("started"), "cpu_s": p.get("cpu_s"), "at_ts": now_ts}
+           for p in procs if is_candidate(p, own) and p.get("cpu_s") is not None}
+    SEEN.parent.mkdir(parents=True, exist_ok=True)
+    tmp = SEEN.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc), "utf-8")
+    os.replace(tmp, SEEN)
+
+
 def run_pass(apply: bool = True) -> dict[str, Any]:
     memory_snapshot = _process_health().memory_snapshot
 
@@ -374,7 +428,9 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
     snap = memory_snapshot()
     procs = _processes()
     own = _own_pids()
-    decision = plan(snap, procs, own)
+    now_ts = time.time()
+    prev = _load_seen()
+    decision = plan(snap, procs, own, prev=prev, now_ts=now_ts)
     rows = load_queue()
     running = {" ".join(p.get("cmdline") or []) for p in procs}
     rows = settle(rows, running, at)
@@ -403,6 +459,7 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
                                 "error": f"{type(exc).__name__}: {exc}"[:300]})
     if apply:
         save_queue(rows)
+        _save_seen(procs, own, now_ts)
     top = sorted((p for p in procs if is_candidate(p, own)),
                  key=lambda p: -float(p.get("private_mb") or 0.0))[:5]
     doc = {

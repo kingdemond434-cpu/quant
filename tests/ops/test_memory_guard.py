@@ -106,6 +106,7 @@ def test_headroom_needs_twice_the_floor() -> None:
 def test_dry_pass_writes_a_report_and_changes_nothing(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(mg, "REPORT", tmp_path / "MEMORY_GUARD.json")
     monkeypatch.setattr(mg, "QUEUE", tmp_path / "q.json")
+    monkeypatch.setattr(mg, "SEEN", tmp_path / "seen.json")
     stopped: list[int] = []
     monkeypatch.setattr(mg, "stop", lambda pid: stopped.append(pid) or {"result": "STOPPED"})
     monkeypatch.setattr(mg, "_processes", lambda: [proc(13224, 10**7, SCALING)])
@@ -119,9 +120,44 @@ def test_dry_pass_writes_a_report_and_changes_nothing(tmp_path: Path, monkeypatc
 def test_applied_pass_stops_and_queues(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(mg, "REPORT", tmp_path / "MEMORY_GUARD.json")
     monkeypatch.setattr(mg, "QUEUE", tmp_path / "q.json")
+    monkeypatch.setattr(mg, "SEEN", tmp_path / "seen.json")
     monkeypatch.setattr(mg, "stop", lambda pid: {"pid": pid, "result": "STOPPED"})
-    monkeypatch.setattr(mg, "_processes", lambda: [proc(13224, 10**7, SCALING)])
+    big = {**proc(13224, 10**7, SCALING), "cpu_s": 5.0, "started": 1.0}
+    monkeypatch.setattr(mg, "_processes", lambda: [big])
     monkeypatch.setattr(mg, "_own_pids", lambda: set())
     doc = mg.run_pass(apply=True)
     assert doc["actions"][0]["action"] == "STOP"
+    assert "13224" in json.loads((tmp_path / "seen.json").read_text("utf-8"))
     assert mg.load_queue(tmp_path / "q.json")[0]["state"] == "QUEUED"
+
+
+def test_a_day_old_job_burning_no_cpu_is_stalled_and_a_working_one_is_not() -> None:
+    now = 1_800_000_000.0
+    started = now - 43 * 3600
+    stuck = {**proc(36280, 15_000, "python -m merge_hypotheses"), "started": started,
+             "cpu_s": 59.78}
+    busy = {**proc(2, 3_000, "python -m judge"), "started": started, "cpu_s": 900.0}
+    prev = {"36280": {"started": started, "cpu_s": 59.78, "at_ts": now - 120},
+            "2": {"started": started, "cpu_s": 800.0, "at_ts": now - 120}}
+    d = mg.plan(BOX, [busy, stuck], set(), prev=prev, now_ts=now)
+    assert d["rule"] == "STALLED" and d["stop"]["pid"] == 36280
+
+
+def test_stall_needs_age_the_same_instance_and_a_real_gap() -> None:
+    now = 1_800_000_000.0
+    young = {**proc(1, 3_000, "python -m a"), "started": now - 3600, "cpu_s": 1.0}
+    reused = {**proc(2, 3_000, "python -m b"), "started": now - 30 * 3600, "cpu_s": 1.0}
+    close = {**proc(3, 3_000, "python -m c"), "started": now - 30 * 3600, "cpu_s": 1.0}
+    prev = {"1": {"started": now - 3600, "cpu_s": 1.0, "at_ts": now - 120},
+            "2": {"started": now - 99 * 3600, "cpu_s": 1.0, "at_ts": now - 120},
+            "3": {"started": now - 30 * 3600, "cpu_s": 1.0, "at_ts": now - 10}}
+    d = mg.plan(BOX, [young, reused, close], set(), prev=prev, now_ts=now)
+    assert d["rule"] == "CLEAR"
+
+
+def test_money_path_is_never_stalled_out() -> None:
+    now = 1_800_000_000.0
+    gw = {**proc(9, 3_000, r"python desks\mt5\mt5desk\gateway.py"), "started": now - 99 * 3600,
+          "cpu_s": 1.0}
+    prev = {"9": {"started": now - 99 * 3600, "cpu_s": 1.0, "at_ts": now - 120}}
+    assert mg.plan(BOX, [gw], set(), prev=prev, now_ts=now)["stop"] is None
