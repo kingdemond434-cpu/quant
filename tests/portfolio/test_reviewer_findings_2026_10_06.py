@@ -130,3 +130,34 @@ def test_acceptance_hazard_scale_has_a_calibration_artifact() -> None:
     assert doc.get("basis") == "fitted"
     assert float(doc["scale_days"]) == pytest.approx(perishability.HAZARD_SCALE_DAYS)
     assert int(doc.get("n_edges", 0)) > 0
+
+
+# ------------------------------------------------------------------------------------------------
+# THE THREE REPRODUCTIONS, KEPT AS REGRESSIONS (#896 audit). Each ran on the exact inputs that
+# reproduced the defect at 2d61e69a1 and asserted the defect; the defects are fixed, so the same
+# inputs now pin the fixed outcome and fail if any of the three comes back.
+
+
+def test_regression_twin_sleeves_are_not_certified_at_the_beaten_point() -> None:
+    """Was: 0.10/0.10 with converged=True, beaten by the feasible 0.15/0.05 by 0.00075."""
+    ev, cfg, worlds = _twin_book()
+    res = optimise(ev, hard_cap=0.20, target=0.20, max_per_sleeve=0.15, cfg=cfg, worlds=worlds)
+    better = score_book(ev, {"a": 0.15, "b": 0.05}, cfg=cfg, worlds=worlds)["robust_score"]
+    assert res.robust_score >= better - 1e-12, "the solver returned a point 0.15/0.05 beats"
+    assert res.heat != pytest.approx({"a": 0.10, "b": 0.10}, abs=1e-6)
+
+
+def test_regression_multiperiod_cost_changes_the_path_not_only_the_report() -> None:
+    """Was: cost 0.0 / 0.0005 / 0.5 / 5.0 gave the IDENTICAL path; only total_cost moved."""
+    paths = {c: [round(s["a"], 12) for s in _plan(c).path]  # type: ignore[attr-defined]
+             for c in (0.0, 0.0005, 0.5, 5.0)}
+    assert paths[0.0] == [0.3, 0.1]
+    assert paths[5.0] != paths[0.0], "a prohibitive cost must change the chosen path"
+
+
+def test_regression_decay_hazard_can_exceed_the_blanket() -> None:
+    """Was: decay_prob_i=0.90 -> 0.30 (capped at the blanket); 0.05 -> 0.05 (relief only)."""
+    cfg = WorldConfig()
+    assert cfg.decay_prob == 0.30
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.90), cfg) == 0.90
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.05), cfg) == 0.05
