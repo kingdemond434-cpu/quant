@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    executable_book,
     fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
@@ -5501,6 +5502,18 @@ def main() -> None:
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
+    # THE EXECUTABLE BOOK (CRO row 111 Q4): per book key, what this pass will actually send
+    # after carriers, aliases, zeros and the heat cap. A report; never raises, never gates.
+    try:
+        _exe = executable_book(sleeves, _book)
+        _exe_path = BASE / "reports" / "EXECUTABLE_BOOK.json"
+        _exe_tmp = _exe_path.with_suffix(".json.tmp")
+        _exe_tmp.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                        "consumed_decision_id": st.get("consumed_decision_id"),
+                                        **_exe}, indent=1, default=str), encoding="utf-8")
+        os.replace(_exe_tmp, _exe_path)
+    except Exception as exc:
+        log(f"EXECUTABLE_BOOK not written ({type(exc).__name__}: {exc})")
     # Hunt-certified family sleeves run their own replay-faithful executor -- AFTER the heat
     # cap, so an inadmissible sleeve never reaches it, and OUTSIDE the bracket loop, whose
     # session-window semantics they do not share.
