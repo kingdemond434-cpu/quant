@@ -117,13 +117,10 @@ def test_box_last_word(tmp_path: Path) -> None:
     assert got["last_page"] == {"armed": 0, "delivered": 0, "status": None}
 
 
-def test_main_pages_a_failed_drill_and_writes(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def _main_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> list[tuple[str, str]]:
     monkeypatch.setattr(wd, "REPORT", tmp_path / "WATCHDOG_DRILL.json")
     monkeypatch.setattr(wd, "STATE", tmp_path / "state.json")
     monkeypatch.setattr(wd, "HEARTBEAT", tmp_path / "none.json")
-    monkeypatch.setattr(wd, "DRILLS", {"x": lambda _t: (False, "stayed quiet")})
     from libs.ops import alert_channels
 
     pages: list[tuple[str, str]] = []
@@ -133,17 +130,59 @@ def test_main_pages_a_failed_drill_and_writes(
         return {"armed": 1, "delivered": 1, "results": [{"channel": "hc", "ok": True}]}
 
     monkeypatch.setattr(alert_channels, "send_all", rec)
+    return pages
+
+
+def test_a_failed_drill_pages_once_and_a_new_one_pages_again(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pages = _main_env(monkeypatch, tmp_path)
+    monkeypatch.setattr(wd, "DRILLS", {"x": lambda _t: (False, "stayed quiet")})
     assert wd.main([]) == 2
     titles = [t for t, _ in pages]
-    assert "Watchdog drill canary" in titles
-    assert any(t.startswith("Watchdog drill FAILED: x") for t in titles)
+    assert titles.count("Watchdog drill canary") == 1
+    assert [t for t in titles if t.startswith("Watchdog drill FAILED")] == [
+        "Watchdog drill FAILED: x"
+    ]
     rep = json.loads((tmp_path / "WATCHDOG_DRILL.json").read_text("utf-8"))
-    assert rep["verdict"] == "FAIL" and rep["failed"] == ["x"]
-    # failing: due again at once; passing and fresh: not due
+    assert rep["verdict"] == "FAIL" and rep["failed"] == ["x"] and rep["newly_failed"] == ["x"]
+    # the same failure next pass: re-drilled, reported, NOT paged, and no hourly canary
+    pages.clear()
+    assert wd.main([]) == 2
+    assert pages == []
+    rep = json.loads((tmp_path / "WATCHDOG_DRILL.json").read_text("utf-8"))
+    assert rep["failed"] == ["x"] and rep["newly_failed"] == []
+    # a second watchdog breaks: that pages, naming only the new one
+    monkeypatch.setattr(wd, "DRILLS", {"x": lambda _t: (False, "quiet"),
+                                       "y": lambda _t: (False, "quiet")})  # fmt: skip
+    assert wd.main([]) == 2
+    assert [t for t, _ in pages] == ["Watchdog drill FAILED: y"]
+    # all pass: quiet, and not due again until the week is up
+    pages.clear()
     monkeypatch.setattr(wd, "DRILLS", {"x": lambda _t: (True, "paged")})
     assert wd.main([]) == 0
-    pages.clear()
     assert wd.main([]) == 0 and pages == []
+
+
+def test_a_failing_canary_is_re_sent_each_pass(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pages = _main_env(monkeypatch, tmp_path)
+    monkeypatch.setattr(wd, "DRILLS", {})
+    monkeypatch.setattr(wd, "channel_drill", lambda: {"drill": wd.CANARY, "result": "FAIL",
+                                                      "detail": "NO CHANNEL ARMED"})  # fmt: skip
+    assert wd.main([]) == 2 and len(pages) == 1
+    calls: list[int] = []
+    monkeypatch.setattr(wd, "channel_drill", lambda: calls.append(1) or {
+        "drill": wd.CANARY, "result": "FAIL", "detail": "NO CHANNEL ARMED"})  # fmt: skip
+    assert wd.main([]) == 2 and calls == [1] and len(pages) == 1
+
+
+def test_the_report_names_channels_where_the_canary_is_visible() -> None:
+    ok = [{"channel": "hc", "ok": True}, {"channel": "telegram", "ok": True}]
+    res = {"armed": 2, "delivered": 2, "results": ok}
+    row = wd.channel_drill(lambda *_a, **_k: res, frozenset({"hc"}))
+    assert row["canary_visible_on"] == ["telegram"]
 
 
 def test_wired_as_core_leg_and_published() -> None:

@@ -27,7 +27,9 @@ failed on, and whether its last page reached a channel, so "it would page" and "
 on one row.
 
 A FAILED DRILL PAGES (through the same send_all) with the watchdog's name and what it did
-instead, and is re-drilled every run until it passes -- never once a week.
+instead, ONCE: it is re-drilled every pass until it passes, but pages again only when another
+drill joins the failing set. The report names the channels with no silent probe, on which the
+weekly canary is visible.
 """
 
 from __future__ import annotations
@@ -51,6 +53,7 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "WATCHDOG_DRILL.json"
 STATE = ROOT / "desks" / "mt5" / "data" / "watchdog_drill_state.json"
 HEARTBEAT = ROOT / "desks" / "mt5" / "reports" / "BOX_HEARTBEAT.json"
 EVERY = timedelta(days=7)
+CANARY = "alert_channels:canary"
 
 Pages = list[tuple[str, str]]
 
@@ -185,19 +188,28 @@ def run_drills(drills: dict[str, Callable[[Path], tuple[bool, str] | None]]) -> 
     return rows
 
 
-def channel_drill(send: Callable[..., dict[str, Any]] | None = None) -> dict[str, Any]:
+def channel_drill(
+    send: Callable[..., dict[str, Any]] | None = None, silent: frozenset[str] | None = None
+) -> dict[str, Any]:
     """One real canary through every armed channel. Kinds and counts only."""
     try:
         if send is None:
             if str(ROOT) not in sys.path:
                 sys.path.insert(0, str(ROOT))
             from libs.ops.alert_channels import send_all as send
+        if silent is None:
+            try:
+                from libs.ops.alert_channels import _CANARY_AWARE as silent
+            except ImportError:
+                silent = frozenset()
         res = send("Watchdog drill canary", "weekly proof the pager path delivers", canary=True)
     except Exception as exc:
         return {"drill": "alert_channels:canary", "result": "FAIL",
                 "detail": f"send_all raised {type(exc).__name__}"}  # fmt: skip
     armed, delivered = int(res.get("armed") or 0), int(res.get("delivered") or 0)
     kinds = sorted({str(r.get("channel")) for r in res.get("results") or [] if r.get("ok")})
+    # S1: a channel with no silent probe shows the canary to whoever reads it, once a week.
+    loud = sorted({str(r.get("channel")) for r in res.get("results") or []} - set(silent or ()))
     if armed == 0:
         ok, why = False, "NO CHANNEL ARMED: every watchdog's page goes nowhere"
     elif delivered == 0:
@@ -205,7 +217,8 @@ def channel_drill(send: Callable[..., dict[str, Any]] | None = None) -> dict[str
     else:
         ok, why = True, f"{delivered}/{armed} channel(s) delivered ({', '.join(kinds)})"
     return {"drill": "alert_channels:canary", "result": "PASS" if ok else "FAIL", "detail": why,
-            "armed": armed, "delivered": delivered}  # fmt: skip
+            "armed": armed, "delivered": delivered,
+            "canary_visible_on": loud}  # fmt: skip
 
 
 def box_last_word(path: Path = HEARTBEAT) -> dict[str, Any]:
@@ -223,14 +236,26 @@ def box_last_word(path: Path = HEARTBEAT) -> dict[str, Any]:
                           if isinstance(paged, dict) else paged)}  # fmt: skip
 
 
-def due(state: dict[str, Any], now: datetime) -> bool:
-    if state.get("failed"):
-        return True  # a failing drill re-runs every pass until it passes
+def weekly_due(state: dict[str, Any], now: datetime) -> bool:
     try:
         last = datetime.fromisoformat(str(state["last_full"]))
     except (KeyError, ValueError):
         return True
     return now - last >= EVERY
+
+
+def due(state: dict[str, Any], now: datetime) -> bool:
+    """A failing drill re-runs every pass until it passes (it PAGES only when the failing set
+    gains a drill: see `newly_failed`); otherwise once a week."""
+    return bool(state.get("failed")) or weekly_due(state, now)
+
+
+def newly_failed(failed: list[str], state: dict[str, Any]) -> list[str]:
+    """The drills failing now that were not failing last run. Only these page (Auditor M1 on
+    #947): one broken watchdog pages once, not every hour until someone fixes it, and a second
+    one breaking pages again. The same rule as box_heartbeat's `newly`."""
+    before = set(state.get("failed") or [])
+    return [d for d in failed if d not in before]
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -260,8 +285,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"watchdog_drill: not due (last full drill {state.get('last_full')})")
         return 0
     rows = run_drills(DRILLS)
-    if not a.no_canary and not a.print:
+    # The canary is weekly. On an hourly re-drill it is re-sent only if IT is what failed, so a
+    # broken heartbeat drill never turns into an hourly canary on every channel.
+    canary_due = a.force or weekly_due(state, now) or CANARY in (state.get("failed") or [])
+    if not a.no_canary and not a.print and canary_due:
         rows.append(channel_drill())
+    elif CANARY in (state.get("failed") or []):
+        rows.append({"drill": CANARY, "result": "FAIL", "detail": "not re-sent this pass"})
     failed = [r["drill"] for r in rows if r["result"] == "FAIL"]
     doc = {"schema": "watchdog_drill/1", "at": now.isoformat(),
            "verdict": "FAIL" if failed else "PASS", "failed": failed, "drills": rows,
@@ -270,17 +300,20 @@ def main(argv: list[str] | None = None) -> int:
     if a.print:
         print(json.dumps(doc, indent=1))
         return 2 if failed else 0
-    if failed:
+    fresh = newly_failed(failed, state)
+    doc["newly_failed"] = fresh
+    if fresh:
         body = "; ".join(f"{r['drill']}: {r['detail']}" for r in rows if r["result"] == "FAIL")
         try:
             from libs.ops.alert_channels import send_all
 
-            res = send_all(f"Watchdog drill FAILED: {', '.join(failed)}", body[:3000])
+            res = send_all(f"Watchdog drill FAILED: {', '.join(fresh)}", body[:3000])
             doc["paged"] = {"armed": res.get("armed"), "delivered": res.get("delivered")}
         except Exception as exc:  # the report below is the second voice
             doc["paged"] = f"not sent ({type(exc).__name__})"
     _write(REPORT, doc)
-    _write(STATE, {"last_full": now.isoformat(), "failed": failed})
+    last_full = now.isoformat() if canary_due else state.get("last_full", now.isoformat())
+    _write(STATE, {"last_full": last_full, "failed": failed})
     print(f"watchdog_drill: {doc['verdict']} {' '.join(failed)}".rstrip())
     return 2 if failed else 0
 
