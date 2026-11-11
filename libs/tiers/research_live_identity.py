@@ -214,8 +214,15 @@ def judge(live_rows: Iterable[Mapping[str, Any]], **kw: Any) -> dict[str, Any]:
     rows = [judge_row(r, **kw) for r in live_rows]
     by = {v: [r["name"] for r in rows if r["verdict"] == v] for v in (MATCH, MISMATCH,
                                                                       UNMEASURED)}
+    code_unknown = [r["name"] for r in rows
+                    if any(str(u).startswith("code:") for u in r.get("unmeasured") or [])
+                    or (r["verdict"] == UNMEASURED and "code:" in str(r.get("why") or ""))]
     return {"n_live": len(rows), "counts": {k: len(v) for k, v in by.items()},
             "mismatched": by[MISMATCH], "unmeasured": by[UNMEASURED],
+            # CRO D21's counter: LIVE rows whose traded code is not the code the clock froze. A
+            # row whose code could not be resolved is counted apart, never as a match.
+            "live_code_hash_mismatch": sum(1 for r in rows if "code" in (r.get("fields") or ())),
+            "live_code_hash_unmeasured": len(code_unknown),
             "defects": [{"name": r["name"], "defect": "IDENTITY_MISMATCH",
                          "fields": r["fields"], "why": r["why"]}
                         for r in rows if r["verdict"] == MISMATCH],

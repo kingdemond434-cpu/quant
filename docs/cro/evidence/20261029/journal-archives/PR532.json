@@ -1,0 +1,7 @@
+{
+  "pointer": "PR #532",
+  "journal_row": "D-20261029-003",
+  "canonical": "pr:532",
+  "url": "https://github.com/kingdemond434-cpu/quant/pull/532",
+  "note": "D-20261029-003 cited its PR as plain text. The journal is append-only, so this receipt makes the historical pointer verifiable; context.py decide now rejects pointers that resolve to MISSING."
+}

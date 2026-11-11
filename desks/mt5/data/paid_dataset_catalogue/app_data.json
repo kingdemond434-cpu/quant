@@ -1,0 +1,127 @@
+{
+ "class": "app_data",
+ "label": "Mobile app downloads and rankings",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:apptopia:app_analytics",
+   "vendor": "Apptopia",
+   "dataset": "App Analytics",
+   "class": "app_data",
+   "region": "global",
+   "measures": "Mobile application performance and usage data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:data_ai_app_annie:mobile_app_analytics",
+   "vendor": "data.ai (App Annie)",
+   "dataset": "Mobile App Analytics",
+   "class": "app_data",
+   "region": "global",
+   "measures": "Download counts, active users, and engagement metrics",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:moonfox_aurora_mobile:moonfox_iapp",
+   "vendor": "Moonfox (Aurora Mobile)",
+   "dataset": "MoonFox iApp",
+   "class": "app_data",
+   "region": "CN",
+   "measures": "Chinese app ranking and usage panel",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:questmobile:chinese_app_analytics",
+   "vendor": "QuestMobile",
+   "dataset": "Chinese App Analytics",
+   "class": "app_data",
+   "region": "CN",
+   "measures": "Chinese mobile app usage and engagement metrics",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:sensor_tower:app_market_intelligence",
+   "vendor": "Sensor Tower",
+   "dataset": "App Market Intelligence",
+   "class": "app_data",
+   "region": "global",
+   "measures": "App store rankings, downloads, and revenue estimates",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:similarweb:similarweb_app_intelligence",
+   "vendor": "Similarweb",
+   "dataset": "Similarweb app intelligence",
+   "class": "app_data",
+   "region": "global",
+   "measures": "App usage estimates",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

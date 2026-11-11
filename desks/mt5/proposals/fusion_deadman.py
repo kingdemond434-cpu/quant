@@ -80,10 +80,20 @@ DAILY_LOSS_PCT = 0.10
 #: The book's worst measured 3-leg drawdown is -33.7R; at the realised risk this account runs,
 #: that is a ~40%+ equity drawdown INSIDE NORMAL BEHAVIOUR. A 30% floor would therefore halt the
 #: desk permanently during a drawdown it was built to survive -- guaranteeing it never compounds
-#: back out. The floor is instead placed where the account stops being able to trade its own
-#: policy: PROMOTED_MIN_EQUITY (EUR 300), the desk's own "cannot size properly below this" line.
-#: Below that the venue's 0.01 lot minimum dictates risk and the policy is fiction.
-EQUITY_FLOOR_EUR = 300.0
+#: back out. The floor is placed where the account stops being able to trade its own policy.
+#:
+#: EUR 10, THE PRINCIPAL'S NUMBER (zuck 2026-11-05 16:10:57Z, cmsg_012XFUfE12Rvggnu86fDb8prW6c
+#: JtjkyJHtsW3hyt6SyCB: "lower the Fusion equity floor to EUR 10"). It was EUR 300 --
+#: PROMOTED_MIN_EQUITY, from before allocator sovereignty, when below it the 0.01-lot minimum
+#: dictated risk. Every Fusion order is now judged on its own size: sovereignty sends nothing
+#: below the venue minimum, the gateway refuses any order risking more than
+#: FUSION_MAX_TRADE_RISK_FRAC (10%) and stops for the day at FUSION_DAILY_LOSS_FRAC, so the
+#: account-wide halt at 300 only stopped orders those rails allow (it halted Fusion at EUR 266).
+#: DERIVED as the ruin line: the equity below which not even the cheapest admitted order fits
+#: the 10% per-trade rail -- measured on the live ledger 2026-11-05, the cheapest admitted
+#: sleeve's 0.01-lot stop risk is EUR 0.58 (usdnok_carry, n=6); 0.58 / 0.10 = EUR 5.8, rounded
+#: up to EUR 10. Every other rail here and in the gateway is unchanged.
+EQUITY_FLOOR_EUR = 10.0
 
 #: Must exceed the daily cap or it is decoration: ~2 maximum bad days.
 WEEKLY_LOSS_PCT = 0.20
@@ -155,10 +165,23 @@ REARM_COOLDOWN_CAP_MIN = 12 * 60
 
 def log(msg: str) -> None:
     line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} {msg}"
-    BREACH_LOG.parent.mkdir(parents=True, exist_ok=True)
-    with BREACH_LOG.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
     print(line)
+    # THE LOG MAY NOT KILL THE RAIL (2026-11-03): the DryRun and Live tasks share this file, and
+    # Windows refuses the second open while the first holds it; that PermissionError crashed
+    # every DryRun pass. The line is already on stdout (the task's own log); retry briefly, then
+    # carry on without it.
+    import time
+
+    for wait in (0.0, 0.2, 0.5, 1.0):
+        time.sleep(wait)
+        try:
+            BREACH_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with BREACH_LOG.open("a", encoding="utf-8") as f:
+                f.write(line + "\n")
+            return
+        except OSError:
+            continue
+    print(f"(not appended to {BREACH_LOG.name}: the file stayed locked)")
 
 
 def _read(p: Path, default):
@@ -302,6 +325,21 @@ def size_guard(positions: list[dict], expected: dict[int, float] | None
     return breaches, {"judged": judged, "unmeasured": unmeasured}
 
 
+def _withdrawn_offset(real: float) -> float:
+    """mt5desk.fusion_equity_reference.active_offset, read by path so this script needs no
+    package on sys.path. Anything unreadable is 0: no reference, the plain floor."""
+    import importlib.util
+
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "fusion_equity_reference", BASE / "mt5desk" / "fusion_equity_reference.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return float(mod.active_offset(real))
+    except Exception:
+        return 0.0
+
+
 def evaluate(account: dict, positions: list[dict], rows: list[dict],
              peak_equity: float, halt_codes: tuple = (),
              expected: dict[int, float] | None = None, *,
@@ -318,12 +356,16 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
     # HYSTERESIS: once halted on the floor, the account must climb back to floor x 1.05 before
     # this stops reporting a breach -- so the CLEAR condition is strictly harder than the BREACH
     # condition and the ruin rail cannot oscillate across its own boundary unattended.
+    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03): while a reference is active the floor is
+    # judged on real equity plus the withdrawn amount (mt5desk.fusion_equity_reference), so it
+    # keeps the euro distance it had before the money left. Daily and weekly rails stay real.
+    offset = float(account.get("withdrawn_offset", 0.0) or 0.0)
     floor = (EQUITY_FLOOR_EUR * EQUITY_REARM_HYSTERESIS
              if "EQUITY_FLOOR" in (halt_codes or ()) else EQUITY_FLOOR_EUR)
-    if equity > 0 and equity < floor:
+    if equity > 0 and equity + offset < floor:
         breaches.append(("EQUITY_FLOOR",
-                         f"EQUITY FLOOR: {equity:.2f} < {floor:.2f} -- the account "
-                         f"can no longer size its own policy"))
+                         f"EQUITY FLOOR: {equity:.2f} (+{offset:.2f} withdrawn) < {floor:.2f} "
+                         f"-- the account can no longer size its own policy"))
 
     # THE CURRENT BROKER DAY ONLY (r6): realised P/L since the server's midnight, and the
     # equity against THAT day's opening balance (the gateway's `day_start_equity` anchor, used
@@ -565,7 +607,8 @@ def main(dry_run: bool = True) -> int:
     st = _read(STATE, {})
     account = {"equity": st.get("equity", 0.0), "margin_free": st.get("margin_free", 0.0),
                "last_reconcile": st.get("last_reconcile"), "pending": st.get("pending") or [],
-               "day_start_equity": st.get("day_start_equity")}
+               "day_start_equity": st.get("day_start_equity"),
+               "withdrawn_offset": _withdrawn_offset(float(st.get("equity", 0.0) or 0.0))}
     positions = st.get("position") or []
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
                           "rearm_history": {}, "escalated": [], "cleared_at": None})

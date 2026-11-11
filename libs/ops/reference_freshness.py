@@ -667,6 +667,24 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="loss_learner.act",
+        module="desks/mt5/research/loss_learner.py",
+        function="act",
+        removes="a LIVE parent row in data/sleeves.json (status RETIRED, risk_frac 0.0, close "
+                "queued) that a forward-superior loss-learning variant replaces",
+        reference="reports/LOSS_LEARNER.json replacement verdicts, each computed from both forward "
+                  "clocks' ledgers in the same pass, plus the roster row of the variant",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (2026-11-03): retires only on a REPLACE verdict -- >= 20 "
+             "paired forward days over >= 14, an always-valid lower bound > 0 at alpha / lifetime "
+             "lineage trials, the variant's own forward verdict promoting -- AND only when the "
+             "variant's row is LIVE with risk_frac > 0 both in the roster act() decides on and "
+             "in the re-read just before the write, and only from a report under 26h old "
+             "(STALE_REPORT otherwise). An absent report, verdict, clock ledger or variant row "
+             "retires nothing (IMMATURE / WAITING / PENDING_VARIANT_LIVE). The pop() the scan "
+             "sees removes an in-memory door note, not evidence.",
+    ),
+    DestructivePath(
         path_id="run_sharded_gauntlet.drop_merge_snapshot",
         module="desks/mt5/scripts/run_sharded_gauntlet.py",
         function="_drop_merge_snapshot",
@@ -795,6 +813,39 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "survivor_publication.unrunnable_reason, and build() returns UNMEASURED with no "
              "`unrunnable` list when the judge or the registry is unreadable, so apply() moves "
              "nothing. A partial registry yields FEWER evictions, never more.",
+    ),
+    DestructivePath(
+        path_id="certificate_hygiene.evict_banned",
+        module="desks/mt5/research/certificate_hygiene.py",
+        function="evict_banned",
+        removes="banned-family survivors popped out of UNIVERSAL_SURVIVORS.json and the canon "
+                "into their `retired_certificates` and UNIVERSAL_SURVIVORS_BANNED.json",
+        reference="family_policy.family_banned on each row's own family (banned_rows())",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a key moves only when build()'s `banned` list names it, and "
+             "banned_rows() admits a row only when its OWN family is on the principal's ban list "
+             "(family_banned('') is False, so a row with no readable family is never evicted). "
+             "No decisions -> evicted 0; a missing or unreadable registry is skipped, never "
+             "rewritten. Nothing is deleted: every row moves with its reason to "
+             "retired_certificates and the banned archive.",
+    ),
+    DestructivePath(
+        path_id="canon_publication.pending_rejudge",
+        module="desks/mt5/research/canon_publication.py",
+        function="publish",
+        removes="seal survivors popped out of `survivors` into the seal's `pending_rejudge` "
+                "(lockbox v4: gates evaluated before the attestation in force)",
+        reference="attestation_remint's REMINT_STATUS.json (in_force_since, fingerprint-matched "
+                  "to the attestation in force) and the seal's own gate_policy",
+        status="positive",
+        note="Triggered only by POSITIVE evidence that the attestation changed: a REMINT_STATUS "
+             "whose fingerprint is the current attestation's (absent, unreadable or another "
+             "attestation's status gives floor=None and parks nothing), or a seal whose own "
+             "gate_policy is not the exact one. Nothing is deleted: rows move whole to "
+             "pending_rejudge, stay in the never-shrink accounting, are put on the docket by "
+             "attestation_remint, and return when the judge re-mints them. OPEN DESIGN POINT for "
+             "the owner: once the floor is established, a row with NO gated_at is parked as "
+             "predating it (attestation_remint.stale_keys / canon_publication.predates).",
     ),
     DestructivePath(
         path_id="forward_reconcile.orphan_clocks",
