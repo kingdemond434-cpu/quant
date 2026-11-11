@@ -87,7 +87,7 @@ def test_family_rollup_separate_bases():
     ogd = fams["overnight_gap_decay"]
     assert ogd["basis_d_elog"] == "PRIOR" and ogd["basis_cpu"] == "PRIOR"
     assert ogd["score_median"] is None and ogd["n_scored"] == 0 and ogd["n_cells"] == 1
-    assert ogd["basis_d_elog_counts"] == {"MEASURED": 0, "PRIOR": 1, "UNMEASURED": 0}
+    assert ogd["basis_counts"]["basis_d_elog"] == {"MEASURED": 0, "PRIOR": 1, "UNMEASURED": 0}
     assert fams["carry"]["basis_d_elog"] == "UNMEASURED"
 
 
@@ -100,7 +100,7 @@ def test_rollup_median_over_non_null_scores_only():
     f = D.rollup(rows)["f"]
     assert f["score_median"] == 2.0 and f["n_scored"] == 2 and f["n_cells"] == 5
     assert f["basis_d_elog"] == "UNMEASURED" and f["basis_cpu"] == "MEASURED"
-    assert f["basis_d_elog_counts"] == {"MEASURED": 1, "PRIOR": 1, "UNMEASURED": 3}
+    assert f["basis_counts"]["basis_d_elog"] == {"MEASURED": 1, "PRIOR": 1, "UNMEASURED": 3}
 
 
 def _docket(tmp_path: Path, n: int) -> Path:
@@ -151,3 +151,63 @@ def test_atomic_write(tmp_path, monkeypatch):
     assert calls and calls[0][1] == out and calls[0][0] != out
     assert json.loads(out.read_text("utf-8")) == {"new": 1}
     assert not list(tmp_path.glob("*.tmp*"))
+
+
+def test_schema_pinned_for_the_judges_reader(tmp_path):
+    """The Judge's sealed reader reads exactly these names and types."""
+    from datetime import datetime
+    doc = D.build(docket=_docket(tmp_path, 20), worlds=tmp_path / "none.npz",
+                  warm=tmp_path / "none.json")
+    assert isinstance(doc["at"], str)
+    assert datetime.fromisoformat(doc["at"]).utcoffset().total_seconds() == 0
+    bases = {"MEASURED", "PRIOR", "UNMEASURED"}
+    assert doc["families"]
+    for f in doc["families"].values():
+        assert f["score_median"] is None or isinstance(f["score_median"], float)
+        assert isinstance(f["basis_cpu"], str) and f["basis_cpu"] in bases
+        assert isinstance(f["basis_d_elog"], str) and f["basis_d_elog"] in bases
+        assert isinstance(f["n_cells"], int) and not isinstance(f["n_cells"], bool)
+        assert isinstance(f["n_scored"], int) and not isinstance(f["n_scored"], bool)
+        assert isinstance(f["basis_counts"], dict)
+
+
+FIXTURE_FAMILIES = ("session_range_breakout", "overnight_gap_decay")
+
+
+def build_fixture(tmp: Path, n_per_family: int = 32) -> dict:
+    """The real build() over a tiny synthetic desk: two families, a MEASURED cpu meter, PRIOR
+    d_elog, every cell scored. Also the source of the Judge's contract fixture."""
+    tmp.mkdir(parents=True, exist_ok=True)
+    docket = [{"symbol": f"SYM{i:02d}", "family": fam, "params": {"session": "asia", "k": i}}
+              for fam in FIXTURE_FAMILIES for i in range(n_per_family)]
+    (tmp / "docket.json").write_text(json.dumps(docket), "utf-8")
+    names = ["AAA_session_range_breakout_asia", "BBB_overnight_gap_decay_asia",
+             "CCC_overnight_gap_decay_asia"]
+    r = np.random.default_rng(7).normal(0, 0.01, size=(4, 64, 3)).astype("float32")
+    np.savez(tmp / "worlds.npz", r=r, names=np.array(names))
+    (tmp / "warm.json").write_text(json.dumps({"cost_meter": {"by_family": {
+        "session_range_breakout": {"n": 40, "s": 120.0, "max_s": 9.0, "warmed": 40},
+        "overnight_gap_decay": {"n": 25, "s": 50.0, "max_s": 4.0, "warmed": 25}}}}), "utf-8")
+    (tmp / "posterior.json").write_text(json.dumps({"sleeves": [
+        {"name": names[0], "family": "session_range_breakout", "mu_mean": 0.04},
+        {"name": names[1], "family": "overnight_gap_decay", "mu_mean": 0.02}]}), "utf-8")
+    saved = (D.POSTERIOR_ALPHA, D.SLEEVES, D.PF_ALLOCATION, D.survival_rate)
+    try:
+        D.POSTERIOR_ALPHA = tmp / "posterior.json"
+        D.SLEEVES = tmp / "no_sleeves.json"
+        D.PF_ALLOCATION = tmp / "no_pf_allocation.json"
+        D.survival_rate = lambda: {"session_range_breakout": 0.10, "overnight_gap_decay": 0.06}
+        return D.build(docket=tmp / "docket.json", worlds=tmp / "worlds.npz",
+                       warm=tmp / "warm.json")
+    finally:
+        D.POSTERIOR_ALPHA, D.SLEEVES, D.PF_ALLOCATION, D.survival_rate = saved
+
+
+def test_fixture_every_family_scored(tmp_path):
+    doc = build_fixture(tmp_path)
+    assert set(doc["families"]) == set(FIXTURE_FAMILIES)
+    for f in doc["families"].values():
+        assert f["basis_cpu"] == "MEASURED" and f["basis_d_elog"] == "PRIOR"
+        assert f["n_scored"] >= 30 and f["n_scored"] == f["n_cells"]
+        assert isinstance(f["score_median"], float) and f["score_median"] > 0
+    assert all(r["score_basis"] == "PRIOR" for r in doc["rows"].values())

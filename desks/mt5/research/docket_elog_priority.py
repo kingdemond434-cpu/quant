@@ -297,11 +297,13 @@ def rollup(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
                                  "score_median": statistics.median(sc) if sc else None,
                                  "n_measured": sum(1 for r in rs
                                                    if r.get("score_basis") == MEASURED)}
+        # basis_d_elog / basis_cpu are PLAIN STRINGS (the Judge's sealed reader pins them): the
+        # dominant basis, a tie going to the better-evidenced one. Counts sit in basis_counts.
+        entry["basis_counts"] = {}
         for key in ("basis_d_elog", "basis_cpu"):
             cnt = {b: sum(1 for r in rs if r[key] == b) for b in (MEASURED, PRIOR, UNMEASURED)}
-            # dominant = most cells; a tie goes to the better-evidenced basis
             entry[key] = max((MEASURED, PRIOR, UNMEASURED), key=lambda b: cnt[b])
-            entry[f"{key}_counts"] = cnt
+            entry["basis_counts"][key] = cnt
         out[fam] = entry
     return out
 
