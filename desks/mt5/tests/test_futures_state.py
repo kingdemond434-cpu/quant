@@ -815,8 +815,8 @@ def test_bis_collect_refuses_a_cut_reply_and_records_a_hard_stop(
 
 
 def test_bis_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
-    from datetime import UTC, datetime
     import urllib.error
+    from datetime import UTC, datetime
     (tmp_desk / "raw").mkdir()
     now = datetime(2026, 11, 11, 12, tzinfo=UTC)
     calls: list[str] = []
