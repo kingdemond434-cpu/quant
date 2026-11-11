@@ -4,7 +4,11 @@ the roster rows (repo file and in-code) for the RavenPack / card / foot-traffic 
 substitutes.
 
 Fixtures are SYNTHETIC pages shaped like each publisher's, except `us_oi_card_spend.csv` and
-`us_oi_google_mobility.csv`, which are ten verbatim rows of the public Opportunity Insights CSVs.
+`us_oi_google_mobility.csv`, which are ten verbatim rows of the public Opportunity Insights CSVs,
+and `my_bnm_kijang_emas.json`, a COPIED BOX READ: the BNM Open API current-day body exactly as
+read on the trading box 2026-11-11 (/mnt/project-files/reports/box_reads/
+bnm_robots_terms_2026-11-11.md). `my_bnm_kijang_emas.1.json` (the month route's list form) is
+synthetic: that shape is unconfirmed live.
 """
 from __future__ import annotations
 
@@ -12,10 +16,11 @@ import io
 import json
 import sys
 import urllib.error
+import urllib.request
 import zipfile
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pandas as pd
 import pytest
@@ -345,11 +350,15 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
     assert A.BY_ID["cn_maoyan_box_office"].terms == "refused"
 
 
+#: Terms reviews read on a later date than the 2026-09-30 sweep.
+CHECKED_AT = {"my_bnm_kijang_emas": "2026-11-11"}
+
+
 def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        assert ev["robots"] and ev["checked_at"] == CHECKED_AT.get(sid, "2026-09-30"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
@@ -832,3 +841,95 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
                    if A.BY_ID[x].terms == "confirmed"}
     assert "asia_za_statssa_retail" not in lib
+
+
+# ============================================================================ BNM Kijang Emas
+def test_bnm_kijang_emas_reads_the_box_body_and_the_list_form() -> None:
+    one = _parse("my_bnm_kijang_emas")                         # the copied box read
+    d = date(2026, 11, 10)
+    assert one[("kijang_emas_1oz_selling_myr", d)].value == 17818
+    assert one[("kijang_emas_1oz_buying_myr", d)].value == 17101
+    assert one[("kijang_emas_1oz_spread_pct", d)].value == pytest.approx(
+        (17818 - 17101) / ((17818 + 17101) / 2) * 100)
+    assert len(one) == 3
+    month = A.parse_bnm_kijang_emas((FIX / "my_bnm_kijang_emas.1.json").read_bytes(), A.Ctx())
+    days = sorted({o.period for o in month})
+    assert days == [date(2026, 10, 1), date(2026, 10, 2), date(2026, 10, 5)]
+    assert len(month) == 9
+    assert {o.series for o in month} == set(A.BY_ID["my_bnm_kijang_emas"].signal_series)
+
+
+@pytest.mark.parametrize("body", [
+    b"not json", b"<html>maintenance</html>", b"[]", b'{"data": null}', b'{"data": "x"}',
+    b'{"message": "Not Found"}', b'{"data": {"effective_date": "2026-11-10"}}',
+    b'{"data": [{"one_oz": {"buying": 1, "selling": 2}}]}',
+    b'{"data": {"effective_date": "garbage", "one_oz": {"buying": 1, "selling": 2}}}',
+    b'{"data": [1, "a", null]}'])
+def test_bnm_kijang_emas_emits_nothing_on_any_other_shape(body: bytes) -> None:
+    assert A.parse_bnm_kijang_emas(body, A.Ctx()) == []
+
+
+def test_bnm_kijang_emas_requests_walk_back_one_month_per_pass_to_2018() -> None:
+    src = A.BY_ID["my_bnm_kijang_emas"]
+    st: dict[str, Any] = {}
+    cur, month = A.requests_for(src, NOW, st)
+    assert cur.url == "https://api.bnm.gov.my/public/kijang-emas"
+    assert month.url.endswith("/kijang-emas/year/2026/month/9")
+    assert st["backfill_to_next"] == "2026-08-01"
+    st = {"backfill_to": "2018-01-01"}
+    assert A.requests_for(src, NOW, st)[1].url.endswith("/year/2018/month/1")
+    st = {"backfill_to": "2017-12-01"}
+    assert [r.url for r in A.requests_for(src, NOW, st)] == [cur.url]   # floor reached
+    assert "backfill_to_next" not in st
+
+
+def test_accept_header_is_sent_only_for_the_bnm_source(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert [s.id for s in A.SOURCES if s.accept] == ["my_bnm_kijang_emas"]
+    assert A.BY_ID["my_bnm_kijang_emas"].accept == "application/vnd.BNM.API.v1+json"
+    sent: list[str | None] = []
+
+    class _Resp(io.BytesIO):
+        headers: ClassVar[dict[str, str]] = {"Content-Type": "application/json"}
+
+    def fake_urlopen(req: Any, timeout: float = 0, context: Any = None) -> _Resp:
+        sent.append(req.get_header("Accept"))
+        return _Resp(b"{}")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    A.http_get("https://example.invalid/x")
+    A.http_get("https://example.invalid/y", A.BY_ID["my_bnm_kijang_emas"].accept)
+    assert sent == ["*/*", "application/vnd.BNM.API.v1+json"]
+    calls: list[tuple[Any, ...]] = []
+    body = (FIX / "my_bnm_kijang_emas.json").read_bytes()
+
+    def getter(*args: Any) -> tuple[bytes, str]:
+        calls.append(args)
+        return body, "application/json"
+
+    paths = A.Paths(tmp_path / "desk")
+    for sid in ("my_bnm_kijang_emas", "br_bcb_payments"):
+        A.collect(paths, A.BY_ID[sid], {}, NOW, fetch=True, fixtures=None, deadline=1e18,
+                  getter=getter)
+    bnm = [c for c in calls if "bnm.gov.my" in c[0]]
+    other = [c for c in calls if "bnm.gov.my" not in c[0]]
+    assert len(bnm) == 2 and all(c[1:] == ("application/vnd.BNM.API.v1+json",) for c in bnm)
+    assert other and all(len(c) == 1 for c in other)          # LIVE sources: URL alone
+
+
+def test_bnm_kijang_emas_terms_are_confirmed_with_the_attribution() -> None:
+    src = A.BY_ID["my_bnm_kijang_emas"]
+    assert src.terms == "confirmed" and A.status_of(src, {}) == "UNMEASURED_LIVE_YIELD"
+    assert src.region == "MY" and src.cadence == "daily" and src.key_env is None
+    ev = A.TERMS_EVIDENCE["my_bnm_kijang_emas"]
+    assert ev["terms_url"] == "https://www.bnm.gov.my/terms-of-use-bnm-datasets"
+    assert "copy, publish, distribute, and transfer the data" in ev["terms_quote"]
+    assert "use the data for commercial and non-commercial purposes" in ev["terms_quote"]
+    assert '"Source: Bank Negara Malaysia"' in ev["conditions_quote"]
+    assert "Data and information are subject to Terms of Use for BNM Datasets" in (
+        ev["conditions_quote"])
+    assert A.credit_of(src.id).startswith("Source: Bank Negara Malaysia")
+    assert "Source: Bank Negara Malaysia" in src.licence
+    assert "terms-of-use-bnm-datasets" in A.credit_of(src.id)
+    # a release is never stamped before BNM's ~03:00 MYT update, read as either MYT or UTC
+    assert A.rule_bnm_kijang(date(2026, 11, 10)) == datetime(2026, 11, 10, 4, tzinfo=UTC)
