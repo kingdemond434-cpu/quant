@@ -45,9 +45,17 @@ lanes (`prop/e8_executor.py`, `prop/e8_gold.py`) wrap their venue with `guard_ve
 place / place_stop / modify_stop / close / cancel / close_all go through `venue_act`.
 
 WHAT IT NEVER DOES. It never changes a size, a price, a stop or a target; it never adds a veto
-on new risk the broker itself would have accepted; it never blocks a close, a stop move or a
-cancel. It adds correctness only -- the principal's standing order is that the desk never
-reduces its aggressiveness.
+of its own on new risk the broker itself would have accepted; it never blocks a close, a stop
+move or a cancel. It adds correctness only -- the principal's standing order is that the desk
+never reduces its aggressiveness.
+
+THE ONE EXCEPTION IS A SURVIVAL RAIL ITS CALLER REGISTERS (`register_open_gate`, 2026-11-11):
+the gateway's account breakers (`mt5desk.account_breaker`: a prop account's daily-loss breaker
+and the disconnect breaker) hold the door shut on NEW risk only, so no lane in the process can
+open past them. A gate is asked about `open` alone -- never a close, stop, cancel or modify --
+and a gate that raises refuses the open (a survival rail that cannot answer fails closed). Each
+gate bills its own refusals on the rails ledger; the door records them as `door_reason` = the
+gate's name.
 
 `restart_reconcile` is the startup half: before anything new is placed on a pass it reads the
 venue's own positions and orders under this desk's magic, resolves the in-doubt keys against
@@ -125,7 +133,9 @@ class DoorRefused(SimpleNamespace):
 #: count these -- a duplicate guard holding back a second copy of a landed order is the door
 #: working, and two of them must never auto-pause the desk. `broker_check_rejected` is NOT here:
 #: it carries the broker's own retcode, the send would have failed with the same code, and it
-#: keeps counting, so a venue refusing everything still pauses the desk as it always did.
+#: keeps counting, so a venue refusing everything still pauses the desk as it always did. A
+#: registered survival gate's refusal (`register_open_gate`) is the desk's own too: a breaker
+#: holding new risk for a day must not read as a venue refusing everything.
 DOOR_OWN_REFUSALS = frozenset({"duplicate_of_in_doubt", "in_doubt_venue_unreadable"})
 
 
@@ -133,7 +143,8 @@ def is_door_own_refusal(res: Any) -> bool:
     """True for a `DoorRefused` whose reason is the door's own (see DOOR_OWN_REFUSALS). The
     refusal also carries `door_own`, so a caller can read it without importing this module."""
     return bool(getattr(res, "door_refused", False)) \
-        and getattr(res, "door_reason", None) in DOOR_OWN_REFUSALS
+        and (getattr(res, "door_reason", None) in DOOR_OWN_REFUSALS
+             or getattr(res, "door_reason", None) in OPEN_GATES)
 
 
 # ------------------------------------------------------------------ paths and the log sink
@@ -445,6 +456,32 @@ def _check(mt5: Any, request: Mapping[str, Any]) -> tuple[str, int | None, str]:
     return "reject", rc_i, comment
 
 
+# ------------------------------------------------------------------ survival gates on `open`
+#: name -> gate(raw_mt5, request) -> refusal reason, or None to let the open through.
+OPEN_GATES: dict[str, Callable[[Any, Mapping[str, Any]], str | None]] = {}
+
+
+def register_open_gate(name: str, gate: Callable[[Any, Mapping[str, Any]], str | None]) -> None:
+    """Install (or replace) a caller's survival gate on NEW risk. See the module doc."""
+    OPEN_GATES[str(name)] = gate
+
+
+def clear_open_gate(name: str) -> None:
+    OPEN_GATES.pop(str(name), None)
+
+
+def _gate_refusal(mt5: Any, req: Mapping[str, Any]) -> tuple[str, str] | None:
+    """(gate name, reason) of the first registered gate that refuses this open, else None."""
+    for name, gate in list(OPEN_GATES.items()):
+        try:
+            why = gate(mt5, req)
+        except Exception as exc:
+            why = f"the {name} gate raised {type(exc).__name__}: {exc}; failing closed"[:300]
+        if why:
+            return name, str(why)
+    return None
+
+
 # ------------------------------------------------------------------ THE door
 def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
          log: Callable[[str], None] | None = None,
@@ -467,6 +504,16 @@ def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
         # sends its stop with the order; one that does not is a defect to find, loudly.
         row["no_stop"] = True
         _emit(log, f"{where}: WARNING opening order carries no stop (sl={req.get('sl')!r})")
+
+    refused = _gate_refusal(mt5, req) if kind == OPEN and OPEN_GATES else None
+    if refused is not None:
+        gname, gwhy = refused
+        row.update({"door": "refused", "reason": gname, "gate_why": gwhy, "retcode": None})
+        _emit(log, f"{where}: REFUSED by the {gname} survival gate -- {gwhy}")
+        append_ledger(row, log=log)
+        return DoorRefused(retcode=None, comment=f"order_door: {gname}: {gwhy}"[:200], order=0,
+                           deal=0, volume=0.0, price=0.0, door_refused=True, door_reason=gname,
+                           door_own=True)
 
     key = dedupe_key(req) if kind == OPEN else ""
     if key:

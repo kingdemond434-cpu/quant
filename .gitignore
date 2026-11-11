@@ -290,6 +290,7 @@ desks/*/data/recover_candidates.json
 # Runtime state files (mt5-state branch only)
 **/shadow_health.json
 **/gateway_state.json
+**/account_breaker_state.json
 **/sleeves.json
 **/regime_state.json
 # TWO PATTERNS THAT LOST THEIR NEWLINE. This read `**/sync_marker.jsonbackups/` -- a single rule
