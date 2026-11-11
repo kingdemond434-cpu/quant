@@ -256,13 +256,39 @@ def fetcher_source(kind: str) -> tuple[str, str]:
         return "", ""
 
 
+#: The only fields of a drift record that may leave the box in a prompt. Counts, classes and
+#: dates -- never a row, a page body, a URL's query, a run note or a `detail` string, any of
+#: which can carry licensed feed content. A third-party LLM sees the SHAPE of the breakage and
+#: the desk's own parser code, nothing the feed published.
+PROMPT_FIELDS: tuple[str, ...] = ("kind", "fetcher_kind", "status", "requests",
+                                  "last_yield_at", "passes_with_new_schema")
+
+
+def schema_diff(d: Mapping[str, Any]) -> dict[str, Any]:
+    """The drift as a schema diff: whitelisted scalars plus column-level changes (names and
+    dtypes only, never values)."""
+    out: dict[str, Any] = {k: d.get(k) for k in PROMPT_FIELDS if d.get(k) is not None}
+    if d.get("kind") == "PARSER_DRIFT":
+        out["parsed_rows"] = 0
+    changes = []
+    for c in d.get("changes") or []:
+        changes.append({k: c.get(k) for k in ("kind", "column", "was", "now")
+                        if c.get(k) is not None and not (c.get("kind") == "ROWS_SHRANK"
+                                                         and k == "column")})
+    if changes:
+        out["changes"] = changes
+    return out
+
+
 def prompt_for(d: Mapping[str, Any], name: str, src: str) -> str:
-    return ("A free-stack fetcher stopped parsing its source. Requests succeeded (no transport "
-            "failure) but nothing was parsed, while earlier runs yielded. Propose the smallest "
-            "change to the parser below that would read the likely new page/JSON shape, as a "
-            "unified diff, and list what a builder must verify on a recorded fixture before "
-            "merging. Do not change what is fetched or the robots/UA handling.\n\n"
-            f"Fetcher: {name}\nLast detail: {d.get('detail')}\nNotes: {d.get('notes')}\n\n"
+    """The source NAME, the schema diff and the desk's own parser code. Never sample rows."""
+    return ("A data parser stopped producing rows. Requests succeeded (no transport failure) "
+            "but nothing was parsed, while earlier runs yielded. Propose the smallest change to "
+            "the parser below that would read the likely new page/JSON shape, as a unified diff, "
+            "and list what a builder must verify on a recorded fixture before merging. Do not "
+            "change what is fetched or the robots/UA handling.\n\n"
+            f"Source: {d.get('feed')}\nFetcher: {name}\n"
+            f"Schema diff: {json.dumps(schema_diff(d), sort_keys=True, default=str)}\n\n"
             f"```python\n{src[:6000]}\n```")
 
 

@@ -127,3 +127,31 @@ def test_the_leg_is_wired() -> None:
     src = inspect.getsource(hourly_cycle.main)
     assert '_costed("feed_schema_watch"' in src and '"feed_schema_watch": fsw' in src
     assert hourly_cycle.department_of("feed_schema_watch") == "data"
+
+
+def test_the_llm_prompt_carries_the_name_and_schema_diff_never_rows() -> None:
+    """Licensed feed rows must never reach a third-party LLM (Auditor, PR #1034)."""
+    feed_row = '{"title": "LICENSED ROW 7203 +3.1%", "price": 2961.5}'
+    d = {"feed": "free_stack:app_rank_apple", "kind": "PARSER_DRIFT",
+         "fetcher_kind": "app_rank_apple", "status": "BLOCKED", "requests": 20,
+         "last_yield_at": "2026-11-10T00:00:00+00:00", "breaking": True,
+         "detail": f"no chart parsed; body began {feed_row}",
+         "notes": [f"http_200: https://x.example/api?q=feedterm {feed_row}"],
+         "sample": [feed_row], "raw": feed_row}
+    prompt = fw.prompt_for(d, "libs/data/free_stack.py:fetch_app_rank_apple", "def f(): pass")
+    assert "free_stack:app_rank_apple" in prompt and "PARSER_DRIFT" in prompt
+    for leak in ("LICENSED ROW", "2961.5", "q=feedterm", "no chart parsed"):
+        assert leak not in prompt
+    lake = {"feed": "lake:x.parquet", "kind": "SCHEMA_DRIFT",
+            "changes": [{"kind": "COLUMN_REMOVED", "column": "value", "was": "double"},
+                        {"kind": "ROWS_SHRANK", "was": 900, "now": 10}],
+            "rows_sample": [feed_row]}
+    diff = fw.schema_diff(lake)
+    assert diff["changes"][0] == {"kind": "COLUMN_REMOVED", "column": "value", "was": "double"}
+    assert "LICENSED" not in json.dumps(diff)
+    assert set(fw.schema_diff(d)) <= set(fw.PROMPT_FIELDS) | {"parsed_rows"}
+
+
+def test_tickets_are_gitignored() -> None:
+    ignore = (_DESK.parent.parent / ".gitignore").read_text("utf-8")
+    assert "desks/mt5/data/feed_schema_watch/tickets/" in ignore
