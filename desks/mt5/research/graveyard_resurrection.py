@@ -72,6 +72,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 from libs.moat import registry as reg  # noqa: E402
 from libs.ops.phase_stamp import PhaseStamp  # noqa: E402
 from libs.research import hypothesis_graph as hg  # noqa: E402
+from libs.research import hypothesis_graph_scan as hg_scan  # noqa: E402
 from libs.research import mechanism_ontology as onto  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 from research import negative_knowledge as nk  # noqa: E402
@@ -300,10 +301,10 @@ def read_graph_with_ids(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], se
     THE GRAPH IS READ BY PATTERN, NOT PARSED WHOLE (2026-11-03). The old read was a full
     `json.loads` of the graph's FIRST `limit` lines: on the box's 4.4 GB file that is the oldest
     rows, every pass, at ~6 MB/s, and the leg was killed at its cap on 1,934 runs with 0
-    candidates from 271k dead cells. `hg.latest_rows` parses only the judged rows, the newest
+    candidates from 271k dead cells. `hg_scan.latest_rows` parses only the judged rows, the newest
     `limit` of them.
     """
-    return hg.latest_rows(JUDGED_FATES, GRAPH, limit)
+    return hg_scan.latest_rows(JUDGED_FATES, GRAPH, limit)
 
 
 def read_graph_measured(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], set[str], str]:
@@ -313,7 +314,7 @@ def read_graph_measured(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], se
     the first as UNMEASURED: a dead-cell count taken without the graph is not a count of the dead.
     """
     problems: list[str] = []
-    rows, ids = hg.latest_rows(JUDGED_FATES, GRAPH, limit, problems)
+    rows, ids = hg_scan.latest_rows(JUDGED_FATES, GRAPH, limit, problems)
     return rows, ids, "; ".join(problems)
 
 
