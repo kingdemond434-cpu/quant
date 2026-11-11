@@ -84,4 +84,4 @@ def test_wired_as_an_hourly_leg() -> None:
     assert '"research/ftmo_pace_modifier.py", "--once"' in src
     assert layers.LEG_LAYER["ftmo_pace_modifier"] == "sizing"
     reg = json.loads((_ROOT / "docs" / "research" / "experiment_contracts.json").read_text("utf-8"))
-    assert "ftmo_pace_modifier" in reg
+    assert "ftmo_pace_modifier" in reg["legs"]
