@@ -362,8 +362,10 @@ def family_weekend_crypto_gap(
         driver = bars_named(str(driver_symbol), df)
     if driver is None or len(driver) < 200 or "close" not in driver.columns:
         return []
-    idx = pd.DatetimeIndex(df.index)
-    didx = pd.DatetimeIndex(driver.index)
+    # nanoseconds on both clocks: `asi8` is in the index's own unit, and a us-resolution frame
+    # compared against ns Timedeltas finds no weekend at all
+    idx = pd.DatetimeIndex(df.index).as_unit("ns")
+    didx = pd.DatetimeIndex(driver.index).as_unit("ns")
     span = pd.Timedelta(minutes=LC.bar_minutes(idx))
     dclose = driver["close"].to_numpy(dtype=float)
     past: list[float] = []
