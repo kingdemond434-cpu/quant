@@ -109,3 +109,18 @@ def test_a_datetime_time_column_fills_in_milliseconds_and_a_twin_counts_once(
     prof = CS.tick_profile("EURCHF", POINT, root=tmp_path)
     assert prof is not None and list(prof["hours"]) == ["5"]
     assert prof["hours"]["5"]["n_ticks"] == 250 and prof["n_dropped_no_time"] == 0
+
+
+def test_the_window_counts_distinct_dates_and_a_tick_in_both_files_counts_once(
+        tmp_path: Path) -> None:
+    """CS1 2026-11-11: each date has a dashed and a compact file, so `[-days:]` of the file list
+    covered half the days, and one tick stored in both files must count once."""
+    for k in range(4):
+        day = f"2026-10-1{k}"
+        _tape(tmp_path, "EURCHF", 4, [2.0] * 200, day=day)
+        compact = tmp_path / "EURCHF" / f"{day.replace('-', '')}.parquet"
+        (tmp_path / "EURCHF" / f"{day}.parquet").rename(compact)
+        _tape(tmp_path, "EURCHF", 4, [2.0] * 200, day=day)        # the same ticks, dashed name
+    prof = CS.tick_profile("EURCHF", POINT, days=3, root=tmp_path)
+    assert prof is not None and prof["days"] == ["2026-10-11", "2026-10-12", "2026-10-13"]
+    assert prof["hours"]["4"]["n_ticks"] == 600

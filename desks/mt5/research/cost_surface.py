@@ -277,7 +277,11 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
     if desk not in sys.path:
         sys.path.insert(0, desk)
     from mt5desk.tape import day_files
-    files = day_files(symbol, root)[-days:]
+    # The tape keeps up to two files per date (the recorder's compact YYYYMMDD and the merged
+    # dashed YYYY-MM-DD), so the window is the last `days` DISTINCT dates, every file of each.
+    every = day_files(symbol, root)
+    keep = set(sorted({d for d, _f in every})[-days:])
+    files = [(d, f) for d, f in every if d in keep]
     frames = []
     for _day, f in files:
         try:
@@ -329,7 +333,7 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
             row["p90"] = round(float(cell.quantile(0.90)), 2)
             row["p50_nonzero"] = round(float(nz.median()), 2) if nz.size else 0.0
         hours[str(h)] = row
-    return {"days": [d for d, _f in files], "n_ticks": len(t), "n_dropped_no_time": n_no_time,
+    return {"days": sorted(keep), "n_ticks": len(t), "n_dropped_no_time": n_no_time,
             "hours": hours,
             "n_hours_measured": sum(1 for r in hours.values() if r["status"] == "MEASURED")}
 
