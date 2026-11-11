@@ -330,7 +330,7 @@ def test_cot_follows_the_cftc_calendar() -> None:
     # One calendar on the desk: the same stamps futures_state gives, and its schema overrides.
     from research import futures_state as fs
     cal = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))["cftc_release_calendar"]
-    assert rel.equals(fs.cftc_available(rd, cal))
+    assert (rel == fs.cftc_available(rd, cal)).all()
     assert ifp.cot_release_times(rd, {"releases": {"2025-10-07": "2025-11-19"}}).iloc[2] \
         == pd.Timestamp("2025-11-19 21:00", tz="UTC")
     assert not hasattr(ifp, "COT_CALENDAR")
