@@ -154,13 +154,31 @@ def terms_gate(terms_id: str, terms_path: Path = TERMS) -> tuple[str, str]:
         return HELD, f"terms row `{terms_id}` needs auth={row.get('auth')!r}: held"
     if row.get("machine_use_allowed") is not True:
         return HELD, f"terms row `{terms_id}` does not declare machine_use_allowed: held"
-    return LIVE, f"terms row `{terms_id}`: {row.get('licence')}"
+    # AN ASSERTION IS NOT A READING (audit HOLD on d6f0d42da, 2026-11-11). `machine_use_allowed`
+    # alone is a claim nobody can check; the row must also cite the clause that was read, where,
+    # and when. The Eastmoney terms are recorded UNREAD (they could not be loaded), so the repo's
+    # own row holds this lane until somebody reads them and writes the citation into the row.
+    missing = [k for k in TERMS_CITATION_KEYS if not str(row.get(k) or "").strip()]
+    if missing:
+        return HELD, (f"terms row `{terms_id}` asserts machine use but cites no reading "
+                      f"(missing {', '.join(missing)}): held (fail closed)")
+    return LIVE, (f"terms row `{terms_id}`: {row.get('licence')} "
+                  f"[{row.get('terms_url')} read {row.get('terms_read_at')}]")
+
+
+#: What a terms row must cite before `machine_use_allowed` counts: the clause, its URL, the date.
+TERMS_CITATION_KEYS = ("terms_clause", "terms_url", "terms_read_at")
+#: robots.txt statuses that are a refusal of this agent, never "no robots file".
+ROBOTS_REFUSAL_CODES = frozenset({401, 403, 429, 451})
 
 
 def robots_gate(url: str, fetch: Fetch, cache: dict[str, Any]) -> tuple[str, str]:
     """(ALLOWED | ROBOTS_DISALLOWED | ROBOTS_UNREADABLE, why) for this agent on `url`. RFC 9309:
-    a 4xx robots.txt allows everything; a 5xx or an unreachable one allows nothing this pass.
-    robots.txt is read once per host per pass (`cache`)."""
+    a 404/410 or other plain 4xx robots.txt allows everything; a 5xx or an unreachable one allows
+    nothing this pass. 401, 403, 429 and 451 are REFUSALS, not absences (desk ruling): the host
+    is telling this agent no, so nothing is fetched. robots.txt is read once per host per pass
+    (`cache`). This local copy is replaced by `libs/data/robots_gate.py` once that module lands
+    (#831); until then it carries the same rule."""
     from urllib.robotparser import RobotFileParser
 
     parts = urllib.parse.urlsplit(url)
@@ -174,8 +192,13 @@ def robots_gate(url: str, fetch: Fetch, cache: dict[str, Any]) -> tuple[str, str
         except Exception as exc:
             reason = str(getattr(exc, "reason", "") or type(exc).__name__)
             code = reason[5:] if reason.startswith("http_") else ""
-            cache[robots] = ("allow_all" if code.isdigit() and 400 <= int(code) < 500
-                             else f"unreachable ({reason})")
+            n = int(code) if code.isdigit() else 0
+            if n in ROBOTS_REFUSAL_CODES:
+                cache[robots] = f"refused ({reason})"
+            elif 400 <= n < 500:
+                cache[robots] = "allow_all"
+            else:
+                cache[robots] = f"unreachable ({reason})"
     got = cache[robots]
     if got == "allow_all":
         return "ALLOWED", "robots.txt absent (4xx): allowed per RFC 9309"

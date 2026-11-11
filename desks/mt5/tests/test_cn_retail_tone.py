@@ -166,10 +166,20 @@ class FakeNet:
         raise FetchError("http_404", url)
 
 
+#: A terms row that CITES a reading (synthetic): what the gate needs before it opens the lane.
+CITED_ROW = {"id": "cn_guba", "auth": "none", "machine_use_allowed": True,
+             "licence": "synthetic", "terms_clause": "synthetic clause 1",
+             "terms_url": "https://example.invalid/terms", "terms_read_at": "2026-09-01"}
+
+
 def _paths(tmp: Path) -> dict[str, Any]:
+    tmp.mkdir(parents=True, exist_ok=True)
+    terms = tmp / "cited_terms.json"
+    terms.write_text(json.dumps({"sources": [CITED_ROW]}), "utf-8")
     return {"store_root": tmp / "store", "series_dir": tmp / "series",
             "axis_out": tmp / "axes" / "cn.json", "report": tmp / "rep.json",
-            "vault": tmp / "vault", "digest_path": tmp / "digest.json", "pause_s": 0.0}
+            "vault": tmp / "vault", "digest_path": tmp / "digest.json", "pause_s": 0.0,
+            "terms_path": terms}
 
 
 def test_a_pass_fetches_only_allowed_guba_boards_and_never_xueqiu(tmp_path: Path) -> None:
@@ -205,6 +215,13 @@ def test_robots_disallow_and_unreachable_robots_stop_the_fetch(tmp_path: Path) -
     rep = organ.run(datetime(2026, 9, 4, tzinfo=UTC), get=missing, chat=None,
                     **_paths(tmp_path / "c"))
     assert rep["fetch"]["postures"]["waihui"]["posture"] == "OK"     # RFC 9309: 4xx allows
+    # 401 / 403 / 429 / 451 are the host REFUSING this agent, never "no robots file".
+    for i, code in enumerate((401, 403, 429, 451)):
+        refused = FakeNet(robots=FetchError(f"http_{code}", "robots"))
+        rep = organ.run(datetime(2026, 9, 4, tzinfo=UTC), get=refused, chat=None,
+                        **_paths(tmp_path / f"r{i}"))
+        assert rep["fetch"]["postures"]["waihui"]["posture"] == "ROBOTS_UNREADABLE", code
+        assert rep["fetch"]["requests"] == 0, code
 
 
 def test_a_source_without_a_permitting_terms_row_is_held(tmp_path: Path) -> None:
@@ -212,12 +229,25 @@ def test_a_source_without_a_permitting_terms_row_is_held(tmp_path: Path) -> None
     terms.write_text(json.dumps({"sources": [{"id": "cn_guba", "auth": "cookie",
                                               "machine_use_allowed": True}]}), "utf-8")
     net = FakeNet()
-    rep = organ.run(datetime(2026, 9, 4, tzinfo=UTC), get=net, chat=None, terms_path=terms,
-                    **_paths(tmp_path))
+    rep = organ.run(datetime(2026, 9, 4, tzinfo=UTC), get=net, chat=None,
+                    **{**_paths(tmp_path), "terms_path": terms})
     assert {v["posture"] for v in rep["fetch"]["postures"].values()} == {"HELD"}
     assert net.calls == []
     assert organ.terms_gate("nope", terms)[0] == organ.HELD
-    assert organ.terms_gate("cn_guba")[0] == organ.LIVE            # the repo's own row permits
+    # AN ASSERTION WITHOUT A CITED READING HOLDS: each citation key is required.
+    for key in organ.TERMS_CITATION_KEYS:
+        row = {k: v for k, v in CITED_ROW.items() if k != key}
+        terms.write_text(json.dumps({"sources": [row]}), "utf-8")
+        verdict, why = organ.terms_gate("cn_guba", terms)
+        assert verdict == organ.HELD and key in why
+    terms.write_text(json.dumps({"sources": [CITED_ROW]}), "utf-8")
+    assert organ.terms_gate("cn_guba", terms)[0] == organ.LIVE
+    # The repo's own row opens the lane only once it cites a reading (Eastmoney terms were
+    # recorded UNREAD on 2026-11-11, so today it holds).
+    rows = json.loads(organ.TERMS.read_text("utf-8")).get("sources") or []
+    own = next(r for r in rows if r.get("id") == "cn_guba")
+    cited = all(str(own.get(k) or "").strip() for k in organ.TERMS_CITATION_KEYS)
+    assert (organ.terms_gate("cn_guba")[0] == organ.LIVE) == cited
 
 
 def test_the_series_lands_in_the_lake_with_available_time_and_a_stable_known_at(
