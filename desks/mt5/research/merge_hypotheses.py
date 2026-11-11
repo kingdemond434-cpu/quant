@@ -1404,8 +1404,22 @@ def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, 
 #: Twelve hours, not six: the last fifteen published merge_report.json commits on LIVE
 #: (2026-11-06..09) sit 2.7-8.7 h apart, so a healthy run can take ~8 h and a six-hour wall
 #: would have stopped good runs. Twelve clears the slowest healthy one by ~40% and still ends a
-#: hang 17 h sooner than the one above. Override with MERGE_DOCKET_WALL_S (0 disarms).
-MERGE_WALL_S = float(os.environ.get("MERGE_DOCKET_WALL_S", str(12 * 3600)))
+#: hang 17 h sooner than the one above. Override with MERGE_DOCKET_WALL_S (0 disarms); the
+#: variable is read when the wall is armed, never at import, so a malformed value cannot break
+#: the modules that import this one (breadth_sweep, local_converter).
+MERGE_WALL_S = 12 * 3600.0
+
+
+def _wall_seconds() -> float:
+    raw = os.environ.get("MERGE_DOCKET_WALL_S")
+    if raw is None or not raw.strip():
+        return MERGE_WALL_S
+    try:
+        return float(raw)
+    except ValueError:
+        print(f"merge_hypotheses: MERGE_DOCKET_WALL_S={raw!r} is not a number; using "
+              f"{MERGE_WALL_S:.0f}s", flush=True)
+        return MERGE_WALL_S
 #: The exit status of a run stopped at the wall: not 0, so it never reads as a publication.
 MERGE_WALL_EXIT = 124
 
@@ -1415,20 +1429,34 @@ def _arm_wall(wall_s: float | None = None) -> bool:
     import faulthandler
     import sys
 
-    wall = MERGE_WALL_S if wall_s is None else float(wall_s)
+    _FINISHED.clear()                                # a new run: nothing has finished yet
+    wall = _wall_seconds() if wall_s is None else float(wall_s)
     if wall <= 0:
         return False
     print(f"merge_hypotheses: wall armed at {wall:.0f}s; a run still going then dumps its "
           f"stacks and exits {MERGE_WALL_EXIT}", flush=True)
-    faulthandler.dump_traceback_later(wall, exit=False, file=sys.stderr)
+    try:
+        faulthandler.dump_traceback_later(wall, exit=False, file=sys.stderr)
+    except (AttributeError, ValueError, OSError) as exc:
+        # No usable stderr (pythonw, a detached task): the wall still ends the run, unnamed.
+        print(f"merge_hypotheses: no stack dump at the wall ({type(exc).__name__}: {exc})",
+              flush=True)
 
     def _stop() -> None:
         # A run already writing its ledgers and docket gets WRITE_GRACE_S to finish; an
         # append-only log cut mid-line (preregistrations.jsonl's reader stops at the first bad
         # line) would cost every later entry. A hang inside the writes still ends at the grace.
-        if _WRITES.acquire(timeout=WRITE_GRACE_S):
-            _WRITES.release()
-        sys.stderr.flush()
+        # The lock is KEPT through the exit, so a main() that had not reached its writes cannot
+        # start one now; a run that finished them inside the grace is not stopped at all.
+        held = _WRITES.acquire(timeout=WRITE_GRACE_S)
+        if _FINISHED:
+            if held:
+                _WRITES.release()
+            return
+        try:
+            sys.stderr.flush()
+        except (AttributeError, ValueError, OSError):
+            pass
         print(f"merge_hypotheses: WALL {wall:.0f}s reached; stacks above; exiting "
               f"{MERGE_WALL_EXIT} with the previous docket standing", flush=True)
         os._exit(MERGE_WALL_EXIT)
@@ -1453,6 +1481,8 @@ _WALL: list[Any] = []
 #: Held from preregistration to the end of main(): the wall waits on it (bounded) before exiting.
 _WRITES = threading.Lock()
 _WRITES_HELD: list[bool] = []
+#: Set once main() has returned or raised, before its write lock is released.
+_FINISHED: list[bool] = []
 WRITE_GRACE_S = 1800.0
 
 
@@ -1486,8 +1516,9 @@ def run_cli() -> int:
         try:
             return main()
         finally:
-            _leave_writes()
+            _FINISHED.append(True)
             _disarm_wall()
+            _leave_writes()
             print(f"merge_hypotheses: wall time {time.monotonic() - t0:.0f}s", flush=True)
 
 
