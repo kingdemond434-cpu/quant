@@ -90,7 +90,7 @@ class Box:
         self.merge = _git(r, "rev-parse", "HEAD")
         self.release(self.merge)
         self.pin = self.reg / "ROOT_PIN.json"
-        first = rp_mod.tree_digest(rp_mod.Repo(r), self.base, rpm, self.policy)
+        first = rp_mod.tree_digest(rp_mod.Repo(r / ".git"), self.base, rpm, self.policy)
         self.pin.write_text(json.dumps({"digest": first}))
         (self.reg / "ROOT_INFLIGHT.json").write_text(json.dumps({"pr": 41, "head": self.head}))
         self.notice(T_MERGE - timedelta(hours=73))
@@ -108,8 +108,19 @@ class Box:
         self.sent.append(title)
         return (0 if self.delivered else 1), f"armed 1, delivered {self.delivered}"
 
+    def mirror(self, repo: Any, rp: Any) -> str:
+        """The sealed mirror's fetch of GitHub's LIVE, from the local live repo instead."""
+        m = str(repo.path)
+        if not (repo.path / "HEAD").exists():
+            subprocess.run(["git", "init", "-q", "--bare", m], check=True)
+        subprocess.run(["git", "--git-dir", m, "fetch", "-q", str(self.live),
+                        "+refs/heads/*:refs/remotes/box/*"], check=True)  # fmt: skip
+        tip = self.tip or _git(self.live, "rev-parse", "HEAD")
+        subprocess.run(["git", "--git-dir", m, "update-ref", "refs/heads/live", tip], check=True)
+        return tip
+
     def run(self, now: datetime | None = None) -> int:
-        rp_mod.live_tip = lambda repo, rp: self.tip or _git(self.live, "rev-parse", "HEAD")
+        rp_mod.refresh_mirror = self.mirror
         return int(rp_mod.run(self.reg, self.live, self.pin, now or T_MERGE + timedelta(hours=1),
                               home=self.home, send=self.send))  # fmt: skip
 
@@ -129,7 +140,7 @@ def test_a_root_path_merge_that_was_released_and_adopted_is_re_pinned(tmp_path: 
     old = json.loads(b.pin.read_text())["digest"]
     assert b.run() == 0
     pin = json.loads(b.pin.read_text())
-    want = rp_mod.tree_digest(rp_mod.Repo(b.live), b.merge, rpm, b.policy)
+    want = rp_mod.tree_digest(rp_mod.Repo(b.live / ".git"), b.merge, rpm, b.policy)
     assert pin["digest"] == want != old and pin["commit"] == b.merge and pin["by"] == "repin"
     assert pin["previous_digest"] == old and pin["merge"] == b.merge
     assert not (b.reg / "ROOT_INFLIGHT.json").exists()
@@ -140,7 +151,7 @@ def test_a_root_path_merge_that_was_released_and_adopted_is_re_pinned(tmp_path: 
 def test_the_digest_is_the_one_the_authority_computes(tmp_path: Path) -> None:
     b = Box(tmp_path)
     pol = _load("pol_t", AUTH / "policy.py")
-    repo = rp_mod.Repo(b.live)
+    repo = rp_mod.Repo(b.live / ".git")
     names = repo.out("ls-tree", "-r", "--name-only", b.merge).splitlines()
     want = pol.root_digest(lambda n: repo.show(b.merge, n), names, pol.load_policy())
     assert rp_mod.tree_digest(repo, b.merge, rpm, b.policy) == want
@@ -150,7 +161,7 @@ def test_repin_never_runs_code_from_the_tree_it_pins(tmp_path: Path) -> None:
     """A hostile policy.py in the tree (one that lies about its digest or acts on import) changes
     nothing: the digest comes from the installed sealed root_path, and tree code never runs."""
     b = Box(tmp_path)
-    repo = rp_mod.Repo(b.live)
+    repo = rp_mod.Repo(b.live / ".git")
     want = rp_mod.tree_digest(repo, b.merge, rpm, b.policy)
     flag = tmp_path / "pwned"
     _put(b.live, "ops/release/authority/policy.py",
@@ -257,6 +268,7 @@ def test_the_installer_seals_the_copy_and_runs_it_as_system() -> None:
     ps = (AUTH / "install_repin.ps1").read_text("utf-8")
     assert '"repin.py", "root_path.py", "notify.py", "ROOT_POLICY.json"' in ps
     assert "alert_channels.py" in ps and "--notify" not in ps  # nothing from the live tree runs
+    assert 'Join-Path $Sealed "data\\secrets"' in ps  # the channel config is sealed too
     assert '"Administrators:(OI)(CI)F" "SYSTEM:(OI)(CI)F" "Users:(OI)(CI)RX"' in ps
     assert 'New-ScheduledTaskPrincipal -UserId "SYSTEM"' in ps and "Quant-RootRepin" in ps
     assert "the task was NOT registered" in ps  # a dry run must pass before the task exists
@@ -271,13 +283,60 @@ def test_a_release_that_is_not_on_githubs_live_is_not_pinned(tmp_path: Path) -> 
     b.tip = b.base  # GitHub's LIVE does not contain the release
     assert b.run() == 0 and b.pin.read_text() == before
     assert b.log()[-1]["action"] == "WAIT" and "GitHub's LIVE" in b.log()[-1]["why"]
-    b.tip = "e" * 40  # a tip the live tree has not fetched
-    assert b.run() == 0 and b.pin.read_text() == before and "not fetched" in b.log()[-1]["why"]
+    b.tip = None
+    b.release("f" * 40)  # a release GitHub's LIVE does not have at all
+    assert b.run() == 0 and b.pin.read_text() == before and "not on GitHub" in b.log()[-1]["why"]
+
+
+def test_git_never_runs_in_the_live_tree(tmp_path: Path) -> None:
+    """The live tree's .git/config is writable by another account: a hostile one changes
+    nothing, because every git call runs against the sealed mirror."""
+    b = Box(tmp_path)
+    flag = tmp_path / "pwned"
+    hook = tmp_path / "evil.sh"
+    hook.write_text(f"#!/bin/sh\ntouch {flag}\n")
+    hook.chmod(0o755)
+    _git(b.live, "config", "core.askPass", str(hook))
+    _git(b.live, "config", "core.fsmonitor", str(hook))
+    _git(b.live, "config", "core.pager", str(hook))
+    _git(b.live, "config", "url.https://evil.example/.insteadOf", "https://github.com/")
+    assert b.run() == 0 and json.loads(b.pin.read_text())["by"] == "repin"
+    assert not flag.exists()
+    assert (b.home / "live.git" / "HEAD").exists()  # the mirror is the service's own
+
+
+def test_the_live_head_is_read_from_files(tmp_path: Path) -> None:
+    b = Box(tmp_path)
+    assert rp_mod.live_head(b.live) == _git(b.live, "rev-parse", "HEAD")
+    (b.live / ".git" / "HEAD").write_text("ref: ../../etc/x\n")
+    assert rp_mod.live_head(b.live) is None
+
+
+def test_the_sealed_notifier_uses_only_its_own_channel_config(tmp_path: Path) -> None:
+    nt = _load("notify_t", AUTH / "notify.py")
+    home, live = tmp_path / "sealed", tmp_path / "live"
+    (home / "data" / "secrets").mkdir(parents=True)
+    (live / "data" / "secrets").mkdir(parents=True)
+    (live / "data" / "secrets" / "alert_channels.json").write_text('{"evil": 1}')
+    (home / "data" / "secrets" / "alert_channels.json").write_text('{"zuck": 1}')
+    (home / "alert_channels.py").write_text(
+        "import json, os\n"
+        "def send_all(t, b):\n"
+        "    with open('data/secrets/alert_channels.json') as fh:\n"
+        "        cfg = json.load(fh)\n"
+        "    with open('data/ledger', 'a') as fh:\n"
+        "        fh.write(os.getcwd())\n"
+        "    return {'armed': 1, 'delivered': 1 if 'zuck' in cfg else 0}\n"
+    )
+    rc, out = nt.send("t", "b", live, home)
+    assert rc == 0 and out == "armed 1, delivered 1"
+    assert (home / "data" / "ledger").exists() and not (live / "data" / "ledger").exists()
+    assert nt.send("t", "b", live, tmp_path / "nothing")[0] == 1  # no sealed channels: not sent
 
 
 def test_the_digest_uses_the_installed_policy_never_the_trees(tmp_path: Path) -> None:
     b = Box(tmp_path)
-    repo = rp_mod.Repo(b.live)
+    repo = rp_mod.Repo(b.live / ".git")
     want = rp_mod.tree_digest(repo, b.merge, rpm, b.policy)
     narrow = {**b.policy, "root_files": ["nothing/*"]}
     assert rp_mod.tree_digest(repo, b.merge, rpm, narrow) != want  # the policy decides...

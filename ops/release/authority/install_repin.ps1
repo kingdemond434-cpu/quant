@@ -39,6 +39,16 @@ New-Item -ItemType Directory -Force -Path $Sealed | Out-Null
 & icacls $Sealed /inheritance:r /grant:r "Administrators:(OI)(CI)F" "SYSTEM:(OI)(CI)F" "Users:(OI)(CI)RX" | Out-Null
 foreach ($f in $Files) { Copy-Item -Force -LiteralPath (Join-Path $Src $f) -Destination (Join-Path $Sealed $f) }
 Copy-Item -Force -LiteralPath $Channels -Destination (Join-Path $Sealed "alert_channels.py")
+# the SEALED channel config (and the delivery ledger beside it): never the live tree's copy
+$SecretsDst = Join-Path $Sealed "data\secrets"
+New-Item -ItemType Directory -Force -Path $SecretsDst | Out-Null
+& icacls $SecretsDst /inheritance:r /grant:r "Administrators:(OI)(CI)F" "SYSTEM:(OI)(CI)F" | Out-Null
+$Copied = 0
+foreach ($f in @("alert_channels.json", "heartbeat_url.json")) {
+    $src = Join-Path $LiveTree "data\secrets\$f"
+    if (Test-Path -LiteralPath $src) { Copy-Item -Force -LiteralPath $src -Destination (Join-Path $SecretsDst $f); $Copied++ }
+}
+if (-not (Test-Path -LiteralPath (Join-Path $SecretsDst "alert_channels.json"))) { throw "no data\secrets\alert_channels.json on the box: no ROOT notice could ever be delivered." }
 $hashes = foreach ($f in $Files + @("alert_channels.py")) { "{0} {1}" -f (Get-FileHash -Algorithm SHA256 (Join-Path $Sealed $f)).Hash.ToLower(), $f }
 $hashes | Set-Content -LiteralPath (Join-Path $Sealed "INSTALLED.sha256") -Encoding ASCII
 

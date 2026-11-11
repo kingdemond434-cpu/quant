@@ -17,7 +17,10 @@ stays off), logs a RED line and alerts:
   5. M's change (M^1..M) touches no SEALED CORE file and no sealed value, judged by THIS
      installed copy of root_path.py, never by the tree being pinned;
   6. the root digest of C equals the root digest of M: no other root change rode in after M;
-  7. C is on GitHub's LIVE (ls-remote of root_path.REPO_URL, never the tree's own remote).
+  7. C is on GitHub's LIVE: fetched from the sealed root_path.REPO_URL into a bare mirror in the
+     sealed folder (MIRROR) that only SYSTEM writes. EVERY git call runs against that mirror with
+     pinned config; git never runs in the live tree (another account can write its .git/config),
+     whose HEAD is read from its .git files only.
 
 Digests are computed by the INSTALLED root_path.root_digest over the INSTALLED copy of
 ROOT_POLICY.json; no code from any tree is run. The sealed checks run before any digest.
@@ -30,7 +33,7 @@ the authority, the gate and step 4.
 
 Then it writes the pin for C (digest, commit, the old digest, the PR, head and merge), appends a
 line to repin.log.jsonl, alerts with both digests, and removes ROOT_INFLIGHT.json. It never pins a
-digest it did not compute from the released tree, and it reads git only (no fetch, no checkout).
+digest it did not compute from the released tree, and it never checks anything out.
 
 It runs as SYSTEM from C:\\opt\\authority\\sealed (install_repin.ps1, the last box step of the
 final sitting); that folder is writable by Administrators and SYSTEM only, so no PR and no
@@ -56,6 +59,8 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 INFLIGHT = "ROOT_INFLIGHT.json"
 ATTEMPTS = "root_notice_attempts.json"
+#: The bare mirror of GitHub's LIVE the service owns (in its sealed folder).
+MIRROR = "live.git"
 #: A notice that was not delivered is tried again at most this often.
 RETRY = timedelta(hours=1)
 LOG = "repin.log.jsonl"
@@ -140,26 +145,38 @@ def plan(f: Mapping[str, Any], rp: Any) -> tuple[str, str]:
 # ----------------------------------------------------------------------------- the box side
 
 
+#: Config pinned for every git call (GIT_CONFIG_COUNT, which outranks any repository config):
+#: nothing git reads can name a program to run, a proxy, or switch TLS checks off.
+_PINNED = (
+    ("core.askPass", ""), ("credential.helper", ""), ("core.sshCommand", ""),
+    ("core.hooksPath", os.devnull), ("core.fsmonitor", "false"), ("core.pager", "cat"),
+    ("diff.external", ""), ("log.showSignature", "false"), ("gpg.program", "false"),
+    ("protocol.allow", "never"), ("protocol.https.allow", "always"), ("http.proxy", ""),
+    ("https.proxy", ""), ("http.sslVerify", "true"), ("http.extraHeader", ""),
+    ("core.gitProxy", ""), ("uploadpack.packObjectsHook", ""),
+)  # fmt: skip
+
+
 class Repo:
-    def __init__(self, path: Path) -> None:
-        self.path = path
+    """git as SYSTEM, ONLY against a bare mirror in the sealed folder (MIRROR), which SYSTEM
+    creates and owns and no other account can write: never against the live tree, whose
+    .git/config another account can write. No system or global config; _PINNED on top."""
+
+    def __init__(self, git_dir: Path) -> None:
+        self.path = git_dir
 
     def git(self, *args: str) -> subprocess.CompletedProcess[bytes]:
-        """Read-only git as SYSTEM in a tree other accounts can write: no system or global
-        config, and every repo-config key that can run a program is overridden on the command
-        line (which wins over .git/config). Only plumbing reads are used: no index, no hooks."""
-        env = {**os.environ, "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
-               "GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0"}  # fmt: skip
-        env.pop("GIT_DIR", None)
-        env.pop("GIT_WORK_TREE", None)
-        safe = ["-c", f"safe.directory={self.path.as_posix()}", "-c", "core.fsmonitor=false",
-                "-c", "core.hooksPath=" + os.devnull, "-c", "diff.external=",
-                "-c", "core.pager=cat", "-c", "core.sshCommand=",
-                "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
-                "-c", "credential.helper=", "-c", "http.extraHeader="]  # fmt: skip
+        env = {k: v for k, v in os.environ.items()
+               if not k.startswith("GIT_") and k not in ("SSH_ASKPASS", "HTTPS_PROXY",
+                                                          "HTTP_PROXY", "ALL_PROXY")}  # fmt: skip
+        env.update({"GIT_DIR": str(self.path), "GIT_CONFIG_NOSYSTEM": "1",
+                    "GIT_CONFIG_GLOBAL": os.devnull, "GIT_TERMINAL_PROMPT": "0",
+                    "GIT_OPTIONAL_LOCKS": "0", "GIT_CONFIG_COUNT": str(len(_PINNED))})  # fmt: skip
+        for i, (k, v) in enumerate(_PINNED):
+            env[f"GIT_CONFIG_KEY_{i}"], env[f"GIT_CONFIG_VALUE_{i}"] = k, v
         return subprocess.run(
-            ["git", *safe, "-C", str(self.path), *args],
-            capture_output=True, check=False, timeout=120, env=env,
+            ["git", *args], capture_output=True, check=False, timeout=600, env=env,
+            cwd=str(self.path),
         )  # fmt: skip
 
     def out(self, *args: str) -> str:
@@ -172,8 +189,47 @@ class Repo:
         p = self.git("show", "--no-textconv", f"{rev}:{name}")
         return p.stdout if p.returncode == 0 else None
 
+    def has(self, sha: str) -> bool:
+        return self.git("cat-file", "-e", f"{sha}^{{commit}}").returncode == 0
+
     def ancestor(self, a: str, b: str) -> bool:
         return self.git("merge-base", "--is-ancestor", a, b).returncode == 0
+
+
+def refresh_mirror(repo: Repo, rp: Any) -> str:
+    """Fetch GitHub's LIVE (the sealed REPO_URL) into the sealed mirror; LIVE's tip sha."""
+    if not (repo.path / "HEAD").exists():
+        repo.path.mkdir(parents=True, exist_ok=True)
+        repo.out("init", "--bare", "-q")
+    repo.out("fetch", "-q", "--no-tags", rp.REPO_URL,
+             f"+refs/heads/{rp.LIVE_BRANCH}:refs/heads/live")  # fmt: skip
+    tip = repo.out("rev-parse", "refs/heads/live").strip()
+    if len(tip) != 40:
+        raise RuntimeError("the mirror has no LIVE tip")
+    return tip
+
+
+def live_head(live: Path) -> str | None:
+    """The live tree's HEAD commit, read from its .git FILES (git is never run there)."""
+    g = live / ".git"
+    try:
+        head = (g / "HEAD").read_text(encoding="ascii").strip()
+        if not head.startswith("ref: "):
+            return head if len(head) == 40 else None
+        ref = head[5:].strip()
+        if ".." in ref or not ref.startswith("refs/"):
+            return None
+        loose = g / ref
+        if loose.is_file():
+            sha = loose.read_text(encoding="ascii").strip()
+            return sha if len(sha) == 40 else None
+        for ln in (g / "packed-refs").read_text(encoding="ascii").splitlines():
+            parts = ln.split()
+            if len(parts) == 2 and parts[1] == ref and len(parts[0]) == 40:
+                return parts[0]
+    except (OSError, UnicodeDecodeError):
+        return None
+    return None
 
 
 def tree_digest(repo: Repo, rev: str, rp: Any, policy: Mapping[str, Any]) -> str:
@@ -182,14 +238,6 @@ def tree_digest(repo: Repo, rev: str, rp: Any, policy: Mapping[str, Any]) -> str
     from the tree is ever used; only its bytes are hashed."""
     names = repo.out("ls-tree", "-r", "--name-only", rev).splitlines()
     return str(rp.root_digest(lambda n: repo.show(rev, n), names, policy))
-
-
-def live_tip(repo: Repo, rp: Any) -> str:
-    """LIVE's tip sha on GitHub (ls-remote of the sealed REPO_URL; writes nothing)."""
-    got = repo.out("ls-remote", rp.REPO_URL, f"refs/heads/{rp.LIVE_BRANCH}").split()
-    if not got or len(got[0]) != 40:
-        raise RuntimeError("GitHub did not name LIVE's tip")
-    return got[0]
 
 
 def _read_json(path: Path) -> Any:
@@ -209,10 +257,19 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any, home: Path = HERE) ->
     f["release_sha"] = c
     if not c:
         return f
-    repo = Repo(live)
-    tip = repo.out("rev-parse", "HEAD").strip()
-    f["adopted"] = (repo.ancestor(c, tip), f"the live tree's HEAD {tip[:9]} vs release {c[:9]}")
-    if not f["adopted"][0]:
+    repo = Repo(home / MIRROR)
+    tip = refresh_mirror(repo, rp)
+    if not repo.has(c):
+        f["on_live"] = (False, f"release {c[:9]} is not on GitHub's LIVE")
+    else:
+        f["on_live"] = (repo.ancestor(c, tip), f"release {c[:9]} vs GitHub's LIVE {tip[:9]}")
+    if not f["on_live"][0]:
+        f["adopted"] = (False, f["on_live"][1])
+        return f
+    here = live_head(live)
+    ok = bool(here) and repo.has(str(here)) and repo.ancestor(c, str(here))
+    f["adopted"] = (ok, f"the live tree's HEAD {str(here)[:9]} vs release {c[:9]}")
+    if not ok:
         return f
     old = _read_json(pin)
     since = str(old.get("commit") or "") if isinstance(old, Mapping) else ""
@@ -243,11 +300,6 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any, home: Path = HERE) ->
     f["sealed"] = rp.sealed_touch(names, side(f"{m}^1"), side(m))
     if f["sealed"]:
         return f  # refused before anything else is read
-    tip = live_tip(repo, rp)
-    if repo.git("cat-file", "-e", f"{tip}^{{commit}}").returncode != 0:
-        f["on_live"] = (False, f"LIVE's tip {tip[:9]} is not fetched into the live tree yet")
-    else:
-        f["on_live"] = (repo.ancestor(c, tip), f"release {c[:9]} vs LIVE {tip[:9]}")
     policy = sealed_policy(home)
     f["digest_m"] = tree_digest(repo, m, rp, policy)
     f["digest_c"] = tree_digest(repo, c, rp, policy)
