@@ -186,7 +186,12 @@ def test_the_heartbeat_and_alert_reports_are_published_off_the_box() -> None:
 
 
 def test_the_heartbeat_and_backup_are_contracted_and_the_backup_self_registers() -> None:
-    from ops.organ_contract import CONTRACTS
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_oc_hb", ROOT / "ops" / "organ_contract.py")
+    assert spec is not None and spec.loader is not None
+    oc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(oc)
+    CONTRACTS = oc.CONTRACTS  # noqa: N806
     assert CONTRACTS["MT5-BoxHeartbeat"][0] == "desks/mt5/reports/DESK_ALERTS.json"
     assert CONTRACTS["MT5-OffsiteBackup"][0] == "desks/mt5/reports/OFFSITE_BACKUP.json"
     adopt = (ROOT / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text("utf-8", errors="ignore")
