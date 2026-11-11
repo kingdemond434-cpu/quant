@@ -442,11 +442,17 @@ def prompt(diff: str, files: list[str], nonce: str, part: str = "") -> str:
     )
 
 
-def split_diff(diff: str, limit: int) -> list[str] | None:
+def split_diff(diff: str, limit: int, hard: int | None = None) -> list[str] | None:
     """The diff in parts of at most `limit` characters, cut only at file or hunk boundaries:
     whole files packed in order, and a file over the limit cut at its hunks, each piece carrying
     the file's own header. None when one hunk alone is over the limit: a hunk is never read in
-    part (#457 audit MF2). Every line of the diff is in exactly one part."""
+    part (#457 audit MF2). Every line of the diff is in exactly one part.
+
+    `hard` (>= limit): a hunk over `limit` but within `hard` is not a refusal. It goes into a part
+    of its own, read whole, and every other part still keeps to `limit`. Before this, one such
+    hunk sent the WHOLE diff back through split_diff at the hard limit, collapsing it into one
+    part that no local call could finish (#659, 11-11: "1 parts", five timeouts, UNAVAILABLE)."""
+    hard = limit if hard is None else max(hard, limit)
     files: list[list[str]] = []
     for line in re.split(r"(?<=\n)", diff):  # "\n" only: a lone \r or U+2028 is not a line
         if not line:
@@ -462,6 +468,9 @@ def split_diff(diff: str, limit: int) -> list[str] | None:
             continue
         cut = next((i for i, ln in enumerate(lines) if ln.startswith("@@")), len(lines))
         if cut == len(lines):
+            if len(text) <= hard:  # a hunkless file within the hard limit: alone, whole
+                pieces.append(text)
+                continue
             return None  # an oversize file with no hunk to cut at (#547 audit SF)
         head = "".join(lines[:cut])
         hunks: list[list[str]] = [[]]
@@ -472,12 +481,19 @@ def split_diff(diff: str, limit: int) -> list[str] | None:
         piece = head
         for h in ("".join(x) for x in hunks if x):
             if len(head) + len(h) > limit:
-                return None
+                if len(head) + len(h) > hard:
+                    return None
+                if piece != head:  # an oversize hunk in a part of its own
+                    pieces.append(piece)
+                pieces.append(head + h)
+                piece = head
+                continue
             if len(piece) + len(h) > limit:
                 pieces.append(piece)
                 piece = head
             piece += h
-        pieces.append(piece)
+        if piece != head:
+            pieces.append(piece)
     parts: list[str] = []
     for piece in pieces:
         if parts and len(parts[-1]) + len(piece) <= limit:
@@ -870,8 +886,9 @@ def review(
             return vote(diff, files, ladder, budget_s, sleep, clock)
         return "FAIL", [f"FAIL: the money-path files ({len(money)} characters) do not fit one "
                         f"part: they are never read apart"]  # fmt: skip
-    others = split_diff(rest, quick - frame) if rest and quick - frame > 0 else None
-    if rest and others is None:  # a hunk over the time cap is read whole, as before the cap
+    # a hunk over the time cap is read whole in a part of its own; the rest stay under the cap
+    others = split_diff(rest, quick - frame, hard=limit) if rest and quick - frame > 0 else None
+    if rest and others is None:
         others = split_diff(rest, limit)
     elif not rest:
         others = []
