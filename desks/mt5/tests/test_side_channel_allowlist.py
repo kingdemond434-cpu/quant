@@ -56,3 +56,21 @@ def test_latest_discoveries_is_written_atomically_even_over_a_read_only_file(tmp
     ram.write_atomic(out, json.dumps({"ok": 1}))
     assert json.loads(out.read_text("utf-8")) == {"ok": 1}
     assert not (tmp_path / "latest_discoveries.json.tmp").exists()
+
+
+def test_a_blank_edgar_contact_is_not_configured_and_nothing_is_fetched(monkeypatch) -> None:
+    """A whitespace-only value is not a contact: the channel is set aside, and the miner itself
+    sends nothing (there is no placeholder User-Agent to fall back to)."""
+    import sec_edgar_miner as sem
+    _fake(monkeypatch, ["sec_edgar"])
+    monkeypatch.delenv("QUANT_MINERS_ALLOW", raising=False)
+    for n in sem.EDGAR_UA_NAMES:
+        monkeypatch.setenv(n, "   ")
+    assert ram.run_all_miners()["sec_edgar"]["status"] == "SET_ASIDE"
+    assert sem.edgar_user_agent() == ""
+    sent: list[str] = []
+    monkeypatch.setattr(sem.requests, "get", lambda *a, **k: sent.append(a[0]))
+    assert sem.mine_13f() == [] and sent == []
+    monkeypatch.setenv("SEC_EDGAR_UA", " desk research contact@example.org ")
+    assert sem.edgar_user_agent() == "desk research contact@example.org"
+    assert "example.com" not in sem.__dict__.get("HEADERS", {}).get("User-Agent", "")

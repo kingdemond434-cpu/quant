@@ -56,6 +56,10 @@ def _run_miner(name, fn):
 _dir = os.path.dirname(os.path.abspath(__file__))
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
+# ... and the repository root, so the credential gate reads libs.ops.env_keys.read_key
+_root = os.path.dirname(os.path.dirname(os.path.dirname(_dir)))
+if _root not in sys.path:
+    sys.path.append(_root)
 
 # --- Tier 1: Social/Web miners ---
 from youtube_miner import run_and_save as youtube_mine
@@ -140,6 +144,17 @@ REQUIRES_ENV: dict[str, tuple[str, ...]] = {
     "sec_edgar": ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")}
 
 
+def _configured(names: tuple[str, ...]) -> bool:
+    """Any of `names` holds a non-blank value, read through libs.ops.env_keys.read_key (as the
+    EDGAR readers do); a whitespace-only value is not a configured contact."""
+    try:
+        from libs.ops.env_keys import read_key
+    except ImportError:
+        def read_key(name: str, default: str = "", *, export: bool = False) -> str:
+            return os.environ.get(name, default)
+    return any(str(read_key(n) or "").strip() for n in names)
+
+
 def allowed_channels() -> set[str] | None:
     """QUANT_MINERS_ALLOW (comma-separated channel names) or None for every channel.
 
@@ -162,7 +177,7 @@ def run_all_miners() -> dict:
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         need = REQUIRES_ENV.get(name)
-        if need and not any(os.environ.get(e) for e in need):
+        if need and not _configured(need):
             set_aside[name] = f"{' / '.join(need)} is not configured"
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue

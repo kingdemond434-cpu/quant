@@ -17,12 +17,26 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "sec_edgar"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# SEC fair-access policy: a declared User-Agent naming a real contact. The box sets
-# QUANT_EDGAR_UA (or SEC_EDGAR_USER_AGENT / SEC_EDGAR_UA, the same contact under its other two
-# names); run_all_miners sets this channel aside when all three are absent.
-HEADERS = {"User-Agent": next((v for v in (os.environ.get(n, "").strip() for n in (
-    "QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")) if v),
-    "QuantResearch quant@example.com")}
+# SEC fair-access policy: a declared User-Agent naming a REAL contact. Every name the desk has
+# used for that one contact string (libs/data/credentials.py): QUANT_EDGAR_UA, the principal's
+# SEC_EDGAR_USER_AGENT, the disclosure lane's SEC_EDGAR_UA -- read through read_key, as
+# research/sandboxes/edgar_transmission.py reads them. No UA means NO FETCH: there is no
+# placeholder contact, because a made-up address is not an honest User-Agent.
+EDGAR_UA_NAMES = ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
+
+
+def edgar_user_agent() -> str:
+    """The configured EDGAR contact, stripped; "" when none of the three names holds one."""
+    try:
+        import sys as _sys
+        _root = str(BASE.parent.parent)
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.ops.env_keys import read_key
+    except ImportError:                       # no libs on this path: the process env only
+        def read_key(name: str, default: str = "", *, export: bool = False) -> str:
+            return os.environ.get(name, default)
+    return next((v.strip() for v in map(read_key, EDGAR_UA_NAMES) if v and v.strip()), "")
 
 # Top hedge funds to track
 FUND_CIKS = {
@@ -47,10 +61,14 @@ def mine_13f() -> list[dict]:
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=30)
 
+    ua = edgar_user_agent()
+    if not ua:
+        return discoveries                    # no declared contact: nothing is fetched
+    headers = {"User-Agent": ua}
     for fund, cik in FUND_CIKS.items():
         try:
             url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type=13F&dateb=&owner=include&count=5&search_text=&action=getcompany"
-            resp = requests.get(url, headers=HEADERS, timeout=15)
+            resp = requests.get(url, headers=headers, timeout=15)
             if resp.status_code == 200:
                 text = resp.text
                 # Check for recent filing

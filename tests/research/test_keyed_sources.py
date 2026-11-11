@@ -212,15 +212,29 @@ def test_a_value_first_seen_live_is_never_available_before_it_was_seen(tmp_path:
     assert [p["value"] for p in pts] == [1.0, 2.0]                   # the first vintage serves
 
 
-def test_estat_waits_for_the_one_estat_parser() -> None:
-    try:
-        import research.alt_proxies  # noqa: F401
-    except Exception:
-        with pytest.raises(K.Blocked, match="BLOCKED_DEPENDENCY"):
-            K.collect(_row("estat_jp_macro"), get=lambda r: b"", now=NOW, paths=K.Paths(),
-                      start=None, environ={"ESTAT_APP_ID": SENTINEL})
-    else:                                                             # pragma: no cover
-        pytest.skip("alt_proxies (#131) has landed; the e-Stat rows run through its parser")
+def test_estat_runs_through_the_one_estat_parser(robots_allowed: None) -> None:
+    """alt_proxies (#131) has landed: the e-Stat rows parse through its parse_estat_cpi, the
+    appId travels on the request only, and every declared series is requested."""
+    body = (ROOT / "tests" / "fixtures" / "alt_proxies" / "jp_tokyo_cpi.json").read_bytes()
+    seen: list[str] = []
+
+    def get(req: ks.Request) -> bytes:
+        seen.append(req.url)
+        return body
+    row = _row("estat_jp_macro")
+    obs = K.collect(row, get=get, now=NOW, paths=K.Paths(), start=None,
+                    environ={"ESTAT_APP_ID": SENTINEL})
+    assert obs and {o.series for o in obs} == set(row["series"])
+    assert len(seen) == len(row["series"]) and all(f"appId={SENTINEL}" in u for u in seen)
+    assert all(isinstance(o.value, float) for o in obs)
+
+
+def test_estat_is_blocked_by_name_without_its_parser(monkeypatch: pytest.MonkeyPatch,
+                                                      robots_allowed: None) -> None:
+    monkeypatch.setitem(sys.modules, "research.alt_proxies", None)    # import fails
+    with pytest.raises(K.Blocked, match="BLOCKED_DEPENDENCY"):
+        K.collect(_row("estat_jp_macro"), get=lambda r: b"", now=NOW, paths=K.Paths(),
+                  start=None, environ={"ESTAT_APP_ID": SENTINEL})
 
 
 class _Msg:
