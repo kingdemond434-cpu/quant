@@ -323,4 +323,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import sys as _sys
+
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # the repo root, for libs
+    try:  # money runs above research (libs/ops/money_priority.py); never blocks this runner
+        from libs.ops.money_priority import enter as _money_priority
+
+        _money_priority()
+    except ImportError:
+        pass
     main()
