@@ -178,6 +178,12 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # turns "the seat errored" into "this leg spent the audit lane's budget at 01:42".
     ("llm_budget_census", "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 3600,
      "research/llm_budget_census.py"),
+    # Lab L, our own typed-probability layer (Jev dropped 2026-11-11): the free chain's checked,
+    # calibrated probabilities become a PIT lake series and exogenous_conditioner cells. The
+    # organ rate-limits its own model calls (one reading per 6h); the hourly run settles,
+    # calibrates and republishes.
+    ("semantic_prob_lab", "desks/mt5/reports/SEMANTIC_PROB_LAB.json", 3600,
+     "research/semantic_prob_lab.py"),
     # The judge's pulse (hourly `judge_alive` leg): a verdict that stops being rewritten is a
     # judge nobody is watching.
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
