@@ -160,6 +160,21 @@ EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: nor pause the copy. A zero or an absent file IS the principal's pause.
 #: Every other column is a certified sleeve of the same roster Fusion and E8 trade (2026-11-05).
 COPY_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
+#: HELD OUT UNTIL #806 RE-TESTS THEM (FTMO arming precheck, project memory 2026-11-11): FTMO copies
+#: every sleeve (zuck 2026-11-05 16:06Z) EXCEPT these (symbol, family) cells, whose certificates
+#: #806 is re-testing. Matched on the column, the certificate key and the spec family. Remove a
+#: row when #806 clears it; its forgone heat is the `ftmo_pending_retest` rail in the screen.
+PENDING_RETEST: tuple[tuple[str, str], ...] = (
+    ("GBPSEK", "carry_risk_off"), ("NOKSEK", "carry_risk_off"), ("CHFDKK", "entry_conditioned"))
+
+
+def pending_retest(sym: str, *labels: object) -> str | None:
+    """The PENDING_RETEST cell `sym`/`labels` falls in, or None. Pure."""
+    text = " ".join(str(x or "").lower() for x in labels)
+    for psym, fam in PENDING_RETEST:
+        if sym.upper() == psym and fam in text:
+            return f"{psym} {fam}"
+    return None
 COPY_PRINCIPAL = BASE / "data" / "FTMO_COPY_PRINCIPAL.json"
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
 #: taken as 2.00 in the account currency so the FTMO excess over it is never under-stated.
@@ -661,6 +676,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
     door_blocked: list[str] = []
+    seen_fp: dict[str, str] = {}
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
@@ -690,11 +706,26 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         if reason:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
+        spec, swhy = sleeve_spec(cert_key)
+        held = pending_retest(sym, col, cert_key, (spec or {}).get("family"))
+        if held:
+            columns[col] = {"admitted": False, "rail": "ftmo_pending_retest",
+                            "why": f"PENDING_RETEST: {held} is held out until #806 re-tests it"}
+            continue
+        fp = (spec or {}).get("fingerprint")
+        if fp and fp in seen_fp:
+            # DUPLICATE EXECUTABLES ARE ONE BET (FTMO arming precheck): two certificates that
+            # rebuild to the same order spec would take the solve's heat twice for one trade.
+            columns[col] = {"admitted": False, "rail": "ftmo_duplicate_executable",
+                            "why": f"DUPLICATE_EXECUTABLE: same order spec as {seen_fp[fp]}; "
+                                   "counted once"}
+            continue
         admit(col, r_c[:, :, k], (f"Tier S via {cert_key}" if col in tier_s else
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
         if columns[col].get("admitted"):
             columns[col]["tier_s"] = col in tier_s
-            spec, swhy = sleeve_spec(cert_key)
+            if fp:
+                seen_fp[fp] = col
             if spec is not None:
                 specs[col] = spec
             else:

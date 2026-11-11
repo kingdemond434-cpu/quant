@@ -64,6 +64,13 @@ def _hermetic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN_FILE", tmp_path / "ALLOCATOR_SOVEREIGN.json")
     monkeypatch.setattr(dc, "MIN_LOT_FILE", tmp_path / "MIN_LOT.json")
     monkeypatch.setattr(xa, "_ABANDONED", set())
+    # THIS MODULE PINS THE 10-20 GOLD-ASIA-ONLY ORDER UNDER ITS REVERT SWITCH. The order is
+    # retired by default (zuck 2026-11-05 16:06Z); data/GOLD_ASIA_ONLY_ENABLED restores it, and
+    # every pin mechanic below is proven with that switch on. The new default is pinned in
+    # test_gold_asia_only_retired_by_default and test_e8_london_reaches_the_cert_book_*.
+    switch = tmp_path / "GOLD_ASIA_ONLY_ENABLED"
+    switch.write_text("", encoding="utf-8")
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", switch)
 
 
 def _revert(tmp_path: Path) -> None:
@@ -88,12 +95,46 @@ VOID_BOOKS = (None, {"enabled": False, "fusion": {"gold_london_am": 0.0}, "e8": 
 # ------------------------------------------------------------ the pins, in code (must-fix 1, 2)
 
 def test_the_principal_zeros_are_named_in_code_with_their_venues() -> None:
+    """Under the revert switch (this module's fixture) the 10-20 order is back on both books."""
     assert set(SCALP) == dc.SCALP_LANE_ZERO
     assert set(GOLD_PINNED) == dc.GOLD_ASIA_ONLY_ZERO
-    assert dc.PRINCIPAL_ZERO["fusion"] == dc.GOLD_ASIA_ONLY_ZERO | dc.SCALP_LANE_ZERO \
+    assert dc.principal_zeros("fusion") == dc.GOLD_ASIA_ONLY_ZERO | dc.SCALP_LANE_ZERO \
         | dc.GAP_DECAY_ZERO | dc.FUSION_FX_OUT_ZERO
-    assert dc.PRINCIPAL_ZERO["e8"] == dc.GOLD_ASIA_ONLY_ZERO
-    assert "gold_asia" not in dc.PRINCIPAL_ZERO["fusion"] | dc.PRINCIPAL_ZERO["e8"]
+    assert dc.principal_zeros("e8") == dc.GOLD_ASIA_ONLY_ZERO
+    assert dc.principal_zeros("ftmo") == frozenset()
+    assert "gold_asia" not in dc.principal_zeros("fusion") | dc.principal_zeros("e8")
+
+
+def test_gold_asia_only_retired_by_default(tmp_path, monkeypatch) -> None:
+    """zuck 2026-11-05 16:06Z ("ALL ACCOUNTS TRADE EVERYTHING") supersedes 10-20 21:52Z: with no
+    revert file, london_am and afternoon are no code pin on any venue; the other pins stand."""
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", tmp_path / "absent" / "GOLD_ASIA_ONLY_ENABLED")
+    assert not dc.gold_asia_only()
+    assert dc.principal_zeros("fusion") == dc.SCALP_LANE_ZERO | dc.GAP_DECAY_ZERO \
+        | dc.FUSION_FX_OUT_ZERO
+    assert dc.principal_zeros("e8") == frozenset()
+    for name in (*GOLD_PINNED, "gold_london_am_v3"):
+        assert not dc.principal_zero(name) and not dc.principal_zero(name, "e8"), name
+    assert all(dc.principal_zero(n) for n in SCALP)
+    assert dc.GOLD_ASIA_ONLY_FILE.name.endswith("_ENABLED")   # a governed switch (release.py)
+
+
+def test_e8_london_reaches_the_cert_book_once_the_order_is_retired(
+        monkeypatch, tmp_path) -> None:
+    """No size changes: with the pin retired, london_am is sized by the cert book alone -- the
+    box's 0.0 still sends nothing (labelled cert_book, not pinned_zero), and a positive value
+    the book holds is what places."""
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", tmp_path / "GOLD_ASIA_ONLY_ENABLED.absent")
+    doc, intents = _e8(monkeypatch, tmp_path, hour=LONDON_H, kelly=FRESH_KELLY, cert=VALID,
+                       principal=False)
+    assert "london_am" not in _placed(doc)
+    assert doc["sizing_source"]["london_am"] == "cert_book"
+    assert [r["rail"] for r in intents if r.get("window") == "london_am"] == ["cert_book_zero"]
+    (tmp_path / "b").mkdir()
+    funded = {"enabled": True, "e8": {**VALID["e8"], "gold_london_am": 0.004}}
+    doc, intents = _e8(monkeypatch, tmp_path / "b", hour=LONDON_H, kelly=FRESH_KELLY,
+                       cert=funded, principal=False)
+    assert _placed(doc, intents)["london_am"] == {(0.004, "cert_book")}
 
 
 @pytest.mark.parametrize("doc", VOID_BOOKS)

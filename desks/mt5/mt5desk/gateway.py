@@ -324,6 +324,7 @@ from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 
     GAP_DECAY_ZERO as GAP_DECAY_ZERO,
     GOLD_ASIA_ONLY_ZERO as GOLD_ASIA_ONLY_ZERO,
     PRINCIPAL_ZERO as PRINCIPAL_ZERO,
+    principal_zeros as principal_zeros,
     SCALP_LANE_ZERO as SCALP_LANE_ZERO,
     book_name as book_name,
     cert_zero_row as cert_zero_row,
@@ -704,7 +705,7 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     # 2026-10-20, and a void cert book used to hand every pinned key back to the allocator.
     # NO BOOK AT ALL STAYS None ("rank but do not size"), as before: the pins are enforced per row
     # anyway (cert_zero_row in the sizing loop, promoted_lot, gold_book_lot), with or without one.
-    pins = dict.fromkeys(PRINCIPAL_ZERO["fusion"], 0.0)
+    pins = dict.fromkeys(principal_zeros("fusion"), 0.0)
     try:
         from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
         cert = load_cert_book(CERT_BOOK_FILE, "fusion")

@@ -1175,10 +1175,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                               f"gold_{_w}); stands aside")
         kelly = {**(kelly or {}), **dict.fromkeys(absent, 0.0)}
     # THE PRINCIPAL'S ZEROS NEED NO FILE (decision_core.PRINCIPAL_ZERO["e8"], audit r5 must-fix
-    # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
-    # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
-    from mt5desk.decision_core import PRINCIPAL_ZERO
-    pinned = cert_gold_windows(dict.fromkeys(PRINCIPAL_ZERO["e8"], 0.0))
+    # 1). The 10-20 gold-asia-only pin on london_am and afternoon is RETIRED (zuck 2026-11-05
+    # 16:06Z, all accounts trade everything); `principal_zeros` folds it back only while
+    # data/GOLD_ASIA_ONLY_ENABLED exists. Those windows are then sized by the cert book alone.
+    from mt5desk.decision_core import principal_zeros
+    pinned = cert_gold_windows(dict.fromkeys(principal_zeros("e8"), 0.0))
     kelly = {**(kelly or {}), **pinned}
     # THE CODE CEILING (r7.1, decision_core.E8_CERT_CEILING, principal pin): every window is
     # min(book, 0.006) whatever the book says -- a stale enabled book at 0.01 places at 0.006,
@@ -1336,8 +1337,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         frac, _ = window_risk(name, kelly)
         frac_src = sources.get(name, "RISK_FRAC")
         if name in pinned or name in absent or name in void:
-            why = ("principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
-                   "decision_core.GOLD_ASIA_ONLY_ZERO); no order" if name in pinned
+            why = ("principal zero (decision_core.principal_zeros('e8'); the retired 10-20 "
+                   "gold-asia-only pin is on while data/GOLD_ASIA_ONLY_ENABLED exists); no order"
+                   if name in pinned
                    else void[name] if name in void else absent[name])
             doc["skipped"].append({"window": name, "why": why})
             # One missed-growth line per window per day (research/missed_growth reads it).
