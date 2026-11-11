@@ -15,12 +15,15 @@ stated before any data was looked at.
 
 THE CATALOGUE (`SPECIALISTS`):
   fx       wmr_fix_reversal, fix_forced_flow (WMR + Tokyo TTM), carry_risk_off,
-           cb_meeting_drift (FOMC/ECB/BOE/BOJ, pre-meeting drift and post-decision fade)
+           cb_meeting_drift (FOMC/ECB/BOE/BOJ, pre-meeting drift and post-decision fade),
+           session_handoff_gap (B20), lunar_new_year_liquidity / golden_week_liquidity (B11),
+           ust_auction_result on the USD majors (B13)
   metals   gold_real_yield (gold against the bond proxy and the dollar), gold_silver_ratio,
            metals_fix (the London 4pm fix gold is benchmarked to)
   energy   eia_inventory (Wednesday EIA and Tuesday API windows)
   indices  overnight_gap, open_drive (the cash open of each index's own venue),
-           month_end_rebalance (fixed-weight allocator flow), month_end_forced_flow
+           month_end_rebalance (fixed-weight allocator flow), month_end_forced_flow,
+           session_handoff_gap, the B11 holiday regions, ust_auction_result on US indices
   softs    weather_window (per-commodity crop-cycle windows), wasde (USDA WASDE)
 
 BUILDABLE BY THE SEALED GAUNTLET, OR NOT MINTED. Every cell is asked twice. First
@@ -152,7 +155,66 @@ WEATHER_WINDOWS: dict[str, list[tuple[int, int, int, str]]] = {
 GOLD = ("XAUUSD", "XAUEUR", "XAUAUD")
 
 
+#: B20 (approved 2026-10-13): the gap-decay family re-anchored to the two session handoffs, one
+#: cell per handoff at the family's own defaults -- two distinct hypotheses per symbol, no sweep.
+HANDOFF_CELLS: list[dict[str, Any]] = [{"handoff": "asia_europe"}, {"handoff": "europe_us"}]
+
+#: B11 (approved 2026-10-13): non-Western holiday regions of the `holiday_liquidity` kind, each a
+#: name prefix of the calendar's rows. Which symbols a region bears on is the CALENDAR's answer
+#: (`forced_flow_calendar.holiday_region_instruments`), never a list kept here.
+HOLIDAY_MECHANISMS: dict[str, str] = {"hk_lny": "lunar_new_year_liquidity",
+                                      "jp_holiday": "golden_week_liquidity"}
+
+#: B13 (approved 2026-10-13): the Treasury auction result as an EVENT stance the next day.
+#: (signal, side a HIGH reading implies for the US dollar). A high tail (the auction reached up
+#: the bid stack) is weak demand: yields up, dollar bid, equities offered. A high bid-to-cover
+#: surprise is strong demand: the mirror. The sign is the prior, stated before any data.
+AUCTION_SIGNALS: tuple[tuple[str, int], ...] = (("tail_bp", 1), ("btc_surprise", -1))
+AUCTION_SOURCE = "ust_auction_results"
+#: The series is published ~13:30 New York; held back 12 h it conditions the next day's session
+#: (12 h clears the broker clock's +3 h by a wide margin), one stance per auction, held a day.
+AUCTION_PARAMS: dict[str, Any] = {"transform": "level_z", "threshold": 1.0, "lag_hours": 12,
+                                  "event_window_hours": 12, "ttl_bars": 24}
+
+
+def _holiday_cells(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    from research import forced_flow_calendar as ffc
+    out: list[tuple[str, str, list[dict[str, Any]]]] = []
+    for region, mech in HOLIDAY_MECHANISMS.items():
+        if sym.upper() in ffc.holiday_region_instruments(region):
+            out.append((mech, "forced_flow",
+                        _grid({"event_kind": ["holiday_liquidity"], "clock": ["utc"],
+                               "symbol": [sym], "event_prefix": [f"{region}_holiday_"],
+                               "mode": ["pre_flow", "post_flow_fade"]})))
+    return out
+
+
+def _usd_side(sym: str) -> int | None:
+    """+1 when the pair rises with the dollar, -1 when it falls, None when USD is not a leg."""
+    s = sym.upper()
+    return 1 if s.startswith("USD") else -1 if s.endswith("USD") else None
+
+
+def _auction_cells(sym: str, dollar_sign: int) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    """`dollar_sign` is how this symbol moves when the dollar is bid on weak demand: the pair's
+    own USD side for FX, -1 for a US index (weak auction, higher yields, equities offered)."""
+    return [("ust_auction_result", "exogenous_conditioner",
+             [{"source": AUCTION_SOURCE, "signal": sig, "side_when_high": side * dollar_sign,
+               **AUCTION_PARAMS} for sig, side in AUCTION_SIGNALS])]
+
+
 def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    return _fx_core(sym) + [("session_handoff_gap", "overnight_gap_decay",
+                             [dict(c) for c in HANDOFF_CELLS])] + _holiday_cells(sym) + (
+        _auction_cells(sym, _usd_side(sym) or 0)
+        if sym.upper() in _FX_MAJORS and _usd_side(sym) else [])
+
+
+_FX_MAJORS = ("EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD")
+_US_INDICES = ("US500", "US30", "NAS100", "US2000")
+
+
+def _fx_core(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     return [
         ("wmr_fix_reversal", "fx_fixing_reversal",
          _grid({"fix_hour": [18, 19], "pre_window_bars": [2, 3],
@@ -204,7 +266,11 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
         ("month_end_forced_flow", "forced_flow",
          _grid({"event_kind": ["month_end"], "clock": ["utc"], "symbol": [sym],
                 "mode": ["pre_flow", "post_flow_fade"]})),
+        ("session_handoff_gap", "overnight_gap_decay", [dict(c) for c in HANDOFF_CELLS]),
     ]
+    out += _holiday_cells(sym)
+    if sym.upper() in _US_INDICES:
+        out += _auction_cells(sym, -1)
     hours = OPEN_HOURS.get(sym.upper())
     if hours:
         out.append(("open_drive", "opening_range",
@@ -226,6 +292,24 @@ def _softs(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     return out
 
 
+#: Priors shared by the fx and indices desks (B20, B11, B13).
+_PRIORS_SHARED: dict[str, str] = {
+    "session_handoff_gap": "the gap a region sees at its own cash open (London at the "
+                           "Asia handoff, New York at the European one) was printed in "
+                           "thin books while it was away; the liquidity provider who "
+                           "absorbed it is paid as it decays (gap-decay family, extended)",
+    "lunar_new_year_liquidity": "Hong Kong and mainland venues shut for the Lunar New "
+                                "Year while CNH/HKD and the China index CFDs trade on "
+                                "offshore with the local liquidity providers away",
+    "golden_week_liquidity": "Golden Week removes Tokyo for consecutive days, so JPY and "
+                             "Nikkei flow that clears at the Tokyo fix clears elsewhere",
+    "ust_auction_result": "a primary-dealer auction that tails (stop-out above the "
+                          "median bid) or covers light leaves dealers long duration "
+                          "they must distribute; yields, the dollar and US equities "
+                          "reprice into the next session",
+}
+
+
 #: class -> (per-symbol cell generator, the specialist's priors per mechanism). The priors are
 #: carried onto every donated row as its mechanism text.
 SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str, Any]]]]],
@@ -239,6 +323,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                           "(Brunnermeier, Nagel & Pedersen 2008)",
         "cb_meeting_drift": "rates desks re-hedge the front end into and out of a scheduled "
                             "central-bank decision (Lucca & Moench 2015 pre-announcement drift)",
+        **_PRIORS_SHARED,
     }),
     "metals": (_metals, {
         "gold_real_yield": "gold is priced off the real rate and the dollar; a gap between gold "
@@ -261,6 +346,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                                "month-to-date in the month's last days",
         "month_end_forced_flow": "month-end benchmark and index rebalancing flow on a dated "
                                  "calendar",
+        **_PRIORS_SHARED,
     }),
     "softs": (_softs, {
         "weather_window": "a crop-cycle weather premium is bought by hedgers at any price and "
@@ -300,6 +386,20 @@ _MECH_CULTURE: dict[str, tuple[str, str]] = {
     "eia_inventory": ("US", "physical_flow"),
     "month_end_forced_flow": ("GLOBAL", "institutional"),
     "wasde": ("US", "policy_driven"),
+    "session_handoff_gap": ("GLOBAL", "mixed"),
+    "ust_auction_result": ("US", "institutional"),
+}
+#: The non-Western holiday mechanisms: (culture tag, participant structure, failure timing).
+_NON_WESTERN_HOLIDAY: dict[str, tuple[str, str, str]] = {
+    "lunar_new_year_liquidity": (
+        "CN", "settlement_constrained",
+        "the closure is set by the lunisolar calendar and the HK/mainland holiday notices, so it "
+        "should fail when those venues change their closure days or when offshore CNH liquidity "
+        "deepens enough to absorb the flow, not on any Western calendar"),
+    "golden_week_liquidity": (
+        "JP", "settlement_constrained",
+        "the closure is set by Japanese statute and the Tokyo settlement calendar, so it should "
+        "fail when Japanese corporates stop clearing at the 09:55 fix or the holiday law moves"),
 }
 
 
@@ -324,6 +424,10 @@ def culture(mechanism: str, symbol: str) -> dict[str, str]:
                "policy calendar moves, independently of Western demand"
                if tag != "UNMEASURED" else "UNMEASURED: the producing country is not declared")
         return {"source_culture": tag, "participant_structure": "physical_flow",
+                "failure_mode_hypothesis": why}
+    if mechanism in _NON_WESTERN_HOLIDAY:
+        tag, part, why = _NON_WESTERN_HOLIDAY[mechanism]
+        return {"source_culture": tag, "participant_structure": part,
                 "failure_mode_hypothesis": why}
     tag, part = _MECH_CULTURE.get(mechanism, ("UNMEASURED", "UNMEASURED"))
     if mechanism == "fix_forced_flow":
@@ -621,6 +725,32 @@ def _culture_census() -> dict[str, Any]:
             "participant_structure": dict(Counter(c["participant_structure"] for c in cells))}
 
 
+def _unmeasured_inputs() -> dict[str, Any]:
+    """The inputs the B11 and B13 mechanisms read, said out loud where they are absent: holiday
+    years with no official row (Diwali and Ramadan/Eid have none at all yet), and whether the
+    Treasury auction series is on this host."""
+    out: dict[str, Any] = {}
+    try:
+        from research import forced_flow_calendar as ffc
+        today = datetime.now(tz=UTC).date()
+        # the bar history a cell is judged on reaches back years; every one without a row shows
+        out["holiday_years"] = ffc.unmeasured_holidays(today.replace(year=today.year - 8, day=1),
+                                                       today)
+    except Exception as exc:
+        out["holiday_years"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    try:
+        from mt5desk.family_exogenous_conditioner import series_path
+        p = series_path(AUCTION_SOURCE)
+        out[AUCTION_SOURCE] = ({"status": "PRESENT", "path": str(p)} if p else
+                               {"status": UNMEASURED, "why": (
+                                   "series absent: research/ust_auction_results.py has not "
+                                   "fetched on this host, so every ust_auction_result cell "
+                                   "builds with no signal")})
+    except Exception as exc:
+        out[AUCTION_SOURCE] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    return out
+
+
 def report(seeded: dict[str, Any]) -> dict[str, Any]:
     new_families = {}
     try:
@@ -646,6 +776,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
         "new_families": new_families,
         "seeding": seeded,
         "certificates": _certificates(),
+        "unmeasured_inputs": _unmeasured_inputs(),
         "consumer": ("data/intelligence/specialist_cell/ -> research/miner_candidate_compiler.py "
                      "-> the docket -> scripts/external_gauntlet.py build_cell (sealed)"),
     }

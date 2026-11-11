@@ -136,8 +136,15 @@ def family_exogenous_conditioner(
     rr: float = 2.0,
     ttl_bars: int = 96,
     series_root: Path | None = None,
+    event_window_hours: int = 0,
 ) -> list[Signal]:
     """Take a directional stance while the pack's own published statistic is at an extreme.
+
+    `event_window_hours` (2026-11-11, B13) turns the standing stance into an EVENT stance for a
+    sparse series such as an auction result: the stance is taken ONCE per published value, at the
+    first bar inside `event_window_hours` after it became usable (its `available_time` plus
+    `lag_hours`), and never again on the forward-filled value. 0 -- the default, and what every
+    existing cell carries -- keeps the standing behaviour exactly.
 
     REFUSES -- returns no signals -- without the pack, the column, its point-in-time stamp or
     enough observations to measure. `delta` carries raw units, so its extreme is `threshold`
@@ -158,6 +165,10 @@ def family_exogenous_conditioner(
     atr = _atr(d, atr_n)
     thr = abs(float(threshold))
     signals: list[Signal] = []
+    if int(event_window_hours) > 0:
+        return _event_stance(d, cond, atr.to_numpy(), thr, int(event_window_hours),
+                             side_when_high=side_when_high, atr_n=atr_n, stop_atr=stop_atr,
+                             rr=rr, ttl_bars=ttl_bars)
     _a_m = m.to_numpy()
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
@@ -174,3 +185,35 @@ def family_exogenous_conditioner(
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="exogenous_conditioner", trigger=None, wait_bars=1))
     return signals
+
+
+def _event_stance(d: pd.DataFrame, cond: pd.Series, atr: np.ndarray, thr: float, window_h: int,
+                  *, side_when_high: int, atr_n: int, stop_atr: float, rr: float,
+                  ttl_bars: int) -> list[Signal]:
+    """One stance per published value: the first bar at or after the value became usable and
+    inside `window_h` of it. `cond` is already lagged, so its index IS the usable instant."""
+    idx = d.index
+    close = d["close"].to_numpy()
+    window = pd.Timedelta(hours=window_h)
+    out: list[Signal] = []
+    used: set[int] = set()
+    for at, value in cond.items():
+        v = float(value)
+        if not np.isfinite(v) or abs(v) < thr:
+            continue
+        try:
+            i = int(idx.searchsorted(at, side="left"))
+        except (TypeError, ValueError):
+            return []          # a series that will not align to the bar clock is UNMEASURED
+        if i < atr_n or i >= len(d) - 1 or i in used or idx[i] - at > window:
+            continue
+        a = float(atr[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        used.add(i)
+        side = side_when_high if v > 0 else -side_when_high
+        px = float(close[i])
+        out.append(Signal(time=idx[i], side=side, stop=px - side * stop_atr * a,
+                          target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
+                          tag="exogenous_conditioner.event", trigger=None, wait_bars=1))
+    return out

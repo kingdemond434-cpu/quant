@@ -404,7 +404,7 @@ def mechanism_arrays(family: str, frame: Any, params: Mapping[str, Any], *,
     sign = 0
     hold = int(p.get("ttl_bars") or p.get("max_hold") or 8)
     fam = str(family or "").lower()
-    if fam == "overnight_gap_decay":
+    if fam == "overnight_gap_decay" and not p.get("handoff"):   # handoff variant: not this rule
         gap = np.full(n, np.nan)
         gap[1:] = o[1:] - c[:-1]
         x = np.where(first_bar, gap / safe_atr, np.nan)
