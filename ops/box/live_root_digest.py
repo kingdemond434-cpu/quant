@@ -33,7 +33,7 @@ def main(argv: list[str]) -> int:
             print(f"UNMEASURED: {argv[0]} is not a commit here", file=sys.stderr)
             return 1
         digest = auth.tree_digest(argv[0], auth.pol.load_policy())
-    except Exception as exc:  # noqa: BLE001 -- any failure is UNMEASURED, said once
+    except Exception as exc:  # any failure is UNMEASURED, said once
         print(f"UNMEASURED: {type(exc).__name__}", file=sys.stderr)
         return 1
     if not re.fullmatch(r"[0-9a-f]{64}", str(digest)):

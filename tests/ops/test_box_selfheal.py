@@ -23,7 +23,7 @@ def test_the_adopter_runs_the_selfheal_before_it_seals() -> None:
 
 
 def test_the_pin_is_moved_never_computed() -> None:
-    """Only zuck's own file is copied, and only when every guard of the Auditor's ROOT ruling holds."""
+    """Only zuck's own file is copied, and only when every guard of the ROOT ruling holds."""
     body = _body("Invoke-PinRelocation")
     assert "Copy-Item -LiteralPath $OwnerPin -Destination $RegistryPin" in body
     assert "pin_root.py" not in body and "--write" not in HEAL      # no digest of our own
