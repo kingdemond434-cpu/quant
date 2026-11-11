@@ -1,8 +1,8 @@
-"""The #238 HOLD repairs (2026-11-11): the COT label lives on the BAR clock, and a cell is charged once.
+"""The #238 HOLD repairs (2026-11-11): COT labels live on the BAR clock; a cell is charged once.
 
 A. LOOK-AHEAD. `cot_frames._label_for` returned the release in true UTC while the bars a label is
    searched against are broker wall time (New York + 7 h) under a UTC tzinfo, so a delayed report
-   was readable 1.5 h (summer) to 2.5 h (winter) before it was public. Every expected instant
+   was readable 1.5 h (winter) to 2.5 h (summer) before it was public. Every expected instant
    below is written out by hand from the CFTC's 15:30 New York release, never derived from the
    code under test.
 
@@ -90,11 +90,11 @@ def test_holiday_week_is_never_labelled_before_release_on_the_broker_clock(asof,
     release_bar = _broker(ny_wall)
     lab = cot_frames.release_label(_ts(asof))
     assert lab >= release_bar, (asof, lab, release_bar)
-    # THE DEFECT, pinned: the same instant in true UTC is 2 h (EDT) or 3 h (EST) EARLIER than the
+    # THE DEFECT, pinned: the same instant in true UTC is 2 h (EST) or 3 h (EDT) EARLIER than the
     # bar that carries it, and that is what the label used to be compared against.
     true_utc = pd.Timestamp(ny_wall).tz_localize(NY).tz_convert(UTC)
-    assert release_bar - true_utc == pd.Timedelta(hours=3 if regime == "EST" else 2)
-    assert lab > true_utc.ceil("h")
+    assert release_bar - true_utc == pd.Timedelta(hours=2 if regime == "EST" else 3)
+    assert lab > true_utc.ceil("h")              # the old label, 1.5 h / 2.5 h too early
 
 
 def test_plain_holiday_weeks_label_the_first_bar_hour_after_release():

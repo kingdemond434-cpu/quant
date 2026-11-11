@@ -72,9 +72,14 @@ def _now() -> pd.Timestamp:
 
 
 def latest_released_week(now: pd.Timestamp | None = None) -> pd.Timestamp | None:
-    """The W-FRI Friday of the newest report whose release label is at or before `now`."""
+    """The W-FRI Friday of the newest report whose release label is at or before `now`.
+
+    The schedule's labels are on the BAR clock (broker wall time under a UTC tzinfo), so the
+    true-UTC `now` is converted before the two are compared."""
     from mt5desk import cot_frames
-    t = now if now is not None else _now()
+
+    from research import futures_state
+    t = futures_state.to_bar_clock(now if now is not None else _now())
     sched = cot_frames.release_schedule()
     past = sched[sched <= t]
     return None if past.empty else pd.Timestamp(past.index[-1])

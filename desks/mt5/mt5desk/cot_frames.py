@@ -31,7 +31,7 @@ converted with `futures_state.to_bar_clock` before it is compared with anything,
 this label is searched against are stamped in BROKER wall time (New York + 7 h) under a UTC
 tzinfo. Until this fix `_label_for` returned the release in TRUE UTC: a Monday 15:30 New York
 release was labelled 20:00 or 21:00, while the bar that opens at the release reads 22:30, so
-every holiday-week report was readable 1.5 h (summer) to 2.5 h (winter) BEFORE it existed. This
+every holiday-week report was readable 1.5 h (winter) to 2.5 h (summer) BEFORE it existed. This
 module's own tables (`EXTRA_CLOSURES`, `SHUTDOWN_RELEASES`) are kept as a FLOOR only: the label is
 the later of the shared helper's instant and the one they derive, so it is never earlier than
 either. Where the shared rule is later than the old derivation (a Tuesday holiday with a Monday
