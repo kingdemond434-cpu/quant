@@ -58,6 +58,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import hashlib
 import json
 import math
 import sys
@@ -444,7 +445,12 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
     for cid in sorted(certs, key=lambda c: (_stamp(c), c)):
         cert = certs[cid]
         prev_e = prior.get(cid)
+        # Keyed on the certificate's CONTENT as well as its id: a certificate re-minted under the
+        # same id with a different spec is a new measurement, never a carried one.
+        spec_sha = hashlib.sha256(json.dumps(cert, sort_keys=True, default=str)
+                                  .encode()).hexdigest()[:16]
         if (not force and isinstance(prev_e, dict) and "status" in prev_e
+                and prev_e.get("spec_sha") == spec_sha
                 and not prev_e.get("carried_forward") and 0.0 <= _age_s(cid) < REFRESH_S):
             per[cid] = prev_e
             continue
@@ -455,7 +461,8 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
                         "carried_forward": prev is not None,
                         "why_not_reached": f"the {budget_s:.0f}s budget was spent first"}
             continue
-        per[cid] = {**score_certificate(cert, meta, build, classes), "measured_at": _now()}
+        per[cid] = {**score_certificate(cert, meta, build, classes), "measured_at": _now(),
+                    "spec_sha": spec_sha}
         if build_err and per[cid]["status"] == "UNMEASURED":
             per[cid]["why"] = build_err
     measured = [e for e in per.values() if e.get("novelty") is not None]

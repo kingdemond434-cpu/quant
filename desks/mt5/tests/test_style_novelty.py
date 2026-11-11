@@ -224,8 +224,10 @@ def test_a_measurement_inside_the_refresh_window_is_kept_so_a_big_canon_complete
         "utf-8")
     now = time.time()
     young = sn.datetime.fromtimestamp(now - 3600, sn.UTC).isoformat()
+    spec = {"shadow_spec": {"symbol": "EURUSD", "family": "carry"}}
+    sha = sn.hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:16]
     kept = {"status": "MEASURED", "novelty": 0.2, "novel": False, "family": "carry",
-            "measured_at": young}
+            "measured_at": young, "spec_sha": sha}
     rep, wk = tmp_path / "r.json", tmp_path / "w.json"
     rep.write_text(json.dumps({"generated_utc": young, "complete": False,
                                "per_certificate": {"a": kept}}), "utf-8")
@@ -244,3 +246,12 @@ def test_a_measurement_inside_the_refresh_window_is_kept_so_a_big_canon_complete
                     weekly_path=wk, universe=tmp_path / "u.json", build=build, force=True,
                     now=now)
     assert len(built) == 3 and forced["complete"] is True   # --force re-measures both
+    # Same id, new content: re-measured even though its stamp is young.
+    rep.write_text(json.dumps({"generated_utc": young, "complete": False,
+                               "per_certificate": {"a": kept}}), "utf-8")
+    certs.write_text(json.dumps({"survivors": {
+        "a": {"shadow_spec": {"symbol": "EURUSD", "family": "carry", "params": {"k": 2}}}}}),
+        "utf-8")
+    sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep, weekly_path=wk,
+           universe=tmp_path / "u.json", build=build, now=now)
+    assert len(built) == 4
