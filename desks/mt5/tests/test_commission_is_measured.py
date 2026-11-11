@@ -133,7 +133,7 @@ def test_the_published_brochure_rate_is_kept_beside_the_measured_one():
 
 def test_canonical_symbol_costs_use_instrument_metadata_and_do_not_stress_commission():
     meta = {"tick_size": 0.01, "contract_size": 100.0, "tick_value": 1.0,
-            "median_spread_pts": 5.0, "swap_long": -2.0, "swap_short": 1.0}
+            "median_spread_pts": 5.0, "swap_long": -2.0, "swap_short": 1.0, "swap_mode": 1}
     raw = fc.costs_for_symbol(meta)
     stressed = fc.costs_for_symbol(meta, spread_stress=3.0)
     assert raw.commission_per_lot == stressed.commission_per_lot == fc.COMMISSION_PER_LOT_PER_SIDE

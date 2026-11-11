@@ -77,7 +77,8 @@ GAP_MAP = DESK / "reports" / "RESEARCH_GAP_MAP.json"
 SCOUTS = DESK / "reports" / "SCOUT_ROSTER.json"
 ROW_CONVERSION = DESK / "reports" / "ROW_CONVERSION.json"
 CONVERSION_LEDGER = DESK / "data" / "conversion_ledger.json"
-LIVE_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 MARKOUT = DESK / "reports" / "markout.json"
 PF_ALLOCATION = DESK / "reports" / "pf_allocation.json"
 PROBATION_STATE = DESK / "data" / "probation_state.json"
@@ -169,12 +170,13 @@ def paths_for(rt: Path) -> dict[str, Path]:
     rt = Path(rt)
     d, rp, dt = rt / "desks" / "mt5", rt / "desks" / "mt5" / "reports", \
         rt / "desks" / "mt5" / "data"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
     return {"tier1": rt / "docs" / "research" / "tier1_program.json",
             "wiring": rp / "WIRING_CEO.json", "rent": rp / "MODULE_RENT_RESEARCH.json",
             "gap": rp / "RESEARCH_GAP_MAP.json", "scouts": rp / "SCOUT_ROSTER.json",
             "row_conversion": rp / "ROW_CONVERSION.json",
             "conversion_ledger": dt / "conversion_ledger.json",
-            "live": dt / "live_ledger.jsonl", "markout": rp / "markout.json",
+            "live": _audited_ledger_path(dt / "live_ledger.jsonl"), "markout": rp / "markout.json",
             "pf": rp / "pf_allocation.json", "probation": dt / "probation_state.json",
             "auto_legs": dt / "auto_legs.json", "out": rp / "BUILD_ALLOCATOR.json",
             "_desk": d}

@@ -14,10 +14,25 @@ if ($session -eq 0) {
     exit 2
 }
 
-$terminals = @(Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" |
-    Where-Object { $_.ExecutablePath -eq $exe } |
-    Sort-Object CreationDate)
+# Get-Process, never the CIM cmdlets: CIM has hung on the trading box (CLAUDE.md), and a
+# watchdog that hangs is no watchdog. A terminal64 whose Path this account cannot read belongs
+# to another account; it is NOT ours (counting it made any foreign MT5 refuse forever), so it is
+# logged by session and left out.
+function Get-FusionTerminals {
+    @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -eq $exe })
+}
+foreach ($u in @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
+        Where-Object { -not $_.Path })) {
+    Add-Content -LiteralPath $log -Value "$stamp unreadable-path terminal in session $($u.SessionId) (pid $($u.Id)); not counted as Fusion"
+}
+$terminals = Get-FusionTerminals
 $local = @($terminals | Where-Object { $_.SessionId -eq $session })
+# An unreadable terminal in THIS session is not another account's: it may be the Fusion terminal
+# itself behind an access hiccup. Launching beside it would make two terminals on one data
+# directory, so its presence refuses the launch below.
+$unreadableLocal = @(Get-Process -Name 'terminal64' -ErrorAction SilentlyContinue |
+    Where-Object { -not $_.Path -and $_.SessionId -eq $session })
 
 # A terminal in another session may own live state. Refuse to kill it or launch
 # another on the same data directory without controlled reconciliation.
@@ -35,6 +50,65 @@ if ($terminals.Count -gt 1) {
     exit 2
 }
 
+# The existing probe uses MT5 initialize/account_info only; no order permission.
+# THE INTERPRETER IS RESOLVED, NEVER ASSUMED: a hard-coded path that is absent on this box reads
+# "probe unavailable" forever and the watchdog can never pass. Order: the repo .venv, the per-user
+# Python314 (Seal-IfClean.ps1's two candidates), then the machine-wide Program Files Python314
+# (the path this script used to hard-code), then whatever `python` is on PATH.
+$python = $null
+foreach ($cand in @(
+    (Join-Path $root '.venv\Scripts\python.exe'),
+    "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe",
+    'C:\Program Files\Python314\python.exe'
+)) { if (Test-Path -LiteralPath $cand) { $python = $cand; break } }
+if (-not $python) {
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) { $python = $cmd.Source }
+}
+$probe = Join-Path $root 'desks\mt5\research\probe_terminal.py'
+
+# One read-only probe, used on both paths below. Returns the probe's exit code (99 = unavailable).
+function Invoke-ReadOnlyProbe {
+    if (-not $python -or -not (Test-Path -LiteralPath $probe)) {
+        Add-Content -LiteralPath $log -Value "$stamp read-only Fusion IPC probe unavailable"
+        return 99
+    }
+    $previousErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue' # native stderr is data; the exit code is the verdict
+    try {
+        $probeOutput = & $python -u $probe 2>&1 | Out-String
+        $probeCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorAction
+    }
+    if ($probeCode -ne 0) {
+        $reason = ($probeOutput -split "`n" | Where-Object { $_ -match 'init:|last_error|Traceback|Error' } | Select-Object -First 1)
+        Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe failed rc=$probeCode session=$session $reason"
+    }
+    return $probeCode
+}
+
+# THE HEALTH FILE IS WRITTEN ON A PASSED PROBE ONLY. Every refusal appends to the log, so the
+# log's age says the task ran, not that the terminal is usable; organ_contract grades this file.
+function Write-BootHealth([int]$terminalPid, [string]$note) {
+    Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe passed in session $session (pid $terminalPid)$note"
+    $okPath = Join-Path $root 'desks\mt5\data\terminal_boot_ok.json'
+    @{ at = (Get-Date).ToUniversalTime().ToString('o'); session = $session; pid = $terminalPid;
+       python = $python } | ConvertTo-Json -Compress | Set-Content -LiteralPath $okPath -Encoding UTF8
+}
+
+# An unreadable terminal in THIS session may be the Fusion terminal itself: never launch beside
+# it. Ask the read-only probe first -- if the terminal answers, it is healthy and that is the
+# verdict; only an unanswering one is refused.
+if ($local.Count -eq 0 -and $unreadableLocal.Count -gt 0) {
+    $pids = ($unreadableLocal | ForEach-Object { $_.Id }) -join ','
+    if ((Invoke-ReadOnlyProbe) -eq 0) {
+        Write-BootHealth $unreadableLocal[0].Id " (unreadable-path terminal(s) $pids; no launch)"
+        exit 0
+    }
+    Add-Content -LiteralPath $log -Value "$stamp unreadable-path terminal(s) $pids in this session $session; refusing to launch a second terminal"
+    exit 2
+}
 if ($local.Count -eq 0) {
     if (-not (Test-Path -LiteralPath $exe)) {
         Add-Content -LiteralPath $log -Value "$stamp Fusion terminal executable missing: $exe"
@@ -42,34 +116,16 @@ if ($local.Count -eq 0) {
     }
     Start-Process -FilePath $exe -WindowStyle Hidden
     Start-Sleep -Seconds 8
-    $local = @(Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" |
-        Where-Object { $_.ExecutablePath -eq $exe -and $_.SessionId -eq $session })
+    $local = @(Get-FusionTerminals | Where-Object { $_.SessionId -eq $session })
     if ($local.Count -ne 1) {
         Add-Content -LiteralPath $log -Value "$stamp launch did not establish exactly one terminal in interactive session $session"
         exit 2
     }
 }
 
-# The existing probe uses MT5 initialize/account_info only; no order permission.
-$python = 'C:\Program Files\Python314\python.exe'
-$probe = Join-Path $root 'desks\mt5\research\probe_terminal.py'
-if (-not (Test-Path -LiteralPath $python) -or -not (Test-Path -LiteralPath $probe)) {
-    Add-Content -LiteralPath $log -Value "$stamp read-only Fusion IPC probe unavailable"
-    exit 2
-}
-$previousErrorAction = $ErrorActionPreference
-$ErrorActionPreference = 'Continue' # native stderr is data; the exit code is the verdict
-try {
-    $probeOutput = & $python -u $probe 2>&1 | Out-String
-    $probeCode = $LASTEXITCODE
-} finally {
-    $ErrorActionPreference = $previousErrorAction
-}
+$probeCode = Invoke-ReadOnlyProbe
 if ($probeCode -ne 0) {
-    $reason = ($probeOutput -split "`n" | Where-Object { $_ -match 'init:|last_error|Traceback|Error' } | Select-Object -First 1)
-    Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe failed rc=$probeCode session=$session $reason"
     exit 2
 }
-
-Add-Content -LiteralPath $log -Value "$stamp Fusion IPC/account probe passed in session $session (pid $($local[0].ProcessId))"
+Write-BootHealth $local[0].Id ""
 exit 0

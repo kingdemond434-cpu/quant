@@ -42,7 +42,8 @@ for _p in (str(REPO), str(BASE / "research")):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "DRAWDOWN_ALPHA_MINER.json"
-LIVE = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LEDGER_DIRS = (BASE / "reports" / "shadow", REPO / "backups" / "moat" / "shadow_ledgers")
 MIN_DEPTH_R = 1.0
 MAX_WINDOWS = 8

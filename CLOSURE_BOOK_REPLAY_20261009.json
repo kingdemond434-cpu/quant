@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-09T02:07:07.935719+00:00",
+  "mode": "PRIVATE_REPLAY_AUTHENTICATED_SNAPSHOT_NO_ORDER_API",
+  "snapshot": "C:\\opt\\quant\\desks\\mt5\\reports\\FUSION_DEAL_RECONCILIATION_20261009.json",
+  "snapshot_at": "2026-10-08T22:44:36.536785+00:00",
+  "snapshot_sha256": "c25583d0c050093371ec74ada772950856db43a5b858115082e0ade8990df573",
+  "account": "REDACTED_LIVE_IDENTIFIER",
+  "server": "FusionMarkets-Live",
+  "position": 233700226,
+  "before": {
+    "filled": {
+      "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": 0.4
+    },
+    "target": {
+      "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": 0.4
+    }
+  },
+  "after": {
+    "filled": {},
+    "target": {}
+  },
+  "original_prefix_preserved": true,
+  "restart_idempotent": true,
+  "production_book_modified": false,
+  "net_account_pnl": 0.95,
+  "opening_cost": -0.81,
+  "historical_ledger_exit_only_pnl": 1.76,
+  "historical_correction_delta": -0.81,
+  "historical_correction_status": "EVIDENCED_NOT_APPLIED_APPEND_ONLY_HISTORY_PRESERVED"
+}
