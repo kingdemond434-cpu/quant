@@ -443,7 +443,7 @@ def sibling_families(mechanism: str, information_source: str,
     parameter neighbour the registry's vocabulary can name."""
     return sorted(f for f, (m, i, _) in ar.FAMILY_TABLE.items()
                   if m == mechanism and i == information_source and f in families
-                  and not ar._banned(f)) if ar else []
+                  and not ar._banned(f) and f not in ar.rule_only_families()) if ar else []
 
 
 def elite_mutations(niche: dict[str, str], elite: dict[str, Any],

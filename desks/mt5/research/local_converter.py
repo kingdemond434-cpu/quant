@@ -28,12 +28,13 @@ is deduplicated by economic exposure (family, symbol, session) and never by titl
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import os
 import re
 import sys
+import time
 from collections import Counter
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -138,14 +139,22 @@ def _known_families() -> set[str]:
     return out
 
 
-def _iter_rows(limit: int) -> list[tuple[str, dict]]:
-    rows: list[tuple[str, dict]] = []
+def _iter_rows(limit: int) -> Iterator[tuple[str, dict]]:
+    """Yield (miner, row) for up to `limit` mined rows, one at a time.
+
+    STREAMED, NEVER LISTED (2026-11-04). This used to build a list of every row in the corpus
+    (limit 10,000,000) before `convert` read the first one, and held them all as Python dicts
+    for the whole pass: 18.5 GB of commit on the trading box at 18:21Z, the largest single
+    holder while ~1 in 4 Fusion gateway passes died at numpy import. `convert` only ever looks
+    at one row at a time, so a generator yields the same rows in the same order with the same
+    limit and keeps at most one file's document resident."""
+    n = 0
     for root in SOURCES:
         if not root.exists():
             continue
         for p in sorted(root.rglob("*.json")) + sorted(root.rglob("*.jsonl")):
-            if len(rows) >= limit:
-                return rows
+            if n >= limit:
+                return
             miner = p.parent.name
             try:
                 if p.suffix == ".jsonl":
@@ -154,24 +163,29 @@ def _iter_rows(limit: int) -> list[tuple[str, dict]]:
                             ln = ln.strip()
                             if not ln:
                                 continue
-                            with contextlib.suppress(ValueError):
-                                rows.append((miner, json.loads(ln)))
-                            if len(rows) >= limit:
-                                return rows
+                            try:
+                                row = json.loads(ln)
+                            except ValueError:
+                                continue
+                            n += 1
+                            yield miner, row
+                            if n >= limit:
+                                return
                 else:
                     doc = json.loads(p.read_text(encoding="utf-8", errors="replace"))
                     got = doc if isinstance(doc, list) else (
                         doc.get("rows") or doc.get("discoveries") or doc.get("items") or [])
                     if isinstance(got, dict):
                         got = list(got.values())
+                    del doc
                     for r in got:
                         if isinstance(r, dict):
-                            rows.append((miner, r))
-                        if len(rows) >= limit:
-                            return rows
+                            n += 1
+                            yield miner, r
+                        if n >= limit:
+                            return
             except (OSError, ValueError):
                 continue
-    return rows
 
 
 def _text_of(row: dict) -> str:
@@ -314,6 +328,30 @@ def convert(limit: int) -> tuple[list[dict], Counter]:
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 
 
+#: Waits between docket-feed admission attempts (seconds). Three attempts over ~4 minutes, well
+#: inside MT5-LocalConvert's 50-minute limit.
+FEED_RETRY_WAITS_S: tuple[float, ...] = (60.0, 180.0)
+_sleep = time.sleep
+#: The feed's own outcome, MEASURED rather than inferred from the exit code or OUT's age (a
+#: stand-down exits 0 and OUT is rewritten fresh either way). FED or STOOD_DOWN, every run, so a
+#: box where admission is refused for good reads as a starving docket, not as a healthy organ.
+FEED_STATUS = DESK / "data" / "hypotheses" / "local_feed_status.json"
+
+
+def _record_feed(status: str, *, added: int, candidates: int, attempts: int,
+                 docket_rows: int) -> None:
+    doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "status": status,
+           "added": int(added), "candidates": int(candidates), "attempts": int(attempts),
+           "docket_rows": int(docket_rows), "producer": "desks/mt5/research/local_converter.py"}
+    try:
+        FEED_STATUS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = FEED_STATUS.with_name(FEED_STATUS.name + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, FEED_STATUS)
+    except OSError as exc:      # the record must never cost the feed; say so loudly instead
+        print(f"docket feed: could not write {FEED_STATUS.name}: {exc}")
+
+
 def feed_docket(cands: list[dict]) -> tuple[int, int]:
     """Merge converted candidates into the gauntlet's docket. Returns (added, docket size).
 
@@ -334,10 +372,78 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     """
     from research.job_lock import exclusive_job
 
-    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
-        if not owned:
-            raise RuntimeError("Canonical docket writer lane or memory admission refused")
-        return _feed_docket_locked(cands)
+    # A REFUSED ADMISSION WAITS, THEN STANDS DOWN; IT NEVER RAISES (2026-11-04). The docket
+    # writer lane is shared (merge_hypotheses) and admission needs measured free memory, so a
+    # refusal is the box saying "not now", which job_lock documents as the cheap outcome. Raising
+    # here killed every MT5-LocalConvert run after the conversion work was already done: no
+    # output from 11-03 11:12Z for 33h. Now: a few spaced retries inside the run, then a loud
+    # stand-down with (0, -1). The candidates are already written to OUT and the feed is
+    # idempotent, so the next run delivers them.
+    attempt = 0
+    for attempt, wait_s in enumerate((*FEED_RETRY_WAITS_S, None), start=1):
+        with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
+            if owned:
+                added, total = _feed_docket_locked(cands)
+                _record_feed("FED", added=added, candidates=len(cands), attempts=attempt,
+                             docket_rows=total)
+                return added, total
+        if wait_s is None:
+            break
+        print(f"docket feed: writer lane or memory admission refused (attempt {attempt}); "
+              f"retrying in {wait_s:.0f}s")
+        _sleep(wait_s)
+    print("docket feed: STOOD DOWN -- writer lane or memory admission refused on every attempt; "
+          f"{len(cands)} candidate(s) stay in {OUT.name} and the next run feeds them")
+    _record_feed("STOOD_DOWN", added=0, candidates=len(cands), attempts=attempt, docket_rows=-1)
+    return 0, -1
+
+
+def docket_rows(cands: list[dict]) -> list[dict]:
+    """The candidates in the docket's own row shape, PIT-stamped, deduped on the executable spec.
+
+    ONE SHAPE, TWO DOORS (2026-11-05). The direct feed below needs the shared writer lane, and
+    MT5-MergeDocket holds that lane for its whole run -- measured on the box at ~27h for one run
+    and 5h54m into the next, so every hourly feed in between was refused. These same rows are
+    therefore also written into `local_candidates.json["docket_rows"]`, which merge_hypotheses
+    reads as one of its SOURCES under its own lock. Whichever door opens first lands them; the
+    docket dedupes on (symbol, family, params) so landing twice is a no-op.
+    """
+    def key(sym: str, fam: str, params: dict) -> str:
+        return json.dumps([sym, fam, params], sort_keys=True, default=str)
+
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    seen: set[str] = set()
+    rows = []
+    for c in cands:
+        sym = (c.get("symbols") or [None])[0]
+        fam = c.get("family")
+        if not sym or not fam:
+            continue
+        # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
+        # cells rather than one cell with a label the builder cannot read.
+        params = {"selector": c["selector"]} if c.get("selector") else {}
+        k = key(str(sym), str(fam), params)
+        if k in seen:
+            continue
+        seen.add(k)
+        rows.append({
+            "symbol": sym, "family": fam, "params": params,
+            "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
+            "profit_factor": None, "win_rate": None,
+            "source": str(c.get("source") or "local_converter"),
+            "url": None, "producer": "desks/mt5/research/local_converter.py",
+            "first_seen": now, "pit_stamp": now,
+            "evidence": c.get("evidence"),
+            "why": "converted deterministically from the mined corpus; no performance claimed",
+        })
+    if not rows:
+        return rows
+    from libs.data.pit import stamp_or_refuse
+
+    rows, refused = stamp_or_refuse(rows, "local_converter")
+    if refused:
+        raise ValueError(f"Local converter refused {len(refused)} unstamped candidates")
+    return rows
 
 
 def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
@@ -354,35 +460,14 @@ def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
     seen = {key(str(r.get("symbol") or r.get("sym") or ""),
                 str(r.get("family") or ""), r.get("params") or {})
             for r in docket if isinstance(r, dict)}
-    now = datetime.now(UTC).isoformat(timespec="seconds")
     added = []
-    for c in cands:
-        sym = (c.get("symbols") or [None])[0]
-        fam = c.get("family")
-        if not sym or not fam:
+    for row in docket_rows(cands):
+        k = key(str(row["symbol"]), str(row["family"]), row["params"])
+        if k in seen:
             continue
-        # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
-        # cells rather than one cell with a label the builder cannot read.
-        params = {"selector": c["selector"]} if c.get("selector") else {}
-        if key(str(sym), str(fam), params) in seen:
-            continue
-        seen.add(key(str(sym), str(fam), params))
-        added.append({
-            "symbol": sym, "family": fam, "params": params,
-            "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
-            "profit_factor": None, "win_rate": None,
-            "source": str(c.get("source") or "local_converter"),
-            "url": None, "producer": "desks/mt5/research/local_converter.py",
-            "first_seen": now, "pit_stamp": now,
-            "evidence": c.get("evidence"),
-            "why": "converted deterministically from the mined corpus; no performance claimed",
-        })
+        seen.add(k)
+        added.append(row)
     if added:
-        from libs.data.pit import stamp_or_refuse
-
-        added, refused = stamp_or_refuse(added, "local_converter")
-        if refused:
-            raise ValueError(f"Local converter refused {len(refused)} unstamped candidates")
         docket.extend(added)
         from research.merge_hypotheses import _write_docket_atomically
 
@@ -414,13 +499,20 @@ def main(argv: list[str] | None = None) -> int:
         print("--dry-run: nothing written")
         return 0
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(
+    # ATOMIC: merge_hypotheses now reads OUT concurrently, and a torn file reads as ABSENT for a
+    # whole MergeDocket run (~27h). Write beside it, then swap in one rename.
+    tmp = OUT.with_name(OUT.name + ".tmp")
+    tmp.write_text(json.dumps(
         {"built_at": datetime.now(UTC).isoformat(timespec="seconds"),
          "source": "desks/mt5/research/local_converter.py",
-         "stats": dict(stats), "candidates": cands}, indent=1), encoding="utf-8")
+         "stats": dict(stats), "candidates": cands,
+         "docket_rows": docket_rows(cands)}, indent=1), encoding="utf-8")
+    os.replace(tmp, OUT)
     print(f"wrote {OUT}")
     if not a.no_feed:
         added, total = feed_docket(cands)
+        if total < 0:
+            return 0
         print(f"docket: +{added} new cell(s), now {total} row(s) -> {DOCKET.name}")
         if not added:
             print("  (every candidate already in the docket -- the feed is idempotent)")
