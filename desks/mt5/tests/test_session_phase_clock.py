@@ -137,3 +137,16 @@ def test_the_allocator_reads_trade_hours_on_each_trades_own_clock() -> None:
     # The admitted-extra-dimensions branch reads the same per-trade clock as the main path.
     assert "returns_in_phase(keep, phase, broker_utc_offset_h=None)" in src
     assert "broker_utc_offset_h=broker_utc_offset_h)" not in src
+
+
+def test_state_admission_run_carries_each_rows_declared_basis(tmp_path, monkeypatch) -> None:
+    import state_admission_run as sar
+    d = tmp_path / "shadow"
+    d.mkdir()
+    (d / "ledger_s.json").write_text(
+        '[{"entry_time": "2026-07-01 08:00:00+00:00", "r_multiple": 1.0},'
+        ' {"entry_time": "2026-07-01T05:00:00+00:00", "r_multiple": 2.0,'
+        ' "timestamp_basis": "utc"}]', "utf-8")
+    monkeypatch.setattr(sar, "LEDGER_DIRS", (d,))
+    got = {t.r: t.basis for t in sar.load_trades("shadow")}
+    assert got == {1.0: "broker", 2.0: "utc"}
