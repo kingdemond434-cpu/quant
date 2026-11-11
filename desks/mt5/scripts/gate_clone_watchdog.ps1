@@ -86,12 +86,17 @@ try {
 # 2026-11-11: MT5-MergeDocket's python (pid 36280) had hung since 11-09 and survived
 # Stop-ScheduledTask; the Judge's intake stalled behind it. #882 gives merge_hypotheses a 12 h wall
 # for runs that start on its code; a run that predates it, or hangs where the wall cannot fire, is
-# ended here -- but ONLY when it is BOTH older than the wall plus an hour AND has used no CPU
-# across two passes (30 min). A process making no CPU progress is not mid-write, so the append-only
-# preregistrations.jsonl is never torn by this (#882 waits up to 30 min for its own writes).
+# ended here -- but ONLY when it is BOTH older than the wall plus an hour AND STALLED across two
+# consecutive passes (30 min). STALLED (D-20261111-REAPIO, coordinator 10:16Z, from Desk health's
+# measure of 36280 over 616 s: kernel +16.6 s, user +1.9 s, 741k page faults, zero I/O): its I/O
+# read+write byte counts are unchanged AND its USER-mode CPU grew by less than 1% of the time
+# between passes. Kernel time is ignored: a thrashing process pages in kernel mode, so "kernel +
+# user exactly unchanged" would never fire on the very hang it is for. A process with no I/O cannot
+# be mid-append; a torn tail from any other kill is made harmless by #991.
 # THE PROCESS QUERY IS BOUNDED (#984 audit M1): CIM has hung on this box, so it runs in a job with
 # a 60 s timeout, and a timeout is recorded UNMEASURED instead of holding the task.
 $reapAgeH = 13
+$reapUserShare = 0.01   # user-mode CPU under 1% of the gap between passes counts as stalled
 $reaped = @()
 try {
     $prev = @{}
@@ -101,7 +106,7 @@ try {
     $job = Start-Job -ScriptBlock {
         Get-CimInstance Win32_Process -Filter "Name like 'python%'" |
             Where-Object { "$($_.CommandLine)" -match 'merge_hypotheses\.py' } |
-            ForEach-Object { [pscustomobject]@{ Id = $_.ProcessId; Created = $_.CreationDate; Cpu = [double]($_.KernelModeTime + $_.UserModeTime) } }
+            ForEach-Object { [pscustomobject]@{ Id = $_.ProcessId; Created = $_.CreationDate; User = [double]$_.UserModeTime; Io = [double]($_.ReadTransferCount + $_.WriteTransferCount) } }
     }
     if (-not (Wait-Job -Job $job -Timeout 60)) {
         Stop-Job -Job $job; Remove-Job -Job $job -Force
@@ -109,16 +114,24 @@ try {
     } else {
         $procs = @(Receive-Job -Job $job); Remove-Job -Job $job -Force
         $seen = [ordered]@{}
+        $nowUtc = (Get-Date).ToUniversalTime()
         foreach ($p in $procs) {
             $ageH = ((Get-Date) - $p.Created).TotalHours
-            $cpu = [double]$p.Cpu
+            $user = [double]$p.User   # 100 ns units
+            $io = [double]$p.Io
             $key = "$($p.Id)@$($p.Created.ToUniversalTime().ToString('o'))"
             $was = $prev[$key]
-            $still = if ($was -and [double]$was.cpu -eq $cpu) { [int]$was.flat + 1 } else { 0 }
-            $seen[$key] = [ordered]@{ cpu = $cpu; flat = $still; age_h = [math]::Round($ageH, 1) }
+            $stalled = $false
+            if ($was -and $was.at) {
+                $gapS = ($nowUtc - ([datetime]$was.at).ToUniversalTime()).TotalSeconds
+                $userS = ($user - [double]$was.user) / 1e7
+                $stalled = ($gapS -gt 0 -and [double]$was.io -eq $io -and $userS -lt ($reapUserShare * $gapS))
+            }
+            $still = if ($stalled) { [int]$was.flat + 1 } else { 0 }
+            $seen[$key] = [ordered]@{ at = $nowUtc.ToString('o'); user = $user; io = $io; flat = $still; age_h = [math]::Round($ageH, 1) }
             if ($ageH -gt $reapAgeH -and $still -ge 2 -and -not $DryRun) {
                 & taskkill.exe /PID $p.Id /T /F | Out-Null
-                $reaped += "pid $($p.Id) ($([math]::Round($ageH, 1)) h old, no CPU for $still passes; taskkill rc $LASTEXITCODE)"
+                $reaped += "pid $($p.Id) ($([math]::Round($ageH, 1)) h old, no I/O and user CPU under 1% for $still passes; taskkill rc $LASTEXITCODE)"
             }
         }
         Write-Atomic $reapState ($seen | ConvertTo-Json -Compress)

@@ -80,13 +80,30 @@ def test_declared_in_the_box_task_manifest() -> None:
     assert 'installer="desks/mt5/scripts/install_gate_clone_watchdog_task.ps1"' in row[0]
 
 
-def test_a_hung_merge_docket_is_ended_only_when_old_and_cpu_flat() -> None:
+def test_a_hung_merge_docket_is_ended_only_when_old_and_stalled() -> None:
     code = _code(WD)
     assert "merge_hypotheses\\.py" in code
     assert "$reapAgeH = 13" in code  # #882's 12 h wall plus an hour: never pre-empts the wall
     cond = re.search(r"if \(\$ageH -gt \$reapAgeH -and \$still -ge 2 -and -not \$DryRun\)", code)
-    assert cond, "the kill needs age, two CPU-flat passes, and no dry run"
-    assert code.index("$still = if ($was -and [double]$was.cpu -eq $cpu)") < cond.start()
+    assert cond, "the kill needs age, two stalled passes, and no dry run"
+    assert code.index("$still = if ($stalled) { [int]$was.flat + 1 } else { 0 }") < cond.start()
+
+
+def test_stalled_is_no_io_and_user_cpu_under_one_percent_and_kernel_is_ignored() -> None:
+    """D-20261111-REAPIO: pid 36280 over 616 s, kernel +16.6 s (paging), user +1.9 s, zero I/O.
+    Kernel + user exactly unchanged never fired on it; I/O unchanged and user < 1% does."""
+    code = _code(WD)
+    assert "$reapUserShare = 0.01" in code
+    assert "User = [double]$_.UserModeTime" in code
+    assert "Io = [double]($_.ReadTransferCount + $_.WriteTransferCount)" in code
+    assert "KernelModeTime" not in code  # paging inflates it: never part of the test
+    assert (
+        "$stalled = ($gapS -gt 0 -and [double]$was.io -eq $io -and "
+        "$userS -lt ($reapUserShare * $gapS))"
+    ) in code
+    assert "$userS = ($user - [double]$was.user) / 1e7" in code  # 100 ns units to seconds
+    # the measured case: 1.9 s of user CPU over 616 s is 0.31%, under the 1% share
+    assert 1.9 < 0.01 * 616
     assert "taskkill.exe /PID $p.Id /T /F" in code
     assert code.count("taskkill.exe") == 1  # nothing else is ever killed
     assert "merge_docket = ($reaped -join '; ')" in code
