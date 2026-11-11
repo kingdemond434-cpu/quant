@@ -69,7 +69,7 @@ HOLIDAY_WEEKS = [
     ("2024-11-26", "2024-12-02 15:30", "EST"),    # Thanksgiving Thu Nov 28 2024
     ("2023-11-21", "2023-11-27 15:30", "EST"),    # Thanksgiving Thu Nov 23 2023
     ("2024-12-24", "2024-12-30 15:30", "EST"),    # Christmas Wed Dec 25 2024
-    ("2023-12-19", "2023-12-26 15:30", "EST"),    # Christmas Mon Dec 25 2023 follows the Friday
+    ("2020-12-22", "2020-12-28 15:30", "EST"),    # Christmas Fri Dec 25 2020
     ("2026-06-16", "2026-06-22 15:30", "EDT"),    # Juneteenth Fri Jun 19 2026
     ("2024-06-18", "2024-06-24 15:30", "EDT"),    # Juneteenth Wed Jun 19 2024
     ("2026-06-30", "2026-07-06 15:30", "EDT"),    # Jul 3 2026 (Independence Day observed)
