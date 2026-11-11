@@ -52,6 +52,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import urllib.robotparser
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -95,7 +96,61 @@ def _ctx():
         return None
 
 
+#: host -> parsed robots rules, or a refusal string when they could not be read. One read per
+#: host per pass.
+_ROBOTS: dict[str, urllib.robotparser.RobotFileParser | str] = {}
+
+
+def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | str:
+    """The host's robots rules. 404/410 = no rules (allow); 401/403 = disallow everything;
+    anything else unreadable = a refusal string, never an assumed allow."""
+    key = f"{scheme}://{host}"
+    if key in _ROBOTS:
+        return _ROBOTS[key]
+    rp = urllib.robotparser.RobotFileParser()
+    req = urllib.request.Request(f"{key}/robots.txt", headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=15.0, context=_TLS) as r:
+            rp.parse(r.read(500_000).decode("utf-8", errors="replace").splitlines())
+        out: urllib.robotparser.RobotFileParser | str = rp
+    except urllib.error.HTTPError as e:
+        code = getattr(e, "code", 0)
+        if code in (404, 410):
+            rp.parse([])
+            out = rp
+        elif code in (401, 403):
+            rp.parse(["User-agent: *", "Disallow: /"])
+            out = rp
+        else:
+            out = f"robots.txt unreadable (HTTP {code})"
+    except Exception as e:
+        out = f"robots.txt unreadable ({type(e).__name__})"
+    _ROBOTS[key] = out
+    return out
+
+
+def robots_refusal(url: str) -> str | None:
+    """None when the host's robots.txt allows this exact path for our agent, else why not.
+
+    THE STRICTER RULE GOVERNS (Governance ruling 2026-11-10, PR #819): a robots.txt Disallow
+    covering the exact fetched path stops the fetch, and robots that cannot be read are not read
+    as permission. Every request this module makes goes through here, the index APIs included;
+    a robots.txt fetch itself is the one request that cannot be gated by its own answer."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.path == "/robots.txt":
+        return None
+    rules = _robots_for(parts.scheme, parts.netloc)
+    if isinstance(rules, str):
+        return rules
+    if not rules.can_fetch(UA, url):
+        return "robots.txt disallows this path"
+    return None
+
+
 def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes | None, str]:
+    refused = robots_refusal(url)
+    if refused:
+        return None, f"REFUSED: {refused}"
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
