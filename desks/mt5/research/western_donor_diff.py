@@ -117,6 +117,9 @@ PERMISSIVE_LICENCES: tuple[tuple[str, str], ...] = (
     ("BSD", r"Redistribution and use in source and binary forms"),
 )
 UNMEASURED = "UNMEASURED"
+#: The licence a route's QUOTED text is published under. A repository route's licence is the one
+#: the gate read from its LICENSE this pass; arXiv's API metadata (title, abstract) is CC0.
+ARXIV_LICENCE = "CC0-1.0 (arXiv metadata)"
 
 GH = "https://raw.githubusercontent.com"
 LEAN = f"{GH}/QuantConnect/Lean/master"
@@ -573,6 +576,12 @@ class Gate:
         self._licences[licence_url] = got
         return got
 
+    def licence_of(self, src: Source) -> str | None:
+        """The licence name the quoted text of this route travels under, or None if unknown."""
+        if src.licence_url:
+            return self._licences.get(src.licence_url, (None, ""))[0]
+        return ARXIV_LICENCE if src.kind == "arxiv" else None
+
     def read(self, src: Source, url: str) -> tuple[str, str, str]:
         """(outcome, detail, text). Outcomes: FETCHED, TERMS_FAIL_CLOSED, LICENCE_FAIL_CLOSED,
         ROBOTS_REFUSED, UNREACHABLE."""
@@ -712,8 +721,14 @@ def _may_hypothesise(symbol: str, family: str | None) -> bool:
 
 # ---------------------------------------------------------------------------- the challengers --
 def challenger_rows(caps: Sequence[Capability], diff: Mapping[str, Mapping[str, Any]],
-                    universe: set[str], evidence_text: Mapping[str, str]) -> list[dict[str, Any]]:
-    """One row per alpha capability that is not COVERED and carries a challenger spec."""
+                    universe: set[str], evidence_text: Mapping[str, str],
+                    licences: Mapping[str, str | None] | None = None) -> list[dict[str, Any]]:
+    """One row per alpha capability that is not COVERED and carries a challenger spec.
+
+    ATTRIBUTION TRAVELS WITH THE QUOTE (Auditor should-fix, #1020). A row that carries the
+    donor's own words carries the licence they are published under and their URL, because the
+    seat directory is committed to a public repository. A quote whose licence is not known this
+    pass is not carried at all."""
     out: list[dict[str, Any]] = []
     now = _now()
     for cap in caps:
@@ -726,7 +741,8 @@ def challenger_rows(caps: Sequence[Capability], diff: Mapping[str, Mapping[str, 
         if not symbols:
             continue
         url = cap.evidence[0] if cap.evidence else ""
-        verbatim = evidence_text.get(url, "")
+        licence = (licences or {}).get(url)
+        verbatim = evidence_text.get(url, "") if licence else ""
         desc = (f"N8 donor-capability challenger. {DONORS[cap.donor]['name']}: "
                 f"{cap.public_capability}. Mechanism: {cap.economic_mechanism}. Our equivalent: "
                 f"{cap.desk_analogue} -- measured {diff[cap.id]['status']}. "
@@ -744,6 +760,9 @@ def challenger_rows(caps: Sequence[Capability], diff: Mapping[str, Mapping[str, 
             "content_hash": hashlib.sha256(desc.encode()).hexdigest()[:16],
             "region": DONORS[cap.donor]["region"], "language": "en", "lang": "en",
             "consumer": "miner_candidate_compiler -> gauntlet (or -> deepening_worker)"}
+        if verbatim:
+            row.update({"licence": licence, "quoted_from": url,
+                        "attribution": f"{DONORS[cap.donor]['name']}, {url}, {licence}"})
         if family:
             row.update({"kind": "hypothesis", "family": family})
         else:
@@ -755,7 +774,8 @@ def challenger_rows(caps: Sequence[Capability], diff: Mapping[str, Mapping[str, 
 
 # ------------------------------------------------------------------------------------ the run --
 def _claim_rows(text: str, *, src: Source, url: str, universe: set[str],
-                seen: set[str]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+                seen: set[str], licence: str | None = None
+                ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     from libs.research import mechanism_claims as mc
     r = mc.extract(text, universe=universe or None)
     now = _now()
@@ -773,7 +793,8 @@ def _claim_rows(text: str, *, src: Source, url: str, universe: set[str],
                      if src.kind == "github" else "ACADEMIC",
                      "published_time": None, "available_time": now, "ingested_time": now,
                      "revision": None, "source_hash": src_hash, "terms_note": src.basis[:160],
-                     "fetched_utc": now, "score": mc.claim_score(c), "donor": src.donor})
+                     "fetched_utc": now, "score": mc.claim_score(c), "donor": src.donor,
+                     "licence": licence or UNMEASURED, "quoted_from": url})
     counts = {k: int(r.get(k) or 0) for k in ("dropped_venue", "dropped_unmappable",
                                               "duplicate_mechanisms")}
     return rows, counts
@@ -791,6 +812,9 @@ def _tasks(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             t = dfm._task(r, [r])
             t["source"] = SOURCE
             t["donor"] = r.get("donor")
+            # The claim sentence is the donor's text: its licence and URL ride the task.
+            t["licence"] = r.get("licence") or UNMEASURED
+            t["quoted_from"] = r.get("quoted_from") or r.get("url")
             tasks.append(t)
     return tasks
 
@@ -824,6 +848,7 @@ def run(*, budget_s: float = 240.0, max_fetches: int = MAX_FETCHES, fetch: Fetch
     plan = _plan(SOURCES, cursor, max_fetches) if network else []
     fetch_log: list[dict[str, Any]] = []
     texts_by_url: dict[str, str] = {}
+    licence_by_url: dict[str, str | None] = {}
     new_claims: list[dict[str, Any]] = []
     drop_counts = {"dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0}
     for src, url in plan:
@@ -836,7 +861,11 @@ def run(*, budget_s: float = 240.0, max_fetches: int = MAX_FETCHES, fetch: Fetch
         if outcome != "FETCHED":
             continue
         texts_by_url[url] = text
-        rows, counts = _claim_rows(text, src=src, url=url, universe=universe, seen=seen_claims)
+        licence_by_url[url] = gate.licence_of(src)
+        if licence_by_url[url] is None:
+            continue   # a quote with no known licence is never republished
+        rows, counts = _claim_rows(text, src=src, url=url, universe=universe, seen=seen_claims,
+                                   licence=licence_by_url[url])
         new_claims.extend(rows)
         for k, v in counts.items():
             drop_counts[k] += v
@@ -865,7 +894,8 @@ def run(*, budget_s: float = 240.0, max_fetches: int = MAX_FETCHES, fetch: Fetch
 
     # 4. THE CHALLENGERS, and the claims, into the seat directory.
     verbatim = {u: _verbatim_for(t) for u, t in texts_by_url.items()}
-    challengers = [r for r in challenger_rows(CAPABILITIES, diff, universe, verbatim)
+    challengers = [r for r in challenger_rows(CAPABILITIES, diff, universe, verbatim,
+                                              licence_by_url)
                    if r["challenger_id"] not in emitted]
     tasks = _tasks(new_claims)
     out_rows = challengers + tasks

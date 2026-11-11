@@ -229,11 +229,16 @@ def test_a_pass_writes_challengers_and_story_tasks_to_the_seat_once(desk, monkey
     assert set(r["symbols"]) <= {"US500", "NAS100", "GER40"}
     assert "Internal Bar Strength" in r["description"]      # the donor's own words ride along
     assert "Apache" not in r["description"]                 # the licence header does not
+    # ATTRIBUTION TRAVELS WITH THE QUOTE: the licence the gate read, and where it came from.
+    assert r["licence"] == "Apache-2.0"
+    assert r["quoted_from"] == f"{lean}/Algorithm.Python/Alphas/GlobalEquityMeanReversionIBSAlpha.py"
+    assert r["quoted_from"] in r["attribution"] and "Apache-2.0" in r["attribution"]
     assert all(r["source"] == w.SOURCE for r in rows)
     stories = [r for r in rows if r.get("kind") == "story_mechanism" and "provenance" in r]
     for t in stories:
         assert t["consumer"].startswith("deepening_worker")
         assert t["symbols"] and "XAUUSD" in t["symbols"]
+        assert t["licence"] == "Apache-2.0" and t["quoted_from"].startswith(lean)
 
     report = json.loads((desk / "reports" / "WESTERN_DONOR_DIFF.json").read_text("utf-8"))
     assert report["user_agent"] == w.UA
@@ -279,3 +284,25 @@ def test_the_organ_is_wired_on_a_clock_with_a_contract():
     import organ_contract
     art, age, _ = organ_contract.CONTRACTS["MT5-Dept-Intel (western donors)"]
     assert art == "desks/mt5/reports/WESTERN_DONOR_DIFF.json" and age > 60
+
+
+def test_a_quote_without_a_known_licence_is_never_carried(desk):
+    cap = next(c for c in w.CAPABILITIES if c.id == "lean_ibs_reversion")
+    diff = {cap.id: {"status": "PARTIAL"}}
+    url = cap.evidence[0]
+    uni = {"US500", "NAS100"}
+    rows = w.challenger_rows([cap], diff, uni, {url: "the donor's sentence"}, {url: None})
+    assert rows and "the donor's sentence" not in rows[0]["description"]
+    assert "licence" not in rows[0]
+    rows = w.challenger_rows([cap], diff, uni, {url: "the donor's sentence"},
+                             {url: "Apache-2.0"})
+    assert "the donor's sentence" in rows[0]["description"]
+    assert rows[0]["licence"] == "Apache-2.0" and rows[0]["quoted_from"] == url
+
+
+def test_the_organs_bookkeeping_is_never_committed():
+    import subprocess
+    for rel in ("desks/mt5/data/western_donor_claims.jsonl",
+                "desks/mt5/data/western_donor_state.json"):
+        r = subprocess.run(["git", "check-ignore", "-q", rel], cwd=_ROOT, check=False)
+        assert r.returncode == 0, f"{rel} must be gitignored"
