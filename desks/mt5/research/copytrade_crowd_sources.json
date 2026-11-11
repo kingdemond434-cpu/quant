@@ -1,5 +1,5 @@
 {
-  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall or 401/403/429/451 is recorded and never routed around; robots.txt is an access label on every row (LAWS 5e): no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
+  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall or 401/403/429/451 is recorded and never routed around; a robots.txt Disallow on the path, or a refused or unreadable robots.txt, stops the fetch (desk-wide ruling 2026-11-10): no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
   "sources": {
     "mql5_signals": {
       "adapter": "mql5",
@@ -58,6 +58,68 @@
       "adapter": "none",
       "blocked_by": "TODO: public profile portfolio is client-rendered; check for a public JSON the page itself loads without login.",
       "next": "box probe"
+    }
+  },
+  "sentiment": {
+    "_doc": "Broker-side retail sentiment rows (2026-11-11). ROWS, NEVER CODE. terms OPEN = no restriction found; UNREAD = not yet read (fetched under robots + hard stops, never redistributed); RESTRICTS_REDISTRIBUTION = held internally, never redistributed; FORBIDS = never fetched. Evidence read 2026-11-11 from the cloud.",
+    "myfxbook_outlook": {
+      "adapter": "myfxbook_outlook",
+      "host": "www.myfxbook.com",
+      "url": "https://www.myfxbook.com/community/outlook",
+      "terms": "UNREAD",
+      "evidence": "2026-11-11: page served logged out with the long/short table (Short/Long %, lots, positions, average entry prices, popularity). /robots.txt and /terms did not load from the cloud; the box pass reads robots first and stops on a Disallow, refusal or outage. 2026-08-26 the VPS saw a Cloudflare managed challenge on the whole host: if the box sees one, the page carries no table and nothing is parsed; the challenge is never passed."
+    },
+    "ig_client_sentiment": {
+      "adapter": "ig_sentiment",
+      "host": "www.ig.com",
+      "base": "https://www.ig.com",
+      "terms": "RESTRICTS_REDISTRIBUTION",
+      "markets": {
+        "EURUSD": "/uk/forex/markets-forex/eur-usd",
+        "GBPUSD": "/uk/forex/markets-forex/gbp-usd",
+        "USDJPY": "/uk/forex/markets-forex/usd-jpy",
+        "AUDUSD": "/uk/forex/markets-forex/aud-usd",
+        "USDCAD": "/uk/forex/markets-forex/usd-cad",
+        "USDCHF": "/uk/forex/markets-forex/usd-chf",
+        "NZDUSD": "/uk/forex/markets-forex/nzd-usd",
+        "EURGBP": "/uk/forex/markets-forex/eur-gbp",
+        "EURJPY": "/uk/forex/markets-forex/eur-jpy",
+        "GBPJPY": "/uk/forex/markets-forex/gbp-jpy",
+        "XAUUSD": "/uk/commodities/markets-commodities/gold",
+        "XAGUSD": "/uk/commodities/markets-commodities/silver",
+        "USOIL": "/uk/commodities/markets-commodities/us-light-crude",
+        "UK100": "/uk/indices/markets-indices/ftse-100",
+        "GER40": "/uk/indices/markets-indices/germany-40",
+        "US30": "/uk/indices/markets-indices/wall-street",
+        "US500": "/uk/indices/markets-indices/us-spx-500",
+        "NAS100": "/uk/indices/markets-indices/us-tech-100",
+        "JPN225": "/uk/indices/markets-indices/japan-225"
+      },
+      "evidence": "2026-11-11: https://www.ig.com/uk/site-terms-and-conditions has no automated-access clause; it says content may not be 'reproduced, adapted, uploaded to a third party' and data may not be 'retransmit[ted], redistribute[d], publish[ed]'. Held internally for research only, never redistributed or published. robots.txt (User-agent: *) disallows /content/, /etc/, /js/, /*?*state=* -- none match these market pages. Each page: 'X% of client accounts are long|short on this market', updated every 15 minutes."
+    },
+    "dukascopy_swfx": {
+      "adapter": "none",
+      "host": "www.dukascopy.com",
+      "terms": "FORBIDS",
+      "blocked_by": "TERMS_FORBID: https://www.dukascopy.com/swiss/english/legal-pages/terms-of-use/ clause 3: 'You shall not use or attempt to use any \"scraper,\" \"robot,\" \"bot,\" \"spider,\" \"data mining\"' ... 'without the prior express written consent of DUKASCOPY'; also 'may not be used to construct a database of any kind'. Never fetched."
+    },
+    "saxo_positioning": {
+      "adapter": "none",
+      "host": "www.home.saxo",
+      "terms": "FORBIDS",
+      "blocked_by": "TERMS_FORBID + NO_PAGE: https://www.home.saxo/legal/terms-of-use/saxo-terms-of-use: 'These Services are intended for your personal, non-commercial use.' and no public client-positioning page was found. Never fetched."
+    },
+    "cityindex_forexcom": {
+      "adapter": "none",
+      "host": "www.cityindex.com / www.forex.com",
+      "terms": "UNREAD",
+      "blocked_by": "UNREAD: robots.txt and the client-sentiment page did not load from the cloud 2026-11-11; next: read their terms and robots from the box before any adapter."
+    },
+    "myfxbook_api_outlook": {
+      "adapter": "none",
+      "host": "www.myfxbook.com",
+      "terms": "UNREAD",
+      "blocked_by": "BLOCKED_AUTH: the API's community-outlook call needs a logged-in session; this producer never logs in."
     }
   }
 }

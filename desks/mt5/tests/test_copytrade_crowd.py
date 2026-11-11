@@ -231,3 +231,74 @@ def test_login_wall_is_recorded_not_parsed(monkeypatch: pytest.MonkeyPatch) -> N
     o = cc.observe("fxblue", src, "u1", f, state, datetime(2026, 11, 3, tzinfo=UTC))
     assert o is not None and o["positions"] is None and o["growth_pct"] == 12
     assert f.stats["fxblue"]["login_wall"] == 1
+
+
+MFX_OUTLOOK = """<table><tr><td>EURUSD</td><td>1.1499</td><td>-286 pips</td><td>1.1681</td>
+<td>+104 pips</td><td>1.17855</td></tr>
+<tr><td>EURUSD</td><td>Short</td><td>84%</td><td>14885.44 lots</td><td>44875</td></tr>
+<tr><td>Long</td><td>16%</td><td>2763.25 lots</td><td>9980</td></tr>
+<div>39% of traders are currently trading EURUSD.</div>
+<tr><td>GOLD</td><td>Short</td><td>59%</td><td>100 lots</td><td>30</td></tr>
+<tr><td>Long</td><td>41%</td><td>300 lots</td><td>70</td></tr>
+<tr><td>ZZZZZZ</td><td>Short</td><td>50%</td><td>1 lots</td><td>1</td></tr>
+<tr><td>Long</td><td>50%</td><td>1 lots</td><td>1</td></tr></table>"""
+
+
+def test_myfxbook_outlook_and_ig_sentiment_parse() -> None:
+    out = cc.parse_myfxbook_outlook(cc.page_text(MFX_OUTLOOK))
+    e = out["EURUSD"]
+    assert e["mfx_long_pct"] == 16.0
+    assert e["mfx_long_lots_share"] == pytest.approx(100 * 2763.25 / (2763.25 + 14885.44))
+    assert e["mfx_long_pos_share"] == pytest.approx(100 * 9980 / (9980 + 44875))
+    assert e["mfx_popularity"] == 39.0
+    assert e["mfx_long_entry_gap"] == pytest.approx((1.17855 - 1.1681) / 1.17855)
+    assert e["mfx_short_entry_gap"] == pytest.approx((1.1499 - 1.17855) / 1.17855)
+    assert out["GOLD"]["mfx_long_lots_share"] == 75.0
+    assert cc.parse_ig_sentiment("63% of client accounts are long on this market") == 63.0
+    assert cc.parse_ig_sentiment("64% of client accounts are short on this market") == 36.0
+    assert cc.parse_ig_sentiment("no figure here") is None
+
+
+def test_sentiment_rows_respect_terms_robots_and_write_rsent_series(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cc, "canonical", lambda s: canonical(s, UNI))
+    monkeypatch.setattr(cc, "RAW", tmp_path / "raw")
+    monkeypatch.setattr(cc, "mint_cells", lambda frames, state, dry_run: {"n": sorted(frames)})
+    calls: list[str] = []
+
+    def get(url: str) -> tuple[int | None, str]:
+        calls.append(url)
+        if "ig.example/robots.txt" in url:
+            return 200, "User-agent: *\nDisallow: /blocked"
+        if url.endswith("robots.txt"):
+            return 404, ""
+        if "outlook" in url:
+            return 200, MFX_OUTLOOK
+        if url.endswith("/gold"):
+            return 200, "<p>81% of client accounts are long on this market</p>"
+        return 200, "<p>40% of client accounts are short on this market</p>"
+
+    reg = {"sources": {}, "sentiment": {
+        "mfx": {"adapter": "myfxbook_outlook", "url": "https://mfx.example/outlook",
+                "terms": "UNREAD"},
+        "ig": {"adapter": "ig_sentiment", "base": "https://ig.example",
+               "terms": "RESTRICTS_REDISTRIBUTION",
+               "markets": {"XAUUSD": "/gold", "EURUSD": "/eur-usd", "GBPUSD": "/blocked"}},
+        "duka": {"adapter": "ig_sentiment", "base": "https://duka.example", "terms": "FORBIDS",
+                 "markets": {"EURUSD": "/x"}},
+        "gap": {"adapter": "none", "blocked_by": "x"}}}
+    d = cc.build(get=get, registry=reg, state_path=tmp_path / "st.json",
+                 series_root=tmp_path / "s", now=datetime(2026, 11, 11, 1, tzinfo=UTC))
+    assert not any("duka" in u for u in calls)                 # terms FORBIDS: never fetched
+    assert "https://ig.example/blocked" not in calls           # robots Disallow: not fetched
+    s = d["sentiment"]
+    assert s["sources"]["duka"]["status"] == "GAP" and s["sources"]["gap"]["status"] == "GAP"
+    assert s["sources"]["ig"]["symbols"] == 2 and s["sources"]["mfx"]["symbols"] == 2
+    assert s["sources"]["mfx"]["unmapped"] == 1
+    e = pd.read_parquet(tmp_path / "s" / "rsent_EURUSD.parquet").iloc[-1]
+    assert e["ig_long_pct"] == 60.0 and e["mfx_long_pct"] == 16.0
+    assert e["crowd_long_pct"] == 38.0
+    assert not bool(e["redistribute"])                         # never published
+    g = pd.read_parquet(tmp_path / "s" / "rsent_XAUUSD.parquet").iloc[-1]
+    assert g["ig_long_pct"] == 81.0 and g["mfx_long_pct"] == 41.0
+    assert "rsent_EURUSD" in d["cells"]["n"]

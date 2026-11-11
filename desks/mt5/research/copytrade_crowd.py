@@ -639,8 +639,8 @@ def symbol_labels(obs: Iterable[Mapping[str, Any]]) -> dict[str, str]:
 
 
 def write_series(book: Mapping[str, Mapping[str, Any]], now: datetime,
-                 root: Path | None = None, labels: Mapping[str, str] | None = None
-                 ) -> dict[str, Any]:
+                 root: Path | None = None, labels: Mapping[str, str] | None = None,
+                 prefix: str = SERIES_PREFIX) -> dict[str, Any]:
     """One row per symbol per pass into `ctc_<SYMBOL>.parquet`, available_time = capture time,
     with the row's access label and whether it may be redistributed."""
     import pandas as pd
@@ -648,7 +648,7 @@ def write_series(book: Mapping[str, Mapping[str, Any]], now: datetime,
     base.mkdir(parents=True, exist_ok=True)
     frames: dict[str, Any] = {}
     for sym, row in book.items():
-        sid = f"{SERIES_PREFIX}{sym}"
+        sid = f"{prefix}{sym}"
         p = base / f"{sid}.parquet"
         new = pd.DataFrame([{**{k: (float(v) if v is not None else float("nan"))
                                  for k, v in row.items()},
@@ -681,11 +681,18 @@ def mint_cells(frames: Mapping[str, Any], state: dict[str, Any], dry_run: bool
         import futures_state as fs  # type: ignore[import-not-found,unused-ignore]
     except Exception as exc:
         return {"status": "UNAVAILABLE", "why": f"{type(exc).__name__}: {exc}"}
-    built = {sid: {"kind": "copytrade_crowd", "targets": [sid[len(SERIES_PREFIX):]],
-                   "why": ("Aggregated public copy-trade accounts: positions and new-deal flow "
-                           "of the retail crowd, split smart vs dumb by track record; crowd "
-                           "extremes fade, smart-minus-dumb follows.")}
-             for sid in frames}
+    def meta(sid: str) -> dict[str, Any]:
+        if sid.startswith(SENT_PREFIX):
+            return {"kind": "retail_sentiment", "targets": [sid[len(SENT_PREFIX):]],
+                    "why": ("Broker-side retail sentiment (share of a venue's clients long, by "
+                            "accounts, lots and positions, with each side's distance from its "
+                            "average entry): a crowded, underwater retail side is the liquidity "
+                            "the move runs through, so extremes and their turns fade.")}
+        return {"kind": "copytrade_crowd", "targets": [sid[len(SERIES_PREFIX):]],
+                "why": ("Aggregated public copy-trade accounts: positions and new-deal flow "
+                        "of the retail crowd, split smart vs dumb by track record; crowd "
+                        "extremes fade, smart-minus-dumb follows.")}
+    built = {sid: meta(sid) for sid in frames}
     enqueue = None
     if not dry_run:
         try:
@@ -697,6 +704,134 @@ def mint_cells(frames: Mapping[str, Any], state: dict[str, Any], dry_run: bool
     res: dict[str, Any] = fs.mint(built, dict(frames), fs._universe(), mstate,
                                   dry_run=dry_run, enqueue=enqueue, limit=1500)
     return res
+
+
+# ----------------------------------------------------------------------------- sentiment book
+#
+# BROKER-SIDE CROWD SENTIMENT (2026-11-11, routed from Calendar flows): the share of a broker's
+# or community's clients long each market. Distinct from the copy-trade books above, which read
+# individual accounts: these are the venue's own aggregate, one page per pass. Rows live in the
+# registry's "sentiment" block; a row whose terms forbid machine or commercial use is a named
+# gap and is never fetched. Series `rsent_<SYMBOL>`, available_time = capture time.
+
+SENT_PREFIX = "rsent_"
+_MFX_ROW = re.compile(
+    r"\b([A-Z0-9]{3,12})\s+Short\s+(\d{1,3})\s*%\s+([\d.,]+)\s*lots\s+([\d,]+)\s+"
+    r"Long\s+(\d{1,3})\s*%\s+([\d.,]+)\s*lots\s+([\d,]+)")
+_MFX_POP = re.compile(
+    r"(\d{1,3})\s*%\s+of\s+traders\s+are\s+currently\s+trading\s+([A-Z0-9]{3,12})")
+_MFX_PX = re.compile(
+    r"\b([A-Z0-9]{3,12})\s+([\d.]+)\s+([+-]?[\d.,]+)\s*pips\s+([\d.]+)\s+([+-]?[\d.,]+)\s*pips\s+"
+    r"([\d.]+)\b")
+_IG = re.compile(r"(\d{1,3})\s*%\s+of\s+client\s+accounts\s+are\s+(long|short)\s+on\s+this\s+"
+                 r"market", re.I)
+
+
+def parse_myfxbook_outlook(text: str) -> dict[str, dict[str, float]]:
+    """Myfxbook Community Outlook, per broker ticker: long share by accounts, by lots and by
+    open positions, the ticker's popularity, and how far each side's average entry sits from the
+    current price (as a fraction of price, positive = that side is in profit)."""
+    out: dict[str, dict[str, float]] = {}
+    for m in _MFX_ROW.finditer(text):
+        sym = m.group(1)
+        s_pct, l_pct = float(m.group(2)), float(m.group(5))
+        s_lots, l_lots = _num(m.group(3)) or 0.0, _num(m.group(6)) or 0.0
+        s_pos, l_pos = _num(m.group(4)) or 0.0, _num(m.group(7)) or 0.0
+        if not 99.0 <= s_pct + l_pct <= 101.0:
+            continue
+        row = {"mfx_long_pct": l_pct}
+        if s_lots + l_lots > 0:
+            row["mfx_long_lots_share"] = 100.0 * l_lots / (s_lots + l_lots)
+        if s_pos + l_pos > 0:
+            row["mfx_long_pos_share"] = 100.0 * l_pos / (s_pos + l_pos)
+        out.setdefault(sym, row)
+    for m in _MFX_POP.finditer(text):
+        if m.group(2) in out:
+            out[m.group(2)]["mfx_popularity"] = float(m.group(1))
+    for m in _MFX_PX.finditer(text):
+        sym = m.group(1)
+        short_avg, long_avg, cur = _num(m.group(2)), _num(m.group(4)), _num(m.group(6))
+        if sym in out and cur and short_avg and long_avg:
+            out[sym]["mfx_long_entry_gap"] = (cur - long_avg) / cur
+            out[sym]["mfx_short_entry_gap"] = (short_avg - cur) / cur
+    return out
+
+
+def parse_ig_sentiment(text: str) -> float | None:
+    """IG market page: 'X% of client accounts are long|short on this market' -> long %."""
+    m = _IG.search(text)
+    if not m:
+        return None
+    v = float(m.group(1))
+    if not 0.0 <= v <= 100.0:
+        return None
+    return v if m.group(2).lower() == "long" else 100.0 - v
+
+
+def collect_sentiment(sent: Mapping[str, Any], f: Fetcher
+                      ) -> tuple[dict[str, dict[str, float]], dict[str, str], dict[str, Any]]:
+    """One pass over the sentiment rows: (book by universe symbol, worst access label by
+    symbol, per-source report). Terms FORBIDS and adapter none are never fetched."""
+    book: dict[str, dict[str, float]] = {}
+    labels: dict[str, str] = {}
+    report: dict[str, Any] = {}
+
+    def put(sym_raw: str, cols: Mapping[str, float], lab: str) -> bool:
+        sym = canonical(sym_raw)
+        if sym is None:
+            return False
+        book.setdefault(sym, {}).update(cols)
+        old = labels.get(sym, "PUBLIC")
+        labels[sym] = max(old, lab, key=LABEL_ORDER.index)
+        return True
+
+    for name, row in sent.items():
+        adapter = row.get("adapter")
+        terms = str(row.get("terms") or "UNREAD").upper()
+        if adapter in (None, "none") or terms == "FORBIDS":
+            report[name] = {"status": "GAP", "terms": terms, "blocked_by": row.get("blocked_by")}
+            continue
+        # A row whose terms restrict reproduction or redistribution is held internally and never
+        # redistributed: its label is at least PUBLIC_WITH_TERMS.
+        floor = "PUBLIC" if terms == "OPEN" else "PUBLIC_WITH_TERMS"
+        mapped = unmapped = 0
+        if adapter == "myfxbook_outlook":
+            url = str(row["url"])
+            body = f.fetch(name, url)
+            if body is not None:
+                text = page_text(body)
+                if LOGIN_WALL.search(text):
+                    f._stat(name, "blocked_auth")
+                else:
+                    lab = max(f.access_label(url), floor, key=LABEL_ORDER.index)
+                    for sym_raw, cols in parse_myfxbook_outlook(text).items():
+                        if put(sym_raw, cols, lab):
+                            mapped += 1
+                        else:
+                            unmapped += 1
+        elif adapter == "ig_sentiment":
+            base = str(row.get("base") or "")
+            for sym_raw, path in (row.get("markets") or {}).items():
+                url = f"{base}{path}"
+                body = f.fetch(name, url)
+                if body is None:
+                    continue
+                v = parse_ig_sentiment(page_text(body))
+                if v is None:
+                    f._stat(name, "no_figure")
+                    continue
+                lab = max(f.access_label(url), floor, key=LABEL_ORDER.index)
+                if put(sym_raw, {"ig_long_pct": v}, lab):
+                    mapped += 1
+                else:
+                    unmapped += 1
+        report[name] = {"status": "LIVE", "terms": terms, "symbols": mapped,
+                        "unmapped": unmapped, "stats": f.stats.get(name, {})}
+    for cols in book.values():
+        heads = [cols[k] for k in ("mfx_long_pct", "ig_long_pct") if k in cols]
+        if heads:
+            cols["crowd_long_pct"] = sum(heads) / len(heads)
+    return book, labels, report
 
 
 # ----------------------------------------------------------------------------- build
@@ -713,6 +848,8 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
     f = Fetcher(state, deadline=t0 + budget_s, get=get)
     sources = (reg.get("sources") or {})
     live = {n: s for n, s in sources.items() if s.get("adapter") not in (None, "none")}
+    # Sentiment first: a handful of pages, so the account walk below can never starve it.
+    sbook, slabels, sreport = collect_sentiment(reg.get("sentiment") or {}, f)
     fresh: list[dict[str, Any]] = []
     for name, src in live.items():
         ids = population(name, src, f, state)
@@ -733,8 +870,14 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
     cells: dict[str, Any] = {"status": "DRY_RUN"}
     if not dry_run and fresh:
         append_raw(fresh, now)
+    if not dry_run and sbook:
+        append_raw([{"source": "sentiment", "symbol": k, "captured_at": _iso(now), **v}
+                    for k, v in sbook.items()], now)
     if not dry_run and book:
         frames = write_series(book, now, series_root, symbol_labels(window))
+    if not dry_run and sbook:
+        frames.update(write_series(sbook, now, series_root, slabels, prefix=SENT_PREFIX))
+    if not dry_run and frames:
         cells = mint_cells(frames, state, dry_run)
     groups = cohorts(window)
     doc = {
@@ -750,6 +893,10 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
         "cohort_sizes": {"all": len(window), "smart": len(groups["smart"]),
                          "dumb": len(groups["dumb"])},
         "symbols": len(book),
+        "sentiment": {"symbols": len(sbook), "sources": sreport,
+                      "top": dict(sorted(sbook.items(),
+                                         key=lambda kv: -abs((kv[1].get("crowd_long_pct")
+                                                              or 50.0) - 50.0))[:25])},
         "book_top": dict(sorted(book.items(),
                                 key=lambda kv: -(kv[1].get("pos_n_all") or 0)
                                 - (kv[1].get("flow_deals_all") or 0))[:25]),
