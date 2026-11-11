@@ -61,11 +61,12 @@ holds it to the worst of its own measured runs rather than to a hopeful constant
 from __future__ import annotations
 
 import argparse
-import dataclasses
+import contextlib
 import json
 import os
 import sys
 import time
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -95,6 +96,9 @@ COST_OUT = _DESK / "data" / "cost_surface_tick.json"
 SLIPPAGE_OUT = _DESK / "data" / "tape" / "slippage_surface.json"
 REPORT = _DESK / "reports" / "TAPE_FEATURES.json"
 STATE = _DESK / "data" / "tape_features_state.json"
+#: One JSON per built symbol-day holding that day's hour cells, so a pass that skips an unchanged
+#: (or deferred) day still pools it into the cost and slippage surfaces. Derived, prunable.
+CELL_CACHE = _DESK / "data" / "tape" / "cell_cache"
 UNIVERSE = _DESK / "data" / "universe" / "universe.json"
 #: `tick_integrity`'s verdict per symbol-day. READ BEFORE BUILDING, AND THIS IS THE WHOLE POINT
 #: OF HAVING WRITTEN IT. A day the checker called FAIL has a hole in it that no gap row explains,
@@ -122,15 +126,76 @@ INTRABAR_FREQS = ("1min", "5min", "15min", "1h", "4h", "1D")
 #: not try to build a year in one pass -- the watermark makes the next run continue.
 DEFAULT_DAYS = 30
 
-#: Wall seconds one pass may spend BUILDING before it stops starting new symbol-days and
-#: publishes what it has. MT5-TapeFeatures runs under a 45-minute task limit; killed 12 runs in a
-#: row from 11-02 13:40Z, it never reached the end of `run`, where the watermark used to be
-#: written, so every run restarted from the same first day. 35 minutes leaves the publish and
-#: the report their time. A pass that stops on the budget is INCOMPLETE and says so; the next one
-#: resumes from the watermark, which is now saved as each day is built.
-DEFAULT_BUDGET_S = 35 * 60.0
-#: Seconds between watermark checkpoints while building (and always after the last day).
-CHECKPOINT_EVERY_S = 30.0
+#: THE OPEN DAY ON ITS OWN CLOCK (2026-11-06). An unsealed day's watermark is its byte count, which
+#: moves every minute, so every hourly pass rebuilt TODAY in full for every symbol: 2291-2540 s on
+#: the box and killed at the task's 2700 s limit on 2 of 5 runs, losing the whole pass. An unsealed
+#: day already built within this many seconds is deferred to a later pass and its cached cells are
+#: pooled instead. Sealed days are unaffected: they still rebuild the moment their digest changes.
+OPEN_DAY_REBUILD_S = float(os.environ.get("QUANT_TAPE_OPEN_DAY_REBUILD_S", "7200"))
+_OPEN_BUILT = "_open_day_built_at"
+
+
+def _now_s() -> float:
+    return time.time()
+
+
+def _cache_path(symbol: str, day: str) -> Path:
+    return CELL_CACHE / symbol / f"{day}.json"
+
+
+def _replace(tmp: Path, dst: Path) -> None:
+    """os.replace, retried through Windows sharing/read-only refusals when libs is importable."""
+    try:
+        from libs.ops.win_write import replace_resilient
+    except ImportError:
+        os.replace(tmp, dst)
+        return
+    replace_resilient(tmp, dst)
+
+
+def _write_json_atomic(dst: Path, doc: Any, **dump_kw: Any) -> None:
+    """A pid-unique temp file, then one rename: a kill mid-write never leaves a torn JSON behind.
+
+    THE STATE IS THE WHOLE WATERMARK (Auditor MF, 2026-11-06). `_load` reads a torn state as {} and
+    the next pass then rebuilds every day of every symbol, times out, and tears it again -- the
+    exact loop the per-symbol checkpoint exists to end, so the checkpoint must never truncate.
+    """
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dst.with_name(f".{dst.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, **dump_kw) + "\n", "utf-8")
+    try:
+        _replace(tmp, dst)
+    finally:
+        with contextlib.suppress(OSError):
+            if tmp.exists():
+                tmp.unlink()
+
+
+def _save_cells(symbol: str, day: str, cells: list[ms.QuoteStats]) -> None:
+    _write_json_atomic(_cache_path(symbol, day), [asdict(c) for c in cells])
+
+
+def _prune_cache(symbol: str, cutoff: str) -> int:
+    """Drop cached days older than the look-back window; nothing outside it is ever pooled."""
+    n = 0
+    folder = CELL_CACHE / symbol
+    if not cutoff or not folder.is_dir():
+        return 0
+    for f in folder.glob("*.json"):
+        if f.stem < cutoff:
+            with contextlib.suppress(OSError):
+                f.unlink()
+                n += 1
+    return n
+
+
+def _cached_cells(symbol: str, day: str) -> list[ms.QuoteStats] | None:
+    """The day's cells from its last build, or None when there is no readable cache."""
+    try:
+        rows = json.loads(_cache_path(symbol, day).read_text("utf-8"))
+        return [ms.QuoteStats(**r) for r in rows]
+    except (OSError, ValueError, TypeError):
+        return None
 
 
 def _load(path: Path, default: Any) -> Any:
@@ -421,46 +486,9 @@ def slippage_surface(by_symbol: dict[str, list[ms.QuoteStats]]) -> dict[str, Any
     }
 
 
-def _cells_path(symbol: str, day: str) -> Path:
-    """Where a built day's hour cells are kept, beside its silver (same derived layer)."""
-    return SILVER.parent / "cells" / symbol / f"{day}.json"
-
-
-def _save_cells(symbol: str, day: str, cells: list[ms.QuoteStats]) -> None:
-    dst = _cells_path(symbol, day)
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dst.parent / f".tmp-{dst.name}"
-    tmp.write_text(json.dumps([dataclasses.asdict(c) for c in cells]), "utf-8")
-    tmp.replace(dst)
-
-
-def _load_cells(symbol: str, day: str) -> list[ms.QuoteStats] | None:
-    """A built day's cells, or None when they were never kept (built before 2026-11-05)."""
-    try:
-        rows = json.loads(_cells_path(symbol, day).read_text("utf-8"))
-        return [ms.QuoteStats(**r) for r in rows]
-    except (OSError, ValueError, TypeError):
-        return None
-
-
-def _save_state(state: dict[str, str]) -> None:
-    """The watermark, atomically: a pass killed mid-write never leaves a torn one."""
-    STATE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = STATE.with_name(f"{STATE.name}.{os.getpid()}.tmp")
-    tmp.write_text(json.dumps(state, indent=0, sort_keys=True) + "\n", "utf-8")
-    os.replace(tmp, STATE)
-
-
 def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEFAULT_DAYS,
-        rebuild: bool = False, budget_s: float | None = None) -> dict[str, Any]:
-    """Build every symbol-day whose bronze is newer than its silver. Incremental by design.
-
-    RESUMABLE (2026-11-05). The watermark is checkpointed as days are built, newest day first
-    across every symbol, and a pass that reaches `budget_s` stops STARTING days, publishes the
-    surfaces from every day in the window (built now or earlier, from each day's kept cells) and
-    reports itself INCOMPLETE with the count left. The next pass continues where it stopped, so
-    the whole window is always reached; nothing is skipped to fit, it is spread over passes.
-    """
+        rebuild: bool = False) -> dict[str, Any]:
+    """Build every symbol-day whose bronze is newer than its silver. Incremental by design."""
     registry = _load(UNIVERSE, {})
     state = {} if rebuild else _load(STATE, {})
     failed_days, integrity_note = _failed_days()
@@ -469,70 +497,76 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
     if days_back:
         cutoff = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=int(days_back))).date().isoformat()
 
-    started = time.monotonic()
-    last_ckpt = started
+    by_symbol: dict[str, list[ms.QuoteStats]] = {}
     built: list[dict[str, Any]] = []
     skipped: list[str] = []
     intrabar_tally: dict[str, dict[str, float]] = {}
-    cells_by_symbol: dict[str, list[ms.QuoteStats]] = {}
-    # NEWEST DAY FIRST, ACROSS SYMBOLS: a pass that stops on its budget has refreshed the days a
-    # consumer reads first (today, yesterday) for every symbol, not every day of the first few.
-    work: list[tuple[str, str]] = [(sym, day) for sym in syms for day in store.days(sym)
-                                   if not (cutoff and day < cutoff)]
-    work.sort(key=lambda sd: (sd[1], sd[0]), reverse=True)
-    remaining = 0
-    out_of_time = False
-    for sym, day in work:
-        key = f"{sym}/{day}"
-        if key in failed_days:
-            # REFUSED, NOT SKIPPED QUIETLY. The refusal is in the report with the checker's
-            # own reason attached, so a symbol whose features stop appearing has a named
-            # cause instead of looking like a symbol nobody trades.
-            skipped.append(f"{key}: REFUSED, tick_integrity verdict FAIL "
-                           f"({failed_days[key][:120]})")
-            continue
-        seal = store.seal(sym, day)
-        # THE WATERMARK IS THE DAY'S OWN CONTENT, not a timestamp. A sealed day is keyed by
-        # its manifest digest, so a day that GREW after being built is rebuilt and a day that
-        # did not is skipped -- an mtime would rebuild everything after any touch.
-        token = (seal.manifest_sha256 if seal else f"unsealed:{store.day_bytes(sym, day)}")
-        if not rebuild and state.get(key) == token:
-            kept = _load_cells(sym, day)
-            if kept is not None:
-                cells_by_symbol.setdefault(sym, []).extend(kept)
+    open_built: dict[str, float] = state.setdefault(_OPEN_BUILT, {})
+    deferred_open: list[str] = []
+    deferred_age_s: list[float] = []
+    pruned = 0
+    for sym in syms:
+        cells: list[ms.QuoteStats] = []
+        for day in store.days(sym):
+            if cutoff and day < cutoff:
                 continue
-            # Built before its cells were kept: rebuilt once so the surfaces cover it.
-        if out_of_time or (budget_s is not None and built
-                           and time.monotonic() - started > budget_s):
-            out_of_time = True
-            remaining += 1
-            continue
-        point = _point_for(sym, store, day, registry)
-        res = build_day(store, sym, day, point)
-        if res["status"] != "BUILT":
-            skipped.append(f"{key}: {res['status']}")
-            continue
-        day_cells = res.pop("cells")
-        _save_cells(sym, day, day_cells)
-        cells_by_symbol.setdefault(sym, []).extend(day_cells)
-        for freq, row in res["intrabar"].items():
-            t = intrabar_tally.setdefault(freq, {"bars": 0.0, "high_first": 0.0})
-            t["bars"] += row["bars"]
-            t["high_first"] += row["bars"] * row["high_first_frac"]
-        built.append(res)
-        state[key] = token
-        if time.monotonic() - last_ckpt > CHECKPOINT_EVERY_S:
-            _save_state(state)
-            last_ckpt = time.monotonic()
-    _save_state(state)
-    by_symbol: dict[str, list[ms.QuoteStats]] = {
-        sym: _merge_cells(cells) for sym, cells in cells_by_symbol.items() if cells}
+            key = f"{sym}/{day}"
+            if key in failed_days:
+                # REFUSED, NOT SKIPPED QUIETLY. The refusal is in the report with the checker's
+                # own reason attached, so a symbol whose features stop appearing has a named
+                # cause instead of looking like a symbol nobody trades.
+                skipped.append(f"{key}: REFUSED, tick_integrity verdict FAIL "
+                               f"({failed_days[key][:120]})")
+                continue
+            seal = store.seal(sym, day)
+            # THE WATERMARK IS THE DAY'S OWN CONTENT, not a timestamp. A sealed day is keyed by
+            # its manifest digest, so a day that GREW after being built is rebuilt and a day that
+            # did not is skipped -- an mtime would rebuild everything after any touch.
+            token = (seal.manifest_sha256 if seal else f"unsealed:{store.day_bytes(sym, day)}")
+            if not rebuild and state.get(key) == token:
+                cached = _cached_cells(sym, day)
+                if cached is not None:
+                    cells.extend(cached)
+                continue
+            if not rebuild and seal is None and key in state:
+                age = _now_s() - float(open_built.get(key, 0.0))
+                cached = _cached_cells(sym, day) if age < OPEN_DAY_REBUILD_S else None
+                if cached is not None:
+                    cells.extend(cached)
+                    deferred_open.append(key)
+                    deferred_age_s.append(age)
+                    continue
+            point = _point_for(sym, store, day, registry)
+            res = build_day(store, sym, day, point)
+            if res["status"] != "BUILT":
+                skipped.append(f"{key}: {res['status']}")
+                continue
+            day_cells = res.pop("cells")
+            _save_cells(sym, day, day_cells)
+            cells.extend(day_cells)
+            for freq, row in res["intrabar"].items():
+                t = intrabar_tally.setdefault(freq, {"bars": 0.0, "high_first": 0.0})
+                t["bars"] += row["bars"]
+                t["high_first"] += row["bars"] * row["high_first_frac"]
+            built.append(res)
+            state[key] = token
+            if seal is None:
+                open_built[key] = _now_s()
+            else:
+                open_built.pop(key, None)
+        if cells:
+            by_symbol[sym] = _merge_cells(cells)
+        pruned += _prune_cache(sym, cutoff)
+        # CHECKPOINT PER SYMBOL: a pass killed at its time limit keeps the watermarks it earned
+        # instead of losing all of them, which made the next pass redo the same work.
+        _write_json_atomic(STATE, state, indent=0, sort_keys=True)
 
     cost = cost_surface_from_cells(by_symbol, registry)
     slip = slippage_surface(by_symbol)
     for path, doc in ((COST_OUT, cost), (SLIPPAGE_OUT, slip)):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
+    _write_json_atomic(STATE, state, indent=0, sort_keys=True)
 
     measured_cells = sum(1 for cells in by_symbol.values() for c in cells if c.status == "MEASURED")
     total_cells = sum(len(c) for c in by_symbol.values())
@@ -541,12 +575,6 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "tape_root": str(store.root),
         "symbol_days_built": len(built),
-        # COMPLETE means every symbol-day in the window is built at its current content. A pass
-        # that stopped on its budget says how many are left; the next pass takes them first.
-        "complete": not out_of_time,
-        "symbol_days_remaining": remaining,
-        "budget_s": budget_s,
-        "elapsed_s": round(time.monotonic() - started, 1),
         "silver_rows": sum(int(b["silver_rows"]) for b in built),
         "symbols": sorted(by_symbol),
         "cells_measured": measured_cells,
@@ -564,6 +592,12 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
         "days_refused_on_integrity": len(failed_days),
         "skipped": skipped[:50],
         "n_skipped": len(skipped),
+        "open_days_deferred": len(deferred_open),
+        "open_day_rebuild_s": OPEN_DAY_REBUILD_S,
+        # HOW STALE THE DEFERRED SILVER IS, stated rather than implied (Auditor SF3).
+        "open_days_deferred_max_age_s": (round(max(deferred_age_s), 1) if deferred_age_s
+                                         else None),
+        "cell_cache_pruned": pruned,
         # NAMED, NOT IMPLIED. A feature nobody reads is the failure mode this module exists to
         # avoid, so every artifact says who is supposed to read it and what happens if nobody does.
         "consumers": CONSUMERS,
@@ -664,20 +698,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--symbols", type=str, default="")
     ap.add_argument("--days", type=int, default=DEFAULT_DAYS)
     ap.add_argument("--rebuild", action="store_true")
-    ap.add_argument("--budget-s", type=float, default=None,
-                    help="stop starting new symbol-days after this many seconds (0 = no limit); "
-                         "default: DEFAULT_BUDGET_S, or 80%% of the cap a caller hands down in "
-                         "QUANT_LEG_BUDGET_S when that is shorter (the hourly leg)")
     ap.add_argument("--out", type=Path, default=REPORT)
     args = ap.parse_args(argv)
-    if args.budget_s is None:
-        args.budget_s = DEFAULT_BUDGET_S
-        try:
-            cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
-        except ValueError:
-            cap = 0.0
-        if cap > 0:
-            args.budget_s = min(args.budget_s, max(60.0, 0.8 * cap))
 
     from recorders.tick_recorder import DEFAULT_TAPE_ROOT
     store = TapeStore(args.root or Path(DEFAULT_TAPE_ROOT))
@@ -693,7 +715,7 @@ def main(argv: list[str] | None = None) -> int:
         exclusive_job = None                                   # type: ignore[assignment]
 
     if exclusive_job is None:
-        rep = run(store, syms, args.days, args.rebuild, budget_s=args.budget_s or None)
+        rep = run(store, syms, args.days, args.rebuild)
     else:
         with exclusive_job("tape_features", need_mb=NEED_MB) as admitted:
             if not admitted:
@@ -701,16 +723,13 @@ def main(argv: list[str] | None = None) -> int:
                       "pass right now). The tape is unharmed and the next run resumes from the "
                       "watermark.")
                 return 0
-            rep = run(store, syms, args.days, args.rebuild, budget_s=args.budget_s or None)
+            rep = run(store, syms, args.days, args.rebuild)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
     print(f"tape_features: {rep['symbol_days_built']} symbol-day(s) built, "
           f"{rep['silver_rows']:,} silver rows, {rep['cells_measured']}/{rep['cells_total']} "
-          f"symbol-hour cells MEASURED"
-          + ("" if rep["complete"] else
-             f"; INCOMPLETE: budget reached, {rep['symbol_days_remaining']} symbol-day(s) left "
-             f"for the next pass (watermark saved)"))
+          f"symbol-hour cells MEASURED")
     for freq, t in rep["intrabar"].items():
         print(f"  intrabar {freq}: {t['bars']:,} bars, high came first on "
               f"{t['high_first_frac']} of them")
