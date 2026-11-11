@@ -149,7 +149,9 @@ def test_only_true_aliases_merge() -> None:
     carry = [_row("CHFNOK", "asia", {"input_symbol": "CHFNOK"}, "carry"),
              _row("CHFNOK", "continuous", {}, "carry"),
              _row("CHFNOK", "asia", {"input_symbol": "GBPJPY"}, "carry")]
-    assert len(SF._one_clock_per_cell(carry, starts={})) == 1
+    started = {SF.sleeve_key(*r[:5]): (f"2026-09-1{i}T00:00:00+00:00", "ACTIVE")
+               for i, r in enumerate(carry)}
+    assert len(SF._one_clock_per_cell(carry, starts=started)) == 1
     distinct = [_row("EURZAR", "asia", {"session": "asia"}, "overnight_gap_decay"),
                 _row("EURZAR", "asia", {}, "overnight_gap_decay"),
                 _row("EURZAR", "asia", {"timeframe": "M15"}, "overnight_gap_decay"),
@@ -160,3 +162,19 @@ def test_only_true_aliases_merge() -> None:
                _row("EURUSD", "london_am", {}, "session_range_breakout")]
     assert len(SF._one_clock_per_cell(windows, starts={})) == 2
     assert SF.ALIAS_MERGED == {}
+
+
+def test_an_unreadable_state_merges_nothing_and_both_twins_stay_enrolled(tmp_path) -> None:
+    """Auditor HOLD on #701: a survivor is chosen only on READ starts. An unreadable state,
+    or one twin with no start, keeps every twin enrolled and retires nothing."""
+    import shadow_forward as SF
+    a = _row("EURZAR", "asia", {}, "overnight_gap_decay")
+    c = _row("EURZAR", "continuous", {}, "overnight_gap_decay")
+    ka, kc = (SF.sleeve_key(*r[:5]) for r in (a, c))
+    bad = tmp_path / "shadow_state.json"
+    bad.write_text("{not json", encoding="utf-8")
+    assert SF._clock_starts(bad) == {}
+    for starts in ({}, SF._clock_starts(bad),
+                   {kc: ("2026-09-10T00:00:00+00:00", "ACTIVE")}):
+        out = SF._one_clock_per_cell([a, c], starts=starts)
+        assert sorted(out) == sorted([a, c]) and SF.ALIAS_MERGED == {}

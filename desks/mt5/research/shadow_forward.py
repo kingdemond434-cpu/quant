@@ -414,8 +414,9 @@ def _one_clock_per_cell(rows: list[tuple], *,
 
     THE SURVIVOR NEVER LOSES ITS START. The clock with the EARLIEST `forward_start` already on
     the engine's state keeps running, untouched, so no forward day is reset or re-credited; a
-    promoted clock is preferred over an unpromoted one. With no clock on either side the
-    existing deterministic rank decides. The dropped key is no longer enrolled, so
+    promoted clock is preferred over an unpromoted one. When any twin's start cannot be read
+    (state unreadable or empty, or a twin with no clock yet) nothing merges: every twin stays
+    enrolled that pass, logged ONE-CELL UNMEASURED. The dropped key is no longer enrolled, so
     `forward_reconcile` retires it RETIRED_ORPHAN with its evidence preserved, naming the
     survivor from `CLOCK_ALIASES` (written here; this engine never edits the dropped row, so it
     cannot race the reconciler's own write of it).
@@ -441,6 +442,18 @@ def _one_clock_per_cell(rows: list[tuple], *,
         return (not promoted, not start, start or "~", _key(row))
 
     for members in groups.values():
+        # POSITIVE EVIDENCE ONLY (Auditor HOLD on #701, 2026-11-11, L1.28a). Choosing a survivor
+        # retires the other clock, so it needs every twin's start READ from the engine's state.
+        # An unreadable or empty state, or any twin with no recorded start, would leave key order
+        # to choose -- and could retire the clock holding weeks of forward evidence. Then every
+        # twin stays enrolled for this pass and the merge waits for a readable state.
+        unread = [_key(m) for m in members if not starts.get(_key(m), ("", ""))[0]]
+        if len(members) > 1 and unread:
+            out.extend(members)
+            slog(f"ONE-CELL UNMEASURED: {len(members)} clocks run one cell but "
+                 f"{len(unread)} have no readable forward_start ({', '.join(sorted(unread))}); "
+                 "all stay enrolled this pass, nothing is merged on absence")
+            continue
         members = sorted(members, key=_rank)
         keep = members[0]
         out.append(keep)
