@@ -3,7 +3,6 @@ roster and its fetchers, the registry, the digest and the verdict join.
 """
 from __future__ import annotations
 
-import importlib.util
 import json
 import textwrap
 import time
