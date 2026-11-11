@@ -41,7 +41,7 @@ def test_the_pin_guards_follow_the_ruling() -> None:
     assert "$row.equal = ($row.destination_sha256 -eq $src)" in body  # (e) byte copy, verified
     assert "Rename-Item -LiteralPath $RegistryPin" in body            # (f) a stale pin is kept
     assert "Remove-Item -LiteralPath $OwnerPin" not in body and "Move-Item" not in body  # (g)
-    assert "Rename-Item -LiteralPath $kept" in body                   # a mismatch restores the old pin
+    assert "Rename-Item -LiteralPath $kept" in body  # a mismatch restores the old pin
     assert body.count("Write-HealLedger $row") >= 3                    # (h) every outcome recorded
     assert "UNMEASURED" in body                                       # (j)
 
