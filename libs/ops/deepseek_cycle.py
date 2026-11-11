@@ -374,16 +374,32 @@ def cold_context(state: dict[str, Any]) -> dict[str, Any]:
     would produce uninformed guesses rather than independent ones, which is a different and
     equally useless thing.
     """
-    kept: dict[str, Any] = {}
     removed: list[str] = []
-    for k, v in (state or {}).items():
+
+    def _contaminated(k: Any) -> bool:
         low = str(k).strip().lower()
-        if low in CONTAMINATION_KEYS or any(
-                low.endswith("_" + c) or low.startswith(c + "_") for c in
-                ("opinion", "conclusion", "rationale", "ranking", "recommendation")):
-            removed.append(k)
-            continue
-        kept[k] = v
+        return low in CONTAMINATION_KEYS or any(
+            low.endswith("_" + c) or low.startswith(c + "_") for c in
+            ("opinion", "conclusion", "rationale", "ranking", "recommendation"))
+
+    # AT ANY DEPTH (2026-10-20). The packet nests its facts under `sections`, and a filter that
+    # read only the top level let `sections.research_frontier.claude_opinion` straight through.
+    def _strip(obj: Any, path: str, depth: int) -> Any:
+        if depth > 8:
+            return obj
+        if isinstance(obj, dict):
+            out: dict[str, Any] = {}
+            for k, v in obj.items():
+                if _contaminated(k):
+                    removed.append(f"{path}{k}")
+                    continue
+                out[k] = _strip(v, f"{path}{k}.", depth + 1)
+            return out
+        if isinstance(obj, list):
+            return [_strip(v, path, depth + 1) for v in obj]
+        return obj
+
+    kept: dict[str, Any] = _strip(dict(state or {}), "", 0)
     # TIER S LAYER 4: BLIND TO THE HELD-OUT ANSWER. Survivor metrics are facts and stay; the
     # desk's own held-out / lockbox / forward / gate OUTCOMES are the answer to the question this
     # cold phase is asked, and a generator that read them is not proposing blind. They are

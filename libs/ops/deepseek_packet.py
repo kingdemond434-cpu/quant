@@ -152,6 +152,37 @@ def _data_and_features(base: Path) -> dict[str, Any]:
         "axes": [{"name": p.stem, "mb": _size_mb(p)}
                  for p in sorted((data / "axes").glob("*.json"))[:MAX_ITEMS]]
         if (data / "axes").is_dir() else [],
+        "futures_state": _futures_state(base),
+    }
+
+
+#: The Futures lane's brief for the strategy labs (desks/mt5/research/futures_state.py writes it
+#: every pass): per series its kind, MT5 targets, extreme percentiles and an
+#: `exogenous_conditioner` params template. A data axis like any other: facts, no fitting.
+FUTURES_LAB_INPUTS = "desks/mt5/data/intelligence/futures_state/lab_inputs.json"
+FUTURES_MAX_SERIES = 40
+
+
+def _futures_state(base: Path) -> dict[str, Any]:
+    doc = _json(base / FUTURES_LAB_INPUTS)
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return {"status": "UNMEASURED", "why": f"{FUTURES_LAB_INPUTS} absent (futures_state leg "
+                                               "has not written a pass here)"}
+    keep = [r for r in rows if isinstance(r, dict)]
+    # Series at an extreme first: those are the states a conditioner can act on today.
+    keep.sort(key=lambda r: (-len(r.get("extreme_percentiles") or {}), str(r.get("series"))))
+    return {
+        "generated_utc": doc.get("generated_utc"),
+        "n_series": len(keep),
+        "family": "exogenous_conditioner",
+        "params_template": {"source": "<series>", "signal": "<column>",
+                            "transform": "level_z|delta|delta_z"},
+        "series": [{"series": r.get("series"), "kind": r.get("kind"),
+                    "targets": (r.get("targets") or [])[:6], "as_of": r.get("as_of"),
+                    "extreme_percentiles": r.get("extreme_percentiles") or {},
+                    "columns": (r.get("columns") or [])[:12]}
+                   for r in keep[:FUTURES_MAX_SERIES]],
     }
 
 
