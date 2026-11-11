@@ -146,11 +146,19 @@ def _atomic_write(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
-def register(path: Path, key: str, *, engine: str, stem: str | None = None) -> None:
-    """Record that `path` is `key`'s ledger. Idempotent; rewritten only when it changes."""
+def register(path: Path, key: str, *, engine: str, stem: str | None = None,
+             integrity: str = "OWN_REPLAY") -> None:
+    """Record that `path` is `key`'s ledger. Idempotent; rewritten only when it changes.
+
+    `integrity` is OWN_REPLAY when the engine has just written the file from this key's own
+    replay, and UNMEASURED when the migration renamed a legacy file to it (Auditor S2): its
+    content was one key's by the census, but no replay of that key has re-derived it yet.
+    Engines call this AFTER the write, so OWN_REPLAY is never claimed for a file not written.
+    """
     path = Path(path)
     side = _keys_dir(path.parent) / path.name
-    doc = {"sleeve_key": str(key), "engine": engine, "stem": stem, "name": path.name}
+    doc = {"sleeve_key": str(key), "engine": engine, "stem": stem, "name": path.name,
+           "integrity": integrity}
     try:
         if json.loads(side.read_text("utf-8")) == doc:
             return
@@ -206,9 +214,28 @@ def stem_of(path: Path | str) -> str:
     return p.name[len(PREFIX):-len(SUFFIX)] if p.name.startswith(PREFIX) else p.stem
 
 
+def integrity_of(path: Path | str) -> str:
+    """OWN_REPLAY, or UNMEASURED (renamed by the migration and not yet rebuilt, or unknown)."""
+    doc = _sidecar(Path(path))
+    return str((doc or {}).get("integrity") or "UNMEASURED")
+
+
 def label_of(path: Path | str) -> str:
     """A per-sleeve label that is UNIQUE per ledger: the sleeve key when known, else the stem."""
     return key_of(path) or stem_of(path)
+
+
+def sleeve_id(path: Path | str) -> str:
+    """A per-ledger id that is UNIQUE per file and still parses like the legacy stem.
+
+    `<stem>~<hash>` for a keyed ledger, the bare stem for a legacy one. Readers that split a sleeve
+    label on `_` for its symbol or family (excursions, regime_coverage, alpha_breadth) keep
+    working, and two params variants of one stem are two sleeves, never one merged series.
+    """
+    p = Path(path)
+    m = _KEYED_NAME.match(p.name)
+    stem = stem_of(p)
+    return f"{stem}~{m.group('h')}" if m else stem
 
 
 def find(key: str, shadow_dir: Path | None = None) -> Path | None:
@@ -252,8 +279,9 @@ def resolve(name: str, dirs: Iterable[Path] | Path | None = None) -> Path | None
        declared stem it is -- only when exactly ONE ledger declares it. Two keyed ledgers on one
        stem are two strategies; a reader that wants one of them must name its key.
 
-    A legacy-named file is considered only after the forward migration has run here, so a file
-    that may still be shared is never returned as one sleeve's.
+    A legacy-named file is NEVER returned for a stem (Auditor M1): its name may still be a file
+    several keys shared -- a migration that failed part-way, a mirror's stale copy -- and the
+    answer is then UNMEASURED, never a neighbour's trades.
     """
     if dirs is None:
         dirs = [SHADOW_DIR]
@@ -264,12 +292,11 @@ def resolve(name: str, dirs: Iterable[Path] | Path | None = None) -> Path | None
         p = find(name, d)
         if p is not None:
             return p
-    legacy_ok = migrated(dirs[0] if dirs else None) or migrated()
     index = _stem_index(tuple(dirs))
     hits: list[Path] = []
     for c in _join_candidates(name):
         for p in index.get(c, ()):
-            if (is_keyed(p) or legacy_ok) and p not in hits:
+            if is_keyed(p) and key_of(p) and p not in hits:
                 hits.append(p)
     return hits[0] if len(hits) == 1 else None
 
@@ -334,8 +361,11 @@ def retired_legacy_names(shadow_dir: Path | None = None) -> frozenset[str]:
             doc = json.loads(f.read_text("utf-8"))
         except (OSError, ValueError):
             continue
-        out.update((doc.get("collided") or {}).keys())
-        out.update((doc.get("renamed") or {}).keys())
+        for part in ("collided", "renamed", "superseded"):
+            out.update((doc.get(part) or {}).keys())
+        # A shared file whose move FAILED is still shared: never anyone's evidence.
+        out.update(n for n, v in (doc.get("failed") or {}).items()
+                   if isinstance(v, dict) and int(v.get("n_keys") or 0) > 1)
     return frozenset(out)
 
 
@@ -386,7 +416,10 @@ def join_names(paths: Iterable[Path]) -> tuple[dict[Path, str], dict[str, list[s
     """
     paths = list(paths)
     unique, ambiguous = unique_by_stem(paths)
-    owner = {p: s for s, p in unique.items()}
+    # ONLY A KEYED LEDGER WITH A KNOWN OWNER MAY CARRY A STEM (Auditor M1). A legacy or unkeyed
+    # file is published under its own file label, so a shared file a migration could not move,
+    # or a mirror's stale copy, never reaches a stem-joined consumer as one sleeve's record.
+    owner = {p: s for s, p in unique.items() if is_keyed(p) and key_of(p)}
     return {p: owner.get(p) or label_of(p) for p in paths}, ambiguous
 
 
@@ -426,14 +459,60 @@ def _read_only(path: Path) -> None:
         pass
 
 
+#: The record wall's signed manifest (scripts/check_immutable_evaluator.py). Seal rows of the
+#: legacy files a migration retires are ANNOTATED there (Auditor S3), never removed: the
+#: journaled box-side re-seal must carry every one of them forward.
+MANIFEST = BASE / "data" / "IMMUTABLE_MANIFEST.json"
+SEAL_PREFIX = "desks/mt5/reports/shadow/"
+
+
+def _move_one(name: str, keys: list[str], sd: Path, cdir: Path, engine: str,
+              stems: Mapping[str, str], acct: dict[str, Any]) -> None:
+    src = sd / name
+    sha, n = _sha256(src), _records(src)
+    if len(keys) == 1:
+        dst = ledger_path(keys[0], sd)
+        if dst.exists():
+            # The key already has its own ledger; this legacy copy is stale. Evidence, not
+            # trades: move it aside, never over the key's own file.
+            tgt = _free_target(cdir / "superseded" / name)
+            tgt.parent.mkdir(parents=True, exist_ok=True)
+            os.replace(src, tgt)
+            _read_only(tgt)
+            acct["superseded"][name] = {"key": keys[0], "moved_to": f"superseded/{tgt.name}",
+                                        "sha256": sha, "records": n}
+            return
+        os.replace(src, dst)
+        # UNMEASURED until this key's own replay rewrites it (Auditor S2).
+        register(dst, keys[0], engine=engine, stem=stems.get(keys[0]), integrity="UNMEASURED")
+        acct["renamed"][name] = {"key": keys[0], "to": dst.name, "sha256": sha, "records": n,
+                                 "integrity": "UNMEASURED"}
+        return
+    cdir.mkdir(parents=True, exist_ok=True)
+    tgt = _free_target(cdir / name)
+    os.replace(src, tgt)
+    _read_only(tgt)
+    acct["collided"][name] = {"keys": keys, "n_keys": len(keys), "moved_to": tgt.name,
+                              "sha256": sha, "records": n, "collided": True,
+                              "integrity": "UNMEASURED"}
+
+
 def migrate(owners: Mapping[str, Sequence[str]], *, engine: str,
             shadow_dir: Path | None = None, stems: Mapping[str, str] | None = None,
-            now: datetime | None = None) -> dict[str, Any]:
+            now: datetime | None = None, manifest: Path | None = None) -> dict[str, Any]:
     """Retire every legacy-named ledger this engine's keys map to. Idempotent; deletes nothing.
 
     `owners` is {legacy file name: [every sleeve key that maps to it]}, built from the engine's
     FULL key set (never a partial `rows=` pass, or a shared file would look like one key's).
     `stems` is {key: join stem}, recorded in each sidecar.
+
+    EACH FILE IS ITS OWN TRANSACTION AND THE CENSUS IS ALWAYS WRITTEN (Auditor M1). A move that
+    fails is recorded under `failed` with its keys and the error, and the census goes out in a
+    `finally` -- so every file already moved is retired from every reader even when a later one
+    fails, and a shared file that could not be moved is retired too (`retired_legacy_names`).
+
+    `manifest` is the record wall's manifest whose seal rows are annotated; it defaults to the
+    desk's own only when `shadow_dir` IS the desk's shadow directory, so a test never touches it.
 
     Returns this pass's accounting; the cumulative census is `census_path(engine)`.
     """
@@ -442,42 +521,64 @@ def migrate(owners: Mapping[str, Sequence[str]], *, engine: str,
     stamp = (now or datetime.now(UTC)).isoformat(timespec="seconds")
     stems = stems or {}
     acct: dict[str, Any] = {"engine": engine, "at": stamp, "collided": {}, "renamed": {},
-                  "superseded": {}, "absent": 0}
-    for name, keys in sorted(owners.items()):
-        src = sd / name
-        if not src.is_file() or is_keyed(src):
-            acct["absent"] += 1
-            continue
-        keys = sorted({str(k) for k in keys})
-        sha, n = _sha256(src), _records(src)
-        if len(keys) == 1:
-            dst = ledger_path(keys[0], sd)
-            if dst.exists():
-                # The key already has its own ledger; this legacy copy is stale. Evidence, not
-                # trades: move it aside, never over the key's own file.
-                cdir.mkdir(parents=True, exist_ok=True)
-                tgt = _free_target(cdir / "superseded" / name)
-                tgt.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(src, tgt)
-                _read_only(tgt)
-                acct["superseded"][name] = {"key": keys[0], "moved_to": tgt.name,
-                                            "sha256": sha, "records": n}
+                            "superseded": {}, "failed": {}, "absent": 0}
+    try:
+        for name, keys in sorted(owners.items()):
+            src = sd / name
+            if not src.is_file() or is_keyed(src):
+                acct["absent"] += 1
                 continue
-            os.replace(src, dst)
-            register(dst, keys[0], engine=engine, stem=stems.get(keys[0]))
-            acct["renamed"][name] = {"key": keys[0], "to": dst.name, "sha256": sha,
-                                     "records": n}
-            continue
-        cdir.mkdir(parents=True, exist_ok=True)
-        tgt = _free_target(cdir / name)
-        os.replace(src, tgt)
-        _read_only(tgt)
-        acct["collided"][name] = {"keys": keys, "n_keys": len(keys), "moved_to": tgt.name,
-                                  "sha256": sha, "records": n, "collided": True,
-                                  "integrity": "UNMEASURED"}
-    if owners:
-        _write_census(engine, sd, acct)
+            ks = sorted({str(k) for k in keys})
+            try:
+                _move_one(name, ks, sd, cdir, engine, stems, acct)
+            except Exception as exc:                  # one file never stops the others
+                acct["failed"][name] = {"keys": ks, "n_keys": len(ks),
+                                        "why": f"{type(exc).__name__}: {exc}",
+                                        "integrity": "UNMEASURED"}
+    finally:
+        if owners:
+            _write_census(engine, sd, acct)
+            if manifest is None and sd.resolve() == SHADOW_DIR.resolve():
+                manifest = MANIFEST
+            if manifest is not None:
+                try:
+                    annotate_seals(manifest, acct)
+                except Exception as exc:              # the census already holds the record
+                    acct["seal_annotation_error"] = f"{type(exc).__name__}: {exc}"
     return acct
+
+
+def annotate_seals(manifest: Path, acct: Mapping[str, Any]) -> int:
+    """Mark the seal row of every legacy file this pass retired `collided` (Auditor S3).
+
+    The row is KEPT, byte for byte, with fields added beside it: the files leave the record
+    wall's `ledger_*.json` glob, so the checker stops judging them, and the re-seal (box-side,
+    journaled) must carry these rows forward rather than drop them. Returns rows annotated.
+    """
+    try:
+        doc = json.loads(Path(manifest).read_text("utf-8"))
+    except (OSError, ValueError):
+        return 0
+    rows = doc.get("append_only") if isinstance(doc, dict) else None
+    if not isinstance(rows, dict):
+        return 0
+    n = 0
+    for part in ("collided", "renamed", "superseded", "failed"):
+        for name, info in (acct.get(part) or {}).items():
+            row = rows.get(SEAL_PREFIX + name)
+            if not isinstance(row, dict) or row.get("retired_by"):
+                continue
+            row.update({"collided": part in ("collided", "failed"), "retired_by":
+                        "ledger_paths.migrate", "retired_as": part, "retired_at": acct["at"],
+                        "moved_to": info.get("moved_to") or info.get("to"),
+                        "keys": info.get("keys") or [info.get("key")],
+                        "integrity": "UNMEASURED"})
+            n += 1
+    if n:
+        doc["collided_seal_rows"] = sum(1 for r in rows.values()
+                                        if isinstance(r, dict) and r.get("retired_by"))
+        _atomic_write(Path(manifest), json.dumps(doc, indent=1))
+    return n
 
 
 def _write_census(engine: str, sd: Path, acct: dict[str, Any]) -> None:
@@ -489,27 +590,35 @@ def _write_census(engine: str, sd: Path, acct: dict[str, Any]) -> None:
             doc = {}
     except (OSError, ValueError):
         doc = {}
-    for part in ("collided", "renamed", "superseded"):
+    for part in ("collided", "renamed", "superseded", "failed"):
         merged = dict(doc.get(part) or {})
         merged.update(acct[part])
         doc[part] = merged
+    # A file that failed once and moved later is no longer a failure.
+    for part in ("collided", "renamed", "superseded"):
+        for name in acct[part]:
+            doc["failed"].pop(name, None)
     doc.update({
         "engine": engine, "updated_at": acct["at"],
         "rule": ("one forward ledger per sleeve key (desks/mt5/research/ledger_paths.py). "
                  "Collided legacy files are kept here read-only as evidence and never deleted; "
                  "any certificate or promotion that cited one is UNMEASURED-integrity until the "
                  "key's own ledger is rebuilt from its own replay and the Judge re-reads it. "
-                 "Nothing is voided or resized by this migration."),
+                 "Renamed single-owner files are UNMEASURED until their key's own replay "
+                 "rewrites them. Nothing is voided or resized by this migration."),
         "n_collided_files": len(doc["collided"]),
         "n_collided_keys": sum(int(v.get("n_keys") or 0) for v in doc["collided"].values()),
+        "n_failed": len(doc["failed"]),
     })
     _atomic_write(path, json.dumps(doc, indent=1, sort_keys=True))
-    if not (acct["collided"] or acct["renamed"] or acct["superseded"]):
+    if not (acct["collided"] or acct["renamed"] or acct["superseded"] or acct["failed"]):
         return
     journal = path.parent / "MIGRATION.jsonl"
+    journal.parent.mkdir(parents=True, exist_ok=True)
     with open(journal, "a", encoding="utf-8") as fh:
         fh.write(json.dumps({k: acct[k] for k in ("engine", "at")}
-                            | {p: sorted(acct[p]) for p in ("collided", "renamed", "superseded")},
+                            | {p: sorted(acct[p])
+                               for p in ("collided", "renamed", "superseded", "failed")},
                             sort_keys=True) + "\n")
 
 

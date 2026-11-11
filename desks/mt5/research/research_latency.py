@@ -152,7 +152,7 @@ def forward_first_rows(dirs: tuple[Path, ...] = LEDGER_DIRS) -> dict[str, str]:
                 continue
             if not isinstance(rows, list):
                 continue
-            name = f.stem.removeprefix("ledger_")
+            name = _lp.sleeve_id(f)  # unique per ledger
             times = [str(r.get("entry_time")) for r in rows
                      if isinstance(r, dict) and r.get("entry_time")]
             if times:

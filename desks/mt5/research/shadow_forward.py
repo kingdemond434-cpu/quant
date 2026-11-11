@@ -1285,8 +1285,6 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # only, so every params variant of one cell wrote ONE file and the last writer won
             # (965 of 1,016 keys on 121 files). `ledger_paths` is the only namer now.
             ledger = _lp.ledger_path(key, SHADOW_DIR)
-            _lp.register(ledger, key, engine="shadow_forward",
-                         stem=_lp.legacy_stem_forward(sym, fam, win))
             from research.session_runtime_window import ensure as _ensure_session_window
             if _ensure_session_window(key, params, st, ledger=ledger):
                 slog(f"{key}: session filter corrected; prior state archived and a "
@@ -1342,6 +1340,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   **_stamp}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
+            # Owner recorded AFTER the write: OWN_REPLAY is never claimed for an unwritten file.
+            _lp.register(ledger, key, engine="shadow_forward",
+                         stem=_lp.legacy_stem_forward(sym, fam, win))
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours

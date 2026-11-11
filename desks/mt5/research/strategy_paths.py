@@ -91,7 +91,7 @@ def _day(stamp: object) -> date | None:
 def _ledgers() -> dict[str, list[dict[str, Any]]]:
     """sleeve id -> its FORWARD trades. A ledger with none is dropped, not zero-filled."""
     out: dict[str, list[dict[str, Any]]] = {}
-    for f in sorted(SHADOW.glob("ledger_*.json")):
+    for f in _lp.iter_ledgers(SHADOW):  # skips retired legacy names
         rows = _read(f, [])
         if not isinstance(rows, list):
             continue
@@ -99,7 +99,7 @@ def _ledgers() -> dict[str, list[dict[str, Any]]]:
                if isinstance(r, dict) and str(r.get("phase") or "") == "forward"
                and isinstance(r.get("r_multiple"), (int, float))]
         if len(fwd) >= MIN_TRADES:
-            out[f.stem[len("ledger_"):]] = fwd
+            out[_lp.sleeve_id(f)] = fwd  # unique per ledger
     return out
 
 

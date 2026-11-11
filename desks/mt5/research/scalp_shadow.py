@@ -313,10 +313,10 @@ def run(now: datetime | None = None) -> dict:
         n_historical = len(_all) - len(records)
         # ONE LEDGER PER SLEEVE KEY, named by `ledger_paths` like every other forward engine.
         ledger = _lp.ledger_path(name, SHADOW)
-        _lp.register(ledger, name, engine="scalp_shadow", stem=_lp.legacy_stem_scalp(name))
         ledger.write_text(json.dumps(
             [{**r, "phase": ("forward" if r in records else "historical")} for r in _all],
             indent=2), "utf-8")
+        _lp.register(ledger, name, engine="scalp_shadow", stem=_lp.legacy_stem_scalp(name))
         rs = [float(row["r"]) for row in records]
         n = len(rs)
         last_bar = pd.Timestamp(df.index[-1])

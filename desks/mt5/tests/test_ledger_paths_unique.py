@@ -88,10 +88,13 @@ def test_the_name_is_readable_and_names_the_full_key() -> None:
 
 
 #: Only this module may build a `ledger_` file name.
-_BUILDS = re.compile(r"""f["']ledger_\{|["']ledger_["']\s*\+|["']ledger_%s""")
+_BUILDS = re.compile(
+    r"""f["']ledger_\{|["']ledger_["']\s*\+|["']ledger_%s"""      # builds a name
+    r"""|removeprefix\(\s*["']ledger_|len\(\s*["']ledger_["']\)"""  # parses one
+    r"""|glob\([^)]*["']ledger_|\[7:-5\]""")                         # globs past iter_ledgers
 
 
-def test_no_module_outside_ledger_paths_builds_a_ledger_name() -> None:
+def test_no_module_outside_ledger_paths_builds_parses_or_globs_a_ledger_name() -> None:
     offenders: list[str] = []
     for base in (DESK, ROOT / "scripts", ROOT / "libs"):
         for path in base.rglob("*.py"):
@@ -209,6 +212,35 @@ def test_gold_asia_column_reads_its_own_clock_and_never_a_variant(tmp_path, monk
     assert series["gold_asia"] == {"2026-11-02": 2.0}
     assert "XAUUSD_asia" not in series                          # shared stem: not joined
     assert set(pe.ambiguous_stems()) == {"XAUUSD_asia"}
+    status = pe.column_clock_status()
+    assert status["gold_asia"]["status"] == "JOINED"
+    assert status["gold_asia"]["ledger"] == lp.ledger_name("XAUUSD.asia")
+    assert status["gold_asia"]["integrity"] == "OWN_REPLAY"
+
+
+def test_only_gold_asia_is_mapped_and_the_other_gold_columns_read_unmeasured(
+        tmp_path, monkeypatch) -> None:
+    """Auditor S4: only the clock decision_core NAMES is joined; the inferred two are not."""
+    from research import portfolio_evidence as pe
+
+    assert pe.COLUMN_CLOCKS == {"gold_asia": "XAUUSD.asia"}
+    shadow = tmp_path / "shadow"
+    _engine_write(shadow, "XAUUSD.london_am", "XAUUSD_london_am",
+                  [{"phase": "forward", "entry_time": "2026-11-02T10:00", "r_multiple": 1.0}])
+    monkeypatch.setattr(pe, "SHADOW", shadow)
+    series = pe.daily_series()
+    assert "gold_london_am" not in series and "gold_afternoon" not in series
+    assert "XAUUSD_london_am" in series                         # its own unique stem still joins
+    status = pe.column_clock_status()
+    assert status["gold_london_am"]["status"] == "UNMEASURED"
+    assert status["gold_afternoon"]["status"] == "UNMEASURED"
+    assert status["gold_asia"]["status"] == "NO_LEDGER"
+
+
+def test_the_allocation_artifact_publishes_the_forward_join() -> None:
+    src = (DESK / "research" / "pf_allocator.py").read_text("utf-8")
+    assert '"forward_join": dict(_FORWARD_JOIN)' in src
+    assert "column_clock_status()" in src and '"ambiguous_stems": _amb' in src
 
 
 def test_forward_engines_name_ledgers_only_through_ledger_paths() -> None:
@@ -221,3 +253,111 @@ def test_forward_engines_name_ledgers_only_through_ledger_paths() -> None:
 def test_sidecar_round_trip(tmp_path, key: str) -> None:
     p = _engine_write(tmp_path, key, "STEM_x", [])
     assert lp.key_of(p) == key and lp.label_of(p) == key and lp.is_keyed(p)
+
+
+# --------------------------------------------------------------------- Auditor HOLD, 1dee9f44
+def test_a_failed_move_is_recorded_and_the_census_is_still_written(tmp_path, monkeypatch) -> None:
+    """M1: one file failing never stops the others, and the census always goes out."""
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_GBPCHF_carry_asia.json", [{"r_multiple": 1.0}])
+    _write(shadow / "ledger_XAUUSD_asia.json", [{"r_multiple": 2.0}])
+    owners = lp.owners_of([(k, "GBPCHF_carry_asia") for k in GBPCHF]
+                          + [(k, "XAUUSD_asia") for k in GOLD])
+    real = lp._move_one
+
+    def flaky(name, *a, **kw):
+        if name == "ledger_GBPCHF_carry_asia.json":
+            raise PermissionError("locked by a reader")
+        return real(name, *a, **kw)
+
+    monkeypatch.setattr(lp, "_move_one", flaky)
+    acct = lp.migrate(owners, engine="shadow_forward", shadow_dir=shadow)
+    assert "ledger_GBPCHF_carry_asia.json" in acct["failed"]
+    assert acct["failed"]["ledger_GBPCHF_carry_asia.json"]["n_keys"] == len(GBPCHF)
+    assert "ledger_XAUUSD_asia.json" in acct["collided"]         # the other file still moved
+    census = json.loads(lp.census_path("shadow_forward", shadow).read_text("utf-8"))
+    assert census["n_failed"] == 1 and "ledger_XAUUSD_asia.json" in census["collided"]
+    # the shared file that could not move is still retired from every reader
+    assert "ledger_GBPCHF_carry_asia.json" in lp.retired_legacy_names(shadow)
+    assert all(p.name != "ledger_GBPCHF_carry_asia.json" for p in lp.iter_ledgers(shadow))
+
+    monkeypatch.setattr(lp, "_move_one", real)                   # next pass succeeds
+    lp.migrate(owners, engine="shadow_forward", shadow_dir=shadow)
+    census = json.loads(lp.census_path("shadow_forward", shadow).read_text("utf-8"))
+    assert census["n_failed"] == 0 and "ledger_GBPCHF_carry_asia.json" in census["collided"]
+
+
+def test_a_legacy_file_is_never_joined_by_stem(tmp_path) -> None:
+    """M1: a legacy-named file cannot say whose it is, so it never owns a stem."""
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_EURUSD_asia.json", [{"r_multiple": 1.0}])
+    assert lp.resolve("EURUSD_asia", shadow) is None
+    names, _ = lp.join_names(list(lp.iter_ledgers(shadow)))
+    assert names[shadow / "ledger_EURUSD_asia.json"] != "EURUSD_asia"
+
+
+def test_a_renamed_file_is_unmeasured_until_its_own_replay_rewrites_it(tmp_path) -> None:
+    """S2: the migration's rename is not the key's own replay; the engine's write is."""
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_EURUSD_asia.json", [{"r_multiple": 1.0}])
+    lp.migrate(lp.owners_of([("EURUSD.asia", "EURUSD_asia")]), engine="shadow_forward",
+               shadow_dir=shadow)
+    own = lp.ledger_path("EURUSD.asia", shadow)
+    assert own.is_file() and lp.integrity_of(own) == "UNMEASURED"
+    _engine_write(shadow, "EURUSD.asia", "EURUSD_asia", [{"r_multiple": 0.5}])
+    assert lp.integrity_of(own) == "OWN_REPLAY"
+
+
+def test_engines_register_only_after_the_ledger_is_written() -> None:
+    """S2: a sidecar must never claim OWN_REPLAY for a file the engine has not yet written."""
+    for name in ("shadow_forward.py", "qquant_shadow.py", "scalp_shadow.py"):
+        lines = (DESK / "research" / name).read_text("utf-8").splitlines()
+        reg = [i for i, ln in enumerate(lines) if "_lp.register(" in ln]
+        assert reg, name
+        for i in reg:
+            window = "\n".join(lines[max(0, i - 12):i])
+            assert "write_text(" in window or "atomic" in window.lower(), (name, i + 1)
+
+
+def test_the_seal_rows_of_retired_files_are_annotated_never_dropped(tmp_path) -> None:
+    """S3: the record wall's rows are kept and marked, so the re-seal carries them forward."""
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_XAUUSD_asia.json", [{"r_multiple": 2.0}])
+    _write(shadow / "ledger_EURUSD_asia.json", [{"r_multiple": 1.0}])
+    manifest = tmp_path / "IMMUTABLE_MANIFEST.json"
+    seal = {"sha256": "ab", "n": 1}
+    manifest.write_text(json.dumps({"append_only": {
+        lp.SEAL_PREFIX + "ledger_XAUUSD_asia.json": dict(seal),
+        lp.SEAL_PREFIX + "ledger_EURUSD_asia.json": dict(seal),
+        lp.SEAL_PREFIX + "ledger_OTHER_asia.json": dict(seal)}}), "utf-8")
+    owners = lp.owners_of([(k, "XAUUSD_asia") for k in GOLD] + [("EURUSD.asia", "EURUSD_asia")])
+    lp.migrate(owners, engine="shadow_forward", shadow_dir=shadow, manifest=manifest)
+    rows = json.loads(manifest.read_text("utf-8"))["append_only"]
+    gold = rows[lp.SEAL_PREFIX + "ledger_XAUUSD_asia.json"]
+    assert gold["sha256"] == "ab" and gold["n"] == 1             # the seal itself is kept
+    assert gold["collided"] is True and gold["retired_as"] == "collided"
+    assert sorted(gold["keys"]) == sorted(GOLD) and gold["integrity"] == "UNMEASURED"
+    eur = rows[lp.SEAL_PREFIX + "ledger_EURUSD_asia.json"]
+    assert eur["collided"] is False and eur["retired_as"] == "renamed"
+    assert "retired_by" not in rows[lp.SEAL_PREFIX + "ledger_OTHER_asia.json"]
+    assert json.loads(manifest.read_text("utf-8"))["collided_seal_rows"] == 2
+
+
+def test_a_test_migration_never_touches_the_desks_own_manifest(tmp_path) -> None:
+    before = lp.MANIFEST.read_bytes() if lp.MANIFEST.exists() else None
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_XAUUSD_asia.json", [{"r_multiple": 2.0}])
+    lp.migrate(lp.owners_of([(k, "XAUUSD_asia") for k in GOLD]), engine="shadow_forward",
+               shadow_dir=shadow)
+    assert (lp.MANIFEST.read_bytes() if lp.MANIFEST.exists() else None) == before
+
+
+def test_sleeve_id_is_unique_per_ledger_and_parses_like_the_stem(tmp_path) -> None:
+    """M2: readers that split a label on `_` keep their symbol; variants never merge."""
+    shadow = tmp_path / "shadow"
+    paths = [_engine_write(shadow, k, "XAUUSD_asia", [{"r_multiple": 1.0}]) for k in GOLD]
+    ids = [lp.sleeve_id(p) for p in paths]
+    assert len(set(ids)) == len(GOLD)
+    assert all(i.split("_")[0] == "XAUUSD" and i.startswith("XAUUSD_asia~") for i in ids)
+    _write(shadow / "ledger_EURUSD_asia.json", [])
+    assert lp.sleeve_id(shadow / "ledger_EURUSD_asia.json") == "EURUSD_asia"

@@ -197,7 +197,7 @@ def load_trades() -> tuple[list[dict], dict[str, str]]:
                 continue
             if not isinstance(rows, list):
                 continue
-            sleeve = f.stem.removeprefix("ledger_")
+            sleeve = _lp.sleeve_id(f)  # unique per ledger, parses like the stem
             for r in rows:
                 t = _trade(r, sleeve, "shadow")
                 if t is not None:

@@ -327,6 +327,11 @@ def _log(msg: str) -> None:
 # EVIDENCE
 # ---------------------------------------------------------------------------------------
 
+#: How the last `build_evidence` joined forward ledgers to columns: the stems refused as shared
+#: and each named column's clock status. Published in `pf_allocation.json["forward_join"]`.
+_FORWARD_JOIN: dict[str, Any] = {}
+
+
 def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
     """The daily-R matrix for every priced sleeve, plus forward days per sleeve.
 
@@ -359,9 +364,14 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
 
     forward: dict[str, dict[str, float]] = {}
     try:
-        from research.portfolio_evidence import ambiguous_stems, daily_series
+        from research.portfolio_evidence import ambiguous_stems, column_clock_status, daily_series
         forward = daily_series()
         _amb = ambiguous_stems()
+        _FORWARD_JOIN.clear()
+        _FORWARD_JOIN.update({"ambiguous_stems": _amb, "column_clocks": column_clock_status(),
+                              "basis": "ledger_paths.join_names: a stem joins only when ONE "
+                                       "sleeve key's ledger declares it; columns join by exact "
+                                       "clock key"})
         if _amb:
             _log(f"forward evidence: {len(_amb)} cell stem(s) carry several sleeve keys' "
                  f"ledgers ({sum(len(v) for v in _amb.values())} ledgers); each is published "
@@ -5182,6 +5192,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # P12: E[log W] as a function of capital per sleeve, and which edges this account's size
         # is still able to harvest. Read from CAPACITY.json; sizes nothing.
         "capacity_growth": _capacity_growth(),
+        # Auditor S4 (2026-11-11): the forward join made visible -- shared stems refused, and
+        # each gold column's clock JOINED / NO_LEDGER / UNMEASURED. Absent = the join never ran.
+        "forward_join": dict(_FORWARD_JOIN) or {"status": "UNMEASURED",
+                                                "why": "forward evidence was not built this pass"},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")

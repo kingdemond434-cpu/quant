@@ -813,7 +813,7 @@ def units_sleeve_ledgers(cursor: dict[str, Any], gaps: list[dict[str, str]]
             # declared `<sym>_<window>` stem, which params variants may share (`ledger_paths`).
             stem = _lp.stem_of(path)
             sym, _, window = stem.partition("_")
-            items.append(Unit("sleeve_ledger", path.stem[len("ledger_"):], str(path),
+            items.append(Unit("sleeve_ledger", _lp.sleeve_id(path), str(path),
                               (stem.lower(), f"{sym}|{window}".lower(), sym.lower()),
                               (sym.upper(),), at=_mtime(path), pit=True))
     else:

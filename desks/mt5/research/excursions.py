@@ -109,7 +109,7 @@ def run() -> dict:
                 continue
             if not isinstance(rows, list):
                 continue
-            sleeve = f.stem.removeprefix("ledger_")
+            sleeve = _lp.sleeve_id(f)  # unique per ledger, parses like the stem
             sym = _symbol_of(sleeve)
             bars = get(sym)
             if bars is None:

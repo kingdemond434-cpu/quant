@@ -114,7 +114,7 @@ def load_forward(dirs: tuple[Path, ...] = LEDGER_DIRS) -> list[tuple[str, str, f
                 continue
             if not isinstance(rows, list):
                 continue
-            sleeve = f.stem.removeprefix("ledger_")
+            sleeve = _lp.sleeve_id(f)  # unique per ledger, parses like the stem
             for row in rows:
                 if not isinstance(row, dict):
                     continue

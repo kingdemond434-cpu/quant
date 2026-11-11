@@ -163,7 +163,6 @@ def main() -> int:
         # ONE LEDGER PER SLEEVE KEY, named by `ledger_paths` like every other forward engine.
         ledger = _lp.ledger_path(key, SHADOW)
         ledger.parent.mkdir(parents=True, exist_ok=True)
-        _lp.register(ledger, key, engine="qquant_shadow", stem=_lp.legacy_stem_qquant(key))
         stamp = bars.stamp()
         ledger.write_text(json.dumps([
             {"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
@@ -171,6 +170,7 @@ def main() -> int:
              "r_multiple": t.r_multiple, "reason": t.reason, **stamp}
             for t in trades
         ], indent=2), encoding="utf-8")
+        _lp.register(ledger, key, engine="qquant_shadow", stem=_lp.legacy_stem_qquant(key))
         days = max(0, (now - frozen_at.to_pydatetime()).days)
         expectancy = sum(values) / len(values) if values else 0.0
         row.update({

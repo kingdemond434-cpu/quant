@@ -163,7 +163,7 @@ def _ledger_rows() -> dict[str, list[dict[str, Any]]]:
                 continue
             keep = [r for r in rows if isinstance(r, dict)]
             if keep:
-                out.setdefault(f.stem.removeprefix("ledger_"), []).extend(keep)
+                out.setdefault(_lp.sleeve_id(f), []).extend(keep)
     return out
 
 

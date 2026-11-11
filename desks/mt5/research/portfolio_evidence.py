@@ -39,6 +39,7 @@ import json
 import math
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
     from desks.mt5.research import ledger_paths as _lp
 except ImportError:
@@ -74,11 +75,28 @@ def _read(p: Path):
 #: `XAUUSD.asia` outright). The file stem `XAUUSD_asia` never equalled the column `gold_asia`, so
 #: the allocator NEVER saw gold_asia's forward evidence -- a missed-growth gap the Auditor named.
 #: Joined by the EXACT key only, so a params variant (`XAUUSD.asia#rr=1.5`) is never substituted.
+#: ONLY gold_asia IS MAPPED (Auditor S4, 2026-11-11): decision_core names its clock outright. The
+#: other two gold columns' clocks are inferred from window defaults, not named, so they stay
+#: UNJOINED and are reported UNMEASURED in `column_clock_status()` until a named clock exists.
 COLUMN_CLOCKS: dict[str, str] = {
     "gold_asia": "XAUUSD.asia",
-    "gold_london_am": "XAUUSD.london_am",
-    "gold_afternoon": "XAUUSD.afternoon",
 }
+
+#: Columns whose forward clock is NOT named anywhere the allocator can cite. Never joined.
+UNMAPPED_COLUMNS: dict[str, str] = {
+    "gold_london_am": "no clock is named for this column (XAUUSD.london_am would be inferred from "
+                      "window defaults, not cited); forward evidence UNMEASURED, not joined",
+    "gold_afternoon": "no clock is named for this column (XAUUSD.afternoon would be inferred from "
+                      "window defaults, not cited); forward evidence UNMEASURED, not joined",
+}
+
+#: {column: status row} from the last `daily_series()` call.
+_COLUMN_STATUS: dict[str, dict[str, Any]] = {}
+
+
+def column_clock_status() -> dict[str, dict[str, Any]]:
+    """Per allocator column: JOINED (exact clock key found), NO_LEDGER, or UNMEASURED."""
+    return {k: dict(v) for k, v in _COLUMN_STATUS.items()}
 
 #: {legacy stem: [ledger names]} for stems several sleeve keys share, from the last
 #: `daily_series()` call. Unjoined by stem on purpose; see `daily_series`.
@@ -103,6 +121,12 @@ def daily_series() -> dict[str, dict[str, float]]:
     names, ambiguous = _lp.join_names(ledgers)
     _AMBIGUOUS.clear()
     _AMBIGUOUS.update(ambiguous)
+    _COLUMN_STATUS.clear()
+    for col, clock in COLUMN_CLOCKS.items():
+        _COLUMN_STATUS[col] = {"clock": clock, "status": "NO_LEDGER", "ledger": None,
+                               "integrity": None, "forward_days": 0}
+    for col, why in UNMAPPED_COLUMNS.items():
+        _COLUMN_STATUS[col] = {"clock": None, "status": "UNMEASURED", "why": why}
     for ledger in ledgers:
         rows = _read(ledger)
         if not isinstance(rows, list) or not rows:
@@ -125,6 +149,9 @@ def daily_series() -> dict[str, dict[str, float]]:
             for col, clock in COLUMN_CLOCKS.items():
                 if key == clock:
                     out[col] = by_day
+                    _COLUMN_STATUS[col].update(status="JOINED", ledger=ledger.name,
+                                               integrity=_lp.integrity_of(ledger),
+                                               forward_days=len(by_day))
     return out
 
 
