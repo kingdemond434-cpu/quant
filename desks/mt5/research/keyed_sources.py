@@ -326,6 +326,8 @@ def fetch_generic(row: Mapping[str, Any], keys: Mapping[str, str], get: Getter,
             # Scrubbed BEFORE anything reads it: EIA v2 echoes `api_key` in `request.params`,
             # and the 160-byte error excerpt below would otherwise cut a key before redacting it.
             body = ks.scrub_body(get(req), keys.values())
+        except Blocked:
+            raise                       # a refusal (robots, auth) is the source's state
         except Exception as exc:
             empty.append(f"{req.part or kind}: {type(exc).__name__}: {exc}")
             continue
@@ -353,14 +355,11 @@ def collect(row: Mapping[str, Any], *, get: Getter, now: datetime, paths: Paths,
         raise Blocked("BLOCKED_TERMS:machine_use_allowed is not true")
     keys = resolve_keys(row, environ)
     kind = str(row["kind"])
-    # ROBOTS FAIL CLOSED ON EVERY KEYED REQUEST (audit hold on #251): each request -- and the
-    # Telegram session's host -- asks libs.data.robots_shim first; absent the desk's robots gate
-    # (#831) the answer is no and nothing is requested, robots.txt included.
+    # ROBOTS FAIL CLOSED ON EVERY HTTP REQUEST OF THIS LEG (audit hold on #251): each request
+    # asks libs.data.robots_shim first; absent the desk's robots gate (#831) the answer is no and
+    # nothing is requested, robots.txt included. (Telegram is MTProto through telethon, not a web
+    # fetch: robots.txt does not govern it, and its session gate below is unchanged.)
     from libs.data import robots_shim
-    if kind == "telegram" and not robots_shim.robots_allows(str(row.get("url") or "")):
-        robots_shim.refuse("keyed_sources", str(row.get("url") or ""), str(row.get("id") or ""),
-                           now)
-        raise Blocked(robots_shim.REFUSED_ROBOTS_UNREAD)
     raw_get = get
 
     def gated(req: ks.Request) -> bytes:

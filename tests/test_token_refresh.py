@@ -648,3 +648,9 @@ def test_jquants_passes_the_gate_only_under_its_private_use_condition(
     monkeypatch.setitem(T.TERMS_EVIDENCE, "jquants", {**ev, "condition": "x"})
     monkeypatch.setitem(T.TERMS, "jquants", ("to_confirm", "test"))
     assert C._terms_state(row, row["url"])[0] == "to_confirm"
+
+
+@pytest.fixture(autouse=True)
+def _robots_read_and_allowing(robots_allowed: None) -> None:
+    """These tests exercise what the fetch does once robots.txt is read (tests/conftest.py's
+    `robots_allowed`); the fail-closed default is pinned in tests/test_robots_fail_closed.py."""

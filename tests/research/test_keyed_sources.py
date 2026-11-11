@@ -491,3 +491,9 @@ def test_a_bad_registry_file_is_reported_not_raised(tmp_path: Path) -> None:
     finally:
         cred.reload()
     assert cred.load_error() is None and cred.registry()
+
+
+@pytest.fixture(autouse=True)
+def _robots_read_and_allowing(robots_allowed: None) -> None:
+    """These tests exercise what the fetch does once robots.txt is read (tests/conftest.py's
+    `robots_allowed`); the fail-closed default is pinned in tests/test_robots_fail_closed.py."""

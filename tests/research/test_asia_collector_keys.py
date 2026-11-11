@@ -96,3 +96,9 @@ def test_an_encoded_key_is_scrubbed(monkeypatch: pytest.MonkeyPatch) -> None:
     rec, seen = _keyed_fetch(monkeypatch, key, lambda u: OSError(f"refused {u}"))
     assert "ab%2Bcd%2Fef%3D%3Dgh" in seen[0]
     assert "ab%2Bcd" not in str(rec) and key not in str(rec)
+
+
+@pytest.fixture(autouse=True)
+def _robots_read_and_allowing(robots_allowed: None) -> None:
+    """These tests exercise what the fetch does once robots.txt is read (tests/conftest.py's
+    `robots_allowed`); the fail-closed default is pinned in tests/test_robots_fail_closed.py."""

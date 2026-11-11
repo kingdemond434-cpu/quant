@@ -297,3 +297,28 @@ def _robots_refusals_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     tmp, never in the checkout's desks/mt5/data."""
     monkeypatch.setattr("libs.data.robots_shim.MISSED_GROWTH",
                         tmp_path / "robots_refused_missed_growth.jsonl")
+
+
+class _AllowingRobotsGate:
+    """A stand-in for libs.data.robots_gate.RobotsGate that answers ALLOWED for every URL and
+    reads nothing: the fetch paths behind libs.data.robots_shim then run as the gate allows."""
+
+    def __init__(self, get: Any, agent: str = "") -> None:
+        self.checked: list[str] = []
+
+    def check(self, url: str) -> str:
+        self.checked.append(url)
+        return "ALLOWED"
+
+
+@pytest.fixture
+def robots_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The desk's robots gate (#831) present and allowing: for tests of what a fetch does once
+    robots.txt is read. Without this fixture the shim fails closed, as it does on a live tree
+    that does not carry the gate."""
+    import types
+
+    from libs.data import robots_shim
+    stub = types.SimpleNamespace(RobotsGate=_AllowingRobotsGate, ALLOWED="ALLOWED")
+    monkeypatch.setattr(robots_shim, "_gate_module", lambda: stub)
+    monkeypatch.setattr(robots_shim, "_GATE", None)
