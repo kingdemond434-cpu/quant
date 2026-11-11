@@ -13,9 +13,12 @@ roi".
 WHAT IT DOES, every two minutes (MT5-MemoryGuard, SYSTEM):
 
   1. PROTECT. The live path is never a candidate: only python processes are, and never one whose
-     command line names the money path (gateway, allocator, executor, deadman, OCO, order door,
-     E8, FTMO, tape and tick recorders, bridge). MT5 terminals, the bridge and every non-python
-     process are out of scope by construction.
+     command line names the money path or the release path (gateway, allocator, executor,
+     deadman, OCO, order door, E8, FTMO, tape and tick recorders, bridge, promoter, shadow
+     forward, sleeves, decision core, sizing, adopt, seal, sign train, release, self-heal, workflow
+     gate, root pin), and never one whose ANCESTOR is a terminal or any such process -- a helper
+     the gateway or Adopt-And-Seal spawned is protected whatever its own command line says. MT5
+     terminals, the bridge and every non-python process are out of scope by construction.
   2. STOP AT MOST ONE JOB A PASS, and only when one of three rules holds:
        HARD CAP  one research process holds more than HARD_CAP_FRAC of physical memory. That is
                  a leak, not a workload: nothing on this desk legitimately needs a quarter of
@@ -29,20 +32,26 @@ WHAT IT DOES, every two minutes (MT5-MemoryGuard, SYSTEM):
      A stop is terminate, a grace period, then kill, for the process and its children only.
      Its parent (the cmd that runs a lane of organs) is untouched, so the lane moves on to its
      next organ instead of losing the whole pass.
-  3. RE-QUEUE. The stopped command line, its directory and why it was stopped are written to the
-     queue. When the box has headroom again (available above twice the floor and commit below
-     its line) the guard runs it again, at below-normal priority, inside a Windows job object
-     whose per-process memory limit is the hard cap. A capped run that leaks fails with a
-     MemoryError at the cap instead of taking the box down. At most MAX_ATTEMPTS re-runs per
-     command per UTC day; after that the row is GAVE_UP with its reason, and the organ still runs
-     on its own schedule tomorrow. Nothing is dropped silently.
+  3. RE-QUEUE, AS ITS OWN TASK, NEVER AS SYSTEM. The stopped job's owner and the scheduled task
+     that launched it (matched from its ancestors' command lines against the scheduler's "Task To
+     Run") are written to the queue with why it was stopped. When the box has headroom again
+     (available above twice the floor and commit below its line) and that task is not already
+     running, the guard re-runs it with `schtasks /Run /TN <task>`, so it runs under the task's
+     own principal, never this guard's. A recorded command line is NEVER started by the guard:
+     a SYSTEM task that re-ran whatever a python process happened to be running would be a
+     ready-made privilege escalation (audit of #1051, M1). A job whose task cannot be resolved is
+     stopped and marked GAVE_UP ("owner unresolved; not re-run as SYSTEM"); it runs on its own
+     schedule next time. The re-run is bounded by the same rules: a re-run that leaks again is
+     stopped again within two minutes. At most MAX_ATTEMPTS re-runs per task per UTC day; after
+     that the row is GAVE_UP with its reason. Nothing is dropped silently.
 
 WHAT IT NEVER DOES. It never touches a non-python process, a money-path process, its own
 process tree, or anything when memory is healthy and no process is over the hard cap. It throttles
 nothing: a job that fits runs at full speed, which is the "without reducing ROI" half of the ask.
 
 Output: desks/mt5/reports/MEMORY_GUARD.json (every pass) and desks/mt5/data/MEMORY_GUARD_QUEUE.json
-(the re-queue). The hourly pass reads the report.
+(the re-queue). The hourly pass reads the report. Each STOP row records the victim's open files,
+so a ledger left with a torn tail by the stop is named where the cause can be seen.
 """
 from __future__ import annotations
 
@@ -61,7 +70,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "MEMORY_GUARD.json"
 QUEUE = DESK / "data" / "MEMORY_GUARD_QUEUE.json"
-REQUEUE_LOG = DESK / "logs" / "MT5-MemoryGuard-requeue.log"
 SEEN = DESK / "data" / "MEMORY_GUARD_SEEN.json"
 
 MB = 1024 * 1024
@@ -69,32 +77,45 @@ HARD_CAP_FRAC = 0.25        # one research process above this share of physical 
 FLOOR_FRAC = 0.125          # available memory below this share of physical RAM is pressure
 COMMIT_LINE = 0.90          # commit above this share of the commit limit is pressure
 MIN_STOP_MB = 2048          # under pressure a smaller job is never the cause, so never stopped
-MAX_ATTEMPTS = 2            # re-runs per command line per UTC day
+MAX_ATTEMPTS = 2            # re-runs per task per UTC day
 GRACE_S = 10.0
 STALL_AGE_H = 24.0          # a research job this old ...
 STALL_CPU_S = 1.0           # ... that used less CPU than this between two passes is stuck
 STALL_MIN_GAP_S = 60.0      # the two readings must be at least this far apart
 
 PYTHON_NAMES = frozenset({"python.exe", "pythonw.exe", "python", "python3", "py.exe"})
+PROTECTED_NAMES = frozenset({"terminal64.exe", "metatester64.exe", "terminal.exe"})
+#: Over-matching on purpose ("oco" and "tape" as substrings): a false protect costs one missed
+#: stop, a false candidate can stop the money path.
 MONEY_PATH = re.compile(
     r"(?i)gateway|allocator|executor|deadman|oco|money_closure|order_door|e8_|\be8\b|ftmo|"
-    r"tape|tick_record|recorder|bridge|placement|venue|mt5desk[\\/.]run|terminal64|metatrader")
+    r"tape|tick_record|recorder|bridge|placement|venue|mt5desk[\\/.]run|terminal64|metatrader|"
+    r"promoter|shadow_forward|sleeve|decision_core|sizing|adopt|seal|sign_train|release|"
+    r"selfheal|self_heal|workflow_gate|root_pin")
 
 
 def _now() -> datetime:
     return datetime.now(tz=UTC)
 
 
+def _protected(name: Any, cmdline: Any) -> bool:
+    cmd = " ".join(cmdline or []) if isinstance(cmdline, list) else str(cmdline or "")
+    return (str(name or "").lower() in PROTECTED_NAMES or bool(MONEY_PATH.search(cmd))
+            or "memory_guard" in cmd)
+
+
 def is_candidate(proc: dict[str, Any], own_pids: set[int]) -> bool:
-    """Only research python, never the money path, never ourselves."""
+    """Only research python, never the money path, never under it, never ourselves."""
     if int(proc.get("pid") or -1) in own_pids:
         return False
     if str(proc.get("name") or "").lower() not in PYTHON_NAMES:
         return False
-    cmd = " ".join(proc.get("cmdline") or [])
-    if not cmd or MONEY_PATH.search(cmd):
+    if not proc.get("cmdline") or _protected(proc.get("name"), proc.get("cmdline")):
         return False
-    return "memory_guard" not in cmd
+    ancestors = proc.get("ancestors")
+    if ancestors is None:           # unreadable lineage is not a clean one
+        return False
+    return not any(_protected(a.get("name"), a.get("cmdline")) for a in ancestors)
 
 
 def thresholds(snap: dict[str, Any]) -> dict[str, float | None]:
@@ -206,33 +227,61 @@ def save_queue(rows: list[dict[str, Any]], path: Path | None = None) -> None:
     os.replace(tmp, path)
 
 
+def _norm(cmd: Any) -> str:
+    text = " ".join(cmd) if isinstance(cmd, list) else str(cmd or "")
+    return " ".join(text.replace('"', " ").replace("'", " ").lower().split())
+
+
+def owning_task(proc: dict[str, Any], tasks: list[dict[str, str]]) -> str | None:
+    """The scheduled task that launched `proc`: the task whose "Task To Run" is the command line
+    of the process or one of its ancestors. Outermost ancestor first, so a lane's cmd wins over
+    a python that happens to share a prefix. None when nothing matches."""
+    chain = [*reversed(proc.get("ancestors") or []), proc]
+    runs = [(t.get("TaskName") or "", _norm(t.get("Task To Run"))) for t in tasks]
+    runs = [(n, r) for n, r in runs if n and len(r) >= 12]
+    for node in chain:
+        cmd = _norm(node.get("cmdline"))
+        if len(cmd) < 12:
+            continue
+        for name, run in runs:
+            if run == cmd or run in cmd or cmd in run:
+                return name
+    return None
+
+
 def enqueue(rows: list[dict[str, Any]], proc: dict[str, Any], rule: str, why: str,
-            at: str) -> list[dict[str, Any]]:
-    key = " ".join(proc.get("cmdline") or [])
+            at: str, task: str | None) -> list[dict[str, Any]]:
+    key = task or " ".join(proc.get("cmdline") or [])
+    peak = float(proc.get("private_mb") or 0)
     for r in rows:
         if r.get("key") == key and r.get("state") in ("QUEUED", "RUNNING"):
             r.update(state="QUEUED", last_stop_at=at, last_rule=rule, last_why=why,
-                     peak_mb=max(float(r.get("peak_mb") or 0), float(proc.get("private_mb") or 0)))
+                     peak_mb=max(float(r.get("peak_mb") or 0), peak))
             return rows
-    rows.append({"key": key, "cmdline": list(proc.get("cmdline") or []),
-                 "cwd": proc.get("cwd"), "state": "QUEUED", "first_stop_at": at,
-                 "last_stop_at": at, "last_rule": rule, "last_why": why,
-                 "peak_mb": float(proc.get("private_mb") or 0), "attempts": {}})
+    row: dict[str, Any] = {
+        "key": key, "task": task, "owner": proc.get("owner"),
+        "cmdline": list(proc.get("cmdline") or []), "state": "QUEUED", "first_stop_at": at,
+        "last_stop_at": at, "last_rule": rule, "last_why": why, "peak_mb": peak,
+        "attempts": {}}
+    if task is None:
+        row.update(state="GAVE_UP", gave_up_why="owner unresolved; not re-run as SYSTEM -- no "
+                   "scheduled task launched it, so it runs again only when its owner runs it")
+    rows.append(row)
     return rows
 
 
 def next_requeue(rows: list[dict[str, Any]], at: str,
-                 running_keys: set[str]) -> dict[str, Any] | None:
-    """The oldest QUEUED job still under today's attempt cap and not already running."""
+                 running_tasks: set[str]) -> dict[str, Any] | None:
+    """The oldest QUEUED task still under today's attempt cap and not already running."""
     day = _day(at)
     for r in sorted(rows, key=lambda r: str(r.get("last_stop_at") or "")):
-        if r.get("state") != "QUEUED":
+        if r.get("state") != "QUEUED" or not r.get("task"):
             continue
-        if r.get("key") in running_keys:
+        if r.get("task") in running_tasks:
             continue
         if int((r.get("attempts") or {}).get(day, 0)) >= MAX_ATTEMPTS:
             r["state"] = "GAVE_UP"
-            r["gave_up_why"] = (f"{MAX_ATTEMPTS} capped re-runs today; it runs again on its own "
+            r["gave_up_why"] = (f"{MAX_ATTEMPTS} re-runs today; it runs again on its own "
                                 f"schedule. If the rule was HARD_CAP the organ needs to stream "
                                 f"its input (the scaling_laws fix, #1049).")
             continue
@@ -240,13 +289,13 @@ def next_requeue(rows: list[dict[str, Any]], at: str,
     return None
 
 
-def settle(rows: list[dict[str, Any]], running_keys: set[str], at: str) -> list[dict[str, Any]]:
-    """A RUNNING re-run that is no longer running finished (or failed at its cap) -> DONE.
-    GAVE_UP and DONE rows older than seven days are dropped from the working queue (the
-    report of the pass that closed them is the record)."""
+def settle(rows: list[dict[str, Any]], running_tasks: set[str], at: str) -> list[dict[str, Any]]:
+    """A RUNNING re-run whose task is no longer running finished -> DONE. DONE and GAVE_UP rows
+    older than seven days leave the working queue (the pass reports that closed them are the
+    record)."""
     keep = []
     for r in rows:
-        if r.get("state") == "RUNNING" and r.get("key") not in running_keys:
+        if r.get("state") == "RUNNING" and r.get("task") not in running_tasks:
             r["state"] = "DONE"
             r["done_at"] = at
         if r.get("state") in ("DONE", "GAVE_UP"):
@@ -271,7 +320,12 @@ def _processes() -> list[dict[str, Any]]:
             mi = p.memory_info()
             private = float(getattr(mi, "private", None) or getattr(mi, "vms", 0) or 0)
             ct = _safe(p.cpu_times)
+            parents = _safe(p.parents)
+            ancestors = None if parents is None else [
+                {"pid": q.pid, "name": _safe(q.name), "cmdline": _safe(q.cmdline) or []}
+                for q in parents]
             out.append({"pid": p.info["pid"], "name": p.info["name"],
+                        "owner": _safe(p.username), "ancestors": ancestors,
                         "private_mb": private / MB, "rss_mb": mi.rss / MB,
                         "cmdline": p.cmdline(), "cwd": _safe(p.cwd),
                         "started": p.info.get("create_time"),
@@ -307,6 +361,9 @@ def stop(pid: int) -> dict[str, Any]:
         tree = [*p.children(recursive=True), p]
     except psutil.NoSuchProcess:
         return {"pid": pid, "result": "GONE"}
+    # WHAT IT HAD OPEN, recorded before the stop: a ledger whose tail the stop tears is then
+    # named here, where its reader's error can be traced back (audit of #1051, should-fix).
+    files = sorted({f.path for q in tree for f in (_safe(q.open_files) or [])})[:50]
     for q in tree:
         with contextlib.suppress(psutil.Error):
             q.terminate()
@@ -316,79 +373,8 @@ def stop(pid: int) -> dict[str, Any]:
             q.kill()
     _, still = psutil.wait_procs(alive, timeout=GRACE_S)
     return {"pid": pid, "result": "STOPPED" if not still else "STILL_ALIVE",
-            "tree": [q.pid for q in tree], "killed": [q.pid for q in alive]}
-
-
-def _job_with_memory_cap(cap_bytes: int) -> Any:
-    """A Windows job object whose per-process committed memory is capped (None elsewhere)."""
-    if sys.platform != "win32":
-        return None
-    import ctypes
-    from ctypes import wintypes
-
-    class IO_COUNTERS(ctypes.Structure):
-        _fields_ = [(n, ctypes.c_ulonglong) for n in (
-            "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
-            "ReadTransferCount", "WriteTransferCount", "OtherTransferCount")]
-
-    class BASIC(ctypes.Structure):
-        _fields_ = [("PerProcessUserTimeLimit", ctypes.c_longlong),
-                    ("PerJobUserTimeLimit", ctypes.c_longlong),
-                    ("LimitFlags", wintypes.DWORD),
-                    ("MinimumWorkingSetSize", ctypes.c_size_t),
-                    ("MaximumWorkingSetSize", ctypes.c_size_t),
-                    ("ActiveProcessLimit", wintypes.DWORD),
-                    ("Affinity", ctypes.c_size_t),
-                    ("PriorityClass", wintypes.DWORD),
-                    ("SchedulingClass", wintypes.DWORD)]
-
-    class EXTENDED(ctypes.Structure):
-        _fields_ = [("BasicLimitInformation", BASIC), ("IoInfo", IO_COUNTERS),
-                    ("ProcessMemoryLimit", ctypes.c_size_t),
-                    ("JobMemoryLimit", ctypes.c_size_t),
-                    ("PeakProcessMemoryUsed", ctypes.c_size_t),
-                    ("PeakJobMemoryUsed", ctypes.c_size_t)]
-
-    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    k32.CreateJobObjectW.restype = wintypes.HANDLE
-    job = k32.CreateJobObjectW(None, None)
-    if not job:
-        return None
-    info = EXTENDED()
-    job_object_limit_process_memory = 0x00000100
-    info.BasicLimitInformation.LimitFlags = job_object_limit_process_memory
-    info.ProcessMemoryLimit = cap_bytes
-    job_object_extended_limit_information = 9
-    if not k32.SetInformationJobObject(wintypes.HANDLE(job), job_object_extended_limit_information,
-                                       ctypes.byref(info), ctypes.sizeof(info)):
-        k32.CloseHandle(wintypes.HANDLE(job))
-        return None
-    return (k32, job)
-
-
-def requeue_run(row: dict[str, Any], cap_mb: float) -> dict[str, Any]:
-    """Start the stopped command again, below-normal priority, inside the memory-capped job."""
-    REQUEUE_LOG.parent.mkdir(parents=True, exist_ok=True)
-    flags = 0
-    if sys.platform == "win32":
-        flags = subprocess.BELOW_NORMAL_PRIORITY_CLASS | subprocess.CREATE_NO_WINDOW
-    cwd = row.get("cwd") if row.get("cwd") and Path(row["cwd"]).is_dir() else str(ROOT)
-    with REQUEUE_LOG.open("ab") as log:
-        log.write((f"\n--- {_now().isoformat(timespec='seconds')} re-run with a "
-                   f"{round(cap_mb)} MB cap: {row['key']}\n").encode("utf-8", "replace"))
-        log.flush()
-        proc = subprocess.Popen(row["cmdline"], cwd=cwd, stdout=log, stderr=subprocess.STDOUT,
-                                stdin=subprocess.DEVNULL, creationflags=flags, close_fds=True)
-    capped = False
-    job = _job_with_memory_cap(int(cap_mb * MB))
-    if job is not None:
-        from ctypes import wintypes
-        k32, handle = job
-        capped = bool(k32.AssignProcessToJobObject(wintypes.HANDLE(handle),
-                                                   wintypes.HANDLE(int(proc._handle))))  # type: ignore[attr-defined]
-        # The handle is deliberately leaked to the OS for the guard's lifetime: closing it
-        # would not lift the limit, and the guard exits within the pass.
-    return {"pid": proc.pid, "capped": capped, "cap_mb": round(cap_mb)}
+            "tree": [q.pid for q in tree], "killed": [q.pid for q in alive],
+            "open_files": files}
 
 
 def _process_health() -> Any:
@@ -401,6 +387,25 @@ def _process_health() -> Any:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def _tasks() -> tuple[list[dict[str, str]], str]:
+    """The scheduler's task table (name, "Task To Run", status), via process_health's bounded,
+    parse-checked reader. An unreadable table is ([], reason): nothing is matched, nothing is
+    re-run."""
+    try:
+        rows, status = _process_health()._tasks()
+        return list(rows), str(status)
+    except Exception as exc:
+        return [], f"UNMEASURED: {type(exc).__name__}"
+
+
+def rerun_task(task: str) -> dict[str, Any]:
+    """`schtasks /Run /TN <task>`: the task starts under its OWN principal. Never as SYSTEM."""
+    proc = subprocess.run(["schtasks", "/Run", "/TN", task], capture_output=True, text=True,
+                          errors="replace", timeout=60)
+    return {"task": task, "rc": proc.returncode,
+            "out": ((proc.stdout or "") + (proc.stderr or "")).strip()[:300]}
 
 
 def _load_seen() -> dict[str, Any]:
@@ -432,30 +437,35 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
     prev = _load_seen()
     decision = plan(snap, procs, own, prev=prev, now_ts=now_ts)
     rows = load_queue()
-    running = {" ".join(p.get("cmdline") or []) for p in procs}
-    rows = settle(rows, running, at)
+    tasks, tasks_status = _tasks()
+    running = {t.get("TaskName", "") for t in tasks
+               if str(t.get("Status", "")).lower() == "running"}
+    tasks_read = bool(tasks)
+    if tasks_read:
+        rows = settle(rows, running, at)
     actions: list[dict[str, Any]] = []
     victim = decision.get("stop")
     if victim is not None and apply:
+        task = owning_task(victim, tasks)
         res = stop(int(victim["pid"]))
         actions.append({"action": "STOP", "rule": decision["rule"], "why": decision["why"],
-                        "cmdline": victim.get("cmdline"), **res})
+                        "cmdline": victim.get("cmdline"), "owner": victim.get("owner"),
+                        "task": task, **res})
         if res["result"] != "GONE":
-            rows = enqueue(rows, victim, decision["rule"], decision["why"], at)
-    elif victim is None and apply and headroom(snap, decision["thresholds"]):
+            rows = enqueue(rows, victim, decision["rule"], decision["why"], at, task)
+    elif victim is None and apply and tasks_read and headroom(snap, decision["thresholds"]):
         nxt = next_requeue(rows, at, running)
-        cap = decision["thresholds"]["hard_cap_mb"]
-        if nxt is not None and cap:
+        if nxt is not None:
+            att = nxt.setdefault("attempts", {})
+            att[_day(at)] = int(att.get(_day(at), 0)) + 1
             try:
-                res = requeue_run(nxt, cap)
-                nxt["state"] = "RUNNING"
-                att = nxt.setdefault("attempts", {})
-                att[_day(at)] = int(att.get(_day(at), 0)) + 1
-                actions.append({"action": "REQUEUE", "cmdline": nxt["cmdline"], **res})
+                res = rerun_task(str(nxt["task"]))
+                if res["rc"] == 0:
+                    nxt["state"] = "RUNNING"
+                actions.append({"action": "REQUEUE" if res["rc"] == 0 else "REQUEUE_FAILED",
+                                **res})
             except Exception as exc:  # a failed start is an attempt, not a crash of the guard
-                att = nxt.setdefault("attempts", {})
-                att[_day(at)] = int(att.get(_day(at), 0)) + 1
-                actions.append({"action": "REQUEUE_FAILED", "cmdline": nxt["cmdline"],
+                actions.append({"action": "REQUEUE_FAILED", "task": nxt["task"],
                                 "error": f"{type(exc).__name__}: {exc}"[:300]})
     if apply:
         save_queue(rows)
@@ -464,15 +474,18 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
                  key=lambda p: -float(p.get("private_mb") or 0.0))[:5]
     doc = {
         "at": at, "applied": apply, "memory": snap,
-        "verdict": decision["rule"], "why": decision["why"],
+        "verdict": decision["rule"], "why": decision["why"], "tasks_read": tasks_status,
         "thresholds_mb": {k: (round(v) if v is not None else None)
                           for k, v in decision["thresholds"].items()},
         "actions": actions,
-        "queue": [{k: r.get(k) for k in ("key", "state", "last_rule", "last_stop_at",
-                                         "attempts", "peak_mb", "gave_up_why")} for r in rows],
+        "queue": [{k: r.get(k) for k in ("key", "task", "owner", "state", "last_rule",
+                                         "last_stop_at", "attempts", "peak_mb", "gave_up_why")}
+                  for r in rows],
         "largest_research_jobs": [{"pid": p["pid"], "private_mb": round(p["private_mb"]),
                                    "cmd": " ".join(p.get("cmdline") or [])[:200]} for p in top],
-        "protected": "non-python processes and every command line matching the money-path pattern",
+        "protected": ("non-python processes, every command line matching the money-path "
+                      "pattern, and every process with a terminal or such a process as an "
+                      "ancestor"),
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
