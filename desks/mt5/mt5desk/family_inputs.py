@@ -85,6 +85,43 @@ def _runtime_bars(inputs: Any, symbol: str, timeframe: str, primary: Any) -> Any
         return None
 
 
+#: A factor whose last bar is more than this many days older than the instrument's own last bar
+#: has stopped updating. Seven days clears every holiday run the venues keep (Golden Week, the
+#: Lunar New Year week) without ever passing a series that died.
+FACTOR_STALE_DAYS = 7.0
+
+
+def stale_inputs(loaded: list[tuple[str, Any]], primary: Any) -> dict[str, str]:
+    """{symbol: "<its last bar> vs <instrument's last bar>"} for every input that stopped updating.
+
+    WHY THIS REFUSES BY NAME (measured on the box 2026-11-11). UST10Y has no bars after
+    2025-12-31 on any chart, and `family_cross_asset_residual` joins its factors `how="inner"`
+    on exact stamps and then drops NaN: 0 of 6,899 XAUEUR@M5 rows since 10-07 survived, the
+    family returned [] on every pass, and the forward clock sat at n=0 reading as a mechanism
+    that never fires (FROZEN_ROWS) instead of an input that is gone. An unreadable index is not
+    evidence of staleness and is left to the family.
+    """
+    try:
+        import pandas as pd
+
+        def _last(frame: Any) -> Any:
+            ts = pd.Timestamp(frame.index.max())
+            return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+
+        own = _last(primary)
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    for sym, frame in loaded:
+        try:
+            last = _last(frame)
+        except Exception:
+            continue
+        if (own - last).total_seconds() / 86400.0 > FACTOR_STALE_DAYS:
+            out[str(sym)] = f"last bar {last.isoformat()} vs instrument {own.isoformat()}"
+    return out
+
+
 def bars_named(symbol: str, like: Any) -> Any:
     """`symbol`'s bars on the chart `like` IS, or None -- for a family handed a NAME, not a frame.
 
@@ -282,6 +319,11 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             if missing:
                 return None, (f"factor bars unavailable for {missing}; all {len(names)} named "
                               "factors are required to preserve the certified model")
+            stale = stale_inputs(loaded, h1)
+            if stale:
+                return None, (f"factor bars end before the instrument's own: {stale}; the "
+                              "families inner-join on exact stamps, so a factor that stopped "
+                              "updating removes every recent bar and the clock can never fire")
             factors = [d for _s, d in loaded]
             extra["factors"] = factors
             return extra, "ok"
