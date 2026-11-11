@@ -1,15 +1,18 @@
-"""Does this PR touch anything but docs, reports or box state? Prints `heavy=true|false`.
+"""Does this PR touch anything but prose under docs/, reports/ or logs/? Prints `heavy=true|false`.
 
 WHY (2026-11-11). About 1,036 Actions runs were queued, 797 of them on PRs' current heads.
 Each push starts ci (quality, mt5-money-path, coverage-floor) and release-gates (risk-invariants,
 replay-shadow, independent-review). A PR that only adds a note under docs/ or a box report ran
 the full suite, ahead of the code PRs waiting for the same free runners.
 
-THE RULE IS AN ALLOWLIST. `heavy=false` only when EVERY changed path (both sides of a rename) is on
-SKIP_PREFIXES / SKIP_FILES below, AND none of them is:
+THE RULE IS AN ALLOWLIST. `heavy=false` only when EVERY changed path (both sides of a rename) is
+either one of SKIP_FILES (the decision journal, the desk lessons) or a PROSE file (PROSE_EXTS)
+under one of SKIP_PREFIXES (docs/, reports/, logs/ and the desk's docs/ and logs/), AND none of
+them is:
   - a code or config file type anywhere (audit_gate.CODE_SPECS: *.py, *.ps1, *.yml, *.txt ...);
-  - a replay-shadow input: desks/mt5/data/*.json, desks/mt5/reports/*.json, data/*.json (what the
-    live book reads; replay-shadow must judge any change to them);
+  - under a folder the live book reads (desks/mt5/data/, desks/mt5/reports/, data/), at ANY depth
+    (#983 audit M2: decision_core reads desks/mt5/data/universe/universe.json; box state is not
+    on the allowlist at all, so replay-shadow judges every change to it);
   - governed state (libs.ops.release.is_governed_state: pins, sign rows, survivor canon,
     allocator proof, live manifest, switches);
   - PROTECTED, formerly protected or in ops/release/protected_paths.txt, or a secrets path, or a
@@ -40,32 +43,25 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 MAX_FILES = 3000
 
-#: THE ALLOWLIST: box state, logs, reports and prose. Nothing else is ever light.
+#: THE ALLOWLIST: prose under these folders. Nothing else is ever light.
 SKIP_PREFIXES: tuple[str, ...] = (
     "docs/",
     "reports/",
     "logs/",
-    "web/",
-    "data/",
     "desks/mt5/docs/",
-    "desks/mt5/data/",
-    "desks/mt5/reports/",
     "desks/mt5/logs/",
-    "desks/mt5/frontier_intel/data/",
-    "desks/mt5/side_channels/data/",
 )
+#: What counts as prose under SKIP_PREFIXES (audit_gate.LOW_EXTS plus .rst and .log).
+PROSE_EXTS: tuple[str, ...] = (".md", ".rst", ".log", ".png", ".jpg", ".jpeg", ".svg", ".gif")
 SKIP_FILES: frozenset[str] = frozenset(
     {
         "context/decision_journal.jsonl",
         "docs/desk_lessons.jsonl",
     }
 )
-#: What the live book reads (release-gates.yml replay-shadow's sparse checkout): never light.
-REPLAY_INPUTS: tuple[str, ...] = (
-    "desks/mt5/data/*.json",
-    "desks/mt5/reports/*.json",
-    "data/*.json",
-)
+#: Folders the live book reads (release-gates.yml replay-shadow's inputs live here): never light,
+#: at any depth. Belt and braces: none of them is on SKIP_PREFIXES either.
+LIVE_READ_PREFIXES: tuple[str, ...] = ("desks/mt5/data/", "desks/mt5/reports/", "data/")
 
 
 def _load(name: str, rel: str) -> Any:
@@ -77,22 +73,17 @@ def _load(name: str, rel: str) -> Any:
     return mod
 
 
-def _one_dir_match(path: str, pattern: str) -> bool:
-    """fnmatch with `*` kept inside one directory, as a workflow glob reads it."""
-    return fnmatch.fnmatchcase(path, pattern) and path.count("/") == pattern.count("/")
-
-
 def light_reason(path: str, governed: Callable[[str], bool], gate: Any) -> str | None:
     """None when `path` may skip the heavy suite; otherwise why it may not."""
     p = path.replace("\\", "/").lstrip("./")
     low = p.lower()
-    if not (p in SKIP_FILES or p.startswith(SKIP_PREFIXES)):
-        return f"{p}: not on the docs/reports/state allowlist"
+    if p.startswith(LIVE_READ_PREFIXES):
+        return f"{p}: under a folder the live book reads"
+    if not (p in SKIP_FILES or (p.startswith(SKIP_PREFIXES) and low.endswith(PROSE_EXTS))):
+        return f"{p}: not prose under docs/, reports/ or logs/"
     base = p.rsplit("/", 1)[-1].lower()
     if any(fnmatch.fnmatchcase(base, spec) for spec in gate.CODE_SPECS if "/" not in spec):
         return f"{p}: a code or config file type, wherever it sits"
-    if any(_one_dir_match(p, pat) for pat in REPLAY_INPUTS):
-        return f"{p}: a replay-shadow input (the live book reads it)"
     if governed(p):
         return f"{p}: governed state"
     if any(fnmatch.fnmatchcase(low, s) for s in gate.SECRETS):
@@ -120,7 +111,7 @@ def decide(paths: Iterable[str], governed: Callable[[str], bool], gate: Any) -> 
         why = light_reason(p, governed, gate)
         if why is not None:
             return True, why
-    return False, f"{len(names)} path(s), all docs, reports or box state"
+    return False, f"{len(names)} path(s), all prose under docs/, reports/ or logs/"
 
 
 def _gh(*args: str) -> str:
@@ -174,6 +165,11 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:  # any doubt is heavy
         heavy, why = True, f"could not decide ({type(exc).__name__}: {exc})"
     print(f"heavy={'true' if heavy else 'false'}")
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary and not heavy:
+        # #983 audit SF (L1.49): a green check on a light run must never read as a passed suite.
+        with open(summary, "a", encoding="utf-8") as fh:
+            fh.write(f"**LIGHT: the heavy steps of this job did not run.** {why}\n")
     print(f"ci_scope: {'HEAVY' if heavy else 'LIGHT'} -- {why}", file=sys.stderr)
     return 0
 
