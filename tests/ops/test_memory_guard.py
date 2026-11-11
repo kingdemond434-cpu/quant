@@ -222,8 +222,8 @@ def test_a_day_old_job_idle_on_every_pass_for_the_window_is_stalled() -> None:
                  "cpu_s": 59.78},
                 {**proc(2, 3_000, "python -m judge"), "started": STARTED, "cpu_s": 800.0 + 50 * i}]
     passes = int(mg.STALL_WINDOW_S // 120)                 # first reading is the baseline
-    assert _passes(at, passes)["rule"] == "CLEAR"           # idle 28 min: not yet the window
-    d = _passes(at, passes + 1)                             # idle 30 min on every pass
+    assert _passes(at, passes)["rule"] == "CLEAR"           # one pass short of the window
+    d = _passes(at, passes + 1)                             # idle 6 h on every pass
     assert d["rule"] == "STALLED" and d["stop"]["pid"] == 36280
 
 
@@ -233,7 +233,7 @@ def test_one_quiet_pass_or_a_burst_of_work_resets_the_window() -> None:
         return [{**proc(5, 15_000, "python -m blocked_on_io"), "started": STARTED, "cpu_s": cpu}]
     assert _passes(at, 20)["rule"] == "CLEAR"              # worked at pass 10: window restarts
     window = int(mg.STALL_WINDOW_S // 120)
-    assert _passes(at, 10 + window)["rule"] == "CLEAR"     # 28 min since the burst
+    assert _passes(at, 10 + window)["rule"] == "CLEAR"     # one pass short since the burst
     assert _passes(at, 10 + window + 1)["rule"] == "STALLED"
 
 
@@ -259,3 +259,70 @@ def test_money_path_is_never_stalled_out() -> None:
           "cpu_s": 1.0}
     prev = {"9": {"started": now - 99 * 3600, "cpu_s": 1.0, "at_ts": now - 120}}
     assert mg.plan(BOX, [gw], set(), prev=prev, now_ts=now)["stop"] is None
+
+
+def test_a_two_minute_sleep_inside_a_busy_six_hours_is_not_a_stall() -> None:
+    """Audit M3: a rate-limit backoff, robots wait or blocking fetch sleeps through a pass or
+    several; only six hours with no second of CPU on any pass is a stall."""
+    window = int(mg.STALL_WINDOW_S // 120)
+
+    def at(i: int) -> list:
+        busy = sum(5.0 for k in range(i) if k % 10 != 3)    # quiet every tenth pass
+        return [{**proc(8, 15_000, "python -m fetch_world"), "started": STARTED,
+                 "cpu_s": 100.0 + busy}]
+    assert _passes(at, window + 40)["rule"] == "CLEAR"
+    assert mg.STALL_WINDOW_S >= 6 * 3600
+
+
+MANIFEST_SAMPLE = (
+    'TASK name="MT5-Dept-Japan" trigger="at startup + every 10 minutes (keep-alive of a 24/7 '
+    'resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"\n'
+    'TASK name="MT5-Gauntlet" trigger="resident (sweeps back to back)" '
+    'runs="desks/mt5/scripts/run_sharded_gauntlet.py" installer="x" lane="research"\n'
+    'TASK name="MT5-FrontierAudit" trigger="every 1 hour" runs="ops/run_frontier_audit.cmd" '
+    'installer="x" lane="research"\n')
+
+
+def test_residents_are_read_from_the_manifest() -> None:
+    assert mg.residents(MANIFEST_SAMPLE) == {"department_resident.py", "run_sharded_gauntlet.py"}
+    real = mg.residents(mg.MANIFEST.read_text(encoding="utf-8"))
+    assert "run_sharded_gauntlet.py" in real and "department_resident.py" in real
+
+
+def test_a_sleeping_resident_is_never_stalled_but_still_capped() -> None:
+    runs = mg.residents(MANIFEST_SAMPLE)
+    now = 1_800_000_000.0
+    for cmd in (r"C:\Program Files\Python314\python.exe -B research\department_resident.py",
+                "python desks/mt5/scripts/run_sharded_gauntlet.py --shards 8",
+                "python -m libs.research.judge_resident"):      # names itself a resident
+        sleeper = {**proc(4, 6_000, cmd), "started": now - 99 * 3600, "cpu_s": 1.0}
+        prev = {"4": {"started": now - 99 * 3600, "cpu_s": 1.0, "at_ts": now - 120,
+                      "idle_since": now - 99 * 3600}}
+        assert mg.plan(BOX, [sleeper], set(), prev=prev, now_ts=now,
+                       resident_runs=runs)["rule"] == "CLEAR", cmd
+        hog = {**sleeper, "private_mb": 10**7}
+        assert mg.plan(BOX, [hog], set(), prev=prev, now_ts=now,
+                       resident_runs=runs)["rule"] == "HARD_CAP", cmd
+    lone = {**proc(5, 6_000, "python -m merge_hypotheses"), "started": now - 43 * 3600,
+            "cpu_s": 1.0}
+    prev = {"5": {"started": now - 43 * 3600, "cpu_s": 1.0, "at_ts": now - 120,
+                  "idle_since": now - 7 * 3600}}
+    assert mg.plan(BOX, [lone], set(), prev=prev, now_ts=now,
+                   resident_runs=runs)["rule"] == "STALLED"
+
+
+def test_a_short_ancestor_cannot_claim_a_task_and_two_matches_are_ambiguous() -> None:
+    py = r"C:\Program Files\Python314\python.exe"
+    tasks = [{"TaskName": "\\MT5-A", "Task To Run": py + r" C:\opt\quant\a.py"},
+             {"TaskName": "\\MT5-B", "Task To Run": py + r" C:\opt\quant\b.py"}]
+    bare = proc(6, 30_000, "x", ancestors=[{"name": "python.exe", "cmdline": [py]}])
+    bare["cmdline"] = [py]
+    assert mg.task_matches(bare, tasks) == [] and mg.owning_task(bare, tasks) is None
+    both = [{"TaskName": "\\MT5-A", "Task To Run": FRONTIER_CMD},
+            {"TaskName": "\\MT5-B", "Task To Run": FRONTIER_CMD}]
+    job = proc(7, 30_000, SCALING)
+    assert mg.task_matches(job, both) == ["\\MT5-A", "\\MT5-B"]
+    assert mg.owning_task(job, both) is None
+    rows = mg.enqueue([], job, "HARD_CAP", "leak", "2026-11-11T15:00:00+00:00", None,
+                      "owner AMBIGUOUS: 2 tasks match")
+    assert rows[0]["state"] == "GAVE_UP" and "AMBIGUOUS" in rows[0]["gave_up_why"]

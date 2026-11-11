@@ -26,7 +26,7 @@ WHAT IT DOES, every two minutes (MT5-MemoryGuard, SYSTEM):
        PRESSURE  available memory is under the floor (or commit is near its limit), in which
                  case the LARGEST research process above MIN_STOP_MB is stopped.
        STALLED   a research process older than STALL_AGE_H that used under STALL_CPU_S of CPU
-                 on EVERY pass for at least STALL_WINDOW_S (30 min, about 15 passes). That is
+                 on EVERY pass for at least STALL_WINDOW_S (6 h, about 180 passes). That is
                  a job stuck on a lock or a dead handle (the
                  merge_hypotheses pass that sat 43 h holding 15 GB of commit and an inherited
                  log handle, 2026-11-11), not a slow one: a working job burns CPU every pass.
@@ -83,7 +83,14 @@ GRACE_S = 10.0
 STALL_AGE_H = 24.0          # a research job this old ...
 STALL_CPU_S = 1.0           # ... that used less CPU than this between two passes is stuck
 STALL_MIN_GAP_S = 60.0      # consecutive readings must be at least this far apart
-STALL_WINDOW_S = 1800.0     # ... and idle on EVERY pass for at least this long (audit M3)
+STALL_WINDOW_S = 6 * 3600.0 # ... and idle on EVERY pass for at least this long (audit M3):
+#                             a rate-limit backoff, a robots wait or a blocking fetch sleeps
+#                             minutes, never six hours without one second of CPU
+MANIFEST = DESK / "ops" / "box_tasks.manifest"
+# A declared resident blocks between sweeps by design, so it is never STALLED (it is still
+# subject to HARD_CAP and PRESSURE). Declared = its box_tasks.manifest trigger says so.
+RESIDENT_TRIGGER = re.compile(r"resident|startup|start-up|logon", re.IGNORECASE)
+_TASK_ROW = re.compile(r'^TASK\s.*?trigger="([^"]*)".*?runs="([^"]*)"')
 
 PYTHON_NAMES = frozenset({"python.exe", "pythonw.exe", "python", "python3", "py.exe"})
 PROTECTED_NAMES = frozenset({"terminal64.exe", "metatester64.exe", "terminal.exe"})
@@ -183,10 +190,46 @@ def stalled(p: dict[str, Any], prev: dict[str, Any], now_ts: float) -> float | N
     return None if since is None else now_ts - since
 
 
+def _slashes(text: str) -> str:
+    return _norm(text).replace("\\", "/")
+
+
+def residents(manifest_text: str) -> set[str]:
+    """The script names of every task the box manifest declares resident (a startup or logon
+    trigger, or the word resident in its trigger), normalised for matching a cmdline."""
+    out: set[str] = set()
+    for line in manifest_text.splitlines():
+        m = _TASK_ROW.match(line.strip())
+        if m and RESIDENT_TRIGGER.search(m.group(1)):
+            run = _slashes(m.group(2))
+            if run.endswith(".py"):
+                out.add(run.rsplit("/", 1)[-1])   # box cmdlines run it from several cwds
+    return out
+
+
+def _load_residents() -> set[str]:
+    try:
+        return residents(MANIFEST.read_text(encoding="utf-8"))
+    except OSError:
+        return set()
+
+
+def is_resident(proc: dict[str, Any], resident_runs: set[str]) -> bool:
+    """True when the process or any ancestor runs a declared resident's script."""
+    for node in [proc, *(proc.get("ancestors") or [])]:
+        cmd = _slashes(node.get("cmdline"))
+        names = {tok.rsplit("/", 1)[-1] for tok in cmd.split()}
+        if names & resident_runs or any("resident" in n for n in names):
+            return True       # a script that names itself a resident declares itself one
+    return False
+
+
 def plan(snap: dict[str, Any], procs: list[dict[str, Any]],
          own_pids: set[int], prev: dict[str, Any] | None = None,
-         now_ts: float | None = None) -> dict[str, Any]:
-    """Pure decision: which one process (if any) to stop and why."""
+         now_ts: float | None = None,
+         resident_runs: set[str] | None = None) -> dict[str, Any]:
+    """Pure decision: which one process (if any) to stop and why. A declared resident is never
+    STALLED (audit M3); HARD_CAP and PRESSURE still apply to it."""
     th = thresholds(snap)
     cands = sorted((p for p in procs if is_candidate(p, own_pids)),
                    key=lambda p: -float(p.get("private_mb") or 0.0))
@@ -205,13 +248,15 @@ def plan(snap: dict[str, Any], procs: list[dict[str, Any]],
                                 f"job at {round(p['private_mb'])} MB")}
     if prev and now_ts is not None:
         for p in cands:
+            if resident_runs and is_resident(p, resident_runs):
+                continue
             idle = stalled(p, prev, now_ts)
             if idle is not None and idle >= STALL_WINDOW_S:
                 age_h = (now_ts - float(p["started"])) / 3600
                 return {"stop": p, "rule": "STALLED", "thresholds": th, "pressure": under,
                         "why": (f"pid {p['pid']} has run {age_h:.1f} h and been idle (under "
                                 f"{STALL_CPU_S:g} s of CPU per pass) on every pass for "
-                                f"{idle / 60:.0f} min while holding "
+                                f"{idle / 3600:.1f} h while holding "
                                 f"{round(float(p.get('private_mb') or 0))} MB: it is stuck, not "
                                 f"working")}
     if under:
@@ -256,6 +301,15 @@ def owning_task(proc: dict[str, Any], tasks: list[dict[str, str]]) -> str | None
     """The scheduled task that launched `proc`: the task whose "Task To Run" is the command line
     of the process or one of its ancestors. Outermost ancestor first, so a lane's cmd wins over
     a python that happens to share a prefix. None when nothing matches."""
+    names = task_matches(proc, tasks)
+    return names[0] if len(names) == 1 else None
+
+
+def task_matches(proc: dict[str, Any], tasks: list[dict[str, str]]) -> list[str]:
+    """Every task whose "Task To Run" is, or is contained in, the command line of the first node
+    (outermost ancestor first) that matches any. A short cmdline never matches by being
+    contained in a task's command, so a bare python.exe cannot claim the first python task.
+    More than one name is AMBIGUOUS and is never re-run."""
     chain = [*reversed(proc.get("ancestors") or []), proc]
     runs = [(t.get("TaskName") or "", _norm(t.get("Task To Run"))) for t in tasks]
     runs = [(n, r) for n, r in runs if n and len(r) >= 12]
@@ -263,14 +317,15 @@ def owning_task(proc: dict[str, Any], tasks: list[dict[str, str]]) -> str | None
         cmd = _norm(node.get("cmdline"))
         if len(cmd) < 12:
             continue
-        for name, run in runs:
-            if run == cmd or run in cmd or cmd in run:
-                return name
-    return None
+        hits = sorted({name for name, run in runs if run == cmd or run in cmd})
+        if hits:
+            return hits
+    return []
 
 
 def enqueue(rows: list[dict[str, Any]], proc: dict[str, Any], rule: str, why: str,
-            at: str, task: str | None) -> list[dict[str, Any]]:
+            at: str, task: str | None,
+            unresolved: str | None = None) -> list[dict[str, Any]]:
     key = task or " ".join(proc.get("cmdline") or [])
     peak = float(proc.get("private_mb") or 0)
     for r in rows:
@@ -284,8 +339,9 @@ def enqueue(rows: list[dict[str, Any]], proc: dict[str, Any], rule: str, why: st
         "last_stop_at": at, "last_rule": rule, "last_why": why, "peak_mb": peak,
         "attempts": {}}
     if task is None:
-        row.update(state="GAVE_UP", gave_up_why="owner unresolved; not re-run as SYSTEM -- no "
-                   "scheduled task launched it, so it runs again only when its owner runs it")
+        row.update(state="GAVE_UP", gave_up_why=unresolved or (
+            "owner unresolved; not re-run as SYSTEM -- no scheduled task launched it, so it "
+            "runs again only when its owner runs it"))
     rows.append(row)
     return rows
 
@@ -474,7 +530,8 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
     own = _own_pids()
     now_ts = time.time()
     prev = _load_seen()
-    decision = plan(snap, procs, own, prev=prev, now_ts=now_ts)
+    decision = plan(snap, procs, own, prev=prev, now_ts=now_ts,
+                    resident_runs=_load_residents())
     rows = load_queue()
     tasks, tasks_status = _tasks()
     running = {t.get("TaskName", "") for t in tasks
@@ -485,13 +542,17 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
     actions: list[dict[str, Any]] = []
     victim = decision.get("stop")
     if victim is not None and apply:
-        task = owning_task(victim, tasks)
+        matches = task_matches(victim, tasks)
+        task = matches[0] if len(matches) == 1 else None
+        unresolved = (f"owner AMBIGUOUS: {len(matches)} tasks match ({', '.join(matches)}); "
+                      f"not re-run" if len(matches) > 1 else None)
         res = stop(int(victim["pid"]))
         actions.append({"action": "STOP", "rule": decision["rule"], "why": decision["why"],
                         "cmdline": victim.get("cmdline"), "owner": victim.get("owner"),
                         "task": task, **res})
         if res["result"] != "GONE":
-            rows = enqueue(rows, victim, decision["rule"], decision["why"], at, task)
+            rows = enqueue(rows, victim, decision["rule"], decision["why"], at, task,
+                           unresolved)
     elif victim is None and apply and tasks_read and headroom(snap, decision["thresholds"]):
         nxt = next_requeue(rows, at, running)
         if nxt is not None:
