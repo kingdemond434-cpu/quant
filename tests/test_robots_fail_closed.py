@@ -227,12 +227,12 @@ def test_a_token_collector_row_names_the_refusal_without_the_gate(
         no_gate: None, _token_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CDSE_CLIENT_ID", "cid")
     monkeypatch.setenv("CDSE_CLIENT_SECRET", "cs-SECRET")
+    # the row's own terms decision is not what is under test here: the robots door is
+    monkeypatch.setattr(ac, "_terms_state", lambda src, url: ("confirmed", ""))
     net = _Net(monkeypatch)
     rec = ac.collect_one({"id": "cdse_catalogue", "access": "key", "key_env": "CDSE_TOKEN",
                           "url": "https://catalogue.dataspace.copernicus.eu/odata/v1/Products",
                           "expect": "json"})
-    if rec["status"] == "BLOCKED_ON_TERMS":
-        pytest.skip("the CDSE row is terms-fenced in this registry: nothing is sent either way")
     assert rec["status"] == "REFUSED_ROBOTS_UNREAD" and rec["requests"] == 0, rec
     assert net.calls == [] and "cs-SECRET" not in json.dumps(rec)
 
