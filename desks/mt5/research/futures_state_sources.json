@@ -166,7 +166,7 @@
   {
    "id": "boj_tankan",
    "adapter": "boj_tankan",
-   "terms": "HELD",
+   "terms": "OPEN",
    "url": "https://www.boj.or.jp/en/statistics/tk/index.htm",
    "api": "https://www.stat-search.boj.or.jp/api/v1",
    "db": "CO",
@@ -205,7 +205,7 @@
     "side_when_high": -1
    },
    "why": "B14 (approved 2026-10-13): spot far above large manufacturers' Tankan-assumed USDJPY gives exporters a windfall and an incentive to sell USD forward, so a high gap predicts yen strength (short USDJPY, the JPY crosses and JPN225); far below, the reverse. level_z only: the delta of a spot-over-assumption gap is the spot return, a price cell",
-   "note": "HELD (fail-closed) until a box read records the BoJ notice verbatim (URL, status, sha256, text) under reports/box_reads; the terms below are a paraphrase nobody has read from the source. BoJ Time-Series Data Search API (launched 2026-02-18; db CO = Tankan). To be used under the BoJ's 'Notice Regarding the Use of the API Service': low-frequency access only (this row is read at most once per refresh_hours, five requests), credit 'Source: Bank of Japan', no published service. The series is found by its English name in getMetadata; set series_code here if the name matches several. Release dates come from the Tankan page (past releases only); an undated survey is stamped quarter-end + 45 days, 08:50 JST"
+   "note": "OPEN on the BoJ 'Notice Regarding the Use of the API Service', read verbatim on the box 2026-11-11T10:51:38Z: https://www.stat-search.boj.or.jp/info/api_notice_en.pdf (HTTP 200, 109,822 B, sha256 7773abb22c8a863038a0926001253e4b2cc4cb3a56db234772b64bad8c8b5fd6), recorded at reports/box_reads/boj_api_notice_20261111T1051Z.md; both robots.txt 404 (absent, RFC 9309). It prohibits 'Excessive access frequency or other acts that interfere with the operation of the API' (this row: at most one read per refresh_hours, five requests); credit and a release notice to post.rsd@boj.or.jp apply when 'releasing a service', which internal research is not; it is silent on redistribution, so the lake series stay gitignored and are never published. BoJ Time-Series Data Search API (launched 2026-02-18; db CO = Tankan). The series is found by its English name in getMetadata; set series_code here if the name matches several. Release dates come from the Tankan page (past releases only); an undated survey is stamped quarter-end + 45 days, 08:50 JST"
   },
   {
    "id": "fx_options_risk_reversals",

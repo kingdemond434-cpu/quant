@@ -106,10 +106,12 @@ def _src(**over: Any) -> dict[str, Any]:
     return {**row, **over}
 
 
-def test_registry_row_is_held_low_frequency_and_names_no_code() -> None:
-    """HELD until a box read records the BoJ API notice verbatim: unread terms fail closed."""
+def test_registry_row_is_open_on_the_read_notice_low_frequency_and_names_no_code() -> None:
+    """OPEN only on the BoJ API notice read verbatim on the box, cited by URL and sha256."""
     row = _src()
-    assert row["terms"] == "HELD" and row["adapter"] == "boj_tankan"
+    assert row["terms"] == "OPEN" and row["adapter"] == "boj_tankan"
+    assert "api_notice_en.pdf" in row["note"] and "7773abb22c8a8630" in row["note"]
+    assert "boj_api_notice_20261111T1051Z.md" in row["note"]
     assert row["series_code"] is None, "the code is found by name on the box, never typed"
     assert row["refresh_hours"] >= 24
     assert row["transforms"] == ["level_z"] and "H1" not in row["charts"]
@@ -255,5 +257,5 @@ def test_a_held_row_fetches_nothing(tmp_desk: Path) -> None:
         raise AssertionError("a HELD source must not be fetched")
 
     notes: list[dict[str, Any]] = []
-    fs.tankan_collect(_src(), get, lambda u: calls.append(u) or "", {}, notes)
+    fs.tankan_collect(_src(terms="HELD"), get, lambda u: calls.append(u) or "", {}, notes)
     assert calls == []
