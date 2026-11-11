@@ -91,3 +91,27 @@ def test_only_failing_rows_carry_evidence(monkeypatch, tmp_path):
     assert rows["MT5-Bad"]["verdict"] == "FAILING"
     assert rows["MT5-Bad"]["failure_evidence"]["logs"][0]["tail"] == ["boom"]
     assert rows["MT5-Good"]["failure_evidence"] is None
+
+
+def test_auditor_leak_paths_are_masked():
+    fred = "0123456789abcdef0123456789abcdef"
+    sha40 = "442dfd6a8" + "0" * 31
+    for line, leaked in ((f"GET /series/{fred}/obs", fred),
+                         ("x " + "ab" * 32, "ab" * 32),
+                         ("equity 98765.43", "98765.43"),
+                         ("balance=$12,345.67", "12,345.67"),
+                         ("profit 512 today", "512"),
+                         ("login 20512345", "20512345"),
+                         ("account: 4412", "4412"),
+                         ("took 3.14159 s", "3.14159")):
+        assert leaked not in ph.redact_line(line), line
+    kept = ph.redact_line(f"sha {sha40} short 442dfd6a8 on 20261111")
+    assert sha40 in kept and "442dfd6a8" in kept and "20261111" in kept
+
+
+def test_money_path_tasks_publish_no_tail(tmp_path):
+    log = tmp_path / "g.log"
+    log.write_text("equity 1\n", "utf-8")
+    for name in ("\\MT5-Gateway", "\\MT5-FTMO-Allocator", "\\MT5-E8-OcoWatch"):
+        ev = ph.failure_evidence({"TaskName": name, "Task To Run": f"py x.py >> {log} 2>&1"})
+        assert ev["state"] == "WITHHELD" and "logs" not in ev

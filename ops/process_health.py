@@ -459,21 +459,48 @@ _LONG_DIGITS = re.compile(r"\b\d{7,}\b")
 _LAST_RUN_FORMATS = ("%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m/%d/%Y %I:%M:%S %p")
 
 
+_SHA_SHAPE = re.compile(r"[0-9a-f]{7,12}|[0-9a-f]{40}")
+_MONEY_LINE = re.compile(r"(?i)balance|equity|profit|pnl|p/l|margin|usd|eur|gbp|\$|€|£|drawdown")
+_ANY_NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+_DECIMAL_2 = re.compile(r"\b\d[\d,]*\.\d{2,}\b")
+_ACCOUNT_NUMBER = re.compile(r"(?i)\b(login|account|acct)(\W{0,3})\d{4,}")
+#: Tasks on the money path never publish a tail, only that they failed and with which code.
+MONEY_PATH_TASK = re.compile(r"(?i)gateway|allocator|executor|oco|money_closure|order_door|e8|ftmo")
+
+
+def _real_date(digits: str) -> bool:
+    if len(digits) != 8 or not ("2020" <= digits[:4] <= "2030"):
+        return False
+    try:
+        date(int(digits[:4]), int(digits[4:6]), int(digits[6:]))
+    except ValueError:
+        return False
+    return True
+
+
 def redact_line(line: str) -> str:
-    """One log line made safe to publish: secret assignments, long opaque tokens and long digit
-    runs (account logins) are masked. A git sha or an 8-digit date stays readable."""
+    """One log line made safe to publish: secret assignments, long opaque tokens (every hex
+    length but a git sha's), account numbers, money figures and long digit runs are masked.
+    A git sha (7-12 or 40 hex) and a real 2020-2030 YYYYMMDD date stay readable."""
     line = _SECRET_ASSIGN.sub(lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}[REDACTED]", line)
+    line = _ACCOUNT_NUMBER.sub(lambda m: f"{m.group(1)}{m.group(2)}[N]", line)
 
     def _tok(m: re.Match[str]) -> str:
         t = m.group(0)
-        if re.fullmatch(r"[0-9a-f]{7,64}", t) or not (re.search(r"\d", t)
-                                                      and re.search(r"[A-Za-z]", t)):
+        if _SHA_SHAPE.fullmatch(t):
             return t
-        return "[REDACTED]"
+        if re.fullmatch(r"[0-9a-fA-F]+", t) or (re.search(r"\d", t) and re.search(r"[A-Za-z]", t)):
+            return "[REDACTED]"
+        return t
 
     line = _LONG_TOKEN.sub(_tok, line)
-    line = _LONG_DIGITS.sub(lambda m: m.group(0) if re.fullmatch(r"20\d{6}", m.group(0))
-                            else "[N]", line)
+    line = re.sub(r"\b[0-9a-fA-F]{13,39}\b|\b[0-9a-fA-F]{41,}\b",
+                  lambda m: m.group(0) if not re.search(r"[a-fA-F]", m.group(0))
+                  else "[REDACTED]", line)
+    if _MONEY_LINE.search(line):
+        line = _ANY_NUMBER.sub(lambda m: m.group(0) if _real_date(m.group(0)) else "[N]", line)
+    line = _DECIMAL_2.sub("[N]", line)
+    line = _LONG_DIGITS.sub(lambda m: m.group(0) if _real_date(m.group(0)) else "[N]", line)
     return line[:TAIL_LINE_CHARS]
 
 
@@ -558,6 +585,9 @@ def log_tail(path: Path, last_run: str = "") -> dict[str, Any]:
 def failure_evidence(task: dict[str, str]) -> dict[str, Any]:
     """Why a FAILING task failed, as far as its own logs say."""
     command = str(task.get("Task To Run") or "")
+    if MONEY_PATH_TASK.search(str(task.get("TaskName") or "") + " " + command):
+        return {"state": "WITHHELD", "why": "money-path task: only its failure and exit code "
+                "are published, never its log"}
     targets = redirect_targets(command, str(task.get("Start In") or ""))
     last_run = str(task.get("Last Run Time") or "")
     # A -File wrapper that logs for itself names no file on its command line; the desk's own
