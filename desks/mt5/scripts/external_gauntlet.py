@@ -1982,6 +1982,14 @@ def cache_save(key: str, ds1, ds3) -> None:
             print(f"  CACHE SAVE FAILING ({type(exc).__name__}: {exc}) -- sweeps will run at "
                   f"cold speed until this is fixed; reporting once, not per cell")
 
+def _warm_one_timed(spec: dict, meta: dict) -> dict:
+    """`_warm_one`, with the worker's own seconds on the result (see `_cost`). Report-only."""
+    t0 = time.time()
+    out = _warm_one(spec, meta)
+    out["seconds"] = round(time.time() - t0, 3)
+    return out
+
+
 def _warm_one(spec: dict, meta: dict) -> dict:
     """Build ONE cell's series pair into the on-disk cache. Runs in a worker process.
 
@@ -2032,6 +2040,43 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         return out
 
 
+#: WHERE THE BUILD BUDGET GOES, PER FAMILY (2026-11-11). REPORT-ONLY. The pre-warm is most of a
+#: sweep's wall (10,797 s of the 11-10 21:02 sweep) and its rate fell 5.3 -> 3.7 -> 2.2 cells/s
+#: over three sweeps with 190k-288k cells unreached each time, yet nothing said which families
+#: spend the seconds. Each worker now times its own cell and the pool sums worker-seconds per
+#: status and per family (n, total, max), published under `result["prewarm"]`. Nothing reads it
+#: to decide anything: the order, the deadline and every verdict are unchanged.
+PREWARM_COST_TOP = 40
+
+
+def _cost(summary: dict, spec: dict, status: str, seconds: object) -> None:
+    try:
+        sec = float(seconds)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return
+    ws = summary["worker_seconds"]
+    ws[status] = round(ws.get(status, 0.0) + sec, 3)
+    fam = str(spec.get("family") or "")
+    row = summary["by_family"].setdefault(fam, {"n": 0, "s": 0.0, "max_s": 0.0, "warmed": 0})
+    row["n"] += 1
+    row["s"] = round(row["s"] + sec, 3)
+    row["max_s"] = max(row["max_s"], round(sec, 3))
+    if status == "WARMED":
+        row["warmed"] += 1
+
+
+def _top_families(by_family: dict, k: int = PREWARM_COST_TOP) -> dict:
+    """The `k` families spending the most worker-seconds, plus one `_rest` row for the others."""
+    ranked = sorted(by_family.items(), key=lambda kv: -kv[1]["s"])
+    out = {f: dict(r, mean_s=round(r["s"] / r["n"], 3) if r["n"] else None)
+           for f, r in ranked[:k]}
+    rest = ranked[k:]
+    if rest:
+        out["_rest"] = {"families": len(rest), "n": sum(r["n"] for _, r in rest),
+                        "s": round(sum(r["s"] for _, r in rest), 3)}
+    return out
+
+
 def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
 
@@ -2060,7 +2105,8 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
                "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
-               "built_symbols": set()}
+               "built_symbols": set(), "worker_seconds": {}, "by_family": {},
+               "drain_seconds": None}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
@@ -2072,7 +2118,7 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
             sp = next(it, None)
             if sp is None:
                 return False
-            _fut = pool.submit(_warm_one, sp, meta)
+            _fut = pool.submit(_warm_one_timed, sp, meta)
             pending[_fut] = sp
             pending_spec[_fut] = sp
             summary["submitted"] += 1
@@ -2098,6 +2144,7 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                 except Exception as exc:
                     r = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
                 st = str(r.get("status") or "ERROR")
+                _cost(summary, pending_spec.get(f) or {}, st, r.get("seconds"))
                 if st == "WARMED":
                     summary["warmed"] += 1
                     # WARMED only, never HIT: the cursor records when a symbol's cells were last
@@ -2117,6 +2164,7 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                     reasons[reason] = reasons.get(reason, 0) + 1
                 if time.time() <= deadline:
                     _submit_next()
+    summary["drain_seconds"] = round(max(0.0, time.time() - deadline), 1)
     summary["unreached"] += sum(1 for _ in it)
     summary["seconds"] = round(time.time() - t0, 1)
     print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
@@ -2125,6 +2173,10 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
           + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
     if summary["failure_reasons"]:
         print(f"PRE-WARM failure reasons: {summary['failure_reasons']}", flush=True)
+    summary["by_family"] = _top_families(summary["by_family"])
+    print(f"PRE-WARM cost: worker-seconds by status {summary['worker_seconds']}; drain after "
+          f"the deadline {summary['drain_seconds']}s; top families "
+          f"{ {f: r['s'] for f, r in list(summary['by_family'].items())[:10]} }", flush=True)
     return summary
 
 
