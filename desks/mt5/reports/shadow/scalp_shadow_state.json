@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-10T22:44:35+00:00",
+  "updated_at": "2026-11-11T00:18:31+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
@@ -56,7 +56,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-10T23:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
+      "source_trading_lag_hours": 1.0,
       "source_stale": false,
       "promotion_authority": false,
       "note": "Fusion-native forward shadow.",
@@ -99,7 +99,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-10T23:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
+      "source_trading_lag_hours": 1.0,
       "source_stale": false,
       "promotion_authority": true,
       "note": "Fusion-native forward shadow."
@@ -141,7 +141,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-10T23:30:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
+      "source_trading_lag_hours": 1.0,
       "source_stale": false,
       "promotion_authority": true,
       "note": "Fusion-native forward shadow."
@@ -183,7 +183,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-10T23:30:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 0.0,
+      "source_trading_lag_hours": 1.0,
       "source_stale": false,
       "promotion_authority": true,
       "note": "Fusion-native forward shadow."
