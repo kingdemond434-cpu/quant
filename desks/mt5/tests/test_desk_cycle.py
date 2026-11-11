@@ -394,3 +394,13 @@ def test_the_end_row_carries_the_enforced_misses_not_the_agents_claim() -> None:
     for field in ("duties_missed", "pass_questions_missed", "judging_sweep_missed"):
         assert f"{field} = $enforced.{field}" in src, field
     assert 'duties_missed = "UNMEASURED"' in src
+
+
+def test_the_retired_midnight_lane_is_never_re_registered() -> None:
+    """2026-11-11 (CRO): the Codex midnight lane is retired; the installer defaults to noon and
+    refuses midnight/both before any Register-ScheduledTask runs."""
+    src = _cro_installer()
+    assert "[string] $Lane = 'noon'" in src
+    guard = src.index("if ($Lane -ne 'noon')")
+    assert "throw" in src[guard:guard + 300]
+    assert guard < src.index("Register-ScheduledTask")
