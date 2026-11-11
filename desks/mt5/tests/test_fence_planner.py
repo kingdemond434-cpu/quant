@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -191,7 +191,8 @@ def test_one_pending_event_is_unmeasured(tmp_path):
             return t - timedelta(hours=3)
     doc = fmt.run(evs=[_ev()], bars_for=lambda s: _bars({}, end="2026-10-29 09:00"),
                   out=tmp_path / "m.jsonl", summary=tmp_path / "s.json", clock=Clock,
-                  directions={}, cert={})
+                  directions={}, cert={},
+                  now=datetime(2026, 10, 29, 12, 0, tzinfo=UTC))
     assert doc["verdict"] == "UNMEASURED" and doc["pending_count"] == 1
     assert doc["priced_rows"] == 0
 
