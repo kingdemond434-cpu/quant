@@ -142,3 +142,11 @@ def test_every_matching_user_agent_group_is_combined() -> None:
     assert robots_allows(rules, "https://h/c")          # '*' does not apply when we are named
     star = robots_rules("User-agent: *\nDisallow: /x\n\nUser-agent: *\nDisallow: /y\n")
     assert not robots_allows(star, "https://h/x") and not robots_allows(star, "https://h/y")
+
+
+def test_agent_group_matches_the_whole_product_token_only() -> None:
+    txt = "User-agent: research\nDisallow: /\n\nUser-agent: *\nDisallow: /x\n"
+    rules = robots_rules(txt)
+    assert robots_allows(rules, "https://h/a") and not robots_allows(rules, "https://h/x")
+    named = robots_rules("User-agent: Quant-Research/2.0\nDisallow: /a\n")
+    assert not robots_allows(named, "https://h/a")

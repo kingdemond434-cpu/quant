@@ -72,12 +72,22 @@ def robots_rules(txt: str, agent: str = "quant-research") -> Rules:
     # RFC 9309 s2.2.1: EVERY group that matches the product token is combined (a Disallow in a
     # second matching group must bind; taking only the first failed open). The '*' groups,
     # likewise combined, apply only when no group names the agent.
-    a = agent.lower()
-    named = [r for agents, rules in groups if any(x != "*" and x in a for x in agents)
+    # A group names us only on the WHOLE product token, case-insensitively (s2.2.1): never a
+    # substring, so "User-agent: quant" does not bind "quant-research".
+    a = product_token(agent)
+    named = [r for agents, rules in groups if a and any(product_token(x) == a for x in agents)
              for r in rules]
-    if any(any(x != "*" and x in a for x in agents) for agents, _ in groups):
+    if a and any(product_token(x) == a for agents, _ in groups for x in agents):
         return named
     return [r for agents, rules in groups if "*" in agents for r in rules]
+
+
+def product_token(agent: str) -> str:
+    """The product token of a User-Agent string or a robots.txt user-agent line, lower-cased:
+    the leading run of letters, '_' and '-' (RFC 9309 s2.2.1), so "Quant-Research/1.0 (x)"
+    and "quant-research" are the same token. '*' yields ''."""
+    m = re.match(r"[A-Za-z_-]+", (agent or "").strip())
+    return m.group(0).lower() if m else ""
 
 
 def robots_allows(rules: Rules, url: str) -> bool:
