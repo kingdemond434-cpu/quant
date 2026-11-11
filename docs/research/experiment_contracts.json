@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "sleeve_forecasts": {
+   "hypothesis": "Keeping every sleeve's posterior forecast before its outcome and scoring it tells whether the allocator's beliefs are calibrated, and names the sleeves whose outcomes run worse than forecast with anytime-valid cross-sleeve error control.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_scored",
+    "better": "up",
+    "organ": "report:SLEEVE_FORECASTS.json"
+   },
+   "falsifier": {
+    "metric": "n_scored",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days: no published forecast ever matured and was scored"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
