@@ -86,6 +86,12 @@ OUT = DESK / "reports" / "E8_GOLD.json"
 INTENTS = DESK / "data" / "e8_gold_intents.jsonl"
 ARMED_MARKER = DESK / "data" / "E8_GOLD_ARMED"
 GUARD = DESK / "data" / "e8_guard_state.json"
+#: THE ABSENT-KEY DOOR'S RELEASE ROW (2026-11-11). While `context/decision_journal.jsonl` holds a
+#: row with this id, a gold window an ENABLED cert book does not name is sized at the fresh
+#: survival solve's fraction (reports/KELLY_SURVIVAL.json e8, the same file `run` reads) instead
+#: of 0.0. Without the row the enabled book stays a whitelist, exactly as before.
+DECISION_JOURNAL = DESK.parent.parent / "context" / "decision_journal.jsonl"
+ABSENT_KEY_DOOR_ROW = "D-20261111-071"
 LOG = DESK / "logs" / "e8_gold.log"
 TAG = "E8gold"
 #: XAUUSD's price grid, used only when the terminal cannot state `trade_tick_size`.
@@ -164,9 +170,69 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     return RISK_FRAC, "policy RISK_FRAC"
 
 
+def absent_key_door_open(path: Path | None = None) -> bool:
+    """True when the decision journal holds release row `ABSENT_KEY_DOOR_ROW`. An absent or
+    unreadable journal, or a torn line, is no row: the door stays shut (today's behaviour)."""
+    try:
+        lines = (path or DECISION_JOURNAL).read_text(encoding="utf-8-sig").splitlines()
+    except OSError:
+        return False
+    for line in lines:
+        if ABSENT_KEY_DOOR_ROW not in line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("id") == ABSENT_KEY_DOOR_ROW:
+            return True
+    return False
+
+
+def resolve_book(solve: dict[str, float] | None, cert_raw: dict[str, float] | None,
+                 *, door: bool) -> tuple[dict[str, float], dict[str, float], dict[str, str],
+                                         dict[str, str], dict[str, float]]:
+    """(kelly, cert, absent, void, doored): each gold window's fraction before the principal's
+    pins and the code ceiling. Pure.
+
+    `solve` is `load_kelly_survival(KELLY_FILE, "e8")` -- None or {} when the file is absent,
+    stale or not OK. A void book (`cert_raw` None) zeroes every window. An enabled book overrides
+    the solve per named key (an explicit 0.0 stays 0.0); an UNNAMED key stands aside at 0.0,
+    unless `door` is open AND the fresh solve names that window, in which case it is sized at the
+    solve's fraction (`doored`). Door open but no fresh fraction: 0.0, billed RAIL_BLOCKED with
+    the reason. Never a guess, never RISK_FRAC.
+    """
+    cert = cert_gold_windows(cert_raw)
+    kelly: dict[str, float] = {**(solve or {}), **cert}
+    absent: dict[str, str] = {}
+    void: dict[str, str] = {}
+    doored: dict[str, float] = {}
+    if cert_raw is None:
+        for _w, _h, _r in GOLD_WINDOWS:
+            void[_w] = ("the cert book is void (CERT_BOOK_LIVE.json absent, unreadable, disabled, "
+                        "e8 block missing or a value out of range); stands aside at 0 -- no "
+                        "Kelly or RISK_FRAC fallback on E8")
+        return {**kelly, **dict.fromkeys(void, 0.0)}, cert, absent, void, doored
+    for _w, _h, _r in GOLD_WINDOWS:
+        if _w in cert:
+            continue
+        v = (solve or {}).get(_w)
+        if door and v is not None and v == v and float(v) >= 0.0:
+            doored[_w] = float(v)
+        elif door:
+            absent[_w] = (f"absent from the enabled cert book (no gold_{_w}) and the absent-key "
+                          f"door ({ABSENT_KEY_DOOR_ROW}) has no fresh survival-solve fraction "
+                          f"for it (KELLY_SURVIVAL.json e8 missing, stale or not OK); stands aside")
+        else:
+            absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
+                          f"gold_{_w}); stands aside")
+    return ({**kelly, **doored, **dict.fromkeys(absent, 0.0)}, cert, absent, void, doored)
+
+
 def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None,
                    absent: dict[str, str] | None, pinned: dict[str, float] | None,
-                   void: dict[str, str] | None = None) -> dict[str, str]:
+                   void: dict[str, str] | None = None,
+                   doored: dict[str, float] | None = None) -> dict[str, str]:
     """{window: where its risk fraction came from}. Pure. Precedence matches the merge in `run`:
     `pinned_zero` (decision_core.PRINCIPAL_ZERO["e8"]) > `cert_book_void` (no readable book: 0.0)
     > `cert_book_absent` (an enabled book that does not name the window: 0.0) > `cert_book` >
@@ -182,6 +248,8 @@ def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None
             out[name] = "cert_book_absent"
         elif name in (cert or {}):
             out[name] = "cert_book"
+        elif name in (doored or {}):
+            out[name] = "absent_key_door"
         elif name in (solve or {}):
             out[name] = "kelly_survival"
         else:
@@ -1150,9 +1218,6 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
     _cert_raw = load_cert_book(CERT_BOOK_FILE, "e8")
-    cert = cert_gold_windows(_cert_raw)
-    if cert:
-        kelly = {**(kelly or {}), **cert}
     # AN ENABLED BOOK IS A WHITELIST FOR THE GOLD WINDOWS (audit hourly pass 15): a window the
     # loaded book does not name stands aside at 0.0, never RISK_FRAC -- a book writer that drops a
     # key must not reopen a window. This holds for gold_asia too: asia must be named to trade.
@@ -1160,20 +1225,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # or one value out of range names no window -- Fix B's own rule -- so no KELLY_SURVIVAL solve
     # (its grid reaches 0.015) and no RISK_FRAC (not a certified number) may size E8 instead.
     # Each window is billed `cert_book_void` with its missed-growth line.
-    absent: dict[str, str] = {}
-    void: dict[str, str] = {}
-    if _cert_raw is None:
-        for _w, _h, _r in GOLD_WINDOWS:
-            void[_w] = ("the cert book is void (CERT_BOOK_LIVE.json absent, unreadable, disabled, "
-                        "e8 block missing or a value out of range); stands aside at 0 -- no "
-                        "Kelly or RISK_FRAC fallback on E8")
-        kelly = {**(kelly or {}), **dict.fromkeys(void, 0.0)}
-    else:
-        for _w, _h, _r in GOLD_WINDOWS:
-            if _w not in cert:
-                absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
-                              f"gold_{_w}); stands aside")
-        kelly = {**(kelly or {}), **dict.fromkeys(absent, 0.0)}
+    # THE ABSENT-KEY DOOR (ABSENT_KEY_DOOR_ROW in the decision journal): an unnamed window takes
+    # the FRESH solve's fraction, then the same pins, ceiling, guard and room check as any other.
+    kelly, cert, absent, void, doored = resolve_book(
+        _solve, _cert_raw, door=absent_key_door_open())
     # THE PRINCIPAL'S ZEROS NEED NO FILE (decision_core.PRINCIPAL_ZERO["e8"], audit r5 must-fix
     # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
     # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
@@ -1202,9 +1257,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # WHERE EACH WINDOW'S NUMBER CAME FROM (r6): one label per window, never one for the lane --
     # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
     # A VOID cert book is `cert_book_void` for every unpinned window (r7; see above).
-    sources = window_sources(_solve, cert, absent, pinned, void)
+    sources = window_sources(_solve, cert, absent, pinned, void, doored)
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
+                "absent_key_door": doored or None,
                 "sizing_source": sources,
                 "kelly_risk": kelly,
                 "e8_cert_ceiling": {"ceiling": E8_CERT_CEILING, "cut": ceilinged}})
