@@ -4395,10 +4395,12 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             srec.pop("open_ttl_until", None)
 
 
-def _sleeve_positions(symbol: str, name: str) -> list:
-    """Open positions this sleeve owns: the order comment is the sleeve's tag."""
+def _sleeve_positions(symbol: str, name: str, *, in_roster: bool = True) -> list:
+    """Open positions this sleeve owns: the order comment is the sleeve's tag. An OFF-roster
+    name passes in_roster=False, so a legacy tag a roster sleeve still carries is never its."""
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
-            if owns(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None), name)]
+            if owns(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None), name,
+                    in_roster=in_roster)]
 
 
 def close_retired_positions(st: dict) -> None:
@@ -4468,9 +4470,10 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
     every other close here; the roster's own sleeves are left to their own loop.
     """
     on_roster = {str(s.get("name") or "") for s in sleeves}
-    # order_comment cuts a tag to COMMENT_MAX, so an off-roster name can share its tag with a
-    # LIVE row (the *_principal_20261007 gap-decay rows did). Closing by that tag would take the
-    # live sleeve's position on the retired name's deadline: a shared tag is never closed here.
+    # A plain-truncated tag could be shared by an off-roster name and a LIVE row (the
+    # *_principal_20261007 gap-decay rows were). Closing by that tag would take the live
+    # sleeve's position on the retired name's deadline: a shared tag is never closed here. Tags
+    # are unique now, so this guards a hash collision; legacy tags are judged by `owns` below.
     roster_tags = {order_comment(n) for n in on_roster if n}
     gstate = st.get("generic") or {}
     now_iso = datetime.now(tz=UTC).isoformat()
@@ -4484,19 +4487,23 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
             srec.pop("open_ttl_until", None)
             continue
+        # Ownership, not one tag: since tags became unique (2026-10-13) a position this name
+        # opened earlier wears its LEGACY tag, which is read only while no roster sleeve carries
+        # it (in_roster=False) -- else by the ticket's own intent -- exactly as the retired close.
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if owns(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None),
+                        str(name), in_roster=False)]
         for symbol in sorted({str(p.symbol) for p in held}):
             _book_target(str(name), symbol, 0.0, "ttl")
             if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
                 log(f"[{name}] OFF-ROSTER TTL: closing its {symbol} position(s)")
-                close_sleeve_positions(st, symbol, str(name))
+                close_sleeve_positions(st, symbol, str(name), in_roster=False)
             else:
                 log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
         srec.pop("open_ttl_until", None)
 
 
-def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
+def close_sleeve_positions(st: dict, symbol: str, name: str, *, in_roster: bool = True) -> None:
     """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
 
     `close_positions` closes every position on the symbol, which on XAUUSD would take the armed
@@ -4505,7 +4512,7 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
     if not st.get("armed"):
         log(f"[{name}] SHADOW would close its open position(s)")
         return
-    for p in _sleeve_positions(symbol, name):
+    for p in _sleeve_positions(symbol, name, in_roster=in_roster):
         tick = mt5.symbol_info_tick(symbol)
         if tick is None:
             continue

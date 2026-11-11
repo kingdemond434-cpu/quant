@@ -1728,22 +1728,28 @@ def test_a_refused_sleeve_still_gets_its_time_exit(tmp_path) -> None:
 
 
 def test_an_off_roster_name_sharing_a_live_rows_tag_is_never_ttl_closed(tmp_path) -> None:
-    """order_comment truncates to COMMENT_MAX: a retired name and a LIVE row can share one tag.
-    The retired name's expired deadline must never close the live sleeve's position."""
+    """A retired name and a LIVE row once shared one plain-truncated tag. Tags are unique now,
+    but positions opened before carry the LEGACY tag both names share: the retired name's
+    expired deadline must close neither the live row's new-tag position nor a legacy one."""
     live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
     retired = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a"
     sent: list[dict] = []
     logs: list[str] = []
     booked: list[tuple] = []
     ns = _refused_ns([], sent, logs, booked, tmp_path)
-    assert ns["order_comment"](live) == ns["order_comment"](retired)
+    assert ns["order_comment"](live) != ns["order_comment"](retired)
+    shared = ns["legacy_order_comment"](live)
+    assert shared == ns["legacy_order_comment"](retired)
     book = [SimpleNamespace(ticket=907, type=0, volume=0.02, symbol="AUDCHF",
-                            comment=ns["order_comment"](live))]
+                            comment=ns["order_comment"](live)),
+            SimpleNamespace(ticket=908, type=0, volume=0.02, symbol="AUDCHF", comment=shared)]
     ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    roster = [{"name": live, "symbol": "AUDCHF"}]
+    ns["note_roster_tags"](roster)
     st = {"armed": True, "generic": {retired: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
-    ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
+    ns["close_refused_sleeve_ttls"](st, roster)
     assert sent == [] and booked == []
-    assert any("shared with a roster sleeve" in x for x in logs)
+    assert "open_ttl_until" not in st["generic"][retired]
 
 
 def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:
