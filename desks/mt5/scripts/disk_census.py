@@ -45,7 +45,11 @@ REPORT = BASE / "reports" / "DISK_CENSUS.json"
 #: The history is what turns "the disk is full" into "this directory grew N GB since yesterday".
 HISTORY = BASE / "reports" / "DISK_CENSUS_HISTORY.jsonl"
 HISTORY_TOP = 40          # rows per history entry: the 40 largest trees carry the story
-HISTORY_KEEP = 24 * 30    # entries kept (a month at the 6 h cadence is 120; generous ceiling)
+#: Retention (Auditor should-fix on #880): the box sync refuses files over 4 MB, so the history
+#: keeps only a tail -- entries from the last HISTORY_DAYS, and never more than HISTORY_KEEP rows
+#: (a month at the 6 h cadence is 120; ~4 KB each keeps the file well under 1 MB).
+HISTORY_DAYS = 31
+HISTORY_KEEP = 150
 
 REFETCHABLE, SYSTEM, IRREPLACEABLE, REVIEW = "REFETCHABLE", "SYSTEM", "IRREPLACEABLE", "REVIEW"
 
@@ -247,7 +251,11 @@ def growth(history: list[dict[str, Any]], now_row: dict[str, Any],
 
 
 def append_history(row: dict[str, Any], path: Path = HISTORY) -> None:
-    rows = [*read_history(path)[-(HISTORY_KEEP - 1):], row]
+    now_t = _parse(row.get("at"))
+    kept = [r for r in read_history(path)
+            if now_t is None or (t := _parse(r.get("at"))) is None
+            or (now_t - t).total_seconds() <= HISTORY_DAYS * 86400]
+    rows = [*kept[-(HISTORY_KEEP - 1):], row]
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".jsonl.tmp")
     tmp.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), "utf-8")

@@ -111,3 +111,17 @@ def test_wired_as_core_hourly_leg() -> None:
     assert "disk_census" in contracts["legs"]
     src = (BASE / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_producer("disk_census", "scripts/disk_census.py", "--min-age-h", "6")' in src
+
+
+def test_history_keeps_only_a_month_tail_under_the_sync_cap(tmp_path: Path) -> None:
+    h = tmp_path / "H.jsonl"
+    t0 = datetime(2026, 9, 1, tzinfo=UTC)
+    top = {f"C:/opt/quant/some/fairly/long/directory/path/number_{i:03d}": 12.34 for i in range(40)}
+    for i in range(400):                      # 100 days at the 6 h cadence
+        dc.append_history(_row(t0 + timedelta(hours=6 * i), float(i), top), h)
+    rows = dc.read_history(h)
+    newest = datetime.fromisoformat(rows[-1]["at"])
+    assert all((newest - datetime.fromisoformat(r["at"])).days <= dc.HISTORY_DAYS for r in rows)
+    assert len(rows) <= dc.HISTORY_KEEP
+    assert h.stat().st_size < 1024 * 1024    # far under the box sync's 4 MB refusal
+
