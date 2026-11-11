@@ -1,5 +1,5 @@
 {
- "_note": "SYNTHETIC fixture shaped like a Banxico SIE reply (series/<ids>/datos/<from>/<to>): bmx.series[].{idSerie,titulo,datos[].{fecha DD/MM/YYYY,dato}}. Values are invented, not Banxico data. SF99999 stands for a configured FX-commission series.",
+ "_note": "SYNTHETIC fixture shaped like a Banxico SIE reply (series/<ids>/datos/<from>/<to>): bmx.series[].{idSerie,titulo,datos[].{fecha DD/MM/YYYY,dato}}. Values are invented, not Banxico data. SF99999 stands for a series the row did not ask for (dropped).",
  "bmx": {
   "series": [
    {
@@ -94,7 +94,7 @@
    },
    {
     "idSerie": "SF99999",
-    "titulo": "Configured FX-commission series (synthetic)",
+    "titulo": "A series the row did not ask for (synthetic)",
     "datos": [
      {
       "fecha": "08/05/2026",

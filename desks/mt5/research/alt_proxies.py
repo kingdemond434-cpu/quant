@@ -1437,20 +1437,11 @@ def parse_inegi_bie(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
-#: Banxico SIE series the desk names itself; any other configured id is published as sie_<id>.
+#: Banxico SIE series this row reads, id -> the desk's series name. An id is added here only
+#: after it was read from the SIE catalogue itself; none is guessed and none comes from the
+#: environment.
 BANXICO_SERIES = {"SF43707": "reserves_usd_mn"}
 _SIE_ID = re.compile(r"^S[A-Z]\d{3,7}$")
-
-
-def banxico_series_ids(environ: Any = None) -> list[str]:
-    """SF43707 (international reserves) plus the ids in ALT_BANXICO_FX_SERIES, comma separated:
-    the Comision de Cambios intervention and auction series, read from the SIE catalogue on the
-    box. An entry that is not shaped like a SIE id is dropped, never sent."""
-    env: Any = os.environ if environ is None else environ
-    extra = [x.strip().upper() for x in str(env.get("ALT_BANXICO_FX_SERIES") or "").split(",")]
-    out = list(BANXICO_SERIES)
-    out += [x for x in extra if _SIE_ID.match(x) and x not in out]
-    return out[:20]
 
 
 def parse_banxico_sie(body: bytes, ctx: Ctx) -> list[Obs]:
@@ -1468,7 +1459,9 @@ def parse_banxico_sie(body: bytes, ctx: Ctx) -> list[Obs]:
         sid = str(item.get("idSerie") or "").upper()
         if not _SIE_ID.match(sid):
             continue
-        name = BANXICO_SERIES.get(sid, f"sie_{sid.lower()}")
+        name = BANXICO_SERIES.get(sid)
+        if name is None:
+            continue                     # a series this row did not ask for
         for o in item.get("datos") or []:
             if not isinstance(o, dict):
                 continue
@@ -1763,6 +1756,9 @@ class Source:
     #: When set, the key travels in THIS request header and never in the URL (Banxico's
     #: Bmx-Token), so no URL the desk logs, vaults or prints can carry it.
     key_header: str = ""
+    #: When set, `key_env` names an ENTRY of this file under data/secrets/ (read through the
+    #: country lanes' own loader) instead of an environment variable.
+    key_secret_file: str = ""
     series_instruments: dict[str, dict[str, int]] = field(default_factory=dict)
     note: str = ""
     #: A local read in place of a fetch (a series another organ already fetches).
@@ -2004,7 +2000,7 @@ SOURCES: tuple[Source, ...] = (
              "{from}/{to}"),
         region="MX", language="es", cadence="weekly", parse=parse_banxico_sie,
         rule=_lag_rule(6, 0, weekday=True), transform="level_dev",
-        key_env="BANXICO_TOKEN", key_header="Bmx-Token",
+        key_env="banxico_token", key_secret_file="latam_apis.json", key_header="Bmx-Token",
         instruments={"USDMXN": -1},
         signal_series=("reserves_usd_mn",),
         mechanism=("the central bank's own balance sheet is the footprint of the FX commission "
@@ -2025,18 +2021,18 @@ SOURCES: tuple[Source, ...] = (
                                  "weekly balance prints days after the flow"),
         crowding_prior="medium", vintage="current",
         note=("Source: Banco de México, SIE, https://www.banxico.org.mx/SieAPIRest/service/v1/ "
-              "(terms read from the box 2026-11-11). The token travels in the Bmx-Token header "
-              "from BANXICO_TOKEN and never in a URL, a log or the vault. One historical-range "
-              "request a pass (quota 200 per 5 minutes, 10,000 a day). An over-quota reply (HTTP "
-              "400 carrying secondsToReset) and any 401/403/429/451 STOP the source until the "
-              "reset; nothing retries into a blocked token. SF43707 is the weekly international "
-              "reserve (USD millions) in the bank's statement of account, as of Friday and "
-              "published the following Tuesday; the 6-day weekday rule is after that. The FX "
-              "intervention and auction series have NO default ids: none could be verified "
-              "from an official page without the token, and an id is never guessed. Read them "
-              "from the SIE catalogue on the box and list them in ALT_BANXICO_FX_SERIES (comma "
-              "separated); each is published as sie_<id>. SIE serves the current vintage only, "
-              "so the first history fetch is stamped vintage=current")),
+              "(terms read from the box 2026-11-11). The token is the `banxico_token` entry of "
+              "data/secrets/latam_apis.json, the same credential the Latin America data plane "
+              "uses; it travels in the Bmx-Token header and never in a URL, a log or the vault. "
+              "One historical-range request a pass (quota 200 per 5 minutes, 10,000 a day). An "
+              "over-quota reply (HTTP 400 carrying secondsToReset) and any 401/403/429/451 STOP "
+              "the source until the reset; nothing retries into a blocked token. SF43707 is the "
+              "weekly international reserve (USD millions) in the bank's statement of account, "
+              "as of Friday and published the following Tuesday; the 6-day weekday rule is "
+              "after that. The series read are the BANXICO_SERIES constants: an FX-commission "
+              "intervention or auction id is added there only after it is read from the SIE "
+              "catalogue, never guessed. SIE serves the current vintage only, so the first "
+              "history fetch is stamped vintage=current")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -3285,6 +3281,27 @@ CONFIG_DEFAULTS: dict[str, str] = {
 }
 
 
+#: Where a `key_secret_file` lives. Its values never leave this box and are never printed.
+SECRETS_DIR = DESK / "data" / "secrets"
+
+
+def key_value(src: Source, environ: Any = None) -> str:
+    """The source's key, or ''. A `key_secret_file` source reads its entry from that secrets
+    file with the country lanes' loader (one credential, one place); every other keyed source
+    reads its environment variable. An explicit `environ` replaces both (the committed roster
+    passes {} to state each source's status as declared)."""
+    if not src.key_env:
+        return ""
+    if environ is None and src.key_secret_file:
+        try:
+            from research.countries.br.data_plane import load_secrets
+        except Exception:                                      # pragma: no cover - import guard
+            return ""
+        return load_secrets(SECRETS_DIR / src.key_secret_file).get(src.key_env, "")
+    env: Any = os.environ if environ is None else environ
+    return str(env.get(src.key_env) or "")
+
+
 def config_value(name: str, environ: Any = None) -> str:
     """The env override if set, else the documented default, else ''."""
     env: Any = os.environ if environ is None else environ
@@ -3308,7 +3325,7 @@ def status_of(src: Source, environ: dict[str, str] | None = None,
         cands = SUBSTITUTED_BY.get(src.id)
         return (f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={','.join(cands)}" if cands
                 else f"BLOCKED_ON_TERMS:{src.terms}")
-    if src.key_env and not env.get(src.key_env):
+    if src.key_env and not key_value(src, environ):
         return f"BLOCKED_ON_KEY:{src.key_env}"
     missing = [e for e in src.config_env if not config_value(e, env)]
     if missing:
@@ -3330,7 +3347,7 @@ def _tls() -> Any:
 
 
 def _redact(url: str, src: Source) -> str:
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    key = key_value(src)
     return url.replace(key, f"<{src.key_env}>") if key else url
 
 
@@ -3367,7 +3384,7 @@ class Request:
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
-    key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    key = key_value(src)
     if src.id == "cn_firms_industrial":
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()
@@ -3430,7 +3447,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
             now.date() - timedelta(days=60)
         if not state.get("full_done"):
             state["full_done_next"] = True
-        url = (src.url.replace("{ids}", ",".join(banxico_series_ids()))
+        url = (src.url.replace("{ids}", ",".join(BANXICO_SERIES))
                .replace("{from}", first.isoformat()).replace("{to}", now.date().isoformat()))
         return [Request(url, Ctx(start=first, end=now.date(), fetched_at=now),
                         headers={src.key_header: key})]
@@ -4593,7 +4610,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
-        "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
+        "keys": {s.key_env: bool(key_value(s)) for s in SOURCES if s.key_env},
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
