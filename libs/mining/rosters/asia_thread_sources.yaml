@@ -478,7 +478,7 @@ sources:
     url: libs/ops/llm_seat.py (desk seat, free tier by default)
     region: GLOBAL
     language: en/ja/zh/ko
-    cadence: daily (<= --llm-max docs per pass)
+    cadence: daily (<= --llm-max docs per run)
     auth: API key on the box only (data/secrets/**, never printed)
     licence: seat provider's API terms; titles only are sent
     cursor: llm_cache.jsonl keyed by doc_hash; a title is never paid for twice

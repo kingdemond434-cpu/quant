@@ -15,7 +15,7 @@ Three readers, chosen by the source's `kind` in the roster:
                leverage), published to the mechanics feed, which becomes
                exogenous_conditioner series and cells (mining_supervisor.conditioners)
 
-Regex is the first pass because it is exact and free. The LLM pass is the existing deepening
+Regex is the first pass because it is exact and free. The LLM stage is the existing deepening
 worker (`story_mechanism`): a claim that names a mechanism the regex cannot compile is handed to
 it verbatim rather than dropped, so the LLM seat reads what the grammar missed.
 
