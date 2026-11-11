@@ -129,6 +129,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(br, "SURVIVORS", paths["survivors"])
     monkeypatch.setattr(br, "LEDGER", paths["ledger"])
     monkeypatch.setattr(br, "OUT", paths["out"])
+    monkeypatch.setattr(br, "CLOCK_LAW", tmp_path / "no_clock_law.json")
     return paths
 
 
@@ -278,6 +279,25 @@ def test_least_recently_reviewed_first(desk):
                       {"at": "2026-09-01T00:00:00+00:00", "cell": "a", "verdict": br.PASS}],
                      desk["ledger"])
     assert br.order_cells(["a", "b", "c"], desk["ledger"]) == ["c", "a", "b"]
+
+
+def test_a_never_reviewed_promotion_candidate_leads_then_rejoins_the_rotation(desk):
+    br.append_ledger([{"at": "2026-09-05T00:00:00+00:00", "cell": "b", "verdict": br.PASS},
+                      {"at": "2026-09-01T00:00:00+00:00", "cell": "a", "verdict": br.PASS}],
+                     desk["ledger"])
+    assert br.order_cells(["a", "b", "c", "d"], desk["ledger"], first={"d"}) == \
+        ["d", "c", "a", "b"]
+    # a candidate already reviewed is ordinary rotation: no starvation of everything else
+    assert br.order_cells(["a", "b", "c"], desk["ledger"], first={"b"}) == ["c", "a", "b"]
+
+
+def test_promotion_candidates_read_from_the_clock_law(tmp_path):
+    law = tmp_path / "law.json"
+    law.write_text(json.dumps({"certificates": [
+        {"certificate": "x.A", "status": "PROMOTION CANDIDATE"},
+        {"certificate": "x.B", "status": "ACTIVE"}, {"status": "PROMOTION CANDIDATE"}]}))
+    assert br.promotion_candidates(law) == {"x.A"}
+    assert br.promotion_candidates(tmp_path / "absent.json") == set()
 
 
 def test_build_writes_coverage_and_bounds_the_run(desk):
