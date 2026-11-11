@@ -291,6 +291,8 @@ LEG_LAYER: dict[str, str] = {
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
+    # SEC 8-K 2.02 acceptance times joined to share-CFD reactions: an event dataset, no forecast
+    "earnings_reactions": "information",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
     "counterexample_agent": "meta",
