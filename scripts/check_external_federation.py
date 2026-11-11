@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -64,11 +65,22 @@ def _age_hours(stamp: str | None) -> float | None:
         return None
 
 
+#: THE PORTABLE HALF NEVER JUDGES BOX STATE (2026-10-20, the twin of the judge-coverage defect
+#: in auditor ruling 2026-10-14 route 2). `run_law_gate.py --laws-only` sets this flag on every
+#: fence it runs, and on a clean box tree that battery runs IN PLACE beside the box's own
+#: external_federation.json -- so the LIVE half (dispositions, schedules, watermarks, stranded
+#: data), which the gate's design gives to _STATE_FENCES, was judged by the portable half. In a
+#: source view the two state files are not read; the roster, vocabulary, sandbox-policy, packet
+#: and admission checks below still run and still fail. `--require-state` is unchanged.
+SOURCE_VIEW_ENV = "QUANT_LAWGATE_SOURCE_VIEW"
+
+
 def check(*, require_state: bool = False) -> dict:
     problems: list[str] = []
     notes: list[str] = []
-    state = _read(STATE)
-    report = _read(REPORT)
+    source_view = os.environ.get(SOURCE_VIEW_ENV) == "1" and not require_state
+    state = None if source_view else _read(STATE)
+    report = None if source_view else _read(REPORT)
     rows: dict[str, dict] = {}
     if isinstance(state, dict) and isinstance(state.get("systems"), dict):
         rows = {str(k): v for k, v in state["systems"].items() if isinstance(v, dict)}
@@ -105,7 +117,12 @@ def check(*, require_state: bool = False) -> dict:
         problems.append("admission let a capability twin in as a new system: that is fake breadth")
 
     # ---- the live half ------------------------------------------------------------------
-    if not rows:
+    if source_view:
+        notes.append("box state: the live half is judged by the box-side state fence "
+                     "(run_law_gate.py _STATE_FENCES, check_external_federation.py "
+                     f"--require-state), not here -- {SOURCE_VIEW_ENV}=1, "
+                     f"{STATE.name} and {REPORT.name} not read")
+    elif not rows:
         why = (f"{STATE.relative_to(ROOT).as_posix()} is absent or empty: the federation organ "
                f"has not written state here")
         if require_state:
@@ -190,11 +207,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="the box: a missing artifact is the defect, not a condition")
     a = ap.parse_args(argv)
     out = check(require_state=a.require_state)
-    try:
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
-    except OSError:
-        pass
+    # FEDERATION_FENCE.json is the box's record of its own verdict; a source view writes none.
+    if not (os.environ.get(SOURCE_VIEW_ENV) == "1" and not a.require_state):
+        try:
+            OUT.parent.mkdir(parents=True, exist_ok=True)
+            OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
+        except OSError:
+            pass
     if a.json:
         print(json.dumps(out, indent=1))
     else:

@@ -47,6 +47,21 @@ def _bars(seed: int, drift: float = 0.0, days: int = DAYS) -> pd.DataFrame:
                          "tick_volume": 100}, index=idx)
 
 
+#: Each member's planted differential: GGGHHH and EEEFFF are the class's high-carry tercile,
+#: CCCDDD and AAABBB its low one, so every generic test symbol has a carry leg to build.
+CARRY_LEVEL = {"AAABBB": 1.0, "CCCDDD": 0.0, "EEEFFF": 6.0, "GGGHHH": 7.0, "IIIJJJ": 3.0,
+               "KKKLLL": 4.0, "MMMNNN": 5.0, "OOOPPP": 2.0}
+
+
+def _carry_frame(level: float, start: str = "2019-10-01", months: int = 40) -> pd.DataFrame:
+    """A monthly rate differential at `level` percent with a small wobble, stamped like
+    research/futures_state stamps the OECD series: available 76 days after the month starts."""
+    ev = pd.date_range(start, periods=months, freq="MS", tz="UTC")
+    wob = 0.1 * np.sin(np.arange(months))
+    return pd.DataFrame({"diff": level + wob, "event_time": ev,
+                         "available_time": ev + pd.Timedelta(days=76, hours=23)})
+
+
 @pytest.fixture()
 def universe(tmp_path, monkeypatch):
     """Eight synthetic class members on disk; AAABBB is a planted relative winner."""
@@ -56,6 +71,12 @@ def universe(tmp_path, monkeypatch):
         frames[sym] = _bars(i + 1, drift)
         frames[sym].to_parquet(tmp_path / f"{sym}_H1.parquet")
     monkeypatch.setattr(xs, "UNIVERSE_DIR", tmp_path)
+    carry_dir = tmp_path / "series"
+    carry_dir.mkdir()
+    for sym in MEMBERS:
+        _carry_frame(CARRY_LEVEL[sym]).to_parquet(
+            carry_dir / f"{xs.CARRY_SOURCE}_{sym.lower()}.parquet")
+    monkeypatch.setattr(xs, "CARRY_DIR", carry_dir)
     monkeypatch.setattr(xs, "class_of", lambda s: "fx_cross" if s in MEMBERS else None)
     monkeypatch.setattr(xs, "class_symbols", lambda k: list(MEMBERS) if k == "fx_cross" else [])
     xs._SERIES_CACHE.clear()
@@ -367,3 +388,136 @@ def test_one_argument_doors_still_work():
     judged, off, _, _ = mh.split_by_lane([{"symbol": "X", "family": "f"}],
                                          lambda s: "event", "now")
     assert not judged and len(off) == 1
+
+
+# ------------------------------------------------------------------ carry class book (HML_FX) ---
+def test_carry_ranks_the_high_rate_member_long_and_the_low_short(universe):
+    """GGGHHH carries the highest differential, AAABBB the second lowest -- and AAABBB is the
+    planted PRICE winner: carry is long the first and short the second regardless."""
+    hi = xs.family_cross_sectional_class_carry(universe["GGGHHH"], symbol="GGGHHH")
+    lo = xs.family_cross_sectional_class_carry(universe["AAABBB"], symbol="AAABBB")
+    assert hi and all(s.side > 0 for s in hi)
+    assert lo and all(s.side < 0 for s in lo)
+    mid = xs.family_cross_sectional_class_carry(universe["MMMNNN"], symbol="MMMNNN")
+    assert mid == []                                      # middle tercile holds nothing
+
+
+def test_carry_reads_only_what_was_published(universe, tmp_path_factory, monkeypatch):
+    """Truncating every differential at T (by availability) changes no signal before T + lag."""
+    df = universe["GGGHHH"]
+    full = _key(xs.family_cross_sectional_class_carry(df, symbol="GGGHHH"))
+    cut = pd.Timestamp("2021-01-15", tz="UTC")
+    short = tmp_path_factory.mktemp("carry_cut")
+    for sym in MEMBERS:
+        f = _carry_frame(CARRY_LEVEL[sym])
+        f[f["available_time"] < cut].to_parquet(
+            short / f"{xs.CARRY_SOURCE}_{sym.lower()}.parquet")
+    monkeypatch.setattr(xs, "CARRY_DIR", short)
+    trunc = _key(xs.family_cross_sectional_class_carry(df, symbol="GGGHHH"))
+    before = [k for k in full if k[0] < cut.value]
+    assert before and [k for k in trunc if k[0] < cut.value] == before
+
+
+def test_carry_is_unmeasured_without_its_own_differential(universe, monkeypatch, tmp_path):
+    empty = tmp_path / "none"
+    empty.mkdir()
+    monkeypatch.setattr(xs, "CARRY_DIR", empty)
+    assert xs.family_cross_sectional_class_carry(universe["GGGHHH"], symbol="GGGHHH") == []
+
+
+def test_carry_crash_filter_only_removes_trades(universe):
+    df = universe["GGGHHH"]
+    plain = {k[:4] for k in _key(xs.family_cross_sectional_class_carry(df, symbol="GGGHHH"))}
+    calm = {k[:4] for k in _key(xs.family_cross_sectional_class_carry(
+        df, symbol="GGGHHH", crash="class_vol", history_d=120))}
+    assert calm and calm < plain
+
+
+def test_carry_rejects_unknown_score_and_crash(universe):
+    df = universe["GGGHHH"]
+    assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", score="swap") == []
+    assert xs.family_cross_sectional_class_carry(df, symbol="GGGHHH", crash="vix") == []
+
+
+def test_a_measurement_stands_for_the_remeasure_window():
+    """Firing is re-measured weekly, not daily: a daily re-measure of the whole grid kept every
+    pass inside the alphabet's first classes and the FX classes were never reached."""
+    from research import cross_sectional_breadth as csb
+    assert csb._due({}, "2026-11-10")
+    assert not csb._due({"day": "2026-11-09"}, "2026-11-10")
+    assert csb._due({"day": "2026-11-03"}, "2026-11-10")
+    assert csb._due({"day": "garbled"}, "2026-11-10")
+
+
+def test_a_cut_short_pass_resumes_on_the_classes_it_did_not_reach():
+    from research import cross_sectional_breadth as csb
+
+    def plan_of(sym):
+        return [("fam", None, {"symbol": sym})]
+    cells = {csb.identity("AAA", "fam", {"symbol": "AAA"}): {"day": "2026-11-10"},
+             csb.identity("BBB", "fam", {"symbol": "BBB"}): {"day": "2026-11-01"}}
+    order = csb._oldest_first({"a_equity": ["AAA", "BBB"], "fx_usd": ["EURUSD"]}, cells, plan_of)
+    assert order == [("fx_usd", "EURUSD"), ("a_equity", "BBB"), ("a_equity", "AAA")]
+
+
+def test_the_seeding_loop_stops_inside_its_share_of_the_budget(universe, tmp_path, monkeypatch):
+    """A zero budget measures nothing and still returns (and saves) instead of being killed."""
+    from research import cross_sectional_breadth as csb
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
+    got = csb.seed(budget_s=0.0, dry_run=False)
+    assert got["status"] == "OK" and got["stopped_because"].startswith("time budget")
+    assert sum(v.get("measured_this_pass", 0) for v in got["cells_by_family"].values()) == 0
+    assert (tmp_path / "state.json").exists()
+
+
+def test_an_under_floor_cell_is_due_daily_once_the_grid_was_covered():
+    from research import cross_sectional_breadth as csb
+    low = {"day": "2026-11-09", "trade_days_lb": csb.SEED_FLOOR - 1}
+    high = {"day": "2026-11-09", "trade_days_lb": csb.SEED_FLOOR}
+    assert not csb._due(low, "2026-11-10")
+    assert csb._due(low, "2026-11-10", covered=True)
+    assert not csb._due(low, "2026-11-09", covered=True)
+    assert not csb._due(high, "2026-11-10", covered=True)
+
+
+def test_a_family_that_raises_is_retried_the_next_day_not_the_same_day():
+    from research import cross_sectional_breadth as csb
+    errored = {"error_day": "2026-11-10", "error": "KeyError"}
+    assert not csb._due(errored, "2026-11-10")
+    assert csb._due(errored, "2026-11-11")
+
+    def plan_of(sym):
+        return [("fam", None, {"symbol": sym})]
+    cells = {csb.identity("AAA", "fam", {"symbol": "AAA"}): errored}
+    order = csb._oldest_first({"k": ["AAA", "BBB"]}, cells, plan_of)
+    assert order == [("k", "BBB"), ("k", "AAA")], "an errored symbol must not hold the front"
+
+
+def test_a_cleared_cell_the_door_refused_is_donated_before_any_budget(universe, tmp_path,
+                                                                      monkeypatch):
+    """Measured and undonated sorts LAST in the walk; a pass with no budget must still offer it."""
+    from research import cross_sectional_breadth as csb
+    from research import proposer_common as pc
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
+    fam = next(iter(xs.CROSS_SECTIONAL_FAMILIES))
+    call = {"symbol": MEMBERS[0], **csb.grid(fam)[0]}
+    ident = csb.identity(MEMBERS[0], fam, call)
+    today = csb.datetime.now(tz=csb.UTC).date().isoformat()
+    (tmp_path / "state.json").write_text(json.dumps({"cells": {ident: {
+        "day": today, "family": fam, "symbol": MEMBERS[0], "klass": "k", "params": call,
+        "trade_days_lb": csb.SEED_FLOOR, "signal_days": csb.SEED_FLOOR}}}), "utf-8")
+    donated: list[list[dict]] = []
+
+    def fake_donate(source, rows, tests_run):
+        donated.append(list(rows))
+        return tmp_path / "discoveries.json"
+    monkeypatch.setattr(pc, "donate", fake_donate)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1})
+    got = csb.seed(budget_s=0.0)
+    assert got["stopped_because"].startswith("time budget")
+    assert [r["params"] for r in donated[0]] == [call]
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))
+    assert state["cells"][ident]["donated_at"]
+    assert not state.get("covered_once"), "a cut-short pass has not covered the grid"

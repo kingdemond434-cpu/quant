@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -482,13 +483,16 @@ AXES: tuple[Axis, ...] = (
 )
 
 
-def measure(root: Path | None = None, *, floors: Path | None = None) -> dict[str, Any]:
+def measure(root: Path | None = None, *, floors: Path | None = None,
+            require_state: bool = False) -> dict[str, Any]:
     base = Path(root or ROOT)
     stored = _json(floors or (base / "docs" / "research" / "birth_obligations.json"))
     known: dict[str, Any] = stored.get("axes", {}) if isinstance(stored, dict) else {}
     axes: dict[str, Any] = {}
     failures: list[str] = []
-    trading = _is_trading_host(base)
+    trading = _is_trading_host(base) or require_state
+    source_view = (os.environ.get("QUANT_LAWGATE_SOURCE_VIEW") == "1"
+                   and not require_state)
     for ax in AXES:
         objects, ok, why = ax.derive(base)
         # AN AXIS IS ONLY AS CURRENT AS THE REPORT IT READS, AND ONLY SOME HOSTS WRITE THOSE.
@@ -518,7 +522,11 @@ def measure(root: Path | None = None, *, floors: Path | None = None) -> dict[str
         # UNMEASURED with its own reason when its input is missing, and a fresh tree that simply
         # has not written a report yet must keep reading exactly as it did. Only a report that
         # EXISTS and has stopped describing today is a staleness question.
-        if (not trading and ax.source is not None and not why.startswith(UNMEASURED)
+        if source_view and ax.name == "family" and not why.startswith(UNMEASURED):
+            why = (f"{UNMEASURED}: isolated source checkout does not run the producer "
+                   f"of {ax.source}; copied state is not a local runtime receipt. "
+                   f"Judge the operational obligation with --require-state. Last read: {why}")
+        elif (not trading and ax.source is not None and not why.startswith(UNMEASURED)
                 and age_h is not None and age_h > _SOURCE_STALE_H):
             why = (f"{UNMEASURED}: this host is not the trading box (host identity: "
                    f"{host_identity.identify().verdict}) and {ax.source} is {age_h:.1f}h old"
@@ -603,6 +611,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--root", type=Path, default=None)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--require-state", action="store_true",
+                    help="judge operational obligations even in an isolated source context")
     ap.add_argument("--with-fences", action="store_true",
                     help="also run the fence that already owns each axis")
     ap.add_argument("--update", action="store_true",
@@ -611,7 +621,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     _name_safe_stdout()             # before the first print: this fence's job is to NAME things
     root = Path(a.root or ROOT)
-    doc = measure(root)
+    doc = measure(root, require_state=a.require_state)
     if a.with_fences:
         doc["fences"] = run_fences(root)
         for name, r in doc["fences"].items():

@@ -483,3 +483,113 @@ def test_the_host_stamp_records_the_machine_identity(tmp_path: Path, monkeypatch
     h = ra.host_identity(ra.Paths.at(tmp_path))
     assert h["hostname"] == "vmi3571445" and h["machine_id"] == "box-machine-id"
     assert h["desk_host"] is True
+
+
+# ------------------------------------------ desk_host: a non-desk attestation is UNMEASURED
+def _stamped(desk_host: object, *, hours: float, role: str = "trading_host") -> dict:
+    """An attestation stamped as #151's full pass stamps it, `hours` old, on THIS machine."""
+    h = dict(_box_host(), role=role, machine_id="some-machine-id", desk_host=desk_host)
+    return _doc(host=h, generated_at=ra._iso(time.time() - hours * 3600))
+
+
+def test_a_non_desk_attestation_is_unmeasured_and_never_judged_stale(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # even claiming role trading_host, on the host it names, hours past its silence: a stamp of
+    # desk_host false is not a desk attestation, so its age is judged NOWHERE -- not under
+    # --require-state either, which is the ~2h red that followed every cloud attest
+    _write(tmp_path, _stamped(False, hours=10 * ra.MAX_SILENCE_S / 3600))
+    v = fence.measure(tmp_path)
+    assert v["desk_host"] is False and v["desk_attestation"] is False
+    assert v["on_attesting_host"] and not v["age_judged"]
+    assert v["staleness"].startswith(ra.UNMEASURED) and "not a desk attestation" in v["staleness"]
+    assert not v["failures"]
+    assert fence.main(["--root", str(tmp_path)]) == 0
+    assert fence.main(["--root", str(tmp_path), "--require-state"]) == 0
+    assert "not a desk attestation" in capsys.readouterr().out
+    # structure still fails everywhere: desk_host false excuses the age, never a lie
+    _write(tmp_path, dict(_stamped(False, hours=5), attests_to_host="some-other-box"))
+    assert fence.main(["--root", str(tmp_path)]) == 2
+
+
+def test_a_desk_attestation_is_judged_stale_as_before(tmp_path: Path) -> None:
+    _write(tmp_path, _stamped(True, hours=(ra.MAX_SILENCE_S + 600) / 3600))
+    v = fence.measure(tmp_path)
+    assert v["desk_attestation"] is True and v["age_judged"]
+    assert any("stale on its own host" in f for f in v["failures"])
+    assert fence.main(["--root", str(tmp_path)]) == 2
+    assert fence.main(["--root", str(tmp_path), "--require-state"]) == 2
+    _write(tmp_path, _stamped(True, hours=0.1))
+    assert fence.main(["--root", str(tmp_path), "--require-state"]) == 0
+
+
+def test_a_legacy_stamp_keeps_the_hostname_and_role_rule(tmp_path: Path) -> None:
+    old = ra._iso(time.time() - 10 * ra.MAX_SILENCE_S)
+    # no desk_host key: #146's rule -- the trading box's own stale document is red ...
+    _write(tmp_path, _doc(host=_box_host(), generated_at=old))
+    v = fence.measure(tmp_path)
+    assert v["desk_attestation"] is None and str(v["desk_host"]).startswith("legacy")
+    assert v["age_judged"] and fence.main(["--root", str(tmp_path)]) == 2
+    # ... a non_trading_host one is UNMEASURED in the law half, and --require-state still
+    # fails it on age, exactly as live does today
+    _write(tmp_path, _doc(generated_at=old))
+    assert not fence.measure(tmp_path)["age_judged"]
+    assert fence.main(["--root", str(tmp_path)]) == 0
+    assert fence.main(["--root", str(tmp_path), "--require-state"]) == 2
+
+
+def test_a_malformed_desk_host_stamp_fails(tmp_path: Path) -> None:
+    _write(tmp_path, _stamped("no", hours=0.1))
+    assert any("desk_host" in f for f in fence.measure(tmp_path)["failures"])
+
+
+def test_a_non_desk_attestation_sets_no_ratchet_floor_and_is_judged_against_none(
+        tmp_path: Path, monkeypatch) -> None:
+    here = socket.gethostname()
+    census = dict.fromkeys(ra.STATES, 0)
+    census.update({"LIVE": 1, "NEVER": 900})
+    doc = _stamped(False, hours=0.1, role="non_trading_host")
+    doc.update(census=census, scope={"attested": 901, "wall_s": 0.1})
+    monkeypatch.setattr(ra, "attest", lambda paths, budget_s: json.loads(json.dumps(doc)))
+    monkeypatch.setattr(ra, "render", lambda d: "rendered")
+    paths = ra.Paths.at(tmp_path)
+    paths.out_json.parent.mkdir(parents=True, exist_ok=True)
+    assert ra.main(["--root", str(tmp_path), "--budget-s", "1"]) == 0
+    assert not paths.ratchet.exists()                       # no floor was set from it
+    written = json.loads(paths.out_json.read_text(encoding="utf-8"))
+    assert written["ratchet"]["status"] == ra.UNMEASURED
+    # and a floor already on file for this host does not judge it either
+    ra.ratchet_update(paths, here, {"STALE": 0, "MISSING": 0, "NEVER": 0})
+    v = fence.measure(tmp_path)
+    assert v["ratchet"].startswith(ra.UNMEASURED) and not v["ratchet_regressions"]
+    assert not v["failures"]
+    # a desk-stamped pass DOES set the floor, as before
+    paths.ratchet.unlink()
+    doc["host"]["desk_host"] = True
+    assert ra.main(["--root", str(tmp_path), "--budget-s", "1"]) == 0
+    assert json.loads(paths.ratchet.read_text(encoding="utf-8"))["hosts"][here]["NEVER"] == 900
+
+
+def test_the_law_gate_stays_green_hours_after_a_cloud_attest(tmp_path: Path, monkeypatch) -> None:
+    """The whole point: a cloud (desk_host false) attestation five hours old, judged by the law
+    gate's own runner through BOTH arms (the portable one and --require-state), is not red."""
+    import shutil
+
+    from scripts import run_law_gate as gate
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "desks" / "mt5" / "research").mkdir(parents=True)
+    shutil.copy(ROOT / "scripts" / "check_runtime_attestation.py", tmp_path / "scripts")
+    shutil.copy(ROOT / "desks" / "mt5" / "research" / "runtime_attestation.py",
+                tmp_path / "desks" / "mt5" / "research")
+    arms = [f for f in gate._LAW_FENCES + gate._STATE_FENCES
+            if f[0] == "check_runtime_attestation.py"]
+    assert [a for _, a in arms] == [(), ("--require-state",)]
+    monkeypatch.setattr(gate, "_LAW_FENCES", [arms[0]])
+    monkeypatch.setattr(gate, "_STATE_FENCES", [arms[1]])
+    _write(tmp_path, _stamped(False, hours=5, role="non_trading_host"))
+    rep = gate.full_gate(tmp_path, laws_only=False)
+    assert rep["ok"], rep["failures"]
+    assert rep["n_fences"] == 2
+    # the same document stamped as a desk attestation IS red on the host it names
+    _write(tmp_path, _stamped(True, hours=5))
+    rep = gate.full_gate(tmp_path, laws_only=False)
+    assert not rep["ok"] and len(rep["failures"]) == 2

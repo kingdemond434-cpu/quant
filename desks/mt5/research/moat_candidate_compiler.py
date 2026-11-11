@@ -322,6 +322,7 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
         fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
         if not fam or not sym:
             continue
+        mark = provenance_mark(r)
         cand = pc.candidate(
             SOURCE, sym, fam, params, str(r.get("mechanism") or ""),
             f"{sym} {fam}: claimed by {r['_department']} from the moat exchange",
@@ -330,7 +331,11 @@ def claim_and_donate(conn: Any, *, per_department: int | None = None,
              "novelty_vs_live": r.get("novelty_vs_live"),
              "novelty_vs_graveyard": r.get("novelty_vs_graveyard"),
              "expected_return_independence": r.get("expected_return_independence"),
-             "search_count": r.get("search_count")})
+             "search_count": r.get("search_count"), **mark})
+        # ON THE ROW TOO, where miner_candidate_compiler copies it onto the docket candidate: a
+        # research-lane series (correlation to its paid set UNMEASURED) stays marked all the way
+        # to certification and sizing, never laundered into an unmarked cell by the donation.
+        cand.update(mark)
         cand.update(claim_lineage(r.get("lineage_json")))
         cands.append(cand)
     path = pc.donate(SOURCE, cands, len(claimed)) if cands else None
@@ -360,6 +365,23 @@ def claim_lineage(blob: Any) -> dict[str, Any]:
         except (TypeError, ValueError):
             out.pop("claim_selection_trials")
     return out if out.get("claim_family") else {}
+
+
+#: The registry fields that say WHERE a cell came from and under what standing. They were dropped
+#: at the donation (audit R-lane, 2026-09-30): a paid-substitute cell minted in the research lane
+#: (`campaign_id = paid_substitute:research_unverified:<dataset>`) reached the intake unmarked.
+PROVENANCE_FIELDS: tuple[str, ...] = ("campaign_id", "source_id", "origin", "generator")
+
+
+def provenance_mark(row: Any) -> dict[str, Any]:
+    """The claimed row's provenance, plus `validation_lane` read off a paid-substitute campaign
+    id (`paid_substitute:<lane>:<dataset>`), so no consumer has to parse the id to see the lane."""
+    get = row.get if hasattr(row, "get") else (lambda _k: None)
+    out = {k: str(get(k)) for k in PROVENANCE_FIELDS if get(k)}
+    parts = str(out.get("campaign_id") or "").split(":")
+    if len(parts) >= 3 and parts[0] == "paid_substitute":
+        out["validation_lane"] = parts[1]
+    return out
 
 
 def _read_params(blob: Any) -> dict[str, Any]:

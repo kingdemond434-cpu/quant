@@ -1,14 +1,14 @@
 {
  "_": "HIGH-WATER MARKS for MT5 money-path branch coverage, per file, as fractions of 1. Sealed once by --init, raised by the gate whenever a run measures higher, NEVER lowered by code: nothing lowers a mark but a human editing this file with a reason. A missing file is a CI failure, not a zero -- a ratchet with no memory is not one.",
  "sealed_at": "2026-09-05T01:45:51.487207+00:00",
- "measured_at": "2026-09-05T12:29:11.817065+00:00",
+ "measured_at": "2026-10-11T22:21:09.850983+00:00",
  "suite_command": "pytest desks/mt5/tests -q -p no:randomly --timeout=600 --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch --cov-report=term:skip-covered --cov-report=json:mt5cov.json",
- "report": "mt5cov.json",
- "report_sha256": "352901e49853576da6e2193968a395a8adc38bfe0c935ccab3e8ba4986362e34",
+ "report": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\publication-combined-20261012-coverage.json",
+ "report_sha256": "8417e98fc0fb9e29bca1f7b8ceb46076de33c6eef1656e1360a3d47dce97eac1",
  "report_meta": {
   "format": 3,
-  "version": "7.16.0",
-  "timestamp": "2026-09-05T12:27:44.408256",
+  "version": "7.16.2",
+  "timestamp": "2026-10-12T00:15:05.647561",
   "branch_coverage": true,
   "show_contexts": false
  },
@@ -26,15 +26,15 @@
   "desks/mt5/research/allocator_attribution.py"
  ],
  "high_water": {
-  "desks/mt5/mt5desk/gateway.py": 0.0063,
-  "desks/mt5/mt5desk/engine.py": 0.8477,
+  "desks/mt5/mt5desk/gateway.py": 0.16,
+  "desks/mt5/mt5desk/engine.py": 0.8802,
   "desks/mt5/mt5desk/independence.py": 0.7762,
-  "desks/mt5/mt5desk/markout.py": 0.8994,
-  "desks/mt5/research/pf_allocator.py": 0.1674,
-  "desks/mt5/research/promoter.py": 0.7924,
-  "desks/mt5/research/state_admission_run.py": 0.673,
-  "desks/mt5/research/session_phase.py": 0.8842,
-  "desks/mt5/research/allocator_attribution.py": 0.7933,
+  "desks/mt5/mt5desk/markout.py": 0.9097,
+  "desks/mt5/research/pf_allocator.py": 0.3748,
+  "desks/mt5/research/promoter.py": 0.8136,
+  "desks/mt5/research/state_admission_run.py": 0.6792,
+  "desks/mt5/research/session_phase.py": 0.9906,
+  "desks/mt5/research/allocator_attribution.py": 0.8107,
   "desks/mt5/mt5desk/decision_core.py": 0.9964
  },
  "unmeasurable_here": {},

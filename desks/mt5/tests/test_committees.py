@@ -136,8 +136,9 @@ def test_a_pass_writes_contracts_without_authority_and_donates_forensic_cells(de
     fams = {r["family"] for r in don["discoveries"]}
     assert fams == {"mean_reversion_rsi", "range_reversion"}
     assert all(r["gauntlet_bypass"] is False for r in don["discoveries"])
-    hints = json.loads(cm.PREMORTEMS.read_text())
-    assert hints and all(h["source"] == "committees" for h in hints.values())
+    # The LLM miner reports its lead classes but never writes the battery's order hints: since
+    # the 2026-09-30 17:04 ruling those belong to the deterministic Scientific ensemble.
+    assert doc["premortem_hints"] >= 1 and not cm.PREMORTEMS.exists()
     # the same input is never argued twice
     again = cm.run(ask=seat, fates={}, calls=24,
                    subjects={cm.SCIENTIFIC: [_subject()], cm.FORENSIC: []})

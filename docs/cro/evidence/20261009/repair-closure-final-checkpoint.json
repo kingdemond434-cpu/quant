@@ -1,0 +1,4762 @@
+{
+  "at": "2026-10-09T05:14:53.056379+00:00",
+  "controller_epoch": 17,
+  "state": "LOCAL_REPAIRS_VERIFIED_REQUIRED_FULL_VALIDATION_AND_DELIVERY_BLOCKED",
+  "closed": false,
+  "selected_work_checkpointed_or_dispositioned": true,
+  "overall_optimality_claim": false,
+  "release": {
+    "production_wrapper": "3726ff3acba95b0e9e839cdf22d2d0348c54f1d4",
+    "sealed_code": "cb341efee62c08f363123d0a002334da90769b4b",
+    "release_id": "416ccb3d215b",
+    "live_head": "d2325ffdf5540abedeb425fdda9cea8e4848dffa",
+    "source_head": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+    "source_branch": "codex/repair-closure-20261009",
+    "source_base": "a2ee157dc39ce4b68720279a7cdf43a3e34d8da0",
+    "published": false,
+    "deployed": false,
+    "pending_library_commit": true,
+    "full_gate": "RED",
+    "fast_gate": "PASS before final benchmark fixture-only change; amended fixture lint and covered test PASS"
+  },
+  "capital_path": {
+    "at": "2026-10-09T05:14:53.056379+00:00",
+    "mode": "READ_ONLY_EXISTING_PRODUCTION_RECEIPTS",
+    "Fusion": {
+      "last_reconcile": "2026-10-09T05:14:09+00:00",
+      "restart_reconcile": {
+        "at": "2026-10-09T05:14:03+00:00",
+        "caller": "restart_reconcile",
+        "kind": "restart_reconcile",
+        "magic": 341953,
+        "armed": true,
+        "positions": [
+          {
+            "ticket": 233796519,
+            "symbol": "XAUUSD",
+            "comment": "DWgold_asia",
+            "volume": 0.01,
+            "sl": 4134.06
+          }
+        ],
+        "orders": [],
+        "in_doubt": [],
+        "stopless": [],
+        "verdict": "OK"
+      },
+      "positions": [
+        {
+          "ticket": 233796519,
+          "type": 0,
+          "volume": 0.01,
+          "price_open": 4180.21,
+          "sl": 4130.87,
+          "tp": 4278.4,
+          "profit": 2.34,
+          "symbol": "XAUUSD"
+        }
+      ],
+      "pending": null,
+      "intent_receipt": [
+        {
+          "sleeve": "gold_asia",
+          "symbol": "XAUUSD",
+          "side": "buy_stop",
+          "lot": 0.01,
+          "intended": 4180.18,
+          "sl": 4130.87,
+          "tp": 4278.400000000001,
+          "ticket": 233796519,
+          "retcode": 10009,
+          "decision_bid": 4177.78,
+          "decision_ask": 4177.85,
+          "spread_at_decision": 0.07000000000061846,
+          "point": 0.01,
+          "stops_level": 0,
+          "order_type": "pending_stop",
+          "latency_ms": 207.991,
+          "time": "2026-10-09T04:00:33+00:00",
+          "state_vector_id": "7b3ac5e6415252e0",
+          "release_id": "416ccb3d215b",
+          "intent_id": "deb22dab649b6cf8",
+          "latency_send_to_ack_ms": 207.991,
+          "acked_at": "2026-10-09T04:00:33+00:00",
+          "sent_at": "2026-10-09T04:00:32.792009+00:00",
+          "account": "ACCOUNT_REDACTED",
+          "server": "FusionMarkets-Live",
+          "account_kind": "live"
+        }
+      ],
+      "release_identity": {
+        "ok": true,
+        "running_sha": "d2325ffdf5540abedeb425fdda9cea8e4848dffa",
+        "release_sha": "cb341efee62c08f363123d0a002334da90769b4b",
+        "reason": "running d2325ffdf554 is the sealed code cb341efee62c plus seal/state commits only (1468 path(s))",
+        "age_h": 16.041,
+        "stale": false,
+        "measured": true,
+        "stale_refuses": false,
+        "source": "git",
+        "release_id": "416ccb3d215b",
+        "changed_paths": [],
+        "drift": [],
+        "report": [
+          "survivor canon on disk differs from the sealed one (reported only)"
+        ],
+        "at": "2026-10-09T05:14:03+00:00",
+        "tested_sha": "b32547979c47eb7be73a0b591cb4136ba5338ca9",
+        "tested_gates": "fast",
+        "allocator_certificate": "c3b455282fcf4a82@2026-10-09T05:01:38.360368+00:00 proof=FAILED book=equal_weight",
+        "ci_run_id": "UNMEASURED",
+        "allows_new_risk": true,
+        "verdict": "OK"
+      },
+      "assistant_order_sent": false,
+      "current_position_state": [
+        {
+          "ticket": 233796519,
+          "type": 0,
+          "volume": 0.01,
+          "price_open": 4180.21,
+          "sl": 4134.06,
+          "tp": 4278.4,
+          "profit": 6.51,
+          "symbol": "XAUUSD"
+        }
+      ],
+      "position_snapshot_at": "2026-10-09T04:26:03+00:00"
+    },
+    "E8": {
+      "executor_at": "2026-10-09T05:10:07+00:00",
+      "status": "OK",
+      "guard": {
+        "verdict": "OK",
+        "why": "2,570 to today's floor, 7,619 to the static floor, 1,867 of counted profit left today",
+        "equity": 97619.1,
+        "day_start": 97486.1,
+        "day_pnl": 133.0,
+        "room_to_daily_floor": 2570.15,
+        "room_to_static_floor": 7619.1,
+        "counted_profit_today": 133.0,
+        "flatten": false,
+        "may_open": true
+      },
+      "n_sent": 0,
+      "sleeves": [
+        {
+          "symbol": "AUDCHF",
+          "family": "overnight_gap_decay",
+          "tag": "E8overniAUDCHF",
+          "status": "TIER_S_BLOCKED",
+          "why": "DOOR_ERROR: the replication check raised DoorReadError: REPLICATION.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean"
+        }
+      ],
+      "gold_at": "2026-10-09T04:26:07+00:00",
+      "gold_identity": {
+        "status": "OK"
+      }
+    },
+    "new_source_deployed": false,
+    "account_identity": {
+      "Fusion": "FusionMarkets-Live/ACCOUNT_REDACTED",
+      "E8": "E8TradeLockerPro/2478877 (previous authenticated snapshot)"
+    },
+    "live_book_or_arm_modified_by_assistant": false
+  },
+  "material_repairs": [
+    "reject unexecutable next-fill brackets without clipping valid costly trades or deleting signal trials",
+    "allocate opening commission, fee and swap across exit volume; include exit fee",
+    "book confirmed complete market exits with account-qualified persistent receipts and atomic target reset",
+    "bind gauntlet caches to replay-code bytes and preserve bounded receipt counts/digests",
+    "bind allocator worlds to every supplied posterior input and WorldConfig field",
+    "Independent engines reject the same unexecutable bracket geometry with independent arithmetic",
+    "Immutable code-only signing preserves unchanged authorizations and clears stale changed/removed entries; all 194 historical record seals preserved",
+    "Tier S fixtures keep their owned temporary roots; burn-in cannot mistake a parent repo for data provenance",
+    "Bound credential source scanning; archive 25 untracked private fixture trees without deleting evidence or touching tracked fixtures",
+    "Research artifact harvesting preserves sibling-directory intelligence path and hash",
+    "Runtime smoke deadline measures an uninstrumented production child; functional checks and twenty-second deadline retained",
+    "Independent engines reject the same unexecutable bracket geometry with independent arithmetic",
+    "Immutable code-only signing preserves unchanged authorizations and clears stale changed/removed entries; all 194 historical record seals preserved",
+    "Tier S fixtures keep their owned temporary roots; burn-in cannot mistake a parent repo for data provenance",
+    "Bound credential source scanning; archive 25 untracked private fixture trees without deleting evidence or touching tracked fixtures",
+    "Research artifact harvesting preserves sibling-directory intelligence path and hash",
+    "Runtime smoke deadline measures an uninstrumented production child; functional checks and twenty-second deadline retained"
+  ],
+  "proof": {
+    "geometry": {
+      "at": "2026-10-09T01:52:36.559950+00:00",
+      "mode": "REPLAY_NO_ORDER_API",
+      "production_modified": false,
+      "cells": [
+        {
+          "symbol": "NZDCAD",
+          "params": {
+            "beta_win": 240,
+            "entry_z": 2.0,
+            "factor_symbols": [
+              "USDX"
+            ],
+            "lookback": 240,
+            "side_mode": "revert",
+            "timeframe": "M15",
+            "ttl_bars": 72
+          },
+          "signals": 12995,
+          "old_trades": 2426,
+          "new_trades": 2218,
+          "old_max_abs_r": 849090659346.9238,
+          "new_max_abs_r": 72.01104761887301,
+          "geometry_rejections": [
+            {
+              "signal_time": "2022-10-05 04:15:00+00:00",
+              "fill_time": "2022-10-05 04:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.78365,
+              "stop": 0.7833680000000001,
+              "target": 0.7760980000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-10-17 03:45:00+00:00",
+              "fill_time": "2022-10-17 04:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.77015,
+              "stop": 0.770722,
+              "target": 0.7745920000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-10-26 17:00:00+00:00",
+              "fill_time": "2022-10-26 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.7909,
+              "stop": 0.7898059999999999,
+              "target": 0.784166,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-11-07 00:00:00+00:00",
+              "fill_time": "2022-11-07 00:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79293,
+              "stop": 0.797295,
+              "target": 0.8020575000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-02 00:00:00+00:00",
+              "fill_time": "2022-12-02 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.85359,
+              "stop": 0.854102,
+              "target": 0.8581219999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-09 00:00:00+00:00",
+              "fill_time": "2022-12-09 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.8652,
+              "stop": 0.865594,
+              "target": 0.8686090000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-13 15:15:00+00:00",
+              "fill_time": "2022-12-13 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.86758,
+              "stop": 0.8688980000000001,
+              "target": 0.874203,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-20 15:00:00+00:00",
+              "fill_time": "2022-12-20 15:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.85931,
+              "stop": 0.859551,
+              "target": 0.8651235,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-02 02:00:00+00:00",
+              "fill_time": "2023-01-02 02:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.85721,
+              "stop": 0.858005,
+              "target": 0.8629425,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-03 10:00:00+00:00",
+              "fill_time": "2023-01-03 10:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.85019,
+              "stop": 0.850665,
+              "target": 0.8554525000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-04 09:30:00+00:00",
+              "fill_time": "2023-01-04 09:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.85971,
+              "stop": 0.859542,
+              "target": 0.855187,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-10 00:00:00+00:00",
+              "fill_time": "2023-01-10 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.85168,
+              "stop": 0.8516969999999999,
+              "target": 0.8547794999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-31 23:45:00+00:00",
+              "fill_time": "2023-02-01 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.85678,
+              "stop": 0.857212,
+              "target": 0.861632,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-02-10 15:30:00+00:00",
+              "fill_time": "2023-02-10 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84629,
+              "stop": 0.847915,
+              "target": 0.8519525000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-02-21 08:30:00+00:00",
+              "fill_time": "2023-02-21 08:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83874,
+              "stop": 0.839146,
+              "target": 0.842206,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-02-22 03:00:00+00:00",
+              "fill_time": "2023-02-22 03:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8436,
+              "stop": 0.841568,
+              "target": 0.836723,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-02-24 10:00:00+00:00",
+              "fill_time": "2023-02-24 10:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84237,
+              "stop": 0.842409,
+              "target": 0.8446865,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-07 17:00:00+00:00",
+              "fill_time": "2023-03-07 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.84322,
+              "stop": 0.847846,
+              "target": 0.8435309999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-21 11:30:00+00:00",
+              "fill_time": "2023-03-21 11:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84698,
+              "stop": 0.84736,
+              "target": 0.8505349999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-27 00:00:00+00:00",
+              "fill_time": "2023-03-27 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.8509,
+              "stop": 0.850901,
+              "target": 0.8534485,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-29 05:30:00+00:00",
+              "fill_time": "2023-03-29 05:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.85244,
+              "stop": 0.852407,
+              "target": 0.8495145,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-05 05:00:00+00:00",
+              "fill_time": "2023-04-05 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8544,
+              "stop": 0.847987,
+              "target": 0.8427695,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-28 14:45:00+00:00",
+              "fill_time": "2023-04-28 15:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83959,
+              "stop": 0.839504,
+              "target": 0.8361689999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-02 14:15:00+00:00",
+              "fill_time": "2023-05-02 14:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.84317,
+              "stop": 0.842856,
+              "target": 0.8394909999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-05 15:15:00+00:00",
+              "fill_time": "2023-05-05 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84765,
+              "stop": 0.848405,
+              "target": 0.8512925,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-05 15:30:00+00:00",
+              "fill_time": "2023-05-05 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84515,
+              "stop": 0.846213,
+              "target": 0.8498055,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-12 06:00:00+00:00",
+              "fill_time": "2023-05-12 06:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84512,
+              "stop": 0.84585,
+              "target": 0.8485750000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-17 10:00:00+00:00",
+              "fill_time": "2023-05-17 10:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.84263,
+              "stop": 0.842036,
+              "target": 0.8394710000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-24 05:00:00+00:00",
+              "fill_time": "2023-05-24 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83441,
+              "stop": 0.838738,
+              "target": 0.844768,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-31 17:00:00+00:00",
+              "fill_time": "2023-05-31 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81581,
+              "stop": 0.815903,
+              "target": 0.8198955,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-31 17:45:00+00:00",
+              "fill_time": "2023-05-31 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81462,
+              "stop": 0.815568,
+              "target": 0.8205979999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-05 17:00:00+00:00",
+              "fill_time": "2023-06-05 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81719,
+              "stop": 0.8149479999999999,
+              "target": 0.8110529999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-07 17:00:00+00:00",
+              "fill_time": "2023-06-07 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81148,
+              "stop": 0.813276,
+              "target": 0.818161,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-09 15:30:00+00:00",
+              "fill_time": "2023-06-09 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81733,
+              "stop": 0.816711,
+              "target": 0.8130835000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-14 21:30:00+00:00",
+              "fill_time": "2023-06-14 21:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8269,
+              "stop": 0.8263469999999999,
+              "target": 0.8204795,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-21 07:00:00+00:00",
+              "fill_time": "2023-06-21 07:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81659,
+              "stop": 0.8165749999999999,
+              "target": 0.8143374999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-27 15:30:00+00:00",
+              "fill_time": "2023-06-27 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81415,
+              "stop": 0.813812,
+              "target": 0.810332,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-30 15:30:00+00:00",
+              "fill_time": "2023-06-30 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81022,
+              "stop": 0.809054,
+              "target": 0.804919,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-07 15:30:00+00:00",
+              "fill_time": "2023-07-07 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82297,
+              "stop": 0.823434,
+              "target": 0.8278490000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-12 16:00:00+00:00",
+              "fill_time": "2023-07-12 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82627,
+              "stop": 0.825666,
+              "target": 0.8198010000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-17 16:30:00+00:00",
+              "fill_time": "2023-07-17 16:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83321,
+              "stop": 0.833639,
+              "target": 0.8374415,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-18 14:30:00+00:00",
+              "fill_time": "2023-07-18 14:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82953,
+              "stop": 0.8296439999999999,
+              "target": 0.8332839999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-20 04:30:00+00:00",
+              "fill_time": "2023-07-20 04:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82748,
+              "stop": 0.826403,
+              "target": 0.8229955,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-18 00:00:00+00:00",
+              "fill_time": "2023-08-18 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80033,
+              "stop": 0.801279,
+              "target": 0.8043564999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-30 23:45:00+00:00",
+              "fill_time": "2023-08-31 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80539,
+              "stop": 0.805896,
+              "target": 0.808131,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-09-01 15:30:00+00:00",
+              "fill_time": "2023-09-01 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81222,
+              "stop": 0.8065640000000001,
+              "target": 0.800954,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-09-12 00:00:00+00:00",
+              "fill_time": "2023-09-12 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80251,
+              "stop": 0.802562,
+              "target": 0.8048069999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-09-14 16:00:00+00:00",
+              "fill_time": "2023-09-14 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80214,
+              "stop": 0.8017960000000001,
+              "target": 0.7981560000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-09-19 15:15:00+00:00",
+              "fill_time": "2023-09-19 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79665,
+              "stop": 0.796809,
+              "target": 0.7990865,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-09-19 16:00:00+00:00",
+              "fill_time": "2023-09-19 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79419,
+              "stop": 0.794947,
+              "target": 0.7981045,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-04 04:00:00+00:00",
+              "fill_time": "2023-10-04 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80736,
+              "stop": 0.8095650000000001,
+              "target": 0.8137274999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-13 17:15:00+00:00",
+              "fill_time": "2023-10-13 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80475,
+              "stop": 0.80514,
+              "target": 0.80944,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-17 15:30:00+00:00",
+              "fill_time": "2023-10-17 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80473,
+              "stop": 0.8038240000000001,
+              "target": 0.799814,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-25 03:30:00+00:00",
+              "fill_time": "2023-10-25 03:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80389,
+              "stop": 0.802278,
+              "target": 0.798608,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-01 00:45:00+00:00",
+              "fill_time": "2023-11-01 01:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80492,
+              "stop": 0.80623,
+              "target": 0.8093800000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-13 00:00:00+00:00",
+              "fill_time": "2023-11-13 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81129,
+              "stop": 0.811782,
+              "target": 0.8138270000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-14 15:15:00+00:00",
+              "fill_time": "2023-11-14 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80915,
+              "stop": 0.810659,
+              "target": 0.8139115,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-14 15:30:00+00:00",
+              "fill_time": "2023-11-14 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81837,
+              "stop": 0.811368,
+              "target": 0.805848,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-21 10:00:00+00:00",
+              "fill_time": "2023-11-21 10:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83398,
+              "stop": 0.833833,
+              "target": 0.8306255,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-29 03:00:00+00:00",
+              "fill_time": "2023-11-29 03:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83973,
+              "stop": 0.835246,
+              "target": 0.8305560000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-12-05 16:00:00+00:00",
+              "fill_time": "2023-12-05 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83243,
+              "stop": 0.8326089999999999,
+              "target": 0.8359114999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-12-08 16:00:00+00:00",
+              "fill_time": "2023-12-08 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83086,
+              "stop": 0.831178,
+              "target": 0.835458,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-12-14 10:30:00+00:00",
+              "fill_time": "2023-12-14 10:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83491,
+              "stop": 0.835055,
+              "target": 0.8393674999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-02-15 23:45:00+00:00",
+              "fill_time": "2024-02-16 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82132,
+              "stop": 0.821664,
+              "target": 0.823654,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-02-20 15:30:00+00:00",
+              "fill_time": "2024-02-20 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8349,
+              "stop": 0.834834,
+              "target": 0.831274,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-02-27 02:00:00+00:00",
+              "fill_time": "2024-02-27 02:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83174,
+              "stop": 0.831771,
+              "target": 0.8337185,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-02-28 03:00:00+00:00",
+              "fill_time": "2024-02-28 03:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.8291,
+              "stop": 0.83298,
+              "target": 0.8368300000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-01 17:00:00+00:00",
+              "fill_time": "2024-03-01 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82871,
+              "stop": 0.827181,
+              "target": 0.8232035,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-06 15:15:00+00:00",
+              "fill_time": "2024-03-06 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82912,
+              "stop": 0.829085,
+              "target": 0.8260475,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-12 23:45:00+00:00",
+              "fill_time": "2024-03-13 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82921,
+              "stop": 0.8292789999999999,
+              "target": 0.8310815,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-19 15:30:00+00:00",
+              "fill_time": "2024-03-19 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82346,
+              "stop": 0.822058,
+              "target": 0.819038,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-28 03:00:00+00:00",
+              "fill_time": "2024-03-28 03:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81287,
+              "stop": 0.813171,
+              "target": 0.8154684999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-29 00:00:00+00:00",
+              "fill_time": "2024-03-29 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80771,
+              "stop": 0.8077629999999999,
+              "target": 0.8096304999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-19 04:00:00+00:00",
+              "fill_time": "2024-04-19 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81029,
+              "stop": 0.8113589999999999,
+              "target": 0.8136865,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-19 04:30:00+00:00",
+              "fill_time": "2024-04-19 04:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80856,
+              "stop": 0.8092189999999999,
+              "target": 0.8121215,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-01 01:45:00+00:00",
+              "fill_time": "2024-05-01 02:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.8097,
+              "stop": 0.8099230000000001,
+              "target": 0.8125655,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-03 15:30:00+00:00",
+              "fill_time": "2024-05-03 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82173,
+              "stop": 0.819815,
+              "target": 0.8162524999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-10 15:30:00+00:00",
+              "fill_time": "2024-05-10 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82148,
+              "stop": 0.822043,
+              "target": 0.8251355,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-20 15:15:00+00:00",
+              "fill_time": "2024-05-20 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83107,
+              "stop": 0.8314869999999999,
+              "target": 0.8334445,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-22 05:00:00+00:00",
+              "fill_time": "2024-05-22 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83781,
+              "stop": 0.8335020000000001,
+              "target": 0.829697,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-24 16:45:00+00:00",
+              "fill_time": "2024-05-24 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.835,
+              "stop": 0.836046,
+              "target": 0.838356,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-27 00:45:00+00:00",
+              "fill_time": "2024-05-27 01:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83647,
+              "stop": 0.83333,
+              "target": 0.835905,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-31 15:15:00+00:00",
+              "fill_time": "2024-05-31 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83516,
+              "stop": 0.83567,
+              "target": 0.838045,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-06-07 15:30:00+00:00",
+              "fill_time": "2024-06-07 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84375,
+              "stop": 0.8459540000000001,
+              "target": 0.848894,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-06-07 15:45:00+00:00",
+              "fill_time": "2024-06-07 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84231,
+              "stop": 0.842452,
+              "target": 0.845722,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-07-02 17:00:00+00:00",
+              "fill_time": "2024-07-02 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83103,
+              "stop": 0.831194,
+              "target": 0.833634,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-07-08 01:00:00+00:00",
+              "fill_time": "2024-07-08 01:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83845,
+              "stop": 0.838024,
+              "target": 0.835889,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-07-10 05:00:00+00:00",
+              "fill_time": "2024-07-10 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83028,
+              "stop": 0.834383,
+              "target": 0.8369755000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-07-12 16:00:00+00:00",
+              "fill_time": "2024-07-12 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83454,
+              "stop": 0.834178,
+              "target": 0.8317330000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-05 08:45:00+00:00",
+              "fill_time": "2024-08-05 09:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82149,
+              "stop": 0.821859,
+              "target": 0.8261865,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-05 09:00:00+00:00",
+              "fill_time": "2024-08-05 09:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81792,
+              "stop": 0.819283,
+              "target": 0.8249005,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-13 16:15:00+00:00",
+              "fill_time": "2024-08-13 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.83186,
+              "stop": 0.831618,
+              "target": 0.828723,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-14 05:00:00+00:00",
+              "fill_time": "2024-08-14 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82699,
+              "stop": 0.830858,
+              "target": 0.835213,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-14 06:00:00+00:00",
+              "fill_time": "2024-08-14 06:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.8252,
+              "stop": 0.825444,
+              "target": 0.8305589999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-29 03:15:00+00:00",
+              "fill_time": "2024-08-29 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.84334,
+              "stop": 0.843328,
+              "target": 0.841108,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-29 04:00:00+00:00",
+              "fill_time": "2024-08-29 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.84539,
+              "stop": 0.844265,
+              "target": 0.8412775,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-09-02 00:00:00+00:00",
+              "fill_time": "2024-09-02 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84138,
+              "stop": 0.8421109999999999,
+              "target": 0.8447085,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-09-05 15:15:00+00:00",
+              "fill_time": "2024-09-05 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.84025,
+              "stop": 0.8401839999999999,
+              "target": 0.837774,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-09-19 23:45:00+00:00",
+              "fill_time": "2024-09-20 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.84441,
+              "stop": 0.8453579999999999,
+              "target": 0.847263,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-16 00:45:00+00:00",
+              "fill_time": "2024-10-16 01:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83509,
+              "stop": 0.836229,
+              "target": 0.8392565,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-30 11:00:00+00:00",
+              "fill_time": "2024-10-30 11:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8335,
+              "stop": 0.8331879999999999,
+              "target": 0.830518,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-31 16:45:00+00:00",
+              "fill_time": "2024-10-31 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82681,
+              "stop": 0.82709,
+              "target": 0.830815,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-11-22 04:30:00+00:00",
+              "fill_time": "2024-11-22 04:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81517,
+              "stop": 0.815488,
+              "target": 0.818043,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-11-26 01:45:00+00:00",
+              "fill_time": "2024-11-26 02:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81917,
+              "stop": 0.818352,
+              "target": 0.815347,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-11-26 02:00:00+00:00",
+              "fill_time": "2024-11-26 02:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82091,
+              "stop": 0.8205629999999999,
+              "target": 0.8170555,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-12-09 09:45:00+00:00",
+              "fill_time": "2024-12-09 10:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82692,
+              "stop": 0.8265910000000001,
+              "target": 0.8235385000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-12-09 10:45:00+00:00",
+              "fill_time": "2024-12-09 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82889,
+              "stop": 0.8287909999999999,
+              "target": 0.8255135,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-12-18 10:00:00+00:00",
+              "fill_time": "2024-12-18 10:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82116,
+              "stop": 0.821168,
+              "target": 0.823523,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-12-18 23:45:00+00:00",
+              "fill_time": "2024-12-19 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81216,
+              "stop": 0.814007,
+              "target": 0.8192645,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-10 15:30:00+00:00",
+              "fill_time": "2025-01-10 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80044,
+              "stop": 0.8031539999999999,
+              "target": 0.806519,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-20 00:45:00+00:00",
+              "fill_time": "2025-01-20 01:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80906,
+              "stop": 0.808729,
+              "target": 0.8056565,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-30 22:30:00+00:00",
+              "fill_time": "2025-01-30 22:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81682,
+              "stop": 0.816716,
+              "target": 0.813176,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-31 16:00:00+00:00",
+              "fill_time": "2025-01-31 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81929,
+              "stop": 0.819131,
+              "target": 0.8164534999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-02-03 00:00:00+00:00",
+              "fill_time": "2025-02-03 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82293,
+              "stop": 0.820572,
+              "target": 0.814317,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-02-03 23:30:00+00:00",
+              "fill_time": "2025-02-03 23:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81057,
+              "stop": 0.811105,
+              "target": 0.8168175,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-02-05 17:00:00+00:00",
+              "fill_time": "2025-02-05 17:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81311,
+              "stop": 0.8130369999999999,
+              "target": 0.8098945,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-02-13 15:15:00+00:00",
+              "fill_time": "2025-02-13 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80332,
+              "stop": 0.803514,
+              "target": 0.805679,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-02-19 03:00:00+00:00",
+              "fill_time": "2025-02-19 03:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80661,
+              "stop": 0.8075340000000001,
+              "target": 0.8108489999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-03-03 21:45:00+00:00",
+              "fill_time": "2025-03-03 22:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81437,
+              "stop": 0.813445,
+              "target": 0.8096075,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-03-19 00:00:00+00:00",
+              "fill_time": "2025-03-19 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.83062,
+              "stop": 0.830968,
+              "target": 0.8330730000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-03-19 10:30:00+00:00",
+              "fill_time": "2025-03-19 10:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82936,
+              "stop": 0.829713,
+              "target": 0.8316805,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-03-28 18:00:00+00:00",
+              "fill_time": "2025-03-28 18:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81808,
+              "stop": 0.818319,
+              "target": 0.8216465000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-29 16:00:00+00:00",
+              "fill_time": "2025-04-29 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82232,
+              "stop": 0.822574,
+              "target": 0.825864,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-29 23:45:00+00:00",
+              "fill_time": "2025-04-30 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81996,
+              "stop": 0.8199730000000001,
+              "target": 0.8222655,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-12 01:00:00+00:00",
+              "fill_time": "2025-05-12 01:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82488,
+              "stop": 0.824217,
+              "target": 0.8217245,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-15 15:15:00+00:00",
+              "fill_time": "2025-05-15 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82015,
+              "stop": 0.820488,
+              "target": 0.823743,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-26 04:45:00+00:00",
+              "fill_time": "2025-05-26 05:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82519,
+              "stop": 0.825066,
+              "target": 0.8216009999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-28 05:00:00+00:00",
+              "fill_time": "2025-05-28 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82306,
+              "stop": 0.8211970000000001,
+              "target": 0.8176045000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-30 23:45:00+00:00",
+              "fill_time": "2025-06-02 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81851,
+              "stop": 0.8188150000000001,
+              "target": 0.8214275,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-12 04:30:00+00:00",
+              "fill_time": "2025-06-12 04:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82262,
+              "stop": 0.8229430000000001,
+              "target": 0.8258355000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-17 01:00:00+00:00",
+              "fill_time": "2025-06-17 01:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8222,
+              "stop": 0.8220540000000001,
+              "target": 0.8190939999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-09 05:00:00+00:00",
+              "fill_time": "2025-07-09 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82207,
+              "stop": 0.82033,
+              "target": 0.8168799999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-28 10:30:00+00:00",
+              "fill_time": "2025-07-28 10:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82109,
+              "stop": 0.821223,
+              "target": 0.8236155000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-30 21:45:00+00:00",
+              "fill_time": "2025-07-30 22:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81401,
+              "stop": 0.814893,
+              "target": 0.8187855,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-01 15:30:00+00:00",
+              "fill_time": "2025-08-01 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81666,
+              "stop": 0.810677,
+              "target": 0.8146095000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-13 09:30:00+00:00",
+              "fill_time": "2025-08-13 09:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82218,
+              "stop": 0.8219620000000001,
+              "target": 0.8198070000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-14 15:45:00+00:00",
+              "fill_time": "2025-08-14 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81814,
+              "stop": 0.8182630000000001,
+              "target": 0.8209805,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-20 05:00:00+00:00",
+              "fill_time": "2025-08-20 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81085,
+              "stop": 0.815453,
+              "target": 0.8193705,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-27 10:15:00+00:00",
+              "fill_time": "2025-08-27 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80775,
+              "stop": 0.807841,
+              "target": 0.8098635,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-28 00:00:00+00:00",
+              "fill_time": "2025-08-28 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80669,
+              "stop": 0.8068,
+              "target": 0.80915,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-09-02 10:15:00+00:00",
+              "fill_time": "2025-09-02 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80741,
+              "stop": 0.807656,
+              "target": 0.809741,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-09-02 10:45:00+00:00",
+              "fill_time": "2025-09-02 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80619,
+              "stop": 0.806287,
+              "target": 0.8087445000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-01 15:15:00+00:00",
+              "fill_time": "2025-10-01 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81042,
+              "stop": 0.810171,
+              "target": 0.8073185,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-03 23:45:00+00:00",
+              "fill_time": "2025-10-06 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81086,
+              "stop": 0.81313,
+              "target": 0.8149550000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-06 00:00:00+00:00",
+              "fill_time": "2025-10-06 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81102,
+              "stop": 0.811912,
+              "target": 0.814107,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-08 04:00:00+00:00",
+              "fill_time": "2025-10-08 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80252,
+              "stop": 0.807076,
+              "target": 0.810861,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-21 01:00:00+00:00",
+              "fill_time": "2025-10-21 01:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80653,
+              "stop": 0.8063910000000001,
+              "target": 0.8042635,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-24 15:30:00+00:00",
+              "fill_time": "2025-10-24 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80766,
+              "stop": 0.8065000000000001,
+              "target": 0.803725,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-27 00:00:00+00:00",
+              "fill_time": "2025-10-27 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8078,
+              "stop": 0.804768,
+              "target": 0.8020229999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-28 18:45:00+00:00",
+              "fill_time": "2025-10-28 19:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80537,
+              "stop": 0.805705,
+              "target": 0.8084675,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-04 23:45:00+00:00",
+              "fill_time": "2025-11-05 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79572,
+              "stop": 0.796056,
+              "target": 0.798341,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-07 15:30:00+00:00",
+              "fill_time": "2025-11-07 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79089,
+              "stop": 0.791366,
+              "target": 0.793951,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-11 14:00:00+00:00",
+              "fill_time": "2025-11-11 14:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.79284,
+              "stop": 0.7927890000000001,
+              "target": 0.7909415000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-20 15:30:00+00:00",
+              "fill_time": "2025-11-20 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.79038,
+              "stop": 0.789941,
+              "target": 0.7874385,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-26 00:00:00+00:00",
+              "fill_time": "2025-11-26 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.7913,
+              "stop": 0.7913479999999999,
+              "target": 0.793553,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-26 03:00:00+00:00",
+              "fill_time": "2025-11-26 03:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.79794,
+              "stop": 0.794879,
+              "target": 0.7906065000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-28 23:45:00+00:00",
+              "fill_time": "2025-12-01 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79968,
+              "stop": 0.8004990000000001,
+              "target": 0.8026015000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-12-03 16:00:00+00:00",
+              "fill_time": "2025-12-03 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80026,
+              "stop": 0.800373,
+              "target": 0.8030904999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-12-05 15:30:00+00:00",
+              "fill_time": "2025-12-05 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80314,
+              "stop": 0.8045450000000001,
+              "target": 0.8072825,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-12-15 04:00:00+00:00",
+              "fill_time": "2025-12-15 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79637,
+              "stop": 0.797504,
+              "target": 0.801694,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-22 23:45:00+00:00",
+              "fill_time": "2026-01-23 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81679,
+              "stop": 0.816318,
+              "target": 0.814298,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-09 01:00:00+00:00",
+              "fill_time": "2026-02-09 01:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82332,
+              "stop": 0.8227639999999999,
+              "target": 0.819804,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-16 00:00:00+00:00",
+              "fill_time": "2026-02-16 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81978,
+              "stop": 0.8210489999999999,
+              "target": 0.8235515,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-18 04:00:00+00:00",
+              "fill_time": "2026-02-18 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81961,
+              "stop": 0.819727,
+              "target": 0.8234845000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-26 17:15:00+00:00",
+              "fill_time": "2026-02-26 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81708,
+              "stop": 0.8171619999999999,
+              "target": 0.819657,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-02 00:00:00+00:00",
+              "fill_time": "2026-03-02 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81199,
+              "stop": 0.816061,
+              "target": 0.8194085000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-02 01:00:00+00:00",
+              "fill_time": "2026-03-02 01:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81456,
+              "stop": 0.809564,
+              "target": 0.8143290000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-06 15:45:00+00:00",
+              "fill_time": "2026-03-06 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79978,
+              "stop": 0.7998540000000001,
+              "target": 0.8047940000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-06 23:45:00+00:00",
+              "fill_time": "2026-03-09 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79733,
+              "stop": 0.799666,
+              "target": 0.803051,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-09 00:00:00+00:00",
+              "fill_time": "2026-03-09 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79789,
+              "stop": 0.7981499999999999,
+              "target": 0.8019749999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-18 15:15:00+00:00",
+              "fill_time": "2026-03-18 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.7992,
+              "stop": 0.799207,
+              "target": 0.8020894999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-06 05:00:00+00:00",
+              "fill_time": "2026-04-06 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.79471,
+              "stop": 0.794582,
+              "target": 0.792002,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-08 00:00:00+00:00",
+              "fill_time": "2026-04-08 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79382,
+              "stop": 0.794451,
+              "target": 0.7980735,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-08 01:30:00+00:00",
+              "fill_time": "2026-04-08 01:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.79999,
+              "stop": 0.799528,
+              "target": 0.7935080000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-08 01:45:00+00:00",
+              "fill_time": "2026-04-08 02:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.8035,
+              "stop": 0.802719,
+              "target": 0.7958965,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-13 00:00:00+00:00",
+              "fill_time": "2026-04-13 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80409,
+              "stop": 0.8063569999999999,
+              "target": 0.8095395,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-21 01:45:00+00:00",
+              "fill_time": "2026-04-21 02:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80659,
+              "stop": 0.8049299999999999,
+              "target": 0.801605,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-04 06:45:00+00:00",
+              "fill_time": "2026-05-04 07:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80484,
+              "stop": 0.804634,
+              "target": 0.802274,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-11 00:00:00+00:00",
+              "fill_time": "2026-05-11 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81255,
+              "stop": 0.814399,
+              "target": 0.8169765000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-20 17:15:00+00:00",
+              "fill_time": "2026-05-20 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80567,
+              "stop": 0.805534,
+              "target": 0.802599,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-21 11:00:00+00:00",
+              "fill_time": "2026-05-21 11:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80798,
+              "stop": 0.8079270000000001,
+              "target": 0.8052595,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-26 00:15:00+00:00",
+              "fill_time": "2026-05-26 00:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80924,
+              "stop": 0.810009,
+              "target": 0.8112865,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-27 15:15:00+00:00",
+              "fill_time": "2026-05-27 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.81591,
+              "stop": 0.815731,
+              "target": 0.8125285,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-01 12:00:00+00:00",
+              "fill_time": "2026-06-01 12:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82332,
+              "stop": 0.8233199999999999,
+              "target": 0.8254950000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-01 16:00:00+00:00",
+              "fill_time": "2026-06-01 16:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82157,
+              "stop": 0.8220759999999999,
+              "target": 0.8250609999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-01 16:45:00+00:00",
+              "fill_time": "2026-06-01 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81832,
+              "stop": 0.8187030000000001,
+              "target": 0.8225205,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-08 00:15:00+00:00",
+              "fill_time": "2026-06-08 00:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80522,
+              "stop": 0.8061670000000001,
+              "target": 0.8091245,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-16 07:00:00+00:00",
+              "fill_time": "2026-06-16 07:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81259,
+              "stop": 0.8126979999999999,
+              "target": 0.814603,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-30 04:15:00+00:00",
+              "fill_time": "2026-06-30 04:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80381,
+              "stop": 0.803266,
+              "target": 0.801276,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-02 15:30:00+00:00",
+              "fill_time": "2026-07-02 15:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80867,
+              "stop": 0.804839,
+              "target": 0.8080164999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-20 00:00:00+00:00",
+              "fill_time": "2026-07-20 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.8166,
+              "stop": 0.8176869999999999,
+              "target": 0.8199695,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-20 14:30:00+00:00",
+              "fill_time": "2026-07-20 14:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82216,
+              "stop": 0.822045,
+              "target": 0.8195325,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-23 00:00:00+00:00",
+              "fill_time": "2026-07-23 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81832,
+              "stop": 0.818527,
+              "target": 0.8200594999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-23 10:30:00+00:00",
+              "fill_time": "2026-07-23 10:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81593,
+              "stop": 0.8160040000000001,
+              "target": 0.818269,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-13 06:00:00+00:00",
+              "fill_time": "2026-08-13 06:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81388,
+              "stop": 0.814727,
+              "target": 0.8167844999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-18 09:00:00+00:00",
+              "fill_time": "2026-08-18 09:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81485,
+              "stop": 0.814952,
+              "target": 0.817122,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-24 00:00:00+00:00",
+              "fill_time": "2026-08-24 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.82438,
+              "stop": 0.8234950000000001,
+              "target": 0.8216574999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-28 00:30:00+00:00",
+              "fill_time": "2026-08-28 00:45:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82328,
+              "stop": 0.823681,
+              "target": 0.8254785,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-31 04:00:00+00:00",
+              "fill_time": "2026-08-31 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.82105,
+              "stop": 0.821233,
+              "target": 0.8234005000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-02 05:00:00+00:00",
+              "fill_time": "2026-09-02 05:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.81497,
+              "stop": 0.818123,
+              "target": 0.8218655,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-03 00:00:00+00:00",
+              "fill_time": "2026-09-03 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.80809,
+              "stop": 0.808852,
+              "target": 0.811122,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-17 09:00:00+00:00",
+              "fill_time": "2026-09-17 09:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80231,
+              "stop": 0.802127,
+              "target": 0.7998845,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-18 23:45:00+00:00",
+              "fill_time": "2026-09-21 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79951,
+              "stop": 0.79982,
+              "target": 0.801395,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-21 00:00:00+00:00",
+              "fill_time": "2026-09-21 00:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79931,
+              "stop": 0.799488,
+              "target": 0.801168,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-22 04:00:00+00:00",
+              "fill_time": "2026-09-22 04:15:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79959,
+              "stop": 0.799913,
+              "target": 0.8024055,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-22 05:45:00+00:00",
+              "fill_time": "2026-09-22 06:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80403,
+              "stop": 0.803624,
+              "target": 0.8005390000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-25 23:45:00+00:00",
+              "fill_time": "2026-09-28 00:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 0.79965,
+              "stop": 0.800279,
+              "target": 0.8026065,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-28 19:15:00+00:00",
+              "fill_time": "2026-09-28 19:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 0.80476,
+              "stop": 0.8043300000000001,
+              "target": 0.800905,
+              "reason": "unexecutable bracket at fill"
+            }
+          ]
+        },
+        {
+          "symbol": "XBRUSD",
+          "params": {
+            "beta_win": 240,
+            "entry_z": 2.0,
+            "factor_symbols": [
+              "NZDUSD",
+              "USDHUF"
+            ],
+            "lookback": 240,
+            "side_mode": "revert",
+            "timeframe": "M30",
+            "ttl_bars": 8
+          },
+          "signals": 7261,
+          "old_trades": 1935,
+          "new_trades": 1724,
+          "old_max_abs_r": 1444968681441.7554,
+          "new_max_abs_r": 12.33793476923128,
+          "geometry_rejections": [
+            {
+              "signal_time": "2021-05-20 11:00:00+00:00",
+              "fill_time": "2021-05-20 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 65.473,
+              "stop": 65.73169999999999,
+              "target": 68.14744999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-06-17 18:00:00+00:00",
+              "fill_time": "2021-06-17 19:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 72.05,
+              "stop": 72.5843,
+              "target": 74.48355,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-07-06 17:00:00+00:00",
+              "fill_time": "2021-07-06 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 74.928,
+              "stop": 75.0987,
+              "target": 77.25445,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-07-07 17:00:00+00:00",
+              "fill_time": "2021-07-07 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.182,
+              "stop": 73.3312,
+              "target": 75.9107,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-08-06 23:00:00+00:00",
+              "fill_time": "2021-08-09 03:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 70.227,
+              "stop": 70.342,
+              "target": 72.62950000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-09-09 15:00:00+00:00",
+              "fill_time": "2021-09-09 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 72.857,
+              "stop": 73.11859999999999,
+              "target": 74.66460000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-09-27 03:00:00+00:00",
+              "fill_time": "2021-09-27 04:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 79.167,
+              "stop": 78.824,
+              "target": 77.3065,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-10-04 16:00:00+00:00",
+              "fill_time": "2021-10-04 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 82.397,
+              "stop": 82.063,
+              "target": 79.87299999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-10-21 17:00:00+00:00",
+              "fill_time": "2021-10-21 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 84.297,
+              "stop": 84.71700000000001,
+              "target": 86.542,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-11-26 17:30:00+00:00",
+              "fill_time": "2021-11-26 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 72.164,
+              "stop": 73.00760000000001,
+              "target": 76.71860000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-12-20 10:30:00+00:00",
+              "fill_time": "2021-12-20 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 70.137,
+              "stop": 70.36099999999999,
+              "target": 72.151,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-12-27 17:30:00+00:00",
+              "fill_time": "2021-12-27 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 78.687,
+              "stop": 78.399,
+              "target": 76.569,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2021-12-31 14:00:00+00:00",
+              "fill_time": "2021-12-31 14:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 78.131,
+              "stop": 78.34200000000001,
+              "target": 79.8045,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-01-18 04:30:00+00:00",
+              "fill_time": "2022-01-18 05:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 87.627,
+              "stop": 87.48400000000001,
+              "target": 86.2915,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-01-21 03:00:00+00:00",
+              "fill_time": "2022-01-21 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 86.357,
+              "stop": 86.5202,
+              "target": 88.81219999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-01-27 13:30:00+00:00",
+              "fill_time": "2022-01-27 14:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 90.847,
+              "stop": 90.734,
+              "target": 89.06649999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-02-02 16:30:00+00:00",
+              "fill_time": "2022-02-02 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 89.837,
+              "stop": 89.941,
+              "target": 92.10600000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-02-18 12:00:00+00:00",
+              "fill_time": "2022-02-18 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 90.877,
+              "stop": 90.90299999999999,
+              "target": 92.913,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-02-22 10:00:00+00:00",
+              "fill_time": "2022-02-22 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 99.287,
+              "stop": 98.9262,
+              "target": 96.6032,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-02-24 06:00:00+00:00",
+              "fill_time": "2022-02-24 06:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 101.907,
+              "stop": 101.06840000000001,
+              "target": 97.5149,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-03-07 03:00:00+00:00",
+              "fill_time": "2022-03-07 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 128.997,
+              "stop": 123.79910000000001,
+              "target": 115.31134999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-03-28 03:00:00+00:00",
+              "fill_time": "2022-03-28 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 116.324,
+              "stop": 117.1961,
+              "target": 123.52834999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-04-13 13:00:00+00:00",
+              "fill_time": "2022-04-13 13:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 108.177,
+              "stop": 107.94770000000001,
+              "target": 105.04595,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-05-05 16:00:00+00:00",
+              "fill_time": "2022-05-05 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 113.627,
+              "stop": 113.473,
+              "target": 110.408,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-05-10 12:00:00+00:00",
+              "fill_time": "2022-05-10 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 104.947,
+              "stop": 104.989,
+              "target": 109.184,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-06-02 03:00:00+00:00",
+              "fill_time": "2022-06-02 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 116.457,
+              "stop": 117.243,
+              "target": 121.27799999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-06-10 17:30:00+00:00",
+              "fill_time": "2022-06-10 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 122.987,
+              "stop": 123.25200000000001,
+              "target": 126.36449999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-06-13 03:00:00+00:00",
+              "fill_time": "2022-06-13 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 121.667,
+              "stop": 122.141,
+              "target": 126.531,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-06-17 17:30:00+00:00",
+              "fill_time": "2022-06-17 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 115.567,
+              "stop": 115.616,
+              "target": 119.59349999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-07-05 16:00:00+00:00",
+              "fill_time": "2022-07-05 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 111.817,
+              "stop": 113.806,
+              "target": 117.3585,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-07-05 17:30:00+00:00",
+              "fill_time": "2022-07-05 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 108.697,
+              "stop": 108.74,
+              "target": 113.4825,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-07-05 18:00:00+00:00",
+              "fill_time": "2022-07-05 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 106.287,
+              "stop": 106.51,
+              "target": 111.92750000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-07-06 16:00:00+00:00",
+              "fill_time": "2022-07-06 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 104.967,
+              "stop": 105.773,
+              "target": 109.983,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-07-18 16:00:00+00:00",
+              "fill_time": "2022-07-18 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 107.217,
+              "stop": 106.929,
+              "target": 103.474,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-08-31 10:30:00+00:00",
+              "fill_time": "2022-08-31 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 99.477,
+              "stop": 99.63399999999999,
+              "target": 101.4165,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-08-31 11:00:00+00:00",
+              "fill_time": "2022-08-31 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 98.397,
+              "stop": 98.618,
+              "target": 100.7405,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-08-31 12:00:00+00:00",
+              "fill_time": "2022-08-31 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 97.287,
+              "stop": 97.46199999999999,
+              "target": 99.8995,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-09-01 11:00:00+00:00",
+              "fill_time": "2022-09-01 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 96.247,
+              "stop": 96.491,
+              "target": 98.456,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-09-08 11:00:00+00:00",
+              "fill_time": "2022-09-08 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 89.137,
+              "stop": 89.215,
+              "target": 91.295,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-09-08 12:00:00+00:00",
+              "fill_time": "2022-09-08 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 88.967,
+              "stop": 89.043,
+              "target": 91.378,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-09-12 11:30:00+00:00",
+              "fill_time": "2022-09-12 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 94.927,
+              "stop": 94.86099999999999,
+              "target": 92.976,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-09-23 16:00:00+00:00",
+              "fill_time": "2022-09-23 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 87.207,
+              "stop": 87.287,
+              "target": 89.987,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-09-29 12:00:00+00:00",
+              "fill_time": "2022-09-29 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 89.317,
+              "stop": 89.255,
+              "target": 87.085,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-10-05 17:30:00+00:00",
+              "fill_time": "2022-10-05 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 94.827,
+              "stop": 94.621,
+              "target": 90.961,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-10-11 11:30:00+00:00",
+              "fill_time": "2022-10-11 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 94.617,
+              "stop": 94.619,
+              "target": 96.714,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-10-12 15:30:00+00:00",
+              "fill_time": "2022-10-12 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 94.357,
+              "stop": 94.462,
+              "target": 96.8495,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-11-08 20:00:00+00:00",
+              "fill_time": "2022-11-08 20:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 97.137,
+              "stop": 97.223,
+              "target": 99.933,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-11-09 14:00:00+00:00",
+              "fill_time": "2022-11-09 14:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 95.277,
+              "stop": 95.304,
+              "target": 96.9865,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-11-18 15:30:00+00:00",
+              "fill_time": "2022-11-18 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 87.587,
+              "stop": 87.834,
+              "target": 90.0415,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-11-21 16:00:00+00:00",
+              "fill_time": "2022-11-21 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 84.827,
+              "stop": 86.34599999999999,
+              "target": 88.8735,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-06 12:00:00+00:00",
+              "fill_time": "2022-12-06 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 80.817,
+              "stop": 81.335,
+              "target": 83.53999999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-07 11:30:00+00:00",
+              "fill_time": "2022-12-07 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 77.327,
+              "stop": 77.473,
+              "target": 79.458,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-14 12:00:00+00:00",
+              "fill_time": "2022-12-14 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 81.007,
+              "stop": 80.84599999999999,
+              "target": 79.5235,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2022-12-29 10:30:00+00:00",
+              "fill_time": "2022-12-29 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 81.647,
+              "stop": 81.69800000000001,
+              "target": 83.02050000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-04 10:00:00+00:00",
+              "fill_time": "2023-01-04 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 80.107,
+              "stop": 80.664,
+              "target": 82.44649999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-12 11:30:00+00:00",
+              "fill_time": "2023-01-12 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 83.337,
+              "stop": 83.179,
+              "target": 81.924,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-01-27 19:00:00+00:00",
+              "fill_time": "2023-01-27 19:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.737,
+              "stop": 85.75899999999999,
+              "target": 88.12899999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-02-08 10:30:00+00:00",
+              "fill_time": "2023-02-08 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 84.667,
+              "stop": 84.616,
+              "target": 83.36850000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-03 15:30:00+00:00",
+              "fill_time": "2023-03-03 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 83.417,
+              "stop": 83.64200000000001,
+              "target": 85.1795,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-13 15:00:00+00:00",
+              "fill_time": "2023-03-13 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 79.027,
+              "stop": 79.736,
+              "target": 82.01350000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-15 13:30:00+00:00",
+              "fill_time": "2023-03-15 14:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 76.087,
+              "stop": 76.96700000000001,
+              "target": 78.792,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-15 16:00:00+00:00",
+              "fill_time": "2023-03-15 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 74.517,
+              "stop": 74.635,
+              "target": 77.115,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-03-22 15:30:00+00:00",
+              "fill_time": "2023-03-22 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 75.737,
+              "stop": 75.66,
+              "target": 74.2275,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-03 03:00:00+00:00",
+              "fill_time": "2023-04-03 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 85.167,
+              "stop": 81.381,
+              "target": 78.471,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-17 18:00:00+00:00",
+              "fill_time": "2023-04-17 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.207,
+              "stop": 85.242,
+              "target": 86.7795,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-19 10:30:00+00:00",
+              "fill_time": "2023-04-19 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 84.067,
+              "stop": 84.128,
+              "target": 84.9005,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-19 16:30:00+00:00",
+              "fill_time": "2023-04-19 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 82.757,
+              "stop": 82.882,
+              "target": 84.51950000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-20 10:00:00+00:00",
+              "fill_time": "2023-04-20 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 81.877,
+              "stop": 82.117,
+              "target": 83.01700000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-04-26 21:00:00+00:00",
+              "fill_time": "2023-04-26 21:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 77.887,
+              "stop": 78.295,
+              "target": 80.825,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-03 10:30:00+00:00",
+              "fill_time": "2023-05-03 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 74.847,
+              "stop": 74.949,
+              "target": 75.66899999999998,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-03 11:00:00+00:00",
+              "fill_time": "2023-05-03 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 74.177,
+              "stop": 74.512,
+              "target": 75.3745,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-03 13:00:00+00:00",
+              "fill_time": "2023-05-03 13:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.427,
+              "stop": 73.453,
+              "target": 74.713,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-30 16:00:00+00:00",
+              "fill_time": "2023-05-30 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 74.567,
+              "stop": 74.816,
+              "target": 76.4685,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-31 10:30:00+00:00",
+              "fill_time": "2023-05-31 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.197,
+              "stop": 73.279,
+              "target": 74.32400000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-05-31 12:30:00+00:00",
+              "fill_time": "2023-05-31 13:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 72.427,
+              "stop": 72.476,
+              "target": 74.1285,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-06-30 15:30:00+00:00",
+              "fill_time": "2023-06-30 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 74.907,
+              "stop": 74.836,
+              "target": 73.5635,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-14 17:00:00+00:00",
+              "fill_time": "2023-07-14 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 80.214,
+              "stop": 80.285,
+              "target": 81.65750000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-07-17 12:30:00+00:00",
+              "fill_time": "2023-07-17 13:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 78.33,
+              "stop": 78.62960000000001,
+              "target": 80.4056,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-02 16:00:00+00:00",
+              "fill_time": "2023-08-02 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.077,
+              "stop": 85.171,
+              "target": 86.336,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-02 17:30:00+00:00",
+              "fill_time": "2023-08-02 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 83.487,
+              "stop": 83.903,
+              "target": 85.688,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-03 10:30:00+00:00",
+              "fill_time": "2023-08-03 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 82.717,
+              "stop": 82.723,
+              "target": 83.63300000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-15 16:30:00+00:00",
+              "fill_time": "2023-08-15 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.067,
+              "stop": 85.12400000000001,
+              "target": 86.7065,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-08-28 16:30:00+00:00",
+              "fill_time": "2023-08-28 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 85.117,
+              "stop": 84.95,
+              "target": 83.69250000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-09-05 16:00:00+00:00",
+              "fill_time": "2023-09-05 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 90.822,
+              "stop": 89.548,
+              "target": 88.05799999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-05 10:00:00+00:00",
+              "fill_time": "2023-10-05 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 86.876,
+              "stop": 87.27709999999999,
+              "target": 88.37434999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-05 11:30:00+00:00",
+              "fill_time": "2023-10-05 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 86.126,
+              "stop": 86.5621,
+              "target": 87.99685,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-23 03:00:00+00:00",
+              "fill_time": "2023-10-23 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 91.984,
+              "stop": 91.9974,
+              "target": 94.3789,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-10-24 11:00:00+00:00",
+              "fill_time": "2023-10-24 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 90.096,
+              "stop": 90.40700000000001,
+              "target": 91.6295,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-08 12:00:00+00:00",
+              "fill_time": "2023-11-08 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 81.724,
+              "stop": 81.755,
+              "target": 83.0525,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-11-13 16:30:00+00:00",
+              "fill_time": "2023-11-13 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 82.768,
+              "stop": 82.76100000000001,
+              "target": 81.2535,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-12-18 15:00:00+00:00",
+              "fill_time": "2023-12-18 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 78.322,
+              "stop": 78.212,
+              "target": 76.412,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-12-26 10:00:00+00:00",
+              "fill_time": "2023-12-26 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 78.392,
+              "stop": 78.533,
+              "target": 79.5305,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2023-12-28 12:00:00+00:00",
+              "fill_time": "2023-12-28 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 78.457,
+              "stop": 78.67030000000001,
+              "target": 79.98705,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-01-03 11:00:00+00:00",
+              "fill_time": "2024-01-03 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 75.007,
+              "stop": 75.03,
+              "target": 76.1725,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-01-26 20:00:00+00:00",
+              "fill_time": "2024-01-26 20:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 82.897,
+              "stop": 82.547,
+              "target": 80.79699999999998,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-02-01 19:30:00+00:00",
+              "fill_time": "2024-02-01 20:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 79.252,
+              "stop": 80.678,
+              "target": 83.538,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-02-21 10:30:00+00:00",
+              "fill_time": "2024-02-21 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 81.808,
+              "stop": 81.84,
+              "target": 82.51,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-14 11:30:00+00:00",
+              "fill_time": "2024-03-14 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 85.102,
+              "stop": 85.0996,
+              "target": 84.4056,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-14 17:00:00+00:00",
+              "fill_time": "2024-03-14 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 85.752,
+              "stop": 85.727,
+              "target": 84.5645,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-21 11:30:00+00:00",
+              "fill_time": "2024-03-21 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 86.165,
+              "stop": 86.2343,
+              "target": 86.96105,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-03-21 14:00:00+00:00",
+              "fill_time": "2024-03-21 14:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.695,
+              "stop": 85.71200000000002,
+              "target": 86.56949999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-02 10:00:00+00:00",
+              "fill_time": "2024-04-02 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 88.817,
+              "stop": 88.684,
+              "target": 88.1165,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-10 11:00:00+00:00",
+              "fill_time": "2024-04-10 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 89.738,
+              "stop": 89.82499999999999,
+              "target": 90.58250000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-17 18:30:00+00:00",
+              "fill_time": "2024-04-17 19:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 88.086,
+              "stop": 88.239,
+              "target": 90.1565,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-18 10:00:00+00:00",
+              "fill_time": "2024-04-18 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 87.15,
+              "stop": 87.179,
+              "target": 88.0815,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-04-30 16:30:00+00:00",
+              "fill_time": "2024-04-30 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 86.787,
+              "stop": 87.124,
+              "target": 88.45649999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-01 17:30:00+00:00",
+              "fill_time": "2024-05-01 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.505,
+              "stop": 85.84100000000001,
+              "target": 87.551,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-08 17:30:00+00:00",
+              "fill_time": "2024-05-08 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 83.959,
+              "stop": 83.945,
+              "target": 82.50500000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-24 12:00:00+00:00",
+              "fill_time": "2024-05-24 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 80.993,
+              "stop": 81.00179999999999,
+              "target": 81.80479999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-05-29 11:00:00+00:00",
+              "fill_time": "2024-05-29 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 84.852,
+              "stop": 84.8022,
+              "target": 84.25169999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-06-03 16:30:00+00:00",
+              "fill_time": "2024-06-03 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 79.439,
+              "stop": 80.01,
+              "target": 81.5575,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-06-04 10:00:00+00:00",
+              "fill_time": "2024-06-04 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 77.45,
+              "stop": 77.49499999999999,
+              "target": 78.30749999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-07-09 10:00:00+00:00",
+              "fill_time": "2024-07-09 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 86.1,
+              "stop": 86.10000000000001,
+              "target": 86.625,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-07-09 18:00:00+00:00",
+              "fill_time": "2024-07-09 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.51,
+              "stop": 85.704,
+              "target": 87.044,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-08-26 13:00:00+00:00",
+              "fill_time": "2024-08-26 13:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 80.737,
+              "stop": 80.202,
+              "target": 79.3145,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-09-26 08:30:00+00:00",
+              "fill_time": "2024-09-26 09:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 72.2,
+              "stop": 72.6524,
+              "target": 73.89640000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-03 17:00:00+00:00",
+              "fill_time": "2024-10-03 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 77.476,
+              "stop": 77.358,
+              "target": 74.803,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-09 13:00:00+00:00",
+              "fill_time": "2024-10-09 13:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 77.315,
+              "stop": 77.576,
+              "target": 79.4235,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-09 16:00:00+00:00",
+              "fill_time": "2024-10-09 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 76.285,
+              "stop": 76.376,
+              "target": 78.6235,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-14 23:30:00+00:00",
+              "fill_time": "2024-10-15 03:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 75.544,
+              "stop": 77.104,
+              "target": 79.3365,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-22 12:00:00+00:00",
+              "fill_time": "2024-10-22 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 75.069,
+              "stop": 74.74770000000001,
+              "target": 73.55095000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-10-28 12:00:00+00:00",
+              "fill_time": "2024-10-28 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 71.798,
+              "stop": 71.867,
+              "target": 73.74449999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-11-08 17:00:00+00:00",
+              "fill_time": "2024-11-08 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.857,
+              "stop": 73.89899999999999,
+              "target": 75.444,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-11-11 11:00:00+00:00",
+              "fill_time": "2024-11-11 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.495,
+              "stop": 73.7988,
+              "target": 74.88929999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-11-18 16:00:00+00:00",
+              "fill_time": "2024-11-18 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 72.369,
+              "stop": 72.30099999999999,
+              "target": 70.996,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2024-12-04 11:30:00+00:00",
+              "fill_time": "2024-12-04 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 74.538,
+              "stop": 74.527,
+              "target": 73.8545,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-08 18:00:00+00:00",
+              "fill_time": "2025-01-08 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 76.442,
+              "stop": 76.499,
+              "target": 77.95649999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-10 16:00:00+00:00",
+              "fill_time": "2025-01-10 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 80.896,
+              "stop": 80.758,
+              "target": 79.15299999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-10 23:30:00+00:00",
+              "fill_time": "2025-01-13 03:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 81.568,
+              "stop": 80.834,
+              "target": 78.714,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-13 03:00:00+00:00",
+              "fill_time": "2025-01-13 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 81.478,
+              "stop": 80.9132,
+              "target": 78.4202,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-01-20 15:30:00+00:00",
+              "fill_time": "2025-01-20 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 80.029,
+              "stop": 80.713,
+              "target": 82.003,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-02-25 17:00:00+00:00",
+              "fill_time": "2025-02-25 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.336,
+              "stop": 73.785,
+              "target": 74.96249999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-03-19 11:30:00+00:00",
+              "fill_time": "2025-03-19 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 70.083,
+              "stop": 70.1214,
+              "target": 70.85040000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-03 03:00:00+00:00",
+              "fill_time": "2025-04-03 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.292,
+              "stop": 73.4225,
+              "target": 75.38374999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-04 10:00:00+00:00",
+              "fill_time": "2025-04-04 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 69.047,
+              "stop": 69.0585,
+              "target": 70.07974999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-04 11:30:00+00:00",
+              "fill_time": "2025-04-04 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 67.977,
+              "stop": 68.1145,
+              "target": 69.37075,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-04 13:00:00+00:00",
+              "fill_time": "2025-04-04 13:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 66.917,
+              "stop": 67.476,
+              "target": 69.25349999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-04 14:00:00+00:00",
+              "fill_time": "2025-04-04 14:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 64.867,
+              "stop": 65.293,
+              "target": 67.678,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-07 03:00:00+00:00",
+              "fill_time": "2025-04-07 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 63.732,
+              "stop": 64.8245,
+              "target": 68.65575000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-17 18:00:00+00:00",
+              "fill_time": "2025-04-17 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 67.742,
+              "stop": 67.50200000000001,
+              "target": 66.227,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-29 11:30:00+00:00",
+              "fill_time": "2025-04-29 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 64.622,
+              "stop": 64.813,
+              "target": 65.93549999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-04-30 18:30:00+00:00",
+              "fill_time": "2025-04-30 19:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 61.907,
+              "stop": 62.774,
+              "target": 64.9065,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-05 03:00:00+00:00",
+              "fill_time": "2025-05-05 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 59.985,
+              "stop": 61.2123,
+              "target": 64.03654999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-22 09:30:00+00:00",
+              "fill_time": "2025-05-22 10:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 64.286,
+              "stop": 64.75,
+              "target": 65.63999999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-05-23 14:30:00+00:00",
+              "fill_time": "2025-05-23 15:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 64.103,
+              "stop": 64.395,
+              "target": 65.53999999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-11 21:00:00+00:00",
+              "fill_time": "2025-06-11 21:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 70.208,
+              "stop": 70.045,
+              "target": 68.2275,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-13 03:00:00+00:00",
+              "fill_time": "2025-06-13 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 73.664,
+              "stop": 71.6078,
+              "target": 69.10329999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-13 05:00:00+00:00",
+              "fill_time": "2025-06-13 05:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 76.984,
+              "stop": 76.6228,
+              "target": 72.7508,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-23 19:30:00+00:00",
+              "fill_time": "2025-06-23 20:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 75.478,
+              "stop": 75.913,
+              "target": 79.72550000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-06-23 20:00:00+00:00",
+              "fill_time": "2025-06-23 20:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 73.108,
+              "stop": 73.774,
+              "target": 78.009,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-01 13:30:00+00:00",
+              "fill_time": "2025-07-01 14:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 68.248,
+              "stop": 68.191,
+              "target": 67.2335,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-10 14:30:00+00:00",
+              "fill_time": "2025-07-10 15:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 70.113,
+              "stop": 70.134,
+              "target": 71.1815,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-10 16:00:00+00:00",
+              "fill_time": "2025-07-10 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 69.463,
+              "stop": 69.756,
+              "target": 71.12349999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-29 11:30:00+00:00",
+              "fill_time": "2025-07-29 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 70.676,
+              "stop": 70.6589,
+              "target": 69.95165,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-29 20:30:00+00:00",
+              "fill_time": "2025-07-29 21:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 72.256,
+              "stop": 71.72500000000001,
+              "target": 70.37750000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-07-30 10:30:00+00:00",
+              "fill_time": "2025-07-30 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 73.026,
+              "stop": 72.9718,
+              "target": 72.15729999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-04 11:30:00+00:00",
+              "fill_time": "2025-08-04 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 69.485,
+              "stop": 69.5876,
+              "target": 70.8061,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-08-14 16:00:00+00:00",
+              "fill_time": "2025-08-14 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 66.976,
+              "stop": 66.92099999999999,
+              "target": 65.8085,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-09-05 15:30:00+00:00",
+              "fill_time": "2025-09-05 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 66.111,
+              "stop": 66.20400000000001,
+              "target": 67.39649999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-09-30 14:30:00+00:00",
+              "fill_time": "2025-09-30 15:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 66.317,
+              "stop": 66.569,
+              "target": 67.689,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-10 18:00:00+00:00",
+              "fill_time": "2025-10-10 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 63.382,
+              "stop": 63.444,
+              "target": 65.16400000000002,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-21 12:30:00+00:00",
+              "fill_time": "2025-10-21 13:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 61.483,
+              "stop": 61.4616,
+              "target": 60.515100000000004,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-22 06:00:00+00:00",
+              "fill_time": "2025-10-22 06:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 62.569,
+              "stop": 62.4294,
+              "target": 61.053399999999996,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-22 22:00:00+00:00",
+              "fill_time": "2025-10-22 22:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 63.729,
+              "stop": 63.440999999999995,
+              "target": 61.760999999999996,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-10-23 03:00:00+00:00",
+              "fill_time": "2025-10-23 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 64.375,
+              "stop": 64.3496,
+              "target": 62.2731,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-11-12 16:30:00+00:00",
+              "fill_time": "2025-11-12 17:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 63.513,
+              "stop": 63.574,
+              "target": 64.4715,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-12-10 16:00:00+00:00",
+              "fill_time": "2025-12-10 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 61.88,
+              "stop": 61.893,
+              "target": 62.7855,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2025-12-16 10:00:00+00:00",
+              "fill_time": "2025-12-16 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 60.051,
+              "stop": 60.056700000000006,
+              "target": 60.66745,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-05 10:00:00+00:00",
+              "fill_time": "2026-01-05 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 60.023,
+              "stop": 60.1111,
+              "target": 60.99085,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-09 16:00:00+00:00",
+              "fill_time": "2026-01-09 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 63.222,
+              "stop": 63.143,
+              "target": 62.0155,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-23 15:30:00+00:00",
+              "fill_time": "2026-01-23 16:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 65.719,
+              "stop": 65.65400000000001,
+              "target": 64.6665,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-26 08:00:00+00:00",
+              "fill_time": "2026-01-26 08:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 66.418,
+              "stop": 66.3631,
+              "target": 65.42535,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-29 10:30:00+00:00",
+              "fill_time": "2026-01-29 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 69.467,
+              "stop": 69.42399999999999,
+              "target": 68.33149999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-01-29 16:00:00+00:00",
+              "fill_time": "2026-01-29 16:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 71.057,
+              "stop": 71.015,
+              "target": 69.095,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-13 13:30:00+00:00",
+              "fill_time": "2026-02-13 14:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 67.507,
+              "stop": 67.62799999999999,
+              "target": 68.8005,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-19 10:30:00+00:00",
+              "fill_time": "2026-02-19 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 71.757,
+              "stop": 71.659,
+              "target": 70.57900000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-26 11:00:00+00:00",
+              "fill_time": "2026-02-26 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 70.702,
+              "stop": 70.847,
+              "target": 71.6845,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-02-26 12:00:00+00:00",
+              "fill_time": "2026-02-26 12:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 70.192,
+              "stop": 70.452,
+              "target": 71.477,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-02 03:00:00+00:00",
+              "fill_time": "2026-03-02 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 76.316,
+              "stop": 74.76790000000001,
+              "target": 71.69065,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-06 23:30:00+00:00",
+              "fill_time": "2026-03-09 03:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 108.451,
+              "stop": 95.388,
+              "target": 89.61300000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-09 03:00:00+00:00",
+              "fill_time": "2026-03-09 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 108.691,
+              "stop": 97.12129999999999,
+              "target": 87.61305,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-09 04:30:00+00:00",
+              "fill_time": "2026-03-09 05:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 114.851,
+              "stop": 113.83529999999999,
+              "target": 103.02454999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-03-24 23:00:00+00:00",
+              "fill_time": "2026-03-24 23:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 100.5,
+              "stop": 101.28099999999999,
+              "target": 107.52850000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-04-08 03:00:00+00:00",
+              "fill_time": "2026-04-08 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 97.796,
+              "stop": 104.0597,
+              "target": 114.78295,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-06 03:00:00+00:00",
+              "fill_time": "2026-05-06 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 113.556,
+              "stop": 113.64930000000001,
+              "target": 117.85355,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-06 10:30:00+00:00",
+              "fill_time": "2026-05-06 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 110.366,
+              "stop": 111.0693,
+              "target": 115.08605,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-06 11:30:00+00:00",
+              "fill_time": "2026-05-06 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 107.916,
+              "stop": 109.41029999999999,
+              "target": 114.64955,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-06 13:30:00+00:00",
+              "fill_time": "2026-05-06 14:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 102.966,
+              "stop": 103.378,
+              "target": 109.623,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-07 10:00:00+00:00",
+              "fill_time": "2026-05-07 10:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 103.351,
+              "stop": 104.00500000000001,
+              "target": 107.395,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-20 17:00:00+00:00",
+              "fill_time": "2026-05-20 17:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 108.729,
+              "stop": 109.081,
+              "target": 113.326,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-22 20:00:00+00:00",
+              "fill_time": "2026-05-22 20:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 103.049,
+              "stop": 103.31599999999999,
+              "target": 107.72349999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-25 03:00:00+00:00",
+              "fill_time": "2026-05-25 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 99.774,
+              "stop": 102.8425,
+              "target": 108.80874999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-05-25 19:30:00+00:00",
+              "fill_time": "2026-05-25 20:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 97.464,
+              "stop": 97.54499999999999,
+              "target": 101.2175,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-05 11:00:00+00:00",
+              "fill_time": "2026-06-05 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 96.258,
+              "stop": 96.678,
+              "target": 98.603,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-08 03:00:00+00:00",
+              "fill_time": "2026-06-08 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 97.55,
+              "stop": 94.2408,
+              "target": 97.2088,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-12 11:00:00+00:00",
+              "fill_time": "2026-06-12 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 87.77,
+              "stop": 88.3627,
+              "target": 91.00595,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-06-15 03:00:00+00:00",
+              "fill_time": "2026-06-15 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.313,
+              "stop": 86.9463,
+              "target": 91.00555,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-07 21:30:00+00:00",
+              "fill_time": "2026-07-07 22:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 75.272,
+              "stop": 75.235,
+              "target": 73.1525,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-07 22:00:00+00:00",
+              "fill_time": "2026-07-07 22:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 76.222,
+              "stop": 76.184,
+              "target": 73.90400000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-08 11:00:00+00:00",
+              "fill_time": "2026-07-08 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 78.043,
+              "stop": 77.0961,
+              "target": 74.73835,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-14 03:00:00+00:00",
+              "fill_time": "2026-07-14 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 85.549,
+              "stop": 84.96470000000001,
+              "target": 80.79795,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-27 03:00:00+00:00",
+              "fill_time": "2026-07-27 03:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 88.651,
+              "stop": 92.2303,
+              "target": 96.54955,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-28 09:30:00+00:00",
+              "fill_time": "2026-07-28 10:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 85.162,
+              "stop": 85.273,
+              "target": 87.7455,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-07-28 18:00:00+00:00",
+              "fill_time": "2026-07-28 18:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 83.602,
+              "stop": 83.78,
+              "target": 87.61,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-11 09:30:00+00:00",
+              "fill_time": "2026-08-11 10:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 89.824,
+              "stop": 89.78689999999999,
+              "target": 87.97964999999999,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-08-25 11:30:00+00:00",
+              "fill_time": "2026-08-25 12:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 90.594,
+              "stop": 90.69949999999999,
+              "target": 92.93575,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-01 19:00:00+00:00",
+              "fill_time": "2026-09-01 19:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 95.698,
+              "stop": 95.222,
+              "target": 92.612,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-10 15:00:00+00:00",
+              "fill_time": "2026-09-10 15:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 106.227,
+              "stop": 105.78299999999999,
+              "target": 102.743,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-16 17:30:00+00:00",
+              "fill_time": "2026-09-16 18:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": 1,
+              "entry": 106.194,
+              "stop": 106.341,
+              "target": 109.57350000000001,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-24 10:30:00+00:00",
+              "fill_time": "2026-09-24 11:00:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 104.089,
+              "stop": 104.0095,
+              "target": 101.80825,
+              "reason": "unexecutable bracket at fill"
+            },
+            {
+              "signal_time": "2026-09-24 11:00:00+00:00",
+              "fill_time": "2026-09-24 11:30:00+00:00",
+              "tag": "cross_asset_residual:revert",
+              "side": -1,
+              "entry": 105.799,
+              "stop": 105.0945,
+              "target": 102.58075,
+              "reason": "unexecutable bracket at fill"
+            }
+          ]
+        }
+      ],
+      "aligned_matrix": {
+        "days": 3420,
+        "sleeves": 160,
+        "certificates": 849,
+        "priced": 151,
+        "refused": {},
+        "max_abs_daily_r": 284.7885714274784,
+        "crisis_vol_mult": 2.5,
+        "crisis_note": "stress regime bull/high_vol (480d, shrink weight 0.89); pairwise correlation 0.01 in bull/low_vol vs 0.01 in bull/high_vol",
+        "prior_crisis_vol_mult": 301646980.4178
+      },
+      "completed_at": "2026-10-09T02:00:28.553699+00:00"
+    },
+    "book_replay": {
+      "at": "2026-10-09T02:07:07.935719+00:00",
+      "mode": "PRIVATE_REPLAY_AUTHENTICATED_SNAPSHOT_NO_ORDER_API",
+      "snapshot": "C:\\opt\\quant\\desks\\mt5\\reports\\FUSION_DEAL_RECONCILIATION_20261009.json",
+      "snapshot_at": "2026-10-08T22:44:36.536785+00:00",
+      "snapshot_sha256": "c25583d0c050093371ec74ada772950856db43a5b858115082e0ade8990df573",
+      "account": "ACCOUNT_REDACTED",
+      "server": "FusionMarkets-Live",
+      "position": 233700226,
+      "before": {
+        "filled": {
+          "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": 0.4
+        },
+        "target": {
+          "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": 0.4
+        }
+      },
+      "after": {
+        "filled": {},
+        "target": {}
+      },
+      "original_prefix_preserved": true,
+      "restart_idempotent": true,
+      "production_book_modified": false,
+      "net_account_pnl": 0.95,
+      "opening_cost": -0.81,
+      "historical_ledger_exit_only_pnl": 1.76,
+      "historical_correction_delta": -0.81,
+      "historical_correction_status": "EVIDENCED_NOT_APPLIED_APPEND_ONLY_HISTORY_PRESERVED"
+    },
+    "review_packet": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\quant-repair-review-packet.json",
+    "tests": {
+      "closure-final-seal-check-junit.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "34",
+          "time": "41.093",
+          "timestamp": "2026-10-09T06:43:18.662166+02:00",
+          "hostname": "vmi3571445"
+        }
+      ],
+      "closure-root-crash-repro-junit.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "35",
+          "time": "48.111",
+          "timestamp": "2026-10-09T06:08:46.138100+02:00",
+          "hostname": "vmi3571445"
+        }
+      ],
+      "closure-desk-final-repair-junit.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "33",
+          "time": "248.584",
+          "timestamp": "2026-10-09T07:02:40.560492+02:00",
+          "hostname": "vmi3571445"
+        }
+      ],
+      "closure-smoke-covered-junit.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "1",
+          "time": "19.485",
+          "timestamp": "2026-10-09T07:08:05.763208+02:00",
+          "hostname": "vmi3571445"
+        }
+      ]
+    },
+    "full_gate": {
+      "status": "RED",
+      "root": [
+        {
+          "name": "pytest",
+          "errors": "2",
+          "failures": "0",
+          "skipped": "50",
+          "tests": "10352",
+          "time": "1750.505",
+          "timestamp": "2026-10-09T05:33:34.845206+02:00",
+          "hostname": "vmi3571445"
+        }
+      ],
+      "desk": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "9",
+          "skipped": "25",
+          "tests": "11093",
+          "time": "2574.823",
+          "timestamp": "2026-10-09T06:02:57.545084+02:00",
+          "hostname": "vmi3571445"
+        }
+      ],
+      "root_note": "Incomplete xdist run: two worker crashes, zero recorded assertion failures; not a full pass.",
+      "desk_note": "Nine failures: eight path-containment failures repaired, one instrumented runtime benchmark separated from tracing and rechecked; original red evidence retained.",
+      "global_coverage_percent": 49.29,
+      "global_coverage_floor_percent": 86.48,
+      "money_path_floor": "PASS",
+      "floors_lowered": false,
+      "root_retry": "AUTOMATIC_APPROVAL_REVIEW_REJECTED: blocked by policy; no detailed reason supplied",
+      "retry_via_alternate_route": false
+    },
+    "production_runtime_smoke_seconds": 13.181,
+    "immutable_smoke": {
+      "ok": true,
+      "breaches": [],
+      "crlf_only": [],
+      "n_signed": 19
+    },
+    "append_only_prefixes_unchanged": true,
+    "record_seals": 194
+  },
+  "research": {
+    "certificates_last_verified": 849,
+    "families_last_verified": 10,
+    "new_family_verified": false,
+    "judging_measurement": {
+      "at": "2026-10-09T05:09:47.862211+00:00",
+      "scope": "canonical verdict ledger, first terminal cell identities",
+      "verdicts": {
+        "status": "MEASURED",
+        "rows_total": 833310,
+        "rows_unstamped": 0,
+        "last_verdict_at": "2026-10-08T17:44:23+00:00",
+        "counts": {
+          "1h": 0,
+          "24h": 77817,
+          "7d": 552063
+        },
+        "count_basis": "changed verdict events; unchanged retests do not append",
+        "first_terminal_counts": {
+          "1h": 0,
+          "24h": 23949,
+          "7d": 146627
+        },
+        "first_terminal_cells": 273766,
+        "first_terminal_per_hour": {
+          "1h": 0.0,
+          "24h": 997.875,
+          "7d": 872.78
+        },
+        "per_hour": {
+          "1h": 0.0,
+          "24h": 3242.375,
+          "7d": 3286.089
+        }
+      },
+      "created": {
+        "status": "MEASURED",
+        "counts": {
+          "24h": 31094,
+          "7d": 194077
+        },
+        "per_hour": {
+          "24h": 1295.583,
+          "7d": 1155.22
+        }
+      }
+    },
+    "current_full_backlog": "UNMEASURED; historical 1.4 million is not a current census",
+    "active_batch_cells": 368238,
+    "partition_target": 15,
+    "retained_shards": [
+      {
+        "file": "shard_0.pkl",
+        "bytes": 20327531,
+        "at": "2026-10-08T22:21:50.043725+00:00"
+      },
+      {
+        "file": "shard_1.pkl",
+        "bytes": 15593671,
+        "at": "2026-10-08T22:49:19.147884+00:00"
+      },
+      {
+        "file": "shard_10.pkl",
+        "bytes": 7568035,
+        "at": "2026-10-09T04:49:46.157191+00:00"
+      },
+      {
+        "file": "shard_2.pkl",
+        "bytes": 35468456,
+        "at": "2026-10-08T21:13:02.448165+00:00"
+      },
+      {
+        "file": "shard_3.pkl",
+        "bytes": 12674211,
+        "at": "2026-10-08T23:30:35.164415+00:00"
+      },
+      {
+        "file": "shard_4.pkl",
+        "bytes": 11254242,
+        "at": "2026-10-09T00:17:16.151780+00:00"
+      },
+      {
+        "file": "shard_5.pkl",
+        "bytes": 11472697,
+        "at": "2026-10-09T00:45:17.845329+00:00"
+      },
+      {
+        "file": "shard_6.pkl",
+        "bytes": 9829611,
+        "at": "2026-10-09T01:15:50.060419+00:00"
+      },
+      {
+        "file": "shard_7.pkl",
+        "bytes": 8748157,
+        "at": "2026-10-09T01:55:01.136199+00:00"
+      },
+      {
+        "file": "shard_8.pkl",
+        "bytes": 7842541,
+        "at": "2026-10-09T03:01:48.664543+00:00"
+      },
+      {
+        "file": "shard_9.pkl",
+        "bytes": 7762988,
+        "at": "2026-10-09T04:06:48.549843+00:00"
+      }
+    ],
+    "shard_note": "Retained build partitions are not completed judgements or new certificates",
+    "binding_constraint": "Active serial shard recovery plus long-running canonical merge; performance/intake repairs have not reached the canonical runtime",
+    "legacy_unstamped_last_verified": 29483,
+    "continuous_workers": "Existing judge, merge, gateway and canonical E8 executor retained; no duplicate scheduler/controller/judge launched",
+    "stale_capacity_report": "GAUNTLET_BACKPRESSURE at 2026-10-03 is stale; current production throughput report still incorrectly calls its queue MEASURED"
+  },
+  "owned_work": [
+    {
+      "item": "Selected implementation and private replay",
+      "state": "VERIFIED_SOURCE_NOT_DEPLOYED",
+      "owner": "Codex",
+      "proof": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\quant-repair-review-packet.json"
+    },
+    {
+      "item": "Required full-root validation and library commit",
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "owner": "Codex after legitimate policy clearance",
+      "next_action": "Run the original required full validation after clearance, repair any real failures, keep coverage floors, then commit"
+    },
+    {
+      "item": "Canonical publication, CI, integration, seal, release and downstream adoption",
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "owner": "Codex after full green checks and legitimate repository/workflow authority",
+      "next_action": "Use canonical release path; require exact CI and adopter receipts, then measure throughput and natural signals"
+    },
+    {
+      "item": "Historical AUDCHF net-cost correction",
+      "state": "EVIDENCED_NOT_APPLIED",
+      "owner": "Codex",
+      "delta_account_currency": -0.81,
+      "next_action": "After validated release, use a tested append-only correction consumer; never overwrite or reseal the original history"
+    },
+    {
+      "item": "Historical gold book offset",
+      "state": "PARKED_WITH_EVIDENCE_REQUIREMENT",
+      "owner": "Codex",
+      "reopen_trigger": "Authenticated original account/position linkage for theoretical -0.24 lot offset"
+    },
+    {
+      "item": "USDJPY and CHFNOK eligibility",
+      "state": "VALIDATION_QUARANTINE_PRESERVED",
+      "owner": "Canonical research workers",
+      "reopen_trigger": "Valid source lineage for USDJPY and independent no-lookahead rejudgement for CHFNOK"
+    }
+  ],
+  "external_blockers": {
+    "at": "2026-10-09T04:00:06.042679+00:00",
+    "authenticated_connector_login": "kingdemond434-cpu",
+    "repository": "kingdemond434-cpu/quant",
+    "read_permission_probe": {
+      "tool": "github_get_repo_collaborator_permission",
+      "http_status": 403,
+      "error": "Resource not accessible by integration"
+    },
+    "previous_pr_create": {
+      "http_status": 403,
+      "error": "Resource not accessible by integration"
+    },
+    "previous_pr_ci_shell_action": {
+      "result": "automatic approval review rejected",
+      "reason": "blocked by policy",
+      "detailed_reason": null
+    },
+    "write_authority_change_evidenced": false,
+    "denied_mutation_retried": false,
+    "required_unblock": "Legitimate GitHub integration PR/workflow write access and clearance of separate automatic-review policy refusal; exact green full CI plus canonical integration/release/adopter receipts.",
+    "supported_plugin_inspection": {
+      "at": "2026-10-09T04:36:22.759598+00:00",
+      "plugin": "GitHub",
+      "id": "plugin_connector_1p_1a69035c238881919c4190932b2df699",
+      "installed": true,
+      "status": "ENABLED",
+      "oauth_or_repository_admin_grant_capability": false,
+      "note": "Available plugin permission tools manage ChatGPT approval preferences, explicitly not GitHub OAuth/admin scopes; no permission setting changed, no duplicate installation suggested."
+    },
+    "full_root_validation_action": {
+      "state": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+      "result": "automatic approval review rejected command",
+      "reason": "blocked by policy; no detailed reason supplied",
+      "retried_in_alternate_form": false,
+      "required_unblock": "Legitimate clearance of the automatic policy refusal for the exact full-root validation action; then all required full checks before committing library changes."
+    }
+  },
+  "evidence": {
+    "patch": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\quant-remaining-repairs-review.patch",
+    "packet": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\quant-repair-review-packet.json",
+    "full_gate": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-01\\check-repo-https-github-com-kingdemond434\\outputs\\closure-full-final-gates",
+    "capital": "C:\\opt\\quant\\desks\\mt5\\reports\\CLOSURE_CAPITAL_PATH_20261009.json",
+    "judging": "C:\\opt\\quant\\desks\\mt5\\reports\\CLOSURE_VERDICT_MEASUREMENT_20261009.json"
+  },
+  "next_action": "Clear the exact automatic validation refusal and integration repository/workflow scope; resume required full checks, canonical release and consumer proof from this checkpoint"
+}

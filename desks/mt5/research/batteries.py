@@ -238,11 +238,22 @@ ORGANS: tuple[Entry, ...] = (
     # half of the same file is on daily_cycle's proposer list.
     _e("desks/mt5/research/nlp_social_cells.py", "text -> event/policy factors and Asian retail "
        "attention/mood deltas, fetched and published", "--ingest"),
+    # THE DESK'S OWN COSTS AND THE OPERATOR'S ALERT LOAD (ARCH-28, 2026-10-07): model spend and
+    # broker charges from the desk's ledgers, the hurdle over them, and how much of the alert
+    # traffic deserves a person. It ran only in the VPS daily cycle, which the box never sees.
+    _e("scripts/run_desk_economics.py", "the hurdle from measured costs, and the alert burden"),
+    # EVERY ACTIVE LIMIT, BY KIND (ARCH-25): implementation budget, machine resource, access
+    # and spend, statistical safeguard, capital control -- each binding, headroom or unmeasured.
+    _e("desks/mt5/research/limits_census.py", "which limits bind, and what kind each one is"),
     _e("desks/mt5/research/empty_cluster_forcer.py", "force cells into every EMPTY alpha cluster"),
     _e("desks/mt5/research/institutional_cards.py", "mechanism cards for never-certified axes"),
     _e("desks/mt5/research/local_converter.py", "mined rows -> candidates, no seat, no network"),
     _e("desks/mt5/research/index_discovery.py", "index-driven discovery: addresses, not crawls"),
-    _e("desks/mt5/research/asia_transmission.py", "the Asian production-chain transmission graph"),
+    # --propose (2026-10-06, Asia audit gap 10): measured, non-REFUTED edges donate their
+    # lead_lag cells through proposer_common with every screen charged as a trial, and every
+    # chain's measurement -- failures included -- is appended to data/asia_transmission_edges.
+    _e("desks/mt5/research/asia_transmission.py", "the Asian production-chain transmission "
+       "graph, measured, donated and remembered", "--propose"),
     _e("desks/mt5/research/middle_east_interaction.py", "six mechanism families, two triples"),
     _e("desks/mt5/research/south_america_interaction.py", "local state as a SENSOR, not a trade"),
     _e("desks/mt5/research/countries/kr/miners.py", "the Korea miner registry: twelve agents"),

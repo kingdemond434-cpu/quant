@@ -52,11 +52,14 @@ def _git(*args: str) -> str:
 #: Paths whose dirtiness says nothing about what CODE was tested. Mirrors
 #: `libs/ops/release.py:STATE_PREFIXES`, duplicated so this script runs on a bare checkout.
 _STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                   "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                    "data/", "reports/", "logs/", "web/", "docs/")
+_STATE_FILES = frozenset({"desks/mt5/swap_exposure.json",
+                          "desks/mt5/docs/TRADE_PATH_REPORT.md"})
 
 
 def _is_state(rel: str) -> bool:
-    return any(rel.startswith(pre) for pre in _STATE_PREFIXES)
+    return rel in _STATE_FILES or any(rel.startswith(pre) for pre in _STATE_PREFIXES)
 
 
 def _tracked_py() -> set[str]:
@@ -90,6 +93,23 @@ def _working_tree_rows() -> list[str]:
             if rel not in tracked and (ROOT / Path(rel)).is_file():
                 rows.append(f"?? {rel}")
     return rows
+
+
+def _status_paths(row: str) -> tuple[str, list[str]]:
+    """Parse Git name-status rows and the synthetic untracked/porcelain rows.
+
+    ``diff-files --name-status`` uses ``M\tpath``; porcelain uses `` M path``.
+    Treating both as three-column porcelain drops the first byte of every
+    tracked path, making state changes look like code drift.
+    """
+    if row.startswith("?? "):
+        return "??", [row[3:]]
+    if "\t" in row:
+        status, *paths = row.split("\t")
+        return status, paths[:2] if status.startswith(("R", "C")) else paths[:1]
+    if len(row) >= 4 and row[2] == " ":
+        return row[:2], [row[3:]]
+    return "", []
 
 
 def code_hash(ref: str = "HEAD") -> str:
@@ -183,13 +203,15 @@ def attest(gates: str, result: str) -> dict[str, object]:
     for ln in _working_tree_rows():
         if not ln.strip():
             continue
-        code, rel = ln[:2], ln[3:].strip().strip('"')
-        if _is_state(rel):
+        code, paths = _status_paths(ln)
+        paths = [rel.strip().strip('"') for rel in paths if rel.strip()]
+        if not paths or all(_is_state(rel) for rel in paths):
             continue
-        if code.strip() == "??":
+        if code == "??":
             # An untracked file is in no commit. It can only change what the gates executed by
             # SHADOWING a tracked module of the same name in the same package -- see
             # `_shadows_a_real_module`. Anything else is a scratch file nothing imports.
+            rel = paths[0]
             if not rel.endswith(".py"):
                 continue
             if tracked_py is None:
