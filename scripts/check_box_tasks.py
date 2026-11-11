@@ -250,8 +250,13 @@ MAX_KNOWN_TRIGGER_DRIFT = 5
 #: register_absent, and Install-QuantWindows' own task-table loop, whose entries ARE compared
 #: through their `Name = ... Trigger = {}` blocks). UNCOMPARED: resolved tasks with no manifest
 #: period to compare against (resident, at startup, at logon, or no manifest row).
-MAX_UNRESOLVED_REGISTRATIONS = 5
-MAX_UNCOMPARED_TRIGGERS = 11
+#: RE-MEASURED 2026-11-11 WHEN THIS FENCE MET LIVE: 8, not the 5 counted on 2026-10-14. Three
+#: registrations arrived on live in between, all of the same loop-over-a-table shape this scan
+#: does not read: install_box_watchers_canon.ps1, install_moat_backup_tasks.ps1 and a second
+#: one in install_tape_tasks.ps1. The fence did not exist on live while they landed, so 8 is its
+#: starting count there; from here it only shrinks.
+MAX_UNRESOLVED_REGISTRATIONS = 8
+MAX_UNCOMPARED_TRIGGERS = 10
 
 
 def check(root: Path | None = None) -> dict[str, object]:

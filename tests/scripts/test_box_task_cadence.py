@@ -57,8 +57,8 @@ def test_every_known_drift_still_resolves_to_its_recorded_period() -> None:
     assert len(cbt.KNOWN_TRIGGER_DRIFT) <= cbt.MAX_KNOWN_TRIGGER_DRIFT == 5
     # Pinned EQUAL to the measured blind spot: a fixed site forces the constant down, and
     # raising a constant to admit a new blind site fails here.
-    assert len(out["unresolved_registrations"]) == cbt.MAX_UNRESOLVED_REGISTRATIONS == 5
-    assert len(out["uncompared_triggers"]) == cbt.MAX_UNCOMPARED_TRIGGERS == 11
+    assert len(out["unresolved_registrations"]) == cbt.MAX_UNRESOLVED_REGISTRATIONS == 8
+    assert len(out["uncompared_triggers"]) == cbt.MAX_UNCOMPARED_TRIGGERS == 10
     assert not [p for p in out["problems"] if "trigger" in p.lower() or "Register" in p]
 
 
