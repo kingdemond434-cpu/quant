@@ -247,10 +247,24 @@ def cost_ratio(surface: Mapping[str, Any] | None, symbol: str,
 #: net of the fill-hour spread, and adding `base_cost_r * (ratio - 1)` on top would charge the
 #: same spread twice -- the double charge this module's own rule forbids ("correcting it belongs
 #: in the replay, at source"). The ratio is still measured and published per sleeve; its bias is
-#: zero, sourced CHARGED_AT_SOURCE. A caller replaying FLAT evidence passes
-#: `charged_at_source=False` to get the old correction back.
+#: zero, sourced CHARGED_AT_SOURCE.
+#:
+#: BUT ONLY FOR A SLEEVE WHOSE EVIDENCE WAS PRICED THAT WAY (Auditor HOLD on #389). The allocator's
+#: series are the backtest matrix and the certified library -- both still replayed on the FLAT
+#: pooled spread -- with forward days appended. A blanket "charged at source" zeroed the
+#: under-charge correction for every one of them, raised their means on a cost-model artefact,
+#: and sized them up for it. So the exemption is per sleeve: a row whose `spread_basis` is the
+#: table basis (`TABLE_BASIS`) is charged at source; every other row keeps the correction.
 CHARGED_AT_SOURCE = "CHARGED_AT_SOURCE"
-REPLAY_CHARGES_ENTRY_HOUR = True
+TABLE_BASIS = "fill_hour_surface_table"
+REPLAY_CHARGES_ENTRY_HOUR = False
+
+
+def _row_charged_at_source(row: Mapping[str, Any], default: bool) -> bool:
+    """True only when this sleeve's own evidence names the table basis."""
+    if "spread_basis" not in row:
+        return bool(default)
+    return str(row.get("spread_basis") or "").split(";")[0] == TABLE_BASIS
 
 
 def costs_for(sleeves: Sequence[Mapping[str, Any]],
@@ -297,7 +311,8 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
         # and is reported -- but applying it would raise the sleeve's mean on the strength of a
         # cost model, and sizing up on a model is the one direction this desk does not take from
         # an instrument that has never been validated against a real fill.
-        bias = 0.0 if charged_at_source else float(base_cost_r) * max(0.0, applied - 1.0)
+        at_source = _row_charged_at_source(s, charged_at_source)
+        bias = 0.0 if at_source else float(base_cost_r) * max(0.0, applied - 1.0)
         if ratio > 1.0:
             n_under += 1
             if worst is None or ratio > worst[0]:
@@ -311,7 +326,7 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
             "cost_r": round(float(base_cost_r) * applied, 6),
             "ratio": round(applied, 4), "ratio_raw": round(float(ratio), 4),
             "clipped": bool(applied < ratio),
-            "source": CHARGED_AT_SOURCE if charged_at_source else MEASURED, "why": why,
+            "source": CHARGED_AT_SOURCE if at_source else MEASURED, "why": why,
             **detail,
         }
     n = len(out)

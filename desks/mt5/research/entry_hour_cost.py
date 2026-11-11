@@ -1,4 +1,10 @@
-"""ENTRY-HOUR COST: every gate and every forward clock charges the spread of the hour it TRADES.
+"""ENTRY-HOUR COST: every forward clock charges the spread of the hour it TRADES.
+
+WHERE IT IS WIRED, AND WHERE IT IS NOT (Auditor, #389). The forward clocks (`shadow_forward`,
+`qquant_shadow`) price through this module. The sealed gauntlet does NOT yet: `gauntlet_costs`
+below is its prepared call and has no caller until the sealed hunk lands through the sign path,
+so a gauntlet verdict is still priced at its modal fill hour, and the allocator's backtest and
+certified series are still FLAT (which is why `execution_cost` keeps their correction).
 
 THE DEFECT, measured 2026-10-13 on the desk's own artifacts. `universe.json` carries ONE
 `median_spread_pts` per symbol and `Costs.from_symbol` charged it at every fill. The gauntlet
@@ -218,7 +224,13 @@ def spread_table_pts(surface: dict[str, Any] | None, symbol: str,
             vals.append(float(v))
             b = str(info.get("basis"))
             bases[b] = bases.get(b, 0) + 1
-    return tuple(vals), {"basis": "fill_hour_surface_table", "cells_by_basis": bases,
+    # DISCLOSED, NOT POINT-IN-TIME (Auditor, #389): a recent-365 cell is ONE static number built
+    # from the last year's bars and charged to every year of the replay, so on history before that
+    # year it is cost-side lookahead. The basis says so whenever any slot used one.
+    basis = "fill_hour_surface_table"
+    if any("recent365" in b for b in bases):
+        basis += ";not_point_in_time:last_365d_cells_applied_to_all_history"
+    return tuple(vals), {"basis": basis, "cells_by_basis": bases,
                          "q": q, "schema": (surface or {}).get("schema")}
 
 

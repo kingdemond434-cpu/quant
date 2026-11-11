@@ -152,6 +152,12 @@ def main() -> int:
         from research.entry_hour_cost import costs_at_entry_hour
         costs, _spread_basis = costs_at_entry_hour(
             str(spec["symbol"]), meta.get(str(spec["symbol"]), {}), mult=2.0)
+        # The table is keyed on the broker clock; HTTP bars are true UTC (see shadow_forward).
+        if getattr(costs, "spread_per_lot_by_hour", None) and \
+                str(getattr(bars, "source", "")).startswith("HTTP:"):
+            import dataclasses as _dcs
+            costs = _dcs.replace(costs, spread_per_lot_by_hour=None)
+            _spread_basis = f"REGISTRY_FALLBACK:bars_not_on_broker_clock({bars.source})"
         result = run_backtest(h1, signals, costs)
         trades = [trade for trade in result.trades
                   if pd.Timestamp(trade.entry_time).tz_convert("UTC") > frozen_at]
@@ -173,6 +179,7 @@ def main() -> int:
             "forward_bars_evaluated": int((h1.index > frozen_at).sum()),
             "forward_decision_bars": len(decision_bars),
             "forward_eligible_signals": len(forward_signals),
+            "spread_basis": _spread_basis,
             "last_evaluated_bar": (
                 None if h1.empty else pd.Timestamp(h1.index.max()).isoformat()
             ),
