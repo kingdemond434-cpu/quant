@@ -110,7 +110,7 @@ def main() -> None:
             print(f"    {w:<10} n={wb['n']:4d} exp={wb['exp']:+.3f} "
                   f"t={wb['t']:5.2f} PF={wb['pf']:5.2f}")
     (BASE / "reports" / "hunt11.json").write_text(
-        json.dumps(out, indent=2, default=str), encoding="utf-8")
+        json.dumps(out, indent=2, default=str), encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

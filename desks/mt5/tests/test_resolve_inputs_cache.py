@@ -19,7 +19,7 @@ for p in (str(DESK), str(DESK / "research")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-import edge_search  # noqa: E402
+from research import edge_search  # noqa: E402
 
 
 @pytest.fixture

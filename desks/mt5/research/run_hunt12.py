@@ -307,6 +307,16 @@ def _write_atomic(path: Path, doc: dict[str, Any]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("hunt12", need_mb=0) as go:
+        if not go:
+            print("hunt12: another sweep holds the writer lock; existing progress preserved")
+            return 0
+        return _run(argv)
+
+
+def _run(argv: list[str] | None = None) -> int:
     global E_MAX
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--max-age-h", type=float, default=MAX_AGE_H,
@@ -412,7 +422,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if doc["complete"]:
             _write_atomic(BASE / "reports" / "hunt12.json",
-                          {"survivors": [r for r in results if r.get("gate")],
+                          {**doc, "survivors": [r for r in results if r.get("gate")],
                            "all": results, "e_max": float(E_MAX),
                            "routed": routed, "set_aside": doc["set_aside"],
                            "swept_at": datetime.now(UTC).isoformat()})

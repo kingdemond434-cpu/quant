@@ -59,10 +59,16 @@ def replay(df: pd.DataFrame, signals: Sequence[Any], cost_price_units: float = 0
         entry_i = i + 1
         if entry_i <= busy_until:
             continue
+        if s.side not in (-1, 1):
+            continue
         side = int(s.side)
         entry = float(o[entry_i])
-        risk = abs(entry - float(s.stop))
-        if risk <= 0 or not math.isfinite(risk):
+        stop, target = float(s.stop), float(s.target)
+        if not all(math.isfinite(x) for x in (entry, stop, target)):
+            continue
+        resolution = 8 * math.ulp(max(abs(entry), abs(stop), abs(target)))
+        risk = side * (entry - stop)
+        if risk <= resolution or side * (target - entry) <= resolution:
             continue
         ttl = max(1, int(s.ttl_bars))
         exit_i, exit_px, reason = None, None, ""

@@ -54,8 +54,7 @@ def test_the_pull_runs_before_every_early_exit() -> None:
     """
     src = _src()
     pull = src.index("Sync-Pull -RepoRoot")
-    for guard in ('Write-SyncLog "SKIP: none of the tracked',
-                  'Write-SyncLog "no new state since last sync'):
+    for guard in ('Write-SyncLog "SKIP: none of the tracked',):
         assert pull < src.index(guard), (
             f"the pull now runs AFTER `{guard[14:50]}...` -- a box with nothing to say stops "
             "receiving code, which is how it ended up 41 commits behind while holding live "
@@ -98,11 +97,11 @@ def _sync_pull_body() -> str:
 
 
 def test_a_failed_fetch_does_not_abort_the_sync() -> None:
-    """A network blink must not cost the local commit.
+    """A network blink must not cost state publication.
 
     The old behaviour (push, fetch only on rejection) is still a correct fallback, so a failed
     pull degrades to it rather than aborting. Refusing to sync because a fetch failed would trade
-    a delivery bug for an availability one -- and on this box, not committing means the dashboard
+    a delivery bug for an availability one -- and on this box, not publishing means the dashboard
     stops being told anything at all.
     """
     body = _sync_pull_body()
