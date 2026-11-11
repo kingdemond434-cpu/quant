@@ -54,8 +54,10 @@ _KV = re.compile(r'(\w+)="([^"]*)"')
 #: A REAL task name is CamelCase after the dash: `MT5-Gauntlet`, never `MT5-volume`. The loose
 #: pattern matched prose and data ("MT5-volume", "MT5-valid") and reported three phantom tasks --
 #: a fence whose first run is mostly false positives gets muted, which is the one outcome that
-#: makes it worthless. Windows task names on this box are all CamelCase by convention.
-_TASK_NAME = re.compile(r"MT5-[A-Z][a-z][A-Za-z0-9]*")
+#: makes it worthless. Windows task names on this box are all CamelCase by convention -- but an
+#: acronym may lead (`MT5-FTMOFollow`) and a digit may sit inside (`MT5-E8WindowGuard`), so the
+#: rule is "starts upper-case, carries at least one lower-case letter", never "upper then lower".
+_TASK_NAME = re.compile(r"MT5-[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*")
 #: Names shaped like a task that are not one: the git-writer MUTEX both box writers hold.
 _NOT_A_TASK = frozenset({"MT5-GitWriter"})
 

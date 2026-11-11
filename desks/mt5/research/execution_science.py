@@ -67,7 +67,8 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK / "scripts"), str(ROOT)):
 
 UNI = DESK / "data" / "universe"
 SLEEVES = DESK / "data" / "sleeves.json"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 OUT = DESK / "reports" / "EXECUTION_SCIENCE.json"
 
 #: Families whose execution is studied. The same three the joint search uses, so the two organs
