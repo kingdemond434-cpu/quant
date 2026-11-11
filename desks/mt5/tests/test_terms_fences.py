@@ -369,8 +369,9 @@ def test_the_proposer_sweeps_at_the_start_of_its_pass(tmp_path, monkeypatch) -> 
     series, q, ledger = _sweep_dirs(tmp_path)
     _frame(series / "fs_congress_trades.csv")
     monkeypatch.setattr(fp, "SERIES", series)
-    monkeypatch.setattr(tf, "QUARANTINE_DIR", q)
-    monkeypatch.setattr(tf, "QUARANTINE_LEDGER", ledger)
+    # the proposer imports the package path, which is a different module object from `tf`
+    monkeypatch.setattr(fp.terms_fences, "QUARANTINE_DIR", q)
+    monkeypatch.setattr(fp.terms_fences, "QUARANTINE_LEDGER", ledger)
     monkeypatch.setattr(fp, "COLUMNS", tmp_path / "columns.json")    # absent: NO_COLUMNS
     monkeypatch.setattr(fp, "REPORT", tmp_path / "report.json")
     assert fp.main(["--once", "--dry-run"]) == 0
