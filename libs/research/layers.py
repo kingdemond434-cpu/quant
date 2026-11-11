@@ -364,6 +364,9 @@ LEG_LAYER: dict[str, str] = {
     # certificate -> clock, every loss named -- and changes nothing in it: the machine reading
     # itself, the same layer as `judging_burndown` and `forward_enrolment`.
     "conversion_funnel": "meta",
+    # THE HANDOFF CONVERTER turns the judge's parked cells into new testable cells (a same-class
+    # transplant) or a named refusal / defect report: conversion work, beside the maximiser.
+    "conversion_handoff_converter": "prediction",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.
