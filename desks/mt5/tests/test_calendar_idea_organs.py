@@ -273,7 +273,8 @@ def test_event_stance_fires_once_per_value_inside_its_window(tmp_path):
     vals[: n - 3] = np.random.default_rng(1).normal(0, 0.1, n - 3)
     pd.DataFrame({"available_time": stamps.astype(str), "tail_bp": vals}).to_csv(
         tmp_path / "ust_auction_results.csv", index=False)
-    idx = pd.date_range("2025-05-01", stamps[-1] + pd.Timedelta(days=5), freq="h", tz="UTC")
+    idx = pd.date_range(pd.Timestamp("2025-05-01", tz="UTC"), stamps[-1] + pd.Timedelta(days=5),
+                        freq="h")
     close = 100 + np.sin(np.arange(len(idx)) / 10.0)
     o = np.r_[close[0], close[:-1]]
     df = pd.DataFrame({"open": o, "high": np.maximum(o, close) + 0.1,
