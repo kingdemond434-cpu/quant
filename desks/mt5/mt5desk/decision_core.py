@@ -29,7 +29,7 @@ import math
 import re
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1678,6 +1678,26 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return budget, why
     except Exception as exc:
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
+
+
+def fold_book_aliases(keys: Mapping[str, str | None]) -> dict[str, str]:
+    """ONE ORDER PER BOOK KEY (hourly pass / Auditor MUST-FIX, 2026-11-04). The allocator prices a
+    (symbol, family, window) CELL once; every roster row that `_book_key` folds onto that cell
+    would otherwise send the cell's whole fraction, so k LIVE variants of one cell sent k times
+    its risk and `cap_by_heat` only trims the total. Given {row name: book key or None}, returns
+    {alias row name: the row that carries the key}: the carrier is the first name in sorted order
+    (deterministic across passes), every other row on the key is an ALIAS that sends nothing."""
+    carrier: dict[str, str] = {}
+    folded: dict[str, str] = {}
+    for name in sorted(keys):
+        k = keys[name]
+        if k is None:
+            continue
+        if k in carrier:
+            folded[name] = carrier[k]
+        else:
+            carrier[k] = name
+    return folded
 
 
 def book_from_allocation(total: float, book: object, book_fallback: object, *,
