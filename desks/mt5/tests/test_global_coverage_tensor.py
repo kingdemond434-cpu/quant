@@ -20,6 +20,7 @@ What is fenced here, and why each is worth a test:
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 import sqlite3
 import sys
 from datetime import UTC, datetime, timedelta
@@ -67,10 +68,23 @@ def desk(tmp_path, monkeypatch):
     return paths
 
 
+_OPEN: list[sqlite3.Connection] = []
+
+
 def _conn() -> sqlite3.Connection:
+    # Closed on teardown: a handle left to the garbage collector raises ResourceWarning inside
+    # whichever test is running when it is collected (filterwarnings=error makes that a failure).
     c = sqlite3.connect(":memory:")
     c.row_factory = sqlite3.Row
+    _OPEN.append(c)
     return c
+
+
+@pytest.fixture(autouse=True)
+def _close_memory_connections() -> Iterator[None]:
+    yield
+    while _OPEN:
+        _OPEN.pop().close()
 
 
 def _jsonl(path: Path, rows: list[dict[str, Any]], mode: str = "w") -> None:
