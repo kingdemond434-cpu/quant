@@ -19,14 +19,14 @@ def sym(name, mode=4, path="Forex\\Majors\\X", exp=0, t=Q, visible=True, select=
                            visible=visible, select=select, time=t)
 
 
-def test_snapshot_rows_cover_disabled_symbols_with_utc_times():
+def test_snapshot_rows_cover_disabled_symbols_with_broker_clock_times():
     rows = E.snapshot_rows([sym("UST10Y", 0, "Bonds\\UST10Y"), sym("EURUSD", t=0)])
     assert [r["name"] for r in rows] == ["EURUSD", "UST10Y"]
     ust = rows[1]
     assert ust == {"name": "UST10Y", "path": "Bonds\\UST10Y", "asset_class": "Bonds",
                    "trade_mode": 0, "expiration_time": None, "visible": True, "select": True,
-                   "time": "2025-12-31T09:14:00+00:00"}
-    assert rows[0]["time"] is None
+                   "last_quote_broker_clock": "2025-12-31T09:14:00"}
+    assert rows[0]["last_quote_broker_clock"] is None
     doc = E.build_snapshot(rows, NOW)
     assert doc["taken_at_utc"] == "2026-11-11T12:00:00+00:00"
     assert doc["by_trade_mode"] == {"0": 1, "4": 1}
@@ -79,7 +79,7 @@ def test_registry_merge_disabled_then_reenabled_never_shrinks():
     assert len(reg) == n and set(reg) == {"UST10Y", "EURUSD", "OLDSYM"}
     u = reg["UST10Y"]
     assert u["broker_trade_mode"] == 0 and u["quoted"] is False and u["tradeable"] is False
-    assert u["last_quote_utc"] == "2025-12-31T09:14:00+00:00"
+    assert u["last_quote_broker_clock"] == "2025-12-31T09:14:00"  # broker clock, no offset
     assert u["not_quoted_seen_at"] == NOW.isoformat(timespec="seconds")
     assert u["tick_value"] == 0.08            # merged, never replaced
     assert reg["OLDSYM"]["listed"] is False

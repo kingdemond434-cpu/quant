@@ -287,6 +287,13 @@ def _asset_class(s) -> str:
     return str(getattr(s, "path", "")).split("\\")[0] or "Unknown"
 
 
+def _epoch_broker(value) -> str | None:
+    """An MT5 symbol stamp (`SymbolInfo.time`) is seconds on the BROKER's clock, not UTC, so it
+    is written without an offset and named for its clock; None for 0 or unreadable."""
+    iso = _epoch_iso(value)
+    return iso[:-6] if iso and iso.endswith("+00:00") else iso
+
+
 def _epoch_iso(value) -> str | None:
     """Epoch seconds as an ISO UTC string; None for 0, absent or unreadable (never 1970)."""
     try:
@@ -328,7 +335,7 @@ def snapshot_rows(symbols) -> list[dict]:
             "expiration_time": _epoch_iso(getattr(s, "expiration_time", 0)),
             "visible": bool(getattr(s, "visible", False)),
             "select": bool(getattr(s, "select", False)),
-            "time": _epoch_iso(getattr(s, "time", 0)),
+            "last_quote_broker_clock": _epoch_broker(getattr(s, "time", 0)),
         })
     return sorted(rows, key=lambda r: r["name"])
 
@@ -433,7 +440,8 @@ def merge_broker_status(registry: dict, symbols, now: datetime) -> dict[str, lis
     """Mark registry rows the broker has disabled or stopped listing. MERGES, never deletes.
 
     * broker trade_mode 0 -> broker_trade_mode 0, quoted false, tradeable false,
-      last_quote_utc, not_quoted_seen_at (first sighting kept).
+      last_quote_broker_clock (MT5 stamps are broker-clock seconds, NOT UTC),
+      not_quoted_seen_at (first sighting kept).
     * re-enabled after that -> quoted true, broker_trade_mode the new value, and tradeable put
       back to fetch_universe's own rule (trade_mode 4) since it was this marker that cleared it.
     * a registry symbol absent from the list -> listed false (listed true again if it returns).
@@ -464,7 +472,7 @@ def merge_broker_status(registry: dict, symbols, now: datetime) -> dict[str, lis
             continue
         if tm == 0:
             row.update({"broker_trade_mode": 0, "quoted": False, "tradeable": False,
-                        "last_quote_utc": _epoch_iso(getattr(s, "time", 0))})
+                        "last_quote_broker_clock": _epoch_broker(getattr(s, "time", 0))})
             row.setdefault("not_quoted_seen_at", at)
             out["not_quoted"].append(name)
         elif row.get("quoted") is False:
