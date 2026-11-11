@@ -174,8 +174,18 @@ def test_monday_holiday_before_the_asof_date_moves_nothing():
     assert _label("2026-09-08") == _ts("2026-09-14")    # Labor Day Mon Sep 7
 
 
-def test_tuesday_holiday_monday_asof_keeps_the_friday_release():
-    assert _label("2023-07-03") == _ts("2023-07-10")    # Jul 4 2023 was a Tuesday
+def _bar(ts: pd.Timestamp) -> pd.Timestamp:
+    """A true instant on the bar clock: New York wall time + 7 h under a UTC tzinfo."""
+    return (ts.tz_convert(cot_frames.ET).tz_localize(None) + pd.Timedelta(hours=7)
+            ).tz_localize(UTC)
+
+
+def test_tuesday_holiday_monday_asof_is_never_before_the_friday_release():
+    # Jul 4 2023 was a Tuesday, so the report is as of Monday Jul 3. The desk's one release rule
+    # (`futures_state.cftc_release_day`) counts the Tuesday closure between the as-of day and the
+    # Friday and holds the report to the next business day; the label is that day's first bar
+    # hour after 15:30 New York. Later than the nominal Monday, never earlier.
+    assert _label("2023-07-03") == _ts("2023-07-10 23:00")
 
 
 @pytest.mark.parametrize("asof,released_et", [
@@ -186,7 +196,8 @@ def test_tuesday_holiday_monday_asof_keeps_the_friday_release():
     ("2025-01-07", "2025-01-13 15:30"),                 # Carter day of mourning Thu Jan 9
 ])
 def test_holiday_week_is_labelled_after_its_true_release(asof, released_et):
-    true = pd.Timestamp(released_et).tz_localize(cot_frames.ET).tz_convert(UTC)
+    # ON THE BAR CLOCK: the bars are broker wall time, so the true-UTC instant is 2-3 h early.
+    true = _bar(pd.Timestamp(released_et).tz_localize(cot_frames.ET))
     lab = _label(asof)
     assert lab >= true and lab - true < pd.Timedelta(hours=1)
     assert lab > _ts(asof) + pd.Timedelta(days=6)        # later than the old Monday label
@@ -198,7 +209,7 @@ def test_holiday_week_is_labelled_after_its_true_release(asof, released_et):
     ("2013-10-01", "2013-10-25"),
 ])
 def test_shutdown_report_is_labelled_after_its_catch_up_publication(asof, published):
-    end_of_day = pd.Timestamp(f"{published} 23:59").tz_localize(cot_frames.ET).tz_convert(UTC)
+    end_of_day = _bar(pd.Timestamp(f"{published} 23:59").tz_localize(cot_frames.ET))
     assert _label(asof) >= end_of_day
 
 
@@ -210,7 +221,7 @@ def test_schedule_is_strictly_increasing():
 
 def test_to_release_clock_uses_the_true_release():
     s = cot_frames.to_release_clock(pd.Series([1.0], index=[_ts("2024-11-26")]))
-    assert s.index[0] > _ts("2024-12-02 20:00")
+    assert s.index[0] >= _ts("2024-12-02 22:30")         # 15:30 New York on the bar clock
 
 
 # -------------------------------------------------------------------- the verdict join
