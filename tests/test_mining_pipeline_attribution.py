@@ -16,6 +16,9 @@ from libs.mining import acquirer as acq
 from libs.mining.pit_store import iso
 from tests.test_mining_pipeline import MS, ROOT, T0, _pipe
 
+#: The module that owns PRODUCER_ORGANS and reads it (mining_supervisor re-exports it).
+WIRING = sys.modules["research.mining_supervisor_wiring"]
+
 
 def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_path: Path) -> None:
     """Credit comes from a DECLARED seat or the longest proper URL prefix; a host-only registry
@@ -120,7 +123,7 @@ def test_the_producer_map_names_real_organs_and_fails_loudly(monkeypatch: Any) -
     assert MS.producer_of("miner:central_bank", organ_of) == "central_bank_miner"
     assert MS.producer_of("session_chart_equivalent:ny_mid@H1", organ_of) == \
         "session_chart_equivalents"
-    monkeypatch.setattr(MS, "PRODUCER_ORGANS", ROOT / "no" / "such.json")
+    monkeypatch.setattr(WIRING, "PRODUCER_ORGANS", ROOT / "no" / "such.json")
     with pytest.raises(OSError):
         MS._scout_seats()
 
@@ -228,12 +231,12 @@ def test_audit_round_two_attribution_rules(tmp_path: Path) -> None:
                                            "params": {}}),
          "passed": False, "terminal_gate": "pbo", "at": iso(T0)}) + "\n", "utf-8")
     pipe.index_judged(now=T0)
-    orig = MS.PRODUCER_ORGANS
+    orig = WIRING.PRODUCER_ORGANS
     try:
-        MS.PRODUCER_ORGANS = ROOT / "no" / "such.json"
+        WIRING.PRODUCER_ORGANS = ROOT / "no" / "such.json"
         st = pipe.source_status(T0)
     finally:
-        MS.PRODUCER_ORGANS = orig
+        WIRING.PRODUCER_ORGANS = orig
     assert st["boj"]["evaluated_cells_30d"] == 1
     assert st["boj"]["cold_reason"].startswith("no fetcher of it ran in 30 days (PRODUCER MAP")
     assert pipe._attribution["producer_map_error"].startswith("PRODUCER MAP FAILED")
