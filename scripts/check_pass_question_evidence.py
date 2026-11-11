@@ -66,7 +66,6 @@ EXIT_RED = 2
 FUTURE_SLACK = timedelta(minutes=10)
 
 GROWTH_ALLOCATOR = "desktop 'Growth allocator overhaul' session (money path)"
-DESK_HEALTH = "Desk health thread"
 
 #: Q -> (question, sub-measures). A sub-measure is (name, artifact, key) where `key` is looked
 #: up anywhere in the artifact (`check_cro_duties.find_key`), or (name, None, owner) for a part
@@ -89,15 +88,15 @@ QUESTIONS: dict[str, tuple[str, list[tuple[str, str | None, str]]]] = {
     ]),
     "Q4": ("Did the allocator beat its baselines?", [
         ("baseline_contest", "reports/ALLOCATOR_PROOF.json", "scores"),
-        ("best_single_sleeve_baseline", None, GROWTH_ALLOCATOR),
-        ("executable_book_after_lots_and_costs", None, GROWTH_ALLOCATOR),
+        ("best_single_sleeve_baseline", "reports/ALLOCATOR_PROOF.json", "best_single_sleeve"),
+        ("executable_book_after_lots_and_costs", "reports/EXECUTABLE_BOOK.json", "refusals"),
     ]),
     "Q5": ("What did stale information, costs or defects cost?", [
         ("cost_vs_model", "reports/COST_TRUTH.json", "total_overcharge"),
         ("stale_desk_inputs", "reports/DESK_STALE.json", "verdict"),
         ("stale_swap_costs", "reports/BROKER_SWAPS_FRESHNESS.json", "at"),
         ("fail_closed_rail_costs", "reports/MISSED_GROWTH.json", "rails"),
-        ("defect_loss_in_elog", None, DESK_HEALTH),
+        ("defect_loss_in_elog", "reports/DEFECT_LOSS.json", "defect_loss_elog"),
     ]),
     "Q6": ("Which components can be removed?", [
         ("dead_architecture", "reports/dead_architecture.json", "organs"),
@@ -253,9 +252,10 @@ def allocator_vs_baselines(proof: Any) -> dict[str, Any]:
     return {"status": "MEASURED", "dynamic_robust_score": dyn,
             "baselines": dict(sorted(rivals.items())),
             "baselines_beating_dynamic": beat_by, "passed": proof.get("passed"),
-            "basis": ("sampled worlds at equal total heat (libs/portfolio/allocator_proof); "
-                      "NOT the executable book after lot rounding and costs, and no "
-                      "best-single-sleeve rival is contested -- both are NO_ORGAN below"),
+            "basis": ("sampled worlds at equal total heat (libs/portfolio/allocator_proof), "
+                      "best_single_sleeve included when the proof contests it; the executable "
+                      "book after lot rounding is read from EXECUTABLE_BOOK.json"),
+            "best_single_sleeve_contested": "best_single_sleeve" in rivals,
             "route": GROWTH_ALLOCATOR if beat_by else None}
 
 

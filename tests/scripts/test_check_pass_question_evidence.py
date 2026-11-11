@@ -50,13 +50,33 @@ def test_an_empty_host_is_red_and_every_question_unmeasured(tmp_path: Path) -> N
     assert doc["questions"]["Q4"]["contest"]["status"] == "UNMEASURED"
 
 
-def test_parts_no_organ_measures_are_named_with_their_owner(tmp_path: Path) -> None:
+def test_every_part_now_has_an_organ_and_an_absent_one_is_absent_not_clean(
+        tmp_path: Path) -> None:
     _, doc = _run(tmp_path)
-    parts = {(r["question"], r["part"]): r["owner"] for r in doc["no_organ"]}
-    assert ("Q4", "best_single_sleeve_baseline") in parts
-    assert ("Q4", "executable_book_after_lots_and_costs") in parts
-    assert ("Q5", "defect_loss_in_elog") in parts
-    assert "money path" in parts[("Q4", "best_single_sleeve_baseline")]
+    assert doc["no_organ"] == []
+    subs = {r["name"]: r for q in ("Q4", "Q5") for r in doc["questions"][q]["sub_measures"]}
+    assert subs["best_single_sleeve_baseline"]["artifact"].endswith("ALLOCATOR_PROOF.json")
+    assert subs["executable_book_after_lots_and_costs"]["artifact"].endswith(
+        "EXECUTABLE_BOOK.json")
+    assert subs["defect_loss_in_elog"]["artifact"].endswith("DEFECT_LOSS.json")
+    for name in ("best_single_sleeve_baseline", "executable_book_after_lots_and_costs",
+                 "defect_loss_in_elog"):
+        assert subs[name]["state"] == "ABSENT"
+
+
+def test_q4_reads_the_best_single_sleeve_rival_and_the_executable_book(tmp_path: Path) -> None:
+    _write(tmp_path, "reports/ALLOCATOR_PROOF.json", {
+        "at": FRESH, "passed": False, "best_baseline": "best_single_sleeve",
+        "scores": {"dynamic": {"robust_score": 0.01},
+                   "best_single_sleeve": {"robust_score": 0.03}}})
+    _write(tmp_path, "reports/EXECUTABLE_BOOK.json", {"at": FRESH, "books": {
+        "gold_asia": {"fraction": 0.006, "lot": 0.02, "refusals": []}}})
+    _, doc = _run(tmp_path)
+    q4 = doc["questions"]["Q4"]
+    assert q4["status"] == "MEASURED"
+    assert q4["contest"]["best_single_sleeve_contested"] is True
+    assert q4["contest"]["baselines_beating_dynamic"] == ["best_single_sleeve"]
+    assert len(q4["citations"]) == 2
 
 
 def test_a_fresh_artifact_yields_a_citation_the_duty_checker_resolves(tmp_path: Path) -> None:
@@ -126,7 +146,8 @@ def test_q4_names_the_baselines_that_beat_the_allocator(tmp_path: Path) -> None:
     q4 = doc["questions"]["Q4"]
     assert q4["contest"]["baselines_beating_dynamic"] == ["equal_weight"]
     assert q4["contest"]["route"] == pqe.GROWTH_ALLOCATOR
-    # the contest is measured but two parts have no organ: PARTIAL, and the leg stays RED
+    assert q4["contest"]["best_single_sleeve_contested"] is False
+    # the contest is measured but the rival key and the executable book are not: PARTIAL
     assert q4["status"] == "PARTIAL" and rc == pqe.EXIT_RED
 
 
