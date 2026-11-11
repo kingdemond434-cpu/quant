@@ -101,15 +101,33 @@ LLM_ORDER = ("standing rule: LLMs propose only -- no LLM output holds live capit
 def llm_derived(row: Mapping[str, Any]) -> str | None:
     """The LLM-derived source this row is conditioned on, or None.
 
-    Read from the row itself and from its `params` (the family's arguments, where an
-    exogenous_conditioner names its `source`), and an explicit `llm_derived` flag on either."""
+    An explicit `llm_derived` flag on the row or its `params` (the family's arguments) matches;
+    so does ANY parameter value naming an LLM-derived source -- not only an
+    exogenous_conditioner's `source`, but a signal, a series id or a lake path such as
+    `data/lake/series/semantic_prob.parquet`, so a future family that reads the same series under
+    another key cannot slip past (Auditor, #997)."""
     params = row.get("params")
     params = params if isinstance(params, Mapping) else {}
     for holder in (row, params):
         if holder.get("llm_derived"):
             return str(holder.get("source") or "llm_derived")
-    src = str(params.get("source") or "").strip().lower()
-    return src if src in LLM_DERIVED_SOURCES else None
+    for text in _strings(params.values()):
+        low = text.lower()
+        for src in LLM_DERIVED_SOURCES:
+            if src in low:
+                return src
+    return None
+
+
+def _strings(values: Iterable[Any], depth: int = 0) -> Iterable[str]:
+    """Every string inside `values`, through nested lists, tuples and mappings (bounded)."""
+    for v in values:
+        if isinstance(v, str):
+            yield v
+        elif depth < 4 and isinstance(v, Mapping):
+            yield from _strings(list(v.keys()) + list(v.values()), depth + 1)
+        elif depth < 4 and isinstance(v, (list, tuple, set, frozenset)):
+            yield from _strings(v, depth + 1)
 
 
 @dataclass(frozen=True)

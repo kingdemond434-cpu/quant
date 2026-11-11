@@ -172,3 +172,45 @@ def test_a_certified_llm_derived_cell_is_never_written_live(
     assert promoter._apply_live_policy(rows) == len(rows) - 1
     assert all(r["status"] == "RETIRED" and r["risk_frac"] == 0.0 for r in rows[:-1])
     assert rows[-1]["status"] == "LIVE"
+
+
+def test_the_fence_reads_any_param_naming_the_series() -> None:
+    from mt5desk import live_policy as lp
+    pol = lp.Policy(live_symbols=frozenset({"*"}), banned_timeframes={},
+                    banned_families=frozenset(), banned_execs=frozenset())
+    for params in ({"signal": "semantic_prob.usd__tilt"},
+                   {"path": "desks/mt5/data/lake/series/semantic_prob.parquet"},
+                   {"inputs": [{"series": "SEMANTIC_PROB"}]}):
+        row = {"symbol": "EURUSD", "family": "world_macro_state", "params": params}
+        assert lp.refuse(row, pol), params
+    assert lp.refuse({"symbol": "EURUSD", "params": {"source": "boj_fixing", "n": 3}}, pol) is None
+
+
+def test_every_fence_retirement_is_billed_to_missed_growth(
+        wired: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from mt5desk import live_policy
+
+    from libs.portfolio.rails import rail
+    from research import missed_growth, promoter
+    assert rail("llm_live_fence").measure == "measure_llm_fence"
+    ledger = wired / "data" / "llm_fence_blocks.jsonl"
+    monkeypatch.setattr(promoter, "LLM_FENCE_LEDGER", ledger)
+    monkeypatch.setattr(promoter, "plog", lambda msg: None)
+    monkeypatch.setattr(missed_growth, "BASE", wired)
+    pol = live_policy.Policy(live_symbols=frozenset({"*"}), banned_timeframes={},
+                             banned_families=frozenset(), banned_execs=frozenset())
+    monkeypatch.setattr(live_policy, "policy", lambda path=None: pol)
+    r = rail("llm_live_fence")
+    assert missed_growth.measure_llm_fence(r, {}, {})["verdict"] == missed_growth.NOT_BINDING
+    rows = [{"name": f"c{i}", "symbol": "EURUSD", "status": "LIVE", "shadow_exp": 0.1,
+             "shadow_n": 30, "params": {"source": "semantic_prob"}} for i in range(12)]
+    rows.append({"name": "price", "symbol": "EURUSD", "status": "LIVE", "shadow_exp": 0.1,
+                 "params": {"source": "boj_fixing"}})
+    assert promoter._apply_live_policy(rows) == 12
+    lines = [json.loads(x) for x in ledger.read_text("utf-8").splitlines()]
+    assert len(lines) == 12 and lines[0]["source"] == "semantic_prob"
+    assert lines[0]["exp_r"] == 0.1 and lines[0]["was"] == "LIVE"
+    m = missed_growth.measure_llm_fence(r, {"book": {"a": 0.01}}, {})
+    assert m["verdict"] == missed_growth.COSTS and m["n"] == 12
+    assert promoter._apply_live_policy(rows) == 0, "a retired row is billed once"
+    assert len(ledger.read_text("utf-8").splitlines()) == 12

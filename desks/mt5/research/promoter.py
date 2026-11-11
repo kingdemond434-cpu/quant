@@ -284,8 +284,30 @@ def _apply_live_policy(rows: list[dict]) -> int:
                     "retired_at": stamp, "retire_reason": why,
                     "retired_by": "live_policy"})
         plog(f"LIVE POLICY retired {row.get('name')} (was {was}): {why}")
+        _record_llm_fence(row, stamp, was)
         n += 1
     return n
+
+
+#: Every row the LLM fence (`live_policy.LLM_DERIVED_SOURCES`) retired, with the forward
+#: expectancy it carried, so `missed_growth.measure_llm_fence` can price what the standing rule
+#: "LLMs propose only" forgoes (Growth Governance Rule 1) for the day the principal weighs it.
+LLM_FENCE_LEDGER = BASE / "data" / "llm_fence_blocks.jsonl"
+
+
+def _record_llm_fence(row: dict, stamp: str, was: str) -> None:
+    """Append one line when the refusal was the LLM fence; a write failure never fails the pass."""
+    with suppress(Exception):
+        from mt5desk.live_policy import llm_derived
+        src = llm_derived(row)
+        if not src:
+            return
+        LLM_FENCE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with LLM_FENCE_LEDGER.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({
+                "at": stamp, "name": row.get("name"), "symbol": row.get("symbol"),
+                "family": row.get("family"), "source": src, "was": was,
+                "exp_r": row.get("shadow_exp"), "n": row.get("shadow_n")}) + "\n")
 
 
 UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"

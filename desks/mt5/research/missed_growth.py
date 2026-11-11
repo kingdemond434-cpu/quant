@@ -504,6 +504,33 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
 
 
+def measure_llm_fence(r: Any, alloc: dict[str, Any], _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the LLM fence withheld from live capital, priced like the Tier S door.
+
+    Each row `promoter._record_llm_fence` logged carries the forward mean R its shadow clock had
+    when it was retired. Positive mean R across ten or more priced rows is growth the standing
+    rule forgoes (COSTS_GROWTH, reported, never acted on: the rule is the principal's); negative
+    is the rule earning its place. Per row, log-wealth forgone is mean R x one sleeve's heat."""
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in (BASE / "data" / "llm_fence_blocks.jsonl").read_text("utf-8").splitlines():
+            if line.strip():
+                rows.append(json.loads(line))
+    except (OSError, ValueError):
+        rows = []
+    if not rows:
+        return {"verdict": NOT_BINDING, "n": 0, "value_logw_per_day": 0.0,
+                "why": "the LLM fence has retired no live row on this host"}
+    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
+    rs = [float(x["exp_r"]) for x in rows if isinstance(x.get("exp_r"), (int, float))]
+    if len(rs) < 10:
+        return {"verdict": UNMEASURED, "n": len(rows),
+                "why": f"{len(rs)} fenced row(s) carry a forward R; ten are needed to price"}
+    m = float(np.mean(rs))
+    return {"verdict": COSTS if m > 0 else EARNS, "n": len(rows),
+            "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
+
+
 def measure_late_release_excluded(r: Any, _alloc: dict[str, Any],
                                   _fv: dict[str, Any]) -> dict[str, Any]:
     """What the release-spike clock's PER-RELEASE EXCLUSION costs and buys (dead families v4.4).
