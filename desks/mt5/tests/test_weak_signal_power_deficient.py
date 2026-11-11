@@ -116,3 +116,38 @@ def test_a_verdict_with_no_stage_detail_is_not_a_member(tmp_path, monkeypatch):
     _write(tmp_path, monkeypatch,
            [{"cell": cid, "sym": "USDJPY", "family": "carry", "stages": {}}], [row])
     assert wsc.power_deficient() == {}
+
+
+def test_coverage_names_every_eligible_cell_that_was_not_ingested(tmp_path, monkeypatch):
+    """ELIGIBLE VS INGESTED (hourly pass item 37, 2026-11-11): every power-only cell the gauntlet
+    produced is counted, and each one that never entered a combination is listed with its reason,
+    so the scorecard can mark it RED instead of reading a bare count."""
+    power = {"deflated_sharpe": {"passed": False},
+             "in_sample_screen": {"passed": True, "sharpe": 0.2}}
+    rows = [_row("EURUSD", "carry", {"rr": float(i)}) for i in range(3)]
+    verdicts = [{"cell": cell_id({**r, "sym": "EURUSD"}), "sym": "EURUSD", "family": "carry",
+                 "stages": power} for r in rows]
+    verdicts.append({"cell": "LOST.carry.p=0000000000000000", "sym": "LOST", "family": "carry",
+                     "stages": power})
+    _write(tmp_path, monkeypatch, verdicts, rows)
+    wsc.NOT_INGESTED.clear()
+    wsc.INGESTED.clear()
+    pool = wsc.power_deficient(max_per_symbol=2)
+    built = pool["EURUSD"][0]["cell"]
+    wsc.INGESTED.add(built)
+    wsc._not_ingested(pool["EURUSD"][1:], "built fewer than 20 signals")
+    cov = wsc.coverage(pool)
+    assert cov["eligible"] == 4 and cov["pooled"] == 2 and cov["ingested"] == 1
+    assert cov["not_ingested"] == 3 and cov["ingested_share"] == 0.25
+    whys = {c["cell"]: c["why"] for c in cov["not_ingested_cells"]}
+    assert built not in whys
+    assert whys["LOST.carry.p=0000000000000000"] == "no docket row carries its params"
+    assert whys[pool["EURUSD"][1]["cell"]] == "built fewer than 20 signals"
+    assert sum(1 for w in whys.values() if w.startswith("over the 2-member cap")) == 1
+    assert sum(cov["not_ingested_by_reason"].values()) == cov["not_ingested"]
+
+
+def test_coverage_is_unmeasured_when_the_gauntlet_report_is_unreadable(tmp_path, monkeypatch):
+    monkeypatch.setattr(wsc, "GATES", tmp_path / "absent.json")
+    assert wsc.power_deficient() == {}
+    assert wsc.coverage({})["verdict"] == "UNMEASURED"
