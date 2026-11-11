@@ -31,6 +31,7 @@ import os
 import subprocess
 import sys
 import time
+from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -63,6 +64,9 @@ RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
 #     unmeasured ownership as alive, and only the head ticket may claim, so that ticket blocked
 #     every department forever even with free slots.  Waiters now refresh their ticket every
 #     poll; a ticket not refreshed for TICKET_STALE_S has no owner polling it and is removed.
+# The resident no longer reads this constant for admission: `derived_slot_count` measures the
+# count at every claim (floor 3, ONE WAY UP) and an explicit DEPT_CONCURRENT_PASSES still wins.
+# It stays the default for direct callers of claim_capacity_slot.
 CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "3")))
 #: A waiter touches its ticket every PAUSE_S; twenty missed polls means no live owner is waiting.
 TICKET_STALE_S = max(600, 20 * PAUSE_S)
@@ -429,9 +433,14 @@ def _slot_census(slots: int) -> str:
     return ", ".join(held) or "no holder records"
 
 
-def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
+def wait_for_capacity(dept: str, *, slots: int | None = None,
                       poll_s: int = PAUSE_S):
-    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail."""
+    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail.
+
+    `slots=None` derives the count at every claim (`derived_slot_count`); an int fixes it.
+    Every poll also feeds this resident's windowed idle-core history, so the head waiter
+    judges extra slots on several minutes of readings, never one.
+    """
     announced = False
     ticket = _wait_ticket(dept)
     started = time.monotonic()
@@ -440,13 +449,19 @@ def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
         while True:
             with contextlib.suppress(OSError):
                 os.utime(ticket, None)  # the waiter's own heartbeat (see TICKET_STALE_S)
+            if slots is None:
+                sample_idle_cores()
             queue = _waiters()
+            count = slots
             if queue and queue[0][2] == ticket:
-                handle = claim_capacity_slot(slots, dept=dept)
+                derivation = "fixed by caller"
+                if count is None:
+                    count, derivation = derived_slot_count()
+                handle = claim_capacity_slot(count, dept=dept)
                 if handle is not None:
-                    if announced:
-                        log(dept, f"capacity available after {time.monotonic() - started:.0f}s: "
-                                  f"admitted to one of {slots} department slots")
+                    log(dept, f"admitted after {time.monotonic() - started:.0f}s to slot "
+                              f"{handle.record['slot']} of {count} department slots "
+                              f"({derivation})")
                     return handle
             if not announced:
                 log(dept, "waiting: bounded department slots or older pass(es) ahead")
@@ -455,7 +470,8 @@ def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
             elif time.monotonic() - reported >= WAIT_REPORT_S:
                 ahead = next((k for k, row in enumerate(queue) if row[2] == ticket), len(queue))
                 log(dept, f"still waiting {time.monotonic() - started:.0f}s: {ahead} older "
-                          f"waiter(s) ahead of {len(queue)}; slots: {_slot_census(slots)}")
+                          f"waiter(s) ahead of {len(queue)}; slots: "
+                          f"{_slot_census(max(count or 0, DEPT_SLOTS_MAX))}")
                 reported = time.monotonic()
             time.sleep(max(1, int(poll_s)))
     finally:
@@ -528,6 +544,95 @@ def spare_cores() -> float | None:
         return (psutil.cpu_count() or 1) * (100.0 - busy) / 100.0
     except Exception:
         return None
+
+
+#: TODAY'S BOUND IS THE FLOOR. The derived slot count is ONE WAY: it only ever rises above the
+#: three slots this file has always had, and only while the box measurably has room.
+DEPT_SLOTS_FLOOR = 3
+#: A FILE-COUNT bound, not a research cap: every slot index owns a `dept_capacity_<i>` lock plus
+#: its reclaim generations and holder records, and every claim and census walks them. Eight keeps
+#: that directory and the per-poll scan bounded; the measured inputs below decide the count
+#: beneath it, and DEPT_CONCURRENT_PASSES remains the manual override for the box.
+DEPT_SLOTS_MAX = 8
+#: Cores kept free for the MONEY tasks, on top of the terminal's IDLE_RESERVE_CORES. Measured on
+#: the trading box 2026-11-11: around 01:42Z total CPU read 90-95%, the allocator alone held
+#: about 4.8 cores, and in the crunch 00:41-01:17Z E8-Gold and TerminalBoot were killed at their
+#: time limits. BELOW_NORMAL priority for department children did not save them, so an extra
+#: slot is only ever added while the windowed idle cores still leave this reserve AND the
+#: terminal's free. Generous on purpose: six covers the allocator's measured 4.8 with margin.
+MONEY_RESERVE_CORES = float(os.environ.get("DEPT_MONEY_RESERVE_CORES", "6"))
+#: PLACEHOLDERS, to be replaced by the measured figure. Neither this module nor the holder
+#: records measure what one department pass costs (no per-pass CPU or RSS is recorded today);
+#: replace both with the measured per-pass median once a pass records its own peak tree RSS
+#: and CPU seconds / wall seconds. Until then they are deliberately heavy, so the derivation
+#: under-admits rather than over-admits.
+PASS_CORES_ESTIMATE = float(os.environ.get("DEPT_PASS_CORES_ESTIMATE", "2.0"))
+PASS_MB_ESTIMATE = float(os.environ.get("DEPT_PASS_MB_ESTIMATE", "8192"))
+#: Idle cores are read over a WINDOW, never one sample: the minimum of the samples a resident
+#: took while waiting, spread over at least IDLE_WINDOW_MIN_SPAN_S. A one-second read at a quiet
+#: instant is exactly how a crunch like 2026-11-11 00:41Z would be missed.
+IDLE_WINDOW_S = 600
+IDLE_WINDOW_MIN_SPAN_S = 180
+IDLE_WINDOW_MIN_SAMPLES = 5
+_IDLE_SAMPLES: deque[tuple[float, float]] = deque(maxlen=256)
+
+
+def sample_idle_cores(now: float | None = None) -> None:
+    """Append one spare_cores() reading to this resident's rolling history (if measurable)."""
+    t = time.time() if now is None else float(now)
+    value = spare_cores()
+    if value is not None:
+        _IDLE_SAMPLES.append((t, float(value)))
+    while _IDLE_SAMPLES and t - _IDLE_SAMPLES[0][0] > IDLE_WINDOW_S:
+        _IDLE_SAMPLES.popleft()
+
+
+def windowed_idle_cores(now: float | None = None) -> tuple[float | None, str]:
+    """The MINIMUM idle cores across the window, or None (UNMEASURED) when the window is thin."""
+    t = time.time() if now is None else float(now)
+    rows = [(ts, v) for ts, v in _IDLE_SAMPLES if t - ts <= IDLE_WINDOW_S]
+    if not rows:
+        return None, "idle cores UNMEASURED (no samples in window)"
+    span = rows[-1][0] - rows[0][0]
+    if len(rows) < IDLE_WINDOW_MIN_SAMPLES or span < IDLE_WINDOW_MIN_SPAN_S:
+        return None, (f"idle cores UNMEASURED ({len(rows)} samples over {span:.0f}s; needs "
+                      f"{IDLE_WINDOW_MIN_SAMPLES} over {IDLE_WINDOW_MIN_SPAN_S}s)")
+    low = min(v for _, v in rows)
+    return low, f"idle cores min {low:.1f} over {len(rows)} samples / {span:.0f}s"
+
+
+def derived_slot_count(now: float | None = None) -> tuple[int, str]:
+    """How many department slots a claim may scan right now, and the inputs that said so.
+
+        slots = clamp(max(FLOOR, min(by_cores, by_memory)), FLOOR, DEPT_SLOTS_MAX)
+        by_cores  = floor((windowed min idle cores - IDLE_RESERVE_CORES - MONEY_RESERVE_CORES)
+                          / PASS_CORES_ESTIMATE)
+        by_memory = floor((free_phys_mb - MIN_FREE_MB) / PASS_MB_ESTIMATE)
+
+    An explicit DEPT_CONCURRENT_PASSES wins (the box's manual override). Anything UNMEASURED
+    gives the floor, which is exactly today's three. Conservative by construction: both readings
+    are taken WHILE the current passes run, so they measure room for MORE passes, yet the count
+    is compared against ALL holders -- a slot is added only when the room clears the whole count.
+    """
+    override = os.environ.get("DEPT_CONCURRENT_PASSES")
+    if override is not None and override.strip():
+        try:
+            return max(1, int(override)), f"DEPT_CONCURRENT_PASSES={override.strip()} override"
+        except ValueError:
+            pass
+    idle, idle_why = windowed_idle_cores(now)
+    free = free_phys_mb()
+    free_why = "free memory UNMEASURED" if free is None else f"free {free:.0f}MB"
+    if idle is None or free is None:
+        return DEPT_SLOTS_FLOOR, f"floor {DEPT_SLOTS_FLOOR}: {idle_why}; {free_why}"
+    by_cores = int((idle - IDLE_RESERVE_CORES - MONEY_RESERVE_CORES) // PASS_CORES_ESTIMATE)
+    by_memory = int((free - MIN_FREE_MB) // PASS_MB_ESTIMATE)
+    count = min(DEPT_SLOTS_MAX, max(DEPT_SLOTS_FLOOR, min(by_cores, by_memory)))
+    return count, (f"{count} = max({DEPT_SLOTS_FLOOR}, min(by_cores {by_cores}, by_memory "
+                   f"{by_memory})) cap {DEPT_SLOTS_MAX}; {idle_why} less reserves "
+                   f"{IDLE_RESERVE_CORES}+{MONEY_RESERVE_CORES:g} at {PASS_CORES_ESTIMATE:g}/pass "
+                   f"(placeholder); {free_why} less {MIN_FREE_MB:.0f} at "
+                   f"{PASS_MB_ESTIMATE:.0f}MB/pass (placeholder)")
 
 
 def cycle_floor_s() -> tuple[float, str]:
