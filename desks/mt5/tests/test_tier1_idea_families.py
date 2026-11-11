@@ -195,3 +195,31 @@ def test_proposer_grid_is_declared_and_parks_absent_inputs_by_name(monkeypatch, 
     fresh = tp.run(now=now + timedelta(hours=2))
     assert fresh["status"] == "FRESH" and fresh["age_h"] == pytest.approx(2.0)
     assert tp.run(now=now + timedelta(hours=21), only=["U6"])["status"] == "SWEPT"
+
+
+def test_the_cboe_reprints_stay_off_the_public_repo() -> None:
+    """GVZCLS/OVXCLS are CBOE indices FRED reprints with permission: never committed."""
+    import subprocess
+
+    probe = "desks/mt5/data/world_datasets/obs/FRED/GVZCLS.parquet"
+    out = subprocess.run(["git", "check-ignore", "-q", probe], cwd=ROOT, check=False)
+    assert out.returncode == 0, f"{probe} must be gitignored"
+
+
+def test_breadth_decision_is_never_before_the_last_share_open_it_used() -> None:
+    """Share CFDs open at the cash bell (~16:30 broker); the index decides on or after that bar."""
+    panel = {f"N{i}": _bars(days=200, seed=200 + i) for i in range(25)}
+    for frame in panel.values():                       # share CFDs print only the cash session
+        minute, _ = t1.LC.local_frame(frame.index, "America/New_York")
+        keep = (minute >= 9 * 60 + 30) | ((minute < 9 * 60 + 30) & (minute + 60 > 9 * 60 + 30))
+        frame.drop(frame.index[~(keep & (minute < 16 * 60))], inplace=True)
+    b = t1.gap_breadth(panel, "America/New_York", "09:30", "16:00", gap_sd=0.5, vol_days=20,
+                       min_names=20)
+    assert not b.empty
+    sigs = t1.family_equity_gap_breadth(_bars(days=200, seed=8), breadth=b, breadth_lo=0.0)
+    assert sigs
+    stamps = b.index
+    for s in sigs:
+        used = stamps[stamps <= s.time]
+        assert len(used) and used[-1].normalize() == s.time.normalize()
+        assert s.time >= used[-1], "decided before the share open it read"
