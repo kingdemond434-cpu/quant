@@ -102,7 +102,13 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/hypotheses/external_survivors.json",
                  "desks/mt5/data/hypotheses/merge_report.json"),
          reads=("desks/mt5/data/intelligence/", "data/alpha_registry.sqlite",
-                "desks/mt5/data/hypotheses/external_survivors.json"),
+                "desks/mt5/data/hypotheses/external_survivors.json",
+                # merge_hypotheses -> judge_coverage.order_docket -> rank_by_value: the
+                # empty-cluster factor lifts the families the forcer FORCED, read only while the
+                # liveness fence publishes that leg GREEN. The order IS the selection the
+                # sealed gauntlet judges in.
+                "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
+                "desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json"),
          billed_as=("miner_candidate_compiler",)),
     Node("miner_candidate_compiler", "desks/mt5/research/miner_candidate_compiler.py",
          writes=("desks/mt5/data/hypotheses/miner_candidates.json",
@@ -556,9 +562,16 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/deep_forest_sources.json",
                 "desks/mt5/data/deep_forest_claims.jsonl",
                 "desks/mt5/data/deep_forest_seen.json", "desks/mt5/data/universe/universe.json",
-                "desks/mt5/data/hypotheses/deepening_worked.jsonl"),
+                "desks/mt5/data/hypotheses/deepening_worked.jsonl",
+                # the scheduler's worked-first list: culture gaps (`culture_gaps`) plus the RED
+                # regions of REGION_YIELD, the latter only while the liveness fence reads GREEN
+                "desks/mt5/reports/CELL_CULTURE.json", "desks/mt5/reports/REGION_YIELD.json",
+                "desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json"),
          writes=("desks/mt5/reports/DEEP_FOREST.json", "desks/mt5/data/deep_forest_claims.jsonl",
                  "desks/mt5/data/deep_forest_seen.json",
+                 # its per-ground checkpoint counters (`_record_vector_stats`), which
+                 # region_yield and forest_attempts read back
+                 "desks/mt5/data/deep_forest_vector_stats.json",
                  "desks/mt5/data/intelligence/world/frontier.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("revival_engine", "desks/mt5/research/revival_engine.py",
@@ -879,6 +892,15 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/CELL_CULTURE.json"),
          writes=("desks/mt5/reports/REGION_YIELD.json",),
          freshness_s={"desks/mt5/reports/REGION_YIELD.json": 3 * 3600}),
+    # The hourly `judge_coverage` leg publishes the family census the breadth mandate counts
+    # from; `cell_culture_index` publishes the culture summary the forest scheduler's gap list
+    # and region_yield's cell counts read. Both were read in the graph with no declared writer.
+    Node("judge_coverage", "desks/mt5/research/judge_coverage.py",
+         reads=("desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
+                "desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json"),
+         writes=("desks/mt5/reports/JUDGE_COVERAGE.json",)),
+    Node("cell_culture_index", "desks/mt5/research/cell_culture_index.py",
+         writes=("desks/mt5/reports/CELL_CULTURE.json",)),
     Node("leg_artifact_liveness", "scripts/check_leg_artifact_liveness.py",
          reads=("desks/mt5/reports/BREADTH_MANDATE.json",
                 "desks/mt5/reports/REGION_YIELD.json", "desks/mt5/data/sync_marker.json"),

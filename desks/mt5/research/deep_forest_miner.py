@@ -1896,6 +1896,16 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
     culture_gap = culture_gaps()
+    # THE REGION-YIELD WORKLIST (row 75, 2026-11-11). `region_yield` names every region with
+    # registered sources and ZERO measured output (RED); those regions join the culture gaps
+    # worked first inside each frontier bucket -- the same reorder, never a removal, and only
+    # while the liveness fence publishes the region_yield leg GREEN (a frozen list is no list).
+    try:
+        from research.region_yield import red_regions
+        region_red, region_red_why = red_regions()
+    except Exception as _exc:  # an unreadable report may never stop the miner
+        region_red, region_red_why = frozenset(), f"region_yield unimportable: {_exc!r}"[:200]
+    culture_gap = frozenset(culture_gap | region_red)
     # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
     # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
     try:
@@ -2110,6 +2120,9 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "proposer_seat": seat_hint,
            # the culture gap list this run worked first (reports/CELL_CULTURE.json `gaps`)
            "culture_gaps_first": sorted(culture_gap),
+           # of which: the RED regions reports/REGION_YIELD.json named, and why (or why none)
+           "region_yield_red_first": sorted(region_red),
+           "region_yield_basis": region_red_why,
            "source_expansion": expansion,
            "fetch_notes": [s for s in r.status if "url" in s][:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",

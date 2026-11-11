@@ -306,6 +306,42 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     }
 
 
+def _liveness(leg: str) -> tuple[str, str]:
+    """The liveness fence's published verdict for `leg`; UNMEASURED when it cannot be read."""
+    try:
+        import importlib.util
+        path = REPO / "scripts" / "check_leg_artifact_liveness.py"
+        spec = importlib.util.spec_from_file_location("check_leg_artifact_liveness", path)
+        if spec is None or spec.loader is None:
+            return UNMEASURED, f"cannot load {path.name}"
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        verdict, why = mod.leg_verdict(leg)
+        return str(verdict), str(why)
+    except Exception as exc:
+        return UNMEASURED, f"liveness unreadable: {type(exc).__name__}"
+
+
+def red_regions(path: Path | None = None, *, require_live: bool = True
+                ) -> tuple[frozenset[str], str]:
+    """THE DECISION EDGE: the RED regions (sources registered, zero measured output) the forest
+    scheduler works FIRST inside each frontier bucket (`deep_forest_miner.schedule`).
+
+    A reorder, never a removal: a region is moved ahead, nothing is dropped. Steered on ONLY while
+    `check_leg_artifact_liveness` publishes the `region_yield` leg GREEN; a stale, missing or
+    UNMEASURED report returns the empty set and the scheduler keeps its historic order (L1.28a --
+    a frozen worklist is not a measured one)."""
+    if require_live:
+        verdict, why = _liveness("region_yield")
+        if verdict != "GREEN":
+            return frozenset(), f"region_yield liveness {verdict}: {why}"
+    doc = _json(path or OUT)
+    if not isinstance(doc, dict):
+        return frozenset(), f"{(path or OUT).name} absent or unreadable"
+    red = frozenset(_region(r) for r in (doc.get("red") or []) if _region(r))
+    return red, f"{len(red)} RED region(s) from {(path or OUT).name} at {doc.get('generated_utc')}"
+
+
 def write(doc: dict[str, Any], out: Path | None = None) -> None:
     path = out or OUT
     path.parent.mkdir(parents=True, exist_ok=True)

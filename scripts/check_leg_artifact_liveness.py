@@ -138,6 +138,41 @@ def check(*, now: datetime | None = None, root: Path | None = None,
                      "UNMEASURED, never GREEN (L1.28a)")}
 
 
+#: The verdict file itself goes stale too: a consumer trusts a GREEN row only while the fence
+#: that wrote it is inside this age (two hourly passes plus room for one missed).
+VERDICT_MAX_AGE_H = 3.0
+
+
+def leg_verdict(leg: str, *, now: datetime | None = None,
+                path: Path | None = None) -> tuple[str, str]:
+    """(verdict, why) for one contracted leg, AS THIS FENCE LAST PUBLISHED IT.
+
+    The decision-side reader. An organ that steers on a contracted artifact (the judge's
+    empty-cluster factor on EMPTY_CLUSTER_FORCER, the forest scheduler's region worklist on
+    REGION_YIELD) asks here first and steers ONLY on GREEN. Everything else -- no verdict file,
+    a stale one, a leg with no row -- is UNMEASURED, never GREEN (L1.28a): the consumer then
+    behaves exactly as it did before the artifact existed, rather than deciding on a frozen copy.
+    """
+    now = now or datetime.now(UTC)
+    p = path or OUT
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return UNMEASURED, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict):
+        return UNMEASURED, f"{p.name} is not an object"
+    at = _parse(doc.get("generated_utc"))
+    if at is None:
+        return UNMEASURED, f"{p.name} carries no generated_utc"
+    age_h = (now - at).total_seconds() / 3600.0
+    if age_h > VERDICT_MAX_AGE_H:
+        return UNMEASURED, f"{p.name} is {age_h:.1f}h old (> {VERDICT_MAX_AGE_H:g}h)"
+    for row in doc.get("rows") or []:
+        if isinstance(row, dict) and row.get("leg") == leg:
+            return str(row.get("verdict") or UNMEASURED), str(row.get("why") or "")
+    return UNMEASURED, f"{leg} has no row in {p.name}"
+
+
 def write(doc: dict[str, Any], out: Path | None = None) -> None:
     path = out or OUT
     path.parent.mkdir(parents=True, exist_ok=True)

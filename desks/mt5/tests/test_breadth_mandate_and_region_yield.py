@@ -354,3 +354,70 @@ def test_both_new_legs_are_wired_hourly():
     src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '_costed("region_yield"' in src and '_costed("leg_artifact_liveness"' in src
     assert '_costed("empty_cluster_forcer"' in src
+
+
+# ------------------------------------------------------------- the decision edges ---
+def test_leg_verdict_reads_green_only_from_a_fresh_fence(tmp_path, liveness):
+    now = datetime.now(UTC)
+    p = tmp_path / "LIVE.json"
+    assert liveness.leg_verdict("x", now=now, path=p)[0] == "UNMEASURED"          # absent
+    p.write_text(json.dumps({"generated_utc": now.isoformat(),
+                             "rows": [{"leg": "x", "verdict": "GREEN", "why": "ok"},
+                                      {"leg": "y", "verdict": "RED", "why": "stale"}]}))
+    assert liveness.leg_verdict("x", now=now, path=p) == ("GREEN", "ok")
+    assert liveness.leg_verdict("y", now=now, path=p)[0] == "RED"
+    assert liveness.leg_verdict("z", now=now, path=p)[0] == "UNMEASURED"           # no row
+    later = now + timedelta(hours=liveness.VERDICT_MAX_AGE_H + 1)
+    assert liveness.leg_verdict("x", now=later, path=p)[0] == "UNMEASURED"         # stale fence
+
+
+def test_red_regions_steer_only_on_a_green_leg(tmp_path, monkeypatch):
+    from research import region_yield as ry
+    p = tmp_path / "REGION_YIELD.json"
+    p.write_text(json.dumps({"generated_utc": "2026-11-11T00:00:00+00:00", "red": ["BR", "ar"]}))
+    monkeypatch.setattr(ry, "_liveness", lambda leg: ("GREEN", "fresh"))
+    assert ry.red_regions(p)[0] == frozenset({"br", "ar"})
+    monkeypatch.setattr(ry, "_liveness", lambda leg: ("RED", "frozen"))
+    red, why = ry.red_regions(p)
+    assert red == frozenset() and "RED" in why
+    assert ry.red_regions(tmp_path / "absent.json", require_live=False)[0] == frozenset()
+
+
+def test_forest_scheduler_works_red_regions_first():
+    import deep_forest_miner as dfm
+    grounds = [{"name": "g_cn", "region": "cn"}, {"name": "g_br", "region": "br"}]
+    plain = [g["name"] for g in dfm.schedule(grounds)]
+    lifted = [g["name"] for g in dfm.schedule(grounds, gaps=frozenset({"br"}))]
+    assert sorted(plain) == sorted(lifted)                        # a reorder, never a removal
+    assert lifted.index("g_br") < lifted.index("g_cn")
+
+
+def test_forced_families_steer_only_on_a_green_leg(tmp_path, monkeypatch):
+    from research import empty_cluster_forcer as ecf
+    p = tmp_path / "ECF.json"
+    p.write_text(json.dumps({"generated_utc": "x", "clusters": [
+        {"cluster": "news_reaction", "verdict": "FORCED", "families": ["jump"],
+         "cells_minted": 6},
+        {"cluster": "options_implied", "verdict": "DATA_GAP", "families": ["implied_vol"],
+         "cells_minted": 0},
+        {"cluster": "relative_value", "verdict": "ALREADY_ATTACKED", "families": ["pairs"]}]}))
+    monkeypatch.setattr(ecf, "_liveness", lambda leg: ("GREEN", "fresh"))
+    assert ecf.forced_families(p)[0] == frozenset({"jump"})
+    monkeypatch.setattr(ecf, "_liveness", lambda leg: ("UNMEASURED", "no fence"))
+    assert ecf.forced_families(p)[0] == frozenset()
+
+
+def test_the_judge_lifts_forced_families_and_demotes_none(monkeypatch):
+    from research import empty_cluster_forcer as ecf
+    from research import judge_coverage as jc
+    backlog = {"jump": 10, "trend_ma_cross": 10}
+    rows = [{"family": f, "timeframe": "H1"} for f in backlog for _ in range(10)]
+    monkeypatch.setattr(ecf, "forced_families", lambda: (frozenset(), "none"))
+    base = {r["family"]: r for r in jc.rank_by_value(backlog, rows, 100)}
+    monkeypatch.setattr(ecf, "forced_families", lambda: (frozenset({"jump"}), "forced"))
+    lifted = {r["family"]: r for r in jc.rank_by_value(backlog, rows, 100)}
+    assert lifted["jump"]["empty_cluster_factor"] == 1.0 + jc.EMPTY_CLUSTER_LIFT
+    assert lifted["jump"]["ev_per_cell"] == pytest.approx(
+        base["jump"]["ev_per_cell"] * (1.0 + jc.EMPTY_CLUSTER_LIFT))
+    assert lifted["trend_ma_cross"]["ev_per_cell"] == pytest.approx(
+        base["trend_ma_cross"]["ev_per_cell"])

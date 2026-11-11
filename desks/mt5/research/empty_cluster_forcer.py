@@ -535,6 +535,50 @@ def plan(mandate: dict[str, Any] | None = None) -> dict[str, Any]:
     }
 
 
+def _liveness(leg: str) -> tuple[str, str]:
+    """The liveness fence's published verdict for `leg`; UNMEASURED when it cannot be read."""
+    try:
+        import importlib.util
+        path = ROOT / "scripts" / "check_leg_artifact_liveness.py"
+        spec = importlib.util.spec_from_file_location("check_leg_artifact_liveness", path)
+        if spec is None or spec.loader is None:
+            return "UNMEASURED", f"cannot load {path.name}"
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        verdict, why = mod.leg_verdict(leg)
+        return str(verdict), str(why)
+    except Exception as exc:
+        return "UNMEASURED", f"liveness unreadable: {type(exc).__name__}"
+
+
+def forced_families(path: Path | None = None, *, require_live: bool = True
+                    ) -> tuple[frozenset[str], str]:
+    """THE DECISION EDGE: families this leg FORCED into an empty cluster on its last pass.
+
+    `judge_coverage.rank_by_value` multiplies their expected value per judge-second by
+    `1 + EMPTY_CLUSTER_LIFT`, so the cells minted here reach the sealed gauntlet ahead of a
+    re-judged family's instead of sitting at the docket's tail -- the ORDER is the selection, and
+    a forced cell nobody judges has not attempted the cluster. One-sided (>= 1.0), a reorder of
+    whole families, no row removed. Steered on ONLY while `check_leg_artifact_liveness` publishes
+    this leg GREEN; anything else returns the empty set and the judge ranks as before (L1.28a)."""
+    if require_live:
+        verdict, why = _liveness("empty_cluster_forcer")
+        if verdict != "GREEN":
+            return frozenset(), f"empty_cluster_forcer liveness {verdict}: {why}"
+    doc = _read(path or OUT, {})
+    if not isinstance(doc, dict) or not doc:
+        return frozenset(), f"{(path or OUT).name} absent or unreadable"
+    fams: set[str] = set()
+    for r in list(doc.get("clusters") or []) + list(doc.get("asset_classes") or []):
+        if isinstance(r, dict) and r.get("verdict") == "FORCED" and int(
+                r.get("cells_minted") or 0) > 0:
+            fams.update(str(f) for f in (r.get("families") or []) if f)
+            if r.get("family"):
+                fams.add(str(r["family"]))
+    return frozenset(fams), (f"{len(fams)} forced famil(ies) from {(path or OUT).name} at "
+                             f"{doc.get('generated_utc')}")
+
+
 def family_verdict_of(family: str) -> tuple[str, str]:
     """The sealed gauntlet's buildability verdict; an unimportable probe is UNMEASURED."""
     try:
