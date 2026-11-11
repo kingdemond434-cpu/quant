@@ -3042,3 +3042,22 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ------------------------------------------ an unlocated FAIL is tagged, never changed (D-953)
+
+
+def test_an_unlocated_fail_is_tagged_unspecified_and_still_fails() -> None:
+    """Reporting only (D-20261111-953, Auditor ruling 11-11): #538 MF-A stands. A risk_increasing
+    FAIL that names no place is final; the tag only lets the #816 adjudication path find it."""
+    bare = json.dumps({"verdict": "FAIL", "risk_increasing": True, "touches_control": False,
+                       "findings": ["could be used to bypass risk checks"], "summary": "risky"})
+    small = _diff(("docs/a.py", ["+x = 1"]))
+    v, log = _review(small, [("qwen", "q1", _counting(bare)), ("llama", "l1", _counting(_PASS))])
+    assert v == "FAIL" and log[-1] == f"q1: {ir.UNSPECIFIED}"
+    placed = json.dumps({"verdict": "FAIL", "risk_increasing": True, "touches_control": False,
+                         "findings": [{"file": "docs/a.py", "line": 1, "why": "x"}],
+                         "summary": "risky"})
+    v, log = _review(small, [("qwen", "q1", _counting(placed)), ("llama", "l1", _counting(_PASS))])
+    assert v == "FAIL" and not any(ir.UNSPECIFIED in x for x in log)
+    assert not ir.unspecified(json.loads(_PASS))
