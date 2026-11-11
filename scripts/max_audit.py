@@ -3968,6 +3968,12 @@ _TERMINAL_ARTIFACTS = {
     # once the desktop applies it: the code and its drill are then the record. It cannot rot
     # unseen, because the organ that cites it keeps a FAIL row open until the drill it names
     # passes (desks/mt5/research/recovery_drills.py: GATEWAY_SPEC, FILL_ORDER_SPEC).
+    # The secret-sauce stack note (2026-11-11): a point-in-time status of one backlog row plus two
+    # designs. Each organ it names owns a live report; the note is superseded by the PR that
+    # builds either design item. Also recorded in docs/research/ARTIFACT_GOVERNANCE.md.
+    "docs/research/SECRET_SAUCE_STACK.md":
+        "TERMINAL status-and-design note for the 2026-09-30 secret-sauce row; live state is in "
+        "the organs' own reports, and the PR that builds a design item supersedes its section.",
     "docs/desktop_pass/":
         "SPEC HANDED TO THE DESKTOP PASS for a money-path change the cloud may not make. Terminal "
         "on application; until then a FAIL row in reports/RECOVERY_DRILLS.json names it.",
