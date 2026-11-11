@@ -732,7 +732,11 @@ def test_the_side_search_charge_lands_in_the_trial_ledger(
         donated.extend(cands)
     monkeypatch.setattr(pc, "donate", fake_donate)
     monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(donated)})
-    moat.claim_and_donate(registry.connect(), per_department=1000)
+    conn = registry.connect()
+    try:
+        moat.claim_and_donate(conn, per_department=1000)
+    finally:
+        conn.close()            # an unclosed sqlite handle is a ResourceWarning, an error here
     n_cells = len(ifp.TRANSFORMS_STATE) * len(ifp.CHARTS)
     assert len(donated) == n_cells
     assert all(d["claim_selection_trials"] == 2 and d["claim_family"] for d in donated)
