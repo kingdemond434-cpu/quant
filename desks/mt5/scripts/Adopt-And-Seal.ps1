@@ -562,7 +562,9 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 foreach ($ensure in @(
         @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
-        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
+        # the merge gate heals its own jammed clone as SYSTEM, independent of adoption (2026-11-11)
+        @{ Task = "MT5-GateCloneWatchdog"; Installer = "install_gate_clone_watchdog_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }

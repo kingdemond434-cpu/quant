@@ -264,6 +264,7 @@ TASK name="MT5-FTMO-VenueReader" trigger="every 5 minutes" runs="desks/mt5/prop/
 # The FTMO book's solve on its own clock (2026-11-05): it never fit HourlyCore's rotation. Writes the
 # CERT_BOOK_LIVE ftmo block only when data/FTMO_ALLOCATOR_ARMED exists.
 TASK name="MT5-FTMO-Allocator" trigger="every 1 hour, at :50" runs="desks/mt5/research/prop_challenge_allocator.py" installer="desks/mt5/scripts/install_ftmo_allocator_task.ps1" lane="prop"
+TASK name="MT5-GateCloneWatchdog" trigger="every 15 minutes" runs="desks/mt5/scripts/gate_clone_watchdog.ps1" installer="desks/mt5/scripts/install_gate_clone_watchdog_task.ps1" lane="ops"
 TASK name="MT5-FTMO-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_executor.py" installer="desks/mt5/scripts/install_ftmo_executor_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
