@@ -7,7 +7,8 @@
 #   Quant-BootSession   at logon:        ops\box\unattended_boot.ps1 -Mode Logon
 #   Quant-BootRecord    every 10 min:    ops\box\unattended_boot.ps1 -Mode Record
 #   Quant-WorkflowGate  logon + 10 min:  ops\box\workflow_gate.ps1
-#   Quant-SignTrain     logon + 10 min:  ops\box\sign_train_leg.ps1  (the audit signs, D-20261027-003)
+#   Quant-SignTrain     logon + 10 min:  ops\box\sign_train_stub.ps1, installed as sign_train_leg.ps1;
+#                                        it runs LIVE's ops\box\sign_train_leg.ps1 (D-20261027-003)
 #
 # and REPORTS (reads only) the two things only zuck can give, once:
 #
@@ -68,10 +69,13 @@ foreach ($path in @($Root) + @(Get-ChildItem -LiteralPath $Root -Force -Recurse 
     }
 }
 
-foreach ($name in @('unattended_boot.ps1', 'workflow_gate.ps1', 'sign_train_leg.ps1')) {
+# The sign train's bin copy is its STUB (2026-11-11): the stub runs LIVE's own leg each time, so a
+# merged change to sign_train_leg.ps1 needs no re-install. The task keeps its file name.
+$copies = [ordered]@{ 'unattended_boot.ps1' = 'unattended_boot.ps1'; 'workflow_gate.ps1' = 'workflow_gate.ps1'; 'sign_train_stub.ps1' = 'sign_train_leg.ps1' }
+foreach ($name in $copies.Keys) {
     $src = Join-Path $PSScriptRoot $name
     if (-not (Test-Path -LiteralPath $src)) { throw "$name missing at $src" }
-    $dst = Join-Path $BinDir $name
+    $dst = Join-Path $BinDir $copies[$name]
     Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue
     Copy-Item -LiteralPath $src -Destination $dst
     "copied {0} (sha256 {1})" -f $dst, (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower().Substring(0, 12)
