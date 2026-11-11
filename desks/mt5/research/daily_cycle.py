@@ -929,9 +929,12 @@ _CANON_STEPS = dict(STEPS)
 #     and the chain moves on. The default is above the longest step ever measured on the box
 #     (9,056 s), so it stops a hang, never a slow day.
 #   * A STALL COUNT. A step is marked in flight before it starts and cleared when it ends; one
-#     that has been started STALL_ATTEMPTS times today without ever ending (the caller was killed
-#     around it) is stamped STALLED and skipped for the day, by name, so the next pass reaches the
-#     steps behind it. `--force` or tomorrow's date runs it again.
+#     that has been started STALL_ATTEMPTS times today without ever ending AND has been in flight
+#     for at least its own limit since its first start is stamped STALLED and skipped for the day,
+#     by name, so the next pass reaches the steps behind it. `--force` or tomorrow's date runs it
+#     again. A CALLER'S KILL ALONE NEVER COUNTS (Auditor, M2): the hourly leg kills the whole chain
+#     at 900 s, so a healthy step slower than that is killed at every hourly attempt; it is
+#     stalled only once it has had the time its own limit grants it.
 DEFAULT_STEP_TIMEOUT_S = 3 * 3600.0
 #: Per-step limits where one is known to be tighter than the default. Empty means the default.
 STEP_TIMEOUT_S: dict[str, float] = {}
@@ -983,11 +986,30 @@ def stall_attempts(today: str, name: str) -> int:
         return 0
 
 
+def in_flight_s(today: str, name: str, now: datetime | None = None) -> float:
+    """Seconds since this step FIRST started today without ever ending (0.0 when unknown)."""
+    row = _inflight(today).get(name) or {}
+    try:
+        first = datetime.fromisoformat(str(row.get("first_start")))
+    except ValueError:
+        return 0.0
+    if first.tzinfo is None:
+        first = first.replace(tzinfo=UTC)
+    return max(0.0, ((now or datetime.now(UTC)) - first).total_seconds())
+
+
+def is_stalled(today: str, name: str, now: datetime | None = None) -> bool:
+    """Started STALL_ATTEMPTS times without ending AND given its own limit to finish."""
+    return (stall_attempts(today, name) >= STALL_ATTEMPTS
+            and in_flight_s(today, name, now) >= step_timeout_s(name))
+
+
 def _inflight_start(today: str, name: str) -> None:
     steps = _inflight(today)
     row = dict(steps.get(name) or {})
     row["attempts"] = stall_attempts(today, name) + 1
     row["last_start"] = datetime.now(UTC).isoformat(timespec="seconds")
+    row.setdefault("first_start", row["last_start"])
     steps[name] = row
     _inflight_write(today, steps)
 
@@ -1021,21 +1043,24 @@ def run_step_isolated(name: str) -> dict:
     except subprocess.TimeoutExpired:
         out = {"ok": False, "timed_out": True,
                "error": f"TIMEOUT: past its {limit:g}s limit; its process tree was killed"}
-        dlog(f"{name}: {out['error']}")
     except OSError as exc:
         out = {"ok": False, "error": f"could not start the step: {type(exc).__name__}: {exc}"}
         dlog(f"{name}: FAILED -- {out['error']}")
     out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
+    if out.get("timed_out"):
+        # The wall it was killed at stays MEASURED, so the step's real length is never a guess.
+        dlog(f"{name}: {out['error']} after {out['seconds']}s")
     return out
 
 
 def run_chain_step(today: str, name: str, fn) -> dict:
     """One step of the chain: skipped by name when stalled, else bounded, with its in-flight mark."""
-    n = stall_attempts(today, name)
-    if n >= STALL_ATTEMPTS:
+    if is_stalled(today, name):
+        n, held = stall_attempts(today, name), in_flight_s(today, name)
         out = {"ok": False, "stalled": True, "seconds": 0.0,
-               "error": (f"STALLED: started {n} times today and never finished; skipped for the "
-                         f"day so the steps after it run (--force runs it again)")}
+               "error": (f"STALLED: started {n} times today over {held:.0f}s (its limit is "
+                         f"{step_timeout_s(name):g}s) and never finished; skipped for the day so "
+                         f"the steps after it run (--force runs it again)")}
         dlog(f"{name}: {out['error']}")
         return out
     _inflight_start(today, name)

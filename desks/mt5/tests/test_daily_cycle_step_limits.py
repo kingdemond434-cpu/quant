@@ -40,13 +40,23 @@ def _stamp(cyc) -> dict:
     return json.loads((cyc.tmp / "daily_cycle_state.json").read_text())["steps"]
 
 
+def _age(today: str, name: str, seconds: float) -> None:
+    """Back-date a step's first start, as if it had first started `seconds` ago."""
+    from datetime import UTC, datetime, timedelta
+    steps = daily_cycle._inflight(today)
+    steps[name]["first_start"] = (datetime.now(UTC) - timedelta(seconds=seconds)).isoformat()
+    daily_cycle._inflight_write(today, steps)
+
+
 def test_a_step_killed_twice_today_is_skipped_by_name_and_the_rest_run(cyc, monkeypatch):
     steps = tuple((n, cyc.step(n)) for n in ("stuck", "recertify", "promoter", "markout"))
     monkeypatch.setattr(daily_cycle, "STEPS", steps)
     today = daily_cycle._utc_today()
-    # two earlier passes started `stuck` and were killed around it (no end mark)
+    # two earlier passes started `stuck` and were killed around it (no end mark), and it has
+    # been in flight longer than its own limit
     daily_cycle._inflight_start(today, "stuck")
     daily_cycle._inflight_start(today, "stuck")
+    _age(today, "stuck", daily_cycle.step_timeout_s("stuck") + 1)
     assert daily_cycle._run_chain(False) == 1
     assert cyc.calls == ["recertify", "promoter", "markout"]
     rec = _stamp(cyc)
@@ -70,11 +80,30 @@ def test_a_finished_step_clears_its_mark_and_is_never_rerun(cyc, monkeypatch):
     assert daily_cycle._inflight(daily_cycle._utc_today()) == {}
 
 
+def test_a_healthy_slow_step_killed_by_the_hourly_caller_is_never_stalled(cyc, monkeypatch):
+    """Killed at 900 s on two hourly passes: the caller's budget, not the step's. It runs again."""
+    monkeypatch.setattr(daily_cycle, "STEPS", (("research", cyc.step("research")),))
+    today = daily_cycle._utc_today()
+    for _ in range(daily_cycle.STALL_ATTEMPTS + 1):
+        daily_cycle._inflight_start(today, "research")
+    _age(today, "research", 2 * 3600 + 900)        # three hourly kills, still under 3 h
+    assert not daily_cycle.is_stalled(today, "research")
+    assert daily_cycle._run_chain(False) == 0 and cyc.calls == ["research"]
+
+
+def test_a_step_in_flight_past_its_limit_but_started_once_is_retried(cyc):
+    today = daily_cycle._utc_today()
+    daily_cycle._inflight_start(today, "x")
+    _age(today, "x", daily_cycle.step_timeout_s("x") + 1)
+    assert not daily_cycle.is_stalled(today, "x")
+
+
 def test_force_clears_the_stall_count(cyc, monkeypatch):
     monkeypatch.setattr(daily_cycle, "STEPS", (("stuck", cyc.step("stuck")),))
     today = daily_cycle._utc_today()
     for _ in range(daily_cycle.STALL_ATTEMPTS):
         daily_cycle._inflight_start(today, "stuck")
+    _age(today, "stuck", daily_cycle.step_timeout_s("stuck") + 1)
     assert daily_cycle._run_chain(True) == 0 and cyc.calls == ["stuck"]
 
 
