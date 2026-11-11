@@ -103,6 +103,10 @@ C2_KEY_ENV = "C2_API_KEY"
 CROWD_MIN_GAP_S = 55 * 60
 CROWD_DAILY_CAP = 90
 HARD_STOP = frozenset({401, 403, 429, 451})
+#: Myfxbook's API terms have not been read verbatim from the source (2026-11-11): unread terms
+#: fail CLOSED. Nothing is fetched until a box read records the terms (URL, status, sha256,
+#: verbatim text) under reports/box_reads and a reviewed commit sets this to "OPEN".
+MYFXBOOK_TERMS = "HELD"
 
 #: Every cell here reads a UTC-stamped series against broker-stamped bars (UTC+2/+3).
 LAG_H = 3
@@ -355,7 +359,7 @@ def collect_crowd(state: dict[str, Any], *, now: datetime, offline: bool,
                   session: str | None,
                   get: Callable[[str], tuple[int | None, str, str]] | None = None,
                   robots: Callable[[str], str | None] | None = None,
-                  raw: Path | None = None) -> dict[str, Any]:
+                  raw: Path | None = None, terms: str | None = None) -> dict[str, Any]:
     """At most one outlook call per hour, appended to the raw jsonl with its retrieval time."""
     st = state.setdefault("myfxbook", {})
     if st.get("hard_stop"):
@@ -365,6 +369,10 @@ def collect_crowd(state: dict[str, Any], *, now: datetime, offline: bool,
         return {"status": "UNCONFIGURED",
                 "why": f"{MYFXBOOK_KEY_ENV} is not set and data/secrets/myfxbook.json holds no "
                        "session: a named state, never a dead endpoint"}
+    if (terms or MYFXBOOK_TERMS) != "OPEN":
+        return {"status": "TERMS_HELD",
+                "why": "Myfxbook's API terms are unread at the source; fail-closed until a box "
+                       "read records them and MYFXBOOK_TERMS is set OPEN in a reviewed commit"}
     if offline:
         return {"status": "OFFLINE", "why": "--offline: serving the held raw readings"}
     last = pd.to_datetime(st.get("last_fetch"), utc=True, errors="coerce")
@@ -610,10 +618,11 @@ def build(*, dry_run: bool = False, offline: bool = False, now: datetime | None 
                   "panel_symbols": len(swaps)},
         "crowd": {
             "myfxbook": {"fetch": crowd_fetch, "symbols_live": crowd_ok,
-                         "accruing": crowd_accruing, "terms": (
-                             "official API; the API page asks that software built on it be free "
-                             "and caps the free tier at 100 calls/day; read for internal research "
-                             "only, never redistributed")},
+                         "accruing": crowd_accruing, "terms": MYFXBOOK_TERMS,
+                         "terms_note": (
+                             "HELD until the terms are read verbatim on the box; the API page "
+                             "reportedly asks that software built on it be free and caps the "
+                             "free tier at 100 calls/day")},
             "collective2": {"status": UNMEASURED, "key_present": c2_key, "why": (
                 "FAIL-CLOSED: the official API v4 exposes no sentiment or aggregated "
                 "positioning endpoint, only per-strategy positions; a crowd series would mean "

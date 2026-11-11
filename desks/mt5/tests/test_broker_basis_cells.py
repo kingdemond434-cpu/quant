@@ -105,11 +105,11 @@ def test_crowd_is_official_api_hourly_robots_first_and_the_session_never_leaks(
         return 200, _outlook(), ""
 
     st: dict = {}
-    r = B.collect_crowd(st, now=NOW, offline=False, session=SESSION, get=get,
+    r = B.collect_crowd(st, now=NOW, offline=False, terms="OPEN", session=SESSION, get=get,
                         robots=lambda u: None, raw=raw)
     assert r["status"] == "COLLECTED" and len(calls) == 1
     assert calls[0].startswith(B.MYFXBOOK_URL)
-    r = B.collect_crowd(st, now=NOW, offline=False, session=SESSION, get=get,
+    r = B.collect_crowd(st, now=NOW, offline=False, terms="OPEN", session=SESSION, get=get,
                         robots=lambda u: None, raw=raw)
     assert r["status"] == "NOT_DUE" and len(calls) == 1          # one call an hour at most
     assert SESSION not in raw.read_text() and SESSION not in json.dumps(st)
@@ -132,18 +132,18 @@ def test_a_refusal_is_a_hard_stop_that_holds(tmp_path: Path, answer, status) -> 
         calls.append(url)
         return answer
 
-    r = B.collect_crowd(st, now=NOW, offline=False, session=SESSION, get=get,
+    r = B.collect_crowd(st, now=NOW, offline=False, terms="OPEN", session=SESSION, get=get,
                         robots=lambda u: None, raw=tmp_path / "r.jsonl")
     assert r["status"] == status and st["myfxbook"]["hard_stop"]
     later = NOW.replace(hour=20)
-    r = B.collect_crowd(st, now=later, offline=False, session=SESSION, get=get,
+    r = B.collect_crowd(st, now=later, offline=False, terms="OPEN", session=SESSION, get=get,
                         robots=lambda u: None, raw=tmp_path / "r.jsonl")
     assert r["status"] == "HARD_STOP" and len(calls) == 1      # never fetched again
 
 
 def test_robots_and_a_missing_session_are_named_and_fetch_nothing(tmp_path: Path) -> None:
     called: list[str] = []
-    r = B.collect_crowd({}, now=NOW, offline=False, session=SESSION,
+    r = B.collect_crowd({}, now=NOW, offline=False, terms="OPEN", session=SESSION,
                         get=lambda u: called.append(u) or (200, "", ""),
                         robots=lambda u: "robots.txt unreadable (HTTP 503)",
                         raw=tmp_path / "r.jsonl")
@@ -364,3 +364,16 @@ def test_both_organs_are_legs_of_the_hourly_clock_with_a_layer() -> None:
         assert leg in HC.CORE_LEGS
         assert f'"{leg}", "{script}"' in src
         assert layers.LEG_LAYER[leg] == "information"
+
+
+def test_held_myfxbook_terms_fetch_nothing(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def get(url: str) -> tuple[int | None, str, str]:
+        calls.append(url)
+        raise AssertionError("HELD terms must not fetch")
+
+    r = B.collect_crowd({}, now=NOW, offline=False, session=SESSION, get=get,
+                        robots=lambda u: calls.append(u) or None, raw=tmp_path / "r.jsonl")
+    assert r["status"] == "TERMS_HELD" and calls == []
+    assert B.MYFXBOOK_TERMS == "HELD"
