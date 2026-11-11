@@ -187,10 +187,11 @@ def test_proposer_grid_is_declared_and_parks_absent_inputs_by_name(monkeypatch, 
     assert len(u3) == 8 and all(v["implied_series"] == "OVXCLS" for v in u3)
     now = datetime(2026, 11, 11, 12, tzinfo=UTC)
     doc = tp.run(only=["U3", "U6"], now=now)
-    for idea in ("U3", "U6"):
-        assert doc["ideas"][idea]["status"] == "PARKED"
-        assert all("not yet in the world dataset store" in v
-                   for v in doc["ideas"][idea]["parked"].values())
+    assert doc["ideas"]["U3"]["status"] == "PARKED"
+    assert all("not yet in the world dataset store" in v
+               for v in doc["ideas"]["U3"]["parked"].values())
+    assert doc["ideas"]["U6"]["status"] == "PARKED", "U6 waits for first-release vintages"
+    assert all(v == tp.U6_PARK for v in doc["ideas"]["U6"]["parked"].values())
     fresh = tp.run(now=now + timedelta(hours=2))
     assert fresh["status"] == "FRESH" and fresh["age_h"] == pytest.approx(2.0)
     assert tp.run(now=now + timedelta(hours=21), only=["U6"])["status"] == "SWEPT"

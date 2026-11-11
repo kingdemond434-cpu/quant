@@ -11,6 +11,7 @@ THE IDEAS (zuck, 2026-11-11, backlog rows U1-U6 and N1):
     U4 weekend_crypto_gap     BTC/ETH CFD weekend move -> Monday session, JPY, AUD, gold, indices
     U5 equity_gap_breadth     US share-CFD opening-gap breadth -> US indices
     U6 world_macro_state      Kim-Wright 10y term premium (FRED THREEFYTP10): gold, JPY, bonds
+                              -- PARKED until a first-release vintage exists (see U6_PARK)
     N1 holiday_drift          pre- and post-holiday sessions, by each index's own venue calendar
 
 N2 (degree days) and N3 (net liquidity) are World sensor's (#903, #904) and are not minted here.
@@ -57,6 +58,15 @@ DEFAULT_BUDGET_S = 600.0
 
 US_INDICES = ("US500", "US30", "NAS100", "US2000")
 
+#: U6 IS PARKED ON A POINT-IN-TIME DEFECT, NOT ON DATA. The world dataset hunter stamps a
+#: series' backfilled history at period end + publication lag (`world_dataset_hunter.pit_series`),
+#: and fredgraph.csv serves the CURRENT vintage. GVZ and OVX are market closes that are never
+#: revised, so U3 is unaffected; THREEFYTP10 is a model estimate the Fed re-fits, so its history
+#: carries revisions the desk could not have known. It is minted when a first-release vintage
+#: source exists (ALFRED, Global data's FRED axis #761). Set to "" to mint it.
+U6_PARK = ("THREEFYTP10 history is the current vintage stamped at its observation date "
+           "(revised model output): waits for first-release vintages")
+
 
 def _session(sym: str) -> dict[str, str]:
     tz, o, c, _cal = t1.SESSIONS[sym]
@@ -91,6 +101,7 @@ def ideas() -> list[dict[str, Any]]:
          "targets": ["XAUUSD", "USDJPY", "EURUSD", "UST10Y", "UST05Y"],
          "fixed": lambda s: {"series_key": _fred_key("THREEFYTP10"), "z_obs": 250},
          "inputs": lambda s: ["THREEFYTP10"],
+         "park": U6_PARK,
          "grid": {"band": [(1.0, 99.0), (-99.0, -1.0)], "direction": ["long", "short"],
                   "hold_bars": [120, 480]}},
         {"id": "N1", "family": "holiday_drift",
@@ -184,6 +195,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
         per_idea[idea["id"]] = rec
         fn = _family(idea["family"])
         for sym in idea["targets"]:
+            if idea.get("park"):
+                rec["parked"][sym] = str(idea["park"])
+                continue
             if time.monotonic() - started > budget_s:
                 rec["parked"][sym] = "sweep budget exhausted this pass"
                 continue
