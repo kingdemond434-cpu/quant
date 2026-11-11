@@ -521,8 +521,7 @@ NODES: tuple[Node, ...] = (
     # THE TIER-1 IDEA ROWS (2026-11-11): U1-U6 and N1 as declared grids -> screened cells donated
     # into the intake the compiler merges. Its report is the per-idea reach and park state.
     Node("tier1_idea_proposer", "desks/mt5/research/tier1_idea_proposer.py",
-         reads=("desks/mt5/data/universe/", "desks/mt5/data/calendars/",
-                "desks/mt5/data/world_datasets/"),
+         reads=("desks/mt5/data/universe/", "desks/mt5/data/calendars/"),
          writes=("desks/mt5/reports/TIER1_IDEA_PROPOSER.json",
                  "desks/mt5/data/intelligence/tier1_ideas/")),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
