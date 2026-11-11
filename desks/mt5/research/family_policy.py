@@ -81,19 +81,41 @@ def banned_families(path: Path | None = None) -> dict[str, dict[str, Any]]:
     softens or drops `discovered` changes nothing about it.
     """
     out: dict[str, dict[str, Any]] = {k: dict(v) for k, v in PERMANENT.items()}
-    p = path or BANNED_FAMILIES_FILE
-    try:
-        doc = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return out
-    raw = doc.get("banned") if isinstance(doc, dict) else None
-    if not isinstance(raw, dict):
-        return out
+    raw = _file_bans(path or BANNED_FAMILIES_FILE)
     for k, v in raw.items():
         if str(k).strip().lower() in PERMANENT:
             continue
-        out[str(k)] = v if isinstance(v, dict) else {"why": str(v)}
+        out[str(k)] = dict(v) if isinstance(v, dict) else {"why": str(v)}
     return out
+
+
+#: (path, mtime_ns, size) -> the file's parsed `banned` dict. MEASURED 2026-11-11 (hourly pass
+#: idea 595, first asked as idea 240 on 10-29): the sweep plan called `family_banned` twice per
+#: docket cell and each call re-read and re-parsed this file -- 5.8% of the plan's samples. The
+#: key changes whenever the file is rewritten, so an edit is seen on the very next call; a
+#: file that cannot be stat'ed is read as before, never served from memory.
+_FILE_MEMO: dict[tuple[str, int, int], dict[str, Any]] = {}
+
+
+def _file_bans(p: Path) -> dict[str, Any]:
+    try:
+        st = p.stat()
+        key: tuple[str, int, int] | None = (str(p), st.st_mtime_ns, st.st_size)
+    except OSError:
+        key = None
+    if key is not None and key in _FILE_MEMO:
+        return _FILE_MEMO[key]
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    raw = doc.get("banned") if isinstance(doc, dict) else None
+    raw = raw if isinstance(raw, dict) else {}
+    if key is not None:
+        for k in [k for k in _FILE_MEMO if k[0] == key[0]]:
+            del _FILE_MEMO[k]
+        _FILE_MEMO[key] = raw
+    return raw
 
 
 def family_banned(family: object, path: Path | None = None) -> bool:
