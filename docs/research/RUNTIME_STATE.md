@@ -1048,7 +1048,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/mine_channel_transcripts.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_MINING_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/video_transcript_vault.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cot_positioning_flow` | `hourly_cycle:cot_positioning_flow` | UNMEASURED UNMEASURED | `desks/mt5/reports/COT_POSITIONING_FLOW.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-FTMO-Allocator` | `MT5-FTMO-Allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/FTMO_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/research/certificate_recheck.py` | `import:desks/mt5/research/cot_positioning_flow.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CERTIFICATE_RECHECKS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 
