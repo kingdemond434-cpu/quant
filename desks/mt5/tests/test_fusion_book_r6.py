@@ -288,6 +288,8 @@ def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
         _st = json.loads((tmp_path / "state.json").read_text("utf-8"))
         (tmp_path / "state.json").write_text(json.dumps({**_st, "deferred": list(deferred)}),
                                              encoding="utf-8")
+    # The pin is set explicitly here (principal=True) or lifted (False), never by the switch.
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", tmp_path / "GOLD_ASIA_ONLY_ENABLED.off")
     if principal:      # the sandbox lifts the pin for its mechanics tests; these test the pin
         monkeypatch.setitem(dc.PRINCIPAL_ZERO, "e8", dc.GOLD_ASIA_ONLY_ZERO)
     monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the sandbox lifts it too
