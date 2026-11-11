@@ -207,3 +207,62 @@ def test_waiter_heartbeats_its_ticket_and_is_admitted(monkeypatch, tmp_path):
     assert handle is not None and handle.record["dept"] == "mathlab"
     handle.close()
     assert not list((tmp_path / "locks").glob("dept_wait_*.ticket"))
+
+
+def _age_holder_past_budget(held, **extra):
+    import json
+    record = json.loads(dr._holder_path(held.lock_path).read_text(encoding="utf-8"))
+    record["admitted_epoch"] -= dr.holder_budget_s() + 60
+    record.update(extra)
+    dr._holder_path(held.lock_path).write_text(json.dumps(record), encoding="utf-8")
+
+
+def test_reclaim_logs_holder_rss_and_attempts_kill_tree_once(monkeypatch, tmp_path):
+    """Auditor should-fix: a reclaimed holder is a 4th live pass. Its RSS is logged and its
+    tree is killed once, outcome logged, so it is then either visible or gone."""
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_RECLAIMS_LOGGED", set())
+    held = dr.claim_capacity_slot(1, dept="validate")
+    _age_holder_past_budget(held, pid=424242, pid_create_time=1234.0)
+    states = iter(["alive", "alive", "dead"])  # leak check, pre-kill identity, post-kill
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: next(states))
+    monkeypatch.setattr(dr, "_holder_rss", lambda pid: "777MB")
+    kills: list[int] = []
+    monkeypatch.setattr(dr, "_kill_tree",
+                        lambda pid: kills.append(pid) or {"killed": 3, "method": "psutil"})
+    reclaimed = dr.claim_capacity_slot(1, dept="mathlab")
+    assert reclaimed is not None
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: "alive")
+    reclaimed.close()
+    again = dr.claim_capacity_slot(1, dept="macro")   # same leaked holder: no second kill
+    assert again is not None
+    assert kills == [424242]
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "holder rss 777MB" in log
+    assert "kill_tree attempted pid 424242: killed 3 via psutil; holder now dead" in log
+    again.close()
+    held.close()
+
+
+def test_reclaim_never_kills_an_unverified_or_own_pid_and_rss_unmeasured(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_RECLAIMS_LOGGED", set())
+    kills: list[int] = []
+    monkeypatch.setattr(dr, "_kill_tree", lambda pid: kills.append(pid) or {})
+    held = dr.claim_capacity_slot(1, dept="validate")     # holder is THIS process
+    _age_holder_past_budget(held)
+    first = dr.claim_capacity_slot(1, dept="mathlab")
+    assert first is not None and kills == []
+    second_holder = dr.claim_capacity_slot(2, dept="china")  # slot 1, then aged, no create time
+    _age_holder_past_budget(second_holder, pid=515151, pid_create_time=None)
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: "unmeasured")
+    assert dr._holder_rss(-1) == "UNMEASURED"
+    reclaimed = dr.claim_capacity_slot(2, dept="macro")
+    assert reclaimed is not None and kills == []
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "not attempted: holder is this process" in log
+    assert "holder rss UNMEASURED" in log and "create time UNMEASURED" in log
+    for h in (reclaimed, second_holder, first, held):
+        h.close()

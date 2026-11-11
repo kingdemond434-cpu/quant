@@ -258,6 +258,59 @@ def _holder_leaked(lock_path: Path, now: float) -> str | None:
 _RECLAIMS_LOGGED: set[tuple[str, str]] = set()
 
 
+def _holder_rss(pid: int) -> str:
+    """The holder's resident set, psutil memory_info().rss, or UNMEASURED when unreadable."""
+    try:
+        import psutil
+        return f"{psutil.Process(int(pid)).memory_info().rss / (1024 * 1024):.0f}MB"
+    except Exception:
+        return "UNMEASURED"
+
+
+def _kill_tree(pid: int) -> dict:
+    """libs/ops/proctree.kill_tree (never raises); a resident keeps running if it cannot load."""
+    try:
+        root = str(DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops import proctree
+        return dict(proctree.kill_tree(int(pid)))
+    except Exception as exc:
+        return {"pid": pid, "killed": 0, "method": None, "note": f"{type(exc).__name__}"}
+
+
+def _reap_leaked_holder(lock_path: Path) -> tuple[str, str]:
+    """Measure, then try ONCE to end, a holder already judged past its own budget.
+
+    Reclaiming the slot stops a hung holder counting against the bound, but the process is
+    still resident: without this the reclaim line hides a 4th live pass and whatever memory it
+    holds. The RSS is logged so a box read sees the cost; kill_tree is attempted once (the
+    caller logs once per holder) and its outcome is logged, so that process is then either
+    visibly still there or gone.
+
+    The kill is attempted ONLY on a holder measured to be the SAME process that took the slot
+    (its recorded create time matches): a reused PID could be anything on the box -- the live
+    terminal included -- and an unmeasured identity is never a licence to kill. Never self.
+    """
+    row = _read_holder(lock_path) or {}
+    try:
+        pid = int(row["pid"])
+    except (KeyError, TypeError, ValueError):
+        return "UNMEASURED", "not attempted: holder pid unreadable"
+    rss = _holder_rss(pid)
+    if pid == os.getpid():
+        return rss, "not attempted: holder is this process"
+    if row.get("pid_create_time") is None:
+        return rss, "not attempted: holder create time UNMEASURED (PID reuse not excluded)"
+    if _pid_state(pid, row.get("pid_create_time")) != "alive":
+        return rss, "not attempted: holder identity UNMEASURED or gone"
+    out = _kill_tree(pid)
+    still = _pid_state(pid, row.get("pid_create_time"))
+    return rss, (f"attempted pid {pid}: killed {out.get('killed', 0)} via "
+                 f"{out.get('method')}{'; ' + str(out['note']) if out.get('note') else ''}; "
+                 f"holder now {still}")
+
+
 def claim_capacity_slot(slots: int = CONCURRENT_PASSES, dept: str = "?",
                         budget_s: int | None = None):
     """Claim one of the shared department-pass slots, or None when all are busy.
@@ -295,7 +348,9 @@ def claim_capacity_slot(slots: int = CONCURRENT_PASSES, dept: str = "?",
             key = (str(path), str((_read_holder(path) or {}).get("pid")))
             if key not in _RECLAIMS_LOGGED:  # once per leaked holder, not once per 30 s poll
                 _RECLAIMS_LOGGED.add(key)
+                rss, killed = _reap_leaked_holder(path)
                 log(dept, f"RECLAIM department slot {index} generation {generation}: {why}; "
+                          f"holder rss {rss}; kill_tree {killed}; "
                           f"claiming generation {generation + 1}")
             generation += 1
     return None
