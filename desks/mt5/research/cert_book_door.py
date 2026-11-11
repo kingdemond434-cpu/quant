@@ -16,8 +16,9 @@ bounded by the survival envelope and the per-trade rails, which this file does n
 FAIL CLOSED, EVERY WAY. A missing or unreadable journal, book, or release row changes nothing.
 The book's `enabled: false` changes nothing. The revert switch `data/GOLD_ASIA_ONLY_ENABLED`
 (the principal's switch that folds the gold-asia-only pin back in) changes nothing. Every write
-keeps a timestamped `.bak` beside the book and appends what it removed to
-`reports/CERT_BOOK_DOOR.json`.
+keeps a timestamped backup under `reports/cert_book_door_backups/` (never beside the book
+in data/), appends a `released_by` note to the venue's `<venue>_by` prose, and records what it
+removed -- and what it could NOT release (E8, NEEDS_SIZE) -- in `reports/CERT_BOOK_DOOR.json`.
 """
 from __future__ import annotations
 
@@ -34,15 +35,23 @@ BOOK = BASE / "data" / "CERT_BOOK_LIVE.json"
 JOURNAL = ROOT / "context" / "decision_journal.jsonl"
 REPORT = BASE / "reports" / "CERT_BOOK_DOOR.json"
 REVERT_SWITCH = BASE / "data" / "GOLD_ASIA_ONLY_ENABLED"
+#: Backups live with the report, never beside the book in data/ (#956 audit S1).
+BACKUPS = BASE / "reports" / "cert_book_door_backups"
 
 #: The principal orders that release pins, by journal row, and exactly which pins each releases.
-#: zuck 2026-11-05 "all accounts trade everything", journalled by #954 (Max-growth; #953 re-ided), retires the
-#: gold-asia-only pin on Fusion and E8.
+#: zuck 2026-11-05 "all accounts trade everything", journalled by #954 (Max-growth; #953
+#: re-ided), retires the gold-asia-only pin on Fusion and E8.
+#:
+#: E8 IS NOT RELEASED HERE (#956 audit M1). On E8 an ENABLED cert book is a whitelist
+#: (`prop/e8_gold.window_risk`: a window absent from the e8 block "stands aside" at 0), so
+#: deleting its zero sends nothing either -- reporting that as RELEASED would be a lie. E8's
+#: windows are reported NEEDS_SIZE until e8_gold reads an absent key as "the allocator's
+#: fraction" (Max-growth's separate PROTECTED PR).
 RELEASES: tuple[dict[str, Any], ...] = (
     {"journal_id": "D-20261111-071", "title_starts": "All accounts trade everything",
      "order": "zuck 2026-11-05: all accounts trade everything (#954)",
-     "pins": {"fusion": ("gold_london_am", "gold_afternoon"),
-              "e8": ("gold_london_am", "gold_afternoon")}},
+     "pins": {"fusion": ("gold_london_am", "gold_afternoon")},
+     "needs_size": {"e8": ("gold_london_am", "gold_afternoon")}},
 )
 
 
@@ -66,7 +75,9 @@ def journal_ids(path: Path = JOURNAL) -> dict[str, str] | None:
 def released(book: dict[str, Any], ids: dict[str, str],
              releases: tuple[dict[str, Any], ...] = RELEASES
              ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """(the book with every released ZERO pin removed, what was removed). Pure."""
+    """(the book with every released ZERO pin removed, what was removed). Pure. Each venue block
+    that lost a pin gets a text-only `released_by` note appended to its `<venue>_by` prose
+    (#956 audit S2), so a reader of the book sees why the key is gone."""
     out = json.loads(json.dumps(book))
     removed: list[dict[str, Any]] = []
     for rel in releases:
@@ -84,11 +95,36 @@ def released(book: dict[str, Any], ids: dict[str, str],
                     del block[key]
                     removed.append({"venue": venue, "key": key, "was": 0.0,
                                     "journal_id": rel["journal_id"], "order": rel["order"]})
+    for venue in sorted({r["venue"] for r in removed}):
+        keys = ", ".join(r["key"] for r in removed if r["venue"] == venue)
+        note = (f" | released_by research/cert_book_door.py: removed the 0.0 pin(s) {keys} "
+                f"per {removed[0]['journal_id']} ({removed[0]['order']}); the allocator sizes "
+                f"them under the survival envelope")
+        out[f"{venue}_by"] = str(out.get(f"{venue}_by") or "") + note
     return out, removed
 
 
+def needs_size(book: dict[str, Any], ids: dict[str, str],
+               releases: tuple[dict[str, Any], ...] = RELEASES) -> list[dict[str, Any]]:
+    """The pins a principal order released on a venue whose cert book cannot yet be released by
+    deletion (E8: an enabled book is a whitelist). Reported, never changed."""
+    out: list[dict[str, Any]] = []
+    for rel in releases:
+        if not ids.get(rel["journal_id"], "").startswith(rel["title_starts"]):
+            continue
+        for venue, keys in (rel.get("needs_size") or {}).items():
+            block = book.get(venue) if isinstance(book.get(venue), dict) else {}
+            for key in keys:
+                out.append({"venue": venue, "key": key, "pinned": block.get(key),
+                            "journal_id": rel["journal_id"],
+                            "why": ("an enabled e8 block is a whitelist (prop/e8_gold): deleting "
+                                    "the pin would still send nothing; needs e8_gold to read an "
+                                    "absent key as the allocator's fraction")})
+    return out
+
+
 def run(book_path: Path = BOOK, journal_path: Path = JOURNAL, report_path: Path = REPORT,
-        revert_switch: Path = REVERT_SWITCH) -> dict[str, Any]:
+        revert_switch: Path = REVERT_SWITCH, backups: Path = BACKUPS) -> dict[str, Any]:
     now = datetime.now(UTC).isoformat(timespec="seconds")
     doc: dict[str, Any] = {"at": now, "removed": [], "status": "NO_CHANGE"}
     if revert_switch.exists():
@@ -108,9 +144,15 @@ def run(book_path: Path = BOOK, journal_path: Path = JOURNAL, report_path: Path 
         doc.update(status="NO_CHANGE", why="cert book disabled or not an object")
         return _report(doc, report_path)
     new, removed = released(book, ids)
+    pending = needs_size(book, ids)
+    if pending:
+        doc.update(needs_size=pending)
+        if not removed:
+            doc.update(status="NEEDS_SIZE")
     if removed:
         stamp = now.replace(":", "").replace("-", "")
-        bak = book_path.with_name(f"{book_path.name}.bak_door_{stamp}")
+        backups.mkdir(parents=True, exist_ok=True)
+        bak = backups / f"{book_path.name}.bak_door_{stamp}"
         bak.write_text(book_path.read_text("utf-8"), encoding="utf-8")
         tmp = book_path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(new, indent=1), encoding="utf-8")
