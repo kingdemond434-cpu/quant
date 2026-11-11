@@ -275,8 +275,45 @@ REGIME_FORECAST_H = 1
 REGIME_TERM_STRUCTURE = (1, 2, 5, 21)
 
 
+#: The allocator lock's heartbeat bound (job_lock.orphan_stale), derived from the clocks:
+#: one hourly cycle (allocator_liveness.CYCLE_S, 3600 s) = 12 passes of MT5-AllocatorFast
+#: (every 5 min). A holder beats at every logged stage (`_log`) and per admission candidate, so
+#: a working pass is never silent that long; an orphan silent past it is reclaimed.
+LOCK_HEARTBEAT_STALE_S = 3600.0
+#: pf_allocator's exit code when it stands down behind a lock it may not reclaim: per the exit-code
+#: protocol hourly_cycle.NAMED_FAILURE_EXITS reads (3 = LOCK_REFUSED, the first free non-zero code).
+LOCK_REFUSED_EXIT = 3
+#: A holder that beat within this is BUSY -- the ordinary overlap with a running hourly or heavy
+#: pass -- and the refused pass exits 0 with a named BUSY stand-down. Derived from the clock: three
+#: MT5-AllocatorFast passes (5 min each); a working holder beats at every logged stage, so one
+#: silent this long is not merely overlapping (#752 audit MF).
+LOCK_BUSY_HEARTBEAT_S = 15 * 60.0
+
+
+def lock_refusal(holder: Mapping[str, Any]) -> tuple[str, int]:
+    """(stand-down reason, exit code) for a refused pass. NO_ROOM (memory, exit 0); BUSY (the
+    holder beat within LOCK_BUSY_HEARTBEAT_S, exit 0); LOCK_REFUSED (silent past it and not
+    reclaimable, or the lock unreadable, exit 3 so the unit reads red)."""
+    if holder.get("reason") == "NO_ROOM":
+        return "NO_ROOM", 0
+    age = holder.get("heartbeat_age_s")
+    if isinstance(age, (int, float)) and float(age) <= LOCK_BUSY_HEARTBEAT_S:
+        return "BUSY", 0
+    return "LOCK_REFUSED", LOCK_REFUSED_EXIT
+
+
+def _beat() -> None:
+    try:
+        from research.job_lock import heartbeat
+    except ModuleNotFoundError:
+        from job_lock import heartbeat  # type: ignore[no-redef,import-not-found]
+    with suppress(Exception):
+        heartbeat("pf_allocator")
+
+
 def _log(msg: str) -> None:
     print(f"[{datetime.now(UTC):%H:%M:%S}] {msg}", flush=True)
+    _beat()
 
 
 # ---------------------------------------------------------------------------------------
@@ -2975,6 +3012,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
     solve_s: list[float] = []
     for name in cand_names:
+        _beat()                            # a long scan is a working holder, never an orphan
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
         corr = _corr_to_book(e.daily_r, held, by_name)
@@ -3305,6 +3343,139 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
 #: exchange publishes ZERO as an exact 0.0 and the product of its <= 3 factors is computed in IEEE
 #: doubles, so 1e-6 only absorbs round-off of an exact 0 and sits far below any real factor.
 TIER_S_ZERO_EPS = 1e-6
+
+
+#: Session selectors a book key can end in; two-token ones first so `london_am` is one selector.
+_SELECTORS = ("london_am", "asia", "london", "ny", "afternoon", "continuous", "overlap")
+
+
+def _column_identity(name: str) -> tuple[str, str, str]:
+    """(SYMBOL, family, timeframe) of an allocator column read off its name, for a column no
+    roster row resolves: `SYMBOL_family[_selector]` (a multi-token selector such as `london_am`
+    kept whole, a name with no selector keeping its whole family), the gold windows and xau names
+    on XAUUSD, and an `m15`/`m5`/`h1` token as the timeframe."""
+    low = str(name).lower()
+    toks = [t for t in low.split("_") if t]
+    tf = next((t.upper() for t in toks if re.fullmatch(r"[mh]\d+", t)), "")
+    if low.startswith(("gold_", "xau_", "xauusd_")):
+        sym, rest = "XAUUSD", toks[1:]
+    else:
+        sym, rest = (toks[0].upper() if toks else ""), toks[1:]
+    rest = [t for t in rest if not re.fullmatch(r"[mh]\d+", t)]
+    body = "_".join(rest)
+    for sel in _SELECTORS:
+        if body == sel:
+            body = ""
+            break
+        if body.endswith("_" + sel):
+            body = body[: -len(sel) - 1]
+            break
+    return sym, body, tf
+
+
+def _row_key(r: Mapping[str, Any]) -> str:
+    """The gateway's book key for a roster row (`SYMBOL_family_selector`), case-folded."""
+    sel = str(r.get("selector") or "")
+    return (f"{str(r.get('symbol') or '').upper()}_{r.get('family') or ''}"
+            f"{'_' + sel if sel else ''}").lower()
+
+
+def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, Any]]:
+    """The columns the principal's live policy forbids on the Fusion account, and why.
+
+    The policy is mt5desk/live_policy.py over data/live_sleeve_policy.json. The Fusion book binds
+    these columns to fraction 0 and refills their heat across the columns that can trade.
+    Hourly pass P63 (2026-11-05): the dynamic book put 30% heat on seven cells outside the
+    policy, the gateway could size none of them, and the join read BROKEN.
+
+    ONE RULE, THE POLICY'S OWN (#748 audit MF1). A column that resolves to roster rows (by name,
+    or by the gateway's `SYMBOL_family_selector` key) is judged by `live_policy.refuse` on those
+    rows -- symbol, timeframe, family, exec lane (`scalp_market`, principal 2026-09-29) and the
+    per-symbol allowlist -- and is admitted when any of its rows is. Only a column no row
+    resolves falls back to the name parser, with the same symbol, timeframe and family rules."""
+    try:
+        from mt5desk import live_policy as _lp
+        pol = _lp.policy()
+    except Exception as exc:                                   # pragma: no cover - import guard
+        return frozenset(), {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        rows = []
+    by_name: dict[str, list[dict[str, Any]]] = {}
+    by_key: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        if isinstance(r, dict):
+            by_name.setdefault(str(r.get("name")).lower(), []).append(r)
+            if r.get("symbol") and r.get("family"):
+                by_key.setdefault(_row_key(r), []).append(r)
+    zero: dict[str, str] = {}
+    resolved = 0
+    for n in names:
+        mine = by_name.get(str(n).lower()) or by_key.get(str(n).lower()) or []
+        if mine:
+            resolved += 1
+            whys = [_lp.refuse(r, pol) for r in mine]
+            if all(whys):
+                zero[str(n)] = str(whys[0])
+            continue
+        sym, fam, tf = _column_identity(str(n))
+        why = None
+        if "*" not in pol.live_symbols and sym not in pol.live_symbols:
+            why = f"{sym} is outside the live sleeve universe (no roster row; read off the name)"
+        elif tf and tf in (pol.banned_timeframes.get(sym, frozenset())
+                           | pol.banned_timeframes.get("*", frozenset())):
+            why = f"{sym} {tf} is disabled in the live account (read off the name)"
+        elif fam and fam in pol.banned_families:
+            why = f"family {fam!r} is banned from live capital (read off the name)"
+        elif sym in pol.live_sleeves:
+            why = f"{sym} admits only its allowlisted certificate(s); no roster row is one"
+        if why:
+            zero[str(n)] = why
+    return frozenset(zero), {"status": "MEASURED", "source": pol.source, "by": pol.by,
+                             "n_columns": len(names), "n_resolved_to_rows": resolved,
+                             "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items()))}
+
+
+def ceiling_guard_book(funded: Mapping[str, float], ceiling: float, *,
+                       eps: float = 1e-6) -> tuple[dict[str, float], dict[str, Any]]:
+    """`funded` scaled so its total is at most `ceiling` (+eps), with what was found. A book at or
+    under the ceiling is returned unchanged."""
+    held = float(sum(max(0.0, float(v)) for v in funded.values()))
+    meta: dict[str, Any] = {"held": round(held, 8), "ceiling": round(float(ceiling), 8),
+                            "scaled": False}
+    if ceiling <= 0 or held <= float(ceiling) + eps:
+        return dict(funded), meta
+    k = float(ceiling) / held
+    meta["scaled"], meta["factor"] = True, round(k, 8)
+    return {n: round(float(v) * k, 6) for n, v in funded.items()}, meta
+
+
+def fallback_on_admissible(best: str, ev: Sequence[SleeveEvidence], zeroed: frozenset[str],
+                           total: float, why: dict[str, str] | None = None
+                           ) -> dict[str, float] | None:
+    """The best baseline RE-SOLVED over the columns the account may trade (#748 audit (a)), or
+    None when that baseline cannot be rebuilt without the worlds (multiperiod, posterior, the
+    incumbent): its exchange-zero refill then stands. A pro-rata refill ignores correlation; the
+    baseline's own construction on the admissible evidence does not."""
+    sub = [e for e in ev if e.name not in zeroed]
+    if not sub or total <= 0:
+        return None
+    from libs.portfolio import allocator_proof as _ap
+    if best == "equal_weight":
+        return _ap._equal_weight([e.name for e in sub], total)
+    if best == "inverse_vol":
+        return _ap._inverse_vol(sub, total)
+    if best == "risk_parity":
+        return _ap._risk_parity(sub, total)
+    try:
+        from libs.portfolio.challengers import all_books
+        return all_books(sub, total).get(best)
+    except Exception as exc:
+        # A failed rebuild is NAMED (#748 audit SF), never read as "needs the worlds".
+        if why is not None:
+            why["fallback"] = f"all_books failed: {type(exc).__name__}: {exc}"
+        return None
 
 
 def exchange_zero_bounds(bounds: Mapping[str, float],
@@ -3727,6 +3898,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # the fallback are passed through `exchange_zero` at the end, so no path funds them again;
     # their heat is refilled across the other sleeves and the total is the heat law's.
     ts_zero = frozenset(str(n) for n in evidence_meta.get("tier_s_zeroed") or ())
+    # THE PRINCIPAL'S LIVE POLICY IS A ZERO OF THE SAME KIND: a column the Fusion account may not
+    # trade earns nothing there, so its heat is refilled across the columns that can.
+    lp_zero, live_policy_meta = live_policy_zero([e.name for e in ev])
+    if lp_zero:
+        _log(f"live policy ZERO: {len(lp_zero)} column(s) the Fusion account may not trade, "
+             f"bound to fraction 0 ({', '.join(sorted(lp_zero)[:6])})")
+    ts_zero = ts_zero | lp_zero
     if ts_zero:
         _log(f"tier S exchange ZERO: {len(ts_zero)} sleeve(s) bound to fraction 0 in every path "
              f"({', '.join(sorted(ts_zero)[:6])})")
@@ -4110,7 +4288,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # what every other deploy path already respects. The growth curve keeps its full 1.00
             # sampling grid, so nothing about what the desk can MEASURE changes -- which is what
             # the comment above promised in the first place.
-            _post_ceiling = max(HEAT_HARD_CEILING, float(verdict.total_heat))
+            # The OPERATIVE ceiling the heat law resolved (effective, itself bounded by the survival
+            # envelope), never the 30% constant: bounded by HEAT_HARD_CEILING the posterior chose
+            # 0.30 against a resolved 0.20 on LIVE and 6.48% against a survival 5% on #748's dry
+            # run, past Fusion's 5% daily rail at rho=1 (#748 audit MF).
+            _post_ceiling = max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat))
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
                                ceiling=_post_ceiling,
@@ -4286,7 +4468,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     nt["gain_per_day"] = round(gain, 10) if math.isfinite(gain) else None
     proposed_book = dict(funded)
     _solved_book = book
-    book, funded = bind_verdict(nt, prev_book, held, book, funded)
+    # The held book is judged against THIS pass's band, not the 30% constant: a book held at
+    # 0.30 is out of band when the law resolved 0.05 (#748 audit MF).
+    _band_hi = max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat))
+    book, funded = bind_verdict(nt, prev_book, held, book, funded,
+                                floor=min(float(HEAT_TARGET), _band_hi), ceiling=_band_hi)
     # A HOLD IS ONLY A HOLD IF THE HELD BOOK STILL HOLDS ITS CERTIFICATE (2026-09-16). When the
     # no-trade filter binds, the fresh solve is contested here FIRST. If the fresh solve beats the
     # bench and the held book does not, the hold is overridden and the solve is published: the
@@ -4488,6 +4674,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                     if _ez.get("spilled_past_bounds") else ""))
         elif _ez.get("status") == "UNREFILLABLE":
             _log(f"tier S exchange zero NOT applied: {_ez.get('why')}")
+    # THE BOOK NEVER HOLDS MORE THAN THE LAW RESOLVED (#748 audit MF). Every step above should
+    # keep the total at or under the operative ceiling; this measures it and, if one did not,
+    # scales the published book back to the ceiling with the step named on the artifact. It is
+    # the heat law's own ceiling, not a new cap.
+    funded, ceiling_guard = ceiling_guard_book(
+        funded, max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat)))
+    if ceiling_guard.get("scaled"):
+        from dataclasses import replace as _dc_replace
+        book = _dc_replace(book, heat={k: v for k, v in funded.items() if v > 0},
+                           total_heat=float(sum(funded.values())))
+        _log(f"CEILING GUARD: the book held {ceiling_guard['held']:.4%} against the resolved "
+             f"{ceiling_guard['ceiling']:.4%}; scaled to the ceiling")
     # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
     # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
     # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
@@ -4523,6 +4721,26 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
         best = str(proof.get("best_baseline") or "")
         fb_book = (proof.get("books") or {}).get(best) or {}
+        if best and fb_book and lp_zero:
+            _fb_why: dict[str, str] = {}
+            _fb = fallback_on_admissible(best, ev, ts_zero,
+                                         sum(float(v) for v in fb_book.values()), _fb_why)
+            if _fb:
+                fb_book = _fb
+                # The gateway trades THIS book whenever the proof fails (gateway._allocator_book,
+                # certified=False), so its growth is published beside the dynamic book's.
+                try:
+                    _fb_sc = score_book(ev, _fb, cfg=cfg, worlds=worlds)
+                    live_policy_meta["fallback_mean_log_growth"] = round(
+                        float(_fb_sc["mean_log_growth"]), 8)
+                    live_policy_meta["fallback_robust_score"] = round(
+                        float(_fb_sc["robust_score"]), 8)
+                except Exception as exc:
+                    live_policy_meta["fallback_mean_log_growth"] = (
+                        f"UNMEASURED: {type(exc).__name__}: {exc}")
+            live_policy_meta["fallback"] = (
+                "re-solved on the admissible columns" if _fb else _fb_why.get(
+                    "fallback", "exchange-zero refill (needs the worlds to rebuild)"))
         if best and fb_book:
             fallback = {"name": best, "book": {k: round(float(v), 6) for k, v in fb_book.items()
                                                if float(v) > 1e-6}}
@@ -4818,6 +5036,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "book_zeroed": zeroed,
         # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
         "exchange_zero": exchange_zero_meta,
+        # Which columns the principal's live policy bound to 0 on the Fusion book, and why.
+        "live_policy": live_policy_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
         # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
         # to choose whose certificate applies. Published so the delta is a measurement.
@@ -4844,6 +5064,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # whenever the dynamic weights have no fresh passing proof.
         "book_fallback": fallback,
         "floor_fill": fill_note,
+        # Whether the published book had to be brought back to the resolved ceiling, and from what.
+        "ceiling_guard": ceiling_guard,
         "aggression": aggression,
         "posterior_growth": posterior,
         "constrained_book": constrained_feed,
@@ -5100,15 +5322,26 @@ def main() -> int:
             return 0
         need = 0                            # room confirmed above; do not wait a second time
 
-    with exclusive_job("pf_allocator", need_mb=need) as go:
+    with exclusive_job("pf_allocator", need_mb=need,
+                       heartbeat_stale_s=LOCK_HEARTBEAT_STALE_S) as go:
         if not go:
-            _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
-                 f"{_NEED_MB[args.mode]}MB. The previous book stands.")
-            _record_stand_down(
-                args.mode, "LOCK",
-                f"another allocator pass holds the lock, or the box cannot fit "
-                f"{_NEED_MB[args.mode]}MB", need_mb=_NEED_MB[args.mode])
-            return 0
+            try:
+                from research.job_lock import LAST_REFUSAL
+            except ModuleNotFoundError:
+                from job_lock import LAST_REFUSAL  # type: ignore[no-redef,import-not-found]
+            holder = dict(LAST_REFUSAL.get("pf_allocator") or {})
+            reason, rc = lock_refusal(holder)
+            why = {"NO_ROOM": f"the box cannot fit {_NEED_MB[args.mode]}MB",
+                   "BUSY": "another allocator pass holds the lock and is heartbeating",
+                   "LOCK_REFUSED": ("the lock's holder is silent and cannot be reclaimed, or "
+                                    "the lock is unreadable")}[reason]
+            _log(f"stood down ({reason}): {why} ({holder}). The previous book stands.")
+            _record_stand_down(args.mode, reason, why, need_mb=_NEED_MB[args.mode],
+                               holder=holder)
+            # NON-ZERO ONLY WHEN SOMETHING IS WRONG (2026-11-05: an orphan held the lock 4.5 h
+            # while every refused pass exited 0 and the task read green; an ordinary overlap
+            # with a heartbeating pass is not that, and stays 0).
+            return rc
         try:
             run(args.mode, seed=args.seed)
         except Exception as exc:
