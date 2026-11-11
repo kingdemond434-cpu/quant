@@ -986,20 +986,31 @@ def stall_attempts(today: str, name: str) -> int:
         return 0
 
 
+def caller_budget_s() -> float:
+    """The most one killed attempt can have RUN: the hourly leg's budget for the whole chain."""
+    try:
+        return max(60.0, float(os.environ.get("DAILY_CYCLE_HOURLY_BUDGET_SEC", "900")))
+    except ValueError:
+        return 900.0
+
+
 def in_flight_s(today: str, name: str, now: datetime | None = None) -> float:
-    """Seconds since this step FIRST started today without ever ending (0.0 when unknown)."""
+    """Seconds this step has actually RUN today across attempts that never ended.
+
+    NOT wall time since its first start (Auditor, should-fix on 1dbad5ed0): the idle gaps between
+    hourly passes are not running, so a 2 h step killed at 900 s on four passes has run about an
+    hour, not three. Each interrupted attempt is credited, when the next one starts, with at most
+    min(time since it started, the caller's budget) -- `ran_s` below.
+    """
     row = _inflight(today).get(name) or {}
     try:
-        first = datetime.fromisoformat(str(row.get("first_start")))
-    except ValueError:
+        return max(0.0, float(row.get("ran_s") or 0.0))
+    except (TypeError, ValueError):
         return 0.0
-    if first.tzinfo is None:
-        first = first.replace(tzinfo=UTC)
-    return max(0.0, ((now or datetime.now(UTC)) - first).total_seconds())
 
 
 def is_stalled(today: str, name: str, now: datetime | None = None) -> bool:
-    """Started STALL_ATTEMPTS times without ending AND given its own limit to finish."""
+    """Started STALL_ATTEMPTS times without ending AND given its own limit, in RUN time."""
     return (stall_attempts(today, name) >= STALL_ATTEMPTS
             and in_flight_s(today, name, now) >= step_timeout_s(name))
 
@@ -1007,8 +1018,17 @@ def is_stalled(today: str, name: str, now: datetime | None = None) -> bool:
 def _inflight_start(today: str, name: str) -> None:
     steps = _inflight(today)
     row = dict(steps.get(name) or {})
+    now = datetime.now(UTC)
+    try:
+        prev = datetime.fromisoformat(str(row.get("last_start")))
+        prev = prev if prev.tzinfo else prev.replace(tzinfo=UTC)
+        # The previous attempt never ended: credit what it can have run, never the idle gap.
+        ran = min(max(0.0, (now - prev).total_seconds()), caller_budget_s())
+    except ValueError:
+        ran = 0.0
+    row["ran_s"] = round(float(row.get("ran_s") or 0.0) + ran, 1)
     row["attempts"] = stall_attempts(today, name) + 1
-    row["last_start"] = datetime.now(UTC).isoformat(timespec="seconds")
+    row["last_start"] = now.isoformat(timespec="seconds")
     row.setdefault("first_start", row["last_start"])
     steps[name] = row
     _inflight_write(today, steps)
@@ -1058,7 +1078,7 @@ def run_chain_step(today: str, name: str, fn) -> dict:
     if is_stalled(today, name):
         n, held = stall_attempts(today, name), in_flight_s(today, name)
         out = {"ok": False, "stalled": True, "seconds": 0.0,
-               "error": (f"STALLED: started {n} times today over {held:.0f}s (its limit is "
+               "error": (f"STALLED: started {n} times today, ran {held:.0f}s (its limit is "
                          f"{step_timeout_s(name):g}s) and never finished; skipped for the day so "
                          f"the steps after it run (--force runs it again)")}
         dlog(f"{name}: {out['error']}")

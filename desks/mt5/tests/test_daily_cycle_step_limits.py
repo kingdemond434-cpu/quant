@@ -41,11 +41,30 @@ def _stamp(cyc) -> dict:
 
 
 def _age(today: str, name: str, seconds: float) -> None:
-    """Back-date a step's first start, as if it had first started `seconds` ago."""
+    """Credit a step with `seconds` of RUN time across its interrupted attempts."""
+    steps = daily_cycle._inflight(today)
+    steps[name]["ran_s"] = float(seconds)
+    daily_cycle._inflight_write(today, steps)
+
+
+def _back(today: str, name: str, seconds: float) -> None:
+    """Back-date the last start, as if that attempt began `seconds` ago."""
     from datetime import UTC, datetime, timedelta
     steps = daily_cycle._inflight(today)
-    steps[name]["first_start"] = (datetime.now(UTC) - timedelta(seconds=seconds)).isoformat()
+    steps[name]["last_start"] = (datetime.now(UTC) - timedelta(seconds=seconds)).isoformat()
     daily_cycle._inflight_write(today, steps)
+
+
+def test_four_hourly_kills_of_a_two_hour_step_credit_run_time_not_wall_time(cyc, monkeypatch):
+    """Started at 00:00, 01:00, 02:00, 03:00, killed at 900 s each time: ~45 min run, not 3 h."""
+    monkeypatch.delenv("DAILY_CYCLE_HOURLY_BUDGET_SEC", raising=False)
+    today = daily_cycle._utc_today()
+    for _ in range(4):
+        daily_cycle._inflight_start(today, "research")
+        _back(today, "research", 3600)
+    daily_cycle._inflight_start(today, "research")
+    assert daily_cycle.in_flight_s(today, "research") == 4 * 900
+    assert not daily_cycle.is_stalled(today, "research")
 
 
 def test_a_step_killed_twice_today_is_skipped_by_name_and_the_rest_run(cyc, monkeypatch):
@@ -86,7 +105,7 @@ def test_a_healthy_slow_step_killed_by_the_hourly_caller_is_never_stalled(cyc, m
     today = daily_cycle._utc_today()
     for _ in range(daily_cycle.STALL_ATTEMPTS + 1):
         daily_cycle._inflight_start(today, "research")
-    _age(today, "research", 2 * 3600 + 900)        # three hourly kills, still under 3 h
+    _age(today, "research", 3 * 900)               # three hourly kills: 45 min run
     assert not daily_cycle.is_stalled(today, "research")
     assert daily_cycle._run_chain(False) == 0 and cyc.calls == ["research"]
 
