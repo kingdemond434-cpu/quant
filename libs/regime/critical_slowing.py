@@ -79,7 +79,7 @@ def bimodality_coefficient(skew: float, ex_kurt: float, n: int) -> float:
     return float((skew * skew + 1.0) / denom) if denom > 0 else float("nan")
 
 
-def kendall_tau(y: Sequence[float]) -> float:
+def kendall_tau(y: Sequence[float] | np.ndarray) -> float:
     """Kendall's tau-a of `y` against time, ignoring non-finite points; nan below 8 points."""
     v = np.asarray([p for p in y if math.isfinite(p)], dtype=float)
     n = len(v)
@@ -89,7 +89,7 @@ def kendall_tau(y: Sequence[float]) -> float:
     return 2.0 * s / (n * (n - 1))
 
 
-def rolling_indicators(returns: Sequence[float], window: int = WINDOW
+def rolling_indicators(returns: Sequence[float] | np.ndarray, window: int = WINDOW
                        ) -> dict[str, np.ndarray]:
     """Each indicator on every trailing window end; index i uses returns[i .. i+window-1].
 

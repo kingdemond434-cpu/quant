@@ -40,7 +40,7 @@ def test_bimodality_coefficient_separates_two_basins_from_one() -> None:
     one = rng.normal(0, 1, 2000)
     two = np.concatenate([rng.normal(-3, 0.5, 1000), rng.normal(3, 0.5, 1000)])
     for x, bimodal in ((one, False), (two, True)):
-        var, skew, kurt = cs._moments(x - x.mean())
+        _var, skew, kurt = cs._moments(x - x.mean())
         bc = cs.bimodality_coefficient(skew, kurt, len(x))
         assert (bc > cs.BIMODAL_BC) is bimodal
 
