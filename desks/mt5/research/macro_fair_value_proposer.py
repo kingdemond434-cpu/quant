@@ -3,7 +3,8 @@
 Three bases of one family (`mt5desk.family_macro_fair_value`), each with the symbols it can
 actually reach on this host and its own declared grid:
 
-  net_liquidity      FRED WALCL - WTREGEN - RRPONTSYD (data/axes/fred.json). Swept on XAUUSD,
+  net_liquidity      FRED WALCL - WTREGEN (data/axes/fred.json, first-release or vintage-stable
+                     series only; RRP is citation-required and excluded). Swept on XAUUSD,
                      NAS100, US500 and the hypothesis-lane USD forex pairs. Both directions are
                      open hypotheses (an injection may lift gold or the dollar).
   rate_differential  BIS `<PAIR>.carry_differential` (data/axes/bis.json), only the pairs the axis
@@ -18,7 +19,8 @@ variant per (symbol, basis) cell through `proposer_common.donate`. The sealed ga
 via `ORTHOGONAL_FAMILIES`; the family reloads its input from `basis`/`symbol` on the recipe.
 
 A BASIS WITH NO INPUT PARKS, BY NAME AND BY COUNT: its block in the report says UNMEASURED with the
-family's refusal code (`fred_net_liquidity_absent`, `bis_rate_differential_absent`,
+family's refusal code (`fred_net_liquidity_absent`, `fred_vintage_undeclared`,
+`bis_rate_differential_absent`,
 `tot_basket_absent`) and the symbols it would have swept. Nothing is screened for it, and a pass
 where every basis parks is UNMEASURED as a whole -- never zero.
 
@@ -121,7 +123,10 @@ def reach(meta: dict[str, Any]) -> dict[str, dict[str, Any]]:
         out["net_liquidity"] = {"symbols": nl_syms, "prints": len(nl),
                                 "last_knowable": str(nl.index.max().date()) if len(nl) else None}
     except F.MacroFairValueUnavailable as exc:
-        out["net_liquidity"] = {"parked_reason": F.ABSENT_FRED, "why": str(exc)[:300],
+        code = str(exc).split(":", 1)[0]
+        out["net_liquidity"] = {"parked_reason": code if code in (F.ABSENT_FRED,
+                                                                  F.UNVINTAGED_FRED)
+                                else F.ABSENT_FRED, "why": str(exc)[:300],
                                 "symbols_parked": len(nl_syms)}
     fx = [s for s in lane if "forex" in str(meta[s].get("asset_class") or "").lower()]
     bis = [s for s in _bis_pairs(fx) if s in lane]

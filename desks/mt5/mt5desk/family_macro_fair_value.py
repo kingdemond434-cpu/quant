@@ -1,6 +1,6 @@
 """Trade an instrument when a macro fair-value reading moves hard: three bases, one family.
 
-    basis "net_liquidity"      reading = z( weekly change of WALCL - WTREGEN - 1000 * RRPONTSYD )
+    basis "net_liquidity"      reading = z( weekly change of WALCL - WTREGEN )
     basis "rate_differential"  reading = <PAIR>.carry_differential(d) - its value `lookback_days`
                                          earlier (percentage points, BIS policy rates)
     basis "terms_of_trade"     reading = z( log(pair) - rolling OLS fit on log(commodity basket) )
@@ -9,8 +9,11 @@
     signal  = `direction`, on the first bar that opens after the market could know the reading
 
 MECHANISM. Each basis is a fair value the instrument's holders reprice toward with a lag.
-NET LIQUIDITY: the Fed balance sheet less the Treasury's cash at the Fed (TGA) less the overnight
-reverse-repo facility is the dollar reserve the private system can deploy; a large weekly
+NET LIQUIDITY: the Fed balance sheet less the Treasury's cash at the Fed (TGA) is the dollar
+reserve the private system can deploy (the overnight reverse-repo facility is NOT subtracted: FRED
+tags RRPONTSYD "Copyrighted: Citation Required" for its NY Fed source, so it stays fail-closed and
+never reaches a cell; it stood near $0.15bn on 2026-11-10, but it was ~$2.5tn in 2022, so this is
+a different series from the textbook one and is judged as itself); a large weekly
 injection or drain reprices duration-sensitive and dollar-denominated risk (gold, US indices, the
 dollar crosses) over the days after the H.4.1 is read. RATE DIFFERENTIAL: a widening of one
 currency's policy-rate advantage moves carry holders and rate-expectation holders into it, so the
@@ -27,11 +30,14 @@ are the desk's own MT5 bars, resolved by the family itself through
 cell's own chart; a caller that already holds them passes `peers` and nothing is read from disk.
 
 THE EVENT CLOCK IS THE PRINT'S KNOWABLE DAY, AND A DAY IS NOT AN INSTANT.
-  - FRED: WALCL and WTREGEN are Wednesday levels published Thursday 16:30 ET (20:30/21:30 UTC);
-    RRPONTSYD is a daily print. A point is keyed on its `knowable_at` when the axis stamps one,
-    otherwise on its observation date + 1 day (`FRED_PUBLICATION_LAG_D`). The three series are
-    joined as of each WALCL knowable day (WTREGEN and RRP at the latest knowable day at or before
-    it). RRPONTSYD is in billions, WALCL and WTREGEN in millions: RRP is scaled by 1000.
+  - FRED: WALCL and WTREGEN are Wednesday levels published Thursday 16:30 ET (20:30/21:30 UTC).
+    A point is keyed on its `knowable_at` when the axis stamps one, otherwise on its observation
+    date + 1 day (`FRED_PUBLICATION_LAG_D`). WTREGEN is joined as of each WALCL knowable day.
+  - REVISABLE FRAMES NEVER REACH A CELL (audit #904). FRED serves the LATEST revision; a cell
+    built on it reads numbers nobody could see at the time. So a series is used only when the
+    axis declares its `vintage` as "first_release" (ALFRED's first vintage per date) or
+    "vintage_stable" (a publisher that does not revise, declared with its evidence by whoever
+    writes the axis); anything else refuses by name (`fred_vintage_undeclared`).
   - BIS: each row is keyed on its `knowable_at` day (the policy rate in force that day).
   - Either way a knowable DAY carries no hour, and the H.4.1 posts in the US afternoon, so a
     reading is taken as knowable from 00:00 UTC of the FOLLOWING day.
@@ -83,9 +89,10 @@ BASES = ("net_liquidity", "rate_differential", "terms_of_trade")
 MOVES = ("up", "down")
 DIRECTIONS = {"long": 1, "short": -1}
 
-#: FRED: (axis series id, multiplier to millions of USD). Net liquidity = WALCL - WTREGEN - RRP.
-NET_LIQUIDITY_SERIES: tuple[tuple[str, float], ...] = (("WALCL", 1.0), ("WTREGEN", 1.0),
-                                                       ("RRPONTSYD", 1000.0))
+#: FRED: (axis series id, multiplier to millions of USD). Net liquidity = WALCL - WTREGEN.
+NET_LIQUIDITY_SERIES: tuple[tuple[str, float], ...] = (("WALCL", 1.0), ("WTREGEN", 1.0))
+#: The only FRED vintage declarations a cell may read (see the module docstring).
+FRED_VINTAGES_ADMITTED = frozenset({"first_release", "vintage_stable"})
 #: Days from a FRED observation to its publication when the axis stamps no `knowable_at`
 #: (WALCL/WTREGEN: Wednesday level, Thursday release).
 FRED_PUBLICATION_LAG_D = 1
@@ -103,6 +110,7 @@ BROKER_MAX_OFFSET_H = 3
 _EVENT_SYMBOL = "MACRO_FAIR_VALUE"
 
 ABSENT_FRED = "fred_net_liquidity_absent"
+UNVINTAGED_FRED = "fred_vintage_undeclared"
 ABSENT_BIS = "bis_rate_differential_absent"
 ABSENT_TOT = "tot_basket_absent"
 
@@ -142,6 +150,16 @@ def _stamped(axes: str, sid: str, mtime_ns: int) -> bool:
     return bool(pts) and all(isinstance(p, Mapping) and p.get("knowable_at") for p in pts)
 
 
+@lru_cache(maxsize=16)
+def _vintage(axes: str, sid: str, mtime_ns: int) -> str:
+    """The FRED axis's declared `vintage` for `sid` ("" when it declares none)."""
+    try:
+        doc = json.loads((Path(axes) / "fred.json").read_text(encoding="utf-8-sig"))
+        return str(doc["series"][sid].get("vintage") or "")
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return ""
+
+
 def axis_series(name: str, series: str) -> pd.Series | None:
     """{knowable day (UTC midnight): value} for one axis series, or None when absent."""
     pts = _points(str(AXES), name, series, _mtime(name))
@@ -155,7 +173,8 @@ def axis_series(name: str, series: str) -> pd.Series | None:
 
 
 def net_liquidity() -> pd.Series:
-    """WALCL - WTREGEN - RRP (millions of USD) per WALCL knowable day; refuses if one is absent."""
+    """WALCL - WTREGEN (millions of USD) per WALCL knowable day; refuses if one is absent or
+    is not declared a non-revising vintage."""
     got: dict[str, pd.Series] = {}
     missing = []
     for sid, mult in NET_LIQUIDITY_SERIES:
@@ -168,13 +187,18 @@ def net_liquidity() -> pd.Series:
         raise MacroFairValueUnavailable(
             f"{ABSENT_FRED}: {', '.join(missing)} absent from {Path(AXES) / 'fred.json'}; "
             "net liquidity is unmeasured on this host and the cell is unjudged")
+    revisable = [sid for sid, _m in NET_LIQUIDITY_SERIES
+                 if _vintage(str(AXES), sid, _mtime("fred")) not in FRED_VINTAGES_ADMITTED]
+    if revisable:
+        raise MacroFairValueUnavailable(
+            f"{UNVINTAGED_FRED}: {', '.join(revisable)} in {Path(AXES) / 'fred.json'} declare no "
+            f"vintage in {sorted(FRED_VINTAGES_ADMITTED)}; a latest-revised frame never reaches "
+            "a cell")
     base = got["WALCL"].rename("walcl").to_frame()
-    for sid in ("WTREGEN", "RRPONTSYD"):
-        other = got[sid].rename(sid.lower()).to_frame()
-        base = pd.merge_asof(base, other, left_index=True, right_index=True,
-                             direction="backward")
+    other = got["WTREGEN"].rename("wtregen").to_frame()
+    base = pd.merge_asof(base, other, left_index=True, right_index=True, direction="backward")
     base = base.dropna()
-    return (base["walcl"] - base["wtregen"] - base["rrpontsyd"]).rename("net_liquidity")
+    return (base["walcl"] - base["wtregen"]).rename("net_liquidity")
 
 
 def prior_z(chg: pd.Series, window: int) -> pd.Series:

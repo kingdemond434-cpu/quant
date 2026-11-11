@@ -39,16 +39,19 @@ def axes(tmp_path, monkeypatch):
     monkeypatch.setattr(F, "AXES", tmp_path)
     F._points.cache_clear()
     F._stamped.cache_clear()
+    F._vintage.cache_clear()
 
     def write(name: str, doc: dict) -> Path:
         path = tmp_path / f"{name}.json"
         path.write_text(json.dumps(doc), "utf-8")
         F._points.cache_clear()
         F._stamped.cache_clear()
+        F._vintage.cache_clear()
         return path
     yield write
     F._points.cache_clear()
     F._stamped.cache_clear()
+    F._vintage.cache_clear()
 
 
 # ------------------------------------------------------------------------- net liquidity
@@ -73,9 +76,8 @@ def _fred(stamped: bool, spike: float = 400_000.0, after: float = 0.0) -> dict:
             out.append(p)
         return out
     return {"series": {
-        "WALCL": {"points": pts(_WEDS, walcl)},
-        "WTREGEN": {"points": pts(_WEDS, [700_000.0] * len(_WEDS))},
-        "RRPONTSYD": {"points": pts(_WEDS, [100.0] * len(_WEDS))}}}
+        "WALCL": {"points": pts(_WEDS, walcl), "vintage": "first_release"},
+        "WTREGEN": {"points": pts(_WEDS, [700_000.0] * len(_WEDS)), "vintage": "first_release"}}}
 
 
 def test_net_liquidity_fires_on_a_constructed_injection_after_the_thursday_print(axes):
@@ -126,8 +128,26 @@ def test_net_liquidity_refuses_by_name_when_a_series_is_absent(axes):
         F.family_macro_fair_value(_bars(), basis="net_liquidity", direction="long")
     assert "WTREGEN" in str(exc.value) and isinstance(exc.value, TypeError)
     axes("fred", {"series": {}})                     # the tree's real shape on a failed fetch
-    with pytest.raises(F.MacroFairValueUnavailable, match="WALCL, WTREGEN, RRPONTSYD"):
+    with pytest.raises(F.MacroFairValueUnavailable, match="WALCL, WTREGEN"):
         F.net_liquidity()
+
+
+def test_a_latest_revised_fred_frame_never_reaches_a_cell(axes):
+    """Audit #904: FRED serves the latest revision. A series the axis does not declare
+    first-release or vintage-stable refuses by name, whatever its values."""
+    doc = _fred(stamped=True)
+    del doc["series"]["WTREGEN"]["vintage"]
+    axes("fred", doc)
+    with pytest.raises(F.MacroFairValueUnavailable, match=F.UNVINTAGED_FRED) as exc:
+        F.family_macro_fair_value(_bars(), basis="net_liquidity", direction="long")
+    assert "WTREGEN" in str(exc.value) and "WALCL" not in str(exc.value).split(" in ")[0]
+    doc["series"]["WTREGEN"]["vintage"] = "latest"
+    axes("fred", doc)
+    with pytest.raises(F.MacroFairValueUnavailable, match=F.UNVINTAGED_FRED):
+        F.net_liquidity()
+    doc["series"]["WTREGEN"]["vintage"] = "vintage_stable"
+    axes("fred", doc)
+    assert len(F.net_liquidity()) == len(_WEDS)
 
 
 # ---------------------------------------------------------------------- rate differential
