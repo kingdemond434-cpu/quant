@@ -1576,9 +1576,23 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         position_ids = {int(p["id"]) for p in xau_positions}
     except Exception as exc:
         positions_ok = False
+        venue_positions = []
         xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+    # THE E8 BOOK, PUBLISHED (2026-11-11). FTMO's account_positions.json says "open_positions: 0"
+    # and Fusion's deadman stamp does too; E8 published neither, so a desk-wide "is it flat?"
+    # could not be answered from files (box read FU1). These are the venue's own answers this
+    # pass, as COUNTS only (no ids, sizes or prices), and None -- never 0 -- when unread.
+    orders_ok = "orders_unreadable" not in doc
+    doc["book"] = {
+        "at": now.isoformat(timespec="seconds"),
+        "open_positions": len(venue_positions or []) if positions_ok else None,
+        "gold_positions": len(xau_positions) if positions_ok else None,
+        "gold_open_orders": len(open_orders) if orders_ok else None,
+        "flat": (not venue_positions and not open_orders) if positions_ok and orders_ok
+                else None,
+    }
 
     # -------------------------------------------------------------- dropped legs
     if any(w.get("failed") for w in (state.get("windows") or {}).values()):
