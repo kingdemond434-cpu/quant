@@ -63,9 +63,15 @@ check that needs to know an instrument's class, and it still keeps that promise:
 `research/universe_policy`. A symbol the registry does not carry is UNCLASSIFIED and is never
 called FX on the strength of its name -- absence is not a permission, in either direction.
 
-IT FAILS LOUDLY. `main()` returns 2 on any FAIL verdict. The alternative -- a report that records
-a hole and exits 0 -- is a report nobody reads twice, and this desk's own laws call an unread
-alarm worse than no alarm because it suppresses the ones that matter.
+IT FAILS LOUDLY, ONCE PER FAILURE. `main()` returns 2 when a symbol-day is FAIL that the
+previous report did not already carry as FAIL (`new_failures`). A FAIL day that was already known
+stays in `failures` and in the verdict -- `tape_features` still refuses it, and nothing about the
+day is forgiven -- but it does not page again every hour. A day that failed, cleared and failed
+again pages again; a missing or unreadable previous report makes every failure new, so losing the
+memory can only make the checker louder, never quieter. `--page-on-any` restores the old
+behaviour of paging on every FAIL verdict. The alternative -- 82 old FAIL days returning rc 2 every
+hour -- is an alarm nobody reads twice, and this desk's own laws call an unread alarm worse than no
+alarm because it suppresses the ones that matter (idea 615).
 
 UNMEASURED IS A VERDICT, NEVER A PASS (L1.28a). A day with too little history behind it to
 establish a session, a symbol whose manifest cannot be read, a day whose segments are all
@@ -716,6 +722,64 @@ def _tally(values: list[str]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def _fail_keys(doc: dict[str, Any]) -> set[str]:
+    """Every `symbol/day` a report called FAIL, read from its uncapped `days` list.
+
+    `failures` is capped at 200 rows, so it is only the fallback for a report without `days`;
+    `known_failures` carries forward what an older report already knew.
+    """
+    rows = doc.get("days")
+    if not isinstance(rows, list):
+        rows = doc.get("failures") if isinstance(doc.get("failures"), list) else []
+    keys = {f"{r.get('symbol')}/{r.get('day')}" for r in rows
+            if isinstance(r, dict) and r.get("verdict") == FAIL}
+    return keys
+
+
+def _previous_fail_keys(path: Path) -> tuple[set[str], str]:
+    """The FAIL days the last report already carried, and how that memory was read.
+
+    ABSENCE MAKES THE CHECKER LOUDER, NEVER QUIETER: no previous report, or one that cannot be
+    read, means nothing is known and every FAIL pages.
+    """
+    if not path.exists():
+        return set(), "no previous report: every FAIL is new"
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return set(), f"previous report unreadable ({type(exc).__name__}): every FAIL is new"
+    if not isinstance(doc, dict):
+        return set(), "previous report is not an object: every FAIL is new"
+    return _fail_keys(doc), f"previous report at {doc.get('generated_utc')}"
+
+
+def split_new_failures(rep: dict[str, Any], known: set[str], memory: str) -> dict[str, Any]:
+    """Annotate `rep` with which FAIL days are NEW (they page) and which were already known.
+
+    A known key is kept only while the day is still FAIL in this run: a day that cleared drops
+    out of memory, so if it fails again later it pages again, and a day that left the window is
+    forgotten with it.
+    """
+    now = _fail_keys(rep)
+    new = sorted(now - known)
+    rep["paging"] = {
+        "memory": memory,
+        "new_failures": new[:200],
+        "new_failure_count": len(new),
+        "known_failure_count": len(now & known),
+        "pages": bool(new),
+    }
+    return rep
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """Write the report through a sibling temp file, so the next run's memory is never torn."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, "utf-8")
+    tmp.replace(path)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Prove the MT5 tick tape is what it claims to be")
     ap.add_argument("--root", type=Path, default=None)
@@ -723,6 +787,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--days", type=int, default=None, help="only judge the last N days")
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--sealed-only", action="store_true")
+    ap.add_argument("--page-on-any", action="store_true",
+                    help="exit 2 on every FAIL verdict, not only on failures new since last run")
     args = ap.parse_args(argv)
 
     from recorders.tick_recorder import DEFAULT_TAPE_ROOT
@@ -736,9 +802,10 @@ def main(argv: list[str] | None = None) -> int:
               f"somewhere else (MT5_TAPE_ROOT).")
         return 2
 
+    known, memory = _previous_fail_keys(args.out)
     rep = run(store, syms, args.days, include_unsealed=not args.sealed_only)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    split_new_failures(rep, known, memory)
+    _atomic_write(args.out, json.dumps(rep, indent=1, sort_keys=True) + "\n")
 
     t = rep["totals"]
     print(f"tick_integrity: {rep['verdict']}  {t['symbols']} symbols, "
@@ -758,8 +825,15 @@ def main(argv: list[str] | None = None) -> int:
               f"'{top}' on most ticks")
     for row in rep["failures"][:10]:
         print(f"  FAIL {row['symbol']}/{row['day']}: {'; '.join(row['reasons'][:2])}")
+    pg = rep["paging"]
+    print(f"  paging: {pg['new_failure_count']} NEW FAIL day(s), {pg['known_failure_count']} "
+          f"already known ({pg['memory']})")
+    for key in pg["new_failures"][:10]:
+        print(f"  NEW FAIL {key}")
     print(f"  -> {args.out}")
-    return 2 if rep["verdict"] == FAIL else 0
+    if args.page_on_any:
+        return 2 if rep["verdict"] == FAIL else 0
+    return 2 if pg["pages"] else 0
 
 
 if __name__ == "__main__":

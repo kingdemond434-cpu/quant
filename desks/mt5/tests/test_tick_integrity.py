@@ -390,3 +390,47 @@ def test_the_session_model_reads_cached_masks_rather_than_decoding_every_day(
     assert reads == 0, f"{reads} full-day decodes on a warm cache -- the mask is not being reused"
     assert np.array_equal(first.per_weekday, second.per_weekday)
     assert np.array_equal(first.weekday_obs, second.weekday_obs)
+
+
+# ------------------------------------------- paging on NEW failures only (idea 615) --
+def test_a_known_failure_pages_once_and_a_new_one_pages_again(
+        store: ts.TapeStore, tmp_path: Path) -> None:
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days[:-2])
+    _write_days(store, "EURUSD", [days[-2]], minutes=range(0, 200))
+    out = tmp_path / "TICK_INTEGRITY.json"
+    assert ti.main(["--root", str(store.root), "--out", str(out)]) == 2, "first sight pages"
+    first = json.loads(out.read_text("utf-8"))
+    assert first["paging"]["new_failures"] == [f"EURUSD/{days[-2]}"]
+
+    rc = ti.main(["--root", str(store.root), "--out", str(out)])
+    doc = json.loads(out.read_text("utf-8"))
+    assert rc == 0, "the same FAIL day must not page every hour"
+    assert doc["verdict"] == ti.FAIL, "a known failure is not forgiven, only not re-paged"
+    assert doc["paging"]["known_failure_count"] == 1 and not doc["paging"]["pages"]
+    assert ti.main(["--root", str(store.root), "--out", str(out), "--page-on-any"]) == 2
+
+    _write_days(store, "EURUSD", [days[-1]], minutes=range(0, 200))
+    assert ti.main(["--root", str(store.root), "--out", str(out)]) == 2, "a new day pages"
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["paging"]["new_failures"] == [f"EURUSD/{days[-1]}"]
+
+
+def test_lost_memory_makes_the_checker_louder_never_quieter(
+        store: ts.TapeStore, tmp_path: Path) -> None:
+    days = _weeks(4)
+    _write_days(store, "EURUSD", days[:-1])
+    _write_days(store, "EURUSD", [days[-1]], minutes=range(0, 200))
+    out = tmp_path / "TICK_INTEGRITY.json"
+    out.write_text("{torn", "utf-8")
+    assert ti.main(["--root", str(store.root), "--out", str(out)]) == 2
+    assert "unreadable" in json.loads(out.read_text("utf-8"))["paging"]["memory"]
+
+
+def test_a_day_that_cleared_and_failed_again_pages_again() -> None:
+    fail = {"days": [{"symbol": "X", "day": "d1", "verdict": ti.FAIL}]}
+    clear = {"days": [{"symbol": "X", "day": "d1", "verdict": ti.OK}]}
+    known = ti._fail_keys(fail)
+    assert not ti.split_new_failures(dict(fail), known, "m")["paging"]["pages"]
+    known = ti._fail_keys(clear)
+    assert ti.split_new_failures(dict(fail), known, "m")["paging"]["pages"]
