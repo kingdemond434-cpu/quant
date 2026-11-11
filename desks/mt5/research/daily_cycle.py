@@ -912,9 +912,11 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
-#: THE TABLE AS SHIPPED, captured at import. Only a step that is still the module's own function
-#: runs in a child process; a caller (a test) that swaps STEPS for its own callables runs them in
-#: this process, where they exist.
+#: THE TABLE AS SHIPPED, captured at import. Steps run in a child process only while STEPS is
+#: still this exact table: a caller (a test) that swaps STEPS runs every step in this process,
+#: where its own callables and its own redirected paths exist -- even one that reuses a shipped
+#: function, which a child would run against the real desk.
+_SHIPPED_STEPS = STEPS
 _CANON_STEPS = dict(STEPS)
 
 # ONE STALLED STEP MAY NOT HOLD THE CHAIN (2026-11-11). The chain stamps after every step, so a
@@ -1037,7 +1039,7 @@ def run_chain_step(today: str, name: str, fn) -> dict:
         dlog(f"{name}: {out['error']}")
         return out
     _inflight_start(today, name)
-    if _CANON_STEPS.get(name) is fn:
+    if STEPS is _SHIPPED_STEPS and _CANON_STEPS.get(name) is fn:
         out = run_step_isolated(name)
     else:
         out = run_step(name, fn)
