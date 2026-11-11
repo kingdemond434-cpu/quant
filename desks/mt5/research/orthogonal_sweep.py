@@ -393,10 +393,20 @@ def _cot_frame(symbol: str | None = None):
         COT_LABEL_REFUSALS.pop("in_git_frame", None)
         try:
             got = cot_frames.frame(symbol)
-            if got is not None and len(got) >= 52:
-                return got
-        except Exception:
-            pass
+        except Exception as exc:
+            # FAIL CLOSED (#238 follow-up, 2026-11-11). This branch used to `pass` and fall
+            # through to the JSON rows below, which were indexed on the report's AS-OF date --
+            # every row readable days before the CFTC published it, feeding the LIVE
+            # `EURUSD.cot_positioning` sleeve whenever the cache was absent. A reader that
+            # raised is a reader whose release clock is not trusted: no frame, and the reason
+            # is recorded as UNMEASURED.
+            COT_LABEL_REFUSALS["in_git_frame"] = (
+                f"UNMEASURED: {type(exc).__name__}: {str(exc)[:160]} -- "
+                "mt5desk.cot_frames.frame raised, so no point-in-time COT frame is built and "
+                "no unlabelled fallback stands in for it")
+            return None
+        if got is not None and len(got) >= 52:
+            return got
     for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
         doc = _read(BASE / "data" / name)
         rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
@@ -412,10 +422,29 @@ def _cot_frame(symbol: str | None = None):
                 continue
             for ncol in ("net", "noncomm_net", "net_position"):
                 if ncol in df.columns:
-                    return df[[ncol]].rename(columns={ncol: "net"}).dropna()
+                    return _labelled_fallback(df[ncol], name)
         except Exception:
             continue
     return None
+
+
+def _labelled_fallback(series, name: str):
+    """A JSON fallback's as-of-dated rows, re-labelled at their release on the BAR clock
+    (`cot_frames.to_release_clock`, built on `futures_state.cot_usable_from` + `to_bar_clock`),
+    or None (FAIL CLOSED, recorded) when the schedule cannot label them. An as-of label is a
+    look-ahead on every row, so an unlabelled row is never returned."""
+    try:
+        from mt5desk import cot_frames
+        labelled = cot_frames.to_release_clock(series.dropna())
+    except Exception as exc:
+        COT_LABEL_REFUSALS["json_fallback"] = (
+            f"UNMEASURED: {type(exc).__name__}: {str(exc)[:160]} -- {name} could not be "
+            "labelled at its release, so none of its rows is returned")
+        return None
+    COT_LABEL_REFUSALS.pop("json_fallback", None)
+    if labelled.empty:
+        return None
+    return labelled.rename("net").to_frame()
 
 
 #: Why the last COT label attempt refused, per call site, or empty. Read by the reporters; a

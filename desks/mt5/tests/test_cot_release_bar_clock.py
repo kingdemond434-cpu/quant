@@ -312,3 +312,62 @@ def test_the_seat_keeps_donated_cells_charged_when_the_state_file_is_lost(organ)
     # is pending again -- and it is not charged until a contract carries it
     assert len(door.calls) == 1 and out["tests_run_this_pass"] == 0
     assert out["donated_this_pass"] == 0
+
+
+# ------------------------------------- the sweep's fallback never leaks an as-of-dated row
+def _json_fallback_tree(tmp_path: Path) -> Path:
+    """A desk root with no cache and a JSON fallback whose rows are dated on the AS-OF day,
+    holiday weeks included, so an unlabelled row would read before its release."""
+    base = tmp_path / "desks" / "mt5"
+    (base / "data").mkdir(parents=True)
+    tues = list(pd.date_range("2023-01-03", "2026-07-28", freq="W-TUE"))
+    rows = [{"report_date": str(t.date()), "net": float(i % 7 - 3)} for i, t in enumerate(tues)]
+    (base / "data" / "cot.json").write_text(json.dumps({"rows": rows}), "utf-8")
+    return base
+
+
+@pytest.fixture
+def sweep(tmp_path, monkeypatch):
+    from research import orthogonal_sweep as osw
+    monkeypatch.setattr(osw, "BASE", _json_fallback_tree(tmp_path))
+    osw._cot_frame.cache_clear()
+    osw.COT_LABEL_REFUSALS.clear()
+    yield osw
+    osw._cot_frame.cache_clear()
+    osw.COT_LABEL_REFUSALS.clear()
+
+
+def test_a_raising_frame_fails_closed_and_never_reaches_the_json_rows(sweep, monkeypatch):
+    def boom(_symbol):
+        raise RuntimeError("parquet unreadable")
+    monkeypatch.setattr(cot_frames, "frame", boom)
+    assert sweep._cot_frame("EURUSD") is None
+    why = sweep.COT_LABEL_REFUSALS["in_git_frame"]
+    assert why.startswith("UNMEASURED") and "RuntimeError" in why
+
+
+def test_the_json_fallback_is_labelled_at_release_on_the_bar_clock(sweep, monkeypatch):
+    monkeypatch.setattr(cot_frames, "frame", lambda _symbol: None)    # no in-git frame
+    got = sweep._cot_frame("EURUSD")
+    assert got is not None and list(got.columns) == ["net"] and len(got) > 150
+    for lab in got.index:
+        tue = lab.tz_convert(UTC).normalize()
+        tue -= pd.Timedelta(days=(tue.dayofweek - 1) % 7)           # the as-of Tuesday before
+        while fs.to_bar_clock(fs.cot_usable_from(tue)) > lab:        # step back to the week
+            tue -= pd.Timedelta(days=7)                              # whose label this is
+        friday = tue.tz_localize(None) + pd.Timedelta(days=3)
+        assert lab >= _broker(f"{friday.date()} 15:30"), lab
+    # the holiday weeks in the span are held past their true release, as the schedule holds them
+    assert pd.Timestamp("2024-12-02 23:00", tz=UTC) in got.index        # Thanksgiving 2024
+    assert pd.Timestamp("2026-06-22 23:00", tz=UTC) in got.index        # Juneteenth 2026
+    assert not any(lab.dayofweek == 1 and lab.hour == 0 for lab in got.index)  # no as-of label
+
+
+def test_a_fallback_the_schedule_cannot_label_returns_nothing(sweep, monkeypatch):
+    monkeypatch.setattr(cot_frames, "frame", lambda _symbol: None)
+
+    def no_clock(_series):
+        raise RuntimeError("schedule unavailable")
+    monkeypatch.setattr(cot_frames, "to_release_clock", no_clock)
+    assert sweep._cot_frame("EURUSD") is None
+    assert sweep.COT_LABEL_REFUSALS["json_fallback"].startswith("UNMEASURED")
