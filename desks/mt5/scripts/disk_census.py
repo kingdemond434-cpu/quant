@@ -265,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     now = datetime.now(UTC)
-    age = report_age_h(now)
+    age = report_age_h(now, REPORT)
     if args.min_age_h > 0 and age is not None and age < args.min_age_h:
         print(f"disk_census: last census {age:.1f} h old (< {args.min_age_h:g} h) -- skipped")
         return 0
@@ -310,7 +310,7 @@ def main(argv: list[str] | None = None) -> int:
     by_class_gb = {k: round(v / (1024 ** 3), 2) for k, v in by_class.items()}
     hrow = history_row(at, round(used / (1024 ** 3), 2), round(free / (1024 ** 3), 2),
                        by_class_gb, rows)
-    hist = read_history()
+    hist = read_history(HISTORY)
     grow = {"24h": growth(hist, hrow, 24), "7d": growth(hist, hrow, 24 * 7)}
     for k, g in grow.items():
         if g["status"] == "MEASURED":
@@ -325,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
         "by_class_gb": by_class_gb,
         "rows": rows[:400],
     }, indent=1), "utf-8")
-    append_history(hrow)
+    append_history(hrow, HISTORY)
     print(f"\nwritten: {REPORT}")
     return 0
 
