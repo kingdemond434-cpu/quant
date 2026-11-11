@@ -158,7 +158,44 @@ def _corr_matrix(cols: list[np.ndarray]) -> np.ndarray | None:
     return np.nan_to_num(c, nan=0.0, posinf=0.0, neginf=0.0)
 
 
-def effective_trials(series: Iterable[np.ndarray]) -> TrialCensus:
+def _finite_participation(cols: list[np.ndarray], include_pairs: bool
+                          ) -> tuple[float, list[tuple[int, int, float]]] | None:
+    """The same PSD correlation spectrum, via trace identities on its smaller Gram.
+
+    For normalized centered columns Z, C=Z.T@Z and Z@Z.T have the same
+    nonzero eigenvalues. sum(lambda)=trace(G), sum(lambda**2)=sum(G**2).
+    No eigenvalue approximation, subsampling, or trial discount is introduced.
+    Nonfinite inputs retain the original correlation/eigenvalue path below.
+    """
+    m = np.column_stack(cols)
+    if m.shape[0] < MIN_SERIES or not np.isfinite(m).all():
+        return None
+    keep = m.std(axis=0) > 0
+    if keep.sum() < 2:
+        return None
+    z = m[:, keep]
+    z = z - z.mean(axis=0)
+    z /= np.sqrt(np.sum(z * z, axis=0))
+    gram = z @ z.T if z.shape[0] < z.shape[1] else z.T @ z
+    denom = float(np.sum(gram * gram))
+    if denom <= 0:
+        return None
+    rank = float(np.trace(gram) ** 2 / denom)
+    pairs = []
+    if include_pairs:
+        # Preserve EVERY pair in the legacy lexicographic order, with bounded
+        # temporary storage. Null ranks and unlabelled reports need no pairs.
+        for start in range(0, z.shape[1], 256):
+            block = np.clip(z[:, start:start + 256].T @ z, -1., 1.)
+            for offset, row in enumerate(block):
+                i = start + offset
+                for j in np.flatnonzero(np.abs(row[i + 1:]) >= CLONE_RHO) + i + 1:
+                    pairs.append((i, int(j), float(row[j])))
+    return rank, pairs
+
+
+def effective_trials(series: Iterable[np.ndarray], *,
+                     include_clone_pairs: bool = True) -> TrialCensus:
     """Independent searches actually performed, from the trial return matrix.
 
     The columns must already be DATE-ALIGNED -- row t the same calendar day in every column. An
@@ -170,6 +207,16 @@ def effective_trials(series: Iterable[np.ndarray]) -> TrialCensus:
     if n_raw < 2:
         return TrialCensus(n_raw, float(max(n_raw, 1)), "n<2",
                            why="fewer than two trials; nothing to deduplicate")
+
+    finite = _finite_participation(cols, include_clone_pairs)
+    if finite is not None:
+        rank, pairs = finite
+        n_eff = max(2.0, min(rank, float(n_raw)))
+        return TrialCensus(
+            n_raw, n_eff, "participation_ratio", pairs,
+            why=(f"participation ratio of the trial correlation spectrum: {n_raw} cells behave as "
+                 f"{n_eff:.1f} independent searches ({n_raw / n_eff:.1f}x inflation); "
+                 f"{len(pairs)} pair(s) at |rho| >= {CLONE_RHO}"))
 
     c = _corr_matrix(cols)
     if c is None:
@@ -201,7 +248,8 @@ def effective_trials(series: Iterable[np.ndarray]) -> TrialCensus:
              f"{len(pairs)} pair(s) at |rho| >= {CLONE_RHO}"))
 
 
-def null_calibrated_effective_trials(series: Iterable[np.ndarray]) -> TrialCensus:
+def null_calibrated_effective_trials(series: Iterable[np.ndarray], *,
+                                    include_clone_pairs: bool = True) -> TrialCensus:
     """Remove the participation-ratio estimator's own finite-history floor.
 
     Independent per-column permutations preserve each trial's marginal distribution and sparsity
@@ -209,13 +257,14 @@ def null_calibrated_effective_trials(series: Iterable[np.ndarray]) -> TrialCensu
     null and scaled back to N, so only dependence beyond sampling noise earns gate relief.
     """
     cols = [np.asarray(s, dtype=float) for s in series]
-    observed = effective_trials(cols)
+    observed = effective_trials(cols, include_clone_pairs=include_clone_pairs)
     if observed.method != "participation_ratio":
         return observed
     rng = np.random.default_rng(NULL_CALIBRATION_SEED)
     null_ranks = []
     for _ in range(NULL_CALIBRATION_DRAWS):
-        null = effective_trials([rng.permutation(col) for col in cols])
+        null = effective_trials([rng.permutation(col) for col in cols],
+                                include_clone_pairs=False)
         if null.method != "participation_ratio":
             return TrialCensus(
                 observed.n_raw, float(observed.n_raw), "unmeasurable",
@@ -291,7 +340,7 @@ def calibrated_census_report(series: Iterable[np.ndarray], sd_sharpe: float,
                              labels: list[Any] | None = None) -> dict:
     """Gate-authoritative census with the fixed independent-null floor removed."""
     cols = [np.asarray(s, dtype=float) for s in series]
-    census = null_calibrated_effective_trials(cols)
+    census = null_calibrated_effective_trials(cols, include_clone_pairs=bool(labels))
     out = deflation_pair(census, sd_sharpe)
     if labels and census.clone_pairs:
         out["clone_pairs"] = [

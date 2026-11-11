@@ -59,6 +59,7 @@ for win in ("asia", "london_am", "afternoon"):
               f"{'PASS' if b['gate'] else 'fail'}")
     print()
 
-json.dump(res, open("reports/mech_battery.json", "w"), indent=2, default=str)
+with open("reports/mech_battery.json", "w", encoding="utf-8", newline="\n") as _fh:
+    json.dump(res, _fh, indent=2, default=str)
 print("The conditioned cells sit on top of their own unconditional base. Where "
       "they do not separate from it, the state is a label and not a mechanism.")

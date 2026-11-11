@@ -36,7 +36,12 @@ for _p in (str(_DESK), str(_DESK / "research")):
 
 pytest.importorskip("pandas")
 fi = pytest.importorskip("research.frontier_identity")
-gw = pytest.importorskip("mt5desk.gateway")
+gw = None
+
+
+@pytest.fixture(autouse=True)
+def _portable_gateway_binding(portable_gateway, monkeypatch):
+    monkeypatch.setitem(globals(), "gw", portable_gateway)
 
 
 @pytest.fixture()

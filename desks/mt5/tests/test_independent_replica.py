@@ -28,7 +28,7 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from libs.validation import independent_replica as rep  # noqa: E402
 
 META = {"contract_size": 100000.0, "tick_size": 1e-5, "tick_value": 1.0,
-        "median_spread_pts": 12.0, "swap_long": -4.0, "swap_short": 1.5}
+        "median_spread_pts": 12.0, "swap_long": -4.0, "swap_short": 1.5, "swap_mode": 1}
 
 
 def test_the_replica_imports_nothing_from_the_desk() -> None:

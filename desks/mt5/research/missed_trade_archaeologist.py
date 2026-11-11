@@ -50,7 +50,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 DATA = DESK / "data"
 REPORTS = DESK / "reports"
 DECISIONS = DATA / "decision_ledger.jsonl"
-LIVE = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(DATA / "live_ledger.jsonl")
 SHADOW_DIR = REPORTS / "shadow"
 UNIVERSE = DATA / "universe"
 STATE = DATA / "missed_trade_archaeology.json"
@@ -318,7 +319,7 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
             continue
         sleeve = str(f.get("sleeve") or "")
         sym = _sym(f.get("symbol"))
-        joined = [d for (t, d) in taken_by_sleeve.get(sleeve, []) if t <= t_exit]
+        joined = [(t, d) for (t, d) in taken_by_sleeve.get(sleeve, []) if t <= t_exit]
         if not joined:
             out.append({"kind": "large_adverse_move", "lane": "live", "symbol": sym,
                         "sleeve": sleeve, "decision_time": None, "outcome": {"r": loss_r},
