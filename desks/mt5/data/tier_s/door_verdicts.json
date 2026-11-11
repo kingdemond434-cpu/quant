@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-11T04:43:51.810935+00:00",
+ "generated_utc": "2026-11-11T06:42:54.495049+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -81951,6 +81951,15 @@
    }
   },
   "external.CHFSGD.mass_screen_cond.p=9c9895b4651feea8": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFSEK.mass_screen_cond.p=0a4020ee37f5e01a": {
    "verdict": "FAILED",
    "review_failed": [],
    "family": "mass_screen_cond",
