@@ -84,9 +84,8 @@ def test_the_same_hostname_in_live_code_is_still_caught(tmp_path, monkeypatch) -
         "ops/sneaky.sh":
             "#!/usr/bin/env bash\n"
             "# just a note about api.bybit.com\n"
-            'curl -s "https://api.bybit.com/v5/account/wallet-balance?accountType=UNIFIED"\n',
+            'curl -s "https://api.bybit.com/v5/market/tickers?category=linear"\n',
     }))
-    # A non-public path: /v5/market/ is read-only public data since 2026-10-13 (tests below).
     doc = mp.scan()
     assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["ops/sneaky.sh"]
 
@@ -142,51 +141,122 @@ def test_the_real_repo_holds_one_desk() -> None:
         sorted(b["file"] for b in bad))
 
 
-# --------------------------------------------- read-only public market data (2026-10-13 card)
+# ------------------------------------- read-only public market data: named files only
 
-def test_a_public_deribit_reader_passes_and_is_listed(tmp_path, monkeypatch) -> None:
-    """Public crypto market data may feed MT5 signals: listed as a read, never a reach."""
-    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
-        "desks/mt5/research/dvol_feed.py":
-            'import urllib.request\n'
-            'URL = "https://www.deribit.com/api/v2/public/get_volatility_index_data"\n'
-            'def dvol():\n'
-            '    return urllib.request.urlopen(URL)\n',
-    }))
+_FEED = "desks/mt5/research/dvol_feed.py"
+_DERIBIT = ("www.deribit.com/api/v2/public/",)
+_UNIVERSE = "desks/mt5/data/universe/universe.json"
+_BTC_ONLY = '{"BTCUSD": {"asset_class": "Crypto"}, "XAUUSD": {"asset_class": "Metals"}}'
+_DVOL = ('import urllib.request\n'
+         'URL = "https://www.deribit.com/api/v2/public/get_volatility_index_data"\n'
+         'def dvol():\n'
+         '    return urllib.request.urlopen(URL)\n')
+
+
+def _feeds(monkeypatch, root: Path, feeds: dict[str, dict]) -> None:
+    monkeypatch.setattr(mp, "ROOT", root)
+    monkeypatch.setattr(mp, "MT5_UNIVERSE", root / _UNIVERSE)
+    monkeypatch.setattr(mp, "_READ_ONLY_FEEDS", feeds)
+
+
+def _entry(symbols=("BTCUSD",), prefixes=_DERIBIT, reason="DVOL informs BTCUSD") -> dict:
+    return {"prefixes": prefixes, "mt5_symbols": symbols, "reason": reason}
+
+
+def test_the_shipped_feed_list_is_empty_until_a_feed_is_reviewed_in() -> None:
+    """No file is excused by default: the exemption is per named file, never per endpoint."""
+    assert mp._READ_ONLY_FEEDS == {}
+
+
+def test_a_named_feed_tied_to_an_mt5_symbol_passes_and_is_listed(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_FEED: _DVOL, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
     doc = mp.scan()
     assert doc["reaches_a_crypto_venue"] == []
+    assert doc["read_only_feed_refused"] == []
     assert doc["reads_crypto_public_market_data"] == [
-        {"file": "desks/mt5/research/dvol_feed.py", "hosts": ["www.deribit.com/api"]}]
+        {"file": _FEED, "hosts": ["www.deribit.com/api"], "mt5_symbols": ["BTCUSD"]}]
 
 
-def test_a_private_deribit_endpoint_beside_the_public_one_fails(tmp_path, monkeypatch) -> None:
-    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
-        "desks/mt5/research/dvol_feed.py":
-            'PUB = "https://www.deribit.com/api/v2/public/get_volatility_index_data"\n'
-            'BUY = "https://www.deribit.com/api/v2/private/buy"\n',
-    }))
+def test_the_same_public_endpoint_in_an_unnamed_file_fails(tmp_path, monkeypatch) -> None:
+    """THE ROOT FIX: a public prefix alone excuses nothing; only the named file is excused."""
+    root = _tree(tmp_path, {_FEED: _DVOL, "scripts/other_reader.py": _DVOL, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
     doc = mp.scan()
-    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["desks/mt5/research/dvol_feed.py"]
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["scripts/other_reader.py"]
+    assert [r["file"] for r in doc["reads_crypto_public_market_data"]] == [_FEED]
+
+
+def test_a_symbol_missing_from_the_mt5_universe_fails_closed(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_FEED: _DVOL, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry(symbols=("BTCUSD", "SOLUSDT"))})
+    doc = mp.scan()
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == [_FEED]
+    assert doc["read_only_feed_refused"] == [
+        {"file": _FEED, "why": "MT5 symbol(s) not in the universe registry: SOLUSDT"}]
+
+
+def test_no_symbols_or_no_reason_fails_closed(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_FEED: _DVOL, _UNIVERSE: _BTC_ONLY})
+    for bad in (_entry(symbols=()), _entry(reason="  ")):
+        _feeds(monkeypatch, root, {_FEED: bad})
+        assert [h["file"] for h in mp.scan()["reaches_a_crypto_venue"]] == [_FEED]
+
+
+def test_a_missing_or_unreadable_universe_excuses_nothing(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_FEED: _DVOL})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
+    assert [h["file"] for h in mp.scan()["reaches_a_crypto_venue"]] == [_FEED]
+    (root / _UNIVERSE).parent.mkdir(parents=True, exist_ok=True)
+    (root / _UNIVERSE).write_text("{not json", "utf-8")
+    assert [h["file"] for h in mp.scan()["reaches_a_crypto_venue"]] == [_FEED]
+
+
+def test_a_prefix_outside_the_public_list_fails_closed(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_FEED: _DVOL, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry(prefixes=("www.deribit.com/api/",))})
+    assert [h["file"] for h in mp.scan()["reaches_a_crypto_venue"]] == [_FEED]
+
+
+def test_a_named_feed_using_another_files_prefix_fails(tmp_path, monkeypatch) -> None:
+    """Each file is held to ITS OWN declared prefixes, not the whole public list."""
+    body = _DVOL + 'K = "https://api.bybit.com/v5/market/kline"\n'
+    root = _tree(tmp_path, {_FEED: body, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
+    doc = mp.scan()
+    assert doc["reaches_a_crypto_venue"] == [{"file": _FEED, "hosts": ["api.bybit.com"]}]
+
+
+def test_a_private_endpoint_in_a_named_feed_fails(tmp_path, monkeypatch) -> None:
+    body = _DVOL + 'BUY = "https://www.deribit.com/api/v2/private/buy"\n'
+    root = _tree(tmp_path, {_FEED: body, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
+    doc = mp.scan()
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == [_FEED]
     assert doc["reads_crypto_public_market_data"] == []
 
 
-def test_a_public_url_with_an_api_key_header_fails(tmp_path, monkeypatch) -> None:
+def test_an_api_key_header_in_a_named_feed_fails(tmp_path, monkeypatch) -> None:
     """A file that authenticates can trade, whatever URL it starts from."""
-    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
-        "desks/mt5/research/klines.py":
-            'URL = "https://data.binance.vision/data/spot/daily/klines/"\n'
-            'HEADERS = {"X-MBX-APIKEY": KEY}\n',
-    }))
+    body = ('URL = "https://data.binance.vision/data/spot/daily/klines/"\n'
+            'HEADERS = {"X-MBX-APIKEY": KEY}\n')
+    root = _tree(tmp_path, {_FEED: body, _UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry(prefixes=("data.binance.vision/",))})
     doc = mp.scan()
-    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["desks/mt5/research/klines.py"]
-    assert doc["reads_crypto_public_market_data"] == []
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == [_FEED]
+    assert doc["read_only_feed_refused"] == [
+        {"file": _FEED, "why": "file carries a trading marker"}]
 
 
-def test_the_futures_client_still_fails_with_the_allowlist_in_place(tmp_path, monkeypatch) -> None:
-    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
-        "scripts/run_new_hunter.py":
-            'URL = "https://fapi.binance.com/fapi/v1/premiumIndex"\n',
-    }))
+def test_the_futures_client_still_fails_with_a_feed_named(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_FEED: _DVOL, _UNIVERSE: _BTC_ONLY, "scripts/run_new_hunter.py":
+                            'URL = "https://fapi.binance.com/fapi/v1/premiumIndex"\n'})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
     doc = mp.scan()
     assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["scripts/run_new_hunter.py"]
-    assert doc["reads_crypto_public_market_data"] == []
+
+
+def test_a_feed_entry_whose_file_is_gone_is_reported(tmp_path, monkeypatch) -> None:
+    root = _tree(tmp_path, {_UNIVERSE: _BTC_ONLY})
+    _feeds(monkeypatch, root, {_FEED: _entry()})
+    assert mp.scan()["read_only_feed_gone"] == [_FEED]

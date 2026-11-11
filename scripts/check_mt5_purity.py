@@ -48,6 +48,7 @@ import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "mt5_purity.json"
@@ -88,35 +89,81 @@ _DECLARES = (
 #: saying so clearly.
 _PERMITTED = re.compile(r"crypto only as information|fusion[- ]executable|crypto CFD", re.I)
 
-#: READ-ONLY PUBLIC MARKET DATA may feed MT5 signals; orders stay MT5-only (principal, decision
-#: card 2026-10-13 16:43Z: "Allow read-only"). A venue host counts as read-only only when EVERY
-#: occurrence of it in the file's code starts one of these public-data prefixes AND the file
-#: carries no trading marker below. Anything else is still a reach and still fails.
+#: READ-ONLY PUBLIC MARKET DATA, the one crypto use the 2026-08-18 mandate permits: crypto as
+#: REFERENCE data informing an MT5 instrument (see `shadow_institutional.py` below). Orders stay
+#: MT5-only. This is a list of NAMED FILES, never a blanket rule: a venue host is excused only
+#: inside a file listed in `_READ_ONLY_FEEDS`, and only when ALL of these hold --
+#:   * every occurrence of the host starts one of that file's own declared public-data prefixes,
+#:     and each declared prefix is one of the public prefixes in `_READ_ONLY_DATA`;
+#:   * the file carries no trading marker (`_TRADING_MARKERS`) anywhere in its code;
+#:   * the entry names at least one MT5 consumer symbol, and EVERY named symbol is present in
+#:     `MT5_UNIVERSE` (MetaTrader5's own symbol registry). A missing, unreadable or empty
+#:     registry excuses nothing.
+#: Any other file naming the same public endpoint is a reach and fails, exactly as before.
+#: Adding a feed means adding a reviewed entry here, with its symbols and its reason.
 _READ_ONLY_DATA: tuple[str, ...] = (
     "www.deribit.com/api/v2/public/", "data.binance.vision/", "api.bybit.com/v5/market/",
     "www.okx.com/api/v5/public/", "www.okx.com/api/v5/market/",
 )
 
 #: What a client that can trade or authenticate has to carry. One of these anywhere in the code
-#: makes every venue host in the file a reach, whatever its prefix.
+#: makes every venue host in the file a reach, whatever its prefix or registry entry.
 _TRADING_MARKERS: tuple[str, ...] = (
     "/private/", "/order", "/trade/", "/v5/position", "X-MBX-APIKEY", "OK-ACCESS-KEY",
     "OK-ACCESS-SIGN", "X-BAPI-API-KEY", "X-BAPI-SIGN", "api_secret", "apiSecret",
     "client_secret", "hmac.new(",
 )
 
+#: MetaTrader5's own answer to "which symbols does this broker list". A read-only feed must
+#: name the MT5 instrument(s) it informs, and each must be in here.
+MT5_UNIVERSE = ROOT / "desks" / "mt5" / "data" / "universe" / "universe.json"
 
-def _read_only_host(host: str, code: str) -> bool:
-    """Is every occurrence of `host` in `code` the start of an allowed public-data prefix?"""
-    prefixes = [p for p in _READ_ONLY_DATA if p.startswith(host)]
-    if not prefixes:
+#: path -> {"prefixes": public-data prefixes the file may use, "mt5_symbols": MT5 instruments it
+#: informs, "reason": why it survives an MT5-only repo}. Empty until a feed is reviewed in.
+_READ_ONLY_FEEDS: dict[str, dict[str, Any]] = {}
+
+
+def _mt5_symbols() -> set[str]:
+    """Symbols MetaTrader5 lists. Empty (so nothing is excused) when the registry is unreadable."""
+    try:
+        doc = json.loads(MT5_UNIVERSE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {k for k in doc if isinstance(k, str)} if isinstance(doc, dict) else set()
+
+
+def _read_only_host(host: str, code: str, prefixes: tuple[str, ...]) -> bool:
+    """Is every occurrence of `host` in `code` the start of one of `prefixes`?"""
+    mine = [p for p in prefixes if p.startswith(host)]
+    if not mine:
         return False
     start = code.find(host)
     while start != -1:
-        if not any(code.startswith(p, start) for p in prefixes):
+        if not any(code.startswith(p, start) for p in mine):
             return False
         start = code.find(host, start + 1)
     return True
+
+
+def _feed_refusal(rel: str, code: str, universe: set[str]) -> str | None:
+    """Why the named feed `rel` is NOT excused, or None when it is. Fails closed on any doubt."""
+    entry = _READ_ONLY_FEEDS.get(rel)
+    if not isinstance(entry, dict):
+        return "not a named read-only feed"
+    prefixes = tuple(entry.get("prefixes") or ())
+    if not prefixes or any(p not in _READ_ONLY_DATA for p in prefixes):
+        return "entry declares no prefix, or one that is not a public-data prefix"
+    if not str(entry.get("reason") or "").strip():
+        return "entry gives no reason"
+    symbols = [s for s in (entry.get("mt5_symbols") or ()) if isinstance(s, str)]
+    if not symbols:
+        return "entry names no MT5 symbol"
+    missing = sorted(s for s in symbols if s not in universe)
+    if missing:
+        return "MT5 symbol(s) not in the universe registry: " + ", ".join(missing)
+    if any(m in code for m in _TRADING_MARKERS):
+        return "file carries a trading marker"
+    return None
 
 #: A file that says the ground is RETIRED is not claiming it. `deploy/finish_setup.sh` opens by
 #: explaining that the crypto-exchange desk's runbook is dead and that there is no Binance
@@ -246,11 +293,14 @@ def _docstring_window(text: str, path: Path) -> str:
     return text[:_DECLARATION_WINDOW]
 
 
-def scan() -> dict:
-    reaches: list[dict] = []
-    reads: list[dict] = []
-    declares: list[dict] = []
+def scan() -> dict[str, Any]:
+    reaches: list[dict[str, Any]] = []
+    reads: list[dict[str, Any]] = []
+    declares: list[dict[str, Any]] = []
     allowed_seen: list[str] = []
+    refused: list[dict[str, Any]] = []
+    feeds_seen: list[str] = []
+    universe = _mt5_symbols() if _READ_ONLY_FEEDS else set()
 
     for p in sorted(ROOT.rglob("*")):
         if not p.is_file() or not _scannable(p):
@@ -263,11 +313,18 @@ def scan() -> dict:
 
         code = _executable_text(text, p)
         hosts = sorted({h for h in _VENUE_HOSTS if h in code})
-        if hosts and rel not in _ALLOWED and not any(m in code for m in _TRADING_MARKERS):
-            public = [h for h in hosts if _read_only_host(h, code)]
-            if public:
-                reads.append({"file": rel, "hosts": public})
-                hosts = [h for h in hosts if h not in public]
+        if rel in _READ_ONLY_FEEDS and rel not in _ALLOWED:
+            feeds_seen.append(rel)
+            why = _feed_refusal(rel, code, universe)
+            if why is None:
+                prefixes = tuple(_READ_ONLY_FEEDS[rel]["prefixes"])
+                public = [h for h in hosts if _read_only_host(h, code, prefixes)]
+                if public:
+                    reads.append({"file": rel, "hosts": public,
+                                  "mt5_symbols": sorted(_READ_ONLY_FEEDS[rel]["mt5_symbols"])})
+                    hosts = [h for h in hosts if h not in public]
+            elif hosts:
+                refused.append({"file": rel, "why": why})
         window = _docstring_window(text, p)
         excused = _PERMITTED.search(window) or _RETIRED.search(text)
         claims = [] if excused else _declared_claims(window)
@@ -294,6 +351,9 @@ def scan() -> dict:
         "checked_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "reaches_a_crypto_venue": reaches,
         "reads_crypto_public_market_data": reads,
+        "read_only_feed_refused": refused,
+        "read_only_feed_gone": sorted(e for e in set(_READ_ONLY_FEEDS) - set(feeds_seen)
+                                      if not (ROOT / e).exists()),
         "declares_a_crypto_universe": declares,
         "allowed_and_present": sorted(allowed_seen),
         "allowed_file_gone": unused,
@@ -321,7 +381,12 @@ def main() -> int:
     print(f"  allowed and present: {len(doc['allowed_and_present'])} "
           f"(the deadman rail and the mandate's own enforcers)")
     for r in doc["reads_crypto_public_market_data"]:
-        print(f"  read-only public market data (allowed): {r['file']} -> {', '.join(r['hosts'])}")
+        print(f"  read-only public market data (allowed): {r['file']} -> {', '.join(r['hosts'])}"
+              f" informing {', '.join(r['mt5_symbols'])}")
+    for r in doc["read_only_feed_refused"]:
+        print(f"  named read-only feed NOT excused ({r['why']}): {r['file']}")
+    for s in doc["read_only_feed_gone"]:
+        print(f"  NOTE stale read-only feed entry, the file it named is gone: {s}")
 
     # Neither of these is fatal: both mean less crypto in the tree, which is the direction this
     # fence wants. They are reported so the allowlist does not quietly rot into a list of
