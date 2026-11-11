@@ -74,6 +74,10 @@ BUDGET_S = 300.0
 #: Rule 4: re-runs of never-started cancelled PR runs per call, and how far back it looks.
 MAX_UNSTARTED = 20
 UNSTARTED_H = 24.0
+#: Share of the budget CLEARed-first may spend reading comments; the rest is LIVE-first's.
+CLEARED_SHARE = 0.4
+#: Pages of queued runs older than LIVE's newest waiting run read per call (100 a page).
+OLDER_PAGES = 10
 
 
 def _gh(path: str, method: str = "GET") -> Any:
@@ -217,6 +221,46 @@ def _queued(repo: str) -> list[dict[str, Any]]:
     return out
 
 
+def _older(repo: str, base: str, now: datetime) -> list[dict[str, Any]]:
+    """LIVE's own queued runs and, when one is waiting, the queued runs created BEFORE the newest
+    waiting one (GitHub lists newest first, so with more than 500 queued, `_queued` never reaches
+    the oldest: on 11-11 09:45Z, 1,223 were queued, LIVE's runs of 11-10 sat past page 5 and the
+    call saw "0 ahead of LIVE"). Bounded at OLDER_PAGES pages."""
+    got = _gh(f"repos/{repo}/actions/runs?branch={base}&status=queued&per_page=100") or {}
+    mine = [r for r in got.get("workflow_runs") or [] if r.get("event") in LIVE_EVENTS]
+    waiting = [
+        _queued_at(r)
+        for r in mine
+        if (_age_min(now, _queued_at(r)) or 0.0) >= LIVE_FIRST_MIN
+    ]
+    if not waiting:
+        return mine
+    out = list(mine)
+    for page in range(1, OLDER_PAGES + 1):
+        batch = (
+            _gh(
+                f"repos/{repo}/actions/runs?status=queued&created=%3C{max(waiting)}"
+                f"&per_page=100&page={page}"
+            )
+            or {}
+        ).get("workflow_runs") or []
+        out += batch
+        if len(batch) < 100:
+            break
+    return out
+
+
+def _merge_runs(*lists: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[Any] = set()
+    out = []
+    for lst in lists:
+        for r in lst:
+            if r.get("id") not in seen:
+                seen.add(r.get("id"))
+                out.append(r)
+    return out
+
+
 _NUMBERS: dict[str, int] = {}  # head branch -> PR number, from the last _heads() listing
 
 
@@ -303,17 +347,29 @@ def run(
     budget_s: float = BUDGET_S,
 ) -> int:
     # BUDGET_S is a ceiling, never a default to raise: a caller can only shorten the call
-    stop = clock() + min(max(budget_s, 0.0), BUDGET_S)
+    t0 = clock()
+    budget = min(max(budget_s, 0.0), BUDGET_S)
+    stop = t0 + budget
+    # CLEARed-first may spend at most CLEARED_SHARE of the budget: on 11-11 09:45Z it spent all
+    # of it reading comments and the call cancelled nothing ("budget spent" before rule 2).
+    cleared_stop = t0 + CLEARED_SHARE * budget
 
     def over() -> bool:
         return clock() >= stop
 
+    def over_cleared() -> bool:
+        return clock() >= cleared_stop
+
     now = datetime.now(UTC)
     at = now.isoformat(timespec="seconds")
     queued = _queued(repo)  # runs BEFORE heads: a head moving in between reads as current
+    try:  # the oldest queued runs, past `_queued`'s pages; a failed read orders what it has
+        queued = _merge_runs(queued, _older(repo, base, now))
+    except Exception as exc:
+        print(f"  older runs skipped: {type(exc).__name__}: {exc}")
     heads = _heads(repo)
     try:  # CLEARed-first never costs LIVE-first: any failure here orders by LIVE alone (#556 SF1)
-        cleared = _cleared(repo, queued, heads, over)
+        cleared = _cleared(repo, queued, heads, over_cleared)
     except Exception as exc:
         print(f"  cleared-first skipped: {type(exc).__name__}: {exc}")
         cleared = frozenset()
