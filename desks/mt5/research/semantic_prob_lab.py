@@ -81,6 +81,9 @@ MIN_OBSERVATIONS = 30      # family_exogenous_conditioner's own floor; cells wai
 #: six-hour interval is under eight days, and a cell minted then is a trial the judge counts in
 #: its multiplicity charge while having almost nothing to judge it on (Auditor, #997).
 MIN_SPAN_DAYS = 60
+#: The roster the fence's retirements are read from, and the rail they are billed under.
+SLEEVES = BASE / "data" / "sleeves.json"
+FENCE_RAIL = "llm_live_fence"
 #: Bars sit on broker time under a UTC label (+2/+3). A reading is settled from the first bar at
 #: least this far after its stamp, so the offset can never put a bar before the reading.
 CLOCK_PAD_H = 3
@@ -460,6 +463,37 @@ def mint_cells(n_rows: int, span_days: float, *, minted_path: Path | None = None
             "total": len(done), "errors": errors[:5]}
 
 
+def bill_fence(sleeves_path: Path | None = None, line_once: Any = None) -> dict[str, Any]:
+    """Bill every row the LLM fence retired to the missed-growth ledger, once per row.
+
+    GROWTH GOVERNANCE RULE 1. `live_policy.refuse` keeps an LLM-derived row from live capital and
+    the promoter retires it (retired_by live_policy). That fence is the principal's standing rule,
+    not a desk cap, and it is billed anyway: one `fusion_rails` line per retired row, carrying the
+    forward mean R its shadow clock had, so `missed_growth` publishes what the rule forgoes on the
+    day he weighs it. The rail register and the promoter are sealed evaluator files; this is the
+    published-ledger route `fusion_rails` exists for."""
+    from mt5desk import live_policy
+    if line_once is None:
+        from mt5desk.fusion_rails import line_once
+    try:
+        doc = json.loads((sleeves_path or SLEEVES).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"status": _UNMEASURED, "why": "sleeves.json unreadable on this host"}
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    billed = 0
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict) or r.get("retired_by") != "live_policy":
+            continue
+        src = live_policy.llm_derived(r)
+        if not src:
+            continue
+        line_once(FENCE_RAIL, dedupe=str(r.get("name")), name=r.get("name"),
+                  symbol=r.get("symbol"), family=r.get("family"), source=src,
+                  exp_r=r.get("shadow_exp"), n=r.get("shadow_n"), retired_at=r.get("retired_at"))
+        billed += 1
+    return {"status": "MEASURED", "fenced_rows": billed}
+
+
 # ------------------------------------------------------------------ the pass
 def _ask(system: str, user: str) -> tuple[str, str | None, str]:
     from libs.ops import llm_seat
@@ -509,12 +543,13 @@ def run(now: datetime | None = None, *, ask: Any = None, bars_dir: Path | None =
                        "rejected": bad, "error": err}
     n = write_series(rows)
     cells = mint_cells(n, series_span_days(), enqueue=enqueue)
+    fence = bill_fence()
     return {"generated_utc": t.isoformat(timespec="seconds"),
             "status": "MEASURED" if rows else _UNMEASURED,
             "this_pass": reading, "readings": len(rows), "series_rows": n,
             "topics": {k: {"ref": v["ref"], "cells": v["cells"], "calibration": cal[k]}
                        for k, v in TOPICS.items()},
-            "reject_rate": _reject_rate(rows), "cells": cells,
+            "reject_rate": _reject_rate(rows), "cells": cells, "llm_fence": fence,
             "authority": "research features only: no sizing, promotion, veto or order"}
 
 

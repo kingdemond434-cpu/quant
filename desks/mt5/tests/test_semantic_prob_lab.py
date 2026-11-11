@@ -26,6 +26,7 @@ def wired(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(lab, "READINGS", tmp_path / "state" / "readings.jsonl")
     monkeypatch.setattr(lab, "MINTED", tmp_path / "state" / "minted.json")
     monkeypatch.setattr(lab, "SERIES", tmp_path / "series" / "semantic_prob.parquet")
+    monkeypatch.setattr(lab, "SLEEVES", tmp_path / "sleeves.json")
     bars = tmp_path / "bars"
     bars.mkdir()
     idx = pd.date_range(NOW - timedelta(days=90), NOW + timedelta(days=5), freq="h", tz="UTC")
@@ -169,7 +170,6 @@ def test_a_certified_llm_derived_cell_is_never_written_live(
     # the promoter's writer, under a policy that would admit every symbol, family and lane
     monkeypatch.setattr(live_policy, "policy", lambda path=None: pol)
     monkeypatch.setattr(promoter, "plog", lambda msg: None)
-    monkeypatch.setattr(promoter, "LLM_FENCE_LEDGER", wired / "data" / "llm_fence_blocks.jsonl")
     assert promoter._apply_live_policy(rows) == len(rows) - 1
     assert all(r["status"] == "RETIRED" and r["risk_frac"] == 0.0 for r in rows[:-1])
     assert rows[-1]["status"] == "LIVE"
@@ -189,29 +189,29 @@ def test_the_fence_reads_any_param_naming_the_series() -> None:
 
 def test_every_fence_retirement_is_billed_to_missed_growth(
         wired: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from mt5desk import live_policy
+    from mt5desk import fusion_rails, live_policy
 
-    from libs.portfolio.rails import rail
     from research import missed_growth, promoter
-    assert rail("llm_live_fence").measure == "measure_llm_fence"
-    ledger = wired / "data" / "llm_fence_blocks.jsonl"
-    monkeypatch.setattr(promoter, "LLM_FENCE_LEDGER", ledger)
+    assert lab.FENCE_RAIL in fusion_rails.RAILS
+    assert lab.FENCE_RAIL in missed_growth.FUSION_RAIL_NAMES
+    ledger = wired / "data" / "fusion_book_rails.jsonl"
+    monkeypatch.setattr(fusion_rails, "LEDGER", ledger)
+    monkeypatch.setattr(missed_growth, "FUSION_RAILS", ledger)
     monkeypatch.setattr(promoter, "plog", lambda msg: None)
-    monkeypatch.setattr(missed_growth, "BASE", wired)
     pol = live_policy.Policy(live_symbols=frozenset({"*"}), banned_timeframes={},
                              banned_families=frozenset(), banned_execs=frozenset())
     monkeypatch.setattr(live_policy, "policy", lambda path=None: pol)
-    r = rail("llm_live_fence")
-    assert missed_growth.measure_llm_fence(r, {}, {})["verdict"] == missed_growth.NOT_BINDING
+    assert lab.bill_fence()["status"] == "UNMEASURED", "no roster is not a clean zero"
     rows = [{"name": f"c{i}", "symbol": "EURUSD", "status": "LIVE", "shadow_exp": 0.1,
-             "shadow_n": 30, "params": {"source": "semantic_prob"}} for i in range(12)]
+             "shadow_n": 30, "params": {"source": "semantic_prob"}} for i in range(3)]
     rows.append({"name": "price", "symbol": "EURUSD", "status": "LIVE", "shadow_exp": 0.1,
                  "params": {"source": "boj_fixing"}})
-    assert promoter._apply_live_policy(rows) == 12
+    assert promoter._apply_live_policy(rows) == 3
+    lab.SLEEVES.write_text(json.dumps({"sleeves": rows}), "utf-8")
+    assert lab.bill_fence()["fenced_rows"] == 3
+    assert lab.bill_fence()["fenced_rows"] == 3
     lines = [json.loads(x) for x in ledger.read_text("utf-8").splitlines()]
-    assert len(lines) == 12 and lines[0]["source"] == "semantic_prob"
-    assert lines[0]["exp_r"] == 0.1 and lines[0]["was"] == "LIVE"
-    m = missed_growth.measure_llm_fence(r, {"book": {"a": 0.01}}, {})
-    assert m["verdict"] == missed_growth.COSTS and m["n"] == 12
-    assert promoter._apply_live_policy(rows) == 0, "a retired row is billed once"
-    assert len(ledger.read_text("utf-8").splitlines()) == 12
+    assert len(lines) == 3, "billed once per row however often the pass runs"
+    assert {x["rail"] for x in lines} == {"llm_live_fence"} and lines[0]["exp_r"] == 0.1
+    bill = missed_growth.published_fusion_book_lines()["rails"]["llm_live_fence"]
+    assert bill["n"] == 3

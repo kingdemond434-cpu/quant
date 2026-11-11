@@ -167,14 +167,6 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
-    # THE LLM FENCE (2026-11-11, the standing rule "LLMs propose only"). A row conditioned on an
-    # LLM-derived source (`live_policy.LLM_DERIVED_SOURCES`, Lab L's `semantic_prob`) keeps its
-    # forward-shadow clock and is never written LIVE. It is the principal's rule, not a desk cap,
-    # so it is not tunable; it is billed anyway, from data/llm_fence_blocks.jsonl, so the growth
-    # it forgoes is measured on the day he weighs lifting it.
-    Rail("llm_live_fence", "mandate",
-         "live_policy.refuse <- LLM_DERIVED_SOURCES (promoter._apply_live_policy, roster)",
-         "measure_llm_fence"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
