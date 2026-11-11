@@ -183,8 +183,9 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
     cls, why = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head),
                             enforced=enforced)  # fmt: skip
     f.update(tier=level, tier_why=twhy, cls=cls, cls_reasons=why, files=names)
-    found = ag.verdicts(ag._flat(ag._gh(f"repos/{repo}/issues/{pr}/comments?per_page=100",
-                                        "--paginate", "--slurp")))  # fmt: skip
+    comments = ag._flat(ag._gh(f"repos/{repo}/issues/{pr}/comments?per_page=100",
+                               "--paginate", "--slurp"))  # fmt: skip
+    found = ag.verdicts(comments)
     if found and found[-1]["verdict"] != "CLEAR":
         f["hold"] = f"AUDIT HOLD {found[-1]['sha'][:9]} ({found[-1]['at']})"
     board = ag._flat(ag._gh(f"repos/{repo}/issues/{ag.APPROVALS_ISSUE}/comments?per_page=100",
@@ -215,15 +216,21 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
                 f["evidence"]["trusted-eval"] = ewhy
         f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
     elif cls == "ROOT":
-        # THE ROOT PATH (root_path.py): the sealed core is refused before anything is read
+        # THE ROOT PATH (root_path.py): the authority enforces EVERY condition itself, so under
+        # Level 2 a rewritten gate cannot merge a ROOT PR the authority did not pass
         rp = pol.root_path()
         f["sealed"] = rp.sealed_touch(names, reader(f"origin/{base}"), reader(head))
+        f["enforced"] = enforced
+        f["repin_installed"] = Path(rp.REPIN_MARKER).is_file()
         if not f["sealed"] and rp.eligible(why)[0]:
-            pages = ag._gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
-                           "--slurp")  # fmt: skip
+            f["comment"] = rp.comment_clear(found, head)
+            f["registry"] = rp.registry_agrees(auditor_rows(ag, rp), pr, head)
+            pages = ag._gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100&filter=all",
+                           "--paginate", "--slurp")  # fmt: skip
             runs = [r for page in ag._flat_pages(pages) for r in (page.get("check_runs") or [])]
             genuine = ag.provenance(repo, pr, head)
-            f["root_jobs"] = rp.jobs(ag.root_attempts(repo, runs, genuine))
+            tries = ag.root_attempts(repo, runs, genuine)
+            f["root_jobs"] = rp.jobs(tries)
             f["evidence"] = {
                 str(r.get("name")): {"id": r.get("id"), "conclusion": r.get("conclusion")}
                 for r in runs
@@ -235,7 +242,26 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
             if ok:
                 f["evidence"]["trusted-eval"] = ewhy
             f["fresh"], f["fresh_why"] = ag.up_to_date(base, head)
+            void = rp.voids(found, tries, board, ag.DEACTIVATE, ag.TRUSTED)
+            f["window"] = rp.window(rp.notices(comments, ag.TRUSTED), head, ag.datetime.now(UTC),
+                                    void)  # fmt: skip
     return f
+
+
+def auditor_rows(ag: Any, rp: Any) -> list[dict[str, Any]]:
+    """The Auditor's rows from the audit-registry ref, read with git by the authority itself (no
+    box file a session or the gate writes). Unreadable or absent: no rows (fail closed)."""
+    local = "refs/remotes/origin/audit-registry"
+    try:
+        ag._git("fetch", "-q", "--no-tags", "origin", f"+{rp.AUDIT_REF}:{local}")
+    except (subprocess.SubprocessError, OSError):
+        return []
+    raw = _git_bytes("show", f"{local}:{rp.AUDIT_FILE}")
+    try:
+        rows = [json.loads(x) for x in (raw or b"").decode("utf-8-sig").splitlines() if x.strip()]
+    except ValueError:
+        return []
+    return rows if all(isinstance(r, dict) for r in rows) else []
 
 
 def issue(
@@ -326,12 +352,14 @@ def status_for(
     """The commit status the LIVE ruleset requires (Level 2). success only on a CLEAR; for a
     CONTROLLER PR only once the veto has run from its FIRST signed CLEAR, so GitHub itself refuses
     a merge inside the 24 h window even from a rewritten gate. A ROOT PR gets success only on a
-    ROOT-path CLEAR (root_path.py) and only after ROOT_VETO_H (72 h) from its first signed CLEAR;
-    the gate separately counts 72 h from its own DELIVERED notice. The sealed core never does."""
+    ROOT-path CLEAR (root_path.authority_verdict), which already includes every ROOT condition and
+    its 72 h delivered window. The sealed core never does."""
     now = now or datetime.now(UTC)
     if f.get("cls") == "ROOT" and verdict == "CLEAR":
-        veto_h = max(veto_h, float(pol.root_path().ROOT_VETO_H))
-    elif f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
+        # root_path.authority_verdict signs CLEAR only with EVERY ROOT condition met, its own
+        # 72 h delivered window included, so the CLEAR itself is the status (Auditor #875 M6)
+        return "success", "ROOT path CLEAR: every condition met, 72 h window elapsed"
+    if f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
         return "failure", f"{f.get('cls')}: the owner's path, never this status"[:140]
     if verdict == "CLEAR":
         if f.get("cls") in ("AUTO", "LOW"):

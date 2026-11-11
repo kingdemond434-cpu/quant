@@ -931,12 +931,18 @@ def root_attempts(
         recs: list[dict[str, Any]] = []
         for r in sorted(rs, key=lambda x: str(x.get("started_at") or "")):
             rec: dict[str, Any] = {"id": r.get("id"), "status": r.get("status"),
-                                   "conclusion": r.get("conclusion"), "flags": []}  # fmt: skip
+                                   "conclusion": r.get("conclusion"), "flags": [],
+                                   "completed_at": r.get("completed_at")}  # fmt: skip
             if (r.get("status") == "completed" and r.get("conclusion") != "success"
                     and name in rp.RERUNNABLE):  # fmt: skip
                 try:
-                    notes = _gh(f"repos/{repo}/check-runs/{r['id']}/annotations?per_page=100")
-                    notes = [a for a in notes or [] if isinstance(a, dict)]
+                    pages = _gh(f"repos/{repo}/check-runs/{r['id']}/annotations?per_page=100",
+                                "--paginate", "--slurp")  # fmt: skip
+                    if not isinstance(pages, list) or not all(isinstance(p, list) for p in pages):
+                        raise TypeError("annotations are not a list")
+                    notes = [a for p in pages for a in p if isinstance(a, dict)]
+                    if not notes:  # a failure with no annotation at all names nothing we can read
+                        raise TypeError("no annotations")
                     rec["unavailable"] = any(
                         str(a.get("title") or "") == UNAVAILABLE_MARK for a in notes
                     )
@@ -948,15 +954,6 @@ def root_attempts(
             recs.append(rec)
         out[name] = recs
     return out
-
-
-def root_window_record(folder: Path, pr: int) -> dict[str, Any] | None:
-    try:
-        got = json.loads((folder / ROOT_WINDOW_FILE).read_text(encoding="utf-8"))
-        rec = got.get(str(pr)) if isinstance(got, dict) else None
-        return rec if isinstance(rec, dict) else None
-    except (OSError, ValueError):
-        return None
 
 
 def run_root_notify(title: str, body: str) -> tuple[int | None, str]:
@@ -981,7 +978,9 @@ def _show(rev: str, name: str) -> str | None:
     return got.stdout.decode("utf-8", "replace") if got.returncode == 0 else None
 
 
-def root_notify(folder: Path, pr: int, head: str, root_files: list[str], now: datetime) -> str:
+def root_notify(
+    repo: str, folder: Path, pr: int, head: str, root_files: list[str], now: datetime
+) -> str:
     """Send the ROOT veto notice for `head` with the box's notify command and record it ONLY with
     a delivery receipt (exit 0 and "delivered N", N > 0). Why, either way."""
     rp = _authority_mod("root_path")
@@ -1006,7 +1005,40 @@ def root_notify(folder: Path, pr: int, head: str, root_files: list[str], now: da
         os.replace(tmp, path)
     except (OSError, ValueError) as exc:
         return f"the ROOT notice record could not be written ({type(exc).__name__})"
+    try:  # the anchoring comment: its GitHub time starts the window both sides read
+        _gh(f"repos/{repo}/issues/{pr}/comments", "-X", "POST",
+            data={"body": rp.notice_comment(head, got)})  # fmt: skip
+    except RuntimeError as exc:
+        return f"ROOT notice delivered but not anchored on the PR ({str(exc)[:120]}); retried"
     return f"ROOT notice delivered for {head[:9]} ({got}): the {rp.ROOT_VETO_H:.0f} h window starts"
+
+
+def root_auditor_rows() -> list[dict[str, Any]]:
+    """The Auditor's rows from the audit-registry ref, read with git (root_path.AUDIT_REF), never
+    from a box file. Unreadable or absent: no rows (fail closed)."""
+    rp = _authority_mod("root_path")
+    local = "refs/remotes/origin/audit-registry"
+    try:
+        _git("fetch", "-q", "--no-tags", "origin", f"+{rp.AUDIT_REF}:{local}")
+    except (subprocess.SubprocessError, OSError):
+        return []
+    raw = _show(local, rp.AUDIT_FILE)
+    try:
+        rows = [json.loads(x) for x in (raw or "").lstrip("\ufeff").splitlines() if x.strip()]
+    except ValueError:
+        return []
+    return rows if all(isinstance(r, dict) for r in rows) else []
+
+
+def root_level2(repo: str, base: str) -> tuple[bool, str]:
+    """The authority's own Level 2 reading (GitHub enforces its status on LIVE), fail closed."""
+    try:
+        import types
+
+        auth = _authority_mod("authority")
+        return auth.level2_enforced(types.SimpleNamespace(_gh=_gh), repo, base)
+    except Exception as exc:
+        return False, f"Level 2 not read ({type(exc).__name__})"
 
 
 def root_in_flight(folder: Path) -> str:
@@ -1505,12 +1537,12 @@ def run(
             return [], f"authority: attestations cannot be verified ({type(exc).__name__})"
         st, why = authority_clear(sts, head, patch_id(base, head), level)
         if st is None:
-            # the authority signs a ROOT PR only once every ROOT job is green, so the ROOT path's
-            # one automatic re-run is asked for here, before any attestation exists
-            rr = root_rerun() if level == "PROTECTED" else ""
-            return [], f"authority: {why}" + (f"; {rr}" if rr else "")
+            # the authority signs a ROOT PR only after the 72 h window, so the ROOT path's notice
+            # and its one automatic re-run are sent from here, before any attestation exists
+            got, rwhy = root_judge(None, why) if level == "PROTECTED" else ([], "")
+            return got, f"authority: {why}" + (f"; {rwhy}" if rwhy else "")
         if st["tier"] == "ROOT":
-            return root_rows(root_dir(), st, why)
+            return root_judge(st, why)
         if st["tier"] == "CONTROLLER":
             ok, ewhy = trusted_eval_passed(repo, pr, head, base)
             if not ok:
@@ -1518,52 +1550,32 @@ def run(
         # the gate's own row shape: the window, the HOLD, the up-to-date and CI rules below apply
         return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
 
-    def root_request_rerun(tries: Mapping[str, list[dict[str, Any]]], jobs: tuple) -> str:
-        last = (tries.get(str(jobs[2])) or [{}])[-1]
-        try:
-            _gh(f"repos/{repo}/actions/jobs/{last['id']}/rerun", "-X", "POST")
-        except (RuntimeError, KeyError) as exc:
-            return f"re-run not requested ({str(exc)[:120]})"
-        return f"the one automatic re-run of {jobs[2]} requested"
-
-    def root_rerun() -> str:
-        """Ask for the ROOT path's one automatic re-run, when root_path.jobs() says so, for a
-        root-file-only PR that is not the sealed core. "" when nothing was asked."""
+    def root_judge(st: Mapping[str, Any] | None, awhy: str) -> tuple[list[dict[str, Any]], str]:
+        """THE ROOT PATH on the gate's side (root_path.gate_verdict): send the notice, ask for the
+        one automatic re-run, or return the one CLEAR row for this exact head when the authority
+        has attested it as class ROOT. Before any attestation exists only NOTIFY and RERUN act."""
         rp = _authority_mod("root_path")
-        try:
-            _roots, reasons, sealed = root_classify(files, level, base, head)
-            if sealed or not rp.eligible(reasons)[0]:
-                return ""
-            pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
-                        "--slurp")  # fmt: skip
-            runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
-            tries = root_attempts(repo, runs, provenance(repo, pr, head))
-        except Exception:  # a read error asks for nothing; the next sweep looks again
-            return ""
-        jobs = rp.jobs(tries)
-        return root_request_rerun(tries, jobs) if jobs[0] == "rerun" else ""
-
-    def root_rows(
-        folder: Path, st: Mapping[str, Any], awhy: str
-    ) -> tuple[list[dict[str, Any]], str]:
-        """The ROOT path's one CLEAR row for this head, or none; why (see ROOT_WINDOW_FILE).
-        Sends the ROOT notice, or asks for the one automatic re-run, when root_path says so."""
-        rp = _authority_mod("root_path")
+        folder = root_dir()
         now = datetime.now(UTC)
         try:
             roots, reasons, sealed = root_classify(files, level, base, head)
-            found = pr_verdicts()
+            if sealed or not rp.eligible(reasons)[0]:
+                return [], ""
+            comments = _flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
+                                 "--slurp"))  # fmt: skip
+            found = verdicts(comments)
+            board = _flat(_gh(f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                              "--paginate", "--slurp"))  # fmt: skip
             on, owhy = switches()
-            pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate",
-                        "--slurp")  # fmt: skip
+            pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100&filter=all",
+                        "--paginate", "--slurp")  # fmt: skip
             runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
             tries = root_attempts(repo, runs, provenance(repo, pr, head))
             ok, ewhy = trusted_eval_passed(repo, pr, head, base)
             fresh, fwhy = up_to_date(base, head)
-        except Exception as exc:  # any read error: nothing merges by the ROOT path this sweep
+            enforced, lwhy = root_level2(repo, base)
+        except Exception as exc:  # any read error: nothing acts by the ROOT path this sweep
             return [], f"ROOT path: not judged ({type(exc).__name__}: {str(exc)[:120]})"
-        rows, rwhy = registry_rows(os.environ.get(rp.AUDITOR_ROWS_ENV))
-        reg = rp.registry_agrees(rows, pr, head) if rows else (False, f"Auditor rows: {rwhy}")
         done = "running" not in ewhy and "no base-run" not in ewhy
         jobs = rp.jobs(tries)
         g = {
@@ -1575,24 +1587,38 @@ def run(
                 else ""
             ),
             "deactivated": not on,
+            "enforced": enforced,
+            "repin_installed": Path(rp.REPIN_MARKER).is_file(),
             "in_flight": root_in_flight(folder),
             "comment": rp.comment_clear(found, head),
-            "registry": reg,
-            "attested": (True, awhy),
+            "registry": rp.registry_agrees(root_auditor_rows(), pr, head),
+            "attested": (st is not None, awhy),
             "root_jobs": jobs,
             "trusted_eval": ("pass" if ok else "fail" if done else "pending", ewhy),
             "fresh": fresh,
             "fresh_why": fwhy,
-            "window": rp.window(root_window_record(folder, pr), head, now),
+            "window": rp.window(
+                rp.notices(comments, TRUSTED),
+                head,
+                now,
+                rp.voids(found, tries, board, DEACTIVATE, TRUSTED),
+            ),
         }
         verdict, vwhy = rp.gate_verdict(g)
+        if not enforced and "Level 2" in vwhy:
+            vwhy = f"{vwhy} ({lwhy})"
+        if not on and "DEACTIVATED" in vwhy:
+            vwhy = f"{vwhy} ({owhy})"
         if verdict == "NOTIFY":
-            return [], f"ROOT path: {root_notify(folder, pr, head, roots, now)}"
+            return [], f"ROOT path: {root_notify(repo, folder, pr, head, roots, now)}"
         if verdict == "RERUN":
-            return [], f"ROOT path: {vwhy}; {root_request_rerun(tries, jobs)}"
-        if verdict != "MERGE":
-            if owhy and not on:
-                vwhy = f"{vwhy} ({owhy})"
+            last = (tries.get(str(jobs[2])) or [{}])[-1]
+            try:
+                _gh(f"repos/{repo}/actions/jobs/{last['id']}/rerun", "-X", "POST")
+            except (RuntimeError, KeyError) as exc:
+                return [], f"ROOT path: {vwhy}; re-run not requested ({str(exc)[:120]})"
+            return [], f"ROOT path: {vwhy}; the one automatic re-run of {jobs[2]} requested"
+        if verdict != "MERGE" or st is None:
             return [], f"ROOT path: {verdict}: {vwhy}"
         return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"],
                  "root": True}], vwhy  # fmt: skip
@@ -1617,7 +1643,13 @@ def run(
         if not fresh:
             return None, f"{mwhy}; registry: {fwhy}"
         now = datetime.now(UTC)
-        if rows[0].get("root"):  # the ROOT path already ran its own 72 h delivered window
+        if (  # a ROOT row comes ONLY from root_judge (the authority path), for this PR and head
+            os.environ.get(AUTHORITY_PUBKEY_ENV)
+            and len(rows) == 1
+            and rows[0].get("root") is True
+            and rows[0].get("pr") == pr
+            and rows[0].get("sha") == head
+        ):  # the ROOT path ran its own 72 h delivered window
             got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": str(rows[0]["at"])}
             return {**got, "by": "registry", "root": "1"}, f"{REGISTRY_TITLE} {head[:9]}: {gone}"
         seen = Path(path + ".window.json")
@@ -1697,33 +1729,34 @@ def run(
             _summary(f"(quarantine label not removed: {exc})")
     if p.get("draft"):
         subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True, timeout=GH_TIMEOUT_S)
-    _gh(
-        f"repos/{repo}/pulls/{pr}/merge",
-        "-X",
-        "PUT",
-        data={
-            "sha": head,
-            "merge_method": clear["method"],
-            "commit_title": (
-                f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
-                if clear["verdict"] == mode.upper()
-                else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, ROOT path, from the box)"
-                if clear.get("root")
-                else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
-                if clear.get("by") == "registry"
-                else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
-            ),
-        },
-    )
-    _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
-    if clear.get("root"):  # one ROOT merge at a time: the re-pin service clears this
+    if clear.get("root"):  # one ROOT merge at a time: written BEFORE the merge, or no merge
         try:
             mark_root_in_flight(root_dir(), pr, head, datetime.now(UTC))
         except OSError as exc:
-            _summary(
-                f"RED ROOT_INFLIGHT not written for #{pr} ({exc}): one-at-a-time rests on "
-                "the root pin alone"
-            )
+            _summary(f"#{pr} @ {head[:9]}: not merged -- {ROOT_INFLIGHT_FILE} not written ({exc})")
+            return 1
+    title = (
+        f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
+        if clear["verdict"] == mode.upper()
+        else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, ROOT path, from the box)"
+        if clear.get("root")
+        else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
+        if clear.get("by") == "registry"
+        else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
+    )
+    try:
+        _gh(
+            f"repos/{repo}/pulls/{pr}/merge",
+            "-X",
+            "PUT",
+            data={"sha": head, "merge_method": clear["method"], "commit_title": title},
+        )
+    except RuntimeError:
+        if clear.get("root"):  # the merge did not happen: the in-flight mark is taken back
+            with contextlib.suppress(OSError):
+                (root_dir() / ROOT_INFLIGHT_FILE).unlink()
+        raise
+    _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
     if box:
         return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so

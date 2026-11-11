@@ -1,34 +1,42 @@
 """THE ROOT PATH (zuck 2026-11-10 23:18Z / 23:19Z: "everything literally everything autonomous",
 "never ever need to manually comment paste anything fr merges any type"). SEALED CORE.
 
-After the final sitting, a ROOT PR (one that changes the merge machinery itself: audit_gate.py,
-the release authority, the publisher, trusted-eval) merges with no owner comment when ALL hold.
-Both the release authority (policy.decide) and the box gate (audit_gate.py) import THIS module
-from their own pinned checkout, so a PR is always judged by the base's rules, never its own:
+After the final sitting, a ROOT PR that changes the box gate (audit_gate.py), the publisher or the
+release machinery merges with no owner comment when ALL hold. THE RELEASE AUTHORITY ENFORCES
+EVERY CONDITION (authority_verdict), and only once GitHub itself enforces the authority's status
+on LIVE (Level 2): a rewritten gate can then merge nothing the authority did not pass, so the gate
+is not trusted to keep this path. The gate runs the same rules (gate_verdict) to send the notice,
+ask for the one re-run and merge. Both load THIS module from their own pinned checkout, so a PR is
+judged by the base's rules, never its own:
 
-  1. an AUDIT CLEAR comment for the exact head, and the Auditor's synced registry row agrees;
-  2. every job in ROOT_JOBS green on the exact head, by GitHub Actions. A failed
-     independent-review or replay-shadow is re-run automatically ONCE on the same head, and only
-     when its failure cites no file:line and does not flag control machinery; a second failure,
-     or any other failure, blocks. No adjudication, no empty commit;
+  0. Level 2 is enforced, and the sealed re-pin service is installed on the box (REPIN_MARKER);
+  1. the newest AUDIT verdict comment is CLEAR for the exact head, AND the Auditor's newest row
+     for the PR on the audit-registry ref (AUDIT_REF:AUDIT_FILE, read from git, not from a box
+     file) is CLEAR for that head;
+  2. every ROOT_JOBS job green on the exact head, counted over ALL attempts (filter=all). A failed
+     independent-review or replay-shadow is re-run automatically ONCE, only when its failure cites
+     no line and flags nothing; a second failure, or any other failure, blocks. No adjudication;
   3. the BASE's trusted-eval passed on the exact head;
-  4. up to date with LIVE, the merge pinned to the head sha;
-  5. a release-authority Ed25519 attestation (class ROOT) for the exact head and patch;
-  6. ROOT_VETO_H (72 h) since a veto notice for THIS head was DELIVERED (a recorded receipt:
-     the alert command's exit 0 AND its "delivered N" with N > 0). The notice names the PR, the
-     head and the ROOT files it changes. A new push is a new head: a new notice, a new window.
-     An AUDIT HOLD, DEACTIVATE, a HOLD row or any red check in the window: no merge;
-  7. one at a time: no ROOT merge while an earlier one is not yet re-pinned and adopted.
+  4. up to date with LIVE; the merge pinned to the head sha;
+  5. ROOT_VETO_H (72 h) since a ROOT NOTICE for THIS head was DELIVERED: the gate sends it to
+     zuck's alert channel, and only on a receipt (exit 0 AND "delivered N", N > 0) posts the
+     anchoring PR comment "ROOT NOTICE <head> delivered: <receipt>", whose GitHub time starts the
+     window. Any red check, non-CLEAR verdict, edited trusted comment or DEACTIVATE dated after
+     that notice VOIDS it: a new notice, a new 72 h. A new push is a new head;
+  6. one at a time: the authority signs nothing while LIVE's root digest is not the pinned one,
+     which is true from a ROOT merge until the re-pin service (repin.py) re-pins the released,
+     adopted tree; the gate also writes ROOT_INFLIGHT.json BEFORE the merge call.
 
 THE SEALED CORE never takes this path (the project's rule: a pin approved from a phone may never
-re-pin its own door). A PR that changes a SEALED_CORE file, or any SEALED_VALUES constant, or
-whose ROOT reasons are anything but "root file X" (a grow-only list shrinking, a sizing envelope
-change), is refused here and waits for zuck's own CLEAR + APPROVE MERGES, as today. Lifting that
-is zuck's call alone.
+re-pin its own door): every file of the release authority (ops/release/authority/*, which holds
+this module, the policy, the signer, the pin tools, the re-pin service and ROOT_POLICY.json with
+the root list, the grow-only lists and the sizing envelope), trusted-eval.yml, the immutable
+evaluator check, and the SEALED_VALUES constants. A ROOT PR whose reasons are anything but
+"root file X" stays zuck's too. Lifting that is zuck's call alone.
 
 RESIDUAL RISK (stated for the sitting note, Auditor 2026-11-10): every session posts with one
-GitHub identity, and the registry ref is landed by a session, so the comment and the row are two
-records, not two independent keys. Against a deliberate forge the 72 h delivered window is
+GitHub identity, and the registry ref is landed by a session, so the comment, the row and the
+notice comment are records, not independent keys. Against a deliberate forge the 72 h window is
 DETECTION, not prevention, until an authenticated Auditor channel exists.
 
 Pure: no I/O here. The callers read GitHub, the box files and the clock, and pass facts in.
@@ -40,7 +48,7 @@ import ast
 import fnmatch
 import re
 from collections.abc import Callable, Iterable, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 #: Condition 6: the ROOT veto window, three times the normal 24 h.
@@ -61,19 +69,23 @@ RERUNNABLE = ("independent-review", "replay-shadow")
 RERUNS = 1
 #: Condition 3.
 TRUSTED_EVAL = "trusted-eval"
-#: The box command that delivers the veto notice, and the Auditor's synced rows file (#818).
+#: The box command that delivers the veto notice (the gate's own channel).
 NOTIFY_ENV = "QUANT_REGISTRY_NOTIFY"
-AUDITOR_ROWS_ENV = "QUANT_AUDITOR_ROWS"
+#: Condition 1, second record: read from git by both the authority and the gate.
+AUDIT_REF = "refs/heads/audit-registry"
+AUDIT_FILE = "REGISTRY_ROWS.jsonl"
+#: Condition 0: written by install_repin.ps1 once the sealed re-pin service is installed.
+REPIN_MARKER = r"C:\opt\authority\sealed\INSTALLED.sha256"
+#: Condition 5: the anchoring PR comment the gate posts after a delivered notice.
+NOTICE_PREFIX = "ROOT NOTICE"
+_NOTICE = re.compile(r"\AROOT NOTICE ([0-9a-f]{40}) delivered: (\S.*)")
 #: The class an attestation carries for this path.
 ROOT_CLASS = "ROOT"
 
-#: Files no PR may change through this path. ROOT_POLICY.json holds the root_files list, the
-#: grow-only lists and the sizing envelope (risk limits), so all of it is sealed.
+#: Files no PR may change through this path (patterns, case-insensitive).
 SEALED_CORE = (
-    "ops/release/authority/ROOT_POLICY.json",
-    "ops/release/authority/root_path.py",
-    "ops/release/authority/repin.py",
-    "ops/release/authority/install_repin.ps1",
+    "ops/release/authority/*",
+    ".github/workflows/trusted-eval.yml",
     "scripts/check_immutable_evaluator.py",
 )
 #: Constants in other files that steer where the path's records come from or go to. A PR that
@@ -86,17 +98,24 @@ SEALED_VALUES: dict[tuple[str, str], Any] = {
     (".github/scripts/audit_gate.py", "AUTHORITY_DIR_ENV"): "QUANT_AUTHORITY_ATTESTATIONS",
     (".github/scripts/audit_gate.py", "AUTHORITY_PIN_ENV"): "QUANT_AUTHORITY_ROOT_PIN",
     (".github/scripts/audit_gate.py", "AUTHORITY_KILL"): "DEACTIVATE",
-    (".github/scripts/audit_gate.py", "AUDITOR_ROWS_ENV"): "QUANT_AUDITOR_ROWS",
     ("ops/release/auditor_sync.py", "REF"): "refs/heads/audit-registry",
     ("ops/release/auditor_sync.py", "FILE"): "REGISTRY_ROWS.jsonl",
     ("ops/release/auditor_sync.py", "MEMECOIN_FILE"): "MEMECOIN_REGISTRY_ROWS.jsonl",
     (".github/scripts/memecoin_gate.py", "MEMECOIN_REGISTRY_ENV"): "MEMECOIN_AUDIT_REGISTRY",
 }
+#: Forms that can re-bind a module global without an assignment the AST pin sees. A sealed-value
+#: file that uses any of them cannot be pinned down, so a change to it is SEALED.
+_REBIND = re.compile(
+    r"globals\(\)|vars\(\)|__dict__|sys\.modules|setattr\(|importlib\.reload|\bexec\(|\beval\("
+)
 
 _UNREADABLE = object()
 _ROOT_REASON = "root file "
 #: A failure that names a place: path/file.ext:123.
-_CITES_LINE = re.compile(r"[\w./\\-]+\.[A-Za-z0-9]{1,8}:\d+")
+_CITES_LINE = re.compile(
+    r"[\w./\\-]+\.[A-Za-z0-9]{1,8}:\d+|\bline\s+\d+|\blines?\s+\d+\s*-\s*\d+|\bL\d+\b",
+    re.IGNORECASE,
+)
 _CONTROL = re.compile(r"touches_control|control machinery", re.IGNORECASE)
 _RISK = re.compile(r"risk_increasing|risk increase", re.IGNORECASE)
 #: A model's FAIL vote: its findings stay in the job log (never relayed), so whether they cite a
@@ -137,6 +156,8 @@ def py_constant(src: str | None, name: str) -> Any:
     the name anywhere in the module, or a `global` re-binding)."""
     if src is None:
         return None
+    if _REBIND.search(src):
+        return _UNREADABLE
     try:
         tree = ast.parse(src)
     except (SyntaxError, ValueError):
@@ -171,10 +192,12 @@ def sealed_touch(
     """Why this change touches the SEALED CORE (empty: it does not). `files`: every changed path,
     both sides of a rename."""
     changed = {f.replace("\\", "/") for f in files}
+    low = {f.lower(): f for f in changed}
     out = [f"sealed core file {f}" for f in sorted(changed) if _sealed_file(f)]
     for (path, name), pinned in SEALED_VALUES.items():
-        if path not in changed:
+        if path.lower() not in low:
             continue
+        path = low[path.lower()]
         hv, bv = py_constant(read_head(path), name), py_constant(read_base(path), name)
         if hv is _UNREADABLE:
             out.append(f"sealed value {path}:{name} cannot be read on the head")
@@ -313,17 +336,81 @@ def receipt(returncode: int, stdout: str) -> str | None:
     return " ".join((stdout or "").split())[:200]
 
 
-def window(rec: Mapping[str, Any] | None, head: str, now: datetime) -> tuple[str, str]:
-    """("open" | "elapsed" | "none", why) for the ROOT window of `head`. `rec`: the gate's own
-    record {"head", "at", "receipt"} of the last DELIVERED ROOT notice for this PR."""
-    if not rec or rec.get("head") != head or not rec.get("receipt"):
-        return "none", f"no delivered ROOT notice for {head[:9]}"
+def notice_comment(head: str, got: str) -> str:
+    """The anchoring PR comment posted after a DELIVERED notice; its time starts the window."""
+    return f"{NOTICE_PREFIX} {head} delivered: {' '.join(got.split())[:200]}"
+
+
+def _when(text: Any) -> datetime | None:
     try:
-        at = datetime.fromisoformat(str(rec.get("at")))
+        at = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
     except ValueError:
-        return "none", "the ROOT notice record has an unreadable time"
-    if at.tzinfo is None or at > now:
-        return "none", "the ROOT notice record has a bad time"
+        return None
+    return at if at.tzinfo is not None else None
+
+
+def notices(
+    comments: Iterable[Mapping[str, Any]], trusted: Iterable[str]
+) -> list[tuple[datetime, str]]:
+    """(time, head) of every unedited ROOT NOTICE comment by a trusted author, oldest first."""
+    ok = set(trusted)
+    out: list[tuple[datetime, str]] = []
+    for c in comments:
+        if str(c.get("author_association") or "") not in ok:
+            continue
+        if c.get("updated_at") not in (None, c.get("created_at")):
+            continue
+        m = _NOTICE.match(str(c.get("body") or ""))
+        at = _when(c.get("created_at"))
+        if m and at is not None:
+            out.append((at, m.group(1)))
+    return sorted(out)
+
+
+def voids(
+    verdicts: Iterable[Mapping[str, Any]],
+    attempts: Mapping[str, list[Mapping[str, Any]]],
+    board: Iterable[Mapping[str, Any]],
+    deactivate: str,
+    trusted: Iterable[str],
+) -> list[datetime]:
+    """Every moment that VOIDS a ROOT notice dated before it: a non-CLEAR AUDIT verdict (an edited
+    trusted comment is one), a ROOT job attempt that failed, and a DEACTIVATE (or an edited
+    trusted comment) on the switch board. An unreadable time counts as the far future."""
+    far = datetime.max.replace(tzinfo=UTC)
+    ok = set(trusted)
+    out: list[datetime] = []
+    for v in verdicts:
+        if v.get("verdict") != "CLEAR":
+            out.append(_when(v.get("at")) or far)
+    for runs in attempts.values():
+        for r in runs:
+            if r.get("status") == "completed" and r.get("conclusion") != "success":
+                out.append(_when(r.get("completed_at")) or far)
+    for c in board:
+        if str(c.get("author_association") or "") not in ok:
+            continue
+        if c.get("updated_at") not in (None, c.get("created_at")):
+            out.append(_when(c.get("updated_at")) or far)
+        elif str(c.get("body") or "").strip() == deactivate:
+            out.append(_when(c.get("created_at")) or far)
+    return out
+
+
+def window(
+    sent: list[tuple[datetime, str]], head: str, now: datetime, void: Iterable[datetime] = ()
+) -> tuple[str, str]:
+    """("open" | "elapsed" | "none", why) for the ROOT window of `head`: from the newest ROOT
+    NOTICE for this head, unless anything in `void` is dated after it (then a new notice is due)."""
+    mine = [at for at, h in sent if h == head]
+    if not mine:
+        return "none", f"no delivered ROOT notice for {head[:9]}"
+    at = max(mine)
+    if at > now:
+        return "none", "the ROOT notice is dated in the future"
+    late = [v for v in void if v >= at]
+    if late:
+        return "none", f"something went red, HOLD or off after the notice ({max(late).isoformat()})"
     age_h = (now - at).total_seconds() / 3600.0
     if age_h < ROOT_VETO_H:
         return "open", f"ROOT veto window {age_h:.1f} of {ROOT_VETO_H:.0f} h"
@@ -333,20 +420,37 @@ def window(rec: Mapping[str, Any] | None, head: str, now: datetime) -> tuple[str
 # ----------------------------------------------------------------------------- the verdicts
 
 
-def authority_verdict(f: Mapping[str, Any]) -> tuple[str, list[str]]:
-    """The release authority's verdict on a ROOT PR (policy.decide calls this for class ROOT).
-    Facts beyond policy.decide's: sealed (sealed_touch()), root_jobs (jobs()), trusted_eval
-    ("pass" | "pending" | "fail", why). CLEAR here signs a class-ROOT attestation; the gate still
-    needs the comment, the registry row, the window and one-at-a-time before anything merges."""
+def _common(f: Mapping[str, Any]) -> tuple[str, str] | None:
+    """The checks both sides make, in order; None when all of them pass."""
     if f.get("sealed"):
-        return "HOLD", ["SEALED CORE, zuck's path only: " + "; ".join(f["sealed"])]
+        return "HOLD", "SEALED CORE, zuck's path only: " + "; ".join(f["sealed"])
     ok, why = eligible(f.get("cls_reasons") or [])
     if not ok:
-        return "HOLD", [f"ROOT: {why}"]
+        return "HOLD", f"ROOT: {why}"
     if f.get("hold"):
-        return "HOLD", [f"an AUDIT HOLD stands: {f['hold']}"]
+        return "HOLD", f"an AUDIT HOLD stands: {f['hold']}"
     if f.get("deactivated"):
-        return "WAIT", ["merges are DEACTIVATED"]
+        return "WAIT", "merges are DEACTIVATED"
+    if not f.get("enforced"):
+        return "WAIT", "the ROOT path is off until GitHub enforces the authority's status (Level 2)"
+    if not f.get("repin_installed"):
+        return "WAIT", "the ROOT path is off until the sealed re-pin service is installed"
+    for key in ("comment", "registry"):
+        good, kwhy = f.get(key) or (False, f"{key} not read")
+        if not good:
+            return "WAIT", kwhy
+    return None
+
+
+def authority_verdict(f: Mapping[str, Any]) -> tuple[str, list[str]]:
+    """The release authority's verdict on a ROOT PR (policy.decide calls this for class ROOT).
+    It enforces EVERY condition, the window included, so a CLEAR here (signed as class ROOT, and
+    the Level 2 status success) is enough for GitHub to allow the merge. Facts beyond
+    policy.decide's: sealed, enforced, repin_installed, comment, registry, root_jobs (jobs()),
+    trusted_eval, window (window())."""
+    got = _common(f)
+    if got is not None:
+        return got[0], [got[1]]
     if not f.get("patch_id"):
         return "WAIT", ["the change's patch-id could not be computed"]
     state, jwhy, _ = f.get("root_jobs") or ("pending", "no checks read", None)
@@ -361,30 +465,22 @@ def authority_verdict(f: Mapping[str, Any]) -> tuple[str, list[str]]:
         return "WAIT", [f"ROOT path: {twhy}"]
     if not f.get("fresh"):
         return "WAIT", [f"not up to date: {f.get('fresh_why')}"]
-    return "CLEAR", [f"ROOT path ({why}): {jwhy}; {twhy}"]
+    w, wwhy = f.get("window") or ("none", "no ROOT notice")
+    if w != "elapsed":
+        return "WAIT", [f"ROOT path: {wwhy}"]
+    return "CLEAR", [f"ROOT path: {jwhy}; {twhy}; {wwhy}"]
 
 
 def gate_verdict(g: Mapping[str, Any]) -> tuple[str, str]:
-    """The box gate's action on a ROOT-attested PR: "MERGE" | "NOTIFY" (send the notice now) |
-    "RERUN" | "WAIT" | "HOLD", and why. Facts: sealed, cls_reasons, hold, deactivated,
-    in_flight (why an earlier ROOT merge is not yet re-pinned and adopted, or ""), comment,
-    registry (each (bool, why)), attested (bool, why), root_jobs (jobs()), trusted_eval,
-    fresh/fresh_why, window (window())."""
-    if g.get("sealed"):
-        return "HOLD", "SEALED CORE, zuck's path only: " + "; ".join(g["sealed"])
-    ok, why = eligible(g.get("cls_reasons") or [])
-    if not ok:
-        return "HOLD", f"ROOT: {why}"
-    if g.get("hold"):
-        return "HOLD", f"an AUDIT HOLD stands: {g['hold']}"
-    if g.get("deactivated"):
-        return "WAIT", "merges are DEACTIVATED"
+    """The box gate's action on a ROOT PR: "MERGE" | "NOTIFY" (send the notice now) | "RERUN" |
+    "WAIT" | "HOLD", and why. Same facts as authority_verdict, plus in_flight (why an earlier
+    ROOT merge is not yet re-pinned, or "") and attested ((bool, why): the authority's class-ROOT
+    CLEAR for this head, needed only to merge)."""
+    got = _common(g)
+    if got is not None:
+        return got
     if g.get("in_flight"):
         return "WAIT", f"one ROOT merge at a time: {g['in_flight']}"
-    for key in ("comment", "registry", "attested"):
-        good, kwhy = g.get(key) or (False, f"{key} not read")
-        if not good:
-            return "WAIT", kwhy
     state, jwhy, _ = g.get("root_jobs") or ("pending", "no checks read", None)
     if state == "rerun":
         return "RERUN", jwhy
@@ -402,4 +498,7 @@ def gate_verdict(g: Mapping[str, Any]) -> tuple[str, str]:
         return "NOTIFY", wwhy
     if w == "open":
         return "WAIT", wwhy
+    good, awhy = g.get("attested") or (False, "no authority attestation")
+    if not good:
+        return "WAIT", f"{wwhy}, but {awhy}"
     return "MERGE", f"ROOT path: {jwhy}; {twhy}; {wwhy}"

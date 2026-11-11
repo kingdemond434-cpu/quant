@@ -163,19 +163,16 @@ def test_an_expired_attestation_is_refused(sb: Any) -> None:
 
 @pytest.mark.parametrize("path", [
     ".github/scripts/audit_gate.py",
-    "ops/release/authority/attestation.py",
-    ".github/workflows/trusted-eval.yml",
     "ops/box/workflow_gate.ps1",
 ])  # fmt: skip
-def test_a_pr_that_changes_the_authority_or_the_merger_is_root_and_never_takes_the_24h_path(
+def test_a_root_pr_waits_while_the_root_path_is_off_and_never_takes_the_24h_path(
     tmp_path: Path, path: str
 ) -> None:
-    # THE ROOT PATH (root_path.py): the authority may attest a root-file PR as class ROOT, but
-    # the gate merges it only with the Auditor's two records and a 72 h DELIVERED window, never
-    # through the 24 h registry window that CONTROLLER PRs use.
+    # THE ROOT PATH (root_path.py) is off until GitHub enforces the authority's status (Level 2)
+    # and the sealed re-pin service is installed: nothing is signed, nothing merges
     sb = sb_mod.Sandbox(tmp_path, files=(path,))
     v, why = sb.authority()
-    assert v == "CLEAR" and why[0].startswith("ROOT path")
+    assert v == "WAIT" and "Level 2" in why[0]
     _through_window(sb)
     assert sb.gh.merges() == [] and sb.notices == []
 
@@ -183,10 +180,16 @@ def test_a_pr_that_changes_the_authority_or_the_merger_is_root_and_never_takes_t
 @pytest.mark.parametrize("path", [
     "ops/release/authority/ROOT_POLICY.json",
     "ops/release/authority/root_path.py",
+    "ops/release/authority/attestation.py",
+    "ops/release/authority/policy.py",
+    "ops/release/authority/repin.py",
+    ".github/workflows/trusted-eval.yml",
     "scripts/check_immutable_evaluator.py",
 ])  # fmt: skip
 def test_a_pr_that_changes_the_sealed_core_is_held_for_zuck(tmp_path: Path, path: str) -> None:
     sb = sb_mod.Sandbox(tmp_path, files=(path,))
+    sb.level2 = True
+    sb.repin_marker.write_text("x")
     v, why = sb.authority()
     assert v == "HOLD" and "SEALED CORE" in why[0]
     sb.audit_clear()
@@ -470,17 +473,10 @@ def test_status_is_failure_outside_the_delegated_classes_even_on_clear() -> None
         assert a.status_for({"cls": "ROOT"}, verdict, [], since=None, veto_h=24)[0] != "success"
 
 
-def test_a_root_clear_gets_success_only_after_72h_from_its_first_signed_clear() -> None:
-    from datetime import UTC, datetime, timedelta
-
+def test_a_root_status_is_success_only_on_the_authoritys_full_root_clear() -> None:
+    # root_path.authority_verdict signs CLEAR only with every condition and its 72 h window met
     a = _auth()
-    t0 = datetime(2026, 11, 4, tzinfo=UTC)
-    f = {"cls": "ROOT"}
-    assert a.status_for(f, "CLEAR", [], since=None, veto_h=24, now=t0)[0] == "pending"
-    late = t0 + timedelta(hours=71)
-    assert a.status_for(f, "CLEAR", [], since=t0, veto_h=24, now=late)[0] == "pending"
-    done = t0 + timedelta(hours=72, minutes=1)
-    assert a.status_for(f, "CLEAR", [], since=t0, veto_h=24, now=done)[0] == "success"
+    assert a.status_for({"cls": "ROOT"}, "CLEAR", [], since=None, veto_h=24)[0] == "success"
 
 
 def _check_ruleset() -> Any:

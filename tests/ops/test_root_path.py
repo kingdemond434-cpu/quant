@@ -169,15 +169,57 @@ def test_a_receipt_needs_exit_0_and_a_delivery() -> None:
     assert rp.receipt(0, "") is None
 
 
-def test_the_window_is_72h_from_a_delivered_notice_for_this_head() -> None:
-    rec = {"head": H1, "at": T0.isoformat(), "receipt": "delivered 1"}
-    assert rp.window(None, H1, T0)[0] == "none"
-    assert rp.window(rec, H2, T0)[0] == "none"  # a new push: a new notice
-    assert rp.window({**rec, "receipt": ""}, H1, T0)[0] == "none"
-    assert rp.window(rec, H1, T0 + timedelta(hours=71))[0] == "open"
-    assert rp.window(rec, H1, T0 + timedelta(hours=72, minutes=1))[0] == "elapsed"
-    assert rp.window({**rec, "at": "2026-11-11T00:00:00"}, H1, T0)[0] == "none"  # no zone
-    assert rp.window(rec, H1, T0 - timedelta(hours=1))[0] == "none"  # dated in the future
+def _c(body: str, at: datetime, edited: bool = False, who: str = "OWNER") -> dict[str, Any]:
+    t = at.strftime("%Y-%m-%dT%H:%M:%SZ")
+    up = (at + timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%SZ") if edited else t
+    return {"body": body, "created_at": t, "updated_at": up, "author_association": who}
+
+
+TRUSTED = ("OWNER", "MEMBER", "COLLABORATOR")
+
+
+def test_the_window_is_72h_from_the_anchored_notice_for_this_head() -> None:
+    sent = rp.notices([_c(rp.notice_comment(H1, "armed 1, delivered 1"), T0)], TRUSTED)
+    assert sent == [(T0, H1)]
+    assert rp.window([], H1, T0)[0] == "none"
+    assert rp.window(sent, H2, T0)[0] == "none"  # a new push: a new notice
+    assert rp.window(sent, H1, T0 + timedelta(hours=71))[0] == "open"
+    assert rp.window(sent, H1, T0 + timedelta(hours=72, minutes=1))[0] == "elapsed"
+    assert rp.window(sent, H1, T0 - timedelta(hours=1))[0] == "none"  # dated in the future
+
+
+def test_only_an_unedited_trusted_notice_comment_counts() -> None:
+    body = rp.notice_comment(H1, "delivered 1")
+    assert rp.notices([_c(body, T0, edited=True)], TRUSTED) == []
+    assert rp.notices([_c(body, T0, who="NONE")], TRUSTED) == []
+    assert rp.notices([_c("x " + body, T0)], TRUSTED) == []
+    assert rp.notices([_c(f"ROOT NOTICE {H1} delivered: ", T0)], TRUSTED) == []
+
+
+def test_anything_red_held_or_off_after_the_notice_voids_it() -> None:
+    sent = [(T0, H1)]
+    late = T0 + timedelta(hours=80)
+    later = (T0 + timedelta(hours=10)).isoformat()
+    hold = [{"verdict": "HOLD", "at": later}]
+    assert rp.window(sent, H1, late, rp.voids(hold, {}, [], "OFF", TRUSTED))[0] == "none"
+    red = {"replay-shadow": [{"status": "completed", "conclusion": "failure",
+                              "completed_at": later}]}  # fmt: skip
+    assert rp.window(sent, H1, late, rp.voids([], red, [], "OFF", TRUSTED))[0] == "none"
+    off = [_c("OFF", T0 + timedelta(hours=5))]
+    assert rp.window(sent, H1, late, rp.voids([], {}, off, "OFF", TRUSTED))[0] == "none"
+    edit = [_c("anything", T0 + timedelta(hours=5), edited=True)]
+    assert rp.window(sent, H1, late, rp.voids([], {}, edit, "OFF", TRUSTED))[0] == "none"
+    # the same events BEFORE the notice void nothing (a re-run failure that led to it)
+    early = (T0 - timedelta(hours=1)).isoformat()
+    red_before = {"replay-shadow": [{"status": "completed", "conclusion": "failure",
+                                     "completed_at": early}]}  # fmt: skip
+    v = rp.voids([{"verdict": "CLEAR", "at": later}], red_before, [], "OFF", TRUSTED)
+    assert rp.window(sent, H1, late, v)[0] == "elapsed"
+    # a new notice after the void starts a new window
+    assert rp.window([*sent, (T0 + timedelta(hours=11), H1)], H1, late,
+                     rp.voids(hold, {}, [], "OFF", TRUSTED))[0] == "open"  # fmt: skip
+    bad_time = [{"verdict": "HOLD", "at": "garbage"}]
+    assert rp.window(sent, H1, late, rp.voids(bad_time, {}, [], "OFF", TRUSTED))[0] == "none"
 
 
 def test_the_notice_names_the_pr_the_head_and_the_files_in_plain_words() -> None:
@@ -191,22 +233,32 @@ def test_the_notice_names_the_pr_the_head_and_the_files_in_plain_words() -> None
 
 @pytest.fixture
 def sb(tmp_path: Path) -> Any:
-    return sb_mod.Sandbox(tmp_path, files=(GATE,))
+    box = sb_mod.Sandbox(tmp_path, files=(GATE,))
+    box.level2 = True  # the sitting's end state: GitHub enforces the authority's status
+    box.repin_marker.write_text("abc repin.py\n")
+    return box
 
 
-def test_a_root_pr_merges_after_72h_from_its_delivered_notice_with_no_owner_step(sb: Any) -> None:
-    v, why = sb.authority()
-    assert v == "CLEAR" and why[0].startswith("ROOT path")
+def _cycle(sb: Any, hours: float) -> None:
+    sb.clock.advance(hours=hours)
+    sb.authority()
+    sb.gate()
+
+
+def test_a_root_pr_merges_72h_after_its_anchored_notice_with_no_owner_step(sb: Any) -> None:
     sb.audit_clear()
+    v, why = sb.authority()
+    assert v == "WAIT" and "no delivered ROOT notice" in why[0]  # no attestation before the notice
     sb.gate()
     assert len(sb.root_notices) == 1 and sb.gh.merges() == []
     assert "#41" in sb.root_notices[0][0] and GATE in sb.root_notices[0][1]
-    sb.clock.advance(hours=24, minutes=1)
-    sb.authority()  # the attestation is renewed inside its 48 h life, as the service does
-    sb.gate()
+    anchored = [c for c in sb.gh.comments if str(c["body"]).startswith("ROOT NOTICE")]
+    assert len(anchored) == 1 and H1 in anchored[0]["body"]
+    _cycle(sb, 24.1)
     assert sb.gh.merges() == []  # 24 h is not enough for ROOT
-    sb.clock.advance(hours=48)
-    sb.authority()
+    _cycle(sb, 48)
+    v, why = sb.authority()
+    assert v == "CLEAR" and why[0].startswith("ROOT path")
     sb.gate()
     m = sb.gh.merges()
     assert len(m) == 1 and m[0]["sha"] == H1 and "ROOT path" in m[0]["commit_title"]
@@ -215,61 +267,148 @@ def test_a_root_pr_merges_after_72h_from_its_delivered_notice_with_no_owner_step
     assert inflight["pr"] == 41 and inflight["head"] == H1
 
 
+def test_the_root_path_is_off_until_level2_and_the_repin_service(sb: Any) -> None:
+    sb.audit_clear()
+    for off in ("level2", "marker"):
+        if off == "level2":
+            sb.level2 = False
+        else:
+            sb.level2 = True
+            sb.repin_marker.unlink()
+        sb.gate()
+        _cycle(sb, 80)
+        assert sb.gh.merges() == [] and sb.root_notices == [], off
+
+
+def test_the_level2_status_for_root_is_success_only_on_the_full_clear(sb: Any) -> None:
+    a = sb.auth
+    assert a.status_for({"cls": "ROOT"}, "WAIT", ["x"], since=None, veto_h=24)[0] != "success"
+    assert a.status_for({"cls": "ROOT"}, "CLEAR", ["x"], since=None, veto_h=24)[0] == "success"
+
+
 def _past_window(sb: Any) -> None:
     sb.gate()
-    for _ in range(2):
-        sb.clock.advance(hours=37)
-        sb.authority()
-        sb.gate()
+    for _ in range(3):
+        _cycle(sb, 30)
 
 
 @pytest.mark.parametrize("comment,row", [(True, False), (False, True), (False, False)])
 def test_one_auditor_record_alone_merges_nothing(sb: Any, comment: bool, row: bool) -> None:
-    sb.authority()
     sb.audit_clear(comment=comment, row=row)
     _past_window(sb)
     assert sb.gh.merges() == [] and sb.root_notices == []
 
 
 def test_an_undelivered_notice_starts_no_window(sb: Any) -> None:
-    sb.authority()
     sb.audit_clear()
     sb.root_notify_out = (0, "armed 1, delivered 0")
     _past_window(sb)
-    assert sb.gh.merges() == [] and len(sb.root_notices) == 3
+    assert sb.gh.merges() == [] and len(sb.root_notices) == 4
+    assert not any(str(c["body"]).startswith("ROOT NOTICE") for c in sb.gh.comments)
 
 
-def test_a_hold_posted_in_the_window_stops_it(sb: Any) -> None:
-    sb.authority()
+def test_a_hold_posted_in_the_window_stops_it_and_a_new_clear_restarts_it(sb: Any) -> None:
     sb.audit_clear()
     sb.gate()
-    sb.gh.comments.append({"body": f"AUDIT HOLD {H1}", "created_at": "2026-11-05T00:00:00Z",
-                           "updated_at": "2026-11-05T00:00:00Z", "author_association": "OWNER",
+    sb.clock.advance(hours=10)
+    at = sb.clock.t.strftime("%Y-%m-%dT%H:%M:%SZ")
+    sb.gh.comments.append({"body": f"AUDIT HOLD {H1}", "created_at": at, "updated_at": at,
+                           "author_association": "OWNER",
                            "performed_via_github_app": None})  # fmt: skip
-    _past_window(sb)
+    _cycle(sb, 70)
+    assert sb.gh.merges() == []
+    sb.audit_clear()  # a new CLEAR: the old notice is void, a new one is sent
+    sb.gate()
+    assert len(sb.root_notices) == 2
+    _cycle(sb, 24)
     assert sb.gh.merges() == []
 
 
 def test_an_earlier_root_merge_in_flight_blocks_the_next(sb: Any) -> None:
     (sb.registry.parent / "ROOT_INFLIGHT.json").write_text(json.dumps({"pr": 7, "head": H2}))
-    sb.authority()
     sb.audit_clear()
     _past_window(sb)
     assert sb.gh.merges() == [] and sb.root_notices == []
 
 
-def test_a_failed_review_is_rerun_automatically_before_any_attestation(sb: Any) -> None:
-    sb.gh.conclusion["independent-review"] = "failure"
-    assert sb.authority()[0] == "WAIT"
+def test_the_inflight_mark_is_written_before_the_merge_or_nothing_merges(sb: Any) -> None:
     sb.audit_clear()
     sb.gate()
+    sb.clock.advance(hours=73)
+    assert sb.authority()[0] == "CLEAR"
+    (sb.registry.parent / "ROOT_INFLIGHT.json").mkdir()  # cannot be written as a file
+    sb.gate()
+    assert sb.gh.merges() == []
+
+
+def test_a_root_row_in_the_unsigned_registry_clears_nothing(tmp_path: Path) -> None:
+    box = sb_mod.Sandbox(tmp_path, files=(".github/workflows/ci.yml",))
+    row = {"pr": 41, "sha": H1, "verdict": "CLEAR", "at": "2026-11-01T00:00:00Z", "root": True}
+    box.registry.write_text(json.dumps(row) + "\n")
+    import os
+
+    os.environ.pop(box.ag.AUTHORITY_PUBKEY_ENV, None)
+    with box.wired():
+        os.environ.pop(box.ag.AUTHORITY_PUBKEY_ENV, None)
+        box.ag.run("o/r", 41, box.ag.LIVE, 0.0, box=True)
+    assert box.gh.merges() == []  # the 24 h window still applies: a notice, no merge yet
+
+
+def test_a_failed_review_is_rerun_automatically_before_any_attestation(sb: Any) -> None:
+    sb.gh.conclusion["independent-review"] = "failure"
+    sb.audit_clear()
+    assert sb.authority()[0] == "WAIT"
+    sb.gate()
     reruns = [p for (_m, p, _d) in sb.gh.writes if p.endswith("/rerun")]
-    assert len(reruns) == 1 and sb.gh.merges() == []
+    assert len(reruns) == 1 and sb.gh.merges() == [] and sb.root_notices == []
+
+
+def test_no_rerun_while_a_hold_stands_or_merges_are_off(sb: Any) -> None:
+    sb.gh.conclusion["independent-review"] = "failure"
+    sb.audit_clear()
+    at = sb.clock.t.strftime("%Y-%m-%dT%H:%M:%SZ")
+    sb.gh.comments.append({"body": f"AUDIT HOLD {H1}", "created_at": at, "updated_at": at,
+                           "author_association": "OWNER",
+                           "performed_via_github_app": None})  # fmt: skip
+    sb.gate()
+    assert not [p for (_m, p, _d) in sb.gh.writes if p.endswith("/rerun")]
 
 
 def test_a_failing_trusted_eval_blocks(sb: Any) -> None:
     sb.gh.trusted_eval = "failure"
-    assert sb.authority()[0] == "FAIL"
     sb.audit_clear()
+    assert sb.authority()[0] == "FAIL"
     _past_window(sb)
     assert sb.gh.merges() == []
+
+
+@pytest.mark.parametrize("form", [
+    "globals()['REGISTRY_HOLD_H'] = 1.0",
+    "setattr(sys.modules[__name__], 'REGISTRY_HOLD_H', 1.0)",
+    "vars()['REGISTRY_HOLD_H'] = 1.0",
+    "sys.modules[__name__].__dict__['REGISTRY_HOLD_H'] = 1.0",
+    "exec('REGISTRY_HOLD_H = 1.0')",
+])  # fmt: skip
+def test_an_indirect_rebinding_of_a_sealed_value_is_sealed(form: str) -> None:
+    base = "REGISTRY_HOLD_H = 24.0\n"
+    assert rp.sealed_touch([GATE], lambda n: base, lambda n: base + form + "\n")
+
+
+def test_sealed_values_match_paths_case_insensitively() -> None:
+    base = "REGISTRY_HOLD_H = 24.0\n"
+    got = rp.sealed_touch([GATE.upper()], lambda n: base, lambda n: "REGISTRY_HOLD_H = 1.0\n")
+    assert got
+
+
+@pytest.mark.parametrize("text", ["see line 42 of gate.py", "L42 is wrong", "lines 3-9"])
+def test_other_line_citations_rule_out_the_rerun(text: str) -> None:
+    assert rp.failure_flags([text])
+
+
+def test_the_whole_authority_and_trusted_eval_are_sealed() -> None:
+    none = lambda n: None  # noqa: E731
+    for f in ("ops/release/authority/policy.py", "ops/release/authority/attestation.py",
+              "ops/release/authority/pin_root.py", "ops/release/authority/authority.py",
+              ".github/workflows/trusted-eval.yml"):  # fmt: skip
+        assert rp.sealed_touch([f], none, none), f
+    assert rp.sealed_touch([".github/scripts/audit_gate.py"], none, none) == []

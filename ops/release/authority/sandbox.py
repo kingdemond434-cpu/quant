@@ -79,6 +79,7 @@ class FakeGitHub:
         self.conclusion = dict.fromkeys((*ag.GATING_JOBS, *ag.AUTO_JOBS), "success")
         self.trusted_eval: str | None = "success"
         self.writes: list[tuple[str, str, dict[str, Any]]] = []
+        self.clock: Clock | None = None
 
     @property
     def head(self) -> str:
@@ -91,20 +92,29 @@ class FakeGitHub:
             sid = 1 if wf.endswith("ci.yml") else 2
             out.append({"id": i, "name": name, "status": "completed", "conclusion": concl,
                         "app": {"slug": "github-actions"}, "check_suite": {"id": sid},
-                        "started_at": "2026-11-04T00:00:00Z"})  # fmt: skip
+                        "started_at": "2026-11-04T00:00:00Z",
+                        "completed_at": "2026-11-04T00:00:00Z"})  # fmt: skip
         return out
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
         if "-X" in args:
             self.writes.append((args[args.index("-X") + 1], path, dict(data or {})))
+            if args[args.index("-X") + 1] == "POST" and path.endswith("/issues/41/comments"):
+                at = (self.clock.t if self.clock else datetime.now(UTC)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
+                self.comments.append({"body": (data or {}).get("body"), "created_at": at,
+                                      "updated_at": at, "author_association": "OWNER",
+                                      "performed_via_github_app": None})  # fmt: skip
             return None
         if f"/issues/{self.ag.APPROVALS_ISSUE}/comments" in path:
             return [self.board]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
         if "/annotations" in path:
-            return []
+            notes = [{"title": "", "message": "Process completed with exit code 1."}]
+            return [notes] if "--slurp" in args else notes
         if "/check-runs" in path:
             return (
                 [{"check_runs": self.runs()}] if "--slurp" in args else {"check_runs": self.runs()}
@@ -156,6 +166,11 @@ class Sandbox:
         self.att = self.auth.att
         self.gh = FakeGitHub(self.ag, files)
         self.clock = Clock(T0)
+        self.gh.clock = self.clock
+        #: GitHub enforces the authority's status on LIVE (Level 2), and the sealed re-pin
+        #: service is installed: both off by default, as on the box before the sitting
+        self.level2 = False
+        self.repin_marker = tmp / "INSTALLED.sha256"
         self.notices: list[str] = []
         self.deliver = True
         self.folder = tmp / "attestations"
@@ -192,14 +207,14 @@ class Sandbox:
     def wired(self) -> Iterator[None]:
         ag = self.ag
         names = ("_gh", "_git", "patch_id", "up_to_date", "referenced_by_code", "datetime",
-                 "run_notify", "_show", "run_root_notify")  # fmt: skip
+                 "run_notify", "_show", "run_root_notify", "root_level2",
+                 "_authority_mod")  # fmt: skip
         saved = {k: getattr(ag, k) for k in names}
         env = {
             ag.REGISTRY_ENV: str(self.registry),
             ag.AUTHORITY_PUBKEY_ENV: str(self.pub),
             ag.AUTHORITY_DIR_ENV: str(self.folder),
             ag.AUTHORITY_PIN_ENV: str(self.pin),
-            ag._authority_mod("root_path").AUDITOR_ROWS_ENV: str(self.auditor_rows),
         }
         old_env = {k: os.environ.get(k) for k in env}
         os.environ.update(env)
@@ -208,6 +223,8 @@ class Sandbox:
         def git_bytes(*args: str) -> bytes | None:
             if args and args[0] == "show":
                 rev, _, name = args[1].partition(":")
+                if rev.endswith("audit-registry"):
+                    return self.auditor_rows.read_bytes()
                 src = self.head_text if rev == self.gh.head else self.base_text
                 t = src.get(name)
                 return t.encode() if t is not None else None
@@ -222,6 +239,8 @@ class Sandbox:
             return self.root_notify_out
 
         def show(rev: str, name: str) -> str | None:
+            if rev.endswith("audit-registry"):
+                return self.auditor_rows.read_text(encoding="utf-8")
             src = self.head_text if rev == self.gh.head else self.base_text
             return src.get(name)
 
@@ -234,6 +253,17 @@ class Sandbox:
         ag.run_notify = notify
         ag.run_root_notify = root_notify
         ag._show = show
+        ag.root_level2 = lambda repo, base: (self.level2, "sandbox Level 2")
+        real_mod = saved["_authority_mod"]
+
+        def authority_mod(name: str) -> Any:
+            mod = real_mod(name)
+            if name == "root_path":
+                mod.REPIN_MARKER = str(self.repin_marker)
+            return mod
+
+        ag._authority_mod = authority_mod
+        self.auth.pol.root_path().REPIN_MARKER = str(self.repin_marker)
         self.auth._git_bytes = git_bytes
         try:
             yield
@@ -250,7 +280,8 @@ class Sandbox:
     def authority(self) -> tuple[str, list[str]]:
         """One authority pass over #41: decide, and sign CLEAR/HOLD into the folder."""
         with self.wired():
-            f = self.auth.facts(self.ag, "o/r", 41, self.ag.LIVE, self.policy)
+            f = self.auth.facts(self.ag, "o/r", 41, self.ag.LIVE, self.policy,
+                                enforced=self.level2)  # fmt: skip
             verdict, reasons = self.auth.pol.decide(f)
             if verdict in ("CLEAR", "HOLD"):
                 key, kid = self.att.load_private(self.key_pem)

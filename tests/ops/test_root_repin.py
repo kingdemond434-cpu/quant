@@ -221,6 +221,5 @@ def test_the_installer_seals_the_copy_and_runs_it_as_system() -> None:
     assert 'New-ScheduledTaskPrincipal -UserId "SYSTEM"' in ps and "Quant-RootRepin" in ps
     assert "the task was NOT registered" in ps  # a dry run must pass before the task exists
     rp = _load("rp_seal_t", AUTH / "root_path.py")
-    assert {"ops/release/authority/repin.py", "ops/release/authority/install_repin.ps1"} <= set(
-        rp.SEALED_CORE
-    )
+    for f in ("ops/release/authority/repin.py", "ops/release/authority/install_repin.ps1"):
+        assert rp.sealed_touch([f], lambda n: None, lambda n: None), f
