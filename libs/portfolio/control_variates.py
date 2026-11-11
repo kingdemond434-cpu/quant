@@ -59,7 +59,8 @@ def _beta(y: np.ndarray, x: np.ndarray) -> tuple[float, float]:
     return c / vx, min(max(rho2, 0.0), 1.0)
 
 
-def cv_mean(y: Sequence[float], x: Sequence[float], mu_x: float) -> dict[str, Any]:
+def cv_mean(y: Sequence[float] | np.ndarray, x: Sequence[float] | np.ndarray,
+            mu_x: float) -> dict[str, Any]:
     """Control-variate estimate of E[Y], with its plain twin and both standard errors."""
     yy = np.asarray(y, dtype=float)
     xx = np.asarray(x, dtype=float)
@@ -78,7 +79,7 @@ def cv_mean(y: Sequence[float], x: Sequence[float], mu_x: float) -> dict[str, An
             "efficiency": (plain_se / cv_se) ** 2 if cv_se > 0 else None}
 
 
-def cv_cvar(losses: Sequence[float], x: Sequence[float], mu_x: float,
+def cv_cvar(losses: Sequence[float] | np.ndarray, x: Sequence[float] | np.ndarray, mu_x: float,
             alpha: float = ALPHA) -> dict[str, Any]:
     """CVaR at `alpha` of `losses` (positive = loss), plain and control-variate adjusted."""
     loss = np.asarray(losses, dtype=float)
