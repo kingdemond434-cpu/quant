@@ -43,7 +43,11 @@ row is re-measured on a later pass and, if anything changed, a NEW row is append
 
 SEC FAIR ACCESS. A declared User-Agent (`QUANT_EDGAR_UA`, else an honest generic one), at most
 five requests a second through `polite_fetch`, no retry, and a HARD STOP on 401/403/429/451: the
-pass stops fetching, the refusal is recorded, and the network rests for `COOLDOWN_H`.
+pass stops fetching, the refusal is recorded, and the host stays closed until its robots.txt,
+read afresh on a later pass, admits us again. Every host's robots.txt is read once per pass
+under our own User-Agent before any request: a Disallow stops the pass, 401/403/429/451 on
+robots.txt is a refusal, 5xx or no answer stops the pass and is read again next pass, and
+404/410 means no rules.
 """
 from __future__ import annotations
 
@@ -80,7 +84,10 @@ FALLBACK_UA = "quant-research-earnings/1.0 (+public research reader)"
 #: SEC fair access allows ten a second; this organ takes half.
 MIN_INTERVAL_S = 0.2
 HARD_STOP_STATUS = frozenset({401, 403, 429, 451})
-COOLDOWN_H = 12.0
+#: robots.txt answers, under the desk ruling of 2026-11-10: 404/410 (and any other 4xx that is
+#: not a refusal) means no rules, so fetch; 401/403/429/451 is a refusal; 5xx, a timeout or an
+#: unreadable answer stops the pass and is read again next pass.
+ROBOTS_ABSENT_STATUS = frozenset({404, 410})
 TICKERS_MAX_AGE_H = 24.0
 CIK_MAX_AGE_H = 20.0
 MAX_FETCH_PER_PASS = 300
@@ -151,6 +158,14 @@ class HardStop(Exception):
     def __init__(self, url: str, status: int) -> None:
         super().__init__(f"HTTP {status} from {url}")
         self.url, self.status = url, int(status)
+
+
+class RobotsStop(Exception):
+    """robots.txt did not admit this URL: a Disallow, or an unreadable file. Stop the pass."""
+
+    def __init__(self, url: str, label: str, why: str) -> None:
+        super().__init__(f"{label}: {why}")
+        self.url, self.label, self.why = url, label, why
 
 
 # ------------------------------------------------------------------------------ small helpers
@@ -320,8 +335,41 @@ class Fetcher:
         self.ua = user_agent()
         self.fetched = 0
         self.failed: list[dict[str, Any]] = []
+        self.robots: dict[str, Any] = {}          # host -> parsed rules, or None when absent
+
+    def robots_read(self, url: str) -> None:
+        """Read the host's robots.txt once per pass, under our own User-Agent, and stop unless
+        it admits `url`. A refusal of robots.txt itself is a HardStop like any other."""
+        import urllib.robotparser
+        from urllib.parse import urlsplit
+        parts = urlsplit(url)
+        host = parts.netloc.lower()
+        if host not in self.robots:
+            robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
+            r = self.get(robots_url, headers={"User-Agent": self.ua, "Accept": "text/plain"},
+                         retries=0, deadline=self.deadline, max_bytes=1_000_000, leg=ORGAN,
+                         gate=self.gate, sleep=self.sleep)
+            self.fetched += 1
+            status = getattr(r, "status", None)
+            code = int(status) if status is not None else None
+            if code in HARD_STOP_STATUS:
+                raise HardStop(robots_url, int(code))
+            if getattr(r, "ok", False):
+                rp = urllib.robotparser.RobotFileParser()
+                rp.parse((getattr(r, "text", "") or "").splitlines())
+                self.robots[host] = rp
+            elif code is not None and 400 <= code < 500:
+                self.robots[host] = None                 # absent: no rules
+            else:
+                raise RobotsStop(url, "ROBOTS_UNREACHABLE",
+                                 f"robots.txt answered {code or getattr(r, 'error', '') or 'nothing'}"
+                                 "; read again next pass")
+        rules = self.robots[host]
+        if rules is not None and not rules.can_fetch(self.ua, url):
+            raise RobotsStop(url, "DISALLOWED", f"robots.txt disallows {parts.path} for our agent")
 
     def json(self, url: str) -> Any:
+        self.robots_read(url)
         r = self.get(url, headers={"User-Agent": self.ua, "Accept": "application/json",
                                    "Accept-Encoding": "gzip, deflate"},
                      retries=0, deadline=self.deadline, max_bytes=MAX_BYTES, leg=ORGAN,
@@ -803,28 +851,50 @@ def run(*, budget_s: float = 240.0, offline: bool = False, paths: Paths | None =
 
     fetcher: Fetcher | None = None
     why_no_net = ""
-    cool = _parse_iso(state.get("cooldown_until"))
+    census["robots_stops"] = []
+
+    def hard_stop(exc: HardStop) -> None:
+        census["refused"].append({"url": exc.url, "status": exc.status, "at": _iso(now)})
+        state["blocked"] = {"url": exc.url, "status": exc.status, "at": _iso(now)}
+        state["last_refusal"] = state["blocked"]
+
+    def robots_stop(exc: RobotsStop) -> None:
+        census["robots_stops"].append({"url": exc.url, "label": exc.label, "why": exc.why,
+                                       "at": _iso(now)})
+
     if offline:
         why_no_net = "--offline"
-    elif cool is not None and cool > now:
-        why_no_net = f"cooling down after a hard stop until {_iso(cool)}"
     else:
         ok, why = machine_use(TICKERS_URL)
         if not ok:
             why_no_net = f"HARD BOUNDARY: {why}"
         else:
             fetcher = Fetcher(getter, deadline=fetch_deadline, sleep=sleep)
+            blocked = state.get("blocked")
+            if isinstance(blocked, dict) and blocked.get("url"):
+                # A host that refused us stays closed until its robots.txt, read afresh, admits
+                # us again: no fixed timer, and the refusing URL itself is not retried to find out.
+                try:
+                    fetcher.robots_read(str(blocked["url"]))
+                    state.pop("blocked", None)
+                    census["unblocked"] = {"after": blocked, "robots": "admits"}
+                except HardStop as exc:
+                    hard_stop(exc)
+                    why_no_net = f"still refused: {exc}"
+                    fetcher = None
+                except RobotsStop as exc:
+                    robots_stop(exc)
+                    why_no_net = f"blocked since {blocked.get('at')}: {exc}"
+                    fetcher = None
     census["network"] = {"used": fetcher is not None, "why_not": why_no_net}
-
-    def hard_stop(exc: HardStop) -> None:
-        census["refused"].append({"url": exc.url, "status": exc.status, "at": _iso(now)})
-        state["cooldown_until"] = _iso(now + timedelta(hours=COOLDOWN_H))
-        state["last_refusal"] = {"url": exc.url, "status": exc.status, "at": _iso(now)}
 
     try:
         sec = load_sec_tickers(paths, fetcher, now, census)
-    except HardStop as exc:
-        hard_stop(exc)
+    except (HardStop, RobotsStop) as exc:
+        if isinstance(exc, HardStop):
+            hard_stop(exc)
+        else:
+            robots_stop(exc)
         fetcher = None
         sec = load_sec_tickers(paths, None, now, census)
     mapping, unmapped = map_tickers(symbols, sec, ticker_table)
@@ -846,6 +916,9 @@ def run(*, budget_s: float = 240.0, offline: bool = False, paths: Paths | None =
                 got = fetch_cik(paths, fetcher, cik, now)
             except HardStop as exc:
                 hard_stop(exc)
+                break
+            except RobotsStop as exc:
+                robots_stop(exc)
                 break
             if got is not None:
                 census["fetched_ciks"] += 1

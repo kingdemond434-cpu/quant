@@ -126,12 +126,21 @@ class FakeResp:
 
 
 class FakeGet:
-    def __init__(self, refuse: dict[str, int] | None = None) -> None:
+    def __init__(self, refuse: dict[str, int] | None = None,
+                 robots: dict[str, Any] | None = None) -> None:
         self.calls: list[dict[str, Any]] = []
         self.refuse = refuse or {}
+        self.robots = robots or {}          # host -> robots.txt text, or an HTTP status
 
     def __call__(self, url: str, **kw: Any) -> FakeResp:
         self.calls.append({"url": url, **kw})
+        if url.endswith("/robots.txt"):
+            ans = self.robots.get(url.split("/")[2], 404)
+            if isinstance(ans, int):
+                return FakeResp(ans)
+            r = FakeResp(200)
+            r.text = ans
+            return r
         for frag, status in self.refuse.items():
             if frag in url:
                 return FakeResp(status)
@@ -249,7 +258,11 @@ def test_missing_bars_are_unmeasured_never_zero() -> None:
     assert rx["ret_5d"] is None and rx["unmeasured"]["ret_5d"].startswith(er.PENDING)
 
 
-def test_a_403_is_a_hard_stop_with_no_retry_and_a_cooldown(desk: er.Paths) -> None:
+DATA_HOST = "data.sec.gov"
+CLOSED = "User-agent: *\nDisallow: /\n"
+
+
+def test_a_403_is_a_hard_stop_that_holds_until_robots_admits_us(desk: er.Paths) -> None:
     get = FakeGet(refuse={f"CIK{AAPL_CIK:010d}": 403})
     c = _run(desk, get)
     assert all(call["retries"] == 0 for call in get.calls)
@@ -257,13 +270,43 @@ def test_a_403_is_a_hard_stop_with_no_retry_and_a_cooldown(desk: er.Paths) -> No
     stop = urls.index(er.SUBMISSIONS_URL.format(cik=AAPL_CIK))
     assert stop == len(urls) - 1, "nothing is fetched after the refusal"
     assert c["refused"] and c["refused"][0]["status"] == 403
-    state = json.loads(desk.state.read_text())
-    assert state["cooldown_until"] > NOW.isoformat()
-    # the next pass inside the cooldown touches no network
-    get2 = FakeGet()
-    c2 = _run(desk, get2, now=NOW + timedelta(hours=1))
-    assert get2.calls == [] and not c2["network"]["used"]
-    assert "cooling down" in c2["network"]["why_not"]
+    assert json.loads(desk.state.read_text())["blocked"]["status"] == 403
+    # a later pass reads ONLY robots.txt while it still shuts us out -- no fixed timer
+    get2 = FakeGet(robots={DATA_HOST: CLOSED})
+    c2 = _run(desk, get2, now=NOW + timedelta(days=3))
+    assert [x["url"] for x in get2.calls] == [f"https://{DATA_HOST}/robots.txt"]
+    assert not c2["network"]["used"] and "blocked since" in c2["network"]["why_not"]
+    # once robots.txt admits us the block lifts and the pass fetches
+    get3 = FakeGet()
+    c3 = _run(desk, get3, now=NOW + timedelta(days=4))
+    assert c3["network"]["used"] and "unblocked" in c3
+    assert "blocked" not in json.loads(desk.state.read_text())
+    assert any("CIK" in x["url"] for x in get3.calls)
+
+
+def test_robots_is_read_once_per_host_and_a_disallow_stops_the_pass(desk: er.Paths) -> None:
+    get = FakeGet(robots={DATA_HOST: CLOSED})
+    c = _run(desk, get)
+    urls = [x["url"] for x in get.calls]
+    assert urls.count(f"https://{DATA_HOST}/robots.txt") == 1
+    assert urls.count("https://www.sec.gov/robots.txt") == 1
+    assert not any("CIK" in u for u in urls), "a disallowed path is never requested"
+    assert c["robots_stops"] and c["robots_stops"][0]["label"] == "DISALLOWED"
+    assert "blocked" not in json.loads(desk.state.read_text()), "a Disallow is not a refusal"
+
+
+@pytest.mark.parametrize("answer, fetched", [(404, True), (410, True), (503, False),
+                                             (403, False), (429, False), (451, False)])
+def test_robots_answers_follow_the_desk_ruling(desk: er.Paths, answer: int,
+                                               fetched: bool) -> None:
+    get = FakeGet(robots={DATA_HOST: answer})
+    c = _run(desk, get)
+    assert any("CIK" in x["url"] for x in get.calls) is fetched
+    if answer in er.HARD_STOP_STATUS:
+        assert c["refused"][0]["url"].endswith("/robots.txt")
+    elif answer >= 500:
+        assert c["robots_stops"][0]["label"] == "ROBOTS_UNREACHABLE"
+        assert "blocked" not in json.loads(desk.state.read_text())
 
 
 def test_the_user_agent_is_declared(desk: er.Paths, monkeypatch: pytest.MonkeyPatch) -> None:
