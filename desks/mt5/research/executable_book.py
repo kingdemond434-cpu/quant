@@ -114,7 +114,9 @@ def _daily_r(names: list[str]) -> tuple[np.ndarray, list[str], str]:
     try:
         from research import pf_allocator as pa
         daily, _fwd = pa.build_evidence()
-    except Exception as exc:
+    except (Exception, SystemExit) as exc:
+        # `build_evidence` REFUSES with SystemExit when the hunt report is absent: the growth
+        # comparison is then UNMEASURED and the rest of the report still publishes.
         return np.empty((0, 0)), [], f"no evidence matrix ({type(exc).__name__})"
     cols = [n for n in names if n in daily.columns]
     if not cols:
