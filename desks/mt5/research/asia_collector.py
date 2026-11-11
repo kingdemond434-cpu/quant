@@ -21,11 +21,14 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
-    (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
-                    now a LABEL: the reading is recorded on the row as `robots_disallows` and
-                    `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
-                    fetched like any other open page (LAWS 5e). The status name stays in the
-                    census tuple below so an OLD row already carrying it still prints.
+    BLOCKED_BY_ROBOTS  the host's robots.txt disallows this exact path for our agent. The page
+                    is NOT fetched (ruling of 2026-11-10, PR #819; from 2026-09-23 until then a
+                    Disallow was recorded as a label and fetched). Never silent: the row carries
+                    the label, what reopens it and a two-sided missed-growth line, and
+                    `robots_gate` counts every refusal per day. The same state, with its own
+                    label, when robots.txt itself answers 401/403 (ROBOTS_REFUSED) or cannot be
+                    reached (ROBOTS_UNREACHABLE: asked again next pass, never in a loop). A site
+                    serving no robots.txt (another 4xx) is fetched and counted ROBOTS_ABSENT.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -151,31 +154,31 @@ def _key_present(src: dict[str, Any]) -> bool:
     return bool(env and os.environ.get(env))
 
 
-def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
-    """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
+def _robots_open(url: str, agent: str, timeout: float) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": agent})
+    with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        return str(r.read(200_000).decode("utf-8", errors="replace"))
 
-    LAWS 5e (rewritten 2026-09-23): licence, robots, source class and credibility route
-    REDISTRIBUTION and WEIGHT and never stop discovery, ingestion, representation or testing.
-    This helper used to return False on a served DISALLOW and `_fetch` turned that into
-    BLOCKED_BY_ROBOTS -- a discovery brake, and the last one left in the shared fetch path that
-    `event_surprise` and `data_acquisition_scientist` both call.
 
-    The reading is still MADE and still travels with the row, because provenance is the half of
-    the old behaviour worth keeping. What is gone is the refusal. The five refused ACTS are
-    untouched and none of them is robots.txt: a login, a paywall, a credential or an access
-    control is still never crossed (see the auth/subscription branch above this call).
-    """
+#: One pass's robots.txt per host (parsed, or why it could not be read), so a host is asked once
+#: a pass however many of its paths the registry declares. `main` clears it, and it also expires
+#: by age, because `event_surprise` and `data_acquisition_scientist` reach `_robots_verdict`
+#: without going through `main` and a long-lived process must not hold a stale verdict.
+_ROBOTS_CACHE: dict[tuple[str, str], Any] = {}
+_ROBOTS_CACHE_TTL_S = 900.0
+_ROBOTS_CACHE_BORN = [0.0]
+
+
+def _robots_verdict(url: str, agent: str = "quant-desk-collector") -> tuple[str, str]:
+    """(label, why) from the desk's one robots gate, read through this collector's TLS context."""
     try:
-        from urllib.robotparser import RobotFileParser
-        parts = urllib.parse.urlsplit(url)
-        rp = RobotFileParser()
-        robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
-        req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
-            rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
-        return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
-    except Exception as exc:
-        return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
+        from research import robots_gate as RG
+    except ImportError:                                                      # pragma: no cover
+        import robots_gate as RG  # type: ignore[no-redef]
+    if time.monotonic() - _ROBOTS_CACHE_BORN[0] > _ROBOTS_CACHE_TTL_S:
+        _ROBOTS_CACHE.clear()
+        _ROBOTS_CACHE_BORN[0] = time.monotonic()
+    return RG.read(url, agent, opener=_robots_open, cache=_ROBOTS_CACHE)
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -365,15 +368,27 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
-    # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
-    # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
-    # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
-    allowed, why_robots = _robots_allows(url)
+    # robots.txt DECIDES BEFORE THE PAGE IS ASKED FOR (rulings of 2026-11-10, PR #819): a
+    # Disallow on this exact path, a 401/403 on robots.txt or an unreachable robots.txt stops
+    # the fetch. The refusal is a named state with its reopen and its missed-growth line, and
+    # `robots_gate` counts it by label, so the cost of the rule is measured every day. A site
+    # serving no robots.txt is fetched and counted as ROBOTS_ABSENT.
+    label, why_robots = _robots_verdict(url)
     rec["robots"] = why_robots
-    rec["robots_disallows"] = not allowed
-    if not allowed:
-        rec["terms_note"] = ("robots.txt disallows this path: recorded as a REDISTRIBUTION "
-                             "label, mined and tested like any other open page")
+    rec["robots_disallows"] = label == "DISALLOWED"
+    rec["access_label"] = label
+    try:
+        from research import robots_gate as RG
+    except ImportError:                                                      # pragma: no cover
+        import robots_gate as RG  # type: ignore[no-redef]
+    if label == RG.ROBOTS_ABSENT:
+        rec["robots_counted"] = RG.note_absent("asia_collector", sid, url, why_robots)
+    if RG.stops(label):
+        aside = RG.refuse("asia_collector", sid, url, label, why_robots)
+        rec.update({"status": "BLOCKED_BY_ROBOTS", "access_label": label, "why": why_robots,
+                    "reopen": aside["reopen"], "missed_growth": aside["missed_growth"],
+                    "billed": aside["billed"]})
+        return rec
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
     # daily or monthly against a pass that may run hourly -- so the default behaviour is to
@@ -513,6 +528,7 @@ def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
 def main(argv: list[str] | None = None) -> int:
     global _TLS
     _TLS = _tls_context()
+    _ROBOTS_CACHE.clear()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--id", action="append", help="collect only these source ids")
     ap.add_argument("--timeout", type=float, default=25.0)

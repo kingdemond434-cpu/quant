@@ -80,8 +80,8 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(das, "INTEL", tmp_path / "intel" / das.SEAT)
     monkeypatch.setattr(das.DS, "gather", lambda **kw: ([], {}))
     calls: dict[str, list[str]] = {"fetch": [], "robots": []}
-    monkeypatch.setattr(das, "_robots_allows",
-                        lambda url: (calls["robots"].append(url) or True, "robots.txt stub"))
+    monkeypatch.setattr(das, "_robots_verdict",
+                        lambda url: (calls["robots"].append(url) or "PUBLIC", "robots.txt stub"))
     monkeypatch.setattr(das, "_fetch", lambda url: (calls["fetch"].append(url) or CSV,
                                                     "text/csv"))
     axes = tmp_path / "axes"
@@ -176,6 +176,58 @@ def test_the_sample_goes_through_the_lawful_route_and_the_request_carries_the_co
     assert set(roi) == set(doc["requests"]["datasets"])
     assert roi["kr_krx_short_sale_balance"]["acquired"] is False
     assert roi["kr_krx_short_sale_balance"]["roi"]["measured"] is False
+
+
+def test_a_robots_disallow_takes_no_sample_and_is_billed(
+        desk: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ruling of 2026-11-10 (PR #819): a Disallow on the exact path means no fetch. The request
+    is still donated; the sample row says why there is none and what reopens it."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", desk["tmp"] / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", desk["tmp"] / "ROBOTS_SET_ASIDE.json")
+    monkeypatch.setattr(das, "_robots_verdict",
+                        lambda url: ("DISALLOWED", "robots.txt disallows this exact path"))
+    doc = _build(desk)
+    krx = {s["dataset"]: s for s in doc["samples"]}["kr_krx_short_sale_balance"]
+    assert desk["calls"]["fetch"] == [], "the data URL must not be requested"
+    assert krx["status"] == "BLOCKED_BY_ROBOTS" and krx["access_label"] == "DISALLOWED"
+    assert krx["reopen"] and krx["billed"] is True
+    assert {m["side"] for m in krx["missed_growth"]} == {"cost", "gain"}
+    line = json.loads((desk["tmp"] / "robots_set_aside.jsonl").read_text("utf-8").splitlines()[0])
+    assert line["organ"] == "data_acquisition_scientist"
+    assert line["source"] == "kr_krx_short_sale_balance"
+
+
+@pytest.mark.parametrize("label", ["ROBOTS_REFUSED", "ROBOTS_UNREACHABLE"])
+def test_a_refused_or_unreachable_robots_file_takes_no_sample_and_is_billed(
+        desk: Any, monkeypatch: pytest.MonkeyPatch, label: str) -> None:
+    """Governance ruling 2026-11-10 20:08Z: a 401/403 on robots.txt and an unreachable
+    robots.txt stop the sample like a Disallow, counted under their own label."""
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", desk["tmp"] / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", desk["tmp"] / "ROBOTS_SET_ASIDE.json")
+    monkeypatch.setattr(das, "_robots_verdict", lambda url: (label, "robots.txt said no"))
+    doc = _build(desk)
+    krx = {s["dataset"]: s for s in doc["samples"]}["kr_krx_short_sale_balance"]
+    assert desk["calls"]["fetch"] == []
+    assert krx["status"] == "BLOCKED_BY_ROBOTS" and krx["access_label"] == label
+    line = json.loads((desk["tmp"] / "robots_set_aside.jsonl").read_text("utf-8").splitlines()[0])
+    assert line["status"] == "SET_ASIDE" and line["access_label"] == label
+
+
+def test_a_site_with_no_robots_file_is_sampled_and_counted(
+        desk: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import robots_gate as RG
+    monkeypatch.setattr(RG, "LEDGER", desk["tmp"] / "robots_set_aside.jsonl")
+    monkeypatch.setattr(RG, "REPORT", desk["tmp"] / "ROBOTS_SET_ASIDE.json")
+    monkeypatch.setattr(das, "_robots_verdict",
+                        lambda url: ("ROBOTS_ABSENT", "no robots.txt (HTTP 404): no rules"))
+    doc = _build(desk)
+    krx = {s["dataset"]: s for s in doc["samples"]}["kr_krx_short_sale_balance"]
+    assert krx["status"] == "SAMPLED" and "HTTP 404" in krx["terms_note"]
+    assert desk["calls"]["fetch"] == ["https://data.krx.example/short.csv"]
+    line = json.loads((desk["tmp"] / "robots_set_aside.jsonl").read_text("utf-8").splitlines()[0])
+    assert line["status"] == "ABSENT_FETCHED"
 
 
 def test_a_second_pass_re_requests_nothing_until_the_value_moves_or_the_day_turns(
