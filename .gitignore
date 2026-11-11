@@ -241,6 +241,9 @@ reports/principal_drop.json
 # the shadow step. Committing a stamp written on a research box would make the execution box pull
 # it, see the day as done, and skip the one run that matters.
 desks/mt5/data/daily_cycle_state.json
+# process_health's derived-contract watch (idea 589): box-local memory, never published
+desks/mt5/data/derived_contract_state.json
+desks/mt5/data/derived_contract_state.json.tmp
 
 # Per-box task queue. Same reason as the stamp above, one level worse: the journal records LEASES
 # -- "task X is held by worker W until 03:14" -- and a lease names a process that only exists on
