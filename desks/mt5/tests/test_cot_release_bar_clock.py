@@ -371,3 +371,31 @@ def test_a_fallback_the_schedule_cannot_label_returns_nothing(sweep, monkeypatch
     monkeypatch.setattr(cot_frames, "to_release_clock", no_clock)
     assert sweep._cot_frame("EURUSD") is None
     assert sweep.COT_LABEL_REFUSALS["json_fallback"].startswith("UNMEASURED")
+
+
+# ----------------------------------- a Monday holiday BEFORE the as-of Tuesday (should-fix pin)
+#: The repo's rule (`futures_state.cftc_release_day`, and the registry calendar's own note "rule
+#: matches every delayed date on CFTC's 2026 schedule"): a federal holiday on the Monday BEFORE
+#: the as-of Tuesday does not move the Friday release -- the 2026 schedule's delayed weeks are
+#: Jun 19, Jul 3, Nov 11, Thanksgiving and Dec 25 only. The repo holds no recorded CFTC release
+#: date for any Monday-holiday week, and cftc.gov is unreachable from the build container, so
+#: this pins the documented rule; it is not a comparison against CFTC's published dates.
+MONDAY_HOLIDAY_WEEKS = [
+    ("2025-09-02", "2025-09-05"),    # Labor Day Mon Sep 1 2025
+    ("2026-09-08", "2026-09-11"),    # Labor Day Mon Sep 7 2026
+    ("2025-01-21", "2025-01-24"),    # MLK Day Mon Jan 20 2025
+    ("2026-01-20", "2026-01-23"),    # MLK Day Mon Jan 19 2026
+]
+
+
+@pytest.mark.parametrize("asof,friday", MONDAY_HOLIDAY_WEEKS)
+def test_a_monday_holiday_before_the_asof_tuesday_keeps_the_friday_release(asof, friday):
+    assert fs.cftc_release_day(pd.Timestamp(asof), fs.cftc_calendar()) == pd.Timestamp(friday)
+    # and the label is never before that Friday's 15:30 New York on the bar clock
+    assert cot_frames.release_label(_ts(asof)) >= _broker(f"{friday} 15:30")
+
+
+def test_a_holiday_inside_the_week_still_moves_it_later():
+    # the contrast case, so the pin above cannot pass by ignoring holidays altogether
+    assert fs.cftc_release_day(pd.Timestamp("2026-06-16"), fs.cftc_calendar()) == \
+        pd.Timestamp("2026-06-22")
