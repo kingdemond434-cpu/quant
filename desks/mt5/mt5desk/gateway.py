@@ -68,7 +68,7 @@ from mt5desk.decision_core import (
     fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
-    closed_bar_is_current,
+    frame_is_current,
     closed_trade_r,
     diagnose,
     entry_is_legal,
@@ -3710,21 +3710,27 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     frame = h1_frame(h1)
     closed = frame.iloc[:-1]
     call_params: dict | None = None
-    # THE VENUE'S CLOCK, NOT AN IMPLICIT ONE: this pass's broker wall-clock tick time
-    # (`placement_tick_broker`, the bars' own convention), so a frame whose "forming" bar had
-    # already closed is refused as stale rather than acted on hours late (`closed_bar_is_current`).
+    # A STALLED FEED IS NOT A SIGNAL (#926): the frame is current only while its FORMING row is
+    # the bar in progress on the venue's broker wall clock (`frame_is_current`); after a weekend
+    # or a session break the venue prints a new forming bar, so the first decision after a gap is
+    # taken exactly as the replay takes it. A refused frame leaves its reason and a count in the
+    # pass state, never a silent None. An unreadable clock refuses nothing.
     _venue_now = _venue_clock(st)
     _tf_min = int(_BAR_MINUTES.get(tf, 60))
+    if _venue_now is not None and len(frame) and not frame_is_current(
+            frame.index[-1], now=_venue_now, bar_minutes=_tf_min):
+        _stale = st.setdefault("stale_frames", {})
+        _stale["count"] = int(_stale.get("count") or 0) + 1
+        _why = (f"refused: stale frame -- the forming {tf} bar opened {frame.index[-1]} and the "
+                f"venue clock reads {_venue_now}; the feed stopped printing")
+        _stale.setdefault("rows", {})[name] = _why
+        return {"ok": False, "stage": "stale_frame", "why": _why}
     if population == "hunt16":
         # ONE DECISION A DAY AT THE CERTIFIED HOUR.
-        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]),
-                                  now=_venue_now, bar_minutes=_tf_min)
+        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]))
     else:
         # NO HOUR FILTER, BECAUSE THE CLOCK APPLIES NONE -- the family itself owns when it fires.
         last_bar = closed.index[-1] if len(closed) else None
-        if last_bar is not None and not closed_bar_is_current(last_bar, now=_venue_now,
-                                                              bar_minutes=_tf_min):
-            last_bar = None
     # THE MARK IS READ BEFORE THE INPUTS ARE REBUILT (2026-09-16). Input reconstruction is the
     # expensive step -- peer bars, factor bars, primitives -- and it was paid on every pass for
     # every sleeve whether or not the bar had already been considered: 64 sleeves at 2-5 s each

@@ -2890,8 +2890,7 @@ def family_signal_hour(window: dict) -> int:
     return window.get("signal_at") or window["range_start"]
 
 
-def family_bar_due(closed: pd.DataFrame, sig_hour: int, *, now: object = None,
-                   bar_minutes: int = 60) -> pd.Timestamp | None:
+def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
     """The last CLOSED bar when it is the sleeve's signal bar, else None. The in-progress bar
     is excluded by the caller, exactly as the replay sees it.
 
@@ -2910,35 +2909,29 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int, *, now: object = None,
     sleeve acts on the first bar whose label is the signal hour, as soon as that bar closes. On M5
     that is the N:00 bar acting at N:05 -- the same "act on the signal bar the moment it is
     final", one chart down.
-
-    THE CLOCK IS AN ARGUMENT (ported from #111, 2026-09-30), and it answers the one question the
-    frame cannot: is this frame CURRENT? The caller drops the last row as the forming bar, so on
-    a live feed `now` lies inside the bar AFTER `last_bar` -- less than two bars past its open. At
-    two bars or more the "forming" row had already closed (a stalled feed, or a quiet symbol whose
-    venue printed no bar), `last_bar` is not the bar just finished, and acting on it would enter
-    a signal hours late. That is refused here as not due. `now` must be in the bars' own clock
-    (the gateway passes the venue's broker wall clock); None reads the current UTC time, which on
-    a venue whose server runs ahead of UTC can only make a frame look fresher, never refuse a
-    current one.
     """
     last_bar = closed.index[-1]
     if last_bar.hour != sig_hour:
         return None
-    if last_bar.minute != 0:
-        return None
-    return last_bar if closed_bar_is_current(last_bar, now=now, bar_minutes=bar_minutes)         else None
+    return last_bar if last_bar.minute == 0 else None
 
 
-def closed_bar_is_current(last_bar: object, *, now: object = None,
-                          bar_minutes: int = 60) -> bool:
-    """True when `last_bar` (the last CLOSED bar's open) is the bar that just finished: `now`
-    is less than two bars past its open. See `family_bar_due` for the clock convention; None is
-    the current UTC time."""
-    t = pd.Timestamp(datetime.now(tz=UTC) if now is None else now)  # type: ignore[arg-type]
-    lb = pd.Timestamp(last_bar)  # type: ignore[arg-type]
-    if (t.tzinfo is None) != (lb.tzinfo is None):
+def frame_is_current(forming_open: object, *, now: object, bar_minutes: int = 60) -> bool:
+    """True when the frame's FORMING row is the bar in progress now: `now` is less than one bar
+    past its open (#926 audit MF, superseding #111's two-bars-after-the-last-CLOSED-bar test).
+
+    WHY THE FORMING ROW. Judging the last closed bar refused every legitimate first decision after
+    a gap -- a Friday 23:00 bar acted on at Monday's open is ~49 h old, a 22:00 bar acted on after
+    the daily break at 01:05 is three hours old -- while the replay acts on exactly those bars at
+    the next open, so live would drop real trades and leave the certified spec. After a gap the
+    venue prints a NEW forming bar at the open, so it is current; only a feed that stopped
+    printing leaves the forming row behind the clock. `now` must be in the bars' own clock (the
+    gateway passes the broker wall clock); a `now` before the open (clock skew) is current."""
+    t = pd.Timestamp(now)  # type: ignore[arg-type]
+    fo = pd.Timestamp(forming_open)  # type: ignore[arg-type]
+    if (t.tzinfo is None) != (fo.tzinfo is None):
         t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC").tz_localize(None)
-    return bool(t - lb < pd.Timedelta(minutes=2 * int(bar_minutes)))
+    return bool(t - fo < pd.Timedelta(minutes=int(bar_minutes)))
 
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
