@@ -26,7 +26,7 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 826,
+  "NEVER": 827,
   "UNMEASURED": 43
  },
  "scope": {
@@ -2901,6 +2901,31 @@
    },
    "progress_metric": "leg_completions",
    "consumer": "scripts/check_certificate_truth.py, registered in scripts/run_law_gate.py:163 an"
+  },
+  {
+   "organ": "leg:e8_pass_time",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/e8_pass_time.py"
+   ],
+   "clock": "hourly_cycle:e8_pass_time",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/E8_PASS_TIME.json",
+   "artifact_declared": "desks/mt5/reports/E8_PASS_TIME.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
   },
   {
    "organ": "leg:health",
