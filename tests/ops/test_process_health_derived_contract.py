@@ -215,10 +215,16 @@ def test_build_end_to_end_and_never_stale_never_starts_it(
     assert [r["name"] for r in doc["derived_contract"]["newly_stale"]] == ["Q-Stopped"]
     assert doc["derived_contract"]["state"] == "written"
     state = json.loads((tmp_path / ph.DERIVED_STATE).read_text(encoding="utf-8"))["tasks"]
-    assert state["Q-Stopped"]["breached_at"] and "Q-Boot" not in state
-    # a second pass: still breached, but it is not NEW, so it pages only once
+    assert "breached_at" not in state["Q-Stopped"] and "Q-Boot" not in state
+    # the page FAILED: nothing is marked, so the next pass retries it
+    failed = ph.page_newly_stale(doc, lambda *_a: {"armed": 2, "delivered": 0})
+    assert "retried" in failed
     doc2 = _board(monkeypatch, tmp_path, verbose, brief, manifest)
-    assert doc2["derived_contract"]["newly_stale"] == []
+    assert [r["name"] for r in doc2["derived_contract"]["newly_stale"]] == ["Q-Stopped"]
+    # delivered: marked, and the next pass is quiet
+    assert "marked written" in ph.page_newly_stale(doc2, lambda *_a: {"armed": 1, "delivered": 1})
+    doc3 = _board(monkeypatch, tmp_path, verbose, brief, manifest)
+    assert doc3["derived_contract"]["newly_stale"] == []
     # never_stale --apply starts nothing for it (Auditor M1)
     ns = _never_stale()
     rep = tmp_path / "process_health.json"
@@ -250,7 +256,8 @@ def test_brief_only_read_records_nothing(monkeypatch: pytest.MonkeyPatch, tmp_pa
     assert not (tmp_path / ph.DERIVED_STATE).exists()
 
 
-def test_page_newly_stale_once_with_cause() -> None:
+def test_page_newly_stale_once_with_cause(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(ph, "ROOT", tmp_path)
     sent: list[tuple[str, str]] = []
 
     def send(title: str, body: str) -> dict[str, Any]:
@@ -259,7 +266,8 @@ def test_page_newly_stale_once_with_cause() -> None:
 
     assert ph.page_newly_stale({"derived_contract": {"newly_stale": []}}, send) == "nothing new"
     new = [{"name": "MT5-TapeFeatures", "why": "auto-contract: ...; last result: terminated"}]
-    assert ph.page_newly_stale({"derived_contract": {"newly_stale": new}}, send).startswith("armed")
+    got = ph.page_newly_stale({"derived_contract": {"newly_stale": new}}, send)
+    assert got.startswith("armed 1, delivered 1")
     assert "MT5-TapeFeatures" in sent[0][0] and "terminated" in sent[0][1]
 
     def boom(*_a: Any) -> dict[str, Any]:

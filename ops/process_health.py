@@ -826,8 +826,9 @@ def build() -> dict[str, Any]:
         for name, entry in derived_next.items():
             row = verdict_of.get(name) or {}
             if row.get("verdict") == DERIVED_VERDICT:
+                # `breached_at` is written only once the page is DELIVERED (mark_paged): a page
+                # that failed stays new and is retried next pass.
                 if not entry.get("breached_at"):
-                    entry["breached_at"] = now.isoformat(timespec="seconds")
                     newly_stale.append({"name": name, "why": str(row.get("why"))})
             else:
                 entry.pop("breached_at", None)
@@ -1070,8 +1071,10 @@ def _deliver_account_key_alerts() -> str:
 
 
 def page_newly_stale(doc: dict[str, Any], send: Any = None) -> str:
-    """One page naming every task whose derived contract was breached THIS pass, with its cause.
-    Each breach pages once (its `breached_at` is remembered) and again only after it recovers.
+    """One page naming every task whose derived contract was newly breached, with its cause.
+    Each breach is marked paged (`breached_at`) only when a channel DELIVERED it, or when no
+    channel is armed (an unarmed pager is a recorded state, as judge_stall_pager counts it); a
+    failed send stays new and is retried next pass. Paged again only after it recovers.
     NEVER RAISES."""
     new = (doc.get("derived_contract") or {}).get("newly_stale") or []
     if not new:
@@ -1083,9 +1086,30 @@ def page_newly_stale(doc: dict[str, Any], send: Any = None) -> str:
                 sys.path.insert(0, str(ROOT))
             from libs.ops.alert_channels import send_all as send
         res = send(f"Tasks stopped succeeding: {', '.join(r['name'] for r in new)[:180]}", body)
-        return f"armed {res.get('armed')}, delivered {res.get('delivered')}"
+        res = res if isinstance(res, dict) else {}
+        armed, delivered = res.get("armed"), res.get("delivered")
+        out = f"armed {armed}, delivered {delivered}"
+        if delivered or not armed:
+            out += f"; marked {mark_paged([str(r['name']) for r in new])}"
+        else:
+            out += "; not marked: retried next pass"
+        return out
     except Exception as exc:
-        return f"not sent ({type(exc).__name__})"
+        return f"not sent ({type(exc).__name__}): retried next pass"
+
+
+def mark_paged(names: list[str], root: Path | None = None) -> str:
+    """Record `breached_at` for tasks whose breach page went out. NEVER RAISES."""
+    try:
+        base = root or ROOT
+        tasks = _read_derived_state(base)
+        stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        for n in names:
+            if n in tasks:
+                tasks[n]["breached_at"] = stamp
+        return _write_derived_state(base, tasks)
+    except Exception as exc:
+        return f"NOT written ({type(exc).__name__})"
 
 
 def main(argv: list[str] | None = None) -> int:
