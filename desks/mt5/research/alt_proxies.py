@@ -1807,7 +1807,8 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="us_census_marts_ex_autos", name="US Census advance retail sales, ex-autos cuts",
         url=("https://api.census.gov/data/timeseries/eits/marts?get=cell_value,data_type_code,"
-             "time_slot_id,category_code,seasonally_adj&time=from+2015"),
+             "time_slot_id,category_code,seasonally_adj&time=from+2015&key={key}"),
+        key_env="CENSUS_API_KEY",
         region="US", language="en", cadence="monthly", parse=parse_census_marts,
         rule=_lag_rule(17, 13, weekday=True), transform="mom_monthly",
         instruments={"US500": 1, "USDJPY": 1, "EURUSD": -1, "XAUUSD": -1},
@@ -1880,6 +1881,7 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="imf_portwatch_ports", name="IMF PortWatch daily port calls",
         url=PORTWATCH_BASE.format(svc="Daily_Ports_Data"),
+        key_env="ARCGIS_API_KEY",
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_ports,
         rule=_lag_rule(10, 0), transform="anomaly_daily",
         instruments={"AUDUSD": 1},
@@ -1902,6 +1904,7 @@ SOURCES: tuple[Source, ...] = (
     Source(
         id="imf_portwatch_chokepoints", name="IMF PortWatch daily chokepoint transits",
         url=PORTWATCH_BASE.format(svc="Daily_Chokepoints_Data"),
+        key_env="ARCGIS_API_KEY",
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_chokepoints,
         rule=_lag_rule(10, 0), transform="anomaly_daily",
         instruments={"XTIUSD": -1, "XBRUSD": -1},
@@ -3305,7 +3308,10 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
             q = urllib.parse.urlencode({
                 "where": f"portname IN ({quoted}) AND date >= timestamp '{since} 00:00:00'",
                 "outFields": "date,portname,portcalls,n_total", "orderByFields": "date",
-                "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
+                "resultOffset": offset, "resultRecordCount": 2000, "f": "json",
+                # the FeatureServer answers 499 "Token Required" since 2026-11 (box read
+                # 2026-11-11): an ArcGIS API key rides as `token`, redacted like any key
+                **({"token": key} if key else {})})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
     if src.id == "gdelt_events_country":
