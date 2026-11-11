@@ -21,6 +21,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import sys
 import tempfile
 import time
 from datetime import UTC, datetime
@@ -753,13 +754,39 @@ FAMILIES_STEP = "merge_hypotheses.families"
 FAMILIES_STEP_DECLARED_MB = 3000
 
 
+def _peak_commit_mb() -> int | None:
+    """This process's PEAK COMMIT on Windows (psutil peak_pagefile), or None elsewhere/unreadable.
+
+    The 11-11 stall (pid 36280) was measured on commit, 16.7 GB, which can sit well above the
+    working-set high-water mark job_lock reads. Admitting on the working set alone would read
+    the step's growth low against the quantity that actually starved the box."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import psutil
+
+        peak = int(getattr(psutil.Process().memory_info(), "peak_pagefile", 0) or 0)
+        return max(1, peak // (1024 * 1024)) if peak > 0 else None
+    except Exception:
+        return None
+
+
+def _peak_mb() -> int | None:
+    """The larger of the working-set and commit high-water marks; None only if neither reads."""
+    from research.job_lock import peak_rss_mb
+
+    vals = [v for v in (peak_rss_mb(), _peak_commit_mb()) if v is not None]
+    return max(vals) if vals else None
+
+
 def _mem_line(step: str, started: float) -> dict[str, Any]:
-    """One per-step line in the run's log: high-water mark so far, binding free memory, seconds.
+    """One per-step line in the run's log: high-water mark so far (the larger of working set and
+    commit), binding free memory, seconds.
     Never raises: a counter that cannot be read prints UNMEASURED, it does not cost the step."""
     import time as _time
     try:
-        from research.job_lock import free_mb, peak_rss_mb
-        peak, free = peak_rss_mb(), free_mb()
+        from research.job_lock import free_mb
+        peak, free = _peak_mb(), free_mb()
     except Exception:
         peak, free = None, None
     row = {"step": step, "peak_mb": peak, "free_mb": free,

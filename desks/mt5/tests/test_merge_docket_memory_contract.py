@@ -60,6 +60,18 @@ def test_each_step_logs_its_peak_free_and_time(monkeypatch: pytest.MonkeyPatch,
     assert "mem[before families]: peak 1234MB, free 5678MB" in out
 
 
+def test_the_peak_is_the_larger_of_working_set_and_commit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """pid 36280 was measured on COMMIT (16.7 GB). Growth read on the working set alone reads low."""
+    monkeypatch.setattr(job_lock, "peak_rss_mb", lambda: 9000)
+    monkeypatch.setattr(job_lock, "free_mb", lambda: 1)
+    monkeypatch.setattr(merger, "_peak_commit_mb", lambda: 16700)
+    assert merger._mem_line("x", 0.0)["peak_mb"] == 16700
+    monkeypatch.setattr(merger, "_peak_commit_mb", lambda: None)
+    assert merger._mem_line("x", 0.0)["peak_mb"] == 9000
+    monkeypatch.setattr(job_lock, "peak_rss_mb", lambda: None)
+    assert merger._mem_line("x", 0.0)["peak_mb"] is None
+
+
 def test_a_refusal_costs_the_census_never_a_row() -> None:
     """The refusal rides the step's existing fault path, which keeps rows_out unchanged."""
     src = inspect.getsource(merger.main)
