@@ -116,6 +116,8 @@ def _ask(base, key, model, messages, timeout=150.0):
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
+    from libs.ops import openrouter_guard
+    openrouter_guard.check_request(req)
     from libs.data.keyed_sources import keyed_urlopen
     with keyed_urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())

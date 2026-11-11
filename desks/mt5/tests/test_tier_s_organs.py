@@ -535,7 +535,9 @@ def test_suspension_reaches_every_steering_consumer() -> None:
                   "red_queen", "twin"):
         assert f'authority.suspended("{organ}")' in src, organ
     door = (ROOT / "libs" / "tiers" / "promotion_authority.py").read_text("utf-8")
-    assert 'suspended("online_fdr")' in door and 'suspended("immune")' in door
+    assert '_suspendable("online_fdr"' in door and '_suspendable("immune"' in door
+    # the law is never a steering opinion (audit I16): no suspension reaches the constitution
+    assert 'suspended("truth_kernel")' not in door
     impl = (DESK / "research" / "implementer.py").read_text("utf-8")
     assert 'suspended("self_model"' in impl
 

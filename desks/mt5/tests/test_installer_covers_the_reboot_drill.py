@@ -131,7 +131,7 @@ def test_universe_collector_uses_the_interactive_terminal_session() -> None:
 
 def test_mt5_ipc_jobs_use_the_terminal_interactive_session() -> None:
     text = _installer_text()
-    assert '"MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet"' in text
+    assert '"MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet"' in text
     assert 'New-ScheduledTaskPrincipal -UserId $InteractiveUser' in text
     assert '-LogonType Interactive -RunLevel Highest' in text
     assert 'requires the MT5 interactive desktop owner' in text

@@ -261,6 +261,17 @@ def cost_fields_from_symbol_info(si: Any) -> dict[str, Any]:
     ccy = getattr(si, VENUE_CCY_FIELD, None)
     if isinstance(ccy, str) and len(ccy.strip()) == 3:
         out[VENUE_CCY_FIELD] = ccy.strip().upper()
+    # THE UNIT OF swap_long/swap_short (2026-10-07). The registry carried the swap NUMBERS on 248
+    # rows and never the MODE that says what they mean, so `engine.Costs.from_symbol` read 138
+    # annual-percent rates as points. 0 is a real value here (DISABLED), so it is written.
+    mode = getattr(si, "swap_mode", None)
+    if isinstance(mode, int) and not isinstance(mode, bool) and 0 <= mode <= 8:
+        out["swap_mode"] = mode
+    # Modes 2/3 quote money in the base / margin currency; both are needed to carry it to quote.
+    for field in ("currency_base", "currency_margin"):
+        val = getattr(si, field, None)
+        if isinstance(val, str) and len(val.strip()) == 3:
+            out[field] = val.strip().upper()
     return out
 
 

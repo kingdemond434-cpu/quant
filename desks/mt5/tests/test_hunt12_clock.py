@@ -230,6 +230,99 @@ def test_a_corrupt_report_is_a_refusal_not_a_traceback(tmp_path, monkeypatch):
     assert "unreadable" in str(e.value)
 
 
+def _complete_snapshot(tmp_path, monkeypatch, **changes):
+    _reports(tmp_path, monkeypatch,
+             {"complete": False, "done": ["EURUSD"], "n_routed": 2,
+              "all": [{"gate": True, "sym": "EURUSD", "partial_only": True}]})
+    (tmp_path / "data" / "universe").mkdir(parents=True)
+    (tmp_path / "data" / "universe" / "universe.json").write_text(
+        json.dumps({"EURUSD": {}, "XAUUSD": {}}), "utf-8")
+    doc = {"complete": True, "done": ["EURUSD", "XAUUSD"],
+           "routed": ["EURUSD", "XAUUSD"], "n_routed": 2,
+           "started_at": (datetime.now(UTC) - timedelta(hours=12)).isoformat(),
+           "swept_at": datetime.now(UTC).isoformat(),
+           "all": [{"gate": True, "sym": "XAUUSD"},
+                   {"gate": False, "sym": "EURUSD"}]}
+    doc.update(changes)
+    p = tmp_path / "reports" / "hunt12.json"
+    p.write_text(json.dumps(doc), "utf-8")
+    return p
+
+
+@pytest.mark.parametrize("partial", ["incomplete", "absent", "corrupt"])
+def test_refresh_keeps_the_verified_complete_book(tmp_path, monkeypatch, partial):
+    _complete_snapshot(tmp_path, monkeypatch)
+    p = tmp_path / "reports" / "hunt12_partial.json"
+    if partial == "absent":
+        p.unlink()
+    elif partial == "corrupt":
+        p.write_text("{ interrupted", "utf-8")
+    before = p.read_bytes() if p.exists() else None
+    assert [row["sym"] for row in _PP.load_h12_survivors()] == ["XAUUSD"]
+    assert (p.read_bytes() if p.exists() else None) == before
+
+
+@pytest.mark.parametrize("changes", [
+    {"started_at": (datetime.now(UTC) - timedelta(days=8)).isoformat()},
+    {"started_at": (datetime.now(UTC) + timedelta(hours=1)).isoformat()},
+    {"started_at": None},
+    {"complete": False},
+    {"done": ["EURUSD", "EURUSD"]},
+    {"routed": ["EURUSD", "USDJPY"]},
+    {"n_routed": 1},
+    {"all": [{"sym": "USDJPY", "gate": True}]},
+])
+def test_publication_time_never_rescues_invalid_completed_evidence(
+        tmp_path, monkeypatch, changes):
+    _complete_snapshot(tmp_path, monkeypatch, **changes)
+    with pytest.raises(SystemExit, match="unfinished sweep"):
+        _PP.load_h12_survivors()
+
+
+def test_legacy_full_report_cannot_claim_a_fresh_evaluation_age(tmp_path, monkeypatch):
+    p = _complete_snapshot(tmp_path, monkeypatch)
+    doc = json.loads(p.read_text("utf-8"))
+    del doc["started_at"]
+    p.write_text(json.dumps(doc), "utf-8")
+    with pytest.raises(SystemExit, match="unfinished sweep"):
+        _PP.load_h12_survivors()
+
+
+def test_completed_publication_preserves_evaluation_age_on_no_work_pass(tmp_path, monkeypatch):
+    uni = tmp_path / "data" / "universe"
+    uni.mkdir(parents=True)
+    (uni / "universe.json").write_text(json.dumps({"EURUSD": {}}), "utf-8")
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    started = (datetime.now(UTC) - timedelta(hours=12)).isoformat()
+    (reports / "hunt12_partial.json").write_text(json.dumps({
+        "started_at": started, "done": ["EURUSD"], "routed": ["EURUSD"],
+        "all": [{"sym": "EURUSD", "gate": True}], "complete": True,
+    }), "utf-8")
+    monkeypatch.setattr(h12, "BASE", tmp_path)
+    monkeypatch.setattr(h12, "UNI", uni)
+    assert h12._run([]) == 0
+    complete = json.loads((reports / "hunt12.json").read_text("utf-8"))
+    assert complete["complete"] is True
+    assert complete["started_at"] == started
+    assert complete["done"] == complete["routed"] == ["EURUSD"]
+
+
+def test_hunt12_overlapping_writer_cannot_enter_sweep(monkeypatch):
+    from contextlib import contextmanager
+
+    from research import job_lock
+
+    @contextmanager
+    def held(name, **kwargs):
+        assert name == "hunt12"
+        yield False
+
+    monkeypatch.setattr(job_lock, "exclusive_job", held)
+    monkeypatch.setattr(h12, "_run", lambda args: pytest.fail("entered occupied sweep"))
+    assert h12.main([]) == 0
+
+
 # --------------------------------------------------------------- the hourly clock
 
 
@@ -256,6 +349,144 @@ def test_the_leg_runs_when_the_sweep_is_a_week_old(cycle, tmp_path):
                             "started_at": (NOW - timedelta(hours=200)).isoformat()})
     run, why = cycle._hunt12_state(p, NOW)
     assert run and "200h old" in why
+
+
+def test_refresh_begins_while_the_last_complete_sweep_is_still_valid(cycle, tmp_path):
+    p = _partial(tmp_path, {"complete": True,
+                            "started_at": (NOW - timedelta(days=6)).isoformat()})
+    run, why = cycle._hunt12_state(p, NOW)
+    assert run and "refresh 120h; evidence expiry 168h" in why
+    assert cycle.HUNT12_MAX_AGE_S - cycle.HUNT12_REFRESH_AGE_S == 48 * 3600
+
+
+def test_refresh_threshold_reaches_the_producer_and_honors_hold(cycle, tmp_path, monkeypatch):
+    monkeypatch.setattr(cycle, "BASE", tmp_path)
+    monkeypatch.setattr(cycle, "_hunt12_state", lambda: (True, "refresh due"))
+    calls = []
+    monkeypatch.setattr(cycle, "_producer", lambda *args: calls.append(args) or {"status": "OK"})
+    assert cycle.hunt12()["status"] == "OK"
+    assert calls[0][-2:] == ("--max-age-h", "120.0")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "HOLD_hunt12").touch()
+    assert cycle.hunt12()["status"] == "SKIPPED"
+    assert len(calls) == 1
+
+
+def test_future_complete_sweep_requires_repair(cycle, tmp_path):
+    p = _partial(tmp_path, {"complete": True,
+                            "started_at": (NOW + timedelta(hours=1)).isoformat()})
+    run, why = cycle._hunt12_state(p, NOW)
+    assert run and "future timestamp" in why
+
+
+@pytest.fixture()
+def resident(cycle, tmp_path, monkeypatch):
+    import psutil
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(cycle, "BASE", tmp_path)
+    monkeypatch.setattr(cycle.time, "time", lambda: 1000)
+    (tmp_path / "data").mkdir()
+
+    class Process:
+        pid = 42
+        info = {"cmdline": ["pythonw.exe", "research/run_hunt12.py"]}
+        state = psutil.STATUS_STOPPED
+        started = 0
+        cpu = 0
+        child = []
+        files = []
+        resumes = 0
+
+        def cwd(self):
+            return str(tmp_path)
+
+        def status(self):
+            return self.state
+
+        def cpu_times(self):
+            return SimpleNamespace(user=self.cpu, system=0)
+
+        def create_time(self):
+            return self.started
+
+        def children(self):
+            return self.child
+
+        def open_files(self):
+            return self.files
+
+        def resume(self):
+            self.resumes += 1
+            self.state = psutil.STATUS_RUNNING
+
+    proc = Process()
+    monkeypatch.setattr(psutil, "process_iter", lambda attrs: iter([proc]))
+    return proc
+
+
+def test_unused_stopped_canonical_writer_is_resumed_without_a_second_writer(cycle, resident):
+    receipt = cycle._hunt12_resident_health()
+    assert receipt["alive"] and receipt["resumed"] and receipt["pid"] == 42
+    assert resident.resumes == 1
+
+
+@pytest.mark.parametrize("reason", ["hold", "cpu", "child", "file", "recent", "other_cwd"])
+def test_stopped_worker_with_existing_ownership_or_hold_is_preserved(
+        cycle, resident, tmp_path, reason, monkeypatch):
+    if reason == "hold":
+        (tmp_path / "data" / "HOLD_hunt12").touch()
+    elif reason == "cpu":
+        resident.cpu = 0.01
+    elif reason == "child":
+        resident.child = [object()]
+    elif reason == "file":
+        resident.files = [object()]
+    elif reason == "recent":
+        resident.started = 900
+    else:
+        monkeypatch.setattr(resident, "cwd", lambda: str(tmp_path.parent))
+    receipt = cycle._hunt12_resident_health()
+    assert receipt["alive"] is not True
+    assert resident.resumes == 0
+
+
+def test_ambiguous_residents_and_denied_status_never_resume(cycle, resident, monkeypatch):
+    import psutil
+
+    monkeypatch.setattr(psutil, "process_iter", lambda attrs: iter([resident, resident]))
+    assert cycle._hunt12_resident_health()["resident_count"] == 2
+    monkeypatch.setattr(psutil, "process_iter", lambda attrs: iter([resident]))
+
+    def denied():
+        raise psutil.AccessDenied(resident.pid)
+
+    monkeypatch.setattr(resident, "status", denied)
+    assert cycle._hunt12_resident_health()["alive"] is None
+    assert resident.resumes == 0
+
+
+def test_health_does_not_duplicate_a_stopped_writer(cycle, resident, monkeypatch):
+    import psutil
+
+    resident.cpu = 1
+    resident.state = psutil.STATUS_STOPPED
+    monkeypatch.setattr(cycle, "EXPECTED", {"hunt12": ("pythonw.exe", "run_hunt12.py")})
+    monkeypatch.setattr(cycle, "procs", lambda: "run_hunt12.py")
+    monkeypatch.setattr(cycle, "_cmd_lines", lambda: "")
+    monkeypatch.setattr(cycle, "start", lambda script: pytest.fail("duplicate writer launched"))
+    assert cycle.health()["hunt12"]["alive"] is False
+
+
+def test_health_does_not_start_an_absent_held_writer(cycle, tmp_path, monkeypatch):
+    monkeypatch.setattr(cycle, "BASE", tmp_path)
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "HOLD_hunt12").touch()
+    monkeypatch.setattr(cycle, "EXPECTED", {"hunt12": ("pythonw.exe", "run_hunt12.py")})
+    monkeypatch.setattr(cycle, "procs", lambda: "")
+    monkeypatch.setattr(cycle, "_cmd_lines", lambda: "")
+    monkeypatch.setattr(cycle, "start", lambda script: pytest.fail("held writer launched"))
+    assert "no launch attempted" in cycle.health()["hunt12"]["note"]
 
 
 def test_a_fresh_complete_sweep_is_skipped_with_a_reason(cycle, tmp_path):

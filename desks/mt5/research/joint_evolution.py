@@ -216,7 +216,8 @@ def _book_daily() -> tuple[Any, str | None]:
     file would be a number about nothing.
     """
     import pandas as pd
-    p = DESK / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    p = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
     if not p.exists():
         return (None, f"no live ledger at {p.relative_to(ROOT)}")
     rows: dict[str, float] = {}

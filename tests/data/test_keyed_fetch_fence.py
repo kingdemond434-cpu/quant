@@ -19,6 +19,10 @@ WINDOW = 8
 #: Being rewritten elsewhere; each names the PR that routes it through the guard.
 OWNED_ELSEWHERE = {
     "scripts/collect_fred_macro.py": "#211 (World Sensor) imports keyed_urlopen",
+    # The release authority runs from its own ACL'd folder with no repo import path, so it cannot
+    # import libs; its three calls go to fixed api.github.com URLs with a 9-minute App JWT.
+    # Routing it through a vendored guard is a release-authority change, owned by that thread.
+    "ops/release/authority/mint_app_token.py": "release authority (self-contained, no libs path)",
 }
 
 

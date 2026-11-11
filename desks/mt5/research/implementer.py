@@ -139,8 +139,9 @@ _OWNERS: tuple[tuple[str, str], ...] = (
     ("shadow", "hourly_cycle:shadow_forward"),
     ("promot", "MT5-Hourly:promoter"),
     ("sleeve", "MT5-Hourly:promoter"),
-    ("gateway", "MT5-Gateway"),
-    ("execution", "MT5-Gateway"),
+    # MT5-GatewayResident: MT5-Gateway has been Disabled since 2026-09-16 (box_tasks.manifest).
+    ("gateway", "MT5-GatewayResident"),
+    ("execution", "MT5-GatewayResident"),
     ("allocator", "MT5-AllocatorFast"),
     ("heat", "MT5-AllocatorFast"),
     ("universe", "MT5-Hourly:refresh_bars"),

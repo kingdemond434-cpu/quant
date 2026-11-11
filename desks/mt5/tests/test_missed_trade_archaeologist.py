@@ -25,6 +25,25 @@ T0 = datetime(2026, 3, 2, 0, 0, tzinfo=UTC)
 N_PAST = 250
 
 
+def test_live_loss_joins_the_latest_prior_taken_decision() -> None:
+    earlier = T0 + timedelta(hours=1)
+    latest = T0 + timedelta(hours=2)
+    exit_at = T0 + timedelta(hours=3)
+    decisions = [
+        {"sleeve": "gold_asia", "time": (exit_at + timedelta(hours=1)).isoformat(), "taken": True},
+        {"sleeve": "gold_asia", "time": latest.isoformat(), "taken": True},
+        {"sleeve": "gold_asia", "time": earlier.isoformat(), "taken": True},
+        {"sleeve": "other", "time": exit_at.isoformat(), "taken": True},
+    ]
+    fills = [{"sleeve": "gold_asia", "symbol": "XAUUSD", "time": exit_at.isoformat(),
+              "r_multiple": -1.2, "deal": 123, "side": 0}]
+    episodes = MT.find_episodes(decisions, fills, {}, lambda _symbol: None)
+    assert len(episodes) == 1
+    assert episodes[0]["decision_time"] == latest
+    assert episodes[0]["status"] == "SELECTED"
+    assert episodes[0]["outcome"] == {"r": -1.2, "deal": 123}
+
+
 def _bars(n: int = 300, spike_after: int | None = None) -> pd.DataFrame:
     rng = np.random.default_rng(7)
     idx = pd.date_range(T0, periods=n, freq="h", tz="UTC", name="time")

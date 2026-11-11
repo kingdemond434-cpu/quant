@@ -285,7 +285,9 @@ def _mt5_realised(root: Path) -> tuple[dict[str, dict[str, float]], str]:
             unresolved += 1
 
     try:
-        lines = (root / _MT5_LEDGER).read_text("utf-8").splitlines()
+        from libs.ops.live_ledger_view import ledger_path
+
+        lines = ledger_path(root / _MT5_LEDGER).read_text("utf-8").splitlines()
     except OSError as exc:
         return {}, f"{_MT5_LEDGER} unreadable ({type(exc).__name__}) -- P&L UNMEASURED"
     out: dict[str, dict[str, float]] = {}
