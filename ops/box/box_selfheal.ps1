@@ -119,18 +119,26 @@ function Invoke-PinRelocation([string] $live) {
             Write-HealLedger $row
             return "pin: a guard failed ($(($g.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ', ')); NOT moved"
         }
+        $kept = $null
         if (Test-Path -LiteralPath $RegistryPin) {                                  # (f): stale, kept
             $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
-            $row.superseded = "$RegistryPin.superseded-$stamp"
+            $kept = "$RegistryPin.superseded-$stamp"
+            $row.superseded = $kept
             $row.superseded_sha256 = Get-Sha $RegistryPin
+            $row.superseded_digest = Read-PinDigest $RegistryPin
             Rename-Item -LiteralPath $RegistryPin -NewName ("ROOT_PIN.json.superseded-" + $stamp)
         }
         Copy-Item -LiteralPath $OwnerPin -Destination $RegistryPin                  # (g): source stays
         & icacls $RegistryPin /inheritance:r /grant:r "*S-1-5-32-544:F" "*S-1-5-18:F" "*S-1-5-32-545:R" | Out-Null
         $row.destination_sha256 = Get-Sha $RegistryPin
         $row.equal = ($row.destination_sha256 -eq $src)                             # (e)
+        if (-not $row.equal) {                                                      # put the old pin back
+            Remove-Item -LiteralPath $RegistryPin -Force -ErrorAction SilentlyContinue
+            if ($kept) { Rename-Item -LiteralPath $kept -NewName "ROOT_PIN.json"; $row.restored = $kept }
+            Write-HealLedger $row
+            return "pin: COPY MISMATCH ($src vs $($row.destination_sha256)); the superseded pin was restored"
+        }
         Write-HealLedger $row
-        if (-not $row.equal) { return "pin: COPY MISMATCH ($src vs $($row.destination_sha256)); see the ledger" }
         return "pin: MOVED the owner pin $($owner.Substring(0,12)) to $RegistryPin (byte copy, sha256 equal)"
     } catch {
         $row.error = $_.Exception.Message; Write-HealLedger $row
@@ -189,13 +197,14 @@ function Invoke-BinRefresh([string] $treeDigest) {
         $src = Join-Path $RepoRoot ("ops\box\" + $name)
         $dst = Join-Path $bin $name
         if (-not (Test-Path -LiteralPath $src)) { continue }
-        if ((Test-Path -LiteralPath $dst) -and (Get-Sha $src) -eq (Get-Sha $dst)) { continue }
+        $before = if (Test-Path -LiteralPath $dst) { Get-Sha $dst } else { $null }
+        if ($before -eq (Get-Sha $src)) { continue }
         Copy-Item -LiteralPath $src -Destination $dst -Force
-        $done += $name
+        $done += [ordered]@{ name = $name; before_sha256 = $before; after_sha256 = (Get-Sha $dst) }
     }
     if ($done) {
         Write-HealLedger @{ step = "bin"; action = "refreshed"; files = $done; root = $treeDigest }
-        return "bin: refreshed $($done -join ', ') from the pinned tree"
+        return "bin: refreshed $(($done | ForEach-Object { $_.name }) -join ', ') from the pinned tree"
     }
     return "bin: copies already match the pinned tree"
 }

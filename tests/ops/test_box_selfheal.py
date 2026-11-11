@@ -40,7 +40,8 @@ def test_the_pin_guards_follow_the_ruling() -> None:
     assert "5a8778c7" not in HEAL                                     # never a remembered value
     assert "$row.equal = ($row.destination_sha256 -eq $src)" in body  # (e) byte copy, verified
     assert "Rename-Item -LiteralPath $RegistryPin" in body            # (f) a stale pin is kept
-    assert "Remove-Item" not in body and "Move-Item" not in body      # (g) the source stays
+    assert "Remove-Item -LiteralPath $OwnerPin" not in body and "Move-Item" not in body  # (g)
+    assert "Rename-Item -LiteralPath $kept" in body                   # a mismatch restores the old pin
     assert body.count("Write-HealLedger $row") >= 3                    # (h) every outcome recorded
     assert "UNMEASURED" in body                                       # (j)
 
@@ -66,6 +67,7 @@ def test_bin_copies_refresh_only_from_the_pinned_tree() -> None:
     body = _body("Invoke-BinRefresh")
     assert "$pin -ne $treeDigest" in body and body.index("$pin -ne") < body.index("Copy-Item")
     assert "-not $treeDigest" in body
+    assert "before_sha256" in body and "after_sha256" in body
 
 
 def test_no_step_can_stop_the_seal() -> None:
