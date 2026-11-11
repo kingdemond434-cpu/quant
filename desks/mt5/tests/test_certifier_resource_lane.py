@@ -71,3 +71,16 @@ def test_gauntlet_checks_broker_h1_availability_once_per_symbol() -> None:
     external = (DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
     assert "_LIVE_H1_AVAILABLE: dict[str, bool]" in external
     assert "if key not in _LIVE_H1_AVAILABLE:" in external
+
+
+def test_the_age_is_read_from_the_reports_own_stamp(tmp_path) -> None:
+    import json
+    from datetime import UTC, datetime, timedelta
+    cl = _launcher()
+    art = tmp_path / "QQUANT_GATES.json"
+    old = (datetime.now(UTC) - timedelta(minutes=cl.CONTRACT_MIN + 30)).isoformat()
+    art.write_text(json.dumps({"swept_at": old}), "utf-8")   # fresh mtime, stale stamp
+    rep = tmp_path / "l.json"
+    assert cl.stand_down({}, artifact=art, report=rep) == cl.STANDDOWN_BREACH_EXIT
+    doc = json.loads(rep.read_text("utf-8"))
+    assert doc["artifact_age_basis"] == "swept_at" and doc["artifact_age_min"] > cl.CONTRACT_MIN

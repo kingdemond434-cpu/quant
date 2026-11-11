@@ -59,10 +59,31 @@ from research.job_lock import LAST_REFUSAL, exclusive_job  # noqa: E402
 
 
 def _age_min(path: Path) -> float | None:
+    """The report's age by its OWN stamp (`swept_at`), never mtime unless it has none."""
+    return _age(path)[0]
+
+
+def _age(path: Path) -> tuple[float | None, str]:
     try:
-        return round((time.time() - path.stat().st_mtime) / 60.0, 1)
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    if isinstance(doc, dict):
+        for key in ("swept_at", "generated_at", "at"):
+            raw = doc.get(key)
+            if not raw:
+                continue
+            try:
+                at = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if at.tzinfo is None:
+                at = at.replace(tzinfo=UTC)
+            return round((datetime.now(UTC) - at).total_seconds() / 60.0, 1), key
+    try:
+        return round((time.time() - path.stat().st_mtime) / 60.0, 1), "mtime"
     except OSError:
-        return None
+        return None, "absent"
 
 
 def _record(doc: dict[str, Any], path: Path | None = None) -> None:
@@ -82,12 +103,12 @@ def stand_down(refusal: dict[str, Any] | None, *, artifact: Path | None = None,
     """Record why this launch did not run, and the exit code the task should show."""
     why = dict(refusal or {})
     reason = "NO_ROOM" if why.get("reason") == "NO_ROOM" else "DUPLICATE"
-    age = _age_min(artifact or ARTIFACT)
+    age, basis = _age(artifact or ARTIFACT)
     breach = age is None or age > CONTRACT_MIN
     doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "verdict": "STOOD_DOWN",
            "reason": reason, "detail": why, "lane": LANE,
-           "artifact_age_min": age, "contract_min": CONTRACT_MIN,
-           "contract_breached": breach}
+           "artifact_age_min": age, "artifact_age_basis": basis,
+           "contract_min": CONTRACT_MIN, "contract_breached": breach}
     _record(doc, report)
     print(f"qquant_gates: STOOD DOWN ({reason}) {json.dumps(why, default=str)}; "
           f"QQUANT_GATES.json age={age}min contract={CONTRACT_MIN:.0f}min", flush=True)
