@@ -58,6 +58,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+import urllib.robotparser
 import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -67,8 +68,16 @@ from itertools import pairwise
 from typing import Any
 
 UNMEASURED = "UNMEASURED"
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-      "Chrome/124.0.0.0 Safari/537.36 quant-desk-free-stack/1.0 (research)")
+#: ONE HONEST USER-AGENT FOR EVERY FETCHER (hard rule, 2026-11-11). This was a Chrome browser
+#: string with our name appended: a site that refuses research clients saw a browser and served
+#: it. Now the request says what it is, names the organ and where its source lives, and nothing
+#: a fetcher passes in `headers` can replace it (`http_fetch` sets it last). A site that refuses
+#: this agent is a REFUSAL the hunter records as a fail-closed verdict, never worked around.
+ROBOTS_AGENT = "quant-research"
+UA = f"{ROBOTS_AGENT}/1.0 (+https://github.com/kingdemond434-cpu/quant; free_stack_hunter)"
+#: The failure class a robots refusal is counted under (the free-stack run log and the feed
+#: schema watch both read it as "not a parser failure").
+ROBOTS_REFUSED = "BLOCKED_BY_ROBOTS"
 HTTP_TIMEOUT_S = 25.0
 MAX_BYTES = 40 * 1024 * 1024
 
@@ -99,11 +108,81 @@ def classify(exc: BaseException) -> str:
     return type(exc).__name__
 
 
+class RobotsGate:
+    """robots.txt for OUR agent, read once per host, under the stricter rule (Governance ruling
+    2026-11-10, PR #819): 200 = parsed and asked for this exact URL; 404/410 = no rules, allowed;
+    401/403 = everything disallowed; anything else, or no answer, = REFUSED -- an unread policy
+    is never read as permission. `refusal(url)` is None when allowed, else the reason.
+
+    The same rule as `libs/data/robots_gate.py` in the ALFRED/patents PR (#1026); kept here so
+    this PR stands alone on LIVE, and to be folded into that module once both have landed."""
+
+    def __init__(self, get_text: Callable[[str], tuple[int, str]] | None = None) -> None:
+        self._get = get_text or self._urllib_get
+        self._rules: dict[str, urllib.robotparser.RobotFileParser | str] = {}
+        #: host -> what the gate decided about its robots file (for the yield report)
+        self.consulted: dict[str, str] = {}
+
+    @staticmethod
+    def _urllib_get(url: str) -> tuple[int, str]:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=15.0) as r:
+                return int(getattr(r, "status", 200) or 200), r.read(500_000).decode(
+                    "utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            return int(exc.code or 0), ""
+        except Exception:
+            return 0, ""
+
+    def refusal(self, url: str) -> str | None:
+        parts = urllib.parse.urlsplit(url)
+        if parts.path == "/robots.txt":
+            return None
+        if parts.scheme not in ("http", "https") or not parts.netloc:
+            return f"not an http(s) URL: {url[:80]}"
+        key = f"{parts.scheme}://{parts.netloc}"
+        rules = self._rules.get(key)
+        if rules is None:
+            status, text = self._get(f"{key}/robots.txt")
+            rp = urllib.robotparser.RobotFileParser()
+            if 200 <= status < 300:
+                rp.parse(text.splitlines())
+                rules, note = rp, "robots.txt read"
+            elif status in (404, 410):
+                rp.parse([])
+                rules, note = rp, f"no robots.txt (HTTP {status}): no rules"
+            elif status in (401, 403):
+                rp.parse(["User-agent: *", "Disallow: /"])
+                rules, note = rp, f"robots.txt HTTP {status}: everything disallowed"
+            else:
+                rules = note = (f"robots.txt unreadable (HTTP {status})" if status
+                                else "robots.txt unreadable (no HTTP answer)")
+            self._rules[key] = rules
+            self.consulted[parts.netloc] = note
+        if isinstance(rules, str):
+            return rules
+        if not rules.can_fetch(ROBOTS_AGENT, url):
+            return "robots.txt disallows this path for our agent"
+        return None
+
+
+#: The live transport's gate. One per process; the hunter reads `consulted` into its report.
+GATE = RobotsGate()
+
+
 def http_fetch(url: str, headers: Mapping[str, str] | None = None,
                body: bytes | None = None) -> bytes:
-    """The live transport. urllib only: `requests` is pinned but adds nothing here."""
-    hdr = {"User-Agent": UA, "Accept": "*/*"}
-    hdr.update(dict(headers or {}))
+    """The live transport. urllib only: `requests` is pinned but adds nothing here.
+
+    Every request passes the robots gate first and goes out under `UA`, whatever `headers` say.
+    """
+    why = GATE.refusal(url)
+    if why:
+        raise FetchError(ROBOTS_REFUSED, f"{why}: {url}")
+    hdr = {"Accept": "*/*"}
+    hdr.update({k: v for k, v in dict(headers or {}).items() if k.lower() != "user-agent"})
+    hdr["User-Agent"] = UA
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
     try:
@@ -1532,22 +1611,15 @@ def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[st
 
 def fetch_akshare_package(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                           now: datetime) -> Harvest:
-    """AKShare through its own package when importable, else its upstreams directly."""
-    try:
-        import akshare as ak  # type: ignore[import-not-found]
-    except Exception:
-        h = fetch_akshare_direct(fetch, row, cursor, now)
-        h.notes.append("akshare package not importable: fetched its upstreams directly")
-        return h
-    h = Harvest(str(row["id"]))
-    try:
-        df = ak.stock_zh_index_daily(symbol="sh000300")
-        pts = [(str(d)[:10], float(c)) for d, c in zip(df["date"], df["close"], strict=False)]
-        _returns(h, "csi300", pts, ("CHINAH", "HK50", "USDCNH"), "CSI300 (akshare)")
-    except Exception as exc:
-        h.failures[type(exc).__name__] += 1
-    if not h.obs:
-        h.status = "BLOCKED" if h.failures else "EMPTY"
+    """AKShare's upstreams, fetched directly through the desk's own transport -- never through
+    the akshare package, even where it is importable. The package sends browser User-Agent
+    strings from inside its own HTTP calls, which this desk can neither see nor replace, so using
+    it would put an impersonating request on the wire under the desk's name (hard rule,
+    2026-11-11). The direct route reads the same public upstreams under the honest UA and the
+    robots gate."""
+    h = fetch_akshare_direct(fetch, row, cursor, now)
+    h.notes.append("akshare package not used (it impersonates a browser); upstreams fetched "
+                   "directly under the desk's own User-Agent")
     return h
 
 
