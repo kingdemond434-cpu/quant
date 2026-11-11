@@ -932,11 +932,16 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     caller_sparse = _caller_sparse_state(root)
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
     wt = tmp / "t"
-    where, subject, why = _head_checkout(root, tmp, wt, dirt)
+    restored: list[str] = []
+    try:
+        where, subject, why = _head_checkout(root, tmp, wt, dirt)
+    finally:
+        # Even when the checkout raises: a caller left flipped is the defect itself (Auditor).
+        restored = _restore_caller_sparse(root, caller_sparse)
+        if restored:
+            print("law gate: " + restored[0], file=sys.stderr)
     # A repair, not a breach: the verdict still stands, and its subject names what was put back.
-    restored = _restore_caller_sparse(root, caller_sparse)
     if restored:
-        print("law gate: " + restored[0], file=sys.stderr)
         subject = f"{subject}; {restored[0]}"
     return where, subject, why
 

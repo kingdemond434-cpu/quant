@@ -300,6 +300,29 @@ def test_a_moved_caller_sparse_setting_is_PUT_BACK_and_named(tmp_path: Path) -> 
                        capture_output=True, text=True)
 
 
+def test_a_checkout_that_RAISES_still_puts_the_caller_back(tmp_path: Path) -> None:
+    """Auditor should-fix on #973: restore runs in a finally, not only on a normal return."""
+    import scripts.run_law_gate as gate
+    _repo, wt = _sparse_caller(tmp_path)
+    before = gate._caller_sparse_state(wt)
+    real = gate._head_checkout
+
+    def flip_then_raise(root: Path, tmp: Path, w: Path,
+                        dirt: list[str]) -> tuple[Path, str, list[str]]:
+        subprocess.run(["git", "config", "--worktree", "core.sparseCheckout", "false"], cwd=root,
+                       capture_output=True, text=True, check=True)
+        raise RuntimeError("checkout died mid-way")
+
+    gate._head_checkout = flip_then_raise  # type: ignore[assignment]
+    try:
+        with pytest.raises(RuntimeError):
+            gate._at_head(wt)
+    finally:
+        gate._head_checkout = real  # type: ignore[assignment]
+    assert gate._caller_sparse_state(wt) == before
+    assert _status(wt) == [" M a/x.txt"]
+
+
 def test_fast_gate_guards_core_and_doctrine():
     from scripts.run_law_gate import fast_gate
     rep = fast_gate()
