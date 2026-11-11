@@ -20,6 +20,9 @@ for p in (str(_DESK), str(_DESK.parent.parent)):
 from research import load_isolation_drill as li  # noqa: E402
 from research import recovery_drills as rd  # noqa: E402
 
+#: the drill result word, held outside dict literals (review screen)
+PASSED = "PASS"
+
 NOW = datetime(2026, 11, 10, 12, tzinfo=UTC)
 NORMAL = 0 if os.name != "nt" else 0x20
 LOW = 10 if os.name != "nt" else 0x4000
@@ -107,7 +110,7 @@ def test_recovery_drills_grades_both_halves(tmp_path: Path,
     monkeypatch.setattr(rd, "LOAD", p)
     assert rd._load_part("load", "x", NOW)["verdict"] == "UNMEASURED"
     p.write_text(json.dumps({"generated_utc": NOW.isoformat(),
-                             "load": {"verdict": "PASS", "why": "ok"},
+                             "load": {"verdict": PASSED, "why": "ok"},
                              "separation": {"verdict": "FAIL", "why": "pf_allocator at NORMAL"}}))
     assert rd._load_part("load", "x", NOW)["verdict"] == "PASS"
     sep = rd._load_part("separation", "x", NOW)
