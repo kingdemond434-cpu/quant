@@ -1,33 +1,33 @@
 {
- "at": "2026-11-11T18:31:03+00:00",
+ "at": "2026-11-11T18:46:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 7.86,
-   "why": "no new verdict for 7.9h (last 2026-11-11T10:39:31+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 8.11,
+   "why": "no new verdict for 8.1h (last 2026-11-11T10:39:31+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": true,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 1.96,
-   "busy_other_cores": 10.93,
-   "why": "judge tree at 1.96 cores (others 10.93) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.0h (limit 1h)",
-   "low_since": "2026-11-11T18:31:24+00:00",
-   "hours": 0.0
+   "busy_judge_cores": 0.35,
+   "busy_other_cores": 14.76,
+   "why": "judge tree at 0.35 cores (others 14.76) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.1h (limit 1h)",
+   "low_since": "2026-11-11T18:41:18+00:00",
+   "hours": 0.08
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.1,
+   "heartbeat_age_min": 0.0,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.1 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.0 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 2.96,
+   "hours": 3.21,
    "limit_h": 25.59,
-   "why": "3.0h since the last sweep ended (2026-11-11T15:33:29+00:00), status SWEEPING; limit 25.59h"
+   "why": "3.2h since the last sweep ended (2026-11-11T15:33:29+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -41,9 +41,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "build_shards",
-   "hours": 0.34,
+   "hours": 0.59,
    "known_phase": true,
-   "why": "sweep phase build_shards has run 0.3h since 2026-11-11T18:10:55+00:00 (limit 18h)"
+   "why": "sweep phase build_shards has run 0.6h since 2026-11-11T18:10:55+00:00 (limit 18h)"
   },
   "host_unreadable": {
    "open": false,
@@ -88,7 +88,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-11T18:30:59+00:00",
+  "heartbeat_utc": "2026-11-11T18:46:01+00:00",
   "last_sweep_ended_utc": "2026-11-11T15:33:29+00:00",
   "last_rc": 1
  },
