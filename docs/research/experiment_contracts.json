@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "ftmo_fill_attribution": {
+   "hypothesis": "Joining every FTMO fill to the sleeve, signal and size rule that produced it, and scoring its +1/+5/+15/+60m and to-close markouts against its certificate's expected net edge, exposes FTMO sleeves whose live fills underdeliver their certificate before the challenge's loss limits do.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "attributed_share",
+    "better": "up",
+    "organ": "report:FTMO_FILL_ATTRIBUTION.json"
+   },
+   "falsifier": {
+    "metric": "attributed_share",
+    "op": "<",
+    "threshold": 0.5,
+    "after": "14 days of FTMO trading in which under half the fills join a SENT intent: the join is too weak to score sleeves against certificates"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

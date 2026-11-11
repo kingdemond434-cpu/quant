@@ -1216,7 +1216,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
     # board rolls every organ into one verdict. It runs last so it reads this pass.
-    "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
+    "build_failure_bank", "trade_pathology", "ftmo_fill_attribution", "experiment_contracts", "health_board",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -1425,7 +1425,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology",
+                     "ftmo_fill_attribution"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -2363,6 +2364,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # second on the build box); the caps only guard a damaged file.
     "build_failure_bank": 120,
     "trade_pathology": 120,
+    "ftmo_fill_attribution": 120,
     "experiment_contracts": 240,
     "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
@@ -6207,6 +6209,10 @@ def main() -> None:
         "build_failure_bank", "research/build_failure_bank.py", "--once"))
     tpa = _costed("trade_pathology", lambda: _producer(
         "trade_pathology", "research/trade_pathology.py", "--once"))
+    # FTMO FILL ATTRIBUTION (idea 621): every FTMO fill -> sleeve, signal, size rule, scored
+    # with +1/+5/+15/+60m and to-close markouts against its certificate. Report only.
+    ffa = _costed("ftmo_fill_attribution", lambda: _producer(
+        "ftmo_fill_attribution", "research/ftmo_fill_attribution.py", "--once"))
     exc_ = _costed("experiment_contracts", lambda: _producer(
         "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
     hbd = _costed("health_board", lambda: _producer(
@@ -6540,6 +6546,7 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cro_noon_freshness": cnf,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
+                    "ftmo_fill_attribution": ffa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
