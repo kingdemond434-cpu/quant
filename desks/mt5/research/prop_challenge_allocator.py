@@ -709,16 +709,21 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         spec, swhy = sleeve_spec(cert_key)
         held = pending_retest(sym, col, cert_key, (spec or {}).get("family"))
         if held:
+            # A HOLD, SO IT IS BILLED (growth governance Rule 1): the column's prior mean R per
+            # trade is the forgone edge research/missed_growth publishes for this rail.
             columns[col] = {"admitted": False, "rail": "ftmo_pending_retest",
-                            "why": f"PENDING_RETEST: {held} is held out until #806 re-tests it"}
+                            "why": f"PENDING_RETEST: {held} is held out until #806 re-tests it",
+                            "prior_r": round(float(r_c[:, :, k].mean()), 6)}
             continue
         fp = (spec or {}).get("fingerprint")
         if fp and fp in seen_fp:
             # DUPLICATE EXECUTABLES ARE ONE BET (FTMO arming precheck): two certificates that
             # rebuild to the same order spec would take the solve's heat twice for one trade.
+            # NOT A HOLD: the one order still trades through the kept column, so the forgone
+            # edge is 0 R by construction -- published as such, never unpriced.
             columns[col] = {"admitted": False, "rail": "ftmo_duplicate_executable",
                             "why": f"DUPLICATE_EXECUTABLE: same order spec as {seen_fp[fp]}; "
-                                   "counted once"}
+                                   "counted once", "prior_r": 0.0, "kept": seen_fp[fp]}
             continue
         admit(col, r_c[:, :, k], (f"Tier S via {cert_key}" if col in tier_s else
                                   f"certified via {cert_key} (the roster Fusion and E8 trade)"))
@@ -1067,8 +1072,10 @@ def rail_blocks(uni: dict[str, Any]) -> list[dict[str, Any]]:
     for col, row in (uni.get("columns") or {}).items():
         if row.get("admitted") or not row.get("rail"):
             continue
-        out.append({"column": col, "rail": row["rail"], "why": row["why"],
-                    "missed_J": "UNMEASURED"})
+        line = {"column": col, "rail": row["rail"], "why": row["why"], "missed_J": "UNMEASURED"}
+        if isinstance(row.get("prior_r"), (int, float)):
+            line["prior_r"] = row["prior_r"]
+        out.append(line)
     return out
 
 

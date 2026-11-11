@@ -845,6 +845,45 @@ def published_ftmo_follower_lines() -> dict[str, Any]:
     return {"source": f"data/{FTMO_INTENTS.name} RAIL_BLOCKED", "rails": lines}
 
 
+#: THE FTMO ALLOCATOR'S UNIVERSE HOLDS (zuck 2026-11-05 16:06Z precheck, journal D-20261111-071):
+#: research/prop_challenge_allocator.build_universe keeps the #806 cells out (`ftmo_pending_retest`,
+#: a hold) and counts identical executables once (`ftmo_duplicate_executable`, 0 R by
+#: construction). Both reach reports/FTMO_ALLOCATOR.json `rail_blocks` with the column's prior
+#: mean R per trade; this publishes them as priced lines.
+FTMO_ALLOCATOR_REPORT = BASE / "reports" / "FTMO_ALLOCATOR.json"
+FTMO_ALLOCATOR_RAIL_NAMES = ("ftmo_pending_retest", "ftmo_duplicate_executable")
+
+
+def published_ftmo_allocator_lines() -> dict[str, Any]:
+    """One line per FTMO allocator hold rail: n columns, the forgone prior R per trade (positive
+    edges only: a negative-edge column held out costs nothing) and the columns. An absent report
+    binds nothing yet; an unreadable one is UNMEASURED; a row without `prior_r` is unpriced."""
+    src = f"reports/{FTMO_ALLOCATOR_REPORT.name} rail_blocks"
+    if not FTMO_ALLOCATOR_REPORT.exists():
+        return {"source": src, "rails": {}}
+    try:
+        doc = json.loads(FTMO_ALLOCATOR_REPORT.read_text(encoding="utf-8"))
+        blocks = [b for b in (doc.get("rail_blocks") or []) if isinstance(b, dict)]
+    except (OSError, ValueError, AttributeError):
+        return {"source": src, "unreadable": [FTMO_ALLOCATOR_REPORT.name],
+                "rails": {r: {"verdict": UNMEASURED, "n": 0} for r in FTMO_ALLOCATOR_RAIL_NAMES}}
+    lines: dict[str, Any] = {}
+    for rail in FTMO_ALLOCATOR_RAIL_NAMES:
+        mine = [b for b in blocks if b.get("rail") == rail]
+        if not mine:
+            continue
+        priced = [float(b["prior_r"]) for b in mine
+                  if isinstance(b.get("prior_r"), (int, float))
+                  and not isinstance(b.get("prior_r"), bool)]
+        lines[rail] = {"verdict": UNMEASURED, "n": len(mine),
+                       "forgone_prior_r_per_trade": round(sum(max(x, 0.0) for x in priced), 6),
+                       "n_unpriced": len(mine) - len(priced),
+                       "columns": sorted(str(b.get("column")) for b in mine),
+                       "why": ("the prior mean R per trade the hold keeps off the FTMO book; "
+                               "published, not a measured E[log W] cost")}
+    return {"source": src, "rails": lines}
+
+
 FTMO_EXEC_INTENTS = BASE / "data" / "ftmo_exec_intents.jsonl"
 
 
@@ -1190,6 +1229,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "fusion_book_rails": published_fusion_book_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "ftmo_executor_rails": published_ftmo_executor_lines(),
+                                    "ftmo_allocator_rails": published_ftmo_allocator_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
                                         JUDGE_PRIORITY_RAISES,

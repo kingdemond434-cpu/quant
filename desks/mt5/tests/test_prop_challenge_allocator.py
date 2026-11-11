@@ -574,3 +574,34 @@ def test_a_pending_retest_cell_takes_no_solve_heat(tmp_path, monkeypatch) -> Non
         kept: {"symbol": "EURUSD", "family": "x", "fingerprint": "e"}})
     assert uni["cols"] == [kept]
     assert uni["columns"][held]["rail"] == "ftmo_pending_retest"
+
+
+def test_the_holds_reach_the_missed_growth_ledger_priced(tmp_path, monkeypatch) -> None:
+    """Auditor S1 on #953: PENDING_RETEST is a hold, so its column's prior mean R per trade is
+    billed through FTMO_ALLOCATOR.json rail_blocks into missed_growth's published lines; the
+    duplicate is published at 0 R (its order still trades through the kept column)."""
+    import missed_growth as mg
+    held, kept = "GBPSEK_carry_risk_off_asia", "EURNOK_carry_asia_p_1"
+    dup = "EURNOK_carry_asia_p_2"
+    spec = {"symbol": "EURNOK", "family": "carry", "fingerprint": "same"}
+    uni = _two_column_world(tmp_path, monkeypatch, [held, kept, dup], {
+        held: {"symbol": "GBPSEK", "family": "carry_risk_off", "fingerprint": "g"},
+        kept: spec, dup: dict(spec)})
+    blocks = {b["column"]: b for b in pca.rail_blocks(uni)}
+    assert blocks[held]["rail"] == "ftmo_pending_retest" and blocks[held]["prior_r"] == 0.1
+    assert blocks[dup]["rail"] == "ftmo_duplicate_executable" and blocks[dup]["prior_r"] == 0.0
+    report = tmp_path / "FTMO_ALLOCATOR.json"
+    report.write_text(json.dumps({"rail_blocks": list(blocks.values())}), encoding="utf-8")
+    monkeypatch.setattr(mg, "FTMO_ALLOCATOR_REPORT", report)
+    lines = mg.published_ftmo_allocator_lines()["rails"]
+    assert lines["ftmo_pending_retest"]["n"] == 1
+    assert lines["ftmo_pending_retest"]["forgone_prior_r_per_trade"] == 0.1
+    assert lines["ftmo_pending_retest"]["n_unpriced"] == 0
+    assert lines["ftmo_duplicate_executable"]["forgone_prior_r_per_trade"] == 0.0
+    # Absent binds nothing; torn is UNMEASURED, never a clean zero.
+    monkeypatch.setattr(mg, "FTMO_ALLOCATOR_REPORT", tmp_path / "absent.json")
+    assert mg.published_ftmo_allocator_lines()["rails"] == {}
+    report.write_text("{torn", encoding="utf-8")
+    monkeypatch.setattr(mg, "FTMO_ALLOCATOR_REPORT", report)
+    assert mg.published_ftmo_allocator_lines()["rails"]["ftmo_pending_retest"]["verdict"] == \
+        mg.UNMEASURED
