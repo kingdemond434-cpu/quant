@@ -28,6 +28,18 @@ ROOT = HERE.parents[2]
 H1, H2 = "1" * 40, "2" * 40
 BASE_SHA = "b" * 40
 T0 = datetime(2026, 11, 4, 12, 0, tzinfo=UTC)
+#: The sealed service's runtime files (root_path.SEALED_RUNTIME, listed here so the sandbox's
+#: base reader serves them without importing root_path first).
+RUNTIME = (
+    "ops/release/authority/repin.py",
+    "ops/release/authority/root_path.py",
+    "ops/release/authority/notify.py",
+    "ops/release/authority/ROOT_POLICY.json",
+)
+
+
+def _repin() -> Any:
+    return _load("sandbox_repin", HERE / "repin.py")
 
 
 def _load(name: str, path: Path) -> Any:
@@ -170,7 +182,9 @@ class Sandbox:
         #: GitHub enforces the authority's status on LIVE (Level 2), and the sealed re-pin
         #: service is installed: both off by default, as on the box before the sitting
         self.level2 = False
-        self.repin_marker = tmp / "INSTALLED.sha256"
+        #: the sealed re-pin service's folder (root_path.SEALED_HOME): install_repin() fills it
+        self.sealed = tmp / "sealed"
+        self.sealed.mkdir()
         self.notices: list[str] = []
         self.deliver = True
         self.folder = tmp / "attestations"
@@ -207,7 +221,7 @@ class Sandbox:
     def wired(self) -> Iterator[None]:
         ag = self.ag
         names = ("_gh", "_git", "patch_id", "up_to_date", "referenced_by_code", "datetime",
-                 "run_notify", "_show", "run_root_notify", "root_level2",
+                 "run_notify", "_show", "_show_bytes", "root_level2",
                  "_authority_mod")  # fmt: skip
         saved = {k: getattr(ag, k) for k in names}
         env = {
@@ -225,18 +239,19 @@ class Sandbox:
                 rev, _, name = args[1].partition(":")
                 if rev.endswith("audit-registry"):
                     return self.auditor_rows.read_bytes()
-                src = self.head_text if rev == self.gh.head else self.base_text
-                t = src.get(name)
-                return t.encode() if t is not None else None
+                return show_bytes(rev, name)
             return saved_bytes(*args)
+
+        def show_bytes(rev: str, name: str) -> bytes | None:
+            src = self.head_text if rev == self.gh.head else self.base_text
+            t = src.get(name)
+            if t is None and name in RUNTIME and rev != self.gh.head:
+                return (ROOT / name).read_bytes()  # the base's sealed runtime: this checkout's
+            return t.encode() if t is not None else None
 
         def notify(title: str, body: str) -> bool:
             self.notices.append(title)
             return self.deliver
-
-        def root_notify(title: str, body: str) -> tuple[int | None, str]:
-            self.root_notices.append((title, body))
-            return self.root_notify_out
 
         def show(rev: str, name: str) -> str | None:
             if rev.endswith("audit-registry"):
@@ -251,19 +266,19 @@ class Sandbox:
         ag.referenced_by_code = lambda base, n: False
         ag.datetime = fake_datetime(self.clock)
         ag.run_notify = notify
-        ag.run_root_notify = root_notify
         ag._show = show
+        ag._show_bytes = show_bytes
         ag.root_level2 = lambda repo, base: (self.level2, "sandbox Level 2")
         real_mod = saved["_authority_mod"]
 
         def authority_mod(name: str) -> Any:
             mod = real_mod(name)
             if name == "root_path":
-                mod.REPIN_MARKER = str(self.repin_marker)
+                mod.SEALED_HOME = str(self.sealed)
             return mod
 
         ag._authority_mod = authority_mod
-        self.auth.pol.root_path().REPIN_MARKER = str(self.repin_marker)
+        self.auth.pol.root_path().SEALED_HOME = str(self.sealed)
         self.auth._git_bytes = git_bytes
         try:
             yield
@@ -283,12 +298,34 @@ class Sandbox:
             f = self.auth.facts(self.ag, "o/r", 41, self.ag.LIVE, self.policy,
                                 enforced=self.level2)  # fmt: skip
             verdict, reasons = self.auth.pol.decide(f)
+            if verdict == "NOTIFY":
+                self.auth.ask_notice(self.folder, f, self.clock.t)
             if verdict in ("CLEAR", "HOLD"):
                 key, kid = self.att.load_private(self.key_pem)
                 env = self.auth.issue(f, verdict, reasons, repo="o/r", digest=self.digest,
                                       key=key, kid=kid, ttl_h=48, now=self.clock.t)  # fmt: skip
                 self.auth.write(self.folder, env, 41, f["head"], verdict, self.digest)
+        self.serve()
         return verdict, reasons
+
+    def install_repin(self) -> None:
+        """install_repin.ps1: the sealed service's files, as LIVE has them."""
+        for rel in RUNTIME:
+            (self.sealed / rel.rsplit("/", 1)[-1]).write_bytes((ROOT / rel).read_bytes())
+
+    def serve(self) -> None:
+        """One pass of the sealed service's notice side (repin.serve_notices), on the fake clock,
+        through a fake channel."""
+        if not (self.sealed / "repin.py").exists():
+            return
+        rp = self.auth.pol.root_path()
+
+        def send(title: str, body: str) -> tuple[int, str]:
+            self.root_notices.append((title, body))
+            rc, out = self.root_notify_out
+            return int(rc or 0), out
+
+        _repin().serve_notices(self.tmp, self.sealed, rp, send, self.clock.t)
 
     def audit_clear(self, head: str | None = None, comment: bool = True, row: bool = True) -> None:
         """The Auditor's two records for `head`: its CLEAR comment and its synced registry row."""

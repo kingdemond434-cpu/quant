@@ -189,7 +189,7 @@ def test_a_root_pr_waits_while_the_root_path_is_off_and_never_takes_the_24h_path
 def test_a_pr_that_changes_the_sealed_core_is_held_for_zuck(tmp_path: Path, path: str) -> None:
     sb = sb_mod.Sandbox(tmp_path, files=(path,))
     sb.level2 = True
-    sb.repin_marker.write_text("x")
+    sb.install_repin()
     v, why = sb.authority()
     assert v == "HOLD" and "SEALED CORE" in why[0]
     sb.audit_clear()

@@ -178,8 +178,12 @@ def _c(body: str, at: datetime, edited: bool = False, who: str = "OWNER") -> dic
 TRUSTED = ("OWNER", "MEMBER", "COLLABORATOR")
 
 
-def test_the_window_is_72h_from_the_anchored_notice_for_this_head() -> None:
-    sent = rp.notices([_c(rp.notice_comment(H1, "armed 1, delivered 1"), T0)], TRUSTED)
+def _rec(head: str, at: datetime, receipt: str = "armed 1, delivered 1") -> dict[str, Any]:
+    return {"41": [{"head": head, "at": at.isoformat(), "receipt": receipt}]}
+
+
+def test_the_window_is_72h_from_the_sealed_services_delivered_notice_for_this_head() -> None:
+    sent = rp.own_notices(_rec(H1, T0), 41)
     assert sent == [(T0, H1)]
     assert rp.window([], H1, T0)[0] == "none"
     assert rp.window(sent, H2, T0)[0] == "none"  # a new push: a new notice
@@ -188,12 +192,28 @@ def test_the_window_is_72h_from_the_anchored_notice_for_this_head() -> None:
     assert rp.window(sent, H1, T0 - timedelta(hours=1))[0] == "none"  # dated in the future
 
 
-def test_only_an_unedited_trusted_notice_comment_counts() -> None:
-    body = rp.notice_comment(H1, "delivered 1")
-    assert rp.notices([_c(body, T0, edited=True)], TRUSTED) == []
-    assert rp.notices([_c(body, T0, who="NONE")], TRUSTED) == []
-    assert rp.notices([_c("x " + body, T0)], TRUSTED) == []
-    assert rp.notices([_c(f"ROOT NOTICE {H1} delivered: ", T0)], TRUSTED) == []
+def test_only_a_well_formed_delivered_record_for_this_pr_counts() -> None:
+    assert rp.own_notices(_rec(H1, T0, receipt=""), 41) == []
+    assert rp.own_notices(_rec(H1, T0), 42) == []
+    assert rp.own_notices(_rec("abc", T0), 41) == []
+    assert rp.own_notices({"41": [{"head": H1, "at": "garbage", "receipt": "x"}]}, 41) == []
+    assert rp.own_notices({"41": [{"head": H1, "at": "2026-11-04T12:00:00", "receipt": "x"}]},
+                          41) == []  # no timezone  # fmt: skip
+    assert rp.own_notices(None, 41) == [] and rp.own_notices({"41": "x"}, 41) == []
+
+
+def test_a_notice_comment_on_the_pr_starts_no_window(sb: Any) -> None:
+    """Every session posts as one identity, so a comment that LOOKS like a notice counts for
+    nothing: only the sealed service's own record starts the window."""
+    sb.root_notify_out = (0, "armed 1, delivered 0")  # the real notice never goes out
+    sb.audit_clear()
+    at = sb.clock.t.strftime("%Y-%m-%dT%H:%M:%SZ")
+    sb.gh.comments.append({"body": f"ROOT NOTICE {H1} delivered: armed 1, delivered 1",
+                           "created_at": at, "updated_at": at, "author_association": "OWNER",
+                           "performed_via_github_app": None})  # fmt: skip
+    _past_window(sb)
+    assert sb.gh.merges() == []
+    assert not (sb.sealed / "root_notices.json").exists()
 
 
 def test_anything_red_held_or_off_after_the_notice_voids_it() -> None:
@@ -235,7 +255,7 @@ def test_the_notice_names_the_pr_the_head_and_the_files_in_plain_words() -> None
 def sb(tmp_path: Path) -> Any:
     box = sb_mod.Sandbox(tmp_path, files=(GATE,))
     box.level2 = True  # the sitting's end state: GitHub enforces the authority's status
-    box.repin_marker.write_text("abc repin.py\n")
+    box.install_repin()
     return box
 
 
@@ -245,15 +265,19 @@ def _cycle(sb: Any, hours: float) -> None:
     sb.gate()
 
 
-def test_a_root_pr_merges_72h_after_its_anchored_notice_with_no_owner_step(sb: Any) -> None:
+def test_a_root_pr_merges_72h_after_its_sealed_notice_with_no_owner_step(sb: Any) -> None:
     sb.audit_clear()
-    v, why = sb.authority()
-    assert v == "WAIT" and "no delivered ROOT notice" in why[0]  # no attestation before the notice
-    sb.gate()
+    v, why = sb.authority()  # nothing signed; the authority asks the sealed service for the notice
+    assert v == "NOTIFY" and "no delivered ROOT notice" in why[0]
+    req = json.loads((sb.folder / "root_notice_request.json").read_text())
+    assert req["41"]["head"] == H1 and req["41"]["files"] == [GATE]
     assert len(sb.root_notices) == 1 and sb.gh.merges() == []
     assert "#41" in sb.root_notices[0][0] and GATE in sb.root_notices[0][1]
-    anchored = [c for c in sb.gh.comments if str(c["body"]).startswith("ROOT NOTICE")]
-    assert len(anchored) == 1 and H1 in anchored[0]["body"]
+    rec = json.loads((sb.sealed / "root_notices.json").read_text())
+    assert rec["41"][0]["head"] == H1 and "delivered 1" in rec["41"][0]["receipt"]
+    sb.gate()
+    assert not any(str(c["body"]).startswith("ROOT NOTICE") for c in sb.gh.comments)
+    assert sb.authority()[0] == "WAIT" and len(sb.root_notices) == 1  # sent once, not again
     _cycle(sb, 24.1)
     assert sb.gh.merges() == []  # 24 h is not enough for ROOT
     _cycle(sb, 48)
@@ -269,12 +293,14 @@ def test_a_root_pr_merges_72h_after_its_anchored_notice_with_no_owner_step(sb: A
 
 def test_the_root_path_is_off_until_level2_and_the_repin_service(sb: Any) -> None:
     sb.audit_clear()
-    for off in ("level2", "marker"):
+    for off in ("level2", "stale", "missing"):
         if off == "level2":
             sb.level2 = False
-        else:
+        elif off == "stale":  # an installed copy that is not LIVE's
             sb.level2 = True
-            sb.repin_marker.unlink()
+            (sb.sealed / "root_path.py").write_text("# old\n")
+        else:
+            (sb.sealed / "root_path.py").unlink()
         sb.gate()
         _cycle(sb, 80)
         assert sb.gh.merges() == [] and sb.root_notices == [], off
@@ -303,13 +329,14 @@ def test_an_undelivered_notice_starts_no_window(sb: Any) -> None:
     sb.audit_clear()
     sb.root_notify_out = (0, "armed 1, delivered 0")
     _past_window(sb)
-    assert sb.gh.merges() == [] and len(sb.root_notices) == 4
-    assert not any(str(c["body"]).startswith("ROOT NOTICE") for c in sb.gh.comments)
+    assert sb.gh.merges() == [] and len(sb.root_notices) == 3  # retried each pass, never recorded
+    assert not (sb.sealed / "root_notices.json").exists()
 
 
 def test_a_hold_posted_in_the_window_stops_it_and_a_new_clear_restarts_it(sb: Any) -> None:
     sb.audit_clear()
-    sb.gate()
+    sb.authority()
+    assert len(sb.root_notices) == 1
     sb.clock.advance(hours=10)
     at = sb.clock.t.strftime("%Y-%m-%dT%H:%M:%SZ")
     sb.gh.comments.append({"body": f"AUDIT HOLD {H1}", "created_at": at, "updated_at": at,
@@ -318,7 +345,7 @@ def test_a_hold_posted_in_the_window_stops_it_and_a_new_clear_restarts_it(sb: An
     _cycle(sb, 70)
     assert sb.gh.merges() == []
     sb.audit_clear()  # a new CLEAR: the old notice is void, a new one is sent
-    sb.gate()
+    sb.authority()
     assert len(sb.root_notices) == 2
     _cycle(sb, 24)
     assert sb.gh.merges() == []
@@ -328,12 +355,12 @@ def test_an_earlier_root_merge_in_flight_blocks_the_next(sb: Any) -> None:
     (sb.registry.parent / "ROOT_INFLIGHT.json").write_text(json.dumps({"pr": 7, "head": H2}))
     sb.audit_clear()
     _past_window(sb)
-    assert sb.gh.merges() == [] and sb.root_notices == []
+    assert sb.gh.merges() == []  # (a notice may go out: the authority judges, the gate waits)
 
 
 def test_the_inflight_mark_is_written_before_the_merge_or_nothing_merges(sb: Any) -> None:
     sb.audit_clear()
-    sb.gate()
+    sb.authority()
     sb.clock.advance(hours=73)
     assert sb.authority()[0] == "CLEAR"
     (sb.registry.parent / "ROOT_INFLIGHT.json").mkdir()  # cannot be written as a file

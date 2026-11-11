@@ -902,7 +902,6 @@ def trusted_eval_passed(repo: str, pr: int, head: str, base: str) -> tuple[bool,
 # failed review or replay-shadow that names nothing), the base's trusted-eval, up to date, 72 h
 # since the gate's own DELIVERED notice for this head, and no earlier ROOT merge still waiting to
 # be re-pinned and adopted. The rules are read from THIS (the base's) checkout.
-ROOT_WINDOW_FILE = "root_window.json"
 #: Written when a ROOT PR merges; only the re-pin service removes it, after it re-pinned the
 #: released root digest and the box adopted that tree.
 ROOT_INFLIGHT_FILE = "ROOT_INFLIGHT.json"
@@ -956,61 +955,31 @@ def root_attempts(
     return out
 
 
-def run_root_notify(title: str, body: str) -> tuple[int | None, str]:
-    """(exit code, stdout) of the box's ROOT notify command (root_path.NOTIFY_ENV, the same
-    channel as the registry notice); (None, "") when none is configured."""
-    import shlex
+def root_sealed_bytes(name: str) -> bytes | None:
+    """A file of the sealed re-pin service (root_path.SEALED_HOME), read only."""
+    try:
+        return (Path(_authority_mod("root_path").SEALED_HOME) / name).read_bytes()
+    except OSError:
+        return None
 
-    cmd = os.environ.get(_authority_mod("root_path").NOTIFY_ENV)
-    if not cmd:
-        return None, ""
-    done = subprocess.run(
-        [*shlex.split(cmd, posix=os.name != "nt"), title, body],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=GH_TIMEOUT_S, check=False,
-    )  # fmt: skip
-    return done.returncode, done.stdout or ""
+
+def root_sealed_json(name: str) -> Any:
+    raw = root_sealed_bytes(name)
+    try:
+        return json.loads(raw.decode("utf-8-sig")) if raw is not None else None
+    except (UnicodeDecodeError, ValueError):
+        return None
+
+
+def _show_bytes(rev: str, name: str) -> bytes | None:
+    got = subprocess.run(["git", "show", f"{rev}:{name}"], capture_output=True, check=False)
+    return got.stdout if got.returncode == 0 else None
 
 
 def _show(rev: str, name: str) -> str | None:
     """`name` at `rev` as text, or None when it is not there."""
     got = subprocess.run(["git", "show", f"{rev}:{name}"], capture_output=True, check=False)
     return got.stdout.decode("utf-8", "replace") if got.returncode == 0 else None
-
-
-def root_notify(
-    repo: str, folder: Path, pr: int, head: str, root_files: list[str], now: datetime
-) -> str:
-    """Send the ROOT veto notice for `head` with the box's notify command and record it ONLY with
-    a delivery receipt (exit 0 and "delivered N", N > 0). Why, either way."""
-    rp = _authority_mod("root_path")
-    title, body = rp.notice(pr, head, root_files)
-    try:
-        rc, out = run_root_notify(title, body)
-    except (OSError, subprocess.SubprocessError) as exc:
-        return f"the ROOT notice failed ({type(exc).__name__}); the next sweep retries"
-    if rc is None:
-        return "no notify command configured: no ROOT window can start"
-    got = rp.receipt(rc, out)
-    if got is None:
-        return "the ROOT notice was not delivered; the next sweep retries"
-    path = folder / ROOT_WINDOW_FILE
-    try:
-        seen = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-        if not isinstance(seen, dict):
-            raise ValueError("not an object")
-        seen[str(pr)] = {"head": head, "at": now.isoformat(), "receipt": got}
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        tmp.write_text(json.dumps(seen, sort_keys=True), encoding="utf-8")
-        os.replace(tmp, path)
-    except (OSError, ValueError) as exc:
-        return f"the ROOT notice record could not be written ({type(exc).__name__})"
-    try:  # the anchoring comment: its GitHub time starts the window both sides read
-        _gh(f"repos/{repo}/issues/{pr}/comments", "-X", "POST",
-            data={"body": rp.notice_comment(head, got)})  # fmt: skip
-    except RuntimeError as exc:
-        return f"ROOT notice delivered but not anchored on the PR ({str(exc)[:120]}); retried"
-    return f"ROOT notice delivered for {head[:9]} ({got}): the {rp.ROOT_VETO_H:.0f} h window starts"
 
 
 def root_auditor_rows() -> list[dict[str, Any]]:
@@ -1551,14 +1520,15 @@ def run(
         return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
 
     def root_judge(st: Mapping[str, Any] | None, awhy: str) -> tuple[list[dict[str, Any]], str]:
-        """THE ROOT PATH on the gate's side (root_path.gate_verdict): send the notice, ask for the
-        one automatic re-run, or return the one CLEAR row for this exact head when the authority
-        has attested it as class ROOT. Before any attestation exists only NOTIFY and RERUN act."""
+        """THE ROOT PATH on the gate's side (root_path.gate_verdict): ask for the one automatic
+        re-run, or return the one CLEAR row for this exact head when the authority has attested
+        it as class ROOT. The veto notice is the sealed service's (root_sealed_json), never this
+        gate's. Before any attestation exists only RERUN acts."""
         rp = _authority_mod("root_path")
         folder = root_dir()
         now = datetime.now(UTC)
         try:
-            roots, reasons, sealed = root_classify(files, level, base, head)
+            _roots, reasons, sealed = root_classify(files, level, base, head)
             if sealed or not rp.eligible(reasons)[0]:
                 return [], ""
             comments = _flat(_gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
@@ -1588,7 +1558,9 @@ def run(
             ),
             "deactivated": not on,
             "enforced": enforced,
-            "repin_installed": Path(rp.REPIN_MARKER).is_file(),
+            "repin_installed": rp.repin_current(
+                root_sealed_bytes, lambda n: _show_bytes(f"origin/{base}", n)
+            ),
             "in_flight": root_in_flight(folder),
             "comment": rp.comment_clear(found, head),
             "registry": rp.registry_agrees(root_auditor_rows(), pr, head),
@@ -1598,7 +1570,7 @@ def run(
             "fresh": fresh,
             "fresh_why": fwhy,
             "window": rp.window(
-                rp.notices(comments, TRUSTED),
+                rp.own_notices(root_sealed_json(rp.NOTICES_FILE), pr),
                 head,
                 now,
                 rp.voids(found, tries, board, DEACTIVATE, TRUSTED),
@@ -1609,8 +1581,6 @@ def run(
             vwhy = f"{vwhy} ({lwhy})"
         if not on and "DEACTIVATED" in vwhy:
             vwhy = f"{vwhy} ({owhy})"
-        if verdict == "NOTIFY":
-            return [], f"ROOT path: {root_notify(repo, folder, pr, head, roots, now)}"
         if verdict == "RERUN":
             last = (tries.get(str(jobs[2])) or [{}])[-1]
             try:

@@ -12,11 +12,21 @@ stays off), logs a RED line and alerts:
      workflow's seal) names code_sha C, the live tree's HEAD contains C, and C contains the merge;
   3. the merge M is on C's first-parent line, titled by the gate's ROOT path for that PR, with
      that head as its second parent;
-  4. the gate's own record shows a DELIVERED ROOT notice (a receipt) for that head at least
-     ROOT_VETO_H before M was committed;
+  4. THIS service's own record (NOTICES_FILE in its sealed folder) shows a ROOT notice it
+     DELIVERED (a receipt) for that head at least ROOT_VETO_H before M was committed;
   5. M's change (M^1..M) touches no SEALED CORE file and no sealed value, judged by THIS
      installed copy of root_path.py, never by the tree being pinned;
-  6. the root digest of C equals the root digest of M: no other root change rode in after M.
+  6. the root digest of C equals the root digest of M: no other root change rode in after M;
+  7. C is on GitHub's LIVE (ls-remote of root_path.REPO_URL, never the tree's own remote).
+
+Digests are computed by the INSTALLED root_path.root_digest over the INSTALLED copy of
+ROOT_POLICY.json; no code from any tree is run. The sealed checks run before any digest.
+
+It also SENDS THE ROOT VETO NOTICES: the authority writes a request into its own attestations
+folder (root_path.REQUEST_FILE) when a ROOT PR passes everything but the window; this service
+sends it through the sealed notifier (notify.py + the frozen alert_channels.py) and records it in
+NOTICES_FILE only on a receipt. That record, which no session can write, starts the window for
+the authority, the gate and step 4.
 
 Then it writes the pin for C (digest, commit, the old digest, the PR, head and merge), appends a
 line to repin.log.jsonl, alerts with both digests, and removes ROOT_INFLIGHT.json. It never pins a
@@ -27,7 +37,7 @@ final sitting); that folder is writable by Administrators and SYSTEM only, so no
 session can change the copy that runs.
 
     python -I repin.py --registry C:\\opt\\audit_registry --live-tree C:\\opt\\quant
-        [--pin C:\\opt\\audit_registry\\ROOT_PIN.json] [--notify "python ...send_alert.py"]
+        [--pin C:\\opt\\audit_registry\\ROOT_PIN.json]
 """
 
 from __future__ import annotations
@@ -36,7 +46,6 @@ import argparse
 import importlib.util
 import json
 import os
-import shlex
 import subprocess
 import sys
 from collections.abc import Callable, Mapping
@@ -46,22 +55,34 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 INFLIGHT = "ROOT_INFLIGHT.json"
-WINDOW = "root_window.json"
+ATTEMPTS = "root_notice_attempts.json"
+#: A notice that was not delivered is tried again at most this often.
+RETRY = timedelta(hours=1)
 LOG = "repin.log.jsonl"
 RELEASE_REL = "desks/mt5/data/RELEASE.json"
-POLICY_REL = "ops/release/authority/policy.py"
-ROOT_POLICY_REL = "ops/release/authority/ROOT_POLICY.json"
 #: Commits searched for the merge when the current pin names no commit on the released line.
 SCAN = 5000
 
 
-def _root_path() -> Any:
-    spec = importlib.util.spec_from_file_location("_repin_root_path", HERE / "root_path.py")
+def _sealed(name: str, home: Path = HERE) -> Any:
+    spec = importlib.util.spec_from_file_location(f"_repin_{name}", home / f"{name}.py")
     if spec is None or spec.loader is None:
-        raise ImportError("root_path")
+        raise ImportError(name)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def _root_path(home: Path = HERE) -> Any:
+    return _sealed("root_path", home)
+
+
+def sealed_policy(home: Path = HERE) -> dict[str, Any]:
+    """The INSTALLED ROOT_POLICY.json (a sealed file: a ROOT-path merge never changes it)."""
+    doc = json.loads((home / "ROOT_POLICY.json").read_text(encoding="utf-8"))
+    if not isinstance(doc, dict) or not isinstance(doc.get("root_files"), list):
+        raise ValueError("the installed ROOT_POLICY.json has no root_files")
+    return doc
 
 
 def find_merge(
@@ -80,7 +101,8 @@ def find_merge(
 def plan(f: Mapping[str, Any], rp: Any) -> tuple[str, str]:
     """("PIN" | "CLEAR" | "WAIT" | "REFUSE", why). Pure over the facts the service read:
     inflight, release_sha, adopted (bool, why), contains_merge, merge ((sha, time) or None),
-    window_rec, sealed (list), digest_m, digest_c, old_digest."""
+    on_live ((bool, why)), notices (root_path.own_notices for the PR), sealed (list), digest_m,
+    digest_c, old_digest."""
     inf = f.get("inflight")
     if not inf:
         return "CLEAR", "no ROOT merge in flight"
@@ -97,18 +119,17 @@ def plan(f: Mapping[str, Any], rp: Any) -> tuple[str, str]:
     merge = f.get("merge")
     if merge is None:
         return "REFUSE", f"no ROOT-path merge of #{pr} at {head[:9]} on the released line"
-    rec = f.get("window_rec") or {}
-    if rec.get("head") != head or not rec.get("receipt"):
-        return "REFUSE", f"no delivered ROOT notice on record for #{pr} at {head[:9]}"
-    try:
-        sent = datetime.fromisoformat(str(rec.get("at")))
-    except ValueError:
-        return "REFUSE", "the ROOT notice record has an unreadable time"
-    merged = datetime.fromtimestamp(int(merge[1]), tz=UTC)
-    if sent.tzinfo is None or merged - sent < timedelta(hours=float(rp.ROOT_VETO_H)):
-        return "REFUSE", f"#{pr} merged before {rp.ROOT_VETO_H:.0f} h from its delivered notice"
     if f.get("sealed"):
         return "REFUSE", "the merge touches the SEALED CORE: " + "; ".join(f["sealed"])
+    sent = [at for at, h in f.get("notices") or [] if h == head]
+    if not sent:
+        return "REFUSE", f"no delivered ROOT notice on record for #{pr} at {head[:9]}"
+    merged = datetime.fromtimestamp(int(merge[1]), tz=UTC)
+    if merged - max(sent) < timedelta(hours=float(rp.ROOT_VETO_H)):
+        return "REFUSE", f"#{pr} merged before {rp.ROOT_VETO_H:.0f} h from its delivered notice"
+    on_live, lwhy = f.get("on_live") or (False, "LIVE not read")
+    if not on_live:
+        return "WAIT", f"the released tree is not confirmed on GitHub's LIVE: {lwhy}"
     if not f.get("digest_c") or f.get("digest_c") != f.get("digest_m"):
         return "REFUSE", "another root change reached the release after the ROOT merge"
     if f.get("digest_c") == f.get("old_digest"):
@@ -134,7 +155,8 @@ class Repo:
         safe = ["-c", f"safe.directory={self.path.as_posix()}", "-c", "core.fsmonitor=false",
                 "-c", "core.hooksPath=" + os.devnull, "-c", "diff.external=",
                 "-c", "core.pager=cat", "-c", "core.sshCommand=",
-                "-c", "protocol.allow=never"]  # fmt: skip
+                "-c", "protocol.allow=never", "-c", "protocol.https.allow=always",
+                "-c", "credential.helper=", "-c", "http.extraHeader="]  # fmt: skip
         return subprocess.run(
             ["git", *safe, "-C", str(self.path), *args],
             capture_output=True, check=False, timeout=120, env=env,
@@ -154,15 +176,20 @@ class Repo:
         return self.git("merge-base", "--is-ancestor", a, b).returncode == 0
 
 
-def tree_digest(repo: Repo, rev: str, rp: Any) -> str:
+def tree_digest(repo: Repo, rev: str, rp: Any, policy: Mapping[str, Any]) -> str:
     """The root digest of `rev` by the INSTALLED sealed root_path.root_digest (the same function
-    the authority and the gate use), over that tree's ROOT_POLICY.json (a sealed file). No code
-    from the tree is ever run."""
-    raw = repo.show(rev, ROOT_POLICY_REL)
-    if raw is None:
-        raise RuntimeError(f"{rev[:9]} has no root policy")
+    the authority and the gate use), over the INSTALLED ROOT_POLICY.json. No code and no policy
+    from the tree is ever used; only its bytes are hashed."""
     names = repo.out("ls-tree", "-r", "--name-only", rev).splitlines()
-    return str(rp.root_digest(lambda n: repo.show(rev, n), names, json.loads(raw)))
+    return str(rp.root_digest(lambda n: repo.show(rev, n), names, policy))
+
+
+def live_tip(repo: Repo, rp: Any) -> str:
+    """LIVE's tip sha on GitHub (ls-remote of the sealed REPO_URL; writes nothing)."""
+    got = repo.out("ls-remote", rp.REPO_URL, f"refs/heads/{rp.LIVE_BRANCH}").split()
+    if not got or len(got[0]) != 40:
+        raise RuntimeError("GitHub did not name LIVE's tip")
+    return got[0]
 
 
 def _read_json(path: Path) -> Any:
@@ -172,7 +199,7 @@ def _read_json(path: Path) -> Any:
         return {"unreadable": True}
 
 
-def gather(registry: Path, live: Path, pin: Path, rp: Any) -> dict[str, Any]:
+def gather(registry: Path, live: Path, pin: Path, rp: Any, home: Path = HERE) -> dict[str, Any]:
     f: dict[str, Any] = {"inflight": _read_json(registry / INFLIGHT)}
     inf = f["inflight"]
     if not isinstance(inf, Mapping) or not inf.get("head") or not isinstance(inf.get("pr"), int):
@@ -199,8 +226,7 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any) -> dict[str, Any]:
     merge = find_merge(log, int(inf["pr"]), str(inf["head"]))
     f["merge"] = merge
     f["contains_merge"] = merge is not None or repo.ancestor(str(inf["head"]), c)
-    window = _read_json(registry / WINDOW)
-    f["window_rec"] = (window or {}).get(str(inf["pr"])) if isinstance(window, Mapping) else None
+    f["notices"] = rp.own_notices(_read_json(home / rp.NOTICES_FILE), int(inf["pr"]))
     if merge is None:
         return f
     m = merge[0]
@@ -215,21 +241,71 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any) -> dict[str, Any]:
         return read
 
     f["sealed"] = rp.sealed_touch(names, side(f"{m}^1"), side(m))
-    f["digest_m"] = tree_digest(repo, m, rp)
-    f["digest_c"] = tree_digest(repo, c, rp)
+    if f["sealed"]:
+        return f  # refused before anything else is read
+    tip = live_tip(repo, rp)
+    if repo.git("cat-file", "-e", f"{tip}^{{commit}}").returncode != 0:
+        f["on_live"] = (False, f"LIVE's tip {tip[:9]} is not fetched into the live tree yet")
+    else:
+        f["on_live"] = (repo.ancestor(c, tip), f"release {c[:9]} vs LIVE {tip[:9]}")
+    policy = sealed_policy(home)
+    f["digest_m"] = tree_digest(repo, m, rp, policy)
+    f["digest_c"] = tree_digest(repo, c, rp, policy)
     f["old_digest"] = old.get("digest") if isinstance(old, Mapping) else None
     return f
 
 
-def _alert(cmd: str | None, title: str, body: str) -> str:
-    if not cmd:
-        return "no notify command"
-    try:
-        p = subprocess.run([*shlex.split(cmd, posix=os.name != "nt"), title, body],
-                           capture_output=True, text=True, timeout=120, check=False)  # fmt: skip
-    except (OSError, subprocess.SubprocessError) as exc:
-        return f"alert failed ({type(exc).__name__})"
-    return f"alert rc={p.returncode} {' '.join((p.stdout or '').split())[:120]}"
+Sender = Callable[[str, str], tuple[int, str]]
+
+
+def _alert(send: Sender, title: str, body: str) -> str:
+    rc, out = send(title, body)
+    return f"alert rc={rc} {' '.join(out.split())[:120]}"
+
+
+def _write_json(path: Path, doc: Any) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def serve_notices(registry: Path, home: Path, rp: Any, send: Sender, now: datetime) -> list[str]:
+    """Send every ROOT notice the authority requested (registry/attestations/REQUEST_FILE) that
+    has no delivered record dated after its `after`, at most once per RETRY each, and record ONLY
+    a delivered one (a receipt) in home/NOTICES_FILE. What was done, one line each."""
+    req = _read_json(registry / "attestations" / rp.REQUEST_FILE)
+    if not isinstance(req, Mapping) or req.get("unreadable"):
+        return []
+    record = _read_json(home / rp.NOTICES_FILE)
+    record = dict(record) if isinstance(record, Mapping) and not record.get("unreadable") else {}
+    tries = _read_json(home / ATTEMPTS)
+    tries = dict(tries) if isinstance(tries, Mapping) and not tries.get("unreadable") else {}
+    done: list[str] = []
+    for key, r in sorted(req.items()):
+        if not key.isdigit() or not isinstance(r, Mapping):
+            continue
+        head, after = str(r.get("head") or ""), rp._when(r.get("after")) if r.get("after") else None
+        if r.get("after") and after is None:
+            continue
+        have = [at for at, h in rp.own_notices(record, int(key)) if h == head]
+        if have and (after is None or max(have) > after):
+            continue
+        prev = tries.get(key) if isinstance(tries.get(key), Mapping) else {}
+        last = rp._when(prev.get("at")) if prev.get("at") else None
+        if last is not None and prev.get("head") == head and now - last < RETRY:
+            continue
+        tries[key] = {"head": head, "at": now.isoformat()}
+        _write_json(home / ATTEMPTS, tries)
+        title, body = rp.notice(int(key), head, r.get("files") or [])
+        rc, out = send(title, body)
+        got = rp.receipt(rc, out)
+        if got is None:
+            done.append(f"#{key} {head[:9]}: ROOT notice NOT delivered ({out[:80]})")
+            continue
+        record.setdefault(key, []).append({"head": head, "at": now.isoformat(), "receipt": got})
+        _write_json(home / rp.NOTICES_FILE, record)
+        done.append(f"#{key} {head[:9]}: ROOT notice delivered ({got[:80]})")
+    return done
 
 
 def write_pin(pin: Path, doc: Mapping[str, Any]) -> None:
@@ -248,10 +324,22 @@ def write_pin(pin: Path, doc: Mapping[str, Any]) -> None:
     os.replace(tmp, pin)
 
 
-def run(registry: Path, live: Path, pin: Path, notify: str | None, now: datetime) -> int:
-    rp = _root_path()
+def run(registry: Path, live: Path, pin: Path, now: datetime, home: Path = HERE,
+        send: Sender | None = None) -> int:  # fmt: skip
+    rp = _root_path(home)
+    if send is None:
+        nt = _sealed("notify", home)
+
+        def send(title: str, body: str) -> tuple[int, str]:
+            return nt.send(title, body, live, home)  # type: ignore[no-any-return]
+
     try:
-        f = gather(registry, live, pin, rp)
+        for msg in serve_notices(registry, home, rp, send, now):
+            print(msg, flush=True)
+    except Exception as exc:  # a broken request never blocks the re-pin side
+        print(f"ROOT notices not served ({type(exc).__name__}: {str(exc)[:160]})", flush=True)
+    try:
+        f = gather(registry, live, pin, rp, home)
         action, why = plan(f, rp)
     except Exception as exc:  # any read error pins nothing; the next pass looks again
         action, why, f = "WAIT", f"not judged ({type(exc).__name__}: {str(exc)[:160]})", {}
@@ -263,13 +351,13 @@ def run(registry: Path, live: Path, pin: Path, notify: str | None, now: datetime
                "head": inf.get("head"), "merge": f["merge"][0]}  # fmt: skip
         write_pin(pin, doc)
         line.update(old=f.get("old_digest"), new=f["digest_c"], commit=f["release_sha"])
-        line["alert"] = _alert(notify, f"ROOT re-pinned after #{inf.get('pr')}",
+        line["alert"] = _alert(send, f"ROOT re-pinned after #{inf.get('pr')}",
                                f"{why}. Root digest {str(f.get('old_digest'))[:16]} -> "
                                f"{f['digest_c'][:16]}.")  # fmt: skip
     if action in ("PIN", "CLEAR") and inf:
         (registry / INFLIGHT).unlink(missing_ok=True)
     if action == "REFUSE":
-        line["alert"] = _alert(notify, "RED ROOT re-pin refused",
+        line["alert"] = _alert(send, "RED ROOT re-pin refused",
                                f"{why}. Nothing was pinned; the ROOT path stays off.")  # fmt: skip
     if action != "CLEAR" or inf:
         with (registry / LOG).open("a", encoding="utf-8") as fh:
@@ -283,11 +371,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--registry", required=True)
     ap.add_argument("--live-tree", required=True)
     ap.add_argument("--pin")
-    ap.add_argument("--notify")
     a = ap.parse_args(argv)
     registry = Path(a.registry)
     pin = Path(a.pin) if a.pin else registry / "ROOT_PIN.json"
-    return run(registry, Path(a.live_tree), pin, a.notify, datetime.now(UTC))
+    return run(registry, Path(a.live_tree), pin, datetime.now(UTC))
 
 
 if __name__ == "__main__":
