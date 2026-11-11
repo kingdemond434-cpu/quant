@@ -172,6 +172,77 @@ def test_a_price_already_through_the_level_rests_a_limit_at_it_never_a_chase(wor
     assert req["type"] == mt5.ORDER_TYPE_BUY_LIMIT and req["price"] == 4340.0
 
 
+def test_a_follow_just_through_the_level_enters_at_market_with_e8s_stop_and_target(
+        world) -> None:
+    """11-04: E8's breakout filled and ran; FTMO's late limit at the level never filled. Within
+    LATE_ENTRY_MAX_R of the stop distance it is a market order, sized on the real distance."""
+    mt5 = _MT5(bid=4340.8, ask=4341.0)                 # 1.0 through a 20-point stop = 0.05 R
+    _pass(mt5)
+    (req,) = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_DEAL]
+    assert req["type"] == mt5.ORDER_TYPE_BUY and req["price"] == 4341.0
+    assert (req["sl"], req["tp"]) == (4320.0, 4380.0)
+    assert req["volume"] == pytest.approx(0.42)        # 0.009 x 100k / (21 x 100), floored
+    assert not _entries(mt5)
+    sent = [r for r in _rows() if r.get("status") == "SENT"]
+    assert sent[0]["kind"] == "buy_market" and sent[0]["entry"] == 4341.0
+
+
+class _RequotingMT5(_MT5):
+    """Refuses every market DEAL with a requote (10004); pending orders rest as usual."""
+
+    def order_send(self, req: dict) -> SimpleNamespace:
+        if req["action"] == self.TRADE_ACTION_DEAL:
+            self.sent.append(req)
+            return SimpleNamespace(retcode=10004, order=0)
+        return super().order_send(req)
+
+
+def test_a_rejected_market_follow_falls_back_to_the_limit_the_old_path_placed(world) -> None:
+    """Auditor HOLD on #746: a requoted market follow must never lose the trade the old limit
+    at E8's level would have kept -- same pass, same write-ahead, sized on E8's distance."""
+    mt5 = _RequotingMT5(bid=4340.8, ask=4341.0)
+    _pass(mt5)
+    deal, pend = (r for r in mt5.sent if r["action"] in (mt5.TRADE_ACTION_DEAL,
+                                                       mt5.TRADE_ACTION_PENDING))
+    assert deal["action"] == mt5.TRADE_ACTION_DEAL
+    assert pend["type"] == mt5.ORDER_TYPE_BUY_LIMIT and pend["price"] == 4340.0
+    assert (pend["sl"], pend["tp"]) == (4320.0, 4380.0)
+    assert pend["volume"] == pytest.approx(0.45)       # 0.009 x 100k / (20 x 100)
+    (row,) = [r for r in _rows() if r.get("status") in ("SENT", "REJECTED")]
+    assert row["status"] == "SENT" and row["fallback"] and row["kind"] == "buy_limit"
+    assert row["market_attempt"]["retcode"] == 10004
+    assert row["market_attempt"]["kind"] == "buy_market"
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(_entries(mt5)) == 1                     # still one order a day
+
+
+def test_a_partly_filled_market_follow_is_a_fill_and_places_no_limit(world) -> None:
+    """Auditor HOLD on a506aaeda: 10010 DONE_PARTIAL is a fill. A full-lot limit beside it would
+    hold up to twice the intended risk, so no fallback is placed."""
+
+    class _Partial(_MT5):
+        def order_send(self, req: dict) -> SimpleNamespace:
+            if req["action"] == self.TRADE_ACTION_DEAL:
+                self.sent.append(req)
+                return SimpleNamespace(retcode=10010, order=9100, volume=0.2)
+            return super().order_send(req)
+
+    mt5 = _Partial(bid=4340.8, ask=4341.0)
+    _pass(mt5)
+    assert not _entries(mt5)
+    (row,) = [r for r in _rows() if r.get("status") in ("SENT", "REJECTED")]
+    assert row["status"] == "SENT" and row["partial"] and row["filled_volume"] == 0.2
+    assert row["venue_retcode"] == 10010 and not row.get("fallback")
+
+
+def test_the_late_entry_bound_is_a_share_of_e8s_stop() -> None:
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4329.8, 4330.0) == ("buy_stop", 4340.0)
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4341.8, 4342.0) == ("buy_market", 4342.0)
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4342.8, 4343.0) == ("buy_limit", 4340.0)
+    assert ff.entry_plan("short", 4300.0, 4320.0, 4299.0, 4299.2) == ("sell_market", 4299.0)
+    assert ff.entry_plan("short", 4300.0, 4320.0, 4296.0, 4296.2) == ("sell_limit", 4300.0)
+
+
 def test_gold_is_selected_into_market_watch_before_the_tick_is_read(world) -> None:
     """2026-10-22: XAUUSD absent from the FTMO terminal's Market Watch read NO_TICK every pass."""
     mt5 = _MT5()
@@ -597,7 +668,8 @@ def test_the_shipped_cert_book_funds_ftmo_gold_asia_at_0009() -> None:
 
 def test_a_trade_that_could_breach_the_daily_loss_is_refused(world) -> None:
     # 4,000 lost since midnight CET: 4,000 + (20 + 24.13 slip) x 0.45 x 100 = 5,985.85 >= 5,000.
-    mt5 = _MT5(deals=(SimpleNamespace(profit=-4000.0, commission=0.0, swap=0.0, fee=0.0),))
+    mt5 = _MT5(deals=(SimpleNamespace(profit=-4000.0, commission=0.0, swap=0.0, fee=0.0,
+                                      time=TICK - 600),))
     doc = _pass(mt5)
     assert _entries(mt5) == []
     (row,) = [r for r in _rows() if r.get("reason") == "loss_guard"]
@@ -1032,3 +1104,92 @@ def test_two_writers_never_tear_a_line(world, tmp_path) -> None:
     assert len(rows) == 300
     assert {f"{r['book']}:{r['position_id']}" for r in rows} == (
         {f"ftmo:{1000 + i}" for i in range(150)} | {f"e8:{5000 + i}" for i in range(150)})
+
+
+def test_the_day_start_balance_is_read_on_the_server_clock() -> None:
+    """Audit MF4: deals carry the server's wall clock (UTC+3 here, measured off the tick). CET
+    midnight of 10-21 is 22:00 UTC of 10-20 = 01:00 on the server. A deal stamped 00:30 server
+    is yesterday's; one stamped 01:30 and one in the last hour (which the old real-UTC window
+    dropped) are today's."""
+    _, midnight = ff.cet_day(NOW)
+    srv = midnight.timestamp() + 3 * 3600
+
+    def deal(profit: float, ts: object) -> SimpleNamespace:
+        return SimpleNamespace(profit=profit, commission=0.0, swap=0.0, fee=0.0, time=ts)
+
+    mt5 = _MT5(deals=(deal(-700.0, srv - 1800), deal(-1000.0, srv + 1800),
+                      deal(-2000.0, TICK - 600)))
+    assert ff.day_start_balance(mt5, 97_000.0, midnight, NOW) == pytest.approx(100_000.0)
+
+
+def test_the_server_offset_is_measured_off_the_tick_not_assumed() -> None:
+    """Audit 2026-10-29: an EET server runs UTC+2 in the last week of October while NY+7 is
+    UTC+3. A loss stamped 00:30 on that server is 22:30 UTC, today's CET day; read at +3 it fell
+    out of today and understated today's loss."""
+    _, midnight = ff.cet_day(NOW)
+    tick2 = int((NOW + timedelta(hours=2)).timestamp())
+    loss = SimpleNamespace(profit=-2000.0, commission=0.0, swap=0.0, fee=0.0,
+                           time=midnight.timestamp() + 2 * 3600 + 1800)
+    mt5 = _MT5(deals=(loss,), tick=tick2)
+    assert ff.day_start_balance(mt5, 50_000.0, midnight, NOW) == pytest.approx(52_000.0)
+
+
+@pytest.mark.parametrize("bad", ["unstamped_deal", "stale_tick", "no_tick"])
+def test_an_unmeasurable_day_start_raises(bad: str) -> None:
+    _, midnight = ff.cet_day(NOW)
+    if bad == "unstamped_deal":
+        mt5 = _MT5(deals=(SimpleNamespace(profit=50.0, commission=0.0, swap=0.0, fee=0.0),))
+        with pytest.raises(ValueError, match="no readable time"):
+            ff.day_start_balance(mt5, 100_000.0, midnight, NOW)
+        return
+    # every clock symbol's tick is that stale (or absent): nothing to read the server clock from
+    epoch = int((NOW - timedelta(days=2)).timestamp()) if bad == "stale_tick" else 0
+    with pytest.raises(ValueError, match="server clock"):
+        ff.day_start_balance(_MT5(tick=epoch), 100_000.0, midnight, NOW, server_epoch=epoch)
+
+
+@pytest.mark.parametrize(("minutes_old", "skew_s"), [(0, 0), (4, 0), (0, 240), (0, -240)])
+def test_a_fresh_tick_reads_the_server_offset(minutes_old: int, skew_s: int) -> None:
+    epoch = (NOW + timedelta(hours=3, minutes=-minutes_old, seconds=skew_s)).timestamp()
+    assert ff.server_offset_from_tick(epoch, NOW) == 3
+
+
+@pytest.mark.parametrize(("minutes_old", "skew_s"), [(6, 0), (40, 0), (50, 0), (0, 400)])
+def test_a_stale_or_skewed_tick_is_never_read_as_the_server_clock(minutes_old: int,
+                                                                   skew_s: int) -> None:
+    """Audit 2026-10-29: anything off a whole hour by more than TICK_SKEW_S refuses rather than
+    shift FTMO's CET day start (and the daily-loss anchor) by an hour. A tick 55-65 minutes old
+    reads like a fresh one an hour over: one tick cannot tell them apart, which is why the clock
+    is read off the freshest of several liquid symbols (next test)."""
+    epoch = (NOW + timedelta(hours=3, minutes=-minutes_old, seconds=skew_s)).timestamp()
+    with pytest.raises(ValueError):
+        ff.server_offset_from_tick(epoch, NOW)
+
+
+@pytest.mark.parametrize("epoch", [0.0, (NOW + timedelta(hours=6)).timestamp(),
+                                   (NOW - timedelta(hours=2)).timestamp()])
+def test_a_tick_that_cannot_be_the_server_clock_raises(epoch: float) -> None:
+    with pytest.raises(ValueError):
+        ff.server_offset_from_tick(epoch, NOW)
+
+
+def test_the_clock_is_read_off_the_freshest_liquid_tick() -> None:
+    """Gold's daily break leaves XAUUSD an hour stale -- read alone, an hour-old tick on UTC+3
+    looks like a fresh one on UTC+2 and moves FTMO's day start. EURUSD trades through it."""
+    stale = int((NOW + timedelta(hours=3, minutes=-58)).timestamp())
+    fresh = int((NOW + timedelta(hours=3)).timestamp())
+
+    class _Ticks(_MT5):
+        def symbol_info_tick(self, symbol: str) -> SimpleNamespace:
+            return SimpleNamespace(time=fresh if symbol == "EURUSD" else stale, bid=1.0, ask=1.0)
+
+    mt5 = _Ticks()
+    assert ff.freshest_tick_epoch(mt5) == fresh
+    _, midnight = ff.cet_day(NOW)
+    loss = SimpleNamespace(profit=-2000.0, commission=0.0, swap=0.0, fee=0.0,
+                           time=midnight.timestamp() + 3 * 3600 + 600)
+    mt5.deals = (loss,)
+    # read off the stale gold tick alone (+2), this loss would sit an hour later than midnight
+    # and still count; the freshest tick gives +3 and the same answer, with no hour's shift
+    assert ff.day_start_balance(mt5, 98_000.0, midnight, NOW, server_epoch=stale) == \
+        pytest.approx(100_000.0)
