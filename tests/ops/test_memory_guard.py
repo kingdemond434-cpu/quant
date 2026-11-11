@@ -201,28 +201,54 @@ def test_requeue_pass_runs_the_task_not_the_command(tmp_path: Path, monkeypatch)
     assert mg.load_queue(tmp_path / "q.json")[0]["state"] == "RUNNING"
 
 
-def test_a_day_old_job_burning_no_cpu_is_stalled_and_a_working_one_is_not() -> None:
-    now = 1_800_000_000.0
-    started = now - 43 * 3600
-    stuck = {**proc(36280, 15_000, "python -m merge_hypotheses"), "started": started,
-             "cpu_s": 59.78}
-    busy = {**proc(2, 3_000, "python -m judge"), "started": started, "cpu_s": 900.0}
-    prev = {"36280": {"started": started, "cpu_s": 59.78, "at_ts": now - 120},
-            "2": {"started": started, "cpu_s": 800.0, "at_ts": now - 120}}
-    d = mg.plan(BOX, [busy, stuck], set(), prev=prev, now_ts=now)
+def _passes(procs_at: list, n: int, step: float = 120.0, start: float = 1_800_000_000.0):
+    """Run n passes of plan + seen_book, procs_at(i) giving the processes at pass i."""
+    prev: dict = {}
+    d: dict = {}
+    for i in range(n):
+        now = start + i * step
+        procs = procs_at(i)
+        d = mg.plan(BOX, procs, set(), prev=prev, now_ts=now)
+        prev = mg.seen_book(procs, set(), prev, now)
+    return d
+
+
+STARTED = 1_800_000_000.0 - 43 * 3600
+
+
+def test_a_day_old_job_idle_on_every_pass_for_the_window_is_stalled() -> None:
+    def at(i: int) -> list:
+        return [{**proc(36280, 15_000, "python -m merge_hypotheses"), "started": STARTED,
+                 "cpu_s": 59.78},
+                {**proc(2, 3_000, "python -m judge"), "started": STARTED, "cpu_s": 800.0 + 50 * i}]
+    passes = int(mg.STALL_WINDOW_S // 120) + 1
+    assert _passes(at, passes)["rule"] == "CLEAR"           # idle, but not yet for the window
+    d = _passes(at, passes + 1)
     assert d["rule"] == "STALLED" and d["stop"]["pid"] == 36280
+
+
+def test_one_quiet_pass_or_a_burst_of_work_resets_the_window() -> None:
+    def at(i: int) -> list:
+        cpu = 10.0 + (30.0 if i == 10 else 0.0) + (30.0 if i > 10 else 0.0)
+        return [{**proc(5, 15_000, "python -m blocked_on_io"), "started": STARTED, "cpu_s": cpu}]
+    assert _passes(at, 20)["rule"] == "CLEAR"              # worked at pass 10: window restarts
+    assert _passes(at, 10 + int(mg.STALL_WINDOW_S // 120) + 2)["rule"] == "STALLED"
 
 
 def test_stall_needs_age_the_same_instance_and_a_real_gap() -> None:
     now = 1_800_000_000.0
     young = {**proc(1, 3_000, "python -m a"), "started": now - 3600, "cpu_s": 1.0}
     reused = {**proc(2, 3_000, "python -m b"), "started": now - 30 * 3600, "cpu_s": 1.0}
-    close = {**proc(3, 3_000, "python -m c"), "started": now - 30 * 3600, "cpu_s": 1.0}
-    prev = {"1": {"started": now - 3600, "cpu_s": 1.0, "at_ts": now - 120},
-            "2": {"started": now - 99 * 3600, "cpu_s": 1.0, "at_ts": now - 120},
-            "3": {"started": now - 30 * 3600, "cpu_s": 1.0, "at_ts": now - 10}}
-    d = mg.plan(BOX, [young, reused, close], set(), prev=prev, now_ts=now)
-    assert d["rule"] == "CLEAR"
+    prev = {"1": {"started": now - 3600, "cpu_s": 1.0, "at_ts": now - 120,
+                  "idle_since": now - 7200},
+            "2": {"started": now - 99 * 3600, "cpu_s": 1.0, "at_ts": now - 120,
+                  "idle_since": now - 7200}}
+    assert mg.plan(BOX, [young, reused], set(), prev=prev, now_ts=now)["rule"] == "CLEAR"
+    # passes 10 s apart never shorten the measured gap: the earlier reading is kept
+    p = {**proc(3, 3_000, "python -m c"), "started": now - 30 * 3600, "cpu_s": 1.0}
+    book = mg.seen_book([p], set(), {"3": {"started": p["started"], "cpu_s": 1.0,
+                                           "at_ts": now - 10, "idle_since": None}}, now)
+    assert book["3"]["at_ts"] == now - 10
 
 
 def test_money_path_is_never_stalled_out() -> None:

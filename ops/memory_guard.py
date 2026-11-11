@@ -26,7 +26,7 @@ WHAT IT DOES, every two minutes (MT5-MemoryGuard, SYSTEM):
        PRESSURE  available memory is under the floor (or commit is near its limit), in which
                  case the LARGEST research process above MIN_STOP_MB is stopped.
        STALLED   a research process older than STALL_AGE_H that used under STALL_CPU_S of CPU
-                 between two passes. That is a job stuck on a lock or a dead handle (the
+                 on EVERY pass for at least STALL_WINDOW_S (30 min, about 15 passes). That is a job stuck on a lock or a dead handle (the
                  merge_hypotheses pass that sat 43 h holding 15 GB of commit and an inherited
                  log handle, 2026-11-11), not a slow one: a working job burns CPU every pass.
      A stop is terminate, a grace period, then kill, for the process and its children only.
@@ -81,7 +81,8 @@ MAX_ATTEMPTS = 2            # re-runs per task per UTC day
 GRACE_S = 10.0
 STALL_AGE_H = 24.0          # a research job this old ...
 STALL_CPU_S = 1.0           # ... that used less CPU than this between two passes is stuck
-STALL_MIN_GAP_S = 60.0      # the two readings must be at least this far apart
+STALL_MIN_GAP_S = 60.0      # consecutive readings must be at least this far apart
+STALL_WINDOW_S = 1800.0     # ... and idle on EVERY pass for at least this long (audit M3)
 
 PYTHON_NAMES = frozenset({"python.exe", "pythonw.exe", "python", "python3", "py.exe"})
 PROTECTED_NAMES = frozenset({"terminal64.exe", "metatester64.exe", "terminal.exe"})
@@ -150,18 +151,35 @@ def headroom(snap: dict[str, Any], th: dict[str, float | None]) -> bool:
                 and commit > th["commit_line_mb"])
 
 
-def stalled(p: dict[str, Any], prev: dict[str, Any], now_ts: float) -> float | None:
-    """CPU seconds this process used since the last pass when it is old enough to judge and that
-    reading is comparable (same process instance, far enough apart); None otherwise."""
+def idle_since(p: dict[str, Any], prev: dict[str, Any], now_ts: float) -> float | None:
+    """When this process instance went idle and has stayed idle on every pass since; None when it
+    is not idle now or cannot be compared. Idle means under STALL_CPU_S of CPU between two
+    readings at least STALL_MIN_GAP_S apart. One quiet pass is not a stall (audit M3): a job
+    blocked on I/O or a lock for a couple of minutes would read idle once, so the run of idle
+    passes is carried forward and only a long one counts."""
     started, cpu = p.get("started"), p.get("cpu_s")
-    if started is None or cpu is None or now_ts - float(started) < STALL_AGE_H * 3600:
-        return None
     seen = prev.get(str(p.get("pid")))
-    if not isinstance(seen, dict) or seen.get("started") != started:
+    if started is None or cpu is None or not isinstance(seen, dict) \
+            or seen.get("started") != started:
         return None
-    if now_ts - float(seen.get("at_ts") or now_ts) < STALL_MIN_GAP_S:
+    at = float(seen.get("at_ts") or now_ts)
+    if now_ts - at < STALL_MIN_GAP_S:
+        # Too close to the last reading to judge: carry its run unchanged.
+        v = seen.get("idle_since")
+        return float(v) if v is not None else None
+    if float(cpu) - float(seen.get("cpu_s") or 0.0) >= STALL_CPU_S:
         return None
-    return float(cpu) - float(seen.get("cpu_s") or 0.0)
+    v = seen.get("idle_since")
+    return float(v) if v is not None else at
+
+
+def stalled(p: dict[str, Any], prev: dict[str, Any], now_ts: float) -> float | None:
+    """Seconds this process has been idle on every pass, when it is old enough to judge."""
+    started = p.get("started")
+    if started is None or now_ts - float(started) < STALL_AGE_H * 3600:
+        return None
+    since = idle_since(p, prev, now_ts)
+    return None if since is None else now_ts - since
 
 
 def plan(snap: dict[str, Any], procs: list[dict[str, Any]],
@@ -186,12 +204,13 @@ def plan(snap: dict[str, Any], procs: list[dict[str, Any]],
                                 f"job at {round(p['private_mb'])} MB")}
     if prev and now_ts is not None:
         for p in cands:
-            used = stalled(p, prev, now_ts)
-            if used is not None and used < STALL_CPU_S:
+            idle = stalled(p, prev, now_ts)
+            if idle is not None and idle >= STALL_WINDOW_S:
                 age_h = (now_ts - float(p["started"])) / 3600
                 return {"stop": p, "rule": "STALLED", "thresholds": th, "pressure": under,
-                        "why": (f"pid {p['pid']} has run {age_h:.1f} h and used {used:.2f} s of "
-                                f"CPU since the last pass while holding "
+                        "why": (f"pid {p['pid']} has run {age_h:.1f} h and been idle (under "
+                                f"{STALL_CPU_S:g} s of CPU per pass) on every pass for "
+                                f"{idle / 60:.0f} min while holding "
                                 f"{round(float(p.get('private_mb') or 0))} MB: it is stuck, not "
                                 f"working")}
     if under:
@@ -416,10 +435,29 @@ def _load_seen() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
-def _save_seen(procs: list[dict[str, Any]], own: set[int], now_ts: float) -> None:
-    """The CPU each research process had used at this pass, for the next pass's STALLED rule."""
-    doc = {str(p["pid"]): {"started": p.get("started"), "cpu_s": p.get("cpu_s"), "at_ts": now_ts}
-           for p in procs if is_candidate(p, own) and p.get("cpu_s") is not None}
+def seen_book(procs: list[dict[str, Any]], own: set[int], prev: dict[str, Any],
+              now_ts: float) -> dict[str, Any]:
+    """Each research process's CPU at this pass and how long it has been idle on every pass. A
+    reading too close to the last one keeps the last one, so a burst of passes cannot shorten
+    the measured gap."""
+    doc: dict[str, Any] = {}
+    for p in procs:
+        if not is_candidate(p, own) or p.get("cpu_s") is None:
+            continue
+        seen = prev.get(str(p["pid"]))
+        if isinstance(seen, dict) and seen.get("started") == p.get("started") \
+                and now_ts - float(seen.get("at_ts") or now_ts) < STALL_MIN_GAP_S:
+            doc[str(p["pid"])] = seen
+            continue
+        doc[str(p["pid"])] = {"started": p.get("started"), "cpu_s": p.get("cpu_s"),
+                              "at_ts": now_ts, "idle_since": idle_since(p, prev, now_ts)}
+    return doc
+
+
+def _save_seen(procs: list[dict[str, Any]], own: set[int], prev: dict[str, Any],
+               now_ts: float) -> None:
+    """Persist `seen_book` for the next pass's STALLED rule."""
+    doc = seen_book(procs, own, prev, now_ts)
     SEEN.parent.mkdir(parents=True, exist_ok=True)
     tmp = SEEN.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc), "utf-8")
@@ -469,7 +507,7 @@ def run_pass(apply: bool = True) -> dict[str, Any]:
                                 "error": f"{type(exc).__name__}: {exc}"[:300]})
     if apply:
         save_queue(rows)
-        _save_seen(procs, own, now_ts)
+        _save_seen(procs, own, prev, now_ts)
     top = sorted((p for p in procs if is_candidate(p, own)),
                  key=lambda p: -float(p.get("private_mb") or 0.0))[:5]
     doc = {
