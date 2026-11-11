@@ -68,8 +68,18 @@ def test_no_other_leg_gains_a_floor_by_accident() -> None:
     assert hc._leg_floor_s("weak_signals") == 0
     # coevolution is deliberate: its method challenger runs after its own --budget-s, so the
     # self-stop floor (read from --budget-s alone) would cut it (audit, 2026-10-06).
-    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet", "coevolution"}
+    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet", "coevolution",
+                                            "gauntlet_backpressure", "global_coverage_tensor"}
     assert hc._leg_floor_s("coevolution") >= hc._self_stop_floor_s(("--budget-s", "990"))
+
+
+def test_a_self_stopping_organ_is_never_priced_below_its_own_budget() -> None:
+    """CRO 2026-09-30 gap 2: both organs stop themselves on `--budget-s`; the floor sits above
+    that budget and at or below the leg's base, so the pricer can only ever give them more."""
+    src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    for leg, own in (("gauntlet_backpressure", 480), ("global_coverage_tensor", 540)):
+        assert f'"--budget-s", "{own}"' in src, leg
+        assert own < hc._leg_floor_s(leg) <= hc.LEG_BUDGET_SEC[leg], leg
 
 
 def test_the_base_budget_covers_a_measured_full_pass() -> None:
