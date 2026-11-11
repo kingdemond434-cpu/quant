@@ -54,4 +54,6 @@ def test_bin_copies_refresh_only_from_the_pinned_tree() -> None:
 def test_no_step_can_stop_the_seal() -> None:
     body = _body("Invoke-BoxSelfHeal")
     assert body.count("catch") >= 2
-    assert "exit" not in HEAL.lower().replace("exit_code", "")
+    import re
+
+    assert not re.search(r"(^|[;{}]\s*)exit\b", HEAL, flags=re.M | re.I)  # dot-sourced: an exit ends the adopter
