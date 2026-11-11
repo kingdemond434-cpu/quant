@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-10T18:55:30.211345+00:00",
+ "generated_utc": "2026-11-11T13:57:56.314374+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -79983,6 +79983,2031 @@
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
+   }
+  },
+  "external.AUDCAD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDCHF.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDCHF.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDJPY.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CADJPY.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CADJPY.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=9400ea0df415c4ae": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=3c681020833294f6": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFJPY.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFSEK.mass_screen_clock.p=b68e30fc9a94225c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFSGD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFSGD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFSGD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFSGD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURAUD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURCHF.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURCHF.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURHKD.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURHKD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURMXN.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNOK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNOK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNOK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNOK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNOK.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNOK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURNZD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURPLN.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURPLN.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURPLN.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURPLN.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSEK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSEK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSEK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSEK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSEK.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSEK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURSGD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURZAR.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURZAR.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURZAR.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.EURZAR.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPAUD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPAUD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPCAD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPCAD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPDKK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPDKK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPDKK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPDKK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPJPY.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPJPY.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPJPY.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPMXN.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNOK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNOK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNOK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNOK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNOK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNZD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPNZD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSEK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSGD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSGD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSGD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSGD.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPSGD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPZAR.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPZAR.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCAD.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCAD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCAD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCAD.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCAD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCHF.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCHF.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCHF.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCHF.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCHF.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDCHF.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDHUF.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDJPY.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDJPY.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDJPY.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDSGD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDSGD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDSGD.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NZDSGD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.SGDJPY.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDCNH.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDCNH.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDCNH.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDDKK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDKRW.mass_screen_clock.p=4b780fd3bf25eb69": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDMXN.mass_screen_clock.p=fe13f54f9cb8787c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDMXN.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDMXN.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDMXN.mass_screen_clock.p=1528d8b5d91a23c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDMXN.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDNOK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDNOK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDNOK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDNOK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDNOK.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDPLN.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDPLN.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDPLN.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDPLN.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSEK.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSEK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSEK.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSEK.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSEK.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.mass_screen_clock.p=f40dfa24d134e831": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.mass_screen_clock.p=b824a5249ea62554": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.mass_screen_clock.p=23e4e273f06dd5ab": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.mass_screen_clock.p=7fb0014254115444": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.XAUUSD.mass_screen_clock.p=4b780fd3bf25eb69": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_cond.p=d019d419ddcac833": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFDKK.mass_screen_cond.p=5488112a224b4d9a": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFSGD.mass_screen_cond.p=9c9895b4651feea8": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFSEK.mass_screen_cond.p=0a4020ee37f5e01a": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.EURNZD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NOKSEK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_cond.p=9c9895b4651feea8": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFNOK@M30.overnight_gap_decay.p=62b19010a137a703": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.1053,
+    "sd": 0.0491,
+    "status": "REFUTED"
    }
   }
  },
