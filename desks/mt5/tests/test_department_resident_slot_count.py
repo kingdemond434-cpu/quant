@@ -118,3 +118,57 @@ def test_admission_at_index_four_uses_the_same_lock_and_reclaim_scheme(
     assert "RECLAIM department slot 4 generation 0" in log and "holder rss 512MB" in log
     for h in [reclaimed, *held]:
         h.close()
+
+
+def _ledger(rows: list[dict]) -> None:
+    dr.LOGS.mkdir(parents=True, exist_ok=True)
+    (dr.LOGS / dr.PASS_COST_NAME).write_text("".join(json.dumps(r) + "\n" for r in rows))
+
+
+def test_pass_estimates_use_the_measured_p90_once_the_ledger_is_thick(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DEPT_PASS_CORES_ESTIMATE", raising=False)
+    monkeypatch.delenv("DEPT_PASS_MB_ESTIMATE", raising=False)
+    cores, mb, why = dr.pass_estimates()
+    assert (cores, mb) == (dr.PASS_CORES_ESTIMATE, dr.PASS_MB_ESTIMATE) and "placeholder" in why
+    row = {"status": "ok", "samples": 10, "cores": 0.5, "peak_rss_mb": 1000.0}
+    _ledger([row] * (dr.PASS_COST_MIN_ROWS - 1))
+    assert "placeholder" in dr.pass_estimates()[2]               # one short of the minimum
+    rows = [dict(row, cores=0.1 * k, peak_rss_mb=100.0 * k) for k in range(1, 11)]
+    rows.append({"status": "ok", "samples": 1, "cores": 99.0, "peak_rss_mb": 99_999.0})
+    _ledger(rows)                                                # thin-sample row is ignored
+    cores, mb, why = dr.pass_estimates()
+    assert cores == pytest.approx(1.0) and mb == pytest.approx(1000.0) and "measured" in why
+    monkeypatch.setenv("DEPT_PASS_CORES_ESTIMATE", "3")
+    cores, _mb, why = dr.pass_estimates()
+    assert cores == 3.0 and "env override" in why
+
+
+def test_measured_cost_reaches_the_slot_count_and_logs_the_reserve(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DEPT_PASS_CORES_ESTIMATE", raising=False)
+    monkeypatch.delenv("DEPT_PASS_MB_ESTIMATE", raising=False)
+    _ledger([{"status": "ok", "samples": 10, "cores": 1.0, "peak_rss_mb": 1000.0}] * 12)
+    monkeypatch.setattr(dr, "free_phys_mb", lambda: dr.MIN_FREE_MB + 50_000.0)
+    reserve = dr.IDLE_RESERVE_CORES + dr.MONEY_RESERVE_CORES
+    now = _fill_window(monkeypatch, [reserve + 5.0] * 6)
+    count, why = dr.derived_slot_count(now)
+    assert count == 5 and "measured" in why
+    assert f"money reserve withheld {dr.DEPT_SLOTS_MAX - 5} slot(s)" in why
+
+
+def test_pass_meter_records_a_child_tree(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("psutil")
+    import subprocess
+    meter = dr.PassMeter(interval_s=0.05)
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(1)"])
+    try:
+        for _ in range(4):
+            meter.sample()
+    finally:
+        child.wait()
+    summary = meter.summary(1.0)
+    assert summary["samples"] >= 1 and summary["peak_rss_mb"] > 0
+    dr.record_pass_cost("x", {"status": "ok", "seconds": 1.0}, summary)
+    row = json.loads((dr.LOGS / dr.PASS_COST_NAME).read_text().splitlines()[-1])
+    assert row["dept"] == "x" and row["samples"] == summary["samples"]

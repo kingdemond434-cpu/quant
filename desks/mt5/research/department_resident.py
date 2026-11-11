@@ -30,6 +30,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from collections import deque
 from datetime import UTC, datetime
@@ -512,16 +513,148 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     if sys.platform == "win32":
         kwargs["creationflags"] = BELOW_NORMAL_PRIORITY_CLASS
     t0 = time.monotonic()
+    meter = PassMeter()
+    meter.start()
     try:
         r = _run_tree([sys.executable, "-W", "ignore", str(CYCLE)], cwd=str(DESK),
                       env=env, timeout=timeout_s, check=False, **kwargs)
-        return {"rc": r.returncode, "seconds": round(time.monotonic() - t0, 1), "status": "ok"
-                if r.returncode == 0 else "exit"}
+        res = {"rc": r.returncode, "seconds": round(time.monotonic() - t0, 1), "status": "ok"
+               if r.returncode == 0 else "exit"}
     except subprocess.TimeoutExpired:
-        return {"rc": None, "seconds": round(time.monotonic() - t0, 1), "status": "timeout"}
+        res = {"rc": None, "seconds": round(time.monotonic() - t0, 1), "status": "timeout"}
     except OSError as exc:
-        return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
-                "status": f"failed_to_start: {type(exc).__name__}"}
+        res = {"rc": None, "seconds": round(time.monotonic() - t0, 1),
+               "status": f"failed_to_start: {type(exc).__name__}"}
+    finally:
+        meter.stop()
+    record_pass_cost(dept, res, meter.summary(res["seconds"]))
+    return res
+
+
+#: What one department pass costs, measured by the resident that ran it (box-local, under logs/).
+PASS_COST_NAME = "department_pass_cost.jsonl"
+PASS_METER_INTERVAL_S = 5.0
+#: The estimates below are read from the last PASS_COST_WINDOW measured passes once at least
+#: PASS_COST_MIN_ROWS of them exist; the 90th percentile, so a heavy pass is what a slot is sized
+#: for. Fewer rows keep the placeholders, which are deliberately heavy.
+PASS_COST_WINDOW = 200
+PASS_COST_MIN_ROWS = 10
+PASS_COST_MIN_SAMPLES = 3
+
+
+class PassMeter:
+    """Samples this resident's child process tree while a pass runs: peak summed RSS and the
+    CPU seconds each child had used when last seen (a child's CPU stops counting when it exits,
+    so a short-lived child read only once is under-counted, never over-counted)."""
+
+    def __init__(self, interval_s: float = PASS_METER_INTERVAL_S) -> None:
+        self.interval_s = interval_s
+        self.peak_rss_mb = 0.0
+        self.cpu_by_proc: dict[tuple[int, float], float] = {}
+        self.samples = 0
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def sample(self) -> None:
+        try:
+            import psutil
+        except ImportError:
+            return
+        try:
+            kids = psutil.Process().children(recursive=True)
+        except Exception:
+            return
+        rss = 0.0
+        for k in kids:
+            try:
+                with k.oneshot():
+                    ct = k.cpu_times()
+                    key = (k.pid, k.create_time())
+                    rss += k.memory_info().rss / 1048576.0
+                self.cpu_by_proc[key] = max(self.cpu_by_proc.get(key, 0.0), ct.user + ct.system)
+            except Exception:
+                continue
+        if kids:
+            self.samples += 1
+            self.peak_rss_mb = max(self.peak_rss_mb, rss)
+
+    def _loop(self) -> None:
+        while not self._stop.wait(self.interval_s):
+            self.sample()
+
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self._loop, name="pass-meter", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=self.interval_s + 5)
+
+    def summary(self, seconds: float) -> dict:
+        cpu_s = sum(self.cpu_by_proc.values())
+        return {"cpu_s": round(cpu_s, 1), "peak_rss_mb": round(self.peak_rss_mb, 1),
+                "cores": round(cpu_s / seconds, 3) if seconds > 0 else None,
+                "samples": self.samples}
+
+
+def record_pass_cost(dept: str, res: dict, cost: dict) -> None:
+    row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "dept": dept,
+           "status": res.get("status"), "seconds": res.get("seconds"), **cost}
+    with contextlib.suppress(OSError):
+        LOGS.mkdir(parents=True, exist_ok=True)
+        with (LOGS / PASS_COST_NAME).open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+
+
+def _p90(values: list[float]) -> float:
+    v = sorted(values)
+    return v[min(len(v) - 1, int(0.9 * len(v)))]
+
+
+def measured_pass_cost(path: Path | None = None) -> tuple[float | None, float | None, str]:
+    """(p90 cores per pass, p90 peak MB per pass, why) from the measured ledger, or Nones while
+    it is thinner than PASS_COST_MIN_ROWS usable rows."""
+    path = LOGS / PASS_COST_NAME if path is None else path
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()[-PASS_COST_WINDOW:]
+    except OSError:
+        return None, None, "pass cost UNMEASURED (no ledger)"
+    cores: list[float] = []
+    mbs: list[float] = []
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if (r.get("status") in ("ok", "exit", "timeout")
+                and int(r.get("samples") or 0) >= PASS_COST_MIN_SAMPLES
+                and isinstance(r.get("cores"), (int, float)) and r["cores"] > 0
+                and isinstance(r.get("peak_rss_mb"), (int, float)) and r["peak_rss_mb"] > 0):
+            cores.append(float(r["cores"]))
+            mbs.append(float(r["peak_rss_mb"]))
+    if len(cores) < PASS_COST_MIN_ROWS:
+        return None, None, (f"pass cost UNMEASURED ({len(cores)} usable passes; needs "
+                            f"{PASS_COST_MIN_ROWS})")
+    return _p90(cores), _p90(mbs), f"pass cost p90 over {len(cores)} measured passes"
+
+
+def pass_estimates(path: Path | None = None) -> tuple[float, float, str]:
+    """Cores and MB one pass is sized at: an env override wins, then the measured p90, then the
+    heavy placeholders."""
+    c_env = os.environ.get("DEPT_PASS_CORES_ESTIMATE", "").strip()
+    m_env = os.environ.get("DEPT_PASS_MB_ESTIMATE", "").strip()
+    c_meas, m_meas, why = measured_pass_cost(path)
+    try:
+        cores = float(c_env) if c_env else (c_meas if c_meas is not None
+                                            else PASS_CORES_ESTIMATE)
+        mb = float(m_env) if m_env else (m_meas if m_meas is not None else PASS_MB_ESTIMATE)
+    except ValueError:
+        cores, mb = PASS_CORES_ESTIMATE, PASS_MB_ESTIMATE
+    src = "env override" if (c_env or m_env) else ("measured" if c_meas is not None
+                                                   else "placeholder")
+    # a pass can never be sized at zero: that would divide the room by nothing
+    return max(0.1, cores), max(64.0, mb), f"{src}; {why}"
 
 
 #: Cores kept for the live terminal, the gateway and the core hourly pass before a resident is
@@ -561,13 +694,13 @@ DEPT_SLOTS_MAX = 8
 #: slot is only ever added while the windowed idle cores still leave this reserve AND the
 #: terminal's free. Generous on purpose: six covers the allocator's measured 4.8 with margin.
 MONEY_RESERVE_CORES = float(os.environ.get("DEPT_MONEY_RESERVE_CORES", "6"))
-#: PLACEHOLDERS, to be replaced by the measured figure. Neither this module nor the holder
-#: records measure what one department pass costs (no per-pass CPU or RSS is recorded today);
-#: replace both with the measured per-pass median once a pass records its own peak tree RSS
-#: and CPU seconds / wall seconds. Until then they are deliberately heavy, so the derivation
-#: under-admits rather than over-admits.
-PASS_CORES_ESTIMATE = float(os.environ.get("DEPT_PASS_CORES_ESTIMATE", "2.0"))
-PASS_MB_ESTIMATE = float(os.environ.get("DEPT_PASS_MB_ESTIMATE", "8192"))
+#: PLACEHOLDERS, used only until the box has measured its own passes: every pass now records
+#: its tree's peak RSS and CPU seconds / wall seconds (PassMeter -> logs/department_pass_cost.jsonl)
+#: and `pass_estimates` sizes a slot at the p90 of those once PASS_COST_MIN_ROWS exist. Until
+#: then these are deliberately heavy, so the derivation under-admits rather than over-admits.
+#: DEPT_PASS_CORES_ESTIMATE / DEPT_PASS_MB_ESTIMATE in the environment still win over both.
+PASS_CORES_ESTIMATE = 2.0
+PASS_MB_ESTIMATE = 8192.0
 #: Idle cores are read over a WINDOW, never one sample: the minimum of the samples a resident
 #: took while waiting, spread over at least IDLE_WINDOW_MIN_SPAN_S. A one-second read at a quiet
 #: instant is exactly how a crunch like 2026-11-11 00:41Z would be missed.
@@ -625,14 +758,18 @@ def derived_slot_count(now: float | None = None) -> tuple[int, str]:
     free_why = "free memory UNMEASURED" if free is None else f"free {free:.0f}MB"
     if idle is None or free is None:
         return DEPT_SLOTS_FLOOR, f"floor {DEPT_SLOTS_FLOOR}: {idle_why}; {free_why}"
-    by_cores = int((idle - IDLE_RESERVE_CORES - MONEY_RESERVE_CORES) // PASS_CORES_ESTIMATE)
-    by_memory = int((free - MIN_FREE_MB) // PASS_MB_ESTIMATE)
+    per_core, per_mb, est_why = pass_estimates()
+    by_cores = int((idle - IDLE_RESERVE_CORES - MONEY_RESERVE_CORES) // per_core)
+    by_memory = int((free - MIN_FREE_MB) // per_mb)
     count = min(DEPT_SLOTS_MAX, max(DEPT_SLOTS_FLOOR, min(by_cores, by_memory)))
+    # What the money reserve cost this claim, in slots (the reserve's missed-compute line).
+    unreserved = min(DEPT_SLOTS_MAX, max(DEPT_SLOTS_FLOOR, min(
+        int((idle - IDLE_RESERVE_CORES) // per_core), by_memory)))
     return count, (f"{count} = max({DEPT_SLOTS_FLOOR}, min(by_cores {by_cores}, by_memory "
                    f"{by_memory})) cap {DEPT_SLOTS_MAX}; {idle_why} less reserves "
-                   f"{IDLE_RESERVE_CORES}+{MONEY_RESERVE_CORES:g} at {PASS_CORES_ESTIMATE:g}/pass "
-                   f"(placeholder); {free_why} less {MIN_FREE_MB:.0f} at "
-                   f"{PASS_MB_ESTIMATE:.0f}MB/pass (placeholder)")
+                   f"{IDLE_RESERVE_CORES}+{MONEY_RESERVE_CORES:g} at {per_core:g} cores/pass; "
+                   f"{free_why} less {MIN_FREE_MB:.0f} at {per_mb:.0f}MB/pass ({est_why}); "
+                   f"money reserve withheld {unreserved - count} slot(s)")
 
 
 def cycle_floor_s() -> tuple[float, str]:
