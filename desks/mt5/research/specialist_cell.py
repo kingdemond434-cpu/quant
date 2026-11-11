@@ -187,6 +187,13 @@ _REGION_DAYS: dict[str, int] = {}
 PARKED_UNDER_FLOOR: dict[str, dict[str, Any]] = {}
 
 
+def holiday_prefix(region: str) -> str:
+    """The calendar row-name prefix of a region: `hk_lny` -> `hk_lny_holiday_`, and `jp_holiday`
+    (whose rows are already named `jp_holiday_<date>`) -> `jp_holiday_`, never
+    `jp_holiday_holiday_`, which matches nothing and would fire no cell at all."""
+    return f"{region}_" if region.endswith("_holiday") else f"{region}_holiday_"
+
+
 def holiday_region_event_days(region: str) -> int:
     """Distinct UTC dates the family can see inside this region's holiday windows."""
     if region not in _REGION_DAYS:
@@ -196,7 +203,7 @@ def holiday_region_event_days(region: str) -> int:
         lo = hi.replace(year=hi.year - HOLIDAY_LOOKBACK_YEARS)
         days: set[Any] = set()
         for start, end, _syms in calendar_windows("holiday_liquidity", lo, hi,
-                                                  f"{region}_holiday_"):
+                                                  holiday_prefix(region)):
             days.update(pd.date_range(start.normalize(), end, freq="D").date)
         _REGION_DAYS[region] = len(days)
     return _REGION_DAYS[region]
@@ -217,7 +224,7 @@ def _holiday_cells(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
                 continue
             out.append((mech, "forced_flow",
                         _grid({"event_kind": ["holiday_liquidity"], "clock": ["utc"],
-                               "symbol": [sym], "event_prefix": [f"{region}_holiday_"],
+                               "symbol": [sym], "event_prefix": [holiday_prefix(region)],
                                "mode": ["pre_flow", "post_flow_fade"]})))
     return out
 

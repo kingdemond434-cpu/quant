@@ -340,6 +340,16 @@ def test_a_holiday_region_under_the_seed_floor_is_parked_not_measured(monkeypatc
     assert parked["golden_week_liquidity"]["event_days_visible"] == sc.SEED_FLOOR - 1
 
 
+def test_every_holiday_region_prefix_matches_calendar_rows():
+    """A prefix that matches no row name fires no cell: `jp_holiday` once became
+    `jp_holiday_holiday_`."""
+    names = [e.name for e in C.events(date(2026, 1, 1), date(2027, 12, 31))
+             if e.kind == "holiday_liquidity"]
+    for region in sc.HOLIDAY_MECHANISMS:
+        prefix = sc.holiday_prefix(region)
+        assert any(n.startswith(prefix) for n in names), (region, prefix)
+
+
 def test_the_fetch_is_an_hourly_leg_with_a_budget_and_a_layer():
     from libs.research.layers import LEG_LAYER
     from research import hourly_cycle as hc
