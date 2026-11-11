@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-11T10:54:18.739579+00:00",
+ "generated_utc": "2026-11-11T11:42:40.021929+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -128,8 +128,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -139,8 +139,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -150,8 +150,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -183,8 +183,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -194,8 +194,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -205,8 +205,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -216,8 +216,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19810,8 +19810,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19821,8 +19821,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19832,8 +19832,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19843,8 +19843,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19854,8 +19854,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19909,8 +19909,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -19920,8 +19920,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -25493,8 +25493,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -25504,8 +25504,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -42202,8 +42202,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -42213,8 +42213,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
@@ -54324,8 +54324,8 @@
    "family": "session_range_breakout",
    "theory": {
     "n_oos": 13,
-    "confidence": 0.9677,
-    "sd": 0.0312,
+    "confidence": 0.7742,
+    "sd": 0.0739,
     "status": "SUPPORTED"
    }
   },
