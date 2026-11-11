@@ -101,6 +101,11 @@ def test_closed_fill_joins_by_order_id_and_scores_markouts(
     assert m["+60m"]["status"] == fa.UNMEASURED     # the path stops before +60m
     assert m["to_close"]["r"] == 0.5
     assert f["vs_certificate"]["realised_minus_expected_net_r"] == pytest.approx(0.334)
+    # the #639 ruling: the raw tickets join in memory and never reach the artifact
+    assert "entry_order" not in f and "position_id" not in f
+    assert f["entry_order_h"] == fa.ticket_hash(7001) and len(f["entry_order_h"]) == 12
+    fa.write(doc, tmp_path / "out.json")
+    assert "7001" not in (tmp_path / "out.json").read_text("utf-8")
 
 
 def test_write_is_atomic(tmp_path: Path) -> None:

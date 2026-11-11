@@ -29,6 +29,10 @@ MARKOUTS. side x (price at entry + h - entry) / |entry - stop| in R, for h in +1
 +60m, and to the close (the realised R for a closed fill). A horizon the price path does not reach,
 or a fill with no stop, is UNMEASURED with its reason -- never 0.
 
+NO RAW TICKET LEAVES THE JOIN (the #639 ruling: no account, login or ticket is copied out of a
+ledger). The entry order and position id are used in memory to join, and the artifact carries
+only `entry_order_h` / `position_id_h`, a sha256 prefix of each (`ticket_hash`).
+
 REPORT ONLY. It sends, sizes and vetoes nothing: report_only true, consumer null.
 
     python desks/mt5/research/ftmo_fill_attribution.py --once
@@ -36,6 +40,7 @@ REPORT ONLY. It sends, sizes and vetoes nothing: report_only true, consumer null
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -231,6 +236,24 @@ def markouts(fill: dict[str, Any], path: Any) -> dict[str, Any]:
 
 # ------------------------------------------------------------------ fills and the join
 
+#: The raw broker identifiers a fill carries in memory only; the artifact gets their hashes.
+RAW_IDS = ("entry_order", "position_id")
+
+
+def ticket_hash(x: Any) -> str | None:
+    """A 12-hex sha256 prefix of a broker ticket, or None when there is none."""
+    if x is None or x == "":
+        return None
+    return hashlib.sha256(str(x).encode("utf-8")).hexdigest()[:12]
+
+
+def redact(fill: dict[str, Any]) -> dict[str, Any]:
+    out = {k: v for k, v in fill.items() if k not in RAW_IDS}
+    for k in RAW_IDS:
+        out[f"{k}_h"] = ticket_hash(fill.get(k))
+    return out
+
+
 def collect_fills(ledger: list[dict[str, Any]] | None, state: Any) -> list[dict[str, Any]]:
     fills: list[dict[str, Any]] = []
     for r in ledger or []:
@@ -343,10 +366,11 @@ def build(now: datetime | None = None) -> dict[str, Any]:
                 if close.get("status") == "OK" and isinstance(exp, float)
                 else {"status": UNMEASURED,
                       "why": "needs a closed fill's R and the certificate's net edge"})
+            f = redact(f)
             rows_out.append(f)
             if f["attribution"] == UNATTRIBUTED:
                 unatt.append({k: f.get(k) for k in ("source", "symbol", "side", "volume",
-                                                     "entry_order", "position_id",
+                                                     "entry_order_h", "position_id_h",
                                                      "attribution_why")})
         n = len(rows_out)
         doc = {"status": "OK", "fills": rows_out, "unattributed": unatt, "n_fills": n,
