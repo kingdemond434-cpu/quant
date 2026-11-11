@@ -169,7 +169,9 @@ def _point(tmp_path, monkeypatch, universe, cov) -> dict:
     ticks = tmp_path / "ticks"
     _probe_files(ticks, ["2026-10-29.parquet", "20261029.parquet"])
     monkeypatch.setattr(tl, "TICKS", ticks)
-    (tmp_path / "quotes.json").write_text(json.dumps({"at": NOW.isoformat(), "symbols": {
+    (tmp_path / "quotes.json").write_text(json.dumps({
+        "at": NOW.isoformat(), "now_ms": int(NOW.timestamp() * 1000), "newest_stalled_s": 0,
+        "terminal_newest_ms": int(NOW.timestamp() * 1000), "symbols": {
         s: {"quote_ms": int(NOW.timestamp() * 1000), "visible": True} for s in UNIVERSE}}))
     monkeypatch.setattr(tl, "TERMINAL_QUOTES", tmp_path / "quotes.json")
     return state
@@ -237,8 +239,8 @@ def test_a_long_dead_symbol_steps_down_to_amber_and_stays_named():
 
 
 def _probe_files(root: Path, names: list[str]) -> None:
-    d = root / tl.WRITER_PROBE
-    d.mkdir(parents=True)
+    d = root / tl.WRITER_PROBES[0]
+    d.mkdir(parents=True, exist_ok=True)
     for n in names:
         (d / n).write_bytes(b"")
 
@@ -255,36 +257,121 @@ def test_a_dead_compact_writer_is_red_even_while_tape_state_is_fresh(tmp_path):
     assert red == [] and amber
 
 
+US = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
+US_MS = int(US.timestamp() * 1000)
+
+
+def _quotes(rows: dict, at: datetime = US, stalled: int = 0, newest_lag_ms: int = 0) -> dict:
+    return {"at": at.isoformat(), "now_ms": int(at.timestamp() * 1000),
+            "terminal_newest_ms": int(at.timestamp() * 1000) - newest_lag_ms,
+            "newest_stalled_s": stalled, "symbols": rows}
+
+
+EQ_DEAD = {"EURUSD": {"quote_ms": US_MS, "visible": True},
+           "Apple": {"quote_ms": US_MS - 17 * 3_600_000, "visible": True},
+           "Tesla": {"quote_ms": US_MS - 17 * 3_600_000, "visible": True}}
+
+
 def test_a_dead_class_is_split_into_broker_side_or_our_side():
     """The 10-29 equities: no tick in any store. The terminal's own quotes say whose fault."""
-    us = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
-    newest = int(us.timestamp() * 1000)
-    quotes = {"symbols": {"EURUSD": {"quote_ms": newest, "visible": True},
-                          "Apple": {"quote_ms": newest - 17 * 3_600_000, "visible": True,
-                                    "reselected": True},
-                          "Tesla": {"quote_ms": None, "visible": False}}}
-    term, amber = tl.terminal_block(quotes, UNIVERSE)
-    assert amber == []
+    rows = {"EURUSD": {"quote_ms": US_MS, "visible": True},
+            "Apple": {"quote_ms": US_MS - 17 * 3_600_000, "visible": True, "reselected": True},
+            "Tesla": {"quote_ms": None, "visible": False}}
+    term, amber = tl.terminal_block(_quotes(rows), UNIVERSE, US)
+    assert amber == [] and term["measured"] is True
     assert term["classes"]["Equities"] == {"symbols": 2, "terminal_fresh": 0, "not_visible": 1,
                                            "reselected": 1}
-    _, amber = tl.terminal_block(None, UNIVERSE)
-    assert amber and amber[0].startswith("UNMEASURED")
+    term, amber = tl.terminal_block(None, UNIVERSE, US)
+    assert amber and amber[0].startswith("UNMEASURED") and term["measured"] is False
 
 
+def test_a_stale_probe_file_is_unmeasured_never_all_quoting():
+    """Auditor MF1: a 30 h old file (recorder dead) read 103/103 quoting."""
+    rows = {s: {"quote_ms": US_MS, "visible": True} for s in UNIVERSE}
+    term, amber = tl.terminal_block(_quotes(rows), UNIVERSE, US + timedelta(hours=30))
+    assert term["measured"] is False and "classes" not in term
+    assert amber and "not probing" in amber[0]
 
-def test_run_names_the_side_of_a_dead_class(tmp_path, monkeypatch):
-    us = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
-    cov = {"at": us.isoformat(), "families": {
+
+def test_a_disconnected_terminal_is_unmeasured_never_all_quoting():
+    """Auditor MF1: every quote 5 h old ages together, so each is fresh against the newest."""
+    old = {s: {"quote_ms": US_MS - 5 * 3_600_000, "visible": True} for s in UNIVERSE}
+    by_clock, amber = tl.terminal_block(
+        _quotes(old, newest_lag_ms=5 * 3_600_000), UNIVERSE, US)
+    assert by_clock["measured"] is False and "not streaming" in amber[0]
+    # A trade server stamping UTC+3 hides a 2 h outage from the clock bound; the recorder's own
+    # "newest quote has not advanced" counter does not care about the timezone.
+    by_stall, amber = tl.terminal_block(
+        _quotes(old, stalled=7200, newest_lag_ms=-3_600_000), UNIVERSE, US)
+    assert by_stall["measured"] is False and "not advanced" in amber[0]
+    # A healthy UTC+3 server is measured.
+    ok, amber = tl.terminal_block(
+        _quotes(EQ_DEAD, newest_lag_ms=-3 * 3_600_000), UNIVERSE, US)
+    assert ok["measured"] is True and amber == []
+    # A file without the proof fields (written by the pre-lease recorder) is not a reading.
+    bare, amber = tl.terminal_block({"at": US.isoformat(), "symbols": old}, UNIVERSE, US)
+    assert bare["measured"] is False and amber
+
+
+def _dead_equities_run(tmp_path, monkeypatch, quotes: dict | None, prior: dict | None = None):
+    cov = {"at": US.isoformat(), "families": {
         f: {"mined": 10, "judged_total": 3} for f in tl.TAPE_FAMILIES}}
     _point(tmp_path, monkeypatch, UNIVERSE, cov)
-    st = {s: {"last_tick_utc": (us - timedelta(hours=h)).isoformat()}
+    st = {s: {"last_tick_utc": (US - timedelta(hours=h)).isoformat()}
           for s, h in dict(LIVE, Apple=17.0, Tesla=17.0).items()}
     (tmp_path / "state.json").write_text(json.dumps(st))
-    newest = int(us.timestamp() * 1000)
-    (tmp_path / "quotes.json").write_text(json.dumps({"symbols": dict(
-        {s: {"quote_ms": newest, "visible": True} for s in UNIVERSE},
-        Apple={"quote_ms": newest - 17 * 3_600_000, "visible": True},
-        Tesla={"quote_ms": newest - 17 * 3_600_000, "visible": True})}))
-    rep = tl.run(now=us, reader=_reader_seeing(st), prior=SETTLED)
-    dead = [r for r in rep["red"] if r.startswith("CLASS_DEAD: Equities")]
-    assert dead and "TERMINAL is not quoting" in dead[0]
+    if quotes is None:
+        (tmp_path / "quotes.json").unlink()
+    else:
+        (tmp_path / "quotes.json").write_text(json.dumps(quotes))
+    return tl.run(now=US, reader=_reader_seeing(st), prior=dict(SETTLED, **(prior or {})))
+
+
+def _dead(rep: dict) -> list[str]:
+    return [r for r in rep["red"] if r.startswith("CLASS_DEAD: Equities")]
+
+
+def test_an_exchange_holiday_is_amber_class_quiet_not_red(tmp_path, monkeypatch):
+    """Auditor MF2: US Thanksgiving inside the core session read as "recorder not taping"."""
+    rep = _dead_equities_run(tmp_path, monkeypatch, _quotes(EQ_DEAD))
+    assert _dead(rep) == []
+    quiet = [a for a in rep["amber"] if a.startswith("CLASS_QUIET: Equities")]
+    assert quiet and "holiday" in quiet[0]
+    assert rep["recorder"]["quiet_since"]["Equities"] == US.isoformat()
+
+
+def test_a_dead_class_stays_red_when_the_probe_cannot_vouch(tmp_path, monkeypatch):
+    stale = _quotes(EQ_DEAD, at=US - timedelta(hours=30))
+    for quotes in (None, stale, _quotes(EQ_DEAD, stalled=7200)):
+        rep = _dead_equities_run(tmp_path, monkeypatch, quotes)
+        assert _dead(rep), quotes
+        assert not [a for a in rep["amber"] if a.startswith("CLASS_QUIET")]
+        assert "TERMINAL" not in _dead(rep)[0]          # an unmeasured probe names no side
+
+
+def test_a_dead_class_the_terminal_is_quoting_is_our_fault_and_red(tmp_path, monkeypatch):
+    rows = dict(EQ_DEAD, Apple={"quote_ms": US_MS, "visible": True})
+    rep = _dead_equities_run(tmp_path, monkeypatch, _quotes(rows))
+    assert _dead(rep) and "our writers are missing it" in _dead(rep)[0]
+
+
+def test_a_class_out_of_market_watch_or_quiet_for_days_is_red(tmp_path, monkeypatch):
+    rows = dict(EQ_DEAD, Tesla={"quote_ms": None, "visible": False})
+    rep = _dead_equities_run(tmp_path, monkeypatch, _quotes(rows))
+    assert _dead(rep) and "dropped out of Market Watch" in _dead(rep)[0]
+    since = (US - timedelta(days=tl.QUIET_MAX_D, hours=1)).isoformat()
+    rep = _dead_equities_run(tmp_path, monkeypatch, _quotes(EQ_DEAD),
+                             prior={"quiet_since": {"Equities": since}})
+    assert _dead(rep) and "longer than any holiday" in _dead(rep)[0]
+    assert rep["recorder"]["quiet_since"]["Equities"] == since
+
+
+def test_one_live_probe_proves_a_writer(tmp_path):
+    """Auditor: WRITER_STALE rested on BTCUSD alone. A renamed probe is not a dead writer."""
+    for name in ("2026-10-29.parquet", "20261029.parquet"):
+        (tmp_path / "ETHUSD").mkdir(exist_ok=True)
+        (tmp_path / "ETHUSD" / name).write_bytes(b"")
+    (tmp_path / "BTCUSD").mkdir()
+    (tmp_path / "BTCUSD" / "2026-09-01.parquet").write_bytes(b"")
+    _, red, amber = tl.writer_block(NOW, tmp_path)
+    assert red == [] and amber == []

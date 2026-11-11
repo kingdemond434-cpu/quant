@@ -23,11 +23,14 @@ This check walks the whole path -- writer, reader, judge -- and goes RED at the 
   CLASS_DEAD         a whole asset class is stale inside its CORE session (CORE_SESSIONS) -- the
                      case peers cannot catch, because every peer is dead too.
   WRITER_STALE       either tape writer (dashed mt5desk/tape, compact moat_silver) has no file
-                     for today or yesterday on the 24/7 probe.
+                     for today or yesterday on ANY of the 24/7 probes (WRITER_PROBES).
   ZERO_SPREAD        every probe tick in the last hour has ask == bid: a feed that is quoting
                      nothing tradeable while looking alive.
   TAPE_NEVER_JUDGED  a tape family has mined cells and zero verdicts (principal 2026-10-14: the
                      tape must produce cells AND certificates).
+
+AMBER CLASS_QUIET, not RED CLASS_DEAD, when a FRESH terminal quote probe shows the terminal
+itself quoting none of the class with every symbol still in Market Watch: an exchange holiday.
 
 AMBER, never GREEN, whenever something could not be MEASURED (L1.28a: absence is never a clean
 verdict): no universe, no crypto class to prove the recorder on a weekend, a probe symbol with no
@@ -88,7 +91,16 @@ CORE_SESSIONS: dict[str, tuple[frozenset[int], float, float]] = {
     "Crypto": (frozenset(range(7)), 0.0, 24.0),
 }
 #: The 24/7 probe whose two writers must both have a file for today or yesterday.
-WRITER_PROBE = "BTCUSD"
+WRITER_PROBES = ("BTCUSD", "ETHUSD")
+#: terminal_quotes.json older than this against the wall clock is not a reading of the terminal
+#: (the recorder probes every 300 s; three missed probes and a margin).
+PROBE_LEASE_S = 1200
+#: The terminal's newest quote must have advanced within this long (crypto quotes 24/7).
+TERMINAL_STALL_S = 1800
+#: The trade server's clock may run this far ahead of UTC (Fusion: +2 winter, +3 summer).
+SERVER_AHEAD_H = 4
+#: A class the terminal has not quoted for this long in core sessions is no holiday.
+QUIET_MAX_D = 4
 
 
 def _read(path: Path) -> Any:
@@ -217,35 +229,74 @@ def writer_block(now: datetime, ticks: Path | None = None
     state file reads, so without this a dead silver writer is invisible.
     """
     from mt5desk.tape_days import day_key
-    d = (ticks or TICKS) / WRITER_PROBE
     newest: dict[str, str | None] = {"dashed (mt5desk/tape)": None, "compact (moat_silver)": None}
-    for f in d.glob("*.parquet") if d.is_dir() else []:
-        key = day_key(f.stem)
-        if key is None:
-            continue
-        which = "dashed (mt5desk/tape)" if "-" in f.stem else "compact (moat_silver)"
-        if newest[which] is None or key > str(newest[which]):
-            newest[which] = key
+    # The NEWEST day either writer wrote across every 24/7 probe: one delisted or renamed probe
+    # symbol must not read as a dead writer, and one live probe is proof the writer runs.
+    for probe in WRITER_PROBES:
+        d = (ticks or TICKS) / probe
+        for f in d.glob("*.parquet") if d.is_dir() else []:
+            key = day_key(f.stem)
+            if key is None:
+                continue
+            which = "dashed (mt5desk/tape)" if "-" in f.stem else "compact (moat_silver)"
+            if newest[which] is None or key > str(newest[which]):
+                newest[which] = key
     red: list[str] = []
     amber: list[str] = []
     floor = (now - timedelta(days=1)).date().isoformat()
+    probes = "/".join(WRITER_PROBES)
     if not any(newest.values()):
-        amber.append(f"UNMEASURED: no {WRITER_PROBE} tape files to prove either writer by")
+        amber.append(f"UNMEASURED: no {probes} tape files to prove either writer by")
     else:
         for which, key in newest.items():
             if key is None or key < floor:
-                red.append(f"WRITER_STALE: {which} has no {WRITER_PROBE} day newer than {key} "
+                red.append(f"WRITER_STALE: {which} has no {probes} day newer than {key} "
                            f"on a 24/7 symbol")
-    return {"probe": WRITER_PROBE, "newest_day": newest}, red, amber
+    return {"probes": list(WRITER_PROBES), "newest_day": newest}, red, amber
 
 
-def terminal_block(quotes: dict[str, Any] | None, universe: dict[str, Any]
-                   ) -> tuple[dict[str, Any], list[str]]:
+def terminal_block(quotes: dict[str, Any] | None, universe: dict[str, Any],
+                   now: datetime | None = None) -> tuple[dict[str, Any], list[str]]:
     """Per asset class: how many symbols the TERMINAL itself quoted within STALE_H of its own
-    newest quote (clock-free: both stamps are the trade server's). (block, amber)."""
+    newest quote (both stamps are the trade server's). (block, amber).
+
+    THE FILE HAS A LEASE (audit 2026-10-29). "Fresh relative to the newest quote in the file" is
+    100% quoting for a file the dead recorder wrote 30 h ago, and for a disconnected terminal
+    whose quotes all aged together. So the block is `measured` only when (a) the file was written
+    within PROBE_LEASE_S of the wall clock, (b) the recorder saw the terminal's newest quote
+    ADVANCE within TERMINAL_STALL_S (its own monotonic clock, timezone-free), and (c) that newest
+    quote is not hours behind the recorder's clock at the moment of the probe (the bound allows a
+    trade server up to SERVER_AHEAD_H ahead of UTC). Anything else is UNMEASURED, and an
+    unmeasured probe never names a side.
+    """
+    now = now or datetime.now(UTC)
     if not quotes or not isinstance(quotes.get("symbols"), dict):
-        return {}, ["UNMEASURED: no terminal_quotes.json from the moat recorder -- a dead class "
-                    "cannot be split into broker/subscription side vs our writers"]
+        return {"measured": False}, [
+            "UNMEASURED: no terminal_quotes.json from the moat recorder -- a dead class "
+            "cannot be split into broker/subscription side vs our writers"]
+    at = _ts(quotes.get("at"))
+    why: str | None = None
+    if at is None:
+        why = "the probe file carries no `at` stamp"
+    elif abs((now - at).total_seconds()) > PROBE_LEASE_S:
+        why = (f"the probe file is {_age_h(at, now)}h old (lease {PROBE_LEASE_S / 60:g} min) -- "
+               f"the moat recorder is not probing")
+    else:
+        stalled = quotes.get("newest_stalled_s")
+        newest, now_ms = quotes.get("terminal_newest_ms"), quotes.get("now_ms")
+        if not isinstance(newest, int | float) or not isinstance(now_ms, int | float):
+            why = "the probe file has no terminal_newest_ms/now_ms to prove the terminal streams"
+        elif isinstance(stalled, int | float) and stalled > TERMINAL_STALL_S:
+            why = (f"the terminal's newest quote has not advanced for {stalled / 60:.0f} min -- "
+                   f"the terminal is not streaming (disconnected?)")
+        elif not (-TERMINAL_STALL_S * 1000 <= newest - now_ms
+                  <= SERVER_AHEAD_H * 3_600_000 + TERMINAL_STALL_S * 1000):
+            why = (f"the terminal's newest quote is {(now_ms - newest) / 3_600_000:.1f}h behind "
+                   f"the recorder's clock -- the terminal is not streaming (disconnected?)")
+    if why is not None:
+        return {"measured": False, "at": quotes.get("at"), "why": why}, [
+            f"UNMEASURED: terminal quote probe unusable -- {why}; a dead class cannot be split "
+            f"into broker/subscription side vs our writers"]
     rows = quotes["symbols"]
     ref = max((int(r.get("quote_ms") or 0) for r in rows.values() if isinstance(r, dict)),
               default=0)
@@ -261,7 +312,51 @@ def terminal_block(quotes: dict[str, Any] | None, universe: dict[str, Any]
         c["terminal_fresh"] += int(bool(q) and ref - q <= STALE_H * 3_600_000)
         c["not_visible"] += int(r.get("visible") is False)
         c["reselected"] += int("reselected" in r)
-    return {"at": quotes.get("at"), "classes": out}, []
+    return {"measured": True, "at": quotes.get("at"), "classes": out}, []
+
+
+def split_dead_classes(red: list[str], term: dict[str, Any], now: datetime,
+                       prior_quiet: dict[str, Any] | None
+                       ) -> tuple[list[str], list[str], dict[str, str]]:
+    """Name the side of every CLASS_DEAD line. (red, amber, quiet_since).
+
+    A class the terminal itself is not quoting, with every symbol still in Market Watch, is the
+    broker's session being shut (an exchange holiday inside the core session: US Thanksgiving
+    15:00-19:30 UTC) -- not "the recorder is not taping". That one case steps down to AMBER
+    CLASS_QUIET, and only on a MEASURED probe: a stale or absent probe proves nothing and the
+    line stays RED. It also stays RED when any symbol fell out of Market Watch (a subscription
+    fault inside our reach), and goes back to RED after QUIET_MAX_D days, which outlasts any
+    holiday plus a weekend -- a class the broker stopped quoting for good is not a holiday.
+    """
+    keep: list[str] = []
+    amber: list[str] = []
+    quiet_since: dict[str, str] = {}
+    classes = (term.get("classes") or {}) if term.get("measured") else {}
+    for line in red:
+        cls = line[len("CLASS_DEAD: "):].split(" is inside")[0] if line.startswith(
+            "CLASS_DEAD: ") else None
+        c = classes.get(cls) if cls is not None else None
+        if not c:
+            keep.append(line)
+            continue
+        note = (f"[terminal: {c['terminal_fresh']}/{c['symbols']} quoting, "
+                f"{c['not_visible']} not in Market Watch, {c['reselected']} re-selected")
+        if c["terminal_fresh"] > 0:
+            keep.append(f"{line} {note}; the TERMINAL IS quoting it -- our writers are missing it]")
+            continue
+        since = _ts((prior_quiet or {}).get(cls)) or now
+        quiet_since[str(cls)] = since.isoformat()
+        side = "the TERMINAL is not quoting it either -- broker, session or Market Watch side"
+        if c["not_visible"] > 0:
+            keep.append(f"{line} {note}; {side}; symbols have dropped out of Market Watch]")
+        elif now - since >= timedelta(days=QUIET_MAX_D):
+            keep.append(f"{line} {note}; {side}; quiet since {since.isoformat()}, longer than "
+                        f"any holiday]")
+        else:
+            amber.append(f"CLASS_QUIET: {cls} is inside its core session and the terminal "
+                         f"itself is quoting none of it since {since.isoformat()} -- broker "
+                         f"session or exchange holiday, not our writers {note}]")
+    return keep, amber, quiet_since
 
 
 def _default_reader(symbol: str) -> Any:
@@ -357,19 +452,11 @@ def run(now: datetime | None = None, reader: Callable[[str], Any] | None = None,
         prior = (_read(OUT) or {}).get("recorder")
     rec, red, amber = recorder_block(state, universe, now, prior)
     wrt, red_w, amber_w = writer_block(now)
-    term, amber_t = terminal_block(_read(TERMINAL_QUOTES), universe)
-    amber += amber_t
-    for i, line in enumerate(red):
-        cls = line[len("CLASS_DEAD: "):].split(" is inside")[0] if line.startswith(
-            "CLASS_DEAD: ") else None
-        c = (term.get("classes") or {}).get(cls) if cls else None
-        if c:
-            side = ("the TERMINAL is not quoting it either -- broker, session or Market Watch "
-                    "side" if c["terminal_fresh"] == 0 else
-                    "the TERMINAL IS quoting it -- our writers are missing it")
-            red[i] = (f"{line} [terminal: {c['terminal_fresh']}/{c['symbols']} quoting, "
-                      f"{c['not_visible']} not in Market Watch, {c['reselected']} re-selected; "
-                      f"{side}]")
+    term, amber_t = terminal_block(_read(TERMINAL_QUOTES), universe, now)
+    red, amber_q, quiet_since = split_dead_classes(
+        red, term, now, prior.get("quiet_since") if isinstance(prior, dict) else None)
+    rec["quiet_since"] = quiet_since
+    amber += amber_t + amber_q
     rdr, red_r, amber_r = reader_block(state, now, reader)
     jdg, red_j, amber_j = judge_block(_read(JUDGE_COVERAGE), now)
     red += red_w + red_r + red_j

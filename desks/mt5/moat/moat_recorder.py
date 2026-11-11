@@ -129,6 +129,8 @@ class Recorder:
         self.last = {"universe": 0.0, "ticks": 0.0, "specs": 0.0, "health": 0.0, "quotes": 0.0}
         self.zero_pulls: dict[str, int] = {}
         self.reselected_at: dict[str, float] = {}
+        self.newest_quote_ms = 0
+        self.newest_advanced_mono: float | None = None
         self.paused = False
 
     # -- universe -------------------------------------------------------------------------
@@ -223,13 +225,24 @@ class Recorder:
         for sym, row in rows.items():
             quote_ms = int(row["quote_ms"] or 0)
             stale = not quote_ms or ref - quote_ms > 30 * 60_000
-            if (stale and self.zero_pulls.get(sym, 0) >= 3
+            # ONLY a symbol that has dropped OUT of Market Watch: re-selecting a visible one is a
+            # no-op that was measured (audit 2026-10-29) at ~100 calls and a health row an hour,
+            # all weekend, for every closed market.
+            if (stale and row["visible"] is False and self.zero_pulls.get(sym, 0) >= 3
                     and mono - self.reselected_at.get(sym, -RESELECT_S) >= RESELECT_S):
                 self.reselected_at[sym] = mono
                 row["reselected"] = bool(mt5.symbol_select(sym, True))
+        # IS THE TERMINAL STREAMING AT ALL? Its newest quote must ADVANCE between probes (crypto
+        # quotes 24/7). Measured on this process's monotonic clock, so it needs no opinion about
+        # the trade server's timezone: a disconnected terminal's quotes all age together, and
+        # "fresh relative to the newest" then reads 100% quoting for a feed that is dead.
+        if ref > self.newest_quote_ms or self.newest_advanced_mono is None:
+            self.newest_quote_ms = max(ref, self.newest_quote_ms)
+            self.newest_advanced_mono = mono
         write_json_atomic(QUOTES, {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                                    "now_ms": now_ms, "terminal_newest_ms": ref or None,
-                                   "symbols": rows})
+                                   "newest_stalled_s": round(mono - self.newest_advanced_mono),
+                                   "probe_s": QUOTE_PROBE_S, "symbols": rows})
         reselected = sorted(s for s, r in rows.items() if "reselected" in r)
         if reselected:
             self.health_row(event="market_watch_reselect", symbols=reselected[:50],
