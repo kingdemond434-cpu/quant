@@ -521,8 +521,12 @@ NODES: tuple[Node, ...] = (
     # DEGREE-DAY REVISION (2026-11-11): NOAA CPC 7-day degree-day forecast revisions (the lake's
     # PIT series) -> screened `degree_day_revision` cells on XNGUSD donated into the intake the
     # compiler merges. Its report is the per-product reach and park state for a person.
+    # ITS LAKE READ (desks/mt5/data/lake/series/noaa_<product>.parquet) IS NOT DECLARED YET ON
+    # PURPOSE: its producer, research/noaa_forecast_vintage.py, is not on this branch, so the read
+    # would be a true DEAD_CONSUMER. The proposer parks every product by name until it lands; the
+    # producer's own node adds the lake path to both ends when it does.
     Node("degree_day_revision_proposer", "desks/mt5/research/degree_day_revision_proposer.py",
-         reads=("desks/mt5/data/lake/series/", "desks/mt5/data/universe/"),
+         reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/DEGREE_DAY_REVISION_PROPOSER.json",
                  "desks/mt5/data/intelligence/degree_day_revision/")),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
