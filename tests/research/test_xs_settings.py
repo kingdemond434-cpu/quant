@@ -200,12 +200,13 @@ def test_the_panel_setting_rides_each_cell_and_splits_its_dedupe_key(monkeypatch
 
     monkeypatch.setattr(XF, "PANEL_NEUTRALIZATION", "group")
     group = XF.Cell(expr=z_expr, symbol="EURUSD", hold=6)
-    assert group.key != market_key
+    group_key = group.key                 # the settings are module constants, fixed per pass
+    assert group_key != market_key
     assert group.as_dict()["panel_settings"] == {"xzscore_neutralization": "group"}
 
     monkeypatch.setattr(XF, "PANEL_TRUNCATION", 0.25)
     capped = XF.Cell(expr=z_expr, symbol="EURUSD", hold=6)
-    assert capped.key not in (market_key, group.key)
+    assert capped.key not in (market_key, group_key)
     ps = capped.as_dict()["panel_settings"]
     assert ps == {"xzscore_neutralization": "group", "truncation": 0.25}
 
@@ -217,7 +218,7 @@ def test_the_panel_setting_rides_each_cell_and_splits_its_dedupe_key(monkeypatch
 
     # the duplicate-AST check: a seen market-z key does not block the group cell
     seen = {market_key}
-    assert group.key not in seen
+    assert group_key not in seen
 
     # campaign row, registry params and donation provenance all carry it
     camp = XF.Campaign.__new__(XF.Campaign)
