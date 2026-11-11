@@ -82,6 +82,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -117,6 +118,17 @@ COMMITTEES: tuple[str, ...] = (SCIENTIFIC, FORENSIC)
 DEFAULT_BUDGET_S = 600.0
 DEFAULT_CALLS = 12
 EXPERIMENT_BUDGET_S = 240.0
+#: SELF-STOP INSIDE THE CAP (MR7 2026-11-11: 64 straight kills at the 720 s leg cap against a
+#: 600 s budget, COMMITTEE_IDEA_MINER.json never written). The deadline was read only between
+#: subjects, while one subject is several seat calls (the free panel rotates its roster with no
+#: wall clock of its own) plus an experiment run. Each call, each pool load and each experiment
+#: run now has a wall-clock bound, and the pass stops with POST_MARGIN_S left for settlement and
+#: the writes. Nothing is dropped: an unreviewed subject is not marked seen, so it is reviewed on
+#: the next pass.
+POST_MARGIN_S = 90.0
+#: A seat call is not started with less than this left: it could not return a usable answer.
+MIN_CALL_S = 20.0
+CALL_TIMEOUT_S = 120.0
 MAX_DONATIONS = 60
 #: The scrap rule's evidence floor and bar. Below MIN_SETTLED settled kills nothing is scrapped.
 MIN_SETTLED = 50
@@ -413,6 +425,33 @@ def _context(s: Subject, prior: Sequence[Mapping[str, Any]]) -> list[str]:
     return ctx
 
 
+def _phase(label: str, t0: float) -> None:
+    """One progress line on stderr; the cycle keeps a killed leg's stderr tail."""
+    print(f"PHASE {label} +{time.monotonic() - t0:.1f}s", file=sys.stderr, flush=True)
+
+
+def _bounded(fn: Callable[[], Any], timeout_s: float) -> tuple[bool, Any]:
+    """(True, value) when `fn` returned within `timeout_s`, else (False, None). An overrunning
+    call is abandoned on a daemon thread, which exit does not wait for, so the pass still writes.
+    The call's own exception is re-raised on the caller's thread."""
+    box: dict[str, Any] = {}
+
+    def go() -> None:
+        try:
+            box["v"] = fn()
+        except BaseException as exc:  # re-raised on the caller's thread
+            box["e"] = exc
+
+    th = threading.Thread(target=go, daemon=True)
+    th.start()
+    th.join(max(0.0, timeout_s))
+    if th.is_alive():
+        return False, None
+    if "e" in box:
+        raise box["e"]
+    return True, box.get("v")
+
+
 def _seat() -> Any:
     try:
         from libs.research import proposer_seat as ps
@@ -422,8 +461,8 @@ def _seat() -> Any:
 
 
 def deliberate(s: Subject, *, calls_left: int, branches: Sequence[str] = (),
-               ask: Callable[..., Any] | None = None) -> tuple[list[dict[str, Any]],
-                                                              dict[str, Any]]:
+               ask: Callable[..., Any] | None = None, deadline: float | None = None
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Every role of the subject's committee speaks once, in order, seeing the earlier ones."""
     ps = _seat()
     ask = ask or (ps.ask if ps is not None else None)
@@ -439,12 +478,23 @@ def deliberate(s: Subject, *, calls_left: int, branches: Sequence[str] = (),
         if meter["calls"] >= calls_left:
             meter["roles_unmeasured"] += 1
             continue
-        reply = ask(committee, "candidates",
-                    task=f"You are the {role.replace('_', ' ')}. {task}",
-                    grammar=_grammar(allowed, branches if s.committee == FORENSIC else ()),
-                    context=_context(s, said), n=2,
-                    validate=_valid_explanation(allowed, s.claim_type))
+        left = CALL_TIMEOUT_S if deadline is None else deadline - time.monotonic()
+        if left < MIN_CALL_S:
+            meter["roles_unmeasured"] += 1
+            meter["why"] = "the pass reached its own stop before this role could be asked"
+            continue
+        wait = min(CALL_TIMEOUT_S, left)
+        done, reply = _bounded(lambda role=role, committee=committee, allowed=allowed,
+                               task=task: ask(
+            committee, "candidates", task=f"You are the {role.replace('_', ' ')}. {task}",
+            grammar=_grammar(allowed, branches if s.committee == FORENSIC else ()),
+            context=_context(s, said), n=2,
+            validate=_valid_explanation(allowed, s.claim_type)), wait)
         meter["calls"] += 1
+        if not done:
+            meter["roles_unmeasured"] += 1
+            meter["why"] = f"seat call did not return within {wait:.0f}s"
+            continue
         meter["trials_charged"] += float(getattr(reply, "trials_charged", 0.0) or 0.0)
         meter["discarded"] += int(getattr(reply, "discarded", 0) or 0)
         meter["reasons"] += list(getattr(reply, "reasons", []) or [])[:2]
@@ -735,7 +785,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         meta: Mapping[str, Any] | None = None, fates: Mapping[str, Any] | None = None,
         subjects: Mapping[str, Sequence[Subject]] | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
-    deadline = t0 + max(0.0, float(budget_s))
+    deadline = t0 + max(0.0, float(budget_s) - POST_MARGIN_S)
+    _phase("start", t0)
     state = _json(STATE, {}) if write else {}
     prior = _jsonl(CONTRACTS)
     seen = {str((c.get("fingerprint") or {}).get("input")) for c in prior}
@@ -769,7 +820,17 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         if subjects is not None:
             pool = list(subjects.get(name) or [])
         else:
-            pool = scientific_subjects() if name == SCIENTIFIC else forensic_subjects()
+            done, got = _bounded(lambda name=name: scientific_subjects() if name == SCIENTIFIC
+                                 else forensic_subjects(),
+                                 max(0.0, deadline - time.monotonic()))
+            if not done:
+                entry.update({"status": UNMEASURED,
+                              "why": "its subject pool did not load inside the pass's time"})
+                doc["committees"][name] = entry
+                _phase(f"{name} pool overran", t0)
+                continue
+            pool = list(got or [])
+        _phase(f"{name} pool={len(pool)}", t0)
         todo, set_aside = screen(pool, seen)
         entry.update({"population": len(pool), "set_aside": set_aside,
                       "eligible": len(todo)})
@@ -782,7 +843,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         for s in todo:
             if share < 3 or time.monotonic() > deadline:
                 break
-            said, meter = deliberate(s, calls_left=share, branches=sorted(branches), ask=ask)
+            said, meter = deliberate(s, calls_left=share, branches=sorted(branches), ask=ask,
+                                     deadline=deadline)
             share -= meter["calls"]
             calls_left -= meter["calls"]
             entry["calls"] += meter["calls"]
@@ -791,12 +853,18 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
                 entry["why"] = meter.get("why") or "the seat said nothing usable"
                 break
             verdict = judge(said)
-            outcome = (run_experiments(s, verdict, min(deadline, time.monotonic()
-                                                       + EXPERIMENT_BUDGET_S),
-                                       build=build, meta=meta)
-                       if name == SCIENTIFIC else
-                       {"status": "DONATED", "why": "competing mechanisms enter the docket as "
-                                                     "candidates; the gauntlet judges them"})
+            if name == SCIENTIFIC:
+                until = min(deadline, time.monotonic() + EXPERIMENT_BUDGET_S)
+                done, outcome = _bounded(lambda s=s, verdict=verdict, until=until:
+                                         run_experiments(s, verdict, until, build=build,
+                                                         meta=meta),
+                                         max(0.0, until - time.monotonic()) + MIN_CALL_S)
+                if not done:
+                    outcome = {"status": UNMEASURED,
+                               "why": "an experiment ran past the pass's own stop"}
+            else:
+                outcome = {"status": "DONATED", "why": "competing mechanisms enter the docket "
+                                                       "as candidates; the gauntlet judges them"}
             c = contract(s, said, verdict, outcome, meter, model)
             new_contracts.append(c)
             seen.add(s.fingerprint())
@@ -812,6 +880,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         entry["kill_rate"] = (round(entry["kills"] / entry["reviewed"], 4)
                               if entry["reviewed"] else UNMEASURED)
         doc["committees"][name] = entry
+        _phase(f"{name} reviewed={entry['reviewed']} calls={entry['calls']}", t0)
     # delayed settlement, reflection, and the scrap rule
     all_contracts = prior + new_contracts
     prior_settled = _jsonl(SETTLEMENTS)

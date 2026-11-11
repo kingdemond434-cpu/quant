@@ -2600,13 +2600,28 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
                 "stderr_tail": (r.stderr or "")[-1200:],
                 "budget_s": budget, "at": datetime.now(UTC).isoformat()}
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        # WHAT IT WAS DOING WHEN THE CAP FELL IS KEPT (MR7, 2026-11-11). The runner already hands
+        # back the child's captured output on a kill; dropping it left 64 committees timeouts and
+        # 39 committee_ensembles timeouts with no line saying whether the time went to loading or
+        # to one subject. The tail is the only measurement a leg that never finishes can leave.
         return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
+                "tail": _text_tail(exc.output, 600),
+                "stderr_tail": _text_tail(exc.stderr, 2000),
                 "at": datetime.now(UTC).isoformat()}
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}", "at": datetime.now(UTC).isoformat()}
+
+
+def _text_tail(raw: object, n: int) -> str:
+    """The last `n` characters of a captured stream, bytes or str; empty when nothing came back."""
+    if raw is None:
+        return ""
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8", errors="replace")
+    return str(raw)[-n:]
 
 
 def execution_twin() -> dict:
