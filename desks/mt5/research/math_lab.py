@@ -93,12 +93,16 @@ ENGINE_SHARE = 0.08
 #:   * a scientist starts no tradition, and no panel within one, after SCIENCE_SHARE of the pass;
 #:     the traditions not reached run FIRST next pass (`cursor_path`), so every tradition is
 #:     reached within a lap and none is reached never;
-#:   * the judge stops at JUDGE_SHARE (it was 0.80, which left the tail no room); an unjudged
-#:     object is still admitted, registered and donated unranked, exactly as before;
+#:   * the judge keeps its 0.80 deadline (judging volume is the desk's goal, so the tail's room
+#:     is taken from the scientists, not the judge -- audit 2026-11-11); an unjudged object is
+#:     still admitted, registered and donated unranked, exactly as before;
 #:   * the engines take what is left before STOP_SHARE, and the report is written after them.
+#: The tail (0.80 -> 0.85, 36 s of a 720 s cap) is UNMEASURED on the box: no pass has reached it
+#: since the box began timing out. The first pass under this file records it in the report's
+#: `shares`/`partial` fields and, on a timeout, the runner's stdout/stderr tails name the stall.
 #: A pass that deferred anything says `partial: true`; every object evaluated is charged.
-SCIENCE_SHARE = 0.50
-JUDGE_SHARE = 0.72
+SCIENCE_SHARE = 0.45
+JUDGE_SHARE = 0.80
 STOP_SHARE = 0.85
 NOT_REACHED = "NOT_REACHED"
 
