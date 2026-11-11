@@ -1680,6 +1680,22 @@ def _intake_report(led: Any, when: datetime, payload: Mapping[str, Any],
     from libs.research import sensor_contract as sc
     day = when.date().isoformat()
     metrics = sc.intake_metrics(_day_rows(led, day), led.clock_rows(day))
+    # THE LEDGER SHARDS BY PUBLICATION DAY AND THIS METER READS THE PASS'S DAY (audit #204). A
+    # pass just after 00:00 UTC appends items published before midnight to YESTERDAY's shard, so
+    # today's shard can hold none of them; a 0 here would be an absence read as a count (L1.28a).
+    other = sorted(str(d) for d in (ledger_census.get("shards") or []) if str(d) != day)
+    appended = int(ledger_census.get("appended") or 0)
+    if other:
+        metrics["rows_in_other_shards"] = {
+            "shards": other,
+            "why": "this pass appended rows to shards other than the pass's day; they are "
+                   "counted on their own day's meter, not here"}
+    if appended and not metrics.get("raw_observations"):
+        for k in ("raw_observations", "unique_documents"):
+            metrics[k] = UNMEASURED
+        metrics["why_unmeasured"] = (f"{appended} row(s) appended this pass, none to {day}'s "
+                                     f"shard (shards {other or 'unnamed'}): the day's count is "
+                                     f"not readable from this pass")
     doc = {
         "at": _iso(when), "day": day, "schema": "world_sensor_intake/1",
         "rule": ("throughput is a measurement, not a quota: no article target exists; every "
