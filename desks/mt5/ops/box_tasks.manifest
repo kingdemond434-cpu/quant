@@ -265,6 +265,9 @@ TASK name="MT5-FTMO-VenueReader" trigger="every 5 minutes" runs="desks/mt5/prop/
 # CERT_BOOK_LIVE ftmo block only when data/FTMO_ALLOCATOR_ARMED exists.
 TASK name="MT5-FTMO-Allocator" trigger="every 1 hour, at :50" runs="desks/mt5/research/prop_challenge_allocator.py" installer="desks/mt5/scripts/install_ftmo_allocator_task.ps1" lane="prop"
 TASK name="MT5-FTMO-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_executor.py" installer="desks/mt5/scripts/install_ftmo_executor_task.ps1" lane="prop"
+# The gold direction lock's one-minute cancel/flatten pass on E8 (2026-11-11, audit #959 M1): it
+# claims E8's fills and cancels E8 gold legs against the day's direction within the minute. Never places.
+TASK name="MT5-E8-OcoWatch" trigger="every 1 minute" runs="desks/mt5/prop/e8_oco_watch.py" installer="desks/mt5/scripts/install_e8_oco_watch_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.

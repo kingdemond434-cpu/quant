@@ -46,7 +46,10 @@ THE RULE.
      flatten a whipsaw exactly as for E8's own twin. Open POSITIONS always block, and every
      other lane's resting entries block as before. A mirror lane's first fill is E8's signal by
      construction (it can only rest E8's levels), so a fallback lane follows it like E8's own
-     (`leader_set`). Mirror is demoted to fallback while any lane runs another PROTOCOL, and a
+     -- but only once E8's same-side leg has filled too (`leader_set`, audit #959 M2). A fill
+     anywhere cancels every opposite leg on E8 within the minute: E8's own pass runs every five,
+     so `prop/e8_oco_watch.py` (task MT5-E8-OcoWatch, every minute, cancel and flatten only, never
+     an entry) claims E8's fills and applies rules 2 and 7 to E8's book in between. Mirror is demoted to fallback while any lane runs another PROTOCOL, and a
      lane's explicit "fallback" in the mode file switches it off.
 
 THE STALENESS BOUND, MAX_STATE_AGE_S = 600 s. The slowest lane is E8-Gold, one pass every five
@@ -518,13 +521,33 @@ def configured_mode(lane: str, doc: dict[str, Any] | None = None) -> str:
     return "fallback"
 
 
-def leader_set(entry: dict[str, Any] | None, doc: dict[str, Any] | None = None) -> bool:
-    """Was the day's direction set by E8's bracket -- E8's own fill, or a fill of a MIRROR lane,
-    which only ever rests E8's own levels (rule 8)? What a fallback lane may follow."""
+#: `leader_set`'s default: read the leader's published gold state itself.
+_READ_LEADER: Any = object()
+
+
+def leader_set(entry: dict[str, Any] | None, doc: dict[str, Any] | None = None,
+               leader: Any = _READ_LEADER, *, date: str | None = None) -> bool:
+    """Was the day's direction set by E8's bracket? What a fallback lane may follow.
+
+    E8's own first fill, yes. A MIRROR lane's first fill (it rests only E8's own levels, rule 8)
+    counts ONLY ONCE E8'S SAME-SIDE LEG HAS FILLED TOO -- the leader's published gold state holds
+    a position on the day's direction opened on `date` (audit #959 M2): a copy that filled on its
+    own quote while E8's leg never did is not E8's trade, and no fallback lane inherits it.
+    `leader` is E8's gold state (None: unreadable, so no); by default it is read here."""
     first = str((entry or {}).get("first_fill_lane") or "")
     if first == LEADER:
         return True
-    return first in KNOWN_LANES and configured_mode(first, doc) == "mirror"
+    if first not in KNOWN_LANES or configured_mode(first, doc) != "mirror":
+        return False
+    if leader is _READ_LEADER:
+        leader, _why = read_lane(LEADER)
+    if not isinstance(leader, dict):
+        return False
+    d = side_of((entry or {}).get("direction"))
+    day = str(date or (entry or {}).get("date") or "")
+    return d is not None and any(side_of(p.get("side")) == d
+                                 and str(p.get("opened_date") or "") == day
+                                 for p in leader.get("positions") or [])
 
 
 # ------------------------------------------------------------------ lane state
@@ -802,7 +825,7 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
                                   f"here could fill against it", mode)
     if entry is not None:
         d, first = side_of(entry.get("direction")), entry.get("first_fill_lane")
-        if mode == "fallback" and not leader_set(entry, doc):
+        if mode == "fallback" and not leader_set(entry, doc, states.get(LEADER), date=date):
             return Verdict(False, f"gold OCO fallback: {date}'s direction was set by {first}, "
                                   f"and fallback copies only a fill of E8's bracket", mode)
         if want != d:

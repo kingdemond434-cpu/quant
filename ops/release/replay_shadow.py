@@ -63,7 +63,7 @@ ENTRY_POINTS = (
     "desks/mt5/research/run_gateway_loop.py", "desks/mt5/research/gateway_resident.py",
     "desks/mt5/research/pf_allocator.py", "desks/mt5/proposals/fusion_deadman.py",
     "desks/mt5/prop/e8_executor.py", "desks/mt5/prop/e8_gold.py", "desks/mt5/prop/e8_book.py",
-    "desks/mt5/prop/ftmo_follower.py",
+    "desks/mt5/prop/ftmo_follower.py", "desks/mt5/prop/e8_oco_watch.py",
 )  # fmt: skip
 #: SCRIPTS: MONEY PATH UNLESS SHOWN OTHERWISE (2026-10-29; #508 audit HOLD on a text scan that
 #: failed OPEN). Every shell script and stand-alone Python tool under SCRIPT_DIRS is money path

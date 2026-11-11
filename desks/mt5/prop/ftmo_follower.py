@@ -180,7 +180,8 @@ COMMENT = "FTgold_asia"
 #: A mirror leg's comment (GA1): how the lane tells its copy of E8's bracket from its follow.
 MIRROR_COMMENT = "FTgold_asia_m"
 #: Where E8 writes each leg the moment it is sent (prop/e8_gold.INTENTS), and the caller E8's
-#: TradeLocker writes carry in the order door's ledger (order_door.guard_venue).
+#: TradeLocker writes carry in the order door's ledger (order_door.guard_venue); "e8_gold:<x>"
+#: (the one-minute OCO watch's cancels) is E8 too.
 E8_INTENTS = DESK / "data" / "e8_gold_intents.jsonl"
 E8_CALLER = "e8_gold"
 #: How much of the end of each append-only file one pass reads (the door ledger carries every
@@ -287,7 +288,7 @@ def follow_decision(e8_doc: Any, entry: dict[str, Any] | None, entry_why: str | 
         return "wait", None, "E8's gold_asia has not been placed today"
     if w.get("position_id") is None:
         return "wait", None, "E8's gold_asia has no filled leg yet"
-    if entry is None or not _oco.leader_set(entry):
+    if entry is None or not _oco.leader_set(entry, leader=e8_lane, date=today):
         return "wait", None, ("E8's asia fill has not set today's direction in the shared "
                               "direction state yet")
     side = _oco.side_of(entry.get("direction"))
@@ -394,7 +395,8 @@ def e8_bracket(intents: list[dict[str, Any]] | None, door: list[dict[str, Any]] 
     placed: set[str] = set()
     cancelled: set[str] = set()
     for r in door:
-        if r.get("caller") != E8_CALLER or r.get("outcome") != "acknowledged":
+        if str(r.get("caller") or "").split(":")[0] != E8_CALLER \
+                or r.get("outcome") != "acknowledged":
             continue
         if r.get("action") == "place_stop" and r.get("result") is not None:
             placed.add(str(r.get("result")))
@@ -1070,6 +1072,8 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         doc["state_unreadable"] = "ftmo_follower_state.json is torn; the MAGIC history decides"
     st = st if isinstance(st, dict) else {}
     if st.get("date") != today:
+        for _t, _lag in ((st.get("mirror") or {}).get("lag") or {}).items():
+            _close_lag(_t, _lag, filled=False, why="the trading day ended", now=now)
         st = {"date": today, "windows": {}, "requests": st.get("requests") or {},
               "logged": {}, "followed": st.get("followed") or {}, "account": st.get("account")}
     st.setdefault("followed", {})
@@ -1096,7 +1100,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     if mode == "mirror":
         bracket, bwhy = e8_bracket(
             _tail_rows(E8_INTENTS, needle=f'"{WINDOW}"'),
-            _tail_rows(_door.ledger_path(), needle=f'"caller": "{E8_CALLER}"'), now=now)
+            _tail_rows(_door.ledger_path(), needle=f'"caller": "{E8_CALLER}'), now=now)
     st.setdefault("mirror", {}).setdefault("legs", {})
     doc["mirror"] = {"mode": mode, "why": bwhy,
                      "e8_legs": None if bracket is None else
@@ -1237,6 +1241,13 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         log(f"[{WINDOW}] requested cancel of resting order {c['ticket']}: {act['why']} -> "
             f"{act.get('ok')}")
         doc["actions"].append(act)
+    # THE MIRROR'S LAG IS BILLED (audit #959 S1): minutes a copy rests unfilled after E8's
+    # same-side leg has filled are minutes E8 was in the trade and FTMO was not.
+    _gone = {a["order"] for a in doc["actions"]
+             if str(a.get("act", "")).startswith("cancel") and a.get("ok")}
+    mirror_lag(mt5, st, doc, [o for o in own_ord if int(o.ticket) not in _gone
+                              and _is_mirror(o, mlegs)],
+               own_pos, e8_lane, today=today, now=now)
     # A FILL AGAINST THE DAY'S DIRECTION IS CLOSED AT ONCE (gold_oco v2, must-fix 6).
     _rows = [{"p": p, "id": int(p.ticket),
               "side": "long" if int(getattr(p, "type", -1)) == 0 else "short",
@@ -1355,6 +1366,57 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     doc.setdefault("status", "OK")
     _write_out(doc, st)
     return doc
+
+
+MIRROR_LAG_RAIL = "ftmo_mirror_lag"
+
+
+def _close_lag(ticket: str, lag: dict[str, Any], *, filled: bool, why: str,
+               now: datetime) -> None:
+    """One RAIL_BLOCKED row for a closed lag: the minutes, and the copy's whole risk when it never
+    filled (E8 traded, FTMO did not) -- 0.0 when it filled late (the trade was taken)."""
+    since = _iso(lag.get("since"))
+    minutes = None if since is None else round((now - since).total_seconds() / 60.0, 1)
+    risk = lag.get("risk_usd")
+    _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
+             "status": "RAIL_BLOCKED", "rail": MIRROR_LAG_RAIL,
+             "reason": "mirror_filled_late" if filled else "mirror_unfilled_after_e8_fill",
+             "why": f"mirror leg {ticket} ({lag.get('side')}) rested {minutes} min after E8's "
+                    f"same-side fill; {why}",
+             "order_id": ticket, "lag_minutes": minutes,
+             "missed_growth_risk_usd": 0.0 if filled else
+             (None if risk is None else round(float(risk), 2))})
+
+
+def mirror_lag(mt5: Any, st: dict[str, Any], doc: dict[str, Any], resting: list[Any],
+               own_pos: list[Any], e8_lane: dict[str, Any] | None, *, today: str,
+               now: datetime) -> None:
+    """Open a lag for each resting mirror copy whose side E8 holds a position opened today; close
+    it (one billed row) once the copy is gone or E8's position is. An unreadable E8 state opens
+    and closes nothing."""
+    lag: dict[str, dict[str, Any]] = st["mirror"].setdefault("lag", {})
+    if e8_lane is None:
+        return
+    e8_sides = {_oco.side_of(p.get("side")) for p in e8_lane.get("positions") or []
+                if str(p.get("opened_date") or "") == str(today)}
+    live: set[str] = set()
+    for o in resting:
+        side, t = _side_of_type(int(getattr(o, "type", -1))), str(int(o.ticket))
+        if side in e8_sides:
+            live.add(t)
+            if t not in lag:
+                lag[t] = {"since": now.isoformat(timespec="seconds"), "side": side,
+                          "risk_usd": order_risk_usd(mt5, o)}
+    pos_sides = {_side_of_type(int(getattr(p, "type", -1))) for p in own_pos}
+    for t in [t for t in lag if t not in live]:
+        item = lag.pop(t)
+        still = any(str(int(o.ticket)) == t for o in resting)
+        filled = not still and item.get("side") in pos_sides
+        _close_lag(t, item, filled=filled, now=now,
+                   why=("it filled" if filled else
+                        "E8's position closed first" if still else "it was cancelled unfilled"))
+    if lag:
+        doc["mirror"]["lag"] = {t: v.get("since") for t, v in lag.items()}
 
 
 def _is_mirror(o: Any, mlegs: dict[str, dict[str, Any]]) -> bool:
