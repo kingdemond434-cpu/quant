@@ -6152,7 +6152,7 @@ def main() -> None:
     # Report only: no lane imported, no venue, no write but its own report. Re-measures at most
     # every 15 min, so an hourly call always measures.
     apy = _costed("account_parity", lambda: _producer(
-        "account_parity", "scripts/account_parity.py"))
+        "account_parity", "research/account_parity.py"))
     # THE WHOLE ROUND TRIP, KEYED (2026-09-30). The cost model was spread x hour only; this joins
     # the corpus fill_recorder just wrote with the ledger's commission and swap into surfaces
     # keyed instrument x session x size x vol x direction x order type, UNMEASURED where no fill

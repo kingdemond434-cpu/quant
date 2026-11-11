@@ -689,7 +689,7 @@
     ]
    },
    {
-    "at": "2026-11-11T07:45:36+00:00",
+    "at": "2026-11-11T08:04:55+00:00",
     "host": "vm",
     "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
     "on_attesting_host": false,
@@ -27658,7 +27658,7 @@
    "organ": "leg:account_parity",
    "kind": "leg",
    "code": [
-    "desks/mt5/scripts/account_parity.py"
+    "desks/mt5/research/account_parity.py"
    ],
    "clock": "hourly_cycle:account_parity",
    "cadence_s": 3600,
@@ -27680,7 +27680,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-11-11T07:45:36+00:00"
+   "measured_at": "2026-11-11T08:04:55+00:00"
   }
  ],
  "ratchet": {

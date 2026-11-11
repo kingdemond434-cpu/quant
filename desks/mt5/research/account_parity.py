@@ -2,9 +2,9 @@
 """Does every live account run the same mechanisms? A read-only census, never a decision.
 
 Its one clock is the hourly research cycle (leg `account_parity`, MT5-HourlyCore), which runs
-`python scripts/account_parity.py`; it re-measures at most every REMEASURE_MIN and always exits 0
+`python research/account_parity.py`; it re-measures at most every REMEASURE_MIN and always exits 0
 (a report, not a check). By hand, forcing a re-measure:
-    python desks/mt5/scripts/account_parity.py --force
+    python desks/mt5/research/account_parity.py --force
 
 WHY (zuck, 2026-11-03). Every live account -- E8, FTMO, Fusion, and any future one -- must run
 IDENTICAL mechanisms. Only the firm's caps may differ (loss limits, profit caps, lot caps), and a
@@ -48,8 +48,9 @@ BOUNDED. Only the last TAIL_BYTES of each log or journal is read, the whole pass
 and whatever the budget does not reach is UNMEASURED. `refresh` re-measures at most every
 REMEASURE_MIN and never raises.
 
-Writes `desks/mt5/reports/ACCOUNT_PARITY.json` (a state path; the box may write it), published to
-LIVE every 15 minutes by `sync_shadow_to_git.ps1`. No account number is read or written.
+Writes `desks/mt5/reports/ACCOUNT_PARITY.json` (a state path; the box may write it; not
+.gitignored). Publishing it to LIVE is the publish-list PR's (`sync_shadow_to_git.ps1`), not this
+file's. No account number is read or written.
 """
 from __future__ import annotations
 
