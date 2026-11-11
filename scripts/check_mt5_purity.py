@@ -88,6 +88,36 @@ _DECLARES = (
 #: saying so clearly.
 _PERMITTED = re.compile(r"crypto only as information|fusion[- ]executable|crypto CFD", re.I)
 
+#: READ-ONLY PUBLIC MARKET DATA may feed MT5 signals; orders stay MT5-only (principal, decision
+#: card 2026-10-13 16:43Z: "Allow read-only"). A venue host counts as read-only only when EVERY
+#: occurrence of it in the file's code starts one of these public-data prefixes AND the file
+#: carries no trading marker below. Anything else is still a reach and still fails.
+_READ_ONLY_DATA: tuple[str, ...] = (
+    "www.deribit.com/api/v2/public/", "data.binance.vision/", "api.bybit.com/v5/market/",
+    "www.okx.com/api/v5/public/", "www.okx.com/api/v5/market/",
+)
+
+#: What a client that can trade or authenticate has to carry. One of these anywhere in the code
+#: makes every venue host in the file a reach, whatever its prefix.
+_TRADING_MARKERS: tuple[str, ...] = (
+    "/private/", "/order", "/trade/", "/v5/position", "X-MBX-APIKEY", "OK-ACCESS-KEY",
+    "OK-ACCESS-SIGN", "X-BAPI-API-KEY", "X-BAPI-SIGN", "api_secret", "apiSecret",
+    "client_secret", "hmac.new(",
+)
+
+
+def _read_only_host(host: str, code: str) -> bool:
+    """Is every occurrence of `host` in `code` the start of an allowed public-data prefix?"""
+    prefixes = [p for p in _READ_ONLY_DATA if p.startswith(host)]
+    if not prefixes:
+        return False
+    start = code.find(host)
+    while start != -1:
+        if not any(code.startswith(p, start) for p in prefixes):
+            return False
+        start = code.find(host, start + 1)
+    return True
+
 #: A file that says the ground is RETIRED is not claiming it. `deploy/finish_setup.sh` opens by
 #: explaining that the crypto-exchange desk's runbook is dead and that there is no Binance
 #: account any more -- which is precisely the record an outside reviewer needs, and flagging it
@@ -218,6 +248,7 @@ def _docstring_window(text: str, path: Path) -> str:
 
 def scan() -> dict:
     reaches: list[dict] = []
+    reads: list[dict] = []
     declares: list[dict] = []
     allowed_seen: list[str] = []
 
@@ -232,6 +263,11 @@ def scan() -> dict:
 
         code = _executable_text(text, p)
         hosts = sorted({h for h in _VENUE_HOSTS if h in code})
+        if hosts and rel not in _ALLOWED and not any(m in code for m in _TRADING_MARKERS):
+            public = [h for h in hosts if _read_only_host(h, code)]
+            if public:
+                reads.append({"file": rel, "hosts": public})
+                hosts = [h for h in hosts if h not in public]
         window = _docstring_window(text, p)
         excused = _PERMITTED.search(window) or _RETIRED.search(text)
         claims = [] if excused else _declared_claims(window)
@@ -257,6 +293,7 @@ def scan() -> dict:
     return {
         "checked_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "reaches_a_crypto_venue": reaches,
+        "reads_crypto_public_market_data": reads,
         "declares_a_crypto_universe": declares,
         "allowed_and_present": sorted(allowed_seen),
         "allowed_file_gone": unused,
@@ -283,6 +320,8 @@ def main() -> int:
     print(f"MT5 PURITY {doc['checked_at']}")
     print(f"  allowed and present: {len(doc['allowed_and_present'])} "
           f"(the deadman rail and the mandate's own enforcers)")
+    for r in doc["reads_crypto_public_market_data"]:
+        print(f"  read-only public market data (allowed): {r['file']} -> {', '.join(r['hosts'])}")
 
     # Neither of these is fatal: both mean less crypto in the tree, which is the direction this
     # fence wants. They are reported so the allowlist does not quietly rot into a list of

@@ -84,8 +84,9 @@ def test_the_same_hostname_in_live_code_is_still_caught(tmp_path, monkeypatch) -
         "ops/sneaky.sh":
             "#!/usr/bin/env bash\n"
             "# just a note about api.bybit.com\n"
-            'curl -s "https://api.bybit.com/v5/market/tickers?category=linear"\n',
+            'curl -s "https://api.bybit.com/v5/account/wallet-balance?accountType=UNIFIED"\n',
     }))
+    # A non-public path: /v5/market/ is read-only public data since 2026-10-13 (tests below).
     doc = mp.scan()
     assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["ops/sneaky.sh"]
 
@@ -139,3 +140,53 @@ def test_the_real_repo_holds_one_desk() -> None:
     bad = doc["reaches_a_crypto_venue"] + doc["declares_a_crypto_universe"]
     assert not bad, "files that would give a reader a second desk: " + ", ".join(
         sorted(b["file"] for b in bad))
+
+
+# --------------------------------------------- read-only public market data (2026-10-13 card)
+
+def test_a_public_deribit_reader_passes_and_is_listed(tmp_path, monkeypatch) -> None:
+    """Public crypto market data may feed MT5 signals: listed as a read, never a reach."""
+    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
+        "desks/mt5/research/dvol_feed.py":
+            'import urllib.request\n'
+            'URL = "https://www.deribit.com/api/v2/public/get_volatility_index_data"\n'
+            'def dvol():\n'
+            '    return urllib.request.urlopen(URL)\n',
+    }))
+    doc = mp.scan()
+    assert doc["reaches_a_crypto_venue"] == []
+    assert doc["reads_crypto_public_market_data"] == [
+        {"file": "desks/mt5/research/dvol_feed.py", "hosts": ["www.deribit.com/api"]}]
+
+
+def test_a_private_deribit_endpoint_beside_the_public_one_fails(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
+        "desks/mt5/research/dvol_feed.py":
+            'PUB = "https://www.deribit.com/api/v2/public/get_volatility_index_data"\n'
+            'BUY = "https://www.deribit.com/api/v2/private/buy"\n',
+    }))
+    doc = mp.scan()
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["desks/mt5/research/dvol_feed.py"]
+    assert doc["reads_crypto_public_market_data"] == []
+
+
+def test_a_public_url_with_an_api_key_header_fails(tmp_path, monkeypatch) -> None:
+    """A file that authenticates can trade, whatever URL it starts from."""
+    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
+        "desks/mt5/research/klines.py":
+            'URL = "https://data.binance.vision/data/spot/daily/klines/"\n'
+            'HEADERS = {"X-MBX-APIKEY": KEY}\n',
+    }))
+    doc = mp.scan()
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["desks/mt5/research/klines.py"]
+    assert doc["reads_crypto_public_market_data"] == []
+
+
+def test_the_futures_client_still_fails_with_the_allowlist_in_place(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(mp, "ROOT", _tree(tmp_path, {
+        "scripts/run_new_hunter.py":
+            'URL = "https://fapi.binance.com/fapi/v1/premiumIndex"\n',
+    }))
+    doc = mp.scan()
+    assert [h["file"] for h in doc["reaches_a_crypto_venue"]] == ["scripts/run_new_hunter.py"]
+    assert doc["reads_crypto_public_market_data"] == []
