@@ -18,6 +18,7 @@ import json
 import re
 import sqlite3
 import sys
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -226,7 +227,25 @@ def _acquire(tmp: Path, sub_ids: list[str]) -> Path:
     return out
 
 
-def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
+@pytest.fixture
+def registry_conn() -> Iterator[sqlite3.Connection]:
+    """An in-memory candidate registry the TEST owns and closes.
+
+    `pse.run` borrows a caller-supplied connection and (correctly) never closes it, so a bare
+    `sqlite3.connect(":memory:")` argument leaked one connection per call; its ResourceWarning
+    fired at garbage collection, which under `filterwarnings = error` failed whichever test
+    happened to be running when the collector reached it -- this one when run alone.
+    """
+    conn = sqlite3.connect(":memory:")
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def test_every_enrolled_substitute_feeds_all_three_uses(
+    tmp_path: Path, registry_conn: sqlite3.Connection
+) -> None:
     """Standing rule 2026-09-30: an enrolled substitute feeds direct cells, exogenous_gate
     cells and WORLD_STATE_INPUTS at enrolment, every cell carrying the dataset_id."""
     p = _paths(tmp_path)
@@ -236,7 +255,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
                                 "utf-8")
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=registry_conn)
     enrolled = json.loads(p["enrolled"].read_text("utf-8"))["enrolled"]
     ids = {e["dataset_id"] for e in enrolled}
     assert ids == {"psub_fred_bamlh0a0hym2", "psub_cboe_vix"} and doc["headline"]["enrolled"] == 2
@@ -268,17 +287,19 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
     # idempotent: a second pass enqueues nothing new
     n = len(door.calls)
     pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-            registry_conn=sqlite3.connect(":memory:"))
+            registry_conn=registry_conn)
     assert len(door.calls) == n
 
 
-def test_nothing_is_minted_before_the_series_exists(tmp_path: Path) -> None:
+def test_nothing_is_minted_before_the_series_exists(
+    tmp_path: Path, registry_conn: sqlite3.Connection
+) -> None:
     """A ready match with no acquired series is AWAITING_ACQUISITION: its endpoint goes to the
     acquirer, and no cell is minted (no trial charged, nothing parked)."""
     p = _paths(tmp_path)
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=registry_conn)
     assert door.calls == [] and doc["headline"]["enrolled"] == 0
     assert doc["headline"]["ready_awaiting_acquisition"] > 0
     lib = {s["id"]: s for s in pse.load_library()}
