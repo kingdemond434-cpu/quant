@@ -57,9 +57,53 @@ def test_registry_reader_is_inert_off_windows(monkeypatch):
 
 def test_secrets_presence_is_boolean_only(tmp_path):
     (tmp_path / "latam_apis.json").write_text(json.dumps({"banxico_token": "tok-123"}), "utf-8")
-    (tmp_path / "alt_keys.json").write_text(json.dumps({DECLARED[0]: "v", DECLARED[1]: " "}), "utf-8")
+    keys = {DECLARED[0]: "v", DECLARED[1]: " "}
+    (tmp_path / "alt_keys.json").write_text(json.dumps(keys), "utf-8")
     p = A.secrets_presence(tmp_path)
     assert p["latam_apis.json:banxico_token"] is True
     assert p[f"alt_keys.json:{DECLARED[0]}"] is True and p[f"alt_keys.json:{DECLARED[1]}"] is False
     assert all(isinstance(v, bool) for v in p.values()) and "tok-123" not in json.dumps(p)
     assert A.secrets_presence(tmp_path / "missing")["latam_apis.json:banxico_token"] is False
+
+
+class _FakeWinreg:
+    HKEY_USERS = object()
+    REG_SZ, REG_EXPAND_SZ = 1, 2
+
+    def __init__(self, hives):
+        self.hives = hives            # {sid: {name: (value, type)}}
+
+    def EnumKey(self, root, i):
+        sids = list(self.hives)
+        if i >= len(sids):
+            raise OSError
+        return sids[i]
+
+    def OpenKey(self, root, path):
+        sid = path.split("\\")[0]
+        if sid not in self.hives:
+            raise OSError
+        import contextlib as _c
+        return _c.nullcontext(self.hives[sid])
+
+    def QueryValueEx(self, k, name):
+        if name not in k:
+            raise OSError
+        return k[name]
+
+
+def test_registry_expands_skips_percent_and_flags_conflicts(monkeypatch):
+    a, b, c = DECLARED[0], DECLARED[1], DECLARED[2]
+    fake = _FakeWinreg({
+        "S-1-5-21-1-500": {a: ("v-a", 1), b: ("%QP_TEST_HOME%\\k", 2), c: ("%UNSET_VAR_X%", 2)},
+        "S-1-5-21-1-500_Classes": {a: ("ignored", 1)},
+        "S-1-5-21-1-501": {a: ("v-a-other", 1)},
+    })
+    monkeypatch.setitem(sys.modules, "winreg", fake)
+    monkeypatch.setattr(A.sys, "platform", "win32")
+    monkeypatch.setenv("QP_TEST_HOME", "C:\\h")
+    out = A._registry_user_env({a, b, c})
+    assert out[a] == "v-a", "the first SID's value is used"
+    assert out[b] == "C:\\h\\k", "REG_EXPAND_SZ is expanded"
+    assert c not in out, "a value still holding % after expansion is skipped"
+    assert sorted(A.REGISTRY_CONFLICTS) == [a]

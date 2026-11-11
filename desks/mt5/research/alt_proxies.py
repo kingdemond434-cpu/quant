@@ -73,6 +73,7 @@ import io
 import itertools
 import json
 import math
+import ntpath
 import os
 import re
 import sys
@@ -3195,9 +3196,16 @@ CONFIG_DEFAULTS: dict[str, str] = {
 BOX_KEYS_FILE = DESK / "data" / "secrets" / "alt_keys.json"
 
 
+#: Names two loaded hives held with DIFFERENT values on the last registry read (names only): the
+#: first SID's value is used, and the report says the choice was ambiguous.
+REGISTRY_CONFLICTS: set[str] = set()
+
+
 def _registry_user_env(names: set[str]) -> dict[str, str]:
     """Values for `names` from loaded user hives (HKEY_USERS\\<sid>\\Environment). Windows only;
-    {} anywhere else or on any error. Hives of logged-off users are not loaded and are skipped."""
+    {} anywhere else or on any error. Hives of logged-off users are not loaded and are skipped.
+    A REG_EXPAND_SZ value is expanded; one that still holds a `%` after expansion is skipped."""
+    REGISTRY_CONFLICTS.clear()
     if not names or sys.platform != "win32":
         return {}
     out: dict[str, str] = {}
@@ -3214,11 +3222,20 @@ def _registry_user_env(names: set[str]) -> dict[str, str]:
             if not sid.startswith("S-1-5-21-") or sid.endswith("_Classes"):
                 continue
             with contextlib.suppress(OSError), winreg.OpenKey(root, sid + "\\Environment") as k:
-                for name in names - set(out):
+                for name in names:
                     with contextlib.suppress(OSError):
-                        val, _typ = winreg.QueryValueEx(k, name)
-                        if isinstance(val, str) and val.strip():
-                            out[name] = val.strip()
+                        val, typ = winreg.QueryValueEx(k, name)
+                        if not isinstance(val, str):
+                            continue
+                        if typ == getattr(winreg, "REG_EXPAND_SZ", 2):
+                            val = ntpath.expandvars(val)
+                        val = val.strip()
+                        if not val or "%" in val:
+                            continue
+                        if name not in out:
+                            out[name] = val
+                        elif out[name] != val:
+                            REGISTRY_CONFLICTS.add(name)
     return out
 
 
@@ -4530,6 +4547,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
         # where each present key was found (env / secrets_file / registry_user), never its value
         "key_source": dict(sorted((key_source or {}).items())),
+        # names two loaded user hives held with different values (first SID used); never values
+        "registry_user_conflict": sorted(REGISTRY_CONFLICTS),
         "secrets_presence": secrets_presence(),
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
