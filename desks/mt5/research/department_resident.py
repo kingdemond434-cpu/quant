@@ -393,12 +393,16 @@ WORKER_BUSY_RC = 3
 WORKER_BUSY_WAIT_S = 60
 
 
-def _source_digest() -> str:
+def source_digest(*paths: Path) -> str:
+    """One digest over the supervisor's own source files; "" when one cannot be read."""
+    import hashlib
+    h = hashlib.sha256()
     try:
-        import hashlib
-        return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        for p in paths or (Path(__file__),):
+            h.update(Path(p).read_bytes())
     except OSError:
         return ""
+    return h.hexdigest()
 
 
 def _spawn_worker(dept: str) -> int:
@@ -417,44 +421,55 @@ def respawn_delay(rc: int | None, lived_s: float, young_deaths: int) -> tuple[fl
     return float(min(CRASH_BACKOFF_MAX_S, CRASH_BACKOFF_S * 2 ** (deaths - 1))), deaths
 
 
-def supervise(dept: str, *, spawn=None, sleep=time.sleep, clock=time.monotonic,
-              digest=None, max_workers: int | None = None) -> int:
-    """Hold the department and keep exactly one worker running, restarting it on every exit.
+def run_supervised(name: str, *, claim, spawn, say, sleep=time.sleep, clock=time.monotonic,
+                   digest, max_workers: int | None = None) -> int:
+    """THE ONE SUPERVISOR every 24/7 resident family shares (departments, forests, moat swarms).
 
-    Returns only when this file changed on disk (an adoption), so the keep-alive trigger starts a
-    supervisor of the new code, or when `max_workers` (tests) is reached.
+    `claim()` takes the resident's singleton lock (None: another supervisor or a pre-supervisor
+    loop holds it, so this one exits 0 and the keep-alive stays a no-op). `spawn()` runs one worker
+    to its exit and returns its code; the next worker starts after `respawn_delay`. Returns only
+    when `digest()` changes (its code was adopted, so the keep-alive starts the new supervisor)
+    or when `max_workers` (tests) is reached.
     """
-    spawn = spawn or _spawn_worker
-    digest = digest or _source_digest
     started_digest = digest()
-    handle = claim_singleton(dept)
+    handle = claim()
     if handle is None:
-        print(f"dept[{dept}]: another resident holds the slot; exiting", flush=True)
+        print(f"{name}: another resident holds the slot; exiting", flush=True)
         return 0
-    log(dept, f"supervisor started pid {os.getpid()}: restarts the worker on exit "
-              f"(respawn {RESPAWN_S}s, crash backoff {CRASH_BACKOFF_S}-{CRASH_BACKOFF_MAX_S}s)")
+    say(f"supervisor started pid {os.getpid()}: restarts the worker on exit "
+        f"(respawn {RESPAWN_S}s, crash backoff {CRASH_BACKOFF_S}-{CRASH_BACKOFF_MAX_S}s)")
     workers = deaths = 0
     try:
         while max_workers is None or workers < max_workers:
             workers += 1
             t0 = clock()
             try:
-                rc: int | None = spawn(dept)
+                rc: int | None = spawn()
             except OSError as exc:
-                log(dept, f"worker failed to start: {type(exc).__name__}: {exc}")
+                say(f"worker failed to start: {type(exc).__name__}: {exc}")
                 rc = None
             lived = clock() - t0
             delay, deaths = respawn_delay(rc, lived, deaths)
-            log(dept, f"worker {workers} exited rc={rc} after {lived:.0f}s; next in {delay:.0f}s")
+            say(f"worker {workers} exited rc={rc} after {lived:.0f}s; next in {delay:.0f}s")
             if started_digest and digest() not in ("", started_digest):
-                log(dept, "supervisor source changed on disk: exiting so the keep-alive starts "
-                          "the adopted code")
+                say("supervisor source changed on disk: exiting so the keep-alive starts the "
+                    "adopted code")
                 return 0
             sleep(delay)
         return 0
     finally:
         with contextlib.suppress(OSError):
             handle.close()
+
+
+def supervise(dept: str, *, spawn=None, sleep=time.sleep, clock=time.monotonic,
+              digest=None, max_workers: int | None = None) -> int:
+    """Hold the department and keep exactly one worker running, restarting it on every exit."""
+    run_one = spawn or _spawn_worker
+    return run_supervised(f"dept[{dept}]", claim=lambda: claim_singleton(dept),
+                          spawn=lambda: run_one(dept), say=lambda m: log(dept, m),
+                          sleep=sleep, clock=clock, digest=digest or source_digest,
+                          max_workers=max_workers)
 
 
 def main(argv: list[str] | None = None) -> int:

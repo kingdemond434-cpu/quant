@@ -31,7 +31,7 @@ differently, which is the only reason to run them concurrently rather than in se
 
 Each swarm is a RESIDENT, not a leg: `python moat_swarms.py --swarm exploit` holds
 `data/locks/moat_exploit.lock` and loops. Three residents, three locks, three sets of workers,
-100% concurrency -- the keep-alive trigger that restarts a dead swarm is a no-op while one is
+100% concurrency -- the keep-alive trigger that restarts a dead supervisor is a no-op while one is
 alive, exactly as `department_resident` does it, and the pass discipline is borrowed wholesale
 from `hourly_cycle._producer`: a child under a hard timeout at BELOW_NORMAL priority, a
 compute-ledger run opened and closed around every engine so `research_runs` sees it, a MISSING
@@ -199,8 +199,18 @@ def log(swarm: str, msg: str) -> None:
 
 def claim_singleton(swarm: str):
     """Hold data/locks/moat_<swarm>.lock for this process's life; None when another holds it."""
+    return _claim_lock(f"moat_{swarm}.lock")
+
+
+def claim_worker(swarm: str):
+    """Hold data/locks/moatworker_<swarm>.lock for the worker's life (outside the `moat_*.lock`
+    names): a worker orphaned by a killed supervisor is never doubled by the next one."""
+    return _claim_lock(f"moatworker_{swarm}.lock")
+
+
+def _claim_lock(name: str):
     LOCKS.mkdir(parents=True, exist_ok=True)
-    path = LOCKS / f"moat_{swarm}.lock"
+    path = LOCKS / name
     try:
         fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held for the process lifetime
     except OSError:
@@ -596,6 +606,30 @@ def summary(swarm: str, doc: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _spawn_worker(swarm: str, budget_s: float) -> int:
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--swarm", swarm,
+                        "--worker", "--budget-s", str(budget_s)], cwd=str(DESK), check=False)
+    return int(r.returncode)
+
+
+def supervise(swarm: str, *, budget_s: float = PASS_BUDGET_S, spawn=None, sleep=time.sleep,
+              clock=time.monotonic, digest=None, max_workers: int | None = None) -> int:
+    """RESTART-ON-EXIT (BACKLOG 2026-09-29), the department supervisor reused, not copied.
+
+    The swarm task used to BE the loop, so each recycle or crash left the swarm dead until the
+    next ten-minute keep-alive slot. The task now runs this supervisor, which holds
+    moat_<swarm>.lock and restarts the `--worker` loop within seconds of any exit.
+    """
+    import department_resident as dr
+    run_one = spawn or _spawn_worker
+    return dr.run_supervised(
+        f"moat[{swarm}]", claim=lambda: claim_singleton(swarm),
+        spawn=lambda: run_one(swarm, budget_s), say=lambda m: log(swarm, m),
+        sleep=sleep, clock=clock,
+        digest=digest or (lambda: dr.source_digest(Path(__file__), Path(dr.__file__))),
+        max_workers=max_workers)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--swarm", required=True, choices=sorted(SWARMS),
@@ -605,12 +639,18 @@ def main(argv: list[str] | None = None) -> int:
                     help="print the plan; start no child, write nothing, charge nothing")
     ap.add_argument("--budget-s", type=float, default=PASS_BUDGET_S,
                     help=f"wall clock one pass hands out (default {PASS_BUDGET_S:.0f})")
+    ap.add_argument("--worker", action="store_true",
+                    help="run the loop itself (the supervisor's child); recycles by exiting")
     a = ap.parse_args(argv)
     swarm = str(a.swarm).strip().lower()
-    handle = None if a.dry_run else claim_singleton(swarm)
+    if not (a.once or a.dry_run or a.worker):
+        return supervise(swarm, budget_s=float(a.budget_s))
+    handle = None if a.dry_run else (claim_worker(swarm) if a.worker else claim_singleton(swarm))
     if handle is None and not a.dry_run:
-        print(f"moat[{swarm}]: another swarm resident holds the slot; exiting", flush=True)
-        return 0
+        print(f"moat[{swarm}]: another swarm {'worker' if a.worker else 'resident'} holds the "
+              "slot; exiting", flush=True)
+        import department_resident as dr
+        return dr.WORKER_BUSY_RC if a.worker else 0
     if not a.dry_run:
         log(swarm, f"swarm started pid {os.getpid()}; pass budget {a.budget_s:.0f}s, "
                    f"min cycle {MIN_CYCLE_S:.0f}s, recycle after {RECYCLE_PASSES} passes")
@@ -637,7 +677,7 @@ def main(argv: list[str] | None = None) -> int:
             if a.once:
                 return 0
             if passes >= RECYCLE_PASSES:
-                log(swarm, "recycling: the keep-alive trigger restarts a fresh swarm")
+                log(swarm, "recycling: the supervisor starts a fresh worker")
                 return 0
             time.sleep(max(PAUSE_S, MIN_CYCLE_S - (time.monotonic() - started)))
     finally:

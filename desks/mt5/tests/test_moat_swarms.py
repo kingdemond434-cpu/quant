@@ -246,3 +246,49 @@ def test_dry_run_starts_nothing_writes_nothing_and_charges_nothing(desk):
     doc = ms.run_pass("exploit", 1, budget_s=800.0, dry_run=True)
     assert {e["status"] for e in doc["engines"]} == {"PLANNED"}
     assert sum(e["budget_s"] for e in doc["engines"]) == pytest.approx(800.0, abs=4.0)
+
+
+# ------------------------------------------- supervised restart-on-exit (BACKLOG 2026-09-29)
+def test_the_swarm_task_runs_the_shared_supervisor_and_restarts_on_every_exit(desk):
+    """A recycle used to leave the swarm dead until the next ten-minute keep-alive."""
+    import department_resident as dr
+    exits = iter([0, 1, 0])
+    naps: list[float] = []
+    spawned: list[tuple[str, float]] = []
+
+    def spawn(swarm: str, budget: float) -> int:
+        spawned.append((swarm, budget))
+        return next(exits)
+
+    assert ms.supervise("exploit", budget_s=700.0, spawn=spawn, sleep=naps.append,
+                        digest=lambda: "same", max_workers=3) == 0
+    assert spawned == [("exploit", 700.0)] * 3
+    assert naps == [dr.RESPAWN_S, dr.CRASH_BACKOFF_S, dr.RESPAWN_S]
+    held = ms.claim_singleton("exploit")              # released when the supervisor ends
+    assert held is not None
+    held.close()
+
+
+def test_a_held_swarm_starts_no_second_supervisor(desk):
+    held = ms.claim_singleton("explore")
+    spawned: list[str] = []
+    assert ms.supervise("explore", spawn=lambda s, _b: spawned.append(s) or 0,
+                        sleep=lambda _s: None, digest=lambda: "same", max_workers=1) == 0
+    assert spawned == []
+    held.close()
+
+
+def test_an_orphaned_swarm_worker_is_never_doubled(desk):
+    import department_resident as dr
+    orphan = ms.claim_worker("resurrect")
+    assert orphan is not None
+    assert ms.main(["--swarm", "resurrect", "--worker", "--budget-s", "300"]) == dr.WORKER_BUSY_RC
+    assert desk["calls"] == []
+    orphan.close()
+
+
+def test_the_task_entrypoint_is_the_supervisor(desk, monkeypatch):
+    called: list[tuple[str, float]] = []
+    monkeypatch.setattr(ms, "supervise", lambda s, budget_s: called.append((s, budget_s)) or 0)
+    assert ms.main(["--swarm", "exploit", "--budget-s", "900"]) == 0
+    assert called == [("exploit", 900.0)]
