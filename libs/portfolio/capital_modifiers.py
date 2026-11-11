@@ -119,6 +119,15 @@ REGISTRY: tuple[Modifier, ...] = (
              "(research/financing_lab.py) and data/roi_capital_evidence.json "
              "(research/research_roi.py), applied to SleeveEvidence.daily_r before the solve",
              "desks/mt5/reports/FINANCING_LAB.json"),
+    # THE FTMO PACE MODIFIER (idea 625, consumer half, 2026-11-11). The book-risk multiplier that
+    # maximises P(pass) from the challenge's distance to target and its room NOW, E[log W] the
+    # tiebreak: DOWN when ahead and near the target, UP above 1 when behind, capped only by the
+    # 1-in-100 day staying inside today's daily room. REPORT ONLY (consumer null): the intended
+    # consumer is the FTMO allocator, and nothing sizes from it yet. Billed by rail ftmo_pace.
+    Modifier("ftmo_pace", 0.5, 2.0, "two_sided",
+             "research/ftmo_pace_modifier.py (report only; intended consumer "
+             "prop_challenge_allocator)",
+             "desks/mt5/reports/FTMO_PACE_MODIFIER.json"),
     Modifier("fade", 0.5, 1.0, "reduce_only",
              "mt5desk.sizing.decay_factor (L1.59 fade flag from decay_monitor)",
              "desks/mt5/reports/MISSED_GROWTH.json"),

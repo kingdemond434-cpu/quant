@@ -1217,6 +1217,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # contracts leg reads every leg's declared experiment against its own report, and the health
     # board rolls every organ into one verdict. It runs last so it reads this pass.
     "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
+    # The FTMO pace modifier (idea 625, consumer half): reads FTMO_PACING.json, a few seconds.
+    "ftmo_pace_modifier",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -1431,6 +1433,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
+    # sizing advice for the FTMO lane, report only (idea 625)
+    "ftmo_pace_modifier": "forward",
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
@@ -2377,6 +2381,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # second on the build box); the caps only guard a damaged file.
     "build_failure_bank": 120,
     "trade_pathology": 120,
+    # ~2 s measured (calibration bisect + a 16-point grid of 4,000-path walks).
+    "ftmo_pace_modifier": 120,
     "experiment_contracts": 240,
     "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
@@ -6265,6 +6271,10 @@ def main() -> None:
         "trade_pathology", "research/trade_pathology.py", "--once"))
     exc_ = _costed("experiment_contracts", lambda: _producer(
         "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
+    # THE FTMO PACE MODIFIER (idea 625, consumer half, 2026-11-11): FTMO_PACING.json -> the
+    # book-risk multiplier maximising P(pass) from the account now. REPORT ONLY, consumer null.
+    fpm = _costed("ftmo_pace_modifier", lambda: _producer(
+        "ftmo_pace_modifier", "research/ftmo_pace_modifier.py", "--once"))
     hbd = _costed("health_board", lambda: _producer(
         "health_board", "research/health_board.py", "--once"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
@@ -6584,6 +6594,7 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cro_noon_freshness": cnf,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
+                    "ftmo_pace_modifier": fpm,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,

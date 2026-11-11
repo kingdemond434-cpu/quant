@@ -62,6 +62,21 @@
     "after": "7 days: under 5% of closed deals join their decision intent, so four of the six classes cannot be measured"
    }
   },
+  "ftmo_pace_modifier": {
+   "hypothesis": "Re-solving the FTMO book-risk multiplier from the challenge's distance to target and its room now (down when ahead, up when behind, capped only by the worst day staying inside the daily room) raises P(pass) over the book at 1.0 on the same walk.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "p_pass_gain",
+    "better": "up",
+    "organ": "report:FTMO_PACE_MODIFIER.json"
+   },
+   "falsifier": {
+    "metric": "p_pass_gain",
+    "op": "<=",
+    "threshold": 0,
+    "after": "30 days on the trading box: the pick never beats 1.0 on P(pass), so the modifier buys the FTMO lane nothing"
+   }
+  },
   "experiment_contracts": {
    "hypothesis": "Declaring hypothesis, metric, falsifier, budget and owner for every research leg makes each hour of compute answerable to a measured claim; contract coverage rises as the grandfathered backlog shrinks.",
    "metric": {

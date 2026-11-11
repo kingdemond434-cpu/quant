@@ -622,6 +622,8 @@ LEG_LAYER: dict[str, str] = {
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.
     "trade_pathology": "execution",
+    # The FTMO pace modifier advises the FTMO book's risk multiplier: SIZING (report only).
+    "ftmo_pace_modifier": "sizing",
     "build_failure_bank": "meta", "experiment_contracts": "meta", "health_board": "meta",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
