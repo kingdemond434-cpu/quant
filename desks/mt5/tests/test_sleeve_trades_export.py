@@ -31,6 +31,7 @@ def test_export_groups_filters_and_counts(tmp_path, monkeypatch):
         _row("b", 0.0, risk_quote=0),
         _row("b", "x"),
         _row("a", 3.0, days_ago=200),
+        _row("b", 1.5, time="not-a-time"),
         "{broken",
     ]) + "\n", "utf-8")
     monkeypatch.setattr(D, "LEDGER", led)
@@ -40,7 +41,7 @@ def test_export_groups_filters_and_counts(tmp_path, monkeypatch):
     assert doc["ledger_state"] == "READ"
     assert doc["rows"] == 3
     assert doc["excluded"] == {"unreconstructible": 1, "risk_quote_le_0": 1, "no_numeric_r": 1,
-                               "bad_json": 1, "older_than_window": 1}
+                               "bad_json": 1, "older_than_window": 1, "no_time": 1}
     ri = doc["columns"].index("r_multiple")
     assert [t[ri] for t in doc["sleeves"]["a"]] == [1.0, -0.5]
     assert doc["summary"]["a"]["n"] == 2 and doc["summary"]["b"]["exp_r"] == 2.0
@@ -61,3 +62,14 @@ def test_row_cap_keeps_newest_and_declares_cut(tmp_path, monkeypatch):
     doc = D.export_sleeve_trades(tmp_path / "o.json")
     ri = doc["columns"].index("r_multiple")
     assert doc["rows_cut_oldest"] == 3 and [t[ri] for t in doc["sleeves"]["a"]] == [3.0, 4.0]
+
+
+def test_export_is_wired_onto_the_state_wire():
+    """Written on the box is not read off it: the file must be whitelisted past `**/reports/*`
+    and listed in the sync's report paths, or the threads it is for read nothing (audit #994)."""
+    root = _DESK.parents[1]
+    ign = (root / ".gitignore").read_text("utf-8").splitlines()
+    assert "!desks/mt5/reports/SLEEVE_TRADES.json" in ign
+    ps1 = (_DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+    assert '"desks/mt5/reports/SLEEVE_TRADES.json",' in ps1
+    assert D.SLEEVE_TRADES_OUT.relative_to(root).as_posix() == "desks/mt5/reports/SLEEVE_TRADES.json"

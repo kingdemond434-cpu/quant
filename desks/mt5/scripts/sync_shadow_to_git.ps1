@@ -842,6 +842,9 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # per-sleeve per-trade R, trailing 90 days (2026-11-11, research/decay_monitor.py, leg
+    # decay_monitor): the off-box threads study each sleeve's R series from this
+    "desks/mt5/reports/SLEEVE_TRADES.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",

@@ -940,7 +940,7 @@ def export_sleeve_trades(out: Path | None = None) -> dict:
     cutoff = now - timedelta(days=EXPORT_DAYS)
     rows: list[dict] = []
     excluded = {"unreconstructible": 0, "risk_quote_le_0": 0, "no_numeric_r": 0,
-                "bad_json": 0, "older_than_window": 0}
+                "bad_json": 0, "older_than_window": 0, "no_time": 0}
     state = "NO_LEDGER"
     if LEDGER.exists():
         state = "READ"
@@ -970,9 +970,12 @@ def export_sleeve_trades(out: Path | None = None) -> dict:
                 ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
             except ValueError:
                 ts = None
-            if ts is not None and ts.tzinfo is None:
+            if ts is None:
+                excluded["no_time"] += 1                   # no window can admit an undated row
+                continue
+            if ts.tzinfo is None:
                 ts = ts.replace(tzinfo=UTC)
-            if ts is not None and ts < cutoff:
+            if ts < cutoff:
                 excluded["older_than_window"] += 1
                 continue
             rows.append(r)
