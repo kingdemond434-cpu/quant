@@ -57,6 +57,7 @@ FORMAT NOTES, BECAUSE THEY BITE
 from __future__ import annotations
 
 import argparse
+import json
 import lzma
 import struct
 import sys
@@ -66,6 +67,7 @@ import urllib.request
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 UTC = UTC
 BASE = "https://datafeed.dukascopy.com/datafeed"
@@ -85,9 +87,9 @@ REC = struct.Struct(">IIIff")          # big-endian: ms, ask, bid, askvol, bidvo
 # and this feed exists to build the spread series the liquidity-regime family will be judged on.
 # Absence is not a permission (L1.28a).
 #
-# THE REGISTRY IS STILL USED -- as a CHECK. `check_scale()` re-prices a decoded tick against the
-# broker's own last known level and refuses a symbol whose two sources disagree by more than an
-# order of magnitude, which is the error this comment exists to describe.
+# THE BROKER IS STILL USED -- as a CHECK. `check_scale()` compares a decoded day's mid against the
+# broker's own H1 close for the same date and `dukascopy_backfill` refuses a symbol whose two
+# sources disagree by more than 3x, which is the error this comment exists to describe.
 POINT = {
     # metals: three decimals
     "XAUUSD": 1000.0, "XAGUSD": 1000.0, "XPTUSD": 1000.0, "XPDUSD": 1000.0,
@@ -106,9 +108,91 @@ POINT = {
 }
 
 
+# THE VENDOR INSTRUMENT MAP (2026-11-11): every Fusion symbol Dukascopy actually publishes, with
+# the vendor's instrument id and decimal factor, generated from the pinned public metadata by
+# `build_dukascopy_instruments.py` (source URL and commit are recorded in the file itself). It is
+# consulted FIRST; POINT above is the fallback for the original 35 and is otherwise unchanged.
+# Where both name a symbol the map wins, because it is the vendor's own statement: five POINT
+# rows (XTIUSD, XBRUSD, XNGUSD, XPTUSD, XPDUSD) were never Dukascopy ids and only ever 404'd.
+INSTRUMENTS = Path(__file__).resolve().parents[1] / "data" / "dukascopy_instruments.json"
+_MAP_CACHE: dict[Path, dict[str, dict[str, Any]]] = {}
+
+
+def instrument_map(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Fusion symbol -> mapped vendor row. An absent or unreadable file maps nothing (POINT)."""
+    p = path or INSTRUMENTS
+    if p not in _MAP_CACHE:
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+            rows = doc.get("mapped") if isinstance(doc, dict) else None
+        except (OSError, ValueError):
+            rows = None
+        clean: dict[str, dict[str, Any]] = {}
+        for sym, row in (rows or {}).items():
+            try:
+                code = str(row["vendor_code"]).strip().upper()
+                factor = float(row["decimal_factor"])
+            except (KeyError, TypeError, ValueError):
+                continue  # a malformed row is refused, never defaulted
+            if code and code.isalnum() and factor > 0:
+                clean[str(sym)] = {**row, "vendor_code": code, "decimal_factor": factor}
+        _MAP_CACHE[p] = clean
+    return _MAP_CACHE[p]
+
+
+def unmapped_reasons(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """The map's named refusals (UNMAPPED + reason), for the coverage report."""
+    try:
+        doc = json.loads((path or INSTRUMENTS).read_text(encoding="utf-8"))
+        rows = doc.get("unmapped") if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        rows = None
+    return {str(k): dict(v) for k, v in (rows or {}).items() if isinstance(v, dict)}
+
+
+def _mapped(symbol: str) -> dict[str, Any] | None:
+    """The map row for a Fusion symbol (exact name first; Fusion names are case-distinct)."""
+    rows = instrument_map()
+    if symbol in rows:
+        return rows[symbol]
+    folded = {k.upper(): v for k, v in rows.items()}
+    return folded.get(symbol.upper())
+
+
+def vendor_code(symbol: str) -> str:
+    """The id the datafeed URL uses for a Fusion symbol. Files stay keyed by the Fusion symbol."""
+    row = _mapped(symbol)
+    return str(row["vendor_code"]) if row else symbol.upper()
+
+
+def point_factor(symbol: str) -> float | None:
+    """The vendor's integer-price scale: the map first, POINT as fallback, else None (refuse)."""
+    row = _mapped(symbol)
+    if row:
+        return float(row["decimal_factor"])
+    return POINT.get(symbol.upper())
+
+
+def supported_symbols() -> set[str]:
+    """Every Fusion symbol this fetcher can scale: mapped vendor instruments plus POINT."""
+    return set(instrument_map()) | set(POINT)
+
+
+def check_scale(mid: float, reference: float | None, *, band: float = 3.0) -> str:
+    """Does a decoded mid agree with the broker's own level for the same date, within `band`x?
+
+    Returns "OK", "SCALE_MISMATCH" or "UNMEASURED" (no reference -- never a pass). A wrong decimal
+    factor is a power of ten, so a 3x band catches it while tolerating vendor/venue basis.
+    """
+    if reference is None or not reference > 0 or not mid > 0:
+        return "UNMEASURED"
+    ratio = mid / reference
+    return "OK" if 1.0 / band <= ratio <= band else "SCALE_MISMATCH"
+
+
 def hour_url(symbol: str, t: datetime) -> str:
-    # month is ZERO-INDEXED in this API
-    return (f"{BASE}/{symbol}/{t.year}/{t.month - 1:02d}/{t.day:02d}/"
+    # month is ZERO-INDEXED in this API. The path carries the VENDOR id (US500 -> USA500IDXUSD).
+    return (f"{BASE}/{vendor_code(symbol)}/{t.year}/{t.month - 1:02d}/{t.day:02d}/"
             f"{t.hour:02d}h_ticks.bi5")
 
 
@@ -133,11 +217,12 @@ def decode_hour(blob: bytes, symbol: str, t: datetime) -> tuple[list, str]:
 
     # NO SCALE MEANS NO DECODE. A default here would be a silent 100x price error on every FX
     # symbol the registry has not classified -- see the note on POINT above.
-    scale = POINT.get(symbol.upper())
+    scale = point_factor(symbol)
     if scale is None:
         raise KeyError(
-            f"{symbol}: no point factor. It is not in universe.json and has no fallback, so its "
-            f"integer prices cannot be scaled. Classify it in the registry before fetching.")
+            f"{symbol}: no point factor. It has no confirmed vendor instrument in "
+            f"dukascopy_instruments.json and no POINT fallback, so its integer prices cannot be "
+            f"scaled. Map it from the vendor's published metadata before fetching.")
     base_ms = int(t.timestamp() * 1000)
     rows = []
     for off in range(0, len(raw) - REC.size + 1, REC.size):

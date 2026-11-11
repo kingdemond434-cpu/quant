@@ -1,0 +1,2533 @@
+{
+ "authority": "RESEARCH_DEPTH_ONLY",
+ "generator": "desks/mt5/research/build_dukascopy_instruments.py",
+ "mapped": {
+  "3M": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MMM",
+   "start_hour_for_ticks": "2017-05-11T13:32:14.712Z",
+   "vendor_code": "MMMUSUSD",
+   "vendor_description": "3M CO",
+   "vendor_key": "mmmususd",
+   "vendor_name": "MMM.US/USD"
+  },
+  "ADAUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2000-01-01T00:00:00.000Z",
+   "vendor_code": "ADAUSD",
+   "vendor_description": "Cardano vs US Dollar",
+   "vendor_key": "adausd",
+   "vendor_name": "ADA/USD"
+  },
+  "ADP": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker ADP",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.569Z",
+   "vendor_code": "ADPUSUSD",
+   "vendor_description": "AUTOMATIC DATA PROCESSING",
+   "vendor_key": "adpususd",
+   "vendor_name": "ADP.US/USD"
+  },
+  "AMD": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AMD",
+   "start_hour_for_ticks": "2017-11-02T13:41:48.274Z",
+   "vendor_code": "AMDUSUSD",
+   "vendor_description": "ADVANCED MICRO DEVICES",
+   "vendor_key": "amdususd",
+   "vendor_name": "AMD.US/USD"
+  },
+  "AT&T": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker T",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.438Z",
+   "vendor_code": "TUSUSD",
+   "vendor_description": "AT&T INC",
+   "vendor_key": "tususd",
+   "vendor_name": "T.US/USD"
+  },
+  "AUDCAD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-03T00:00:05.860Z",
+   "vendor_code": "AUDCAD",
+   "vendor_description": "Australian Dollar vs Canadian Dollar",
+   "vendor_key": "audcad",
+   "vendor_name": "AUD/CAD"
+  },
+  "AUDCHF": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-03-01T00:01:00.898Z",
+   "vendor_code": "AUDCHF",
+   "vendor_description": "Australian Dollar vs Swiss Franc",
+   "vendor_key": "audchf",
+   "vendor_name": "AUD/CHF"
+  },
+  "AUDHUF": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-04-23T15:23:01.343Z",
+   "vendor_code": "AUDHUF",
+   "vendor_description": "Australian dollar vs. Hungarian forint",
+   "vendor_key": "audhuf",
+   "vendor_name": "AUD/HUF"
+  },
+  "AUDJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-11-30T22:00:00.662Z",
+   "vendor_code": "AUDJPY",
+   "vendor_description": "Australian Dollar vs Japanese Yen",
+   "vendor_key": "audjpy",
+   "vendor_name": "AUD/JPY"
+  },
+  "AUDNZD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-12-12T00:01:02.665Z",
+   "vendor_code": "AUDNZD",
+   "vendor_description": "Australian Dollar vs New Zealand Dollar",
+   "vendor_key": "audnzd",
+   "vendor_name": "AUD/NZD"
+  },
+  "AUDSGD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-14T00:00:20.923Z",
+   "vendor_code": "AUDSGD",
+   "vendor_description": "Australian Dollar vs Singapore Dollar",
+   "vendor_key": "audsgd",
+   "vendor_name": "AUD/SGD"
+  },
+  "AUDUSD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:05.044Z",
+   "vendor_code": "AUDUSD",
+   "vendor_description": "Australian Dollar vs US Dollar",
+   "vendor_key": "audusd",
+   "vendor_name": "AUD/USD"
+  },
+  "AUS200": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "ASX 200",
+   "start_hour_for_ticks": "2014-06-01T23:50:09.337Z",
+   "vendor_code": "AUSIDXAUD",
+   "vendor_description": "Australia 200 Index",
+   "vendor_key": "ausidxaud",
+   "vendor_name": "AUS.IDX/AUD"
+  },
+  "Accenture": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker ACN",
+   "start_hour_for_ticks": "2022-05-12T13:30:03.115Z",
+   "vendor_code": "ACNUSUSD",
+   "vendor_description": "ACCENTURE PLC-CL A",
+   "vendor_key": "acnususd",
+   "vendor_name": "ACN.US/USD"
+  },
+  "Adobe": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker ADBE",
+   "start_hour_for_ticks": "2017-05-11T13:30:10.165Z",
+   "vendor_code": "ADBEUSUSD",
+   "vendor_description": "ADOBE SYSTEMS INC",
+   "vendor_key": "adbeususd",
+   "vendor_name": "ADBE.US/USD"
+  },
+  "AlibabaGroup": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BABA",
+   "start_hour_for_ticks": "2017-01-26T14:30:00.107Z",
+   "vendor_code": "BABAUSUSD",
+   "vendor_description": "ALIBABA GROUP HOLDING-SP ADR",
+   "vendor_key": "babaususd",
+   "vendor_name": "BABA.US/USD"
+  },
+  "Alphabet-A": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker GOOGL",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.580Z",
+   "vendor_code": "GOOGLUSUSD",
+   "vendor_description": "ALPHABET INC-CL A",
+   "vendor_key": "googlususd",
+   "vendor_name": "GOOGL.US/USD"
+  },
+  "Alphabet-C": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker GOOG",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.581Z",
+   "vendor_code": "GOOGUSUSD",
+   "vendor_description": "ALPHABET INC-CL C",
+   "vendor_key": "googususd",
+   "vendor_name": "GOOG.US/USD"
+  },
+  "Amazon": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AMZN",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.221Z",
+   "vendor_code": "AMZNUSUSD",
+   "vendor_description": "AMAZON.COM INC",
+   "vendor_key": "amznususd",
+   "vendor_name": "AMZN.US/USD"
+  },
+  "AmericanExpress": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AXP",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.157Z",
+   "vendor_code": "AXPUSUSD",
+   "vendor_description": "AMERICAN EXPRESS CO",
+   "vendor_key": "axpususd",
+   "vendor_name": "AXP.US/USD"
+  },
+  "Amgen": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AMGN",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.440Z",
+   "vendor_code": "AMGNUSUSD",
+   "vendor_description": "AMGEN INC",
+   "vendor_key": "amgnususd",
+   "vendor_name": "AMGN.US/USD"
+  },
+  "Apple": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AAPL",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.325Z",
+   "vendor_code": "AAPLUSUSD",
+   "vendor_description": "APPLE INC",
+   "vendor_key": "aaplususd",
+   "vendor_name": "AAPL.US/USD"
+  },
+  "AppliedMaterials": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AMAT",
+   "start_hour_for_ticks": "2017-05-11T13:30:03.833Z",
+   "vendor_code": "AMATUSUSD",
+   "vendor_description": "APPLIED MATERIALS INC",
+   "vendor_key": "amatususd",
+   "vendor_name": "AMAT.US/USD"
+  },
+  "Atlassian": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TEAM",
+   "start_hour_for_ticks": "2022-05-13T13:30:06.159Z",
+   "vendor_code": "TEAMUSUSD",
+   "vendor_description": "ATLASSIAN CORP PLC-CLASS A",
+   "vendor_key": "teamususd",
+   "vendor_name": "TEAM.US/USD"
+  },
+  "BCHUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2021-05-17T12:09:25.871Z",
+   "vendor_code": "BCHUSD",
+   "vendor_description": "Bitcoin Cash vs US dollar",
+   "vendor_key": "bchusd",
+   "vendor_name": "BCH/USD"
+  },
+  "BTCUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2017-05-07T23:59:59.058Z",
+   "vendor_code": "BTCUSD",
+   "vendor_description": "Bitcoin vs US Dollar",
+   "vendor_key": "btcusd",
+   "vendor_name": "BTC/USD"
+  },
+  "Baidu": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BIDU",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.827Z",
+   "vendor_code": "BIDUUSUSD",
+   "vendor_description": "BAIDU INC",
+   "vendor_key": "biduususd",
+   "vendor_name": "BIDU.US/USD"
+  },
+  "BankofAmericaCorp": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BAC",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.580Z",
+   "vendor_code": "BACUSUSD",
+   "vendor_description": "BANK OF AMERICA CORP",
+   "vendor_key": "bacususd",
+   "vendor_name": "BAC.US/USD"
+  },
+  "Berkshire": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BRKB",
+   "start_hour_for_ticks": "2017-11-06T14:30:01.318Z",
+   "vendor_code": "BRKBUSUSD",
+   "vendor_description": "BERKSHIRE HATHAWAY INC-CL B",
+   "vendor_key": "brkbususd",
+   "vendor_name": "BRKB.US/USD"
+  },
+  "BeyondMeat": {
+   "asset_class": "UNCLASSIFIED",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BYND",
+   "start_hour_for_ticks": "2022-05-12T13:30:00.155Z",
+   "vendor_code": "BYNDUSUSD",
+   "vendor_description": "BEYOND MEAT INC",
+   "vendor_key": "byndususd",
+   "vendor_name": "BYND.US/USD"
+  },
+  "BlackRock": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BLK",
+   "start_hour_for_ticks": "2022-05-12T13:30:03.613Z",
+   "vendor_code": "BLKUSUSD",
+   "vendor_description": "BLACKROCK INC",
+   "vendor_key": "blkususd",
+   "vendor_name": "BLK.US/USD"
+  },
+  "BlockInc": {
+   "asset_class": "UNCLASSIFIED",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "Square Inc renamed Block Inc (2021); vendor id SQ",
+   "start_hour_for_ticks": "2020-10-23T17:59:59.850Z",
+   "vendor_code": "SQUSUSD",
+   "vendor_description": "Square Inc",
+   "vendor_key": "sqususd",
+   "vendor_name": "SQ.US/USD"
+  },
+  "Boeing": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker BA",
+   "start_hour_for_ticks": "2017-01-26T14:30:02.524Z",
+   "vendor_code": "BAUSUSD",
+   "vendor_description": "Boeing Co",
+   "vendor_key": "baususd",
+   "vendor_name": "BA.US/USD"
+  },
+  "Booking": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "Priceline Group renamed Booking Holdings (2018); vendor id PCLN",
+   "start_hour_for_ticks": "2017-01-26T14:30:14.016Z",
+   "vendor_code": "PCLNUSUSD",
+   "vendor_description": "PRICELINE GROUP INC/THE",
+   "vendor_key": "pclnususd",
+   "vendor_name": "PCLN.US/USD"
+  },
+  "Broadcom": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker AVGO",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.440Z",
+   "vendor_code": "AVGOUSUSD",
+   "vendor_description": "Broadcom Limited",
+   "vendor_key": "avgoususd",
+   "vendor_name": "AVGO.US/USD"
+  },
+  "CADCHF": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:38:05.365Z",
+   "vendor_code": "CADCHF",
+   "vendor_description": "Canadian Dollar vs Swiss Franc",
+   "vendor_key": "cadchf",
+   "vendor_name": "CAD/CHF"
+  },
+  "CADJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2004-10-25T00:01:01.974Z",
+   "vendor_code": "CADJPY",
+   "vendor_description": "Canadian Dollar vs Japanese Yen",
+   "vendor_key": "cadjpy",
+   "vendor_name": "CAD/JPY"
+  },
+  "CHFDKK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:04:38.332Z",
+   "vendor_code": "CHFDKK",
+   "vendor_description": "Swiss franc vs. Danish krone",
+   "vendor_key": "chfdkk",
+   "vendor_name": "CHF/DKK"
+  },
+  "CHFHUF": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:04:38.281Z",
+   "vendor_code": "CHFHUF",
+   "vendor_description": "Swiss franc vs. Hungarian forint",
+   "vendor_key": "chfhuf",
+   "vendor_name": "CHF/HUF"
+  },
+  "CHFJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:14.329Z",
+   "vendor_code": "CHFJPY",
+   "vendor_description": "Swiss Franc vs Japanese Yen",
+   "vendor_key": "chfjpy",
+   "vendor_name": "CHF/JPY"
+  },
+  "CHFNOK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:04:28.743Z",
+   "vendor_code": "CHFNOK",
+   "vendor_description": "Swiss franc vs. Norwegian krone",
+   "vendor_key": "chfnok",
+   "vendor_name": "CHF/NOK"
+  },
+  "CHFPLN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-14T02:00:05.222Z",
+   "vendor_code": "CHFPLN",
+   "vendor_description": "Swiss franc vs. Polish zÅ‚oty",
+   "vendor_key": "chfpln",
+   "vendor_name": "CHF/PLN"
+  },
+  "CHFSEK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:04:30.474Z",
+   "vendor_code": "CHFSEK",
+   "vendor_description": "Swiss franc vs. Swedish krona",
+   "vendor_key": "chfsek",
+   "vendor_name": "CHF/SEK"
+  },
+  "CHFSGD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-06-04T09:31:10.450Z",
+   "vendor_code": "CHFSGD",
+   "vendor_description": "Swiss Franc vs Singapore Dollar",
+   "vendor_key": "chfsgd",
+   "vendor_name": "CHF/SGD"
+  },
+  "COFARA": {
+   "asset_class": "Soft Commodity",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Coffee Arabica, US cents",
+   "start_hour_for_ticks": "2017-12-04T09:15:00.003Z",
+   "vendor_code": "COFFEECMDUSX",
+   "vendor_description": "Coffee Arabica",
+   "vendor_key": "coffeecmdusx",
+   "vendor_name": "COFFEE.CMD/USX"
+  },
+  "COTTON": {
+   "asset_class": "Soft Commodity",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Cotton No.2, US cents",
+   "start_hour_for_ticks": "2017-10-20T08:44:16.204Z",
+   "vendor_code": "COTTONCMDUSX",
+   "vendor_description": "Cotton",
+   "vendor_key": "cottoncmdusx",
+   "vendor_name": "COTTON.CMD/USX"
+  },
+  "CVSHealth": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker CVS",
+   "start_hour_for_ticks": "2017-11-02T14:04:03.485Z",
+   "vendor_code": "CVSUSUSD",
+   "vendor_description": "CVS HEALTH CORP",
+   "vendor_key": "cvsususd",
+   "vendor_name": "CVS.US/USD"
+  },
+  "Caterpillar": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker CAT",
+   "start_hour_for_ticks": "2017-05-11T13:30:05.283Z",
+   "vendor_code": "CATUSUSD",
+   "vendor_description": "CATERPILLAR INC",
+   "vendor_key": "catususd",
+   "vendor_name": "CAT.US/USD"
+  },
+  "CharlesSchwab": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker SCHW",
+   "start_hour_for_ticks": "2017-11-02T16:02:24.299Z",
+   "vendor_code": "SCHWUSUSD",
+   "vendor_description": "SCHWAB (CHARLES) CORP",
+   "vendor_key": "schwususd",
+   "vendor_name": "SCHW.US/USD"
+  },
+  "Chevron": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker CVX",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.325Z",
+   "vendor_code": "CVXUSUSD",
+   "vendor_description": "CHEVRON CORP",
+   "vendor_key": "cvxususd",
+   "vendor_name": "CVX.US/USD"
+  },
+  "Cisco": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker CSCO",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.331Z",
+   "vendor_code": "CSCOUSUSD",
+   "vendor_description": "CISCO SYSTEMS INC",
+   "vendor_key": "cscoususd",
+   "vendor_name": "CSCO.US/USD"
+  },
+  "Citigroup": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker C",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.589Z",
+   "vendor_code": "CUSUSD",
+   "vendor_description": "CITIGROUP INC",
+   "vendor_key": "cususd",
+   "vendor_name": "C.US/USD"
+  },
+  "Coca-Cola": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker KO",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.437Z",
+   "vendor_code": "KOUSUSD",
+   "vendor_description": "COCA-COLA CO/THE",
+   "vendor_key": "koususd",
+   "vendor_name": "KO.US/USD"
+  },
+  "Comcast": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker CMCSA",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.604Z",
+   "vendor_code": "CMCSAUSUSD",
+   "vendor_description": "COMCAST CORP-CLASS A",
+   "vendor_key": "cmcsaususd",
+   "vendor_name": "CMCSA.US/USD"
+  },
+  "CostcoWholesale": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker COST",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.352Z",
+   "vendor_code": "COSTUSUSD",
+   "vendor_description": "COSTCO WHOLESALE CORP",
+   "vendor_key": "costususd",
+   "vendor_name": "COST.US/USD"
+  },
+  "DocuSign": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker DOCU",
+   "start_hour_for_ticks": "2022-05-12T13:30:00.542Z",
+   "vendor_code": "DOCUUSUSD",
+   "vendor_description": "DOCUSIGN INC",
+   "vendor_key": "docuususd",
+   "vendor_name": "DOCU.US/USD"
+  },
+  "E35": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "IBEX 35",
+   "start_hour_for_ticks": "2014-06-02T07:01:09.603Z",
+   "vendor_code": "ESPIDXEUR",
+   "vendor_description": "Spain 35 Index",
+   "vendor_key": "espidxeur",
+   "vendor_name": "ESP.IDX/EUR"
+  },
+  "EOSUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2019-08-04T22:00:17.191Z",
+   "vendor_code": "EOSUSD",
+   "vendor_description": "EOS vs US Dollar",
+   "vendor_key": "eosusd",
+   "vendor_name": "EOS/USD"
+  },
+  "ETHUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2017-12-11T23:51:21.218Z",
+   "vendor_code": "ETHUSD",
+   "vendor_description": "Ether vs US Dollar",
+   "vendor_key": "ethusd",
+   "vendor_name": "ETH/USD"
+  },
+  "EURAUD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2005-10-07T05:54:01.827Z",
+   "vendor_code": "EURAUD",
+   "vendor_description": "Euro vs Australian Dollar",
+   "vendor_key": "euraud",
+   "vendor_name": "EUR/AUD"
+  },
+  "EURCAD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2004-10-25T00:00:05.846Z",
+   "vendor_code": "EURCAD",
+   "vendor_description": "Euro vs Canadian Dollar",
+   "vendor_key": "eurcad",
+   "vendor_name": "EUR/CAD"
+  },
+  "EURCHF": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:00.609Z",
+   "vendor_code": "EURCHF",
+   "vendor_description": "Euro vs Swiss Franc",
+   "vendor_key": "eurchf",
+   "vendor_name": "EUR/CHF"
+  },
+  "EURCZK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2016-01-03T23:00:39.923Z",
+   "vendor_code": "EURCZK",
+   "vendor_description": "Euro vs Czech Koruna",
+   "vendor_key": "eurczk",
+   "vendor_name": "EUR/CZK"
+  },
+  "EURDKK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2004-10-25T00:33:06.743Z",
+   "vendor_code": "EURDKK",
+   "vendor_description": "Euro vs Danish Krone",
+   "vendor_key": "eurdkk",
+   "vendor_name": "EUR/DKK"
+  },
+  "EURGBP": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:00.158Z",
+   "vendor_code": "EURGBP",
+   "vendor_description": "Euro vs Pound Sterling",
+   "vendor_key": "eurgbp",
+   "vendor_name": "EUR/GBP"
+  },
+  "EURHKD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:52:10.251Z",
+   "vendor_code": "EURHKD",
+   "vendor_description": "Euro vs Hong Kong Dollar",
+   "vendor_key": "eurhkd",
+   "vendor_name": "EUR/HKD"
+  },
+  "EURHUF": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-14T06:13:37.708Z",
+   "vendor_code": "EURHUF",
+   "vendor_description": "Euro vs Hungarian Forint",
+   "vendor_key": "eurhuf",
+   "vendor_name": "EUR/HUF"
+  },
+  "EURILS": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-09-16T13:38:38.363Z",
+   "vendor_code": "EURILS",
+   "vendor_description": "Euro vs. Israeli new shekel",
+   "vendor_key": "eurils",
+   "vendor_name": "EUR/ILS"
+  },
+  "EURJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:01.007Z",
+   "vendor_code": "EURJPY",
+   "vendor_description": "Euro vs Japanese Yen",
+   "vendor_key": "eurjpy",
+   "vendor_name": "EUR/JPY"
+  },
+  "EURMXN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T19:15:12.351Z",
+   "vendor_code": "EURMXN",
+   "vendor_description": "Euro vs. Mexican peso",
+   "vendor_key": "eurmxn",
+   "vendor_name": "EUR/MXN"
+  },
+  "EURNOK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2004-10-25T00:18:08.311Z",
+   "vendor_code": "EURNOK",
+   "vendor_description": "Euro vs Norwegian Krone",
+   "vendor_key": "eurnok",
+   "vendor_name": "EUR/NOK"
+  },
+  "EURNZD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:38:22.520Z",
+   "vendor_code": "EURNZD",
+   "vendor_description": "Euro vs New Zealand Dollar",
+   "vendor_key": "eurnzd",
+   "vendor_name": "EUR/NZD"
+  },
+  "EURPLN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-14T00:00:03.095Z",
+   "vendor_code": "EURPLN",
+   "vendor_description": "Euro vs Polish Zloty",
+   "vendor_key": "eurpln",
+   "vendor_name": "EUR/PLN"
+  },
+  "EURSEK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2004-10-27T17:16:02.596Z",
+   "vendor_code": "EURSEK",
+   "vendor_description": "Euro vs Swedish Krona",
+   "vendor_key": "eursek",
+   "vendor_name": "EUR/SEK"
+  },
+  "EURSGD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:42:05.186Z",
+   "vendor_code": "EURSGD",
+   "vendor_description": "Euro vs Singapore Dollar",
+   "vendor_key": "eursgd",
+   "vendor_name": "EUR/SGD"
+  },
+  "EURTRY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:54:03.245Z",
+   "vendor_code": "EURTRY",
+   "vendor_description": "Euro vs Turkish Lira",
+   "vendor_key": "eurtry",
+   "vendor_name": "EUR/TRY"
+  },
+  "EURUSD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-05-04T21:00:00.914Z",
+   "vendor_code": "EURUSD",
+   "vendor_description": "Euro vs US Dollar",
+   "vendor_key": "eurusd",
+   "vendor_name": "EUR/USD"
+  },
+  "EURZAR": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T05:41:02.006Z",
+   "vendor_code": "EURZAR",
+   "vendor_description": "Euro vs. South African rand",
+   "vendor_key": "eurzar",
+   "vendor_name": "EUR/ZAR"
+  },
+  "EUSTX50": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Euro Stoxx 50",
+   "start_hour_for_ticks": "2014-06-02T06:00:57.299Z",
+   "vendor_code": "EUSIDXEUR",
+   "vendor_description": "Europe 50 Index",
+   "vendor_key": "eusidxeur",
+   "vendor_name": "EUS.IDX/EUR"
+  },
+  "ElectronicArts": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker EA",
+   "start_hour_for_ticks": "2017-05-11T13:30:05.805Z",
+   "vendor_code": "EAUSUSD",
+   "vendor_description": "ELECTRONIC ARTS INC",
+   "vendor_key": "eaususd",
+   "vendor_name": "EA.US/USD"
+  },
+  "ExxonMobil": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker XOM",
+   "start_hour_for_ticks": "2017-01-26T14:30:02.039Z",
+   "vendor_code": "XOMUSUSD",
+   "vendor_description": "EXXON MOBIL CORP",
+   "vendor_key": "xomususd",
+   "vendor_name": "XOM.US/USD"
+  },
+  "FRA40": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "CAC 40",
+   "start_hour_for_ticks": "2013-01-01T17:15:34.496Z",
+   "vendor_code": "FRAIDXEUR",
+   "vendor_description": "France 40 Index",
+   "vendor_key": "fraidxeur",
+   "vendor_name": "FRA.IDX/EUR"
+  },
+  "Ford": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker F",
+   "start_hour_for_ticks": "2017-11-02T14:13:09.640Z",
+   "vendor_code": "FUSUSD",
+   "vendor_description": "FORD MOTOR CO",
+   "vendor_key": "fususd",
+   "vendor_name": "F.US/USD"
+  },
+  "GBPAUD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-03-22T00:00:08.802Z",
+   "vendor_code": "GBPAUD",
+   "vendor_description": "Pound Sterling vs Australian Dollar",
+   "vendor_key": "gbpaud",
+   "vendor_name": "GBP/AUD"
+  },
+  "GBPCAD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:38:05.784Z",
+   "vendor_code": "GBPCAD",
+   "vendor_description": "Pound Sterling vs Canadian Dollar",
+   "vendor_key": "gbpcad",
+   "vendor_name": "GBP/CAD"
+  },
+  "GBPCHF": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-04T10:00:05.092Z",
+   "vendor_code": "GBPCHF",
+   "vendor_description": "Pound Sterling vs Swiss Franc",
+   "vendor_key": "gbpchf",
+   "vendor_name": "GBP/CHF"
+  },
+  "GBPDKK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:34.653Z",
+   "vendor_code": "GBPDKK",
+   "vendor_description": "Pound sterling vs. Danish krone",
+   "vendor_key": "gbpdkk",
+   "vendor_name": "GBP/DKK"
+  },
+  "GBPHUF": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:35.138Z",
+   "vendor_code": "GBPHUF",
+   "vendor_description": "Pound sterling vs. Hungarian forint",
+   "vendor_key": "gbphuf",
+   "vendor_name": "GBP/HUF"
+  },
+  "GBPJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:00.015Z",
+   "vendor_code": "GBPJPY",
+   "vendor_description": "Pound Sterling vs Japanese Yen",
+   "vendor_key": "gbpjpy",
+   "vendor_name": "GBP/JPY"
+  },
+  "GBPMXN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:35.174Z",
+   "vendor_code": "GBPMXN",
+   "vendor_description": "Pound sterling vs. Mexican peso",
+   "vendor_key": "gbpmxn",
+   "vendor_name": "GBP/MXN"
+  },
+  "GBPNOK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:34.652Z",
+   "vendor_code": "GBPNOK",
+   "vendor_description": "Pound sterling vs. Norwegian krone",
+   "vendor_key": "gbpnok",
+   "vendor_name": "GBP/NOK"
+  },
+  "GBPNZD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:38:05.298Z",
+   "vendor_code": "GBPNZD",
+   "vendor_description": "Pound Sterling vs New Zealand Dollar",
+   "vendor_key": "gbpnzd",
+   "vendor_name": "GBP/NZD"
+  },
+  "GBPPLN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:35.143Z",
+   "vendor_code": "GBPPLN",
+   "vendor_description": "Pound sterling vs. Polish zÅ‚oty",
+   "vendor_key": "gbppln",
+   "vendor_name": "GBP/PLN"
+  },
+  "GBPSEK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:34.649Z",
+   "vendor_code": "GBPSEK",
+   "vendor_description": "Pound sterling vs. Swedish krona",
+   "vendor_key": "gbpsek",
+   "vendor_name": "GBP/SEK"
+  },
+  "GBPSGD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:34.977Z",
+   "vendor_code": "GBPSGD",
+   "vendor_description": "Pound sterling vs. Singapore dollar",
+   "vendor_key": "gbpsgd",
+   "vendor_name": "GBP/SGD"
+  },
+  "GBPTRY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:35.128Z",
+   "vendor_code": "GBPTRY",
+   "vendor_description": "Pound sterling vs. Turkish lira",
+   "vendor_key": "gbptry",
+   "vendor_name": "GBP/TRY"
+  },
+  "GBPUSD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-05-04T21:00:00.773Z",
+   "vendor_code": "GBPUSD",
+   "vendor_description": "Pound Sterling vs US Dollar",
+   "vendor_key": "gbpusd",
+   "vendor_name": "GBP/USD"
+  },
+  "GBPZAR": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:07:35.186Z",
+   "vendor_code": "GBPZAR",
+   "vendor_description": "Pound sterling vs. South African rand",
+   "vendor_key": "gbpzar",
+   "vendor_name": "GBP/ZAR"
+  },
+  "GER40": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "DAX 40",
+   "start_hour_for_ticks": "2013-01-01T05:44:03.103Z",
+   "vendor_code": "DEUIDXEUR",
+   "vendor_description": "Germany 40 Index",
+   "vendor_key": "deuidxeur",
+   "vendor_name": "DEU.IDX/EUR"
+  },
+  "GeneralElectric": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker GE",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.829Z",
+   "vendor_code": "GEUSUSD",
+   "vendor_description": "GENERAL ELECTRIC CO",
+   "vendor_key": "geususd",
+   "vendor_name": "GE.US/USD"
+  },
+  "GeneralMotors": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker GM",
+   "start_hour_for_ticks": "2017-11-02T14:16:22.646Z",
+   "vendor_code": "GMUSUSD",
+   "vendor_description": "GENERAL MOTORS CO",
+   "vendor_key": "gmususd",
+   "vendor_name": "GM.US/USD"
+  },
+  "GileadSciences": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker GILD",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.327Z",
+   "vendor_code": "GILDUSUSD",
+   "vendor_description": "GILEAD SCIENCES INC",
+   "vendor_key": "gildususd",
+   "vendor_name": "GILD.US/USD"
+  },
+  "GoldmanSachs": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker GS",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.327Z",
+   "vendor_code": "GSUSUSD",
+   "vendor_description": "GOLDMAN SACHS GROUP INC",
+   "vendor_key": "gsususd",
+   "vendor_name": "GS.US/USD"
+  },
+  "HK50": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Hang Seng (vendor 'Hong Kong 40 Index')",
+   "start_hour_for_ticks": "2013-06-03T01:15:21.916Z",
+   "vendor_code": "HKGIDXHKD",
+   "vendor_description": "Hong Kong 40 Index",
+   "vendor_key": "hkgidxhkd",
+   "vendor_name": "HKG.IDX/HKD"
+  },
+  "HKDJPY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:30:00.096Z",
+   "vendor_code": "HKDJPY",
+   "vendor_description": "Hong Kong Dollar vs Japanese Yen",
+   "vendor_key": "hkdjpy",
+   "vendor_name": "HKD/JPY"
+  },
+  "HomeDepot": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker HD",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.325Z",
+   "vendor_code": "HDUSUSD",
+   "vendor_description": "HOME DEPOT INC",
+   "vendor_key": "hdususd",
+   "vendor_name": "HD.US/USD"
+  },
+  "Honeywell": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker HON",
+   "start_hour_for_ticks": "2017-11-02T14:52:10.585Z",
+   "vendor_code": "HONUSUSD",
+   "vendor_description": "HONEYWELL INTERNATIONAL INC",
+   "vendor_key": "honususd",
+   "vendor_name": "HON.US/USD"
+  },
+  "IBM": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker IBM",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.437Z",
+   "vendor_code": "IBMUSUSD",
+   "vendor_description": "INTL BUSINESS MACHINES CORP",
+   "vendor_key": "ibmususd",
+   "vendor_name": "IBM.US/USD"
+  },
+  "Intel": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker INTC",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.438Z",
+   "vendor_code": "INTCUSUSD",
+   "vendor_description": "INTEL CORP",
+   "vendor_key": "intcususd",
+   "vendor_name": "INTC.US/USD"
+  },
+  "Intuit": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker INTU",
+   "start_hour_for_ticks": "2018-02-01T14:30:01.401Z",
+   "vendor_code": "INTUUSUSD",
+   "vendor_description": "INTUIT INC",
+   "vendor_key": "intuususd",
+   "vendor_name": "INTU.US/USD"
+  },
+  "IntuitiveSurgical": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker ISRG",
+   "start_hour_for_ticks": "2018-02-01T14:30:31.999Z",
+   "vendor_code": "ISRGUSUSD",
+   "vendor_description": "INTUITIVE SURGICAL INC",
+   "vendor_key": "isrgususd",
+   "vendor_name": "ISRG.US/USD"
+  },
+  "JPMorganChase": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker JPM",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.636Z",
+   "vendor_code": "JPMUSUSD",
+   "vendor_description": "JPMORGAN CHASE & CO",
+   "vendor_key": "jpmususd",
+   "vendor_name": "JPM.US/USD"
+  },
+  "JPN225": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Nikkei 225",
+   "start_hour_for_ticks": "2013-01-01T05:44:03.106Z",
+   "vendor_code": "JPNIDXJPY",
+   "vendor_description": "Japan 225",
+   "vendor_key": "jpnidxjpy",
+   "vendor_name": "JPN.IDX/JPY"
+  },
+  "Johnson&Johnson": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker JNJ",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.137Z",
+   "vendor_code": "JNJUSUSD",
+   "vendor_description": "JOHNSON & JOHNSON",
+   "vendor_key": "jnjususd",
+   "vendor_name": "JNJ.US/USD"
+  },
+  "LNKUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2000-01-01T00:00:00.000Z",
+   "vendor_code": "LNKUSD",
+   "vendor_description": "Chainlink vs US Dollar",
+   "vendor_key": "lnkusd",
+   "vendor_name": "LNK/USD"
+  },
+  "LTCUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2018-09-03T00:00:00.500Z",
+   "vendor_code": "LTCUSD",
+   "vendor_description": "Litecoin vs US Dollar",
+   "vendor_key": "ltcusd",
+   "vendor_name": "LTC/USD"
+  },
+  "Lyft": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker LYFT",
+   "start_hour_for_ticks": "2022-05-13T13:30:05.074Z",
+   "vendor_code": "LYFTUSUSD",
+   "vendor_description": "LYFT INC-A",
+   "vendor_key": "lyftususd",
+   "vendor_name": "LYFT.US/USD"
+  },
+  "MATICUSD": {
+   "asset_class": "Crypto",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Polygon (MATIC) vs US dollar",
+   "start_hour_for_ticks": "2000-01-01T00:00:00.000Z",
+   "vendor_code": "MATUSD",
+   "vendor_description": "Polygon vs US Dollar",
+   "vendor_key": "matusd",
+   "vendor_name": "MAT/USD"
+  },
+  "MXNJPY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-06-04T11:25:08.175Z",
+   "vendor_code": "MXNJPY",
+   "vendor_description": "Mexican peso vs. Japanese yen",
+   "vendor_key": "mxnjpy",
+   "vendor_name": "MXN/JPY"
+  },
+  "Mastercard": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MA",
+   "start_hour_for_ticks": "2017-05-11T13:30:06.426Z",
+   "vendor_code": "MAUSUSD",
+   "vendor_description": "MASTERCARD INC-CLASS A",
+   "vendor_key": "maususd",
+   "vendor_name": "MA.US/USD"
+  },
+  "McDonalds": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MCD",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.334Z",
+   "vendor_code": "MCDUSUSD",
+   "vendor_description": "MCDONALD'S CORP",
+   "vendor_key": "mcdususd",
+   "vendor_name": "MCD.US/USD"
+  },
+  "Medtronic": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MDT",
+   "start_hour_for_ticks": "2022-05-13T13:30:00.029Z",
+   "vendor_code": "MDTUSUSD",
+   "vendor_description": "MEDTRONIC PLC",
+   "vendor_key": "mdtususd",
+   "vendor_name": "MDT.US/USD"
+  },
+  "Merck": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MRK",
+   "start_hour_for_ticks": "2017-11-02T13:30:01.242Z",
+   "vendor_code": "MRKUSUSD",
+   "vendor_description": "MERCK & CO. INC.",
+   "vendor_key": "mrkususd",
+   "vendor_name": "MRK.US/USD"
+  },
+  "Meta": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "Facebook Inc renamed Meta Platforms (2021-22); vendor description 'FACEBOOK INC-A / META'",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.438Z",
+   "vendor_code": "FBUSUSD",
+   "vendor_description": "FACEBOOK INC-A / META",
+   "vendor_key": "fbususd",
+   "vendor_name": "FB.US/USD"
+  },
+  "MicronTechnology": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MU",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.026Z",
+   "vendor_code": "MUUSUSD",
+   "vendor_description": "MICRON TECHNOLOGY INC",
+   "vendor_key": "muususd",
+   "vendor_name": "MU.US/USD"
+  },
+  "Microsoft": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MSFT",
+   "start_hour_for_ticks": "2017-01-26T14:30:02.717Z",
+   "vendor_code": "MSFTUSUSD",
+   "vendor_description": "MICROSOFT CORP",
+   "vendor_key": "msftususd",
+   "vendor_name": "MSFT.US/USD"
+  },
+  "MorganStanley": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker MS",
+   "start_hour_for_ticks": "2017-11-02T15:50:21.497Z",
+   "vendor_code": "MSUSUSD",
+   "vendor_description": "MORGAN STANLEY",
+   "vendor_key": "msususd",
+   "vendor_name": "MS.US/USD"
+  },
+  "NAS100": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Nasdaq 100",
+   "start_hour_for_ticks": "2013-01-01T05:44:03.105Z",
+   "vendor_code": "USATECHIDXUSD",
+   "vendor_description": "USA 100 Technical Index",
+   "vendor_key": "usatechidxusd",
+   "vendor_name": "USATECH.IDX/USD"
+  },
+  "NETH25": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "AEX 25",
+   "start_hour_for_ticks": "2017-12-01T08:00:23.780Z",
+   "vendor_code": "NLDIDXEUR",
+   "vendor_description": "Netherlands 25 Index",
+   "vendor_key": "nldidxeur",
+   "vendor_name": "NLD.IDX/EUR"
+  },
+  "NIO": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker NIO",
+   "start_hour_for_ticks": "2020-11-27T17:59:59.041Z",
+   "vendor_code": "NIOUSUSD",
+   "vendor_description": "Nio INC",
+   "vendor_key": "nioususd",
+   "vendor_name": "NIO.US/USD"
+  },
+  "NOKJPY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:12:41.215Z",
+   "vendor_code": "NOKJPY",
+   "vendor_description": "Norwegian krone vs. Japanese yen",
+   "vendor_key": "nokjpy",
+   "vendor_name": "NOK/JPY"
+  },
+  "NOKSEK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:12:40.819Z",
+   "vendor_code": "NOKSEK",
+   "vendor_description": "Norwegian krone vs. Swedish krona",
+   "vendor_key": "noksek",
+   "vendor_name": "NOK/SEK"
+  },
+  "NVIDIA": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker NVDA",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.603Z",
+   "vendor_code": "NVDAUSUSD",
+   "vendor_description": "NVIDIA CORP",
+   "vendor_key": "nvdaususd",
+   "vendor_name": "NVDA.US/USD"
+  },
+  "NZDCAD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:38:06.805Z",
+   "vendor_code": "NZDCAD",
+   "vendor_description": "New Zealand Dollar vs Canadian Dollar",
+   "vendor_key": "nzdcad",
+   "vendor_name": "NZD/CAD"
+  },
+  "NZDCHF": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:38:04.259Z",
+   "vendor_code": "NZDCHF",
+   "vendor_description": "New Zealand Dollar vs Swiss Franc",
+   "vendor_key": "nzdchf",
+   "vendor_name": "NZD/CHF"
+  },
+  "NZDHUF": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:14:14.134Z",
+   "vendor_code": "NZDHUF",
+   "vendor_description": "New Zealand dollar vs. Hungarian forint",
+   "vendor_key": "nzdhuf",
+   "vendor_name": "NZD/HUF"
+  },
+  "NZDJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2006-01-02T22:39:04.109Z",
+   "vendor_code": "NZDJPY",
+   "vendor_description": "New Zealand Dollar vs Japanese Yen",
+   "vendor_key": "nzdjpy",
+   "vendor_name": "NZD/JPY"
+  },
+  "NZDSGD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:44:20.605Z",
+   "vendor_code": "NZDSGD",
+   "vendor_description": "New Zealand dollar vs. Singapore dollar",
+   "vendor_key": "nzdsgd",
+   "vendor_name": "NZD/SGD"
+  },
+  "NZDUSD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:00.203Z",
+   "vendor_code": "NZDUSD",
+   "vendor_description": "New Zealand Dollar vs US Dollar",
+   "vendor_key": "nzdusd",
+   "vendor_name": "NZD/USD"
+  },
+  "Netflix": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker NFLX",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.582Z",
+   "vendor_code": "NFLXUSUSD",
+   "vendor_description": "NETFLIX INC",
+   "vendor_key": "nflxususd",
+   "vendor_name": "NFLX.US/USD"
+  },
+  "Nike": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker NKE",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.809Z",
+   "vendor_code": "NKEUSUSD",
+   "vendor_description": "NIKE INC",
+   "vendor_key": "nkeususd",
+   "vendor_name": "NKE.US/USD"
+  },
+  "OJ": {
+   "asset_class": "Soft Commodity",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "frozen concentrated orange juice, US cents",
+   "start_hour_for_ticks": "2017-10-20T12:00:00.245Z",
+   "vendor_code": "OJUICECMDUSX",
+   "vendor_description": "Orange Juice",
+   "vendor_key": "ojuicecmdusx",
+   "vendor_name": "OJUICE.CMD/USX"
+  },
+  "Oracle": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker ORCL",
+   "start_hour_for_ticks": "2017-11-02T15:53:19.505Z",
+   "vendor_code": "ORCLUSUSD",
+   "vendor_description": "ORACLE CORP",
+   "vendor_key": "orclususd",
+   "vendor_name": "ORCL.US/USD"
+  },
+  "PayPal": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker PYPL",
+   "start_hour_for_ticks": "2017-11-02T16:00:27.120Z",
+   "vendor_code": "PYPLUSUSD",
+   "vendor_description": "PAYPAL HOLDINGS INC",
+   "vendor_key": "pyplususd",
+   "vendor_name": "PYPL.US/USD"
+  },
+  "Pepsi": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker PEP",
+   "start_hour_for_ticks": "2017-11-02T15:55:51.094Z",
+   "vendor_code": "PEPUSUSD",
+   "vendor_description": "PEPSICO INC",
+   "vendor_key": "pepususd",
+   "vendor_name": "PEP.US/USD"
+  },
+  "Pfizer": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker PFE",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.582Z",
+   "vendor_code": "PFEUSUSD",
+   "vendor_description": "PFIZER INC",
+   "vendor_key": "pfeususd",
+   "vendor_name": "PFE.US/USD"
+  },
+  "PhilipMorrisInternational": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker PM",
+   "start_hour_for_ticks": "2017-11-02T15:56:40.164Z",
+   "vendor_code": "PMUSUSD",
+   "vendor_description": "PHILIP MORRIS INTERNATIONAL",
+   "vendor_key": "pmususd",
+   "vendor_name": "PM.US/USD"
+  },
+  "Procter&Gamble": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker PG",
+   "start_hour_for_ticks": "2017-01-26T14:30:01.599Z",
+   "vendor_code": "PGUSUSD",
+   "vendor_description": "PROCTER & GAMBLE CO/THE",
+   "vendor_key": "pgususd",
+   "vendor_name": "PG.US/USD"
+  },
+  "Qualcomm": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker QCOM",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.002Z",
+   "vendor_code": "QCOMUSUSD",
+   "vendor_description": "QUALCOMM INC",
+   "vendor_key": "qcomususd",
+   "vendor_name": "QCOM.US/USD"
+  },
+  "Roku": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker ROKU",
+   "start_hour_for_ticks": "2020-11-23T14:30:00.013Z",
+   "vendor_code": "ROKUUSUSD",
+   "vendor_description": "Roku Inc",
+   "vendor_key": "rokuususd",
+   "vendor_name": "ROKU.US/USD"
+  },
+  "S&PGlobal": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker SPGI",
+   "start_hour_for_ticks": "2022-05-13T13:30:02.462Z",
+   "vendor_code": "SPGIUSUSD",
+   "vendor_description": "S&P GLOBAL INC",
+   "vendor_key": "spgiususd",
+   "vendor_name": "SPGI.US/USD"
+  },
+  "SEKJPY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:16:29.191Z",
+   "vendor_code": "SEKJPY",
+   "vendor_description": "Swedish krona vs. Japanese yen",
+   "vendor_key": "sekjpy",
+   "vendor_name": "SEK/JPY"
+  },
+  "SGDJPY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:01:00.144Z",
+   "vendor_code": "SGDJPY",
+   "vendor_description": "Singapore Dollar vs Japanese Yen",
+   "vendor_key": "sgdjpy",
+   "vendor_name": "SGD/JPY"
+  },
+  "SOYBEAN": {
+   "asset_class": "Soft Commodity",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "soybeans, US cents",
+   "start_hour_for_ticks": "2017-12-01T02:00:00.385Z",
+   "vendor_code": "SOYBEANCMDUSX",
+   "vendor_description": "Soybean",
+   "vendor_key": "soybeancmdusx",
+   "vendor_name": "SOYBEAN.CMD/USX"
+  },
+  "SUGAR": {
+   "asset_class": "Soft Commodity",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "London (white) sugar No.5, USD/t",
+   "start_hour_for_ticks": "2017-10-02T07:45:00.134Z",
+   "vendor_code": "SUGARCMDUSD",
+   "vendor_description": "London Sugar No.5",
+   "vendor_key": "sugarcmdusd",
+   "vendor_name": "SUGAR.CMD/USD"
+  },
+  "Salesforce": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker CRM",
+   "start_hour_for_ticks": "2017-05-11T13:30:14.053Z",
+   "vendor_code": "CRMUSUSD",
+   "vendor_description": "SALESFORCE.COM INC",
+   "vendor_key": "crmususd",
+   "vendor_name": "CRM.US/USD"
+  },
+  "ServiceNow": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker NOW",
+   "start_hour_for_ticks": "2022-05-13T13:30:00.646Z",
+   "vendor_code": "NOWUSUSD",
+   "vendor_description": "SERVICENOW INC",
+   "vendor_key": "nowususd",
+   "vendor_name": "NOW.US/USD"
+  },
+  "Snapchat": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker SNAP",
+   "start_hour_for_ticks": "2017-11-02T16:03:48.322Z",
+   "vendor_code": "SNAPUSUSD",
+   "vendor_description": "SNAP Inc",
+   "vendor_key": "snapususd",
+   "vendor_name": "SNAP.US/USD"
+  },
+  "Snowflake": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker SNOW",
+   "start_hour_for_ticks": "2020-09-22T13:30:00.025Z",
+   "vendor_code": "SNOWUSUSD",
+   "vendor_description": "Snowflake Inc Class A",
+   "vendor_key": "snowususd",
+   "vendor_name": "SNOW.US/USD"
+  },
+  "Spotify": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker SPOT",
+   "start_hour_for_ticks": "2022-05-13T13:30:00.507Z",
+   "vendor_code": "SPOTUSUSD",
+   "vendor_description": "SPOTIFY TECHNOLOGY SA",
+   "vendor_key": "spotususd",
+   "vendor_name": "SPOT.US/USD"
+  },
+  "Starbucks": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker SBUX",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.335Z",
+   "vendor_code": "SBUXUSUSD",
+   "vendor_description": "STARBUCKS CORP",
+   "vendor_key": "sbuxususd",
+   "vendor_name": "SBUX.US/USD"
+  },
+  "TSMC": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TSM",
+   "start_hour_for_ticks": "2018-02-01T15:35:43.655Z",
+   "vendor_code": "TSMUSUSD",
+   "vendor_description": "Taiwan Semiconductor Manufacturing Company Limited",
+   "vendor_key": "tsmususd",
+   "vendor_name": "TSM.US/USD"
+  },
+  "Target": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TGT",
+   "start_hour_for_ticks": "2017-11-02T16:17:00.244Z",
+   "vendor_code": "TGTUSUSD",
+   "vendor_description": "TARGET CORP",
+   "vendor_key": "tgtususd",
+   "vendor_name": "TGT.US/USD"
+  },
+  "Tesla": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TSLA",
+   "start_hour_for_ticks": "2017-01-26T14:30:02.332Z",
+   "vendor_code": "TSLAUSUSD",
+   "vendor_description": "TESLA MOTORS INC",
+   "vendor_key": "tslaususd",
+   "vendor_name": "TSLA.US/USD"
+  },
+  "TexasInstruments": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TXN",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.095Z",
+   "vendor_code": "TXNUSUSD",
+   "vendor_description": "TEXAS INSTRUMENTS INC",
+   "vendor_key": "txnususd",
+   "vendor_name": "TXN.US/USD"
+  },
+  "ThermoFisherScientific": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TMO",
+   "start_hour_for_ticks": "2017-11-02T16:18:32.510Z",
+   "vendor_code": "TMOUSUSD",
+   "vendor_description": "THERMO FISHER SCIENTIFIC INC",
+   "vendor_key": "tmoususd",
+   "vendor_name": "TMO.US/USD"
+  },
+  "Travelers": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TRV",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.418Z",
+   "vendor_code": "TRVUSUSD",
+   "vendor_description": "TRAVELERS COS INC/THE",
+   "vendor_key": "trvususd",
+   "vendor_name": "TRV.US/USD"
+  },
+  "Twilio": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker TWLO",
+   "start_hour_for_ticks": "2022-05-13T13:30:01.520Z",
+   "vendor_code": "TWLOUSUSD",
+   "vendor_description": "TWILIO INC - A",
+   "vendor_key": "twloususd",
+   "vendor_name": "TWLO.US/USD"
+  },
+  "UK100": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "FTSE 100",
+   "start_hour_for_ticks": "2013-01-01T03:51:37.835Z",
+   "vendor_code": "GBRIDXGBP",
+   "vendor_description": "UK 100 Index",
+   "vendor_key": "gbridxgbp",
+   "vendor_name": "GBR.IDX/GBP"
+  },
+  "UKGILT": {
+   "asset_class": "Bonds",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "UK Long Gilt future",
+   "start_hour_for_ticks": "2017-12-28T16:18:15.332Z",
+   "vendor_code": "UKGILTTRGBP",
+   "vendor_description": "UK Long Gilt",
+   "vendor_key": "ukgilttrgbp",
+   "vendor_name": "UKGILT.TR/GBP"
+  },
+  "US2000": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Russell 2000 (US Small Cap 2000)",
+   "start_hour_for_ticks": "2018-08-08T13:30:05.021Z",
+   "vendor_code": "USSC2000IDXUSD",
+   "vendor_description": "US Small Cap 2000",
+   "vendor_key": "ussc2000idxusd",
+   "vendor_name": "USSC2000.IDX/USD"
+  },
+  "US30": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Dow Jones Industrial Average",
+   "start_hour_for_ticks": "2013-01-01T05:44:03.104Z",
+   "vendor_code": "USA30IDXUSD",
+   "vendor_description": "USA 30 Index",
+   "vendor_key": "usa30idxusd",
+   "vendor_name": "USA30.IDX/USD"
+  },
+  "US500": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "S&P 500",
+   "start_hour_for_ticks": "2012-01-16T00:00:07.771Z",
+   "vendor_code": "USA500IDXUSD",
+   "vendor_description": "USA 500 Index",
+   "vendor_key": "usa500idxusd",
+   "vendor_name": "USA500.IDX/USD"
+  },
+  "USCOCOA": {
+   "asset_class": "Soft Commodity",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "NY cocoa",
+   "start_hour_for_ticks": "2017-10-20T08:45:00.010Z",
+   "vendor_code": "COCOACMDUSD",
+   "vendor_description": "NY Cocoa",
+   "vendor_key": "cocoacmdusd",
+   "vendor_name": "COCOA.CMD/USD"
+  },
+  "USDCAD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-03T21:00:01.482Z",
+   "vendor_code": "USDCAD",
+   "vendor_description": "US Dollar vs Canadian Dollar",
+   "vendor_key": "usdcad",
+   "vendor_name": "USD/CAD"
+  },
+  "USDCHF": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-05-04T21:00:01.179Z",
+   "vendor_code": "USDCHF",
+   "vendor_description": "US Dollar vs Swiss Franc",
+   "vendor_key": "usdchf",
+   "vendor_name": "USD/CHF"
+  },
+  "USDCNH": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2012-06-27T00:07:42.688Z",
+   "vendor_code": "USDCNH",
+   "vendor_description": "US Dollar vs Offshore Chinese Renminbi",
+   "vendor_key": "usdcnh",
+   "vendor_name": "USD/CNH"
+  },
+  "USDCZK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2016-01-03T22:00:12.197Z",
+   "vendor_code": "USDCZK",
+   "vendor_description": "US Dollar vs Czech Koruna",
+   "vendor_key": "usdczk",
+   "vendor_name": "USD/CZK"
+  },
+  "USDDKK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-04T00:00:09.907Z",
+   "vendor_code": "USDDKK",
+   "vendor_description": "US Dollar vs Danish Krone",
+   "vendor_key": "usddkk",
+   "vendor_name": "USD/DKK"
+  },
+  "USDHKD": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:01:10.075Z",
+   "vendor_code": "USDHKD",
+   "vendor_description": "US Dollar vs Hong Kong Dollar",
+   "vendor_key": "usdhkd",
+   "vendor_name": "USD/HKD"
+  },
+  "USDHUF": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:58:03.671Z",
+   "vendor_code": "USDHUF",
+   "vendor_description": "US Dollar vs Hungarian Forint",
+   "vendor_key": "usdhuf",
+   "vendor_name": "USD/HUF"
+  },
+  "USDILS": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2016-12-15T06:00:00.081Z",
+   "vendor_code": "USDILS",
+   "vendor_description": "US Dollar vs Israeli Shekel",
+   "vendor_key": "usdils",
+   "vendor_name": "USD/ILS"
+  },
+  "USDJPY": {
+   "asset_class": "Forex",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-05-04T21:00:00.626Z",
+   "vendor_code": "USDJPY",
+   "vendor_description": "US Dollar vs Japanese Yen",
+   "vendor_key": "usdjpy",
+   "vendor_name": "USD/JPY"
+  },
+  "USDMXN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T07:01:04.762Z",
+   "vendor_code": "USDMXN",
+   "vendor_description": "US Dollar vs Mexican Peso",
+   "vendor_key": "usdmxn",
+   "vendor_name": "USD/MXN"
+  },
+  "USDNOK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-04T00:00:08.997Z",
+   "vendor_code": "USDNOK",
+   "vendor_description": "US Dollar vs Norwegian Krone",
+   "vendor_key": "usdnok",
+   "vendor_name": "USD/NOK"
+  },
+  "USDPLN": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T04:56:04.776Z",
+   "vendor_code": "USDPLN",
+   "vendor_description": "US Dollar vs Polish Zloty",
+   "vendor_key": "usdpln",
+   "vendor_name": "USD/PLN"
+  },
+  "USDSEK": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-04T00:00:01.201Z",
+   "vendor_code": "USDSEK",
+   "vendor_description": "US Dollar vs Swedish Krona",
+   "vendor_key": "usdsek",
+   "vendor_name": "USD/SEK"
+  },
+  "USDSGD": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2004-11-16T18:03:02.644Z",
+   "vendor_code": "USDSGD",
+   "vendor_description": "US Dollar vs Singapore Dollar",
+   "vendor_key": "usdsgd",
+   "vendor_name": "USD/SGD"
+  },
+  "USDTHB": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 10000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2017-02-13T06:00:01.232Z",
+   "vendor_code": "USDTHB",
+   "vendor_description": "US Dollar vs Thai Baht",
+   "vendor_key": "usdthb",
+   "vendor_name": "USD/THB"
+  },
+  "USDTRY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-03-13T07:01:00.664Z",
+   "vendor_code": "USDTRY",
+   "vendor_description": "US Dollar vs Turkish Lira",
+   "vendor_key": "usdtry",
+   "vendor_name": "USD/TRY"
+  },
+  "USDX": {
+   "asset_class": "Indices",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "US Dollar Index",
+   "start_hour_for_ticks": "2017-12-01T01:00:00.435Z",
+   "vendor_code": "DOLLARIDXUSD",
+   "vendor_description": "US Dollar Index",
+   "vendor_key": "dollaridxusd",
+   "vendor_name": "DOLLAR.IDX/USD"
+  },
+  "USDZAR": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-08-04T10:03:02.837Z",
+   "vendor_code": "USDZAR",
+   "vendor_description": "US Dollar vs South African Rand",
+   "vendor_key": "usdzar",
+   "vendor_name": "USD/ZAR"
+  },
+  "Uber": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker UBER",
+   "start_hour_for_ticks": "2020-10-01T13:30:00.018Z",
+   "vendor_code": "UBERUSUSD",
+   "vendor_description": "Uber Inc",
+   "vendor_key": "uberususd",
+   "vendor_name": "UBER.US/USD"
+  },
+  "UnionPacific": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker UNP",
+   "start_hour_for_ticks": "2017-11-15T14:57:28.070Z",
+   "vendor_code": "UNPUSUSD",
+   "vendor_description": "UNION PACIFIC CORP",
+   "vendor_key": "unpususd",
+   "vendor_name": "UNP.US/USD"
+  },
+  "UnitedHealth": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker UNH",
+   "start_hour_for_ticks": "2017-11-02T16:21:11.460Z",
+   "vendor_code": "UNHUSUSD",
+   "vendor_description": "UNITEDHEALTH GROUP INC",
+   "vendor_key": "unhususd",
+   "vendor_name": "UNH.US/USD"
+  },
+  "UnitedParcelService": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker UPS",
+   "start_hour_for_ticks": "2017-11-15T15:22:15.996Z",
+   "vendor_code": "UPSUSUSD",
+   "vendor_description": "UNITED PARCEL SERVICE-CL B",
+   "vendor_key": "upsususd",
+   "vendor_name": "UPS.US/USD"
+  },
+  "Verizon": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker VZ",
+   "start_hour_for_ticks": "2017-11-15T15:49:15.137Z",
+   "vendor_code": "VZUSUSD",
+   "vendor_description": "VERIZON COMMUNICATIONS INC",
+   "vendor_key": "vzususd",
+   "vendor_name": "VZ.US/USD"
+  },
+  "Visa": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker V",
+   "start_hour_for_ticks": "2017-01-26T14:30:02.038Z",
+   "vendor_code": "VUSUSD",
+   "vendor_description": "VISA INC-CLASS A SHARES",
+   "vendor_key": "vususd",
+   "vendor_name": "V.US/USD"
+  },
+  "Walgreens": {
+   "asset_class": "UNCLASSIFIED",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker WBA",
+   "start_hour_for_ticks": "2017-11-15T15:56:02.555Z",
+   "vendor_code": "WBAUSUSD",
+   "vendor_description": "WALGREENS BOOTS ALLIANCE INC",
+   "vendor_key": "wbaususd",
+   "vendor_name": "WBA.US/USD"
+  },
+  "Walmart": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker WMT",
+   "start_hour_for_ticks": "2017-11-15T16:41:08.568Z",
+   "vendor_code": "WMTUSUSD",
+   "vendor_description": "WAL-MART STORES INC",
+   "vendor_key": "wmtususd",
+   "vendor_name": "WMT.US/USD"
+  },
+  "WaltDisney": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker DIS",
+   "start_hour_for_ticks": "2017-01-26T14:30:02.437Z",
+   "vendor_code": "DISUSUSD",
+   "vendor_description": "WALT DISNEY CO/THE",
+   "vendor_key": "disususd",
+   "vendor_name": "DIS.US/USD"
+  },
+  "WellsFargo": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker WFC",
+   "start_hour_for_ticks": "2017-01-26T14:30:00.110Z",
+   "vendor_code": "WFCUSUSD",
+   "vendor_description": "WELLS FARGO & CO",
+   "vendor_key": "wfcususd",
+   "vendor_name": "WFC.US/USD"
+  },
+  "XAGEUR": {
+   "asset_class": "Commodities",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2011-09-19T13:30:20.254Z",
+   "vendor_code": "XAGEUR",
+   "vendor_description": "Silver (troy oz) vs. Euro",
+   "vendor_key": "xageur",
+   "vendor_name": "XAG/EUR"
+  },
+  "XAGUSD": {
+   "asset_class": "Commodities",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-05-04T23:09:04.025Z",
+   "vendor_code": "XAGUSD",
+   "vendor_description": "Spot silver",
+   "vendor_key": "xagusd",
+   "vendor_name": "XAG/USD"
+  },
+  "XAUAUD": {
+   "asset_class": "Commodities",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2024-05-15T09:22:31.991Z",
+   "vendor_code": "XAUAUD",
+   "vendor_description": "Gold (troy oz) vs. Australian dollar",
+   "vendor_key": "xauaud",
+   "vendor_name": "XAU/AUD"
+  },
+  "XAUEUR": {
+   "asset_class": "Commodities",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2023-03-14T14:53:03.885Z",
+   "vendor_code": "XAUEUR",
+   "vendor_description": "Gold (troy oz) vs. Euro",
+   "vendor_key": "xaueur",
+   "vendor_name": "XAU/EUR"
+  },
+  "XAUUSD": {
+   "asset_class": "Commodities",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2003-05-05T00:01:03.421Z",
+   "vendor_code": "XAUUSD",
+   "vendor_description": "Spot gold",
+   "vendor_key": "xauusd",
+   "vendor_name": "XAU/USD"
+  },
+  "XBRUSD": {
+   "asset_class": "Energy",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "Brent crude",
+   "start_hour_for_ticks": "2010-12-02T01:00:33.111Z",
+   "vendor_code": "BRENTCMDUSD",
+   "vendor_description": "US Brent Crude Oil",
+   "vendor_key": "brentcmdusd",
+   "vendor_name": "BRENT.CMD/USD"
+  },
+  "XCUUSD": {
+   "asset_class": "Commodities",
+   "basis": "curated_alias",
+   "decimal_factor": 10000,
+   "note": "high-grade copper",
+   "start_hour_for_ticks": "2012-03-02T00:00:07.445Z",
+   "vendor_code": "COPPERCMDUSD",
+   "vendor_description": "High Grade Copper",
+   "vendor_key": "coppercmdusd",
+   "vendor_name": "COPPER.CMD/USD"
+  },
+  "XLMUSD": {
+   "asset_class": "Crypto",
+   "basis": "identical_pair_id",
+   "decimal_factor": 100000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2000-01-01T00:00:00.000Z",
+   "vendor_code": "XLMUSD",
+   "vendor_description": "Stellar vs US Dollar",
+   "vendor_key": "xlmusd",
+   "vendor_name": "XLM/USD"
+  },
+  "XNGUSD": {
+   "asset_class": "Energy",
+   "basis": "curated_alias",
+   "decimal_factor": 10000,
+   "note": "US natural gas",
+   "start_hour_for_ticks": "2012-09-02T22:02:33.889Z",
+   "vendor_code": "GASCMDUSD",
+   "vendor_description": "Natural Gas",
+   "vendor_key": "gascmdusd",
+   "vendor_name": "GAS.CMD/USD"
+  },
+  "XPDUSD": {
+   "asset_class": "Commodities",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "palladium",
+   "start_hour_for_ticks": "2021-07-04T22:00:00.309Z",
+   "vendor_code": "XPDCMDUSD",
+   "vendor_description": "Palladium",
+   "vendor_key": "xpdcmdusd",
+   "vendor_name": "XPD.CMD/USD"
+  },
+  "XPTUSD": {
+   "asset_class": "Commodities",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "platinum",
+   "start_hour_for_ticks": "2021-11-01T00:00:00.046Z",
+   "vendor_code": "XPTCMDUSD",
+   "vendor_description": "Platinum",
+   "vendor_key": "xptcmdusd",
+   "vendor_name": "XPT.CMD/USD"
+  },
+  "XTIUSD": {
+   "asset_class": "Energy",
+   "basis": "curated_alias",
+   "decimal_factor": 1000,
+   "note": "WTI crude = US Light Crude Oil",
+   "start_hour_for_ticks": "2013-01-01T05:44:02.453Z",
+   "vendor_code": "LIGHTCMDUSD",
+   "vendor_description": "US Light Crude Oil",
+   "vendor_key": "lightcmdusd",
+   "vendor_name": "LIGHT.CMD/USD"
+  },
+  "ZARJPY": {
+   "asset_class": "Forex Exotics",
+   "basis": "identical_pair_id",
+   "decimal_factor": 1000,
+   "note": "vendor pair id == Fusion name",
+   "start_hour_for_ticks": "2007-06-04T00:00:18.146Z",
+   "vendor_code": "ZARJPY",
+   "vendor_description": "South African Rand vs Japanese Yen",
+   "vendor_key": "zarjpy",
+   "vendor_name": "ZAR/JPY"
+  },
+  "eBay": {
+   "asset_class": "Equities",
+   "basis": "equity_ticker",
+   "decimal_factor": 1000,
+   "note": "US ticker EBAY",
+   "start_hour_for_ticks": "2017-11-02T13:30:00.049Z",
+   "vendor_code": "EBAYUSUSD",
+   "vendor_description": "EBAY INC",
+   "vendor_key": "ebayususd",
+   "vendor_name": "EBAY.US/USD"
+  }
+ },
+ "schema_version": 1,
+ "source": {
+  "commit": "4bb92bcbcd2edf7c7d75783173f1dae40bee7ef4",
+  "fields": "instrument id (datafeed path) and decimalFactor",
+  "path": "src/utils/instrument-meta-data/generated/instrument-meta-data.json",
+  "release": "dukascopy-node@1.46.4",
+  "repo": "https://github.com/Leo4815162342/dukascopy-node",
+  "url": "https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/4bb92bcbcd2edf7c7d75783173f1dae40bee7ef4/src/utils/instrument-meta-data/generated/instrument-meta-data.json"
+ },
+ "unmapped": {
+  "AVAXUSD": {
+   "asset_class": "Crypto",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "Airbnb": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'abnbususd' with a decimalFactor in the pinned metadata (US ticker ABNB)"
+  },
+  "BNBUSD": {
+   "asset_class": "Crypto",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "CA60": {
+   "asset_class": "Indices",
+   "reason": "vendor publishes no S&P/TSX 60 instrument"
+  },
+  "CHINAH": {
+   "asset_class": "Indices",
+   "reason": "vendor publishes China A50 (CHI.IDX), a different index from Hang Seng China Enterprises; not bridged"
+  },
+  "COFROB": {
+   "asset_class": "Soft Commodity",
+   "reason": "vendor publishes Arabica only; Robusta is a different contract"
+  },
+  "CORN": {
+   "asset_class": "Soft Commodity",
+   "reason": "vendor publishes no corn instrument"
+  },
+  "Charter": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'chtrususd' with a decimalFactor in the pinned metadata (US ticker CHTR)"
+  },
+  "Coinbase": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'coinususd' with a decimalFactor in the pinned metadata (US ticker COIN)"
+  },
+  "DOGEUSD": {
+   "asset_class": "Crypto",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "DOTUSD": {
+   "asset_class": "Crypto",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "Doordash": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'dashususd' with a decimalFactor in the pinned metadata (US ticker DASH)"
+  },
+  "Dow": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'dowususd' with a decimalFactor in the pinned metadata (US ticker DOW)"
+  },
+  "EURRUB": {
+   "asset_class": "Forex Exotics",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "LucidGroup": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'lcidususd' with a decimalFactor in the pinned metadata (US ticker LCID)"
+  },
+  "Pinterest": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'pinsususd' with a decimalFactor in the pinned metadata (US ticker PINS)"
+  },
+  "RobinhoodMarkets": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'hoodususd' with a decimalFactor in the pinned metadata (US ticker HOOD)"
+  },
+  "SOLUSD": {
+   "asset_class": "Crypto",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "SUGARRAW": {
+   "asset_class": "Soft Commodity",
+   "reason": "vendor publishes London No.5 white sugar only; raw No.11 is a different contract"
+  },
+  "Shopify": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'shopususd' with a decimalFactor in the pinned metadata (US ticker SHOP)"
+  },
+  "TMEGroup": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'tmeususd' with a decimalFactor in the pinned metadata (US ticker TME)"
+  },
+  "Toyota": {
+   "asset_class": "Equities",
+   "reason": "no vendor instrument 'tmususd' with a decimalFactor in the pinned metadata (US ticker TM)"
+  },
+  "UKCOCOA": {
+   "asset_class": "Soft Commodity",
+   "reason": "vendor publishes NY cocoa only; London cocoa (GBP) is a different contract"
+  },
+  "USDBRL": {
+   "asset_class": "Forex Exotics",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "USDIDR": {
+   "asset_class": "Forex Exotics",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "USDINR": {
+   "asset_class": "Forex Exotics",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "USDKRW": {
+   "asset_class": "Forex Exotics",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "USDRUB": {
+   "asset_class": "Forex Exotics",
+   "reason": "no vendor instrument of this name and no curated alias"
+  },
+  "UST05Y": {
+   "asset_class": "Bonds",
+   "reason": "vendor publishes only the 30-year USTBOND.TR; a 5-year note is a different duration, not bridged"
+  },
+  "UST10Y": {
+   "asset_class": "Bonds",
+   "reason": "vendor publishes only the 30-year USTBOND.TR; a 10-year note is a different duration, not bridged"
+  },
+  "WHEAT": {
+   "asset_class": "Soft Commodity",
+   "reason": "vendor publishes no wheat instrument"
+  },
+  "XALUSD": {
+   "asset_class": "Commodities",
+   "reason": "vendor publishes no aluminium instrument"
+  },
+  "XNIUSD": {
+   "asset_class": "Commodities",
+   "reason": "vendor publishes no nickel instrument"
+  },
+  "XPBUSD": {
+   "asset_class": "Commodities",
+   "reason": "vendor publishes no lead instrument"
+  },
+  "XZNUSD": {
+   "asset_class": "Commodities",
+   "reason": "vendor publishes no zinc instrument"
+  }
+ }
+}
