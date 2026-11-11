@@ -9,3 +9,4 @@ desks/mt5/tests/test_measured_heat_ceiling.py
 tests/execution/test_ruin_rail.py
 tests/governance/test_sizing_derivation.py
 tests/research/test_immutable_rails.py
+tests/ops/test_money_closure_pin.py

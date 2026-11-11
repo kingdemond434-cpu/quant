@@ -188,9 +188,12 @@ Ok 'RELEASE.json and the live roster committed'
 
 # ---------------------------------------------------------------- 8. arm and verify
 Step 8 'Arm and verify'
-Stop-ScheduledTask  -TaskName MT5-Gateway -ErrorAction SilentlyContinue
+# The gateway is MT5-GatewayResident (MT5-Gateway is Disabled since 2026-09-16). The resident is
+# ASKED to recycle between passes, as Adopt-And-Seal does, never killed mid-pass; starting the
+# task is the backstop for a resident that is not running (its singleton makes it a no-op).
+New-Item -ItemType File -Path (Join-Path $Root 'desks\mt5\data\GATEWAY_RECYCLE') -Force | Out-Null
 Start-Sleep -Seconds 3
-Start-ScheduledTask -TaskName MT5-Gateway -ErrorAction SilentlyContinue
+Start-ScheduledTask -TaskName MT5-GatewayResident -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 25
 $rid = & py -3 (Join-Path $Root 'desks\mt5\mt5desk\release_identity.py') 2>&1
 if ("$rid" -match '"allows_new_risk":\s*true') { Ok 'allows_new_risk: true -- the book is armed' }
