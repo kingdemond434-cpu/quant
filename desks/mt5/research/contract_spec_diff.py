@@ -37,6 +37,9 @@ fix is the broker's own number. Two guards stop a bad reading from rewriting the
   * if more than MASS_CHANGE_FRAC of compared symbols disagree on one field at once, that is a
     terminal or tape fault, not the broker re-papering half its book: nothing on that field
     is written and the alarm says so.
+A LIVE symbol's fix lands only when the broker gave the same value on an earlier day too: the
+first sighting is held in data/CONTRACT_SPEC_PENDING.json and alarmed, so one plausible-but-wrong
+reading (a stale FX rate) cannot rewrite a live cost basis on its own.
 A mismatch on a LIVE symbol also raises data/CONTRACT_SPEC_ALARM.txt (the issue board reads it).
 The alarm is removed on the first clean pass. Changing a live symbol's registry row changes the cost
 basis its sleeves were certified on, which is what should happen: a sleeve certified on a
@@ -61,6 +64,7 @@ TERMS = DESK / "data" / "tape" / "contract_terms"
 REGISTRY = DESK / "data" / "universe" / "universe.json"
 OUT = DESK / "reports" / "CONTRACT_SPEC_DIFF.json"
 ALARM = DESK / "data" / "CONTRACT_SPEC_ALARM.txt"
+PENDING = DESK / "data" / "CONTRACT_SPEC_PENDING.json"
 
 ACCOUNT_CCY = "EUR"
 FRESH_H = 72.0                 # a weekend is ~49 h of no quotes; 72 h still names a dead terminal
@@ -207,6 +211,35 @@ def compare(terms: dict[str, dict[str, Any]], registry: dict[str, Any],
             "live_symbols_without_terms": sorted(s for s in live if s not in terms)}
 
 
+def confirm_live(fixes: dict[str, dict[str, Any]], live: set[str],
+                 pending: dict[str, Any], today: str
+                 ) -> tuple[dict[str, dict[str, Any]], dict[str, Any], dict[str, dict[str, Any]]]:
+    """A LIVE symbol's fix lands only when the broker gave the SAME value on an earlier day too.
+
+    One plausible-but-wrong reading on one live symbol (a stale FX rate moving tick_value) sits
+    below the mass-change guard; two consecutive daily reads agreeing is what tells a reprice
+    from a bad read (audit of #1060, should-fix). The first sighting is held and alarmed.
+    Returns (fixes to apply, the new pending book, the fixes held today)."""
+    apply: dict[str, dict[str, Any]] = {}
+    held: dict[str, dict[str, Any]] = {}
+    book: dict[str, Any] = {}
+    for sym, fields in fixes.items():
+        for field, value in fields.items():
+            if sym not in live:
+                apply.setdefault(sym, {})[field] = value
+                continue
+            seen = (pending.get(sym) or {}).get(field)
+            if isinstance(seen, dict) and seen.get("value") == value \
+                    and str(seen.get("first_seen") or today) < today:
+                apply.setdefault(sym, {})[field] = value
+                continue
+            first = seen.get("first_seen") if isinstance(seen, dict) and \
+                seen.get("value") == value else today
+            book.setdefault(sym, {})[field] = {"value": value, "first_seen": first}
+            held.setdefault(sym, {})[field] = value
+    return apply, book, held
+
+
 def _live_symbols() -> set[str]:
     try:
         sys.path.insert(0, str(DESK))
@@ -239,6 +272,8 @@ def _alarm(doc: dict[str, Any]) -> bool:
         lines.append(f"LIVE {m['symbol']} {m['field']}: broker {m['broker']} vs code {m['code']}")
     for a in doc["alerts"][:10]:
         lines.append(f"LIVE {a['symbol']} {a['alert']}={a['value']} ({a['meaning']})")
+    for sym, fields in doc.get("live_fixes_held_for_confirmation", {}).items():
+        lines.append(f"LIVE {sym}: broker values {fields} held until a second daily read agrees")
     for f, n in doc["withheld_fields"].items():
         lines.append(f"{f}: {n} symbols disagree at once -- fixes withheld as a likely reading "
                      f"fault; check the terminal and the contract-terms tape")
@@ -262,6 +297,21 @@ def run(apply: bool = False, now: datetime | None = None) -> dict[str, Any]:
     status = ("UNMEASURED" if reg_why or not terms else
               "MISMATCH" if result["mismatches"] or result["alerts"] else "MATCH")
     applied: dict[str, list[str]] = {}
+    held: dict[str, dict[str, Any]] = {}
+    if apply and status == "MISMATCH":
+        try:
+            pending = json.loads(PENDING.read_text("utf-8"))
+        except (OSError, ValueError):
+            pending = {}
+        fixes, book, held = confirm_live(result["fixes"], live,
+                                         pending if isinstance(pending, dict) else {},
+                                         now.date().isoformat())
+        result["fixes"] = fixes
+        PENDING.parent.mkdir(parents=True, exist_ok=True)
+        PENDING.write_text(json.dumps(book, indent=1, default=str), "utf-8")
+    elif apply and status == "MATCH":
+        with contextlib.suppress(OSError):
+            PENDING.unlink(missing_ok=True)
     if apply and status == "MISMATCH" and result["fixes"]:
         sys.path.insert(0, str(DESK))
         from mt5desk.universe_registry import merge
@@ -279,6 +329,7 @@ def run(apply: bool = False, now: datetime | None = None) -> dict[str, Any]:
         "venue": "Fusion (the terminal mt5desk.tape records); FTMO and E8 not yet covered",
         "symbols_with_fresh_terms": len(terms), "live_symbols": sorted(live),
         **result, "applied": applied, "applied_mode": "apply" if apply else "report-only",
+        "live_fixes_held_for_confirmation": held,
         "unmeasured_fields": UNMEASURED_FIELDS,
         "tolerances": {"tick_value_rel": TICK_VALUE_TOL, "fresh_h": FRESH_H,
                        "mass_change_frac": MASS_CHANGE_FRAC},

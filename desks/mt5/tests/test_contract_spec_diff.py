@@ -99,17 +99,45 @@ def test_apply_merges_fixes_raises_and_clears_the_alarm(tmp_path: Path, monkeypa
     monkeypatch.setattr(csd, "REGISTRY", registry)
     monkeypatch.setattr(csd, "OUT", tmp_path / "CONTRACT_SPEC_DIFF.json")
     monkeypatch.setattr(csd, "ALARM", tmp_path / "CONTRACT_SPEC_ALARM.txt")
+    monkeypatch.setattr(csd, "PENDING", tmp_path / "pending.json")
     monkeypatch.setattr(csd, "_live_symbols", lambda: {"XAUUSD"})
-    pd.DataFrame([term("XAUUSD", contract_size=10.0), term("EURUSD")]).to_parquet(
-        terms_dir / "2026-11-11.parquet")
+    day1 = [term("XAUUSD", contract_size=10.0), term("EURUSD", volume_min=0.1)]
+    pd.DataFrame(day1).to_parquet(terms_dir / "2026-11-11.parquet")
 
+    # Day 1: the non-live fix lands; the live one is held and alarmed.
     doc = csd.run(apply=True, now=NOW)
-    assert doc["status"] == "MISMATCH" and doc["applied"] == {"XAUUSD": ["contract_size"]}
-    assert json.loads(registry.read_text("utf-8"))["XAUUSD"]["contract_size"] == 10.0
-    assert (tmp_path / "CONTRACT_SPEC_ALARM.txt").exists()
+    assert doc["status"] == "MISMATCH" and doc["applied"] == {"EURUSD": ["volume_min"]}
+    assert doc["live_fixes_held_for_confirmation"] == {"XAUUSD": {"contract_size": 10.0}}
+    assert json.loads(registry.read_text("utf-8"))["XAUUSD"]["contract_size"] == 100.0
+    assert "held until a second daily read" in (tmp_path / "CONTRACT_SPEC_ALARM.txt").read_text()
 
-    doc2 = csd.run(apply=True, now=NOW)
-    assert doc2["status"] == "MATCH" and not (tmp_path / "CONTRACT_SPEC_ALARM.txt").exists()
+    # Same day again: still held.
+    assert csd.run(apply=True, now=NOW + timedelta(hours=2))["applied"] == {}
+
+    # Day 2, same broker value: it lands.
+    d2 = (NOW + timedelta(days=1)).isoformat()
+    day2 = [term("XAUUSD", contract_size=10.0, observed_at=d2, quote_time_utc=d2),
+            term("EURUSD", volume_min=0.1, observed_at=d2, quote_time_utc=d2)]
+    pd.DataFrame(day2).to_parquet(terms_dir / "2026-11-12.parquet")
+    doc2 = csd.run(apply=True, now=NOW + timedelta(days=1))
+    assert doc2["applied"] == {"XAUUSD": ["contract_size"]}
+    assert json.loads(registry.read_text("utf-8"))["XAUUSD"]["contract_size"] == 10.0
+
+    doc3 = csd.run(apply=True, now=NOW + timedelta(days=1, hours=1))
+    assert doc3["status"] == "MATCH" and not (tmp_path / "CONTRACT_SPEC_ALARM.txt").exists()
+    assert not (tmp_path / "pending.json").exists()
+
+
+def test_a_live_reading_that_changes_between_days_never_lands() -> None:
+    fixes = {"XAUUSD": {"tick_value": 0.9}}
+    _, book, held = csd.confirm_live(fixes, {"XAUUSD"}, {}, "2026-11-11")
+    assert held == fixes and book["XAUUSD"]["tick_value"]["first_seen"] == "2026-11-11"
+    apply, book2, _ = csd.confirm_live({"XAUUSD": {"tick_value": 0.95}}, {"XAUUSD"}, book,
+                                           "2026-11-12")
+    assert apply == {} and book2["XAUUSD"]["tick_value"]["first_seen"] == "2026-11-12"
+    apply3, _, _ = csd.confirm_live({"XAUUSD": {"tick_value": 0.95}}, {"XAUUSD"}, book2,
+                                    "2026-11-13")
+    assert apply3 == {"XAUUSD": {"tick_value": 0.95}}
 
 
 def test_no_fresh_terms_is_unmeasured_not_a_match(tmp_path: Path, monkeypatch) -> None:
@@ -119,6 +147,7 @@ def test_no_fresh_terms_is_unmeasured_not_a_match(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr(csd, "REGISTRY", registry)
     monkeypatch.setattr(csd, "OUT", tmp_path / "out.json")
     monkeypatch.setattr(csd, "ALARM", tmp_path / "alarm.txt")
+    monkeypatch.setattr(csd, "PENDING", tmp_path / "pending.json")
     doc = csd.run(apply=True, now=NOW)
     assert doc["status"] == "UNMEASURED" and "terms recorder" in doc["why"]
     assert doc["live_symbols_without_terms"]
