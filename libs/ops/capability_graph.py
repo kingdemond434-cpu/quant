@@ -573,6 +573,19 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/STATE_ADMISSION.json", "desks/mt5/reports/EXECUTION_TWIN.json",
                 "desks/mt5/reports/CROSS_ASSET_GRAPH.json"),
          writes=("desks/mt5/reports/DRIFT.json",)),
+    # Per LIVE/STANDBY sleeve: is it still forward-operationally tradable? Every field is another
+    # organ's reading (tradability_health.py:85-99, opened together at :431-434). Declared here
+    # are the inputs whose producer is a node in this graph. It ALSO reads, by the same `measure`,
+    # RESEARCH_LIVE_IDENTITY.json, COST_TRUTH.json, REGIME_ROUTER.json, CAPACITY_FRONTIER.json,
+    # POSTERIOR_ALPHA.json and data/decay_live.json -- their writers (research_live_identity,
+    # cost_truth, regime_router, capacity_frontier, posterior_alpha, decay_monitor) are not graph
+    # nodes yet, so declaring the reads would report DEAD_CONSUMER for a producer that exists.
+    # When those organs gain nodes, their artifacts join this `reads`.
+    # Output reader: hazard_engine (EXTERNAL_READERS below).
+    Node("tradability_health", "desks/mt5/research/tradability_health.py",
+         reads=("desks/mt5/data/sleeves.json", "desks/mt5/reports/DRIFT.json",
+                "desks/mt5/reports/EXECUTION_TWIN.json", "desks/mt5/reports/CAPACITY.json"),
+         writes=("desks/mt5/reports/TRADABILITY_HEALTH.json",)),
     Node("exit_accounts", "desks/mt5/research/exit_accounts.py",
          reads=("backups/moat/shadow_ledgers/", "desks/mt5/data/excursions.jsonl",
                 "desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/pf_forecast_log.jsonl"),
@@ -1159,6 +1172,10 @@ EXTERNAL_READERS = {
                                              "scientist_tournament"),
     "desks/mt5/reports/UNKNOWN_UNKNOWNS.json": "meta_controller, research_tree, implementer",
     "desks/mt5/reports/FALSIFIER_VERDICTS.json": "destroyer_pool and meta_rnd",
+    "desks/mt5/reports/TRADABILITY_HEALTH.json": ("hazard_engine.tradability_reading "
+                                                  "(hazard_engine.py:67, :731): attaches each "
+                                                  "live sleeve's verdict to its card and queues "
+                                                  "a successor_search for DEGRADING / BROKEN"),
     "desks/mt5/reports/ASIA_COLLECTOR.json": ("source_fixer (every source the collector could not "
                                               "read gets a named repair attempt)"),
     "desks/mt5/reports/dead_architecture.json": ("desks/mt5/research/module_rent "

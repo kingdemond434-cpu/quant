@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "tradability_health": {
+   "hypothesis": "Joining the seven drift organs' own readings (feature, parameter, cost, execution, regime occupancy, capacity, forward posterior) per LIVE/STANDBY sleeve into one tradability verdict turns 'is this sleeve still tradable' from unread into a measured HEALTHY/DEGRADING/BROKEN reading, so hazard_engine starts a successor hunt for a fading sleeve while it is still earning.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.UNMEASURED",
+    "better": "down",
+    "organ": "report:TRADABILITY_HEALTH.json"
+   },
+   "falsifier": {
+    "metric": "field_coverage.recent_forward_posterior",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no live sleeve's forward posterior was ever read, so no sleeve can be judged HEALTHY and the verdict rests on partial readings"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
