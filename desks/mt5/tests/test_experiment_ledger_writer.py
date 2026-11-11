@@ -14,10 +14,10 @@ DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-if str(DESK / "scripts") not in sys.path:
-    sys.path.insert(0, str(DESK / "scripts"))
+if str(DESK) not in sys.path:
+    sys.path.insert(0, str(DESK))
 
-import write_experiment_ledger as w  # noqa: E402
+from research import write_experiment_ledger as w  # noqa: E402
 
 from libs.research import experiment_ledger as el  # noqa: E402
 
@@ -87,4 +87,4 @@ def test_the_hourly_cycle_runs_the_writer_every_hour():
                 and node.target.id == "CORE_LEGS"):
             core = ast.literal_eval(node.value.args[0])
     assert core is not None and "experiment_ledger" in core
-    assert '"experiment_ledger", "scripts/write_experiment_ledger.py"' in src
+    assert '"experiment_ledger", "research/write_experiment_ledger.py"' in src

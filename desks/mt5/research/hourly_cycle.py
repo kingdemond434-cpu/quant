@@ -4862,7 +4862,7 @@ def main() -> None:
     # text says pf_allocator writes it hourly. pf_allocator reads it with write=False and nothing
     # else wrote it, so the file sat at 2026-09-20 for 52 days. Data department, information.
     exl = _costed("experiment_ledger", lambda: _producer(
-        "experiment_ledger", "scripts/write_experiment_ledger.py"))
+        "experiment_ledger", "research/write_experiment_ledger.py"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     #

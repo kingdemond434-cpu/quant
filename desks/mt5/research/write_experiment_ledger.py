@@ -1,5 +1,7 @@
 """Write reports/EXPERIMENT_LEDGER.json on a clock (hourly leg `experiment_ledger`).
 
+Lives in `research/`, not `scripts/`: it is a report writer, never money path.
+
 THE LEDGER HAD NO WRITER. `external_gauntlet.lifetime_trial_report` says "pf_allocator writes it
 hourly through experiment_ledger.lifetime(write=True)", but `pf_allocator.search_trials` calls
 `lifetime(write=False)`, and `experiment_ledger.family_trials` only rebuilds the file when it is
