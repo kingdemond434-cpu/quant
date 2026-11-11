@@ -35,7 +35,7 @@ def test_heals_only_a_jammed_clone_under_all_of_901s_conditions() -> None:
     assert "$fails.Count -eq 3" in code
     assert "Where-Object { $_ -match $cloneFail }).Count -eq 3" in code
     assert "'Global\\QuantBox-WorkflowGate'" in code and "$gm.WaitOne(0)" in code
-    assert "ReparsePoint" in code and "exit 3" in code  # a junction is refused
+    assert "ReparsePoint" in code and "$rc = 3" in code  # a junction is refused
     # the removal sits after every check and inside the mutex
     rm = code.index("Remove-Item -LiteralPath $gateRepo")
     assert code.index("if (-not $jammed)") < rm and code.index("$gm.WaitOne(0)") < rm
@@ -87,6 +87,23 @@ def test_a_hung_merge_docket_is_ended_only_when_old_and_cpu_flat() -> None:
     cond = re.search(r"if \(\$ageH -gt \$reapAgeH -and \$still -ge 2 -and -not \$DryRun\)", code)
     assert cond, "the kill needs age, two CPU-flat passes, and no dry run"
     assert code.index("$still = if ($was -and [double]$was.cpu -eq $cpu)") < cond.start()
-    assert "taskkill.exe /PID $p.ProcessId /T /F" in code
+    assert "taskkill.exe /PID $p.Id /T /F" in code
     assert code.count("taskkill.exe") == 1  # nothing else is ever killed
-    assert "merge_docket = $script:ReapNote" in code
+    assert "merge_docket = ($reaped -join '; ')" in code
+
+
+def test_the_heal_runs_first_and_the_cim_query_is_bounded() -> None:
+    """#984 audit M1: CIM has hung on this box; it must never stand in front of the heal."""
+    code = _code(WD)
+    assert code.index("Remove-Item -LiteralPath $gateRepo") < code.index("Get-CimInstance")
+    assert code.count("Get-CimInstance") == 1
+    job = code.index("$job = Start-Job -ScriptBlock {")
+    assert job < code.index("Get-CimInstance") < code.index("Wait-Job -Job $job -Timeout 60")
+    assert "merge-docket check UNMEASURED: CIM timed out" in code
+    assert code.count("exit ") == 1 and code.rstrip().endswith("exit $rc")  # no early exit
+
+
+def test_state_and_beat_are_written_atomically() -> None:
+    code = _code(WD)
+    assert "Write-Atomic $reapState" in code and "Write-Atomic $outPath" in code
+    assert "Move-Item -LiteralPath $tmp -Destination $path -Force" in code
