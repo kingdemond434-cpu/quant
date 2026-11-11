@@ -5091,9 +5091,6 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
 def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
-        # A PAUSE STOPS TRADING, NOT PROTECTION: a tripped prop account is still flattened.
-        if connect():
-            account_breaker_pass(load_state())
         return
     if not connect():
         return

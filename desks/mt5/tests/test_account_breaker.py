@@ -529,8 +529,7 @@ def test_main_runs_the_breakers_before_anything_and_obeys_them() -> None:
     assert first < body.index("restart_reconcile(") < body.index("account_breaker_reconciled(")
     assert body.index("account_breaker_reconciled(") < body.index("account_breaker_new_risk()")
     assert body.index("account_breaker_pass(st)") < body.index("manage_open_positions(")
-    paused = body.index("gateway_paused()")
-    assert paused < body.index("account_breaker_pass(load_state())") < first
+    assert body.index("gateway_paused()") < first
 
 
 def test_every_trip_and_refusal_has_a_missed_growth_line() -> None:
