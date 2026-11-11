@@ -607,3 +607,7 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# preregistration.spec_index's incremental index sidecar (2026-11-11): box-local, derived from
+# the append-only ledger beside it and rebuilt from byte 0 whenever it cannot be trusted.
+desks/mt5/data/preregistrations.jsonl.spec_index.pkl
+desks/mt5/data/preregistrations.jsonl.spec_index.pkl.*.tmp
