@@ -74,6 +74,35 @@ def test_e_process_is_flat_under_calibration_and_grows_on_optimism() -> None:
     assert optimistic > 1 / sf.ALPHA
 
 
+def test_overlapping_daily_forecasts_keep_the_error_rate(
+        ) -> None:
+    """Daily forecasts over 5-day windows overlap by 4 days; the judged e-process must still hold
+    its level under a calibrated model (rejection rate <= alpha over many seeds)."""
+    from math import erf, sqrt
+    rejections = 0
+    seeds = 300
+    for seed in range(seeds):
+        rng = np.random.default_rng(seed)
+        x = rng.normal(0, 1, 260)
+        idx = [f"d{i:04d}" for i in range(260)]
+        rows = []
+        for i in range(len(x) - 5):
+            real = float(x[i + 1:i + 6].sum())
+            pit = 0.5 * (1 + erf(real / sqrt(5.0) / sqrt(2.0)))
+            rows.append({"sleeve": "s", "info_cutoff": idx[i], "outcome_end": idx[i + 5],
+                         "pit": pit})
+        if sf.judge(rows)["per_sleeve"]["s"]["verdict"] == "WORSE_THAN_FORECAST":
+            rejections += 1
+    assert rejections / seeds <= sf.ALPHA + 0.02
+    assert len(sf.non_overlapping(rows)) == pytest.approx(len(rows) / 5, abs=1)
+
+
+def test_late_rows_are_not_point_in_time() -> None:
+    assert sf._point_in_time({"info_cutoff": "2026-01-02", "published_utc": "2026-01-04T00:00"})
+    assert not sf._point_in_time({"info_cutoff": "2026-01-02",
+                                  "published_utc": "2026-01-09T00:00"})
+
+
 def test_e_bh_controls_across_sleeves() -> None:
     assert sf.e_bh({"a": 500.0, "b": 1.0, "c": 0.5}, 0.05) == ["a"]
     assert sf.e_bh({"a": 10.0, "b": 10.0}, 0.05) == []

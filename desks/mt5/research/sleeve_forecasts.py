@@ -23,7 +23,7 @@ in `data/sleeve_forecasts.jsonl`, an append-only ledger:
     model_version    sha256 of robust_elog's source (12 hex)
     info_cutoff      last evidence day the posterior read
     horizon_days     `HORIZON` (5, the allocator's holding window)
-    expiry           cutoff + horizon calendar days: after it the row is a claim to be scored
+    expiry           cutoff + horizon business days: after it the row is a claim to be scored
     expected_r       horizon x posterior mean daily R
     mean_se          horizon x posterior standard error (parameter uncertainty)
     predictive_sd    sqrt(horizon x daily variance + mean_se^2) (noise plus parameter)
@@ -69,7 +69,7 @@ import os
 import sys
 import time
 from collections.abc import Mapping, Sequence
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -116,7 +116,9 @@ def make_rows(names: Sequence[str], daily: pd.DataFrame, post_mean: Mapping[str,
               version: str = "", horizon: int = HORIZON) -> list[dict[str, Any]]:
     """One forecast row per sleeve from the posterior, as of the matrix's last day."""
     cutoff = str(daily.index[-1])[:10]
-    expiry = (date.fromisoformat(cutoff) + timedelta(days=horizon)).isoformat()
+    # The horizon is counted in TRADING days (score() counts matrix rows), so the expiry is the
+    # cutoff plus `horizon` business days, not calendar days.
+    expiry = str(np.busday_offset(np.datetime64(cutoff), horizon, roll="forward"))
     book = daily.mean(axis=1, skipna=True)
     rows = []
     for n in names:
@@ -180,6 +182,39 @@ def append_new(rows: Sequence[Mapping[str, Any]], path: Path = LEDGER) -> int:
 
 # ------------------------------------------------------------------ score
 
+#: A row counts as point-in-time only if it was published within this many calendar days of its
+#: info_cutoff: derived as a weekend (2 days, a Friday cutoff first published on Sunday) plus one
+#: day of evidence-cache age (the matrix is rebuilt once a day), 3 days in all. A row written
+#: later than that could have been written knowing part of its own outcome window.
+PIT_LAG_DAYS = 3
+
+
+def _point_in_time(r: Mapping[str, Any]) -> bool:
+    pub = str(r.get("published_utc") or "")[:10]
+    cut = str(r.get("info_cutoff") or "")[:10]
+    try:
+        return (date.fromisoformat(pub) - date.fromisoformat(cut)).days <= PIT_LAG_DAYS
+    except ValueError:
+        return True                                     # no stamp: legacy row, kept
+
+
+def non_overlapping(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """One sleeve's scored rows thinned so each bet settles before the next is placed.
+
+    The e-process multiplies one bet per outcome; that product is a test supermartingale only
+    when each outcome is unknown at the time of the next bet. Forecasts are written daily with a
+    HORIZON-day window, so consecutive windows share HORIZON-1 days. Keeping a row only when its
+    info_cutoff is on or after the previous kept row's outcome_end restores that order.
+    """
+    kept: list[Mapping[str, Any]] = []
+    last_end = ""
+    for r in sorted(rows, key=lambda x: str(x.get("info_cutoff"))):
+        if not kept or str(r.get("info_cutoff")) >= last_end:
+            kept.append(r)
+            last_end = str(r.get("outcome_end") or r.get("info_cutoff"))
+    return kept
+
+
 def score(rows: Sequence[Mapping[str, Any]], daily: pd.DataFrame) -> list[dict[str, Any]]:
     """Every matured row with its realized horizon return and PIT."""
     idx = [str(d)[:10] for d in daily.index]
@@ -195,12 +230,15 @@ def score(rows: Sequence[Mapping[str, Any]], daily: pd.DataFrame) -> list[dict[s
         window = daily[n].iloc[i + 1:i + 1 + h]
         if window.isna().all():
             continue
+        if not _point_in_time(r):
+            continue                                    # published too long after its cutoff
         realized = float(window.fillna(0.0).sum())
         sd = float(r.get("predictive_sd") or 0.0)
         if not sd > 0:
             continue
         pit = _phi((realized - float(r["expected_r"])) / sd)
-        out.append({**r, "realized_r": round(realized, 8), "pit": round(pit, 6)})
+        out.append({**r, "realized_r": round(realized, 8), "pit": round(pit, 6),
+                    "outcome_end": idx[i + h]})
     return out
 
 
@@ -261,17 +299,23 @@ def research_requests(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]
 
 def judge(scored: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     by: dict[str, list[float]] = {}
+    rows_by: dict[str, list[Mapping[str, Any]]] = {}
     for r in sorted(scored, key=lambda x: str(x.get("info_cutoff"))):
         by.setdefault(str(r["sleeve"]), []).append(float(r["pit"]))
-    evals = {n: e_value(p) for n, p in by.items() if len(p) >= MIN_SCORED}
+        rows_by.setdefault(str(r["sleeve"]), []).append(r)
+    # The e-process sees only bets that settled before the next was placed (non_overlapping);
+    # calibration and the mean PIT still use every scored row.
+    bets = {n: [float(r["pit"]) for r in non_overlapping(rs)] for n, rs in rows_by.items()}
+    evals = {n: e_value(p) for n, p in bets.items() if len(p) >= MIN_SCORED}
     rejected = set(e_bh(evals))
-    per = {n: {"n_scored": len(p), "e_value": round(evals[n], 4) if n in evals else None,
+    per = {n: {"n_scored": len(p), "n_bets": len(bets.get(n, [])), "e_value": round(evals[n], 4) if n in evals else None,
                "mean_pit": round(float(np.mean(p)), 4),
                "verdict": ("WORSE_THAN_FORECAST" if n in rejected else
                            "CONSISTENT" if n in evals else "UNMEASURED")}
            for n, p in by.items()}
     return {"per_sleeve": per, "n_tested": len(evals), "n_worse": len(rejected),
-            "rule": (f"mixture betting e-process over lambda {list(LAMBDAS)} on 1 - 2 PIT; "
+            "rule": (f"mixture betting e-process over lambda {list(LAMBDAS)} on 1 - 2 PIT, "
+                     f"non-overlapping outcome windows only; "
                      f"e-BH at alpha {ALPHA} across sleeves with >= {MIN_SCORED} outcomes")}
 
 
