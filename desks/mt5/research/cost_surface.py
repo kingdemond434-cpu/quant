@@ -297,10 +297,17 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
     # rest, never let them cost the symbol its measured hours.
     ms = pd.to_numeric(t["time_msc"], errors="coerce")
     if "time" in t.columns:
-        ms = ms.fillna(pd.to_numeric(t["time"], errors="coerce") * 1000)
+        sec = t["time"]
+        if pd.api.types.is_datetime64_any_dtype(sec):     # a datetime is never seconds x 1000
+            sec_ms = pd.to_datetime(sec, utc=True).astype("int64") // 10**6
+            fill = sec_ms.where(sec.notna())
+        else:
+            fill = pd.to_numeric(sec, errors="coerce") * 1000
+        ms = ms.fillna(fill)
     t = t.assign(time_msc=ms).drop(columns=[c for c in ("time",) if c in t.columns])
     n_no_time = int(t["time_msc"].isna().sum())
-    t = t[t["time_msc"].notna()]
+    # Again after the fill: one tick stored with and without time_msc is one tick.
+    t = t[t["time_msc"].notna()].drop_duplicates(subset=["time_msc", "bid", "ask"])
     t = t[(t["bid"] > 0) & (t["ask"] > 0)]
     if t.empty:
         return None

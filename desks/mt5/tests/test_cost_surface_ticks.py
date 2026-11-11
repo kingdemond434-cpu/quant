@@ -89,3 +89,23 @@ def test_a_null_time_msc_never_costs_the_symbol_its_hours(tmp_path: Path) -> Non
     assert prof is not None and prof["n_dropped_no_time"] == 10
     assert prof["hours"]["2"]["n_ticks"] == 290 and prof["hours"]["2"]["p50"] == 2.0
     assert prof["hours"]["3"]["n_ticks"] == 250
+
+
+def test_a_datetime_time_column_fills_in_milliseconds_and_a_twin_counts_once(
+        tmp_path: Path) -> None:
+    """Audit should-fix on #1066: a datetime `time` is converted, never multiplied by 1000, and a
+    tick stored once with and once without time_msc is one tick after the fill."""
+    base = int(pd.Timestamp("2026-10-13", tz="UTC").timestamp() * 1000) + 5 * H
+    n = 250
+    ms = (base + np.arange(n) * 1000).astype("float64")
+    bid = 1.30000 + np.arange(n) * POINT
+    when = pd.to_datetime(ms, unit="ms", utc=True)
+    a = pd.DataFrame({"time_msc": ms, "time": when, "bid": bid, "ask": bid + 3 * POINT})
+    twin = a.iloc[:20].copy()
+    twin["time_msc"] = np.nan                                   # same ticks, clock only in `time`
+    d = tmp_path / "EURCHF"
+    d.mkdir(parents=True)
+    pd.concat([a, twin], ignore_index=True).to_parquet(d / "2026-10-13.parquet")
+    prof = CS.tick_profile("EURCHF", POINT, root=tmp_path)
+    assert prof is not None and list(prof["hours"]) == ["5"]
+    assert prof["hours"]["5"]["n_ticks"] == 250 and prof["n_dropped_no_time"] == 0
