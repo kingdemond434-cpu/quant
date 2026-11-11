@@ -844,7 +844,11 @@ $reportPaths = @(
     "desks/mt5/reports/PRODUCER_YIELD.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
+    "desks/mt5/reports/FORWARD_ENROLMENT_SUMMARY.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
+    # its wire-sized summary (2026-11-10): the full artifact is 8.7 MB at 7,458 certificates and
+    # this cap skips it, so the summary is what reaches every reader off the box
+    "desks/mt5/reports/CERTIFICATE_CLOCK_LAW_SUMMARY.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
     # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
