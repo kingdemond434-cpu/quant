@@ -281,12 +281,26 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
     frames = []
     for _day, f in files:
         try:
-            frames.append(pd.read_parquet(f, columns=["time_msc", "bid", "ask"]))
+            frames.append(pd.read_parquet(f, columns=["time_msc", "time", "bid", "ask"]))
         except (OSError, ValueError, KeyError, ImportError):
-            continue
+            try:
+                frames.append(pd.read_parquet(f, columns=["time_msc", "bid", "ask"]))
+            except (OSError, ValueError, KeyError, ImportError):
+                continue
     if not frames:
         return None
-    t = pd.concat(frames, ignore_index=True).drop_duplicates()
+    t = pd.concat(frames, ignore_index=True)
+    # A tape row can carry a null time_msc (a schema older than the column, or a merge that
+    # aligned columns to the union), and one null made `.astype("int64")` raise
+    # IntCastingNaNError for the WHOLE symbol: 221 of 240 symbols UNREADABLE on 2026-11-11.
+    # Recover the hour from the second-resolution `time` where it exists; drop and COUNT the
+    # rest, never let them cost the symbol its measured hours.
+    ms = pd.to_numeric(t["time_msc"], errors="coerce")
+    if "time" in t.columns:
+        ms = ms.fillna(pd.to_numeric(t["time"], errors="coerce") * 1000)
+    t = t.assign(time_msc=ms).drop(columns=[c for c in ("time",) if c in t.columns])
+    n_no_time = int(t["time_msc"].isna().sum())
+    t = t[t["time_msc"].notna()].drop_duplicates()
     t = t[(t["bid"] > 0) & (t["ask"] > 0)]
     if t.empty:
         return None
@@ -308,7 +322,8 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
             row["p90"] = round(float(cell.quantile(0.90)), 2)
             row["p50_nonzero"] = round(float(nz.median()), 2) if nz.size else 0.0
         hours[str(h)] = row
-    return {"days": [d for d, _f in files], "n_ticks": len(t), "hours": hours,
+    return {"days": [d for d, _f in files], "n_ticks": len(t), "n_dropped_no_time": n_no_time,
+            "hours": hours,
             "n_hours_measured": sum(1 for r in hours.values() if r["status"] == "MEASURED")}
 
 

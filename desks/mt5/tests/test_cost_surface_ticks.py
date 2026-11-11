@@ -67,3 +67,25 @@ def test_atr_carries_the_bar_it_was_computed_through() -> None:
     df = pd.DataFrame({"high": 1.001, "low": 0.999, "close": 1.0}, index=idx)
     assert CS.atr_through(df) == idx[-1].isoformat()
     assert CS.atr_through(df.iloc[:0]) is None
+
+
+def test_a_null_time_msc_never_costs_the_symbol_its_hours(tmp_path: Path) -> None:
+    """2026-11-11: one null time_msc raised IntCastingNaNError for the whole symbol and 221 of
+    240 symbols read UNREADABLE. The hour now comes from `time` where it exists, and a row with
+    neither is dropped and counted."""
+    base = int(pd.Timestamp("2026-10-13", tz="UTC").timestamp() * 1000) + 2 * H
+    n = 300
+    ms = (base + np.arange(n) * 100).astype("float64")
+    ms[:40] = np.nan                                          # recoverable from `time`
+    secs = (base // 1000 + np.arange(n) // 10).astype("float64")
+    secs[:10] = np.nan                                        # 10 rows have no clock at all
+    bid = np.full(n, 1.30000)
+    df = pd.DataFrame({"time_msc": ms, "time": secs, "bid": bid, "ask": bid + 2 * POINT})
+    d = tmp_path / "EURCHF"
+    d.mkdir(parents=True)
+    df.to_parquet(d / "2026-10-13.parquet")
+    _tape(tmp_path, "EURCHF", 3, [1.0] * 250, day="2026-10-12")   # a file with no `time` column
+    prof = CS.tick_profile("EURCHF", POINT, root=tmp_path)
+    assert prof is not None and prof["n_dropped_no_time"] == 10
+    assert prof["hours"]["2"]["n_ticks"] == 290 and prof["hours"]["2"]["p50"] == 2.0
+    assert prof["hours"]["3"]["n_ticks"] == 250
