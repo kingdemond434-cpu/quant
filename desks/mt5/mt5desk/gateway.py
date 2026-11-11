@@ -55,7 +55,7 @@ from mt5desk.decision_core import (
     CLOSE_HOUR,
     GOLD_SYMBOL,
     MAX_TOTAL_REJECTIONS,
-    PROMOTED_MIN_EQUITY,
+    FUSION_RUIN_FLOOR_EUR,
     REJECTION_STREAK_WINDOW_H,
     addon_desc,
     addon_entries,
@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
     closed_trade_r,
@@ -5215,10 +5216,13 @@ def main() -> None:
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
-    if equity < PROMOTED_MIN_EQUITY:
+    # THE RUIN LINE, NOT THE OLD SIZE LINE (zuck 2026-11-05, D-20261105-042): below EUR 300 the
+    # promoted sleeves used to go dormant wholesale; each order is now judged on its own size
+    # (sovereignty, the 10% per-trade rail), so only below the ruin floor do they stand down.
+    if equity < FUSION_RUIN_FLOOR_EUR:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():
-            log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
+            log(f"equity {equity:.0f} < {FUSION_RUIN_FLOOR_EUR:.0f}: promoted sleeves dormant")
     # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
     # trade. Deferred sleeves are named in the log rather than dropped quietly.
     #
@@ -5276,6 +5280,13 @@ def main() -> None:
     # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
     # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
     _pending_legs: dict[str, float] = {}
+    # ONE ORDER PER BOOK KEY: the rows `_book_key` folds onto one allocator cell share its one
+    # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
+    # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
+    # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
+    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
+                                                    else _book_key(_s, _book))
+                                  for _s in sleeves})
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
@@ -5294,6 +5305,13 @@ def main() -> None:
             _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
             _s["book_key"] = _key
+            if str(_s["name"]) in _aliases:
+                # The cell's fraction is already sent by its carrier. Zero, still sized by the
+                # book (allocator sovereignty: a book fraction of 0 sends no order), never the
+                # base ramp a non-book row would fall back to.
+                _s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]
+                log(f"ALIAS_FOLDED {_s['name']} -> {_s['alias_of']} on book key {_key}: one "
+                    f"order per key, sized at the key's {float(_book[_key]):.5f}")
         if cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
             # forgone sleeve is a missed-growth line once per sleeve per day.
