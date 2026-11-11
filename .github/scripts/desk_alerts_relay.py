@@ -112,17 +112,34 @@ def find_issue(call: Call, repo: str) -> dict[str, Any] | None:
     return hits[0] if hits else None
 
 
-def comments(call: Call, repo: str, number: int, pages: int = 30) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    for page in range(1, pages + 1):
+#: The most comment pages one run reads (100 each): the scan is bounded whatever the issue's size.
+MAX_PAGES = 10
+
+
+def comments(call: Call, repo: str, number: int, total: int, now: datetime,
+             max_pages: int = MAX_PAGES) -> list[dict[str, Any]]:
+    """The issue's comments, NEWEST FIRST, back to the relay window (audit of #1024: reading
+    oldest-first from page 1 stopped seeing the newest markers once an issue passed the page
+    cap). The per-issue endpoint takes no sort/direction, so the pages are walked from the last
+    one (the issue's own comment count) backwards. It stops at the first page that reaches past
+    `RELAY_WINDOW_H` once a dead-man marker has been seen (the dead-man state may be older than
+    the window), and never reads more than `max_pages`. Returned in chronological order."""
+    floor = now - timedelta(hours=RELAY_WINDOW_H)
+    last = max(1, -(-int(total or 0) // 100))
+    got: list[list[dict[str, Any]]] = []
+    seen_dead = False
+    for page in range(last, max(0, last - max_pages), -1):
         st, res = call("GET", f"repos/{repo}/issues/{number}/comments?per_page=100&page={page}",
                        None)
         if st != 200 or not isinstance(res, list):
             raise RuntimeError(f"comment listing refused (http {st})")
-        out += res
-        if len(res) < 100:
+        got.append(res)
+        seen_dead = seen_dead or any(f"{MARK}:deadman:" in str(c.get("body") or "")
+                                     for c in res)
+        oldest = min((t for t in (_ts(c.get("created_at")) for c in res) if t), default=None)
+        if seen_dead and (oldest is None or oldest < floor):
             break
-    return out
+    return [c for chunk in reversed(got) for c in chunk]
 
 
 def marks(cmts: list[dict[str, Any]]) -> tuple[set[str], str | None]:
@@ -190,7 +207,9 @@ def run(call: Call, repo: str, root: Path, now: datetime | None = None) -> dict[
     if alerts is None and hb is None:
         return {"action": "NOOP", "why": "neither report is published on this ref"}
     issue = find_issue(call, repo)
-    relayed, last_dead = marks(comments(call, repo, issue["number"])) if issue else (set(), None)
+    relayed, last_dead = (marks(comments(call, repo, issue["number"],
+                                         int(issue.get("comments") or 0), now))
+                          if issue else (set(), None))
     p = plan(alerts, hb, relayed, last_dead, now)
     body = compose(p, now)
     if body is None:

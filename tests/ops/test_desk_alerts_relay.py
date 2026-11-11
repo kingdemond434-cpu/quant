@@ -27,19 +27,26 @@ class Fake:
         self.issue = {"number": 5, "title": relay.ISSUE_TITLE, "state": "open"} if issue else None
         self.cmts: list[dict[str, Any]] = []
         self.created = 0
+        self.gets: list[str] = []
 
     def __call__(self, method: str, path: str, payload: dict[str, Any] | None
                  ) -> tuple[int, Any]:
         if path.startswith("search/issues"):
+            if self.issue:
+                self.issue["comments"] = len(self.cmts)
             return 200, {"items": [self.issue] if self.issue else []}
         if method == "POST" and path == f"repos/{REPO}/issues":
             self.created += 1
             self.issue = {"number": 9, "title": relay.ISSUE_TITLE, "state": "open"}
             return 201, self.issue
         if "/comments" in path and method == "GET":
-            return 200, list(self.cmts)
+            self.gets.append(path)
+            page = int(path.rsplit("page=", 1)[1])
+            return 200, list(self.cmts[(page - 1) * 100:page * 100])
         if "/comments" in path and method == "POST":
-            self.cmts.append({"body": (payload or {})["body"]})
+            self.cmts.append({"body": (payload or {})["body"], "created_at": NOW.isoformat()})
+            assert self.issue is not None
+            self.issue["comments"] = len(self.cmts)
             return 201, {}
         return 404, None
 
@@ -131,3 +138,20 @@ def test_the_workflow_is_one_small_hourly_secret_free_job() -> None:
     assert sparse == [".github/scripts/desk_alerts_relay.py", relay.ALERTS_REL,
                       relay.HEARTBEAT_REL]
     assert job["steps"][0]["with"]["persist-credentials"] is False
+
+
+def test_a_huge_issue_is_read_newest_first_and_the_scan_stays_bounded(tmp_path: Path) -> None:
+    """Audit of #1024: past 3,000 comments an oldest-first scan never reached the newest
+    markers, so every run would relay the same transition again."""
+    f = Fake()
+    old = (NOW - timedelta(days=30)).isoformat()
+    recent = (NOW - timedelta(minutes=30)).isoformat()
+    f.cmts = [{"body": "chatter", "created_at": old} for _ in range(3400)]
+    f.cmts.insert(3300, {"body": f"<!-- {relay.MARK}:deadman:STALE -->", "created_at": old})
+    f.cmts.append({"body": f"<!-- {relay.MARK}:outbox:a1 -->", "created_at": recent})
+    _write(tmp_path, {"outbox": [_msg("a1", 0.5)]}, relay.STALE_MIN + 60)
+    r = relay.run(f, REPO, tmp_path, NOW)
+    # a1 already relayed and the box already said STALE: nothing to say
+    assert r["action"] == "QUIET", r
+    assert f.gets[0].endswith("page=35") and len(f.gets) <= relay.MAX_PAGES
+    assert f.gets == [g for g in f.gets if int(g.rsplit("page=", 1)[1]) >= 34]
