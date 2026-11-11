@@ -50,9 +50,9 @@ def current() -> list[dict[str, Any]]:
     """The shipped registry's fences, cached per process and re-read when the file's mtime (or
     its presence) changes -- so a per-cell caller does not re-parse the registry every call."""
     try:
-        key: Any = REGISTRY.stat().st_mtime_ns
+        key: Any = (str(REGISTRY), REGISTRY.stat().st_mtime_ns)
     except OSError:
-        key = "absent"
+        key = (str(REGISTRY), "absent")
     if _CACHE["fences"] is None or _CACHE["key"] != key:
         _CACHE.update({"key": key, "fences": load()})
     return list(_CACHE["fences"])
