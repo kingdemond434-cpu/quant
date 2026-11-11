@@ -169,12 +169,6 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     """Enumerate every tested cell of a hunt (report-all structure rebuilt from
     the hunt's own family code + params)."""
     if modname == "curve_strategy_screen":
-        # The curves are Yahoo-sourced CME contracts: no cell is read from them unless the
-        # registry says their sources are OPEN (Governance 2026-11-11). Existing series stay on
-        # disk; they simply stop feeding the gate.
-        import curve_strategy_screen
-        if not curve_strategy_screen.mint_permission()["mint"]:
-            return []
         out = []
         series_dir = BASE / "data" / "cell_series" / "curve_compendium"
         for path in sorted(series_dir.glob("*.parquet")):

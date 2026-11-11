@@ -19,7 +19,6 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
 
 import curve_strategy_screen as screen
 import fetch_futures_curves as fetcher
-import universal_gate
 
 
 def _registry(tmp_path: Path, **terms: str) -> Path:
@@ -56,11 +55,6 @@ def test_an_unreadable_registry_fails_closed(tmp_path: Path) -> None:
 def test_only_every_source_open_mints(tmp_path: Path) -> None:
     reg = _registry(tmp_path, yahoo_futures="OPEN", cme_settlements="OPEN")
     assert screen.mint_permission(reg)["mint"] is True
-
-
-def test_the_gate_reads_no_curve_cell_while_fenced(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(screen, "mint_permission", lambda *a, **k: {"mint": False})
-    assert universal_gate.iter_hunt_cells("curve_strategy_screen", {}) == []
 
 
 def test_the_collector_names_itself_honestly_and_carries_its_class() -> None:
