@@ -1,0 +1,48 @@
+"""The SYSTEM adopter heals the box merge gate's two admin-only jams (2026-11-11).
+
+The gate died at its own clone refresh from 23:40Z 11-10 and both remedies needed an
+administrator. These pin the narrow conditions under which the adopter now acts itself.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+PS = (ROOT / "desks/mt5/scripts/Adopt-And-Seal.ps1").read_text(encoding="utf-8")
+
+
+def _block(start: str, end: str) -> str:
+    return PS[PS.index(start) : PS.index(end)]
+
+
+HEAL = _block("0a2. THE MERGE GATE'S OWN CLONE", "0b. THE RELEASE GATE")
+REFRESH = _block("3a. THE MERGE GATE'S INSTALLED COPY", "4. the gateway reads the seal")
+
+
+def test_the_heal_runs_before_the_release_gate_so_a_held_pass_still_heals() -> None:
+    assert PS.index("0a2. THE MERGE GATE'S OWN CLONE") < PS.index("$gateScript = Join-Path")
+
+
+def test_the_clone_is_removed_only_on_three_clone_failures_with_the_mutex_free() -> None:
+    assert "[int]$beat.rc -eq 1" in HEAL and "$fails.Count -eq 3" in HEAL
+    assert "-match $cloneFail }).Count -eq 3" in HEAL
+    assert 'Global\\QuantBox-WorkflowGate' in HEAL and "WaitOne(0)" in HEAL
+    assert "ReparsePoint" in HEAL
+    # it removes the clone and nothing else
+    removes = [ln for ln in HEAL.splitlines() if "Remove-Item" in ln]
+    assert removes == [ln for ln in removes if "$gateRepo" in ln] and len(removes) == 1
+
+
+def test_the_installed_gate_follows_only_the_sealed_heads_committed_bytes() -> None:
+    assert '"show", "HEAD:$relPath"' in REFRESH and 'relPath = "ops/box/workflow_gate.ps1"' in REFRESH
+    assert "$new -ne $old" in REFRESH and "Move-Item -LiteralPath $tmpOut -Destination $dst" in REFRESH
+    # only the PROTECTED gate script; the other bin scripts stay owner-installed
+    assert "unattended_boot.ps1" not in REFRESH.split("'''")[0].replace("The other two", "")
+    assert PS.index("pure seal commit") < PS.index("3a. THE MERGE GATE'S INSTALLED COPY")
+
+
+def test_the_gate_script_it_copies_is_protected() -> None:
+    gate = (ROOT / ".github/scripts/audit_gate.py").read_text(encoding="utf-8")
+    prot = gate[gate.index("PROTECTED = (") : gate.index(")  # fmt: skip")]
+    assert '"ops/box/workflow_gate.ps1"' in prot
