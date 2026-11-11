@@ -87,6 +87,48 @@ ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disa
 #: allowlist is how "one sleeve on this instrument" is said in a way the gateway can enforce.
 DEFAULT_LIVE_SLEEVES: dict[str, frozenset[str]] = {}
 
+#: Data sources whose values are an LLM's output. A row conditioned on one of them may keep its
+#: forward-shadow clock and may hold a certificate, and may NEVER hold live capital: the standing
+#: rule is that LLMs propose only, and no LLM output reaches live sizing or a live decision
+#: without the principal's own word. This is deliberately NOT read from the policy file: lifting
+#: it is a code change carrying that word, not a JSON edit. `semantic_prob` is Lab L
+#: (`research/semantic_prob_lab.py`), the free model chain's calibrated probabilities.
+LLM_DERIVED_SOURCES: frozenset[str] = frozenset({"semantic_prob"})
+LLM_ORDER = ("standing rule: LLMs propose only -- no LLM output holds live capital without the "
+             "principal's word; the cell keeps its forward-shadow clock")
+
+
+def llm_derived(row: Mapping[str, Any]) -> str | None:
+    """The LLM-derived source this row is conditioned on, or None.
+
+    An explicit `llm_derived` flag on the row or its `params` (the family's arguments) matches;
+    so does ANY parameter value naming an LLM-derived source -- not only an
+    exogenous_conditioner's `source`, but a signal, a series id or a lake path such as
+    `data/lake/series/semantic_prob.parquet`, so a future family that reads the same series under
+    another key cannot slip past (Auditor, #997)."""
+    params = row.get("params")
+    params = params if isinstance(params, Mapping) else {}
+    for holder in (row, params):
+        if holder.get("llm_derived"):
+            return str(holder.get("source") or "llm_derived")
+    for text in _strings(params.values()):
+        low = text.lower()
+        for src in LLM_DERIVED_SOURCES:
+            if src in low:
+                return src
+    return None
+
+
+def _strings(values: Iterable[Any], depth: int = 0) -> Iterable[str]:
+    """Every string inside `values`, through nested lists, tuples and mappings (bounded)."""
+    for v in values:
+        if isinstance(v, str):
+            yield v
+        elif depth < 4 and isinstance(v, Mapping):
+            yield from _strings(list(v.keys()) + list(v.values()), depth + 1)
+        elif depth < 4 and isinstance(v, (list, tuple, set, frozenset)):
+            yield from _strings(v, depth + 1)
+
 
 @dataclass(frozen=True)
 class Policy:
@@ -156,6 +198,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     sym = str(row.get("symbol") or "").strip().upper()
     if not sym:
         return "row carries no symbol; it cannot be admitted to the live account"
+    llm = llm_derived(row)
+    if llm:
+        return f"conditioned on LLM-derived source {llm!r} -- {LLM_ORDER}"
     if "*" not in p.live_symbols and sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()

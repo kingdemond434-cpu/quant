@@ -870,6 +870,9 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # Lab L semantic probabilities (2026-11-11, hourly via the issue board): per-topic skill vs
+    # base rate, reject rate and cells minted -- counts and topic names only, no text
+    "desks/mt5/reports/SEMANTIC_PROB_LAB.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,

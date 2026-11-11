@@ -532,6 +532,8 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/LOGIN_FENCE.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
+# Lab L semantic probabilities (issue board leg semantic_prob_lab, 2026-11-11)
+!desks/mt5/reports/SEMANTIC_PROB_LAB.json
 # ...and its fail-closed marker: one box's MISMATCH verdict, read by families_vector.enabled()
 # on that box only. Box state (data/ is a STATE_PREFIX); never published, never carried across.
 desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json
