@@ -1,4 +1,5 @@
 """The three forward engines write each shadow ledger whole (Auditor condition 4, 2026-11-11)."""
+
 from __future__ import annotations
 
 import json
@@ -10,7 +11,9 @@ from pathlib import Path
 import pytest
 
 DESK = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(DESK / "research"))
+for _p in (DESK, DESK / "research"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 from atomic_ledger import write_text_atomic  # noqa: E402
 
