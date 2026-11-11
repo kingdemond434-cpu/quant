@@ -912,6 +912,139 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
+#: THE TABLE AS SHIPPED, captured at import. Only a step that is still the module's own function
+#: runs in a child process; a caller (a test) that swaps STEPS for its own callables runs them in
+#: this process, where they exist.
+_CANON_STEPS = dict(STEPS)
+
+# ONE STALLED STEP MAY NOT HOLD THE CHAIN (2026-11-11). The chain stamps after every step, so a
+# killed pass resumes at the first step it never finished -- and a step that STALLS is that step
+# every time. The hourly leg kills the chain at its 900 s budget, the stalled step is never
+# stamped, and the next hour starts it again: everything after it -- recertify, promoter, markout
+# -- never runs. Two things end that, and neither re-runs a step that finished:
+#   * A TIME LIMIT PER STEP. Each shipped step runs in its own child process under the
+#     tree-killing runner; past its limit the whole tree is killed, the step is stamped TIMEOUT,
+#     and the chain moves on. The default is above the longest step ever measured on the box
+#     (9,056 s), so it stops a hang, never a slow day.
+#   * A STALL COUNT. A step is marked in flight before it starts and cleared when it ends; one
+#     that has been started STALL_ATTEMPTS times today without ever ending (the caller was killed
+#     around it) is stamped STALLED and skipped for the day, by name, so the next pass reaches the
+#     steps behind it. `--force` or tomorrow's date runs it again.
+DEFAULT_STEP_TIMEOUT_S = 3 * 3600.0
+#: Per-step limits where one is known to be tighter than the default. Empty means the default.
+STEP_TIMEOUT_S: dict[str, float] = {}
+STALL_ATTEMPTS = 2
+
+
+def _inflight_path() -> Path:
+    """Beside the stamp, read at call time, so a redirected STAMP (tests) carries it along."""
+    return STAMP.with_name("daily_cycle_inflight.json")
+
+
+def step_timeout_s(name: str) -> float:
+    """The wall limit for one step: its own entry, else the environment's, else the default."""
+    if name in STEP_TIMEOUT_S:
+        return float(STEP_TIMEOUT_S[name])
+    try:
+        return max(60.0, float(os.environ.get("DAILY_CYCLE_STEP_TIMEOUT_S",
+                                              DEFAULT_STEP_TIMEOUT_S)))
+    except ValueError:
+        return DEFAULT_STEP_TIMEOUT_S
+
+
+def _inflight(today: str) -> dict:
+    """Today's in-flight record ({} for another day, an absent or an unreadable file)."""
+    try:
+        doc = json.loads(_inflight_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or doc.get("day") != today:
+        return {}
+    steps = doc.get("steps")
+    return steps if isinstance(steps, dict) else {}
+
+
+def _inflight_write(today: str, steps: dict) -> None:
+    try:
+        _atomic_write(_inflight_path(), json.dumps({"day": today, "steps": steps}, indent=1) + "\n")
+    except OSError as exc:
+        # The stall count is a recovery aid: without it a stalled step is retried as it was
+        # before this existed, which is a loud log line, never a silent skip.
+        dlog(f"in-flight record not written ({type(exc).__name__}: {exc})")
+
+
+def stall_attempts(today: str, name: str) -> int:
+    row = _inflight(today).get(name) or {}
+    try:
+        return int(row.get("attempts") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _inflight_start(today: str, name: str) -> None:
+    steps = _inflight(today)
+    row = dict(steps.get(name) or {})
+    row["attempts"] = stall_attempts(today, name) + 1
+    row["last_start"] = datetime.now(UTC).isoformat(timespec="seconds")
+    steps[name] = row
+    _inflight_write(today, steps)
+
+
+def _inflight_end(today: str, name: str) -> None:
+    steps = _inflight(today)
+    if name in steps:
+        steps.pop(name)
+        _inflight_write(today, steps)
+
+
+def run_step_isolated(name: str) -> dict:
+    """Run one shipped step as `daily_cycle.py --step NAME` under its wall limit.
+
+    The child runs the step through the same `run_step` (so write-or-explain is observed there,
+    once). Exit 0 is a passed step, any other exit a failed one, and a step past its limit has its
+    whole process tree killed and is recorded as TIMEOUT.
+    """
+    import subprocess
+    try:
+        from libs.ops.proctree import run as _run
+    except ImportError:                       # pragma: no cover - the repo root is on sys.path
+        _run = subprocess.run
+    limit = step_timeout_s(name)
+    started = datetime.now(UTC)
+    try:
+        r = _run([sys.executable, "-u", "-W", "ignore", str(Path(__file__).resolve()),
+                  "--step", name], timeout=limit, cwd=str(BASE), check=False)
+        out = ({"ok": True} if r.returncode == 0
+               else {"ok": False, "error": f"step exited {r.returncode} (see the step's log)"})
+    except subprocess.TimeoutExpired:
+        out = {"ok": False, "timed_out": True,
+               "error": f"TIMEOUT: past its {limit:g}s limit; its process tree was killed"}
+        dlog(f"{name}: {out['error']}")
+    except OSError as exc:
+        out = {"ok": False, "error": f"could not start the step: {type(exc).__name__}: {exc}"}
+        dlog(f"{name}: FAILED -- {out['error']}")
+    out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
+    return out
+
+
+def run_chain_step(today: str, name: str, fn) -> dict:
+    """One step of the chain: skipped by name when stalled, else bounded, with its in-flight mark."""
+    n = stall_attempts(today, name)
+    if n >= STALL_ATTEMPTS:
+        out = {"ok": False, "stalled": True, "seconds": 0.0,
+               "error": (f"STALLED: started {n} times today and never finished; skipped for the "
+                         f"day so the steps after it run (--force runs it again)")}
+        dlog(f"{name}: {out['error']}")
+        return out
+    _inflight_start(today, name)
+    if _CANON_STEPS.get(name) is fn:
+        out = run_step_isolated(name)
+    else:
+        out = run_step(name, fn)
+    _inflight_end(today, name)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     # ONE STEP ON ITS OWN CLOCK (2026-09-30). `markout` sits behind research steps this box has
@@ -1619,6 +1752,8 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     # while every hour spent its full budget re-running the same first steps. Stamping each step
     # makes a killed pass RESUME: the next hour runs only what has not run today.
     results: dict[str, dict] = {}
+    if force:
+        _inflight_write(today, {})            # --force is the explicit retry of a stalled step
     for name, fn in todo:
         if lock is not None and not lock.held:
             # RUNNING UNLOCKED (v1.2 should-fix 1). Before every step: take the lock if it is
@@ -1632,7 +1767,7 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
                     continue
             if not lock.held:
                 lock.unlocked_steps.append(name)
-        results[name] = run_step(name, fn)
+        results[name] = run_chain_step(today, name, fn)
         _write_stamp(today, {**prior, **results}, lock)
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
