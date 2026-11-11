@@ -3,7 +3,7 @@
  "running_sha": "eea4447a279913f2a33745e95646e3839bb1bc2d",
  "release_sha": "bb527d650cfa11b0f152f7915951d8d6c188b12e",
  "reason": "running eea4447a2799 is the sealed code bb527d650cfa plus seal/state commits only (1 path(s))",
- "age_h": 12.196,
+ "age_h": 13.195,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -14,7 +14,7 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-11-11T04:36:09+00:00",
+ "at": "2026-11-11T05:36:05+00:00",
  "tested_sha": "UNMEASURED",
  "tested_gates": "UNMEASURED",
  "allocator_certificate": "a230cc991a7f2dc1@2026-11-11T04:27:23.147740+00:00 proof=FAILED book=multiperiod",
