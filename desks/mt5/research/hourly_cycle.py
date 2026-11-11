@@ -1158,6 +1158,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Capacity planning and the observed verdict rate must run before every judge pass;
     # the heavy-plan rotation left its report stale while the gauntlet kept running.
     "judging_throughput",
+    # THE JUDGE'S TREND AND ITS QUEUE MODEL (hourly pass 102, ideas 630/632): two JSON reads of
+    # artifacts written above plus the rate index; report only, every hour, so it is core.
+    "judge_capacity",
     # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.
@@ -1390,7 +1393,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "blas_differential",
-                     "judging_throughput",
+                     "judging_throughput", "judge_capacity",
                      "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "attestation_remint",
@@ -2125,6 +2128,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # The judge-capacity report reads six small JSON files and the rate index (8 days of
+    # stamps); seconds. The cap is protection against a damaged file, not a budget.
+    "judge_capacity": 120,
     # Both stop themselves inside these caps (--budget-s 480 / 540) and write their artifacts:
     # a cap below an organ's own budget truncates it at the same prefix every hour.
     "gauntlet_backpressure": 600,
@@ -5531,6 +5537,11 @@ def main() -> None:
         "--sample", "300", "--rebuild", "14", "--arm-timeout-s", "330"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
+    # 7-DAY VERDICT TREND (630) AND THE FIVE-STAGE QUEUE MODEL (632). Report only: per-day
+    # first-terminal verdicts against the 150k/day floor, verdicts per sweep, and which of
+    # miners -> intake -> judge -> cert -> clock cannot keep up (6h arrival > service alarm).
+    jcp = _costed("judge_capacity", lambda: _producer(
+        "judge_capacity", "research/judge_capacity.py", "--once"))
     try:
         from research.judging_throughput import apply_env as _apply_judging_env
         _apply_judging_env()
@@ -6615,7 +6626,8 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
-                    "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
+                    "judging_throughput": jth, "judge_capacity": jcp,
+                    "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
