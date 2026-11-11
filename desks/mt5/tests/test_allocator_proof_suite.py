@@ -68,3 +68,16 @@ def test_the_leg_is_on_the_hourly_clock() -> None:
     assert '"research/allocator_proof_suite.py"' in src and '"allocator_proof_suite": aps' in src
     from libs.research import layers
     assert layers.LEG_LAYER["allocator_proof_suite"] == "portfolio"
+
+
+def test_an_exhausted_budget_skips_sections_but_keeps_attribution(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(aps, "LEDGER", tmp_path / "ledger.jsonl")
+    monkeypatch.setattr(aps, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(aps, "DATA", tmp_path)
+    monkeypatch.setattr(aps, "WALL_BUDGET_S", -1.0)
+    doc = aps.run(daily=_daily(300), alloc={"book": {"s0": 0.12}},
+                  now=datetime(2026, 11, 11, tzinfo=UTC), write=False)
+    assert "n_scored" in doc["attribution"]
+    assert set(doc["skipped_for_budget"]) == {"dro", "release", "disagreement", "no_trade_band"}
+    assert doc["no_trade_band"]["status"] == "SKIPPED_BUDGET"

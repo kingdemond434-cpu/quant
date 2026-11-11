@@ -61,6 +61,10 @@ MAX_COLUMNS = 40
 #: Columns the causal band study re-solves daily; derived from the same budget: 12 columns x 500
 #: days x 60 iterations is the largest study measured under 30 s on the build box.
 BAND_COLUMNS = 12
+#: Wall-time budget for one pass, in seconds: derived as 4 x the 30 s band study (the largest
+#: section, measured on the build box) so a pass that is 4x slower than measured stops starting
+#: new sections and says which ones it skipped, rather than eating the hourly cycle.
+WALL_BUDGET_S = 120.0
 #: Rebalance bands as fractions of total heat traded (L1). 0 is "always rebalance"; the grid
 #: doubles from 0.5% so the curve is read on a log scale.
 BAND_GRID = (0.0, 0.005, 0.01, 0.02, 0.04, 0.08, 0.16)
@@ -301,16 +305,31 @@ def run(*, write: bool = True, daily: Any = None, alloc: dict[str, Any] | None =
         cols = _columns(daily, book)
         r = daily[cols].tail(LOOKBACK_DAYS).to_numpy(float)
         r = np.nan_to_num(r, nan=0.0)
-        doc.update(
-            status="MEASURED", n_columns=len(cols),
-            dro=dro_section(r, cols, book),
-            disagreement=disagreement_section(daily, [c for c in cols if c in book] or cols[:10],
-                                              labels, current),
-            release=release_section(daily, book, cost_r, now),
-            no_trade_band=band_section(
-                np.nan_to_num(daily[cols].tail(560).to_numpy(float), nan=0.0), cols, book,
-                cost_r),
-            attribution=attribution_section(daily, book, cost_r, write))
+        doc.update(status="MEASURED", n_columns=len(cols), budget_s=WALL_BUDGET_S)
+        skipped: list[str] = []
+        band_r = np.nan_to_num(daily[cols].tail(560).to_numpy(float), nan=0.0)
+        # Cheapest first; the prospective attribution ledger always runs (it is the only section
+        # that writes forward evidence), the band study (the slowest) runs last.
+        plan: list[tuple[str, Any]] = [
+            ("attribution", lambda: attribution_section(daily, book, cost_r, write)),
+            ("dro", lambda: dro_section(r, cols, book)),
+            ("release", lambda: release_section(daily, book, cost_r, now)),
+            ("disagreement", lambda: disagreement_section(
+                daily, [c for c in cols if c in book] or cols[:10], labels, current)),
+            ("no_trade_band", lambda: band_section(band_r, cols, book, cost_r)),
+        ]
+        for name, fn in plan:
+            spent = time.monotonic() - t0
+            if name != "attribution" and spent > WALL_BUDGET_S:
+                doc[name] = {"status": "SKIPPED_BUDGET",
+                             "why": f"{spent:.0f}s spent of the {WALL_BUDGET_S:.0f}s budget"}
+                skipped.append(name)
+                continue
+            s0 = time.monotonic()
+            doc[name] = fn()
+            if isinstance(doc[name], dict):
+                doc[name]["elapsed_s"] = round(time.monotonic() - s0, 2)
+        doc["skipped_for_budget"] = skipped
         doc["n_scored"] = doc["attribution"]["n_scored"]
     doc["elapsed_s"] = round(time.monotonic() - t0, 2)
     if write:
