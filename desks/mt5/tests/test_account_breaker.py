@@ -530,6 +530,8 @@ def test_main_runs_the_breakers_before_anything_and_obeys_them() -> None:
     assert body.index("account_breaker_reconciled(") < body.index("account_breaker_new_risk()")
     assert body.index("account_breaker_pass(st)") < body.index("manage_open_positions(")
     assert body.index("gateway_paused()") < first
+    assert "account_breaker_reconciled(_rr_verdict)" in body, (
+        "only THIS pass's reconcile verdict may lift the hold; a stale OK in `st` must not")
 
 
 def test_every_trip_and_refusal_has_a_missed_growth_line() -> None:

@@ -5183,14 +5183,18 @@ def main() -> None:
     # MAGIC is read, the order door's in-doubt sends are settled against it (so a send that
     # timed out last pass and landed is never sent twice), and a position holding with no stop
     # gets its placement stop back. Never raises; an unreadable venue is recorded UNMEASURED.
+    # THIS pass's verdict only: a reconcile that raised leaves last pass's row in `st`, and an
+    # old OK must never lift the disconnect breaker's hold.
+    _rr_verdict: object = None
     try:
         st["restart_reconcile"] = _door.restart_reconcile(
             mt5, magic=MAGIC, armed=bool(st.get("armed")), intents=_recent_intents(),
             log=log)
+        _rr_verdict = (st["restart_reconcile"] or {}).get("verdict")
     except Exception as exc:
         log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); the lanes' own venue "
             f"checks still stand")
-    account_breaker_reconciled((st.get("restart_reconcile") or {}).get("verdict"))
+    account_breaker_reconciled(_rr_verdict)
 
     # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
     # before the regime filter, before the equity floor, before heat. Those gates decide whether
