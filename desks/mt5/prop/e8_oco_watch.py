@@ -50,6 +50,7 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
 
 SYMBOL = "XAUUSD"
@@ -192,7 +193,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
     except (OSError, ValueError):
         doc["e8_state_unreadable"] = True
     mine = own_legs(_journal_tail(E8_INTENTS), state, now=now)
-    entries = _oco.tradelocker_entry_orders(positions, orders)
+    entries = _xa.tradelocker_entry_orders(positions, orders)
     resting = [{"id": int(o["id"]), "side": o.get("side"), "window": mine[int(o["id"])]["window"]}
                for o in entries if o.get("id") is not None and int(o["id"]) in mine]
     entry, why = _oco.day_entry(today)

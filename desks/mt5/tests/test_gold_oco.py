@@ -1323,18 +1323,29 @@ def test_after_the_first_fill_a_mirror_lane_is_held_to_the_direction() -> None:
     assert not oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
 
 
-def test_a_fallback_lane_follows_a_mirror_fill_as_e8s_signal() -> None:
+def test_a_fallback_lane_follows_a_mirror_fill_only_once_e8s_same_leg_filled_too() -> None:
+    """Audit #959 M2: FTMO's copy filling on FTMO's quote is not E8's trade until E8's own
+    same-side leg fills; until then no fallback lane inherits the window."""
     _mirror_world()
-    entry_fill = oco.claim_fill("ftmo", ft_key(), "sell", date=DAY)
-    assert entry_fill["won"]
+    assert oco.claim_fill("ftmo", ft_key(), "sell", date=DAY)["won"]
     entry, _ = oco.day_entry(DAY)
-    assert oco.leader_set(entry)
-    _flat("e8", e8_key())
+    _flat("e8", e8_key(), orders=[{"id": 2, "side": "sell"}])          # E8's leg still rests
+    assert not oco.leader_set(entry, date=DAY)
+    v = oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY)
+    assert not v.allowed and "copies only a fill of E8" in v.why
+    # A short E8 carried from another day is not today's fill either.
+    _flat("e8", e8_key(), positions=[{"id": 3, "side": "short", "opened_date": "2026-10-20"}])
+    assert not oco.leader_set(entry, date=DAY)
+    # E8's sell leg fills today: now the window is E8's, and Fusion follows it.
+    _flat("e8", e8_key(), positions=[{"id": 4, "side": "short", "opened_date": DAY}])
+    assert oco.leader_set(entry, date=DAY)
     assert oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY).allowed
-    # A fill of a lane in full OCO mode is NOT E8's bracket: fallback still refuses it.
+    # An unreadable E8 state is not a confirmation.
+    assert not oco.leader_set(entry, leader=None, date=DAY)
+    # A fill of a lane in full OCO mode is NOT E8's bracket, E8 filled or not.
     _mirror_world(ftmo="oco")
-    _flat("e8", e8_key())
-    assert not oco.leader_set(entry)
+    _flat("e8", e8_key(), positions=[{"id": 4, "side": "short", "opened_date": DAY}])
+    assert not oco.leader_set(entry, date=DAY)
     v = oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY)
     assert not v.allowed and "copies only a fill of E8" in v.why
 

@@ -1426,3 +1426,88 @@ def test_e8_bracket_reads_only_confirmed_live_legs_inside_the_ttl() -> None:
     assert list(legs or {}) == ["long"]
     assert ff.e8_bracket(None, door_rows, now=NOW)[0] is None
     assert ff.e8_bracket(intents, None, now=NOW)[0] is None
+
+
+def test_no_copy_rests_on_a_side_already_reached_on_ftmos_quote(mirror) -> None:
+    """Audit #959 M1: FTMO never rests a leg whose level its own quote has already reached."""
+    for bid, ask in ((4299.8, 4300.0), (4340.0, 4340.2)):     # at the sell level; at the buy
+        mt5 = _MT5(bid=bid, ask=ask)
+        doc = _pass(mt5)
+        assert mt5.sent == [] and "crossed" in doc["mirror"]["placed"]
+
+
+def test_a_copy_that_filled_first_is_not_followed_until_e8_fills_too(mirror) -> None:
+    """Audit #959 M2, on the follow path: FTMO's own copy setting the day is no E8 signal."""
+    assert oco.claim_fill("ftmo", oco.oco_account_key(FT_LOGIN, FT_SERVER), "buy",
+                          date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")     # E8 report: position 777
+    entry, _ = oco.day_entry(DAY)
+    e8_lane, why = oco.read_lane("e8")
+    action, _sig, fwhy = ff.follow_decision(json.loads(mirror.report.read_text("utf-8")), entry,
+                                            None, e8_lane, why, today=DAY, now=NOW)
+    assert action == "wait" and "direction" in fwhy               # E8's lane holds no fill
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    e8_lane, why = oco.read_lane("e8")
+    action, _sig, _ = ff.follow_decision(json.loads(mirror.report.read_text("utf-8")), entry,
+                                         None, e8_lane, why, today=DAY, now=NOW)
+    assert action == "follow"
+
+
+def _lag_rows() -> list[dict]:
+    return [r for r in _rows() if r.get("rail") == ff.MIRROR_LAG_RAIL]
+
+
+def test_a_copy_resting_after_e8_filled_bills_its_lag_unfilled(mirror) -> None:
+    """Audit #959 S1: the minutes a copy rests unfilled after E8's same-side fill are billed;
+    a copy that never fills bills its whole risk."""
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert list(doc["mirror"]["lag"].values()) == [(NOW + timedelta(minutes=1)).isoformat(
+        timespec="seconds")]
+    assert _lag_rows() == []                                       # still open: nothing yet
+    _e8_cancels(E8_BUY)                                            # E8 is done with its leg
+    _pass(mt5, now=NOW + timedelta(minutes=8))
+    (row,) = _lag_rows()
+    assert row["reason"] == "mirror_unfilled_after_e8_fill" and row["lag_minutes"] == 7.0
+    assert row["status"] == "RAIL_BLOCKED" and row["missed_growth_risk_usd"] == pytest.approx(
+        0.45 * 20 * 100)                                           # the copy's whole risk
+
+
+def test_a_copy_that_fills_late_bills_the_minutes_not_the_risk(mirror) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    mirror.report.write_text(json.dumps(_e8_report()), "utf-8")
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    (buy,) = [o for o in mt5.orders if o.type == mt5.ORDER_TYPE_BUY_STOP]
+    mt5.orders.remove(buy)
+    mt5.positions.append(SimpleNamespace(ticket=9600, symbol="XAUUSD", type=0, magic=ff.MAGIC,
+                                         volume=0.45, time=TICK, price_open=4340.0, sl=4320.0,
+                                         tp=4380.0))
+    _pass(mt5, now=NOW + timedelta(minutes=3))
+    (row,) = _lag_rows()
+    assert row["reason"] == "mirror_filled_late" and row["lag_minutes"] == 2.0
+    assert row["missed_growth_risk_usd"] == 0.0
+
+
+def test_missed_growth_publishes_the_mirror_lag_line(mirror, monkeypatch) -> None:
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "FTMO_INTENTS", Path(ff.INTENTS))
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.publish_lane("e8", mirror.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                      "opened_date": DAY}], orders=[], date=DAY)
+    assert oco.claim_fill("e8", mirror.e8_key, "buy", date=DAY)["won"]
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    _e8_cancels(E8_BUY)
+    _pass(mt5, now=NOW + timedelta(minutes=4))
+    line = mg.published_ftmo_follower_lines()["rails"][ff.MIRROR_LAG_RAIL]
+    assert line["n"] == 1 and line["undeployed_risk_usd"] == pytest.approx(900.0)
