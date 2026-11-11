@@ -385,3 +385,79 @@ def test_every_series_records_when_it_became_knowable() -> None:
     assert lags == {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8, "WALCL": 2, "WTREGEN": 2,
                     "T10Y2Y": 1, "T10YIE": 1}
     assert doc["knowable_lag_days"] == lags and "business" in doc["knowable_lag_basis"]
+
+
+# ------------------------------------------------- vintage key and symbol mapping (#761, #904)
+_UNIVERSE = {
+    "EURUSD": {"asset_class": "Forex", "currency_profit": "USD"},
+    "USDJPY": {"asset_class": "Forex", "currency_profit": "JPY"},
+    "EURGBP": {"asset_class": "Forex", "currency_profit": "GBP"},
+    "XAUUSD": {"asset_class": "Commodities", "currency_profit": "USD"},
+    "XAUEUR": {"asset_class": "Commodities", "currency_profit": "EUR"},
+    "US500": {"asset_class": "Indices", "currency_profit": "USD"},
+    "GER40": {"asset_class": "Indices", "currency_profit": "EUR"},
+    "AAPL": {"asset_class": "Equities", "currency_profit": "USD"},
+    "BTCUSD": {"asset_class": "Crypto", "currency_profit": "USD"},
+}
+
+
+def test_macro_symbols_resolve_by_class_and_currency_never_equities() -> None:
+    assert AI.macro_symbols("USD", _UNIVERSE) == ["EURUSD", "US500", "USDJPY", "XAUUSD"]
+    assert AI.macro_symbols("EUR", _UNIVERSE) == ["EURGBP", "EURUSD", "GER40", "XAUEUR"]
+
+
+def test_walcl_and_wtregen_are_first_release_with_their_publication_dates() -> None:
+    def api(sid: str) -> str:
+        obs = [{"date": d, "value": v, "realtime_start": "2026-11-05"} for d, v in GOOD[sid]]
+        return json.dumps({"observations": obs})
+
+    f = Fetch(api=api)
+    doc = AI.ingest_fred(fetch=f, key=KEY, universe=_UNIVERSE)
+    for sid in ("WALCL", "WTREGEN"):
+        url = next(u for u in f.calls if f"series_id={sid}&" in u)
+        assert "output_type=4" in url and "realtime_start=1776-07-04" in url
+        assert doc["series"][sid]["vintage"] == "first_release"
+        assert doc["series"][sid]["points"][0]["k"] == "2026-11-05"
+    dgs = next(u for u in f.calls if "series_id=DGS10&" in u)
+    assert "output_type" not in dgs
+    assert doc["vintage"]["DGS10"] == "vintage_stable"
+    assert doc["series"]["T10Y2Y"]["vintage"] == "vintage_stable"
+    assert doc["n_symbols"] == 4 and "XAUUSD" in doc["series"]["WALCL"]["applies_to"]
+    assert KEY not in json.dumps(doc)
+
+
+def test_the_keyless_fallback_never_claims_a_first_release() -> None:
+    def graph(sid: str) -> str:
+        return "observation_date," + sid + "\n" + "\n".join(f"{d},{v}" for d, v in GOOD[sid])
+
+    doc = AI.ingest_fred(fetch=Fetch(graph=graph), key=None, universe=_UNIVERSE)
+    assert doc["series"]["WALCL"]["vintage"] == "current"
+    assert "k" not in doc["series"]["WALCL"]["points"][0]
+
+
+def test_the_ecb_axis_maps_to_eur_symbols() -> None:
+    import urllib.request as UR
+
+    body = b"TIME_PERIOD,OBS_VALUE\n2026-11-03,1.08\n"
+
+    class R(io.BytesIO):
+        def __enter__(self) -> R:
+            return self
+
+        def __exit__(self, *a: object) -> None:
+            return None
+
+    orig = UR.urlopen
+    UR.urlopen = lambda *a, **k: R(body)  # type: ignore[assignment]
+    try:
+        doc = AI.ingest_ecb(universe=_UNIVERSE)
+    finally:
+        UR.urlopen = orig  # type: ignore[assignment]
+    assert doc["n_series"] == 3 and doc["n_symbols"] == 4
+    assert all(s["vintage"] == "vintage_stable" for s in doc["series"].values())
+
+
+def test_the_manifest_matches_the_box_s_two_hour_ingest_clock() -> None:
+    text = (_DESK / "ops" / "box_tasks.manifest").read_text(encoding="utf-8")
+    line = next(ln for ln in text.splitlines() if 'name="MT5-AxisIngest"' in ln)
+    assert 'trigger="every 2 hours at :40"' in line

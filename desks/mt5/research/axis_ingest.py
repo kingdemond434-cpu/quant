@@ -512,9 +512,27 @@ def _http_error_detail(exc: BaseException) -> str:
         return ""
 
 
-def _fred_api_points(sid: str, key: str, fetch=None) -> list[tuple[str, float]]:
+#: SERIES WHOSE FIRST PRINT IS WHAT A BACKTEST MAY SEE. For these the keyed route asks ALFRED for
+#: `output_type=4` (initial release only) over the whole real-time span, so every point is the value
+#: as FIRST published and carries `k`, the date it was first published (its ALFRED realtime_start).
+#: World sensor's net_liquidity (WALCL - WTREGEN) reads this key and stays parked without it.
+#: The keyless fredgraph fallback serves the CURRENT vintage only, so a series that falls back is
+#: stamped `vintage: "current"`, never "first_release" -- the stamp says what was fetched.
+FRED_FIRST_RELEASE = frozenset({"WALCL", "WTREGEN"})
+ALFRED_REALTIME = {"realtime_start": "1776-07-04", "realtime_end": "9999-12-31"}
+
+#: Daily market series (H.15 yields, H.10 dollar) are not revised after publication, so the current
+#: vintage IS the first print: `vintage_stable`. Anything not named here or above is `current`.
+FRED_VINTAGE_STABLE = frozenset({"DGS10", "DGS2", "DFII10", "DTWEXBGS"})
+
+
+def _fred_api_points(sid: str, key: str, fetch=None, first_release: bool = False,
+                     known: dict[str, str] | None = None) -> list[tuple[str, float]]:
     import urllib.parse
-    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json"})
+    params = {"series_id": sid, "api_key": key, "file_type": "json"}
+    if first_release:
+        params.update(output_type="4", **ALFRED_REALTIME)
+    q = urllib.parse.urlencode(params)
     text = (fetch or _fred_fetch)(f"{FRED_API_URL}?{q}")
     doc = json.loads(text)
     out = []
@@ -523,10 +541,48 @@ def _fred_api_points(sid: str, key: str, fetch=None) -> list[tuple[str, float]]:
         if v in (None, "", "."):                  # FRED encodes a missing print as "."
             continue
         try:
-            out.append((str(o["date"])[:10], float(v)))
+            d = str(o["date"])[:10]
+            out.append((d, float(v)))
         except (KeyError, TypeError, ValueError):
             continue
+        if first_release and known is not None and o.get("realtime_start"):
+            known[d] = str(o["realtime_start"])[:10]
     return sorted(out)
+
+
+def _fred_vintage(sid: str, route: str) -> str:
+    if sid in FRED_FIRST_RELEASE:
+        return "first_release" if route == "api" else "current"
+    return "vintage_stable" if sid in FRED_VINTAGE_STABLE else "current"
+
+
+#: WHICH MT5 SYMBOLS A MACRO STATE SERIES CONDITIONS. Resolved against MetaTrader's own registry
+#: (`data/universe/universe.json`) by asset class and currency, never a hand list: an FX pair whose
+#: base or quote is the series' currency, and an index, bond, metal or energy CFD whose profit
+#: currency is it. Single-name equities are excluded by the two-lane law (no statistical features)
+#: and crypto CFDs are left to their own lane. Before this the FRED and ECB axes published no
+#: `symbols` at all, so every census read them as conditioning 0 MT5 symbols.
+UNIVERSE_PATH = DESK / "data" / "universe" / "universe.json"
+_FX_CLASSES = {"Forex", "Forex Exotics"}
+_CCY_CLASSES = {"Indices", "Bonds", "Commodities", "Energy"}
+
+
+def macro_symbols(currency: str, universe: dict | None = None) -> list[str]:
+    if universe is None:
+        try:
+            universe = json.loads(UNIVERSE_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+    out = []
+    for sym, row in (universe or {}).items():
+        if not isinstance(row, dict):
+            continue
+        cls = row.get("asset_class")
+        name = str(row.get("symbol") or sym)
+        fx = cls in _FX_CLASSES and currency in (name[:3], name[3:6])
+        if fx or (cls in _CCY_CLASSES and row.get("currency_profit") == currency):
+            out.append(name)
+    return sorted(set(out))
 
 
 def _fred_csv_points(sid: str, fetch=None) -> list[tuple[str, float]]:
@@ -546,7 +602,8 @@ def _series_doc(what: str, pts: list[tuple[str, float]], **extra) -> dict:
             "points": [{"d": d, "v": v} for d, v in pts]}
 
 
-def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
+def ingest_fred(fetch=None, key: str | None | bool = True,
+                universe: dict | None = None) -> dict:
     """US rates, the dollar and the two spreads built from them -- the macro STATE series.
 
     EVERY SERIES ENDS IN EXACTLY ONE OF `series` OR `failed`. The old loop dropped a series that
@@ -565,6 +622,7 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
     series, failed, state = {}, {}, {}
     transport: dict[str, str] = {}
     rate_limited = False
+    usd_syms = macro_symbols("USD", universe)
     for sid, what in FRED_SERIES.items():
         if rate_limited:
             failed[sid] = "RATE_LIMITED: an earlier request this pass got HTTP 429; not asked"
@@ -572,7 +630,10 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
             continue
         reasons = []
         pts: list[tuple[str, float]] = []
-        routes = ([("api", lambda s=sid: _fred_api_points(s, api_key, fetch))] if api_key
+        known: dict[str, str] = {}
+        first = sid in FRED_FIRST_RELEASE
+        routes = ([("api", lambda s=sid, f=first, k=known: _fred_api_points(
+                       s, api_key, fetch, first_release=f, known=k))] if api_key
                   else []) + [("fredgraph", lambda s=sid: _fred_csv_points(s, fetch))]
         if not api_key:
             reasons.append("NEEDS_KEY: no FRED_API_KEY and no data/secrets/fred.json")
@@ -599,8 +660,14 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
                     transport[sid] = route
                 break
         if pts:
+            vintage = _fred_vintage(sid, transport[sid])
             series[sid] = _series_doc(what, pts, transport=transport[sid],
-                                      knowable_lag_days=_fred_lag(sid))
+                                      knowable_lag_days=_fred_lag(sid), vintage=vintage,
+                                      applies_to=usd_syms)
+            if vintage == "first_release" and known:
+                for p in series[sid]["points"]:
+                    if p["d"] in known:
+                        p["k"] = known[p["d"]]
             state[sid] = "OK"
         else:
             failed[sid] = "; ".join(reasons)[:400]
@@ -621,8 +688,11 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
             failed[sid] = f"EMPTY: {a} and {b} share no date"
             state[sid] = "EMPTY"
             continue
+        legs = {la.get("vintage"), lb.get("vintage")}
         series[sid] = _series_doc(what, pts, derived_from=[a, b],
-                                  knowable_lag_days=_fred_lag(sid))
+                                  knowable_lag_days=_fred_lag(sid),
+                                  vintage=(legs.pop() if len(legs) == 1 else "current"),
+                                  applies_to=usd_syms)
         state[sid] = "OK"
 
     return {"axis": "macro_state", "id": "fred_series",
@@ -636,15 +706,20 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
             "transport": transport,
             "ideas_only": {sid: {"terms": why, "missed_growth": FRED_IDEAS_ONLY_MISSED_GROWTH}
                            for sid, why in FRED_IDEAS_ONLY.items()},
-            "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
-                             "or national-accounts series is in this list on purpose."),
+            "vintage": {sid: d.get("vintage") for sid, d in series.items()},
+            "vintage_note": ("Per-series `vintage`: first_release = ALFRED initial print (each "
+                             "point's `k` is the date it was first published); vintage_stable = "
+                             "not revised after publication; current = today's vintage only."),
+            "symbols": usd_syms, "n_symbols": len(usd_syms),
+            "symbols_rule": "USD: FX legs + USD-profit indices/bonds/metals/energy (universe.json)",
             "shape": "series[sid].points -- one dated state variable each",
             "series": series}
 
 
-def ingest_ecb():
+def ingest_ecb(universe: dict | None = None):
     """Euro-area reference rates and the AAA curve -- the state the EUR crosses condition on."""
     series, failed = {}, {}
+    eur_syms = macro_symbols("EUR", universe)
     for name, (flow, key, what) in ECB_SERIES.items():
         try:
             url = ECB_URL.format(flow=flow, key=key, n=4000)
@@ -653,7 +728,8 @@ def ingest_ecb():
                 text = r.read().decode("utf-8", "replace")
             pts = _csv_series(text, "TIME_PERIOD", "OBS_VALUE")
             if pts:
-                series[name] = _series_doc(what, pts)
+                series[name] = _series_doc(what, pts, vintage="vintage_stable",
+                                           applies_to=eur_syms)
             else:
                 # The same silent hole FRED had: a clean fetch that parses to nothing is a
                 # failure with a reason, never a series quietly missing from the list.
@@ -667,6 +743,8 @@ def ingest_ecb():
             "n_series": len(series), "n_failed": len(failed), "failed": failed,
             "series_state": state,
             "vintage_note": "SDMX carries the vintage; these are published and not revised.",
+            "symbols": eur_syms, "n_symbols": len(eur_syms),
+            "symbols_rule": "EUR: FX legs + EUR-profit indices/bonds/metals/energy (universe.json)",
             "shape": "series[name].points -- one dated state variable each",
             "series": series}
 
