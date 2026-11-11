@@ -525,6 +525,7 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/PRODUCER_YIELD.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
+!desks/mt5/reports/FORWARD_ENROLMENT_SUMMARY.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW_SUMMARY.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json

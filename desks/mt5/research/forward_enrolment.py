@@ -510,6 +510,7 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         tmp = OUT.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
         os.replace(tmp, OUT)
+        _write_summary(payload)
         try:
             from libs.ops.events import leg_events
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],
@@ -519,6 +520,50 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
     return payload
+
+
+#: The box sync skips any report over 4 MB (`$ReportCapBytes`, sync_shadow_to_git.ps1), and this
+#: artifact reached 14.37 MB on 11-10: 101 "SKIP report" lines in a day, so origin kept a copy
+#: from 11-06 and every off-box reader judged a stale enrolment. The summary keeps every scalar
+#: and every count, and the first rows of each list, under a budget the sync publishes.
+SUMMARY_BUDGET_BYTES = 3_000_000
+SUMMARY_ROWS = 400
+
+
+def summarise(payload: dict[str, Any], rows: int = SUMMARY_ROWS) -> dict[str, Any]:
+    """Every key of the full artifact survives: scalars and small values as they are, a long list
+    as its length plus its first `rows` entries, a large dict as its size plus its first `rows`
+    items. Nothing is dropped silently -- a cut value says it was cut and how big it was."""
+    out: dict[str, Any] = {"summary_of": "desks/mt5/reports/FORWARD_ENROLMENT.json",
+                           "rows_per_list": rows}
+    for key, value in payload.items():
+        if isinstance(value, list) and len(value) > rows:
+            out[key] = {"truncated": True, "n": len(value), "head": value[:rows]}
+        elif isinstance(value, dict) and len(value) > rows:
+            out[key] = {"truncated": True, "n": len(value),
+                        "head": dict(list(value.items())[:rows])}
+        else:
+            out[key] = value
+    return out
+
+
+def _write_summary(payload: dict[str, Any]) -> None:
+    rows = SUMMARY_ROWS
+    text = json.dumps(summarise(payload, rows), indent=1, default=str)
+    while len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES and rows > 10:
+        rows //= 2
+        text = json.dumps(summarise(payload, rows), indent=1, default=str)
+    # Beside OUT, read at call time, so a redirected OUT (tests, a farm pass) never writes a
+    # summary into the real reports directory.
+    summary = OUT.with_name(OUT.stem + "_SUMMARY.json")
+    tmp = summary.with_name(summary.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    try:
+        os.replace(tmp, summary)
+    except OSError as exc:
+        # Windows refuses the replace while the sync holds the summary open; the full artifact
+        # is already written and the next pass republishes the summary.
+        payload["summary"] = f"UNMEASURED this pass: {type(exc).__name__}: {exc}"
 
 
 def render(payload: dict[str, Any]) -> str:

@@ -186,3 +186,23 @@ def test_the_repair_sweep_defers_rather_than_overrunning_the_leg_budget() -> Non
 def test_a_missing_engine_is_unmeasured_not_a_crash(tmp_path) -> None:
     out = fe.repair([{"key": "X"}], deadline=1e9, engine=tmp_path / "nope.py")
     assert out["status"] == UNMEASURED
+
+
+def test_the_summary_fits_the_sync_cap_and_keeps_every_key_and_count(tmp_path,
+                                                                     monkeypatch) -> None:
+    """The full artifact reached 14.37 MB on the box and the sync skips reports over 4 MB, so
+    origin kept an 11-06 copy. The summary beside it must fit and say what it cut."""
+    out = tmp_path / "FORWARD_ENROLMENT.json"
+    monkeypatch.setattr(fe, "OUT", out)
+    payload = {"n_certificates": 9000, "n_enrolled": 8000, "status": "MEASURED",
+               "certificates": [{"certificate": f"c{i}", "why": "x" * 2000} for i in range(9000)],
+               "blocked": {f"k{i}": i for i in range(1000)}, "notes": ["a", "b"]}
+    fe._write_summary(payload)
+    summary = tmp_path / "FORWARD_ENROLMENT_SUMMARY.json"
+    assert summary.exists() and summary.stat().st_size < fe.SUMMARY_BUDGET_BYTES
+    s = json.loads(summary.read_text())
+    assert set(payload) <= set(s)
+    assert s["n_certificates"] == 9000 and s["notes"] == ["a", "b"]
+    assert s["certificates"]["truncated"] is True and s["certificates"]["n"] == 9000
+    assert s["blocked"]["n"] == 1000 and len(s["blocked"]["head"]) <= fe.SUMMARY_ROWS
+    assert not list(tmp_path.glob("*.tmp"))
