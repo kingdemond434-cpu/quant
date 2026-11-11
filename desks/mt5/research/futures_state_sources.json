@@ -1422,6 +1422,100 @@
      "USDSGD"
     ]
    }
+  },
+  {
+   "id": "usrel",
+   "mode": "first_release",
+   "window": 36,
+   "note": "US scheduled releases as FIRST printed (ALFRED initial-release view), stamped at the New York release time. shock_z scores each first-print change against earlier releases only; consensus surprise is joined forward-only from the calendar vintages",
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "USDX",
+    "UST10Y",
+    "US500",
+    "NAS100"
+   ],
+   "releases": [
+    {
+     "series": "PAYEMS",
+     "at": "08:30",
+     "transform": "diff",
+     "why": "nonfarm payrolls: the largest scheduled USD and gold mover",
+     "weekdays": [
+      3,
+      4
+     ],
+     "title": "Non-Farm Employment Change"
+    },
+    {
+     "series": "UNRATE",
+     "at": "08:30",
+     "transform": "diff",
+     "why": "unemployment rate, released with payrolls",
+     "weekdays": [
+      3,
+      4
+     ],
+     "title": "Unemployment Rate"
+    },
+    {
+     "series": "CPIAUCSL",
+     "at": "08:30",
+     "transform": "logdiff",
+     "why": "headline CPI m/m",
+     "title": "CPI m/m"
+    },
+    {
+     "series": "CPILFESL",
+     "at": "08:30",
+     "transform": "logdiff",
+     "why": "core CPI m/m, the Fed's reaction input",
+     "title": "Core CPI m/m"
+    },
+    {
+     "series": "ICSA",
+     "at": "08:30",
+     "transform": "diff",
+     "why": "weekly initial jobless claims",
+     "weekdays": [
+      2,
+      3
+     ],
+     "title": "Unemployment Claims"
+    },
+    {
+     "series": "RSAFS",
+     "at": "08:30",
+     "transform": "logdiff",
+     "why": "advance retail sales",
+     "title": "Retail Sales m/m"
+    },
+    {
+     "series": "PCEPILFE",
+     "at": "08:30",
+     "transform": "logdiff",
+     "why": "core PCE price index",
+     "title": "Core PCE Price Index m/m"
+    },
+    {
+     "series": "INDPRO",
+     "at": "09:15",
+     "transform": "logdiff",
+     "why": "industrial production",
+     "title": "Industrial Production m/m"
+    },
+    {
+     "series": "JTSJOL",
+     "at": "10:00",
+     "transform": "diff",
+     "why": "JOLTS job openings",
+     "title": "JOLTS Job Openings"
+    }
+   ]
   }
  ],
  "cftc_release_calendar": {
