@@ -97,15 +97,35 @@ def test_changes_inside_the_gap_are_coalesced_not_dropped(tmp_path: Path) -> Non
     assert len(r.posts) == 2 and "`watchdog`" in r.posts[1] and d["told"] == ["disk", "watchdog"]
 
 
-def test_digest_at_most_daily_while_red(tmp_path: Path) -> None:
+def test_a_standing_red_never_reposts_and_the_digest_lives_in_the_artifact(
+        tmp_path: Path) -> None:
     r = Route()
     for m in (0, 5):
         _run(tmp_path, _reading("disk"), T0 + timedelta(minutes=m), r, [])
-    _run(tmp_path, _reading("disk"), T0 + timedelta(hours=23), r, [])
+    d1 = _run(tmp_path, _reading("disk"), T0 + timedelta(hours=23), r, [])
+    d2 = _run(tmp_path, _reading("disk"), T0 + timedelta(hours=24, minutes=6), r, [])
+    for h in range(25, 80, 5):
+        _run(tmp_path, _reading("disk"), T0 + timedelta(hours=h), r, [])
+    assert len(r.posts) == 1                       # transitions only, never a digest comment
+    assert d1["digest"]["at"] == (T0 + timedelta(minutes=0)).isoformat(timespec="seconds")
+    assert d2["digest"]["at"] == (T0 + timedelta(hours=24, minutes=6)).isoformat(
+        timespec="seconds")
+    assert d2["digest"]["still_red"] == [{"key": "disk", "since": d2["active"]["disk"]["since"]}]
+
+
+def test_only_allowlisted_scalar_fields_reach_the_public_issue(tmp_path: Path) -> None:
+    check = {"fail": True, "age_min": 91.5, "max_min": 30, "free_gb": 3.2, "min_gb": 5.0,
+             "fence": "RED", "account": "12345", "path": "C:/x", "rc": "boom",
+             "age_list": [1, 2], "at": "2026-11-11"}
+    assert da.public_detail(check) == {"age_min": 91.5, "max_min": 30, "free_gb": 3.2,
+                                       "min_gb": 5.0, "fence": "RED"}
+    r = Route()
+    reading = {"checks": {"disk": check}, "failing": ["disk"], "verdict": "FAIL"}
+    for m in (0, 5):
+        _run(tmp_path, reading, T0 + timedelta(minutes=m), r, [])
     assert len(r.posts) == 1
-    _run(tmp_path, _reading("disk"), T0 + timedelta(hours=24, minutes=6), r, [])
-    _run(tmp_path, _reading("disk"), T0 + timedelta(hours=24, minutes=40), r, [])
-    assert len(r.posts) == 2 and r.posts[1].startswith("**Daily digest")
+    for leak in ("12345", "C:/x", "boom"):
+        assert leak not in r.posts[0]
 
 
 def test_a_new_silent_organ_posts_at_once_and_clears_only_when_the_census_drops_it(

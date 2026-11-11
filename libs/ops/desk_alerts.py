@@ -20,8 +20,8 @@ pre-existing on the box:
 The optional channels stay optional: when `alert_channels.json` holds armed channels, every
 comment is also sent there through `send_all`. Their absence is recorded, never fatal.
 
-DEDUPE: TRANSITIONS ONLY, A DIGEST AT MOST DAILY. A pager that nags gets muted, and a muted pager
-is no pager. Each failing check (and each NEW silent organ, by name) is a key:
+DEDUPE: TRANSITIONS ONLY; THE DIGEST STAYS IN THE ARTIFACT. A pager that nags gets muted, and a
+muted pager is no pager. Each failing check (and each NEW silent organ, by name) is a key:
 
   * a key turns RED after `CONFIRM_FAIL` consecutive failing heartbeats (5 minutes apart), so a
     reading that flickers once never posts; a silent organ is already a confirmed hourly census
@@ -32,7 +32,11 @@ is no pager. Each failing check (and each NEW silent organ, by name) is a key:
   * a comment is posted only when the RED set differs from the set the issue was last told, and
     never sooner than `MIN_GAP_MIN` after the previous comment -- changes inside the gap are
     COALESCED into the next one, never dropped;
-  * while anything stays RED, one digest per `DIGEST_EVERY_H` hours; when all is clear, silence.
+  * a key that stays RED posts nothing more: the still-RED digest is refreshed in the artifact
+    (`digest`) at most once per `DIGEST_EVERY_H` hours and never posted (audit of #1002).
+
+ONLY ALLOWLISTED FIELDS REACH THE ISSUE (`public_detail`): ages, limits, free space and the
+fence word, as scalars. Any other field a check carries stays on the box.
 
 A failed delivery leaves the told set unchanged, so the transition is retried (no sooner than
 `MIN_GAP_MIN`) rather than lost.
@@ -207,8 +211,8 @@ def default_routes() -> list[tuple[str, Transport]]:
 # ------------------------------------------------------------------ the issue
 def _issue_body() -> str:
     return (f"@{OWNER} this issue is the desk's alarm. The trading box comments here when a "
-            "health check turns RED or recovers, and at most once a day while something stays "
-            "RED. Nothing else posts here.\n\n"
+            "health check turns RED or recovers, and at no other time. Nothing else posts "
+            "here.\n\n"
             "Source: `desks/mt5/scripts/box_heartbeat.py` (every 5 minutes) through "
             "`libs/ops/desk_alerts.py`; state in `desks/mt5/reports/DESK_ALERTS.json`.\n"
             "To quieten it, fix the check; to stop notifications, unsubscribe from this issue.")
@@ -281,9 +285,28 @@ def alert_keys(reading: dict[str, Any]) -> dict[str, str]:
                 for n in new:
                     keys[f"silent:{n}"] = "organ went silent (N14 census)"
                 continue
-        detail = {a: b for a, b in c.items() if a not in ("fail", "new_silent")}
+        detail = public_detail(c)
         keys[k] = json.dumps(detail, separators=(",", ":"), default=str)[:240]
     return keys
+
+
+#: THE ONLY CHECK FIELDS THAT MAY REACH THE PUBLIC ISSUE (audit of #1002). An allowlist, not a
+#: denylist: a field added to a check tomorrow stays off the issue until it is named here.
+PUBLIC_EXACT = frozenset({"free_gb", "min_gb", "floor", "floor_gb", "fence"})
+PUBLIC_PREFIX = ("age_", "max_")
+
+
+def public_detail(check: dict[str, Any]) -> dict[str, Any]:
+    """Allowlisted, scalar fields of one check: numbers, booleans and the fence's short word."""
+    out: dict[str, Any] = {}
+    for a, b in check.items():
+        if not (a in PUBLIC_EXACT or a.startswith(PUBLIC_PREFIX)):
+            continue
+        scalar = b is None or isinstance(b, bool | int | float)
+        word = a == "fence" and isinstance(b, str) and b.isalpha() and len(b) <= 12
+        if scalar or word:
+            out[a] = b
+    return out
 
 
 def silent_now(path: Path = SILENT_ORGANS) -> set[str] | None:
@@ -334,8 +357,7 @@ def compose(kind: str, active: dict[str, dict[str, Any]], told: set[str], now: d
     new = sorted(set(active) - told)
     gone = sorted(told - set(active))
     still = sorted(set(active) & told)
-    head = {"RED": "RED", "RECOVERED": "RECOVERED", "ALL_CLEAR": "ALL CLEAR",
-            "DIGEST": "Daily digest, still RED"}[kind]
+    head = {"RED": "RED", "RECOVERED": "RECOVERED", "ALL_CLEAR": "ALL CLEAR"}[kind]
     lines = [f"**{head}** -- MT5 box, {now.strftime('%Y-%m-%d %H:%M')} UTC", ""]
     if new:
         lines.append("New:")
@@ -344,12 +366,12 @@ def compose(kind: str, active: dict[str, dict[str, Any]], told: set[str], now: d
         lines.append("Recovered:")
         lines += [f"- `{k}`" for k in gone]
     if still:
-        lines.append("Still RED:" if kind != "DIGEST" else "RED:")
+        lines.append("Still RED:")
         lines += [f"- `{k}` since {active[k].get('since')}" for k in still]
     ping = (reading.get("ping") or {}).get("status")
     lines += ["", f"<sub>box_heartbeat verdict {reading.get('verdict')}, outside ping {ping}. "
-                  f"Transitions only (confirmed {CONFIRM_FAIL} beats RED / {CONFIRM_OK} clean), "
-                  f"at most one digest per {DIGEST_EVERY_H:.0f}h.</sub>"]
+                  f"Transitions only (confirmed {CONFIRM_FAIL} beats RED / {CONFIRM_OK} clean); "
+                  "the daily still-RED digest is in DESK_ALERTS.json, never here.</sub>"]
     body = "\n".join(lines)
     mid = sha256(f"{now.isoformat()}|{kind}|{body}".encode()).hexdigest()[:12]
     return {"id": mid, "at": now.isoformat(timespec="seconds"), "kind": kind,
@@ -388,9 +410,6 @@ def dispatch(reading: dict[str, Any], *, out: Path = OUT, census_path: Path = SI
         if set(active) != told:
             kind = ("RED" if set(active) - told else
                     "ALL_CLEAR" if not active else "RECOVERED")
-        elif active and (last_comment is None
-                         or now - last_comment >= timedelta(hours=DIGEST_EVERY_H)):
-            kind = "DIGEST"
         doc: dict[str, Any] = {
             "schema": SCHEMA, "at": now.isoformat(timespec="seconds"),
             "heartbeat_verdict": reading.get("verdict"), "census_read": census is not None,
@@ -402,6 +421,7 @@ def dispatch(reading: dict[str, Any], *, out: Path = OUT, census_path: Path = SI
             "extra_channels": prev.get("extra_channels") or {"state": "UNMEASURED"},
             "outbox": list(prev.get("outbox") or [])[-OUTBOX_KEEP:],
             "deadman_ping": (reading.get("ping") or {}).get("status"),
+            "digest": _digest(prev.get("digest"), active, now),
             "policy": {"confirm_fail": CONFIRM_FAIL, "confirm_ok": CONFIRM_OK,
                        "min_gap_min": MIN_GAP_MIN, "digest_every_h": DIGEST_EVERY_H,
                        "issue_title": ISSUE_TITLE, "repo": REPO},
@@ -443,6 +463,18 @@ def dispatch(reading: dict[str, Any], *, out: Path = OUT, census_path: Path = SI
                 "issue": (doc["issue"] or {}).get("number")}
     except Exception as exc:
         return {"status": "ERROR", "detail": type(exc).__name__}
+
+
+def _digest(prev: Any, active: dict[str, dict[str, Any]], now: datetime) -> dict[str, Any]:
+    """The still-RED digest, IN THE ARTIFACT ONLY (audit of #1002: the issue gets transitions and
+    nothing else). Refreshed at most once per DIGEST_EVERY_H; a reader off the box sees it in the
+    published DESK_ALERTS.json."""
+    p = prev if isinstance(prev, dict) else {}
+    at = _ts(p.get("at"))
+    if at is not None and now - at < timedelta(hours=DIGEST_EVERY_H):
+        return p
+    return {"at": now.isoformat(timespec="seconds"),
+            "still_red": [{"key": k, "since": v.get("since")} for k, v in sorted(active.items())]}
 
 
 def _verdict(doc: dict[str, Any]) -> str:
