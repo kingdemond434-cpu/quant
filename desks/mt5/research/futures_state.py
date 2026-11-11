@@ -13,7 +13,8 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
      book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record
      (every intervention day since 1991, signed, stamped at its quarterly disclosure; monthly
-     totals stamped at their release). Every other
+     totals stamped at their release), and the BoJ Tankan's large-manufacturer assumed USDJPY
+     rate (spot over that assumption is the exporters' hedging pressure). Every other
      venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
      DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
      gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
@@ -910,6 +911,310 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     return days, quarters, pages
 
 
+# ------------------------------------------------------------ BoJ Tankan assumed USDJPY rate
+
+#: THE MECHANISM (breadth idea B14, approved 2026-10-13). Each Tankan survey publishes the USDJPY
+#: rate large manufacturers assume in their fiscal-year plans. When spot sits far ABOVE that
+#: assumption exporters hold a windfall and an incentive to sell dollars forward to lock it in;
+#: far BELOW, the reverse. So the conditioner is (spot / assumed - 1): the hedging pressure the
+#: survey makes visible, read at every daily close and, separately, at the first close after each
+#: release, which is the state exporters read when they set the quarter's hedges.
+#:
+#: SOURCE. The BoJ's own Time-Series Data Search API (launched 2026-02-18; database CO is the
+#: Tankan). The series is found by its NAME in the database's metadata, never by a code typed from
+#: memory; a name match that is empty or ambiguous is UNMEASURED and lists its candidates. The
+#: release dates come from the English Tankan page, which lists PAST releases only: a release the
+#: page has not dated is stamped at a conservative bound no release has ever been later than, and
+#: the row says which rule stamped it. Future release dates are never guessed.
+TANKAN_TZ = "Asia/Tokyo"
+TANKAN_RELEASE_HM = (8, 50)                 # every Tankan is released 08:50 JST
+#: Survey month -> latest plausible public moment, for a release the page does not date. The
+#: December survey is out mid-December and the March one at the start of April, so quarter end
+#: plus 45 days is after every release on record; later than the truth is safe, earlier is not.
+TANKAN_BOUND_DAYS = 45
+#: The bar index is BROKER time (UTC+2/+3) under a UTC label, so a close labelled T happened at
+#: real UTC T-2h or T-3h. A release counts for a close only when it precedes T minus the larger.
+BROKER_AHEAD = pd.Timedelta(hours=3)
+_MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
+                                       "sep", "oct", "nov", "dec"), start=1)}
+
+
+def _keyed(d: Mapping[str, Any], *names: str) -> Any:
+    """A field by any of its spellings, case-insensitively (the API's JSON is upper case)."""
+    low = {str(k).lower(): v for k, v in d.items()}
+    for n in names:
+        if n.lower() in low:
+            return low[n.lower()]
+    return None
+
+
+def _walk_dicts(doc: Any) -> list[Mapping[str, Any]]:
+    out: list[Mapping[str, Any]] = []
+    stack = [doc]
+    while stack:
+        x = stack.pop()
+        if isinstance(x, Mapping):
+            out.append(x)
+            stack.extend(x.values())
+        elif isinstance(x, list):
+            stack.extend(x)
+    return out
+
+
+def _norm(s: str) -> str:
+    return " ".join(str(s).lower().replace(".", "").replace("/", " ").replace("-", " ").split())
+
+
+def tankan_series_candidates(meta: Any, require: Sequence[str], exclude: Sequence[str]
+                             ) -> list[dict[str, str]]:
+    """Every metadata row whose English name carries all of `require` and none of `exclude`."""
+    req = [_norm(t) for t in require]
+    exc = [_norm(t) for t in exclude]
+    seen: dict[str, dict[str, str]] = {}
+    for d in _walk_dicts(meta):
+        code = _keyed(d, "SERIES_CODE", "series_code", "code")
+        name = _keyed(d, "NAME_OF_TIME_SERIES", "name_of_time_series", "name")
+        if not isinstance(code, str) or not isinstance(name, str) or not code.strip():
+            continue
+        n = _norm(name)
+        if all(t in n for t in req) and not any(t in n for t in exc):
+            seen[code.strip()] = {"code": code.strip(), "name": name}
+    return sorted(seen.values(), key=lambda r: r["code"])
+
+
+def tankan_survey_month(period: Any) -> pd.Timestamp | None:
+    """A BoJ period code -> the survey month's first day. Accepts 202609, 2026-09, 2026/09,
+    2026Q3 / 2026 Q3 (a quarter is read as its last month, the Tankan's survey month)."""
+    import re
+    s = str(period).strip().upper()
+    m = re.fullmatch(r"(\d{4})\s*Q([1-4])", s)
+    if m:
+        return pd.Timestamp(int(m.group(1)), 3 * int(m.group(2)), 1)
+    m = re.fullmatch(r"(\d{4})[-/]?(\d{2})(?:[-/]?\d{2})?", s)
+    if m and 1 <= int(m.group(2)) <= 12:
+        return pd.Timestamp(int(m.group(1)), int(m.group(2)), 1)
+    return None
+
+
+def tankan_points(doc: Any, code: str) -> pd.DataFrame:
+    """[survey, assumed] for one series out of a getDataCode reply, whatever its nesting:
+    either parallel SURVEY_DATES / VALUES lists or a list of {date, value} records."""
+    rows: list[tuple[pd.Timestamp, float]] = []
+    for d in _walk_dicts(doc):
+        c = _keyed(d, "SERIES_CODE", "series_code")
+        if c is not None and str(c).strip() != code:
+            continue
+        vals = _keyed(d, "VALUES", "values")
+        if isinstance(vals, Mapping):
+            dates = _keyed(vals, "SURVEY_DATES", "survey_dates", "dates")
+            nums = _keyed(vals, "VALUES", "values")
+            if isinstance(dates, list) and isinstance(nums, list):
+                for p, v in zip(dates, nums, strict=False):
+                    t = tankan_survey_month(p)
+                    x = pd.to_numeric(pd.Series([v]), errors="coerce").iloc[0]
+                    if t is not None and pd.notna(x):
+                        rows.append((t, float(x)))
+    out = pd.DataFrame(rows, columns=["survey", "assumed"])
+    out = out[(out["assumed"] > 50) & (out["assumed"] < 400)]   # a yen rate, not a % or a count
+    return out.drop_duplicates("survey", keep="last").sort_values("survey").reset_index(drop=True)
+
+
+def tankan_release_dates(html: str) -> dict[str, str]:
+    """{survey month 'YYYY-MM': release day 'YYYY-MM-DD'} as the BoJ's Tankan page dates them.
+
+    A survey label ('September 2026 Survey', 'Survey (September 2026)') is paired with the
+    nearest date printed before it. Only a March/June/September/December survey released within
+    75 days of its month's start is accepted, so a revision notice or a data-set date never
+    becomes a release."""
+    import re
+    txt = re.sub(r"<[^>]+>", " ", html).replace("&nbsp;", " ")
+    txt = " ".join(txt.split())
+    date_re = re.compile(r"\b([A-Z][a-z]{2,8})\.?\s+(\d{1,2}),\s+(\d{4})\b")
+    surv_re = re.compile(r"\b([A-Z][a-z]{2,8})\s+(\d{4})\s+Survey\b|Survey\s*\(([A-Z][a-z]{2,8})"
+                         r"\s+(\d{4})\)")
+    dates = []
+    for m in date_re.finditer(txt):
+        mon = _MONTHS.get(m.group(1)[:3].lower())
+        if mon:
+            try:
+                dates.append((m.start(), pd.Timestamp(int(m.group(3)), mon, int(m.group(2)))))
+            except ValueError:
+                continue
+    out: dict[str, str] = {}
+    for m in surv_re.finditer(txt):
+        name, year = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+        mon = _MONTHS.get(name[:3].lower())
+        if mon not in (3, 6, 9, 12):
+            continue
+        prior = [d for pos, d in dates if pos < m.start() and m.start() - pos <= 300]
+        if not prior:
+            continue
+        rel, survey = prior[-1], pd.Timestamp(int(year), mon, 1)
+        if pd.Timedelta(0) <= rel - survey <= pd.Timedelta(days=75):
+            out.setdefault(survey.strftime("%Y-%m"), rel.strftime("%Y-%m-%d"))
+    return dict(sorted(out.items()))
+
+
+def tankan_known_at(survey: pd.Timestamp, releases: Mapping[str, str]) -> tuple[pd.Timestamp, str]:
+    """(UTC instant the survey's numbers became public, which rule said so)."""
+    day = releases.get(survey.strftime("%Y-%m"))
+    rule = "published_release_date"
+    if day is None:
+        day = str((survey + pd.offsets.MonthEnd(0) + pd.Timedelta(days=TANKAN_BOUND_DAYS)).date())
+        rule = "conservative_bound"
+    hh, mm = TANKAN_RELEASE_HM
+    at = (pd.Timestamp(day) + pd.Timedelta(hours=hh, minutes=mm)).tz_localize(TANKAN_TZ)
+    return at.tz_convert("UTC"), rule
+
+
+def tankan_gap_frames(assumed: pd.DataFrame, releases: Mapping[str, str],
+                      bars_usdjpy: pd.DataFrame | None
+                      ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    """(daily frame, per-release frame, facts), both frames stamped and ready for the lake.
+
+    Daily: at each USDJPY daily close, gap_pct = close / (the newest assumption public BEFORE
+    that close) - 1, available at the close's broker-day end. Release: gap_pct at the first
+    close after each release, available at that close. No close sees a survey released after it.
+    """
+    facts: dict[str, Any] = {"surveys": len(assumed)}
+    empty = pd.DataFrame()
+    if assumed.empty or bars_usdjpy is None or bars_usdjpy.empty:
+        facts["why"] = "no assumed-rate history held" if assumed.empty else "no USDJPY bars"
+        return empty, empty, facts
+    known = [tankan_known_at(pd.Timestamp(s), releases) for s in assumed["survey"]]
+    a = assumed.assign(known_at=[k[0] for k in known], rule=[k[1] for k in known])
+    a = a.sort_values("known_at").reset_index(drop=True)
+    facts["stamped_by"] = {r: int((a["rule"] == r).sum()) for r in sorted(set(a["rule"]))}
+    close = bars_usdjpy["close"].astype(float).resample("1D").last().dropna()
+    if close.empty:
+        facts["why"] = "no USDJPY bars"
+        return empty, empty, facts
+    label = pd.DatetimeIndex(close.index).tz_convert("UTC") + pd.Timedelta(days=1)
+    real_lb = label - BROKER_AHEAD                    # earliest real UTC the close can be
+    pos = np.searchsorted(
+        a["known_at"].dt.tz_convert("UTC").dt.tz_localize(None).to_numpy(dtype="datetime64[ns]"),
+        real_lb.tz_localize(None).to_numpy(dtype="datetime64[ns]"), side="right") - 1
+    ok = pos >= 0
+    ass = np.where(ok, a["assumed"].to_numpy()[np.clip(pos, 0, None)], np.nan)
+    gap = close.to_numpy() / ass - 1.0
+    daily = pd.DataFrame({"gap_pct": gap, "assumed": ass, "survey_idx": pos})[ok]
+    lab = pd.Series(label[ok])
+    if daily.empty:
+        facts["why"] = "no close falls after the first held survey"
+        return empty, empty, facts
+    first = daily.reset_index(drop=True).assign(at=lab.to_numpy())
+    first = first.drop_duplicates("survey_idx", keep="first")
+    ev = a["known_at"].iloc[first["survey_idx"].to_numpy()]
+    rel = stamped(pd.DataFrame({"release_gap_pct": first["gap_pct"].to_numpy()}),
+                  pd.Series(first["at"].to_numpy()), "boj_tankan_usdjpy_release",
+                  pd.Series(ev.to_numpy()))
+    day = stamped(pd.DataFrame({"gap_pct": daily["gap_pct"].to_numpy()}), lab,
+                  "boj_tankan_usdjpy_gap", lab - pd.Timedelta(days=1))
+    facts.update({"last_survey": str(a["survey"].max().date()),
+                  "last_assumed": float(a["assumed"].iloc[-1]),
+                  "last_gap_pct": round(float(daily["gap_pct"].iloc[-1]), 5)})
+    return day, rel, facts
+
+
+def _hypothesis_targets(targets: Sequence[str], notes: list[dict[str, Any]], sid: str
+                        ) -> list[str]:
+    """The declared targets the hypothesis lane may test (universe_policy.may_hypothesise).
+    A target set aside is named in the notes, never silently dropped; an unreadable policy keeps
+    nothing, because absence of the policy is not a permission."""
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception as exc:
+        notes.append({"source": sid, "status": "UNMEASURED",
+                      "why": f"universe_policy unreadable: {type(exc).__name__}"})
+        return []
+    keep = [str(t) for t in targets if may_hypothesise(str(t), "exogenous_conditioner")]
+    if len(keep) < len(targets):
+        notes.append({"source": sid, "set_aside_targets": [t for t in targets if t not in keep],
+                      "why": "not in the hypothesis lane"})
+    return keep
+
+
+def tankan_collect(src: Mapping[str, Any], get: Callable[[str], Any] | None,
+                   get_text: Callable[[str], str] | None, state: dict[str, Any],
+                   notes: list[dict[str, Any]], now: datetime | None = None
+                   ) -> tuple[pd.DataFrame, dict[str, str], dict[str, Any]]:
+    """Fetch (at most once per `refresh_hours`, through robots) and cache; return what is held:
+    (assumed-rate history, release dates, facts for the report)."""
+    sid = str(src["id"])
+    raw_p, rel_p = RAW / "boj_tankan_assumed.parquet", RAW / "boj_tankan_releases.json"
+    st = state.setdefault("boj_tankan", {})
+    t = pd.Timestamp(now or datetime.now(UTC))
+    last = pd.Timestamp(st["fetched_at"]) if st.get("fetched_at") else None
+    due = last is None or t - last >= pd.Timedelta(hours=float(src.get("refresh_hours", 24)))
+    facts: dict[str, Any] = {"fetched_at": st.get("fetched_at"), "series_code": st.get("code")}
+    live = (src.get("terms") == "OPEN" and sid not in state.get("hard_stops", {}) and due)
+    if live and get is not None and get_text is not None:
+        api = str(src["api"]).rstrip("/")
+        db = str(src.get("db") or "CO")
+        try:
+            if not robots_allow(f"{api}/getDataCode", get_text):
+                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+            else:
+                code = str(src.get("series_code") or st.get("code") or "")
+                if not code:
+                    meta = get(f"{api}/getMetadata?" + urllib.parse.urlencode(
+                        {"format": "json", "lang": "en", "db": db}))
+                    cands = tankan_series_candidates(meta, src.get("name_require") or [],
+                                                     src.get("name_exclude") or [])
+                    pref = [c for c in cands if all(_norm(p) in _norm(c["name"])
+                                                    for p in src.get("name_prefer") or [])]
+                    pick = pref if len(pref) == 1 else cands if len(cands) == 1 else []
+                    if pick:
+                        code = st["code"] = pick[0]["code"]
+                        st["name"] = pick[0]["name"]
+                    else:
+                        st["candidates"] = cands[:20]
+                        notes.append({"source": sid, "status": "UNMEASURED",
+                                      "why": ("no metadata row matches the assumed-rate name"
+                                              if not cands else "the name matches several "
+                                              "series; set series_code in the registry"),
+                                      "candidates": cands[:20]})
+                if code:
+                    doc = get(f"{api}/getDataCode?" + urllib.parse.urlencode(
+                        {"format": "json", "lang": "en", "db": db, "code": code}))
+                    pts = tankan_points(doc, code)
+                    if not pts.empty:
+                        _atomic_parquet(raw_p, pts, index=False)
+                    else:
+                        notes.append({"source": sid, "status": "UNMEASURED",
+                                      "why": f"series {code} returned no yen-rate points"})
+            idx_url = str(src.get("release_index_url") or "")
+            if idx_url and robots_allow(idx_url, get_text):
+                found = tankan_release_dates(get_text(idx_url))
+                held = _read(rel_p, {}) or {}
+                held.update(found)              # the page drops old rows; dates once seen stay
+                _write(rel_p, dict(sorted(held.items())))
+            elif idx_url:
+                notes.append({"source": sid, "status": "UNMEASURED",
+                              "why": "robots disallows the release page"})
+            st["fetched_at"] = t.isoformat()
+        except HardStop as hs:
+            state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
+        except Exception as exc:
+            notes.append({"source": sid, "error": f"{type(exc).__name__}"})
+    assumed = (pd.read_parquet(raw_p) if raw_p.exists()
+               else pd.DataFrame(columns=["survey", "assumed"]))
+    if not assumed.empty:
+        assumed["survey"] = pd.to_datetime(assumed["survey"])
+    releases = {str(k): str(v) for k, v in (_read(rel_p, {}) or {}).items()}
+    today = t.tz_convert("UTC").tz_localize(None) if t.tzinfo else t
+    upcoming = sorted(d for d in releases.values() if pd.Timestamp(d) > today)
+    facts.update({"series_code": st.get("code"), "series_name": st.get("name"),
+                  "releases_dated": len(releases),
+                  "next_release": upcoming[0] if upcoming else
+                  "UNMEASURED: the BoJ Tankan page lists past releases only; future dates are "
+                  "never guessed"})
+    if assumed.empty:
+        notes.append({"source": sid, "status": "UNMEASURED",
+                      "why": "no Tankan assumed-rate history held yet"})
+    return assumed, releases, facts
+
+
 # ----------------------------------------------------------------------------- build
 
 def _now() -> str:
@@ -1092,6 +1397,28 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             notes.append({"source": "mof_japan_intervention", "status": "UNMEASURED",
                           "why": "no historical CSV held yet"})
 
+    tk = sources.get("boj_tankan") or {}
+    if tk.get("adapter") == "boj_tankan":
+        assumed, releases, facts = tankan_collect(tk, get, get_text, state, notes, now)
+        daily, rel, more = tankan_gap_frames(assumed, releases, bars("USDJPY"))
+        facts.update(more)
+        cell = {"targets": _hypothesis_targets(tk.get("targets") or [], notes, str(tk["id"])),
+                "charts": list(tk.get("charts") or CHARTS),
+                "transforms": list(tk.get("transforms") or TRANSFORMS),
+                "params": dict(tk.get("params") or {}), "why": str(tk.get("why") or ""),
+                "tankan": facts}
+        for sid, frame, kind in (("boj_tankan_usdjpy_gap", daily, "tankan_gap_daily"),
+                                 ("boj_tankan_usdjpy_release", rel, "tankan_gap_at_release")):
+            if len(frame) >= MIN_ROWS:
+                frames[sid] = frame
+                built[sid] = {**cell, "kind": kind, "rows": len(frame),
+                              "last_event": str(frame["event_time"].max())}
+            else:
+                notes.append({"source": sid, "status": "UNMEASURED",
+                              "why": (f"{len(frame)} rows < {MIN_ROWS}: "
+                                      f"{facts.get('why') or 'too few surveys held'}"),
+                              "tankan": facts})
+
     for tr in registry.get("transmissions") or []:
         a, b = frames.get(str(tr["a"])), frames.get(str(tr["b"]))
         ca = str(tr.get("column_a") or tr.get("column"))
@@ -1151,12 +1478,17 @@ def cell_plan(built: Mapping[str, Mapping[str, Any]], frames: Mapping[str, pd.Da
     per: dict[str, list[tuple[tuple[int, int], str, str, str, str, str]]] = {}
     for sid, meta in built.items():
         targets = [t for t in meta.get("targets") or [] if t in universe]
+        # A series may declare the only transforms and charts that ask its question (a quarterly
+        # state is not an H1 question, and the delta of a spot-over-assumption gap is the spot
+        # return): every other cell would be a near-duplicate charged to the program.
+        own_tfs = tuple(meta.get("transforms") or TRANSFORMS)
+        charts = tuple(meta.get("charts") or CHARTS)
         for col in _feature_cols(frames[sid]):
             rank = _col_rank(col)
-            tfs = ("level_z",) if rank[1] else TRANSFORMS
+            tfs = ("level_z",) if rank[1] else own_tfs
             for tf in tfs:
                 for sym in targets:
-                    for chart in CHARTS:
+                    for chart in charts:
                         per.setdefault(sid, []).append((rank, sid, col, tf, sym, chart))
     for rows in per.values():
         rows.sort(key=lambda r: r[0])
@@ -1193,7 +1525,8 @@ def mint(built: Mapping[str, Mapping[str, Any]], frames: Mapping[str, pd.DataFra
         mech = mechs[sid]
         try:
             enqueue(family="exogenous_conditioner", symbol=sym,
-                    params={"source": sid, "signal": col, "transform": tf},
+                    params={"source": sid, "signal": col, "transform": tf,
+                            **(built[sid].get("params") or {})},
                     origin="futures_state", mechanism=mech, chart=chart,
                     horizon=chart, source_id=sid, generator="futures_state",
                     department="information", asset_class="",
