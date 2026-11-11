@@ -217,6 +217,10 @@ class TestNothingIsDroppedSilently:
         monkeypatch.setattr(mc, "OUT", tmp_path / "candidates.json")
         monkeypatch.setattr(mc, "DEEPEN", tmp_path / "deepening.json")
         monkeypatch.setattr(mc, "CURSOR", tmp_path / "cursor.json")
+        # main() ratchets the provenance floor and records the ids it saw; both are real desk
+        # paths, and a test-derived share must never raise the floor the law gate fences.
+        monkeypatch.setattr(mc, "PROVENANCE_FLOOR", tmp_path / "provenance_floor.json")
+        monkeypatch.setattr(mc, "PROVENANCE_SEEN", tmp_path / "provenance_seen.json")
         monkeypatch.setattr(mc, "known_symbols", lambda: {"EURUSD"})
         monkeypatch.setattr(mc, "structurally_untestable_families", lambda: {})
         monkeypatch.setattr(mc, "recent_rows", lambda now: [
