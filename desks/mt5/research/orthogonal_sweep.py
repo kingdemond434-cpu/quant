@@ -206,31 +206,136 @@ def _resample_rule(timeframe: str) -> str:
     return f"{timeframe_minutes(timeframe)}min"
 
 
-@lru_cache(maxsize=1)
-def _ticks(symbol: str):
-    """This symbol's recent tick tape as one indexed frame, or None. ONE symbol resident.
+#: THE TAPE'S WHOLE RECORDED HISTORY, ONE MINUTE AT A TIME (2026-11-11). Both tape families used
+#: to see only the newest 30 day files, so their conditioning series was NaN outside the last
+#: thirty days and no cell could reach the 60-day CPCV history: JUDGE_COVERAGE 2026-11-10 carried
+#: 14,769 `liquidity_regime` and 40,757 `orderflow_imbalance` cells mined and 0 judged. The reader
+#: now takes EVERY day file the box holds, through a per-day, per-minute aggregate that is a few
+#: thousand rows however many ticks the day carried, so memory scales with days, not ticks.
+TAPE_AGG = BASE / "data" / "tape" / "agg_m1"
+#: Bumped whenever the aggregate's arithmetic changes, so a stale cache is never read as current.
+TAPE_AGG_VERSION = 1
+#: The aggregate's columns. `flow_in` counts only the tick-to-tick steps INSIDE a minute; the step
+#: from the previous minute's last mid to this minute's first mid is added back after the days are
+#: joined (`_tape_minutes`), so a day or file boundary drops no step the old full-tick reader made.
+TAPE_AGG_COLUMNS = ("spread_sum", "n", "flow_in", "first_mid", "last_mid")
 
-    Read once per SYMBOL rather than once per (symbol, chart). The concat of thirty tick vintages
-    is the expensive half of `_tape_series` and it is chart-independent -- only the resample rule
-    differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
-    and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
-    symbol's charts before moving on and a tick frame is far larger than a bar frame.
-    """
+
+def _day_minutes_from_ticks(t):
+    """One day file's ticks -> the per-minute aggregate. `t` has `ts, bid, ask`."""
+    import numpy as np
+    import pandas as pd
+    t = t.dropna(subset=["bid", "ask"]).copy()
+    if t.empty:
+        return pd.DataFrame(columns=list(TAPE_AGG_COLUMNS),
+                            index=pd.DatetimeIndex([], tz="UTC", name="ts"))
+    t["ts"] = pd.to_datetime(t["ts"], utc=True)
+    t = t.sort_values("ts", kind="mergesort")
+    mid = ((t["ask"] + t["bid"]) / 2.0).to_numpy(dtype="float64")
+    minute = t["ts"].dt.floor("min").to_numpy()
+    # the sign of every step from the previous tick; the first tick of each MINUTE gets 0 here and
+    # its cross-minute step is restored in `_tape_minutes` from first_mid/last_mid.
+    step = np.zeros(len(mid))
+    if len(mid) > 1:
+        same = minute[1:] == minute[:-1]
+        step[1:] = np.where(same, np.sign(mid[1:] - mid[:-1]), 0.0)
+    step = np.nan_to_num(step, nan=0.0)
+    frame = pd.DataFrame({"spread_sum": (t["ask"] - t["bid"]).to_numpy(dtype="float64"),
+                          "n": 1.0, "flow_in": step, "mid": mid},
+                         index=pd.DatetimeIndex(minute, tz="UTC", name="ts"))
+    g = frame.groupby(level=0, sort=True)
+    out = pd.DataFrame({"spread_sum": g["spread_sum"].sum(), "n": g["n"].sum(),
+                        "flow_in": g["flow_in"].sum(), "first_mid": g["mid"].first(),
+                        "last_mid": g["mid"].last()})
+    return out[list(TAPE_AGG_COLUMNS)]
+
+
+def _day_minutes(src: Path, *, cache: bool):
+    """The per-minute aggregate of one day file, read from or written to the cache when `cache`.
+
+    The cache file is named by the source's size, so a day file that is rewritten (a late tick
+    lands by read-concat-rewrite) is aggregated again rather than served stale. The open day is
+    never cached: it is still growing. A cache that cannot be written is not an error -- the
+    aggregate is returned from memory and the next read builds it again."""
+    import contextlib
+    import os
+    import pandas as pd
+    try:
+        size = src.stat().st_size
+    except OSError:
+        return None
+    dst = TAPE_AGG / src.parent.name / f"{src.stem}.{size}.v{TAPE_AGG_VERSION}.parquet"
+    if cache and dst.exists():
+        try:
+            got = pd.read_parquet(dst)
+            if tuple(got.columns) == TAPE_AGG_COLUMNS:
+                return got
+        except Exception:
+            pass
+    try:
+        agg = _day_minutes_from_ticks(pd.read_parquet(src, columns=["ts", "bid", "ask"]))
+    except Exception:
+        return None
+    if cache:
+        with contextlib.suppress(Exception):
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            tmp = dst.with_name(f"{dst.name}.{os.getpid()}.tmp")
+            agg.to_parquet(tmp)
+            os.replace(tmp, dst)
+            for old in dst.parent.glob(f"{src.stem}.*.parquet"):
+                if old != dst:
+                    old.unlink(missing_ok=True)
+    return agg
+
+
+@lru_cache(maxsize=1)
+def _tape_minutes(symbol: str):
+    """This symbol's WHOLE recorded tape as one per-minute frame, or None. ONE symbol resident.
+
+    Read once per SYMBOL rather than once per (symbol, chart): the aggregation is
+    chart-independent, only the resample rule differs. Columns: `spread_sum`, `n` (ticks) and
+    `flow` (the net sign of every mid step whose LATER tick falls in the minute -- exactly the
+    steps the old full-tick reader summed)."""
+    import numpy as np
     import pandas as pd
     d = TAPE / symbol
-    if not d.exists():
+    files = sorted(d.glob("*.parquet")) if d.exists() else []
+    parts = [_day_minutes(f, cache=i < len(files) - 1) for i, f in enumerate(files)]
+    # A DAY WHOSE TICKS LEFT THE BOX KEEPS ITS MINUTES. `scripts/archive_tape.py` ships day files
+    # older than its KEEP_DAYS off the box; the aggregate built while the file was resident stays
+    # under TAPE_AGG and is read here, so archiving never shortens the history the judge sees.
+    resident = {f.stem for f in files}
+    agg_dir = TAPE_AGG / symbol
+    if agg_dir.exists():
+        import pandas as pd
+        tag = f".v{TAPE_AGG_VERSION}.parquet"
+        for a in sorted(agg_dir.glob(f"*{tag}")):
+            day = a.name[: -len(tag)].rsplit(".", 1)[0]
+            if day in resident:
+                continue
+            try:
+                got = pd.read_parquet(a)
+            except Exception:
+                continue
+            if tuple(got.columns) == TAPE_AGG_COLUMNS:
+                parts.append(got)
+                resident.add(day)
+    parts = [p for p in parts if p is not None and not p.empty]
+    if not parts:
         return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-30:]:
-        try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
-        except Exception:
-            continue
-    if not frames:
-        return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    m = pd.concat(parts)
+    if not m.index.is_unique:
+        # one minute split across two files: sum what adds, keep the earliest first mid and the
+        # latest last mid (the one step between the two halves is the only thing lost)
+        g = m.groupby(level=0, sort=True)
+        m = pd.DataFrame({"spread_sum": g["spread_sum"].sum(), "n": g["n"].sum(),
+                          "flow_in": g["flow_in"].sum(), "first_mid": g["first_mid"].first(),
+                          "last_mid": g["last_mid"].last()})
+    m = m.sort_index()
+    cross = np.sign(m["first_mid"].to_numpy() - m["last_mid"].shift(1).to_numpy())
+    cross = np.nan_to_num(cross, nan=0.0)
+    return pd.DataFrame({"spread_sum": m["spread_sum"], "n": m["n"],
+                         "flow": m["flow_in"] + cross}, index=m.index)
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
@@ -242,17 +347,19 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
     family's own z-score, dressed as a measurement of the M5 book. The whole thesis of
     `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
     which is exactly the claim a fine chart exists to test.
+
+    Spread is the tick-weighted mean in the bar (sum of spreads over ticks), the same number the
+    old `(ask - bid).resample(rule).mean()` produced; flow is the bar's net sign of mid steps, the
+    same proxy as before (not aggressor data -- the tape has no trade side).
     """
-    t = _ticks(symbol)
-    if t is None:
+    m = _tape_minutes(symbol)
+    if m is None:
         return None, None
     rule = _resample_rule(timeframe)
-    spread = (t["ask"] - t["bid"]).resample(rule).mean()
-    mid = ((t["ask"] + t["bid"]) / 2.0)
-    # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
-    # no trade side -- so it is labelled a proxy rather than passed off as order flow.
-    step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample(rule).sum()
+    r = m.resample(rule)
+    n = r["n"].sum()
+    spread = (r["spread_sum"].sum() / n.where(n > 0)).astype("float64")
+    flow = r["flow"].sum()
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 
