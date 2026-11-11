@@ -30,7 +30,7 @@ from libs.regime.control_room import daily_frame  # noqa: E402
 from research import regime_disagreement_miner as rdm  # noqa: E402
 
 
-def _bars(days: int = 900, seed: int = 5) -> pd.DataFrame:
+def _bars(days: int = 1300, seed: int = 5) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     idx = pd.date_range("2022-01-03", periods=days * 24, freq="h", tz="UTC")
     vol = np.repeat(np.where(np.arange(days) // 90 % 2, 0.002, 0.0006), 24)
@@ -62,7 +62,7 @@ def test_mutual_information_reads_agreement_as_zero_and_contradiction_as_high() 
 
 
 def test_every_system_votes_and_every_axis_is_labelled(table: pd.DataFrame) -> None:
-    late = table.iloc[-200:]
+    late = table.iloc[-150:]
     for k in D.VOL_SYSTEMS:
         assert late[f"vol_{k}"].notna().all(), k
     for k in D.TREND_SYSTEMS:

@@ -210,10 +210,12 @@ def bocpd_recent(z: np.ndarray, hazard: float = BOCPD_HAZARD, rmax: int = BOCPD_
     bet = np.array([1.0])
     logr = np.array([0.0])
     lh, l1h = math.log(hazard), math.log1p(-hazard)
+    seen = 0
     for t in range(n):
         x = z[t]
         if not np.isfinite(x):
             continue
+        seen += 1
         nu = 2 * alp
         sc2 = bet * (kap + 1) / (alp * kap)
         lp = (gammaln((nu + 1) / 2) - gammaln(nu / 2) - 0.5 * np.log(nu * np.pi * sc2)
@@ -230,7 +232,8 @@ def bocpd_recent(z: np.ndarray, hazard: float = BOCPD_HAZARD, rmax: int = BOCPD_
             logr = np.r_[logr[:rmax - 1], tail]
             mu, kap, alp, bet = mu[:rmax], kap[:rmax], alp[:rmax], bet[:rmax]
         logr = logr - np.logaddexp.reduce(logr)
-        out[t] = float(np.exp(logr[:recent]).sum())
+        if seen > recent:   # the first `recent` runs are short by construction, not evidence
+            out[t] = float(np.exp(logr[:recent]).sum())
     return out
 
 
