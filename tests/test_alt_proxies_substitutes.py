@@ -832,3 +832,21 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
                    if A.BY_ID[x].terms == "confirmed"}
     assert "asia_za_statssa_retail" not in lib
+
+
+def test_a_400_reply_names_its_cause_and_a_refusal_body_is_never_read() -> None:
+    src = A.BY_ID["br_bcb_payments"]
+    bad = urllib.error.HTTPError("u", 400, "Bad Request", None,  # type: ignore[arg-type]
+                                 io.BytesIO(b'{"error": {"message": "$top  too large"}}'))
+    assert "$top too large" in A._error_body(bad, src)
+    refused = urllib.error.HTTPError("u", 403, "Forbidden", None,  # type: ignore[arg-type]
+                                     io.BytesIO(b"secret page"))
+    assert A._error_body(refused, src) == ""
+    assert A._error_body(ValueError("x"), src) == ""
+
+
+def test_singstat_reads_the_current_monthly_sea_cargo_table() -> None:
+    import os
+
+    url = A.BY_ID["sg_port_throughput"].url
+    assert url.endswith("/M651101") or "ALT_SINGSTAT_PORT_TABLE" in os.environ
