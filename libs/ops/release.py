@@ -573,6 +573,7 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
                tested_sha=head if tested else None, worktree_dirty=dirty_code,
                worktree_dirty_scope="release_code_paths",
                previous_code_sha=prev_sha, previous_release_id=prev_id)
+    doc.update(adopted_origin(head, r))
     # THE SHA AND THE HASHES ADVANCE TOGETHER OR NEITHER DOES. Nothing is signed or written until
     # the manifest has been re-derived from the commit it names and agreed.
     disagrees = manifest_describes_commit(doc, root=r)
@@ -586,6 +587,46 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     if write:
         _write(doc, root)
     return doc
+
+
+#: Set by Adopt-And-Seal to the release gate's target: the ORIGIN commit this adoption took.
+ADOPTED_ORIGIN_ENV = "QUANT_ADOPTED_ORIGIN_SHA"
+
+
+def adopted_origin(head: str, root: Path) -> dict[str, Any]:
+    """Which ORIGIN commit the sealed code came from, and whether the code really matches it.
+
+    WHY (Hourly pass idea 624, 2026-11-11). The box seals its OWN commit: `code_sha` bb527d650
+    of 11-10 16:24Z exists only on the box, because box-state is replayed onto origin as new
+    commits, so nobody off the box could prove which merges were live. Adopt-And-Seal names the
+    release gate's target in ADOPTED_ORIGIN_ENV; the seal records it with `adopted_origin_
+    code_match`: True when no tracked file under the code roots differs between that origin
+    commit and the sealed HEAD (so every merge that is an ancestor of it is live), False when
+    some does, None when it could not be measured. A seal made by hand or by CI names none and
+    says so; nothing here changes what is sealed or whether a seal is allowed.
+    """
+    raw = os.environ.get(ADOPTED_ORIGIN_ENV, "").strip()
+    if not raw:
+        return {"adopted_origin_sha": None, "adopted_origin_code_match": None,
+                "adopted_origin_why": f"{ADOPTED_ORIGIN_ENV} unset: not an Adopt-And-Seal adoption"}
+    full = _rev(f"{raw}^{{commit}}", root)
+    if full is None:
+        return {"adopted_origin_sha": raw[:40], "adopted_origin_code_match": None,
+                "adopted_origin_why": "the named origin commit is not in this clone"}
+    from libs.ops.adopt_guard import CODE_ROOTS
+
+    try:
+        r = subprocess.run([_git_exe(), "diff", "--quiet", "--no-ext-diff", full, head, "--",
+                            *CODE_ROOTS], cwd=root, capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"adopted_origin_sha": full, "adopted_origin_code_match": None,
+                "adopted_origin_why": f"code diff unreadable: {type(exc).__name__}"}
+    match = {0: True, 1: False}.get(r.returncode)
+    why = {True: "no code path differs between the origin commit and the sealed HEAD",
+           False: "some code path differs between the origin commit and the sealed HEAD",
+           None: f"git diff exited {r.returncode}"}[match]
+    return {"adopted_origin_sha": full, "adopted_origin_code_match": match,
+            "adopted_origin_why": why}
 
 
 def manifest_describes_commit(rec: dict[str, Any], root: Path | None = None) -> list[str]:
