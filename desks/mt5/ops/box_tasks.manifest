@@ -338,3 +338,6 @@ TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scrip
 # Clear-access channels only (QUANT_MINERS_ALLOW in the runner): official APIs, open data and
 # local computation. Scrapers and youtube are SET_ASIDE by name; the box never contacts YouTube.
 TASK name="Quant-SideChannelMiners" trigger="every 2 hours at :45" runs="ops/run_side_channel_miners.cmd" installer="scripts/install_side_channel_miners_task.ps1" lane="research" also_runs="desks/mt5/side_channels/run_all_miners.py"
+# MT5-MergeDocket compiles the hypothesis docket. It was registered by hand on 2026-09-24 and had no installer
+# until idea 619. The live trigger was read off the box on 2026-11-11 (Desk health GV2): PT30M, IgnoreNew, SYSTEM.
+TASK name="MT5-MergeDocket"        trigger="every 30 minutes"     runs="desks/mt5/research/merge_hypotheses.py"  installer="desks/mt5/scripts/install_mergedocket_task.ps1" lane="research"

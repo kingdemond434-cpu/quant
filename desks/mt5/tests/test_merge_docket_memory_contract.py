@@ -113,3 +113,36 @@ def test_old_run_logs_are_pruned(tmp_path: Path) -> None:
 def test_the_flag_is_read_before_admission() -> None:
     src = inspect.getsource(merger.run_cli)
     assert src.index('"--log-dir"') < src.index("exclusive_job(")
+
+
+INSTALLER = Path(__file__).resolve().parents[1] / "scripts" / "install_mergedocket_task.ps1"
+
+
+def test_the_task_runs_python_directly_with_a_per_run_log() -> None:
+    """A stop must end the process doing the work, and no run may share another run's log file.
+
+    The 11-11 box read: the cmd.exe wrapper's `>>` redirect onto one shared log failed with
+    0x80070001 on every trigger while an orphaned python child held that log open.
+    """
+    text = INSTALLER.read_text(encoding="utf-8")
+    code = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("#"))
+    assert "cmd.exe" not in code and ">>" not in code
+    assert "--log-dir" in code and "-WorkingDirectory" in code
+    assert "merge_hypotheses.py" in code
+
+
+def test_the_time_limit_is_a_backstop_above_a_healthy_run() -> None:
+    """Healthy runs measure about 27 h; the limit must never end one, only beat the 72 h default."""
+    import re
+
+    text = INSTALLER.read_text(encoding="utf-8")
+    m = re.search(r"-ExecutionTimeLimit \(New-TimeSpan -Hours (\d+)\)", text)
+    assert m, "the installer must set an ExecutionTimeLimit"
+    assert 27 < int(m.group(1)) < 72
+
+
+def test_the_manifest_declares_the_task_with_its_installer() -> None:
+    manifest = (Path(__file__).resolve().parents[1] / "ops" / "box_tasks.manifest").read_text(encoding="utf-8")
+    line = next(ln for ln in manifest.splitlines() if 'name="MT5-MergeDocket"' in ln)
+    assert 'installer="desks/mt5/scripts/install_mergedocket_task.ps1"' in line
+    assert 'trigger="every 30 minutes"' in line
