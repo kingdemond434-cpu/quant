@@ -275,18 +275,22 @@ REGIME_FORECAST_H = 1
 REGIME_TERM_STRUCTURE = (1, 2, 5, 21)
 
 
-#: The allocator lock's heartbeat bound (job_lock.orphan_stale), derived from the clocks:
-#: one hourly cycle (allocator_liveness.CYCLE_S, 3600 s) = 12 passes of MT5-AllocatorFast
-#: (every 5 min). A holder beats at every logged stage (`_log`) and per admission candidate, so
-#: a working pass is never silent that long; an orphan silent past it is reclaimed.
-LOCK_HEARTBEAT_STALE_S = 3600.0
+#: The allocator lock's heartbeat bound (job_lock.orphan_stale): THREE MEDIAN PASSES. Measured
+#: on the box 2026-11-11 from MT5-AllocatorFast.log, a fast pass runs ~10 min and its longest
+#: silent stage (the deflation search-intensity count) ~4.5 min. A holder beats at every logged
+#: stage (`_log`) and per admission candidate, so a working pass is never silent for 30 min; a
+#: hung one was (HP91: AllocatorFast held the lock silent for about an hour under the old 3600 s
+#: bound, which trusted one hourly cycle). Reclaimed past it, not after a whole hour.
+LOCK_HEARTBEAT_STALE_S = 3 * 10 * 60.0
 #: pf_allocator's exit code when it stands down behind a lock it may not reclaim: per the exit-code
 #: protocol hourly_cycle.NAMED_FAILURE_EXITS reads (3 = LOCK_REFUSED, the first free non-zero code).
 LOCK_REFUSED_EXIT = 3
 #: A holder that beat within this is BUSY -- the ordinary overlap with a running hourly or heavy
-#: pass -- and the refused pass exits 0 with a named BUSY stand-down. Derived from the clock: three
-#: MT5-AllocatorFast passes (5 min each); a working holder beats at every logged stage, so one
-#: silent this long is not merely overlapping (#752 audit MF).
+#: pass -- and the refused pass exits 0 with a named BUSY stand-down. Derived from the pass:
+#: about three of its longest silent stage (~4.5 min, measured 2026-11-11), and one
+#: MT5-AllocatorFast period (15 min); a working holder beats at every logged stage, so one
+#: silent this long is not merely overlapping (#752 audit MF). It stays below
+#: LOCK_HEARTBEAT_STALE_S, so a holder is BUSY, then LOCK_REFUSED, then reclaimed.
 LOCK_BUSY_HEARTBEAT_S = 15 * 60.0
 
 
