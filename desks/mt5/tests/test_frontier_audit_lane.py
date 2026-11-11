@@ -39,6 +39,28 @@ def test_every_organ_runs_through_the_failure_counter() -> None:
             assert (ROOT / script.group(1).replace("\\", "/")).is_file(), ln
 
 
+
+def test_every_flag_the_lane_passes_is_one_its_organ_declares() -> None:
+    """CLI drift fails here, not on the box. world_model, meta_rnd and quantbench were passed
+    --apply they never declared; argparse exits 2, so all three failed every daily pass."""
+    lines = _code_lines(RUNNER.read_text("utf-8"))
+    drift = []
+    for ln in _main_body(lines):
+        if not ln.startswith("call :run "):
+            continue
+        rest = ln[len("call :run "):]
+        if rest.startswith("-m "):
+            parts = rest.split()
+            src, flags = ROOT / (parts[1].replace(".", "/") + ".py"), parts[2:]
+        else:
+            m = re.match(r'"([^"]+)"(.*)', rest)
+            assert m, ln
+            src, flags = ROOT / m.group(1).replace("\\", "/"), m.group(2).split()
+        text = src.read_text("utf-8")
+        declared = set(re.findall(r'add_argument\(\s*"(--[\w-]+)"', text))
+        drift += [f"{src.name} {f}" for f in flags if f.startswith("--") and f not in declared]
+    assert not drift, drift
+
 def test_the_lane_exit_code_is_derived_not_hardcoded() -> None:
     lines = _code_lines(RUNNER.read_text("utf-8"))
     body = _main_body(lines)
