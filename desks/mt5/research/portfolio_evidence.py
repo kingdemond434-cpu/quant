@@ -39,6 +39,13 @@ import json
 import math
 from datetime import UTC, datetime
 from pathlib import Path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 SHADOW = BASE / "reports" / "shadow"
@@ -60,14 +67,47 @@ def _read(p: Path):
         return None
 
 
+#: ALLOCATOR COLUMNS WHOSE FORWARD CLOCK HAS ANOTHER NAME. The gateway's gold windows are priced
+#: as `gold_<window>` while their clocks are the breakout keys `XAUUSD.<window>` -- the WINDOWS
+#: defaults the gateway places (asia 07:00; london_am 10-13 -> 13:00; afternoon 14-17 -> 17:00,
+#: matched against `decision_core.GOLD_WINDOWS` 2026-11-11; decision_core names gold_asia's clock
+#: `XAUUSD.asia` outright). The file stem `XAUUSD_asia` never equalled the column `gold_asia`, so
+#: the allocator NEVER saw gold_asia's forward evidence -- a missed-growth gap the Auditor named.
+#: Joined by the EXACT key only, so a params variant (`XAUUSD.asia#rr=1.5`) is never substituted.
+COLUMN_CLOCKS: dict[str, str] = {
+    "gold_asia": "XAUUSD.asia",
+    "gold_london_am": "XAUUSD.london_am",
+    "gold_afternoon": "XAUUSD.afternoon",
+}
+
+#: {legacy stem: [ledger names]} for stems several sleeve keys share, from the last
+#: `daily_series()` call. Unjoined by stem on purpose; see `daily_series`.
+_AMBIGUOUS: dict[str, list[str]] = {}
+
+
+def ambiguous_stems() -> dict[str, list[str]]:
+    return dict(_AMBIGUOUS)
+
+
 def daily_series() -> dict[str, dict[str, float]]:
-    """Per-sleeve daily R, FORWARD PHASE ONLY -- historical rows may not inform allocation."""
+    """Per-sleeve daily R, FORWARD PHASE ONLY -- historical rows may not inform allocation.
+
+    NAMED BY `ledger_paths.join_names` (2026-11-11): a ledger keeps its legacy `<sym>_<window>`
+    stem -- the name the allocator's forward join reads -- only when it is the ONE ledger on that
+    stem. Params variants that used to overwrite one shared file are each published under their
+    own sleeve key, so no stem joins a variant chosen by write order; `ambiguous_stems()` lists
+    them and the allocator reports them unjoined rather than pricing a neighbour's trades.
+    """
     out: dict[str, dict[str, float]] = {}
-    for ledger in sorted(SHADOW.glob("ledger_*.json")):
+    ledgers = list(_lp.iter_ledgers(SHADOW))
+    names, ambiguous = _lp.join_names(ledgers)
+    _AMBIGUOUS.clear()
+    _AMBIGUOUS.update(ambiguous)
+    for ledger in ledgers:
         rows = _read(ledger)
         if not isinstance(rows, list) or not rows:
             continue
-        name = ledger.stem[len("ledger_"):]
+        name = names[ledger]
         by_day: dict[str, float] = {}
         for row in rows:
             if not isinstance(row, dict):
@@ -81,6 +121,10 @@ def daily_series() -> dict[str, dict[str, float]]:
                 continue
         if by_day:
             out[name] = by_day
+            key = _lp.key_of(ledger)
+            for col, clock in COLUMN_CLOCKS.items():
+                if key == clock:
+                    out[col] = by_day
     return out
 
 

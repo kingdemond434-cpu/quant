@@ -38,6 +38,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 TAPE = BASE / "data" / "tape" / "ticks"
@@ -244,12 +251,14 @@ def summarise(rows: list[Exec]) -> dict:
 def collect() -> list[Exec]:
     """Every shadow decision the desk has recorded, as an execution chain."""
     rows: list[Exec] = []
-    for ledger in sorted(SHADOW.glob("ledger_*.json")):
+    for ledger in _lp.iter_ledgers(SHADOW):
         data = _read_json(ledger)
         if not isinstance(data, list) or not data:
             continue
-        stem = ledger.stem[len("ledger_"):]
-        parts = stem.split("_")
+        # The sleeve is the ledger's own (one per sleeve key since 2026-11-11); symbol and
+        # session come from its declared `<sym>_<session>` stem (`ledger_paths`).
+        stem = _lp.label_of(ledger)
+        parts = _lp.stem_of(ledger).split("_")
         symbol = parts[0]
         session = "_".join(parts[1:]) or "unknown"
         for row in data:

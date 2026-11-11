@@ -96,6 +96,13 @@ WORLD_STATE = DESK / "data" / "world_state.json"
 AXES = DESK / "data" / "axes"
 SLEEVES = DESK / "data" / "sleeves.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 SHADOW = DESK / "reports" / "shadow"
 COST_SURFACE = DESK / "data" / "cost_surface.json"
@@ -804,16 +811,21 @@ def sleeve_histories(deadline: float) -> tuple[dict[str, dict[str, Any]], dict[s
                               "status": str(s.get("status") or ""), "trades": []})
         hist[key]["status"] = str(s.get("status") or hist[key].get("status") or "")
     if SHADOW.is_dir():
-        for path in sorted(SHADOW.glob("ledger_*.json")):
+        # By the legacy stem when ONE ledger owns it, else by the ledger's own sleeve key
+        # (`ledger_paths.join_names`): params variants no longer share -- or overwrite -- a file.
+        _ledgers = list(_lp.iter_ledgers(SHADOW))
+        _names, _ambiguous = _lp.join_names(_ledgers)
+        for path in _ledgers:
             if time.monotonic() > deadline:
                 notes["budget_stopped"] = True
                 break
             notes["shadow_files"] += 1
-            key = _norm_sleeve(path.stem[len("ledger_"):])
+            key = _norm_sleeve(_names[path])
             rows = _read_json(path)
             if not isinstance(rows, list):
                 continue
-            blk = hist.setdefault(key, {"symbol": key.split("_")[0].upper(), "lane": "forward",
+            _sym = _lp.stem_of(path).split("_")[0].upper()
+            blk = hist.setdefault(key, {"symbol": _sym, "lane": "forward",
                                         "status": "", "trades": []})
             blk["lane"] = "forward" if blk["lane"] == "roster" else blk["lane"]
             for r in rows:

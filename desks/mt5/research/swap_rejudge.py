@@ -37,6 +37,13 @@ from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parents[1]
 if str(BASE) not in sys.path:
@@ -141,15 +148,19 @@ def _ledger_nights(symbol: str, family: str, window: str) -> dict[str, Any]:
     """
     from mt5desk.engine import rollovers_between
 
+    # By declared stem (`ledger_paths`), never by file name: since 2026-11-11 each params variant
+    # has its own ledger, so "exact" is every variant of this cell -- the same holding behaviour
+    # the shared file used to hold one random variant of.
     match = "exact"
-    exact = SHADOW / f"ledger_{symbol}_{family}_{window}.json"
-    cands = [exact] if exact.exists() else []
+    _all = list(_lp.iter_ledgers(SHADOW))
+    exact_stem = _lp.legacy_stem_forward(symbol, family, window).lower()
+    cands = [p for p in _all if _lp.stem_of(p).lower() == exact_stem]
     if not cands:
         match = "symbol+family"
-        cands = sorted(SHADOW.glob(f"ledger_{symbol}_{family}_*.json"))
+        cands = [p for p in _all if _lp.stem_of(p).lower().startswith(f"{symbol}_{family}_".lower())]
     if not cands:
         match = "symbol only (POOLED: another sleeve's holding behaviour)"
-        cands = sorted(SHADOW.glob(f"ledger_{symbol}_*.json"))
+        cands = [p for p in _all if _lp.stem_of(p).lower().startswith(f"{symbol}_".lower())]
     if not cands:
         return {"nights": None, "why": f"no shadow ledger on disk for {symbol}", "n": 0,
                 "ledgers": [], "match": "none"}

@@ -69,6 +69,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -236,7 +243,7 @@ def lane_states() -> dict[str, dict[str, dict]]:
 def forward_days(key: str) -> dict[str, float]:
     """A clock's FORWARD-phase daily R. Historical rows predate pre-registration and are excluded
     from every threshold on this desk, so they are excluded from the correlation too."""
-    ledger = _read_json(Path(SHADOW_DIR) / f"ledger_{str(key).replace('.', '_')}.json", [])
+    ledger = _read_json(_lp.ledger_path(str(key), Path(SHADOW_DIR)), [])
     days: dict[str, float] = {}
     for trade in ledger if isinstance(ledger, list) else []:
         if not isinstance(trade, dict) or str(trade.get("phase") or "") != "forward":

@@ -615,14 +615,21 @@ class Ledgers:
                 out[(str(r["sleeve"]), day)] += v
         shadow = self.root / SHADOW_DIR
         if shadow.is_dir():
-            for f in sorted(shadow.glob("ledger_*.json")):
+            # Named as the allocator names them (`ledger_paths.join_names`): the legacy stem when
+            # ONE ledger owns it, else the ledger's own sleeve key -- never a stem params variants
+            # share, which until 2026-11-11 was one file holding whichever variant wrote last.
+            from desks.mt5.research import ledger_paths as _lp
+
+            ledgers = list(_lp.iter_ledgers(shadow))
+            names, _ambiguous = _lp.join_names(ledgers)
+            for f in ledgers:
                 try:
                     rows = json.loads(f.read_text("utf-8"))
                 except (OSError, ValueError):
                     continue
                 if not isinstance(rows, list):
                     continue
-                name = f.stem.removeprefix("ledger_")
+                name = names[f]
                 for row in rows:
                     if not isinstance(row, dict) or str(row.get("phase") or "") != "forward":
                         continue

@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 from desks.mt5.research import forward_verdict  # noqa: E402
+from desks.mt5.research import ledger_paths as _lp  # noqa: E402
 from desks.mt5.research import scalp_family_expansion as families  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
 from desks.mt5.research.shadow_admission import (  # noqa: E402
@@ -215,6 +216,13 @@ def run(now: datetime | None = None) -> dict:
         },
     }
     SHADOW.mkdir(parents=True, exist_ok=True)
+    # Retire the pre-2026-11-11 names before this pass writes per-key ones (never deletes).
+    try:
+        _lp.migrate(_lp.owners_of((n, _lp.legacy_stem_scalp(n)) for n in admitted),
+                    engine="scalp_shadow", shadow_dir=SHADOW,
+                    stems={n: _lp.legacy_stem_scalp(n) for n in admitted})
+    except Exception as exc:
+        print(f"scalp ledger migration failed ({type(exc).__name__}: {exc}); next pass")
     cache: dict[tuple[str, str], tuple[pd.DataFrame, dict[str, np.ndarray]]] = {}
     for name, (sym, tf, choice) in admitted.items():
         path = DATA / f"{sym}_{tf}.parquet"
@@ -247,7 +255,7 @@ def run(now: datetime | None = None) -> dict:
             detailed=True, executable=True,
         )
         assert isinstance(records, list)
-        ledger = SHADOW / f"ledger_{name}.json"
+        ledger = _lp.ledger_path(name, SHADOW)
 
         # FORWARD EVIDENCE STARTS AT THIS SLEEVE'S OWN FROZEN CLOCK, not at the engine-wide
         # SHADOW_START. `forward_start` is stamped per row when the row is created; observations
@@ -303,7 +311,9 @@ def run(now: datetime | None = None) -> dict:
                           "row says the same thing on the NEXT pass, the state file is not "
                           "persisting and the clock can never start")
         n_historical = len(_all) - len(records)
-        ledger = SHADOW / f"ledger_{name}.json"
+        # ONE LEDGER PER SLEEVE KEY, named by `ledger_paths` like every other forward engine.
+        ledger = _lp.ledger_path(name, SHADOW)
+        _lp.register(ledger, name, engine="scalp_shadow", stem=_lp.legacy_stem_scalp(name))
         ledger.write_text(json.dumps(
             [{**r, "phase": ("forward" if r in records else "historical")} for r in _all],
             indent=2), "utf-8")

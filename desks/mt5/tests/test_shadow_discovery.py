@@ -123,8 +123,9 @@ def _clock(desk: Path, key: str, rows: list[dict[str, Any]], status: str = "ACTI
     state = json.loads(sd.SHADOW_STATE.read_text("utf-8")) if sd.SHADOW_STATE.exists() else {}
     state[key] = {"n": len(rows), "status": status, "exp_r": 0.1}
     sd.SHADOW_STATE.write_text(json.dumps(state), "utf-8")
-    name = f"ledger_{key.replace('.', '_')}.json"
-    (sd.SHADOW_DIR / name).write_text(json.dumps(rows), "utf-8")
+    path = sd._lp.ledger_path(key, sd.SHADOW_DIR)      # one ledger per sleeve key (ledger_paths)
+    path.write_text(json.dumps(rows), "utf-8")
+    sd._lp.register(path, key, engine="shadow_forward", stem=key.split("#")[0].replace(".", "_"))
 
 
 def _calendar(days: list[str], instruments: list[str]) -> None:

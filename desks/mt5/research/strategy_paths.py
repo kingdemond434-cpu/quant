@@ -46,6 +46,13 @@ from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parents[1]
 SHADOW = BASE / "reports" / "shadow"

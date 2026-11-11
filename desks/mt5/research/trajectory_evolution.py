@@ -69,6 +69,13 @@ from libs.research import lineage_dag as ld  # noqa: E402
 from libs.research import mechanism_ontology as onto  # noqa: E402
 from libs.research import trajectory as tj  # noqa: E402
 from libs.research.hypothesis_graph import GATE_ORDER  # noqa: E402
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 SOURCE = "trajectory_evolution"
 GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
@@ -288,8 +295,9 @@ def forward_index() -> dict[tuple[str, str], dict[str, Any]]:
             rows.setdefault((str(p.get("symbol") or "").upper(),
                              str(p.get("family") or "session_range_breakout")),
                             []).append((float(n), float(exp)))
-    for path in (sorted(SHADOW.glob("ledger_*.json")) if not rows else ()):
-        parts, trades = path.stem.split("_"), _read_json(path)
+    for path in (list(_lp.iter_ledgers(SHADOW)) if not rows else ()):
+        # The declared `<sym>_<fam>_<win>` stem (`ledger_paths`), shaped like the old file stem.
+        parts, trades = ["", *_lp.stem_of(path).split("_")], _read_json(path)
         r = np.asarray([t["r_multiple"] for t in trades or [] if isinstance(t, dict)
                         and isinstance(t.get("r_multiple"), (int, float))], dtype=float)
         if len(parts) >= 3 and r.size:

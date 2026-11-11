@@ -68,6 +68,21 @@ if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/ledger_*.json" "$_LDIR
   done
 fi
 rm -rf "$_LDIR"
+# WHOSE LEDGER EACH FILE IS (2026-11-11). Ledgers are named one per sleeve key now
+# (`ledger_<slug>__<hash>.json`, desks/mt5/research/ledger_paths.py) and the owning key lives in a
+# sidecar under `_keys/`; without it a reader here falls back to the readable slug and cannot
+# tell params variants apart. Same staged, parse-checked move as the ledgers.
+_KDIR="desks/mt5/reports/shadow/.keys.tmp"
+rm -rf "$_KDIR" && mkdir -p "$_KDIR" desks/mt5/reports/shadow/_keys
+if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/_keys/ledger_*.json" "$_KDIR/" \
+     2>/dev/null && [ -n "$(ls -A "$_KDIR" 2>/dev/null)" ]; then
+  for _k in "$_KDIR"/ledger_*.json; do
+    if .venv/bin/python -c "import json,sys; json.load(open(sys.argv[1]))" "$_k" 2>/dev/null; then
+      mv "$_k" "desks/mt5/reports/shadow/_keys/$(basename "$_k")"
+    fi
+  done
+fi
+rm -rf "$_KDIR"
 # newer-only (reports): BOTH BOXES CERTIFY, so the box copy is not automatically the truth.
 # The VPS gauntlet writes this file too. A blind overwrite meant every certificate the VPS sweep
 # produced was reverted by the next pull, 90 seconds later: measured 2026-09-05, the canon read

@@ -27,6 +27,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -95,7 +102,7 @@ def run() -> dict:
     for d in LEDGER_DIRS:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _lp.iter_ledgers(d):  # skips legacy names the migration retired
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):

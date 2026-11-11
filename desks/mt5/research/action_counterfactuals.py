@@ -64,6 +64,13 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 OUT = _DESK / "data" / "action_counterfactuals.jsonl"
 REPORT = _DESK / "reports" / "ACTION_COUNTERFACTUALS.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE = _audited_ledger_path(_DESK / "data" / "live_ledger.jsonl")
 FORECASTS = _DESK / "data" / "pf_forecast_log.jsonl"
 LEDGER_DIRS = (_DESK / "reports" / "shadow", _ROOT / "backups" / "moat" / "shadow_ledgers")
@@ -183,7 +190,7 @@ def load_trades() -> tuple[list[dict], dict[str, str]]:
     for d in LEDGER_DIRS:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _lp.iter_ledgers(d):  # skips legacy names the migration retired
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):

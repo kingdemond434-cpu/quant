@@ -18,6 +18,7 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from run_hunt12 import day_states  # noqa: E402
 from run_hunt16 import FAMILIES, WINDOWS  # noqa: E402
 
+from research import ledger_paths as _lp  # noqa: E402
 from research.h1_source import fetch_h1  # noqa: E402
 
 REPORTS = BASE / "reports"
@@ -76,6 +77,14 @@ def main() -> int:
         gate_why = ""
     except Exception as exc:              # fail closed for NEW clocks only
         gate, gate_why = None, f"integrity door unreadable: {type(exc).__name__}: {exc}"
+    # Retire the pre-2026-11-11 names before this pass writes per-key ones (never deletes).
+    try:
+        _lp.migrate(_lp.owners_of((k, _lp.legacy_stem_qquant(k)) for k in rows
+                                  if str(k).startswith("qquant.")),
+                    engine="qquant_shadow", shadow_dir=SHADOW,
+                    stems={k: _lp.legacy_stem_qquant(k) for k in rows})
+    except Exception as exc:
+        print(f"qquant ledger migration failed ({type(exc).__name__}: {exc}); next pass")
     for key, cert in rows.items():
         if not str(key).startswith("qquant.") or not isinstance(cert, dict):
             continue
@@ -151,8 +160,10 @@ def main() -> int:
         trades = [trade for trade in result.trades
                   if pd.Timestamp(trade.entry_time).tz_convert("UTC") > frozen_at]
         values = [float(trade.r_multiple) for trade in trades]
-        ledger = SHADOW / f"ledger_{key.replace(' ', '_').replace('/', '_')}.json"
+        # ONE LEDGER PER SLEEVE KEY, named by `ledger_paths` like every other forward engine.
+        ledger = _lp.ledger_path(key, SHADOW)
         ledger.parent.mkdir(parents=True, exist_ok=True)
+        _lp.register(ledger, key, engine="qquant_shadow", stem=_lp.legacy_stem_qquant(key))
         stamp = bars.stamp()
         ledger.write_text(json.dumps([
             {"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),

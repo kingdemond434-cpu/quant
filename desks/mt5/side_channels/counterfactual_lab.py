@@ -648,7 +648,14 @@ def run_counterfactual_analysis(base_path: Path, symbol: str = "XAUUSD",
     
     # Load historical signals from shadow ledger
     shadow_dir = base_path / "desks" / "mt5" / "reports" / "shadow"
-    ledger_files = list(shadow_dir.glob(f"ledger_{symbol}_*.json"))
+    # Every ledger of this symbol, by its declared stem (one ledger per sleeve key since
+    # 2026-11-11; the file name no longer starts `ledger_<symbol>_` by construction).
+    try:
+        from desks.mt5.research import ledger_paths as _lp
+    except ImportError:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    ledger_files = [p for p in _lp.iter_ledgers(shadow_dir)
+                    if _lp.stem_of(p).upper().startswith(f"{symbol.upper()}_")]
     
     all_signals = []
     for f in ledger_files:

@@ -77,6 +77,13 @@ BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 OUT = BASE / "data" / "decay_live.json"
 ACTIONS = BASE / "data" / "decay_actions.jsonl"
@@ -500,16 +507,13 @@ def _row_r(row: dict) -> float | None:
 
 
 def _shadow_ledger_rows(name: str) -> list[dict]:
-    """The sleeve's forward-clock ledger rows, from the first directory that holds the file.
-    Ledgers are named by the clock key with dots as underscores (`ledger_CADJPY_asia.json`)."""
-    stem = str(name).replace(".", "_")
-    for d in SHADOW_LEDGER_DIRS:
-        f = d / f"ledger_{stem}.json"
-        if not f.exists():
-            continue
-        rows = _read_json(f, None)
-        return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
-    return []
+    """The sleeve's OWN forward-clock ledger rows (`ledger_paths.resolve`), or [].
+
+    By full sleeve key first; by the legacy `CADJPY_asia` stem only when exactly one ledger
+    declares it. Until 2026-11-11 the stem named a file every params variant overwrote, so this
+    read whichever variant wrote last; an ambiguous name now reads nothing (UNMEASURED)."""
+    rows = _lp.resolve_rows(str(name), SHADOW_LEDGER_DIRS)
+    return [r for r in rows if isinstance(r, dict)]
 
 
 def sleeve_series(name: str, now: datetime | None = None
