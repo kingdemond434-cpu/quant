@@ -54,7 +54,7 @@ def test_the_order_releases_fusion_zero_pins_and_reports_e8_as_needing_a_size(
     assert "released_by research/cert_book_door.py" in book["fusion_by"]
     assert book["e8_by"] == BOOK["e8_by"] and book["rule"] == BOOK["rule"]
     # the backup lives with the report, never beside the book in data/
-    assert [f.name for f in p["backups"].iterdir()][0].startswith("CERT_BOOK_LIVE.json.bak_door_")
+    assert next(f.name for f in p["backups"].iterdir()).startswith("CERT_BOOK_LIVE.json.bak_door_")
     assert not any(f.name.startswith("CERT_BOOK_LIVE.json.bak") for f in tmp_path.iterdir())
     again = _run(p)                                                   # idempotent
     assert again["status"] == "NEEDS_SIZE" and len(again["history"]) == 1
