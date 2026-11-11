@@ -650,9 +650,9 @@ def build(*, max_cells: int = MAX_CELLS, cell: str | None = None, survivors: Pat
           replay: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Review this run's cells and return (artifact, ledger rows). Writes nothing."""
     certs = load_certificates(survivors)
+    cand = promotion_candidates()
     keys = ([cell] if cell is not None
-            else order_cells(list(certs), ledger,
-                             first=promotion_candidates())[:max(0, int(max_cells))])
+            else order_cells(list(certs), ledger, first=cand)[:max(0, int(max_cells))])
     rows: list[dict[str, Any]] = []
     for key in keys:
         entry = certs.get(key)
@@ -675,9 +675,24 @@ def build(*, max_cells: int = MAX_CELLS, cell: str | None = None, survivors: Pat
         "reviewed": rows,
         "coverage": {"certified": len(certs), "reviewed_ever": reviewed_ever,
                      "never_reviewed": len(certs) - reviewed_ever},
+        # The lead is only as good as the key match: a clock-law key that names no survivor
+        # certificate is never reviewed, so a format drift would make the lead vacuous. These
+        # counts are what prove it isn't (UNMEASURED when the clock law could not be read).
+        "promotion_candidates": _candidate_coverage(cand, certs, seen),
         "rule": RULE,
     }
     return doc, rows
+
+
+def _candidate_coverage(cand: set[str], certs: dict[str, Any],
+                        seen: set[str]) -> dict[str, Any]:
+    if not cand and not CLOCK_LAW.exists():
+        return {"status": UNMEASURED, "why": f"{CLOCK_LAW.name} absent"}
+    matched = cand & set(certs)
+    return {"status": "MEASURED", "on_clock_law": len(cand), "matched": len(matched),
+            "unmatched": len(cand) - len(matched),
+            "unreviewed": len(matched - seen),
+            "unmatched_sample": sorted(cand - set(certs))[:5]}
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -311,6 +311,23 @@ def test_build_writes_coverage_and_bounds_the_run(desk):
     assert rows == [] and doc["n_reviewed"] == 0
 
 
+def test_build_counts_how_many_candidates_name_a_certificate(desk, tmp_path, monkeypatch):
+    doc, _ = br.build(max_cells=0, survivors=desk["survivors"], ledger=desk["ledger"],
+                      universe=desk["universe"])
+    assert doc["promotion_candidates"]["status"] == br.UNMEASURED   # the law is absent
+    law = tmp_path / "law.json"
+    law.write_text(json.dumps({"certificates": [
+        {"certificate": KEY, "status": "PROMOTION CANDIDATE"},
+        {"certificate": "drifted.key", "status": "PROMOTION CANDIDATE"}]}))
+    monkeypatch.setattr(br, "CLOCK_LAW", law)
+    doc, _ = br.build(max_cells=0, survivors=desk["survivors"], ledger=desk["ledger"],
+                      universe=desk["universe"])
+    pc = doc["promotion_candidates"]
+    assert (pc["status"], pc["on_clock_law"], pc["matched"], pc["unmatched"]) == \
+        ("MEASURED", 2, 1, 1)
+    assert pc["unmatched_sample"] == ["drifted.key"]
+
+
 def test_an_unknown_cell_key_is_unmeasured(desk):
     _doc, rows = br.build(cell="no.such.cell", survivors=desk["survivors"],
                           ledger=desk["ledger"], universe=desk["universe"])
