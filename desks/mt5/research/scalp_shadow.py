@@ -1,9 +1,10 @@
 """Forward-only shadow clock for the four stable anti-crowd gold scalp candidates.
 
 Discovery bars end before ``SHADOW_START`` and are never counted as forward trades. The engine
-replays only newly acquired M5/M15 broker bars, overwrites deterministic ledgers idempotently, and
-cannot grant promotion authority while the feed is a non-Fusion proxy. Fifty trades can mature a
-sleeve immediately; after fourteen calendar days at least twenty trades are still required.
+replays only newly acquired M5/M15 broker bars, APPENDS closed trades to ledgers it never
+rewrites, and cannot grant promotion authority while the feed is a non-Fusion proxy. Fifty
+trades can mature a sleeve immediately; after fourteen calendar days at least twenty trades
+are still required.
 """
 from __future__ import annotations
 
@@ -95,6 +96,81 @@ def _broker_offset_h() -> float:
         return float(broker_utc_offset_hours(_mt5))
     except Exception:
         return 0.0
+
+
+def _read_ledger(path: Path) -> tuple[list[dict], str | None]:
+    """The rows already written, or ([], why) when a file exists but cannot be read as rows.
+
+    An unreadable record is never overwritten: the caller stands the sleeve down instead."""
+    if not path.exists():
+        return [], None
+    try:
+        rows = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return [], f"{path.name} unreadable ({type(exc).__name__}: {exc}); not overwritten"
+    if not isinstance(rows, list) or not all(isinstance(r, dict) for r in rows):
+        return [], f"{path.name} is not a list of trade rows; not overwritten"
+    return rows, None
+
+
+def _write_ledger(path: Path, rows: list[dict]) -> None:
+    tmp = path.with_name(f"{path.name}.tmp")
+    tmp.write_text(json.dumps(rows, indent=2), "utf-8")
+    tmp.replace(path)
+
+
+def _opened(row: dict) -> pd.Timestamp | None:
+    raw = row.get("opened_at") or row.get("entry_time") or row.get("time") or row.get("open_time")
+    try:
+        return pd.Timestamp(str(raw)) if raw else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _closed_inside(row: dict, last_bar: pd.Timestamp) -> bool:
+    """A trade whose exit is the final bar of the data may be a cut-off, not an exit."""
+    raw = row.get("closed_at")
+    if not raw:
+        return True
+    try:
+        return pd.Timestamp(str(raw)) < last_bar
+    except (ValueError, TypeError):
+        return False
+
+
+def append_only(prior: list[dict], replay: list[dict],
+                last_bar: pd.Timestamp) -> tuple[list[dict], dict]:
+    """(rows to write, drift report). `prior` stands verbatim; only replayed trades opened
+    after the last recorded one, and closed inside the data, are appended.
+
+    Drift is measured on the trades both sides hold (keyed by open time, `phase` aside): a
+    replay that no longer reproduces the record is a fact about the replay's inputs, and the
+    report is where it goes."""
+    def _key(r: dict) -> str:
+        t = _opened(r)
+        return t.isoformat() if t is not None else json.dumps(r, sort_keys=True)
+
+    def _body(r: dict) -> dict:
+        return {k: v for k, v in r.items() if k != "phase"}
+
+    rec = {_key(r): r for r in prior}
+    rep = {_key(r): r for r in replay}
+    stamps = [t for t in (_opened(r) for r in prior) if t is not None]
+    last = max(stamps) if stamps else None
+    differ = [k for k in rec if k in rep and _body(rec[k]) != _body(rep[k])]
+    missing = [k for k in rec if k not in rep]
+    unrecorded = [k for k, r in rep.items() if k not in rec and last is not None
+                  and (_opened(r) or last) <= last]
+    new = []
+    for r in replay:
+        t = _opened(r)
+        after = last is None or (t is not None and t > last)
+        if after and _closed_inside(r, last_bar):
+            new.append(r)
+    drift = {"n_compared": sum(1 for k in rec if k in rep), "n_differ": len(differ),
+             "n_missing": len(missing), "n_unrecorded": len(unrecorded),
+             "first_differ": differ[0] if differ else None, "appended": len(new)}
+    return list(prior) + new, drift
 
 
 def _drawdown(rs: list[float]) -> float:
@@ -302,11 +378,32 @@ def run(now: datetime | None = None) -> dict:
                           "on this pass, so every observation so far is selection-era. If this "
                           "row says the same thing on the NEXT pass, the state file is not "
                           "persisting and the clock can never start")
-        n_historical = len(_all) - len(records)
         ledger = SHADOW / f"ledger_{name}.json"
-        ledger.write_text(json.dumps(
-            [{**r, "phase": ("forward" if r in records else "historical")} for r in _all],
-            indent=2), "utf-8")
+        # THE LEDGER IS A RECORD, NOT A REPLAY (immutable_evaluator BREACH, 2026-11-11). This
+        # used to rewrite the whole file from a fresh re-simulation every pass, so anything that
+        # moves a replay -- the commission read from today's universe.json, the parquet's
+        # earliest bar (EMA and ATR warm-up), the last trade cut off at the end of the data --
+        # silently rewrote trades the promoter and the allocator had already been judged on.
+        # The sealed prefix of ledger_xau_m5_anti_momentum_ny.json stopped hashing. Now the
+        # written rows stand verbatim, a new trade is appended only once it has closed inside
+        # the data, and a replay that disagrees with the record is REPORTED, never written.
+        prior_rows, prior_err = _read_ledger(ledger)
+        if prior_err:
+            state["sleeves"][name] = {"status": "LEDGER_UNREADABLE", "n": 0, "symbol": sym,
+                                      "timeframe": tf, "choice": choice.__dict__,
+                                      "last_error": prior_err}
+            continue
+        tagged = [{**r, "phase": ("forward" if r in records else "historical")} for r in _all]
+        merged, drift = append_only(prior_rows, tagged, pd.Timestamp(df.index[-1]))
+        if merged != prior_rows:
+            _write_ledger(ledger, merged)
+        records = [r for r in merged if r.get("phase") == "forward"]
+        n_historical = len(merged) - len(records)
+        if drift["n_differ"] or drift["n_missing"] or drift["n_unrecorded"]:
+            print(f"  {name}: replay disagrees with the record on {drift['n_differ']} trade(s), "
+                  f"{drift['n_missing']} recorded trade(s) absent from the replay, "
+                  f"{drift['n_unrecorded']} replayed trade(s) before the record's end; "
+                  "the record stands")
         rs = [float(row["r"]) for row in records]
         n = len(rs)
         last_bar = pd.Timestamp(df.index[-1])
@@ -393,6 +490,7 @@ def run(now: datetime | None = None) -> dict:
             "last_source_bar": last_bar.isoformat(), "matured": matured,
             "source_trading_lag_hours": lag_hours, "source_stale": stale_source,
             "promotion_authority": authority,
+            "ledger_records": len(merged), "replay_drift": drift,
             "note": ("Proxy bars may accrue diagnostic evidence but cannot authorize capital."
             if not authority else "Fusion-native forward shadow."),
         }
