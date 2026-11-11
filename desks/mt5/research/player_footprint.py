@@ -977,6 +977,11 @@ SOURCES: dict[str, dict[str, str]] = {
         "terms_note": ("public archive CSV, no login. Site terms not read or recorded in the repo "
                        "(no terms record for spdrgoldshares.com); mined with the label, "
                        "redistribution withheld until confirmed"),
+        # UNREAD: no citation. Left empty on purpose -- only a session that actually reads the
+        # terms writes the clause, its URL and the read date here; until then fetch_gld HELDs.
+        "terms_clause": "",
+        "terms_url": "",
+        "terms_read_at": "",
     },
     "cftc": {
         "access_label": "PUBLIC",
@@ -987,9 +992,31 @@ SOURCES: dict[str, dict[str, str]] = {
     "mt5_bars": {
         "access_label": "LICENSED",
         "terms": "confirmed",
+        # LICENSED/confirmed: the broker feed the trading account is licensed for.
         "terms_note": "the desk's own broker-account price bars, the input of every family",
     },
 }
+
+#: What a terms row must cite before its source is fetched: the clause read, its URL and the
+#: read date. The desk standard set on #672 (cn_retail_tone.TERMS_CITATION_KEYS, same names);
+#: not on LIVE yet -- converge onto that shared definition once #672 lands.
+TERMS_CITATION_KEYS: tuple[str, ...] = ("terms_clause", "terms_url", "terms_read_at")
+
+
+def terms_gate(source: str) -> tuple[str, str]:
+    """(LIVE | HELD, why) for fetching `source`. FAIL CLOSED: an unknown source, or a terms row
+    that does not cite the clause, the URL and the read date, is HELD -- an unread terms record
+    is not a permission, and no request of any kind (robots.txt included) is made."""
+    row = SOURCES.get(source)
+    if row is None:
+        return "HELD", f"no terms row `{source}`: held (fail closed)"
+    missing = [k for k in TERMS_CITATION_KEYS if not str(row.get(k) or "").strip()]
+    if missing:
+        return "HELD", (f"terms row `{source}` is {row.get('terms') or 'unrecorded'} and cites no "
+                        f"reading (missing {', '.join(missing)}): held (fail closed)")
+    return "LIVE", (f"terms row `{source}`: {row.get('terms_clause')} "
+                    f"[{row.get('terms_url')} read {row.get('terms_read_at')}]")
+
 
 #: Access labels from least to most restrictive (retail_crowd.ACCESS_ORDER, LAWS 5e).
 ACCESS_ORDER: tuple[str, ...] = (
@@ -1141,8 +1168,10 @@ def fetch_gld(state: dict[str, Any], now: datetime, *, offline: bool,
               get: Callable[..., Any] | None = None,
               robots: RobotsGate | None = None) -> tuple[str | None, str]:
     """The held archive, refreshed at most once per GLD_REFETCH_H through `honest_get`, and
-    only after the host's robots.txt allows the exact path. `get(url, accept=, timeout=)` is
-    the injectable fetch (`honest_get` by default) used for robots.txt and the page alike."""
+    only when spdrgoldshares' terms row cites its reading (`terms_gate`; otherwise HELD with
+    ZERO requests, robots.txt included) and the host's robots.txt allows the exact path.
+    `get(url, accept=, timeout=)` is the injectable fetch (`honest_get` by default) used for
+    robots.txt and the page alike."""
     held = GLD_RAW.read_text(encoding="utf-8") if GLD_RAW.exists() else None
     if offline:
         return held, "offline: held archive only"
@@ -1155,6 +1184,9 @@ def fetch_gld(state: dict[str, Any], now: datetime, *, offline: bool,
                 return held, "held (fetched within the refetch window)"
         except ValueError:
             pass
+    posture, why = terms_gate(GLD_SOURCES[0])
+    if posture != "LIVE":
+        return held, f"HELD: {why}"
     get = get or honest_get
     verdict = (robots or _robots_for_pass(get)).check(GLD_URL)
     if verdict["verdict"] == "REFUSED":

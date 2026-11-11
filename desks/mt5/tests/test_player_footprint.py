@@ -251,6 +251,7 @@ class TestGoldEtf:
         assert "flow_px_resid" not in frames["pf_gold_etf"].columns
         assert rep["divergence"].startswith("UNMEASURED")
 
+    @pytest.mark.usefixtures("cited_gld_terms")
     def test_a_hard_stop_is_recorded_and_never_retried(self) -> None:
         get, calls = _fake_get({"/robots.txt": (404, "")}, default=(403, ""))
         st: dict[str, Any] = {}
@@ -309,6 +310,44 @@ def _fake_get(by_path: dict[str, tuple[int | None, str]], default: tuple[int | N
     return get, calls
 
 
+@pytest.fixture
+def cited_gld_terms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A SYNTHETIC citation for the spdrgoldshares terms row (test-only; the real row is unread)."""
+    row = {**P.SOURCES["spdrgoldshares"], "terms_clause": "synthetic clause 1",
+           "terms_url": "https://example.invalid/terms", "terms_read_at": "2026-01-01"}
+    monkeypatch.setitem(P.SOURCES, "spdrgoldshares", row)
+
+
+class TestTermsGate:
+    def test_the_real_spdr_row_is_uncited_and_held(self) -> None:
+        posture, why = P.terms_gate("spdrgoldshares")
+        assert posture == "HELD" and "terms_clause" in why
+        assert P.SOURCES["spdrgoldshares"]["terms"] == "to_confirm"
+
+    def test_an_uncited_record_makes_zero_requests_and_the_held_archive_is_read(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        raw = tmp_path / "gld_archive.csv"
+        raw.write_text(GLD_FIXTURE, encoding="utf-8")
+        monkeypatch.setattr(P, "GLD_RAW", raw)
+        get, calls = _fake_get({"/robots.txt": (404, "")}, default=(200, GLD_FIXTURE))
+        st: dict[str, Any] = {}
+        text, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert calls == [] and how.startswith("HELD:") and "cites no reading" in how
+        assert text == GLD_FIXTURE and st == {}
+
+    def test_an_unknown_source_is_held(self) -> None:
+        assert P.terms_gate("nowhere")[0] == "HELD"
+
+    @pytest.mark.usefixtures("cited_gld_terms")
+    def test_a_cited_record_passes_to_the_robots_gate(self) -> None:
+        assert P.terms_gate("spdrgoldshares")[0] == "LIVE"
+        get, calls = _fake_get({"/robots.txt": (200, "User-agent: *\nDisallow: /\n")})
+        _, how = P.fetch_gld({}, _NOW, offline=False, get=get)
+        assert how.startswith("ROBOTS_REFUSED")
+        assert calls == [P.RobotsGate.robots_url(P.GLD_URL)]
+
+
+@pytest.mark.usefixtures("cited_gld_terms")
 class TestRobots:
     def test_a_disallowed_path_never_fetches_the_page(self) -> None:
         rules = "User-agent: *\nDisallow: /assets/dynamic/\n"
