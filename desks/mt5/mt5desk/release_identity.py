@@ -93,6 +93,8 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/process_health.json",
     # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
     "desks/mt5/reports/BACKUP_STATE.json",
+    # The FTMO pacing summary, verdicts and shares only (research/prop_pacing.py, idea 631).
+    "desks/mt5/reports/FTMO_PACING_PUBLIC.json",
     "desks/mt5/data/tier_s/box_evidence.json",
     "desks/mt5/data/tier_s/live_door.json",
     "desks/mt5/reports/NULL_LAB.json",

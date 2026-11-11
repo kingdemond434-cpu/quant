@@ -42,7 +42,7 @@ def _alloc(days_median: float = 8.0, phase: str = "phase1", **kw: Any) -> dict[s
 
 @pytest.fixture
 def files(monkeypatch, tmp_path) -> Path:
-    for name in ("OUT", "LEDGER", "ACCOUNT_STATE", "ALLOCATOR"):
+    for name in ("OUT", "PUBLIC_OUT", "LEDGER", "ACCOUNT_STATE", "ALLOCATOR"):
         monkeypatch.setattr(pp, name, tmp_path / f"{name.lower()}.json")
     return tmp_path
 
@@ -168,3 +168,42 @@ def test_it_never_writes_the_cert_book_or_any_sizing_file() -> None:
 def test_the_venue_reader_runs_it_every_pass() -> None:
     src = (_DESK / "prop" / "ftmo_venue_reader.py").read_text("utf-8")
     assert "prop_pacing.run()" in src
+
+
+def _numbers(obj: Any) -> list[float]:
+    if isinstance(obj, dict):
+        return [x for v in obj.values() for x in _numbers(v)]
+    if isinstance(obj, list):
+        return [x for v in obj for x in _numbers(v)]
+    return [float(obj)] if isinstance(obj, (int, float)) and not isinstance(obj, bool) else []
+
+
+def test_the_public_summary_carries_verdicts_and_shares_never_dollars(files) -> None:
+    pos = [{"symbol": "XAUUSD", "side": "long", "volume": 1.0, "profit": -500.0}]
+    _write(pp.ACCOUNT_STATE, _state(open_positions=pos))
+    _write(pp.ALLOCATOR, _alloc())
+    pp.run(now=NOW)
+    text = Path(pp.PUBLIC_OUT).read_text("utf-8")
+    pub = json.loads(text)
+    assert pub["status"] == "OK" and pub["open_positions"] == 1
+    assert pub["pace"]["verdict"] == "AHEAD" and pub["progress_share"] == 0.3
+    assert pub["daily_room_share"] == 0.82 and pub["max_room_in_daily_limits"] == 2.5
+    assert pub["worst_daily_room_share"] == 0.82 and pub["days"]["min_days_left"] == 2
+    for banned in ("usd", "balance", "equity\"", "account_key", KEY, "sha256", "profit", "XAUUSD"):
+        assert banned not in text, banned
+    # No figure in it is an account-sized amount.
+    assert max(abs(x) for x in _numbers(pub)) < 1000
+
+
+def test_an_unmeasured_account_publishes_unmeasured(files) -> None:
+    pp.run(now=NOW)
+    pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
+    assert pub["status"] == "UNMEASURED" and pub["pace"]["verdict"] is None
+    assert pub["open_positions"] is None
+
+
+def test_the_public_summary_rides_the_state_wire() -> None:
+    root = _DESK.parent.parent
+    rel = "desks/mt5/reports/FTMO_PACING_PUBLIC.json"
+    assert rel in (root / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8")
+    assert f"!{rel}" in (root / ".gitignore").read_text("utf-8")

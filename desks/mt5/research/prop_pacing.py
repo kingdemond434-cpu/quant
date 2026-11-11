@@ -53,6 +53,10 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "FTMO_PACING.json"
+#: THE PUBLIC-SAFE SUMMARY (idea 631): FTMO equity was invisible off the box, and the repo is
+#: public. This one is published on the box's state wire; it carries verdicts, counts and shares
+#: of the firm's own limits only -- never a dollar figure, a balance or the account key.
+PUBLIC_OUT = BASE / "reports" / "FTMO_PACING_PUBLIC.json"
 LEDGER = BASE / "data" / "ftmo_pacing_ledger.jsonl"
 ACCOUNT_STATE = BASE / "reports" / "FTMO_ACCOUNT_STATE.json"
 ALLOCATOR = BASE / "reports" / "FTMO_ALLOCATOR.json"
@@ -166,6 +170,8 @@ def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
     doc.update({"account_key": state.get("account_key"), "phase": phase,
                 "state_generated_at": state.get("generated_at"),
                 "status": "UNMEASURED" if why else "OK", "why": "; ".join(why) or None})
+    pos = state.get("open_positions")
+    doc["open_positions"] = len(pos) if isinstance(pos, list) else None
     # ROOM to the loss limits: equity (floating included) against the day's start and the floor.
     daily_limit = rules.daily_loss * initial
     floor = initial * (1.0 - rules.max_loss)
@@ -257,6 +263,48 @@ def _close_row(snap: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
+#: The public summary's keys, by name: an allow-list, so a field added to the report later never
+#: reaches the public branch without being named here.
+_PUBLIC_DAYS = ("traded", "min_days", "min_days_left", "weekdays_elapsed")
+_PUBLIC_PACE = ("verdict", "vs_plan_now", "vs_plan_at_start", "start_plan_days_median")
+_PUBLIC_PLAN = ("days_median", "days_p90", "p_pass", "p_fail", "halved_days_median",
+                "halved_p_pass", "total_risk")
+
+
+def _share(num: Any, den: Any) -> float | None:
+    if isinstance(num, (int, float)) and isinstance(den, (int, float)) and den > 0:
+        return round(float(num) / float(den), 4)
+    return None
+
+
+def public(doc: dict[str, Any]) -> dict[str, Any]:
+    """The verdict-only view of a pacing report: no dollars, no balances, no account key."""
+    room, prog = doc.get("room") or {}, doc.get("progress") or {}
+    limit = room.get("daily_limit_usd")
+    days, pace, plan = doc.get("days") or {}, doc.get("pace") or {}, doc.get("plan") or {}
+    return {
+        "generated_at": doc.get("generated_at"), "cet_date": doc.get("cet_date"),
+        "status": doc.get("status"), "why": doc.get("why"), "phase": doc.get("phase"),
+        "rules": doc.get("rules"), "open_positions": doc.get("open_positions"),
+        "progress_share": prog.get("share"), "progress_share_equity": prog.get("share_equity"),
+        "target_reached_min_days_left": doc.get("target_reached_min_days_left"),
+        "days": {k: days.get(k) for k in _PUBLIC_DAYS},
+        "pace": {k: pace.get(k) for k in _PUBLIC_PACE},
+        "plan": {k: plan.get(k) for k in _PUBLIC_PLAN} if "why" not in plan else
+                {"why": plan.get("why")},
+        # Room as shares of the firm's own limits, floating P/L included.
+        "daily_room_share": room.get("daily_room_frac"),
+        "max_room_in_daily_limits": room.get("max_room_in_daily_limits"),
+        "worst_daily_room_share": _share(doc.get("worst_daily_room_usd"), limit)}
+
+
+def _atomic(path: Path, doc: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    os.replace(tmp, path)
+
+
 def run(now: datetime | None = None) -> dict[str, Any]:
     """One pass from the files on disk: the report, and the previous day's close row when the
     CE(S)T day has turned. Never raises (the venue reader calls it)."""
@@ -291,10 +339,8 @@ def run(now: datetime | None = None) -> dict[str, Any]:
             with LEDGER.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps({**_close_row(doc), "kind": "phase_start"}, sort_keys=True,
                                     default=str) + "\n")
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = OUT.with_name(f".{OUT.name}.{os.getpid()}.tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-        os.replace(tmp, OUT)
+        _atomic(OUT, doc)
+        _atomic(PUBLIC_OUT, public(doc))
         return doc
     except Exception as exc:
         return {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"[:300]}

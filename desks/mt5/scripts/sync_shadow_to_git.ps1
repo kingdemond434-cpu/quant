@@ -698,6 +698,9 @@ $relPaths = @(
     # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
     # the key backup's present/size/match. Scheme only: no path, repository, password or hash.
     "desks/mt5/reports/BACKUP_STATE.json",
+    # THE FTMO PACING SUMMARY (idea 631): pace verdict, open positions and room as shares of the
+    # firm's limits, written by research/prop_pacing.py. Never a dollar figure or the account key.
+    "desks/mt5/reports/FTMO_PACING_PUBLIC.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two
