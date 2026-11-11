@@ -35,6 +35,9 @@ from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
+#: What this leg writes; mirrors `experiment_ledger.OUT` (a test pins them). Bound here so the
+#: component registry reads the leg's artifact from its own source.
+OUT = DESK / "reports" / "EXPERIMENT_LEDGER.json"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

@@ -88,3 +88,7 @@ def test_the_hourly_cycle_runs_the_writer_every_hour():
             core = ast.literal_eval(node.value.args[0])
     assert core is not None and "experiment_ledger" in core
     assert '"experiment_ledger", "research/write_experiment_ledger.py"' in src
+
+
+def test_the_declared_artifact_is_the_ledger_the_judge_reads():
+    assert w.OUT.resolve() == el.OUT.resolve()
