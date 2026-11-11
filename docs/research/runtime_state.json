@@ -695,8 +695,7 @@
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "fence:check_evaluator_attestations",
-     "task:MT5-FTMO-Allocator"
+     "fence:check_evaluator_attestations"
     ]
    }
   ]
