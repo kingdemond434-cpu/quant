@@ -87,6 +87,30 @@ ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disa
 #: allowlist is how "one sleeve on this instrument" is said in a way the gateway can enforce.
 DEFAULT_LIVE_SLEEVES: dict[str, frozenset[str]] = {}
 
+#: Data sources whose values are an LLM's output. A row conditioned on one of them may keep its
+#: forward-shadow clock and may hold a certificate, and may NEVER hold live capital: the standing
+#: rule is that LLMs propose only, and no LLM output reaches live sizing or a live decision
+#: without the principal's own word. This is deliberately NOT read from the policy file: lifting
+#: it is a code change carrying that word, not a JSON edit. `semantic_prob` is Lab L
+#: (`research/semantic_prob_lab.py`), the free model chain's calibrated probabilities.
+LLM_DERIVED_SOURCES: frozenset[str] = frozenset({"semantic_prob"})
+LLM_ORDER = ("standing rule: LLMs propose only -- no LLM output holds live capital without the "
+             "principal's word; the cell keeps its forward-shadow clock")
+
+
+def llm_derived(row: Mapping[str, Any]) -> str | None:
+    """The LLM-derived source this row is conditioned on, or None.
+
+    Read from the row itself and from its `params` (the family's arguments, where an
+    exogenous_conditioner names its `source`), and an explicit `llm_derived` flag on either."""
+    params = row.get("params")
+    params = params if isinstance(params, Mapping) else {}
+    for holder in (row, params):
+        if holder.get("llm_derived"):
+            return str(holder.get("source") or "llm_derived")
+    src = str(params.get("source") or "").strip().lower()
+    return src if src in LLM_DERIVED_SOURCES else None
+
 
 @dataclass(frozen=True)
 class Policy:
@@ -156,6 +180,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     sym = str(row.get("symbol") or "").strip().upper()
     if not sym:
         return "row carries no symbol; it cannot be admitted to the live account"
+    llm = llm_derived(row)
+    if llm:
+        return f"conditioned on LLM-derived source {llm!r} -- {LLM_ORDER}"
     if "*" not in p.live_symbols and sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()

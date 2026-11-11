@@ -105,11 +105,16 @@ def test_settlement_and_calibration_are_point_in_time(wired: Path) -> None:
 
 def test_cells_wait_for_the_family_floor_then_mint_once(wired: Path) -> None:
     got: list[dict] = []
-    assert lab.mint_cells(lab.MIN_OBSERVATIONS - 1, enqueue=lambda **k: got.append(k)
+    span = lab.MIN_SPAN_DAYS
+    assert lab.mint_cells(lab.MIN_OBSERVATIONS - 1, span, enqueue=lambda **k: got.append(k)
                           )["status"] == "WAITING" and not got
+    assert lab.mint_cells(500, span - 1, enqueue=lambda **k: got.append(k)
+                          )["status"] == "WAITING" and not got, "rows alone are not enough"
     n = sum(len(t["cells"]) for t in lab.TOPICS.values())
-    assert lab.mint_cells(lab.MIN_OBSERVATIONS, enqueue=lambda **k: got.append(k))["minted"] == n
-    assert lab.mint_cells(lab.MIN_OBSERVATIONS, enqueue=lambda **k: got.append(k))["minted"] == 0
+    assert lab.mint_cells(lab.MIN_OBSERVATIONS, span,
+                          enqueue=lambda **k: got.append(k))["minted"] == n
+    assert lab.mint_cells(lab.MIN_OBSERVATIONS, span,
+                          enqueue=lambda **k: got.append(k))["minted"] == 0
     c = next(k for k in got if k["symbol"] == "EURUSD")
     assert c["family"] == "exogenous_conditioner"
     assert c["params"] == {"source": "semantic_prob", "signal": "usd__tilt",
@@ -122,6 +127,7 @@ def test_the_family_reads_the_series_with_its_own_lag(wired: Path) -> None:
              "calibrated": {"usd": {"up": 0.2 + 0.6 * (i % 7 == 0), "down": 0.2,
                                     "flat": 0.6 - 0.6 * (i % 7 == 0)}}} for i in range(60)]
     assert lab.write_series(rows) == 60
+    assert lab.series_span_days() == pytest.approx(6 * 59 / 24)
     bars = pd.read_parquet(wired / "bars" / "EURUSD_H1.parquet")
     bars["high"] = bars["close"] * 1.001
     bars["low"] = bars["close"] * 0.999
@@ -137,3 +143,32 @@ def test_the_family_reads_the_series_with_its_own_lag(wired: Path) -> None:
 def test_the_issue_board_runs_it_hourly() -> None:
     from research import issue_board
     assert '"research/semantic_prob_lab.py"' in Path(issue_board.__file__).read_text("utf-8")
+
+
+def test_a_certified_llm_derived_cell_is_never_written_live(
+        wired: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """LLMs propose only: a cell may be certified and keep its shadow clock, never hold capital."""
+    from mt5desk import live_policy
+
+    from research import promoter
+    assert lab.SERIES_ID in live_policy.LLM_DERIVED_SOURCES, "the lab's marker is the fence's"
+    got: list[dict] = []
+    lab.mint_cells(lab.MIN_OBSERVATIONS, lab.MIN_SPAN_DAYS, enqueue=lambda **k: got.append(k))
+    pol = live_policy.Policy(live_symbols=frozenset({"*"}), banned_timeframes={},
+                             banned_families=frozenset(), banned_execs=frozenset())
+    rows = [{"name": f"{c['symbol'].lower()}_exogenous_conditioner", "symbol": c["symbol"],
+             "timeframe": "H1", "family": "exogenous_conditioner", "status": "LIVE",
+             "risk_frac": 0.01, "exec": "family_market", "params": dict(c["params"])}
+            for c in got]
+    rows.append({**rows[0], "name": "a_price_pack_cell",
+                 "params": {**rows[0]["params"], "source": "boj_fixing"}})
+    for r in rows[:-1]:
+        assert "LLM-derived" in (live_policy.refuse(r, pol) or "")
+    assert live_policy.refuse(rows[-1], pol) is None, "a non-LLM pack cell is untouched"
+    assert live_policy.refuse({"symbol": "EURUSD", "llm_derived": True}, pol)
+    # the promoter's writer, under a policy that would admit every symbol, family and lane
+    monkeypatch.setattr(live_policy, "policy", lambda path=None: pol)
+    monkeypatch.setattr(promoter, "plog", lambda msg: None)
+    assert promoter._apply_live_policy(rows) == len(rows) - 1
+    assert all(r["status"] == "RETIRED" and r["risk_frac"] == 0.0 for r in rows[:-1])
+    assert rows[-1]["status"] == "LIVE"

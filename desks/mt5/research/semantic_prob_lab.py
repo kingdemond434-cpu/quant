@@ -24,9 +24,11 @@ THE LOOP, ONE READING EVERY MIN_INTERVAL_H:
      carries only what was knowable when each value was stamped.
   5. LAB L CELLS. Each directional topic publishes `<topic>__tilt` = p(up) - p(down) into the
      lake series `semantic_prob`, stamped `available_time`. Once that series holds
-     MIN_OBSERVATIONS rows, one `exogenous_conditioner` cell per (topic, symbol), with the sign
-     the topic implies, is enqueued in the canonical registry ONCE. The judge runs them through
-     the same ten gates as everything else; that family lags the series a further publication day.
+     MIN_OBSERVATIONS rows spanning MIN_SPAN_DAYS, one `exogenous_conditioner` cell per
+     (topic, symbol), with the sign the topic implies, is enqueued in the canonical registry
+     ONCE. The judge runs them through the same ten gates as everything else; that family lags
+     the series a further publication day. The cells are LLM-derived through their source:
+     `mt5desk.live_policy.LLM_DERIVED_SOURCES` keeps a certified one in forward shadow, never LIVE.
 
 WHAT IT MAY NOT DO. LLMs propose only: nothing here sizes, promotes, vetoes or touches an order.
 The probabilities are research features. The free tier is the default (llm_seat's own policy),
@@ -75,6 +77,10 @@ SUM_TOL = 0.05
 FREE_RESERVE = 50          # requests left for every other organ
 MIN_SETTLED_TO_CALIBRATE = 20
 MIN_OBSERVATIONS = 30      # family_exogenous_conditioner's own floor; cells wait for it
+#: Calendar span the published series must cover before a cell is minted. Thirty rows at the
+#: six-hour interval is under eight days, and a cell minted then is a trial the judge counts in
+#: its multiplicity charge while having almost nothing to judge it on (Auditor, #997).
+MIN_SPAN_DAYS = 60
 #: Bars sit on broker time under a UTC label (+2/+3). A reading is settled from the first bar at
 #: least this far after its stamp, so the offset can never put a bar before the reading.
 CLOCK_PAD_H = 3
@@ -393,11 +399,34 @@ def write_series(rows: list[dict[str, Any]], path: Path | None = None) -> int:
     return len(recs)
 
 
-def mint_cells(n_rows: int, *, minted_path: Path | None = None,
+def series_span_days(path: Path | None = None) -> float:
+    """Days between the first and last `available_time` of the published series; 0 if absent."""
+    import pandas as pd
+    try:
+        stamps = pd.to_datetime(pd.read_parquet(path or SERIES)["available_time"], utc=True,
+                                errors="coerce").dropna()
+    except Exception:
+        return 0.0
+    if stamps.empty:
+        return 0.0
+    return float((stamps.max() - stamps.min()) / pd.Timedelta(days=1))
+
+
+def mint_cells(n_rows: int, span_days: float, *, minted_path: Path | None = None,
                enqueue: Any = None) -> dict[str, Any]:
-    """One exogenous_conditioner cell per (topic, symbol), once, after MIN_OBSERVATIONS rows."""
-    if n_rows < MIN_OBSERVATIONS:
-        return {"status": "WAITING", "rows": n_rows, "needed": MIN_OBSERVATIONS, "minted": 0}
+    """One exogenous_conditioner cell per (topic, symbol), once, after MIN_OBSERVATIONS rows
+    spanning MIN_SPAN_DAYS.
+
+    THE CELLS ARE LLM-DERIVED AND SAY SO THROUGH THEIR SOURCE. `params.source` is SERIES_ID,
+    which `mt5desk.live_policy.LLM_DERIVED_SOURCES` names: the promoter retires and the gateway
+    refuses any LIVE row carrying it, so a certified cell keeps its forward-shadow clock and never
+    holds capital without the principal's word. The marker is the source and not an extra param
+    because params are the family's keyword arguments.
+    """
+    if n_rows < MIN_OBSERVATIONS or span_days < MIN_SPAN_DAYS:
+        return {"status": "WAITING", "rows": n_rows, "needed": MIN_OBSERVATIONS,
+                "span_days": round(float(span_days), 2), "needed_days": MIN_SPAN_DAYS,
+                "minted": 0}
     minted_path = minted_path or MINTED
     done = set(_read_json(minted_path, []) or [])
     if enqueue is None:
@@ -426,7 +455,8 @@ def mint_cells(n_rows: int, *, minted_path: Path | None = None,
             except Exception as exc:
                 errors.append(f"{key}: {type(exc).__name__}: {str(exc)[:60]}")
     _write_json(minted_path, sorted(done))
-    return {"status": "MINTED" if not errors else "PARTIAL", "rows": n_rows, "minted": made,
+    return {"status": "MINTED" if not errors else "PARTIAL", "rows": n_rows,
+            "span_days": round(float(span_days), 2), "minted": made, "llm_derived": True,
             "total": len(done), "errors": errors[:5]}
 
 
@@ -478,7 +508,7 @@ def run(now: datetime | None = None, *, ask: Any = None, bars_dir: Path | None =
             reading = {"status": "READ" if ok else "REJECTED", "accepted": sorted(ok),
                        "rejected": bad, "error": err}
     n = write_series(rows)
-    cells = mint_cells(n, enqueue=enqueue)
+    cells = mint_cells(n, series_span_days(), enqueue=enqueue)
     return {"generated_utc": t.isoformat(timespec="seconds"),
             "status": "MEASURED" if rows else _UNMEASURED,
             "this_pass": reading, "readings": len(rows), "series_rows": n,
