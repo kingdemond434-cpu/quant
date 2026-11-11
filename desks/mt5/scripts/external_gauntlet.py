@@ -55,6 +55,7 @@ from libs.research.hypothesis_graph import (  # noqa: E402
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+from libs.validation.plausibility import plausibility_stage  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
@@ -2870,7 +2871,7 @@ def _cell_series_x3(cells: list) -> list:
 #: MID, lockbox, TAIL -- exactly the sequence the gates were always evaluated in.
 CELL_LOCAL_HEAD = ("economic_prior", "in_sample_screen")
 CELL_LOCAL_MID = ("cpcv", "walk_forward", "stress_costs")
-CELL_LOCAL_TAIL = ("expected_value", "swap_cost")
+CELL_LOCAL_TAIL = ("expected_value", "swap_cost", "plausibility_ceiling")
 
 
 def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
@@ -2979,6 +2980,8 @@ def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
                 f"UNMEASURED cost fails closed: {_basis['why']}; "
                 f"live: {_cost.get('why') or 'unread'}"),
     }
+    # TOO GOOD TO BE TRUE IS A LEAK (zuck 2026-11-06 transcript; libs/validation/plausibility).
+    stages["plausibility_ceiling"] = plausibility_stage(arr)
     return stages
 
 
@@ -3211,7 +3214,10 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 
         # Expected value, swap (cell-local)
         for _k in CELL_LOCAL_TAIL:
-            stages[_k] = _local[_k]
+            # A shard written before the plausibility ceiling existed lacks it: compute it
+            # here from the same development series rather than skipping the gate.
+            stages[_k] = (_local[_k] if _k in _local else
+                          plausibility_stage(arr) if _k == "plausibility_ceiling" else _local[_k])
 
         passed = all(s["passed"] for s in stages.values())
         # AND AT LEAST AS MANY GATES AS THE LAW IN FORCE REQUIRES (S01): a gate count the
