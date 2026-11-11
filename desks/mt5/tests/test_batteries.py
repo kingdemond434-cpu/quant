@@ -197,3 +197,39 @@ def test_the_ratchet_may_never_rise_and_no_rostered_or_retired_file_is_unclocked
     retired = {r["path"] for r in rows if r.get("path") and r.get("status") != "PROPOSED"}
     assert not (retired & unclocked), "a retired file is still being walked as an executable"
     assert not (retired & rostered), "a file cannot be both retired and rostered"
+
+
+def test_an_organ_that_cannot_finish_in_what_is_left_is_deferred_with_the_cursor_on_it(
+        desk: Path) -> None:
+    """2026-11-03: `check_producer_yield` kept landing late in the fence pass, was started with
+    42 s of a 150 s slice, timed out, and PRODUCER_YIELD.json went stale for hours."""
+    roster = (B._e(_organ(desk, "fast.py", "print('ok')\n"), "fast"),
+              B._e(_organ(desk, "slow.py", "print('ok')\n"), "slow"))
+    state = desk / "state.json"
+    out = desk / "desks" / "mt5" / "reports" / "BATTERY_T.json"
+    # slow last timed out, so it needs a full slice; the pass budget leaves less after `fast`.
+    state.write_text(json.dumps({"t": {"cursor": 0, "runs": {
+        "slow.py": {"verdict": "TIMEOUT", "s": 9.0, "at": B._now()}}}}), encoding="utf-8")
+    B_time = B.time.time
+    try:
+        # Budget 300 s, slice 102 s. `fast` starts at t=0; by the time `slow` is reached 250 s
+        # are spent, 50 s remain, and `slow` (it last TIMED OUT) needs the full 102 s slice.
+        seq = iter([0.0, 0.0, 0.0])
+        B.time.time = lambda: next(seq, 250.0)  # type: ignore[assignment]
+        doc = B.run_battery("t", 300.0, root=desk, state_path=state, roster=roster, out=out)
+    finally:
+        B.time.time = B_time  # type: ignore[assignment]
+    assert doc["ran"] == ["fast.py"]
+    assert doc["skipped"] and doc["skipped"][0]["path"] == "slow.py"
+    assert "deferred" in doc["skipped"][0]["why"]
+    assert doc["cursor"] == 1, "the cursor must stay ON the deferred organ"
+    nxt = B.run_battery("t", 300.0, root=desk, state_path=state, roster=roster, out=out)
+    assert nxt["ran"][0] == "slow.py", "the deferred organ runs first next pass"
+
+
+def test_need_is_the_last_clean_run_with_headroom_or_the_full_slice() -> None:
+    assert B.need_s(None, 150.0) == 150.0
+    assert B.need_s({"verdict": "TIMEOUT", "s": 42.0}, 150.0) == 150.0
+    assert B.need_s({"verdict": "OK", "s": 2.0}, 150.0) == B.MIN_SLICE_S
+    assert B.need_s({"verdict": "OK", "s": 60.0}, 150.0) == 95.0
+    assert B.need_s({"verdict": "OK", "s": 400.0}, 150.0) == 150.0
