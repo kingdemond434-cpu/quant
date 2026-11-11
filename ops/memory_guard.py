@@ -355,8 +355,20 @@ def requeue_run(row: dict[str, Any], cap_mb: float) -> dict[str, Any]:
     return {"pid": proc.pid, "capped": capped, "cap_mb": round(cap_mb)}
 
 
+def _process_health() -> Any:
+    """ops/process_health.py loaded by path: `ops` is also the name of desks/mt5/ops, a regular
+    package that wins any `import ops.*` once desks/mt5 is importable."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_mg_process_health",
+                                                  ROOT / "ops" / "process_health.py")
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def run_pass(apply: bool = True) -> dict[str, Any]:
-    from ops.process_health import memory_snapshot
+    memory_snapshot = _process_health().memory_snapshot
 
     at = _now().isoformat(timespec="seconds")
     snap = memory_snapshot()

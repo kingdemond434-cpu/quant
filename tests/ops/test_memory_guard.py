@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
-from ops import memory_guard as mg
+_spec = importlib.util.spec_from_file_location(
+    "memory_guard", Path(__file__).resolve().parents[2] / "ops" / "memory_guard.py")
+assert _spec is not None and _spec.loader is not None
+mg = importlib.util.module_from_spec(_spec)
+sys.modules["memory_guard"] = mg
+_spec.loader.exec_module(mg)
 
 BOX = {"total_phys_mb": 98_298, "free_phys_mb": 44_000, "commit_charge_mb": 150_000,
        "commit_limit_mb": 251_700}
