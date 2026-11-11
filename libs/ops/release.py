@@ -133,6 +133,10 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/live_ledger_corrections.jsonl",
     "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
     "desks/mt5/reports/attribution_chain.json",
+    # The CRO cycle ledger (2026-11-11): the noon launcher and its agent append start/end rows on
+    # the box, and readers off it (the cloud noon check, cro_noon_freshness) saw it end at 10-21
+    # while the first box noon pass was running. Append-only output, published hourly.
+    "desks/mt5/data/cro_cycle_ledger.jsonl",
     # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
     # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
     "desks/mt5/reports/markout.json",
