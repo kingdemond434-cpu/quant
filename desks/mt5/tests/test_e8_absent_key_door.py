@@ -23,7 +23,7 @@ def _journal(tmp: Path, with_row: bool) -> Path:
     p = tmp / "decision_journal.jsonl"
     rows = [{"id": "D-20261105-043", "title": "other"}]
     if with_row:
-        rows.append({"id": g.ABSENT_KEY_DOOR_ROW, "title": "absent-key door"})
+        rows.append({"id": g.ABSENT_KEY_DOOR_ROW, "title": g.ABSENT_KEY_DOOR_TITLE + ": the gold-asia-only pin is retired"})
     p.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     return p
 
@@ -89,3 +89,10 @@ def test_fraction_breaching_the_daily_floor_is_blocked_by_the_guard(tmp_path: Pa
     d = e8_guard.assess(98_000.0, now=NOW, state=st, persist=False)
     fits, _why = g.risk_budget_allows(0.0, 98_000.0 * frac, float(d.room_to_daily_floor))
     assert not fits
+
+
+def test_right_id_wrong_title_keeps_the_door_shut(tmp_path: Path) -> None:
+    p = tmp_path / "decision_journal.jsonl"
+    p.write_text(json.dumps({"id": g.ABSENT_KEY_DOOR_ROW, "title": "an unrelated ruling"}) + "\n",
+                 encoding="utf-8")
+    assert g.absent_key_door_open(p) is False

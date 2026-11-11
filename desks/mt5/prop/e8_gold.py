@@ -92,6 +92,8 @@ GUARD = DESK / "data" / "e8_guard_state.json"
 #: of 0.0. Without the row the enabled book stays a whitelist, exactly as before.
 DECISION_JOURNAL = DESK.parent.parent / "context" / "decision_journal.jsonl"
 ABSENT_KEY_DOOR_ROW = "D-20261111-071"
+#: Journal ids are minted per branch and have collided, so the id alone never opens the door.
+ABSENT_KEY_DOOR_TITLE = "All accounts trade everything"
 LOG = DESK / "logs" / "e8_gold.log"
 TAG = "E8gold"
 #: XAUUSD's price grid, used only when the terminal cannot state `trade_tick_size`.
@@ -184,7 +186,8 @@ def absent_key_door_open(path: Path | None = None) -> bool:
             row = json.loads(line)
         except ValueError:
             continue
-        if isinstance(row, dict) and row.get("id") == ABSENT_KEY_DOOR_ROW:
+        if (isinstance(row, dict) and row.get("id") == ABSENT_KEY_DOOR_ROW
+                and str(row.get("title", "")).startswith(ABSENT_KEY_DOOR_TITLE)):
             return True
     return False
 
