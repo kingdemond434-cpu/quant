@@ -163,6 +163,13 @@ def measure(root: Path = ROOT) -> dict[str, Any]:
                     "an absent record is UNMEASURED, never clean"}
 
 
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set. The set is exactly the statuses
+#: this fence exits 0 on: PASS, and UNMEASURED because the records it reads are box state absent
+#: from any fresh checkout (it is a law-gate fence); UNMEASURED is still printed, never CLEAN.
+#: Any status nobody declared fails closed.
+_PASSING = frozenset({"PASS", "UNMEASURED"})
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--json", action="store_true")
@@ -178,7 +185,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  FAIL {p}")
         for u in doc["unmeasured"]:
             print(f"  UNMEASURED {u}")
-    return 1 if doc["verdict"] == "FAIL" else 0
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(doc["verdict"], _PASSING)
 
 
 if __name__ == "__main__":
