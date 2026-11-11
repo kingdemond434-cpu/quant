@@ -205,7 +205,7 @@
         "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
       "restored_by": "heal_silent_demotions",
@@ -245,7 +245,7 @@
         "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
       "restored_by": "heal_silent_demotions",
@@ -285,7 +285,7 @@
         "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
       "restored_by": "heal_silent_demotions",
@@ -325,7 +325,7 @@
         "why": "standby on the current reading -- same signal as gold_london_am (a second copy of one bet, not a variant): the allocator prices and funds gold_london_am; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "76d3294f692f48aa",
         "ok": false,
@@ -360,7 +360,7 @@
         "why": "standby on the current reading -- same signal as gold_london_am (a second copy of one bet, not a variant): the allocator prices and funds gold_london_am; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "2a9076c595eee423",
         "ok": false,
@@ -395,7 +395,7 @@
         "why": "standby on the current reading -- same signal as gold_london_am (a second copy of one bet, not a variant): the allocator prices and funds gold_london_am; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "105ec4ce38c2d40c",
         "ok": false,
@@ -430,7 +430,7 @@
         "why": "standby on the current reading -- same signal as gold_afternoon (a second copy of one bet, not a variant): the allocator prices and funds gold_afternoon; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "0c5648f41c8dd935",
         "ok": false,
@@ -465,7 +465,7 @@
         "why": "standby on the current reading -- same signal as gold_afternoon (a second copy of one bet, not a variant): the allocator prices and funds gold_afternoon; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "46f8d1fa8e5ea5ea",
         "ok": false,
@@ -500,7 +500,7 @@
         "why": "standby on the current reading -- same signal as gold_afternoon (a second copy of one bet, not a variant): the allocator prices and funds gold_afternoon; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "18107538babc5487",
         "ok": false,
@@ -2170,12 +2170,12 @@
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.019659,
+        "heat_earned": 0.007138,
         "joined": "joined on 'xauusd|session_range_breakout|asia'",
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -2233,12 +2233,12 @@
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.017764,
+        "heat_earned": 0.007138,
         "joined": "joined on 'xauusd_session_range_breakout_asia_5_wb_8'",
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -2296,12 +2296,12 @@
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.017725,
+        "heat_earned": 0.007138,
         "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12'",
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-25T21:32:41+00:00",
       "restored_by": "heal_silent_demotions",
@@ -12735,7 +12735,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-21T21:53:44+00:00",
       "restored_by": "heal_silent_demotions",
@@ -25954,7 +25954,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "0ecf162bf6563324",
         "ok": true,
@@ -26021,7 +26021,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "ed02d01ef593e9db",
         "ok": true,
@@ -26088,7 +26088,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "8e755b67f96dddf6",
         "ok": true,
@@ -26155,7 +26155,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "59777c1a846eb2ee",
         "ok": true,
@@ -31580,7 +31580,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "672878475e97e3b7",
         "ok": true,
@@ -31647,7 +31647,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
       "artifact": {
@@ -31709,12 +31709,12 @@
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.006761,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf'",
+        "heat_earned": 0.001679,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia'",
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
       "artifact": {
@@ -31781,7 +31781,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
       "artifact": {
@@ -31848,7 +31848,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "73ce8910712839f7",
         "ok": true,
@@ -31915,7 +31915,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "5afa2c20b82eca04",
         "ok": true,
@@ -31982,7 +31982,7 @@
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "edd2a2e1f5d0df1b",
         "ok": true,
@@ -32044,12 +32044,12 @@
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.013051,
+        "heat_earned": 0.007138,
         "joined": "joined on 'xauusd|range_reversion|asia'",
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "artifact": {
         "version_hash": "3b13d93f7cbf5cb0",
         "ok": true,
@@ -34217,12 +34217,12 @@
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.008406,
+        "heat_earned": 0.007138,
         "joined": "joined on 'xauusd_range_reversion_asia_p_f83412948ea922b5'",
         "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-11-10T19:26:26.760851+00:00",
+      "admit_scan": "2026-11-11T15:23:21.347103+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-25T10:45:03+00:00",
       "restored_by": "heal_silent_demotions",
@@ -57054,6 +57054,230 @@
       "retire_reason": "GBPMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy",
       "canonical_identity": "gbpmxn|spread_state|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "GBPCAD.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
+      "symbol": "GBPCAD",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'gbpcad|clock_transition|asia'",
+        "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-11T01:47:29+00:00",
+      "shadow_exp": 0.2336941475090668,
+      "family": "clock_transition",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPCAD.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
+      "sleeve_id": "0a0a765daa4266b141ba",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "label": "tokyo_open",
+        "session": "asia",
+        "stamp_hour": 0,
+        "timeframe": "M30"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-11T01:47:30+00:00",
+      "retire_reason": "GBPCAD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy",
+      "canonical_identity": "gbpcad|clock_transition|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['neg', 'spread'], 8]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "symbol": "GBPNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.04032,
+        "joined": "joined on 'gbpnok|formula|asia'",
+        "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-11T02:22:52+00:00",
+      "shadow_exp": 0.4387939321507,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['neg', 'spread'], 8]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "sleeve_id": "0e278679b6408be99d0f",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "delta",
+          [
+            "neg",
+            "spread"
+          ],
+          8
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "fade",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-11T02:22:54+00:00",
+      "retire_reason": "GBPNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy",
+      "canonical_identity": "gbpnok|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "symbol": "GBPNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.04032,
+        "joined": "joined on 'gbpnok|formula|asia'",
+        "why": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-11T02:22:53+00:00",
+      "shadow_exp": 0.4387939321507,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "sleeve_id": "36f5bd82cbdd58ef9c32",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "neg",
+          [
+            "delta",
+            "spread",
+            8
+          ]
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "fade",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-11T02:22:54+00:00",
+      "retire_reason": "GBPNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy",
+      "canonical_identity": "gbpnok|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "CHFNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": 0.0001441428,
+        "heat_earned": 0.0,
+        "joined": "joined on 'chfnok|formula|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe 4.42 at correlation +0.23 to the held book"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-11T02:45:34+00:00",
+      "shadow_exp": 0.4952566172482624,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+      "sleeve_id": "efff5816875d84e400d8",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "ts_backfill",
+          [
+            "decay",
+            "spread",
+            3
+          ],
+          3
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "follow",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-11T02:45:34+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy",
+      "canonical_identity": "chfnok|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "CHFDKK.overnight_gap_decay.asia#session=overlap",
+      "symbol": "CHFDKK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'chfdkk|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'chfdkk|asia' prices 'cross_asset_residual', not 'overnight_gap_decay'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-11T03:17:43+00:00",
+      "shadow_exp": 0.2389824789113577,
+      "family": "overnight_gap_decay",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFDKK.overnight_gap_decay.asia#session=overlap",
+      "sleeve_id": "5205e8eb7c98a7b0a731",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "overlap"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-11T03:17:43+00:00",
+      "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|overnight_gap_decay|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     }
   ]
