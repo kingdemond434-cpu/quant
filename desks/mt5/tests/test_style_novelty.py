@@ -224,8 +224,7 @@ def test_a_measurement_inside_the_refresh_window_is_kept_so_a_big_canon_complete
         "utf-8")
     now = time.time()
     young = sn.datetime.fromtimestamp(now - 3600, sn.UTC).isoformat()
-    spec = {"shadow_spec": {"symbol": "EURUSD", "family": "carry"}}
-    sha = sn.hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:16]
+    sha = sn.measured_inputs_sha({"shadow_spec": {"symbol": "EURUSD", "family": "carry"}})
     kept = {"status": "MEASURED", "novelty": 0.2, "novel": False, "family": "carry",
             "measured_at": young, "spec_sha": sha}
     rep, wk = tmp_path / "r.json", tmp_path / "w.json"
@@ -241,6 +240,7 @@ def test_a_measurement_inside_the_refresh_window_is_kept_so_a_big_canon_complete
                  weekly_path=wk, universe=tmp_path / "u.json", build=build, now=now)
     assert len(built) == 1                         # only "b" was built
     assert doc["per_certificate"]["a"] == kept and doc["complete"] is True
+    assert doc["n_carried"] == 1
     assert wk.exists()
     forced = sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep,
                     weekly_path=wk, universe=tmp_path / "u.json", build=build, force=True,
@@ -255,3 +255,10 @@ def test_a_measurement_inside_the_refresh_window_is_kept_so_a_big_canon_complete
     sn.run(certs_path=certs, fallback=tmp_path / "x.json", report_path=rep, weekly_path=wk,
            universe=tmp_path / "u.json", build=build, now=now)
     assert len(built) == 4
+    # A field that moves every hour (gates, stamps) does not touch the key; params do.
+    base = {"sym": "EURUSD", "gated_at": "t0", "gates": {"pbo": {"pbo": 0.1}},
+            "shadow_spec": {"symbol": "EURUSD", "family": "carry", "params": {"k": 1}}}
+    moved = {**base, "gated_at": "t1", "gates": {"pbo": {"pbo": 0.2}}, "days": 9}
+    assert sn.measured_inputs_sha(base) == sn.measured_inputs_sha(moved)
+    other = {**base, "shadow_spec": {**base["shadow_spec"], "params": {"k": 2}}}
+    assert sn.measured_inputs_sha(base) != sn.measured_inputs_sha(other)

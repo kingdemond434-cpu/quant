@@ -287,6 +287,18 @@ def _builder() -> Callable[..., dict[str, Any] | None]:
     return fn
 
 
+def measured_inputs_sha(cert: Mapping[str, Any]) -> str:
+    """The carry key: a hash of exactly what `score_certificate` reads from a certificate
+    (symbol, family, params). A certificate re-minted under the same id with a different spec is
+    a new measurement; a field that moves every hour (gates, forward counts, stamps) is not part
+    of the key, or nothing would ever carry and every pass would re-measure the canon again."""
+    spec = cert.get("shadow_spec") or {}
+    key = {"symbol": str(spec.get("symbol") or cert.get("sym") or ""),
+           "family": str(spec.get("family") or cert.get("family") or ""),
+           "params": dict(spec.get("params") or {})}
+    return hashlib.sha256(json.dumps(key, sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+
 def score_certificate(cert: Mapping[str, Any], meta: Mapping[str, Any],
                       build: Callable[..., dict[str, Any] | None] | None,
                       classes: Mapping[str, str]) -> dict[str, Any]:
@@ -442,17 +454,16 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
     # carried with its own stamp, and the report is complete when every certificate holds a
     # measurement inside the window. --force still re-measures everything.
     reached_all = True
+    n_carried = 0
     for cid in sorted(certs, key=lambda c: (_stamp(c), c)):
         cert = certs[cid]
         prev_e = prior.get(cid)
-        # Keyed on the certificate's CONTENT as well as its id: a certificate re-minted under the
-        # same id with a different spec is a new measurement, never a carried one.
-        spec_sha = hashlib.sha256(json.dumps(cert, sort_keys=True, default=str)
-                                  .encode()).hexdigest()[:16]
+        spec_sha = measured_inputs_sha(cert)
         if (not force and isinstance(prev_e, dict) and "status" in prev_e
                 and prev_e.get("spec_sha") == spec_sha
                 and not prev_e.get("carried_forward") and 0.0 <= _age_s(cid) < REFRESH_S):
             per[cid] = prev_e
+            n_carried += 1
             continue
         if time.monotonic() > deadline:
             reached_all = False
@@ -476,6 +487,7 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
     doc = {
         "generated_utc": _now(), "source": source, "n_certificates": len(certs),
         "n_measured": len(measured), "n_novel": len(novel), "novel_threshold": NOVEL_T,
+        "n_carried": n_carried,
         "complete": reached_all,
         "status": ("NO_CERTIFICATES" if not certs else "MEASURED" if measured else "UNMEASURED"),
         "styles": list(STYLES), "styles_not_measured": UNMEASURED_STYLES,
