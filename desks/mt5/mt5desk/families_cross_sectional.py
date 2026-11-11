@@ -43,6 +43,16 @@ THE FAMILIES AND THEIR ECONOMIC PRIORS (written down before any data was looked 
       risk limits sell the high-beta members hardest (Brunnermeier & Pedersen 2009). Long the
       class's lowest-beta third, short its highest-beta third, ONLY in stress. Fires specifically
       in the book's worst periods, which is the crisis_drawdown cluster's bar.
+  cross_sectional_class_carry      The currency risk premium (Lustig, Roussanov & Verdelhan
+      2011, HML_FX; Menkhoff, Sarno, Schmeling & Schrimpf 2012): high-rate currencies earn a
+      premium for bearing global FX-volatility risk, so a class's highest-carry members beat its
+      lowest. Ranked on the POINT-IN-TIME 3M interbank differential (FRED/OECD, written by
+      research/futures_state with its publication stamp), never on today's broker swap carried
+      back over history. `carry_x_momentum` averages the carry rank with a 12-1 month momentum
+      rank (AMP 2013 combination). `crash="class_vol"` stands aside while the class's own
+      lagged volatility is in the top of its history: carry unwinds in vol spikes, and the
+      known fix is to hold it only in calm (Brunnermeier, Nagel & Pedersen 2008). Payer: the
+      hedger and the low-yield funder paying for insurance against the crash.
   lead_lag_class_catchup           Slow updaters: a member's return today is partly its class's
       return yesterday, because its participants watch a different screen. The causal lagged
       beta on the class ex-self predicts which members have not yet caught up; long the members
@@ -101,7 +111,20 @@ PARAM_GRID: dict[str, dict[str, list]] = {
                                       "hold_d": [5, 20]},
     "crisis_only_class_defensive": {"stress_q": [0.67, 0.8], "hold_d": [3, 5]},
     "lead_lag_class_catchup": {"window_d": [120, 250], "hold_d": [1, 2]},
+    "cross_sectional_class_carry": {"score": ["carry", "carry_x_momentum"], "hold_d": [20],
+                                    "crash": ["none", "class_vol"]},
 }
+
+#: Where a member's point-in-time rate differential is read: research/futures_state writes one
+#: lake series per pair, `<CARRY_SOURCE>_<pair lower>.parquet`, column `diff` (base minus quote,
+#: percent), stamped `available_time` at publication. Module-level so a test can point it at
+#: synthetic series.
+CARRY_DIR = BASE / "data" / "lake" / "series"
+CARRY_SOURCE = "fred_rdiff3m"
+#: Hours a differential is held back after its stamp before it may rank a decision bar. The
+#: decision bar is on the broker clock and the stamp is UTC; a full day absorbs the offset, the
+#: same hold `family_exogenous_conditioner` applies.
+CARRY_LAG_H = 24
 
 _SERIES_CACHE: OrderedDict[str, tuple[int, np.ndarray, np.ndarray]] = OrderedDict()
 
@@ -546,6 +569,85 @@ def family_lead_lag_class_catchup(
                     tag=f"lead_lag_catchup:{panel['klass']}:{window_d}")
 
 
+def _carry_series(symbol: str) -> tuple[np.ndarray, np.ndarray] | None:
+    """(available stamps ns incl. the lag, differential) for `symbol`, or None when absent."""
+    path = CARRY_DIR / f"{CARRY_SOURCE}_{symbol.lower()}.parquet"
+    try:
+        frame = pd.read_parquet(path, columns=["available_time", "diff"])
+    except Exception:
+        return None
+    at = pd.to_datetime(frame["available_time"], utc=True, errors="coerce")
+    v = pd.to_numeric(frame["diff"], errors="coerce")
+    ok = at.notna().to_numpy() & np.isfinite(v.to_numpy(dtype="float64"))
+    if not ok.any():
+        return None
+    ser = pd.Series(v.to_numpy(dtype="float64")[ok],
+                    index=pd.DatetimeIndex(at[ok]).as_unit("ns")).sort_index()
+    ser = ser[~ser.index.duplicated(keep="last")]
+    stamps = ser.index.asi8.astype("int64") + int(CARRY_LAG_H) * 3_600_000_000_000
+    return stamps, ser.to_numpy(dtype="float64")
+
+
+def class_carry(d: pd.DataFrame, panel: dict) -> np.ndarray:
+    """rows x members: each member's differential as published by its decision bar, oriented
+    like `logv` (a USDXXX member reads XXX minus USD in fx_usd). NaN where none is published."""
+    stamps = d.index.asi8[panel["pos"]]
+    out = np.full((stamps.size, len(panel["members"])), np.nan, dtype="float64")
+    for k, sym in enumerate(panel["members"]):
+        got = _carry_series(sym)
+        if got is None:
+            continue
+        t, v = got
+        j = np.searchsorted(t, stamps, side="right") - 1
+        has = j >= 0
+        out[has, k] = v[j[has]] * orientation(sym, panel["klass"])
+    return out
+
+
+def _row_rank(m: np.ndarray) -> np.ndarray:
+    """Per-row percentile rank of the finite entries, in (0, 1]; NaN elsewhere."""
+    return pd.DataFrame(m).rank(axis=1, pct=True).to_numpy()
+
+
+def family_cross_sectional_class_carry(
+    df: pd.DataFrame, *, symbol: str = "", score: str = "carry", hold_d: int = 20,
+    crash: str = "none", mom_d: int = 250, skip_d: int = 20, quantile: float = 1 / 3,
+    stress_q: float = 0.8, vol_d: int = 20, history_d: int = 500, decision_hour: int = 22,
+    max_stale_h: float = 12.0, stop_sd: float = 3.0, rr: float = 2.0,
+) -> list[Signal]:
+    """Long while `symbol`'s point-in-time rate differential (or its carry-and-momentum rank)
+    is in the top `quantile` of its class, short while in the bottom; with `crash="class_vol"`,
+    idle while the class's lagged `vol_d`-day volatility is above its `stress_q` quantile."""
+    if (not _valid_common(quantile, hold_d, stop_sd, rr)
+            or score not in ("carry", "carry_x_momentum") or crash not in ("none", "class_vol")
+            or int(mom_d) <= int(skip_d) or int(skip_d) < 0 or not 0.0 < float(stress_q) < 1.0
+            or int(vol_d) < 5 or int(history_d) < 60):
+        return []
+    got = _prepare(df, symbol, decision_hour, max_stale_h)
+    if got is None:
+        return []
+    d, panel = got
+    carry = class_carry(d, panel)
+    if not np.isfinite(carry[:, panel["own"]]).any():
+        return []                       # no published differential for this leg: UNMEASURED
+    lv = panel["logv"]
+    if score == "carry":
+        sc = carry
+    else:
+        mom = _shift(lv, int(skip_d)) - _shift(lv, int(mom_d))
+        mom = np.where(np.isfinite(carry), mom, np.nan)
+        sc = (_row_rank(carry) + _row_rank(mom)) / 2.0
+    gate = None
+    if crash == "class_vol":
+        ew = _row_mean_std(_returns(lv), MIN_MEMBERS)[0]
+        vol = pd.Series(ew).rolling(int(vol_d), min_periods=int(vol_d)).std(ddof=1).to_numpy()
+        stress = _lagged_high(vol, int(history_d), float(stress_q))
+        gate = ~stress & np.isfinite(vol)
+    side = _rank_sides(sc, panel["own"], quantile, gate)
+    return _signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
+                    tag=f"xs_carry:{panel['klass']}:{score}:{crash}")
+
+
 CROSS_SECTIONAL_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "cross_sectional_class_momentum": family_cross_sectional_class_momentum,
     "cross_sectional_class_reversal": family_cross_sectional_class_reversal,
@@ -553,6 +655,7 @@ CROSS_SECTIONAL_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "cross_sectional_class_low_vol": family_cross_sectional_class_low_vol,
     "crisis_only_class_defensive": family_crisis_only_class_defensive,
     "lead_lag_class_catchup": family_lead_lag_class_catchup,
+    "cross_sectional_class_carry": family_cross_sectional_class_carry,
 }
 
 #: The alpha cluster (libs/research/alpha_clusters) each family is BUILT to occupy, with the
@@ -581,4 +684,9 @@ TARGETS: dict[str, dict[str, str]] = {
         "cluster": "cross_asset_lead_lag",
         "prior": "slow updaters: members price the class's move with a lag (Lo & MacKinlay "
                  "1990 lead-lag; Hou 2007)"},
+    "cross_sectional_class_carry": {
+        "cluster": "cross_sectional_fx",
+        "prior": "the currency risk premium for global FX-vol risk, ranked on point-in-time "
+                 "rate differentials (Lustig, Roussanov & Verdelhan 2011; Menkhoff et al. "
+                 "2012), crash-filtered in class vol spikes"},
 }
