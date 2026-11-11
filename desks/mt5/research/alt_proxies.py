@@ -3336,6 +3336,10 @@ class Request:
 #: robots.txt answers that stop every gated fetch to the host for the rest of the pass: the host
 #: refused to tell us its rules, or refused us.
 ROBOTS_STOP_CODES = frozenset({401, 403, 429, 451})
+#: A 200 whose body is a web page (a bot-wall challenge, a JS shell, a soft 404) is NOT a robots
+#: file: robotparser would read it as "no rules" and allow everything, so it is `unread`.
+_ROBOTS_NOT_A_FILE = re.compile(r"(?i)<\s*(?:!doctype|html|head|body|script)\b|captcha|"
+                                r"challenge-platform|cf-chl|access denied|just a moment")
 #: robots.txt answers that mean "no rules" (RFC 9309 2.3.1.3): everything is allowed.
 ROBOTS_ABSENT_CODES = frozenset({404, 410})
 
@@ -3352,8 +3356,12 @@ def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]],
         rp = urllib.robotparser.RobotFileParser()
         try:
             body, _ = getter(f"{host}/robots.txt")
-            rp.parse(body.decode("utf-8", errors="replace").splitlines())
-            cache[host] = rp
+            text = body.decode("utf-8", errors="replace")
+            if _ROBOTS_NOT_A_FILE.search(text[:4096]):
+                cache[host] = "unread"          # an HTML or challenge page is not a robots file
+            else:
+                rp.parse(text.splitlines())
+                cache[host] = rp
         except urllib.error.HTTPError as exc:
             cache[host] = ("allow" if exc.code in ROBOTS_ABSENT_CODES else
                            "stop" if exc.code in ROBOTS_STOP_CODES else "unread")

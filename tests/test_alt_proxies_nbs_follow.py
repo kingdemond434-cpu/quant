@@ -172,3 +172,13 @@ def test_an_unreadable_robots_file_is_never_a_yes(tmp_path: Path, code: int) -> 
 def test_an_absent_robots_file_allows(tmp_path: Path, code: int) -> None:
     rec, _ = _robots_pass(tmp_path, code)
     assert rec["followed"] == 2 and rec["robots_skipped"] == 0 and rec["errors"] == []
+
+
+@pytest.mark.parametrize("body", [
+    b"<!DOCTYPE html><html><head><title>Just a moment...</title></head></html>",
+    b"<html><body><script src='/cdn-cgi/challenge-platform/x.js'></script></body></html>",
+    b"Please complete the CAPTCHA to continue"])
+def test_a_challenge_page_served_as_robots_txt_is_never_a_yes(tmp_path: Path, body: bytes) -> None:
+    rec, calls = _robots_pass(tmp_path, body)
+    assert len(calls) == 2 and rec["followed"] == 0
+    assert any(e.startswith("robots unread") for e in rec["errors"])
