@@ -167,6 +167,10 @@ def test_reads_both_cache_shapes(tmp_path, monkeypatch):
                     {"form": "8-K", "filed": "2026-02-10", "items": ["2.02"]}]}   # no ticker
     assert [r["tickers"] for r in F.filing_rows(own)] == [["MSFT"]]
     assert F.ticker_cfd()["AAPL"] == "Apple"
+    # the EDGAR cell's own cache rows keep the filer identity the family maps
+    from research.sandboxes.edgar_transmission import _hits
+    cell_rows = _hits(raw)
+    assert F.filing_rows({"hits": cell_rows})[0]["tickers"] == ["AAPL"]
 
 
 # ---------------------------------------------------------------------------- 2. look-ahead
