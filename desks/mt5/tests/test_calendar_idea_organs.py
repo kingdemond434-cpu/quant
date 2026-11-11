@@ -340,6 +340,18 @@ def test_a_holiday_region_under_the_seed_floor_is_parked_not_measured(monkeypatc
     assert parked["golden_week_liquidity"]["event_days_visible"] == sc.SEED_FLOOR - 1
 
 
+def test_an_unreadable_calendar_parks_the_region_and_never_crashes_the_leg(monkeypatch):
+    def boom(region: str) -> int:
+        raise OSError("calendar file locked")
+
+    monkeypatch.setattr(sc, "holiday_region_event_days", boom)
+    cells = sc.plan({"fx": ["USDHKD"], "indices": ["JPN225"]})
+    assert "session_handoff_gap" in {c["mechanism"] for c in cells}
+    parked = sc._unmeasured_inputs()["parked_under_floor"]
+    assert parked["lunar_new_year_liquidity"]["event_days_visible"] == sc.UNMEASURED
+    assert parked["golden_week_liquidity"]["why"].startswith("calendar unreadable")
+
+
 def test_every_holiday_region_prefix_matches_calendar_rows():
     """A prefix that matches no row name fires no cell: `jp_holiday` once became
     `jp_holiday_holiday_`."""

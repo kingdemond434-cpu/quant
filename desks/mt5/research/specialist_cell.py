@@ -214,7 +214,14 @@ def _holiday_cells(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     out: list[tuple[str, str, list[dict[str, Any]]]] = []
     for region, mech in HOLIDAY_MECHANISMS.items():
         if sym.upper() in ffc.holiday_region_instruments(region):
-            n_days = holiday_region_event_days(region)
+            try:
+                n_days = holiday_region_event_days(region)
+            except Exception as exc:  # an unreadable calendar parks the region, never the leg
+                row = PARKED_UNDER_FLOOR.setdefault(mech, {
+                    "region": region, "event_days_visible": UNMEASURED, "seed_floor": SEED_FLOOR,
+                    "symbols": [], "why": f"calendar unreadable: {type(exc).__name__}: {exc}"[:240]})
+                row["symbols"].append(sym)
+                continue
             if n_days < SEED_FLOOR:
                 row = PARKED_UNDER_FLOOR.setdefault(mech, {
                     "region": region, "event_days_visible": n_days, "seed_floor": SEED_FLOOR,
