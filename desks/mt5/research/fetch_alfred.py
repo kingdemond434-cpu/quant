@@ -44,7 +44,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -52,7 +52,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk.config import DATA, REPORTS  # noqa: E402
+from mt5desk.config import DATA, REPORTS
 
 OUT = DATA / "lake" / "alfred"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -86,7 +86,19 @@ def api_key() -> str | None:
     env = os.environ.get("FRED_API_KEY", "").strip()
     if env:
         return env
-    for p in (Path(__file__).resolve().parents[3] / "secrets" / "fred_api_key",
+    # THE BOX KEEPS ITS FRED KEY AT data/secrets/fred.json ({"key": ...}) -- the file
+    # scripts/collect_fred_macro.py reads. This module only looked at secrets/fred_api_key, a path
+    # nothing on the box writes, so it reported UNAVAILABLE beside a key that was there.
+    root = Path(__file__).resolve().parents[3]
+    js = root / "data" / "secrets" / "fred.json"
+    if js.exists():
+        try:
+            k = str((json.loads(js.read_text(encoding="utf-8")) or {}).get("key") or "").strip()
+        except (OSError, ValueError, AttributeError):
+            k = ""
+        if k:
+            return k
+    for p in (root / "secrets" / "fred_api_key",
               Path(__file__).resolve().parent.parent / "secrets" / "fred_api_key"):
         if p.exists():
             k = p.read_text(encoding="utf-8").strip()
@@ -95,7 +107,12 @@ def api_key() -> str | None:
     return None
 
 
-def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame | None:
+#: Who is asking. FRED's API terms permit keyed machine use; the request still names itself.
+UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; fetch_alfred)"
+
+
+def fetch_vintages(series_id: str, key: str, timeout: int = 60,
+                   gate: object | None = None) -> pd.DataFrame | None:
     """Every vintage of one series, as a tidy frame.
 
     `output_type=2` asks ALFRED for ALL vintages in one response: one column per vintage date,
@@ -111,10 +128,18 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
     # 1947 to today -- the distance from the oldest observation to the only vintage present.
     # A number that absurd is the file saying it has one vintage without knowing how to say so.
-    r = requests.get(API, params={"series_id": series_id, "api_key": key,
-                                  "file_type": "json", "output_type": 2,
-                                  "realtime_start": "1776-07-04",   # FRED's minimum
-                                  "realtime_end": "9999-12-31"},    # FRED's maximum
+    # THROUGH THE ROBOTS GATE, like every other fetch on this desk (libs/data/robots_gate.py):
+    # a disallow or an unreadable policy refuses the request rather than being read as consent.
+    if gate is not None:
+        why = gate.refusal(f"{API}?series_id={series_id}")  # type: ignore[attr-defined]
+        if why:
+            print(f"  {series_id}: REFUSED by robots gate: {why}", flush=True)
+            return None
+    r = requests.get(API, headers={"User-Agent": UA},
+                     params={"series_id": series_id, "api_key": key,
+                             "file_type": "json", "output_type": 2,
+                             "realtime_start": "1776-07-04",   # FRED's minimum
+                             "realtime_end": "9999-12-31"},    # FRED's maximum
                      timeout=timeout)
     if r.status_code != 200:
         print(f"  {series_id}: HTTP {r.status_code} {r.text[:120]}", flush=True)
@@ -208,7 +233,7 @@ def release_lag(df: pd.DataFrame) -> dict:
                         "print is observable and the release lag cannot be measured")}
     lag = (observable["realtime_date"] - observable["observation_date"]).dt.days
     return {"median_days": float(lag.median()), "min_days": int(lag.min()),
-            "max_days": int(lag.max()), "n_observations": int(len(lag)),
+            "max_days": int(lag.max()), "n_observations": len(lag),
             "excluded_predating_vintage_record": excluded,
             "vintage_record_starts": str(vintage_start.date())}
 
@@ -218,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
     wanted = {s.upper() for s in argv} or set(SERIES)
 
     key = api_key()
-    report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    report = {"at": datetime.now(UTC).isoformat(timespec="seconds"),
               "requested": sorted(wanted)}
 
     if not key:
@@ -254,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{sid}: fetching all vintages...", flush=True)
         try:
             df = fetch_vintages(sid, key)
-        except Exception as exc:                                    # noqa: BLE001
+        except Exception as exc:
             print(f"  {sid}: {type(exc).__name__}: {exc}", flush=True)
             failed.append(sid)
             continue

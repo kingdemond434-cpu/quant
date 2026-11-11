@@ -1346,6 +1346,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # declared sitemaps). Its only clock was the VPS timer chain that died
                      # 2026-11-01/03, so the seat went dark; this is its box clock.
                      "index_discovery",
+                     # Weekly patent publications per sector from the EPO / USPTO APIs, mapped
+                     # to the index and commodity CFDs each sector's R&D bears on.
+                     "patent_filings",
                      # Tier-1 B6/B8/B9: the tree, the residual map that aims the exogenous
                      # search, and the docket the sealed gauntlet orders its sweep by.
                      "research_tree", "residual_map", "frontier_ceo",
@@ -1422,7 +1425,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # ALFRED point-in-time vintages: refreshed, laid into the lake, minted
+                     "alfred_vintages"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2157,6 +2162,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # about 800 s if every request times out, seconds when they answer. It writes only at the
     # end, so the cap must sit above that worst case or a slow hour kills it before it donates.
     "index_discovery": 900,
+    # ALFRED: up to fifteen full revision histories at a 60 s transport timeout when all are due
+    # (once a day); the organ stops refreshing at --budget-s 600 and lays out what it holds.
+    "alfred_vintages": 900,
+    # Two office routes at <= 66 requests each and a 30 s timeout, inside --budget-s 600.
+    "patent_filings": 900,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -4497,6 +4507,11 @@ def main() -> None:
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
     esur = _costed("event_surprise", lambda: _producer(
         "event_surprise", "research/event_surprise.py", "--once", "--budget-s", "300"))
+    # ALFRED VINTAGES ON A CLOCK (Tier-1 C2's open half): every revised US release re-pulled
+    # with all its vintages once a day, laid into the lake one row per vintage date, and
+    # minted once per identity into data/intelligence/alfred_vintages/. No key -> UNMEASURED.
+    alfv = _costed("alfred_vintages", lambda: _producer(
+        "alfred_vintages", "research/alfred_vintages.py", "--once", "--budget-s", "600"))
     # THE ALPHA CAPTURE SUBSTITUTE (2026-09-30): Yahoo upgrades, SEC 8-K guidance, eastmoney,
     # Naver and TDnet views stored at first_seen_at, tracked at +1/+5/+21 trading days against a
     # placebo of shifted dates, and emitted as analyst_revision_drift / cross-market lead cells,
@@ -5934,6 +5949,10 @@ def main() -> None:
     idx = _costed("index_discovery", lambda: _producer(
         "index_discovery", "research/index_discovery.py",
         *INDEX_DISCOVERY_ROUTES_ARGS))
+    # PATENT FILINGS (seat data/intelligence/patent_filings/): weekly per-sector publication
+    # counts from EPO OPS / USPTO ODP, keyed routes that fail closed without their key.
+    pat = _costed("patent_filings", lambda: _producer(
+        "patent_filings", "research/patent_filings.py", "--once", "--budget-s", "600"))
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
     cem = _costed("cell_emitter", cell_emitter)
@@ -6451,7 +6470,7 @@ def main() -> None:
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
-                    "event_surprise": esur, "alpha_capture": acap,
+                    "event_surprise": esur, "alfred_vintages": alfv, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -6564,6 +6583,7 @@ def main() -> None:
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "cell_emitter": cem, "index_discovery": idx,
+                    "patent_filings": pat,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
