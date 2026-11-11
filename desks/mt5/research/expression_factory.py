@@ -114,6 +114,16 @@ STAGES: tuple[str, ...] = ("harvest", "transfer", "mutation", "invention")
 STAGE_SHARE: dict[str, float] = {"harvest": 0.10, "transfer": 0.45, "mutation": 0.35,
                                  "invention": 0.10}
 MIN_FREE_MB = 400.0
+#: THE WORLDQUANT PANEL SETTINGS (N8 gaps `wq_group_neutralization`, `wq_decay_truncation`).
+#: `xzscore` -- the transpiled IndNeutralize -- is neutralised within each member's PEER GROUP
+#: (`universe_policy.peer_class`: fx_usd / fx_cross / index / commodity ...) inside the pass's
+#: asset-class basket, BRAIN's sector level, instead of across the whole basket (its market
+#: level); a group thinner than the basket floor falls back to the basket. `xrank` stays
+#: market-wide, as the paper's rank is. Truncation is BRAIN's weight cap on a book; a panel cell
+#: here is still one instrument's series, so it is OFF until a book-level executor exists, and
+#: the setting rides the report either way.
+PANEL_NEUTRALIZATION = "group"
+PANEL_TRUNCATION: float | None = None
 BARS_PER_YEAR = 24 * 260
 NORM, ENTRY_Z = 240, 1.5
 IS_SHARE = 0.6
@@ -474,6 +484,7 @@ class Lake:
         self.worlds: dict[str, World] = {}
         self.injected: dict[str, pd.DataFrame] = {}
         self.macro_index = 0
+        self._peer_cache: dict[str, str | None] = {}
 
     def _meta(self) -> dict[str, Any]:
         doc = read_json(self.paths.universe_dir / "universe.json", {})
@@ -512,6 +523,21 @@ class Lake:
     def asset_class(self, sym: str) -> str:
         row = self.meta.get(sym.upper()) or {}
         return str(row.get("asset_class") or "unclassified").lower()
+
+    def peer_groups(self, symbols: Iterable[str]) -> dict[str, str | None]:
+        """Each member's peer group (`universe_policy.peer_class`), cached per symbol. A symbol
+        the policy cannot class keeps None and is neutralised against the whole basket."""
+        cache = self._peer_cache
+        out: dict[str, str | None] = {}
+        for s in symbols:
+            if s not in cache:
+                try:
+                    from research import universe_policy as up
+                    cache[s] = up.peer_class(s)
+                except Exception:
+                    cache[s] = None
+            out[s] = cache[s]
+        return out
 
     def baskets(self) -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
@@ -1414,7 +1440,10 @@ class Factory:
         if dsl.has_panel(expr):
             for s in frames:
                 self.memo_for(s)
-            return dsl.evaluate_cell(expr, frames, sym, self.memos)
+            groups = (self.lake.peer_groups(frames) if PANEL_NEUTRALIZATION == "group"
+                      else None)
+            return dsl.evaluate_cell(expr, frames, sym, self.memos, groups=groups,
+                                     truncation=PANEL_TRUNCATION)
         return ag.evaluate(expr, self.lake.worlds[sym].frames, self.memo_for(sym))
 
     # ---- parents
@@ -2068,7 +2097,13 @@ class Factory:
                             "bindings": {s: {t: f.name for t, f in w.bindings.items()}
                                          for s, w in self.lake.worlds.items()},
                             "cost_status": {s: w.cost_status for s, w in self.lake.worlds.items()},
-                            "horizons": list(HORIZONS)}
+                            "horizons": list(HORIZONS),
+                            "panel_settings": {
+                                "xzscore_neutralization": PANEL_NEUTRALIZATION,
+                                "xrank_neutralization": "market",
+                                "truncation": PANEL_TRUNCATION,
+                                "decay": "the grammar's decay operator (linear), per node",
+                                "peer_groups": self.lake.peer_groups(loaded)}}
         if not loaded:
             report["status"] = "NO_WORLDS"
             report["why"] = "no hypothesis-lane symbol with 720+ H1 bars could be loaded"

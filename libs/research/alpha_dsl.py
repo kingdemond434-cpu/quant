@@ -954,8 +954,10 @@ class _Transpiler:
                 return _MISSING
             if x.const:
                 return self.miss("degenerate:neutralise_constant")
-            self.note("IndNeutralize(x, class) -> xzscore(x): demeaned and scaled across the "
-                      "cell's asset-class basket, the desk's analogue of an industry group")
+            self.note("IndNeutralize(x, class) -> xzscore(x): demeaned and scaled within the "
+                      "member's peer group (universe_policy.peer_class) inside the cell's "
+                      "asset-class basket when the evaluator passes groups, the desk's analogue "
+                      "of an industry group; across the whole basket otherwise")
             return _Aff(["xzscore", self._sgn(x)])
         if name in _WINDOWED_CALLS and len(args) == 2:
             op = _WINDOWED_CALLS[name]
@@ -1222,14 +1224,45 @@ def _xs_z(vals: np.ndarray, min_members: int) -> np.ndarray:
     return np.asarray(z)
 
 
+def _xs_neutral(vals: np.ndarray, cols: Sequence[str], min_members: int,
+                groups: Mapping[str, str | None] | None,
+                truncation: float | None) -> np.ndarray:
+    """`xzscore` under the WorldQuant settings (libs/research/xs_settings.py).
+
+    With `groups`, the vector is neutralised within each member's PEER GROUP -- BRAIN's sector /
+    industry neutralisation -- instead of across the whole basket; a member whose group is thinner
+    than `min_members` at a bar falls back to the basket. With `truncation`, the neutralised
+    vector becomes unit-gross book weights with no member above `truncation`. A basket thinner
+    than `min_members` at a bar stays NaN there, exactly as the market-level z-score."""
+    from libs.research import xs_settings as xss
+    panel = pd.DataFrame(vals, columns=list(cols))
+    if truncation is None:
+        out = xss.neutralize(panel, groups, level="group" if groups else "market", scale=True,
+                             min_members=min_members).to_numpy(dtype=float)
+    else:
+        neutral = xss.neutralize(panel, groups, level="group" if groups else "market",
+                                 scale=False, min_members=min_members)
+        out = xss.truncate(neutral, truncation).to_numpy(dtype=float)
+    out[np.isfinite(vals).sum(axis=1) < min_members, :] = np.nan
+    return out
+
+
 def seed_panels(expr: Expr, frames: Mapping[str, Mapping[str, pd.Series]],
-                memos: MutableMapping[str, Any], min_members: int = 3) -> int:
+                memos: MutableMapping[str, Any], min_members: int = 3, *,
+                groups: Mapping[str, str | None] | None = None,
+                truncation: float | None = None) -> int:
     """Compute every panel node of `expr` across the basket and seed each member's memo.
 
     `frames` is symbol -> that symbol's terminal frames; `memos` is symbol -> the memo
     `alpha_grammar.evaluate` will be handed for it (a dict or a cache scope). After this call
     `ag.evaluate(expr, frames[s], memos[s])` is the cell's series for any member `s`. Returns the
     number of panel nodes seeded. A basket thinner than `min_members` at a bar is NaN there.
+
+    THE WORLDQUANT SETTINGS (N8 gaps `wq_group_neutralization`, `wq_decay_truncation`). `xzscore`
+    is the transpiled `IndNeutralize`; given `groups` (symbol -> peer group) it neutralises within
+    the group, given `truncation` it returns unit-gross weights capped at that share. `xrank` is
+    the transpiled market-wide `rank` and is never grouped. Decay needs no setting here: the
+    grammar's `decay` operator is BRAIN's linear decay and composes with any node.
     """
     n_seeded = 0
     for node in panel_nodes(expr):
@@ -1242,7 +1275,12 @@ def seed_panels(expr: Expr, frames: Mapping[str, Mapping[str, pd.Series]],
             continue
         mat = pd.DataFrame(cols)
         vals = mat.to_numpy(dtype=float)
-        out = _xs_rank(vals, min_members) if node[0] == "xrank" else _xs_z(vals, min_members)
+        if node[0] == "xrank":
+            out = _xs_rank(vals, min_members)
+        elif groups is None and truncation is None:
+            out = _xs_z(vals, min_members)
+        else:
+            out = _xs_neutral(vals, list(mat.columns), min_members, groups, truncation)
         k = memo_key(node)
         for j, sym in enumerate(mat.columns):
             idx = next(iter(frames[sym].values())).index
@@ -1252,14 +1290,16 @@ def seed_panels(expr: Expr, frames: Mapping[str, Mapping[str, pd.Series]],
 
 
 def evaluate_cell(expr: Expr, frames: Mapping[str, Mapping[str, pd.Series]], target: str,
-                  memos: MutableMapping[str, Any] | None = None) -> pd.Series:
+                  memos: MutableMapping[str, Any] | None = None, *,
+                  groups: Mapping[str, str | None] | None = None,
+                  truncation: float | None = None) -> pd.Series:
     """The expression on `target`, with its panel nodes computed across every symbol in
     `frames`. Never raises: what cannot be computed is NaN, as in the grammar."""
     memos = {} if memos is None else memos
     if target not in frames:
         return pd.Series(dtype=float)
     if has_panel(expr):
-        seed_panels(expr, frames, memos)
+        seed_panels(expr, frames, memos, groups=groups, truncation=truncation)
     return ag.evaluate(expr, dict(frames[target]), memos.setdefault(target, {}))
 
 
