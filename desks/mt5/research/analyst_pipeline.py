@@ -808,8 +808,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-leads", type=int, default=MAX_LEADS)
     ap.add_argument("--budget-s", type=float, default=BUDGET_S)
     args = ap.parse_args(argv)
-    print(json.dumps(run(max_leads=max(1, args.max_leads), budget_s=max(1.0, args.budget_s),
-                         dry_run=bool(args.dry_run)), indent=1, default=str))
+    report = run(max_leads=max(1, args.max_leads), budget_s=max(1.0, args.budget_s),
+                 dry_run=bool(args.dry_run))
+    print(json.dumps(report, indent=1, default=str))
+    if not args.dry_run:
+        # THE SEAT'S HEARTBEAT (2026-11-11): leads already worked are skipped by the cursor and
+        # repeated claims or cells are triaged out as duplicates, so a pass over old leads
+        # donates nothing; the census says it ran.
+        from research.proposer_common import pass_census
+        tri = dict((report.get("triage") or {}).get("rejected_by_reason") or {})
+        dup = int(tri.get("duplicate_lead") or 0) + int(tri.get("duplicate_cell") or 0)
+        pass_census(SEAT, tried=int(report.get("intake") or 0),
+                    new=int(report.get("donated") or 0), duplicate=dup,
+                    donated=int(report.get("donated") or 0), leg="analyst_pipeline",
+                    structured=int(report.get("structured") or 0),
+                    prescreen_passed=int((report.get("prescreened") or {}).get("passed") or 0))
     return 0
 
 

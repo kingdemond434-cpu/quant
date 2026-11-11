@@ -837,6 +837,16 @@ def main(argv: list[str] | None = None) -> int:
     doc = run(a.budget_s, dry_run=a.dry_run, year=a.year)
     if not a.dry_run:
         _write(OUT, doc)
+        # THE SEAT'S HEARTBEAT (2026-11-11): the per-recipe cursor walks each cell list once, so
+        # a pass over recipes already minted donates nothing; the census says it ran.
+        from research.proposer_common import pass_census
+        t = doc.get("totals") or {}
+        don = doc.get("donation") or {}
+        total, minted = int(t.get("cells_total") or 0), int(t.get("emitted_this_pass") or 0)
+        pass_census(SEAT, tried=total, new=minted, duplicate=None,
+                    donated=int(don.get("donated") or 0), leg=LEG,
+                    recipes=int(t.get("recipes") or 0),
+                    created_this_pass=int(t.get("created_this_pass") or 0))
     print(render(doc))
     return 0
 

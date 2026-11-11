@@ -640,6 +640,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     _atomic(QUEUE, "".join(json.dumps(r, default=str) + "\n" for r in rows))
     _atomic(REPORT, json.dumps(rep, indent=1, default=str))
+    # THE SEAT'S HEARTBEAT (2026-11-11): an item is donated once (`donated_at`), so a pass with
+    # no new open item writes no donation; the census says it ran.
+    from research.proposer_common import pass_census
+    pass_census(SOURCE, tried=int(rep["n_items"]), new=int(rep["n_candidates"]),
+                duplicate=int(rep["n_donated"]) - int(rep["donated_this_pass"]),
+                donated=int(rep["donated_this_pass"]), leg="residual_queue",
+                sightings=int(rep["n_sightings_this_pass"]), refused=int(rep["n_refused"]),
+                open=int(rep["n_open"]))
     print(f"  -> {QUEUE}")
     print(f"  -> {REPORT}")
     return 0

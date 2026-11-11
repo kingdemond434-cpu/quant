@@ -1473,6 +1473,14 @@ def main(argv: list[str] | None = None) -> int:
           f"fired={fired} donated={rep['donated']['n']} discoveries={rep['discoveries']} "
           f"engines={eng} elapsed={rep['budget']['elapsed_s']}s"
           f"{' (dry run: nothing written)' if a.dry_run else ''}")
+    if not a.dry_run:
+        # THE SEAT'S HEARTBEAT (2026-11-11): only a scheduled cell that FIRES now is donated, so
+        # a quiet market donates nothing; the census says the lab ran and what it measured.
+        from research.proposer_common import pass_census
+        n = int(rep["donated"]["n"])
+        pass_census("dislocation_lab", tried=int(rep["n_cells"]), new=n, duplicate=0,
+                    donated=n, seat_dir=Paths(DESK).intel, leg="dislocation_lab",
+                    fired=int(fired), targets=len(rep["targets"]))
     return 0
 
 

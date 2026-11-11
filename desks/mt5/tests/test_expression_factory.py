@@ -351,3 +351,21 @@ def test_main_accepts_once_and_budget(tmp_path: Path, monkeypatch: pytest.Monkey
     monkeypatch.setattr(XF, "DEFAULT_PATHS", XF.Paths(tmp_path / "desk"))
     assert XF.main(["--once", "--budget-s", "1", "--dry-run"]) == 0
     assert "STOOD_DOWN" in capsys.readouterr().out
+
+
+def test_a_cell_the_campaign_already_holds_is_a_duplicate_not_a_crash(
+        factory: XF.Factory) -> None:
+    """THE 2026-11-10 EXIT 1. `seen` keeps at most 50,000 keys while the campaign keeps every
+    QUEUED row, so on a box with months of state a key can leave `seen` while its row stays
+    QUEUED. Re-running that cell called `advance(key, "SCREENED")` from QUEUED, which raised
+    CampaignError out of `run()` and lost the whole pass. Reproduced here by dropping `seen.json`
+    between two passes over the same worlds and seed."""
+    from libs.moat import registry as R
+    first = factory.run(10.0, symbols=list(META))
+    assert first["campaign"]["rows_by_state"].get("QUEUED", 0) >= 1
+    (factory.paths.state_dir / "seen.json").unlink()
+    again = XF.Factory(factory.paths, lake=factory.lake, seed=7, registry=R)
+    assert not again.seen
+    report = again.run(10.0, symbols=list(META))
+    assert report["status"] == "RAN"
+    assert report["cells"]["tier0"]["rejected"].get("duplicate AST", 0) >= 1

@@ -895,6 +895,17 @@ def main(argv: list[str] | None = None) -> int:
     for line in summary_lines(report):
         print(line)
     print(f"-> {report.get('intake', OUT)}")
+    if not a.dry_run:
+        # THE SEAT'S HEARTBEAT (2026-11-11): every child already tried is refused as
+        # `already_tried`, so a generation of repeats donates nothing; the census says so.
+        from research.proposer_common import pass_census
+        refusals = {str(k): int(v)
+                    for k, v in dict(report.get("compatibility_refusals") or {}).items()}
+        n_children = int(report.get("n_children") or 0)
+        pass_census(SOURCE, tried=n_children + sum(refusals.values()), new=n_children,
+                    duplicate=refusals.get("already_tried", 0),
+                    donated=int(report.get("donated") or 0), leg="trajectory_evolution",
+                    refusals=refusals)
     return 0
 
 
