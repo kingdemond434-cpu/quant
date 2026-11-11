@@ -17,7 +17,7 @@
  "uptime_s": 1291940.5,
  "last_sweep_ended_utc": "2026-11-11T15:33:29+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-11T16:04:49+00:00",
+ "heartbeat_utc": "2026-11-11T16:19:50+00:00",
  "sweep_phase": {
   "pid": 16160,
   "sweep_started_utc": "2026-11-11T15:33:55+00:00",
@@ -88,32 +88,37 @@
      }
     },
     "prewarm": {
-     "samples": 48,
+     "samples": 144,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 42,
-       "share": 0.875
+       "n": 135,
+       "share": 0.938
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 5,
-       "share": 0.104
+       "share": 0.035
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 1,
+       "n": 3,
        "share": 0.021
+      },
+      {
+       "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:87 < process.py:submit:797 < external_gauntlet.py:_submit_next:2079 < external_gauntlet.py:_prewarm_cache:2093",
+       "n": 1,
+       "share": 0.007
       }
      ],
      "process": {
-      "cpu_s": 145.1,
-      "page_faults": 6656750.0,
-      "read_bytes": 2795741.0,
-      "write_bytes": 7064838005.0,
-      "sampled_s": 470.0,
+      "cpu_s": 225.2,
+      "page_faults": 11435032.0,
+      "read_bytes": 4971300.0,
+      "write_bytes": 12710718491.0,
+      "sampled_s": 1430.0,
       "rss_mb_max": 3341.3,
-      "cpu_share_of_wall": 0.309
+      "cpu_share_of_wall": 0.158
      }
     }
    }
