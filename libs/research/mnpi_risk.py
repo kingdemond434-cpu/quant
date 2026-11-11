@@ -42,14 +42,20 @@ REFUSED_ACCESS_CLASSES = frozenset({"CONFIDENTIAL_MNPI", "PRIVATE", "STOLEN_UNAU
 _POSSESSION = re.compile(
     r"\b(?:"
     r"insider (?:tip|tips|info|information|knowledge|source)"
-    r"|inside (?:info|information|knowledge|source|scoop)"
+    r"|inside (?:info|information|knowledge|scoop)"
+    # "inside source" alone is how a newspaper credits a source; possession needs the first person
+    r"|(?:my|our) inside source|an inside source (?:told|tells) (?:me|us)"
     r"|material(?:ly)? non[- ]?public"
     r"|non[- ]?public (?:info|information|data|figures|numbers|results)"
     r"|not yet (?:public|disclosed)|not public yet|before (?:it(?:'s| is) )?made public"
     r"|unannounced (?:results|earnings|deal|merger|acquisition|takeover|figures)"
     r"|under embargo|embargoed (?:data|figures|release|results|numbers)"
     r"|leaked to (?:me|us)"
-    r"|(?:internal|confidential) (?:memo|document|figures|numbers|data|results)"
+    # "internal data shows..." is how a published report quotes a firm's own release; only the
+    # writer HOLDING it is possession (audit should-fix, #906)
+    r"|(?:got|have|had|saw|seen|obtained|shared|leaked|passed) (?:me |us )?"
+    r"(?:an? |the |some |their |its )?(?:internal|confidential) "
+    r"(?:memo|document|figures|numbers|data|results)"
     r"|(?:my|a) (?:friend|cousin|brother|sister|contact|source|buddy|mate)"
     r" (?:at|inside|who works (?:at|for))"
     r"|(?:works|working) (?:at|for) the company (?:told|said|says)"

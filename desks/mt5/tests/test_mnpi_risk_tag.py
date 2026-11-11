@@ -31,6 +31,8 @@ UNI = {"EURUSD", "XAUUSD"}
     "Embargoed figures show CPI at 4.1%",
     "Material non-public data from a supplier",
     "heard from someone at the refinery that output halves",
+    "I saw the internal figures before the call, sell the open",
+    "My inside source says the merger is off",
 ])
 def test_possession_language_is_tagged(text: str) -> None:
     assert mnpi_risk({"title": text}) is not None
@@ -42,6 +44,9 @@ def test_possession_language_is_tagged(text: str) -> None:
     "Reuters reported the OPEC draft, and oil gapped up at the open",
     "Buy EURUSD on a breakout of the Asian session range",
     "13D filings by activists lead the stock by two weeks",
+    "Internal data shows the company missed its delivery target, Reuters reported",
+    "Confidential figures published by the regulator show margin calls rose",
+    "An inside source cited by Bloomberg said the deal was priced at par",
 ])
 def test_lawful_public_disclosure_is_never_tagged(text: str) -> None:
     assert mnpi_risk({"title": text}) is None
