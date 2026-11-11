@@ -37,6 +37,7 @@ its missed-growth line, owned by the allocator's solve -- this file is its measu
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sys
@@ -109,31 +110,48 @@ def verdict(ratio: float | None) -> str:
     return "ON_PACE"
 
 
+#: THE ONLY REASONS THE PUBLIC SUMMARY MAY CARRY (#1010 audit HOLD): a closed vocabulary, never
+#: free text. A why string can hold an exception's text (a float() ValueError quotes the balance)
+#: or the account-state writer's own words, and the repo is public.
+WHY_CODES = frozenset({
+    "STATE_ABSENT", "STATE_UNREADABLE", "NO_INITIAL", "STATE_NOT_OK", "STATE_TIME_UNREADABLE",
+    "STATE_STALE", "FUNDED_NO_TARGET", "PLAN_ABSENT", "PLAN_TIME_UNREADABLE", "PLAN_STALE",
+    "PLAN_PHASE_MISMATCH", "PLAN_NO_BLOCK", "RUN_ERROR"})
+PUBLIC_PHASES = frozenset({"phase1", "phase2", "funded"})
+
+
 def _plan(alloc: Any, phase: str, now: datetime) -> tuple[dict[str, Any] | None, str]:
     """The allocator's plan for `phase` from the account now, or (None, why)."""
+    plan, why, _code = _plan_coded(alloc, phase, now)
+    return plan, why
+
+
+def _plan_coded(alloc: Any, phase: str,
+                now: datetime) -> tuple[dict[str, Any] | None, str, str | None]:
+    """`_plan` with its closed-vocabulary reason code (None when the plan is usable)."""
     if not isinstance(alloc, dict):
-        return None, "FTMO_ALLOCATOR.json is absent or unreadable"
+        return None, "FTMO_ALLOCATOR.json is absent or unreadable", "PLAN_ABSENT"
     at = _iso(alloc.get("generated_at"))
     if at is None:
-        return None, "the allocator report carries no readable time"
+        return None, "the allocator report carries no readable time", "PLAN_TIME_UNREADABLE"
     age = (now - at).total_seconds()
     if age > PLAN_MAX_AGE_S:
         return None, (f"the allocator plan is {age / 3600:.1f}h old "
-                      f"(limit {PLAN_MAX_AGE_S // 3600}h)")
+                      f"(limit {PLAN_MAX_AGE_S // 3600}h)"), "PLAN_STALE"
     if (alloc.get("account") or {}).get("phase") != phase:
         return None, (f"the allocator solved phase {(alloc.get('account') or {}).get('phase')!r}, "
-                      f"the account is in {phase!r}")
+                      f"the account is in {phase!r}"), "PLAN_PHASE_MISMATCH"
     block = (alloc.get("phases") or {}).get(phase)
     val = (block or {}).get("validation") if isinstance(block, dict) else None
     if not isinstance(val, dict):
-        return None, f"the allocator report has no validated {phase} block"
+        return None, f"the allocator report has no validated {phase} block", "PLAN_NO_BLOCK"
     est, half = val.get("as_estimated") or {}, val.get("edges_halved") or {}
     plan = {"generated_at": alloc.get("generated_at"), "book_status": block.get("status"),
             "total_risk": block.get("total_risk"),
             "days_median": est.get("days_median"), "days_p90": est.get("days_p90"),
             "p_pass": est.get("p_pass"), "p_fail": est.get("p_fail"),
             "halved_days_median": half.get("days_median"), "halved_p_pass": half.get("p_pass")}
-    return plan, f"allocator plan {age / 60:.0f} min old"
+    return plan, f"allocator plan {age / 60:.0f} min old", None
 
 
 def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
@@ -144,7 +162,8 @@ def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
                            "cet_date": cet_date(now), "rules": rules.name,
                            "rules_source": rules.source, "pace_band": PACE_BAND}
     if not isinstance(state, dict) or "balance" not in state:
-        doc.update({"status": "UNMEASURED", "why": "no FTMO account state"})
+        doc.update({"status": "UNMEASURED", "why": "no FTMO account state",
+                    "why_codes": ["STATE_ABSENT"]})
         return doc
     at = _iso(state.get("generated_at"))
     age = None if at is None else (now - at).total_seconds()
@@ -155,21 +174,26 @@ def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
         phase = str(state["phase"])
         done = int(state.get("days_traded") or 0)
     except (KeyError, TypeError, ValueError) as exc:
-        doc.update({"status": "UNMEASURED", "why": f"account state unreadable ({exc})"})
+        doc.update({"status": "UNMEASURED", "why": f"account state unreadable ({exc})",
+                    "why_codes": ["STATE_UNREADABLE"]})
         return doc
     if not initial > 0:
-        doc.update({"status": "UNMEASURED", "why": "no initial balance"})
+        doc.update({"status": "UNMEASURED", "why": "no initial balance",
+                    "why_codes": ["NO_INITIAL"]})
         return doc
-    why = []
+    why, codes = [], []
     if state.get("status") != "OK":
+        codes.append("STATE_NOT_OK")
         why.append(f"account state {state.get('status')}: "
                    f"{state.get('why') or state.get('phase_why')}")
     if age is None or age > STATE_MAX_AGE_S:
+        codes.append("STATE_TIME_UNREADABLE" if age is None else "STATE_STALE")
         why.append("account state time unreadable" if age is None else
                    f"account state {age / 60:.0f} min old (limit {STATE_MAX_AGE_S // 60} min)")
     doc.update({"account_key": state.get("account_key"), "phase": phase,
                 "state_generated_at": state.get("generated_at"),
-                "status": "UNMEASURED" if why else "OK", "why": "; ".join(why) or None})
+                "status": "UNMEASURED" if why else "OK", "why": "; ".join(why) or None,
+                "why_codes": codes})
     pos = state.get("open_positions")
     doc["open_positions"] = len(pos) if isinstance(pos, list) else None
     # ROOM to the loss limits: equity (floating included) against the day's start and the floor.
@@ -188,6 +212,7 @@ def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
         doc["progress"] = {"phase": phase, "target": None,
                            "why": "funded: no target; pacing is the room alone"}
         doc["pace"] = {"verdict": "UNMEASURED", "why": "no target in the funded phase"}
+        doc["progress_code"] = "FUNDED_NO_TARGET"
         return doc
     target_usd = target * initial
     gained, gained_eq = balance - initial, equity - initial
@@ -203,8 +228,8 @@ def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
                    "phase_started_at": state.get("phase_started_at"),
                    "weekdays_elapsed": elapsed}
     doc["target_reached_min_days_left"] = bool(gained >= target_usd and done < rules.min_days)
-    plan, pwhy = _plan(alloc, phase, now)
-    doc["plan"] = plan if plan is not None else {"why": pwhy}
+    plan, pwhy, pcode = _plan_coded(alloc, phase, now)
+    doc["plan"] = plan if plan is not None else {"why": pwhy, "why_code": pcode}
     # PACE, two ways, never a default.
     realised = gained / elapsed if elapsed else None
     left = max(target_usd - gained, 0.0)
@@ -277,25 +302,58 @@ def _share(num: Any, den: Any) -> float | None:
     return None
 
 
-def public(doc: dict[str, Any]) -> dict[str, Any]:
+#: Every string the public summary may hold: the reason codes, the phases, the pace verdicts.
+_PUBLIC_STRINGS = WHY_CODES | PUBLIC_PHASES | {"OTHER", "OK", "UNMEASURED", "ERROR", "AHEAD",
+                                               "BEHIND", "ON_PACE"}
+
+
+def _codes(raw: Any) -> list[str]:
+    """Only members of WHY_CODES survive; anything else is dropped, never copied."""
+    return [c for c in (raw if isinstance(raw, list) else []) if c in WHY_CODES]
+
+
+def _public_numbers(obj: Any) -> Any:
+    """A share or count is a bare number; anything else in a numeric slot becomes None."""
+    if isinstance(obj, dict):
+        return {k: _public_numbers(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_public_numbers(v) for v in obj]
+    if isinstance(obj, (bool, int, float)) or obj is None:
+        return obj
+    return obj if isinstance(obj, str) and obj in _PUBLIC_STRINGS else None
+
+
+def public(doc: dict[str, Any], now: datetime) -> dict[str, Any]:
     """The verdict-only view of a pacing report: no dollars, no balances, no account key."""
     room, prog = doc.get("room") or {}, doc.get("progress") or {}
     limit = room.get("daily_limit_usd")
     days, pace, plan = doc.get("days") or {}, doc.get("pace") or {}, doc.get("plan") or {}
-    return {
-        "generated_at": doc.get("generated_at"), "cet_date": doc.get("cet_date"),
-        "status": doc.get("status"), "why": doc.get("why"), "phase": doc.get("phase"),
-        "rules": doc.get("rules"), "open_positions": doc.get("open_positions"),
+    out = _public_numbers({
+        "status": doc.get("status"), "why_codes": _codes(doc.get("why_codes")),
+        "phase": doc.get("phase") if doc.get("phase") in PUBLIC_PHASES else
+                 (None if doc.get("phase") is None else "OTHER"),
+        "progress_code": _codes([doc.get("progress_code")]) or None,
+        "open_positions": doc.get("open_positions"),
         "progress_share": prog.get("share"), "progress_share_equity": prog.get("share_equity"),
         "target_reached_min_days_left": doc.get("target_reached_min_days_left"),
         "days": {k: days.get(k) for k in _PUBLIC_DAYS},
         "pace": {k: pace.get(k) for k in _PUBLIC_PACE},
+        # total_risk is the book's summed per-trade risk as a FRACTION of equity
+        # (prop_challenge_allocator: h.sum()), never dollars.
         "plan": {k: plan.get(k) for k in _PUBLIC_PLAN} if "why" not in plan else
-                {"why": plan.get("why")},
+                {"why_codes": _codes([plan.get("why_code")])},
         # Room as shares of the firm's own limits, floating P/L included.
         "daily_room_share": room.get("daily_room_frac"),
         "max_room_in_daily_limits": room.get("max_room_in_daily_limits"),
-        "worst_daily_room_share": _share(doc.get("worst_daily_room_usd"), limit)}
+        "worst_daily_room_share": _share(doc.get("worst_daily_room_usd"), limit)})
+    # Our own clock and our own rules constant, never an upstream string.
+    return {"generated_at": now.isoformat(timespec="seconds"), "cet_date": cet_date(now),
+            "rules": _rules_name(), **out}
+
+
+def _rules_name() -> str:
+    from prop_challenge_allocator import FTMO_2STEP
+    return str(FTMO_2STEP.name)
 
 
 def _atomic(path: Path, doc: dict[str, Any]) -> None:
@@ -340,9 +398,12 @@ def run(now: datetime | None = None) -> dict[str, Any]:
                 fh.write(json.dumps({**_close_row(doc), "kind": "phase_start"}, sort_keys=True,
                                     default=str) + "\n")
         _atomic(OUT, doc)
-        _atomic(PUBLIC_OUT, public(doc))
+        _atomic(PUBLIC_OUT, public(doc, now))
         return doc
     except Exception as exc:
+        with contextlib.suppress(Exception):
+            _atomic(PUBLIC_OUT, {"generated_at": now.isoformat(timespec="seconds"),
+                                 "status": "ERROR", "why_codes": ["RUN_ERROR"]})
         return {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"[:300]}
 
 

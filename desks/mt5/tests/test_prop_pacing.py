@@ -189,7 +189,8 @@ def test_the_public_summary_carries_verdicts_and_shares_never_dollars(files) -> 
     assert pub["pace"]["verdict"] == "AHEAD" and pub["progress_share"] == 0.3
     assert pub["daily_room_share"] == 0.82 and pub["max_room_in_daily_limits"] == 2.5
     assert pub["worst_daily_room_share"] == 0.82 and pub["days"]["min_days_left"] == 2
-    for banned in ("usd", "balance", "\"equity\"", "account_key", KEY, "sha256", "profit", "XAUUSD"):
+    for banned in ("usd", "balance", "\"equity\"", "account_key", KEY, "sha256", "profit",
+                   "XAUUSD"):
         assert banned not in text, banned
     # No figure in it is an account-sized amount.
     assert max(abs(x) for x in _numbers(pub)) < 1000
@@ -199,7 +200,49 @@ def test_an_unmeasured_account_publishes_unmeasured(files) -> None:
     pp.run(now=NOW)
     pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
     assert pub["status"] == "UNMEASURED" and pub["pace"]["verdict"] is None
-    assert pub["open_positions"] is None
+    assert pub["open_positions"] is None and pub["why_codes"] == ["STATE_ABSENT"]
+
+
+def _no_long_digit_runs(pub: dict) -> None:
+    import re
+    body = {k: v for k, v in pub.items() if k not in ("generated_at", "cet_date")}
+    text = json.dumps(body)
+    assert not re.search(r"\d{5,}", text), text
+    assert "$" not in text and "123" not in text
+
+
+@pytest.mark.parametrize(("state", "code"), [
+    # A numeric ValueError: float() quotes the balance in its message.
+    (_state(balance="103,456.78"), "STATE_UNREADABLE"),
+    # The account-state writer's own words, carrying a dollar figure.
+    (_state(status="UNMEASURED", why="balance $123,456 on login 5512345",
+            phase_why="$123,456"), "STATE_NOT_OK"),
+])
+def test_the_public_summary_never_copies_free_text(files, state, code) -> None:
+    _write(pp.ACCOUNT_STATE, state)
+    _write(pp.ALLOCATOR, {"generated_at": "$123,456 garbage", "account": {"phase": "x"}})
+    pp.run(now=NOW)
+    pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
+    assert code in pub["why_codes"] and set(pub["why_codes"]) <= pp.WHY_CODES
+    _no_long_digit_runs(pub)
+
+
+def test_a_plan_reason_is_a_code_and_an_unknown_phase_is_other(files) -> None:
+    _write(pp.ACCOUNT_STATE, _state(phase="phase-$123456"))
+    _write(pp.ALLOCATOR, _alloc(phase="phase1"))
+    pp.run(now=NOW)
+    pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
+    assert pub["phase"] == "OTHER" and pub["plan"] == {"why_codes": ["PLAN_PHASE_MISMATCH"]}
+    _no_long_digit_runs(pub)
+
+
+def test_a_failed_run_publishes_a_code_only(files, monkeypatch) -> None:
+    monkeypatch.setattr(pp, "build", lambda *a, **k: (_ for _ in ()).throw(
+        ValueError("could not convert string to float: '103456.78'")))
+    pp.run(now=NOW)
+    pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
+    assert pub == {"generated_at": pub["generated_at"], "status": "ERROR",
+                   "why_codes": ["RUN_ERROR"]}
 
 
 def test_the_public_summary_rides_the_state_wire() -> None:
