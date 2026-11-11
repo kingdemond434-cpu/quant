@@ -68,6 +68,8 @@ GOOD = {
     "DGS2": [("2026-10-26", "3.60"), ("2026-10-27", "3.50")],
     "DFII10": [("2026-10-27", "1.90")],
     "DTWEXBGS": [("2026-10-23", "121.3202")],
+    "WALCL": [("2026-11-04", "6748145")],
+    "WTREGEN": [("2026-11-04", "957175")],
 }
 
 
@@ -159,7 +161,7 @@ def test_a_refused_key_names_fred_s_reason_and_redacts_the_key() -> None:
 def test_copyrighted_third_party_series_are_ideas_only_and_never_requested() -> None:
     f = Fetch(api=lambda sid: _api_body(GOOD[sid]))
     doc = AI.ingest_fred(fetch=f, key=KEY)
-    for sid in ("VIXCLS", "BAMLH0A0HYM2"):
+    for sid in ("VIXCLS", "BAMLH0A0HYM2", "RRPONTSYD"):
         assert sid not in AI.FRED_SERIES and sid not in doc["series"]
         assert not any(sid in u for u in f.calls)
         row = doc["ideas_only"][sid]
@@ -380,5 +382,6 @@ def test_every_series_records_when_it_became_knowable() -> None:
     """Should-fix 4: H.15 day d is published business day d+1; H.10 weekly; derived = later leg."""
     doc = AI.ingest_fred(fetch=Fetch(api=lambda sid: _api_body(GOOD[sid])), key=KEY)
     lags = {sid: v["knowable_lag_days"] for sid, v in doc["series"].items()}
-    assert lags == {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8, "T10Y2Y": 1, "T10YIE": 1}
+    assert lags == {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8, "WALCL": 2, "WTREGEN": 2,
+                    "T10Y2Y": 1, "T10YIE": 1}
     assert doc["knowable_lag_days"] == lags and "business" in doc["knowable_lag_basis"]

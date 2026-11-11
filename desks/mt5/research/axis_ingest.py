@@ -374,6 +374,10 @@ FRED_SERIES = {
     "DGS2": "US 2y constant-maturity yield",
     "DFII10": "US 10y TIPS real yield (the breakeven's second leg)",
     "DTWEXBGS": "broad trade-weighted USD index",
+    # H.4.1 Factors Affecting Reserve Balances (Board of Governors), FRED tag "Public Domain:
+    # Citation Requested", read 2026-11-11. Net liquidity = WALCL - WTREGEN (- RRP, held below).
+    "WALCL": "Fed total assets, Wednesday level (H.4.1), millions USD",
+    "WTREGEN": "Treasury General Account, week ending Wednesday average (H.4.1), millions USD",
 }
 
 #: THE TWO SPREADS ARE DERIVED HERE, FROM THE PUBLIC-DOMAIN LEGS, UNDER THEIR OLD IDS.
@@ -395,9 +399,13 @@ FRED_DERIVED = {
 #: so its worst case is a Monday print knowable the next Monday, or Tuesday after a holiday: 8.
 #: Rounded up, as COT's is: late costs edge, early invents it. A derived spread is as late as its
 #: later leg.
-FRED_KNOWABLE_LAG_DAYS = {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8}
+FRED_KNOWABLE_LAG_DAYS = {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8,
+                          # H.4.1 for Wednesday d is released Thursday d+1 at 16:30 ET, after
+                          # the European close: rounded up to 2 business days (Friday).
+                          "WALCL": 2, "WTREGEN": 2}
 FRED_KNOWABLE_LAG_BASIS = ("business days after the date FRED stamps the point (H.15: published "
-                           "business day d+1; H.10 DTWEXBGS: weekly Monday release)")
+                           "business day d+1; H.10 DTWEXBGS: weekly Monday release; H.4.1 "
+                           "WALCL/WTREGEN: Thursday 16:30 ET for Wednesday, rounded to 2)")
 
 
 def _fred_lag(sid: str) -> int:
@@ -416,6 +424,9 @@ FRED_IDEAS_ONLY = {
     "BAMLH0A0HYM2": ("ICE Data Indices: 'Reproduction of this data in any form is prohibited "
                      "except with the prior written permission of ICE Data Indices.' FRED tag "
                      "'Copyrighted: Pre-Approval Required'; history cut to 3 years from 2026-04"),
+    "RRPONTSYD": ("Federal Reserve Bank of New York, Temporary Open Market Operations: FRED tag "
+                  "'Copyrighted: Citation Required' (read 2026-11-11); the net-liquidity basis "
+                  "names it and parks it by name until a permitting source is read"),
 }
 #: The missed-growth line every hold carries: what the desk gives up is not measured.
 FRED_IDEAS_ONLY_MISSED_GROWTH = {
