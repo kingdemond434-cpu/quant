@@ -289,7 +289,7 @@ _READ_BLOCK = 64 << 20
 
 
 def _sidecar(p: Path) -> Path:
-    return p.with_name(p.name + ".spec_index.pkl")
+    return p.with_name(p.name + ".spec_index.json")
 
 
 def _guard(fh: Any, offset: int) -> tuple[str, str]:
@@ -324,25 +324,33 @@ def _fold_line(out: dict[str, tuple[str, str]], ln: str) -> None:
 
 
 def _load_sidecar(p: Path) -> dict[str, Any] | None:
-    import pickle
+    """The sidecar, as DATA: plain JSON, every record type-checked; anything else is None."""
     try:
-        with _sidecar(p).open("rb") as fh:
-            doc = pickle.load(fh)
-    except Exception:
+        doc = json.loads(_sidecar(p).read_text("utf-8"))
+    except (OSError, ValueError):
         return None
     if not isinstance(doc, dict) or not isinstance(doc.get("index"), dict):
         return None
-    return doc
+    if not isinstance(doc.get("offset"), int) or not all(
+            isinstance(doc.get(k), str) for k in ("head", "tail")):
+        return None
+    index: dict[str, tuple[str, str]] = {}
+    for sid, rec in doc["index"].items():
+        if (not isinstance(rec, list) or len(rec) != 2
+                or not all(isinstance(x, str) for x in rec)):
+            return None
+        index[str(sid)] = (rec[0], rec[1])
+    return {**doc, "index": index}
 
 
 def _save_sidecar(p: Path, doc: dict[str, Any]) -> None:
     import os
-    import pickle
     target = _sidecar(p)
     tmp = target.with_name(f"{target.name}.{os.getpid()}.tmp")
     try:
-        with tmp.open("wb") as fh:
-            pickle.dump(doc, fh, protocol=pickle.HIGHEST_PROTOCOL)
+        tmp.write_text(json.dumps({**doc, "index": {k: list(v) for k, v in
+                                                   doc["index"].items()}},
+                                  separators=(",", ":")), "utf-8")
         os.replace(tmp, target)
     except OSError:
         try:

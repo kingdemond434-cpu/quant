@@ -96,10 +96,23 @@ def test_an_unreadable_sidecar_rebuilds(tmp_path, monkeypatch) -> None:
     _fresh(monkeypatch)
     p = tmp_path / "preregistrations.jsonl"
     p.write_text(_row("a", "2026-01-02", "h1"), "utf-8")
-    pr._sidecar(p).write_bytes(b"not a pickle")
+    pr._sidecar(p).write_text("not json", "utf-8")
     assert pr.spec_index(p) == {"a": ("2026-01-02", "h1")}
 
 
 def test_an_absent_ledger_is_empty(tmp_path, monkeypatch) -> None:
     _fresh(monkeypatch)
     assert pr.spec_index(tmp_path / "nope.jsonl") == {}
+
+
+def test_a_sidecar_with_wrong_types_is_ignored(tmp_path, monkeypatch) -> None:
+    import json as _j
+    _fresh(monkeypatch)
+    p = tmp_path / "preregistrations.jsonl"
+    p.write_text(_row("a", "2026-01-02", "h1"), "utf-8")
+    pr.spec_index(p)
+    doc = _j.loads(pr._sidecar(p).read_text("utf-8"))
+    doc["index"]["evil"] = {"__reduce__": 1}
+    pr._sidecar(p).write_text(_j.dumps(doc), "utf-8")
+    monkeypatch.setattr(pr, "_INDEX_MEMO", {})
+    assert pr.spec_index(p) == {"a": ("2026-01-02", "h1")}
