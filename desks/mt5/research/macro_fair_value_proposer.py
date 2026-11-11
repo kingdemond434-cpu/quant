@@ -105,6 +105,10 @@ def _bis_pairs(fallback: list[str]) -> list[str]:
         return sorted(fallback)
 
 
+def _n(s: Any) -> int:
+    return 0 if s is None else len(s)
+
+
 def reach(meta: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Per basis: the symbols it would sweep, or the named refusal that parks it."""
     lane = set(_lane(meta))
@@ -121,7 +125,7 @@ def reach(meta: dict[str, Any]) -> dict[str, dict[str, Any]]:
                                 "symbols_parked": len(nl_syms)}
     fx = [s for s in lane if "forex" in str(meta[s].get("asset_class") or "").lower()]
     bis = [s for s in _bis_pairs(fx) if s in lane]
-    held = {s: len(F.axis_series("bis", f"{s}.carry_differential") or ()) for s in bis}
+    held = {s: _n(F.axis_series("bis", f"{s}.carry_differential")) for s in bis}
     rd = sorted(s for s, n in held.items() if n)
     out["rate_differential"] = ({"symbols": rd, "points": held} if rd else
                                 {"parked_reason": F.ABSENT_BIS, "symbols_parked": len(bis),

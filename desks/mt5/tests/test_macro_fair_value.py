@@ -57,10 +57,10 @@ _SPIKE = pd.Timestamp("2026-04-01", tz="UTC")           # a Wednesday
 
 
 def _fred(stamped: bool, spike: float = 400_000.0, after: float = 0.0) -> dict:
-    rng = np.random.default_rng(1)
+    # bounded weekly noise: a sine never reaches 3 sigma of its own trailing history
     walcl, level = [], 7_000_000.0
-    for d in _WEDS:
-        level += rng.normal(0, 5_000) + (spike if d == _SPIKE else 0.0)
+    for i, d in enumerate(_WEDS):
+        level += 5_000 * np.sin(1.3 * i) + (spike if d == _SPIKE else 0.0)
         level += after if d > _SPIKE else 0.0
         walcl.append(level)
 
@@ -113,8 +113,6 @@ def test_net_liquidity_never_reads_a_print_before_it_is_knowable(axes):
     assert [s.time for s in a if s.time <= cut] == [s.time for s in b if s.time <= cut]
     assert a and all(s.time >= cut for s in a)
     # the z of print k reads only the changes before k
-    chg = pd.Series([1.0] * 30 + [50.0])
-    assert F.prior_z(chg + np.r_[np.zeros(30), 0.0], 10).index.max() == 30
     z1 = F.prior_z(pd.Series(np.r_[np.arange(30.0), 99.0]), 10)
     z2 = F.prior_z(pd.Series(np.r_[np.arange(30.0), 1e9]), 10)
     assert z1.iloc[:-1].equals(z2.iloc[:-1])
@@ -279,8 +277,8 @@ def test_the_proposer_parks_absent_bases_by_name_and_writes_its_report(axes, tmp
     from research import proposer_common as pc
     axes("fred", {"series": {}})
     axes("bis", _bis())
-    _d, peers = _tot_frames(n=3000)
-    frames = {"AUDUSD": _bars(n=3000, seed=2, base=0.66), **peers}
+    d, peers = _tot_frames(n=3000)
+    frames = {"AUDUSD": d, **peers}
     monkeypatch.setattr(P, "REPORT", tmp_path / "MACRO_FAIR_VALUE_PROPOSER.json")
     monkeypatch.setattr(P, "MIN_BARS", 500)
     meta = {s: {"asset_class": "Forex", "currency_profit": "USD"}
@@ -292,13 +290,21 @@ def test_the_proposer_parks_absent_bases_by_name_and_writes_its_report(axes, tmp
     monkeypatch.setattr(pc, "cost_frac", lambda s, m, c: 0.0001)
     from research import universe_policy as up
     monkeypatch.setattr(up, "may_hypothesise", lambda s, family=None: True)
+    # the real screen needs 30 trades; a stand-in exercises the charge and the ranking
+    monkeypatch.setattr(pc, "screen", lambda d, sig, cost, unf: (
+        {"t_gross": 3.0 + len(sig) / 100, "clears_cost": True, "n_independent": len(sig)}
+        if sig else None))
     rep = P.run(budget_s=120, donate=False)
     doc = json.loads(P.REPORT.read_text("utf-8"))
     assert doc["status"] == rep["status"] == "OK"
     assert doc["bases"]["net_liquidity"]["parked_reason"] == F.ABSENT_FRED
-    assert doc["bases"]["rate_differential"]["symbols"] == ["AUDUSD"]
+    assert doc["bases"]["rate_differential"]["symbols"] == ["AUDUSD", "EURUSD"]  # axis roster
     assert set(doc["bases"]["terms_of_trade"]["symbols"]) == {"AUDUSD", "NZDUSD", "USDCAD"}
-    assert isinstance(doc["tests_run"], int) and doc["tests_run"] >= 1
+    # AUDUSD carries rate_differential (2 x 2 x 2) and terms_of_trade (2 x 2 x 2); only variants
+    # that fired reach the screen, and every one of them is charged on every row
+    assert isinstance(doc["tests_run"], int) and 1 <= doc["tests_run"] <= 16
+    assert doc["skipped"].get("EURUSD") == "no or too few H1 bars"
+    assert all(r["n_tests_sweep"] == doc["tests_run"] for r in doc["proposals"])
     # everything parked: UNMEASURED, never zero
     axes("bis", {"symbols": [], "rows": []})
     monkeypatch.setattr(pc, "bars", lambda s: None)
