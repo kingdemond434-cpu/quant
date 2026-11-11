@@ -84,7 +84,10 @@ def load_history(root: Path = ROOT, max_commits: int = 150) -> list[Snapshot]:
     req = "".join(f"{h}:{SLEEVES_REL}\n" for h, _ in pairs).encode()
     try:
         raw = subprocess.run(["git", "-C", str(root), "cat-file", "--batch"], input=req,
-                             capture_output=True, timeout=300, check=False).stdout
+                             capture_output=True, timeout=300, check=False,
+                             # a blobless clone must never fetch history on demand: a blob it
+                             # lacks reads "missing" and is skipped as an absent snapshot
+                             env={**os.environ, "GIT_NO_LAZY_FETCH": "1"}).stdout
     except (OSError, subprocess.SubprocessError):
         return []
     snaps: list[Snapshot] = []
