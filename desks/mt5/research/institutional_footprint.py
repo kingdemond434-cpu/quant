@@ -106,6 +106,17 @@ ACTIVE_WINDOW = timedelta(days=30)
 #: UNMEASURED for anything point-in-time (features, states, cells) until a vintage recipe runs.
 FIRST_RELEASE = "FIRST_RELEASE"
 LATEST_REVISED = "LATEST_REVISED"
+#: A row whose release timing nothing in the repository establishes carries exactly this pit_note.
+#: Its frame is stored and reported but never point-in-time: the stamp `lag_hours_of` gives it
+#: would rest on an unestablished lag, so no state or cell may read it (a FIRST_RELEASE grade
+#: says the VALUE is unrevised; it says nothing about WHEN it was public).
+TIMING_UNMEASURED = "UNMEASURED: release timing not established"
+
+
+def timing_unmeasured(row: Mapping[str, Any] | None) -> bool:
+    """True when the row's pit_note declares its release timing UNMEASURED (any spelling that
+    starts with UNMEASURED fails closed)."""
+    return str((row or {}).get("pit_note") or "").strip().upper().startswith("UNMEASURED")
 
 
 def _ontology() -> Any:
@@ -207,9 +218,11 @@ def read_frame(sid: str) -> pd.DataFrame | None:
 
 
 def pit_ok(df: pd.DataFrame | None, row: Mapping[str, Any] | None = None) -> bool:
-    """May a point-in-time consumer read this frame? Only a FIRST_RELEASE frame. A frame written
-    before the grade existed falls back to the row's declared `pit_grade`, and fails closed."""
-    if df is None:
+    """May a point-in-time consumer read this frame? Only a FIRST_RELEASE frame of a row whose
+    release timing is established. A frame written before the grade existed falls back to the
+    row's declared `pit_grade`, and fails closed; a row whose pit_note says its timing is
+    UNMEASURED is never point-in-time, whatever grade its frame carries."""
+    if df is None or timing_unmeasured(row):
         return False
     if "pit_grade" in df.columns:
         return bool((df["pit_grade"].astype(str) == FIRST_RELEASE).all())
@@ -1629,7 +1642,9 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
         "pit": {"state_max_age_hours": STATE_MAX_AGE.total_seconds() / 3600,
                 "min_vintages": MIN_VINTAGES,
                 "latest_revised_frames": sorted(k for k, v in fetched.items()
-                                                if v.get("pit_grade") == LATEST_REVISED)},
+                                                if v.get("pit_grade") == LATEST_REVISED),
+                "timing_unmeasured_rows": sorted(str(r["id"]) for r in rows
+                                                 if timing_unmeasured(r))},
     }
     if not dry_run:
         _write_json(SEARCH_QUEUE, {"at": report["at"], "queue": cov["search_queue"]})

@@ -7,7 +7,7 @@
  "requirements": [
   {
    "id": "IF01",
-   "title": "atlas: every row institutional.<jur>.<publisher>.<dataset> (or a first-registering lane's id carrying atlas_id/aliases), with a pit_note and a declared status; no duplicate ids",
+   "title": "atlas: every row institutional.<jur>.<publisher>.<dataset> (or a first-registering lane's id carrying atlas_id/aliases), with a declared status, and a pit_note on every frame-producing row (exactly 'UNMEASURED: release timing not established' where the repo cannot time it); no duplicate ids",
    "priority": "P0",
    "lane": "research",
    "evaluator": "institutional_footprint.atlas",
@@ -17,7 +17,7 @@
     "desks/mt5/research/countries/institutional/ontology.py"
    ],
    "anchors": [
-    "desks/mt5/research/institutional_footprint.py:138#def load_roster"
+    "desks/mt5/research/institutional_footprint.py:149#def load_roster"
    ],
    "tests": [
     "desks/mt5/tests/test_institutional_footprint.py",
@@ -41,7 +41,7 @@
   },
   {
    "id": "IF02",
-   "title": "PIT: every frame reaching a state or cell is stamped by release time (COT through futures_state.cftc_available); LATEST_REVISED frames never reach states or cells",
+   "title": "PIT: every frame reaching a state or cell is stamped by release time (COT through futures_state.cftc_available); LATEST_REVISED frames never reach states or cells; a row whose release timing is UNMEASURED never reaches states or cells",
    "priority": "P0",
    "lane": "research",
    "evaluator": "institutional_footprint.pit",
@@ -50,12 +50,13 @@
     "desks/mt5/research/futures_state.py"
    ],
    "anchors": [
-    "desks/mt5/research/institutional_footprint.py:161#def write_frame",
-    "desks/mt5/research/institutional_footprint.py:209#def pit_ok",
-    "desks/mt5/research/institutional_footprint.py:615#fs.cftc_available",
-    "desks/mt5/research/institutional_footprint.py:657#cot_release_times",
-    "desks/mt5/research/institutional_footprint.py:707#pit_ok",
-    "desks/mt5/research/institutional_footprint.py:983#pit_ok",
+    "desks/mt5/research/institutional_footprint.py:172#def write_frame",
+    "desks/mt5/research/institutional_footprint.py:113#TIMING_UNMEASURED = ",
+    "desks/mt5/research/institutional_footprint.py:220#def pit_ok",
+    "desks/mt5/research/institutional_footprint.py:628#fs.cftc_available",
+    "desks/mt5/research/institutional_footprint.py:670#cot_release_times",
+    "desks/mt5/research/institutional_footprint.py:720#pit_ok",
+    "desks/mt5/research/institutional_footprint.py:996#pit_ok",
     "desks/mt5/research/futures_state.py:309#def cftc_available"
    ],
    "tests": [
@@ -90,10 +91,10 @@
    "anchors": [
     "desks/mt5/research/institutional_footprint.py:101#STATE_MAX_AGE = pd.Timedelta(days=7)",
     "desks/mt5/research/institutional_footprint.py:103#ACTIVE_WINDOW = timedelta(days=30)",
-    "desks/mt5/research/institutional_footprint.py:767#def fuse",
-    "desks/mt5/research/institutional_footprint.py:1358#def row_status",
-    "desks/mt5/research/institutional_footprint.py:1492#def state_ages",
-    "desks/mt5/research/institutional_footprint.py:1528#def regimes"
+    "desks/mt5/research/institutional_footprint.py:780#def fuse",
+    "desks/mt5/research/institutional_footprint.py:1371#def row_status",
+    "desks/mt5/research/institutional_footprint.py:1505#def state_ages",
+    "desks/mt5/research/institutional_footprint.py:1541#def regimes"
    ],
    "tests": [
     "desks/mt5/tests/test_institutional_footprint.py",
@@ -134,11 +135,11 @@
     "desks/mt5/research/institutional_footprint.py:86#TRAIN_FRACTION = 0.5",
     "desks/mt5/research/institutional_footprint.py:91#SIDE_SELECTION_TRIALS = 2",
     "desks/mt5/research/institutional_footprint.py:99#MIN_VINTAGES = 60",
-    "desks/mt5/research/institutional_footprint.py:956#def planned_cells",
-    "desks/mt5/research/institutional_footprint.py:1012#def learn_side",
-    "desks/mt5/research/institutional_footprint.py:1071#def side_claim_family",
-    "desks/mt5/research/institutional_footprint.py:1123#def emit_cells",
-    "desks/mt5/research/institutional_footprint.py:1200#enqueue_candidate(",
+    "desks/mt5/research/institutional_footprint.py:969#def planned_cells",
+    "desks/mt5/research/institutional_footprint.py:1025#def learn_side",
+    "desks/mt5/research/institutional_footprint.py:1084#def side_claim_family",
+    "desks/mt5/research/institutional_footprint.py:1136#def emit_cells",
+    "desks/mt5/research/institutional_footprint.py:1213#enqueue_candidate(",
     "desks/mt5/research/moat_candidate_compiler.py:355#CLAIM_FIELDS",
     "libs/research/trial_ledger.py:340#claim_selection_trials"
    ],
@@ -175,9 +176,9 @@
     "desks/mt5/data/institutional_coverage_rulings.json"
    ],
    "anchors": [
-    "desks/mt5/research/institutional_footprint.py:1383#def coverage",
-    "desks/mt5/research/institutional_footprint.py:1440#onto.UNMEASURED",
-    "desks/mt5/research/institutional_footprint.py:1635#SEARCH_QUEUE",
+    "desks/mt5/research/institutional_footprint.py:1396#def coverage",
+    "desks/mt5/research/institutional_footprint.py:1453#onto.UNMEASURED",
+    "desks/mt5/research/institutional_footprint.py:1650#SEARCH_QUEUE",
     "desks/mt5/research/countries/institutional/ontology.py:164#def ruling_defect",
     "desks/mt5/research/countries/institutional/ontology.py:178#def ruled_status"
    ],
@@ -224,7 +225,7 @@
     "desks/mt5/research/hourly_cycle.py:6111#_costed(\"institutional_footprint\"",
     "desks/mt5/research/issue_board.py:131#INSTITUTIONAL_COVERAGE.json",
     "desks/mt5/research/duty_cycle.py:99#\"institutional_footprint\"",
-    "desks/mt5/research/institutional_footprint.py:1572#def run"
+    "desks/mt5/research/institutional_footprint.py:1585#def run"
    ],
    "tests": [
     "desks/mt5/tests/test_institutional_footprint.py",

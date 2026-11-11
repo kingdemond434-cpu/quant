@@ -527,6 +527,7 @@ sources:
       silver: https://www.cmegroup.com/delivery_reports/Silver_stocks.xls
       copper: https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls
   pit_grade: LATEST_REVISED
+  pit_note: 'one row per trade date, published with a 1-day lag (data/asia_sources.json comex_warehouse: pit.event_time = trade date, publication_lag_days 1); stamped trade date + 48h (lag_hours_of). No recipe in RECIPES writes this frame yet'
   pack_source_ids:
   - pack_us_us_cme_ice_cboe
 - id: institutional.us.cme.delivery_notices
@@ -752,6 +753,7 @@ sources:
     url: https://cdn.finra.org/equity/regsho/daily/CNMSshvol{yyyymmdd}.txt
     days: 20
   pit_grade: FIRST_RELEASE
+  pit_note: 'one daily file per trade date, latency 1 day (data/paid_substitute_library.json finra_short_volume: latency_days 1); stamped trade date + 48h (lag_hours_of), after the end of the publication day'
   pack_source_ids:
   - pack_us_us_finra_retail_flow
 - id: institutional.us.finra.short_interest
@@ -935,6 +937,7 @@ sources:
     - securities lending data download
     - dissemination began
   pit_grade: LATEST_REVISED
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_us_us_finra_retail_flow
 - id: institutional.us.sec.form_13f
@@ -1119,6 +1122,7 @@ sources:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
   pit_grade: LATEST_REVISED
+  pit_note: 'knowable at the filing''s SEC acceptance time, never the transaction date: Form 4 is due within two business days and is dated at its latest acceptance time (libs/research/form4.py, knowable_at)'
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1167,6 +1171,7 @@ sources:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
   pit_grade: LATEST_REVISED
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1216,6 +1221,7 @@ sources:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
   pit_grade: LATEST_REVISED
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1265,6 +1271,7 @@ sources:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
   pit_grade: LATEST_REVISED
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1498,6 +1505,7 @@ sources:
     - short position data
     - 13f-2 data
   pit_grade: LATEST_REVISED
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1700,6 +1708,7 @@ sources:
     - NCCBR
     - non-centrally cleared bilateral
   pit_grade: LATEST_REVISED
+  pit_note: 'UNMEASURED: release timing not established'
 - id: institutional.us.nyfed.primary_dealer_statistics
   name: 'NY Fed primary dealer statistics: positions, transactions, financing, fails'
   jurisdiction: us
@@ -1755,6 +1764,7 @@ sources:
     - PDFTD-UST
     - PDFTR-UST
   pit_grade: FIRST_RELEASE
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.repo_reverse_repo_operations
@@ -1812,6 +1822,7 @@ sources:
     value: totalAmtAccepted
     group: operationType
   pit_grade: FIRST_RELEASE
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.securities_lending_soma
@@ -1864,6 +1875,7 @@ sources:
     date: operationDate
     value: totalParAmtAccepted
   pit_grade: FIRST_RELEASE
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.reference_rates
@@ -1916,6 +1928,7 @@ sources:
     value: percentRate
     group: type
   pit_grade: FIRST_RELEASE
+  pit_note: 'UNMEASURED: release timing not established'
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.tri_party_repo
@@ -2345,6 +2358,7 @@ sources:
     - primary_dealer_accepted
     - total_accepted
   pit_grade: FIRST_RELEASE
+  pit_note: 'the auction closes 13:00 ET and the result is out at 13:02 ET on the auction date (research/countries/us/miners.py auction_tail_event_study); stamped auction date + 24h, after the result'
   pack_source_ids:
   - pack_us_us_treasury_fiscaldata
 - id: institutional.us.treasury.investor_class_allotments

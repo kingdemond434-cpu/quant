@@ -54,6 +54,9 @@ MAX_AGE_H = 26.0
 DECLARABLE = frozenset({"DISCOVERED_NOT_INGESTED", "PAID_PUBLIC_PROXY", "BLOCKED_SUBSTITUTE",
                         "NOT_PUBLISHED", "WATCH", "ACTIVE_CANDIDATE", "TESTED_NO_INFORMATION",
                         "NOT_RELEVANT"})
+#: The exact pit_note of a row whose release timing nothing in the repo establishes; the engine's
+#: `pit_ok` refuses such a row's frame (`institutional_footprint.TIMING_UNMEASURED`).
+TIMING_UNMEASURED = "UNMEASURED: release timing not established"
 CANONICAL = re.compile(r"institutional\.[a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_]+")
 #: Examples kept per violation class: the counts are complete, the examples are a sample.
 EXAMPLES = 8
@@ -239,6 +242,16 @@ def _lag_hours(row: Mapping[str, Any]) -> float:
     return (float(row.get("publication_lag_days") or 0) + 1.0) * 24.0
 
 
+def _timing_unmeasured(row: Mapping[str, Any]) -> bool:
+    return str(row.get("pit_note") or "").strip().upper().startswith("UNMEASURED")
+
+
+def _produces_frame(root: Path, row: Mapping[str, Any]) -> bool:
+    """A row that has a fetch recipe (an engine recipe, another lane's frame, a watcher that
+    opens one) or already has a frame in the lake. Discovery-only rows produce nothing."""
+    return bool(row.get("fetch")) or (root / SERIES / f"{row.get('id')}.csv").exists()
+
+
 def _key_source(key: str) -> str:
     return key.split("|", 1)[0]
 
@@ -259,6 +272,8 @@ def if01_atlas(root: Path, now: datetime) -> dict[str, Any]:
     v.fail_if("duplicate atlas id", [i for i, n in seen.items() if n > 1 and i])
     names: dict[str, list[str]] = {}
     bad_form, no_lane_id, no_note, bad_status, lane_ids = [], [], [], [], 0
+    bad_unmeasured: list[str] = []
+    producing = 0
     for r in rows:
         rid = str(r.get("id") or "")
         canon = str(r.get("atlas_id") or rid)
@@ -275,12 +290,18 @@ def if01_atlas(root: Path, now: datetime) -> dict[str, Any]:
             lane_ids += 1
             if not r.get("atlas_id") or not isinstance(r.get("aliases"), list):
                 no_lane_id.append(rid)
-        if not str(r.get("pit_note") or "").strip():
-            no_note.append(rid)
+        # A pit_note matters where a row produces frames; discovery-only rows are exempt.
+        if _produces_frame(root, r):
+            producing += 1
+            if not str(r.get("pit_note") or "").strip():
+                no_note.append(rid)
+        if _timing_unmeasured(r) and str(r.get("pit_note")).strip() != TIMING_UNMEASURED:
+            bad_unmeasured.append(rid)
         if str(r.get("declared_status") or "") not in DECLARABLE:
             bad_status.append(f"{rid}={r.get('declared_status')!r}")
-    v.measured.update({"lane_registered_first": lane_ids,
-                       "with_pit_note": len(rows) - len(no_note)})
+    v.measured.update({"lane_registered_first": lane_ids, "frame_producing": producing,
+                       "frame_producing_with_pit_note": producing - len(no_note),
+                       "timing_unmeasured": sum(1 for r in rows if _timing_unmeasured(r))})
     v.fail_if("id not institutional.<jurisdiction>.<publisher>.<dataset>", bad_form)
     v.fail_if("one atlas name claimed by two rows",
               [f"{k}<-{'/'.join(x)}" for k, x in names.items() if len(x) > 1])
@@ -289,7 +310,8 @@ def if01_atlas(root: Path, now: datetime) -> dict[str, Any]:
         f"{r.get('id')}:{a}" for r in rows for a in r.get("aliases") or []
         if str(a) in id_set and str(a) != r.get("id")])
     v.fail_if("lane-registered row without atlas_id/aliases", no_lane_id)
-    v.fail_if("row without a pit_note", no_note)
+    v.fail_if("frame-producing row without a pit_note", no_note)
+    v.fail_if(f"UNMEASURED pit_note not exactly {TIMING_UNMEASURED!r}", bad_unmeasured)
     v.fail_if("row without a declarable status (ACTIVE is measured, never declared)", bad_status)
     return v.done()
 
@@ -331,11 +353,16 @@ def if02_pit(root: Path, now: datetime) -> dict[str, Any]:
     for fn in ("macro_features", "planned_cells"):
         if "pit_ok" not in _called(_function(tree, fn)):
             v.fail(f"{fn} reads frames without the pit_ok FIRST_RELEASE gate")
+    if "timing_unmeasured" not in _called(_function(tree, "pit_ok")):
+        v.fail("pit_ok admits a row whose release timing is UNMEASURED")
     cov = _artifact(v, root, COVERAGE, now)
     rows = {str(r.get("id")): r for r in _roster(root) or []}
     revised, n_frames = _revised_frames(root, cov, rows)
+    untimed = {sid for sid, row in rows.items() if _timing_unmeasured(row)}
     early: list[str] = []
     for sid, row in rows.items():
+        if sid in untimed:
+            continue                     # no established lag to check it against; never PIT
         got = _frame(root / SERIES / f"{sid}.csv")
         if got is None:
             continue
@@ -353,12 +380,18 @@ def if02_pit(root: Path, now: datetime) -> dict[str, Any]:
                for s in [c.get("source_id"), *(c.get("source_ids") or [])]
                if s and str(s) in revised}
     v.fail_if("LATEST_REVISED frame reached a state or cell", reached)
+    v.fail_if("frame of a row with UNMEASURED release timing reached a state or cell", {
+        f"{c.get('cell_id')}<-{s}" for c in culture
+        for s in [c.get("source_id"), *(c.get("source_ids") or [])] if s and str(s) in untimed})
     emitted = _json(root / EMITTED)
     keys = [str(k) for k in (emitted or {}).get("keys") or []] if isinstance(emitted, dict) else []
     v.fail_if("cell key minted from a LATEST_REVISED frame",
               [k for k in keys if _key_source(k) in revised])
+    v.fail_if("cell key minted from a row with UNMEASURED release timing",
+              [k for k in keys if _key_source(k) in untimed])
     v.measured.update({"frames_read": n_frames, "latest_revised_frames": len(revised),
-                       "state_frames": len(states), "culture_rows": len(culture),
+                       "timing_unmeasured_rows": len(untimed), "state_frames": len(states),
+                       "culture_rows": len(culture),
                        "cell_keys": len(keys)})
     if not n_frames and not culture and not keys:
         v.unmeasured.append("no frame, cell or culture row on this host: nothing reached a state")

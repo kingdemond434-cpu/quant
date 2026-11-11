@@ -135,7 +135,8 @@ def test_a_clean_atlas_passes_and_a_duplicate_id_fails(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("bad,why", [
-    ({"pit_note": ""}, "row without a pit_note"),
+    ({"pit_note": "", "fetch": {"kind": "fred_csv"}}, "frame-producing row without a pit_note"),
+    ({"pit_note": "UNMEASURED: maybe Tuesday"}, "UNMEASURED pit_note not exactly"),
     ({"declared_status": "ACTIVE"}, "row without a declarable status"),
     ({"id": "institutional.us.cftc"}, "id not institutional"),
     ({"id": "lane_id_first"}, "lane-registered row without atlas_id/aliases"),
@@ -145,6 +146,19 @@ def test_each_atlas_violation_flips_if01(tmp_path: Path, bad: dict[str, Any], wh
                                                           **bad}])
     got = IA.if01_atlas(tmp_path, NOW)
     assert got["verdict"] == "FAIL" and any(v.startswith(why) for v in got["violations"]), got
+
+
+def test_a_discovery_only_row_needs_no_pit_note(tmp_path: Path) -> None:
+    _roster(tmp_path, [_row("institutional.uk.boe.repo", pit_note=""),
+                       _row("institutional.us.fed.h41", fetch={"kind": "fred_csv"},
+                            pit_note=IA.TIMING_UNMEASURED)])
+    got = IA.if01_atlas(tmp_path, NOW)
+    assert got["verdict"] == "PASS", got
+    assert got["measured"]["frame_producing"] == 1 and got["measured"]["timing_unmeasured"] == 1
+    # A frame already in the lake makes the row frame-producing too.
+    _frame(tmp_path, "institutional.uk.boe.repo",
+           [("2024-01-01T00:00:00+00:00", "2024-01-02T00:00:00+00:00", 1.0)])
+    assert IA.if01_atlas(tmp_path, NOW)["verdict"] == "FAIL"
 
 
 # ------------------------------------------------------------------ IF02 PIT
@@ -177,6 +191,30 @@ def test_a_latest_revised_frame_reaching_a_state_fails_if02(tmp_path: Path) -> N
     got = IA.if02_pit(tmp_path, NOW)
     assert got["verdict"] == "FAIL"
     assert any(v.startswith("LATEST_REVISED frame reached") for v in got["violations"])
+
+
+def test_a_row_with_unmeasured_timing_reaching_a_cell_fails_if02(tmp_path: Path) -> None:
+    _pit_root(tmp_path)
+    _roster(tmp_path, [_row("institutional.us.ok.series", publication_lag_days=0,
+                            pit_note=IA.TIMING_UNMEASURED)])
+    got = IA.if02_pit(tmp_path, NOW)
+    assert got["verdict"] == "FAIL"
+    assert any(v.startswith("frame of a row with UNMEASURED release timing reached")
+               for v in got["violations"])
+
+
+def test_an_engine_whose_pit_ok_admits_untimed_rows_fails_if02(tmp_path: Path) -> None:
+    _pit_root(tmp_path)
+    src = (tmp_path / IA.ENGINE).read_text("utf-8")
+    (tmp_path / IA.ENGINE).write_text(
+        src.replace("if df is None or timing_unmeasured(row):", "if df is None:"), "utf-8")
+    got = IA.if02_pit(tmp_path, NOW)
+    assert got["verdict"] == "FAIL" and any("UNMEASURED" in v for v in got["violations"])
+
+
+def test_the_acceptance_and_the_engine_agree_on_the_unmeasured_note() -> None:
+    src = (ROOT / IA.ENGINE).read_text("utf-8")
+    assert f'TIMING_UNMEASURED = "{IA.TIMING_UNMEASURED}"' in src
 
 
 def test_a_frame_stamped_before_its_release_fails_if02(tmp_path: Path) -> None:

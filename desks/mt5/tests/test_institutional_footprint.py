@@ -365,6 +365,40 @@ def test_a_revised_series_never_reaches_a_state_or_a_cell(lake: Path,
     assert ifp.planned_cells({}, [row])
 
 
+def test_a_row_whose_release_timing_is_unmeasured_never_reaches_a_state_or_a_cell(
+        lake: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A FIRST_RELEASE grade says the value is unrevised, not WHEN it was public. A row whose
+    pit_note says its release timing is UNMEASURED has no established lag, so its frame is
+    stored but no feature, state or cell may read it, whatever grade the frame carries."""
+    row = {"id": "institutional.us.nyfed.repo_reverse_repo_operations", "targets": ["US500"],
+           "pit_grade": "FIRST_RELEASE", "pit_note": ifp.TIMING_UNMEASURED,
+           "fetch": {"kind": "nyfed_json"}}
+    df = pd.DataFrame({"event_time": pd.date_range("2020-01-01", periods=80, freq="D",
+                                                   tz="UTC"), "reverse_repo": np.arange(80.0)})
+    ifp.write_frame(row["id"], df, lag_hours=24, pit_grade=ifp.FIRST_RELEASE)
+    monkeypatch.setattr(ifp, "_may_hunt", lambda s: True)
+    assert ifp.timing_unmeasured(row)
+    assert not ifp.pit_ok(ifp.read_frame(row["id"]), row)
+    assert ifp.planned_cells({}, [row]) == []
+    assert "nyfed.rrp_chg_z" not in ifp.macro_features([row])
+    # Any UNMEASURED spelling fails closed; an established note admits the same frame.
+    assert not ifp.pit_ok(ifp.read_frame(row["id"]), {**row, "pit_note": "unmeasured: tbd"})
+    timed = {**row, "pit_note": "RRP take-up published 13:15 ET daily"}
+    assert ifp.pit_ok(ifp.read_frame(row["id"]), timed)
+    assert ifp.planned_cells({}, [timed])
+    assert "nyfed.rrp_chg_z" in ifp.macro_features([timed])
+
+
+def test_every_frame_producing_atlas_row_says_when_it_was_public() -> None:
+    """Every row with a fetch recipe carries a pit_note; one the repo cannot time says exactly
+    TIMING_UNMEASURED, so the engine's guard reads it."""
+    for r in ifp.load_roster():
+        if r.get("fetch"):
+            assert str(r.get("pit_note") or "").strip(), r["id"]
+        if ifp.timing_unmeasured(r):
+            assert r["pit_note"] == ifp.TIMING_UNMEASURED, r["id"]
+
+
 def test_alfred_keeps_the_first_vintage_at_its_release_day(monkeypatch: pytest.MonkeyPatch) -> None:
     row = {"id": "x", "fetch": {"kind": "fred_csv", "series": {"v": "S"}, "revisable": True}}
     doc = {"observations": [
