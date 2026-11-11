@@ -1185,6 +1185,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # The funnel ledger and the trial allocator: 4 s and 1 s, read-only, measured 2026-09-05.
+    # Their only roster was hourly_discovery.ORGANS, which no task runs, so the box's
+    # conversion_ledger.json still carried 2026-09-05 on 2026-11-10 (Hourly pass 88).
+    "conversion_ledger", "trial_allocator",
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
@@ -2975,6 +2979,27 @@ def fill_attribution() -> dict:
     explaining are exactly the ones that cannot be joined.
     """
     return _producer("fill_attribution", "research/fill_attribution.py")
+
+
+def conversion_ledger() -> dict:
+    """`conversion_ledger`: the whole research funnel, stage by stage, and its binding stage.
+
+    UNCLOCKED FOR TWO MONTHS. The organ was listed only in `hourly_discovery.ORGANS`, and no
+    task, cycle or runner calls hourly_discovery, so data/conversion_ledger.json on the box still
+    read generated_utc 2026-09-05 on 2026-11-10 while every "max conversion per stage" question
+    was answered from it. Read-only and seconds; the trial allocator below reads the same docket.
+    """
+    return _producer("conversion_ledger", "research/conversion_ledger.py", "--quiet")
+
+
+def trial_allocator() -> dict:
+    """`trial_allocator`: the trial budget per (family, class) from the measured conversion.
+
+    Same story as `conversion_ledger`: its only roster was the unscheduled hourly_discovery, so
+    reports/TRIAL_ALLOCATION.json was never refreshed by a clock. Proposers call
+    `trial_allocator.observed()` themselves, so this leg only keeps the published report honest.
+    """
+    return _producer("trial_allocator", "research/trial_allocator.py")
 
 
 def cost_to_edge() -> dict:
@@ -5864,6 +5889,8 @@ def main() -> None:
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
     fat = _costed("fill_attribution", fill_attribution)
+    cvl = _costed("conversion_ledger", conversion_ledger)
+    tra = _costed("trial_allocator", trial_allocator)
     c2e = _costed("cost_to_edge", cost_to_edge)
     swr = _costed("swap_rejudge", swap_rejudge)
     asp = _costed("asia_plane", asia_plane)
@@ -6543,6 +6570,8 @@ def main() -> None:
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
                     "fill_attribution": fat,
+                    "conversion_ledger": cvl,
+                    "trial_allocator": tra,
                     "cost_to_edge": c2e,
                     "swap_rejudge": swr,
                     "asia_plane": asp,
