@@ -516,7 +516,13 @@ def test_no_congressional_fetch_without_the_switch_and_the_gate_is_billed(
     monkeypatch.setenv("QUANT_CONGRESS_ATTEST", "1")
     assert organ.congress_missed_growth(now, path=paths / "other.jsonl") == []
     _rows, house = organ.collect_house(http, {}, 1e18, now)
-    assert house["status"] != "AWAITING_PRINCIPAL" and any("FD.zip" in u for u in http.calls)
+    assert house["status"] != "AWAITING_PRINCIPAL"              # the switch opened the gate
+    try:
+        import pypdf  # noqa: F401
+    except ImportError:                                         # a host without the PDF reader
+        assert house["status"] == "UNMEASURED" and "pypdf" in house["why"]
+    else:
+        assert any("FD.zip" in u for u in http.calls)
 
 
 def test_polymarket_reads_resolved_markets_and_publishes_a_census() -> None:
