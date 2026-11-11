@@ -33,6 +33,8 @@ SCALP_STATE = BASE / "reports" / "shadow" / "scalp_shadow_state.json"
 SLEEVES = BASE / "data" / "sleeves.json"
 #: MT5 truncates the order comment, so the ledger's sleeve is a prefix of the certificate name.
 MIN_PREFIX = 20
+#: Fewer own fills than this and a sleeve's mean slip is anecdote, not a measurement.
+MIN_FILLS = 5
 
 
 def _read(p: Path) -> Any:
@@ -78,20 +80,26 @@ def slips_by_sleeve(rows: list[dict], names: list[str]) -> dict[str, list[float]
     return out
 
 
-def rerank(certs: dict[str, dict], slips: dict[str, list[float]]) -> list[dict]:
+def rerank(certs: dict[str, dict], slips: dict[str, list[float]],
+           usable: bool = True) -> list[dict]:
+    """usable=False (a mixed or unusable markout book, e.g. demo and live slip averaged
+    together) leaves every row UNMEASURED; so does a sleeve with fewer than MIN_FILLS fills."""
     rows = []
     for name, c in certs.items():
         exp = c.get("exp_r")
         exp = float(exp) if isinstance(exp, (int, float)) else None
         s = slips.get(name) or []
         row = {"name": name, **c, "exp_r": exp, "n_fills": len(s)}
-        if s and exp is not None:
+        if usable and len(s) >= MIN_FILLS and exp is not None:
             slip = sum(s) / len(s)
             row.update(slip_r=slip, net_exp_r=exp - slip, verdict="MEASURED",
                        edge_share=(slip / exp) if exp else None)
         else:
             row.update(slip_r=None, net_exp_r=None, edge_share=None, verdict="UNMEASURED",
-                       why="no matched own fill" if not s else "no expectancy on the cert")
+                       why=("markout book unusable (mixed or unreadable account)" if not usable
+                            else "no matched own fill" if not s
+                            else f"{len(s)} own fill(s) < MIN_FILLS={MIN_FILLS}"
+                            if len(s) < MIN_FILLS else "no expectancy on the cert"))
         rows.append(row)
     gross = sorted(rows, key=lambda r: -(r["exp_r"] if r["exp_r"] is not None else -1e9))
     for i, r in enumerate(gross, 1):
@@ -111,10 +119,11 @@ def build() -> dict:
     m = mk.compute(mk.load_jsonl(BASE / "data" / "order_intents.jsonl"),
                    mk.load_jsonl(ledger_path(BASE / "data" / "live_ledger.jsonl")))
     certs = certificates(_read(SCALP_STATE), _read(SLEEVES))
-    ranked = rerank(certs, slips_by_sleeve(list(m.rows or []), list(certs)))
+    ranked = rerank(certs, slips_by_sleeve(list(m.rows or []), list(certs)), usable=bool(m.usable))
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-        "reports_only": True,
+        "reports_only": True, "report_only": True, "consumer": None,
+        "min_fills": MIN_FILLS,
         "markout_usable": bool(m.usable), "account_kind": getattr(m, "account_kind", None),
         "book": {"n_matched": m.n_matched, "mean_slip_r": m.mean_slip_r,
                  "edge_share": m.edge_share},
