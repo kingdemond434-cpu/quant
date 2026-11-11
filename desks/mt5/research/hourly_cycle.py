@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -355,6 +356,15 @@ def daily() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+def _innermost_frame(exc: BaseException) -> str:
+    """`file:line in func` of the frame that raised, for the leg's result record."""
+    tb = traceback.extract_tb(exc.__traceback__)
+    if not tb:
+        return ""
+    f = tb[-1]
+    return f"{Path(f.filename).name}:{f.lineno} in {f.name}"
+
+
 def record_tape() -> dict:
     """Persist broker-native ticks every hourly cycle before any research consumes them."""
     # TWO RECORDERS, TWO FATES. These were in one `try` and it hid the thing that matters: on
@@ -368,8 +378,12 @@ def record_tape() -> dict:
         try:
             rc = call()
         except Exception as exc:
-            print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}", flush=True)
+            # The traceback names the failing line. Without it, a numpy FloatingPointError
+            # from the tape (2026-11-05 14:42Z) logged only "overflow encountered in multiply".
+            print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}\n"
+                  f"{traceback.format_exc()}", flush=True)
             results[f"{label}_error"] = f"{type(exc).__name__}: {exc}"
+            results[f"{label}_where"] = _innermost_frame(exc)
             codes.append(1)
         else:
             results[f"{label}_exit_code"] = rc
@@ -1093,6 +1107,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "attestation_remint": {3: "REMINT_BREACH"},
+    # pf_allocator exits 3 when it stands down behind a lock it may not reclaim (a live,
+    # heartbeating holder); the named stand-down is reports/ALLOCATOR_STANDDOWN.json.
+    "pf_allocator": {3: "LOCK_REFUSED"},
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
@@ -1179,8 +1196,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The bandit's shares, re-derived hourly before the legs that spend them (Tier S).
     "research_bandit",
     # THE TIER S DOOR'S WRITER, EVERY HOUR (2026-09-30): the promotion door fails closed on a
-    # verdict older than 6h, so this leg is on the core clock and exempt from rotation
-    # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
+    # verdict older than 6h, so this leg runs on its own due-by-age clock (soft 3h, hard 5h;
+    # libs/ops/leg_rotation.DUE_BY_AGE_H) instead of every hour, which kept the core legs
+    # starved. ~10 min measured end to end under its 1,500 s cap.
     # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
     # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
     "research_live_identity",
@@ -1541,6 +1559,10 @@ def department_of(name: str) -> str:
 OWN_CLOCK_LEGS: frozenset[str] = frozenset({
     "state_vector",       # MT5-StateVector
     "external_gauntlet",  # MT5-Gauntlet
+    # THE FTMO BOOK'S SOLVE (2026-11-05): ~722 s never fit the core rotation's room, so it was
+    # deferred every pass and never ran after 2026-10-29 -- seven days of FTMO trading only the gold
+    # fallback. Its own hourly task (scripts/install_ftmo_allocator_task.ps1) is the only clock.
+    "prop_challenge_allocator",  # MT5-FTMO-Allocator
 })
 
 
