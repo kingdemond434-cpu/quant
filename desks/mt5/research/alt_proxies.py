@@ -1437,6 +1437,52 @@ def parse_inegi_bie(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
+#: Banxico SIE series the desk names itself; any other configured id is published as sie_<id>.
+BANXICO_SERIES = {"SF43707": "reserves_usd_mn"}
+_SIE_ID = re.compile(r"^S[A-Z]\d{3,7}$")
+
+
+def banxico_series_ids(environ: Any = None) -> list[str]:
+    """SF43707 (international reserves) plus the ids in ALT_BANXICO_FX_SERIES, comma separated:
+    the Comision de Cambios intervention and auction series, read from the SIE catalogue on the
+    box. An entry that is not shaped like a SIE id is dropped, never sent."""
+    env: Any = os.environ if environ is None else environ
+    extra = [x.strip().upper() for x in str(env.get("ALT_BANXICO_FX_SERIES") or "").split(",")]
+    out = list(BANXICO_SERIES)
+    out += [x for x in extra if _SIE_ID.match(x) and x not in out]
+    return out[:20]
+
+
+def parse_banxico_sie(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Banxico SIE JSON, any number of series: `bmx.series[].{idSerie, datos[].{fecha
+    "DD/MM/YYYY", dato "1,234.5"}}`. "N/E" (not available) and an error reply are nothing."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    series = (doc.get("bmx") or {}).get("series") if isinstance(doc, dict) else None
+    out: list[Obs] = []
+    for item in series if isinstance(series, list) else []:
+        if not isinstance(item, dict):
+            continue
+        sid = str(item.get("idSerie") or "").upper()
+        if not _SIE_ID.match(sid):
+            continue
+        name = BANXICO_SERIES.get(sid, f"sie_{sid.lower()}")
+        for o in item.get("datos") or []:
+            if not isinstance(o, dict):
+                continue
+            parts = str(o.get("fecha") or "").split("/")
+            x = _num(str(o.get("dato") or "").replace(",", ""))
+            if x is None or len(parts) != 3 or not all(q.isdigit() for q in parts):
+                continue
+            try:
+                out.append(Obs(name, date(int(parts[2]), int(parts[1]), int(parts[0])), x))
+            except ValueError:
+                continue
+    return out
+
+
 _TUIK_TITLE = re.compile(r"Perakende\s+Satış\s+Endeksleri\s*,\s*(Ocak|Şubat|Mart|Nisan|Mayıs|"  # noqa: RUF001
                          r"Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+(20\d{2})",  # noqa: RUF001
                          re.IGNORECASE)
@@ -1714,6 +1760,9 @@ class Source:
     failure_mode_hypothesis: str
     crowding_prior: str
     key_env: str | None = None
+    #: When set, the key travels in THIS request header and never in the URL (Banxico's
+    #: Bmx-Token), so no URL the desk logs, vaults or prints can carry it.
+    key_header: str = ""
     series_instruments: dict[str, dict[str, int]] = field(default_factory=dict)
     note: str = ""
     #: A local read in place of a fetch (a series another organ already fetches).
@@ -1949,6 +1998,45 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="mx_banxico_sie", name="Banxico SIE: international reserves and FX-commission series",
+        url=("https://www.banxico.org.mx/SieAPIRest/service/v1/series/{ids}/datos/"
+             "{from}/{to}"),
+        region="MX", language="es", cadence="weekly", parse=parse_banxico_sie,
+        rule=_lag_rule(6, 0, weekday=True), transform="level_dev",
+        key_env="BANXICO_TOKEN", key_header="Bmx-Token",
+        instruments={"USDMXN": -1},
+        signal_series=("reserves_usd_mn",),
+        mechanism=("the central bank's own balance sheet is the footprint of the FX commission "
+                   "(Banxico plus the finance ministry): reserves fall when dollars are sold or "
+                   "the Pemex and government flows drain them, and the commission's auction and "
+                   "hedge-programme series date each intervention. A reserve level running below "
+                   "its own recent mean is the official sector leaning against peso weakness"),
+        payer="peso carry holders and importers who trade into an official seller or buyer",
+        constraint=("the commission acts by announced rule and reports its balance sheet weekly; "
+                    "it cannot hide the size"),
+        licence=("Banco de México general authorisation: the information it publishes may be "
+                 "reproduced or used, citing the source and Banco de México's Internet address. "
+                 "Source: Banco de México, Sistema de Información Económica (SIE), "
+                 "https://www.banxico.org.mx"),
+        source_culture="MX/es", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails when reserves move on valuation or on Pemex and "
+                                 "government operations rather than on FX intervention, and the "
+                                 "weekly balance prints days after the flow"),
+        crowding_prior="medium", vintage="current",
+        note=("Source: Banco de México, SIE, https://www.banxico.org.mx/SieAPIRest/service/v1/ "
+              "(terms read from the box 2026-11-11). The token travels in the Bmx-Token header "
+              "from BANXICO_TOKEN and never in a URL, a log or the vault. One historical-range "
+              "request a pass (quota 200 per 5 minutes, 10,000 a day). An over-quota reply (HTTP "
+              "400 carrying secondsToReset) and any 401/403/429/451 STOP the source until the "
+              "reset; nothing retries into a blocked token. SF43707 is the weekly international "
+              "reserve (USD millions) in the bank's statement of account, as of Friday and "
+              "published the following Tuesday; the 6-day weekday rule is after that. The FX "
+              "intervention and auction series have NO default ids: none could be verified "
+              "from an official page without the token, and an id is never guessed. Read them "
+              "from the SIE catalogue on the box and list them in ALT_BANXICO_FX_SERIES (comma "
+              "separated); each is published as sie_<id>. SIE serves the current vintage only, "
+              "so the first history fetch is stamped vintage=current")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2641,6 +2729,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "br_bcb_payments": ("confirmed", "BCB Open Data portal, ODbL"),
     "mx_inegi_emec": ("confirmed", "INEGI Términos de Libre Uso: commercial exploitation "
                       "allowed with credit"),
+    "mx_banxico_sie": ("confirmed", "Banco de México general authorisation to reproduce or use "
+                       "with source and Internet address cited; the SIE API is its automation "
+                       "tool"),
     "tr_tuik_retail": ("confirmed", "TÜİK legal notice: reuse without permission, source cited"),
     "kr_mof_container_teu": ("confirmed", "data.go.kr: 이용허락범위 제한 없음 (unrestricted)"),
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
@@ -2812,6 +2903,16 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "olinda documentation page robots-unreadable from the authoring box; the "
                   "OData endpoint is the portal's own listed resource",
         "checked_at": _CHK},
+    "mx_banxico_sie": {
+        "terms_url": "https://www.banxico.org.mx/footer-es/salvedad-politicas-uso-banco-.html",
+        "terms_quote": ("otorga su autorización de manera general para que la información que "
+                        "en ejercicio de sus atribuciones dé a conocer en ella pueda reproducirse "
+                        "o utilizarse. Las personas que reproduzcan esta información deberán "
+                        "mencionar la fuente de la cual se obtuvo, así como la dirección de "
+                        "Internet del Banco de México"),
+        "robots": ("robots.txt allows /SieAPIRest/ for every agent; the API page says it is for "
+                   "developers who automate extraction, behind a per-user token"),
+        "checked_at": "2026-11-11"},
     "mx_inegi_emec": {
         "terms_url": "https://www.inegi.org.mx/inegi/terminos.html",
         "terms_quote": ("Puede explotar comercialmente la información, utilizándola como insumo "
@@ -3233,8 +3334,9 @@ def _redact(url: str, src: Source) -> str:
     return url.replace(key, f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str) -> tuple[bytes, str]:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+def http_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*",
+                                               **(headers or {})})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
@@ -3259,6 +3361,8 @@ def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
 class Request:
     url: str
     ctx: Ctx
+    #: Secret request headers (a keyed header source). Never logged, vaulted or reported.
+    headers: dict[str, str] = field(default_factory=dict, repr=False)
 
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
@@ -3319,6 +3423,17 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         # page, which TSA publishes at /<year>.
         return [Request(src.url, Ctx(fetched_at=now)),
                 Request(f"{src.url}/{now.year - 1}", Ctx(part="prior_year", fetched_at=now))]
+    if src.id == "mx_banxico_sie":
+        # One historical-range request a pass (quota: 200 per 5 minutes, 10,000 a day): the whole
+        # history once, then the last 60 days.
+        first = date(2000, 1, 1) if not state.get("full_done") else \
+            now.date() - timedelta(days=60)
+        if not state.get("full_done"):
+            state["full_done_next"] = True
+        url = (src.url.replace("{ids}", ",".join(banxico_series_ids()))
+               .replace("{from}", first.isoformat()).replace("{to}", now.date().isoformat()))
+        return [Request(url, Ctx(start=first, end=now.date(), fetched_at=now),
+                        headers={src.key_header: key})]
     url = src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m"))
     for env in src.config_env:
         code = config_value(env)
@@ -4033,6 +4148,32 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
     return None
 
 
+#: How long a keyed-header source stands down after a refusal that carries no reset time.
+STOP_DEFAULT_S = 6 * 3600
+
+
+def _stop_seconds(exc: BaseException) -> int | None:
+    """Seconds to stand down after this error, or None when it is not a stop. 401/403/429/451
+    always stop. Banxico answers an exhausted quota with HTTP 400 carrying `secondsToReset`
+    (body, and the Bmx-secondsToReset header): the token is blocked until then, so that is a
+    stop for exactly that long. A 400 without it is an ordinary bad request."""
+    if not isinstance(exc, urllib.error.HTTPError):
+        return None
+    secs: int | None = None
+    with contextlib.suppress(Exception):
+        secs = int(float(str(exc.headers.get("Bmx-secondsToReset"))))
+    if secs is None:
+        with contextlib.suppress(Exception):
+            text = exc.read(4096).decode("utf-8", "replace")
+            m = re.search(r'"secondsToReset"\s*:\s*"?(\d+)', text)
+            secs = int(m.group(1)) if m else None
+    if exc.code == 400:
+        return None if secs is None else max(60, min(secs + 60, 86400))
+    if exc.code in (401, 403, 429, 451):
+        return max(60, min(secs + 60, 86400)) if secs is not None else STOP_DEFAULT_S
+    return None
+
+
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
             getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
@@ -4070,6 +4211,11 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
         return rec
+    held = _t(sst.get("stop_until"))
+    if held is not None and now < held and fixtures is None:
+        rec.update({"requests": 0, "store_rows": len(store),
+                    "why": f"STOPPED until {sst['stop_until']}: {sst.get('stop_why', '')}"})
+        return rec
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
     errors: list[str] = []
@@ -4084,11 +4230,19 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 continue
         elif fetch:
             try:
-                body, ctype = getter(req.url)
+                body, ctype = (getter(req.url, req.headers)  # type: ignore[call-arg]
+                               if req.headers else getter(req.url))
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                stop = _stop_seconds(exc) if src.key_header else None
+                if stop is not None:
+                    # A refusal or an exhausted quota is a STOP, never something to retry into.
+                    sst["stop_until"] = (now + timedelta(seconds=stop)).isoformat(
+                        timespec="seconds")
+                    sst["stop_why"] = errors[-1]
+                    break
                 continue
         if body is None:
             continue

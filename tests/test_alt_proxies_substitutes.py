@@ -349,7 +349,8 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        # The day the terms were actually read: the 2026-09-30 batch, or a later box read.
+        assert ev["robots"] and ev["checked_at"] in ("2026-09-30", "2026-11-11"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
@@ -832,3 +833,89 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
                    if A.BY_ID[x].terms == "confirmed"}
     assert "asia_za_statssa_retail" not in lib
+
+
+# ================================================================ Banxico SIE (keyed header)
+def _http_error(code: int, body: bytes, headers: dict[str, str] | None = None) -> Exception:
+    import email.message
+    msg = email.message.Message()
+    for k, v in (headers or {}).items():
+        msg[k] = v
+    return urllib.error.HTTPError("https://example.invalid/", code, "x", msg, io.BytesIO(body))
+
+
+def test_banxico_parser_reads_every_series_and_drops_what_is_not_data() -> None:
+    got = _parse("mx_banxico_sie")
+    assert {k[0] for k in got} == {"reserves_usd_mn", "sie_sf99999"}         # the bad id is dropped
+    assert got[("reserves_usd_mn", date(2026, 5, 1))].value == pytest.approx(250350.0)
+    assert got[("sie_sf99999", date(2026, 5, 15))].value == pytest.approx(400.0)
+    assert sum(k[0] == "reserves_usd_mn" for k in got) == 20                 # the N/E row is absent
+    assert A.parse_banxico_sie(b'{"bmx": {"series": "no"}}', A.Ctx()) == []
+
+
+def test_banxico_token_travels_in_the_header_and_never_in_a_url_or_artifact(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    token = "tok" + "9" * 61
+    monkeypatch.setenv("BANXICO_TOKEN", token)
+    monkeypatch.setenv("ALT_BANXICO_FX_SERIES", "sf99999, DROP TABLE, SF43707")
+    src = A.BY_ID["mx_banxico_sie"]
+    assert src.terms == "confirmed" and src.key_header == "Bmx-Token"
+    assert "banxico.org.mx" in src.licence and "banxico.org.mx" in src.note     # attribution
+    (req,) = A.requests_for(src, NOW, {})
+    assert req.headers == {"Bmx-Token": token} and token not in req.url and token not in repr(req)
+    assert "/series/SF43707,SF99999/datos/2000-01-01/" in req.url
+    seen: list[tuple[str, dict[str, str]]] = []
+
+    def getter(url: str, headers: dict[str, str]) -> tuple[bytes, str]:
+        seen.append((url, headers))
+        return (FIX / "mx_banxico_sie.json").read_bytes(), "application/json"
+
+    paths, state = A.Paths(tmp_path), {}
+    rec = A.collect(paths, src, state, NOW, fetch=True, fixtures=None, deadline=1e18,
+                    getter=getter)                              # type: ignore[arg-type]
+    assert seen[0][1] == {"Bmx-Token": token} and rec["parsed"] == 22
+    assert state["sources"][src.id]["full_done"] is True
+    (later,) = A.requests_for(src, NOW, state["sources"][src.id])
+    assert "/datos/2026-08-01/2026-09-30" in later.url          # 60 days, not the history again
+    written = b"".join(p.read_bytes() for p in tmp_path.rglob("*") if p.is_file())
+    assert token.encode() not in written and token not in json.dumps(rec) + json.dumps(state)
+
+
+def test_banxico_is_blocked_on_its_key_by_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("BANXICO_TOKEN", raising=False)
+    assert A.status_of(A.BY_ID["mx_banxico_sie"]) == "BLOCKED_ON_KEY:BANXICO_TOKEN"
+
+
+def test_an_exhausted_banxico_quota_is_a_stop_until_its_reset(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BANXICO_TOKEN", "tok" + "7" * 61)
+    src = A.BY_ID["mx_banxico_sie"]
+    calls: list[str] = []
+
+    def over_quota(url: str, headers: dict[str, str]) -> tuple[bytes, str]:
+        calls.append(url)
+        raise _http_error(400, b'{"error": {"mensaje": "limite"}, "timeReset": 1, '
+                               b'"secondsToReset": 240}')
+
+    paths, state = A.Paths(tmp_path), {}
+    rec = A.collect(paths, src, state, NOW, fetch=True, fixtures=None, deadline=1e18,
+                    getter=over_quota)                          # type: ignore[arg-type]
+    sst = state["sources"][src.id]
+    assert rec["errors"] and sst["stop_until"] == "2026-09-30T12:05:00+00:00"   # 240 s + 60 s
+    assert "full_done" not in sst                               # the history is still owed
+    again = A.collect(paths, src, state, NOW + timedelta(minutes=2), fetch=True, fixtures=None,
+                      deadline=1e18, getter=over_quota)         # type: ignore[arg-type]
+    assert len(calls) == 1 and again["requests"] == 0 and "STOPPED until" in again["why"]
+    A.collect(paths, src, state, NOW + timedelta(minutes=6), fetch=True, fixtures=None,
+              deadline=1e18, getter=over_quota)                 # type: ignore[arg-type]
+    assert len(calls) == 2                                      # asked again only after the reset
+
+
+def test_stop_seconds_reads_the_reset_and_ignores_ordinary_errors() -> None:
+    assert A._stop_seconds(_http_error(400, b"{}", {"Bmx-secondsToReset": "30"})) == 90
+    assert A._stop_seconds(_http_error(400, b'{"error": "serie no encontrada"}')) is None
+    assert A._stop_seconds(_http_error(403, b"")) == A.STOP_DEFAULT_S
+    assert A._stop_seconds(_http_error(429, b"")) == A.STOP_DEFAULT_S
+    assert A._stop_seconds(_http_error(404, b"")) is None
+    assert A._stop_seconds(OSError("down")) is None
+    assert A._stop_seconds(_http_error(400, b'{"secondsToReset": 999999}')) == 86400
