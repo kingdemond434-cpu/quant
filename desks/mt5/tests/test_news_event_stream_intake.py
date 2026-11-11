@@ -67,7 +67,10 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _capture(i: int, title: str | None = None, source: str = "reuters",
              published: datetime | None = None) -> dict[str, Any]:
-    pub = published or (NOW - timedelta(minutes=30))
+    # Never before NOW's own UTC midnight: the ledger shards by the publication day and the meter
+    # reads the pass's day, so a run in the first half hour after midnight once read 0 rows.
+    pub = published or max(NOW - timedelta(minutes=30),
+                           NOW.replace(hour=0, minute=0, second=0))
     return {"source": source, "title": title or f"Headline number {i} about markets",
             "text": "", "url": f"https://{source}.example/{i}",
             "published_utc": pub.isoformat(), "fetched_utc": (pub + timedelta(seconds=40))
