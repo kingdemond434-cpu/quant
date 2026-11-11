@@ -153,3 +153,32 @@ def test_the_institution_addendum_is_loaded_and_names_every_function() -> None:
                 assert (ROOT / p).exists(), (r["id"], p)
         for b in r["blockers"]:
             assert b["id"] and b["owner"] and b["why"], r["id"]
+
+
+@pytest.mark.parametrize("rel", ["/etc/passwd", "../outside.py", "a/../../outside.py",
+                                 "C:/Windows/win.ini", "c:\\x.py", "\\\\server\\share\\x.py",
+                                 "a/..\\..\\outside.py", ""])
+def test_evidence_outside_the_root_is_absent(tmp_path: Path, rel: str) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    (tmp_path / "outside.py").write_text("", "utf-8")
+    assert A._confined(root, rel) is None
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "x", "completion_rule": "strict",
+                                    "frontier_rule": "open", "addenda": [rel or "x.json"],
+                                    "requirements": [{
+        "id": "R01", "title": "x", "priority": "P0", "implementation": [rel],
+        "tests": [rel], "consumers": [rel], "runtime": [rel]}]}), "utf-8")
+    got = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                  now=datetime(2026, 9, 27, tzinfo=UTC))
+    row = got["rows"][0]
+    assert row["checks"]["implementation"]["present"] == 0
+    assert row["checks"]["runtime"][0]["status"] == "ABSENT"
+    assert any(r["id"].startswith("MISSING:") for r in got["rows"])
+
+
+def test_evidence_inside_the_root_is_still_found(tmp_path: Path) -> None:
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "b.py").write_text("", "utf-8")
+    assert A._confined(tmp_path, "a/b.py") == tmp_path / "a" / "b.py"
+    assert A._confined(tmp_path, "a/./b.py") is not None

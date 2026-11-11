@@ -38,6 +38,7 @@ import math
 import re
 import sys
 import time
+import urllib.parse
 import zipfile
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime, timedelta
@@ -146,11 +147,11 @@ def _write_json(p: Path, doc: Any) -> None:
 
 
 # =========================================================================== the atlas
-def load_roster(path: Path = ROSTER) -> list[dict[str, Any]]:
+def load_roster(path: Path | None = None) -> list[dict[str, Any]]:
     """The atlas rows. An unreadable roster is an empty atlas and the report says so."""
     try:
         import yaml
-        doc = yaml.safe_load(Path(path).read_text("utf-8")) or {}
+        doc = yaml.safe_load(Path(path or ROSTER).read_text("utf-8")) or {}
     except Exception:
         return []
     rows = doc.get("sources") if isinstance(doc, Mapping) else doc
@@ -218,11 +219,14 @@ def read_frame(sid: str) -> pd.DataFrame | None:
 
 
 def pit_ok(df: pd.DataFrame | None, row: Mapping[str, Any] | None = None) -> bool:
-    """May a point-in-time consumer read this frame? Only a FIRST_RELEASE frame of a row whose
-    release timing is established. A frame written before the grade existed falls back to the
-    row's declared `pit_grade`, and fails closed; a row whose pit_note says its timing is
-    UNMEASURED is never point-in-time, whatever grade its frame carries."""
-    if df is None or timing_unmeasured(row):
+    """May a point-in-time consumer read this frame? Only a FIRST_RELEASE frame of an atlas row
+    that says when it was public. No row (an unreadable or missing roster, a frame the atlas no
+    longer names), an empty pit_note, or a pit_note that says the release timing is UNMEASURED
+    is a refusal: the frame's own grade says the value is unrevised, never when it could be
+    known. A frame written before the grade existed falls back to the row's declared
+    `pit_grade`, and fails closed."""
+    if (df is None or row is None or not str(row.get("pit_note") or "").strip()
+            or timing_unmeasured(row)):
         return False
     if "pit_grade" in df.columns:
         return bool((df["pit_grade"].astype(str) == FIRST_RELEASE).all())
@@ -257,30 +261,126 @@ def lag_hours_of(row: Mapping[str, Any]) -> float:
 HttpGet = Callable[[str], tuple[int | None, bytes, str]]
 
 
-def polite_get(deadline: float) -> HttpGet:
-    """The desk's polite transport, bounded by the leg's deadline. Returns (status, body, error)."""
-    from libs.data import polite_fetch
+#: AN ATLAS ROW FETCHES ONLY ON ITS CITED TERMS (#672's citation shape). A row that does not name
+#: the clause, the page it is on and when it was read is HELD: no request of any kind is sent for
+#: it -- not its recipe, not its watch probe, not its URL check. Reading the terms is a human or
+#: scout act recorded in the atlas; nothing here infers permission from a page being reachable.
+TERMS_CITATION_KEYS: tuple[str, ...] = ("terms_clause", "terms_url", "terms_read_at")
+#: The prefix of every outcome where the transport sent no request (terms, robots, a stopped host).
+NOT_FETCHED = "NOT_FETCHED"
 
-    def get(url: str) -> tuple[int | None, bytes, str]:
-        if url.lower().endswith(".zip"):
+
+def terms_cited(row: Mapping[str, Any]) -> bool:
+    return all(str(row.get(k) or "").strip() for k in TERMS_CITATION_KEYS)
+
+
+def not_fetched(err: str) -> bool:
+    return str(err or "").startswith(NOT_FETCHED)
+
+
+def _futures_state() -> Any:
+    from research import futures_state as fs
+    return fs
+
+
+def access_ua(url: str) -> str:
+    """The honest identity: futures_state's UA, or for the SEC (whose fair-access rule asks for a
+    contact) the desk's declared EDGAR identity from QUANT_EDGAR_UA when the box sets it. Read
+    from the environment and never printed; no placeholder address is ever sent."""
+    import os
+    host = urllib.parse.urlsplit(url).netloc.lower().split(":")[0]
+    if host == "sec.gov" or host.endswith(".sec.gov"):
+        ua = os.environ.get("QUANT_EDGAR_UA", "").strip()
+        if ua:
+            return ua
+    return str(_futures_state().UA)
+
+
+class PoliteTransport:
+    """The leg's one transport, bounded by its deadline. `(status, body, error)` per call.
+
+    Honest access, the futures_state rules reused rather than copied: its UA (`access_ua`), its
+    `robots_verdict` (RFC 9309: only ALLOWED fetches; REFUSED and UNMEASURED never do) and its
+    HARD_STOP. No retry ever: a 429 or a 5xx on a page, or any HARD_STOP status, stops that HOST
+    for the rest of this pass. A call that sends nothing returns (None, b"", "NOT_FETCHED: why").
+    """
+
+    def __init__(self, deadline: float, *,
+                 raw: Callable[[str, str, bool], tuple[int | None, bytes, str]] | None = None
+                 ) -> None:
+        self.deadline = deadline
+        self._raw = raw or self._send
+        self._robots: dict[str, Any] = {}           # robots.txt url -> text, or the exception
+        self.stopped: dict[str, str] = {}           # host -> why, this pass
+        self.counts: dict[str, int] = {}
+
+    def _count(self, key: str) -> None:
+        self.counts[key] = self.counts.get(key, 0) + 1
+
+    def _send(self, url: str, ua: str, binary: bool) -> tuple[int | None, bytes, str]:
+        from libs.data import polite_fetch
+        if binary:
             # polite_fetch decodes to text; an archive needs its bytes. Same TLS context, same
             # deadline, one attempt.
             import urllib.request
-            left = max(1.0, min(60.0, deadline - time.monotonic()))
-            # The SEC's fair-access rule wants a declared agent; this is the one
-            # side_channels/sec_edgar_miner.py already declares.
-            ua = {"User-Agent": "QuantResearch quant@example.com"}
-            req = urllib.request.Request(url, headers=ua)
+            left = max(1.0, min(60.0, self.deadline - time.monotonic()))
+            req = urllib.request.Request(url, headers={"User-Agent": ua})
             try:
                 with urllib.request.urlopen(req, timeout=left,
                                             context=polite_fetch.ssl_context()) as resp:
                     return int(resp.status), resp.read(), ""
             except Exception as exc:
                 return getattr(exc, "code", None), b"", f"{type(exc).__name__}: {exc}"[:120]
-        r = polite_fetch.get(url, headers={"Accept": "*/*"}, timeout=25.0, retries=1,
-                             deadline=deadline, leg=LEG)
+        r = polite_fetch.get(url, headers={"User-Agent": ua, "Accept": "*/*"}, timeout=25.0,
+                             retries=0, deadline=self.deadline, leg=LEG)
         return r.status, (r.text or "").encode("utf-8", "replace"), str(r.error or "")
-    return get
+
+    def _robots_text(self, ua: str) -> Callable[[str], str]:
+        fs = _futures_state()
+
+        def get_text(u: str) -> str:
+            if u not in self._robots:
+                st, body, err = self._raw(u, ua, False)
+                if st in fs.HARD_STOP:
+                    self._robots[u] = fs.HardStop(int(st or 0), u)
+                elif st is None or not 200 <= st < 300 or err:
+                    self._robots[u] = fs.FetchError(st, u, err or f"HTTP {st}")
+                else:
+                    self._robots[u] = body.decode("utf-8", "replace")
+            got = self._robots[u]
+            if isinstance(got, Exception):
+                raise got
+            return str(got)
+        return get_text
+
+    def __call__(self, url: str) -> tuple[int | None, bytes, str]:
+        fs = _futures_state()
+        host = urllib.parse.urlsplit(url).netloc.lower()
+        if host in self.stopped:
+            self._count("host_stopped")
+            return None, b"", f"{NOT_FETCHED}: host stopped this pass ({self.stopped[host]})"
+        if time.monotonic() > self.deadline:
+            return None, b"", f"{NOT_FETCHED}: deadline"
+        ua = access_ua(url)
+        verdict, why = fs.robots_verdict(url, self._robots_text(ua), ua=ua)
+        self._count(f"robots_{verdict.lower()}")
+        if verdict != fs.ROBOTS_ALLOWED:
+            return None, b"", f"{NOT_FETCHED}: robots {verdict} ({why})"
+        st, body, err = self._raw(url, ua, url.lower().endswith(".zip"))
+        self._count("requests")
+        if st is not None and (st in fs.HARD_STOP or st == 429 or 500 <= st < 600):
+            self.stopped[host] = f"HTTP {st}"
+            self._count("hard_stops")
+        return st, body, err
+
+    def report(self) -> dict[str, Any]:
+        return {"counts": dict(sorted(self.counts.items())),
+                "stopped_hosts": dict(sorted(self.stopped.items()))}
+
+
+def polite_get(deadline: float) -> PoliteTransport:
+    """The leg's transport (`PoliteTransport`), bounded by the leg's deadline."""
+    return PoliteTransport(deadline)
 
 
 def _ok(status: int | None, err: str) -> bool:
@@ -560,6 +660,11 @@ def fetch_all(rows: list[dict[str, Any]], *, get: HttpGet | None, deadline: floa
         if get is None or time.monotonic() > deadline:
             break
         sid = str(r["id"])
+        if not terms_cited(r):
+            # HELD: no request is sent for a row whose terms nobody has read and cited.
+            state[sid] = {**(state.get(sid) or {}), "outcome": "HELD", "held":
+                          "terms not cited (" + ", ".join(TERMS_CITATION_KEYS) + ")"}
+            continue
         try:
             df, why = RECIPES[r["fetch"]["kind"]](r, get)
             grade = str((df.attrs.get("pit_grade") if df is not None else None)
@@ -1273,10 +1378,18 @@ def watch(rows: list[dict[str, Any]], get: HttpGet | None, deadline: float) -> d
         f = r.get("fetch") or {}
         if f.get("kind") != "watch" or get is None or time.monotonic() > deadline:
             continue
+        prev = st.get(r["id"]) or {}
+        if not terms_cited(r):
+            # HELD: the probe is a request too, so it waits on the row's cited terms.
+            st[r["id"]] = {**prev, "status": prev.get("status") or "WATCH",
+                           "held": "terms not cited"}
+            continue
         code, body, err = get(str(f["probe"]))
+        if not_fetched(err):
+            st[r["id"]] = {**prev, "status": prev.get("status") or "WATCH", "error": err[:160]}
+            continue
         text = body.decode("utf-8", "replace") if body else ""
         hits = [m for m in f.get("markers") or [] if m.lower() in text.lower()]
-        prev = st.get(r["id"]) or {}
         st[r["id"]] = {"at": now_utc().isoformat(timespec="seconds"), "http": code,
                        "error": err[:120], "markers_found": hits,
                        "status": "DISCOVERED_NOT_INGESTED" if hits else "WATCH",
@@ -1299,13 +1412,20 @@ def verify_urls(rows: list[dict[str, Any]], get: HttpGet | None, deadline: float
     `fix the URL` ask; a 2xx marks it VERIFIED. Without a transport nothing is claimed."""
     path = STATE_DIR / URL_STATE_NAME
     st = _read_json(path, {})
-    todo = sorted((r for r in rows if r.get("url") and not (r.get("fetch") or {}).get("kind")),
+    # Only rows whose terms are cited are probed: the rest are HELD with zero requests.
+    todo = sorted((r for r in rows if r.get("url") and not (r.get("fetch") or {}).get("kind")
+                   and terms_cited(r)),
                   key=lambda r: str((st.get(r["id"]) or {}).get("at") or ""))
     for r in todo[:URL_PROBES_PER_PASS]:
         if get is None or time.monotonic() > deadline:
             break
         code, _body, err = get(str(r["url"]))
         prev = st.get(r["id"]) or {}
+        if not_fetched(err):
+            # Nothing was sent (robots, a stopped host): no failure is counted against the URL.
+            st[r["id"]] = {**prev, "at": now_utc().isoformat(timespec="seconds"),
+                           "status": prev.get("status") or "UNVERIFIED", "error": err[:160]}
+            continue
         ok = _ok(code, err)
         fails = 0 if ok else int(prev.get("fails") or 0) + 1
         st[r["id"]] = {"at": now_utc().isoformat(timespec="seconds"), "http": code,
@@ -1632,6 +1752,11 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
         "triangulation": cov["triangulation"], "row_status": cov["row_status"],
         "fetch": fetched, "watch": ws, "latent_state_age": ages,
         "cells": cells, "unfed": unfed, "unfed_count": len(unfed),
+        "access": {"terms_citation_keys": list(TERMS_CITATION_KEYS),
+                   "terms_cited": sum(1 for r in rows if terms_cited(r)),
+                   "held": sum(1 for r in rows if not terms_cited(r)),
+                   "transport": (transport.report() if isinstance(transport, PoliteTransport)
+                                 else None)},
         "offline": bool(offline and get is None), "elapsed_s": round(time.monotonic() - t0, 1),
         "rule": ("one status per jurisdiction x class cell; ACTIVE is measured (a frame "
                  "refreshed AND fed within 30 days), never declared, and decays; UNSEARCHED is "

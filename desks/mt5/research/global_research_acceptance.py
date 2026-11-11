@@ -153,8 +153,11 @@ def _anchor_errors(root: Path, anchors: list[Any]) -> list[str]:
         text = str(raw)
         loc, _, needle = text.partition("#")
         rel, _, line = loc.rpartition(":")
+        path = _confined(root, rel)
         try:
-            lines = (root / rel).read_text("utf-8").splitlines()
+            if path is None:
+                raise OSError(rel)
+            lines = path.read_text("utf-8").splitlines()
             n = int(line)
         except (OSError, ValueError):
             out.append(f"anchor:{text}:ABSENT")
@@ -162,6 +165,26 @@ def _anchor_errors(root: Path, anchors: list[Any]) -> list[str]:
         if not 1 <= n <= len(lines) or (needle and needle not in lines[n - 1]):
             out.append(f"anchor:{text}:DRIFTED")
     return out
+
+
+def _confined(root: Path, rel: Any) -> Path | None:
+    """`root / rel` only when `rel` names a path INSIDE root: an absolute path, a drive-letter or
+    UNC path, or any `..` segment is evidence from outside the tree and reads as ABSENT."""
+    text = str(rel or "").strip().replace("\\", "/")
+    if (not text or text.startswith("/") or re.match(r"^[A-Za-z]:", text)
+            or any(part == ".." for part in text.split("/"))):
+        return None
+    path = root / text
+    try:
+        path.resolve().relative_to(root.resolve())
+    except (OSError, ValueError):
+        return None                     # a symlink that escapes the tree
+    return path
+
+
+def _present(root: Path, rel: Any) -> bool:
+    path = _confined(root, rel)
+    return path is not None and path.exists()
 
 
 def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT,
@@ -172,8 +195,8 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
     requirements = list(spec["requirements"])
     loaded_addenda: list[str] = []
     for rel in spec.get("addenda") or []:
-        addendum_path = root / str(rel)
-        if not addendum_path.exists():
+        addendum_path = _confined(root, rel)
+        if addendum_path is None or not addendum_path.exists():
             # The missing addendum is itself evidence debt.  Add a synthetic requirement so the
             # report cannot silently shrink its denominator when a referenced spec disappears.
             requirements.append({"id": f"MISSING:{rel}", "title": "missing acceptance addendum",
@@ -193,7 +216,7 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
             values = list(req.get(kind) or [])
             if not values:
                 missing.append(f"{kind}:UNDECLARED")
-            absent = [p for p in values if not (root / p).exists()]
+            absent = [p for p in values if not _present(root, p)]
             checks[kind] = {"declared": len(values), "present": len(values) - len(absent),
                             "missing": absent}
             missing.extend(f"{kind}:{p}" for p in absent)
@@ -202,8 +225,8 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
         if not runtime_values:
             missing.append("runtime:UNDECLARED")
         for rel in runtime_values:
-            path = root / rel
-            if not path.exists():
+            path = _confined(root, rel)
+            if path is None or not path.exists():
                 runtime_rows.append({"path": rel, "status": "ABSENT"})
                 missing.append(f"runtime:{rel}")
                 continue
