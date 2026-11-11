@@ -1434,7 +1434,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration", "fraction_staleness_cost"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -2334,6 +2334,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "cross_asset_graph": 1_000,
     "transmission_engine": 1_000,
     "forward_calibration": 180,
+    # Idea 611: one `git cat-file --batch` over <=150 sleeves.json versions, ~20 s measured.
+    "fraction_staleness_cost": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
@@ -6264,6 +6266,11 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # WHAT A STALE FRACTION COSTS (idea 611): the modelled E[log W]/day lost sizing on a 15/60/180
+    # min old solve, from the drift of the published risk_frac history. Report only; intended
+    # for the KELLY/E8 max-age checks.
+    fsc = _costed("fraction_staleness_cost", lambda: _producer(
+        "fraction_staleness_cost", "research/fraction_staleness_cost.py"))
     # THE FTMO BOOK BY SOLVE (principal 2026-10-28 14:34Z): pass-speed x pass-probability over the
     # Tier S sleeves FTMO lists, at FTMO's own hour costs, from the account's live phase
     # (reports/FTMO_ACCOUNT_STATE.json). Writes reports/FTMO_ALLOCATOR.json and the FTMO gap
@@ -6553,7 +6560,8 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "kelly_survival": kls, "fraction_staleness_cost": fsc,
+                    "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
