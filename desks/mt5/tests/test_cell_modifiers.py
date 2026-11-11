@@ -92,7 +92,11 @@ def test_selector_is_the_shared_session_axis_not_a_family_parameter() -> None:
     assert kwargs == {"lookback": 3} and mods == {"selector": "ny"}
     assert cm.refusal(mods) is None
     got = cm.apply(sigs, b, mods)
-    assert got and all(14 <= s.time.hour < 22 for s in got)
+    # The filter is New York's own 08:00-16:00 on the venue clock (session_clock, DST-aware),
+    # not a fixed server-hour band: every kept bar is inside it and every inside bar is kept.
+    from libs.regime import session_clock
+    inside = session_clock.in_session([g.time for g in sigs], "ny")
+    assert got and [g.time for g in got] == [g.time for g, m in zip(sigs, inside, strict=True) if m]
     assert "session window" in cm.refusal({"selector": "invented"})
 
 

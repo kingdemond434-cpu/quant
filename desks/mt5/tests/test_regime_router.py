@@ -49,8 +49,10 @@ LEVELS = (0.25, 0.45, 0.8, 1.6, 2.8, 5.0)
 BLOCK = 48
 PRE_BLOCKS = 12                                        # pre-trade tape: two full level cycles
 OFFSETS = (26, 30, 34)                                 # hours 2, 6 and 10 of the block's day
-ASIA = (1, 2, 3)
-NY = (16, 17, 18)
+# Server stamp hours inside one session each (family_call.SESSIONS: asia 2-10, ny 15-23 with
+# london 10-18 overlapping it until 18).
+ASIA = (3, 4, 5)
+NY = (19, 20, 21)
 NOW = BAR0 + timedelta(hours=(PRE_BLOCKS + 60) * BLOCK)   # inside the tape, so bars are fresh
 
 
