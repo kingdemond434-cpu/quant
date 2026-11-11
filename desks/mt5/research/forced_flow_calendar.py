@@ -94,7 +94,7 @@ CALENDAR = BASE / "data" / "forced_flow_calendar.json"
 
 #: Bumped whenever a RULE changes, so an artifact on disk can be told apart from one written by
 #: a different set of rules. A consumer comparing two calendars compares this first.
-RULES_VERSION = "2026-09-16.1"
+RULES_VERSION = "2026-11-11.1"
 
 #: The two labels the blueprint requires on anything not derivable from a rule.
 VERIFY_BANK = "verify against the bank's published calendar"
@@ -163,6 +163,75 @@ CENTRAL_BANK_MEETINGS: dict[str, dict[str, Any]] = {
         "days": {2026: ((1, 22, 23), (3, 18, 19), (4, 27, 28), (6, 15, 16),
                         (7, 30, 31), (9, 17, 18), (10, 29, 30), (12, 17, 18))},
     },
+}
+
+#: NON-WESTERN HOLIDAYS FROM OFFICIAL PUBLISHED ROWS ONLY (B11, approved 2026-10-13). Lunar New
+#: Year, Diwali and Ramadan/Eid follow lunar or lunisolar calendars that no rule in this file can
+#: derive honestly (Eid also turns on a moon sighting announced days ahead), so like the
+#: central-bank table these dates are TRANSCRIBED, each year labelled with the official page it
+#: came from and the sha256 the box recorded when it fetched it. Golden Week is NOT here: it is
+#: fixed by Japanese statute and stays rule-derived in `japan_golden_week`.
+#:
+#: A (holiday, year) WITH NO OFFICIAL ROW PRODUCES NO EVENTS and is listed by name in the
+#: artifact's `unmeasured.holiday_years` block -- never guessed from an almanac, never read as a
+#: year in which the holiday did not happen. Diwali (NSE India: the table sits behind a bot
+#: check) and Ramadan/Eid (Tadawul and DFM: bot-check markers, no rows) have NO official row yet.
+#:
+#: `instruments` is resolved from the registry and `may_hypothesise` at call time like every
+#: other bundle; a region whose instruments the broker does not list (no Gulf USD peg is on the
+#: Fusion books) is reported, not filled.
+OFFICIAL_HOLIDAYS: dict[str, dict[str, Any]] = {
+    "hk_lny": {
+        "holiday": "Lunar New Year",
+        "tz": "Asia/Hong_Kong",
+        "actor": ("Hong Kong and mainland market makers and corporate treasuries, absent for the "
+                  "consecutive Lunar New Year closure while offshore CNH/HKD books stay marked"),
+        "mechanism": ("HKEX and the mainland venues shut for several consecutive days; the "
+                      "CNH and HKD books and the China index CFDs keep trading offshore with "
+                      "the local liquidity providers away, so the same order moves price "
+                      "further and positioning is squared into the closure and rebuilt after "
+                      "it. The dates are published by the government a year ahead."),
+        "source": "GovHK general holidays (the dates HKEX follows)",
+        "years": {
+            2026: {"url": "https://www.gov.hk/en/about/abouthk/holiday/2026.htm",
+                   "sha256": "441a76ac...2a01", "fetched": "2026-11-11",
+                   "days": ((2, 17), (2, 18), (2, 19))},
+            2027: {"url": "https://www.gov.hk/en/about/abouthk/holiday/2027.htm",
+                   "sha256": "303fab71...374f", "fetched": "2026-11-11",
+                   # GovHK lists the first day (Sat 6 Feb) and the third and fourth days; the
+                   # second day falls on the Sunday and is not a separate general holiday.
+                   "days": ((2, 6), (2, 8), (2, 9))},
+        },
+    },
+    "in_diwali": {
+        "holiday": "Diwali (Laxmi Pujan)",
+        "tz": "Asia/Kolkata",
+        "actor": "Indian onshore market makers and exporters, absent for the NSE/BSE closure",
+        "mechanism": ("The onshore INR market shuts for Diwali while the offshore USDINR book "
+                      "stays marked; the local liquidity provider is absent."),
+        "source": "NSE India trading holidays (not obtained: table behind a bot check)",
+        "years": {},
+    },
+    "gulf_eid": {
+        "holiday": "Ramadan / Eid al-Fitr / Eid al-Adha",
+        "tz": "Asia/Riyadh",
+        "actor": ("Gulf banks and sovereign treasuries on Eid closure and Ramadan short hours; "
+                  "the USD-pegged books and the crude they export"),
+        "mechanism": ("Ramadan short sessions and the Eid closures thin Gulf liquidity in the "
+                      "pegged currencies and in the oil complex those balance sheets hedge."),
+        "source": "Tadawul / DFM market holidays (not obtained: bot-check markers, no rows)",
+        "years": {},
+    },
+}
+
+#: Which registry instruments each official holiday region bears on, as bundle rules (resolved
+#: against the registry at call time). The Gulf pegs (SAR/AED/QAR/KWD/BHD/OMR) are asked for by
+#: currency substring; none is on the Fusion books today, so only the crude complex resolves.
+HOLIDAY_REGION_BUNDLES: dict[str, dict[str, tuple[str, ...]]] = {
+    "hk_lny": {"symbols": ("HK50", "CHINAH", "CHINA50"), "fx_with": ("HKD", "CNH")},
+    "in_diwali": {"symbols": (), "fx_with": ("INR",)},
+    "gulf_eid": {"symbols": ("XBRUSD", "XTIUSD"),
+                 "fx_with": ("SAR", "AED", "QAR", "KWD", "BHD", "OMR")},
 }
 
 #: Venue -> index symbols. No rule derives "the S&P 500 trades on this desk as US500", so this is
@@ -330,6 +399,21 @@ def _fx_all() -> tuple[str, ...]:
 @_per_call
 def _fx_majors() -> tuple[str, ...]:
     return _keep(FX_MAJORS)
+
+
+@_per_call
+def holiday_region_instruments(region: str) -> tuple[str, ...]:
+    """The hypothesis-lane registry symbols one holiday region bears on (`jp_holiday` included,
+    whose rows come from the Golden Week rule). Unknown region: empty, never a guess."""
+    if region == "jp_holiday":
+        return _keep(_venue("nikkei") + _fx_with("JPY"))
+    spec = HOLIDAY_REGION_BUNDLES.get(region)
+    if spec is None:
+        return ()
+    out: tuple[str, ...] = tuple(spec["symbols"])
+    for cur in spec["fx_with"]:
+        out += _fx_with(cur)
+    return _keep(out)
 
 
 # =============================================================================================
@@ -875,7 +959,46 @@ def _holiday_events(year: int) -> list[Event]:
                 (datetime.combine(day, time(0, 0), tzinfo=UTC),
                  datetime.combine(day, time(23, 59, 59), tzinfo=UTC)),
                 instruments, actor, mech, f"{label}: {rule}"))
+    rows.extend(_official_holiday_events(year))
     return rows
+
+
+def _official_holiday_events(year: int) -> list[Event]:
+    """Rows from `OFFICIAL_HOLIDAYS` for `year`, each window the LOCAL calendar day in the
+    region's own zone (00:00-24:00 Hong Kong is 16:00-16:00 UTC), labelled with its source URL.
+    A region with no instruments on the broker's books emits nothing and is reported."""
+    rows: list[Event] = []
+    for region, spec in OFFICIAL_HOLIDAYS.items():
+        entry = spec["years"].get(year)
+        instruments = holiday_region_instruments(region)
+        if not entry or not instruments:
+            continue
+        tz = str(spec["tz"])
+        for month, dom in entry["days"]:
+            day = date(year, month, dom)
+            rows.append(_event(
+                day, "holiday_liquidity", f"{region}_holiday_{day.isoformat()}",
+                (local_utc(day, 0, 0, tz), local_utc(day + timedelta(days=1), 0, 0, tz)),
+                instruments, str(spec["actor"]), str(spec["mechanism"]),
+                f"{spec['holiday']} {day.isoformat()}, local day in {tz}: official row from "
+                f"{spec['source']}, {entry['url']} (sha256 {entry['sha256']}, fetched "
+                f"{entry['fetched']}). Transcribed date list, never derived"))
+    return rows
+
+
+def unmeasured_holidays(start: date, end: date) -> dict[str, dict[str, Any]]:
+    """Per official holiday region: the years in range with no official row, and the regions
+    whose instruments the registry does not carry. THE GAP IS THE MEASUREMENT (L1.28a)."""
+    out: dict[str, dict[str, Any]] = {}
+    for region, spec in OFFICIAL_HOLIDAYS.items():
+        missing = [y for y in range(start.year, end.year + 1) if y not in spec["years"]]
+        instruments = holiday_region_instruments(region)
+        if missing or not instruments:
+            out[region] = {"holiday": spec["holiday"], "missing_years": missing,
+                           "instruments": list(instruments),
+                           "why": (spec["source"] if missing else
+                                   "no instrument for this region is on the broker's books")}
+    return out
 
 
 # =============================================================================================
@@ -970,8 +1093,10 @@ def build(days_ahead: int = 120, days_back: int = 400,
         "by_kind": by_kind(rows),
         "unmeasured": {
             "central_bank_years": unmeasured_years(start, end),
+            "holiday_years": unmeasured_holidays(start, end),
             "note": ("a bank with no published table for a year contributes NO rows for it. "
-                     "That is an absence of measurement, not a year without meetings"),
+                     "That is an absence of measurement, not a year without meetings. The same "
+                     "holds for an official holiday region with no published row for a year"),
         },
         "events": [e.to_json() for e in rows],
     }
@@ -1004,6 +1129,9 @@ def main(argv: list[str] | None = None) -> int:
     missing = payload["unmeasured"]["central_bank_years"]
     if missing:
         print(f"  UNMEASURED central-bank years: {missing}")
+    for region, gap in payload["unmeasured"]["holiday_years"].items():
+        print(f"  UNMEASURED {region} ({gap['holiday']}): years {gap['missing_years']}, "
+              f"instruments {gap['instruments'] or 'none on the books'}")
     print("  (dry run: nothing written)" if args.dry_run else f"  wrote {args.path}")
     return 0
 

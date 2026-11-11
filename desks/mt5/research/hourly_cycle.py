@@ -1319,6 +1319,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # US Treasury coupon auction results (tail, bid-to-cover) as a PIT series
+                     "ust_auction_results",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -2264,6 +2266,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # one paged GET at most every 6 h (a second apart), then a CSV rebuild; seconds otherwise
+    "ust_auction_results": 300,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -4487,7 +4491,10 @@ def main() -> None:
     # SPECIALIST RESEARCH CELLS (2026-09-30): per-asset-class desks mint the mechanisms a generic
     # sweep misses -- FX fixes, carry into risk-off, central-bank drift; gold against bonds and the
     # dollar, the gold/silver ratio; the EIA Wednesday; index overnight gaps, open drives and
-    # month-end rebalancing; softs weather windows. Every cell is buildability-checked, BUILT by
+    # month-end rebalancing; softs weather windows; and (2026-11-11) the gap-decay family at the
+    # Asia->Europe and Europe->US handoffs (B20), the official Lunar New Year and statute Golden
+    # Week holiday regions (B11) and the Treasury auction result next day (B13, reading the
+    # ust_auction_results leg's series). Every cell is buildability-checked, BUILT by
     # the sealed build_cell, floored at 66 trade days, donated through the one proposer door and
     # charged to the trial census; writes reports/SPECIALIST_CELLS.json. Additive.
     spcl = _costed("specialist_cell", lambda: _producer(
@@ -5877,6 +5884,13 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # US TREASURY AUCTION RESULTS (B13, 2026-11-11): FiscalData's keyless auctions API through
+    # the robots gate, at most every 6 h, into data/lake/series/ust_auction_results.csv
+    # (available_time = competitive close + 30 min) -- the series specialist_cell's
+    # ust_auction_result cells condition next-day US indices and USD majors on through
+    # exogenous_conditioner. Writes reports/UST_AUCTION_RESULTS.json.
+    uar = _costed("ust_auction_results", lambda: _producer(
+        "ust_auction_results", "research/ust_auction_results.py", "--once"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -6548,7 +6562,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
-                    "alt_proxies": alp,
+                    "alt_proxies": alp, "ust_auction_results": uar,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

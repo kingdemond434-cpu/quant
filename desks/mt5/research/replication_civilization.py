@@ -891,6 +891,12 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     spec = SPEC_BOOK.get(str(family or ""))
     if spec is None:
         return None, f"no written specification in the spec book for family {family!r}"
+    if family == "overnight_gap_decay" and dict(params or {}).get("handoff"):
+        # B20's session-handoff variant re-anchors the gap to a region's cash close and open on
+        # its wall clock; the written rule above is the broker-day first bar only. Rebuilding it
+        # from that rule would replicate the asia cell under the handoff cell's name.
+        return None, ("no written specification for overnight_gap_decay's session-handoff "
+                      "variant (params carry handoff); the spec book names the first-bar rule only")
     p = dict(spec.defaults)
     sel = str(selector or "").lower()
     if spec.selector_params and sel in WINDOWS:
