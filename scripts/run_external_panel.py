@@ -266,6 +266,8 @@ def _ask_once(base_url: str, key: str, model: str, messages: list[dict[str, str]
     req = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions", data=body, method="POST",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    from libs.ops import openrouter_guard
+    openrouter_guard.check_request(req)
     with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
         out = json.loads(r.read())
     msg = out["choices"][0]["message"]

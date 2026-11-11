@@ -288,7 +288,7 @@ def mine_darwinex() -> list[dict]:
                        f"https://web.archive.org/web/{ts}/{orig}",
                        darwin=code.group(1) if code else ""))
     st["darwinex_cdx_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out[:120]
 
 # ---------------------------------------------------------------- S12 TradingView scripts
@@ -424,7 +424,7 @@ def mine_forextsd_cdx() -> list[dict]:
         out.append(row("forextsd_cdx", "era_archive", orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}"))
     st["forextsd_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out[:120]
 
 
@@ -523,11 +523,24 @@ def mine_broker_swaps() -> list[dict]:
             diff = float(lng or 0.0) - float(sht or 0.0)
         except (TypeError, ValueError):
             diff = 0.0
+        # THE VALUE'S OWN TIME, NOT THE COPY'S (2026-10-06): the registry carries the instant the
+        # box read these from the terminal, and that is the knowledge time readers age from.
+        # Stamping the copy time made a 2026-09-03 swap read as fresh on every later pass, so a
+        # carry key built on it was never STALE. A row with no reading time is UNMEASURED.
+        seen = meta.get("updated_at")
+        if not seen:
+            out.append(row("broker_swaps", "unmeasured",
+                           f"{sym}: registry swap has no updated_at -- reading time unknown, so "
+                           "its age cannot be measured", str(reg_path), symbols=[sym],
+                           needs_selector_work=False))
+            continue
         out.append(row("broker_swaps", "swap_table",
                        f"fusion {sym} swap long={lng} short={sht} diff={diff:+.4f}",
                        "mt5://symbol_info", symbols=[sym],
                        swap_long=lng, swap_short=sht, swap_diff=diff,
-                       broker="fusionmarkets", source_kind="venue_terminal"))
+                       broker="fusionmarkets", source_kind="venue_terminal",
+                       found_at=seen, observed_at=seen, value_since=seen,
+                       last_evidence_at=seen))
     if not priced:
         out.append(row("broker_swaps", "unmeasured",
                        "universe registry carries no swap fields yet -- run expand_universe.py on "
@@ -571,7 +584,7 @@ def mine_github_topics() -> list[dict]:
                            (it.get("description") or "")[:400], topic=topic,
                            stars=s, star_delta=delta, pushed=it.get("pushed_at")))
     st["gh_topic_cursor"] = (topic_cursor + len(selected)) % len(topics)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return out
 
 
@@ -596,7 +609,7 @@ def mine_propfirm_boards() -> list[dict]:
     cur = int(st.get("propfirm_cursor", 0)) % len(locs)
     take = locs[cur:cur + 30]
     st["propfirm_cursor"] = (cur + 30) % len(locs)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _write_state(st)
     return [row("propfirm_boards", "trading_update",
                 u.rstrip("/").rsplit("/", 1)[-1].replace("-", " "), u) for u in take]
 
@@ -619,6 +632,71 @@ def mine_global_frontier() -> list[dict]:
     return _frontier().get("discoveries", [])
 
 
+def _depth_module():
+    try:
+        from side_channels import research_depth_miners as rdm
+    except ModuleNotFoundError:
+        import research_depth_miners as rdm  # type: ignore[no-redef]
+    return rdm
+
+
+def mine_research_feeds() -> list[dict]:
+    """Working papers (NBER, Fed, BIS, ECB, CEPR), practitioner research and all nine arXiv
+    q-fin categories, head AND backfill. Feeds live in research_feeds.json, not here."""
+    rdm = _depth_module()
+    st = _state()
+    out = rdm.mine_research_feeds(st, rdm.feed_text, row)
+    _merge_state({k: st[k] for k in ("rf_seen", "rf_status", "rf_arxiv_back") if k in st})
+    return out
+
+
+def mine_github_depth() -> list[dict]:
+    """README, code changes, issues, starred forks and discussions of the trading repos
+    github_topics found, inside GitHub's published rate limit."""
+    rdm = _depth_module()
+    st = _state()
+    out = rdm.mine_github_depth(st, rdm.requests_get, row, rdm.topic_repos(INTEL),
+                                rdm.github_token())
+    _merge_state({k: st[k] for k in ("gd_repos", "gd_fork_pool", "gd_status") if k in st})
+    return out
+
+
+def _merge_state(updates: dict) -> None:
+    """Write `updates` onto the CURRENT state file, never onto a copy read earlier.
+
+    THE CLOBBER THIS REPLACES (found 2026-11-10). run_and_save read the state once before the
+    sweep and wrote that copy back after it. Every miner that keeps its own cursor in the same
+    file (github_topics' gh_topic_cursor/gh_topic_pages/gh_stars, propfirm_cursor,
+    forextsd_offset, darwinex_cdx_offset) wrote its progress mid-sweep, and the end-of-sweep
+    write put the pre-sweep copy back over it. A rotating cursor that is reset every pass is a
+    cursor that never rotates: the committed github_topics archives show the same three topics
+    (mql5, metatrader5, forex-trading) on every pass, and the shipped state file carries no
+    gh_topic_cursor at all.
+    """
+    cur = _state()
+    cur.update(updates)
+    _write_state(cur)
+
+
+def _write_state(st: dict) -> None:
+    """Atomic replace: a reader sees the old file or the new one, never a torn half.
+
+    A torn write used to read back as `{}` in `_state()`, and the next merge would then write
+    every cursor away. Same directory, so `os.replace` stays one rename on both boxes.
+    """
+    import os
+    import tempfile
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=STATE.parent, prefix=".seed_state.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(st, fh, indent=0)
+        os.replace(tmp, STATE)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
 MINERS = {
     "global_frontier": mine_global_frontier,
     "regional_survivors": mine_regional_survivors,
@@ -631,6 +709,7 @@ MINERS = {
     "quant_se": mine_quant_se, "arxiv_qfin": mine_arxiv_qfin,
     "bis_speeches": mine_bis_speeches, "broker_swaps": mine_broker_swaps,
     "github_topics": mine_github_topics, "propfirm_boards": mine_propfirm_boards,
+    "research_feeds": mine_research_feeds, "github_depth": mine_github_depth,
 }
 
 
@@ -728,7 +807,7 @@ def run_and_save() -> dict:
         _write_rows(name, rows_, ts, results, summary)
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    _merge_state({"wall_probes": probes})
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
     try:
@@ -750,12 +829,12 @@ def run_and_save() -> dict:
                   "below. Names only, no addresses."),
             context=[f"already mined: {n}" for n in sorted(MINERS)],
             n=8)
-        st["proposer_seat"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                               "candidate_source_names": _reply.terms,
-                               "verdict": _reply.verdict,
-                               "discipline": ("candidate NAMES for the source registry to vet; "
-                                              "nothing here fetches them")}
-        STATE.write_text(json.dumps(st, indent=0), "utf-8")
+        _merge_state({"proposer_seat": {
+            "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "candidate_source_names": _reply.terms,
+            "verdict": _reply.verdict,
+            "discipline": ("candidate NAMES for the source registry to vet; "
+                           "nothing here fetches them")}})
     except Exception as _exc:                             # pragma: no cover - optional seat
         print(f"  proposer_seat: UNMEASURED ({type(_exc).__name__}: {_exc})")
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")

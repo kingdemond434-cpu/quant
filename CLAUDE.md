@@ -137,8 +137,8 @@ vocabulary. Do not decide something the desk already decided.
   (a degenerate admissible series, or the file holding the recorded n rows all stamped to another
   account); an empty, short, unreadable or unstamped ledger never voids -- the entry stands
   (voids go to GOLD_RETIRED_VOIDED.json and the window is re-judged on the same pass). The three promoted scalp sleeves reach the gateway only as LIVE rows in
-  data/sleeves.json; that needs a MEASURED heavy admission scan (MT5-Hourly now runs heavy when
-  the last scan is missing or >2h old) and two admitting promoter readings for a STANDBY row.
+  data/sleeves.json; that needs a MEASURED heavy admission scan (MT5-Hourly runs heavy when
+  the last scan is missing or every 4th pass -- >3.5h since the last heavy pass started) and two admitting promoter readings for a STANDBY row.
   CLOSE_HOUR (19:30 UTC) closes the gold book only; the scalp lane runs to its own time exit.
 - **The box's state is the box's.** `Adopt-Release.ps1` keeps every state path (the
   `STATE_PREFIXES` in `libs/ops/release.py`, minus `docs/`) that the box changed since it
