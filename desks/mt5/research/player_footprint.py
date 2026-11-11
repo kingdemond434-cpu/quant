@@ -30,9 +30,10 @@ admits as EXACT_RECIPE -- so the sealed gauntlet judges them like any other cell
      NOT yet answered), and `flow_streak`, the signed count of consecutive creation (+) or
      redemption (-) days, reset by a no-change day. The XAUUSD close each GLD row sees is the
      newest broker-day close whose own `available_time` is at or before the row's, so the
-     return never reaches past the flow's 09:00 New York stamp. Extends `GOLD_ETF_creation_redemption_flow`
-     (data/hypotheses/compiled_proposals.json, a HEURISTIC_PROXY that measured distance from a
-     20-bar mean) and `GLD_IAU_Gold_ETF_Rebalance` (side_channels/operational_calendar_miner.py)
+     return never reaches past the flow's 09:00 New York stamp. Extends
+     `GOLD_ETF_creation_redemption_flow` (data/hypotheses/compiled_proposals.json, a
+     HEURISTIC_PROXY that measured distance from a 20-bar mean) and
+     `GLD_IAU_Gold_ETF_Rebalance` (side_channels/operational_calendar_miner.py)
      with the issuer's own measured flow. IAU is NOT fetched: iShares publishes a current
      holdings snapshot, not a public history, and a snapshot accumulated from today cannot be
      backtested; it is named in the report as a gap.
@@ -84,9 +85,20 @@ new identities in that donation. A pass with nothing new writes no contract file
 nothing. A hypothesis whose series is absent or too short is HELD -- not donated, not charged --
 and named in the report until its data arrives.
 
-PUBLIC DATA ONLY. CFTC and the SPDR archive are public pages read with one honest User-Agent
-through `libs.data.polite_fetch`, retries off; a 401/403/429/451 is a HARD STOP recorded in
-state and never retried until `--release-hard-stops`. No login, no key, no paid feed, no
+PUBLIC DATA ONLY. CFTC and the SPDR archive are public pages read through `libs.data.polite_fetch`
+(its per-host spacing), retries off, sending ONLY an honest User-Agent and an Accept header --
+none of polite_fetch's browser-imitating defaults (`honest_get`). Before the SPDR page is
+requested its host's robots.txt is read with the same User-Agent and honoured for the exact path
+(`RobotsGate`, RFC 9309): a disallowed path, or a 401/403/429/451 on robots.txt, is REFUSED; a
+network error, 5xx or challenge body is UNMEASURED; neither ever fetches the page. A
+401/403/429/451 is a HARD STOP recorded in state and never retried until
+`--release-hard-stops`.
+
+ACCESS ON DONATIONS. Every hypothesis carries `access_label`, `terms` and `access_sources`, the
+most restrictive over the sources its cell draws on (`source_access`, retail_crowd's semantics).
+spdrgoldshares.com has no terms record in the repo (data_registry `spdr_gld_holdings` carries
+none), so every GLD cell is PUBLIC_WITH_TERMS / `to_confirm` -- fail closed until its terms are
+read and recorded in `SOURCES`. No login, no key, no paid feed, no
 crypto-exchange universe; single-name equities are never targeted (the donation door refuses
 them anyway).
 
@@ -103,7 +115,10 @@ import math
 import os
 import sys
 import time
-from collections.abc import Callable, Mapping, Sequence
+import urllib.parse
+import urllib.request
+import urllib.robotparser
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from datetime import time as dtime
 from functools import lru_cache
@@ -134,6 +149,7 @@ HARD_STOP = frozenset({401, 403, 429, 451})
 #: already names for `spdr_gld_holdings`). The older `GLD_US_holdings.xlsx` URL 404s.
 GLD_URL = "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv"
 GLD_REFETCH_H = 20.0
+GLD_SOURCES: tuple[str, ...] = ("spdrgoldshares",)
 TROY_OZ_PER_TONNE = 32150.7466
 
 NY = ZoneInfo("America/New_York")
@@ -221,6 +237,10 @@ def cot_release_day(report_day: Any, calendar: Mapping[str, Any] | None = None) 
                                          _holidays(closures))).normalize()
 
 
+# CONVERGE: PR #238 (claude/positioning-flow-cot) adds the shared helpers
+# `futures_state.cot_usable_from` and `futures_state.to_bar_clock`. They are not on LIVE yet, so
+# this module keeps its own two below; once #238 lands, replace both with those helpers so the
+# desk has ONE COT release clock and ONE bar-clock mapping.
 def cot_usable_from(report_day: Any, calendar: Mapping[str, Any] | None = None) -> pd.Timestamp:
     """The UTC instant a COT report dated `report_day` was public: 15:30 New York on its
     release day (the Friday after; the next business day when a federal holiday or a CFTC
@@ -231,7 +251,8 @@ def cot_usable_from(report_day: Any, calendar: Mapping[str, Any] | None = None) 
 
 
 def to_broker(ts_utc: Any) -> pd.Timestamp:
-    """A true UTC instant as the bar clock stamps it: New York wall time + 7 h, UTC-labelled."""
+    """A true UTC instant as the bar clock stamps it: New York wall time + 7 h, UTC-labelled.
+    To converge onto `futures_state.to_bar_clock` (PR #238) once that lands on LIVE."""
     t = pd.Timestamp(ts_utc)
     t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
     wall = t.tz_convert(NY).tz_localize(None) + pd.Timedelta(hours=7)
@@ -720,12 +741,17 @@ def write_series(sid: str, frame: pd.DataFrame, series_dir: Path | None = None) 
 
 
 def _hyp(symbol: str, sid: str, signal: str, threshold: float, side: int, *, producer: str,
-         mechanism: str, falsifier: str, extends: Sequence[str] = ()) -> dict[str, Any]:
+         mechanism: str, falsifier: str, extends: Sequence[str] = (),
+         sources: Sequence[str] = ("mt5_bars",)) -> dict[str, Any]:
+    """One cell. `sources` names every external source its signal draws on (keys of SOURCES);
+    the cell carries their most restrictive access label and a fail-closed terms verdict. The
+    label rides beside `params`, never in them, so it never changes a cell's identity."""
     params = {"source": sid, "signal": signal, "transform": "level_z",
               "threshold": float(threshold), "side_when_high": int(side),
               "lag_hours": LAG_HOURS}
     return {"symbol": symbol, "family": FAMILY, "params": params, "producer": producer,
             "mechanism": mechanism, "falsifier": falsifier, "extends": list(extends),
+            "access": source_access(sources),
             "title": f"{producer}: {symbol} {signal} level_z {'>=' if side > 0 else 'fade'} "
                      f"{threshold:g}"}
 
@@ -784,6 +810,7 @@ def cta_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Mapping[s
             hyps.append(_hyp(sym, sid, "crowd_z", 1.5, -1, producer="cta", mechanism=(
                 "replicated CTA length confirmed by CFTC leveraged-money positioning is a "
                 "crowded systematic trade that unwinds"),
+                sources=("mt5_bars", "cftc"),
                 falsifier=f"{sym} does not fade when the CTA model and CFTC leveraged money "
                           "are jointly extreme"))
         report[sym] = row
@@ -793,10 +820,12 @@ def cta_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Mapping[s
 def gold_etf_producer(text: str | None, xau_h1: pd.DataFrame | None = None
                       ) -> tuple[dict[str, pd.DataFrame], list[dict[str, Any]], dict[str, Any]]:
     if not text:
-        return {}, [], {"status": "UNMEASURED", "why": "no GLD archive held on this box yet"}
+        return {}, [], {"status": "UNMEASURED", "why": "no GLD archive held on this box yet",
+                        **source_access(GLD_SOURCES)}
     h = parse_gld_archive(text)
     if len(h) < MIN_SERIES_ROWS:
-        return {}, [], {"status": "UNMEASURED", "why": f"{len(h)} parsable GLD rows"}
+        return {}, [], {"status": "UNMEASURED", "why": f"{len(h)} parsable GLD rows",
+                        **source_access(GLD_SOURCES)}
     xau = daily_closes(xau_h1)
     feat = gold_etf_features(h, xau)
     sid = "pf_gold_etf"
@@ -804,6 +833,7 @@ def gold_etf_producer(text: str | None, xau_h1: pd.DataFrame | None = None
     mech = ("authorised participants create GLD shares by delivering physical gold: a "
             "sustained creation flow is measured physical demand that the spot price follows")
     hyps = [_hyp("XAUUSD", sid, col, thr, +1, producer="gold_etf", mechanism=mech, extends=ext,
+                 sources=GLD_SOURCES,
                  falsifier=f"XAUUSD shows no continuation after an extreme GLD {col} out of "
                            "sample")
             for col, thr in (("flow_z", 2.0), ("flow_5d_t", 1.5), ("flow_20d_t", 1.5))]
@@ -812,16 +842,17 @@ def gold_etf_producer(text: str | None, xau_h1: pd.DataFrame | None = None
     hyps.append(_hyp("XAUUSD", sid, "flow_px_resid", 1.5, +1, producer="gold_etf", mechanism=(
         "GLD creations the gold price has not yet answered over the same five days are "
         "physical demand still to be priced: the residual of the flow on the return leads "
-        "the return"), extends=ext,
+        "the return"), extends=ext, sources=(*GLD_SOURCES, "mt5_bars"),
         falsifier="XAUUSD shows no continuation after an extreme GLD flow residual on its own "
                   "same-window return out of sample"))
     hyps.append(_hyp("XAUUSD", sid, "flow_streak", 1.5, +1, producer="gold_etf", mechanism=(
         "an unbroken run of creation (redemption) days is a persistent allocator buying "
         "(selling) through authorised participants, not one block: persistence continues"),
-        extends=ext,
+        extends=ext, sources=GLD_SOURCES,
         falsifier="XAUUSD shows no continuation after an extreme signed GLD creation/"
                   "redemption streak out of sample"))
     return {sid: feat}, hyps, {"status": "OK", "rows": len(feat),
+                               **source_access(GLD_SOURCES),
                                "first": str(h["date"].min().date()),
                                "last": str(h["date"].max().date()),
                                "latest_tonnes": round(float(h["tonnes"].iloc[-1]), 2),
@@ -830,6 +861,12 @@ def gold_etf_producer(text: str | None, xau_h1: pd.DataFrame | None = None
                                               "UNMEASURED: no XAUUSD daily closes on this box"),
                                "iau": ("NOT_FETCHED: iShares publishes a current holdings "
                                        "snapshot, not a public history")}
+
+
+def _usable(frame: pd.DataFrame | None, col: str) -> bool:
+    """`col` is in `frame` with at least MIN_SERIES_ROWS non-NaN numeric values."""
+    return (frame is not None and col in frame.columns and int(pd.to_numeric(
+        frame[col], errors="coerce").notna().sum()) >= MIN_SERIES_ROWS)
 
 
 def realmoney_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Mapping[str, Any],
@@ -853,8 +890,18 @@ def realmoney_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Map
         market = REALMONEY_TFF.get(sym)
         if market:
             cot, why = cot_series(market, calendar, series_dir, tff_dir, registry)
-            lev = next((c for c in LEV_COLUMNS if cot is not None and c in cot.columns), None)
-            if cot is not None and lev and AM_COLUMN in cot.columns:
+            # A column counts only with MIN_SERIES_ROWS non-NaN values: an all-NaN leveraged-
+            # money (or asset-manager) column is UNMEASURED and names no source.
+            lev = next((c for c in LEV_COLUMNS if _usable(cot, c)), None)
+            if cot is None:
+                row["am"] = f"UNMEASURED: {why}"
+            elif not _usable(cot, AM_COLUMN):
+                row["am"] = (f"UNMEASURED: fewer than {MIN_SERIES_ROWS} {AM_COLUMN} values "
+                             "in the held COT series")
+            elif lev is None:
+                row["am"] = (f"UNMEASURED: no leveraged-money column with {MIN_SERIES_ROWS} "
+                             "values in the held COT series")
+            else:
                 w = cot[["event_time", "available_time"]].copy()
                 w["am_net_oi"] = pd.to_numeric(cot[AM_COLUMN], errors="coerce")
                 w["am_vs_lev"] = (zscore(w["am_net_oi"], Z_WEEKS)
@@ -862,10 +909,10 @@ def realmoney_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Map
                 w = w.dropna(subset=["am_vs_lev"])
                 if len(w) >= MIN_SERIES_ROWS:
                     parts.append(w)
-                row["am"] = f"{why}:{AM_COLUMN}"
-            else:
-                row["am"] = f"UNMEASURED: {why}" if cot is None else (
-                    f"UNMEASURED: {why} carries no {AM_COLUMN}")
+                    row["am"] = f"{why}:{AM_COLUMN}"
+                else:
+                    row["am"] = (f"UNMEASURED: {len(w)} joint {AM_COLUMN}/{lev} z-score rows "
+                                 f"(< {MIN_SERIES_ROWS})")
         lead_lag: tuple[str, str, int] | None = None
         if sym in REBAL_INDEX:
             lead_lag = (sym, BOND, +1)
@@ -904,6 +951,7 @@ def realmoney_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Map
             hyps.append(_hyp(sym, sid, "am_vs_lev", 1.0, +1, producer="real_money", mechanism=(
                 "asset managers rebalance slowly against benchmarks; when real money leans "
                 "against leveraged money the slow book's direction persists"),
+                sources=("cftc",),
                 falsifier=f"{sym} does not follow CFTC asset-manager positioning when it "
                           "diverges from leveraged funds"))
         if "rebal_pressure" in merged.columns:
@@ -917,9 +965,184 @@ def realmoney_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Map
     return frames, hyps, report
 
 
+# ------------------------------------------------------------------------------ access & terms
+#: Every external source a cell can draw on, with its access label and terms verdict. A terms
+#: verdict is `confirmed` only on a recorded basis; spdrgoldshares.com has no terms record
+#: anywhere in the repo (data_registry.json `spdr_gld_holdings` carries none), so it is
+#: `to_confirm` and every GLD cell stays fail-closed until its terms are read and recorded here.
+SOURCES: dict[str, dict[str, str]] = {
+    "spdrgoldshares": {
+        "access_label": "PUBLIC_WITH_TERMS",
+        "terms": "to_confirm",
+        "terms_note": ("public archive CSV, no login. Site terms not read or recorded in the repo "
+                       "(no terms record for spdrgoldshares.com); mined with the label, "
+                       "redistribution withheld until confirmed"),
+    },
+    "cftc": {
+        "access_label": "PUBLIC",
+        "terms": "confirmed",
+        "terms_note": ("US federal government publication (cftc.gov), public domain; the "
+                       "free_stack_sources.json `cftc_cot` terms record"),
+    },
+    "mt5_bars": {
+        "access_label": "LICENSED",
+        "terms": "confirmed",
+        "terms_note": "the desk's own broker-account price bars, the input of every family",
+    },
+}
+
+#: Access labels from least to most restrictive (retail_crowd.ACCESS_ORDER, LAWS 5e).
+ACCESS_ORDER: tuple[str, ...] = (
+    "PUBLIC", "OPEN_DATA", "PUBLIC_ARCHIVE", "PUBLIC_SOCIAL", "USER_SUBMITTED",
+    "PUBLIC_WITH_TERMS", "LICENSED", "ACCESS_UNCLEAR", "PRIVATE", "CONFIDENTIAL_MNPI",
+    "STOLEN_UNAUTHORIZED")
+
+
+def most_restrictive(labels: Iterable[str]) -> str:
+    """The most restrictive access label among `labels`; none or unknown -> ACCESS_UNCLEAR."""
+    rank = {k: i for i, k in enumerate(ACCESS_ORDER)}
+    floor = rank["ACCESS_UNCLEAR"]
+    got = [str(x or "").upper() for x in labels]
+    if not got:
+        return "ACCESS_UNCLEAR"
+    return ACCESS_ORDER[max(rank.get(x, floor) for x in got)]
+
+
+def source_access(sources: Iterable[str]) -> dict[str, Any]:
+    """{'access_label', 'terms', 'access_sources'} for a cell drawing on `sources`. FAIL CLOSED:
+    `confirmed` only when every source's terms are confirmed; unknown sources are
+    ACCESS_UNCLEAR / to_confirm (retail_crowd.source_access, same semantics)."""
+    srcs = sorted({str(x) for x in sources if x})
+    labels = [SOURCES.get(x, {}).get("access_label", "ACCESS_UNCLEAR") for x in srcs]
+    confirmed = bool(srcs) and all(SOURCES.get(x, {}).get("terms") == "confirmed" for x in srcs)
+    return {"access_label": most_restrictive(labels),
+            "terms": "confirmed" if confirmed else "to_confirm", "access_sources": srcs}
+
+
+# ------------------------------------------------------------------------------ honest fetch
+def _honest_opener(urlopen: Callable[..., Any] | None = None) -> Callable[..., Any]:
+    """An opener for `polite_fetch.get` that sends ONLY the User-Agent and Accept the caller set.
+    polite_fetch merges its browser-imitating BROWSER_HEADERS (Accept-Language,
+    Upgrade-Insecure-Requests, ...) under every caller's headers; this strips them for
+    player_footprint's requests only, leaving polite_fetch's global behaviour untouched."""
+    def open_(req: urllib.request.Request, **kw: Any) -> Any:
+        hdr = {k: v for k, v in (("User-Agent", req.get_header("User-agent")),
+                                 ("Accept", req.get_header("Accept"))) if v}
+        return (urlopen or urllib.request.urlopen)(
+            urllib.request.Request(req.full_url, headers=hdr), **kw)
+    return open_
+
+
+def honest_get(url: str, accept: str, *, timeout: float = 40.0,
+               urlopen: Callable[..., Any] | None = None) -> Any:
+    """One GET through polite_fetch (per-host spacing, never raises), retries off, with only
+    `User-Agent: UA` and `Accept: accept` on the wire."""
+    from libs.data import polite_fetch
+    return polite_fetch.get(url, headers={"User-Agent": UA, "Accept": accept}, timeout=timeout,
+                            retries=0, leg=SEAT, opener=_honest_opener(urlopen))
+
+
+# ------------------------------------------------------------------------------ robots.txt
+_CHALLENGE_MARKERS = ("just a moment", "cf-challenge", "challenge-platform", "ctype: 'managed'",
+                      "cf_chl_", "attention required! | cloudflare", "captcha")
+
+
+class RobotsGate:
+    """robots.txt, read once per host per pass with the same User-Agent the page fetch sends
+    (`UA`) and honoured for the exact path, per RFC 9309. The logic is retail_crowd.Robots
+    (PR #772), with the refusal statuses split out as the auditor's rule requires:
+
+      2xx body           -> the rules (a challenge body is UNMEASURED, not rules)
+      404 / 410          -> no rules published: every path ALLOWED
+      401/403/429/451    -> REFUSED
+      network error, 5xx, any other status -> UNMEASURED
+      REFUSED, ROBOTS_REFUSED (path disallowed) and UNMEASURED never fetch the page.
+
+    SWAP POINT: `libs/data/robots_gate.py` (PR #831) is not on LIVE yet. Once it lands,
+    `_robots_for_pass()` below is the one line to change -- construct robots_gate's gate there
+    instead of this class; callers only use `.check(url)['verdict']`."""
+
+    REFUSED_STATUS = frozenset({401, 403, 429, 451})
+
+    def __init__(self, fetch: Callable[[str], tuple[int | None, str, str]]) -> None:
+        """`fetch(robots_url) -> (status or None, body, error)`."""
+        self._fetch = fetch
+        self._hosts: dict[str, dict[str, Any]] = {}
+
+    @staticmethod
+    def robots_url(url: str) -> str:
+        u = urllib.parse.urlsplit(url)
+        return f"{u.scheme}://{u.netloc}/robots.txt"
+
+    def _host(self, url: str) -> dict[str, Any]:
+        key = urllib.parse.urlsplit(url).netloc.lower()
+        if key in self._hosts:
+            return self._hosts[key]
+        rurl = self.robots_url(url)
+        entry: dict[str, Any] = {"robots_url": rurl, "parser": None}
+        try:
+            st, body, err = self._fetch(rurl)
+        except Exception as exc:
+            st, body, err = None, "", f"{type(exc).__name__}: {exc}"
+        entry["http"] = st
+        low = (body or "")[:20000].lower()
+        if st is None:
+            entry.update(state="UNMEASURED", why=f"robots.txt unreachable: {err}"[:200])
+        elif st in (404, 410):
+            entry.update(state="NO_RULES", why=f"robots.txt HTTP {st}: no rules published")
+        elif st in self.REFUSED_STATUS:
+            entry.update(state="REFUSED", why=f"robots.txt HTTP {st}: refused by the server")
+        elif 200 <= st < 300 and any(m in low for m in _CHALLENGE_MARKERS):
+            entry.update(state="UNMEASURED",
+                         why="robots.txt answered with a challenge body; rules unread")
+        elif 200 <= st < 300:
+            rp = urllib.robotparser.RobotFileParser(rurl)
+            rp.parse((body or "").splitlines())
+            entry.update(state="READ", parser=rp, why="robots.txt read")
+        else:
+            entry.update(state="UNMEASURED", why=f"robots.txt HTTP {st}; rules unread")
+        self._hosts[key] = entry
+        return entry
+
+    def check(self, url: str) -> dict[str, Any]:
+        """{'verdict': ALLOWED | ROBOTS_REFUSED | REFUSED | UNMEASURED, 'robots_url', 'path',
+        'robots_http', 'why'}. Only scheme, host and path are reported."""
+        e = self._host(url)
+        u = urllib.parse.urlsplit(url)
+        path = u.path or "/"
+        out = {"robots_url": e["robots_url"], "path": path, "user_agent": UA,
+               "robots_state": e["state"], "robots_http": e.get("http")}
+        if e["state"] in ("UNMEASURED", "REFUSED"):
+            return {**out, "verdict": e["state"], "why": e["why"]}
+        if e["state"] == "NO_RULES":
+            return {**out, "verdict": "ALLOWED", "why": e["why"]}
+        if e["parser"].can_fetch(UA, urllib.parse.urlunsplit(
+                (u.scheme, u.netloc, path, u.query, ""))):
+            return {**out, "verdict": "ALLOWED", "why": f"robots.txt allows {path}"}
+        return {**out, "verdict": "ROBOTS_REFUSED",
+                "why": f"robots.txt at {e['robots_url']} disallows {path}; not fetched"}
+
+
+def _robots_fetch_via(get: Callable[..., Any]) -> Callable[[str], tuple[int | None, str, str]]:
+    def fetch(rurl: str) -> tuple[int | None, str, str]:
+        r = get(rurl, accept="text/plain,*/*;q=0.5", timeout=20.0)
+        return (getattr(r, "status", None), str(getattr(r, "text", "") or ""),
+                str(getattr(r, "error", "") or ""))
+    return fetch
+
+
+def _robots_for_pass(get: Callable[..., Any] | None = None) -> RobotsGate:
+    """This pass's robots gate (one per pass: its cache is per host per pass). The ONE line to
+    change when libs/data/robots_gate.py (PR #831) is on LIVE."""
+    return RobotsGate(_robots_fetch_via(get or honest_get))
+
+
 def fetch_gld(state: dict[str, Any], now: datetime, *, offline: bool,
-              get: Callable[..., Any] | None = None) -> tuple[str | None, str]:
-    """The held archive, refreshed at most once per GLD_REFETCH_H through polite_fetch."""
+              get: Callable[..., Any] | None = None,
+              robots: RobotsGate | None = None) -> tuple[str | None, str]:
+    """The held archive, refreshed at most once per GLD_REFETCH_H through `honest_get`, and
+    only after the host's robots.txt allows the exact path. `get(url, accept=, timeout=)` is
+    the injectable fetch (`honest_get` by default) used for robots.txt and the page alike."""
     held = GLD_RAW.read_text(encoding="utf-8") if GLD_RAW.exists() else None
     if offline:
         return held, "offline: held archive only"
@@ -932,11 +1155,16 @@ def fetch_gld(state: dict[str, Any], now: datetime, *, offline: bool,
                 return held, "held (fetched within the refetch window)"
         except ValueError:
             pass
-    if get is None:
-        from libs.data import polite_fetch
-        get = polite_fetch.get
-    r = get(GLD_URL, headers={"User-Agent": UA, "Accept": "text/csv,*/*"}, timeout=40.0,
-            retries=0, leg=SEAT)
+    get = get or honest_get
+    verdict = (robots or _robots_for_pass(get)).check(GLD_URL)
+    if verdict["verdict"] == "REFUSED":
+        state.setdefault("hard_stops", {})["gld"] = {"code": verdict["robots_http"],
+                                                     "at": now.isoformat(),
+                                                     "where": verdict["robots_url"]}
+        return held, f"HARD_STOP {verdict['robots_http']} (robots.txt)"
+    if verdict["verdict"] != "ALLOWED":
+        return held, f"{verdict['verdict']}: {verdict['why']}"
+    r = get(GLD_URL, accept="text/csv,*/*", timeout=40.0)
     status = getattr(r, "status", None)
     if status in HARD_STOP:
         state.setdefault("hard_stops", {})["gld"] = {"code": status, "at": now.isoformat()}
@@ -992,7 +1220,8 @@ def donate(new: Sequence[dict[str, Any]], state: dict[str, Any], now: datetime,
                                       "series": f"data/lake/series/{h['params']['source']}"})
         c.update({"falsifier": h["falsifier"], "extends": h["extends"],
                   "identity": h["identity"], "horizon": "H1",
-                  "required_data": [f"desks/mt5/data/lake/series/{h['params']['source']}"]})
+                  "required_data": [f"desks/mt5/data/lake/series/{h['params']['source']}"],
+                  **(h.get("access") or source_access(()))})
         rows.append(c)
     fn = donate_fn or PC.donate
     path = fn(SEAT, rows, tests_run=len(rows))

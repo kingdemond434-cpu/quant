@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -252,19 +252,128 @@ class TestGoldEtf:
         assert rep["divergence"].startswith("UNMEASURED")
 
     def test_a_hard_stop_is_recorded_and_never_retried(self) -> None:
-        class R:
-            status, ok, text, error = 403, False, "", "HTTP 403"
-        calls: list[str] = []
-
-        def get(url: str, **_: Any) -> R:
-            calls.append(url)
-            return R()
+        get, calls = _fake_get({"/robots.txt": (404, "")}, default=(403, ""))
         st: dict[str, Any] = {}
-        now = pd.Timestamp("2026-11-03", tz="UTC").to_pydatetime()
-        _, how = P.fetch_gld(st, now, offline=False, get=get)
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
         assert how == "HARD_STOP 403" and st["hard_stops"]["gld"]["code"] == 403
-        _, how = P.fetch_gld(st, now, offline=False, get=get)
-        assert how.startswith("HARD_STOP") and len(calls) == 1
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how.startswith("HARD_STOP") and calls == [P.RobotsGate.robots_url(P.GLD_URL),
+                                                         P.GLD_URL]
+
+    def test_the_gld_cells_and_report_carry_the_to_confirm_terms_label(self) -> None:
+        days = pd.bdate_range("2023-01-02", periods=80)
+        body = "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7)}" for i, d in enumerate(days))
+        frames, hyps, rep = P.gold_etf_producer(body)
+        assert rep["terms"] == "to_confirm" and rep["access_label"] == "PUBLIC_WITH_TERMS"
+        assert hyps and all(h["access"]["terms"] == "to_confirm" for h in hyps)
+        assert all("spdrgoldshares" in h["access"]["access_sources"] for h in hyps)
+        # the label rides beside params, so it never changes a cell's identity
+        assert all("access" not in h["params"] for h in hyps)
+        # and it reaches the donated row
+        rows: list[dict[str, Any]] = []
+        new, _ = P.plan_donation(hyps, frames, {})
+        P.donate(new, {}, _NOW, donate_fn=lambda seat, r, tests_run: rows.extend(r) or Path("x"))
+        assert rows and all(r["terms"] == "to_confirm" for r in rows)
+        assert all(r["access_label"] == "PUBLIC_WITH_TERMS" for r in rows)
+
+    def test_a_cftc_only_cell_is_confirmed_and_an_unknown_source_is_not(self) -> None:
+        assert P.source_access(["cftc"])["terms"] == "confirmed"
+        mixed = P.source_access(["cftc", "spdrgoldshares"])
+        assert mixed["terms"] == "to_confirm" and mixed["access_label"] == "PUBLIC_WITH_TERMS"
+        assert P.source_access(["nowhere"]) == {"access_label": "ACCESS_UNCLEAR",
+                                               "terms": "to_confirm",
+                                               "access_sources": ["nowhere"]}
+
+
+# ------------------------------------------------------------------------------ robots.txt
+_NOW = pd.Timestamp("2026-11-03", tz="UTC").to_pydatetime()
+
+
+def _fake_get(by_path: dict[str, tuple[int | None, str]], default: tuple[int | None, str]
+              = (200, "")) -> tuple[Any, list[str]]:
+    """A `get(url, accept=, timeout=)` answering by URL path; records every URL requested."""
+    from urllib.parse import urlsplit
+    calls: list[str] = []
+
+    class R:
+        def __init__(self, status: int | None, text: str) -> None:
+            self.status, self.text = status, text
+            self.ok = status is not None and 200 <= status < 300
+            self.error = "URLError: no route" if status is None else (
+                "" if self.ok else f"HTTP {status}")
+
+    def get(url: str, **_: Any) -> R:
+        calls.append(url)
+        return R(*by_path.get(urlsplit(url).path, default))
+    return get, calls
+
+
+class TestRobots:
+    def test_a_disallowed_path_never_fetches_the_page(self) -> None:
+        rules = "User-agent: *\nDisallow: /assets/dynamic/\n"
+        get, calls = _fake_get({"/robots.txt": (200, rules)})
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how.startswith("ROBOTS_REFUSED") and P.GLD_URL not in calls
+        assert "hard_stops" not in st
+
+    def test_a_403_on_robots_txt_is_refused_and_never_fetches_the_page(self) -> None:
+        get, calls = _fake_get({"/robots.txt": (403, "")})
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how == "HARD_STOP 403 (robots.txt)" and P.GLD_URL not in calls
+        assert st["hard_stops"]["gld"]["code"] == 403
+        assert P.RobotsGate(P._robots_fetch_via(get)).check(P.GLD_URL)["verdict"] == "REFUSED"
+
+    @pytest.mark.parametrize("answer", [(503, ""), (500, ""), (None, ""),
+                                        (200, "<html>Just a moment...</html>")])
+    def test_a_5xx_network_error_or_challenge_is_unmeasured_and_never_fetches(
+            self, answer: tuple[int | None, str]) -> None:
+        get, calls = _fake_get({"/robots.txt": answer})
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how.startswith("UNMEASURED") and calls == [P.RobotsGate.robots_url(P.GLD_URL)]
+        assert "hard_stops" not in st
+
+    @pytest.mark.parametrize("code", [404, 410])
+    def test_no_rules_published_allows_the_page(self, code: int) -> None:
+        get, calls = _fake_get({"/robots.txt": (code, "")}, default=(200, "<html>no</html>"))
+        _, how = P.fetch_gld({}, _NOW, offline=False, get=get)
+        assert P.GLD_URL in calls and how.startswith("fetched a body with no parsable")
+
+    def test_robots_is_read_once_per_host_per_pass(self) -> None:
+        get, calls = _fake_get({"/robots.txt": (200, "User-agent: *\nAllow: /\n")})
+        gate = P.RobotsGate(P._robots_fetch_via(get))
+        assert gate.check(P.GLD_URL)["verdict"] == "ALLOWED"
+        assert gate.check(P.GLD_URL + "?x=1")["verdict"] == "ALLOWED"
+        assert len(calls) == 1
+
+
+class TestHonestHeaders:
+    def test_only_user_agent_and_accept_go_on_the_wire(self) -> None:
+        sent: list[dict[str, str]] = []
+
+        class FH:
+            status, url = 200, "https://pf-headers.invalid/x.csv"
+            headers: ClassVar[dict[str, str]] = {"Content-Type": "text/plain"}
+
+            def read(self, n: int = -1) -> bytes:
+                return b"ok"
+
+            def __enter__(self) -> FH:
+                return self
+
+            def __exit__(self, *a: Any) -> None:
+                return None
+
+        def urlopen(req: Any, **_: Any) -> FH:
+            sent.append({k.lower(): v for k, v in req.header_items()})
+            return FH()
+        r = P.honest_get("https://pf-headers.invalid/x.csv", "text/csv,*/*", urlopen=urlopen)
+        assert r.ok and r.text == "ok"
+        assert sent == [{"user-agent": P.UA, "accept": "text/csv,*/*"}]
+        assert not {"accept-language", "upgrade-insecure-requests"} & set(sent[0])
 
 
 def _gld_and_xau(n: int = 300, spike_at: int | None = None, spike_t: float = 5.0
@@ -322,7 +431,7 @@ class TestGoldEtfFlowVsPrice:
             len(idx))))}, index=idx)
         body = "Date,Tonnes of Gold\n" + "\n".join(
             f"{d:%d-%b-%Y},{800 + (i % 7) + 0.1 * i}" for i, d in enumerate(days))
-        frames, hyps, rep = P.gold_etf_producer(body, h1)
+        frames, _, rep = P.gold_etf_producer(body, h1)
         f = frames["pf_gold_etf"]
         assert rep["divergence"] == "OK" and rep["xauusd_closes"] > 100
         assert f["flow_px_resid"].notna().sum() >= P.MIN_SERIES_ROWS
@@ -352,7 +461,7 @@ class TestGoldEtfChargeOnce:
 
     def test_only_the_new_cells_are_charged_and_the_old_ones_never_again(self) -> None:
         from research.proposer_common import identity
-        h, xau = _gld_and_xau(n=320, spike_at=290)
+        _, xau = _gld_and_xau(n=320, spike_at=290)
         idx = pd.date_range("2023-01-02", periods=320 * 24, freq="1h", tz="UTC")
         h1 = pd.DataFrame({"close": np.interp(np.arange(len(idx)) / 24.0, np.arange(320),
                                               xau["close"].to_numpy())}, index=idx)
@@ -361,7 +470,7 @@ class TestGoldEtfChargeOnce:
                if x["params"]["signal"] in ("flow_z", "flow_5d_t", "flow_20d_t")}
         assert len(old) == 3
         now = pd.Timestamp("2026-11-04", tz="UTC").to_pydatetime()
-        state: dict[str, Any] = {"charged": {i: "2026-11-01T00:00:00+00:00" for i in old}}
+        state: dict[str, Any] = {"charged": dict.fromkeys(old, "2026-11-01T00:00:00+00:00")}
         calls: list[int] = []
 
         def fake(seat: str, rows: list[dict[str, Any]], tests_run: int) -> Path:
@@ -523,3 +632,25 @@ def test_the_leg_yields_the_cpu_to_release_and_risk_tasks() -> None:
     assert "'applied': True" in out
     src = Path(P.__file__).read_text("utf-8")
     assert "prio = below_normal()" in src.split("def main", 1)[1]
+
+
+# ------------------------------------------------------------------------------ real money
+def test_an_all_nan_lev_money_column_is_unmeasured_and_names_no_source(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    n = 3 * P.MIN_SERIES_ROWS
+    days = pd.date_range("2020-01-07", periods=n, freq="7D", tz="UTC")
+    cot = pd.DataFrame({"event_time": days, "available_time": days + pd.Timedelta(days=3),
+                        P.AM_COLUMN: np.linspace(-1e4, 1e4, n),
+                        P.LEV_COLUMNS[0]: np.nan})
+    monkeypatch.setattr(P, "cot_series", lambda *a, **k: (cot, "cot_tff_fixture"))
+    _, hyps, rep = P.realmoney_producer(lambda sym: None, CAL)
+    eur = rep["EURUSD"]
+    assert eur["status"] == "UNMEASURED" and eur["am"].startswith("UNMEASURED")
+    assert "cot_tff_fixture" not in eur["am"] and P.LEV_COLUMNS[0] not in eur["am"]
+    assert not any(h["params"]["signal"] == "am_vs_lev" for h in hyps)
+    # the same series with a real leveraged-money column names its source
+    cot[P.LEV_COLUMNS[0]] = np.linspace(5e3, -5e3, n) + np.sin(np.arange(n)) * 1e3
+    _, hyps, rep = P.realmoney_producer(lambda sym: None, CAL)
+    assert rep["EURUSD"]["am"] == f"cot_tff_fixture:{P.AM_COLUMN}"
+    am = [h for h in hyps if h["params"]["signal"] == "am_vs_lev"]
+    assert am and all(h["access"]["terms"] == "confirmed" for h in am)
