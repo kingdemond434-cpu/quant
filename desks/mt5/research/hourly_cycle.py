@@ -1316,7 +1316,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
-                     "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     "source_routes", "source_fixer", "feed_schema_watch", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
@@ -2157,6 +2157,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # about 800 s if every request times out, seconds when they answer. It writes only at the
     # end, so the cap must sit above that worst case or a slow hour kills it before it donates.
     "index_discovery": 900,
+    # Footer reads of every lake file plus one tail of the free-stack run log; at most two LLM
+    # proposals per pass at the seat's own 180 s request timeout.
+    "feed_schema_watch": 600,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -5880,6 +5883,12 @@ def main() -> None:
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
+    # The other half of a dead feed: a route that still answers 200 while its PARSER finds
+    # nothing, and a lake file whose columns or dtypes changed under its readers. Read-only over
+    # the feeds; drift opens a ticket in data/feed_schema_watch/tickets/, where an LLM seat may
+    # PROPOSE a parser change that only a reviewed PR ever applies.
+    fsw = _costed("feed_schema_watch", lambda: _producer(
+        "feed_schema_watch", "research/feed_schema_watch.py", "--once"))
     # The bars every study reads: an unreadable parquet is quarantined for the fetcher to
     # rebuild, a stale one is named by asset class (`scripts/check_universe_integrity.py`).
     uin = _costed("universe_integrity",
@@ -6551,6 +6560,7 @@ def main() -> None:
                     "alt_proxies": alp,
                     "asia_parser": apr,
                     "source_fixer": sfx,
+                    "feed_schema_watch": fsw,
                     "universe_integrity": uin,
                     "synthetic_usdx": usx,
                     "source_routes": srt,
