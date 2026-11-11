@@ -355,6 +355,7 @@ def run() -> tuple[dict, int]:
 
     started = datetime.now(UTC)
     errors: dict[str, str] = {}
+    stage_seconds: dict[str, float] = {}
     for name, fn in (
         ("scalp_bar_refresh", _refresh_scalp_bars),
         # Compatibility migration only: retires the old private external ledger. External
@@ -366,6 +367,7 @@ def run() -> tuple[dict, int]:
         ("qquant_shadow", qquant_shadow.main),
         ("promoter", promoter.main),
     ):
+        _t = datetime.now(UTC)
         try:
             result = fn()
             if isinstance(result, int) and not isinstance(result, bool) and result != 0:
@@ -373,6 +375,8 @@ def run() -> tuple[dict, int]:
         except Exception as exc:
             errors[name] = f"{type(exc).__name__}: {exc}"
             traceback.print_exc()
+        finally:
+            stage_seconds[name] = round((datetime.now(UTC) - _t).total_seconds(), 1)
 
     # PRE-REGISTRATION STAMP, CENTRALIZED (RESEARCH §6d). Every live forward row must carry
     # `forward_start` from the moment it exists; a clock counted from the first trade ever taken
@@ -532,6 +536,11 @@ def run() -> tuple[dict, int]:
         "missing_sleeves": missing,
         "errors": errors,
         "seconds": round((datetime.now(UTC) - started).total_seconds(), 3),
+        # WHERE THE SECONDS WENT (2026-11-05): per stage of this cycle, and inside the forward
+        # engine per phase, family, chart and slowest row (shadow_forward.PassProfile).
+        "stage_seconds": stage_seconds,
+        "engine_profile": ((legacy.get("engine_pass") or {}).get("profile")
+                           if isinstance(legacy.get("engine_pass"), dict) else None),
         "gateway_armed": bool(gw.get("armed", False)),
         # Executable exposures are the headline. Raw certificate rows remain alongside them for
         # lineage audit, so folding aliases can never erase evidence or hide which certificate
