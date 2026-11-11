@@ -241,6 +241,10 @@ reports/principal_drop.json
 # the shadow step. Committing a stamp written on a research box would make the execution box pull
 # it, see the day as done, and skip the one run that matters.
 desks/mt5/data/daily_cycle_state.json
+desks/mt5/data/slo_history.jsonl
+desks/mt5/data/slo_history.jsonl.tmp
+desks/mt5/data/slo_state.json
+desks/mt5/data/slo_state.json.tmp
 
 # Per-box task queue. Same reason as the stamp above, one level worse: the journal records LEASES
 # -- "task X is held by worker W until 03:14" -- and a lease names a process that only exists on
@@ -478,6 +482,7 @@ desks/mt5/data/import_stems_cache.json
 # check had no reader off the box at all.
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
 !desks/mt5/reports/MERGE_PIPELINE.json
+!desks/mt5/reports/SLO_STATUS.json
 !desks/mt5/reports/DESK_HEALTH.json
 !desks/mt5/reports/process_health.json
 # BACKUP_STATE (v5f): whether the box is backed up and a restore was rehearsed, scheme only
