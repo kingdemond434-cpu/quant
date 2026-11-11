@@ -68,7 +68,8 @@ UNIVERSE = DESK / "data" / "universe"
 AXES_DIR = DESK / "data" / "axes"
 FORCED_FLOW = DESK / "data" / "forced_flow_calendar.json"
 SLEEVES = DESK / "data" / "sleeves.json"
-LIVE_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 STANDING = DESK / "reports" / "STANDING_QUESTIONS.json"
 REPRESENTATION = DESK / "reports" / "REPRESENTATION_DISCOVERY.json"
 RESIDUAL_REPORT = DESK / "reports" / "RESIDUAL_QUEUE.json"

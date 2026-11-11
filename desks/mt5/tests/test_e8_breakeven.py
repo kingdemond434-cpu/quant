@@ -75,12 +75,17 @@ def test_management_only_never_opens_the_retired_fx_book(
         def account(self) -> dict[str, float]:
             return {"equity": 100_000.0}
 
+        def positions(self) -> list[dict[str, Any]]:
+            return []
+
     monkeypatch.setattr(e8_guard, "assess", lambda equity, now=None: Decision())
     seen: dict[str, object] = {}
 
     def _manage(venue: object, *, armed: bool,
-                exclude_symbols: set[str] | None = None) -> list[dict]:
+                exclude_symbols: set[str] | None = None,
+                positions: list[dict[str, Any]] | None = None) -> list[dict]:
         seen["excluded"] = exclude_symbols
+        seen["positions"] = positions
         return []
 
     monkeypatch.setattr(e8_executor, "manage_breakeven", _manage)
@@ -89,6 +94,38 @@ def test_management_only_never_opens_the_retired_fx_book(
     assert doc["n_sent"] == 0
     assert doc["sleeves"] == []
     assert seen["excluded"] == {"XAUUSD"}, "only E8-Gold may manage the canonical gold book"
+    assert seen["positions"] == []
+
+
+def test_entry_refuses_when_broker_positions_are_rate_limited(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from prop import e8_guard
+
+    class Decision:
+        flatten = False
+        may_open = True
+        verdict = type("Verdict", (), {"value": "OK"})()
+        why = "ok"
+
+        def as_dict(self) -> dict[str, Any]:
+            return {"equity": 100_000.0}
+
+    class Venue:
+        reads = 0
+
+        def account(self) -> dict[str, float]:
+            return {"equity": 100_000.0}
+
+        def positions(self) -> list[dict[str, Any]]:
+            self.reads += 1
+            raise RuntimeError("HTTP 429")
+
+    monkeypatch.setattr(e8_guard, "assess", lambda equity, now=None: Decision())
+    venue = Venue()
+    doc = e8_executor.run(venue, armed=True, entry_enabled=True)
+    assert doc["status"] == "NO_BROKER_SNAPSHOT"
+    assert doc["n_sent"] == 0
+    assert venue.reads == 1
 
 
 @pytest.mark.parametrize("argv, enabled", [([], False), (["--manage-only"], False),

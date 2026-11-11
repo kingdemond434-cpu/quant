@@ -95,6 +95,20 @@ def family_spread_state(
     _a_sp_rank = sp_rank.to_numpy()
     _a_act_rank = act_rank.to_numpy()
     _a_close = close.to_numpy()
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.spread_state_emit(
+                frame=d, idx=idx, at=_a_atr, ret=_a_ret, sp_rank=_a_sp_rank, act_rank=_a_act_rank,
+                close=_a_close, has_vol=has_vol, norm_window=norm_window, hold_bars=hold_bars,
+                min_move_atr=min_move_atr, mode=mode, spike_pct=spike_pct, calm_pct=calm_pct,
+                active_pct=active_pct, stop_atr=stop_atr, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("spread_state", exc)
+            fast = None
+        if fast is not None:
+            return fast
     for i in range(norm_window, len(idx) - 1):
         if i - last < hold_bars:
             continue

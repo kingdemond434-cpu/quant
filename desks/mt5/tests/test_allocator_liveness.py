@@ -271,7 +271,7 @@ def test_pf_allocator_records_a_named_stand_down_on_every_silent_path() -> None:
     """A pass that ends without an allocation must say why, by name (L1.28a)."""
     src = (DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
     assert src.count("_record_stand_down(") == 4        # 3 call sites + the definition
-    for reason in ('"MEMORY"', '"LOCK"', '"FAILED"'):
+    for reason in ('"MEMORY"', '"LOCK_REFUSED"', '"FAILED"'):
         assert reason in src
     assert "_clear_stand_down(args.mode)" in src
 
@@ -291,7 +291,8 @@ def _gateway_book_key():
     src = (DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     start = src.index("def _book_key(")
     end = src.index("\ndef ", start + 1)
-    ns: dict = {"re": _re}
+    from mt5desk.decision_core import book_name   # the one version rule (r6), pure
+    ns: dict = {"re": _re, "book_name": book_name}
     exec(textwrap.dedent(src[start:end]), ns)
     return ns["_book_key"]
 

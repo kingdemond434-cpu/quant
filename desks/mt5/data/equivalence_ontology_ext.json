@@ -1,0 +1,6 @@
+{
+ "schema": 1,
+ "doc": "Extension of libs/research/equivalence_ontology.py, merged at import. The directive's classes are the floor, not the ceiling. To promote a candidate class from REGIONAL_PARITY.json `candidate_classes` (or desks/mt5/data/equivalence_candidates.json), append a row to `classes`: {group, name, terms (regex matched against pack declarations), layer (default official), cadence (default monthly), mandate_id (default EXT)}. A key (group:name) that already exists is refused by name. `known` rows add named per-country equivalents: {country (ISO-2), key (an existing or extension class key), source_id, series, cadence, publisher, url, endpoints [https only], note}. An endpoint here is still fetched only when TERMS_EVIDENCE in the ontology quotes a permitting clause for it. Every refused row is listed in REGIONAL_PARITY.json `ontology_extension.refused`.",
+ "classes": [],
+ "known": []
+}

@@ -103,6 +103,53 @@ def test_judging_capacity_measurement_cannot_be_rotated_out() -> None:
     assert "judging_throughput" in LR.ALWAYS_RUN
 
 
+def test_promotion_door_refresh_precedes_long_research_work(monkeypatch) -> None:
+    """The short door pass must still run if the full Tier S pass later times out."""
+    roster = LR.legs_in_order(DESK / "research" / "hourly_cycle.py")
+    assert roster.index("tier_s_door") < roster.index("intake_catchup")
+    assert roster.index("tier_s_door") < roster.index("tier_s")
+    assert "tier_s_door" in hourly_cycle.CORE_LEGS
+    assert "tier_s_door" in LR.ALWAYS_RUN
+    calls = []
+    monkeypatch.setattr(hourly_cycle, "_producer", lambda *args: calls.append(args) or
+                        {"status": "OK"})
+    assert hourly_cycle.tier_s_door() == {"status": "OK"}
+    assert calls == [("tier_s_door", "research/tier_s.py", "--only", "review,door")]
+
+
+def test_replication_writer_is_reached_by_core_before_its_live_consumer() -> None:
+    """A heavy-only writer left E8 withheld while hourly core remained alive."""
+    roster = LR.legs_in_order(DESK / "research" / "hourly_cycle.py")
+    assert roster.count("replication_civilization") == 1
+    assert roster.index("replication_civilization") < roster.index("tier_s_door")
+    assert roster.index("replication_civilization") < roster.index("intake_catchup")
+    assert hourly_cycle.in_plan("replication_civilization", "core")
+    assert not hourly_cycle.in_plan("replication_civilization", "dept:validate")
+    soft_h, hard_h = LR.DUE_BY_AGE_H["replication_civilization"]
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    assert hard_h < MAX_AGE_H, "rotation must never hand the door a stale replication verdict"
+
+
+def test_full_tier_s_is_due_by_age_inside_the_door_expiry() -> None:
+    """The full Tier S pass feeds the door's FDR and immune inputs (6h expiry), not an hourly one."""
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    assert "tier_s" not in LR.ALWAYS_RUN
+    soft_h, hard_h = LR.DUE_BY_AGE_H["tier_s"]
+    assert 0 < soft_h <= MAX_AGE_H / 2 and soft_h < hard_h < MAX_AGE_H
+    roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))
+    assert set(LR.DUE_BY_AGE_H) <= roster, "DUE_BY_AGE_H names a leg this cycle does not have"
+
+
+def test_a_due_leg_lands_inside_the_door_expiry_after_its_worst_start_and_runtime() -> None:
+    """Auditor MF2: forced at an age in [hard, hard + period), output one cap later."""
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    for leg, (_soft, hard) in LR.DUE_BY_AGE_H.items():
+        assert hourly_cycle.in_plan(leg, "core"), f"{leg}: the bound assumes the hourly core"
+        cap_h = hourly_cycle.LEG_BUDGET_SEC[leg] / 3600.0
+        assert hard + LR.CORE_PERIOD_H + cap_h < MAX_AGE_H, leg
+    assert not (set(LR.DUE_BY_AGE_H) & LR.ALWAYS_RUN)
+
+
 def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
     """The legs this whole exercise was about must be rotatable, by name."""
     roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))
@@ -112,3 +159,11 @@ def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
             "counterfactual_timeframes", "producer_census"}
     assert dark <= roster, f"not rostered: {sorted(dark - roster)}"
     assert dark <= set(hourly_cycle.CORE_LEGS), "these are core legs and must stay core"
+
+
+def test_cheap_money_and_health_fences_are_pinned():
+    """Cheap fences that gate money or health never wait behind the budget (overlay 27d)."""
+    import libs.ops.leg_rotation as LR
+    for leg in ("decay_monitor", "placement_interlock", "box_state_freshness", "desk_health",
+                "judge_alive"):
+        assert leg in LR.ALWAYS_RUN, leg
