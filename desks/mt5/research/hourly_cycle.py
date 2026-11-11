@@ -1208,6 +1208,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
     "timeframe_fanout",
+    # NOAA CPC forecast vintages: a bounded, polite text fetch (48 files a pass at most)
+    "noaa_forecasts",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1322,7 +1324,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "asia_plane", "futures_state", "noaa_forecasts", "archive_tape",
+                     "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -6110,6 +6113,13 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # WEATHER FORECAST REVISIONS (2026-11-11). Natgas, power and the grains move on how the
+    # forecast changes between issues. This keeps every NOAA CPC degree-day forecast issue once,
+    # stamped with its own issue time (append-only vintages), and writes the issue-to-issue
+    # revision as PIT lake series `noaa_<product>` that exogenous_conditioner cells can read.
+    # Public domain; robots.txt obeyed; 401/403/429/451 is a hard stop per host.
+    nfv = _costed("noaa_forecasts", lambda: _producer(
+        "noaa_forecasts", "research/noaa_forecast_vintage.py", "--once"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6545,6 +6555,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "futures_state": fst,
+                    "noaa_forecasts": nfv,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
