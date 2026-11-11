@@ -47,7 +47,11 @@ function Write-HealLedger([hashtable] $row) {
     try {
         $null = New-Item -ItemType Directory -Force -Path (Split-Path $HealLedger)
         Add-Content -LiteralPath $HealLedger -Value ($row | ConvertTo-Json -Compress -Depth 4) -Encoding utf8
-    } catch { }
+        return $true
+    } catch {
+        Log "selfheal: LEDGER APPEND FAILED ($($_.Exception.Message)); row: $($row | ConvertTo-Json -Compress -Depth 4)" | Out-Host
+        return $false
+    }
 }
 
 function Get-RevRootDigest([string] $rev) {
@@ -95,6 +99,7 @@ function Get-Sha([string] $path) { (Get-FileHash -LiteralPath $path -Algorithm S
 function Invoke-PinRelocation([string] $live) {
     $g = [ordered]@{}
     $row = @{ step = "pin"; guards = $g }
+    $kept = $null                                                                   # set once the stale pin is renamed
     try {
         $g.runner_admin = Test-RunnerIsAdmin                                       # (i)
         if (-not $g.runner_admin) { return "pin: runner is not SYSTEM/Administrators; nothing done" }
@@ -103,7 +108,7 @@ function Invoke-PinRelocation([string] $live) {
         if ((Test-Path -LiteralPath $RegistryPin) -and (Get-Sha $RegistryPin) -eq $src) {
             return "pin: registry pin already has the owner pin's bytes; nothing done"            # (h)
         }
-        if (-not $live) { $g.live_digest = "UNMEASURED"; Write-HealLedger $row; return "pin: LIVE's root digest UNMEASURED; NOT moved" }   # (d)(j)
+        if (-not $live) { $g.live_digest = "UNMEASURED"; $null = Write-HealLedger $row; return "pin: LIVE's root digest UNMEASURED; NOT moved" }   # (d)(j)
         if ((Read-PinDigest $RegistryPin) -eq $live) { return "pin: registry pin already holds LIVE's root; nothing done" }   # (h)
         $owner = Read-PinDigest $OwnerPin
         $g.digest_is_live = ($owner -eq $live)                                      # (a)
@@ -116,17 +121,16 @@ function Invoke-PinRelocation([string] $live) {
             $g.commit_in_live = ($LASTEXITCODE -eq 0)                               # (c)
         }
         if (-not ($g.digest_is_live -and $g.admin_only_write -and $g.commit_in_live)) {
-            Write-HealLedger $row
+            $null = Write-HealLedger $row
             return "pin: a guard failed ($(($g.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ', ')); NOT moved"
         }
-        $kept = $null
         if (Test-Path -LiteralPath $RegistryPin) {                                  # (f): stale, kept
             $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
-            $kept = "$RegistryPin.superseded-$stamp"
-            $row.superseded = $kept
             $row.superseded_sha256 = Get-Sha $RegistryPin
             $row.superseded_digest = Read-PinDigest $RegistryPin
             Rename-Item -LiteralPath $RegistryPin -NewName ("ROOT_PIN.json.superseded-" + $stamp)
+            $kept = "$RegistryPin.superseded-$stamp"
+            $row.superseded = $kept
         }
         Copy-Item -LiteralPath $OwnerPin -Destination $RegistryPin                  # (g): source stays
         & icacls $RegistryPin /inheritance:r /grant:r "*S-1-5-32-544:F" "*S-1-5-18:F" "*S-1-5-32-545:R" | Out-Null
@@ -135,13 +139,21 @@ function Invoke-PinRelocation([string] $live) {
         if (-not $row.equal) {                                                      # put the old pin back
             Remove-Item -LiteralPath $RegistryPin -Force -ErrorAction SilentlyContinue
             if ($kept) { Rename-Item -LiteralPath $kept -NewName "ROOT_PIN.json"; $row.restored = $kept }
-            Write-HealLedger $row
+            $null = Write-HealLedger $row
             return "pin: COPY MISMATCH ($src vs $($row.destination_sha256)); the superseded pin was restored"
         }
-        Write-HealLedger $row
+        $null = Write-HealLedger $row
         return "pin: MOVED the owner pin $($owner.Substring(0,12)) to $RegistryPin (byte copy, sha256 equal)"
     } catch {
-        $row.error = $_.Exception.Message; Write-HealLedger $row
+        $row.error = $_.Exception.Message
+        if ($kept -and (Test-Path -LiteralPath $kept)) {                            # a throw after the rename: put the old pin back
+            try {
+                if (Test-Path -LiteralPath $RegistryPin) { Remove-Item -LiteralPath $RegistryPin -Force }
+                Rename-Item -LiteralPath $kept -NewName "ROOT_PIN.json"
+                $row.restored = $kept
+            } catch { $row.restore_error = $_.Exception.Message }
+        }
+        $null = Write-HealLedger $row
         return "pin: UNMEASURED ($($_.Exception.Message)); NOT moved"               # (j)
     }
 }
@@ -176,13 +188,13 @@ function Invoke-GateCloneReset {
     if ($recent) {
         $paged = Get-Content -LiteralPath $HealLedger -Tail 200 | ForEach-Object { try { $_ | ConvertFrom-Json } catch { } } |
             Where-Object { $_.step -eq "gate" -and $_.action -eq "page" -and [datetime]$_.at -gt [datetime]$recent.at }
-        if (-not $paged) { Write-HealLedger @{ step = "gate"; action = "page"; failure_at = $at.ToString("o") } }
+        if (-not $paged) { $null = Write-HealLedger @{ step = "gate"; action = "page"; failure_at = $at.ToString("o") } }
         return "gate: PAGE: the clone jammed again within 24 h of the reset at $($recent.at); not resetting again"
     }
     $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
     Rename-Item -LiteralPath $clone -NewName ("gate-repo.failed-" + $stamp)
     if (Test-Path -LiteralPath $clone) { return "gate: jammed clone could NOT be renamed" }
-    Write-HealLedger @{ step = "gate"; action = "renamed"; to = "gate-repo.failed-$stamp"; failure_at = $at.ToString("o") }
+    $null = Write-HealLedger @{ step = "gate"; action = "renamed"; to = "gate-repo.failed-$stamp"; failure_at = $at.ToString("o") }
     return "gate: renamed the jammed clone to gate-repo.failed-$stamp; the next sweep re-clones"
 }
 
@@ -192,20 +204,26 @@ function Invoke-BinRefresh([string] $treeDigest) {
     if (-not $treeDigest) { return "bin: this tree's root digest UNMEASURED; nothing copied" }
     $pin = Read-PinDigest $RegistryPin
     if ($pin -ne $treeDigest) { return "bin: this tree's root is not the registry pin; nothing copied" }
-    $done = @()
+    $done = @(); $skipped = @()
     foreach ($name in @('unattended_boot.ps1', 'workflow_gate.ps1', 'sign_train_leg.ps1')) {
         $src = Join-Path $RepoRoot ("ops\box\" + $name)
         $dst = Join-Path $bin $name
         if (-not (Test-Path -LiteralPath $src)) { continue }
+        & git -C $RepoRoot diff --quiet HEAD -- ("ops/box/" + $name) 2>$null      # the digest is HEAD's: the file must be too
+        if ($LASTEXITCODE -ne 0) { $skipped += $name; continue }
         $before = if (Test-Path -LiteralPath $dst) { Get-Sha $dst } else { $null }
         if ($before -eq (Get-Sha $src)) { continue }
         Copy-Item -LiteralPath $src -Destination $dst -Force
         $done += [ordered]@{ name = $name; before_sha256 = $before; after_sha256 = (Get-Sha $dst) }
     }
+    if ($skipped) {
+        $null = Write-HealLedger @{ step = "bin"; action = "skipped_dirty"; files = $skipped; root = $treeDigest }
+    }
     if ($done) {
-        Write-HealLedger @{ step = "bin"; action = "refreshed"; files = $done; root = $treeDigest }
+        $null = Write-HealLedger @{ step = "bin"; action = "refreshed"; files = $done; root = $treeDigest }
         return "bin: refreshed $(($done | ForEach-Object { $_.name }) -join ', ') from the pinned tree"
     }
+    if ($skipped) { return "bin: $($skipped -join ', ') differ from HEAD in the working tree; NOT copied" }
     return "bin: copies already match the pinned tree"
 }
 

@@ -42,7 +42,7 @@ def test_the_pin_guards_follow_the_ruling() -> None:
     assert "Rename-Item -LiteralPath $RegistryPin" in body            # (f) a stale pin is kept
     assert "Remove-Item -LiteralPath $OwnerPin" not in body and "Move-Item" not in body  # (g)
     assert "Rename-Item -LiteralPath $kept" in body  # a mismatch restores the old pin
-    assert body.count("Write-HealLedger $row") >= 3                    # (h) every outcome recorded
+    assert body.count("Write-HealLedger $row") >= 4                    # (h) every outcome recorded
     assert "UNMEASURED" in body                                       # (j)
 
 
@@ -77,3 +77,25 @@ def test_no_step_can_stop_the_seal() -> None:
 
     # dot-sourced into the adopter: an exit statement here would end the adopter itself
     assert not re.search(r"(^|[;{}]\s*)exit\b", HEAL, flags=re.M | re.I)
+
+
+def test_a_throw_after_the_rename_puts_the_old_pin_back() -> None:
+    body = _body("Invoke-PinRelocation")
+    assert body.index("$kept = $null") < body.index("try {")          # hoisted: the catch can see it
+    catch = body.rindex("} catch {")
+    tail = body[catch:]
+    assert "Rename-Item -LiteralPath $kept" in tail and "$row.restored = $kept" in tail
+    assert tail.index("Remove-Item -LiteralPath $RegistryPin") < tail.index("Rename-Item -LiteralPath $kept")
+    # $kept is set only AFTER the rename succeeded, so a failed rename restores nothing
+    assert body.index('NewName ("ROOT_PIN.json.superseded-"') < body.index('$kept = "$RegistryPin.superseded-')
+
+
+def test_bin_copies_only_files_equal_to_head() -> None:
+    body = _body("Invoke-BinRefresh")
+    check = body.index("diff --quiet HEAD --")
+    assert check < body.index("Copy-Item") and "$skipped += $name; continue" in body
+
+
+def test_a_failed_ledger_append_is_said_not_swallowed() -> None:
+    body = _body("Write-HealLedger")
+    assert "LEDGER APPEND FAILED" in body and "return $false" in body and "catch { }" not in body
