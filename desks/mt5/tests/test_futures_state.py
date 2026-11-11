@@ -736,10 +736,15 @@ def test_bis_collect_one_request_per_area_caches_and_respects_the_refetch_gate(
         tmp_desk: Path) -> None:
     from datetime import UTC, datetime, timedelta
     (tmp_desk / "raw").mkdir()
+    import urllib.error
     months = pd.date_range("2000-01-01", periods=60, freq="MS", tz="UTC")
     calls: list[str] = []
+    robots: list[str] = []
 
     def get_text(url: str) -> str:
+        if url.endswith("robots.txt"):
+            robots.append(url)
+            raise urllib.error.HTTPError(url, 404, "nf", None, None)  # type: ignore[arg-type]
         calls.append(url)
         if "WS_CBPOL" in url:
             return _bis_rate_csv(url.split("M.")[1].split("?")[0], months)
@@ -754,6 +759,7 @@ def test_bis_collect_one_request_per_area_caches_and_respects_the_refetch_gate(
                      "https://bis.test/WS_LONG_CPI/M.GB+JP.628?startPeriod=2000-01"]
     assert sorted(out.columns) == ["BIS_CBPOL_GB", "BIS_CBPOL_JP", "BIS_CPI_GB", "BIS_CPI_JP"]
     assert notes == [] and state["bis_last_fetch"].startswith("2026-11-11T12")
+    assert robots == ["https://bis.test/robots.txt"]                   # read once for the host
     # Japan's last month repeats the one before: served blank, kept raw on disk.
     assert np.isnan(out["BIS_CPI_JP"].iloc[-1]) and not np.isnan(out["BIS_CPI_GB"].iloc[-1])
     assert pd.read_parquet(tmp_desk / "raw" / "bis_cpi.parquet")["JP"].notna().all()
@@ -780,6 +786,8 @@ def test_bis_collect_refuses_a_cut_reply_and_records_a_hard_stop(
     monkeypatch.setattr(fs, "BIS_MAX_CHARS", 3000)
 
     def big(url: str) -> str:
+        if url.endswith("robots.txt"):
+            return "User-agent: *\nAllow: /\n"
         return _bis_rate_csv("GB", months) if "WS_CBPOL" in url else "<html>busy</html>"
 
     notes: list[dict[str, Any]] = []
@@ -796,13 +804,43 @@ def test_bis_collect_refuses_a_cut_reply_and_records_a_hard_stop(
 
     state: dict[str, Any] = {}
     assert fs.bis_collect(_bis_src(["GB", "JP"]), refused, state, notes, now).empty
-    assert len(calls) == 1 and state["hard_stops"]["bis_stats"]["code"] == 403
+    assert calls == ["https://bis.test/robots.txt"]                    # refused at the first ask
+    assert state["hard_stops"]["bis_stats"]["code"] == 403
     assert "bis_last_fetch" not in state
     fs.bis_collect(_bis_src(["GB", "JP"]), refused, state, notes, now)
     assert len(calls) == 1                                             # a stop is not retried
     # Terms not OPEN: nothing is ever asked.
     fs.bis_collect({**_bis_src(["GB"]), "terms": "UNVERIFIED"}, refused, {}, notes, now)
     assert len(calls) == 1
+
+
+def test_bis_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
+    from datetime import UTC, datetime
+    import urllib.error
+    (tmp_desk / "raw").mkdir()
+    now = datetime(2026, 11, 11, 12, tzinfo=UTC)
+    calls: list[str] = []
+
+    def disallow(url: str) -> str:
+        calls.append(url)
+        return "User-agent: *\nDisallow: /WS_LONG_CPI\n"            # one table is enough
+
+    notes: list[dict[str, Any]] = []
+    out = fs.bis_collect(_bis_src(["GB", "JP"]), disallow, {}, notes, now)
+    assert calls == ["https://bis.test/robots.txt"] and out.empty
+    assert notes == [{"source": "bis_stats", "status": "UNMEASURED", "why": "robots disallows"}]
+    assert not (tmp_desk / "raw" / "bis_cbpol.parquet").exists()
+
+    # An unreadable robots.txt (anything but a 404) is never a yes.
+    calls.clear()
+
+    def broken(url: str) -> str:
+        calls.append(url)
+        raise urllib.error.HTTPError(url, 500, "err", None, None)  # type: ignore[arg-type]
+
+    assert fs.bis_collect(_bis_src(["GB", "JP"]), broken, {}, notes, now).empty
+    assert calls == ["https://bis.test/robots.txt"]
+    assert notes[-1]["why"] == "robots disallows"
 
 
 def test_shipped_bis_reaction_row_matches_its_source() -> None:

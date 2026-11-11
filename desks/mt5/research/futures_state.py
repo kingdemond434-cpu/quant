@@ -1049,7 +1049,8 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     One request per area for rates (each row repeats a long note, so areas are never batched)
     and one for all the price indices. The first read asks for history from `history_start`,
     later reads for the last two years, and what is held is kept under what is newly read.
-    Fetches at most every BIS_REFETCH_H hours; offline or stopped, it returns what is held."""
+    Fetches at most every BIS_REFETCH_H hours, and only what the host's robots.txt allows;
+    offline, stopped or disallowed, it returns what is held."""
     sid = str(src.get("id") or "bis_stats")
     now = now or datetime.now(UTC)
     paths = {"CBPOL": RAW / "bis_cbpol.parquet", "CPI": RAW / "bis_cpi.parquet"}
@@ -1069,6 +1070,24 @@ def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
                 for a in areas]
             jobs.append(("CPI", str(src["cpi_url"]).format(areas="+".join(areas),
                                                            start=start("CPI")), "628"))
+            # Open terms are not a robots yes: the host's robots.txt is read once per pass and
+            # every URL is asked of it before the first data request.
+            seen: dict[str, str | Exception] = {}
+
+            def robots_text(u: str) -> str:
+                if u not in seen:
+                    try:
+                        seen[u] = get_text(u)
+                    except (urllib.error.HTTPError, FetchError) as exc:
+                        seen[u] = exc
+                got_ = seen[u]
+                if isinstance(got_, Exception):
+                    raise got_
+                return got_
+
+            if not all(robots_allow(url, robots_text) for _k, url, _u in jobs):
+                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+                jobs = []
             for key, url, unit in jobs:
                 text = get_text(url)
                 if len(text) >= BIS_MAX_CHARS:
