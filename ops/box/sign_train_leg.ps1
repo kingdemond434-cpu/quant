@@ -26,8 +26,9 @@ param(
     [string] $Repo = "kingdemond434-cpu/quant",
     [string] $Live = "claude/llm-auto-upgrade-verify-gcjac3",
     [string] $Gh = "C:\Users\Administrator\tools\gh\bin\gh.exe",
-    # the desk's own interpreter: QB-002 runs under pytest
-    [string] $Python = "C:\opt\quant\.venv\Scripts\python.exe"
+    # the desk's own interpreter: QB-002 runs under pytest. Empty = resolve it below; the box has
+    # no C:\opt\quant\.venv (MR7 2026-11-11: the old hard default failed every 10-minute pass).
+    [string] $Python = ""
 )
 $ErrorActionPreference = 'Stop'
 $LogDir = Join-Path $Root "logs"
@@ -104,7 +105,21 @@ $mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
 if (Test-Path -LiteralPath $mergerEnv) { . $mergerEnv; $null = Use-MergerIdentity $Clone }
 
 try {
-    if (-not (Test-Path -LiteralPath $Python)) { throw "no desk Python at $Python" }
+    if (-not $Python) {
+        # Same order the box's other legs use: a venv if one is ever made, then the machine-wide
+        # install every box task is registered with, then the per-user install, then PATH.
+        foreach ($cand in @(
+            "C:\opt\quant\.venv\Scripts\python.exe",
+            "C:\Program Files\Python314\python.exe",
+            "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe"
+        )) { if (Test-Path -LiteralPath $cand) { $Python = $cand; break } }
+        if (-not $Python) {
+            $c = Get-Command python -ErrorAction SilentlyContinue
+            if ($c) { $Python = $c.Source }
+        }
+    }
+    if (-not $Python -or -not (Test-Path -LiteralPath $Python)) { throw "no desk Python found (venv, Program Files\Python314, per-user, PATH)" }
+    Say "python: $Python"
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
 
     # One sign at a time: an open sign-train PR is waited for, never stacked on. Every
