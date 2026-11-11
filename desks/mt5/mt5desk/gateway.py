@@ -4925,9 +4925,48 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     return float(mode), f"fixed lot {float(mode):.2f} from the sleeve row"
 
 
+def paused_snapshot() -> str:
+    """While halted, keep the ruin rail's view of the account current. READS ONLY.
+
+    THE DEFECT (measured 2026-11-11, scripts/check_halt_rail_integrity.py): `main` returned on a
+    halt before it connected, so `gateway_state.json` froze at the halt instant. The Fusion ruin
+    rail reads its whole view of the account out of that file, so for eleven days five of its
+    seven rails could not fire and the one that latched the halt re-read a dead equity figure.
+
+    So a paused pass still connects and refreshes exactly what the rail reads -- equity,
+    margin_free, the open positions and pending orders (`reconcile`, which only reads), and the
+    broker day's opening anchor -- and saves it. It places, modifies and closes nothing, sets no
+    latch and arms nothing; a refused connect or an unreadable account leaves the file as it was
+    and says so. Returns a one-line outcome for the log.
+    """
+    try:
+        if not connect():
+            return "no terminal; the rail's view stays as last saved"
+        acc = mt5.account_info()
+        if acc is None:
+            return "account unreadable; the rail's view stays as last saved"
+        st = load_state()
+        st["equity"] = round(float(acc.equity), 2)
+        st["margin_free"] = round(float(acc.margin_free), 2)
+        st = reconcile(st)
+        tick = mt5.symbol_info_tick("XAUUSD")
+        if tick is not None:
+            day_key = str(pd.Timestamp(tick.time, unit="s", tz="UTC").date())
+            anchor = st.get("day_start_equity")
+            if not (isinstance(anchor, dict) and anchor.get("date") == day_key):
+                st["day_start_equity"] = {"date": day_key, "equity": st["equity"]}
+        st["paused_snapshot_at"] = now()
+        save_state(st)
+        n = len(st.get("position") or [])
+        return f"rail view refreshed: equity {st['equity']}, {n} position(s)"
+    except Exception as exc:  # a read must never take the halted gateway down
+        return f"rail view NOT refreshed ({type(exc).__name__}: {exc})"
+
+
 def main() -> None:
     if gateway_paused():
-        log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
+        log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass; "
+            + paused_snapshot())
         return
     if not connect():
         return
@@ -4937,8 +4976,12 @@ def main() -> None:
         log("no tick; market likely closed")
         mt5.shutdown()
         return
-    equity = float(mt5.account_info().equity)
+    _acc_now = mt5.account_info()
+    equity = float(_acc_now.equity)
     st["equity"] = round(equity, 2)
+    # The ruin rail's MARGIN arm reads this key; until 2026-11-11 no writer carried it, so the
+    # rail read 0.0 and could never fire (scripts/check_halt_rail_integrity.py).
+    st["margin_free"] = round(float(getattr(_acc_now, "margin_free", 0.0) or 0.0), 2)
     from mt5desk.fusion_equity_reference import sizing_equity
 
     # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
