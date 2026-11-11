@@ -417,10 +417,10 @@ def join_names(paths: Iterable[Path]) -> tuple[dict[Path, str], dict[str, list[s
     paths = list(paths)
     unique, ambiguous = unique_by_stem(paths)
     # ONLY A KEYED LEDGER WITH A KNOWN OWNER MAY CARRY A STEM (Auditor M1). A legacy or unkeyed
-    # file is published under its own file label, so a shared file a migration could not move,
+    # file is published under its own file name (`ledger_<stem>`), so a shared file a migration could not move,
     # or a mirror's stale copy, never reaches a stem-joined consumer as one sleeve's record.
     owner = {p: s for s, p in unique.items() if is_keyed(p) and key_of(p)}
-    return {p: owner.get(p) or label_of(p) for p in paths}, ambiguous
+    return {p: owner.get(p) or key_of(p) or p.stem for p in paths}, ambiguous
 
 
 # ------------------------------------------------------------------------- the migration
