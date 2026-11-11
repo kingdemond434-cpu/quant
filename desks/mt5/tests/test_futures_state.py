@@ -614,3 +614,59 @@ def test_release_calendar_backfill_is_written_outside_the_donation_tree(tmp_desk
     assert {r["impact"] for r in rows} == {"High"} and rows[0]["currency"] == "USD"
     # the compiler reads every row under data/intelligence as a donation; this must not be there
     assert "intelligence" not in fs.CALENDAR_BACKFILL.parts
+
+
+def _monthly(start: str, n: int, vals: np.ndarray) -> pd.Series:
+    return pd.Series(vals, index=pd.date_range(start, periods=n, freq="MS", tz="UTC"))
+
+
+def test_reaction_residual_is_taylors_rule_and_strictly_causal() -> None:
+    n = 200
+    rng = np.random.default_rng(3)
+    px = _monthly("2005-01-01", n, 100 * np.cumprod(1 + rng.normal(0.002, 0.002, n)))
+    rate = _monthly("2005-01-01", n, 2.0 + np.cumsum(rng.normal(0, 0.1, n)))
+    u = _monthly("2005-01-01", n, 5.0 + np.cumsum(rng.normal(0, 0.05, n)))
+    f = fs.reaction_residual(rate, px, u, target=2.0)
+    t = f.index[-1]
+    infl = 100 * (px / px.shift(12) - 1)
+    real = (rate - infl).dropna()
+    rstar = real[real.index < t].iloc[-fs.RSTAR_MONTHS:].mean()          # prior months only
+    norm = u[u.index < t].iloc[-fs.UNORM_MONTHS:].mean()
+    rule = rstar + infl[t] + 0.5 * (infl[t] - 2.0) + 0.5 * (-2.0 * (u[t] - norm))
+    assert f.loc[t, "resid"] == pytest.approx(rate[t] - rule)
+    assert f.loc[t, "infl_gap"] == pytest.approx(infl[t] - 2.0)
+    # A higher policy rate today is a tighter bank today, one for one.
+    bumped = rate.copy()
+    bumped.iloc[-1] += 1.0
+    assert fs.reaction_residual(bumped, px, u).loc[t, "resid"] == pytest.approx(
+        f.loc[t, "resid"] + 1.0)
+    # Nothing later changes an earlier row.
+    cut = fs.reaction_residual(rate.iloc[:150], px.iloc[:150], u.iloc[:150])
+    pd.testing.assert_frame_equal(cut, f.loc[cut.index])
+    # No unemployment series: the rule is inflation-only, and still defined.
+    assert not fs.reaction_residual(rate, px).empty
+    # The first rows wait for a year of prices and RSTAR_MIN months of real rates.
+    assert f.index[0] >= px.index[12 + fs.RSTAR_MIN]
+
+
+def test_reaction_mode_makes_one_series_per_bank_and_the_shipped_row_is_sound() -> None:
+    import json
+    n = 120
+    idx = pd.date_range("2010-01-01", periods=n, freq="MS", tz="UTC")
+    yc = pd.DataFrame({"R": np.linspace(1, 4, n), "P": 100 * 1.002 ** np.arange(n),
+                       "U": np.linspace(6, 4, n)}, index=idx)
+    cv = {"id": "cb_reaction", "mode": "reaction", "window": 60, "banks": [
+        {"id": "fed", "rate": "R", "inflation": "P", "unemployment": "U", "targets": ["USDX"]},
+        {"id": "nope", "rate": "MISSING", "inflation": "P", "targets": ["EURUSD"]}]}
+    out = fs.fred_outputs(cv, yc)
+    assert [(o[0], o[3], o[4]) for o in out] == [
+        ("fred_cb_reaction_fed", ["USDX"], "fred_cb_reaction")]
+    assert {"resid", "resid_chg", "resid_pct", "real_rate", "infl_gap"} <= set(out[0][1].columns)
+    reg = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
+    row = next(r for r in reg["fred_sets"] if r["id"] == "cb_reaction")
+    # Stamped after the month's own releases: the month can run 31 days and its CPI or HICP
+    # prints by about the 20th of the next month.
+    assert row["avail_lag_days"] >= 51
+    need = {b[k] for b in row["banks"] for k in ("rate", "inflation", "unemployment") if k in b}
+    assert need == set(row["series"])
+    assert all(b["targets"] and b["target"] > 0 for b in row["banks"])

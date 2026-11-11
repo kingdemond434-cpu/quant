@@ -512,6 +512,7 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             charges elsewhere (GAP_MAP row 64). One series per pair, with that pair's targets.
     levels  each series alone, level and log change (reserves: the change is the intervention
             proxy), with the targets named for that series.
+    reaction  each central bank's distance from a Taylor rule (`reaction_residual`), monthly.
     """
     mode = str(cv.get("mode") or "curve")
     out: list[tuple[str, pd.DataFrame, pd.DatetimeIndex, list[str], str]] = []
@@ -544,7 +545,60 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             out.append((f"fred_{cv['id']}_{ser.lower()}",
                         dynamics(f, ["level", "log_chg"], window=int(cv.get("window", 60))),
                         pd.DatetimeIndex(v.index), list(targets), "fred_level"))
+    elif mode == "reaction":
+        for bk in cv.get("banks") or []:
+            if bk.get("rate") not in yc.columns or bk.get("inflation") not in yc.columns:
+                continue
+            u = yc[bk["unemployment"]] if bk.get("unemployment") in yc.columns else None
+            f = reaction_residual(yc[bk["rate"]], yc[bk["inflation"]], u,
+                                  target=float(bk.get("target", 2.0)))
+            if len(f) < MIN_ROWS:
+                continue
+            out.append((f"fred_{cv['id']}_{str(bk['id']).lower()}",
+                        dynamics(f, list(f.columns), window=int(cv.get("window", 60))),
+                        pd.DatetimeIndex(f.index), list(bk.get("targets") or []),
+                        "fred_cb_reaction"))
     return out
+
+
+#: Months of history the neutral real rate and the unemployment norm are averaged over, and the
+#: fewest months each needs. Both averages stop the month BEFORE the one they are used in.
+RSTAR_MONTHS, RSTAR_MIN = 120, 36
+UNORM_MONTHS, UNORM_MIN = 60, 24
+
+
+def reaction_residual(rate: pd.Series, price_index: pd.Series,
+                      unemployment: pd.Series | None = None, *, target: float = 2.0
+                      ) -> pd.DataFrame:
+    """A central bank's distance from a Taylor (1993) rule, monthly, strictly causal.
+
+        inflation  12-month % change of the price index
+        r*         the bank's own average real policy rate over the prior RSTAR_MONTHS
+        gap        -2 * (unemployment - its prior UNORM_MONTHS average)   (Okun; 0 when absent)
+        rule       r* + inflation + 0.5 * (inflation - target) + 0.5 * gap
+        resid      policy rate - rule: above zero the bank is TIGHTER than its own rule implies,
+                   below zero it is behind it
+
+    The coefficients are Taylor's, fixed, so nothing is fitted and nothing can be fitted to the
+    future. The residual is a QUESTION for the gauntlet (does a bank far behind its rule see
+    its currency weaken, or catch up?), not a forecast. Indexed by the month's first day; the
+    caller stamps availability after that month's releases.
+    """
+    r = pd.to_numeric(rate, errors="coerce").dropna().resample("MS").mean()
+    px = pd.to_numeric(price_index, errors="coerce").dropna().resample("MS").last()
+    infl = 100.0 * (px / px.shift(12) - 1.0)
+    f = pd.DataFrame({"rate": r, "infl": infl}).dropna()
+    real = f["rate"] - f["infl"]
+    rstar = real.rolling(RSTAR_MONTHS, min_periods=RSTAR_MIN).mean().shift(1)
+    gap = pd.Series(0.0, index=f.index)
+    if unemployment is not None:
+        u = pd.to_numeric(unemployment, errors="coerce").dropna().resample("MS").last()
+        norm = u.rolling(UNORM_MONTHS, min_periods=UNORM_MIN).mean().shift(1)
+        gap = (-2.0 * (u - norm)).reindex(f.index)
+    rule = rstar + f["infl"] + 0.5 * (f["infl"] - target) + 0.5 * gap
+    out = pd.DataFrame({"resid": f["rate"] - rule, "real_rate": real,
+                        "infl_gap": f["infl"] - target}, index=f.index)
+    return out.dropna(subset=["resid"])
 
 
 def fred_curve(curve: Mapping[str, Any], key: str, get: Callable[[str], Any]) -> pd.DataFrame:

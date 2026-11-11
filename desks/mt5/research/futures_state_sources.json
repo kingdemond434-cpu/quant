@@ -1454,6 +1454,49 @@
      "title": "JOLTS Job Openings"
     }
    ]
+  },
+  {
+   "id": "cb_reaction",
+   "mode": "reaction",
+   "avail_lag_days": 55,
+   "window": 120,
+   "note": "Central-bank reaction functions: each bank's policy rate minus a fixed-coefficient Taylor (1993) rule built from its own inflation, its own trailing average real rate and (where a series is held) its unemployment gap. Monthly, indexed by the month's first day and available 55 days later: after that month's CPI or HICP and labour releases. FRED serves the current vintage, so a seasonally revised index can differ slightly from the first print; the 12-month change keeps that small and the row says so instead of hiding it. Only banks whose series ids the desk already uses are listed. BoE, BoJ, SNB, BoC, RBA, RBNZ, Banxico, SARB and CBRT are a named gap until their CPI and unemployment ids are read from the FRED catalogue on the box: an id is never guessed.",
+   "series": [
+    "DFF",
+    "CPIAUCSL",
+    "UNRATE",
+    "ECBDFR",
+    "CP0000EZ19M086NEST"
+   ],
+   "banks": [
+    {
+     "id": "fed",
+     "rate": "DFF",
+     "inflation": "CPIAUCSL",
+     "unemployment": "UNRATE",
+     "target": 2.0,
+     "targets": [
+      "USDX",
+      "EURUSD",
+      "USDJPY",
+      "XAUUSD",
+      "UST10Y",
+      "US500"
+     ]
+    },
+    {
+     "id": "ecb",
+     "rate": "ECBDFR",
+     "inflation": "CP0000EZ19M086NEST",
+     "target": 2.0,
+     "targets": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURCHF"
+     ]
+    }
+   ]
   }
  ],
  "cftc_release_calendar": {
