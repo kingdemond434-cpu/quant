@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import ast
 import importlib
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+DESK = Path(__file__).resolve().parents[1]
+ROOT = DESK.parents[1]
+for _p in (str(ROOT), str(DESK)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 def test_a_pinned_family_row_names_the_judges_chart() -> None:
