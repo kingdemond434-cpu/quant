@@ -207,7 +207,7 @@ def test_an_engine_whose_pit_ok_admits_untimed_rows_fails_if02(tmp_path: Path) -
     _pit_root(tmp_path)
     src = (tmp_path / IA.ENGINE).read_text("utf-8")
     (tmp_path / IA.ENGINE).write_text(
-        src.replace("if df is None or timing_unmeasured(row):", "if df is None:"), "utf-8")
+        src.replace("            or timing_unmeasured(row)):", "            or False):"), "utf-8")
     got = IA.if02_pit(tmp_path, NOW)
     assert got["verdict"] == "FAIL" and any("UNMEASURED" in v for v in got["violations"])
 
