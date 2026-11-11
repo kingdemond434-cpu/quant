@@ -161,7 +161,9 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                    " london_close_momentum",
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
-    "macro_release macro market": "macro_conditional macro_gold_yield",
+    # `macro_fair_value` (2026-11-11) trades a scheduled macro print's fair value (net liquidity,
+    # a policy-rate differential, a terms-of-trade basket): the scheduled repricer pays.
+    "macro_release macro market": "macro_conditional macro_gold_yield macro_fair_value",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",

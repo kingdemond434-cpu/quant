@@ -1724,6 +1724,20 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
+# MACRO FAIR VALUE (2026-11-11): three fair values one family -- US net liquidity (FRED axis),
+# the BIS policy-rate differential per pair, and a commodity currency's terms of trade against its
+# basket in the desk's own bars -- named on the recipe as `basis` (and `symbol`). The family loads
+# its own axis or peer bars, so every caller rebuilds the same cell from the same identity, and an
+# absent input raises the named `MacroFairValueUnavailable` (a TypeError) through the builder.
+from mt5desk.family_macro_fair_value import family_macro_fair_value  # noqa: E402
+
+ORTHOGONAL_FAMILIES["macro_fair_value"] = family_macro_fair_value
+FAMILY_INPUTS["macro_fair_value"] = ("one macro fair value (basis on the recipe): FRED net "
+                                     "liquidity, a BIS rate differential (symbol), or a "
+                                     "terms-of-trade basket's bars, resolved by the family itself",
+                                     "data/axes/fred.json, data/axes/bis.json, "
+                                     "data/universe/*_H1.parquet")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
