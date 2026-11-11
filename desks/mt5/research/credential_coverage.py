@@ -27,6 +27,7 @@ placeholder values only).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import platform
@@ -268,8 +269,24 @@ def main(argv: list[str] | None = None) -> int:
     if a.markdown:
         Path(a.markdown).parent.mkdir(parents=True, exist_ok=True)
         Path(a.markdown).write_text(markdown(doc), "utf-8")
+    # KEYS_NEEDED.json (principal 2026-10-06: an alert whenever a key is needed). Derived from
+    # the report just written plus the keyed and Asia legs' own; names and links only.
+    # Never fails the leg: CREDENTIAL_COVERAGE.json is already written above.
+    try:
+        from libs.ops import keys_needed
+        need = keys_needed.build()
+        keys_needed.write(need)
+        needed = f"{need['n']} key(s) needed"
+    except Exception as exc:
+        needed = f"KEYS_NEEDED UNMEASURED ({type(exc).__name__})"
+        # A stub, never the last good list: the daily alert must not read stale content.
+        with contextlib.suppress(Exception):
+            from libs.ops import keys_needed
+            keys_needed.write({"generated_at": doc["generated_at"], "status": "UNMEASURED",
+                               "why": f"{type(exc).__name__} building the list", "n": None,
+                               "digest": "UNMEASURED", "items": []})
     print(f"credential_coverage: {doc['status_counts']}; {len(doc['name_mismatches'])} name "
-          "mismatches")
+          f"mismatches; {needed}")
     return 0
 
 

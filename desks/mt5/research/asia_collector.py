@@ -496,7 +496,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # A KEYED ROW NEVER HANDS ITS CREDENTIAL TO ANOTHER HOST: urllib copies headers to a
     # cross-host redirect target, so the bearer / declared key header is dropped there.
     from libs.data.keyed_sources import keyed_opener, scrub_body
-    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else ())
+    opener = (keyed_opener(_TLS, (hname,) if place == "header" and hname else (), (_key,))
               if _key else None)
     try:
         with (opener.open(req, timeout=timeout) if opener else
@@ -505,6 +505,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
+            cenc = str(r.headers.get("Content-Encoding") or "")
             body = r.read(MAX_BYTES)
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
@@ -530,7 +531,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         rec.update({"status": "UNMEASURED", "why": _why(e, _key)})
         return rec
     if _key:
-        body = scrub_body(body, (_key,))
+        body = scrub_body(body, (_key,), cenc)
 
     rec.update({"http": status, "content_type": ctype, "bytes": len(body)})
     accept = _ACCEPT.get(expect, ())

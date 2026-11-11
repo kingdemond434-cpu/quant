@@ -73,8 +73,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.data import credentials as cred  # noqa: E402
-from libs.ops.env_keys import read_key  # noqa: E402
 from libs.data import keyed_sources as ks  # noqa: E402
+from libs.ops.env_keys import read_key  # noqa: E402
 
 #: The leg's own artifact (the component registry and runtime attestation read this binding).
 REPORT = DESK / "reports" / "KEYED_SOURCES.json"
@@ -228,8 +228,9 @@ def http(req: ks.Request) -> bytes:
                                headers={"User-Agent": "quant-desk-keyed-sources/1.0",
                                         "Accept": "application/json", **req.headers})
     # The builders' headers carry the credential (a bearer, a key header): never to another host.
-    with ks.keyed_opener(_tls(), req.headers).open(r, timeout=TIMEOUT) as resp:
-        return bytes(resp.read(MAX_BYTES))
+    with ks.keyed_opener(_tls(), req.headers, req.secrets).open(r, timeout=TIMEOUT) as resp:
+        body = bytes(resp.read(MAX_BYTES))
+        return ks.scrub_body(body, req.secrets, str(resp.headers.get("Content-Encoding") or ""))
 
 
 Getter = Callable[[ks.Request], bytes]
@@ -325,6 +326,7 @@ def fetch_generic(row: Mapping[str, Any], keys: Mapping[str, str], get: Getter,
         try:
             # Scrubbed BEFORE anything reads it: EIA v2 echoes `api_key` in `request.params`,
             # and the 160-byte error excerpt below would otherwise cut a key before redacting it.
+            req.secrets = tuple(v for v in keys.values() if v)
             body = ks.scrub_body(get(req), keys.values())
         except Exception as exc:
             empty.append(f"{req.part or kind}: {type(exc).__name__}: {exc}")
