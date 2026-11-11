@@ -30,8 +30,9 @@ import numpy as np
 
 #: Trailing window (observations) each indicator is measured on.
 WINDOW = 60
-#: Number of trailing window ends the Kendall trend is read over.
-TREND_WINDOWS = 60
+#: Number of trailing window ends the Kendall trend is read over (180: at 60 the shuffled-null
+#: tau is too wide for a real AR(1) approach to clear it; measured in the tests).
+TREND_WINDOWS = 180
 #: Below this many returns the instrument is UNMEASURED, never CALM.
 MIN_OBS = WINDOW + TREND_WINDOWS
 #: |tau| at or above this is a trend worth naming (Dakos et al. report 0.3-0.7 before transitions).
