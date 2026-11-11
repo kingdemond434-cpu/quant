@@ -118,6 +118,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
     "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
                            "hourly venue-listed, positive-risk certified sleeve selection"),
+    # Department leg of MT5-Hourly. Writes its report every pass, drift or none.
+    "MT5-Hourly (feed schema watch)": (
+        "desks/mt5/reports/FEED_SCHEMA_WATCH.json", 1560,
+        "schema drift in the lake series and parser drift in the free-stack feeds, each with a "
+        "repair ticket; an LLM may propose a parser change, nothing applies it"),
     "MT5-HourlyCore (replication)": (
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "

@@ -188,3 +188,9 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 | `docs/MANDATE_COVERAGE.md` | **TERMINAL** | The disposition map of the consolidation — which annex went where, verified zero-regression at consolidation time. It records one decision at one moment; a later re-consolidation produces a NEW map, never an edit to this one. | never |
 | `docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md` | **DOCTRINE** | Principal standing mandate for the DeepSeek donation-only flywheel (RESEARCH §5 codifies its authority limits: donates findings, refused promotion/allocation/policy/code-merge authority in code). Changes by principal decision only. | never |
 | `docs/research/MOAT_NODE_SPEC.md` | **DOCTRINE** | Standing spec for moat recorder nodes (what a node must record, stamp and replicate). Implementation changes ship as code against the spec; the spec itself moves only by decision. | never |
+
+### Added 2026-11-11 (secret-sauce stack note, classified on arrival)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/research/SECRET_SAUCE_STACK.md` | **TERMINAL** | Records, at one moment, where each item of the 2026-09-30 secret-sauce backlog row stands (file:line, clock, artifact) and the design for the two items with no free build (first-party dataset, agentic procurement). It has no producer and no cadence. The live state of each organ is in its own report (`FREE_STACK_YIELD.json`, `ALFRED_VINTAGES.json`, `PATENT_FILINGS.json`, `FEED_SCHEMA_WATCH.json`). It is superseded by a NAMED CONDITION: when either design item is built, the PR that builds it supersedes the relevant section by name. | never |
