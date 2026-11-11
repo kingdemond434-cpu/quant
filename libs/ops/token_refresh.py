@@ -83,6 +83,8 @@ OK = "OK"
 BLOCKED_ON_KEY = "BLOCKED_ON_KEY"
 REFRESH_FAILED = "REFRESH_FAILED"
 BLOCKED_ON_TERMS = "BLOCKED_ON_TERMS"
+#: The mint endpoint's robots.txt is not read (libs.data.robots_shim, fail closed until #831).
+REFUSED_ROBOTS_UNREAD = "REFUSED_ROBOTS_UNREAD"
 
 #: The status a consumer RECORDS for a token result (see `collector_status`).
 UNCONFIGURED = "UNCONFIGURED"
@@ -394,7 +396,8 @@ def collector_status(res: TokenResult) -> str:
     if res.ok:
         return OK
     return {BLOCKED_ON_KEY: UNCONFIGURED, REFRESH_FAILED: BLOCKED_AUTH,
-            BLOCKED_ON_TERMS: BLOCKED_ON_TERMS}.get(res.status, BLOCKED_AUTH)
+            BLOCKED_ON_TERMS: BLOCKED_ON_TERMS,
+            REFUSED_ROBOTS_UNREAD: REFUSED_ROBOTS_UNREAD}.get(res.status, BLOCKED_AUTH)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -672,6 +675,10 @@ def _mint_myfxbook(e: Mapping[str, str], cached: dict[str, Any], now: float,
     return {"token": urllib.parse.unquote(tok), "expires_at": now + 25 * 86400}
 
 
+#: The endpoint each minter calls, asked of the robots shim before any credential is sent.
+MINT_URLS: dict[str, str] = {"jquants": f"{JQUANTS_BASE}/v1/token/auth_refresh",
+                             "cdse": CDSE_ENDPOINT, "myfxbook": MYFXBOOK_LOGIN_URL}
+
 _MINTERS: dict[str, Callable[[Mapping[str, str], dict[str, Any], float, float],
                              dict[str, Any]]] = {
     "jquants": _mint_jquants, "cdse": _mint_cdse, "myfxbook": _mint_myfxbook}
@@ -747,6 +754,16 @@ def _get_token(env: str, e: Mapping[str, str], timeout: float, now: float) -> To
                       + " or ".join("+".join(g) for g in p.long_envs))
             _record(p, BLOCKED_ON_KEY, None, detail)
             return TokenResult(BLOCKED_ON_KEY, env, apply=p.apply, detail=detail)
+        # ROBOTS FAIL CLOSED BEFORE A LOGIN (audit hold on #251): a mint is a request to the
+        # provider's host; until the desk's robots gate (#831) reads that host's robots.txt and
+        # answers ALLOWED, no credential is sent and nothing is requested at all.
+        from libs.data import robots_shim
+        mint_url = MINT_URLS[p.name]
+        if not robots_shim.robots_allows(mint_url):
+            refused = robots_shim.refuse("token_refresh", mint_url, p.name)
+            _record(p, REFUSED_ROBOTS_UNREAD, None, str(refused["why"])[:300])
+            return TokenResult(REFUSED_ROBOTS_UNREAD, env, apply=p.apply,
+                               detail=str(refused["why"])[:300])
         try:
             doc = _MINTERS[p.name](e, cached, now, timeout)
         except _MintError as m:

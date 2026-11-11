@@ -4579,6 +4579,14 @@ SUBSTITUTE_SEARCH: dict[str, tuple[tuple[str, str, str], ...]] = {
 }
 
 
+#: Plane rows whose robots.txt was NOT read (MOF: recorded "not readable"; HKMA: no reading
+#: cited). Their live fetch goes through libs.data.robots_shim and fails closed until the desk's
+#: robots gate (#831) reads it; fixtures and stored vintages are unaffected.
+ROBOTS_UNREAD_SOURCES: frozenset[str] = frozenset({
+    "jp_mof_securities_weekly", "jp_mof_securities_investor_bonds", "jp_mof_fx_intervention",
+    "hk_hkma_interbank_liquidity", "hk_hkma_hibor_fixing", "hk_hkma_monetary_base"})
+
+
 #: The paid-substitute engine (#152) reads Asia-thread rows from
 #: data/paid_data_substitutes_*.json; this is that file (regenerate with --write-rosters).
 ENGINE_ROWS_FILE = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
@@ -5633,6 +5641,16 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     reqs = requests_for(src, now, sst)
+    if fetch and fixtures is None and src.id in ROBOTS_UNREAD_SOURCES:
+        # ROBOTS FAIL CLOSED for the plane rows whose robots.txt was never read (audit hold on
+        # #251): every request asks libs.data.robots_shim first; absent the desk's robots gate
+        # (#831) the answer is no, and nothing -- not even robots.txt -- is requested.
+        from libs.data import robots_shim
+        refused = next((r.url for r in reqs if not robots_shim.robots_allows(r.url)), None)
+        if refused is not None:
+            rec.update(robots_shim.refuse("alt_proxies", refused, src.id, now))
+            rec["store_rows"] = len(store)
+            return rec
     parsed = fetched = 0
     errors: list[str] = []
     for i, req in enumerate(reqs):

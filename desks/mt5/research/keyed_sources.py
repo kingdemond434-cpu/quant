@@ -353,6 +353,24 @@ def collect(row: Mapping[str, Any], *, get: Getter, now: datetime, paths: Paths,
         raise Blocked("BLOCKED_TERMS:machine_use_allowed is not true")
     keys = resolve_keys(row, environ)
     kind = str(row["kind"])
+    # ROBOTS FAIL CLOSED ON EVERY KEYED REQUEST (audit hold on #251): each request -- and the
+    # Telegram session's host -- asks libs.data.robots_shim first; absent the desk's robots gate
+    # (#831) the answer is no and nothing is requested, robots.txt included.
+    from libs.data import robots_shim
+    if kind == "telegram" and not robots_shim.robots_allows(str(row.get("url") or "")):
+        robots_shim.refuse("keyed_sources", str(row.get("url") or ""), str(row.get("id") or ""),
+                           now)
+        raise Blocked(robots_shim.REFUSED_ROBOTS_UNREAD)
+    raw_get = get
+
+    def gated(req: ks.Request) -> bytes:
+        if not robots_shim.robots_allows(req.url):
+            robots_shim.refuse("keyed_sources", req.url, str(row.get("id") or ""), now)
+            raise Blocked(robots_shim.REFUSED_ROBOTS_UNREAD)
+        return raw_get(req)
+
+    get = gated
+
     try:
         if kind == "estat":
             return fetch_estat(row, keys, get)

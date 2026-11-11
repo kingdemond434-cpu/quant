@@ -289,3 +289,11 @@ def _account_key_in_tmp(_account_key_file: Path, monkeypatch: pytest.MonkeyPatch
     test gets a throwaway key instead. A test about the absent key points the env elsewhere."""
     from libs.ops import provenance as _acct_prov
     monkeypatch.setenv(_acct_prov.KEY_ENV, str(_account_key_file))
+
+
+@pytest.fixture(autouse=True)
+def _robots_refusals_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """libs.data.robots_shim appends a missed-growth line per refusal; under test it lands in
+    tmp, never in the checkout's desks/mt5/data."""
+    monkeypatch.setattr("libs.data.robots_shim.MISSED_GROWTH",
+                        tmp_path / "robots_refused_missed_growth.jsonl")

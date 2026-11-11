@@ -508,9 +508,14 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         # credential is UNCONFIGURED, a refresh the provider refused is BLOCKED_AUTH, and a
         # provider whose terms are not confirmed is BLOCKED_ON_TERMS (no credential was sent).
         st = _token_refresh.collector_status(tok)
+        # token_refresh scrubs every detail it builds; scrubbed AGAIN here because this record
+        # is written to a tracked report (defence in depth, audit hold on #251).
+        detail = _token_refresh.scrub(str(tok.detail or ""))
         rec.update({"status": st, "key_env": key_env, "token_status": tok.status,
-                    "token_http": tok.http, "token_detail": tok.detail,
-                    "why": (tok.detail or st)})
+                    "token_http": tok.http, "token_detail": detail,
+                    "why": (detail or st)})
+        if st == _token_refresh.REFUSED_ROBOTS_UNREAD:
+            rec["requests"] = 0
         return rec
     if access == "key" and tok is None and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
@@ -518,6 +523,16 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"is not set. A named state, never a failure and never a silent "
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
+
+    # A KEYED OR TOKEN FETCH FAILS CLOSED ON AN UNREAD ROBOTS.TXT (audit hold on #251): these
+    # paths are new with the Asia planes, and until the desk's robots gate (#831) reads the
+    # host's robots.txt and answers ALLOWED no credential is sent and nothing is requested --
+    # robots.txt included. Public rows keep the reading-as-label below unchanged.
+    if tok is not None or _is_keyed(src):
+        from libs.data import robots_shim
+        if not robots_shim.robots_allows(url):
+            rec.update(robots_shim.refuse("asia_collector", url, sid))
+            return rec
 
     # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
     # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch

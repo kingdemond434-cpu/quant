@@ -421,3 +421,10 @@ def _gold_oco_world(_cross_account_books_in_tmp: Path, _account_key_in_tmp: None
                                                                          f"conftest-{lane}")
         gold_oco.publish_lane(lane, key, positions=[], orders=[], date="2026-01-01")
     return _cross_account_books_in_tmp
+
+
+@pytest.fixture(autouse=True)
+def _robots_refusals_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """libs.data.robots_shim's refusal ledger lands in tmp under test, never in the checkout."""
+    monkeypatch.setattr("libs.data.robots_shim.MISSED_GROWTH",
+                        tmp_path / "robots_refused_missed_growth.jsonl")
