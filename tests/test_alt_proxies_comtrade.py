@@ -1,14 +1,18 @@
 """alt_proxies, source `un_comtrade_hk_gold`: the UN Comtrade partner-side mirror of Hong Kong's
 HS 7108 (gold) trade -- mainland China (156) and Switzerland (757) imports from and exports to
-Hong Kong (344), monthly, read from the keyless public preview route.
+Hong Kong (344), monthly, read from the keyless public preview route -- and its sibling
+`un_comtrade_sa_gold`, Saudi Arabia's (682) own HS 7108 trade with the World (0).
 
-The fixture `tests/fixtures/alt_proxies/un_comtrade_hk_gold.json` is SYNTHETIC (it says so in its
-own `_fixture` key): every value is invented. UN Comtrade data is internal-use-only, so no real
-row is ever committed to this public repository.
+The fixtures `tests/fixtures/alt_proxies/un_comtrade_{hk,sa}_gold.json` are SYNTHETIC (each says
+so in its own `_fixture` key): every value is invented. UN Comtrade data is internal-use-only, so
+no real row is ever committed to this public repository.
 """
 from __future__ import annotations
 
+import fnmatch
 import json
+import shutil
+import subprocess
 import sys
 import urllib.parse
 from dataclasses import replace
@@ -29,6 +33,8 @@ from research import alt_proxies as A  # noqa: E402
 FIX = ROOT / "tests" / "fixtures" / "alt_proxies"
 BODY = (FIX / "un_comtrade_hk_gold.json").read_bytes()
 SID = "un_comtrade_hk_gold"
+SA = "un_comtrade_sa_gold"
+SA_BODY = (FIX / "un_comtrade_sa_gold.json").read_bytes()
 NOW = datetime(2026, 11, 11, 6, tzinfo=UTC)
 
 
@@ -258,3 +264,176 @@ def test_comtrade_values_never_reach_the_public_repository() -> None:
     assert "desks/mt5/data/alt_proxies/obs/un_comtrade_*" in gi
     assert "desks/mt5/data/axes/alt_un_comtrade_*" in gi
     assert "lake/" in gi
+    # every Comtrade source's own paths, Saudi Arabia's included, fall under those lines
+    assert set(A.COMTRADE_SPECS) == {SID, SA}
+    owned = [p for sid in A.COMTRADE_SPECS for p in (
+        f"desks/mt5/data/alt_proxies/obs/{sid}.json", f"desks/mt5/data/axes/alt_{sid}.json",
+        f"desks/mt5/data/lake/vault/alt_{sid}/x.json",
+        f"desks/mt5/data/lake/series/alt_{sid}__x.csv")]
+    for p in owned:
+        assert p.startswith("desks/mt5/data/lake/") or any(
+            fnmatch.fnmatch(p, pat) for pat in ("desks/mt5/data/alt_proxies/obs/un_comtrade_*",
+                                                "desks/mt5/data/axes/alt_un_comtrade_*")), p
+    git = shutil.which("git")
+    if git is not None and (ROOT / ".git").exists():
+        res = subprocess.run([git, "check-ignore", "--no-index", *owned], cwd=ROOT,
+                             capture_output=True, text=True, check=False)
+        assert res.returncode == 0 and set(res.stdout.split()) == set(owned), res.stdout
+
+
+# ============================================================================ Saudi Arabia
+def test_sa_fixture_is_labelled_synthetic() -> None:
+    assert json.loads(SA_BODY)["_fixture"].startswith("SYNTHETIC")
+    assert "Every row and value is invented" in json.loads(SA_BODY)["_fixture"]
+
+
+def test_sa_parser_reads_the_world_total_per_flow_and_drops_breakdowns() -> None:
+    got = _by(A.parse_comtrade_sa_gold(SA_BODY, A.Ctx()))
+    sep, aug = date(2024, 9, 30), date(2024, 8, 31)
+    assert got[("comtrade_sa_imp_gold_usd", sep)] == 1250000000.0
+    assert got[("comtrade_sa_imp_gold_kg", sep)] == pytest.approx(16400.0)
+    assert got[("comtrade_sa_exp_gold_usd", sep)] == 420000000.0
+    assert got[("comtrade_sa_exp_gold_kg", sep)] == pytest.approx(5300.0)
+    assert got[("comtrade_sa_exp_gold_usd", aug)] == 310000000.0
+    assert ("comtrade_sa_exp_gold_kg", aug) not in got              # netWgt null: no kg point
+    # the transport, per-country and customs breakdown rows and the silver row are skipped
+    assert len(got) == 7
+    assert {s for s, _ in got} <= set(A.BY_ID[SA].signal_series)
+    # the two specs never read each other's rows
+    assert A.parse_comtrade_hk_gold(SA_BODY, A.Ctx()) == []
+    assert A.parse_comtrade_sa_gold(BODY, A.Ctx()) == []
+
+
+@pytest.mark.parametrize("body", [
+    b"not json", b"<html>maintenance</html>", b"[]", b"{}", b'{"data": null}',
+    b'{"data": [1, "a", null]}', b'{"statusCode": 404, "message": "Resource not found"}'])
+def test_sa_parser_emits_nothing_on_garbage(body: bytes) -> None:
+    assert A.parse_comtrade_sa_gold(body, A.Ctx()) == []
+
+
+def test_sa_parser_keeps_only_the_partner_world_aggregate() -> None:
+    good = json.loads(SA_BODY)["data"][0]
+    assert A.parse_comtrade_sa_gold(json.dumps({"data": [good]}).encode(), A.Ctx())
+    bad = [{**good, "partnerCode": 344}, {**good, "partnerCode": 784},
+           {**good, "partner2Code": 784}, {**good, "motCode": 2100},
+           {**good, "customsCode": "C01"}, {**good, "reporterCode": 156},
+           {**good, "cmdCode": "7106"}, {**good, "flowCode": "RM"},
+           {**good, "freqCode": "A"}, {**good, "period": "202400"},
+           {**good, "primaryValue": "garbage", "netWgt": 0}]
+    assert A.parse_comtrade_sa_gold(json.dumps({"data": bad}).encode(), A.Ctx()) == []
+    dup = json.dumps({"data": [good, {**good, "primaryValue": 1.0}]}).encode()
+    assert ("comtrade_sa_imp_gold_usd", date(2024, 9, 30)) not in _by(
+        A.parse_comtrade_sa_gold(dup, A.Ctx()))
+
+
+def test_sa_net_import_is_imports_minus_exports_only_where_both_flows_are_held() -> None:
+    src = A.BY_ID[SA]
+    store: dict[str, Any] = {}
+    A.merge_vintages(store, src, A.parse_comtrade_sa_gold(SA_BODY, A.Ctx()), NOW)
+    net = _by(A.comtrade_net_obs(store, A.COMTRADE_SA))
+    sep, aug = date(2024, 9, 30), date(2024, 8, 31)
+    assert net[("comtrade_sa_net_imp_gold_usd", sep)] == 1250000000.0 - 420000000.0
+    assert net[("comtrade_sa_net_imp_gold_kg", sep)] == pytest.approx(16400.0 - 5300.0)
+    assert net[("comtrade_sa_net_imp_gold_usd", aug)] == 980000000.0 - 310000000.0
+    assert ("comtrade_sa_net_imp_gold_kg", aug) not in net          # export kg missing
+    assert len(net) == 3
+    # one flow alone writes no net
+    only_imp = {k: v for k, v in store.items() if "_imp_gold_" in k}
+    assert A.comtrade_net_obs(only_imp, A.COMTRADE_SA) == []
+    # the Hong Kong derivation never reads Saudi rows
+    assert A.comtrade_net_obs(store) == []
+
+
+def test_sa_urls_ask_reporter_682_against_the_world_four_calls_a_pass() -> None:
+    src = A.BY_ID[SA]
+    st: dict[str, Any] = {}
+    reqs = A.requests_for(src, NOW, st)
+    assert len(reqs) == 4                                  # 2 flows x (recent + backfill)
+    seen = set()
+    for r in reqs:
+        base, q = r.url.split("?")
+        assert base == "https://comtradeapi.un.org/public/v1/preview/C/M/HS"
+        qs = urllib.parse.parse_qs(q)
+        assert qs["reporterCode"] == ["682"] and qs["partnerCode"] == ["0"]
+        assert qs["cmdCode"] == ["7108"] and qs["flowCode"][0] in ("M", "X")
+        assert "key" not in qs and "subscription" not in r.url.lower()
+        seen.add((qs["flowCode"][0], qs["period"][0]))
+    assert len(seen) == 4
+    recent = urllib.parse.parse_qs(reqs[0].url.split("?")[1])["period"][0].split(",")
+    assert recent[0] == "202610" and len(recent) == A.COMTRADE_RECENT_MONTHS
+    assert st["backfill_to_next"] == "2025-10-01"
+    assert A.comtrade_url(682, "X", ["202409"], partner=0).endswith(
+        "?reporterCode=682&partnerCode=0&cmdCode=7108&flowCode=X&period=202409")
+    # its own 20h clock: gated by its own last_attempt, never by Hong Kong's
+    assert A.requests_for(src, NOW, {"last_attempt": (NOW - timedelta(hours=3)).isoformat()}) \
+        == []
+    due = {"last_attempt": (NOW - timedelta(hours=A.COMTRADE_MIN_GAP_H + 1)).isoformat()}
+    assert len(A.requests_for(src, NOW, due)) == 4
+    assert (8 + 4) * (24 // A.COMTRADE_MIN_GAP_H + 1) < A.COMTRADE_MAX_CALLS_PER_DAY
+
+
+def test_sa_collect_runs_on_its_own_clock_and_paces_after_hong_kong(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sleeps: list[float] = []
+    monkeypatch.setattr(A, "_sleep", sleeps.append)
+    monkeypatch.setattr(A, "_comtrade_last", None)
+    paths = A.Paths(tmp_path / "desk")
+    calls: list[str] = []
+
+    def getter(url: str) -> tuple[bytes, str]:
+        calls.append(url)
+        return (SA_BODY if "reporterCode=682" in url else BODY), "application/json"
+
+    state: dict[str, Any] = {}
+    A.collect(paths, A.BY_ID[SID], state, NOW, fetch=True, fixtures=None, deadline=1e18,
+              getter=getter)
+    sleeps.clear()
+    rec = A.collect(paths, A.BY_ID[SA], state, NOW, fetch=True, fixtures=None, deadline=1e18,
+                    getter=getter)
+    # four calls, every one paced -- the first too, straight after Hong Kong's last call
+    assert len(calls) == 12 and sleeps == [A.COMTRADE_MIN_INTERVAL_S] * 4
+    sst = state["sources"][SA]
+    assert rec["errors"] == [] and sst["backfill_to"] == "2025-10-01"
+    assert sst["last_attempt"] == NOW.isoformat(timespec="seconds")
+    store = json.loads((paths.obs_dir / f"{SA}.json").read_text("utf-8"))
+    assert "comtrade_sa_net_imp_gold_usd|2024-09-30" in store
+    assert not any(k.startswith("comtrade_cn_") for k in store)
+
+
+def test_sa_release_rule_terms_and_attribution_are_hong_kongs() -> None:
+    src, hk = A.BY_ID[SA], A.BY_ID[SID]
+    assert src.rule is A.rule_comtrade_monthly is hk.rule
+    assert src.rule(date(2024, 9, 30)) == datetime(2024, 12, 30, tzinfo=UTC)
+    assert A.TERMS[SA] == A.TERMS[SID] and A.TERMS[SA][0] == src.terms == "confirmed"
+    assert A.TERMS_EVIDENCE[SA] is A.TERMS_EVIDENCE[SID]           # one shared record
+    assert A.credit_of(SA) == "Source: UN Comtrade."
+    row = {r["id"]: r for r in A.roster_rows()}[SA]
+    assert row["credit"] == "Source: UN Comtrade." and row["terms"] == "confirmed"
+    assert row["auth"] == "none" and src.key_env is None
+    assert "INTERNAL USE ONLY" in src.licence and "Source: UN Comtrade" in src.licence
+    # the note says why this is the route: GASTAT's own is robots-disallowed
+    assert "robots-disallowed" in src.note and "sa_gastat_gold_terms_2026-11-11.md" in src.note
+
+
+def test_sa_instruments_sign_imports_for_and_exports_against_gold() -> None:
+    src = A.BY_ID[SA]
+    assert src.instruments == {"XAUUSD": 1}
+    assert src.instruments_for("comtrade_sa_imp_gold_usd") == {"XAUUSD": 1}
+    assert src.instruments_for("comtrade_sa_net_imp_gold_kg") == {"XAUUSD": 1}
+    assert src.instruments_for("comtrade_sa_exp_gold_usd") == {"XAUUSD": -1}
+    assert src.instruments_for("comtrade_sa_exp_gold_kg") == {"XAUUSD": -1}
+    assert src.vintage == "current" and src.cadence == "monthly"
+
+
+def test_sa_fails_closed_when_its_terms_are_not_confirmed(tmp_path: Path) -> None:
+    blocked = replace(A.BY_ID[SA], terms="to_confirm")
+    assert A.status_of(blocked, {}) == "BLOCKED_ON_TERMS:to_confirm"
+
+    def boom(url: str) -> tuple[bytes, str]:
+        raise AssertionError(f"fetched {url}")
+
+    paths = A.Paths(tmp_path / "desk")
+    for fixtures in (None, FIX):
+        rec = A.collect(paths, blocked, {}, NOW, fetch=True, fixtures=fixtures, deadline=1e18,
+                        getter=boom)
+        assert rec["requests"] == 0 and rec["status"] == "BLOCKED_ON_TERMS:to_confirm"

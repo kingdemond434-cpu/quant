@@ -346,7 +346,7 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
 
 
 #: Terms reviews read on a later date than the 2026-09-30 sweep.
-CHECKED_AT = {"un_comtrade_hk_gold": "2026-11-11"}
+CHECKED_AT = {"un_comtrade_hk_gold": "2026-11-11", "un_comtrade_sa_gold": "2026-11-11"}
 
 
 def test_reviewed_terms_carry_evidence() -> None:
