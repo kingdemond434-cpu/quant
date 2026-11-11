@@ -80,10 +80,20 @@ DAILY_LOSS_PCT = 0.10
 #: The book's worst measured 3-leg drawdown is -33.7R; at the realised risk this account runs,
 #: that is a ~40%+ equity drawdown INSIDE NORMAL BEHAVIOUR. A 30% floor would therefore halt the
 #: desk permanently during a drawdown it was built to survive -- guaranteeing it never compounds
-#: back out. The floor is instead placed where the account stops being able to trade its own
-#: policy: PROMOTED_MIN_EQUITY (EUR 300), the desk's own "cannot size properly below this" line.
-#: Below that the venue's 0.01 lot minimum dictates risk and the policy is fiction.
-EQUITY_FLOOR_EUR = 300.0
+#: back out. The floor is placed where the account stops being able to trade its own policy.
+#:
+#: EUR 10, THE PRINCIPAL'S NUMBER (zuck 2026-11-05 16:10:57Z, cmsg_012XFUfE12Rvggnu86fDb8prW6c
+#: JtjkyJHtsW3hyt6SyCB: "lower the Fusion equity floor to EUR 10"). It was EUR 300 --
+#: PROMOTED_MIN_EQUITY, from before allocator sovereignty, when below it the 0.01-lot minimum
+#: dictated risk. Every Fusion order is now judged on its own size: sovereignty sends nothing
+#: below the venue minimum, the gateway refuses any order risking more than
+#: FUSION_MAX_TRADE_RISK_FRAC (10%) and stops for the day at FUSION_DAILY_LOSS_FRAC, so the
+#: account-wide halt at 300 only stopped orders those rails allow (it halted Fusion at EUR 266).
+#: DERIVED as the ruin line: the equity below which not even the cheapest admitted order fits
+#: the 10% per-trade rail -- measured on the live ledger 2026-11-05, the cheapest admitted
+#: sleeve's 0.01-lot stop risk is EUR 0.58 (usdnok_carry, n=6); 0.58 / 0.10 = EUR 5.8, rounded
+#: up to EUR 10. Every other rail here and in the gateway is unchanged.
+EQUITY_FLOOR_EUR = 10.0
 
 #: Must exceed the daily cap or it is decoration: ~2 maximum bad days.
 WEEKLY_LOSS_PCT = 0.20
