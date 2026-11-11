@@ -521,11 +521,6 @@ NODES: tuple[Node, ...] = (
     # EARNINGS BREADTH (2026-11-11): cached SEC 8-K 2.02 filings x the reporters' share-CFD bars
     # -> screened `earnings_breadth` cells on the US index CFDs, donated into the intake the
     # compiler merges. Its report is the reach and park state for a person.
-    # The EDGAR cell (run hourly by sandbox_runner --allow-network) caches the full-text hits it
-    # fetched; with no User-Agent configured it fetches nothing and the cache stays absent, which
-    # the proposer reports as earnings_breadth_absent.
-    Node("edgar_transmission", "desks/mt5/research/sandboxes/edgar_transmission.py",
-         writes=("desks/mt5/data/edgar_cache/",)),
     Node("earnings_breadth_proposer","desks/mt5/research/earnings_breadth_proposer.py",
          reads=("desks/mt5/data/edgar_cache/", "desks/mt5/data/universe/"),
          writes=("desks/mt5/reports/EARNINGS_BREADTH_PROPOSER.json",
@@ -1217,6 +1212,11 @@ CONFIG_INPUTS = frozenset({
     "desks/mt5/data/universe/universe.json",
     # Box-produced inputs: acquire_datasets fills this from the prospector's targets.
     "desks/mt5/data/acquired/",
+    # Box-produced: the EDGAR sandbox cell (research/sandboxes/edgar_transmission.py, run by the
+    # hourly sandbox_runner leg with --allow-network, which is not itself a graph node) caches
+    # the 8-K/10-K/10-Q hits it fetched here. With no User-Agent configured it fetches nothing,
+    # the directory stays absent, and earnings_breadth_proposer parks earnings_breadth_absent.
+    "desks/mt5/data/edgar_cache/",
     # Hand-written doctrine the research memory ingests as method and failure memories.
     "docs/graveyard.md", "docs/research/search_operator_library.md", "docs/GROWTH_GOVERNANCE.md",
 })
