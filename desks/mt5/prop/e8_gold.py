@@ -1584,14 +1584,21 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # and Fusion's deadman stamp does too; E8 published neither, so a desk-wide "is it flat?"
     # could not be answered from files (box read FU1). These are the venue's own answers this
     # pass, as COUNTS only (no ids, sizes or prices), and None -- never 0 -- when unread.
-    orders_ok = "orders_unreadable" not in doc
+    # FLAT MEANS EVERY SYMBOL (audit should-fix): the pass's own order read is gold-only, so the
+    # whole account's resting orders are read once more here, read-only, for the count alone.
+    try:
+        all_orders: list[dict] | None = list(venue.orders() or [])
+    except Exception as exc:
+        all_orders = None
+        doc["all_orders_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
     doc["book"] = {
         "at": now.isoformat(timespec="seconds"),
         "open_positions": len(venue_positions or []) if positions_ok else None,
         "gold_positions": len(xau_positions) if positions_ok else None,
-        "gold_open_orders": len(open_orders) if orders_ok else None,
-        "flat": (not venue_positions and not open_orders) if positions_ok and orders_ok
-                else None,
+        "open_orders": None if all_orders is None else len(all_orders),
+        "gold_open_orders": len(open_orders) if "orders_unreadable" not in doc else None,
+        "flat": (not venue_positions and not all_orders)
+                if positions_ok and all_orders is not None else None,
     }
 
     # -------------------------------------------------------------- dropped legs
