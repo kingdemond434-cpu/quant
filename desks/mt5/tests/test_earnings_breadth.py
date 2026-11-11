@@ -55,7 +55,7 @@ def _reporter(file_day: pd.Timestamp, r: float) -> pd.DataFrame:
 
 def _book(n_per_day: int = PER_DAY, skip: frozenset[tuple[int, int]] = frozenset()):
     """Ordinary days: 8..12 of 20 reporters up by 1%, the rest down 1% (bounded, so no ordinary
-    day reaches 3 sigma); POS_DAY all up 3%, NEG_DAY all down 3%."""
+    day reaches 3 sigma); POS_DAY all up 3%, NEG_DAY all down 6%."""
     filings, frames, tmap = [], {}, {}
     for k, day in enumerate(FILE_DAYS):
         n_pos = 10 + ((k * 7) % 5 - 2)
@@ -65,7 +65,7 @@ def _book(n_per_day: int = PER_DAY, skip: frozenset[tuple[int, int]] = frozenset
             if day == POS_DAY:
                 r = 0.03
             elif day == NEG_DAY:
-                r = -0.03
+                r = -0.06
             else:
                 r = 0.01 if i < n_pos else -0.01
             sym, tick = f"S{k}_{i}", f"T{k}X{i}"
