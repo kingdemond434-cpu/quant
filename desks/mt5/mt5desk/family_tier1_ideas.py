@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -157,7 +158,7 @@ def family_intraday_momentum(
     atr = _atr(df, atr_n)
     out: list[Signal] = []
     dates = sorted(sess)
-    for prev, day in zip(dates[:-1], dates[1:], strict=False):
+    for prev, day in pairwise(dates):
         f, e = first_end.get(day), last_start.get(day)
         o, c = sess[day]
         if f is None or e is None or not (o <= f < e - 1 < e <= c):
@@ -215,7 +216,7 @@ def family_overnight_day_tug(
     atr = _atr(df, atr_n)
     out: list[Signal] = []
     dates = sorted(sess)
-    for prev, day in zip(dates[:-1], dates[1:], strict=False):
+    for prev, day in pairwise(dates):
         o, c = sess[day]
         night, dayleg, a = opn[o] - close[sess[prev][1]], close[c] - opn[o], atr[c]
         if not (np.isfinite(a) and a > 0) or night * dayleg >= 0:
@@ -346,9 +347,10 @@ def family_weekend_crypto_gap(
     log return from its last bar at or before the target's Friday close to its last bar that
     ENDS by the target's Monday open, in units of the standard deviation of the previous
     `vol_weekends` weekend moves (weekend crypto trades thinner than the week, so a weekday scale
-    would read every weekend as quiet). Decided on the target's first Monday bar, filled at the next open, so
-    the gap itself is never claimed. `require_gap_disagree` keeps only weekends where the
-    target's reopen gap has the opposite sign to the driver's move (the part not yet priced).
+    would read every weekend as quiet). Decided on the target's first Monday bar, filled at the
+    next open, so the gap itself is never claimed. `require_gap_disagree` keeps only weekends
+    where the target's reopen gap has the opposite sign to the driver's move (the part not yet
+    priced).
     """
     del side
     flip = DIRECTIONS.get(str(direction))

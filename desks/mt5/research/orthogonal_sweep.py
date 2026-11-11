@@ -512,7 +512,8 @@ NOT_SOURCED_HERE = {
                 "search over pairs",
     "intraday_momentum": "the session and window grid is charged once by tier1_idea_proposer (U1)",
     "overnight_day_tug": "the session and side grid is charged once by tier1_idea_proposer (U2)",
-    "implied_realised_gap": "the implied series and band grid is charged once by tier1_idea_proposer (U3)",
+    "implied_realised_gap": "the implied series and band grid is charged once by "
+                            "tier1_idea_proposer (U3)",
     "weekend_crypto_gap": "the driver and side grid is charged once by tier1_idea_proposer (U4)",
     "equity_gap_breadth": "the breadth grid is charged once by tier1_idea_proposer (U5)",
     "holiday_drift": "the venue calendar and leg grid is charged once by tier1_idea_proposer (N1)",

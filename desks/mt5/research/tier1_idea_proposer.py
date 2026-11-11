@@ -46,6 +46,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from mt5desk import family_tier1_ideas as t1  # noqa: E402
+
 from research import proposer_common as pc  # noqa: E402
 
 SOURCE = "tier1_ideas"
@@ -206,7 +207,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
                 rec["tested"] += 1
                 try:
                     sig = fn(d, **params)
-                except Exception as exc:                               # noqa: BLE001
+                except Exception as exc:
                     rec["parked"][sym] = f"family raised {type(exc).__name__}: {exc}"[:200]
                     break
                 sc = pc.screen(d, sig, cost, unfillable)
@@ -228,7 +229,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
                                     "cost_frac", "t_gross", "t_deflated_sweep",
                                     "n_tests_sweep")},
     ) for r in proposals]
-    for idea_id, rec in per_idea.items():
+    for rec in per_idea.values():
         rec["status"] = ("PARKED" if rec["targets"] and len(rec["parked"]) == rec["targets"]
                          else "RAN")
     doc = {"generated_at": now.isoformat(), "swept_at": now.isoformat(), "status": "SWEPT",

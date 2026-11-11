@@ -17,6 +17,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from mt5desk import family_tier1_ideas as t1  # noqa: E402
+
 from research import exchange_holidays as eh  # noqa: E402
 from research import tier1_idea_proposer as tp  # noqa: E402
 
@@ -37,6 +38,7 @@ def _bars(days: int = 400, seed: int = 3, weekends: bool = False,
 
 def test_all_six_are_registered_and_charged_once() -> None:
     from mt5desk import families_orthogonal as fo
+
     from research import orthogonal_sweep as osw
 
     for name, fn in t1.TIER1_IDEA_FAMILIES.items():
@@ -125,7 +127,7 @@ def test_equity_gap_breadth_counts_big_gaps_and_trades_the_index_at_the_open() -
     panel = {f"N{i}": _bars(days=200, seed=100 + i) for i in range(30)}
     idx = panel["N0"].index
     sess = t1.session_bars(idx, "America/New_York", "09:30", "16:00")
-    day, (o, _c) = sorted(sess.items())[100]
+    _day, (o, _c) = sorted(sess.items())[100]
     for frame in panel.values():                             # a broad gap-up morning
         frame.iloc[o:, :] *= 1.05
     b = t1.gap_breadth(panel, "America/New_York", "09:30", "16:00", gap_sd=2.0, vol_days=20,
