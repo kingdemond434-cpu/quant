@@ -117,6 +117,12 @@ ROI_EVIDENCE = BASE / "data" / "roi_capital_evidence.json"
 POSTERIOR_ALPHA = BASE / "reports" / "POSTERIOR_ALPHA.json"
 EXPOSURE_DECOMPOSITION = BASE / "reports" / "EXPOSURE_DECOMPOSITION.json"
 CACHE = BASE / "data" / "pf_allocator_cache"
+#: THE ADMISSION SCAN, WRITTEN OUTSIDE THE BOOK'S LOCK (idea 604, 2026-11-11). The heavy pass
+#: publishes the book under the shared lock and runs its candidate scan afterwards under its own
+#: lock, writing the result here; every later pass carries the newest scan it finds.
+ADMISSION_SCAN = CACHE / "admission_scan.json"
+#: What the deferred scan needs from the pass that published the book (same process).
+_SCAN_CONTEXT: dict[str, Any] = {}
 ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"
 #: Append-only record of what each pass EXPECTED. Read by `allocator_attribution.py`.
 FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"
@@ -3675,10 +3681,27 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
     return digest.hexdigest()
 
 
-def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
-    """One allocator pass. Returns the artifact it wrote."""
+def newest_scan(prev: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
+    """The newer of the artifact's last admission block and the deferred scan file (by
+    `measured_utc`); an unreadable file is ignored."""
+    try:
+        doc = json.loads((path or ADMISSION_SCAN).read_text("utf-8"))
+    except (OSError, ValueError):
+        return prev
+    if not isinstance(doc, dict) or doc.get("status") != "MEASURED":
+        return prev
+    newer = str(doc.get("measured_utc") or "") > str(prev.get("measured_utc") or "")
+    return doc if newer else prev
+
+
+def run(mode: str = "normal", *, seed: int = 0,
+        scan_inline: bool = True) -> dict[str, Any]:
+    """One allocator pass. Returns the artifact it wrote. `scan_inline=False` (the heavy clock
+    since idea 604) publishes the book with the carried scan and leaves the context for
+    `deferred_scan` to run after the book's lock is released."""
     t0 = time.time()
     heavy = mode == "heavy"
+    _SCAN_CONTEXT.clear()
     daily, forward = build_evidence(force=heavy)
     live = live_days_by_sleeve()
     certified, cert_acct = certified_evidence()
@@ -4498,7 +4521,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # Cash is a valid incumbent. The scanner already compares an empty book with
     # each candidate under the same cap; skipping it strands the first admission
     # and keeps carrying an old measurement even on the heavy clock.
-    if heavy:
+    prev_admission = newest_scan(prev_admission)
+    if heavy and not scan_inline:
+        _SCAN_CONTEXT.update(ev=ev, worlds=worlds, cfg=cfg, funded=dict(funded),
+                             bounds=dict(adm_bounds), total_heat=book.total_heat,
+                             order=free.marginal, prev=prev_admission, seed=int(seed))
+    if heavy and scan_inline:
         admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
                                        total_heat=book.total_heat, order=free.marginal,
                                        # Whatever the last scan could not finish goes first, and
@@ -5237,13 +5265,37 @@ def _clear_stand_down(mode: str) -> None:
         _log(f"stand-down NOT cleared ({type(exc).__name__}: {exc})")
 
 
+def deferred_scan(path: Path | None = None) -> dict[str, Any] | None:
+    """THE HEAVY PASS'S CANDIDATE SCAN, AFTER THE BOOK IS PUBLISHED (idea 604). Runs on the
+    context the publishing pass left, writes `ADMISSION_SCAN` atomically, and returns the doc;
+    None when there is no context. The next pass of any clock carries it (`newest_scan`)."""
+    c = dict(_SCAN_CONTEXT)
+    if not c:
+        return None
+    prev = c["prev"]
+    doc = marginal_admission(c["ev"], c["worlds"], c["cfg"], incumbent=c["funded"],
+                             bounds=c["bounds"], total_heat=c["total_heat"], order=c["order"],
+                             prefer=set(prev.get("unscored") or {}), warm=prev.get("warm") or {},
+                             explore_seed=c["seed"] + int(datetime.now(UTC).strftime("%Y%m%d")))
+    out = path or ADMISSION_SCAN
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(doc, default=str), encoding="utf-8")
+    os.replace(tmp, out)
+    _log(f"deferred admission scan: {doc.get('status')} -- {doc.get('n_admitted', 0)}/"
+         f"{doc.get('priced', 0)} admitted, {doc.get('elapsed_s', 0)}s; carried by the next pass")
+    return doc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mode", choices=("fast", "normal", "heavy"), default="normal")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
-    # ONE LOCK ACROSS ALL THREE CLOCKS, not one per mode. The clocks overlap by design -- a heavy
+    # ONE BOOK LOCK ACROSS ALL THREE CLOCKS, not one per mode -- held by the heavy clock only
+    # while it PUBLISHES; its candidate scan runs afterwards under `pf_allocator_scan` (idea 604).
+    # One lock across all three clocks, not one per mode. The clocks overlap by design -- a heavy
     # pass takes ~5 minutes and the fast clock fires every 5 -- and three allocators resident at
     # once is ~750 MB on a box with ~700 MB free. A fast pass while a heavy pass is running has
     # nothing to add anyway: it would re-solve the same evidence at lower fidelity and overwrite
@@ -5294,7 +5346,10 @@ def main() -> int:
             # with a heartbeating pass is not that, and stays 0).
             return rc
         try:
-            run(args.mode, seed=args.seed)
+            # THE HEAVY CLOCK PUBLISHES FIRST AND SCANS AFTER (idea 604, 2026-11-11): the scan
+            # held this lock ~50 min to 2 h, every 15-minute fast pass stood down behind it and
+            # the live book aged past its 90-minute contract (123 min measured 05:36Z).
+            run(args.mode, seed=args.seed, scan_inline=args.mode != "heavy")
         except Exception as exc:
             # A crash here must never read as "no allocation was needed" (L1.28a). The artifact
             # keeps its last good content and the failure is loud and non-zero.
@@ -5303,6 +5358,20 @@ def main() -> int:
             raise
         _clear_stand_down(args.mode)
         _book_generation(args.mode)
+    if args.mode == "heavy" and _SCAN_CONTEXT:
+        # ITS OWN LOCK: one scan at a time, and never the book's lock, so the fast clock keeps
+        # publishing while it runs. A failed scan leaves the last one standing and is logged.
+        with exclusive_job("pf_allocator_scan", need_mb=0,
+                           heartbeat_stale_s=LOCK_HEARTBEAT_STALE_S) as go:
+            if go:
+                try:
+                    deferred_scan()
+                except Exception as exc:
+                    _log(f"deferred admission scan FAILED: {type(exc).__name__}: {exc}; the "
+                         f"last scan stands")
+            else:
+                _log("deferred admission scan: another scan holds its lock; skipped")
+        _SCAN_CONTEXT.clear()
     return 0
 
 
