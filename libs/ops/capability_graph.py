@@ -556,9 +556,19 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/deep_forest_sources.json",
                 "desks/mt5/data/deep_forest_claims.jsonl",
                 "desks/mt5/data/deep_forest_seen.json", "desks/mt5/data/universe/universe.json",
-                "desks/mt5/data/hypotheses/deepening_worked.jsonl"),
+                "desks/mt5/data/hypotheses/deepening_worked.jsonl",
+                # THE CULTURE GAP LIST AIMS THE MINER (2026-11-11, audit of #605):
+                # deep_forest_miner.py:743 `culture_gaps()` calls
+                # cell_culture_index.gap_cultures (cell_culture_index.py:940), which reads
+                # `SUMMARY` = reports/CELL_CULTURE.json (:73), and `schedule` works those grounds
+                # first inside each bucket (deep_forest_miner.py:788).
+                "desks/mt5/reports/CELL_CULTURE.json"),
          writes=("desks/mt5/reports/DEEP_FOREST.json", "desks/mt5/data/deep_forest_claims.jsonl",
                  "desks/mt5/data/deep_forest_seen.json",
+                 # the per-vector attempt/success/row counters `_record_vector_stats` keeps
+                 # beside the seen-ledger (deep_forest_miner.py:147, :2154, :2166); region_yield
+                 # reads them as the `rows` stage of its funnel
+                 "desks/mt5/data/deep_forest_vector_stats.json",
                  "desks/mt5/data/intelligence/world/frontier.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json")),
     Node("revival_engine", "desks/mt5/research/revival_engine.py",
@@ -860,6 +870,30 @@ NODES: tuple[Node, ...] = (
     # ROWS 72/75 (2026-11-03). The forcer writes the breadth mandate (it had no node, so
     # `completion` read it UNDECLARED and nothing judged its staleness); the region yield report
     # and the liveness fence that turns RED when either artifact stops moving.
+    # THE JUDGE'S COVERAGE TABLE (2026-11-11, audit of #605). Hourly leg `judge_coverage`
+    # (hourly_cycle.py:4849, budget :2300); it publishes `REPORT` = reports/JUDGE_COVERAGE.json
+    # (judge_coverage.py:108) from the docket `DOCKET` (:104) and the canon `GATES_REPORT`
+    # (:1396). It had no node, so the forcer's read of its family census below read as
+    # DEAD_CONSUMER although a clocked organ writes it every hour. Only the edges this audit
+    # verified are declared; its banks and ledgers are left to the UNDECLARED count.
+    Node("judge_coverage", "desks/mt5/research/judge_coverage.py",
+         reads=("desks/mt5/data/hypotheses/external_survivors.json",
+                "desks/mt5/reports/universal_gates_external.json"),
+         writes=("desks/mt5/reports/JUDGE_COVERAGE.json",),
+         # Its table orders and censuses the judge's own docket; it reaches a decision through
+         # the cells the forcer mints from it into the compiler's intake, so it is priced
+         # there, as cell_emitter and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
+    # THE CULTURE INDEX (2026-11-11, audit of #605). Hourly leg `cell_culture_index`
+    # (hourly_cycle.py:5378, budget :2280); it publishes `SUMMARY` = reports/CELL_CULTURE.json
+    # (cell_culture_index.py:73) from the graph, the docket, the canon and the registry
+    # (:66-70). Its decision edge is the miner's ground order (deep_forest_miner reads it above).
+    Node("cell_culture_index", "desks/mt5/research/cell_culture_index.py",
+         reads=("desks/mt5/data/hypothesis_graph.jsonl",
+                "desks/mt5/data/hypotheses/external_survivors.json",
+                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "data/alpha_registry.sqlite",
+                "desks/mt5/data/universe/universe.json"),
+         writes=("desks/mt5/reports/CELL_CULTURE.json",)),
     Node("empty_cluster_forcer", "desks/mt5/research/empty_cluster_forcer.py",
          reads=("desks/mt5/reports/JUDGE_COVERAGE.json",
                 "desks/mt5/reports/EFFECTIVE_BREADTH.json",
@@ -880,7 +914,10 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/REGION_YIELD.json",),
          freshness_s={"desks/mt5/reports/REGION_YIELD.json": 3 * 3600}),
     Node("leg_artifact_liveness", "scripts/check_leg_artifact_liveness.py",
+         # every artifact in its CONTRACTS table (check_leg_artifact_liveness.py:47-53), whose
+         # own stamp it reads; EMPTY_CLUSTER_FORCER.json is contracted at :50
          reads=("desks/mt5/reports/BREADTH_MANDATE.json",
+                "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
                 "desks/mt5/reports/REGION_YIELD.json", "desks/mt5/data/sync_marker.json"),
          writes=("desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json",)),
     Node("exogenous_search", "desks/mt5/research/unknown_unknowns.py",
@@ -955,6 +992,13 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # THE REGION YIELD REPORT and THE LIVENESS FENCE'S TABLE (rows 72/75, audited 2026-11-11):
+    # grepped, no organ decides on either. REGION_YIELD ranks regions by funnel gap for a
+    # person; its only other reader is the liveness fence, which reads its stamp. The fence's
+    # own alarm is its EXIT CODE (2/3, check_leg_artifact_liveness.py:21-22), which
+    # check_silent_organs pages on; LEG_ARTIFACT_LIVENESS.json is the evidence a person reads
+    # beside the page. When an organ steers on region gaps, declare it and drop these.
+    "desks/mt5/reports/REGION_YIELD.json", "desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json",
     # The SRB basket judgement: no organ reads it yet (no basket is promotable from it -- the
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
