@@ -27,7 +27,7 @@ def test_the_heal_runs_before_the_release_gate_so_a_held_pass_still_heals() -> N
 def test_the_clone_is_removed_only_on_three_clone_failures_with_the_mutex_free() -> None:
     assert "[int]$beat.rc -eq 1" in HEAL and "$fails.Count -eq 3" in HEAL
     assert "-match $cloneFail }).Count -eq 3" in HEAL
-    assert 'Global\\QuantBox-WorkflowGate' in HEAL and "WaitOne(0)" in HEAL
+    assert "Global\\QuantBox-WorkflowGate" in HEAL and "WaitOne(0)" in HEAL
     assert "ReparsePoint" in HEAL
     # it removes the clone and nothing else
     removes = [ln for ln in HEAL.splitlines() if "Remove-Item" in ln]
@@ -35,14 +35,18 @@ def test_the_clone_is_removed_only_on_three_clone_failures_with_the_mutex_free()
 
 
 def test_the_installed_gate_follows_only_the_sealed_heads_committed_bytes() -> None:
-    assert '"show", "HEAD:$relPath"' in REFRESH and 'relPath = "ops/box/workflow_gate.ps1"' in REFRESH
-    assert "$new -ne $old" in REFRESH and "Move-Item -LiteralPath $tmpOut -Destination $dst" in REFRESH
+    assert '"show", "HEAD:$relPath"' in REFRESH
+    assert 'relPath = "ops/box/workflow_gate.ps1"' in REFRESH
+    assert "$new -ne $old" in REFRESH
+    assert "Move-Item -LiteralPath $tmpOut -Destination $dst" in REFRESH
     # only the PROTECTED gate script; the other bin scripts stay owner-installed
-    assert "unattended_boot.ps1" not in REFRESH.split("'''")[0].replace("The other two", "")
+    code = [ln for ln in REFRESH.splitlines() if not ln.lstrip().startswith("#")]
+    assert not any("unattended_boot" in ln or "sign_train" in ln for ln in code)
     assert PS.index("pure seal commit") < PS.index("3a. THE MERGE GATE'S INSTALLED COPY")
 
 
 def test_the_gate_script_it_copies_is_protected() -> None:
     gate = (ROOT / ".github/scripts/audit_gate.py").read_text(encoding="utf-8")
-    prot = gate[gate.index("PROTECTED = (") : gate.index(")  # fmt: skip")]
+    start = gate.index("\nPROTECTED = (")
+    prot = gate[start : gate.index("\n)", start)]
     assert '"ops/box/workflow_gate.ps1"' in prot
