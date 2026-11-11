@@ -209,6 +209,75 @@ def test_an_UNAVAILABLE_head_checkout_is_REPORTED_never_silently_ignored(tmp_pat
     assert "UNAVAILABLE" in subject and "UNCOMMITTED" in subject
 
 
+def _sparse_caller(tmp_path: Path) -> tuple[Path, Path]:
+    """A repo plus a SPARSE linked worktree (cone on dir a, per-worktree config), dirty."""
+    repo, wt = tmp_path / "repo", tmp_path / "caller"
+    repo.mkdir()
+    (repo / "a").mkdir()
+    (repo / "b").mkdir()
+    _git_repo(repo, {"a/x.txt": "x", "b/y.txt": "y"})
+
+    def g(*a: str, cwd: Path) -> None:
+        subprocess.run(["git", *a], cwd=cwd, capture_output=True, text=True, check=True)
+
+    g("worktree", "add", "-q", str(wt), cwd=repo)
+    g("sparse-checkout", "set", "a", cwd=wt)
+    (wt / "a" / "x.txt").write_text("uncommitted", "utf-8")
+    return repo, wt
+
+
+def _status(wt: Path) -> list[str]:
+    out = subprocess.run(["git", "status", "--porcelain"], cwd=wt, capture_output=True,
+                         text=True, check=True).stdout
+    return out.splitlines()
+
+
+def test_a_SPARSE_caller_keeps_its_sparse_settings_after_the_HEAD_checkout(tmp_path: Path) -> None:
+    """Desk health 2026-11-11: after a push from a sparse worktree that worktree read
+    core.sparseCheckout=false and listed 42,402 files as deleted. The gate must leave the
+    caller exactly as it found it."""
+    from scripts.run_law_gate import _at_head, _caller_sparse_state
+    _repo, wt = _sparse_caller(tmp_path)
+    before = _caller_sparse_state(wt)
+    where, subject, _why = _at_head(wt)
+    try:
+        assert where != wt and (where / "b" / "y.txt").is_file()   # the verdict sees ALL of HEAD
+        assert _caller_sparse_state(wt) == before
+        assert _status(wt) == [" M a/x.txt"]                        # no phantom deletions
+        assert "caller-sparse-restored" not in subject
+    finally:
+        subprocess.run(["git", "worktree", "remove", "--force", str(where)], cwd=wt,
+                       capture_output=True, text=True)
+
+
+def test_a_moved_caller_sparse_setting_is_PUT_BACK_and_named(tmp_path: Path) -> None:
+    """Whatever path moves it (a git version, a future edit), the caller is restored and the
+    verdict's subject says so."""
+    import scripts.run_law_gate as gate
+    _repo, wt = _sparse_caller(tmp_path)
+    before = gate._caller_sparse_state(wt)
+    real = gate._head_checkout
+
+    def clobbering(root: Path, tmp: Path, w: Path, dirt: list[str]) -> tuple[Path, str, list[str]]:
+        out = real(root, tmp, w, dirt)
+        subprocess.run(["git", "config", "--worktree", "core.sparseCheckout", "false"], cwd=root,
+                       capture_output=True, text=True, check=True)
+        return out
+
+    gate._head_checkout = clobbering  # type: ignore[assignment]
+    try:
+        where, subject, _why = gate._at_head(wt)
+    finally:
+        gate._head_checkout = real  # type: ignore[assignment]
+    try:
+        assert "caller-sparse-restored" in subject and "core.sparseCheckout" in subject
+        assert gate._caller_sparse_state(wt) == before
+        assert _status(wt) == [" M a/x.txt"]
+    finally:
+        subprocess.run(["git", "worktree", "remove", "--force", str(where)], cwd=wt,
+                       capture_output=True, text=True)
+
+
 def test_fast_gate_guards_core_and_doctrine():
     from scripts.run_law_gate import fast_gate
     rep = fast_gate()
