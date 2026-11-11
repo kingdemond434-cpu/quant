@@ -56,4 +56,5 @@ def test_no_step_can_stop_the_seal() -> None:
     assert body.count("catch") >= 2
     import re
 
-    assert not re.search(r"(^|[;{}]\s*)exit\b", HEAL, flags=re.M | re.I)  # dot-sourced: an exit ends the adopter
+    # dot-sourced into the adopter: an exit statement here would end the adopter itself
+    assert not re.search(r"(^|[;{}]\s*)exit\b", HEAL, flags=re.M | re.I)
