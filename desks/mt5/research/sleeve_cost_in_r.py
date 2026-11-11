@@ -52,11 +52,15 @@ import json
 import os
 import statistics
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
+if str(DESK) not in sys.path:
+    sys.path.insert(0, str(DESK))
+from mt5desk.calendar_us import us_eastern_offset  # noqa: E402
+
 DATA = DESK / "data"
 REPORTS = DESK / "reports"
 SLEEVES = DATA / "sleeves.json"
@@ -69,6 +73,7 @@ OUT = REPORTS / "SLEEVE_COST_IN_R.json"
 
 SCHEMA = "sleeve-cost-in-r-1"
 UNMEASURED = "UNMEASURED"
+UNMEASURED_BASIS = "UNMEASURED_BASIS"
 #: engine.Costs.commission_per_lot -- measured on the live Fusion account, per lot per SIDE.
 COMMISSION_PER_LOT_SIDE = 2.00
 #: universal_gate: baseline crosses the spread twice, stress (COST_SCENARIO 3) three times.
@@ -121,18 +126,11 @@ def _num(x: Any) -> float | None:
     return v if v == v and abs(v) != float("inf") else None
 
 
-def _last_sunday(year: int, month: int) -> datetime:
-    d = datetime(year, month + 1, 1, tzinfo=UTC) - timedelta(days=1) if month < 12 \
-        else datetime(year, 12, 31, tzinfo=UTC)
-    return d - timedelta(days=(d.weekday() + 1) % 7)
-
-
 def broker_hour(ts: datetime) -> int:
-    """UTC -> broker clock: UTC+3 inside EU summer time, UTC+2 outside it."""
+    """UTC -> broker clock. The broker runs NY+7, so it follows US DST: UTC+3 while US Eastern
+    is UTC-4, UTC+2 while it is UTC-5. The rule is the desk's own calendar_us one, not a copy."""
     ts = ts.astimezone(UTC)
-    start = _last_sunday(ts.year, 3).replace(hour=1)
-    end = _last_sunday(ts.year, 10).replace(hour=1)
-    return (ts.hour + (3 if start <= ts < end else 2)) % 24
+    return (ts.hour - us_eastern_offset(ts.date()) + 7) % 24
 
 
 def _parse_ts(s: Any) -> datetime | None:
@@ -250,11 +248,22 @@ def cert_terms(row: dict[str, Any] | None) -> dict[str, Any]:
     x3 = _num((g.get("stress_costs") or {}).get("exp_x3"))
     if ev is None or x3 is None:
         return _um("certificate lacks ev or exp_x3")
+    # The gauntlet's series is R SUMMED PER ACTIVE DAY. ev - exp_x3 is one crossing PER TRADE
+    # only once both are divided by trades per active day; without that figure the row is
+    # per_day and its measured/charged ratio is not an exact number.
+    tpd = _num(row.get("trades_per_active_day"))
+    if tpd is None and _num(row.get("n_trades")) and _num(row.get("days")):
+        tpd = float(row["n_trades"]) / float(row["days"])
+    basis = "per_trade"
+    if tpd and tpd > 0:
+        ev, x3 = ev / tpd, x3 / tpd
+    else:
+        basis = "per_day"
     one = ev - x3
     if one <= 0:
         return _um(f"ev - exp_x3 = {one:.4f} <= 0: one spread crossing not recoverable")
-    return {"ev_R": ev, "exp_x3_R": x3, "one_crossing_R": one,
-            "basis": "R summed per active day (universal_gate daily series)"}
+    return {"ev_R": ev, "exp_x3_R": x3, "one_crossing_R": one, "ev_basis": basis,
+            "trades_per_active_day": tpd if basis == "per_trade" else UNMEASURED}
 
 
 def slippage_r(name: str, corpus: list[dict[str, Any]]) -> dict[str, Any]:
@@ -317,14 +326,20 @@ def audit_venue(item: dict[str, Any], surface: dict[str, Any] | None, meta: dict
     gross = cert["ev_R"] + charged
     net = gross - measured
     out["cost_R_charged"] = round(charged, 5)
-    out["gap"] = {"measured_minus_charged_R": round(measured - charged, 5),
-                  "measured_over_charged": round(measured / charged, 3) if charged > 0 else None}
+    exact = cert.get("ev_basis") == "per_trade"
+    out["ev_basis"] = cert.get("ev_basis")
+    out["gap"] = {"measured_minus_charged_R": round(measured - charged, 5) if exact
+                  else UNMEASURED_BASIS,
+                  "measured_over_charged": (round(measured / charged, 3) if charged > 0 else None)
+                  if exact else UNMEASURED_BASIS}
     out["gross_edge_R"] = round(gross, 5)
     out["net_edge_R"] = round(net, 5)
     flags = []
     if net <= 0:
         flags.append("COST_EATS_EDGE")
-    if charged > 0 and measured > charged * (1.0 + UNDERCHARGE_TOL):
+    # COST_EATS_EDGE survives a per-day basis (k trades a day scale gross and cost alike, so the
+    # sign of net is unchanged); UNDERCHARGED is only called on an exact per-trade basis.
+    if exact and charged > 0 and measured > charged * (1.0 + UNDERCHARGE_TOL):
         flags.append("UNDERCHARGED")
     if suspect:
         flags.append("SURFACE_SUSPECT")

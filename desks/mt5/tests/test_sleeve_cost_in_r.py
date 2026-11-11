@@ -28,7 +28,8 @@ def _hours(p50: float, zero_frac: float = 0.0) -> dict[str, dict[str, object]]:
 
 
 def _setup(monkeypatch: pytest.MonkeyPatch, tmp: Path, *, p50: float = 10.0,
-           ev: float = 0.2, x3: float = 0.1, cert: bool = True, zero_frac: float = 0.0) -> None:
+           ev: float = 0.2, x3: float = 0.1, cert: bool = True, zero_frac: float = 0.0,
+           tpd: float | None = 1.0) -> None:
     sleeves = {"sleeves": [
         {"name": "eurusd_srb", "status": "STANDBY", "symbol": "EURUSD", "selector": "asia",
          "certificate": {"cell": "external.EURUSD.srb" if cert else None}},
@@ -37,6 +38,8 @@ def _setup(monkeypatch: pytest.MonkeyPatch, tmp: Path, *, p50: float = 10.0,
     surv = {"survivors": {"external.EURUSD.srb": {
         "sym": "EURUSD", "gates": {"expected_value": {"ev": ev}, "stress_costs": {"exp_x3": x3}},
         "shadow_spec": {"symbol": "EURUSD", "selector": "asia"}}}}
+    if tpd is not None:
+        surv["survivors"]["external.EURUSD.srb"]["trades_per_active_day"] = tpd
     uni = {"EURUSD": {"contract_size": 100000.0, "tick_size": 0.00001, "tick_value": 1.0,
                       "median_spread_pts": 10.0}}
     surface = {"symbols": {"EURUSD": {"tick_size": 0.00001, "atr20_h1_pts": 100.0,
@@ -106,6 +109,28 @@ def test_degenerate_surface_is_named(monkeypatch: pytest.MonkeyPatch, tmp_path: 
 def test_broker_clock_follows_eu_dst() -> None:
     assert sc.broker_hour(datetime(2026, 7, 1, 4, tzinfo=UTC)) == 7
     assert sc.broker_hour(datetime(2026, 11, 11, 4, tzinfo=UTC)) == 6
+    # US DST has begun (2nd Sunday of March), EU has not: the NY+7 broker is already UTC+3.
+    assert sc.broker_hour(datetime(2026, 3, 20, 4, tzinfo=UTC)) == 7
+    # EU DST over, US not yet (1st Sunday of November): still UTC+3.
+    assert sc.broker_hour(datetime(2026, 10, 28, 4, tzinfo=UTC)) == 7
+
+
+def test_per_day_basis_withholds_the_ratio(monkeypatch: pytest.MonkeyPatch,
+                                           tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path, p50=100.0, tpd=None)
+    r = _row(sc.build(NOW))
+    f = r["venues"]["fusion"]
+    assert r["certificate"]["ev_basis"] == "per_day"
+    assert f["gap"]["measured_over_charged"] == sc.UNMEASURED_BASIS
+    assert "UNDERCHARGED" not in r["flags"]
+    assert "COST_EATS_EDGE" in r["flags"]
+
+
+def test_trades_per_day_normalises_ev(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path, tpd=2.0)
+    c = _row(sc.build(NOW))["certificate"]
+    assert c["ev_basis"] == "per_trade"
+    assert c["ev_R"] == pytest.approx(0.1) and c["one_crossing_R"] == pytest.approx(0.05)
 
 
 def test_write_is_atomic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
