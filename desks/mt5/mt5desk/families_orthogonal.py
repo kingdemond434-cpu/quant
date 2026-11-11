@@ -1724,6 +1724,19 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
+# DEGREE-DAY REVISION (2026-11-11): natural gas on the REVISION of NOAA CPC's daily 7-day degree-day
+# forecast (more HDD in winter / CDD in summer than the previous issue said = more expected burn),
+# never on its level. The family reads `data/lake/series/noaa_<product>.parquet` by path (product,
+# region and measure on the recipe), enters on the first bar after `available_time`, and an absent
+# parquet or column raises the named `DegreeDayUnavailable` (a TypeError) through the builder.
+from mt5desk.family_degree_day_revision import family_degree_day_revision  # noqa: E402
+
+ORTHOGONAL_FAMILIES["degree_day_revision"] = family_degree_day_revision
+FAMILY_INPUTS["degree_day_revision"] = ("one NOAA CPC degree-day revision series (product, region "
+                                        "and measure on the recipe), resolved by the family itself",
+                                        "data/lake/series/noaa_<product>.parquet "
+                                        "(noaa_forecast_vintage)")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
