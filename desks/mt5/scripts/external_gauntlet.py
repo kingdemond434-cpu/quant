@@ -55,7 +55,14 @@ from libs.research.hypothesis_graph import (  # noqa: E402
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
-from libs.validation.plausibility import plausibility_stage  # noqa: E402
+from libs.validation.plausibility import (  # noqa: E402
+    build_arms,
+    forensics,
+    pit_violations,
+    plausibility_stage,
+    screen,
+    truncation_test,
+)
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
@@ -754,6 +761,18 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         from mt5desk.family_call import session_filter
         sigs = session_filter(list(sigs or []), _session)
     sigs = cell_modifiers.apply(list(sigs or []), h1, _mods)
+
+    def _regen(frame, _fn=fn, _cp=dict(call_params), _ss=_session, _md=_mods):
+        """The same family, same params, on a given frame: the truncation leak test re-runs
+        it on bars cut short, so a signal computed from the future shows up as a change."""
+        try:
+            out = _fn(frame, side=1, **_cp)
+        except TypeError:
+            out = _fn(frame, **_cp)
+        if _ss is not None:
+            from mt5desk.family_call import session_filter
+            out = session_filter(list(out or []), _ss)
+        return cell_modifiers.apply(list(out or []), frame, _md)
     # CHARGE THE HOUR THIS CELL FILLS IN. `universe.json` carries ONE median spread per symbol,
     # collapsed at ingest, so every gate has been dividing by a number that averages away the hour
     # structure -- and the families that fill in thin books are exactly the ones that lose by it.
@@ -800,7 +819,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # caller that builds a cell without params (the recertification audit rebuilds from
     # `authorized_runs`) would otherwise lose the chart between here and its own verdict lookup.
     return {"sym": sym, "family": family, "params": params, "timeframe": timeframe,
-            "df": h1, "sigs": sigs,
+            "df": h1, "sigs": sigs, "_regen": _regen,
             "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
 
 
@@ -2026,6 +2045,8 @@ def _warm_one(spec: dict, meta: dict) -> dict:
             out["status"], out["why"] = "FAIL_3X", f"{type(exc3).__name__}: {exc3}"
             return out
         cache_save(ckey, ds1, ds3)
+        obj["_ckey"] = ckey
+        _plausibility_forensics(obj, ds1, last_day)
         out["status"] = "WARMED" if cache_load(ckey) is not None else "SAVE_FAILED"
         return out
     except Exception as exc:
@@ -2783,6 +2804,94 @@ def charged_lifetime_trials(campaign: int, family: str, lifetime: dict,
     return n, (f"lifetime union trials {union} (family {family or '?'}: "
                f"{fam_n if fam_n is not None else 'absent'}; campaign {int(campaign)})")
 
+#: THE FORENSIC EVIDENCE, EITHER WAY (zuck 2026-11-11: "only dismiss after proof"). Every flagged
+#: cell's forensic result is appended here, and every MONSTER_CANDIDATE / DELAY_FRAGILE cell is
+#: listed in FAST_TRACK.json so forward shadow reads it first. Normal sizing rails still bind.
+PLAUSIBILITY_DIR = Path(__file__).resolve().parents[1] / "data" / "plausibility"
+
+
+def _plausibility_forensics(c: dict, ds, last_day) -> dict | None:
+    """Forensics for a cell the screen flags, from its own signals; None when not flagged.
+
+    Called wherever a fresh series is built with the signals still in hand -- the serial loop,
+    a shard, and the warm pool (`_warm_one`), which caches only series. The result is kept on
+    the cell AND under its cache key, so a cell judged later from the cache reads the forensics
+    its build produced instead of reading as never examined.
+    """
+    try:
+        if ds is None or not len(ds) or not screen(ds.to_numpy(float))["suspect"]:
+            return None
+        _df, _costs, _sigs = c["df"], c["costs"], list(c.get("sigs") or [])
+
+        def _arm(sg, _df=_df, _costs=_costs, _ld=last_day):
+            a = _series_trim_partial(daily_series(_df, sg, _costs), _ld)
+            return None if a is None else a.to_numpy(float)
+        arms = build_arms(_df, _sigs, _arm)
+        first = min((sg.time for sg in _sigs), default=None)
+        fx = forensics(
+            ds.to_numpy(float), delayed=arms.get("delayed"), flipped=arms.get("flipped"),
+            shuffled=arms.get("shuffled"),
+            pit_violations=pit_violations(c.get("pit_rows"), first),
+            truncation=(truncation_test(_df, _sigs, c["_regen"])
+                        if c.get("_regen") is not None else None))
+        fx["arm_errors"] = {k: v for k, v in arms.items() if k.endswith("_error")}
+        c["_plaus_forensics"] = fx
+        _record_plausibility(c, ds)
+        return fx
+    except Exception as exc:
+        print(f"  PLAUSIBILITY-FORENSICS {c.get('sym')}.{c.get('family')}: {exc}")
+        return None
+
+
+def _cached_forensics(c: dict) -> dict | None:
+    key = c.get("_ckey") or c.get("ckey")
+    if not key:
+        return None
+    try:
+        return json.loads((PLAUSIBILITY_DIR / "by_ckey" / f"{key}.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _record_plausibility(c: dict, ds) -> None:
+    fx = c.get("_plaus_forensics") or {}
+    row = {"at": datetime.now(UTC).isoformat(), "sym": c.get("sym"),
+           "family": c.get("family"), "params": c.get("params"),
+           "timeframe": c.get("timeframe"), "screen": screen(ds.to_numpy(float)),
+           "verdict": fx.get("verdict"), "proof": fx.get("proof"), "tests": fx.get("tests"),
+           "arm_errors": fx.get("arm_errors")}
+    try:
+        PLAUSIBILITY_DIR.mkdir(parents=True, exist_ok=True)
+        with (PLAUSIBILITY_DIR / "forensics.jsonl").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+        key = c.get("_ckey") or c.get("ckey")
+        if key:
+            (PLAUSIBILITY_DIR / "by_ckey").mkdir(parents=True, exist_ok=True)
+            (PLAUSIBILITY_DIR / "by_ckey" / f"{key}.json").write_text(
+                json.dumps(fx, default=str), encoding="utf-8")
+        if fx.get("verdict") in ("MONSTER_CANDIDATE", "DELAY_FRAGILE"):
+            ft = PLAUSIBILITY_DIR / "FAST_TRACK.json"
+            try:
+                doc = json.loads(ft.read_text("utf-8"))
+            except (OSError, ValueError):
+                doc = {"cells": []}
+            key = (row["sym"], row["family"], json.dumps(row["params"], sort_keys=True,
+                                                         default=str))
+            doc["cells"] = [x for x in doc.get("cells", [])
+                            if (x.get("sym"), x.get("family"),
+                                json.dumps(x.get("params"), sort_keys=True, default=str)) != key]
+            doc["cells"].append({**{k: row[k] for k in ("at", "sym", "family", "params",
+                                                       "timeframe", "verdict")},
+                                 "annual_sharpe": row["screen"]["annual_sharpe"],
+                                 "forward_priority": "FAST_TRACK"})
+            doc["updated_at"] = row["at"]
+            doc["rule"] = ("flagged too-good, cleared every forensic test run: forward shadow "
+                           "first, normal sizing rails")
+            ft.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
+    except OSError as exc:
+        print(f"  PLAUSIBILITY record failed: {exc}")
+
+
 def _cell_series(cells: list, meta: dict) -> tuple[list, int]:
     """Each cell's FULL 1x daily series, and its 3x arm stashed on the cell, in ONE pass per cell.
 
@@ -2813,6 +2922,9 @@ def _cell_series(cells: list, meta: dict) -> tuple[list, int]:
             ds = _series_trim_partial(daily_series(c["df"], c["sigs"], c["costs"]), last_day)
             c["_fresh_ds"] = ds
             daily.append(ds)
+            # LEAK FORENSICS, WHILE THE SIGNALS ARE STILL IN HAND (they are released below).
+            # Only a cell the plausibility screen flags pays for it; the stage reads the result.
+            c["_plaus_forensics"] = _plausibility_forensics(c, ds, last_day)
             # BOTH COST ARMS IN ONE PASS, so a cell's signals can be released the moment it is
             # done with. The 3x arm used to run as a SECOND loop over every cell, which meant
             # every built cell had to keep its `sigs` alive from the first loop to the second.
@@ -2839,6 +2951,7 @@ def _cell_series(cells: list, meta: dict) -> tuple[list, int]:
             # RELEASE. `df` is a shared LRU frame and costs nothing to drop; `sigs` is this
             # cell's own signal list and is the thing that accumulates.
             c["df"] = c["sigs"] = c["costs"] = None
+            c.pop("_regen", None)  # a closure: never pickled into a shard's result
     return daily, hits
 
 
@@ -2871,7 +2984,7 @@ def _cell_series_x3(cells: list) -> list:
 #: MID, lockbox, TAIL -- exactly the sequence the gates were always evaluated in.
 CELL_LOCAL_HEAD = ("economic_prior", "in_sample_screen")
 CELL_LOCAL_MID = ("cpcv", "walk_forward", "stress_costs")
-CELL_LOCAL_TAIL = ("expected_value", "swap_cost", "plausibility_ceiling")
+CELL_LOCAL_TAIL = ("expected_value", "swap_cost", "plausibility_forensics")
 
 
 def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
@@ -2980,8 +3093,10 @@ def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
                 f"UNMEASURED cost fails closed: {_basis['why']}; "
                 f"live: {_cost.get('why') or 'unread'}"),
     }
-    # TOO GOOD TO BE TRUE IS A LEAK (zuck 2026-11-06 transcript; libs/validation/plausibility).
-    stages["plausibility_ceiling"] = plausibility_stage(arr)
+    # TOO GOOD TO BE TRUE IS A QUESTION, NOT A VERDICT (zuck 2026-11-06 / 2026-11-11;
+    # libs/validation/plausibility). Fails ONLY on leakage the forensics proved.
+    stages["plausibility_forensics"] = plausibility_stage(
+        arr, c.get("_plaus_forensics") or _cached_forensics(c))
     return stages
 
 
@@ -3217,7 +3332,9 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             # A shard written before the plausibility ceiling existed lacks it: compute it
             # here from the same development series rather than skipping the gate.
             stages[_k] = (_local[_k] if _k in _local else
-                          plausibility_stage(arr) if _k == "plausibility_ceiling" else _local[_k])
+                          plausibility_stage(arr, c.get("_plaus_forensics")
+                                             or _cached_forensics(c))
+                          if _k == "plausibility_forensics" else _local[_k])
 
         passed = all(s["passed"] for s in stages.values())
         # AND AT LEAST AS MANY GATES AS THE LAW IN FORCE REQUIRES (S01): a gate count the
