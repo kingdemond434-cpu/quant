@@ -164,12 +164,10 @@ _FAMILY_GROUPS: dict[str, str] = {
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
-    "carry_rollover carry market": "carry mass_screen_carry",
+    "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
-    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
-                                               " mass_screen_clock",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
@@ -185,13 +183,26 @@ _FAMILY_GROUPS: dict[str, str] = {
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
-    "trend_persistence event market": "analyst_revision_drift",
+    "trend_persistence event market": "analyst_revision_drift alt_release_drift",
     "cross_market_lead event market": "analyst_cross_market_lead",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
     "trend_persistence cross_asset market": "cross_sectional_class_momentum",
     "range_reversion cross_asset market": "cross_sectional_class_reversal",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
+    # The specialist families of 2026-09-30 (`mt5desk.families_specialist`). Carry unwound on a
+    # risk proxy's break is a margin call on the levered carry holder; the month-end rebalance
+    # bets on a fixed-weight allocator's flow against the equity-minus-bond gap; a crop-cycle
+    # window is a calendar-constrained hedger's premium. `entry_conditioned` is an OPERATOR over a
+    # base cell, like `exit_operated`: its mechanism is its base's, so no single row names it.
+    # NEITHER OF THE FIRST TWO IS PRICE-ONLY: carry_risk_off reads the swap terms (exogenous) and
+    # a risk proxy's bars; month_end_rebalance conditions on a bond proxy's bars. Their
+    # information source is `carry` / `cross_asset` here and `exogenous` / `conditioned` in
+    # `gauntlet_buildability.information_class`; a test pins that neither reads `price_only`.
+    "forced_liquidation carry market": "carry_risk_off",
+    "calendar_seasonality cross_asset market": "month_end_rebalance",
+    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
+                                               " mass_screen_clock seasonal_window",
     # hunt16_cell (2026-09-30) rebuilds the hunt16 dav_range_filter_adx cells (side, signal hour,
     # day state) through the registry door, so it sits with its base family.
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
@@ -217,7 +228,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
     f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
-                                       " alt_conditioned",
+                                       " alt_conditioned entry_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
@@ -619,6 +630,33 @@ def instruments_by_class() -> dict[str, list[str]]:
     return {k: [s for _, s in sorted(v)] for k, v in out.items()}
 
 
+def rule_only_families() -> frozenset[str]:
+    """The `mass_screen_*` grammars: families that are only ever a specific screened rule.
+
+    Their constructor has no defaults for `feat`, `op`, `thr`, `direction`, `hold` and `stop_atr`
+    on purpose (`mass_screen_rules.family_mass_screen_rule`: "a default-parameter sweep must set
+    this family aside"). A picker that assigns a family to a region or a mechanism has no rule to
+    give one, so the cell it mints builds to nothing and sits on the docket unjudged for ever
+    (measured 2026-11-10: 416 `mass_screen_carry` rows whose params were sensor descriptors, 0
+    judged). Pickers skip them; `mass_screen.py`, which emits the real rule, is untouched.
+    """
+    return frozenset(rule_only_status()["families"])
+
+
+def rule_only_status() -> dict[str, Any]:
+    """The rule-only set and whether it could be READ. An unimportable grammar module leaves
+    the exclusion empty, which would quietly put the pickers back on rule-only families, so the
+    registry report carries this row and says UNMEASURED with the reason, never an empty OK."""
+    try:
+        from mt5desk.mass_screen_rules import MASS_SCREEN_FAMILIES
+    except Exception as exc:
+        return {"status": "UNMEASURED", "families": [], "n": 0,
+                "why": f"mass_screen_rules unimportable ({type(exc).__name__}): the pickers "
+                       "are NOT excluding rule-only families this pass"}
+    return {"status": "OK", "families": sorted(MASS_SCREEN_FAMILIES),
+            "n": len(MASS_SCREEN_FAMILIES)}
+
+
 def family_for(mechanism: str, information_source: str, families: frozenset[str],
                prefer: frozenset[str], salt: str = "") -> str | None:
     """A registered, unbanned family that implements this region, or None.
@@ -631,7 +669,7 @@ def family_for(mechanism: str, information_source: str, families: frozenset[str]
     """
     pool = sorted(f for f, (m, i, _) in FAMILY_TABLE.items()
                   if m == mechanism and i == information_source and f in families
-                  and not _banned(f))
+                  and not _banned(f) and f not in rule_only_families())
     if not pool:
         return None
     head = [f for f in pool if f in prefer] or pool
@@ -818,6 +856,7 @@ def build(max_proposals: int = MAX_PROPOSALS) -> tuple[dict[str, Any], dict[str,
               "axes": axis_counts(cells), "occupancy": occupancy(cells),
               "empty_regions": regions, "unknown_counts": unknown_counts(cells),
               "selection": selection, "rule": RULE, "inputs": note,
+              "rule_only_families": rule_only_status(),
               "prior": {"source": prior_source, "n": model.get("n"),
                         "global": model.get("global"), "why": model.get("why")},
               "families_registered": len(families), "family_table_size": len(FAMILY_TABLE),
