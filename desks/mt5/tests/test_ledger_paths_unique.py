@@ -319,28 +319,74 @@ def test_engines_register_only_after_the_ledger_is_written() -> None:
             assert "write_text(" in window or "atomic" in window.lower(), (name, i + 1)
 
 
-def test_the_seal_rows_of_retired_files_are_annotated_never_dropped(tmp_path) -> None:
-    """S3: the record wall's rows are kept and marked, so the re-seal carries them forward."""
-    shadow = tmp_path / "shadow"
-    _write(shadow / "ledger_XAUUSD_asia.json", [{"r_multiple": 2.0}])
-    _write(shadow / "ledger_EURUSD_asia.json", [{"r_multiple": 1.0}])
+def _manifest(tmp_path: Path) -> Path:
     manifest = tmp_path / "IMMUTABLE_MANIFEST.json"
     seal = {"sha256": "ab", "n": 1}
     manifest.write_text(json.dumps({"append_only": {
         lp.SEAL_PREFIX + "ledger_XAUUSD_asia.json": dict(seal),
         lp.SEAL_PREFIX + "ledger_EURUSD_asia.json": dict(seal),
         lp.SEAL_PREFIX + "ledger_OTHER_asia.json": dict(seal)}}), "utf-8")
+    return manifest
+
+
+def test_the_seal_rows_of_retired_files_are_recorded_beside_the_census(tmp_path) -> None:
+    """S3/M3: retired rows are copied verbatim to _collided/, for the signer's re-seal."""
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_XAUUSD_asia.json", [{"r_multiple": 2.0}])
+    _write(shadow / "ledger_EURUSD_asia.json", [{"r_multiple": 1.0}])
+    manifest = _manifest(tmp_path)
     owners = lp.owners_of([(k, "XAUUSD_asia") for k in GOLD] + [("EURUSD.asia", "EURUSD_asia")])
     lp.migrate(owners, engine="shadow_forward", shadow_dir=shadow, manifest=manifest)
-    rows = json.loads(manifest.read_text("utf-8"))["append_only"]
+    doc = json.loads(lp.seal_rows_path(shadow).read_text("utf-8"))
+    rows = doc["rows"]
     gold = rows[lp.SEAL_PREFIX + "ledger_XAUUSD_asia.json"]
-    assert gold["sha256"] == "ab" and gold["n"] == 1             # the seal itself is kept
+    assert gold["seal"] == {"sha256": "ab", "n": 1}              # the seal itself, verbatim
     assert gold["collided"] is True and gold["retired_as"] == "collided"
     assert sorted(gold["keys"]) == sorted(GOLD) and gold["integrity"] == "UNMEASURED"
     eur = rows[lp.SEAL_PREFIX + "ledger_EURUSD_asia.json"]
     assert eur["collided"] is False and eur["retired_as"] == "renamed"
-    assert "retired_by" not in rows[lp.SEAL_PREFIX + "ledger_OTHER_asia.json"]
-    assert json.loads(manifest.read_text("utf-8"))["collided_seal_rows"] == 2
+    assert lp.SEAL_PREFIX + "ledger_OTHER_asia.json" not in rows
+    assert doc["n_rows"] == 2
+
+
+def test_migrate_never_opens_the_manifest_for_writing(tmp_path, monkeypatch) -> None:
+    """M3: IMMUTABLE_MANIFEST is sealed and train-owned; migrate only ever reads it."""
+    import builtins
+
+    shadow = tmp_path / "shadow"
+    _write(shadow / "ledger_XAUUSD_asia.json", [{"r_multiple": 2.0}])
+    _write(shadow / "ledger_EURUSD_asia.json", [{"r_multiple": 1.0}])
+    manifest = _manifest(tmp_path)
+    before = manifest.read_bytes(), os.stat(manifest).st_mtime_ns
+    target = str(manifest.resolve())
+    writes: list[str] = []
+    real_open, real_atomic, real_replace = builtins.open, lp._atomic_write, os.replace
+
+    def spy_open(file, mode="r", *a, **kw):
+        if any(c in str(mode) for c in "wax+") and str(Path(file).resolve()) == target:
+            writes.append(f"open({mode})")
+        return real_open(file, mode, *a, **kw)
+
+    def spy_atomic(path, text):
+        if str(Path(path).resolve()) == target:
+            writes.append("_atomic_write")
+        return real_atomic(path, text)
+
+    def spy_replace(src, dst, *a, **kw):
+        if str(Path(dst).resolve()) == target:
+            writes.append("os.replace")
+        return real_replace(src, dst, *a, **kw)
+
+    monkeypatch.setattr(builtins, "open", spy_open)
+    monkeypatch.setattr(lp, "_atomic_write", spy_atomic)
+    monkeypatch.setattr(lp.os, "replace", spy_replace)
+    owners = lp.owners_of([(k, "XAUUSD_asia") for k in GOLD] + [("EURUSD.asia", "EURUSD_asia")])
+    lp.migrate(owners, engine="shadow_forward", shadow_dir=shadow, manifest=manifest)
+    lp.migrate(owners, engine="shadow_forward", shadow_dir=shadow, manifest=manifest)
+    assert writes == []
+    assert (manifest.read_bytes(), os.stat(manifest).st_mtime_ns) == before
+    src = (DESK / "research" / "ledger_paths.py").read_text("utf-8")
+    assert "annotate_seals" not in src
 
 
 def test_a_test_migration_never_touches_the_desks_own_manifest(tmp_path) -> None:

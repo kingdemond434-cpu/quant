@@ -459,9 +459,9 @@ def _read_only(path: Path) -> None:
         pass
 
 
-#: The record wall's signed manifest (scripts/check_immutable_evaluator.py). Seal rows of the
-#: legacy files a migration retires are ANNOTATED there (Auditor S3), never removed: the
-#: journaled box-side re-seal must carry every one of them forward.
+#: The record wall's signed manifest (scripts/check_immutable_evaluator.py). READ ONLY here
+#: (Auditor M3): the seal rows of retired legacy files are copied to `_collided/` beside the
+#: census, and the journaled box re-seal carries them forward through the signer.
 MANIFEST = BASE / "data" / "IMMUTABLE_MANIFEST.json"
 SEAL_PREFIX = "desks/mt5/reports/shadow/"
 
@@ -511,8 +511,9 @@ def migrate(owners: Mapping[str, Sequence[str]], *, engine: str,
     `finally` -- so every file already moved is retired from every reader even when a later one
     fails, and a shared file that could not be moved is retired too (`retired_legacy_names`).
 
-    `manifest` is the record wall's manifest whose seal rows are annotated; it defaults to the
-    desk's own only when `shadow_dir` IS the desk's shadow directory, so a test never touches it.
+    `manifest` is the record wall's manifest, READ ONLY, whose retired rows are copied beside the
+    census (`record_seal_rows`); it defaults to the desk's own only when `shadow_dir` IS the
+    desk's shadow directory.
 
     Returns this pass's accounting; the cumulative census is `census_path(engine)`.
     """
@@ -542,18 +543,26 @@ def migrate(owners: Mapping[str, Sequence[str]], *, engine: str,
                 manifest = MANIFEST
             if manifest is not None:
                 try:
-                    annotate_seals(manifest, acct)
+                    record_seal_rows(manifest, acct, sd)
                 except Exception as exc:              # the census already holds the record
-                    acct["seal_annotation_error"] = f"{type(exc).__name__}: {exc}"
+                    acct["seal_record_error"] = f"{type(exc).__name__}: {exc}"
     return acct
 
 
-def annotate_seals(manifest: Path, acct: Mapping[str, Any]) -> int:
-    """Mark the seal row of every legacy file this pass retired `collided` (Auditor S3).
+def seal_rows_path(shadow_dir: Path | None = None) -> Path:
+    return _collided_dir(Path(shadow_dir or SHADOW_DIR)) / "COLLIDED_SEAL_ROWS.json"
 
-    The row is KEPT, byte for byte, with fields added beside it: the files leave the record
-    wall's `ledger_*.json` glob, so the checker stops judging them, and the re-seal (box-side,
-    journaled) must carry these rows forward rather than drop them. Returns rows annotated.
+
+def record_seal_rows(manifest: Path, acct: Mapping[str, Any],
+                     shadow_dir: Path | None = None) -> int:
+    """Record the seal row of every legacy file this pass retired, BESIDE the census (M3/S3).
+
+    THE MANIFEST IS READ, NEVER WRITTEN. `IMMUTABLE_MANIFEST.json` is sealed and train-owned:
+    only the signer changes it (law gate, sign_train G6, single signer). This copies each retired
+    file's seal row verbatim into `_collided/COLLIDED_SEAL_ROWS.json` with what happened to it
+    (collided, retired_as, moved_to, keys, integrity UNMEASURED), so the journaled box re-seal
+    carries the rows forward through the signer. The first record of a row is kept; a later pass
+    never rewrites it. Returns rows newly recorded.
     """
     try:
         doc = json.loads(Path(manifest).read_text("utf-8"))
@@ -562,22 +571,35 @@ def annotate_seals(manifest: Path, acct: Mapping[str, Any]) -> int:
     rows = doc.get("append_only") if isinstance(doc, dict) else None
     if not isinstance(rows, dict):
         return 0
+    out = seal_rows_path(shadow_dir)
+    try:
+        have = json.loads(out.read_text("utf-8"))
+        if not isinstance(have, dict):
+            have = {}
+    except (OSError, ValueError):
+        have = {}
+    recorded = dict(have.get("rows") or {})
     n = 0
     for part in ("collided", "renamed", "superseded", "failed"):
         for name, info in (acct.get(part) or {}).items():
-            row = rows.get(SEAL_PREFIX + name)
-            if not isinstance(row, dict) or row.get("retired_by"):
+            seal_key = SEAL_PREFIX + name
+            row = rows.get(seal_key)
+            if not isinstance(row, dict) or seal_key in recorded:
                 continue
-            row.update({"collided": part in ("collided", "failed"), "retired_by":
-                        "ledger_paths.migrate", "retired_as": part, "retired_at": acct["at"],
-                        "moved_to": info.get("moved_to") or info.get("to"),
-                        "keys": info.get("keys") or [info.get("key")],
-                        "integrity": "UNMEASURED"})
+            recorded[seal_key] = {
+                "seal": row, "collided": part in ("collided", "failed"),
+                "retired_by": "ledger_paths.migrate", "retired_as": part,
+                "retired_at": acct["at"], "moved_to": info.get("moved_to") or info.get("to"),
+                "keys": info.get("keys") or [info.get("key")], "integrity": "UNMEASURED"}
             n += 1
     if n:
-        doc["collided_seal_rows"] = sum(1 for r in rows.values()
-                                        if isinstance(r, dict) and r.get("retired_by"))
-        _atomic_write(Path(manifest), json.dumps(doc, indent=1))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        _atomic_write(out, json.dumps({
+            "rule": ("seal rows of legacy shadow ledgers retired by ledger_paths.migrate, copied "
+                     "verbatim from IMMUTABLE_MANIFEST.json (read only, never written here). The "
+                     "journaled box re-seal carries them forward through the signer."),
+            "manifest": str(manifest), "updated_at": acct["at"], "n_rows": len(recorded),
+            "rows": recorded}, indent=1, sort_keys=True))
     return n
 
 
