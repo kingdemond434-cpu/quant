@@ -2288,6 +2288,29 @@ def input_verdicts(daily: pd.DataFrame, base_share: float,
     return out
 
 
+def _input_rail(rail: str, iv: Mapping[str, Any], *, before: float | None,
+                after: float | None) -> None:
+    """Bill an enforced input move on the rails ledger once per day (missed-growth line).
+
+    A raised crisis share or a switched-off input changes the population the book is solved
+    over; GROWTH_GOVERNANCE requires every such move to carry its ledger line with the evidence
+    that licensed it, in either direction. Never raises.
+    """
+    try:
+        from mt5desk import fusion_rails
+        day = datetime.now(tz=UTC).date().isoformat()
+        arm = "vix" if "vix" in rail else "macro"
+        fusion_rails.line_once(
+            rail, f"{rail}/{day}", before=before, after=after,
+            direction=(None if before is None or after is None
+                       else "shrink" if after > before else "boost"),
+            verdict=((iv.get("inputs") or {}).get(arm) or {}).get("verdict"),
+            evidence=(iv.get("vix") if arm == "vix" else "input_ablation DEMOTE"),
+            licence="input_ablation out-of-sample verdict (INPUT_POLICY enforce)")
+    except Exception:
+        pass
+
+
 def read_drift() -> tuple[dict[str, Any] | None, str]:
     """`reports/DRIFT.json` if it can be read, else None with the reason. Never raises.
 
@@ -3879,10 +3902,22 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         from dataclasses import replace as _replace_iv
         ev = [_replace_iv(e, macro_w=np.array([], dtype=float)) for e in ev]
         _log("input verdict: macro DEMOTED out of sample -> kernel weights off")
-    if iv.get("vix_share") is not None and float(iv["vix_share"]) > crisis_share:
-        crisis_why = f"{crisis_why}; vix own-risk raised it to {float(iv['vix_share']):.1%}"
-        crisis_share = float(iv["vix_share"])
-        _log(f"input verdict: vix PROMOTED -> crisis share {crisis_share:.1%}")
+        _input_rail("input_macro_off", iv, before=None, after=None)
+    if iv.get("vix_share") is not None:
+        # TWO-SIDED: the VIX lift (share / base) multiplies the drift-adjusted share, so a calm
+        # tercile lowers it as readily as a stressed one raises it, inside the same clip.
+        from libs.portfolio.input_arms import crisis_share_min
+        from libs.portfolio.latent_factors import CRISIS_SHARE_MAX as _CSMAX
+        _base = WorldConfig().crisis_prob
+        _lift = float(iv["vix_share"]) / _base if _base > 0 else 1.0
+        _before = crisis_share
+        crisis_share = min(max(crisis_share_min(_base), crisis_share * _lift), _CSMAX)
+        if abs(crisis_share - _before) > 1e-12:
+            _dir = "raised" if crisis_share > _before else "lowered"
+            crisis_why = f"{crisis_why}; vix own-risk {_dir} it to {crisis_share:.1%}"
+            _log(f"input verdict: vix PROMOTED -> crisis share {_before:.1%} -> "
+                 f"{crisis_share:.1%}")
+            _input_rail("input_vix_crisis_share", iv, before=_before, after=crisis_share)
     _log(f"crisis worlds: {crisis_why}")
     # THE HAZARD, BEFORE THE SOLVE AND BEFORE ANY RETIREMENT THRESHOLD. Under `HAZARD_MODE =
     # "decay_posterior"` each sleeve with a measured hazard carries it as its OWN decay

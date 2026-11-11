@@ -20,10 +20,12 @@ days come. It is not a rail. This module asks the book's own history the questio
     belief       P(crisis | today's tercile) under a Beta prior centred on `base` carrying ONE
                  crisis day of weight (`1 / base` pseudo-days), so a thin tercile says little
 
-The share is `base * lift`, where lift = posterior / base. It is RAISE ONLY, like the drift
-overlay: a calm VIX never licenses fewer crisis worlds than the standing share. It is capped at
-`latent_factors.CRISIS_SHARE_MAX`. A tercile with fewer than `MIN_STATE_DAYS` history days
-changes nothing, and says so.
+The share is `base * lift`, where lift = posterior / base. It is TWO-SIDED (Auditor, 2026-11-11;
+GROWTH_GOVERNANCE: every capital modifier is two-sided): a high-VIX tercile with a measured crisis
+rate above base raises the share, and a calm tercile with a measured rate below base LOWERS it,
+with the same Beta prior both ways. It is clipped to [`crisis_share_min(base)`,
+`latent_factors.CRISIS_SHARE_MAX`], the floor being the cap mirrored in log space around base.
+A tercile with fewer than `MIN_STATE_DAYS` history days changes nothing, and says so.
 
 GARCH VOLATILITY (`garch_vol_ratio`). A Gaussian QMLE GARCH(1,1) per sleeve, variance-targeted
 (omega = s2 * (1 - a - b)), forecasting the mean variance over the next `horizon` days. The input
@@ -66,10 +68,18 @@ def _prev_day(d: str) -> str:
     return (date.fromisoformat(d[:10]) - timedelta(days=1)).isoformat()
 
 
+def crisis_share_min(base: float) -> float:
+    """The floor of the two-sided share: the cap mirrored around `base` in log space,
+    base^2 / CRISIS_SHARE_MAX (derived: 0.06^2 / 0.35 = 0.0103 at the standing 6% share), so the
+    VIX can move the share by the same multiple down as up."""
+    b = float(base)
+    return min(b, b * b / CRISIS_SHARE_MAX) if b > 0 else 0.0
+
+
 def vix_crisis_share(book_r: Sequence[float], dates: Sequence[str],
                      vix_rank: Mapping[str, float], asof: str, base: float,
                      ) -> tuple[float, dict[str, Any]]:
-    """The crisis-world share the VIX argues for as of `asof`, and why. Never below `base`."""
+    """The crisis-world share the VIX argues for as of `asof`, and why. Two-sided."""
     base = float(base)
     diag: dict[str, Any] = {"base": base, "asof": str(asof)[:10]}
     if base <= 0.0:
@@ -99,11 +109,13 @@ def vix_crisis_share(book_r: Sequence[float], dates: Sequence[str],
                       "why": f"{n} history days in the {want} tercile; {MIN_STATE_DAYS} needed"}
     prior_n = 1.0 / base                        # one crisis day of prior weight, centred on base
     post = (k + base * prior_n) / (n + prior_n)
-    share = min(max(base, post), CRISIS_SHARE_MAX)
-    diag.update(status="MEASURED", posterior=round(post, 6), lift=round(post / base, 4),
-                share=round(share, 6),
+    floor = crisis_share_min(base)
+    share = min(max(floor, post), CRISIS_SHARE_MAX)
+    diag.update(status="MEASURED", posterior=round(post, 6), lift=round(share / base, 4),
+                share=round(share, 6), floor=round(floor, 6),
                 why=(f"{k}/{n} crisis days after a {want}-VIX day -> P(crisis)={post:.3f} vs "
-                     f"standing {base:.3f}; raise only, cap {CRISIS_SHARE_MAX}"))
+                     f"standing {base:.3f}; two-sided, clipped to [{floor:.4f}, "
+                     f"{CRISIS_SHARE_MAX}]"))
     return share, diag
 
 

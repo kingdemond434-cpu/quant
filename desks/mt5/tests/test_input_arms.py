@@ -40,14 +40,18 @@ def _vix_world(n: int = 600, seed: int = 0):
     return book, days, dict(zip(days, rank, strict=True))
 
 
-def test_vix_share_rises_after_high_vix_and_never_falls_below_the_standing_share() -> None:
+def test_vix_share_is_two_sided() -> None:
     book, days, ranks = _vix_world()
     hi = next(d for d in reversed(days) if ranks[d] >= 0.9)
     lo = next(d for d in reversed(days) if ranks[d] <= 0.1)
     s_hi, d_hi = ia_lib.vix_crisis_share(book, days, ranks, hi, 0.06)
     s_lo, d_lo = ia_lib.vix_crisis_share(book, days, ranks, lo, 0.06)
     assert d_hi["status"] == "MEASURED" and s_hi > 0.06 and s_hi <= CRISIS_SHARE_MAX
-    assert d_lo["status"] == "MEASURED" and s_lo == pytest.approx(0.06)
+    # A calm tercile whose measured crisis rate is below base LOWERS the share (two-sided), but
+    # never below the log-mirrored floor.
+    assert d_lo["status"] == "MEASURED" and s_lo < 0.06
+    assert s_lo >= ia_lib.crisis_share_min(0.06) - 1e-12
+    assert ia_lib.crisis_share_min(0.06) == pytest.approx(0.06 ** 2 / CRISIS_SHARE_MAX)
 
 
 def test_vix_share_says_unmeasured_on_thin_or_missing_evidence() -> None:
