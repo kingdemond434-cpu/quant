@@ -43,3 +43,17 @@ def test_a_clean_file_and_an_unscrubbed_path_are_left_alone() -> None:
     data = b'{"lane":"noon","why":"no figures here"}\n'
     assert aw.scrub_text_for_publish(REL, data) == (None, 0)
     assert aw.scrub_text_for_publish("desks/mt5/data/sleeves.json", b"equity 5.00") == (None, 0)
+
+
+def test_structured_money_and_server_fields_are_withheld_by_key() -> None:
+    row = {"lane": "noon", "work_items": {"gold": {"equity": 266.01, "account_balance": 457.74,
+                                                   "pnl": -12.5, "free_margin": "1,200.00",
+                                                   "server": "FusionMarkets-Live", "login": 1234567,
+                                                   "n_trades": 23, "k_eff": 4.2, "pid": 26412}}}
+    out, n = aw.scrub_text_for_publish(REL, (json.dumps(row) + "\n").encode("utf-8"))
+    assert n == 1 and out is not None
+    gold = json.loads(out)["work_items"]["gold"]
+    for key in ("equity", "account_balance", "pnl", "free_margin"):
+        assert gold[key] == "[money]"
+    assert gold["server"] == "[withheld]" and gold["login"] == "[withheld]"
+    assert (gold["n_trades"], gold["k_eff"], gold["pid"]) == (23, 4.2, 26412)

@@ -132,13 +132,29 @@ def public_text(text: str) -> str:
     return _HOSTLIKE.sub("[host]", s)
 
 
+#: A structured field is withheld by its KEY: a money name (also as a suffix, account_equity) or
+#: a server/login/host name. Other keys (n_trades, k_eff, pid) keep their values.
+_MONEY_KEY = re.compile(r"(?i)(?:^|_)(balance|equity|margin|free_margin|profit|pnl|nav)$")
+_HOST_KEY = re.compile(r"(?i)(?:^|_)(server|login|host)$")
+
+
 def _scrub_values(node: Any) -> Any:
     if isinstance(node, str):
         return public_text(node)
     if isinstance(node, list):
         return [_scrub_values(v) for v in node]
     if isinstance(node, dict):
-        return {k: _scrub_values(v) for k, v in node.items()}
+        out: dict[Any, Any] = {}
+        for k, v in node.items():
+            key = str(k)
+            if _MONEY_KEY.search(key) and isinstance(v, (int, float, str)) \
+                    and not isinstance(v, bool):
+                out[k] = "[money]"
+            elif _HOST_KEY.search(key) and v is not None:
+                out[k] = "[withheld]"
+            else:
+                out[k] = _scrub_values(v)
+        return out
     return node
 
 
