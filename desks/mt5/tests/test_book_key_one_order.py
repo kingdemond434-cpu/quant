@@ -60,7 +60,7 @@ def test_a_name_zeroed_row_is_never_the_carrier(monkeypatch) -> None:
     assert dc.fold_book_aliases(keys) == {}            # b2 carries; a1 is zeroed on its own
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     # the carrier walk's joins: a name-zeroed row joins no key, so it is never walked as carrier
-    assert 'None if cert_book_zero(_r.get("name")) else _book_key(_r, _book))' in src
+    assert 'None if (cert_book_zero(_r.get("name")) or (_dz0 and _dz0(_r.get("name"))))' in src
 
 
 def test_rows_on_different_keys_or_off_the_book_are_never_folded() -> None:
@@ -73,7 +73,7 @@ def test_the_gateway_folds_before_sizing_and_logs_alias_folded() -> None:
     carry sends 0 and is named `alias_of` its final carrier, with the ALIAS_FOLDED log."""
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     assert "_aliases = fold_book_aliases(" not in src, "a second static fold could zero the carrier"
-    i = src.index("_carriers = book_carriers(_joins, _evidence)")
+    i = src.index("_carriers = book_carriers(_joins, _evidence, _holding)")
     j = src.index('_s["alias_of"] = _s["book_key_carrier"]')
     k = src.index('log(f"ALIAS_FOLDED')
     assert i < j < k

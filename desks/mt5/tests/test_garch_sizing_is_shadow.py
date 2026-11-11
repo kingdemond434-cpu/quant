@@ -28,7 +28,4 @@ def test_garch_is_off_the_money_path_and_says_so() -> None:
     assert i_gate < i_write and block.count("_gv_replace(") == 1
     assert 'garch_meta["applied"] = True' in block[i_gate:]
     assert '"applied": False' in block and 'garch_meta["scale"] =' in block
-    spec = next(f for f in model_roles.FAMILIES.values() if f.name == "garch_vol") \
-        if isinstance(model_roles.FAMILIES, dict) else \
-        next(f for f in model_roles.FAMILIES if f.name == "garch_vol")
-    assert "SHADOW" in str(spec)
+    assert "SHADOW" in str(model_roles.FAMILIES["garch_vol"])
