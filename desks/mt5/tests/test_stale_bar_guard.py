@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-from research import bar_freshness as bf
+DESK = Path(__file__).resolve().parents[1]
+if str(DESK) not in sys.path:
+    sys.path.insert(0, str(DESK))
+
+from research import bar_freshness as bf  # noqa: E402
 
 END = datetime(2026, 11, 4, 12, tzinfo=UTC)
 
