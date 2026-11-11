@@ -154,8 +154,8 @@ def test_both_naming_eras_are_read_in_day_order(rig: Path) -> None:
         pd.testing.assert_series_equal(a, b)
     cached = {p.name.split(".")[0] for p in (ow.TAPE_AGG / SYM).glob("*.parquet")}
     assert "20261004" not in cached, "the newest DAY is the open one, whatever its name form"
-    assert ow.TAPE_READ_STATS[SYM] == {"days": 4, "archived_days": 0, "undateable_files": 0,
-                                       "split_minutes": 0}
+    assert ow.TAPE_READ_STATS[SYM] == {"days": 4, "archived_days": 0, "days_with_two_files": 0,
+                                       "undateable_files": 0, "split_minutes": 0}
 
 
 def test_a_renamed_day_is_not_read_twice(rig: Path) -> None:
@@ -186,3 +186,20 @@ def test_a_minute_split_across_two_files_is_counted(rig: Path) -> None:
     _add("2026-10-02.parquet", "2026-10-01 23:59:50")       # a late tick, filed a day on
     ow._tape_series(SYM, pd.date_range("2026-10-01", periods=48, freq="60min", tz="UTC"), "H1")
     assert ow.TAPE_READ_STATS[SYM]["split_minutes"] == 1
+
+
+def test_a_day_written_twice_is_read_once_from_its_fuller_copy(rig: Path) -> None:
+    """The box writes most days twice (nightly `YYYYMMDD` compaction, a later `YYYY-MM-DD`
+    pass). One copy per day is read -- the one holding more ticks -- so no tick counts twice."""
+    days = ["2026-10-01", "2026-10-02", "2026-10-03"]
+    _write_days(rig, days)
+    index = pd.date_range("2026-10-01", "2026-10-03 23:00", freq="60min", tz="UTC")
+    before = ow._tape_series(SYM, index, "H1")
+    full = pd.read_parquet(rig / SYM / "2026-10-02.parquet")
+    full.iloc[: len(full) // 2].to_parquet(rig / SYM / "20261002.parquet")   # the thinner copy
+    ow._tape_minutes.cache_clear()
+    after = ow._tape_series(SYM, index, "H1")
+    for a, b in zip(before, after, strict=True):
+        pd.testing.assert_series_equal(a, b)
+    assert ow.TAPE_READ_STATS[SYM]["days_with_two_files"] == 1
+    assert ow.TAPE_READ_STATS[SYM]["days"] == 3

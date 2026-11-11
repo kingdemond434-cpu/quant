@@ -317,37 +317,62 @@ def _tape_minutes(symbol: str):
     chart-independent, only the resample rule differs. Columns: `spread_sum`, `n` (ticks) and
     `flow` (the net sign of every mid step whose LATER tick falls in the minute -- exactly the
     steps the old full-tick reader summed). Files are ordered by their DAY, never their name."""
+    from typing import Any
+
     import numpy as np
     import pandas as pd
     d = TAPE / symbol
     files = list(d.glob("*.parquet")) if d.exists() else []
     keyed = sorted(((_tape_day(f.stem) or "", f.name, f) for f in files))
     newest = max((k for k, _n, _f in keyed if k), default="")
-    # the newest DAY is still growing and is never cached; an undateable file is read, never
-    # cached, and counted
-    parts = [(k, _day_minutes(f, cache=bool(k) and k != newest)) for k, _n, f in keyed]
-    stats = {"days": len({k for k, _n, _f in keyed if k}), "archived_days": 0,
+    stats = {"days": 0, "archived_days": 0, "days_with_two_files": 0,
              "undateable_files": sum(1 for k, _n, _f in keyed if not k), "split_minutes": 0}
+    # ONE COPY PER DAY. The box writes most days TWICE (measured 2026-11-11: 12,829 of the
+    # 15,220 symbol-days): the nightly compaction as `YYYYMMDD.parquet` and a later pass as
+    # `YYYY-MM-DD.parquet`, not byte-identical, either one newer, either one larger. Reading both
+    # would count every tick and every mid step twice. The copy kept is the one holding MORE
+    # TICKS (measured from its own aggregate), then the newer file -- never a choice by name.
+    # The newest DAY is still growing and is never cached; an undateable file is read, never
+    # cached, and counted.
+    by_day: dict[str, list[tuple[float, float, Any]]] = {}
+    parts: list[tuple[str, Any]] = []
+    for k, _n, f in keyed:
+        agg = _day_minutes(f, cache=bool(k) and k != newest)
+        if not k:
+            parts.append(("", agg))
+            continue
+        try:
+            mtime = float(f.stat().st_mtime)
+        except OSError:
+            mtime = 0.0
+        ticks = float(agg["n"].sum()) if agg is not None and not agg.empty else -1.0
+        by_day.setdefault(k, []).append((ticks, mtime, agg))
     # A DAY WHOSE TICKS LEFT THE BOX KEEPS ITS MINUTES. `scripts/archive_tape.py` ships day files
     # older than its KEEP_DAYS off the box; the aggregate built while the file was resident stays
     # under TAPE_AGG and is read here, so archiving never shortens the history the judge sees.
-    resident = {k for k, _n, _f in keyed if k}
+    resident = set(by_day)
     agg_dir = TAPE_AGG / symbol
     if agg_dir.exists():
         tag = f".v{TAPE_AGG_VERSION}.parquet"
-        archived: dict[str, Path] = {}
         for a in sorted(agg_dir.glob(f"*{tag}")):
             day = _tape_day(a.name[: -len(tag)].rsplit(".", 1)[0])
-            if day and day not in resident:
-                archived.setdefault(day, a)
-        for day, a in sorted(archived.items()):
+            if not day or day in resident:
+                continue
             try:
                 got = pd.read_parquet(a)
+                mtime = float(a.stat().st_mtime)
             except Exception:
                 continue
             if tuple(got.columns) == TAPE_AGG_COLUMNS:
-                parts.append((day, got))
-                stats["archived_days"] += 1
+                if day not in by_day:
+                    stats["archived_days"] += 1
+                by_day.setdefault(day, []).append((float(got["n"].sum()), mtime, got))
+    for day, copies in by_day.items():
+        stats["days"] += 1
+        if len(copies) > 1:
+            stats["days_with_two_files"] += 1
+        best = max(copies, key=lambda c: (c[0], c[1]))
+        parts.append((day, best[2]))
     frames = [p for _k, p in sorted(parts, key=lambda kp: kp[0])
               if p is not None and not p.empty]
     TAPE_READ_STATS[symbol] = stats
