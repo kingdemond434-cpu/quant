@@ -33,8 +33,10 @@ import contextlib
 import csv
 import io
 import json
+import ntpath
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -433,6 +435,151 @@ def _artifact_age(artifact: str) -> float | None:
     return _age_min(ROOT / artifact)
 
 
+#: THE ERROR TEXT OF A FAILING TASK (hourly-pass idea 629, 2026-11-11). A FAILING row used to
+#: carry only the translated exit code: "generic failure (the script itself returned 1)" says a
+#: run failed, never why. MergeDocket returned 1 for hours while its own log was held open by a
+#: hung earlier run, and nothing on the board said so. Each FAILING row now carries the tail of
+#: every log its command redirects into, whether the failing run wrote to that log at all, and
+#: whether the log can be appended to now (a held log is exactly the MergeDocket shape).
+#: process_health.json is published to a public repository, so every tail line is redacted
+#: before it is kept, and a tail is bounded in bytes, lines and line length.
+TAIL_BYTES = 8192
+TAIL_LINES = 20
+TAIL_LINE_CHARS = 300
+_REDIRECT = re.compile(
+    r"""(?<![\w&])(?:[12*])?>>?(?!&)\s*(?:"([^"]+)"|([^\s"<>|&]+))"""
+    r"""|-Redirect(?:StandardError|StandardOutput)\s+(?:"([^"]+)"|'([^']+)'|(\S+))"""
+    r"""|(?:Tee-Object|Out-File)(?:\s+-(?:Append|FilePath|Encoding\s+\S+))*\s+(?:"([^"]+)"|'([^']+)'|([^\s"'|;]+))""",
+    re.IGNORECASE)
+_SECRET_ASSIGN = re.compile(
+    r"(?i)\b(api[_-]?key|apikey|access[_-]?key|token|secret|password|passwd|pwd|authorization"
+    r"|bearer|client[_-]?secret)\b(\s*[:=]\s*|\s+)(['\"]?)[^\s'\"&,;]+")
+_LONG_TOKEN = re.compile(r"\b[A-Za-z0-9_\-+/=]{24,}\b")
+_LONG_DIGITS = re.compile(r"\b\d{7,}\b")
+_LAST_RUN_FORMATS = ("%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m/%d/%Y %I:%M:%S %p")
+
+
+def redact_line(line: str) -> str:
+    """One log line made safe to publish: secret assignments, long opaque tokens and long digit
+    runs (account logins) are masked. A git sha or an 8-digit date stays readable."""
+    line = _SECRET_ASSIGN.sub(lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}[REDACTED]", line)
+
+    def _tok(m: re.Match[str]) -> str:
+        t = m.group(0)
+        if re.fullmatch(r"[0-9a-f]{7,64}", t) or not (re.search(r"\d", t)
+                                                      and re.search(r"[A-Za-z]", t)):
+            return t
+        return "[REDACTED]"
+
+    line = _LONG_TOKEN.sub(_tok, line)
+    line = _LONG_DIGITS.sub(lambda m: m.group(0) if re.fullmatch(r"20\d{6}", m.group(0))
+                            else "[N]", line)
+    return line[:TAIL_LINE_CHARS]
+
+
+def redirect_targets(command: str, start_in: str = "") -> list[str]:
+    """The files a scheduled task's command line writes its output into, in order, deduplicated.
+    `2>&1` and `>nul` are not files. %VARS% are expanded; a relative path is read against the
+    task's Start In folder."""
+    out: list[str] = []
+    for m in _REDIRECT.finditer(command or ""):
+        raw = next((g for g in m.groups() if g), "").strip().strip("'\"")
+        if not raw or raw.lower() in ("nul", "$null", "nul:"):
+            continue
+        path = ntpath.expandvars(raw)
+        base = (start_in or "").strip().strip('"')
+        if not ntpath.isabs(path) and base and base.upper() != "N/A":
+            path = ntpath.join(base, path)
+        if path not in out:
+            out.append(path)
+    return out
+
+
+def _decode(raw: bytes) -> str:
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff") or (raw and raw.count(b"\x00") > len(raw) // 4):
+        return raw.decode("utf-16-le", errors="replace").lstrip("\ufeff")
+    return raw.decode("utf-8", errors="replace").lstrip("\ufeff")
+
+
+def _parse_last_run(text: str) -> datetime | None:
+    for fmt in _LAST_RUN_FORMATS:
+        with contextlib.suppress(ValueError):
+            return datetime.strptime((text or "").strip(), fmt).astimezone()
+    return None
+
+
+def _append_blocked(path: Path) -> bool | None:
+    """True when another process holds the log so a new run cannot append to it. Opens for
+    append WITHOUT create and writes nothing, so neither the content nor the mtime changes.
+    None when not measurable (not Windows, file absent)."""
+    if sys.platform != "win32" or not path.exists():
+        return None
+    try:
+        fd = os.open(str(path), os.O_WRONLY | os.O_APPEND)
+    except PermissionError:
+        return True
+    except OSError:
+        return None
+    os.close(fd)
+    return False
+
+
+def log_tail(path: Path, last_run: str = "") -> dict[str, Any]:
+    """The redacted tail of one log, plus whether the last run wrote to it."""
+    doc: dict[str, Any] = {"path": str(path)}
+    try:
+        st = path.stat()
+    except OSError as exc:
+        doc["state"] = f"UNREADABLE: {type(exc).__name__}"
+        return doc
+    doc["bytes"] = st.st_size
+    mtime = datetime.fromtimestamp(st.st_mtime, tz=UTC)
+    doc["mtime_utc"] = mtime.isoformat(timespec="seconds")
+    ran = _parse_last_run(last_run)
+    # schtasks prints box-local time; it is read as local and compared with the UTC mtime.
+    # A log last written before the run started means the failing run wrote nothing to it.
+    doc["written_by_last_run"] = None if ran is None else mtime >= ran
+    doc["append_blocked"] = _append_blocked(path)
+    try:
+        with path.open("rb") as fh:
+            fh.seek(max(0, st.st_size - TAIL_BYTES))
+            text = _decode(fh.read(TAIL_BYTES))
+    except OSError as exc:
+        doc["state"] = f"UNREADABLE: {type(exc).__name__}"
+        return doc
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if st.st_size > TAIL_BYTES and lines:
+        lines = lines[1:]   # the first line of a mid-file read is a fragment
+    doc["state"] = "OK"
+    doc["tail"] = [redact_line(ln) for ln in lines[-TAIL_LINES:]]
+    return doc
+
+
+def failure_evidence(task: dict[str, str]) -> dict[str, Any]:
+    """Why a FAILING task failed, as far as its own logs say."""
+    command = str(task.get("Task To Run") or "")
+    targets = redirect_targets(command, str(task.get("Start In") or ""))
+    last_run = str(task.get("Last Run Time") or "")
+    # A -File wrapper that logs for itself names no file on its command line; the desk's own
+    # convention (desks/mt5/logs/<TaskName>.log) is read then, when that file exists.
+    name = str(task.get("TaskName") or "").strip().lstrip("\\").split("\\")[-1]
+    conventional = ROOT / "desks" / "mt5" / "logs" / f"{name}.log"
+    if not targets and name and conventional.exists():
+        targets = [str(conventional)]
+    if not targets:
+        return {"state": "NO_LOG", "why": "the task's command redirects into no file, so its "
+                "error text goes nowhere this board can read"}
+    logs = [log_tail(Path(t), last_run) for t in targets[:3]]
+    held = [lg["path"] for lg in logs if lg.get("append_blocked")]
+    silent = [lg["path"] for lg in logs if lg.get("written_by_last_run") is False]
+    why = []
+    if held:
+        why.append("held open by another process, so a new run cannot write: " + ", ".join(held))
+    if silent:
+        why.append("the failing run wrote nothing to: " + ", ".join(silent))
+    return {"state": "READ", "why": "; ".join(why), "logs": logs}
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -560,6 +707,7 @@ def build() -> dict[str, Any]:
             "purpose": purpose or None,
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
+            "failure_evidence": failure_evidence(t) if verdict == "FAILING" else None,
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
