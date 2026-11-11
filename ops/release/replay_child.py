@@ -495,6 +495,24 @@ def research_step(work: Path, scenario: dict[str, Any], now: Any, day: Any) -> d
     from research import pf_allocator as pa
 
     ms.ARCHIVE = ms.ARCHIVE_LONG = paths["archive"]
+    # The factor model's macro cut is "known as of now" wherever the tree has one (#249 adds
+    # `_macro_changes(archive, as_of=None)`, defaulting to the wall clock). The wall clock is not
+    # the scenario's: on it every synthetic print is known and base and head agree vacuously
+    # (#929 audit). So the leg pins that clock to the scenario's `now`; a tree without the
+    # parameter is called exactly as before. (Not recorded in the output: base and head would
+    # differ on the flag itself, not on anything the book does.)
+    import functools
+    import inspect
+
+    _orig_mc = lf._macro_changes
+    if "as_of" in inspect.signature(_orig_mc).parameters:
+        _clock = pd.Timestamp(now).tz_convert("UTC").to_pydatetime()
+
+        @functools.wraps(_orig_mc)
+        def _pinned_mc(archive: Any, as_of: Any = None) -> Any:
+            return _orig_mc(archive, as_of=as_of or _clock)
+
+        lf._macro_changes = _pinned_mc
     ms.ALFRED_DIR = paths["root"] / "no_alfred"
     lf.daily_factor_returns.__defaults__ = (paths["universe"], None)
     lf.daily_factor_returns.__kwdefaults__ = {"cache": None, "max_age_s": 0.0}

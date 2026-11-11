@@ -35,15 +35,31 @@ import replay_child as rc
 import replay_shadow as rs
 sc = next(s for s in rs.scenarios() if s.get("research"))
 day = pd.Timestamp(sc["day"], tz="UTC")
-out = rc.research_step(Path.cwd(), sc, day + pd.Timedelta(hours=23.9), day)
+now = day + pd.Timedelta(hours=23.9)
+mode = sys.argv[2]
+seen = []
+if mode == "lag":  # a macro publication lag two days longer than the tree's
+    from research import orthogonal_sweep as osw
+    osw.MACRO_PUBLICATION_LAG_D += 2
+if mode == "as_of":  # a factor model that cuts at `as_of`, as #249's does, three days of lag
+    from libs.portfolio import leg_factors as lf
+    plain = lf._macro_changes
+    def cut(archive, as_of=None):
+        seen.append(str(pd.Timestamp(as_of)) if as_of is not None else None)
+        edge = (pd.Timestamp(as_of) - pd.Timedelta(days=3)).date().isoformat()
+        return {k: v[[str(i)[:10] <= edge for i in v.index]] for k, v in plain(archive).items()}
+    lf._macro_changes = cut
+out = rc.research_step(Path.cwd(), sc, now, day)
+out["_seen"] = seen
+out["_now"] = str(now)
 print(json.dumps(out, sort_keys=True, default=str))
 """
 
 
-def _run(tmp: Path) -> dict[str, Any]:
+def _run(tmp: Path, mode: str = "plain") -> dict[str, Any]:
     tmp.mkdir(parents=True, exist_ok=True)
     p = subprocess.run(
-        [sys.executable, "-c", _PROBE, str(ROOT)],
+        [sys.executable, "-c", _PROBE, str(ROOT), mode],
         cwd=tmp,
         capture_output=True,
         text=True,
@@ -81,3 +97,20 @@ def test_the_leg_is_not_vacuous_and_is_deterministic(tmp_path: Path) -> None:
     assert all(v is not None for v in alloc["loadings"].values())
     assert any({"d_vix", "d_r10"} & set(v["used"]) for v in alloc["loadings"].values())
     assert _run(tmp_path / "b") == a
+
+
+def test_a_longer_macro_lag_changes_the_macro_cell(tmp_path: Path) -> None:
+    """Agreement only means something if the leg can disagree: two more days of publication lag
+    must move the macro_conditional input the leg compares."""
+    plain, lagged = _run(tmp_path / "a"), _run(tmp_path / "b", "lag")
+    assert lagged["macro_conditional"]["input"] != plain["macro_conditional"]["input"]
+
+
+def test_the_factor_model_is_cut_at_the_scenario_clock_not_the_wall_clock(tmp_path: Path) -> None:
+    """A factor model with an `as_of` cut (#249) gets the scenario's `now`, never the wall
+    clock (on which every synthetic print is known and base and head agree vacuously), and that
+    cut moves the allocator output the leg compares (#929 audit)."""
+    plain, cut = _run(tmp_path / "a"), _run(tmp_path / "b", "as_of")
+    assert cut["_seen"], "the leg never called the factor model's macro cut"
+    assert set(cut["_seen"]) == {cut["_now"]}
+    assert cut["allocator"] != plain["allocator"]
