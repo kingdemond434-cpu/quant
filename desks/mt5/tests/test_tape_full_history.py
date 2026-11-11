@@ -24,6 +24,7 @@ for _p in (str(DESK), str(DESK.parent.parent)):
 from research import orthogonal_sweep as ow  # noqa: E402
 
 SYM = "EURUSD"
+EPOCH = pd.Timestamp(0, tz="UTC")
 
 
 def _old_tape_series(tape: Path, index, rule: str):
@@ -209,7 +210,7 @@ def _as_compact(src: Path, dst: Path) -> None:
     """Rewrite a `ts, bid, ask` day in the compact copy's own schema: bronze rows with
     `time_msc` (epoch ms) and `time` (epoch s), and no `ts` column."""
     t = pd.read_parquet(src)
-    ms = pd.to_datetime(t["ts"], utc=True).astype("int64") // 1_000_000
+    ms = (pd.to_datetime(t["ts"], utc=True) - EPOCH) // pd.Timedelta(milliseconds=1)
     pd.DataFrame({"time": ms // 1000, "time_msc": ms, "bid": t["bid"], "ask": t["ask"],
                   "last": 0.0, "volume": 0, "flags": 6}).to_parquet(dst)
 
@@ -241,7 +242,7 @@ def test_an_integer_ts_is_read_in_its_own_unit(rig: Path, unit: str) -> None:
     before = ow._tape_series(SYM, index, "H1")
     p = rig / SYM / "2026-10-01.parquet"
     t = pd.read_parquet(p)
-    ns = pd.to_datetime(t["ts"], utc=True).astype("int64")
+    ns = (pd.to_datetime(t["ts"], utc=True) - EPOCH) // pd.Timedelta(nanoseconds=1)
     t["ts"] = ns if unit == "ns" else ns // 1_000_000
     t.to_parquet(p)
     for f in (ow.TAPE_AGG / SYM).glob("*.parquet"):
