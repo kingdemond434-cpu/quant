@@ -46,6 +46,8 @@ from __future__ import annotations
 
 import ast
 import fnmatch
+import hashlib
+import json
 import re
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -122,6 +124,25 @@ _RISK = re.compile(r"risk_increasing|risk increase", re.IGNORECASE)
 #: line cannot be read, and a failure that may cite a line is never re-run.
 _VOTED = re.compile(r"voted FAIL|findings are in the job log", re.IGNORECASE)
 _DELIVERED = re.compile(r"\bdelivered\s+(\d+)\b")
+
+
+# ----------------------------------------------------------------------------- the root digest
+
+
+def root_digest(read: Callable[[str], bytes | None], names: Iterable[str], policy: Mapping) -> str:
+    """THE root digest (sealed here; policy.root_digest and repin.py both use THIS function, so no
+    tree's own code decides what is pinned): sha256 over (path, sha256(bytes)) of every root file
+    present in the tree `read` serves. `names`: every path in that tree. A missing root file
+    hashes as absent, so deleting one changes the digest too."""
+    pats = [str(p).lower() for p in policy["root_files"]]
+    rows = {}
+    for n in sorted(set(names)):
+        low = n.replace("\\", "/").lower()
+        if any(fnmatch.fnmatchcase(low, p) for p in pats) and "__pycache__" not in n:
+            data = read(n)
+            rows[n] = hashlib.sha256(data).hexdigest() if data is not None else "absent"
+    blob = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(blob).hexdigest()
 
 
 # ----------------------------------------------------------------------------- the sealed core

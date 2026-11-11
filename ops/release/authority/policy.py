@@ -27,7 +27,6 @@ WAIT or HOLD, never CLEAR.
 from __future__ import annotations
 
 import fnmatch
-import hashlib
 import json
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
@@ -65,17 +64,9 @@ def _match(name: str, pats: Iterable[str]) -> bool:
 
 
 def root_digest(read: Callable[[str], bytes | None], names: Iterable[str], policy: Mapping) -> str:
-    """sha256 over (path, sha256(bytes)) of every root file present in the tree `read` serves.
-    `names`: every path in that tree (git ls-files). A missing root file hashes as absent, so
-    deleting one changes the digest too."""
-    pats = list(policy["root_files"])
-    rows = {}
-    for n in sorted(set(names)):
-        if _match(n, pats) and "__pycache__" not in n:
-            data = read(n)
-            rows[n] = hashlib.sha256(data).hexdigest() if data is not None else "absent"
-    blob = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(blob).hexdigest()
+    """The root digest: root_path.root_digest (sealed), the one function the authority, the gate
+    and the re-pin service all use."""
+    return str(root_path().root_digest(read, names, policy))
 
 
 def _lines(text: str | None) -> set[str]:

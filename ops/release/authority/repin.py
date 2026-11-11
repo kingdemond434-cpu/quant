@@ -39,7 +39,6 @@ import os
 import shlex
 import subprocess
 import sys
-import types
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -52,7 +51,8 @@ LOG = "repin.log.jsonl"
 RELEASE_REL = "desks/mt5/data/RELEASE.json"
 POLICY_REL = "ops/release/authority/policy.py"
 ROOT_POLICY_REL = "ops/release/authority/ROOT_POLICY.json"
-SCAN = 500
+#: Commits searched for the merge when the current pin names no commit on the released line.
+SCAN = 5000
 
 
 def _root_path() -> Any:
@@ -124,9 +124,20 @@ class Repo:
         self.path = path
 
     def git(self, *args: str) -> subprocess.CompletedProcess[bytes]:
+        """Read-only git as SYSTEM in a tree other accounts can write: no system or global
+        config, and every repo-config key that can run a program is overridden on the command
+        line (which wins over .git/config). Only plumbing reads are used: no index, no hooks."""
+        env = {**os.environ, "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
+               "GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0"}  # fmt: skip
+        env.pop("GIT_DIR", None)
+        env.pop("GIT_WORK_TREE", None)
+        safe = ["-c", f"safe.directory={self.path.as_posix()}", "-c", "core.fsmonitor=false",
+                "-c", "core.hooksPath=" + os.devnull, "-c", "diff.external=",
+                "-c", "core.pager=cat", "-c", "core.sshCommand=",
+                "-c", "protocol.allow=never"]  # fmt: skip
         return subprocess.run(
-            ["git", "-c", "safe.directory=*", "-C", str(self.path), *args],
-            capture_output=True, check=False, timeout=120,
+            ["git", *safe, "-C", str(self.path), *args],
+            capture_output=True, check=False, timeout=120, env=env,
         )  # fmt: skip
 
     def out(self, *args: str) -> str:
@@ -136,25 +147,22 @@ class Repo:
         return p.stdout.decode("utf-8", "replace")
 
     def show(self, rev: str, name: str) -> bytes | None:
-        p = self.git("show", f"{rev}:{name}")
+        p = self.git("show", "--no-textconv", f"{rev}:{name}")
         return p.stdout if p.returncode == 0 else None
 
     def ancestor(self, a: str, b: str) -> bool:
         return self.git("merge-base", "--is-ancestor", a, b).returncode == 0
 
 
-def tree_digest(repo: Repo, rev: str) -> str:
-    """The root digest of `rev`, computed exactly as the authority and the gate compute it: by
-    that tree's own policy.root_digest over that tree's own ROOT_POLICY.json."""
-    src = repo.show(rev, POLICY_REL)
+def tree_digest(repo: Repo, rev: str, rp: Any) -> str:
+    """The root digest of `rev` by the INSTALLED sealed root_path.root_digest (the same function
+    the authority and the gate use), over that tree's ROOT_POLICY.json (a sealed file). No code
+    from the tree is ever run."""
     raw = repo.show(rev, ROOT_POLICY_REL)
-    if src is None or raw is None:
+    if raw is None:
         raise RuntimeError(f"{rev[:9]} has no root policy")
-    mod = types.ModuleType("_repin_policy")
-    mod.__dict__["__file__"] = str(HERE / "policy.py")
-    exec(compile(src, f"{rev[:9]}:{POLICY_REL}", "exec"), mod.__dict__)
     names = repo.out("ls-tree", "-r", "--name-only", rev).splitlines()
-    return str(mod.root_digest(lambda n: repo.show(rev, n), names, json.loads(raw)))
+    return str(rp.root_digest(lambda n: repo.show(rev, n), names, json.loads(raw)))
 
 
 def _read_json(path: Path) -> Any:
@@ -179,7 +187,10 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any) -> dict[str, Any]:
     f["adopted"] = (repo.ancestor(c, tip), f"the live tree's HEAD {tip[:9]} vs release {c[:9]}")
     if not f["adopted"][0]:
         return f
-    lines = repo.out("log", "--first-parent", f"-{SCAN}", "--format=%H%x00%P%x00%ct%x00%s", c)
+    old = _read_json(pin)
+    since = str(old.get("commit") or "") if isinstance(old, Mapping) else ""
+    span = [c, f"^{since}"] if since and repo.ancestor(since, c) else [f"-{SCAN}", c]
+    lines = repo.out("log", "--first-parent", "--format=%H%x00%P%x00%ct%x00%s", *span)
     log = []
     for ln in lines.splitlines():
         parts = ln.split("\x00")
@@ -193,7 +204,8 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any) -> dict[str, Any]:
     if merge is None:
         return f
     m = merge[0]
-    names = repo.out("diff", "--name-only", "--no-renames", f"{m}^1", m).splitlines()
+    names = repo.out("diff", "--no-ext-diff", "--no-textconv", "--name-only", "--no-renames",
+                     f"{m}^1", m).splitlines()  # fmt: skip
 
     def side(rev: str) -> Callable[[str], str | None]:
         def read(n: str) -> str | None:
@@ -203,9 +215,8 @@ def gather(registry: Path, live: Path, pin: Path, rp: Any) -> dict[str, Any]:
         return read
 
     f["sealed"] = rp.sealed_touch(names, side(f"{m}^1"), side(m))
-    f["digest_m"] = tree_digest(repo, m)
-    f["digest_c"] = tree_digest(repo, c)
-    old = _read_json(pin)
+    f["digest_m"] = tree_digest(repo, m, rp)
+    f["digest_c"] = tree_digest(repo, c, rp)
     f["old_digest"] = old.get("digest") if isinstance(old, Mapping) else None
     return f
 
@@ -221,6 +232,22 @@ def _alert(cmd: str | None, title: str, body: str) -> str:
     return f"alert rc={p.returncode} {' '.join((p.stdout or '').split())[:120]}"
 
 
+def write_pin(pin: Path, doc: Mapping[str, Any]) -> None:
+    """Atomically: a temp file beside the pin, given the pin's ACL (Administrators and SYSTEM
+    write, Users read) BEFORE it replaces the pin, so there is never a moment with a partial
+    pin or a pin other accounts can write."""
+    tmp = pin.with_name(pin.name + ".repin.tmp")
+    tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+    if os.name == "nt":
+        got = subprocess.run(["icacls", str(tmp), "/inheritance:r", "/grant:r",
+                              "Administrators:F", "SYSTEM:F", "Users:R"],
+                             capture_output=True, check=False, timeout=60)  # fmt: skip
+        if got.returncode != 0:
+            tmp.unlink(missing_ok=True)
+            raise OSError("the new pin's ACL could not be set; nothing pinned")
+    os.replace(tmp, pin)
+
+
 def run(registry: Path, live: Path, pin: Path, notify: str | None, now: datetime) -> int:
     rp = _root_path()
     try:
@@ -234,9 +261,7 @@ def run(registry: Path, live: Path, pin: Path, notify: str | None, now: datetime
         doc = {"digest": f["digest_c"], "commit": f["release_sha"], "pinned_at": now.isoformat(),
                "by": "repin", "previous_digest": f.get("old_digest"), "pr": inf.get("pr"),
                "head": inf.get("head"), "merge": f["merge"][0]}  # fmt: skip
-        # written in place, never replaced, so the pin keeps the ACL root_merge.ps1 / the
-        # installer gave it (Administrators and SYSTEM write, Users read)
-        pin.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+        write_pin(pin, doc)
         line.update(old=f.get("old_digest"), new=f["digest_c"], commit=f["release_sha"])
         line["alert"] = _alert(notify, f"ROOT re-pinned after #{inf.get('pr')}",
                                f"{why}. Root digest {str(f.get('old_digest'))[:16]} -> "

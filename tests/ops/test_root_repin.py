@@ -30,6 +30,7 @@ def _load(name: str, path: Path) -> Any:
 
 
 rp_mod = _load("repin_t", AUTH / "repin.py")
+rpm = _load("rp_t", AUTH / "root_path.py")
 T_MERGE = datetime(2026, 11, 15, 12, tzinfo=UTC)
 
 
@@ -81,7 +82,8 @@ class Box:
         self.merge = _git(r, "rev-parse", "HEAD")
         self.release(self.merge)
         self.pin = self.reg / "ROOT_PIN.json"
-        self.pin.write_text(json.dumps({"digest": rp_mod.tree_digest(rp_mod.Repo(r), self.base)}))
+        first = rp_mod.tree_digest(rp_mod.Repo(r), self.base, rpm)
+        self.pin.write_text(json.dumps({"digest": first}))
         (self.reg / "ROOT_INFLIGHT.json").write_text(json.dumps({"pr": 41, "head": self.head}))
         self.notice(T_MERGE - timedelta(hours=73))
         self.alerts: list[str] = []
@@ -112,7 +114,7 @@ def test_a_root_path_merge_that_was_released_and_adopted_is_re_pinned(tmp_path: 
     old = json.loads(b.pin.read_text())["digest"]
     assert b.run() == 0
     pin = json.loads(b.pin.read_text())
-    want = rp_mod.tree_digest(rp_mod.Repo(b.live), b.merge)
+    want = rp_mod.tree_digest(rp_mod.Repo(b.live), b.merge, rpm)
     assert pin["digest"] == want != old and pin["commit"] == b.merge and pin["by"] == "repin"
     assert pin["previous_digest"] == old and pin["merge"] == b.merge
     assert not (b.reg / "ROOT_INFLIGHT.json").exists()
@@ -126,7 +128,27 @@ def test_the_digest_is_the_one_the_authority_computes(tmp_path: Path) -> None:
     repo = rp_mod.Repo(b.live)
     names = repo.out("ls-tree", "-r", "--name-only", b.merge).splitlines()
     want = pol.root_digest(lambda n: repo.show(b.merge, n), names, pol.load_policy())
-    assert rp_mod.tree_digest(repo, b.merge) == want
+    assert rp_mod.tree_digest(repo, b.merge, rpm) == want
+
+
+def test_repin_never_runs_code_from_the_tree_it_pins(tmp_path: Path) -> None:
+    """A hostile policy.py in the tree (one that lies about its digest or acts on import) changes
+    nothing: the digest comes from the installed sealed root_path, and tree code never runs."""
+    b = Box(tmp_path)
+    repo = rp_mod.Repo(b.live)
+    want = rp_mod.tree_digest(repo, b.merge, rpm)
+    flag = tmp_path / "pwned"
+    _put(b.live, "ops/release/authority/policy.py",
+         f"open({str(flag)!r}, 'w').write('x')\ndef root_digest(*a, **k):\n    return 'forged'\n"
+         "def load_policy(*a, **k):\n    return {}\n")  # fmt: skip
+    _git(b.live, "commit", "-qam", "hostile policy", when=T_MERGE + timedelta(minutes=5))
+    evil = _git(b.live, "rev-parse", "HEAD")
+    got = rp_mod.tree_digest(repo, evil, rpm)
+    assert got != "forged" and not flag.exists()
+    assert got != want  # policy.py is a root file, so its bytes still count in the digest
+    b.release(evil)
+    b.run()
+    assert not flag.exists() and json.loads(b.pin.read_text()).get("digest") != "forged"
 
 
 def _refused(b: Box, words: str) -> None:
