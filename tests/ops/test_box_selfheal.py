@@ -82,12 +82,13 @@ def test_no_step_can_stop_the_seal() -> None:
 def test_a_throw_after_the_rename_puts_the_old_pin_back() -> None:
     body = _body("Invoke-PinRelocation")
     assert body.index("$kept = $null") < body.index("try {")          # hoisted: the catch can see it
-    catch = body.rindex("} catch {")
-    tail = body[catch:]
-    assert "Rename-Item -LiteralPath $kept" in tail and "$row.restored = $kept" in tail
-    assert tail.index("Remove-Item -LiteralPath $RegistryPin") < tail.index("Rename-Item -LiteralPath $kept")
+    tail = body[body.index("a throw after the rename"):]                 # the outer catch
+    restore = tail.index("Rename-Item -LiteralPath $kept")
+    assert "$row.restored = $kept" in tail
+    assert tail.index("Remove-Item -LiteralPath $RegistryPin") < restore
     # $kept is set only AFTER the rename succeeded, so a failed rename restores nothing
-    assert body.index('NewName ("ROOT_PIN.json.superseded-"') < body.index('$kept = "$RegistryPin.superseded-')
+    renamed = body.index('NewName ("ROOT_PIN.json.superseded-"')
+    assert renamed < body.index('$kept = "$RegistryPin.superseded-')
 
 
 def test_bin_copies_only_files_equal_to_head() -> None:
