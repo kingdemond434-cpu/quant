@@ -228,8 +228,10 @@ def growth(history: list[dict[str, Any]], now_row: dict[str, Any],
            hours: float) -> dict[str, Any]:
     """Used-GB and per-directory growth against the newest entry at least `hours` old.
 
-    A directory absent from the old entry counts from 0 (it was under the top-N or did not
-    exist), so a NEW 50 GB tree is named as a grower rather than silently skipped.
+    Only a directory present in BOTH entries gets a gb_delta. One absent from the old top-N is
+    listed under `new_in_top` with its size and no delta: it may have sat just under the
+    top-N and grown a little, or be a brand-new tree, and the history cannot tell which, so
+    claiming its whole size as growth would overstate it.
     """
     now_t = _parse(now_row["at"])
     base: dict[str, Any] | None = None
@@ -243,11 +245,14 @@ def growth(history: list[dict[str, Any]], now_row: dict[str, Any],
     if base is None:
         return {"status": "UNMEASURED", "why": f"no census at least {hours:g} h old yet"}
     old = base.get("top") or {}
-    growers = sorted(((p, round(gb - float(old.get(p, 0.0)), 2))
-                      for p, gb in now_row["top"].items()), key=lambda x: -x[1])
+    growers = sorted(((p, round(gb - float(old[p]), 2))
+                      for p, gb in now_row["top"].items() if p in old), key=lambda x: -x[1])
+    entrants = sorted(((p, round(float(gb), 2)) for p, gb in now_row["top"].items()
+                       if p not in old), key=lambda x: -x[1])
     return {"status": "MEASURED", "since": base["at"],
             "used_gb_delta": round(now_row["used_gb"] - float(base.get("used_gb", 0.0)), 2),
-            "top_growers": [{"path": p, "gb_delta": d} for p, d in growers[:10] if d > 0]}
+            "top_growers": [{"path": p, "gb_delta": d} for p, d in growers[:10] if d > 0],
+            "new_in_top": [{"path": p, "size_gb": g} for p, g in entrants[:10]]}
 
 
 def append_history(row: dict[str, Any], path: Path = HISTORY) -> None:
@@ -323,7 +328,9 @@ def main(argv: list[str] | None = None) -> int:
     for k, g in grow.items():
         if g["status"] == "MEASURED":
             print(f"growth {k}: used {g['used_gb_delta']:+.1f} GB since {g['since']}; top "
-                  + ", ".join(f"{x['path']} {x['gb_delta']:+.1f}" for x in g["top_growers"][:3]))
+                  + ", ".join(f"{x['path']} {x['gb_delta']:+.1f}" for x in g["top_growers"][:3])
+                  + "".join(f"; new in top {x['path']} {x['size_gb']:.1f} GB"
+                            for x in g["new_in_top"][:3]))
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps({
         "generated_at": at, "growth": grow,

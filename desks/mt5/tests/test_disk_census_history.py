@@ -32,8 +32,10 @@ def test_growth_names_the_grower_and_a_new_tree() -> None:
     g = dc.growth(hist, now, 24)
     assert g["status"] == "MEASURED"
     assert g["used_gb_delta"] == 60.0
-    assert [x["path"] for x in g["top_growers"]] == ["C:/a", "C:/new"]
+    assert [x["path"] for x in g["top_growers"]] == ["C:/a"]
     assert g["top_growers"][0]["gb_delta"] == 40.0
+    # an entrant to the top-N is named with its size, never charged its whole size as growth
+    assert g["new_in_top"] == [{"path": "C:/new", "size_gb": 20.0}]
 
 
 def test_growth_unmeasured_without_an_old_enough_entry() -> None:
