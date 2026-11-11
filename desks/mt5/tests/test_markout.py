@@ -183,3 +183,24 @@ def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
         "history_deals_get takes no magic keyword; a refused keyword lands in the except and "
         "the ledger is silently never written")
     assert 'getattr(d, "magic", 0)' in src
+
+
+def test_the_rearm_gate_is_measured_per_sleeve_in_shadow() -> None:
+    """Idea 586: re-arm a Fusion sleeve only on its OWN positive markout -- measured here, used
+    nowhere. A sleeve below the fill floor is UNMEASURED, never re-armed by default."""
+    from mt5desk.markout import REARM_MIN_FILLS, rearm_shadow
+    chain = ([{"sleeve": "good", "realized_r": 0.4}] * REARM_MIN_FILLS
+             + [{"sleeve": "bad", "realized_r": -0.3}] * REARM_MIN_FILLS
+             + [{"sleeve": "thin", "realized_r": 2.0}] * (REARM_MIN_FILLS - 1)
+             + [{"sleeve": "", "realized_r": 1.0}, {"sleeve": "good", "realized_r": None}])
+    rows = [{"sleeve": "good", "slip_r": -0.05}, {"sleeve": "bad", "slip_r": -0.4}]
+    m = Markout(n_deals=31, n_matched=2, n_unfilled_intents=0, n_unmatched_deals=0,
+                mean_slip_quote=0.0, median_slip_quote=0.0, worst_slip_quote=0.0,
+                mean_slip_r=-0.2, edge_share=None, rows=rows, chain=chain)
+    doc = rearm_shadow(m)
+    assert doc["mode"] == "SHADOW"
+    assert doc["sleeves"]["good"]["verdict"] == "WOULD_REARM"
+    assert doc["sleeves"]["good"]["mean_slip_r"] == -0.05
+    assert doc["sleeves"]["bad"]["verdict"] == "WOULD_HOLD"
+    assert doc["sleeves"]["thin"]["verdict"] == "UNMEASURED"
+    assert doc["counts"] == {"WOULD_REARM": 1, "WOULD_HOLD": 1, "UNMEASURED": 1}

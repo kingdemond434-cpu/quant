@@ -244,6 +244,11 @@ def _markout() -> None:
         "mean_slip_quote": m.mean_slip_quote, "mean_slip_r": m.mean_slip_r,
         "edge_share": m.edge_share, "why": m.why,
     }, indent=2), encoding="utf-8")
+    # THE PER-SLEEVE RE-ARM GATE, IN SHADOW (idea 586, 2026-11-11): edge_share was -1.14 on 255
+    # fills book-wide; this says which sleeves' own fills earned money. Nothing reads it to arm.
+    from mt5desk.markout import rearm_shadow
+    (BASE / "reports" / "markout_rearm_shadow.json").write_text(json.dumps(
+        {"at": at, **rearm_shadow(m)}, indent=1, default=str), encoding="utf-8")
     # THE CHAIN, MATERIALISED (2026-09-08). One row per deal the desk can walk back to its
     # intent -- release id, state vector, entry order, entry deal, close deal, realised R -- and
     # the share of all deals that have one. The programme's "no semantic breaks" property is
