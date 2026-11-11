@@ -253,18 +253,19 @@ def _day_minutes_from_ticks(t):
 def _day_minutes(src: Path, *, cache: bool):
     """The per-minute aggregate of one day file, read from or written to the cache when `cache`.
 
-    The cache file is named by the source's size, so a day file that is rewritten (a late tick
-    lands by read-concat-rewrite) is aggregated again rather than served stale. The open day is
+    The cache file is named by the source's size and mtime, so a day file that is rewritten (a
+    late tick lands by read-concat-rewrite) is aggregated again rather than served stale. The open day is
     never cached: it is still growing. A cache that cannot be written is not an error -- the
     aggregate is returned from memory and the next read builds it again."""
     import contextlib
     import os
     import pandas as pd
     try:
-        size = src.stat().st_size
+        st = src.stat()
     except OSError:
         return None
-    dst = TAPE_AGG / src.parent.name / f"{src.stem}.{size}.v{TAPE_AGG_VERSION}.parquet"
+    stamp = f"{st.st_size}-{st.st_mtime_ns}"
+    dst = TAPE_AGG / src.parent.name / f"{src.stem}.{stamp}.v{TAPE_AGG_VERSION}.parquet"
     if cache and dst.exists():
         try:
             got = pd.read_parquet(dst)
