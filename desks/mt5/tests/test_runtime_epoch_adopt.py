@@ -109,7 +109,8 @@ def test_forward_start_never_moves_earlier(tmp_path) -> None:
     reg = _reg(tmp_path, _base())
     reg.adopt_runtime_version(KEY, _ident("session-8a37"),
                               forward_start="2026-08-01T00:00:00+00:00",
-                              prior_versions=[], replayed=True)
+                              prior_versions=["legacy-unfiltered"], replayed=True)
+    assert _row(reg)["runtime_version"] == "session-8a37"
     assert _row(reg)["forward_start"] == "2026-09-01T00:00:00+00:00"
 
 
@@ -119,3 +120,35 @@ def test_a_terminal_verdict_is_never_reopened(tmp_path, status) -> None:
     assert reg.adopt_runtime_version(KEY, _ident("session-8a37"), forward_start=None,
                                      prior_versions=[], replayed=True) is None
     assert _row(reg)["status"] == status
+
+
+def test_a_legacy_registry_with_no_prior_window_is_not_adopted(tmp_path) -> None:
+    reg = _reg(tmp_path, _base())
+    assert reg.adopt_runtime_version(KEY, _ident("session-8a37"), forward_start=None,
+                                     prior_versions=[], replayed=True) is None
+    assert _row(reg)["status"] == "IDENTITY_BROKEN"
+
+
+def test_each_adoption_is_counted_like_a_restore(tmp_path) -> None:
+    reg = _reg(tmp_path, _base(identity_restore_count=4))
+    reg.adopt_runtime_version(KEY, _ident("session-8a37"), forward_start=None,
+                              prior_versions=["legacy-unfiltered"], replayed=True)
+    assert _row(reg)["identity_restore_count"] == 5
+
+
+def test_the_engine_call_site_reads_the_closed_windows_and_clears_the_drift(tmp_path) -> None:
+    """shadow_forward.adopt_runtime_epoch: the state's `runtime_windows_before[].version` (the
+    key session_runtime_window.ensure writes) is what proves the engine moved past the registry."""
+    sys.path[:0] = [str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")]
+    from research import shadow_forward as sf
+    reg = _reg(tmp_path, _base(runtime_version="session-8a37"))
+    st = {"status": "IDENTITY_BROKEN", "identity_drift": ["runtime_version"],
+          "runtime_version": "contract-867e", "forward_start": "2026-10-07T12:30:37+00:00",
+          "runtime_windows_before": [{"version": "legacy-unfiltered"},
+                                     {"version": "session-8a37"}]}
+    assert sf.adopt_runtime_epoch(reg, KEY, st, _ident("contract-867e"))
+    assert "identity_drift" not in st and st["runtime_adopted_why"]
+    assert _row(reg)["status"] == "LIVE" and reg.verify(KEY, _ident("contract-867e")) == []
+    st2 = {"status": "IDENTITY_BROKEN", "runtime_windows_before": [{"version": "other"}]}
+    reg2 = _reg(tmp_path, _base(runtime_version="session-8a37"))
+    assert not sf.adopt_runtime_epoch(reg2, KEY, st2, _ident("contract-867e"))

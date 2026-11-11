@@ -22,6 +22,7 @@ import sys
 import time
 import traceback
 from collections.abc import Iterator
+from typing import Any
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -107,6 +108,25 @@ _TERMINAL_STATUSES = ("KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARAN
 def _is_terminal(status: object) -> bool:
     text = str(status or "").upper()
     return any(text == name or text.startswith(name + "_") for name in _TERMINAL_STATUSES)
+
+
+def adopt_runtime_epoch(reg: Any, key: str, st: dict, ident: dict) -> bool:
+    """Stamp the registry with this state's runtime epoch when that is the only drift.
+
+    The windows `session_runtime_window.ensure` closed are listed under `version` in
+    `runtime_windows_before`; those are the epochs this state provably moved past. On success
+    the reason is kept on the state; the caller then clears IDENTITY_BROKEN through the same
+    proven-clean path every other recovery uses.
+    """
+    prior = [w.get("version") for w in (st.get("runtime_windows_before") or [])
+             if isinstance(w, dict)]
+    why = reg.adopt_runtime_version(key, ident, forward_start=st.get("forward_start"),
+                                    prior_versions=prior,
+                                    replayed=not st.get("order_authority"))
+    if why:
+        st["runtime_adopted_why"] = why
+        st.pop("identity_drift", None)
+    return bool(why)
 
 
 def _unmeasured(st: dict, why: str) -> None:
@@ -1375,16 +1395,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 # and the healer resumed them every 30 minutes, ~650-1,600 times each.
                 # `adopt_runtime_version` stamps the registry only when runtime_version is the
                 # SOLE drift and the registry's version is one this state already moved past.
-                if _drift == ["runtime_version"]:
-                    _prior = [w.get("version") for w in (st.get("runtime_windows_before") or [])
-                              if isinstance(w, dict)]
-                    _why = _reg.adopt_runtime_version(
-                        key, _ident, forward_start=st.get("forward_start"),
-                        prior_versions=_prior, replayed=not st.get("order_authority"))
-                    if _why:
-                        _drift = []
-                        st["runtime_adopted_why"] = _why
-                        slog(f"{key}: RUNTIME EPOCH ADOPTED -- {_why}")
+                if _drift == ["runtime_version"] and adopt_runtime_epoch(_reg, key, st, _ident):
+                    _drift = []
+                    slog(f"{key}: RUNTIME EPOCH ADOPTED -- {st['runtime_adopted_why']}")
                 if _drift:
                     _reason = f"{', '.join(_drift)} changed after the clock froze"
                     _reg.mark(key, "IDENTITY_BROKEN", _reason)

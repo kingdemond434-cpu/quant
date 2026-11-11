@@ -651,9 +651,16 @@ def adopt_runtime_version(key: str, ident: dict[str, Any], *, forward_start: str
     if verify(key, ident) != ["runtime_version"]:
         return None
     old = row.get("runtime_version")
+    # EVIDENCE OF A PRIOR WINDOW IS REQUIRED EITHER WAY. A legacy (None) registry is accepted only
+    # when the state records at least one earlier window, i.e. the engine provably restarted it.
+    if not [v for v in prior_versions if v]:
+        return None
     if old is not None and old not in set(prior_versions):
         return None
     old_start = row.get("forward_start")
+    # A ratchet, so the two records may disagree in ONE direction only: when the state's start is
+    # EARLIER than the registry's, the registry keeps its later start, and the registry's is the
+    # one promotion counts from. No day before the later of the two is ever credited.
     new_start = old_start
     if forward_start and (not old_start or str(forward_start) > str(old_start)):
         new_start = str(forward_start)
@@ -672,6 +679,8 @@ def adopt_runtime_version(key: str, ident: dict[str, Any], *, forward_start: str
         row["status_at"] = now
         row["identity_restored_at"] = now
         row["identity_restored_why"] = why
+        # Counted exactly as reconcile() counts, so a clock that keeps flapping stays visible.
+        row["identity_restore_count"] = int(row.get("identity_restore_count") or 0) + 1
     reg["updated_at"] = now
     _write(reg)
     return why
