@@ -58,18 +58,29 @@ GOLD_PINNED = ("gold_london_am", "gold_afternoon")
 EQUITY = 485.0
 
 
+GOLD_PIN_TESTS = frozenset({
+    "test_the_principal_zeros_are_named_in_code_with_their_venues",
+    "test_a_void_cert_book_still_zeroes_every_pinned_name_in_any_version_or_case",
+    "test_the_cert_book_lookup_and_the_book_join_normalise_the_same_way",
+    "test_the_revert_path_sends_nothing_for_a_pinned_versioned_gold_row",
+    "test_allocator_book_lays_the_principal_zeros_over_pf_book_whatever_the_cert_book"})
+
+
 @pytest.fixture(autouse=True)
-def _hermetic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def _hermetic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+              request: pytest.FixtureRequest) -> None:
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN", True)
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN_FILE", tmp_path / "ALLOCATOR_SOVEREIGN.json")
     monkeypatch.setattr(dc, "MIN_LOT_FILE", tmp_path / "MIN_LOT.json")
     monkeypatch.setattr(xa, "_ABANDONED", set())
-    # THIS MODULE PINS THE 10-20 GOLD-ASIA-ONLY ORDER UNDER ITS REVERT SWITCH. The order is
-    # retired by default (zuck 2026-11-05 16:06Z); data/GOLD_ASIA_ONLY_ENABLED restores it, and
-    # every pin mechanic below is proven with that switch on. The new default is pinned in
-    # test_gold_asia_only_retired_by_default and test_e8_london_reaches_the_cert_book_*.
+    # THE 10-20 GOLD-ASIA-ONLY PIN TESTS RUN UNDER ITS REVERT SWITCH. The order is retired by
+    # default (zuck 2026-11-05 16:06Z); data/GOLD_ASIA_ONLY_ENABLED restores it, and the pin
+    # mechanics in GOLD_PIN_TESTS are proven with that switch on. Every other test runs at the
+    # new default, pinned in test_gold_asia_only_retired_by_default and
+    # test_e8_london_reaches_the_cert_book_once_the_order_is_retired.
     switch = tmp_path / "GOLD_ASIA_ONLY_ENABLED"
-    switch.write_text("", encoding="utf-8")
+    if request.node.originalname in GOLD_PIN_TESTS:
+        switch.write_text("", encoding="utf-8")
     monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", switch)
 
 
