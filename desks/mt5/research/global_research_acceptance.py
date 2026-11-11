@@ -113,6 +113,57 @@ def _runtime_proof(path: Path, *, instant: datetime,
             "claimed_release": claimed_release or None, "proof_errors": reasons}, reasons
 
 
+#: Requirement evaluators: a row naming `evaluator` is also judged on the evidence itself, not only
+#: on the presence of its files. The modules are loaded by path from this directory, never from
+#: the manifest, so a manifest can only name an evaluator registered here.
+EVALUATOR_MODULES: dict[str, str] = {
+    "institutional_footprint.": "institutional_acceptance.py",
+}
+
+
+def _evaluate(name: str, *, root: Path, instant: datetime) -> dict[str, Any]:
+    """Run one registered evaluator. Unknown, unloadable or crashing is UNMEASURED (fail closed)."""
+    import importlib.util
+    module = next((m for prefix, m in EVALUATOR_MODULES.items() if name.startswith(prefix)), None)
+    if module is None:
+        return {"verdict": "UNMEASURED", "unmeasured": [f"evaluator {name!r} is not registered"],
+                "violations": [], "measured": {}}
+    try:
+        path = Path(__file__).resolve().parent / module
+        spec = importlib.util.spec_from_file_location(f"_acceptance_{path.stem}", path)
+        if spec is None or spec.loader is None:
+            raise ImportError(str(path))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        fn = mod.EVALUATORS[name]
+        got = dict(fn(root, instant))
+    except Exception as exc:
+        return {"verdict": "UNMEASURED", "violations": [], "measured": {},
+                "unmeasured": [f"evaluator {name} raised {type(exc).__name__}: {exc}"[:300]]}
+    if got.get("verdict") not in ("PASS", "FAIL", "UNMEASURED"):
+        got["verdict"] = "UNMEASURED"
+    return got
+
+
+def _anchor_errors(root: Path, anchors: list[Any]) -> list[str]:
+    """`path:line#needle`: the line must exist and still carry the needle, so a cited line that
+    drifts away from the code it names is evidence debt, not a silent stale citation."""
+    out: list[str] = []
+    for raw in anchors:
+        text = str(raw)
+        loc, _, needle = text.partition("#")
+        rel, _, line = loc.rpartition(":")
+        try:
+            lines = (root / rel).read_text("utf-8").splitlines()
+            n = int(line)
+        except (OSError, ValueError):
+            out.append(f"anchor:{text}:ABSENT")
+            continue
+        if not 1 <= n <= len(lines) or (needle and needle not in lines[n - 1]):
+            out.append(f"anchor:{text}:DRIFTED")
+    return out
+
+
 def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT,
           now: datetime | None = None) -> dict[str, Any]:
     instant = now or datetime.now(tz=UTC)
@@ -166,10 +217,23 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
         blockers = [b for b in req.get("blockers") or [] if isinstance(b, dict)
                     and str(b.get("status") or "OPEN").upper() != "CLOSED"]
         missing.extend(f"blocker:{b.get('id')}" for b in blockers)
+        anchors = list(req.get("anchors") or [])
+        if anchors:
+            missing.extend(_anchor_errors(root, anchors))
+        evaluation = None
+        if req.get("evaluator"):
+            # The evidence itself is judged: a FAIL or an UNMEASURED reading keeps the row PARTIAL
+            # however complete its files look.
+            evaluation = _evaluate(str(req["evaluator"]), root=root, instant=instant)
+            checks["evaluation"] = evaluation
+            if evaluation["verdict"] != "PASS":
+                missing.append(f"evaluation:{req['evaluator']}:{evaluation['verdict']}")
         rows.append({"id": req["id"], "title": req["title"], "priority": req["priority"],
                      "specification": req.get("specification") or spec["specification"],
                      "lane": req.get("lane") or "UNDECLARED",
                      "status": "CURRENT_VERIFIED" if not missing else "PARTIAL",
+                     **({"verdict": evaluation["verdict"]} if evaluation else {}),
+                     **({"clock": req["clock"]} if req.get("clock") else {}),
                      "missing_evidence": missing, "blockers": blockers, "checks": checks})
     counts = {status: sum(r["status"] == status for r in rows)
               for status in ("CURRENT_VERIFIED", "PARTIAL")}
@@ -185,7 +249,8 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
            # "complete against spec version X" is said only of a version with nothing PARTIAL
            "by_specification": by_spec,
            "complete_against": sorted(k for k, v in by_spec.items() if v["PARTIAL"] == 0),
-           "rows": rows, "unresolved": [r["id"] for r in rows if r["status"] != "CURRENT_VERIFIED"],
+           "evaluations": {r["id"]: r["verdict"] for r in rows if "verdict" in r},
+           "rows": rows, "unresolved":[r["id"] for r in rows if r["status"] != "CURRENT_VERIFIED"],
            "rule": spec["completion_rule"], "frontier_rule": spec["frontier_rule"]}
     _atomic(report, doc)
     return doc

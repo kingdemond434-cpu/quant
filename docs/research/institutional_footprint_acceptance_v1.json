@@ -1,0 +1,254 @@
+{
+ "specification": "INSTITUTIONAL_FOOTPRINT_ACCEPTANCE_V1_20261111",
+ "status": "ARCHITECTURAL_ACCEPTANCE",
+ "scope": "architecture only: the institutional footprint's atlas, point-in-time discipline, latent states, cells, coverage and wiring are correct and connected. It is never evidence that any footprint cell carries alpha.",
+ "source": "backlog row 2026-09-30 'architectural acceptance directive'; footprint PRs #159 and #237",
+ "evaluation_rule": "every row names an evaluator in desks/mt5/research/institutional_acceptance.py that reads the repository and the footprint's artifacts: a violation is FAIL, an absent, unreadable or stale (>26h) artifact is UNMEASURED, and only PASS lets the row reach CURRENT_VERIFIED (with its files, fresh runtime proof and no open blocker)",
+ "requirements": [
+  {
+   "id": "IF01",
+   "title": "atlas: every row institutional.<jur>.<publisher>.<dataset> (or a first-registering lane's id carrying atlas_id/aliases), with a pit_note and a declared status; no duplicate ids",
+   "priority": "P0",
+   "lane": "research",
+   "evaluator": "institutional_footprint.atlas",
+   "implementation": [
+    "desks/mt5/data/source_rosters/institutional_footprint.yaml",
+    "desks/mt5/research/institutional_footprint.py",
+    "desks/mt5/research/countries/institutional/ontology.py"
+   ],
+   "anchors": [
+    "desks/mt5/research/institutional_footprint.py:138#def load_roster"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_institutional_footprint.py",
+    "desks/mt5/tests/test_institutional_acceptance.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/countries/_institutional.py",
+    "desks/mt5/research/institutional_footprint.py"
+   ],
+   "clock": "hourly_cycle:institutional_footprint (CORE_LEGS); audited hourly by global_research_os -> global_research_acceptance",
+   "runtime": [
+    "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json"
+   ],
+   "blockers": [
+    {
+     "id": "not_on_live",
+     "owner": "principal (merge of #159 then #237)",
+     "why": "the footprint (atlas, ontology, engine, leg, rulings, pack field) exists only on claude/institutional-footprint and claude/footprint-followups; LIVE (claude/llm-auto-upgrade-verify-gcjac3) carries none of it until #159/#237 merge, so the box never runs it"
+    }
+   ]
+  },
+  {
+   "id": "IF02",
+   "title": "PIT: every frame reaching a state or cell is stamped by release time (COT through futures_state.cftc_available); LATEST_REVISED frames never reach states or cells",
+   "priority": "P0",
+   "lane": "research",
+   "evaluator": "institutional_footprint.pit",
+   "implementation": [
+    "desks/mt5/research/institutional_footprint.py",
+    "desks/mt5/research/futures_state.py"
+   ],
+   "anchors": [
+    "desks/mt5/research/institutional_footprint.py:161#def write_frame",
+    "desks/mt5/research/institutional_footprint.py:209#def pit_ok",
+    "desks/mt5/research/institutional_footprint.py:615#fs.cftc_available",
+    "desks/mt5/research/institutional_footprint.py:657#cot_release_times",
+    "desks/mt5/research/institutional_footprint.py:707#pit_ok",
+    "desks/mt5/research/institutional_footprint.py:983#pit_ok",
+    "desks/mt5/research/futures_state.py:309#def cftc_available"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_institutional_footprint.py",
+    "desks/mt5/tests/test_institutional_acceptance.py"
+   ],
+   "consumers": [
+    "desks/mt5/mt5desk/family_exogenous_conditioner.py"
+   ],
+   "clock": "hourly_cycle:institutional_footprint (CORE_LEGS); audited hourly by global_research_os -> global_research_acceptance",
+   "runtime": [
+    "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json"
+   ],
+   "blockers": [
+    {
+     "id": "not_on_live",
+     "owner": "principal (merge of #159 then #237)",
+     "why": "the footprint (atlas, ontology, engine, leg, rulings, pack field) exists only on claude/institutional-footprint and claude/footprint-followups; LIVE (claude/llm-auto-upgrade-verify-gcjac3) carries none of it until #159/#237 merge, so the box never runs it"
+    }
+   ]
+  },
+  {
+   "id": "IF03",
+   "title": "latent states: each with a 95% interval, UNMEASURED after 7 days; ACTIVE is measured (a frame plus fed cells within 30 days) and decays, never declared",
+   "priority": "P0",
+   "lane": "production",
+   "evaluator": "institutional_footprint.states",
+   "implementation": [
+    "desks/mt5/research/institutional_footprint.py",
+    "desks/mt5/research/countries/institutional/ontology.py"
+   ],
+   "anchors": [
+    "desks/mt5/research/institutional_footprint.py:101#STATE_MAX_AGE = pd.Timedelta(days=7)",
+    "desks/mt5/research/institutional_footprint.py:103#ACTIVE_WINDOW = timedelta(days=30)",
+    "desks/mt5/research/institutional_footprint.py:767#def fuse",
+    "desks/mt5/research/institutional_footprint.py:1358#def row_status",
+    "desks/mt5/research/institutional_footprint.py:1492#def state_ages",
+    "desks/mt5/research/institutional_footprint.py:1528#def regimes"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_institutional_footprint.py",
+    "desks/mt5/tests/test_institutional_acceptance.py"
+   ],
+   "consumers": [
+    "docs/cro/CRO_CYCLE.md"
+   ],
+   "clock": "hourly_cycle:institutional_footprint (CORE_LEGS); audited hourly by global_research_os -> global_research_acceptance",
+   "runtime": [
+    "desks/mt5/reports/INSTITUTIONAL_STATE.json",
+    "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json"
+   ],
+   "blockers": [
+    {
+     "id": "not_on_live",
+     "owner": "principal (merge of #159 then #237)",
+     "why": "the footprint (atlas, ontology, engine, leg, rulings, pack field) exists only on claude/institutional-footprint and claude/footprint-followups; LIVE (claude/llm-auto-upgrade-verify-gcjac3) carries none of it until #159/#237 merge, so the box never runs it"
+    },
+    {
+     "id": "allocator_reaction_unlanded",
+     "owner": "this thread / principal",
+     "why": "the allocator's reaction to INSTITUTIONAL_STATE.json regimes is a sealed patch (patches/institutional_footprint/allocator_trigger_institutional_state.patch), not landed and not in the repository: no code consumer reads INSTITUTIONAL_STATE.json; CRO D37 reads it by hand"
+    }
+   ]
+  },
+  {
+   "id": "IF04",
+   "title": "cells: one side per cell learned on the purged train half; the 60-vintage mint gate; the side search charged once per claim family into the trial ledger; cells reach the compiler through the registry door and the moat donation (data/intelligence/moat_factory)",
+   "priority": "P0",
+   "lane": "research",
+   "evaluator": "institutional_footprint.cells",
+   "implementation": [
+    "desks/mt5/research/institutional_footprint.py",
+    "libs/moat/registry.py"
+   ],
+   "anchors": [
+    "desks/mt5/research/institutional_footprint.py:86#TRAIN_FRACTION = 0.5",
+    "desks/mt5/research/institutional_footprint.py:91#SIDE_SELECTION_TRIALS = 2",
+    "desks/mt5/research/institutional_footprint.py:99#MIN_VINTAGES = 60",
+    "desks/mt5/research/institutional_footprint.py:956#def planned_cells",
+    "desks/mt5/research/institutional_footprint.py:1012#def learn_side",
+    "desks/mt5/research/institutional_footprint.py:1071#def side_claim_family",
+    "desks/mt5/research/institutional_footprint.py:1123#def emit_cells",
+    "desks/mt5/research/institutional_footprint.py:1200#enqueue_candidate(",
+    "desks/mt5/research/moat_candidate_compiler.py:355#CLAIM_FIELDS",
+    "libs/research/trial_ledger.py:340#claim_selection_trials"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_institutional_footprint.py",
+    "desks/mt5/tests/test_institutional_acceptance.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/moat_candidate_compiler.py",
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "libs/research/trial_ledger.py"
+   ],
+   "clock": "hourly_cycle:institutional_footprint (CORE_LEGS); audited hourly by global_research_os -> global_research_acceptance",
+   "runtime": [
+    "desks/mt5/data/institutional/cells_emitted.json"
+   ],
+   "blockers": [
+    {
+     "id": "not_on_live",
+     "owner": "principal (merge of #159 then #237)",
+     "why": "the footprint (atlas, ontology, engine, leg, rulings, pack field) exists only on claude/institutional-footprint and claude/footprint-followups; LIVE (claude/llm-auto-upgrade-verify-gcjac3) carries none of it until #159/#237 merge, so the box never runs it"
+    }
+   ]
+  },
+  {
+   "id": "IF05",
+   "title": "coverage: no UNSEARCHED cell; every UNMEASURED cell and role gap is in search_queue.json; a ruling closes a cell only on cited evidence",
+   "priority": "P1",
+   "lane": "research",
+   "evaluator": "institutional_footprint.coverage",
+   "implementation": [
+    "desks/mt5/research/institutional_footprint.py",
+    "desks/mt5/research/countries/institutional/ontology.py",
+    "desks/mt5/data/institutional_coverage_rulings.json"
+   ],
+   "anchors": [
+    "desks/mt5/research/institutional_footprint.py:1383#def coverage",
+    "desks/mt5/research/institutional_footprint.py:1440#onto.UNMEASURED",
+    "desks/mt5/research/institutional_footprint.py:1635#SEARCH_QUEUE",
+    "desks/mt5/research/countries/institutional/ontology.py:164#def ruling_defect",
+    "desks/mt5/research/countries/institutional/ontology.py:178#def ruled_status"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_institutional_footprint.py",
+    "desks/mt5/tests/test_institutional_acceptance.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/countries/_institutional.py",
+    "desks/mt5/research/issue_board.py",
+    "docs/cro/CRO_CYCLE.md"
+   ],
+   "clock": "hourly_cycle:institutional_footprint (CORE_LEGS); audited hourly by global_research_os -> global_research_acceptance",
+   "runtime": [
+    "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json",
+    "desks/mt5/data/institutional/search_queue.json"
+   ],
+   "blockers": [
+    {
+     "id": "not_on_live",
+     "owner": "principal (merge of #159 then #237)",
+     "why": "the footprint (atlas, ontology, engine, leg, rulings, pack field) exists only on claude/institutional-footprint and claude/footprint-followups; LIVE (claude/llm-auto-upgrade-verify-gcjac3) carries none of it until #159/#237 merge, so the box never runs it"
+    },
+    {
+     "id": "search_queue_unconsumed",
+     "owner": "this thread",
+     "why": "search_queue.json has no scheduled code consumer: no scout or sweep reads it back, so a queued cell is re-asked only when a human or CRO D37 reads the queue"
+    }
+   ]
+  },
+  {
+   "id": "IF06",
+   "title": "wiring: the institutional_footprint leg is in hourly_cycle CORE_LEGS with a producer clock, an attestation row and its three artifacts",
+   "priority": "P0",
+   "lane": "production",
+   "evaluator": "institutional_footprint.wiring",
+   "implementation": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/institutional_footprint.py"
+   ],
+   "anchors": [
+    "desks/mt5/research/hourly_cycle.py:1141#CORE_LEGS",
+    "desks/mt5/research/hourly_cycle.py:1209#\"institutional_footprint\"",
+    "desks/mt5/research/hourly_cycle.py:6111#_costed(\"institutional_footprint\"",
+    "desks/mt5/research/issue_board.py:131#INSTITUTIONAL_COVERAGE.json",
+    "desks/mt5/research/duty_cycle.py:99#\"institutional_footprint\"",
+    "desks/mt5/research/institutional_footprint.py:1572#def run"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_institutional_footprint.py",
+    "desks/mt5/tests/test_institutional_acceptance.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/issue_board.py",
+    "desks/mt5/research/duty_cycle.py",
+    "desks/mt5/research/runtime_attestation.py",
+    "libs/research/layers.py"
+   ],
+   "clock": "hourly_cycle:institutional_footprint (CORE_LEGS); audited hourly by global_research_os -> global_research_acceptance",
+   "runtime": [
+    "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json",
+    "desks/mt5/reports/INSTITUTIONAL_STATE.json",
+    "desks/mt5/data/institutional/search_queue.json"
+   ],
+   "blockers": [
+    {
+     "id": "not_on_live",
+     "owner": "principal (merge of #159 then #237)",
+     "why": "the footprint (atlas, ontology, engine, leg, rulings, pack field) exists only on claude/institutional-footprint and claude/footprint-followups; LIVE (claude/llm-auto-upgrade-verify-gcjac3) carries none of it until #159/#237 merge, so the box never runs it"
+    }
+   ]
+  }
+ ]
+}
