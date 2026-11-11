@@ -9203,6 +9203,24 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "CSD1",
+   "item": "CRITICAL SLOWING DOWN as a PIT state axis (GAP_MAP row 40, Tier-1 gap thread 2026-10-13): rolling lag-1 autocorrelation, variance, |skew| and flickering (bimodality) of daily log returns per hypothesis-lane symbol and for the LIVE book; the Kendall trend of each, tested against shuffled-return surrogates, labels the instrument WARNING / RISING / CALM / UNMEASURED. Published for the regime cells and as an allocator state input; the allocator read is money-path work for the allocator's owner and is NOT wired here.",
+   "domain": "M",
+   "phase": 5,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:critical_slowing",
+   "artifact": "desks/mt5/reports/CRITICAL_SLOWING.json",
+   "consumer": "a person (HUMAN_READ in libs/ops/capability_graph.py); allocator state input pending its owner",
+   "evidence": [
+    "libs/regime/critical_slowing.py:92-118 rolling_indicators() (vectorised trailing windows); :120-134 surrogate_p() (shuffled-return null); :137-173 early_warning() (state label, taus, p-values, flicker)",
+    "desks/mt5/research/critical_slowing_state.py:69-134 the symbols (hypothesis lane + LIVE sleeves), daily log returns and the equal-weight book; :136-188 build(); :191-208 main()",
+    "desks/mt5/research/hourly_cycle.py:4490-4495 the leg critical_slowing (macro department, heavy plan, LEG_BUDGET_SEC 300 at :2241)",
+    "tests/regime/test_critical_slowing.py -- an AR(1) drifting to 1 is flagged on ar1 and white noise is CALM; vectorised windows equal the scalar definitions; short tape is UNMEASURED; the organ writes its report",
+    "MEASURED on the repository's bar copies (stale to 2026-09): 32 hypothesis-lane symbols, CALM 25 / RISING 4 / WARNING 2 / UNMEASURED 1, 7 s; the book is UNMEASURED here because the repository's sleeves.json holds no LIVE row (box state)"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
