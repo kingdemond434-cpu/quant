@@ -145,6 +145,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the watchdog's own reading -- if THIS goes stale nothing is watching"),
     "MT5-ProcessHealth":  ("desks/mt5/reports/process_health.json", 60,
                            "every process, its last run and whether it is healthy"),
+    # THE ALARM AND THE BACKUP (2026-11-11). MT5-BoxHeartbeat ran every 5 minutes UNCONTRACTED,
+    # so the organ that pages on silent organs could itself go silent unseen. DESK_ALERTS.json
+    # is rewritten on every beat (desk_alerts.dispatch), so 15 minutes is two missed beats.
+    # MT5-OffsiteBackup is declared in box_tasks.manifest and registered by Adopt-And-Seal's
+    # ensure-task step; its report lands at the end of each 6-hourly run (first run up to 5 h).
+    "MT5-BoxHeartbeat":   ("desks/mt5/reports/DESK_ALERTS.json", 15,
+                           "the box's alarm: RED/recovery transitions and the last alert sent"),
+    "MT5-OffsiteBackup":  ("desks/mt5/reports/OFFSITE_BACKUP.json", 720,
+                           "restic snapshot of the box-only data, read back and restore-drilled"),
     "MT5-Healers":        ("desks/mt5/logs/MT5-Healers.log", 180,
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,

@@ -24,9 +24,11 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
                UNMEASURED (an input unreadable, stale or existence-only), or the census older
                than SILENT_MAX_MIN -- audit R2, 2026-09-30: the fence paged nobody before this
 
-All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
-whenever a check JOINS the failing set (or the silent fence names a new organ), one page through `libs.ops.alert_channels.send_all` (whatever is
-armed there; unarmed is recorded, never silent). A failing check does not stop the ping: `/fail`
+All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks. Every
+TRANSITION (a check confirmed RED, a new silent organ, a recovery) is one comment on the repo's
+"Desk alerts" issue through `libs.ops.desk_alerts` (the box's existing GITHUB_TOKEN or gh login,
+plus `alert_channels.send_all` when that is armed), with a digest at most daily while RED; the
+last alert sent is in `reports/DESK_ALERTS.json`. A failing check does not stop the ping: `/fail`
 is itself a ping, so "the box is alive and something on it is wrong" and "the box is gone" stay
 two different pages.
 
@@ -164,8 +166,11 @@ def _ping(url: str, body: str, fail: bool) -> str:
 
 
 def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = SECRETS,
-        reading: dict[str, Any] | None = None) -> dict[str, Any]:
+        reading: dict[str, Any] | None = None,
+        alerts_out: Path | None = None) -> dict[str, Any]:
     doc = reading or measure()
+    if alerts_out is None:
+        alerts_out = out.with_name("DESK_ALERTS.json")
     prev: dict[str, Any] = {}
     with contextlib.suppress(OSError, ValueError):
         prev = json.loads(out.read_text("utf-8"))
@@ -193,28 +198,29 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
             doc["ping"] = {"status": "SENT", "detail": _ping(url, body, bool(doc["failing"]))}
         except Exception as exc:
             doc["ping"] = {"status": "ERROR", "detail": type(exc).__name__}
-    # PAGE ON EVERY NEW FAILURE, not only on the first (audit R2): a box already failing `disk`
-    # must still page when the silent fence turns RED, and a RED fence naming a NEW organ pages
-    # again even though the `silent` check was already failing.
-    prev_failing = set(prev.get("failing") or []) if prev.get("verdict") == "FAIL" else set()
-    prev_new = set(((prev.get("checks") or {}).get("silent") or {}).get("new_silent") or [])
-    now_new = set((doc["checks"].get("silent") or {}).get("new_silent") or [])
-    newly = doc["verdict"] == "FAIL" and (bool(set(doc["failing"]) - prev_failing)
-                                          or ("silent" in doc["failing"]
-                                              and bool(now_new - prev_new)))
+    # ALERTS: TRANSITIONS ONLY, DELIVERED WITH NO NEW SECRET (2026-11-11). `desk_alerts` keys
+    # every failing check and every NEW silent organ (N14), confirms a RED over two beats and a
+    # recovery over three, and comments on the repo's one "Desk alerts" issue through the box's
+    # existing GITHUB_TOKEN (or gh login), plus `alert_channels` when that file is ever armed.
+    # It writes DESK_ALERTS.json (the last alert sent) and never raises into this heartbeat.
     doc["paged"] = None
-    if newly and not dry_run:
+    if not dry_run:
         try:
-            from libs.ops.alert_channels import send_all
-            res = send_all("MT5 box unhealthy", body)
-            doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
+            from libs.ops import desk_alerts
+            doc["paged"] = desk_alerts.dispatch(doc, out=alerts_out, census_path=SILENT_ORGANS)
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}
     doc["since"] = (prev.get("since") if doc["verdict"] == prev.get("verdict") and prev.get("since")
                     else doc["at"])
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(doc, indent=1), "utf-8")
+    _write_atomic(out, doc)
     return doc
+
+
+def _write_atomic(out: Path, doc: dict[str, Any]) -> None:
+    """Temp file then replace (#375): the publisher never copies a torn report, and a read-only
+    destination on Windows is retried once (libs.ops.desk_alerts.write_json_atomic)."""
+    from libs.ops.desk_alerts import write_json_atomic
+    write_json_atomic(out, doc)
 
 
 #: THE JUDGE STALL PAGER RIDES THIS CLOCK (2026-10-21). A stalled judge is an organ gone quiet,
@@ -248,9 +254,7 @@ def _judge_stall(out: Path = OUT) -> dict[str, Any]:
     with contextlib.suppress(OSError, ValueError, TypeError):
         doc = json.loads(out.read_text("utf-8"))
         doc["judge_stall_pager"] = rec
-        tmp = out.with_name(f"{out.name}.tmp")
-        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
-        tmp.replace(out)
+        _write_atomic(out, doc)
     return rec
 
 

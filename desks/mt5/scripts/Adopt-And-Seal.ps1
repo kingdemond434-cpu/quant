@@ -562,12 +562,21 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 foreach ($ensure in @(
         @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
-        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
+        # restic, local repository first (2026-11-11): declared in box_tasks.manifest since
+        # 2026-09-30 and never registered, so no box-only data had a versioned copy. The
+        # installer fetches the pinned, digest-checked restic and arms C:\backup\restic with a
+        # box-generated key that stays in data\secrets; offsite_backup.py's DISK_GUARD refuses
+        # any run that would take the drive under its free-space floor.
+        @{ Task = "MT5-OffsiteBackup"; Installer = "install_offsite_backup_task.ps1";
+           Args = @("-InstallRestic", "-InitLocal") })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
+    $extra = @()
+    if ($ensure.ContainsKey("Args")) { $extra = @($ensure.Args) }
     try {
-        $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
+        $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing @extra 2>&1 |
                  ForEach-Object { "$_" })
         Log ("ensure-task: {0} was missing; installer exit {1}: {2}" -f $ensure.Task, $LASTEXITCODE, ($out -join ' | '))
     } catch {

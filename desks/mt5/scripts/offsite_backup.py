@@ -128,6 +128,13 @@ RESTORE_EVERY = timedelta(days=7)
 RESTORE_FILES = 24
 RESTORE_MAX_BYTES = 32 * 1024 * 1024
 TIMEOUT_S = 5 * 3600
+#: A LOCAL repository shares a disk with the live terminal. Free space on the repository's drive
+#: must stay at or above this AFTER the projected write: the whole source on the first snapshot
+#: (no parent to deduplicate against; restic's compression is not counted, so this errs safe),
+#: nothing extra afterwards (later snapshots add only new ticks). 2026-11-11: the job is now
+#: registered with a local repository by the adoption, unattended, so this is what stops it filling
+#: the trading box. Infrastructure only: it gates no order, size or capital decision.
+LOCAL_MIN_FREE_GB = 25.0
 
 
 def restic_bin() -> str | None:
@@ -410,6 +417,43 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
     return rep
 
 
+def _drive_free_gb(path: str) -> float | None:
+    """Free space on the drive that holds `path` (the nearest existing ancestor)."""
+    p = Path(path)
+    for cand in (p, *p.parents):
+        if cand.exists():
+            with contextlib.suppress(OSError):
+                return shutil.disk_usage(cand).free / 1024 ** 3
+    return None
+
+
+def disk_guard(repository: str, listing: list[str], *, first: bool,
+               free_gb: float | None = None) -> dict[str, Any]:
+    """May a run write to this repository without taking its drive under LOCAL_MIN_FREE_GB?
+    A remote repository always may. An unreadable free-space reading may NOT (absence is not
+    room). Never raises."""
+    if is_remote(repository):
+        return {"ok": True, "local": False}
+    free = _drive_free_gb(str(repository)) if free_gb is None else free_gb
+    need = 0.0
+    if first:
+        for f in listing:
+            with contextlib.suppress(OSError):
+                need += os.stat(f).st_size
+        need /= 1024 ** 3
+    out: dict[str, Any] = {"local": True, "free_gb": None if free is None else round(free, 1),
+                           "projected_gb": round(need, 1), "floor_gb": LOCAL_MIN_FREE_GB,
+                           "first_snapshot": first}
+    if free is None:
+        return {**out, "ok": False, "why": "free space on the repository drive is unreadable"}
+    if free - need < LOCAL_MIN_FREE_GB:
+        return {**out, "ok": False,
+                "why": (f"a local snapshot would leave {free - need:.1f} GB free on the "
+                        f"repository drive (floor {LOCAL_MIN_FREE_GB:.0f} GB): point the "
+                        "repository at another drive or off the box")}
+    return {**out, "ok": True}
+
+
 def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         sources: tuple[str, ...] = SOURCES, runner: Any = _run,
         restic: str | None = None, now: datetime | None = None) -> dict[str, Any]:
@@ -443,13 +487,20 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         env = {**os.environ, **{str(k): str(v) for k, v in (cfg.get("env") or {}).items()},
                "RESTIC_REPOSITORY": str(cfg["repository"]),
                "RESTIC_PASSWORD": str(cfg["password"])}
+        listing = files_to_ship(have)
+        doc["files_listed"] = len(listing)
+        guard = disk_guard(cfg["repository"], listing, first=not prev.get("last_success_at"))
+        doc["disk_guard"] = guard
+        if not guard["ok"]:
+            doc.update(status="DISK_GUARD", why=guard["why"])
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(doc, indent=1), "utf-8")
+            return doc
         probe = runner([exe, "cat", "config"], env)
         if probe.returncode != 0:
             init = runner([exe, "init"], env)
             doc["initialised"] = init.returncode == 0
         ex = [a for e in EXCLUDES for a in ("--exclude", e)]
-        listing = files_to_ship(have)
-        doc["files_listed"] = len(listing)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt",
                                          delete=False) as fl:
             fl.write("\n".join(listing) + "\n")
@@ -496,7 +547,7 @@ def verdict(doc: dict[str, Any], now: datetime | None = None) -> tuple[str, str]
     if not doc:
         return "UNMEASURED", "no OFFSITE_BACKUP.json: MT5-OffsiteBackup has not run on this box"
     st = str(doc.get("status"))
-    if st in ("NOT_ARMED", "NO_RESTIC"):
+    if st in ("NOT_ARMED", "NO_RESTIC", "DISK_GUARD"):
         return st, str(doc.get("why", ""))
     last, chk = _ts(doc.get("last_success_at")), _ts(doc.get("last_check_at"))
     if last is None or now - last > timedelta(hours=36):
