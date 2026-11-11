@@ -228,11 +228,15 @@ def test_the_public_summary_never_copies_free_text(files, state, code) -> None:
 
 
 def test_a_plan_reason_is_a_code_and_an_unknown_phase_is_other(files) -> None:
-    _write(pp.ACCOUNT_STATE, _state(phase="phase-$123456"))
-    _write(pp.ALLOCATOR, _alloc(phase="phase1"))
+    _write(pp.ACCOUNT_STATE, _state())
+    _write(pp.ALLOCATOR, _alloc(phase="phase2"))
     pp.run(now=NOW)
     pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
-    assert pub["phase"] == "OTHER" and pub["plan"] == {"why_codes": ["PLAN_PHASE_MISMATCH"]}
+    assert pub["phase"] == "phase1" and pub["plan"] == {"why_codes": ["PLAN_PHASE_MISMATCH"]}
+    _write(pp.ACCOUNT_STATE, _state(phase="phase-$123456"))
+    pp.run(now=NOW)
+    pub = json.loads(Path(pp.PUBLIC_OUT).read_text("utf-8"))
+    assert pub["phase"] == "OTHER" and pub["progress_code"] == ["FUNDED_NO_TARGET"]
     _no_long_digit_runs(pub)
 
 
