@@ -1,0 +1,676 @@
+"""NEEDS_DATA: a never-firing cell that lacks an input is named for the input, never dropped.
+
+    python -m pytest desks/mt5/tests/test_fireable_specs.py -q
+
+`research/fire_inputs.py` answers NEEDS_DATA only when the family's own code, on the inputs
+`external_gauntlet.build_cell` would hand it, returns no signal on any bars. These tests pin:
+  1. each NEEDS_DATA answer is exact: the family really returns [] on real-shaped bars;
+  2. anything the probe cannot settle is UNMEASURED and is never tagged (fail open);
+  3. judge_coverage names, routes, re-admits and orders such cells without dropping one.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
+
+DESK = Path(__file__).resolve().parent.parent
+_ROOT_DIR = DESK.parent.parent
+for p in (DESK, DESK / "research", DESK.parent.parent):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+from mt5desk.families_orthogonal import family_cot_positioning  # noqa: E402
+from mt5desk.family_event_reaction import family_event_reaction  # noqa: E402
+from mt5desk.family_inputs import events_for_symbol  # noqa: E402
+
+from libs.research import bar_clock  # noqa: E402
+from research import fire_inputs as F  # noqa: E402
+from research import judge_coverage as jc  # noqa: E402
+from research import orthogonal_sweep as inputs  # noqa: E402
+
+
+def _bars(n: int = 3000, start: str = "2026-05-01") -> pd.DataFrame:
+    rng = np.random.default_rng(7)
+    idx = pd.date_range(start, periods=n, freq="h", tz="UTC")
+    close = 100 + np.cumsum(rng.normal(0, 0.2, n))
+    return pd.DataFrame({"open": close, "high": close + 0.3, "low": close - 0.3,
+                         "close": close, "tick_volume": 1}, index=idx)
+
+
+def _cot(n: int = 300) -> pd.DataFrame:
+    idx = pd.date_range("2020-01-03", periods=n, freq="W-FRI", tz="UTC")
+    return pd.DataFrame({"net": np.sin(np.arange(n) / 7.0)}, index=idx)
+
+
+# ------------------------------------------------------------------ 1. exact NEEDS_DATA
+
+def test_cot_without_a_series_is_needs_data_and_the_family_returns_nothing(monkeypatch) -> None:
+    monkeypatch.setattr(inputs, "_cot_frame", lambda symbol=None: None)
+    got = F.probe("EURCZK", "cot_positioning")
+    assert got["status"] == F.NEEDS_DATA
+    assert got["missing_input"] == "cot_series:EURCZK"
+    # exact: the family itself, on real-shaped bars and the input the judge would hand it
+    assert family_cot_positioning(_bars(), cot=inputs._cot_frame("EURCZK")) == []
+
+
+def test_cot_with_a_series_is_present(monkeypatch) -> None:
+    monkeypatch.setattr(inputs, "_cot_frame", lambda symbol=None: _cot())
+    assert F.probe("XAUUSD", "cot_positioning")["status"] == F.PRESENT
+
+
+def _events(monkeypatch, stamps: list[str]) -> pd.DatetimeIndex:
+    idx = pd.DatetimeIndex(pd.to_datetime(stamps, utc=True))
+    monkeypatch.setattr(inputs, "_event_index", lambda: idx)
+    return idx
+
+
+def test_event_reaction_without_a_bar_clock_is_needs_data(monkeypatch) -> None:
+    ev = _events(monkeypatch, ["2026-06-05 12:30", "2026-07-03 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
+    got = F.probe("EURUSD", "event_reaction")
+    assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "bar_clock"
+    assert family_event_reaction(_bars(), events=events_for_symbol(ev, "EURUSD"),
+                                 symbol="EURUSD", clock="utc") == []
+
+
+def test_event_reaction_in_shoulder_months_only_is_needs_data(monkeypatch) -> None:
+    ev = _events(monkeypatch, ["2026-10-02 12:30", "2026-10-09 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
+    got = F.probe("EURUSD", "event_reaction")
+    assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "event_calendar_history"
+    assert family_event_reaction(_bars(4000), events=events_for_symbol(ev, "EURUSD"),
+                                 symbol="EURUSD", clock="utc") == []
+
+
+def test_event_reaction_with_placeable_events_is_present(monkeypatch) -> None:
+    _events(monkeypatch, ["2026-06-05 12:30", "2026-07-03 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
+    got = F.probe("EURUSD", "event_reaction")
+    assert got["status"] == F.PRESENT and got["placeable_events"] == 2
+
+
+# ------------------------------------------------------------------ 2. fail open
+
+def test_unprobed_families_and_errors_are_unmeasured(monkeypatch) -> None:
+    assert F.probe("EURUSD", "carry")["status"] == F.UNMEASURED
+    assert F.probe("", "cot_positioning")["status"] == F.UNMEASURED
+
+    def boom(symbol=None):
+        raise OSError("disk")
+    monkeypatch.setattr(inputs, "_cot_frame", boom)
+    assert F.probe("EURUSD", "cot_positioning")["status"] == F.UNMEASURED
+
+
+def test_no_calendar_at_all_is_left_to_the_judge(monkeypatch) -> None:
+    monkeypatch.setattr(inputs, "_event_index", lambda: None)
+    assert F.probe("EURUSD", "event_reaction")["status"] == F.UNMEASURED
+
+
+# ------------------------------------------------------------------ 3. judge_coverage
+
+def _report(tmp_path: Path, rows: list[dict]) -> Path:
+    p = tmp_path / "gates.json"
+    p.write_text(json.dumps({"verdicts": rows}), "utf-8")
+    return p
+
+
+def _unknown(cell: str, sym: str, fam: str) -> dict:
+    return {"cell": cell, "sym": sym, "family": fam, "unmeasured": True, "days": 0,
+            "params": {}, "unknown_reason": "no_signals"}
+
+
+def test_name_unknowns_names_the_missing_input(tmp_path, monkeypatch) -> None:
+    def fake(sym, fam):
+        return ({"status": "NEEDS_DATA", "missing_input": f"cot_series:{sym}", "why": "w",
+                 "stamp": "absent"} if fam == "cot_positioning" else {"status": "UNMEASURED"})
+    monkeypatch.setattr(jc, "_fire_probe", fake)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 1000)
+    named = jc.name_unknowns(_report(tmp_path, [
+        _unknown("EURCZK.cot_positioning.p=1", "EURCZK", "cot_positioning"),
+        _unknown("EURUSD.carry.p=2", "EURUSD", "carry")]))
+    a, b = named["EURCZK.cot_positioning.p=1"], named["EURUSD.carry.p=2"]
+    assert a["reason"] == "needs_data" and a["missing_input"] == "cot_series:EURCZK"
+    assert b["reason"] == "never_fires"
+    assert "needs_data" in jc.NOT_TESTABLE_REASONS
+    assert jc.FAILURE_ROUTES[jc.failure_class("needs_data") or ""]["owner"] == "converter"
+    assert jc._missing_input("needs_data", a)["input"] == "cot_series:EURCZK"
+
+
+def test_needs_data_returns_when_the_input_appears_not_when_bars_grow(monkeypatch) -> None:
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    row = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+           "days": 0, "bar_bytes": 100, "parked_at": (now - timedelta(days=5)).isoformat()}
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 10_000)        # bars grew 100x
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    assert jc.readmit_due(row, now=now) is False
+    old = {**row, "parked_at": (now - timedelta(days=jc.READMIT_MAX_DAYS + 1)).isoformat()}
+    assert jc.readmit_due(old, now=now) is True
+    for status in ("PRESENT", "UNMEASURED"):
+        monkeypatch.setattr(jc, "_fire_probe", lambda s, f, st=status: {"status": st})
+        assert jc.readmit_due(row, now=now) is True, status
+
+
+def test_intake_order_tails_needs_data_and_keeps_every_row(monkeypatch) -> None:
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 1_000)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: (
+        {"status": "NEEDS_DATA", "missing_input": "bar_clock"} if f == "event_reaction"
+        else {"status": "UNMEASURED", "why": "family not probed"}))
+    rows = [{"sym": "EURUSD", "family": "event_reaction", "n": 0},
+            {"sym": "EURUSD", "family": "carry", "n": 1},
+            {"sym": "GBPUSD", "family": "event_reaction", "n": 2},
+            {"sym": "GBPUSD", "family": "carry", "n": 3}]
+    out, doc = jc.fireability_order(list(rows))
+    assert [r["n"] for r in out] == [1, 3, 0, 2]
+    assert sorted(map(id, out)) == sorted(map(id, rows)), "no row dropped or copied"
+    assert doc["rows_needs_data_to_tail"] == 2
+    assert doc["by_missing_input"] == {"bar_clock": 2}
+
+
+def test_never_fire_ground_still_counts_renamed_cells() -> None:
+    bank = {f"c{i}": {"reason": "needs_data", "family": "event_reaction", "sym": "EURUSD"}
+            for i in range(jc.SIBLING_NEVER_FIRES_MIN)}
+    assert jc.never_fire_pairs(bank, set()) == {("event_reaction", "EURUSD")}
+
+
+@pytest.mark.parametrize("fam", F.PROBED)
+def test_probed_families_resolve_to_the_function_the_judge_calls(fam) -> None:
+    fn = F._resolved(fam)
+    assert fn is (family_cot_positioning if fam == "cot_positioning" else family_event_reaction)
+
+
+# ------------------------------------------------------------- audit of c72ecfc53 (should-fixes)
+
+def test_a_missing_season_offset_is_named_bar_clock_not_calendar_history(monkeypatch) -> None:
+    """Summer measured, winter not: a winter-only calendar lacks the CLOCK, not history."""
+    _events(monkeypatch, ["2026-01-08 12:30", "2026-01-15 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
+    got = F.probe("EURUSD", "event_reaction")
+    assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "bar_clock"
+    assert got["dropped"] == {bar_clock.UNMEASURED: 2}
+
+
+def test_the_probe_leaves_the_familys_drop_counter_as_it_found_it(monkeypatch) -> None:
+    from mt5desk import family_event_reaction as fer
+    _events(monkeypatch, ["2026-10-02 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
+    monkeypatch.setattr(fer, "_DROPPED", {"X": 7})
+    F.probe("EURUSD", "event_reaction")
+    assert fer._DROPPED == {"X": 7}
+
+
+def test_intake_order_does_not_tail_a_needs_data_row_with_no_bars(monkeypatch) -> None:
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: (
+        {"status": "NEEDS_DATA", "missing_input": "bar_clock"} if f == "event_reaction"
+        else {"status": "UNMEASURED", "why": "family not probed"}))
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 0 if sym == "NOBARS" else 1_000)
+    rows = [{"sym": "NOBARS", "family": "event_reaction", "n": 0},
+            {"sym": "EURUSD", "family": "event_reaction", "n": 1},
+            {"sym": "EURUSD", "family": "carry", "n": 2}]
+    out, doc = jc.fireability_order(list(rows))
+    assert [r["n"] for r in out] == [0, 2, 1]
+    assert doc["rows_needs_data_to_tail"] == 1 and doc["rows_needs_data_kept_no_bars"] == 1
+
+
+def test_the_readmit_clock_is_exactly_ninety_days(monkeypatch) -> None:
+    assert jc.READMIT_MAX_DAYS == 90.0
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    base = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+            "days": 0, "bar_bytes": 100}
+    for age, due in ((89.9, False), (90.0, True), (90.1, True)):
+        row = {**base, "parked_at": (now - timedelta(days=age)).isoformat()}
+        assert jc.readmit_due(row, now=now) is due, age
+    never = {**base, "reason": "never_fires"}
+    for age, due in ((89.9, False), (90.0, True)):
+        row = {**never, "parked_at": (now - timedelta(days=age)).isoformat()}
+        assert jc.readmit_due(row, now=now) is due, age
+
+
+def test_a_clock_readmitted_cell_still_missing_its_input_keeps_its_handoff_row(
+        tmp_path, monkeypatch) -> None:
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    bank_path = tmp_path / "unrunnable_specs.json"
+    row = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+           "days": 0, "bar_bytes": 100, "missing_input": "cot_series:EURCZK",
+           "parked_at": (now - timedelta(days=91)).isoformat()}
+    bank_path.write_text(json.dumps({"EURCZK.cot_positioning.p=1": row}), "utf-8")
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    status = {"v": "NEEDS_DATA"}
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": status["v"]})
+    got = jc.update_unrunnable_bank({}, at=now.isoformat(), path=bank_path)
+    assert got["bank_size"] == 0 and got["needs_data_outstanding"] == 1
+    out = jc.needs_data_outstanding(tmp_path / jc.NEEDS_DATA_OUTSTANDING.name)
+    handoff = tmp_path / "conversion_handoff.json"
+    assert jc.write_conversion_handoff({}, at="t", path=handoff, outstanding=out) == 1
+    hrow = json.loads(handoff.read_text("utf-8"))["rows"][0]
+    assert hrow["still_missing_after_readmit"] is True
+    assert hrow["missing_input"]["input"] == "cot_series:EURCZK"
+    status["v"] = "PRESENT"                                    # the input appeared
+    got = jc.update_unrunnable_bank({}, at=now.isoformat(), path=bank_path)
+    assert got["needs_data_outstanding"] == 0
+
+
+def test_needs_data_axes_name_only_organs_that_read_them() -> None:
+    axes = jc.FAILURE_ROUTES["needs_data"]["axes"]
+    assert "acquire_named_input" not in axes and "proxy_series" not in axes
+
+
+# ------------------------------------------------- audit of 3857d4bcd: absent / torn sidecar
+
+def _sidecar_pass(tmp_path, monkeypatch, at: str = "2026-10-21T00:00:00+00:00") -> dict:
+    bank_path = tmp_path / "unrunnable_specs.json"
+    if not bank_path.exists():
+        bank_path.write_text("{}", "utf-8")
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    return jc.update_unrunnable_bank({}, at=at, path=bank_path)
+
+
+def test_the_first_creation_is_the_only_absence_that_measures(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    assert jc.read_needs_data_outstanding(side) == ({}, jc.OUTSTANDING_FIRST)
+    got = _sidecar_pass(tmp_path, monkeypatch)
+    assert got["needs_data_outstanding"] == 0
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_FIRST
+    assert side.exists() and (tmp_path / (side.name + ".born")).exists()
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding_state"] == "MEASURED"
+
+
+def test_a_vanished_sidecar_is_unmeasured_and_named(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    side.unlink()
+    got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_VANISHED
+    assert got["needs_data_outstanding_set_aside"] == [
+        f"{side.name}.vanished-20261022T0000000000"]
+    again = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-23T00:00:00+00:00")
+    assert again["needs_data_outstanding"] == "UNMEASURED"           # until a person clears it
+
+
+def test_a_torn_sidecar_is_never_overwritten_and_is_set_aside_by_name(tmp_path,
+                                                                       monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    torn = '{"EURCZK.cot_positioning.p=1": {"reason": "needs_da'
+    side.write_text(torn, "utf-8")
+    got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_TORN
+    aside = tmp_path / f"{side.name}.torn-20261022T0000000000"
+    assert aside.read_text("utf-8") == torn, "the unreadable bytes are kept exactly"
+    assert got["needs_data_outstanding_set_aside"] == [aside.name]
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding"] == "UNMEASURED"
+
+
+def test_a_torn_sidecar_that_cannot_be_moved_is_left_exactly_as_found(tmp_path,
+                                                                       monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    side.write_text("{torn", "utf-8")
+
+    def refuse(self, target):
+        raise OSError("locked")
+    monkeypatch.setattr(Path, "rename", refuse)
+    got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert side.read_text("utf-8") == "{torn"
+
+
+# ------------------------------------------------- audit of fcef73b92: markers, retries, lock
+
+def _readmittable_bank(tmp_path: Path) -> Path:
+    now = datetime(2026, 10, 21, tzinfo=UTC)
+    bank_path = tmp_path / "unrunnable_specs.json"
+    row = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+           "days": 0, "bar_bytes": 100, "missing_input": "cot_series:EURCZK",
+           "parked_at": (now - timedelta(days=91)).isoformat()}
+    bank_path.write_text(json.dumps({"EURCZK.cot_positioning.p=1": row}), "utf-8")
+    return bank_path
+
+
+def test_every_sidecar_file_and_marker_is_gitignored() -> None:
+    import fnmatch
+    lines = [ln.strip() for ln in (_ROOT_DIR / ".gitignore").read_text("utf-8").splitlines()]
+    base = "desks/mt5/data/hypotheses/needs_data_outstanding.json"
+    for suffix in ("", ".born", ".torn-20261021T0000-1", ".vanished-x", ".tmp", ".lock",
+                   ".lock.stale-0f"):
+        assert any(fnmatch.fnmatch(base + suffix, ln) for ln in lines if ln and
+                   not ln.startswith(("#", "!"))), suffix
+
+
+def test_a_failed_born_write_is_retried_so_a_later_vanish_is_never_zero(tmp_path,
+                                                                         monkeypatch) -> None:
+    """Audit probe: born write fails, then the sidecar vanishes -> must not re-FIRST to 0."""
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    real = Path.write_text
+
+    def no_born(self, *a, **k):
+        if self.name.endswith(".born"):
+            raise OSError("disk full")
+        return real(self, *a, **k)
+    monkeypatch.setattr(Path, "write_text", no_born)
+    first = _sidecar_pass(tmp_path, monkeypatch)
+    assert first["needs_data_outstanding_state"] == jc.OUTSTANDING_FIRST
+    assert not (tmp_path / (side.name + ".born")).exists()
+    monkeypatch.setattr(Path, "write_text", real)
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding_state"] == "MEASURED"
+    assert (tmp_path / (side.name + ".born")).exists(), "born on the next successful write"
+    side.unlink()
+    gone = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-23T00:00:00+00:00")
+    assert gone["needs_data_outstanding"] == "UNMEASURED"
+    assert gone["needs_data_outstanding_state"] == jc.OUTSTANDING_VANISHED
+
+
+def test_a_sidecar_born_before_the_marker_existed_is_marked_and_cannot_vanish_to_zero(
+        tmp_path, monkeypatch) -> None:
+    """Audit probe: a sidecar holding a row and no marker, then deleted -> must not read 0."""
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    side.write_text(json.dumps({"c": {"reason": "needs_data", "sym": "EURCZK",
+                                      "family": "cot_positioning"}}), "utf-8")
+    got = _sidecar_pass(tmp_path, monkeypatch)
+    assert got["needs_data_outstanding"] == 1
+    assert (tmp_path / (side.name + ".born")).exists()
+    side.unlink()
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding"] == "UNMEASURED"
+
+
+def test_an_exists_that_raises_reads_unmeasured_and_holds_the_rows_back(tmp_path,
+                                                                        monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    real = Path.exists
+
+    def denied(self, *a, **k):
+        if self.name.startswith(jc.NEEDS_DATA_OUTSTANDING.name):
+            raise PermissionError("denied")
+        return real(self, *a, **k)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    monkeypatch.setattr(Path, "exists", denied)
+    got = jc.update_unrunnable_bank({}, at="2026-10-21T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_UNREADABLE
+    assert got["bank_size"] == 1 and got["needs_data_readmit_held_back"] == 1
+
+
+def test_a_transient_read_error_is_retried_not_classed_torn(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    real = Path.read_text
+    calls = {"n": 0}
+
+    def flaky(self, *a, **k):
+        if self.name == side.name:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise PermissionError("sharing violation")
+        return real(self, *a, **k)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    monkeypatch.setattr(Path, "read_text", flaky)
+    assert jc.read_needs_data_outstanding(side)[1] == jc.OUTSTANDING_MEASURED
+    assert not list(tmp_path.glob(side.name + ".torn-*"))
+
+
+def test_a_persistent_read_error_leaves_the_file_and_holds_the_rows_back(tmp_path,
+                                                                         monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    before = side.read_bytes()
+    bank_path = _readmittable_bank(tmp_path)
+    real = Path.read_text
+
+    def locked(self, *a, **k):
+        if self.name == side.name:
+            raise PermissionError("sharing violation")
+        return real(self, *a, **k)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    monkeypatch.setattr(Path, "read_text", locked)
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_UNREADABLE
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["bank_size"] == 1 and got["needs_data_readmit_held_back"] == 1
+    assert side.read_bytes() == before and not list(tmp_path.glob(side.name + ".torn-*"))
+
+
+def test_two_tears_in_the_same_second_keep_both_copies(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    for torn in ("{torn one", "{torn two"):
+        side.write_text(torn, "utf-8")
+        _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    kept = sorted(p.read_text("utf-8") for p in tmp_path.glob(side.name + ".torn-*"))
+    assert kept == ["{torn one", "{torn two"]
+
+
+def test_a_failed_replace_is_write_failed_and_the_rows_stay_parked(tmp_path,
+                                                                   monkeypatch) -> None:
+    _sidecar_pass(tmp_path, monkeypatch)
+    bank_path = _readmittable_bank(tmp_path)
+
+    def refuse(self, target):
+        raise OSError("read-only destination")
+    monkeypatch.setattr(Path, "replace", refuse)
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_WRITE_FAILED
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["bank_size"] == 1 and got["readmitted_on_bar_growth"] == 0
+    assert got["readmitted_not_testable"] == 0
+
+
+def test_a_held_lock_is_locked_and_a_stale_one_is_broken(tmp_path, monkeypatch) -> None:
+    import os as _os
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    bank_path = _readmittable_bank(tmp_path)
+    lock = tmp_path / (side.name + ".lock")
+    lock.write_text("{}", "utf-8")
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_LOCKED
+    assert got["needs_data_outstanding"] == "UNMEASURED" and got["bank_size"] == 1
+    old = lock.stat().st_mtime - jc.OUTSTANDING_LOCK_STALE_S - 10
+    _os.utime(lock, (old, old))
+    got = jc.update_unrunnable_bank({}, at="2026-10-23T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_MEASURED
+    assert got["needs_data_outstanding"] == 1 and not lock.exists()
+
+
+# ------------------------------------------------- the lock guards the bank too (1fb3db5f1) --
+def _live_foreign_lock(tmp_path: Path) -> Path:
+    lock = tmp_path / (jc.NEEDS_DATA_OUTSTANDING.name + ".lock")
+    lock.write_text(json.dumps({"token": "someone-else", "pid": 1}), "utf-8")
+    return lock
+
+
+def test_a_locked_pass_neither_reads_into_nor_writes_the_bank(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    before = bank_path.read_text("utf-8")
+    _live_foreign_lock(tmp_path)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    named = {"EURUSD.event_reaction.p=1": {"reason": "needs_data", "sym": "EURUSD",
+                                           "family": "event_reaction", "tf": "H1"}}
+    got = jc.update_unrunnable_bank(named, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_LOCKED
+    assert got["bank_write"] == "SKIPPED_LOCKED"
+    assert got["parked_this_pass"] == 0 and got["readmitted_on_bar_growth"] == 0
+    assert bank_path.read_text("utf-8") == before            # not one byte written
+
+
+def test_a_pass_that_loses_its_lock_mid_pass_writes_nothing(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    before = bank_path.read_text("utf-8")
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    real = jc.read_needs_data_outstanding
+
+    def steal(path=None):
+        _live_foreign_lock(tmp_path)                         # a takeover race replaced it
+        return real(path)
+    monkeypatch.setattr(jc, "read_needs_data_outstanding", steal)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_LOCKED
+    assert got["bank_write"] == "SKIPPED_LOCKED" and got["bank_size"] == 1
+    assert bank_path.read_text("utf-8") == before and not side.exists()
+    lock = tmp_path / (side.name + ".lock")
+    owner = json.loads(lock.read_text("utf-8"))["token"]
+    assert owner == "someone-else"                           # left to its owner
+
+
+def test_the_stale_takeover_is_atomic(tmp_path, monkeypatch) -> None:
+    import os as _os
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    lock = tmp_path / (side.name + ".lock")
+    lock.write_text(json.dumps({"token": "dead"}), "utf-8")
+    old = lock.stat().st_mtime - jc.OUTSTANDING_LOCK_STALE_S - 10
+    _os.utime(lock, (old, old))
+    a, b = jc._SidecarLock(side, "a"), jc._SidecarLock(side, "b")
+    assert a._take_stale() is True and not lock.exists()
+    assert b._take_stale() is False                          # nothing left to take
+    # Between B's read of the stale lock and its move, a live holder replaced it: B moves the
+    # live lock, sees a different token, and links it back untouched.
+    lock.write_text(json.dumps({"token": "dead"}), "utf-8")
+    _os.utime(lock, (old, old))
+    real_rename = _os.rename
+
+    def race(src, dst):
+        Path(src).write_text(json.dumps({"token": "live"}), "utf-8")   # fresh mtime too
+        real_rename(src, dst)
+    monkeypatch.setattr(jc.os, "rename", race)
+    assert b._take_stale() is False
+    restored = json.loads(lock.read_text("utf-8"))["token"]
+    assert restored == "live"
+    assert not list(tmp_path.glob(side.name + ".lock.stale-*"))
+
+
+def test_the_heartbeat_keeps_a_long_pass_s_lock(tmp_path, monkeypatch) -> None:
+    import time as _t
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_BEAT_S", 0.05)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_STALE_S", 0.3)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    holder = jc._SidecarLock(side, "long")
+    assert holder.acquire()
+    _t.sleep(0.8)                                            # longer than the stale window
+    rival = jc._SidecarLock(side, "rival")
+    assert rival.acquire() is False and holder.owned()
+    holder.release()
+    assert rival.acquire() is True
+    rival.release()
+    assert not (tmp_path / (side.name + ".lock")).exists()
+
+
+# ------------------------------------------------------------- v4.2 should-fixes (dea8c4d56) --
+def test_a_replace_blocked_by_a_reader_is_retried(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    real, calls = Path.replace, {"n": 0}
+
+    def flaky(self, target):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise PermissionError("sharing violation")
+        return real(self, target)
+    monkeypatch.setattr(Path, "replace", flaky)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["bank_write"] == "WRITTEN" and calls["n"] >= 3
+
+
+def test_readmissions_count_only_after_the_bank_write_lands(tmp_path, monkeypatch) -> None:
+    now = datetime(2026, 10, 21, tzinfo=UTC)
+    bank_path = tmp_path / "unrunnable_specs.json"
+    row = {"reason": "not_testable_spec", "sym": "EURUSD", "family": "event_reaction",
+           "tf": "H1", "days": 0, "bar_bytes": 1,
+           "parked_at": (now - timedelta(days=91)).isoformat(),
+           "not_testable_since": (now - timedelta(days=91)).isoformat()}
+    bank_path.write_text(json.dumps({"EURUSD.event_reaction.p=1": row}), "utf-8")
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "PRESENT"})
+    if row["reason"] not in jc.NOT_TESTABLE_REASONS:
+        row["reason"] = sorted(jc.NOT_TESTABLE_REASONS)[0]
+        bank_path.write_text(json.dumps({"EURUSD.event_reaction.p=1": row}), "utf-8")
+    real = jc._replace_retry
+
+    def refuse(src, dst):
+        if dst == bank_path:
+            raise OSError("disk full")
+        return real(src, dst)
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    log = tmp_path / "log.jsonl"
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path, log=log)
+    assert got["bank_write"] == "WRITE_FAILED"
+    assert got["readmitted_not_testable"] == 0 and got["readmitted_on_bar_growth"] == 0
+    assert json.loads(log.read_text("utf-8").splitlines()[-1])["state"] == "WRITE_FAILED"
+
+
+def test_a_write_that_fails_leaves_no_tmp_behind(tmp_path, monkeypatch) -> None:
+    """WRITE_FAILED on both the sidecar and the bank: each .tmp was written and never replaced,
+    and both are unlinked in a finally (audit of 1e2f27789)."""
+    bank_path = _readmittable_bank(tmp_path)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    tried: list[Path] = []
+
+    def refuse(src, dst):
+        assert src.exists()                                 # the .tmp really was written
+        tried.append(src)
+        raise OSError("disk full")
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    named = {"GBPUSD.event_reaction.p=1": {"reason": "needs_data", "sym": "GBPUSD",
+                                           "family": "event_reaction", "tf": "H1"}}
+    got = jc.update_unrunnable_bank(named, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["bank_write"] == "WRITE_FAILED"
+    assert {p.name for p in tried} >= {bank_path.name + ".tmp"}
+    assert not list(tmp_path.rglob("*.tmp")), sorted(tmp_path.rglob("*.tmp"))
+
+
+def test_a_locked_pass_logs_locked_not_a_measured_zero(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    _live_foreign_lock(tmp_path)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    log = tmp_path / "log.jsonl"
+    jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path, log=log)
+    line = json.loads(log.read_text("utf-8").splitlines()[-1])
+    assert line == {"at": "2026-10-22T00:00:00+00:00", "state": "LOCKED"}
+    from research import judging_burndown as jb
+    got = jb.readmissions(datetime(2026, 10, 22, 0, 30, tzinfo=UTC), log)
+    assert got["status"] == jb.UNMEASURED                  # a LOCKED line is no reading
+
+
+def test_a_transient_heartbeat_read_never_loses_the_lock(tmp_path, monkeypatch) -> None:
+    import time as _t
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_BEAT_S", 0.02)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    lk = jc._SidecarLock(side, "a")
+    assert lk.acquire()
+    real, state = Path.read_text, {"fail": 6}
+
+    def flaky(self, *a, **k):
+        if self == lk.path and state["fail"] > 0:
+            state["fail"] -= 1
+            raise PermissionError("sharing violation")
+        return real(self, *a, **k)
+    monkeypatch.setattr(Path, "read_text", flaky)
+    _t.sleep(0.3)
+    assert not lk.lost and lk.owned()
+    lk.lost = True                                          # even if a beat had flagged it,
+    lk.release()                                            # our own token is still unlinked
+    assert not lk.path.exists()

@@ -115,14 +115,22 @@ def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
              # a79c35a8475: the gateway is a 24/7 resident now; the seal STARTS its keep-alive
              # task (a running singleton makes that a no-op) instead of stop/start of MT5-Gateway
              'Start-ScheduledTask -TaskName "MT5-GatewayResident"']
-    idx = [ADOPT.index(s) for s in steps]
+    # THE MAIN FLOW'S OCCURRENCE (unattended adopter, 2026-10-28): the dirty-code check and the
+    # resident's start also sit EARLIER in the file, inside the functions the way back uses
+    # (Get-DirtyCode, the rollback's recycle), defined before the flow runs. The order pinned is
+    # the run's own: the last occurrence of each step.
+    idx = [ADOPT.rindex(s) for s in steps]
     assert idx == sorted(idx), "adopt -> seal-if-needed -> commit alone -> restart"
 
 
 def test_adopt_and_seal_refuses_a_partial_adoption_and_a_dirty_tree() -> None:
     assert "partial adoption; NOT sealing" in ADOPT
-    assert 'Done $adoptExit "adopt-release-partial"' in ADOPT
-    assert "refusing to seal:" in ADOPT and 'Done 3 "dirty-code-path"' in ADOPT
+    # a partial adoption is not only left unsealed: it is rolled back (unattended adopter)
+    assert (
+        'Undo-Adoption "Adopt-Release exited $adoptExit (partial adoption)" $adoptExit '
+        '"adopt-release-partial"' in ADOPT
+    )
+    assert "refusing to seal:" in ADOPT and '3 "dirty-code-path"' in ADOPT
 
 
 def test_adopt_and_seal_stages_exactly_one_path_and_never_stashes() -> None:
@@ -330,6 +338,6 @@ def test_a_seal_or_state_commit_on_top_of_the_sealed_code_is_not_re_sealed() -> 
     assert "release.accepts(sys.argv[1], release.load() or {})" in ADOPT_CODE
     eq = ADOPT_CODE.index("if ($sealed -eq $head)")
     acc = ADOPT_CODE.index("release.accepts(")
-    dirty = ADOPT_CODE.index("git diff --name-only --no-ext-diff HEAD")
+    dirty = ADOPT_CODE.rindex("git diff --name-only --no-ext-diff HEAD")  # the flow's own
     assert eq < acc < dirty
     assert "plus seal/state commits only; nothing to seal" in ADOPT_CODE
