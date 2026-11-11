@@ -209,10 +209,18 @@
   ],
   "code_paths_touched": 2535,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-05T19:06:14+00:00",
+  "measured_at": "2026-11-09T20:36:37+00:00",
   "code_paths_differing": 0,
   "code_paths": [],
   "skipped": [
+    {
+      "path": "desks/mt5/ops/box_tasks.manifest",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/prop/e8_executor.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
     {
       "path": "desks/mt5/research/factor_residual_engine.py",
       "why": "blob is in origin's history (an adoption, not box code)"
@@ -222,7 +230,55 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
+      "path": "desks/mt5/research/local_converter.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/research/merge_hypotheses.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/scripts/sync_shadow_to_git.ps1",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
       "path": "desks/mt5/tests/test_factor_residual_book.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "desks/mt5/tests/test_hourly_cycle_leg_rotation.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "libs/ops/leg_rotation.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/release/authority/authority.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "ops/release/publisher/publish.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/check_dead_architecture.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/mine_channel_transcripts.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "scripts/run_law_gate.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_release_authority.py",
+      "why": "blob is in origin's history (an adoption, not box code)"
+    },
+    {
+      "path": "tests/ops/test_state_publisher.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     }
   ],
