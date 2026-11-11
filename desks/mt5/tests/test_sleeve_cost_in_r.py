@@ -1,0 +1,115 @@
+"""Sleeve cost in R (idea 656): measured entry-hour cost vs the certificate's charge, in R.
+Missing inputs are UNMEASURED, never 0; the report is report-only with no consumer."""
+from __future__ import annotations
+
+import json
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+_DESK = Path(__file__).resolve().parents[1]
+_ROOT = _DESK.parent.parent
+for p in (str(_DESK), str(_ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from research import sleeve_cost_in_r as sc  # noqa: E402
+
+NOW = datetime(2026, 11, 11, 18, 0, tzinfo=UTC)
+
+
+def _hours(p50: float, zero_frac: float = 0.0) -> dict[str, dict[str, object]]:
+    out = {str(h): {"status": "MEASURED", "p50": 10.0, "zero_frac": 0.0} for h in range(24)}
+    out["7"] = {"status": "MEASURED", "p50": p50, "zero_frac": zero_frac}
+    return out
+
+
+def _setup(monkeypatch: pytest.MonkeyPatch, tmp: Path, *, p50: float = 10.0,
+           ev: float = 0.2, x3: float = 0.1, cert: bool = True, zero_frac: float = 0.0) -> None:
+    sleeves = {"sleeves": [
+        {"name": "eurusd_srb", "status": "STANDBY", "symbol": "EURUSD", "selector": "asia",
+         "certificate": {"cell": "external.EURUSD.srb" if cert else None}},
+        {"name": "dead", "status": "RETIRED", "symbol": "EURUSD"},
+    ]}
+    surv = {"survivors": {"external.EURUSD.srb": {
+        "sym": "EURUSD", "gates": {"expected_value": {"ev": ev}, "stress_costs": {"exp_x3": x3}},
+        "shadow_spec": {"symbol": "EURUSD", "selector": "asia"}}}}
+    uni = {"EURUSD": {"contract_size": 100000.0, "tick_size": 0.00001, "tick_value": 1.0,
+                      "median_spread_pts": 10.0}}
+    surface = {"symbols": {"EURUSD": {"tick_size": 0.00001, "atr20_h1_pts": 100.0,
+                                      "hours": _hours(p50, zero_frac)}}}
+    files = {"SLEEVES": sleeves, "SURVIVORS": surv, "UNIVERSE": uni, "SURFACE": surface}
+    for attr, doc in files.items():
+        path = tmp / f"{attr}.json"
+        path.write_text(json.dumps(doc), encoding="utf-8")
+        monkeypatch.setattr(sc, attr, path)
+    monkeypatch.setattr(sc, "LEDGER", tmp / "none.jsonl")
+    monkeypatch.setattr(sc, "CORPUS", tmp / "none2.jsonl")
+    monkeypatch.setattr(sc, "DATA", tmp)
+    monkeypatch.setattr(sc, "OUT", tmp / "SLEEVE_COST_IN_R.json")
+
+
+def _row(doc: dict[str, Any], name: str = "eurusd_srb") -> dict[str, Any]:
+    return next(r for r in doc["sleeves"] if r["sleeve"] == name)
+
+
+def test_contract_fields_and_population(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path)
+    doc = sc.build(NOW)
+    assert doc["report_only"] is True and doc["consumer"] is None
+    assert doc["intended_consumer"] == "allocator / vol-target arm (idea 531/415)"
+    assert [r["sleeve"] for r in doc["sleeves"]] == ["eurusd_srb"]  # retired excluded, cert deduped
+
+
+def test_cost_arithmetic_matches_certificate_charge(monkeypatch: pytest.MonkeyPatch,
+                                                     tmp_path: Path) -> None:
+    # Entry spread equals the registry median: the measured spread is ONE crossing and the
+    # cert charged TWO, so measured < charged and nothing is flagged.
+    _setup(monkeypatch, tmp_path)
+    f = _row(sc.build(NOW))["venues"]["fusion"]
+    assert f["cost_R_measured"]["spread_R"] == pytest.approx(0.1)  # one crossing = ev - x3
+    assert f["cost_R_charged"] == pytest.approx(0.2 + f["cost_R_measured"]["commission_R"],
+                                                abs=1e-4)
+    assert f["gross_edge_R"] == pytest.approx(0.2 + f["cost_R_charged"], abs=1e-4)
+    assert f["flags"] == []
+    assert f["cost_R_measured"]["kind"].startswith("FLOOR")
+
+
+def test_expensive_entry_hour_flags_both(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path, p50=100.0)  # 10x the median at the entry hour
+    r = _row(sc.build(NOW))
+    f = r["venues"]["fusion"]
+    assert f["net_edge_R"] <= 0
+    assert set(r["flags"]) >= {"COST_EATS_EDGE", "UNDERCHARGED"}
+    assert f["spread_atr"]["entry_over_median"] == pytest.approx(10.0)
+
+
+def test_missing_inputs_are_unmeasured_never_zero(monkeypatch: pytest.MonkeyPatch,
+                                                  tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path, cert=False)
+    r = _row(sc.build(NOW))
+    assert r["certificate"]["status"] == sc.UNMEASURED
+    assert r["venues"]["fusion"]["status"] == sc.UNMEASURED  # no stop recoverable
+    assert r["venues"]["e8"]["status"] == sc.UNMEASURED
+    assert r["venues"]["ftmo"]["status"] == sc.UNMEASURED
+    assert r["slippage"]["status"] == sc.UNMEASURED
+
+
+def test_degenerate_surface_is_named(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path, zero_frac=0.9)
+    assert "SURFACE_SUSPECT" in _row(sc.build(NOW))["flags"]
+
+
+def test_broker_clock_follows_eu_dst() -> None:
+    assert sc.broker_hour(datetime(2026, 7, 1, 4, tzinfo=UTC)) == 7
+    assert sc.broker_hour(datetime(2026, 11, 11, 4, tzinfo=UTC)) == 6
+
+
+def test_write_is_atomic(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _setup(monkeypatch, tmp_path)
+    sc.write(sc.build(NOW), sc.OUT)
+    assert json.loads(sc.OUT.read_text(encoding="utf-8"))["schema"] == sc.SCHEMA
+    assert not list(tmp_path.glob("*.tmp"))
