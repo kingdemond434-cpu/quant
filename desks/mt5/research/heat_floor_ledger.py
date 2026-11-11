@@ -135,8 +135,11 @@ def causes(account: str, now: datetime) -> list[str]:
     if account == "ftmo" and not (FTMO_ALLOCATOR_ARMED.exists() and FTMO_EXECUTOR_ARMED.exists()):
         out.append("ftmo_unarmed")
     try:
-        from mt5desk.decision_core import GOLD_ASIA_ONLY_ZERO, PRINCIPAL_ZERO
-        pinned = PRINCIPAL_ZERO.get(account, frozenset())
+        from mt5desk import decision_core as dc
+        GOLD_ASIA_ONLY_ZERO = dc.GOLD_ASIA_ONLY_ZERO
+        # after #954 the pin lives behind principal_zeros(), re-armed by GOLD_ASIA_ONLY_ENABLED
+        zeros = getattr(dc, "principal_zeros", None)
+        pinned = zeros(account) if callable(zeros) else dc.PRINCIPAL_ZERO.get(account, frozenset())
         if GOLD_ASIA_ONLY_ZERO and GOLD_ASIA_ONLY_ZERO.issubset(pinned):
             out.append("gold_only_pin (#954)")
     except Exception:  # an unimportable core names no cause; it is not a cause
