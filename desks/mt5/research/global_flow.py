@@ -332,6 +332,71 @@ def _hazard(src: Mapping[str, Any], bars: Callable[[str], Any] | None,
     return pd.concat(cols, axis=1).sort_index() if cols else pd.DataFrame()
 
 
+def session_window(bars_h1: pd.DataFrame, tz: str, start_h: int, end_h: int) -> pd.DataFrame:
+    """One LOCAL trading window's footprint per day, from a symbol's own H1 bars.
+
+    A player class that trades at fixed local hours leaves its mark there: China's commodity
+    night session (21:00-02:30 Beijing) is where its retail-heavy futures crowd meets the global
+    contract. The desk's bars are BROKER stamps under a UTC label, so they go through
+    `session_clock.server_to_utc` first and then to the market's own clock (DST-safe on both
+    sides). H1 bars whose local open hour is in [start_h, end_h) form the window; `end_h` at or
+    below `start_h` wraps past midnight. Indexed by the UTC DAY the window's last bar closes in.
+
+        win_ret        log(close of last bar / open of first bar)
+        win_path_share sum |H1 return| inside the window / the same sum over the 24 bars ending
+                       with it: how much of the day's movement happened in those hours
+        win_vol_share  the same share of tick volume (absent when the bars carry none)
+        win_close_utc  when the last bar closed, true UTC: the value does not exist before it
+    """
+    from libs.regime import session_clock
+    b = bars_h1.sort_index()
+    utc = session_clock.server_to_utc(b.index)
+    local = utc.tz_convert(tz)
+    span = (end_h - start_h) % 24 or 24
+    off = (np.asarray(local.hour) - start_h) % 24
+    inside = off < span
+    # The session a bar belongs to: the local date its window STARTED on.
+    sess = (local - pd.to_timedelta(off, unit="h")).normalize().tz_localize(None)
+    close = pd.to_numeric(b["close"], errors="coerce").to_numpy(dtype=float)
+    opn = pd.to_numeric(b["open"], errors="coerce").to_numpy(dtype=float) \
+        if "open" in b.columns else np.r_[np.nan, close[:-1]]
+    absr = np.abs(np.diff(np.log(close), prepend=np.nan))
+    vol = pd.to_numeric(b["tick_volume"], errors="coerce").to_numpy(dtype=float) \
+        if "tick_volume" in b.columns else None
+    f = pd.DataFrame({"sess": sess, "inside": inside, "open": opn, "close": close, "absr": absr,
+                      "day_absr": pd.Series(absr).rolling(24, min_periods=12).sum().to_numpy(),
+                      "end": (utc + pd.Timedelta(hours=1)).tz_localize(None)})
+    if vol is not None:
+        f["vol"] = vol
+        f["day_vol"] = pd.Series(vol).rolling(24, min_periods=12).sum().to_numpy()
+    g = f[f["inside"]].groupby("sess", sort=True)
+    full = g["close"].count() >= max(1, span - 1)        # a holiday stub is not a session
+    out = pd.DataFrame({"win_ret": np.log(g["close"].last() / g["open"].first()),
+                        "win_path_share": g["absr"].sum() / g["day_absr"].last(),
+                        "win_close_utc": g["end"].last()})
+    if vol is not None:
+        out["win_vol_share"] = g["vol"].sum() / g["day_vol"].last()
+    out = out[full.to_numpy()].replace([np.inf, -np.inf], np.nan).dropna(subset=["win_ret"])
+    out.index = pd.DatetimeIndex(out["win_close_utc"]).normalize()
+    return out[~out.index.duplicated(keep="last")]
+
+
+def _session(src: Mapping[str, Any], bars: Callable[[str], Any] | None,
+             notes: list[dict[str, Any]]) -> pd.DataFrame:
+    """Desk-bar derived, offline like `_hazard`. One column block per symbol."""
+    if bars is None:
+        return pd.DataFrame()
+    cols = []
+    for sym in src.get("symbols") or []:
+        b = bars(str(sym))
+        if b is None or len(b) == 0:
+            notes.append({"source": src["id"], "symbol": sym, "status": "NO_BARS"})
+            continue
+        w = session_window(b, str(src["tz"]), int(src["start_hour"]), int(src["end_hour"]))
+        cols.append(w.drop(columns=["win_close_utc"]).add_prefix(f"{str(sym).lower()}_"))
+    return pd.concat(cols, axis=1).sort_index() if cols else pd.DataFrame()
+
+
 def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: list[dict[str, Any]],
             get_text: Callable[[str], str] | None = None, now: datetime | None = None,
             budget: float | None = None, registry: Mapping[str, Any] | None = None,
@@ -374,6 +439,8 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
                 df = _nse_days(src, get, state, notes, now.date(), deadline)
             elif adapter == "cb_hazard":
                 df = _hazard(src, bars, notes)
+            elif adapter == "session_window":
+                df = _session(src, bars, notes)
         except HardStop as hs:
             stops[f"gf_{sid}"] = {"code": hs.code, "at": now.isoformat(timespec="seconds")}
         except Exception as exc:
