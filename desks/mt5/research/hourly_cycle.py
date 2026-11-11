@@ -1212,6 +1212,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
     "fill_recorder", "cost_surfaces",
+    # When each account last traded (fusion, e8, ftmo): a stdlib reader of the fill and intent
+    # journals and the account-state reports, seconds, so it rides the core clock.
+    "account_activity",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -6141,6 +6144,14 @@ def main() -> None:
     # corpus the execution twin and the shortfall model already read. Recording only.
     flr = _costed("fill_recorder", lambda: _producer(
         "fill_recorder", "research/fill_recorder.py", "--once", "--budget-s", "120"))
+    # WHEN EACH ACCOUNT LAST TRADED (2026-11-11). Nothing published when FTMO or E8 last traded:
+    # FTMO's newest journaled fill was 11-03 and E8's exit-fill journal stale since 10-20, so the
+    # answer was inferred by hand from equity steps and the intent journals. This leg writes that
+    # join to reports/ACCOUNT_ACTIVITY.json: last fill (journaled or labelled inferred), last
+    # intent, 24h counts, balances and every fill journal older than a newer SENT. Report only:
+    # stdlib, no venue, no write but its own report.
+    aac = _costed("account_activity", lambda: _producer(
+        "account_activity", "research/account_activity.py"))
     # THE WHOLE ROUND TRIP, KEYED (2026-09-30). The cost model was spread x hour only; this joins
     # the corpus fill_recorder just wrote with the ledger's commission and swap into surfaces
     # keyed instrument x session x size x vol x direction x order type, UNMEASURED where no fill
@@ -6547,6 +6558,7 @@ def main() -> None:
                     "culture_gap_cells": cgc, "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "account_activity": aac,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,

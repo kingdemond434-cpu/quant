@@ -618,6 +618,8 @@ LEG_LAYER: dict[str, str] = {
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
     "fill_recorder": "execution", "cost_surfaces": "execution",
+    # When each account last traded: a report of fills, intents and balances (2026-11-11).
+    "account_activity": "meta",
     # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.
