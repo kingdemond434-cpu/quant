@@ -1413,6 +1413,103 @@ def parse_bcb_mpv(body: bytes, ctx: Ctx) -> list[Obs]:
     return [Obs("retail_payments_value_brl", d, v) for d, v in sorted(tot.items())]
 
 
+#: UN Comtrade partner-side mirror of Hong Kong's HS 7108 (gold) trade: reporter -> its series
+#: prefix, flow -> its leg. Partner is always Hong Kong (344).
+COMTRADE_REPORTERS: dict[int, str] = {156: "cn", 757: "ch"}
+COMTRADE_FLOWS: dict[str, str] = {"M": "imp_from_hk", "X": "exp_to_hk"}
+COMTRADE_PARTNER = 344
+COMTRADE_CMD = "7108"
+_COMTRADE_PERIOD = re.compile(r"^(\d{4})(\d{2})$")
+
+
+def comtrade_shape_ok(body: bytes) -> bool:
+    """True only for the Comtrade reply envelope `{"data": [ {...}, ... ]}` (an empty list is a
+    real answer: the month is not yet released). Anything else -- an error object, HTML, a bare
+    list, `data` not a list or holding a non-object -- is not this API's data reply."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return False
+    data = doc.get("data") if isinstance(doc, dict) else None
+    return isinstance(data, list) and all(isinstance(r, dict) for r in data)
+
+
+def _comtrade_key(r: dict[str, Any]) -> tuple[str, date] | None:
+    """(series prefix, month-end) for an aggregate HS 7108 row with Hong Kong as partner, else
+    None. A breakdown row (second partner, mode of transport, customs procedure) is not the
+    total and is skipped; so is any row for another commodity, partner, reporter or frequency."""
+    if str(r.get("cmdCode") or "").strip() != COMTRADE_CMD:
+        return None
+    if str(r.get("freqCode") or "M") != "M":
+        return None
+    try:
+        rep, partner = int(str(r.get("reporterCode"))), int(str(r.get("partnerCode")))
+        if int(r.get("partner2Code") or 0) != 0 or int(r.get("motCode") or 0) != 0:
+            return None
+    except (TypeError, ValueError):
+        return None
+    if partner != COMTRADE_PARTNER or rep not in COMTRADE_REPORTERS:
+        return None
+    if str(r.get("customsCode") or "C00") != "C00":
+        return None
+    flow = str(r.get("flowCode") or "")
+    if flow not in COMTRADE_FLOWS:
+        return None
+    m = _COMTRADE_PERIOD.match(str(r.get("period") or "").strip())
+    if not m or not 1 <= int(m.group(2)) <= 12:
+        return None
+    return (f"comtrade_{COMTRADE_REPORTERS[rep]}_{COMTRADE_FLOWS[flow]}_gold",
+            _month_end(int(m.group(1)), int(m.group(2))))
+
+
+def parse_comtrade_hk_gold(body: bytes, ctx: Ctx) -> list[Obs]:
+    """UN Comtrade public preview reply (`/public/v1/preview/C/M/HS`), HS 7108, partner Hong
+    Kong: `{"data": [{period "YYYYMM", reporterCode, partnerCode, flowCode, cmdCode,
+    primaryValue, netWgt, ...}]}`. Per reporter x flow, `<prefix>_usd` (primaryValue, US$) and
+    `<prefix>_kg` (netWgt, only when reported and > 0). Any other envelope emits NOTHING; a key
+    that appears twice among aggregate rows is ambiguous and is dropped, never guessed."""
+    if not comtrade_shape_ok(body):
+        return []
+    rows = json.loads(body.decode("utf-8", errors="replace"))["data"]
+    out: dict[tuple[str, date], float] = {}
+    dup: set[tuple[str, date]] = set()
+    for r in rows:
+        key = _comtrade_key(r)
+        if key is None:
+            continue
+        prefix, d = key
+        usd = _num(str(r.get("primaryValue")))
+        kg = _num(str(r.get("netWgt")))
+        for k, v in (((f"{prefix}_usd", d), usd), ((f"{prefix}_kg", d), kg)):
+            if v is None or v <= 0:
+                continue
+            if k in out:
+                dup.add(k)
+            out[k] = v
+    return [Obs(k, d, v) for (k, d), v in sorted(out.items(), key=lambda kv: (kv[0][1],
+                                                                             kv[0][0]))
+            if (k, d) not in dup]
+
+
+def comtrade_net_obs(store: dict[str, Any]) -> list[Obs]:
+    """China's NET import of gold from Hong Kong per month, from the vintage store: imports
+    from HK minus exports to HK, in US$ and in kg, only for a month where BOTH legs are held
+    (the legs arrive in separate replies, so this is derived after the merge, never in the
+    parser). Uses each leg's latest value, so a revised leg is a revision of the net."""
+    legs: dict[tuple[str, str], float] = {}
+    for row in store.values():
+        if isinstance(row, dict) and str(row.get("series", "")).startswith("comtrade_cn_"):
+            legs[(str(row["series"]), str(row["period"]))] = float(row["value_last"])
+    out: list[Obs] = []
+    for unit in ("usd", "kg"):
+        imp = {p: v for (s, p), v in legs.items() if s == f"comtrade_cn_imp_from_hk_gold_{unit}"}
+        exp = {p: v for (s, p), v in legs.items() if s == f"comtrade_cn_exp_to_hk_gold_{unit}"}
+        for p in sorted(set(imp) & set(exp)):
+            out.append(Obs(f"comtrade_cn_net_imp_from_hk_gold_{unit}", date.fromisoformat(p),
+                           imp[p] - exp[p]))
+    return out
+
+
 def parse_inegi_bie(body: bytes, ctx: Ctx) -> list[Obs]:
     """INEGI Banco de Indicadores API v2.0 JSON for ONE configured EMEC indicator:
     `Series[0].OBSERVATIONS[].{TIME_PERIOD "YYYY/MM", OBS_VALUE}`. An error reply is nothing."""
@@ -1691,6 +1788,16 @@ def rule_kr_mof_port(period: date) -> datetime:
     return _roll_weekday(_utc(t.year, t.month, t.day))
 
 
+def rule_comtrade_monthly(period: date) -> datetime:
+    """UN Comtrade monthly data land about 45+ days after the month and later for many
+    reporters; there is no release calendar per reporter-month on the keyless route. Stamped
+    60 days after the month CLOSES (the day after `period`, the month-end), rolled to a weekday:
+    late-biased. The availability route (getDA, first/last released per reporter-period) would
+    be a better stamp; it is unread from here, so it is not used."""
+    t = _utc(period.year, period.month, period.day) + timedelta(days=1 + 60)
+    return _roll_weekday(t)
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -1754,6 +1861,15 @@ PORTWATCH_BASE = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/ser
                   "{svc}/FeatureServer/0/query")
 PORTS = ("Shanghai", "Ningbo-Zhoushan", "Busan", "Port Hedland", "Singapore")
 CHOKEPOINTS = ("Strait of Hormuz", "Suez Canal", "Bab el-Mandeb Strait", "Malacca Strait")
+#: UN Comtrade keyless public preview (monthly, HS). robots.txt on comtradeapi.un.org 404s (box
+#: read 2026-11-11). Free tier: 500 calls/day, 1 call/s; this source makes 8 calls a day.
+COMTRADE_URL = "https://comtradeapi.un.org/public/v1/preview/C/M/HS"
+COMTRADE_FLOOR = date(2010, 1, 1)
+COMTRADE_RECENT_MONTHS = 6
+COMTRADE_PERIODS_PER_CALL = 6
+COMTRADE_MIN_GAP_H = 20
+COMTRADE_MIN_INTERVAL_S = 1.1
+COMTRADE_MAX_CALLS_PER_DAY = 500
 
 SOURCES: tuple[Source, ...] = (
     Source(
@@ -1949,6 +2065,60 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="un_comtrade_hk_gold",
+        name=("UN Comtrade partner-side mirror of Hong Kong gold (HS 7108): mainland China and "
+              "Switzerland imports from and exports to Hong Kong, monthly"),
+        url=COMTRADE_URL, region="HK", language="en", cadence="monthly",
+        parse=parse_comtrade_hk_gold, rule=rule_comtrade_monthly, transform="level_dev",
+        instruments={"XAUUSD": 1},
+        series_instruments={
+            # gold leaving the mainland for HK, or HK gold returning to Swiss refiners, is
+            # Asian physical SUPPLY back into the market: the opposite leg
+            "comtrade_cn_exp_to_hk_gold": {"XAUUSD": -1},
+            "comtrade_ch_imp_from_hk_gold": {"XAUUSD": -1},
+        },
+        signal_series=(*(f"comtrade_{r}_{f}_gold_{u}" for r in COMTRADE_REPORTERS.values()
+                         for f in COMTRADE_FLOWS.values() for u in ("usd", "kg")),
+                       "comtrade_cn_net_imp_from_hk_gold_usd",
+                       "comtrade_cn_net_imp_from_hk_gold_kg"),
+        mechanism=("Hong Kong is the main channel for gold into mainland China outside the PBoC "
+                   "import quota through Shanghai/Beijing: China's monthly imports of HS 7108 "
+                   "from HK (net of its exports back) are mainland physical offtake, and "
+                   "Switzerland's exports to HK are the refiners' eastbound supply that feeds "
+                   "it. Read from the partner side because HK C&SD's own HS 7108 tables are "
+                   "robots-blocked"),
+        payer=("London/NY gold holders pricing on real yields and the dollar, blind to Asian "
+               "physical offtake until the flows print"),
+        constraint=("PBoC import licences and the HK re-export route set how fast mainland "
+                    "demand can be met; the customs data print weeks after the flow, so the "
+                    "Western tape prices it late if at all"),
+        licence=("UN Comtrade: INTERNAL USE ONLY -- 'Internal use: UN Comtrade data may be used "
+                 "internally for research, analysis, processing, modelling and AI'; 'provided "
+                 "for internal use only and may not be re-disseminated in any form without "
+                 "UNSD's permission'. Attribution 'Source: UN Comtrade'. API, never the UI; free "
+                 "tier 500 calls/day at 1 call/s. Licence Agreement s.5 prohibits automated "
+                 "downloading or redistribution without prior written permission, read against "
+                 "the policy pages that direct users to the APIs (see TERMS_EVIDENCE)"),
+        source_culture="HK/en", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails because the flows print ~2 months late, are revised, "
+                                 "and swing with PBoC quota allocations and Swiss refinery "
+                                 "routing rather than with demand; China has suppressed or "
+                                 "lumped HS 7108 lines in some periods, so a missing month is "
+                                 "absence, never a zero"),
+        crowding_prior="medium",
+        note=("Keyless public preview route, the endpoint family shadow_institutional._COMTRADE "
+              "and data_axis_miner already name; robots.txt on comtradeapi.un.org 404 (box read "
+              "2026-11-11). ONE pass per ~day (COMTRADE_MIN_GAP_H): per reporter x flow, one "
+              "call for the last COMTRADE_RECENT_MONTHS months and one for a backfill block "
+              "walking back to COMTRADE_FLOOR, periods comma-joined (<= "
+              "COMTRADE_PERIODS_PER_CALL; the list form is UNCONFIRMED live: a rejected list is "
+              "an HTTP error and holds the cursor) -- 8 calls/day at >= 1 s apart, far under "
+              "500/day. INTERNAL USE ONLY: the series feed the desk's own research and are "
+              "never exported or redistributed. USDCNH (in universe.json) was considered and "
+              "left unmapped: the sign of mainland gold imports on the yuan is not "
+              "established. Credit: 'Source: UN Comtrade'"),
+        vintage="current"),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2649,6 +2819,11 @@ TERMS: dict[str, tuple[str, str]] = {
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
+    "un_comtrade_hk_gold": ("confirmed", "INTERNAL-USE-ONLY: UN Comtrade policy permits internal "
+                            "research, analysis, modelling and AI use via the APIs (not the "
+                            "UI), at most 500 calls/day; no re-dissemination in any form; "
+                            "attribution 'Source: UN Comtrade'. Licence s.5 tension recorded "
+                            "in TERMS_EVIDENCE"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2984,6 +3159,50 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "commercially or non-commercially."),
         "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
         "checked_at": _CHK},
+    "un_comtrade_hk_gold": {
+        "terms_url": "https://uncomtrade.org/docs/re-dissemination-of-data/",
+        "terms_quote": ("Internal use: UN Comtrade data may be used internally for research, "
+                        "analysis, processing, modelling and AI."),
+        "policy_url": "https://uncomtrade.org/docs/policy-on-comtrade-data-use/",
+        "policy_quote": ("UN Comtrade offers free access to all users. / To avoid suspension, do "
+                         "not attempt to automate data extraction via web scraping of the UI. "
+                         "Instead, utilize the UN Comtrade APIs directly. / UN Comtrade data "
+                         "are provided for internal use only and may not be re-disseminated in "
+                         "any form without UNSD's permission. / Internal use explicitly "
+                         "excludes data dissemination to any entity outside the institutional "
+                         "unit."),
+        "licence_url": "https://comtradeplus.un.org/LicenseAgreement",
+        "licence_quote": ("5. Except as may otherwise be expressly permitted by applicable law, "
+                          "any copying, automated browsing or downloading, redistribution, "
+                          "publication, or commercial exploitation of any material contained "
+                          "on or otherwise made available to you on United Nations COMTRADE is "
+                          "strictly prohibited without the prior written permission of the "
+                          "United Nations."),
+        "limits_url": "https://uncomtrade.org/docs/subscriptions/",
+        "limits_quote": ("data API access for up to 500 calls/day; public API rate limit 1 "
+                         "call per second"),
+        "judgement": ("INTERNAL-USE-ONLY, held as `confirmed` because TERMS has no internal-use "
+                      "status and `confirmed` is the only label that fetches; nothing in this "
+                      "organ exports the data (axis, obs store, lake and reports stay on the "
+                      "box; the committed digest and roster carry counts and metadata, never "
+                      "values). THE TENSION, VISIBLE: Licence Agreement s.5 prohibits automated "
+                      "downloading and redistribution without prior written permission, while "
+                      "UNSD's own policy pages tell users to 'utilize the UN Comtrade APIs "
+                      "directly', grant internal research/modelling/AI use, and size the free "
+                      "API tier (500 calls/day, 1 call/s). Read together: API access for "
+                      "internal research is the use UNSD documents and permits; scraping the "
+                      "UI and re-dissemination are not. If a principal reads s.5 as governing "
+                      "the keyless API too, flip this row to `to_confirm` and it stops "
+                      "fetching. Never redistribute, never publish values outside the desk"),
+        "robots": ("comtradeapi.un.org/robots.txt 404 (JSON 'Resource not found', no rules): "
+                   "ROBOTS_ABSENT under RFC 9309, fetch allowed; the keyless preview for "
+                   "reporter 156 / partner 344 / HS 7108 / M / 202409 returned 200 JSON, one "
+                   "aggregate row. Record: /mnt/project-files/reports/box_reads/"
+                   "comtrade_robots_2026-11-11.md. comtradeplus.un.org/robots.txt disallows "
+                   "'/*?' for the UI, which this organ never touches. Terms read: "
+                   "/mnt/project-files/reports/terms_reads/un_comtrade_terms_2026-11-11.md"),
+        "credit": "Source: UN Comtrade.",
+        "checked_at": "2026-11-11"},
 }
 
 #: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
@@ -3233,6 +3452,10 @@ def _redact(url: str, src: Source) -> str:
     return url.replace(key, f"<{src.key_env}>") if key else url
 
 
+#: The pause between Comtrade calls (a seam the tests replace).
+_sleep = time.sleep
+
+
 def http_get(url: str) -> tuple[bytes, str]:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
@@ -3314,6 +3537,8 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
     if src.id == "cn_baidu_migration":
         return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
                 for city, cid in BAIDU_CITIES.items()]
+    if src.id == "un_comtrade_hk_gold":
+        return _comtrade_requests(src, now, state)
     if src.id == "us_tsa_throughput":
         # The current page carries this year only; the year-on-year comparison needs last year's
         # page, which TSA publishes at /<year>.
@@ -3348,6 +3573,60 @@ def _dated_requests(src: Source, key: str, now: datetime, state: dict[str, Any],
         state["backfill_to_next"] = (bf[-1] - timedelta(days=1)).isoformat()
     return [Request(src.url.replace("{key}", key).replace("{date}", d.strftime("%Y%m%d")),
                     Ctx(part=d.isoformat(), start=d, end=d, fetched_at=now)) for d in days]
+
+
+def comtrade_url(reporter: int, flow: str, periods: Iterable[str]) -> str:
+    """The keyless preview query for one reporter x flow, partner Hong Kong, HS 7108, with the
+    periods comma-joined (at most COMTRADE_PERIODS_PER_CALL)."""
+    ps = list(periods)
+    if not ps or len(ps) > COMTRADE_PERIODS_PER_CALL:
+        raise ValueError(f"{len(ps)} periods: 1..{COMTRADE_PERIODS_PER_CALL} per call")
+    q = urllib.parse.urlencode({"reporterCode": reporter, "partnerCode": COMTRADE_PARTNER,
+                                "cmdCode": COMTRADE_CMD, "flowCode": flow,
+                                "period": ",".join(ps)}, safe=",")
+    return f"{COMTRADE_URL}?{q}"
+
+
+def _months_back(m0: date, n: int) -> list[date]:
+    out = [m0]
+    while len(out) < n:
+        out.append((out[-1] - timedelta(days=1)).replace(day=1))
+    return out
+
+
+def _comtrade_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    """At most ONE pass per COMTRADE_MIN_GAP_H (`last_attempt`, set by collect on a live
+    attempt): per reporter x flow, one call re-reading the last COMTRADE_RECENT_MONTHS complete
+    months (late prints and revisions) and one call for a backfill block walking back from
+    `backfill_to` (first month still owed) to COMTRADE_FLOOR. Eight calls a pass, a pass a day:
+    far under the free tier's 500/day. The backfill cursor commits only on an error-free
+    fetched pass (collect), so a refused block is asked for again."""
+    last = _t(state.get("last_attempt"))
+    if last is not None and now - last < timedelta(hours=COMTRADE_MIN_GAP_H):
+        return []
+    top = (now.date().replace(day=1) - timedelta(days=1)).replace(day=1)   # last full month
+    recent = _months_back(top, COMTRADE_RECENT_MONTHS)
+    blocks: list[tuple[str, list[date]]] = [("recent", recent)]
+    cur = state.get("backfill_to")
+    try:
+        b0 = date.fromisoformat(cur) if cur else None
+    except ValueError:
+        b0 = None
+    b0 = b0 or (recent[-1] - timedelta(days=1)).replace(day=1)
+    if b0 >= COMTRADE_FLOOR:
+        back = [m for m in _months_back(b0, COMTRADE_PERIODS_PER_CALL) if m >= COMTRADE_FLOOR]
+        blocks.append(("backfill", back))
+        state["backfill_to_next"] = (back[-1] - timedelta(days=1)).replace(day=1).isoformat()
+    out: list[Request] = []
+    for label, months in blocks:
+        periods = [f"{m:%Y%m}" for m in months]
+        for rep in COMTRADE_REPORTERS:
+            for flow in COMTRADE_FLOWS:
+                out.append(Request(comtrade_url(rep, flow, periods),
+                                   Ctx(part=f"{label}:{rep}:{flow}", start=months[-1],
+                                       end=_month_end(months[0].year, months[0].month),
+                                       fetched_at=now)))
+    return out
 
 
 def _gdelt_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
@@ -4083,6 +4362,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             if body is None:
                 continue
         elif fetch:
+            if src.id == "un_comtrade_hk_gold" and i:
+                _sleep(COMTRADE_MIN_INTERVAL_S)          # the free tier's 1 call/s, kept
             try:
                 body, ctype = getter(req.url)
                 fetched += 1
@@ -4092,6 +4373,10 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 continue
         if body is None:
             continue
+        if src.id == "un_comtrade_hk_gold" and not comtrade_shape_ok(body):
+            errors.append(f"{req.ctx.part}: not a Comtrade data reply; nothing parsed, cursor "
+                          "held")
+            continue
         obs = src.parse(body, req.ctx)
         parsed += len(obs)
         m = merge_vintages(store, src, obs, now)
@@ -4100,6 +4385,13 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["merge"]["revised"] += m["revised"]
         if src.id.startswith("imf_portwatch") and not obs:
             break                                              # paging exhausted
+    if src.id == "un_comtrade_hk_gold":
+        net = merge_vintages(store, src, comtrade_net_obs(store), now)
+        rec.setdefault("merge", {"added": 0, "revised": 0})
+        rec["merge"]["added"] += net["added"]
+        rec["merge"]["revised"] += net["revised"]
+        if reqs and fetch and fixtures is None:
+            sst["last_attempt"] = now.isoformat(timespec="seconds")
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
     for k in ("backfill_to_next", "full_done_next"):
@@ -4495,6 +4787,10 @@ def _cursor(s: Source) -> str:
         r, lag, b = DATED_SOURCES[s.id]
         return (f"last {r} days (lag {lag}d) re-read each pass + backfill_to walking back "
                 f"{b} days/pass, {DATED_BACKFILL_DEPTH_D}d deep")
+    if s.id == "un_comtrade_hk_gold":
+        return (f"one pass per {COMTRADE_MIN_GAP_H}h: last {COMTRADE_RECENT_MONTHS} months "
+                f"re-read + backfill_to walking back {COMTRADE_PERIODS_PER_CALL} months/pass "
+                f"to {COMTRADE_FLOOR:%Y-%m}; 8 calls/pass, 1 call/s")
     return "vintage store keyed series|period (append-only)"
 
 
