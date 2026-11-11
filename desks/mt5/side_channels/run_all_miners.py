@@ -133,8 +133,11 @@ ALL_MINERS = [
 ]
 
 
-#: Channels that need a configured credential or contact before they may fetch at all.
-REQUIRES_ENV = {"sec_edgar": "QUANT_EDGAR_UA"}
+#: Channels that need a configured credential or contact before they may fetch at all: any one
+#: of the names (the EDGAR contact goes by three: QUANT_EDGAR_UA, the principal's
+#: SEC_EDGAR_USER_AGENT and the disclosure lane's SEC_EDGAR_UA -- libs/data/credentials.py).
+REQUIRES_ENV: dict[str, tuple[str, ...]] = {
+    "sec_edgar": ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")}
 
 
 def allowed_channels() -> set[str] | None:
@@ -159,8 +162,8 @@ def run_all_miners() -> dict:
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         need = REQUIRES_ENV.get(name)
-        if need and not os.environ.get(need):
-            set_aside[name] = f"{need} is not configured"
+        if need and not any(os.environ.get(e) for e in need):
+            set_aside[name] = f"{' / '.join(need)} is not configured"
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}
             continue
         status, payload = _run_miner(name, fn)

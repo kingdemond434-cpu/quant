@@ -18,8 +18,11 @@ OUT = BASE / "data" / "intelligence" / "sec_edgar"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # SEC fair-access policy: a declared User-Agent naming a real contact. The box sets
-# QUANT_EDGAR_UA; run_all_miners sets this channel aside when it is absent.
-HEADERS = {"User-Agent": os.environ.get("QUANT_EDGAR_UA") or "QuantResearch quant@example.com"}
+# QUANT_EDGAR_UA (or SEC_EDGAR_USER_AGENT / SEC_EDGAR_UA, the same contact under its other two
+# names); run_all_miners sets this channel aside when all three are absent.
+HEADERS = {"User-Agent": next((v for v in (os.environ.get(n, "").strip() for n in (
+    "QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")) if v),
+    "QuantResearch quant@example.com")}
 
 # Top hedge funds to track
 FUND_CIKS = {
