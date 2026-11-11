@@ -129,9 +129,15 @@
   {
    "id": "cn_exchanges",
    "adapter": "none",
-   "terms": "OWNED_ELSEWHERE",
+   "terms": "REFUSED",
+   "terms_evidence": {
+    "terms_url": "https://www.shfe.com.cn/disclaimer/",
+    "checked_at": "2026-10-06",
+    "recorded_in": "desks/mt5/data/free_stack_sources.json rows cnx_shfe and cnx_ine (both refused; audit of #224)",
+    "reading": "SHFE grants non-commercial browse and download only (基于非商业目的浏览、下载); trading use is commercial and needs SHFE's written permission (书面许可). INE's own page was unreadable (captcha) and inherits the parent's grant. Re-read 2026-11-11 from the build sandbox: host refused by the sandbox proxy (CONNECT 403), not worked around. Robots ABSENT never overrides this page (Governance 2026-11-11 00:49Z)."
+   },
    "url": "https://www.shfe.com.cn/",
-   "note": "SHFE/DCE/CZCE/INE member positioning and curves are the asia lane's (asia-cn-futures-positioning); not duplicated here"
+   "note": "SHFE/INE terms REFUSED for commercial use, so the SHFE gold/silver and INE crude basis cells against XAUUSD/XAGUSD/XTIUSD/XBRUSD stay unbuilt and UNMEASURED. DCE/CZCE carry no terms verdict yet (to_confirm in free_stack_sources.json): nothing is minted from them before a one-time read"
   },
   {
    "id": "oecd_rates_on_fred",

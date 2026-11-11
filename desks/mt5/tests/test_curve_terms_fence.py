@@ -74,3 +74,15 @@ def test_a_refusal_stops_the_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(fetcher.urllib.request, "urlopen", refuse)
     with pytest.raises(fetcher.HardStop):
         fetcher.fetch_contract("GCZ26.CMX")
+
+
+def test_the_shanghai_exchanges_are_recorded_refused() -> None:
+    doc = json.loads(screen.REGISTRY.read_text(encoding="utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == "cn_exchanges")
+    assert row["terms"] == "REFUSED"
+    assert row["terms_evidence"]["terms_url"] == "https://www.shfe.com.cn/disclaimer/"
+
+
+def test_the_sge_premium_is_stamped_ideas_only() -> None:
+    import fetch_sge_premium as sge
+    assert (sge.TERMS, sge.USE) == ("TO_CONFIRM", "IDEAS_ONLY")
