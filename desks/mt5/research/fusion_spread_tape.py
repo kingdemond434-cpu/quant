@@ -246,6 +246,30 @@ def quote_at_fill_minutes(universe: Path, sym: str, deals: list[dict[str, Any]])
     return out
 
 
+def _attach_desk_terminal(mt5: Any) -> str | None:  # pragma: no cover - needs a terminal
+    """Attach to the desk's terminal, or the reason it refused (the connection is then shut).
+
+    PINNED (2026-11-11): the box runs Fusion and FTMO logged in side by side and a pathless
+    `initialize()` took whichever the bridge saw first -- an FTMO spread filed as Fusion's. The
+    attach goes by `data/terminal_path.txt`, never launches from Session 0, and the attached
+    account must pass `mt5_session.venue_refusal`.
+    """
+    desk = Path(__file__).resolve().parents[1]
+    if str(desk) not in sys.path:
+        sys.path.insert(0, str(desk))
+    from mt5desk.config import terminal_path
+
+    from research.mt5_session import attach_or_initialize, venue_refusal
+    path = terminal_path()
+    if not attach_or_initialize(mt5, path=path, timeout=15000):
+        return f"terminal did not initialise: {mt5.last_error()}"
+    why = venue_refusal(mt5, path)
+    if why is not None:
+        mt5.shutdown()
+        return f"wrong venue, refused: {why}"
+    return None
+
+
 def live_snapshot(symbols: list[str]) -> dict[str, Any]:  # pragma: no cover - needs a terminal
     """`symbol_info.spread` and the book itself, right now, for every symbol.
 
@@ -259,8 +283,9 @@ def live_snapshot(symbols: list[str]) -> dict[str, Any]:  # pragma: no cover - n
         import MetaTrader5 as mt5
     except ImportError as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
-    if not mt5.initialize():
-        return {"status": UNMEASURED, "why": f"terminal did not initialise: {mt5.last_error()}"}
+    why = _attach_desk_terminal(mt5)
+    if why is not None:
+        return {"status": UNMEASURED, "why": why}
     now = datetime.now(tz=UTC).timestamp()
     out: dict[str, Any] = {"status": MEASURED, "at": datetime.now(tz=UTC).isoformat(
         timespec="seconds"), "symbols": {}}
@@ -301,7 +326,7 @@ def deals_from_terminal() -> list[dict[str, Any]]:  # pragma: no cover - needs a
         import MetaTrader5 as mt5
     except ImportError:
         return []
-    if not mt5.initialize():
+    if _attach_desk_terminal(mt5) is not None:
         return []
     try:
         from datetime import timedelta
