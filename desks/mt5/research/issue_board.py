@@ -178,6 +178,11 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # turns "the seat errored" into "this leg spent the audit lane's budget at 01:42".
     ("llm_budget_census", "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 3600,
      "research/llm_budget_census.py"),
+    # ...and what that spend BOUGHT, job by job: tokens per row a downstream judge accepted, the
+    # hourly pass's token-waste row (2026-11-11). Reads the seat's own spend ledger (single
+    # writer: llm_seat._record_spend) and names every caller that bypasses it.
+    ("llm_tokens_per_accepted", "desks/mt5/reports/LLM_TOKENS_PER_ACCEPTED.json", 3600,
+     "research/llm_tokens_per_accepted.py"),
     # The judge's pulse (hourly `judge_alive` leg): a verdict that stops being rewritten is a
     # judge nobody is watching.
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
