@@ -64,7 +64,7 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 REPO = DESK.parents[1]
-OUT_REL = "reports/ACCOUNT_ACTIVITY.json"
+OUT = DESK / "reports" / "ACCOUNT_ACTIVITY.json"
 SCHEMA = "account-activity-v1"
 WINDOW_H = 24
 #: MT5 retcodes that mean the order was accepted (placed / done / done partial).
@@ -567,7 +567,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--print", action="store_true", dest="show")
     a = ap.parse_args(argv)
     doc = build(a.desk, a.repo)
-    out = write(doc, a.desk / OUT_REL)
+    out = write(doc, a.desk / OUT.relative_to(DESK))
     if a.show:
         print(json.dumps(doc, indent=1, default=str))
     for name, b in doc["accounts"].items():
