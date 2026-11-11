@@ -1,56 +1,56 @@
 {
- "at": "2026-11-11T09:58:19+00:00",
+ "at": "2026-11-11T10:56:41+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1604139,
+  "rows_total": 1604590,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-11T06:36:46+00:00",
+  "last_verdict_at": "2026-11-11T10:39:31+00:00",
   "counts": {
-   "1h": 0,
-   "24h": 20201,
-   "7d": 198623,
-   "build_step_lo": 220,
+   "1h": 451,
+   "24h": 20652,
+   "7d": 199074,
+   "build_step_lo": 671,
    "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
-   "1h": 0,
-   "24h": 10349,
-   "7d": 79073,
-   "build_step_lo": 17,
+   "1h": 10,
+   "24h": 10359,
+   "7d": 79083,
+   "build_step_lo": 27,
    "build_step_hi": 0
   },
-  "first_terminal_cells": 720661,
+  "first_terminal_cells": 720671,
   "first_terminal_per_hour": {
-   "1h": 0.0,
-   "24h": 431.208,
-   "7d": 470.673
+   "1h": 10.0,
+   "24h": 431.625,
+   "7d": 470.732
   },
   "per_hour": {
-   "1h": 0.0,
-   "24h": 841.708,
-   "7d": 1182.28
+   "1h": 451.0,
+   "24h": 860.5,
+   "7d": 1184.964
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 16333,
-   "7d": 289242
+   "24h": 17212,
+   "7d": 290130
   },
   "per_hour": {
-   "24h": 680.542,
-   "7d": 1721.679
+   "24h": 717.167,
+   "7d": 1726.964
   }
  },
- "verdicts_per_hour": 841.708,
- "verdicts_per_day": 20201.0,
+ "verdicts_per_hour": 860.5,
+ "verdicts_per_day": 20652.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 10349.0,
+ "first_judged_per_day": 10359.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 16333.0,
+ "created_per_day": 17212.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-11T09:57:19+00:00",
-  "pid": 17076
+  "started_at": "2026-11-11T10:55:35+00:00",
+  "pid": 32972
  }
 }
