@@ -152,10 +152,14 @@ def test_rule_for_connected_main_book_untouched_and_unknowns_fail_closed(tmp_pat
     assert brk.rule_for_connected(acc, tmp_path)[0] is None          # declared, no daily rule
     _declare(tmp_path, {"7@S": "e8-one-8pct"})
     assert brk.rule_for_connected(acc, tmp_path)[0] == brk.RULES["e8-one-8pct"]
+    # Only a DECLARED prop account binds (audit should-fix 1): the main book on a box that also
+    # declares a prop account is never held to E8's 2.5% line, nor is an unknown declaration.
     _declare(tmp_path, {"8@S": "e8-one-8pct"})
-    assert brk.rule_for_connected(acc, tmp_path)[0] == E8             # undeclared: tightest
+    assert brk.rule_for_connected(acc, tmp_path)[0] is None
+    assert brk.rule_for_connected({}, tmp_path)[0] is None
     _declare(tmp_path, {"7@S": "made-up"})
-    assert brk.rule_for_connected(acc, tmp_path)[0] == E8
+    rule, _, why = brk.rule_for_connected(acc, tmp_path)
+    assert rule is None and "no known venue rule" in why
     _declare(tmp_path, {"7@S": "ftmo-2step"}, {"7@S": 100_000})
     rule, initial, why = brk.rule_for_connected(acc, tmp_path)
     assert rule == FTMO2 and initial == 100_000.0 and "7@S" not in why
@@ -332,12 +336,44 @@ def test_a_first_ever_reading_mid_day_without_history_holds_new_risk() -> None:
     assert not v.account_ok and not v.new_risk_ok and not v.tripped and not v.flatten_symbols
 
 
-def test_ftmo_needs_its_initial_balance_and_binds_its_max_loss() -> None:
+def test_ftmo_without_any_initial_balance_still_trades_on_the_anchor() -> None:
+    """Audit must-fix: no declared initial and no deposit in history must NOT go dark."""
     state: dict[str, Any] = {}
     term = Term(equity=95_000.0, balance=95_000.0)
     warm(state, term)
     v = run(state, term, rule=FTMO2)
-    assert not v.account_ok and not v.new_risk_ok and not v.tripped
+    assert v.account_ok and v.new_risk_ok and not v.tripped
+    assert v.initial is None and v.initial_source.startswith("UNMEASURED")
+    assert v.floor == pytest.approx(95_000.0 * (1 - 0.05)), "the anchor stands in as the base"
+
+
+def test_ftmo_with_no_declared_initial_trades_once_the_deposit_is_in_history() -> None:
+    deals = [SimpleNamespace(type=0, time=2_000.0, profit=-50.0),
+             SimpleNamespace(type=brk.DEAL_TYPE_BALANCE, time=1_000.0, profit=100_000.0),
+             SimpleNamespace(type=brk.DEAL_TYPE_BALANCE, time=3_000.0, profit=5_000.0)]
+    term = Term(equity=95_000.0, balance=95_000.0, deals=deals)
+    measured = brk.initial_balance(term, T0)
+    assert measured == 100_000.0, "the FIRST deposit is the initial balance"
+    state: dict[str, Any] = {}
+    run(state, term, at=T0 - timedelta(seconds=60), derived=95_000.0)
+    brk.note_reconcile(state, "OK")
+    v = brk.evaluate(state, reading(term), FTMO2, None, "declared ftmo-2step",
+                     measured_initial=measured, confirm=lambda: reading(term))
+    assert v.new_risk_ok and v.initial == 100_000.0 and v.initial_source.startswith("deal")
+    assert v.floor == pytest.approx(90_000.0)
+    # The declared figure overrides the measured one.
+    v = brk.evaluate(state, reading(term), FTMO2, 99_000.0, "declared ftmo-2step",
+                     measured_initial=measured, confirm=lambda: reading(term))
+    assert v.initial == 99_000.0 and v.initial_source == "declared"
+    assert brk.initial_balance(Term(deals=None), T0) is None
+    assert brk.initial_balance(Term(deals=[SimpleNamespace(type=0, time=1.0, profit=5.0)]),
+                               T0) is None
+
+
+def test_ftmo_binds_its_max_loss() -> None:
+    state: dict[str, Any] = {}
+    term = Term(equity=95_000.0, balance=95_000.0)
+    warm(state, term)
     v = run(state, term, rule=FTMO2, initial=100_000.0)
     # Daily: 95,000 - 5% of 100,000 = 90,000; the static 10% maximum loss floor is also 90,000.
     assert v.floor == pytest.approx(90_000.0) and v.new_risk_ok
@@ -366,6 +402,43 @@ def test_an_order_that_would_enter_the_trip_zone_is_refused() -> None:
     small = brk.order_legs(term, {"symbol": "XAUUSD", "type": 0, "volume": 0.1,
                                   "price": 2000.5, "sl": 1994.0})
     assert brk.projected_refusal(v, reading(term), small) is None
+
+
+# ------------------------------------------------------------------ the cold-start fallback
+class BarsTerm(Term):
+    """A terminal whose M1 bars have a true range of exactly 2.0 (100 per lot of XAUUSD)."""
+
+    def copy_rates_from_pos(self, symbol: str, tf: int, start: int, count: int) -> Any:
+        return [{"high": 2001.0, "low": 1999.0, "close": 2000.0} for _ in range(count)]
+
+
+def test_atr_is_measured_from_the_terminals_bars() -> None:
+    assert brk.atr_m1(BarsTerm(), "XAUUSD") == pytest.approx(2.0)
+    assert brk.atr_m1(Term(), "XAUUSD") is None
+
+
+def test_cold_start_stopless_leg_uses_the_atr_fallback_and_does_not_hold_orders() -> None:
+    """Audit should-fix 2: unmeasured volatility + a leg with no stop is not a refusal."""
+    state: dict[str, Any] = {}
+    term = BarsTerm(positions=[pos(sl=0.0)])
+    warm(state, term)
+    v = run(state, term)
+    assert v.zmax is None and v.new_risk_ok and v.account_ok
+    # 1 lot x 100/price x ATR 2.0 = 200 per sqrt(minute); x 3 x sqrt(120s/60) + close 50
+    assert v.buffer == pytest.approx(200.0 * brk.FALLBACK_ATR_MULT * math.sqrt(2.0) + 50.0)
+    assert v.buffer_why.startswith("fallback")
+    order = brk.order_legs(term, {"symbol": "XAUUSD", "type": 0, "volume": 0.1,
+                                  "price": 2000.5, "sl": 0.0})
+    assert order.atr_unit == pytest.approx(20.0)
+    assert brk.projected_refusal(v, reading(term), order) is None
+
+
+def test_cold_start_with_unreadable_bars_is_unmeasured() -> None:
+    state: dict[str, Any] = {}
+    term = Term(positions=[pos(sl=0.0)])
+    warm(state, term)
+    v = run(state, term)
+    assert v.buffer is None and not v.new_risk_ok and not v.tripped and not v.flatten_symbols
 
 
 # ------------------------------------------------------------------ the disconnect breaker

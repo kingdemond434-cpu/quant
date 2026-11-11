@@ -19,14 +19,17 @@ THE DAILY-LOSS BREAKER, step by step.
   2. THE LINE. floor = anchor - frac x base, where the anchor is the account at the VENUE's day
      boundary (E8: the higher of balance and equity at 17:00 New York, i.e. broker midnight on the
      New York + 7 clock; FTMO: the balance at midnight Prague) and the base is the anchor (E8) or
-     the declared initial balance (FTMO). A static maximum-loss floor, initial x (1 - max), binds
-     too wherever the initial balance is declared. The anchor is the MAX of every reading that can
-     stand for it (the first reading of the day, the last reading of the previous day, and the
-     day-start balance re-derived from the deal history), so a late first pass can only make the
-     line stricter, never looser.
+     the initial balance (FTMO): the first deposit in the account's deal history
+     (`initial_balance`), or the declared one, which overrides it. With neither, the base is the
+     day's anchor and the reading says UNMEASURED; orders are NOT held for it. A static
+     maximum-loss floor, initial x (1 - max), binds too wherever the initial balance is known.
+     The anchor is the MAX of every reading that can stand for it (the first reading of the
+     day, the last reading of the previous day, and the day-start balance re-derived from the
+     deal history), so a late first pass can only make the line stricter, never looser.
   3. THE BUFFER IS MEASURED, NEVER A FIXED CUT. The breaker can only act on its next reading, so
      the line it trips at must sit inside the venue's by the most the open book can lose in ONE
-     BLIND INTERVAL plus the cost of closing it. Two measurements, and the smaller one binds:
+     BLIND INTERVAL plus the cost of closing it. Two measurements, and the smaller one binds
+     (a cold-start fallback below covers the case where neither exists):
        * VOLATILITY OF OPEN RISK: every pass records |d equity| / open notional / sqrt(gap). The
          worst of those over the last trading week, scaled by the current open notional and the
          square root of the longest interval the gateway tolerates (step 5), is the move the book
@@ -36,6 +39,11 @@ THE DAILY-LOSS BREAKER, step by step.
          cannot lose more than the distance to those stops before they fire.
      Both add the live spread to close the whole book. With no open risk the buffer is 0 and the
      breaker trips exactly at the venue's line, because nothing can move it further.
+       * COLD START (audit HOLD on 94a6d4e7, should-fix 2): before a day of readings exists AND
+         with a leg that has no stop, each such leg is priced at `FALLBACK_ATR_MULT` x its
+         instrument's measured M1 ATR (`ATR_BARS` bars from the terminal), scaled to the blind
+         interval, and stopped legs at their stops. The source reads "fallback". New orders are
+         not refused for it; only a leg whose bars cannot be read leaves the buffer UNMEASURED.
   4. TRIP, CONFIRMED. equity <= floor + buffer, read twice (`CONFIRM_READS`, the deadman's rule:
      one torn read must not flatten a healthy book). Then, for the rest of the VENUE day: every new
      order is refused, resting orders are cancelled and every position is closed (the diagram's
@@ -68,6 +76,7 @@ State (the box's, gitignored): desks/mt5/data/account_breaker_state.json -- writ
 from __future__ import annotations
 
 import contextlib
+import itertools
 import json
 import math
 import os
@@ -131,9 +140,6 @@ def _derive_rules() -> dict[str, VenueRule]:
 
 #: Every venue rule the breaker knows, derived from the profiles (never restated).
 RULES: dict[str, VenueRule] = _derive_rules()
-#: An account the box has declared nothing for, while it HAS declared accounts, fails closed to
-#: the tightest envelope -- the same answer `account_profile.envelope_for_connected` gives.
-FAIL_CLOSED_RULE = _acct.E8_PRO.name
 
 # ------------------------------------------------------------------ the measured parts
 #: The resident gateway's cadence contract (research/gateway_resident.INTERVAL_S, pinned by a
@@ -151,6 +157,15 @@ TUKEY_FAR_OUT = 3.0
 #: The volatility window: the last trading week of per-day maxima, so a weekly event (payrolls,
 #: the Friday close) is always inside it.
 Z_DAYS = 5
+#: THE COLD-START FALLBACK (should-fix 2): a stopless leg, before volatility is measured, is priced
+#: at this many of its instrument's M1 ATRs per sqrt(minute) of blind interval -- the same far-out
+#: multiple as the gap fence, so "a move the bars call an outlier" is the one convention used.
+FALLBACK_ATR_MULT = TUKEY_FAR_OUT
+#: M1 bars behind that ATR (Wilder's 14).
+ATR_BARS = 14
+#: MetaTrader's DEAL_TYPE_BALANCE: a deposit or withdrawal, the first of which is the initial
+#: balance a prop firm measures its limits from.
+DEAL_TYPE_BALANCE = 2
 #: Two consecutive reads of the same breach before acting (proposals/fusion_deadman.CONFIRM_READS).
 CONFIRM_READS = 2
 
@@ -209,13 +224,19 @@ def rule_for_connected(acc: Mapping[str, Any] | None, root: Path = _ROOT
 
     No declaration file: the desk runs no declared prop account, nothing binds (the main book
     is untouched). A declared profile without a daily rule (`fusion-live`): nothing binds. An
-    account the file does not name, or names with an unknown profile: E8 Pro, failing closed.
-    The initial balance is read from the same file's optional "initial_balances" object
-    ({"<login>@<server>": number}); the login never leaves this function."""
+    account the file does not name, or names with no known venue rule: nothing binds either --
+    only a DECLARED prop account is held to a prop line (the disconnect breaker covers every
+    account). The declared initial balance is the file's optional "initial_balances" object
+    ({"<login>@<server>": number}), an OVERRIDE of the one `initial_balance` measures from the
+    deal history; the login never leaves this function."""
     declared, why = _acct.read_declarations(root)
     if declared is None:
         return None, None, f"{why}; no prop account is declared, no daily-loss rule binds"
     key = _acct.declaration_key(dict(acc) if acc else None)
+    # ONLY A DECLARED PROP ACCOUNT BINDS (audit HOLD on 94a6d4e7, should-fix 1). An account the
+    # file does not name -- the Fusion main book on a box that also declares a prop account --
+    # is not held to any prop line: failing it closed to E8 Pro would stop the growth book at
+    # -2.5% on an ordinary day. The disconnect breaker still covers it.
     initial: float | None = None
     if key is not None:
         ib = _declarations_raw(root).get("initial_balances")
@@ -224,16 +245,16 @@ def rule_for_connected(acc: Mapping[str, Any] | None, root: Path = _ROOT
             initial = v if v is not None and v > 0 else None
     name = declared.get(key) if key is not None else None
     if name is None:
-        return RULES[FAIL_CLOSED_RULE], initial, (
-            f"the connected account is not declared ({why}); failing closed to "
-            f"{FAIL_CLOSED_RULE}")
+        return None, None, (f"the connected account is not declared a prop account ({why}); "
+                            f"no daily-loss rule binds")
     if name in RULES:
         return RULES[name], initial, f"declared {name} ({why})"
     prof = _acct.PROFILES.get(name)
     if prof is not None and prof.daily_loss_limit is None:
         return None, initial, f"declared {name}, which has no daily-loss rule"
-    return RULES[FAIL_CLOSED_RULE], initial, (
-        f"declared {name!r}, not a known venue rule; failing closed to {FAIL_CLOSED_RULE}")
+    return None, initial, (f"declared {name!r}, which names no known venue rule "
+                           f"({', '.join(sorted(RULES))}); NO daily-loss rule binds -- fix the "
+                           f"declaration")
 
 
 # ------------------------------------------------------------------ one reading of the account
@@ -251,6 +272,10 @@ class Reading:
     stop_bound: float = 0.0
     #: The spread to close every position (and the larger resting side).
     close_cost: float = 0.0
+    #: The cold-start fallback's two parts: the stop risk of the legs that HAVE a stop, and
+    #: sum(volume x value-per-price x M1 ATR) of the legs that do not (inf if a bar is unreadable).
+    stopped_risk: float = 0.0
+    atr_unit: float = 0.0
     n_positions: int = 0
     n_orders: int = 0
     symbols: list[str] = field(default_factory=list)
@@ -280,17 +305,45 @@ def _value_per_price(mt5: Any, symbol: str, cache: dict[str, tuple[float, float]
     return out
 
 
+def atr_m1(mt5: Any, symbol: str, cache: dict[str, float | None] | None = None
+           ) -> float | None:
+    """The instrument's mean true range over the last `ATR_BARS` closed M1 bars, from the
+    terminal's own bars. None when they cannot be read."""
+    if cache is not None and symbol in cache:
+        return cache[symbol]
+    out: float | None = None
+    with contextlib.suppress(Exception):
+        tf = getattr(mt5, "TIMEFRAME_M1", 1)
+        rates = mt5.copy_rates_from_pos(symbol, tf, 1, ATR_BARS + 1)
+        rows = list(rates) if rates is not None else []
+        trs: list[float] = []
+        for prev, cur in itertools.pairwise(rows):
+            hi, lo, pc = _num(cur["high"]), _num(cur["low"]), _num(prev["close"])
+            if hi is None or lo is None or pc is None:
+                continue
+            trs.append(max(hi - lo, abs(hi - pc), abs(lo - pc)))
+        if len(trs) >= ATR_BARS // 2:
+            out = sum(trs) / len(trs)
+    if cache is not None:
+        cache[symbol] = out
+    return out
+
+
 def _leg(volume: object, price: object, sl: object, buy: bool,
-         vps: tuple[float, float] | None) -> tuple[float, float, float]:
-    """(notional, stop risk, close cost) of one leg; inf where it cannot be priced."""
+         vps: tuple[float, float] | None, atr: float | None = None
+         ) -> tuple[float, float, float, float, float]:
+    """(notional, stop risk, close cost, stopped risk, atr unit) of one leg; inf where it cannot
+    be priced. A leg with a stop has atr unit 0; one without has stopped risk 0."""
     vol, px = _num(volume), _num(price)
     if vps is None or vol is None or px is None or vol <= 0 or px <= 0:
-        return math.inf, math.inf, math.inf
+        return math.inf, math.inf, math.inf, math.inf, math.inf
     vpp, spread = vps
     stop = _num(sl)
-    risk = (vol * vpp * max(0.0, (px - stop) if buy else (stop - px))
-            if stop is not None and stop > 0 else math.inf)
-    return vol * vpp * px, risk, vol * vpp * spread
+    if stop is not None and stop > 0:
+        risk = vol * vpp * max(0.0, (px - stop) if buy else (stop - px))
+        return vol * vpp * px, risk, vol * vpp * spread, risk, 0.0
+    unit = vol * vpp * atr if atr is not None else math.inf
+    return vol * vpp * px, math.inf, vol * vpp * spread, 0.0, unit
 
 
 def read_account(mt5: Any, now: datetime | None = None) -> Reading:
@@ -312,27 +365,37 @@ def read_account(mt5: Any, now: datetime | None = None) -> Reading:
         return Reading(at, False, why="the account could not be read")
     r = Reading(at, True, equity=eq, balance=bal)
     cache: dict[str, tuple[float, float] | None] = {}
+    atrs: dict[str, float | None] = {}
+
+    def _atr_if_stopless(sym: str, sl: object) -> float | None:
+        stop = _num(sl)
+        return None if stop is not None and stop > 0 else atr_m1(mt5, sym, atrs)
+
     syms: set[str] = set()
     try:
         positions = list(mt5.positions_get() or ())
         orders = list(mt5.orders_get() or ())
     except Exception as exc:
-        r.notional = r.stop_bound = r.close_cost = math.inf
+        r.notional = r.stop_bound = r.close_cost = r.stopped_risk = r.atr_unit = math.inf
         r.why = f"positions/orders unreadable ({type(exc).__name__}); open risk unbounded"
         return r
     pos_buy = int(getattr(mt5, "POSITION_TYPE_BUY", _POSITION_BUY))
     for p in positions:
         sym = str(getattr(p, "symbol", "") or "")
         syms.add(sym)
-        n, s, c = _leg(getattr(p, "volume", None), getattr(p, "price_current", None),
-                       getattr(p, "sl", None), int(getattr(p, "type", -1)) == pos_buy,
-                       _value_per_price(mt5, sym, cache))
+        sl = getattr(p, "sl", None)
+        n, s, c, sr, au = _leg(getattr(p, "volume", None), getattr(p, "price_current", None),
+                               sl, int(getattr(p, "type", -1)) == pos_buy,
+                               _value_per_price(mt5, sym, cache), _atr_if_stopless(sym, sl))
         r.notional += n
         r.stop_bound += s
         r.close_cost += c
+        r.stopped_risk += sr
+        r.atr_unit += au
     # A RESTING ORDER IS RISK THAT CAN ARRIVE BETWEEN TWO READINGS. Per symbol, the larger side
     # is counted: a bracket's two legs are one trade, and its sibling is cancelled on the fill.
     sides: dict[tuple[str, bool], list[float]] = {}
+    zero = [0.0] * 5
     for o in orders:
         typ = int(getattr(o, "type", -1))
         if typ not in _BUY_ORDER_TYPES and typ not in _SELL_ORDER_TYPES:
@@ -343,18 +406,20 @@ def read_account(mt5: Any, now: datetime | None = None) -> Reading:
         vol = getattr(o, "volume_current", None)
         if _num(vol) is None:
             vol = getattr(o, "volume_initial", None)
-        n, s, c = _leg(vol, getattr(o, "price_open", None), getattr(o, "sl", None), buy,
-                       _value_per_price(mt5, sym, cache))
-        acc = sides.setdefault((sym, buy), [0.0, 0.0, 0.0])
-        acc[0] += n
-        acc[1] += s
-        acc[2] += c
+        osl = getattr(o, "sl", None)
+        legs = _leg(vol, getattr(o, "price_open", None), osl, buy,
+                    _value_per_price(mt5, sym, cache), _atr_if_stopless(sym, osl))
+        acc = sides.setdefault((sym, buy), list(zero))
+        for i in range(5):
+            acc[i] += legs[i]
     for sym in {k[0] for k in sides}:
-        b, s_ = sides.get((sym, True), [0.0] * 3), sides.get((sym, False), [0.0] * 3)
+        b, s_ = sides.get((sym, True), zero), sides.get((sym, False), zero)
         worse = b if b[0] >= s_[0] else s_
         r.notional += worse[0]
         r.stop_bound += max(b[1], s_[1])
         r.close_cost += worse[2]
+        r.stopped_risk += max(b[3], s_[3])
+        r.atr_unit += max(b[4], s_[4])
     r.n_positions, r.n_orders = len(positions), len(orders)
     r.symbols = sorted(x for x in syms if x)
     return r
@@ -386,6 +451,30 @@ def day_start_balance(mt5: Any, balance: float, day: str, rule_tz: str = NY_TZ,
     return balance - moved
 
 
+def initial_balance(mt5: Any, now: datetime | None = None) -> float | None:
+    """The account's initial balance, MEASURED: the first deposit (a DEAL_TYPE_BALANCE deal with a
+    positive amount) in its whole deal history. None when the history is unreadable or holds no
+    deposit. A prop account's history is short, so the wide query is cheap; the gateway caches
+    the answer in the breaker state once found."""
+    end = (now or datetime.now(tz=UTC)) + timedelta(days=1)
+    try:
+        deals = mt5.history_deals_get(datetime(2000, 1, 1, tzinfo=UTC), end)
+    except Exception:
+        return None
+    if not deals:
+        return None
+    first: tuple[float, float] | None = None
+    for d in deals:
+        if int(_num(getattr(d, "type", -1)) or -1) != DEAL_TYPE_BALANCE:
+            continue
+        amt, ts = _num(getattr(d, "profit", None)), _num(getattr(d, "time", None))
+        if amt is None or amt <= 0 or ts is None:
+            continue
+        if first is None or ts < first[0]:
+            first = (ts, amt)
+    return None if first is None else first[1]
+
+
 # ------------------------------------------------------------------ the measured quantities
 def gap_threshold(gaps: Iterable[float]) -> tuple[float, str]:
     """The longest gap between two readings the gateway's own rhythm explains, and its basis."""
@@ -411,9 +500,12 @@ def z_max(z_days: Mapping[str, Any]) -> tuple[float | None, int]:
 
 
 def buffer_for(notional: float, stop_bound: float, close_cost: float,
-               zmax: float | None, horizon_s: float) -> tuple[float | None, str]:
+               zmax: float | None, horizon_s: float, *, stopped_risk: float = math.inf,
+               atr_unit: float = math.inf) -> tuple[float | None, str]:
     """The measured buffer: the smaller of the volatility and stop bounds, plus the close cost.
-    None when neither bound can be measured (the caller fails closed)."""
+    When neither exists (cold start with a stopless leg), the ATR fallback: stopped legs at their
+    stops, stopless legs at FALLBACK_ATR_MULT M1 ATRs per sqrt(minute) of `horizon_s`. None only
+    when even that cannot be priced (the caller then holds new risk)."""
     if notional <= 0 and stop_bound <= 0:
         cc = close_cost if math.isfinite(close_cost) else 0.0
         return cc, "no open risk: the line is the venue's own"
@@ -424,6 +516,12 @@ def buffer_for(notional: float, stop_bound: float, close_cost: float,
                       f"sqrt({horizon_s:.0f}s)"))
     if math.isfinite(stop_bound):
         cands.append((stop_bound, f"stops: {stop_bound:,.2f} to every stop"))
+    if not cands and math.isfinite(stopped_risk) and math.isfinite(atr_unit) \
+            and math.isfinite(close_cost):
+        fb = stopped_risk + atr_unit * FALLBACK_ATR_MULT * math.sqrt(horizon_s / 60.0)
+        return fb + close_cost, (f"fallback (cold start): stops {stopped_risk:,.2f} + "
+                                 f"{FALLBACK_ATR_MULT:g} M1 ATR x {atr_unit:,.2f} x "
+                                 f"sqrt({horizon_s:.0f}s/60) + close {close_cost:,.2f}")
     if not cands or not math.isfinite(close_cost):
         return None, (f"{UNMEASURED}: volatility "
                       f"{'unmeasured' if zmax is None else 'measured'}, "
@@ -455,6 +553,9 @@ class Verdict:
     gap_basis: str = ""
     #: The worst measured normalised move behind the buffer (None while UNMEASURED).
     zmax: float | None = None
+    #: The initial balance the max-loss floor (and an "initial"-based limit) used, and its source.
+    initial: float | None = None
+    initial_source: str = ""
     account_ok: bool = True
     why: str = ""
 
@@ -535,6 +636,7 @@ def _record(state: dict[str, Any], r: Reading, day: str) -> float | None:
 def evaluate(state: dict[str, Any], reading: Reading, rule: VenueRule | None,
              initial: float | None, rule_why: str, *,
              derived_start_balance: float | None = None,
+             measured_initial: float | None = None,
              confirm: Callable[[], Reading] | None = None) -> Verdict:
     """One pass of both breakers. Mutates `state`; the caller persists it and acts on the
     verdict (flatten `flatten_symbols`, and refuse new risk unless `new_risk_ok`)."""
@@ -603,13 +705,20 @@ def evaluate(state: dict[str, Any], reading: Reading, rule: VenueRule | None,
         state.pop("tripped", None)          # the venue day rolled: the breaker re-arms itself
         tr = None
     av = float(anchor["value"])
-    if rule.base == "initial" and initial is None:
-        v.account_ok = False
-        v.why = (f"{rule.name} measures its limit from the initial balance and none is declared "
-                 f"({_acct.DECLARATIONS_REL} initial_balances); {UNMEASURED}, no new orders")
-        v.tripped = tr is not None
-        v.flatten_symbols = reading.symbols if v.tripped else []
-        return v
+    # THE INITIAL BALANCE (audit HOLD on 94a6d4e7, must-fix): the declared figure overrides the
+    # one measured from the deal history's first deposit; with neither, the day's anchor stands
+    # in as the base and the reading says UNMEASURED -- orders are NOT held for it (holding them
+    # took a declared FTMO account dark on the day it was due to trade).
+    if initial is not None:
+        v.initial, v.initial_source = initial, "declared"
+    elif measured_initial is not None:
+        initial = measured_initial
+        v.initial, v.initial_source = initial, "deal history: first deposit"
+    else:
+        v.initial_source = (f"{UNMEASURED}: no declared initial balance and no deposit in the "
+                            f"deal history; the day's anchor stands in"
+                            + ("" if rule.base != "initial" else
+                               f" as {rule.name}'s base, the max-loss floor is not applied"))
     if anchor.get("unmeasured"):
         v.account_ok = False
         v.why = ("the day's anchor is unmeasured (no earlier reading and no deal history); "
@@ -620,7 +729,8 @@ def evaluate(state: dict[str, Any], reading: Reading, rule: VenueRule | None,
     if rule.max_loss_frac is not None and initial is not None:
         floor = max(floor, initial * (1.0 - rule.max_loss_frac))
     zm, _n = z_max(state.get("z_days") or {})
-    buf, bwhy = buffer_for(reading.notional, reading.stop_bound, reading.close_cost, zm, thr)
+    buf, bwhy = buffer_for(reading.notional, reading.stop_bound, reading.close_cost, zm, thr,
+                           stopped_risk=reading.stopped_risk, atr_unit=reading.atr_unit)
     v.floor, v.buffer, v.buffer_why, v.zmax = floor, buf, bwhy, zm
     eq = float(reading.equity or 0.0)
     line = floor + (buf if buf is not None else 0.0)
@@ -680,9 +790,13 @@ def order_legs(mt5: Any, req: Mapping[str, Any]) -> Reading:
     sym = str(req.get("symbol") or "")
     typ = int(_num(req.get("type")) or 0)
     buy = typ == 0 or typ in _BUY_ORDER_TYPES
-    n, s, c = _leg(req.get("volume"), req.get("price"), req.get("sl"), buy,
-                   _value_per_price(mt5, sym, {}))
-    return Reading(0.0, True, notional=n, stop_bound=s, close_cost=c, symbols=[sym])
+    sl = req.get("sl")
+    stop = _num(sl)
+    atr = None if stop is not None and stop > 0 else atr_m1(mt5, sym)
+    n, s, c, sr, au = _leg(req.get("volume"), req.get("price"), sl, buy,
+                           _value_per_price(mt5, sym, {}), atr)
+    return Reading(0.0, True, notional=n, stop_bound=s, close_cost=c, stopped_risk=sr,
+                   atr_unit=au, symbols=[sym])
 
 
 def projected_refusal(v: Verdict, reading: Reading, order: Reading) -> str | None:
@@ -694,7 +808,9 @@ def projected_refusal(v: Verdict, reading: Reading, order: Reading) -> str | Non
         return "the account could not be read"
     buf, why = buffer_for(reading.notional + order.notional,
                           reading.stop_bound + order.stop_bound,
-                          reading.close_cost + order.close_cost, v.zmax, v.gap_threshold_s)
+                          reading.close_cost + order.close_cost, v.zmax, v.gap_threshold_s,
+                          stopped_risk=reading.stopped_risk + order.stopped_risk,
+                          atr_unit=reading.atr_unit + order.atr_unit)
     if buf is None:
         return f"with this order the buffer is {why}"
     if reading.equity <= v.floor + buf:

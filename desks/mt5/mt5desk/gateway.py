@@ -868,9 +868,28 @@ def account_breaker_pass(st: dict) -> _brk.Verdict | None:
             day = _brk.venue_day(now_dt, rule.day_tz, rule.day_roll_hour)
             derived = _brk.day_start_balance(raw, reading.balance, day, rule.day_tz,
                                              rule.day_roll_hour, now_dt)
+        # The initial balance, MEASURED from the deal history's first deposit (the declared
+        # figure overrides it), cached per account once found: the history is only re-read
+        # while it has not yielded one.
+        measured_initial = None
+        if rule is not None and reading.ok:
+            who = _acct.reason_label(acc)
+            cached = state.get("initial_measured")
+            if isinstance(cached, dict) and cached.get("account") == who \
+                    and isinstance(cached.get("value"), (int, float)):
+                measured_initial = float(cached["value"])
+            else:
+                measured_initial = _brk.initial_balance(raw, now_dt)
+                if measured_initial is not None:
+                    state["initial_measured"] = {"account": who, "value": measured_initial,
+                                                 "at": now_dt.isoformat(timespec="seconds")}
         v = _brk.evaluate(state, reading, rule, initial, rule_why,
-                          derived_start_balance=derived,
+                          derived_start_balance=derived, measured_initial=measured_initial,
                           confirm=lambda: _brk.read_account(raw))
+        if v.applicable and v.initial is None and state.get("initial_unmeasured_day") != v.day:
+            state["initial_unmeasured_day"] = v.day
+            log(f"account breaker: initial balance {v.initial_source}; orders are not held "
+                f"for it")
         state["verdict"] = v.as_dict()
         state["checked_at"] = now_dt.isoformat(timespec="seconds")
         _brk.save_state(state)
