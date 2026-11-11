@@ -64,6 +64,10 @@ OUT = ROOT / "desks" / "mt5" / "reports" / "PASS_QUESTION_EVIDENCE.json"
 MAX_AGE_H = 26.0
 EXIT_RED = 2
 FUTURE_SLACK = timedelta(minutes=10)
+#: Artifacts rewritten every gateway pass get a tighter age limit than the pass's 26h: the
+#: writer swallows a failed os.replace (a reader holding the file on Windows), which leaves the
+#: previous pass's file in place, and that must read STALE, never as this pass's book.
+MAX_AGE_H_BY_ARTIFACT: dict[str, float] = {"reports/EXECUTABLE_BOOK.json": 2.0}
 
 GROWTH_ALLOCATOR = "desktop 'Growth allocator overhaul' session (money path)"
 
@@ -89,7 +93,7 @@ QUESTIONS: dict[str, tuple[str, list[tuple[str, str | None, str]]]] = {
     "Q4": ("Did the allocator beat its baselines?", [
         ("baseline_contest", "reports/ALLOCATOR_PROOF.json", "scores"),
         ("best_single_sleeve_baseline", "reports/pf_allocation.json", "best_single_sleeve"),
-        ("executable_book_after_lots_and_costs", "reports/EXECUTABLE_BOOK.json", "refusals"),
+        ("executable_book_after_lots_and_costs", "reports/EXECUTABLE_BOOK.json", "n_sending_keys"),
     ]),
     "Q5": ("What did stale information, costs or defects cost?", [
         ("cost_vs_model", "reports/COST_TRUTH.json", "total_overcharge"),
@@ -273,6 +277,25 @@ def best_single_sleeve(art: Mapping[str, Any]) -> dict[str, Any]:
             "route": GROWTH_ALLOCATOR if row["beats_funded"] else None}
 
 
+def executable_book_gap(art: Mapping[str, Any]) -> dict[str, Any]:
+    """Q4 after lots: the book keys the allocator funds (fraction > 0) that this pass sends
+    nothing for, each with its rows' reasons. Only a FRESH file is read; a stale one (a failed
+    replace left the last pass's book) is UNMEASURED."""
+    if art.get("state") != "FRESH":
+        return {"status": "UNMEASURED", "why": f"EXECUTABLE_BOOK {art.get('state')}"}
+    keys = (art.get("doc") or {}).get("keys")
+    if not isinstance(keys, Mapping):
+        return {"status": "UNMEASURED", "why": "EXECUTABLE_BOOK carries no keys map"}
+    silent: dict[str, list[Any]] = {}
+    for key, k in keys.items():
+        frac = k.get("allocator_fraction") if isinstance(k, Mapping) else None
+        if isinstance(frac, (int, float)) and frac > 0.0 and not k.get("sending"):
+            silent[str(key)] = [r.get("why_zero") for r in k.get("rows") or []
+                                if isinstance(r, Mapping)]
+    return {"status": "MEASURED", "n_keys": len(keys), "funded_but_not_sending": silent,
+            "route": GROWTH_ALLOCATOR if silent else None}
+
+
 def measure(root: Path = ROOT, now: datetime | None = None, since: datetime | None = None,
             max_age_h: float = MAX_AGE_H) -> dict[str, Any]:
     now = now or datetime.now(UTC)
@@ -289,7 +312,8 @@ def measure(root: Path = ROOT, now: datetime | None = None, since: datetime | No
                              "why": "no organ on the desk measures this part of the question"})
                 no_organ.append({"question": q, "part": name, "owner": key})
                 continue
-            art = cache.get(rel) or read_artifact(rel, root, now, max_age_h)
+            art = cache.get(rel) or read_artifact(
+                rel, root, now, min(max_age_h, MAX_AGE_H_BY_ARTIFACT.get(rel, max_age_h)))
             cache[rel] = art
             row = {"name": name, "artifact": art["path"], "key": key, "state": art["state"],
                    "stamp": art["stamp"], "age_h": art["age_h"]}
@@ -333,6 +357,7 @@ def measure(root: Path = ROOT, now: datetime | None = None, since: datetime | No
     q4["contest"] = (allocator_vs_baselines(proof["doc"]) if proof["state"] == "FRESH"
                      else {"status": "UNMEASURED", "why": f"ALLOCATOR_PROOF {proof['state']}"})
     q4["best_single_sleeve"] = best_single_sleeve(cache["reports/pf_allocation.json"])
+    q4["executable_book"] = executable_book_gap(cache["reports/EXECUTABLE_BOOK.json"])
 
     unmeasured = sorted(q for q, v in questions.items() if v["status"] == "UNMEASURED")
     red = bool(unmeasured or no_organ)

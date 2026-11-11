@@ -70,8 +70,10 @@ def test_q4_reads_the_best_single_sleeve_rival_and_the_executable_book(tmp_path:
     _write(tmp_path, "reports/pf_allocation.json", {"at": FRESH, "best_single_sleeve": {
         "name": "gold_asia", "heat": 0.2, "robust_score": 0.03, "delta_vs_funded": 0.02,
         "beats_funded": True}})
-    _write(tmp_path, "reports/EXECUTABLE_BOOK.json", {"at": FRESH, "books": {
-        "gold_asia": {"fraction": 0.006, "lot": 0.02, "refusals": []}}})
+    _write(tmp_path, "reports/EXECUTABLE_BOOK.json", {"at": FRESH, "n_sending_keys": 1, "keys": {
+        "gold_asia": {"allocator_fraction": 0.006, "sending": ["gold_asia"], "rows": []},
+        "scalp_eurusd": {"allocator_fraction": 0.004, "sending": [],
+                         "rows": [{"name": "scalp_eurusd", "why_zero": "decay_zero"}]}}})
     _, doc = _run(tmp_path)
     q4 = doc["questions"]["Q4"]
     assert q4["status"] == "MEASURED"
@@ -79,6 +81,18 @@ def test_q4_reads_the_best_single_sleeve_rival_and_the_executable_book(tmp_path:
     assert q4["best_single_sleeve"]["beats_funded"] is True
     assert q4["best_single_sleeve"]["route"] == pqe.GROWTH_ALLOCATOR
     assert len(q4["citations"]) == 3
+    assert q4["executable_book"]["funded_but_not_sending"] == {"scalp_eurusd": ["decay_zero"]}
+    assert q4["executable_book"]["route"] == pqe.GROWTH_ALLOCATOR
+
+
+def test_a_stale_executable_book_left_by_a_failed_replace_is_unmeasured(tmp_path: Path) -> None:
+    old = "2026-11-04T09:00:00+00:00"  # 3h before NOW: inside 26h, outside the 2h limit
+    _write(tmp_path, "reports/EXECUTABLE_BOOK.json", {"at": old, "n_sending_keys": 0, "keys": {}})
+    _, doc = _run(tmp_path)
+    q4 = doc["questions"]["Q4"]
+    sub = {r["name"]: r for r in q4["sub_measures"]}["executable_book_after_lots_and_costs"]
+    assert sub["state"] == "STALE"
+    assert q4["executable_book"]["status"] == "UNMEASURED"
 
 
 def test_a_fresh_artifact_yields_a_citation_the_duty_checker_resolves(tmp_path: Path) -> None:
