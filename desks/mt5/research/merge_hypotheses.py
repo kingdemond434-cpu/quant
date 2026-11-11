@@ -18,6 +18,7 @@ discovered reaches the gauntlet; the gauntlet decides, using its own sealed cons
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -740,6 +741,51 @@ def _lease(path: Path) -> None:
         pass
 
 
+#: THE FAMILIES STEP'S OWN MEMORY CONTRACT (idea 619, 2026-11-11). The run is admitted once, at
+#: entry, on `exclusive_job("merge_hypotheses", need_mb=14000)` corrected to the p75 of whole-run
+#: peaks -- and then grows. Measured on the box: pid 36280 stalled INSIDE `hypothesis_families`
+#: at 16.7 GB of commit (17.2 GB on an earlier run) against ~15.8 GB admitted, held the docket
+#: writer lane for ~31 h and froze the Judge's intake. A step that grows past its admission must
+#: be asked again before it grows, not discovered afterwards. The step's own growth is recorded
+#: under FAMILIES_STEP after every run, and admission is the p75 of that record, floored at this
+#: declaration (job_lock.measured_need_mb: it only ever raises).
+FAMILIES_STEP = "merge_hypotheses.families"
+FAMILIES_STEP_DECLARED_MB = 3000
+
+
+def _mem_line(step: str, started: float) -> dict[str, Any]:
+    """One per-step line in the run's log: high-water mark so far, binding free memory, seconds.
+    Never raises: a counter that cannot be read prints UNMEASURED, it does not cost the step."""
+    import time as _time
+    try:
+        from research.job_lock import free_mb, peak_rss_mb
+        peak, free = peak_rss_mb(), free_mb()
+    except Exception:
+        peak, free = None, None
+    row = {"step": step, "peak_mb": peak, "free_mb": free,
+           "elapsed_s": round(_time.monotonic() - started, 1)}
+    print(f"   mem[{step}]: peak {peak if peak is not None else 'UNMEASURED'}MB, "
+          f"free {free if free is not None else 'UNMEASURED'}MB, {row['elapsed_s']}s")
+    return row
+
+
+def families_admission() -> tuple[bool, str]:
+    """(may the families step run now, why). Refuses -- with its reason -- when the binding free
+    memory cannot cover the step's measured growth. An unreadable counter ADMITS (it changes
+    nothing from before this contract); a refusal costs the census and the re-aim, never a row."""
+    try:
+        from research.job_lock import free_mb, measured_need_mb
+        need, why = measured_need_mb(FAMILIES_STEP, FAMILIES_STEP_DECLARED_MB)
+        free = free_mb()
+    except Exception as exc:
+        return True, f"admission unmeasured ({type(exc).__name__}); step runs as before"
+    if free is None:
+        return True, f"free memory UNMEASURED; step runs as before ({why})"
+    if free < need:
+        return False, f"needs ~{need}MB of growth, box has {free}MB free ({why})"
+    return True, f"{free}MB free covers ~{need}MB ({why})"
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
@@ -1101,11 +1147,18 @@ def main() -> int:
     # runs on in the judging lane. A fault costs the census and the re-aim, never a row.
     families: dict[str, Any] = {"status": "UNAVAILABLE"}
     families_pending: Any = None
+    import time as _time
+    _t0 = _time.monotonic()
+    _before = _mem_line("before families", _t0)
+    _admit, _admit_why = families_admission()
+    print(f"   families admission: {'ADMIT' if _admit else 'REFUSED'} -- {_admit_why}")
     try:
         import sys as _sys
         for _p in (str(BASE), str(BASE.parents[1])):
             if _p not in _sys.path:
                 _sys.path.insert(0, _p)
+        if not _admit:
+            raise MemoryError(f"families step refused by its memory admission: {_admit_why}")
         from research import hypothesis_families as _hf
         rows_out, families, families_pending = _hf.apply(
             rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
@@ -1119,6 +1172,16 @@ def main() -> int:
     except Exception as exc:
         families = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   families census unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+    _after = _mem_line("after families", _t0)
+    if _admit and _before["peak_mb"] is not None and _after["peak_mb"] is not None:
+        # the step's own growth: what the high-water mark rose by while it ran
+        try:
+            from research.job_lock import record_peak
+            record_peak(FAMILIES_STEP, max(1, _after["peak_mb"] - _before["peak_mb"]))
+        except Exception:
+            pass
+    families["memory"] = {"admitted": _admit, "why": _admit_why, "before": _before,
+                          "after": _after}
 
     # ORDER IS SELECTION: the gauntlet takes this file in order under a bar budget, so a family
     # at the tail is not "lower priority", it is never judged at all.
@@ -1391,6 +1454,48 @@ def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, 
         return {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
 
 
+#: PER-RUN LOG FILES (idea 619). The box task appended to ONE file with a cmd `>>` redirect, and
+#: an orphaned run (pid 36280) kept that file open for writing: every later run died at the
+#: redirect, before Python started (rc 1, 0x8007054B), for ~26 h. With `--log-dir` each run opens
+#: its own file, so no orphan can block the next run, and a pointer names the newest one.
+LOG_STEM = "MT5-MergeDocket"
+LOG_KEEP_DAYS = 14
+
+
+def _arg_value(argv: list[str], flag: str) -> str | None:
+    for i, a in enumerate(argv):
+        if a == flag and i + 1 < len(argv):
+            return argv[i + 1]
+        if a.startswith(flag + "="):
+            return a.split("=", 1)[1]
+    return None
+
+
+def _per_run_log(log_dir: Path, now: datetime | None = None) -> Path | None:
+    """Send this run's stdout/stderr to its own file under `log_dir`; write the pointer; prune
+    files past LOG_KEEP_DAYS. Best effort: a log that cannot be opened leaves output where it was."""
+    import sys
+    now = now or datetime.now(tz=UTC)
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        path = log_dir / f"{LOG_STEM}-{now:%Y%m%dT%H%M%SZ}-{os.getpid()}.log"
+        fh = open(path, "a", encoding="utf-8", buffering=1)  # noqa: SIM115 -- lives for the run
+    except OSError as exc:
+        print(f"merge_hypotheses: per-run log unavailable ({exc}); output stays on the console")
+        return None
+    sys.stdout = fh
+    sys.stderr = fh
+    with contextlib.suppress(OSError):
+        (log_dir / f"{LOG_STEM}.latest.txt").write_text(path.name + "\n", encoding="utf-8")
+    cutoff = time.time() - LOG_KEEP_DAYS * 86400
+    for old in log_dir.glob(f"{LOG_STEM}-*.log"):
+        with contextlib.suppress(OSError):
+            if old != path and old.stat().st_mtime < cutoff:
+                old.unlink()
+    print(f"merge_hypotheses: run log {path.name} (pid {os.getpid()}, {now.isoformat()})")
+    return path
+
+
 def run_cli() -> int:
     """All runtime entry points share one writer and the canonical memory admission."""
     import sys
@@ -1400,6 +1505,9 @@ def run_cli() -> int:
             sys.path.insert(0, str(path))
     from research.job_lock import exclusive_job
 
+    log_dir = _arg_value(sys.argv[1:], "--log-dir")
+    if log_dir:
+        _per_run_log(Path(log_dir))
     with exclusive_job("merge_hypotheses", need_mb=14000) as acquired:
         if not acquired:
             print("merge_hypotheses: DEFERRED -- canonical writer or memory admission unavailable")
