@@ -1370,6 +1370,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
+                     # CFTC positioning-change cells per FX major and metal, aimed at the empty
+                     # positioning_flow cluster (legacy, TFF and disaggregated trader classes)
+                     "cot_positioning_flow",
                      # the alt_proxies equity hand-off minted into the event lane and the
                      # class books (share CFDs never mint anywhere else)
                      "alt_equity_handoff",
@@ -2355,6 +2358,14 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "htf_anchor": 900,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
     "empty_cluster_forcer": 180,
+    # 82 cells on nine symbols' H1 bars, measured at most once a day; ~15 s on the build box.
+    # Its own --budget-s 300 bounds it; since 2026-10-07 it first refetches any CFTC report
+    # family that is behind the release schedule (REFETCH_BUDGET_S = 150, at most once per 6 h
+    # per family), so the cap sits above 300 + 150. Since 2026-11-11 it also runs the
+    # certificate re-check (`research/certificate_recheck.py`): while a re-check has no report it
+    # runs ONE sealed-gauntlet reproduction, at most once per 6 h, under its own 900 s timeout,
+    # so the cap sits above 300 + 150 + 900. A pass with nothing pending adds a file read.
+    "cot_positioning_flow": 1500,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
@@ -4593,6 +4604,14 @@ def main() -> None:
     # branch a cluster needs when every family it has is unbuildable. It had no caller either.
     ecf = _costed("empty_cluster_forcer", lambda: _producer(
         "empty_cluster_forcer", "research/empty_cluster_forcer.py", "--donate"))
+    # THE positioning_flow PROPOSER (2026-10-06, completion audit repair #3): CFTC weekly net
+    # positioning CHANGE per trader class (legacy, TFF, disaggregated) on every FX major and
+    # metal with a contract, faded and followed, built on the sealed gauntlet's own point-in-time
+    # COT frame and donated once through the proposer door. The forcer names this cluster
+    # PROPOSER_OWNED; until this leg nothing owned it.
+    cpf = _costed("cot_positioning_flow", lambda: _producer(
+        "cot_positioning_flow", "research/cot_positioning_flow.py", "--once",
+        "--budget-s", "300"))
     # THE FORWARD SLOT RANKER (C15/W10): slots ranked by P(certify) x dElogW x diversification
     # / time to maturity; REPLACEABLE clocks reported with their missed-growth line, never acted.
     fsr = _costed("forward_slot_ranker", lambda: _producer("forward_slot_ranker",
@@ -6420,6 +6439,7 @@ def main() -> None:
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf,
+                    "cot_positioning_flow": cpf,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
