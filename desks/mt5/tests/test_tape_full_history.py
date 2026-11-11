@@ -175,12 +175,14 @@ def test_a_renamed_day_is_not_read_twice(rig: Path) -> None:
 
 def test_a_minute_split_across_two_files_is_counted(rig: Path) -> None:
     _write_days(rig, ["2026-10-01", "2026-10-02"])
-    late = pd.DataFrame({"ts": [pd.Timestamp("2026-10-01 23:59:59.5", tz="UTC")],
-                         "bid": [1.1], "ask": [1.10001]})
-    p = rig / SYM / "2026-10-02.parquet"
-    pd.concat([late, pd.read_parquet(p)], ignore_index=True).to_parquet(p)
+
+    def _add(name: str, stamp: str) -> None:
+        p = rig / SYM / name
+        tick = pd.DataFrame({"ts": [pd.Timestamp(stamp, tz="UTC")], "bid": [1.1],
+                             "ask": [1.10001]})
+        pd.concat([pd.read_parquet(p), tick], ignore_index=True).to_parquet(p)
+
+    _add("2026-10-01.parquet", "2026-10-01 23:59:10")
+    _add("2026-10-02.parquet", "2026-10-01 23:59:50")       # a late tick, filed a day on
     ow._tape_series(SYM, pd.date_range("2026-10-01", periods=48, freq="60min", tz="UTC"), "H1")
-    first = pd.read_parquet(rig / SYM / "2026-10-01.parquet")
-    last_minute = pd.to_datetime(first["ts"], utc=True).max().floor("min")
-    expected = int(last_minute == pd.Timestamp("2026-10-01 23:59", tz="UTC"))
-    assert ow.TAPE_READ_STATS[SYM]["split_minutes"] == expected
+    assert ow.TAPE_READ_STATS[SYM]["split_minutes"] == 1
