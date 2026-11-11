@@ -198,3 +198,12 @@ def test_the_heartbeat_and_backup_are_contracted_and_the_backup_self_registers()
     assert 'Task = "MT5-OffsiteBackup"; Installer = "install_offsite_backup_task.ps1"' in adopt
     inst = (ROOT / "desks/mt5/scripts/install_offsite_backup_task.ps1").read_text("utf-8")
     assert "[switch]$IfMissing" in inst
+    # desk health 2026-11-11: the moat backup and its drill were absent from the box
+    manifest = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text("utf-8")
+    moat = (ROOT / "desks/mt5/scripts/install_moat_backup_tasks.ps1").read_text("utf-8")
+    assert "[switch]$IfMissing" in moat
+    for task, art in (("MT5-MoatBackup", "data/backup_status.json"),
+                      ("MT5-RestoreDrill", "desks/mt5/reports/restore_drill.json")):
+        assert CONTRACTS[task][0] == art
+        assert f'TASK name="{task}"' in manifest
+        assert f'Task = "{task}"; Installer = "install_moat_backup_tasks.ps1"' in adopt

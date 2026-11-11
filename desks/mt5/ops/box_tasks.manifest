@@ -179,6 +179,13 @@ TASK name="MT5-BoxHeartbeat"       trigger="every 5 minutes"  runs="desks/mt5/sc
 # tape, terminal profile; secrets and accounts.dat excluded). Report OFFSITE_BACKUP.json feeds
 # the encrypted_offbox_backup row of OPS_REDUNDANCY.json.
 TASK name="MT5-OffsiteBackup"      trigger="every 6 hours"    runs="desks/mt5/scripts/offsite_backup.py" installer="desks/mt5/scripts/install_offsite_backup_task.ps1" lane="ops"
+# MT5-MoatBackup / MT5-RestoreDrill (installer 2026-10-29, declared 2026-11-11): desk health found
+# neither registered on the box. The backup replicates the small irreplaceable stores into
+# backups/moat/ with a sha256 manifest (data/backup_status.json); the drill restores the forward
+# evidence from it into a temp dir and fails below 90% of live rows (reports/restore_drill.json).
+# Adopt-And-Seal's ensure-task step registers whichever is missing (-IfMissing).
+TASK name="MT5-MoatBackup"         trigger="daily 06:40"      runs="scripts/run_moat_backup.py" installer="desks/mt5/scripts/install_moat_backup_tasks.ps1" lane="ops"
+TASK name="MT5-RestoreDrill"       trigger="weekly Sunday 07:20" runs="scripts/run_restore_drill.py" installer="desks/mt5/scripts/install_moat_backup_tasks.ps1" lane="ops"
 # MT5-PrivateNetAudit (2026-09-30): AUDIT mode only -- writes desks/mt5/data/private_net.json
 # (EXPOSED / PRIVATE) and changes nothing. -Enforce is an operator act with a 15-minute dead-man
 # rollback and is never scheduled. Register: the same script with no switch, daily.

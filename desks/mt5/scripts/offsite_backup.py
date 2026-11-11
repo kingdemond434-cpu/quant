@@ -99,6 +99,22 @@ SOURCES: tuple[str, ...] = (
     str(ROOT / "data"),
     str(ROOT / "backups"),
 )
+#: WHAT A LOCAL REPOSITORY HOLDS (2026-11-11). The box has ~28 GB free (desk health, 10:42Z) and
+#: the full source set is ~75 GB, so a repository on the box's own disk takes the small,
+#: irreplaceable stores only -- ledgers, sleeve registry, certificates, reports, the moat replica
+#: -- and leaves the tick archive, the tape and the terminal profile for an off-site repository.
+#: DISK_GUARD below still measures the real total before every first snapshot.
+LOCAL_SOURCES: tuple[str, ...] = (
+    str(BASE / "data"),
+    str(BASE / "reports"),
+    str(ROOT / "data"),
+    str(ROOT / "backups"),
+)
+#: A local repository keeps a shorter history: two weeks of dailies and two months of weeklies.
+LOCAL_RETENTION = ("--keep-daily", "14", "--keep-weekly", "8")
+#: Never shipped by any repository: the memecoin programme's capture store is its own project's
+#: data, large and re-creatable, and has no place in the desk's backup (coordinator 2026-11-11).
+SKIP_COMPONENT = ("memecoin",)
 #: Repository schemes that live somewhere other than this box. Anything else (a drive path) is
 #: local: versioned, but gone with the box.
 REMOTE_SCHEMES = ("s3", "sftp", "rest", "b2", "azure", "gs", "swift", "rclone")
@@ -110,7 +126,7 @@ NEVER_NAMES = ("accounts.dat",)
 SECRET_DIRS: tuple[str, ...] = (str(ROOT / "data" / "secrets"), str(BASE / "data" / "secrets"))
 #: Never shipped, whatever the config says.
 EXCLUDES: tuple[str, ...] = ("**/secrets/**", "**/secret*/**", "**/accounts.dat*", "**/*.lock",
-                             "**/logs/**")
+                             "**/logs/**", "**/*memecoin*/**", "**/*memecoin*")
 #: ONE SNAPSHOT SERIES, WHATEVER THE FILE LIST. restic groups snapshots by host and paths by
 #: default, and with `--files-from-verbatim` the paths are the file list, which changes every run
 #: (a new tick file). Grouped that way every run is its own series: `forget` keeps each one (the
@@ -134,7 +150,7 @@ TIMEOUT_S = 5 * 3600
 #: nothing extra afterwards (later snapshots add only new ticks). 2026-11-11: the job is now
 #: registered with a local repository by the adoption, unattended, so this is what stops it filling
 #: the trading box. Infrastructure only: it gates no order, size or capital decision.
-LOCAL_MIN_FREE_GB = 25.0
+LOCAL_MIN_FREE_GB = 15.0
 
 
 def restic_bin() -> str | None:
@@ -208,7 +224,8 @@ def _secretish(part: str) -> bool:
 
 def _never_name(name: str) -> bool:
     low = name.lower()
-    return low.startswith(NEVER_NAMES) or low.endswith(".lock")
+    return (low.startswith(NEVER_NAMES) or low.endswith(".lock")
+            or any(k in low for k in SKIP_COMPONENT))
 
 
 def _is_link(p: str) -> bool:
@@ -261,7 +278,8 @@ def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None
                 full = os.path.join(d, x)
                 if _secretish(x):
                     found.add(full)
-                elif x.lower() != "logs" and not _is_link(full):
+                elif (x.lower() != "logs" and not _is_link(full)
+                      and not any(k in x.lower() for k in SKIP_COMPONENT)):
                     keep.append(x)
             dirs[:] = keep
             if any(_secretish(part) for part in Path(d).parts):
@@ -455,16 +473,20 @@ def disk_guard(repository: str, listing: list[str], *, first: bool,
 
 
 def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
-        sources: tuple[str, ...] = SOURCES, runner: Any = _run,
+        sources: tuple[str, ...] | None = None, runner: Any = _run,
         restic: str | None = None, now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     prev = _load(out)
     cfg = _load(config)
+    local = bool(cfg.get("repository")) and not is_remote(str(cfg.get("repository")))
+    if sources is None:
+        sources = LOCAL_SOURCES if local else SOURCES
+    retention = LOCAL_RETENTION if local else RETENTION
     have = [s for s in sources if s and Path(s).exists()]
     doc: dict[str, Any] = {
         "at": now.isoformat(timespec="seconds"), "included": have,
         "missing": [s for s in sources if s not in have], "excludes": list(EXCLUDES),
-        "retention": " ".join(RETENTION), "encryption": "restic AES-256 (client side)",
+        "retention": " ".join(retention), "encryption": "restic AES-256 (client side)",
         "last_success_at": prev.get("last_success_at"), "last_prune_at": prev.get("last_prune_at"),
         "last_check_at": prev.get("last_check_at"), "last_check_ok": prev.get("last_check_ok"),
         "restore_drill": prev.get("restore_drill"),
@@ -517,7 +539,7 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         if ok:
             doc["last_success_at"] = doc["at"]
             if _due(prev, "last_prune_at", PRUNE_EVERY, now):
-                f = runner([exe, "forget", "--tag", "quant-box", *GROUP_BY, *RETENTION,
+                f = runner([exe, "forget", "--tag", "quant-box", *GROUP_BY, *retention,
                             "--prune"], env)
                 doc["prune_exit"] = f.returncode
                 if f.returncode == 0:

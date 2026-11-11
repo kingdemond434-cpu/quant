@@ -154,6 +154,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the box's alarm: RED/recovery transitions and the last alert sent"),
     "MT5-OffsiteBackup":  ("desks/mt5/reports/OFFSITE_BACKUP.json", 720,
                            "restic snapshot of the box-only data, read back and restore-drilled"),
+    # Daily at 06:40 and weekly Sunday 07:20 (install_moat_backup_tasks.ps1): one missed run each.
+    "MT5-MoatBackup":     ("data/backup_status.json", 2 * 1440 + 60,
+                           "the moat replica in backups/moat/ and its per-store drill"),
+    "MT5-RestoreDrill":   ("desks/mt5/reports/restore_drill.json", 2 * 10080 + 60,
+                           "forward evidence restored from the replica and verified by rows"),
     "MT5-Healers":        ("desks/mt5/logs/MT5-Healers.log", 180,
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,

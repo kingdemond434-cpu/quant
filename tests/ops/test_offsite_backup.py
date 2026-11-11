@@ -353,3 +353,19 @@ def test_a_guarded_run_writes_nothing_to_the_repository_and_says_why(
     assert d["status"] == "DISK_GUARD" and calls == []
     assert ob.verdict(d, NOW)[0] == "DISK_GUARD"
     assert "K" not in json.dumps(d.get("disk_guard"))
+
+
+def test_a_local_repository_backs_up_the_small_stores_only_and_never_memecoin(
+        tmp_path: Path) -> None:
+    assert not set(ob.LOCAL_SOURCES) & {r"C:\moat\bronze"}
+    assert all(s in ob.SOURCES for s in ob.LOCAL_SOURCES)
+    (tmp_path / "memecoin_capture").mkdir()
+    (tmp_path / "memecoin_capture" / "capture.db").write_text("x")
+    (tmp_path / "memecoin.sqlite").write_text("x")
+    (tmp_path / "ledger.jsonl").write_text("x")
+    assert [Path(f).name for f in ob.files_to_ship([str(tmp_path)])] == ["ledger.jsonl"]
+    cfg = tmp_path / "c.json"
+    cfg.write_text(json.dumps({"repository": str(tmp_path / "repo"), "password": "K"}))
+    d = ob.run(config=cfg, out=tmp_path / "o.json", restic="", now=NOW)
+    assert d["retention"] == " ".join(ob.LOCAL_RETENTION)
+    assert d["included"] + d["missing"] == list(ob.LOCAL_SOURCES)

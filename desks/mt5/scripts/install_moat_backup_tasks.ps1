@@ -24,7 +24,11 @@
 # LAST RESULT 0x2 IS A VERDICT, NOT A BROKEN TASK. run_moat_backup.py exits 2 on DEGRADED,
 # DRILL-FAILED, DISK-FUSE and NOTHING-REPLICATED, and run_restore_drill.py exits 1 on FAIL, on
 # purpose: the scheduler's Last Result is then the alarm. Do not "fix" it to 0.
-param([switch]$DryRun)
+#
+# -IfMissing (2026-11-11): register only the tasks the scheduler lacks and never touch a
+# registered one. Adopt-And-Seal's ensure-task step calls it that way, so both organs appear on the
+# first adoption after they ship with no human step.
+param([switch]$DryRun, [switch]$IfMissing)
 
 $ErrorActionPreference = 'Stop'
 $repo = 'C:\opt\quant'
@@ -50,6 +54,9 @@ $jobs = @(
 )
 
 foreach ($j in $jobs) {
+  if ($IfMissing -and (Get-ScheduledTask -TaskName $j.Name -ErrorAction SilentlyContinue)) {
+    Write-Output ("{0} already registered; -IfMissing leaves it untouched" -f $j.Name); continue
+  }
   if (-not (Test-Path (Join-Path $repo $j.Script))) { throw "missing $($j.Script) under $repo" }
   $log = Join-Path $logs ("{0}.log" -f $j.Name)
   $cmd = "/d /s /c cd /d $repo && `"$py`" -u -W ignore $($j.Script) >> `"$log`" 2>&1"

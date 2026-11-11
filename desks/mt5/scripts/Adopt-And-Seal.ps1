@@ -569,7 +569,11 @@ foreach ($ensure in @(
         # box-generated key that stays in data\secrets; offsite_backup.py's DISK_GUARD refuses
         # any run that would take the drive under its free-space floor.
         @{ Task = "MT5-OffsiteBackup"; Installer = "install_offsite_backup_task.ps1";
-           Args = @("-InstallRestic", "-InitLocal") })) {
+           Args = @("-InstallRestic", "-InitLocal") },
+        # the moat replica and its restore drill (desk health 2026-11-11: neither registered);
+        # one installer, and -IfMissing registers only the one that is absent
+        @{ Task = "MT5-MoatBackup"; Installer = "install_moat_backup_tasks.ps1" },
+        @{ Task = "MT5-RestoreDrill"; Installer = "install_moat_backup_tasks.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
