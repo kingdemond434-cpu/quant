@@ -232,9 +232,9 @@ def build(state: Any, alloc: Any, history: list[dict[str, Any]], *,
     return doc
 
 
-def _ledger_rows(path: Path = LEDGER) -> list[dict[str, Any]]:
+def _ledger_rows(path: Path | None = None) -> list[dict[str, Any]]:
     try:
-        lines = path.read_text("utf-8").splitlines()
+        lines = (path or LEDGER).read_text("utf-8").splitlines()
     except OSError:
         return []
     out = []
