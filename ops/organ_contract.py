@@ -158,6 +158,17 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # recorder that beats but records nothing reads STALE, and never_stale starts it.
     "MT5-TickRecorder":   ("desks/mt5/reports/TAPE_RECORDER.json", 120,
                            "the bronze tick tape; age is its newest tick, true UTC"),
+    # TWO MONEY-PATH ORGANS WITH NO CONTRACT (hourly pass 91 + Desk health box read HP91,
+    # 2026-11-11 01:15Z). Both paths were read ON THE BOX with their real age before landing here:
+    # FTMO_FOLLOWER.json moved 01:09:33Z (task every minute, rc 0); TICK_INTEGRITY.json moved
+    # 2026-11-10 22:17:56Z (task hourly at :20, but a pass outlives its hour -- 0x800710E0, the next
+    # start refused while the last still runs), so its contract is six hours, not one: a slow
+    # integrity pass is not a defect, a silent quarter-day is.
+    "MT5-FTMO-Follower":  ("desks/mt5/reports/FTMO_FOLLOWER.json", 15,
+                           "the FTMO follower's per-minute state: what it mirrored from the "
+                           "gold book and what it refused"),
+    "MT5-TickIntegrity":  ("desks/mt5/reports/TICK_INTEGRITY.json", 360,
+                           "the tick tape's integrity audit (gaps, duplicates, clock drift)"),
     # THE FOURTEEN UNCONTRACTED ORGANS (2026-09-12). Every one appeared on the board as
     # "no artifact contract: this process could stop and nothing would notice" -- which is
     # exactly the gap that lets a new organ die quietly, and the principal asked for it closed.
