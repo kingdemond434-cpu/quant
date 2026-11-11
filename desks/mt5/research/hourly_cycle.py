@@ -4767,10 +4767,11 @@ def main() -> None:
         "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     # THE CONVERSION-HANDOFF CONVERTER (box read JG3, 2026-11-11): the 718,558 cells the judge
     # parked "to the converter" had no converter. build_failed -> FAMILY_BUILD_DEFECTS.json (no
-    # trial); short_history_after_cut -> a same-class cross_asset_transplant, one trial charged
-    # per new transplant, capped per pass and per family-day; lockbox_consumed_history ->
-    # NOT_CONVERTIBLE (holdout rail); never_fires / too_rare / build_input_missing held for a
-    # multiple-testing budget. Discovery department, prediction layer.
+    # trial); short_history_after_cut -> a same-class cross_asset_transplant; never_fires -> up to
+    # two grid-relaxed children; too_rare -> a coarser chart or a pooled class book;
+    # build_input_missing -> BUILD_INPUT_GAPS.json and a 24h retry; lockbox_consumed_history ->
+    # NOT_CONVERTIBLE (holdout rail). Every child is a charged trial, under a budget derived from
+    # the judge's measured spare capacity. Discovery department, prediction layer.
     chc = _costed("conversion_handoff_converter", lambda: _producer(
         "conversion_handoff_converter", "research/conversion_handoff_converter.py", "--once",
         "--budget-s", "420"))

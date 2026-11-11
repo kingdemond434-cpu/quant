@@ -1,5 +1,7 @@
 """The conversion-handoff converter: build_failed -> defect report, short_history -> a charged
-cross-asset transplant, everything else held for a multiple-testing budget.
+cross-asset transplant, never_fires -> relaxed children, too_rare -> a coarser chart or a pooled
+class book, build_input_missing -> a data-gap report and a retry, all under a trial budget derived
+from the judge's measured capacity; every row ends with an outcome.
 
 Every test runs on a small synthetic handoff in the writer's own shape
 (`judge_coverage.write_conversion_handoff`: one JSON object, indent=1, rows last), a tmp broker
@@ -11,7 +13,7 @@ from __future__ import annotations
 import json
 import sys
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +28,15 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 
 import research.conversion_handoff_converter as C  # noqa: E402
 import research.universe_policy as UP  # noqa: E402
+
+#: A fixed clock at the start of a UTC day: 24 passes left, so the per-pass budget is a 24th.
+NOW = datetime(2026, 11, 11, 0, 30, tzinfo=UTC)
+
+#: The family registry's grids, injected: one relaxable threshold, one with exit params only.
+SPACES: dict[str, tuple[dict[str, list[Any]], dict[str, Any]]] = {
+    "fam_z": ({"z_thresh": [1.0, 1.5, 2.0, 2.5], "rr": [1.5, 2.0]}, {"z_thresh": 2.0, "rr": 2.0}),
+    "fam_exit_only": ({"rr": [1.5, 2.0], "ttl_bars": [12, 24]}, {"rr": 2.0}),
+}
 
 REGISTRY = {
     # FX: one short-history parent and three long peers
@@ -71,16 +82,23 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[str,
     def exists(fam: str, sym: str, p: Any, tf: str) -> bool:
         return (fam, sym) in existing
 
+    present: dict[str, bool | None] = {}
+    capacity = tmp_path / "capacity"
+    capacity.mkdir()
     w: dict[str, Any] = {"tmp": tmp_path, "uni": uni, "params": params, "donations": donations,
-                         "existing": existing, "handoff": tmp_path / "conversion_handoff.json"}
+                         "existing": existing, "handoff": tmp_path / "conversion_handoff.json",
+                         "present": present, "capacity": capacity, "now": NOW}
 
     def run(**kw: Any) -> dict[str, Any]:
         args: dict[str, Any] = {
             "handoff": w["handoff"], "ledger": tmp_path / "resolved.jsonl",
             "cursor_path": tmp_path / "cursor.json",
             "report": tmp_path / "CONVERSION_HANDOFF.json",
-            "defects": tmp_path / "FAMILY_BUILD_DEFECTS.json", "params_lookup": lookup,
-            "exists": exists, "donor": donor, "universe": uni, "env": {}}
+            "defects": tmp_path / "FAMILY_BUILD_DEFECTS.json",
+            "gaps": tmp_path / "BUILD_INPUT_GAPS.json", "params_lookup": lookup,
+            "exists": exists, "donor": donor, "universe": uni, "env": {},
+            "capacity_dir": capacity, "param_space": lambda f: SPACES.get(f, ({}, {})),
+            "input_present": lambda lab: present.get(lab, False), "now": w["now"]}
         args.update(kw)
         return C.run_pass(**args)
 
@@ -207,15 +225,17 @@ def test_per_family_daily_cap(world: dict[str, Any]) -> None:
     assert d2["counts"]["short_history_after_cut"] == {C.CONVERTED: 2, C.DEFERRED_BUDGET: 1}
 
 
-def test_never_fires_and_the_held_reasons_are_untouched(world: dict[str, Any]) -> None:
-    _write(world["handoff"], [_row("N1", "never_fires"), _row("N2", "too_rare"),
-                              _row("N3", "build_input_missing")])
+def test_no_reason_is_held_any_more(world: dict[str, Any]) -> None:
+    world["params"]["N1"] = {"z_thresh": 2.0}
+    world["params"]["N2"] = {"lookback": 5}
+    _write(world["handoff"], [_row("N1", "never_fires", family="fam_z"),
+                              _row("N2", "too_rare"), _row("N3", "build_input_missing")])
     doc = world["run"]()
-    assert not (world["tmp"] / "resolved.jsonl").exists() or _ledger(world) == []
-    assert world["donations"] == []
-    held = doc["awaiting_multiple_testing_budget"]
-    assert held["by_reason"] == {"never_fires": 1, "too_rare": 1, "build_input_missing": 1}
-    assert doc["counts"]["never_fires"] == {C.AWAITING_BUDGET: 1}
+    assert "awaiting_multiple_testing_budget" not in doc
+    assert doc["counts"]["never_fires"] == {C.CONVERTED: 1}
+    assert doc["counts"]["too_rare"] == {C.CONVERTED: 1}
+    assert doc["counts"]["build_input_missing"] == {C.AWAITING_INPUT: 1}
+    assert doc["accounting"]["every_row_accounted"] is True
 
 
 def test_lockbox_consumed_history_is_not_convertible_and_cites_the_law(
@@ -310,3 +330,224 @@ def test_tiny_budget_in_the_transplant_loop_keeps_the_cursor_on_the_unworked_row
 def test_the_cycle_cap_bounds_the_work_budget() -> None:
     assert C._budget_s(420.0, {"QUANT_LEG_BUDGET_S": "100"}) == pytest.approx(85.0)
     assert C._budget_s(420.0, {}) == pytest.approx(420.0 * C.BUDGET_SHARE)
+
+
+# ---- never_fires -> relaxed_threshold ---------------------------------------------------------
+
+def test_never_fires_mints_two_relaxed_children_along_the_family_grid(
+        world: dict[str, Any]) -> None:
+    world["params"]["N1"] = {"z_thresh": 2.0, "rr": 2.0}
+    _write(world["handoff"], [_row("N1", "never_fires", family="fam_z", symbol="EURUSD")])
+    doc = world["run"]()
+    (fam, cands, tests_run), = world["donations"]
+    assert fam == "fam_z" and tests_run == 2 and len(cands) == 2
+    # the next grid step toward firing, then the loosest grid value; rr (an exit) untouched
+    assert [c["params"]["z_thresh"] for c in cands] == [1.5, 1.0]
+    assert all(c["params"]["rr"] == 2.0 for c in cands)
+    assert all(c["symbol"] == "EURUSD" and c["family"] == "fam_z" for c in cands)
+    assert all(c["lineage"]["parent_cell"] == "N1" for c in cands)
+    assert all(c["lineage"]["route"] == C.ROUTE_RELAXED for c in cands)
+    (rec,) = _ledger(world)
+    assert rec["status"] == C.CONVERTED and rec["trials_charged"] == 2
+    assert rec["child_ids"] == [c["cell"] for c in cands]
+    assert doc["conversions"]["this_pass"] == {"never_fires": {"fam_z": 2}}
+
+
+def test_never_fires_with_no_relaxable_param_is_not_convertible_and_counted(
+        world: dict[str, Any]) -> None:
+    world["params"]["X1"] = {"rr": 2.0}
+    world["params"]["X2"] = {"lookback": 3}
+    _write(world["handoff"], [_row("X1", "never_fires", family="fam_exit_only"),
+                              _row("X2", "never_fires", family="carry")])
+    doc = world["run"]()
+    assert world["donations"] == []
+    led = _ledger(world)
+    assert {r["status"] for r in led} == {C.NOT_CONVERTIBLE}
+    assert all("no relaxable entry param" in r["why"] for r in led)
+    assert doc["counts"]["never_fires"] == {C.NOT_CONVERTIBLE: 2}
+    assert sum(doc["not_convertible_reasons"].values()) == 2
+
+
+def test_relaxation_directions() -> None:
+    kids, _ = C.relaxed_children({"lo_q": 0.05, "hi_q": 0.95},
+                                 {"lo_q": [0.05, 0.1], "hi_q": [0.9, 0.95]})
+    assert [(k["param"], k["to"]) for k in kids] == [("hi_q", 0.9), ("lo_q", 0.1)]
+    kids, _ = C.relaxed_children({"dispersion": "high"}, {"dispersion": ["any", "high"]})
+    assert [k["to"] for k in kids] == ["any"]
+    kids, why = C.relaxed_children({"z_thresh": 1.0}, {"z_thresh": [1.0, 2.0]})
+    assert kids == [] and "no relaxable" in str(why)
+
+
+# ---- too_rare -> coarser_timeframe / cross_sectional_pool -----------------------------------
+
+def test_too_rare_goes_one_rung_up_the_chart_ladder(world: dict[str, Any]) -> None:
+    world["params"]["R1"] = {"lookback": 7}
+    _write(world["handoff"], [_row("R1", "too_rare", family="carry", symbol="EURUSD")])
+    world["run"]()
+    (_fam, cands, n), = world["donations"]
+    assert n == 1 and cands[0]["timeframe"] == "H4"
+    assert cands[0]["params"] == {"lookback": 7, "timeframe": "H4"}
+    assert cands[0]["symbol"] == "EURUSD" and cands[0]["lineage"]["route"] == C.ROUTE_COARSER
+    assert cands[0]["cell"] == C._cell_id("EURUSD", "carry", cands[0]["params"], "H4")
+    assert cands[0]["cell"].startswith("EURUSD@H4.")
+
+
+def test_too_rare_in_a_class_book_pools_onto_a_same_class_peer(world: dict[str, Any]) -> None:
+    fam = "cross_sectional_class_momentum"
+    world["params"]["R2"] = {"lookback_d": 20}
+    world["params"]["R3"] = {"lookback_d": 20}
+    _write(world["handoff"], [_row("R2", "too_rare", family=fam, symbol="NEWCO"),
+                              _row("R3", "too_rare", family="momentum", symbol="NEWCO")])
+    world["run"]()
+    (got, cands, n), = world["donations"]
+    assert got == fam and n == 1
+    assert cands[0]["symbol"] == "AAPL" and cands[0]["lineage"]["route"] == C.ROUTE_POOL
+    led = {r["cell"]: r for r in _ledger(world)}
+    # the two-lane law: a share CFD outside the class books is never converted
+    assert led["R3"]["status"] == C.NOT_CONVERTIBLE and "two-lane" in led["R3"]["why"]
+
+
+# ---- build_input_missing -> data-gap report and retry ---------------------------------------
+
+def _gap_row(cell: str, inputs: list[str]) -> dict[str, Any]:
+    r = _row(cell, "build_input_missing", family="carry", symbol="EURUSD")
+    r["missing_input"] = {"kind": "inputs", "inputs": inputs}
+    r.pop("why")
+    return r
+
+
+def test_build_input_missing_is_a_ranked_gap_then_converts_when_the_input_exists(
+        world: dict[str, Any]) -> None:
+    world["params"]["G1"] = {"lookback": 9}
+    _write(world["handoff"], [_gap_row("G1", ["bars:GBPJPY_H1.parquet"]),
+                              _gap_row("G2", ["bars:GBPJPY_H1.parquet", "surface:XAUUSD"]),
+                              _gap_row("G3", ["surface:XAUUSD"])])
+    d1 = world["run"]()
+    assert world["donations"] == [] and d1["trials_charged"]["this_pass"] == 0
+    assert d1["counts"]["build_input_missing"] == {C.AWAITING_INPUT: 3}
+    gaps = json.loads((world["tmp"] / "BUILD_INPUT_GAPS.json").read_text("utf-8"))
+    assert sorted((g["input"], g["cells_blocked"]) for g in gaps["ranked"]) == [
+        ("bars:GBPJPY_H1.parquet", 2), ("surface:XAUUSD", 2)]
+    assert gaps["build_input_missing_rows"] == 3
+    assert all(r["next_step"] for r in _ledger(world))
+    # inside 24h nothing is re-checked, and the rows stay retryable, not resolved
+    world["present"]["bars:GBPJPY_H1.parquet"] = True
+    d2 = world["run"]()
+    assert d2["counts"]["build_input_missing"] == {C.AWAITING_INPUT: 3}
+    assert world["donations"] == []
+    # after 24h: G1's one input exists, so the same rule is minted and charged once
+    world["now"] = NOW + timedelta(hours=25)
+    d3 = world["run"]()
+    (_fam, cands, n), = world["donations"]
+    assert n == 1 and cands[0]["cell"] == C._cell_id("EURUSD", "carry", {"lookback": 9}, "H1")
+    assert cands[0]["lineage"]["route"] == C.ROUTE_RESTORED
+    assert d3["counts"]["build_input_missing"] == {C.CONVERTED: 1, C.AWAITING_INPUT: 2}
+
+
+# ---- the trial budget ---------------------------------------------------------------------
+
+def _capacity(root: Path, *, judged: int, sweep_s: float, created: int | None,
+              at: str = "2026-11-11T00:00:00+00:00") -> None:
+    (root / "JUDGING_THROUGHPUT.json").write_text(json.dumps(
+        {"at": at, "status": "MEASURED", "queue": {"judged_last_sweep": judged}}), "utf-8")
+    (root / "JUDGE_RESIDENT.json").write_text(json.dumps({"last_sweep_s": sweep_s}), "utf-8")
+    if created is not None:
+        (root / "JUDGING_RATE.json").write_text(json.dumps({"created_per_day": created}),
+                                                "utf-8")
+
+
+def test_budget_is_derived_from_the_measured_spare_capacity(tmp_path: Path) -> None:
+    _capacity(tmp_path, judged=38_620, sweep_s=11_994.8, created=16_333)
+    b = C.trial_budget(tmp_path, now=NOW)
+    measured = int(38_620 * 86_400 / 11_994.8)
+    assert b["status"] == "MEASURED" and b["capacity"]["per_day"] == measured
+    assert b["per_day"] == measured - 16_333
+    assert b["per_pass"] == -(-b["per_day"] // 24)          # 24 passes left at 00:30 UTC
+    # what was charged today comes off the top, spread over the passes left
+    late = C.trial_budget(tmp_path, now=NOW.replace(hour=22), charged_today=1_000)
+    assert late["per_pass"] == -(-(b["per_day"] - 1_000) // 2)
+
+
+def test_a_measured_rate_below_the_judge_floor_is_never_fed_past_capacity(tmp_path: Path) -> None:
+    """The floor is the judge's target, not its capacity: a child is charged at donation, so
+    feeding above capacity would raise every lane's bar with cells nobody tests."""
+    _capacity(tmp_path, judged=100_000, sweep_s=86_400.0, created=10_000)
+    b = C.trial_budget(tmp_path, now=NOW)
+    assert b["capacity_per_day"] == 100_000 and b["per_day"] == 90_000
+    assert b["judge_gap_per_day"] == C.JUDGE_VOLUME_FLOOR_PER_DAY - 100_000
+
+
+def test_absent_or_stale_capacity_is_unmeasured_with_the_fallback(
+        tmp_path: Path, world: dict[str, Any]) -> None:
+    b = C.trial_budget(tmp_path, now=NOW)
+    assert b["status"] == C.UNMEASURED and b["per_day"] == C.FALLBACK_TRIALS_PER_DAY
+    assert "UNMEASURED" in b["basis"]
+    _capacity(tmp_path, judged=38_620, sweep_s=11_994.8, created=0,
+              at="2026-10-01T00:00:00+00:00")
+    assert C.trial_budget(tmp_path, now=NOW)["status"] == C.UNMEASURED
+    _write(world["handoff"], [])
+    doc = world["run"]()
+    assert doc["trial_budget"]["status"] == C.UNMEASURED
+    assert doc["trial_budget"]["applied_per_pass"] == C.FALLBACK_TRIALS_PER_DAY // 24
+
+
+def test_the_pass_takes_the_measured_budget(world: dict[str, Any]) -> None:
+    _capacity(world["capacity"], judged=38_620, sweep_s=11_994.8, created=16_333)
+    _write(world["handoff"], [])
+    doc = world["run"]()
+    tb = doc["trial_budget"]
+    assert tb["status"] == "MEASURED" and tb["applied_per_pass"] == tb["per_pass"] > 10_000
+    assert doc["projection"]["budget_per_day"] == tb["per_day"]
+
+
+def test_round_robin_keeps_the_big_family_from_starving_the_small_one(
+        world: dict[str, Any]) -> None:
+    rows = []
+    for i in range(10):
+        world["params"][f"A{i}"] = {"z_thresh": 2.0, "k": i}
+        rows.append(_row(f"A{i}", "never_fires", family="fam_z", symbol="EURUSD"))
+    for i in range(2):
+        world["params"][f"B{i}"] = {"lookback": i}
+        rows.append(_row(f"B{i}", "too_rare", family="carry", symbol="EURUSD"))
+    _write(world["handoff"], rows)
+    doc = world["run"](max_per_pass=6)
+    charged = {fam: n for fam, _, n in world["donations"]}
+    # both of the small family's rows convert in the same pass the big one is capped in
+    assert charged == {"carry": 2, "fam_z": 4}
+    assert doc["counts"]["too_rare"] == {C.CONVERTED: 2}
+    assert doc["counts"]["never_fires"][C.DEFERRED_BUDGET] == 8
+    assert doc["deferred_backlog"]["by_reason"] == {"never_fires": 8}
+    assert doc["projection"]["backlog_trials_by_reason"] == {"never_fires": 16}
+    assert C.round_robin({"a": [1, 2, 3], "b": [9]}, 3) == [1, 9, 2]  # type: ignore[list-item]
+
+
+def test_trials_are_charged_per_family_through_one_donation_each(world: dict[str, Any]) -> None:
+    world["params"]["N1"] = {"z_thresh": 2.5}
+    world["params"]["S1"] = {"lookback": 20}
+    world["params"]["R1"] = {"lookback": 4}
+    _write(world["handoff"], [_row("N1", "never_fires", family="fam_z", symbol="EURUSD"),
+                              _row("S1", "short_history_after_cut", family="carry"),
+                              _row("R1", "too_rare", family="carry", symbol="GBPUSD")])
+    doc = world["run"]()
+    by_fam = {fam: (len(c), n) for fam, c, n in world["donations"]}
+    assert by_fam == {"fam_z": (2, 2), "carry": (2, 2)}      # one file per family, exact count
+    assert doc["trials_charged"]["this_pass_by_family"] == {"carry": 2, "fam_z": 2}
+    assert doc["conversions"]["this_pass"] == {
+        "never_fires": {"fam_z": 2}, "short_history_after_cut": {"carry": 1},
+        "too_rare": {"carry": 1}}
+    led = _ledger(world)
+    assert sum(r["trials_charged"] for r in led) == 4
+    again = world["run"]()                                    # nothing is ever charged twice
+    assert again["trials_charged"]["this_pass"] == 0
+    assert again["trials_charged"]["lifetime"] == 4
+
+
+def test_an_unknown_reason_is_counted_unhandled_never_skipped(world: dict[str, Any]) -> None:
+    _write(world["handoff"], [_row("U1", "brand_new_reason"), _row("U2", "brand_new_reason"),
+                              _row("L1", "lockbox_consumed_history")])
+    doc = world["run"]()
+    assert doc["counts"]["brand_new_reason"] == {C.UNHANDLED_REASON: 2}
+    assert doc["unhandled_reasons"]["rows"] == 2
+    assert doc["unhandled_reasons"]["by_reason"] == {"brand_new_reason": 2}
+    assert doc["accounting"]["every_row_accounted"] is True
+    assert doc["accounting"]["rows_read"] == 3
