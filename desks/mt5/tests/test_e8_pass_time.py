@@ -32,8 +32,8 @@ def test_daily_loss_is_judged_at_the_intraday_low_losses_first() -> None:
 
 def test_stand_down_stops_later_legs() -> None:
     # first leg -1R at 1% hits the 0.75% stand-down; the +1R leg is not taken, so the day closes
-    # at -1% and 10 such days reach the static floor (-10%) without a daily breach
-    paths = np.tile(np.array([[[-1.0, 1.0]]]), (1, 10, 1))
+    # at -1% and 12 such days reach the static floor (-10%) without a daily breach
+    paths = np.tile(np.array([[[-1.0, 1.0]]]), (1, 12, 1))
     out = ept.simulate(paths, np.array([0.01, 0.01]))
     assert out["p_static"] == 1.0 and out["p_daily"] == 0.0
 
