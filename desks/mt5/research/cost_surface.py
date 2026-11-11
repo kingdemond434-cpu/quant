@@ -289,7 +289,7 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
                 continue
     if not frames:
         return None
-    t = pd.concat(frames, ignore_index=True)
+    t = pd.concat(frames, ignore_index=True).drop_duplicates()   # before `time` fills a gap
     # A tape row can carry a null time_msc (a schema older than the column, or a merge that
     # aligned columns to the union), and one null made `.astype("int64")` raise
     # IntCastingNaNError for the WHOLE symbol: 221 of 240 symbols UNREADABLE on 2026-11-11.
@@ -300,7 +300,7 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
         ms = ms.fillna(pd.to_numeric(t["time"], errors="coerce") * 1000)
     t = t.assign(time_msc=ms).drop(columns=[c for c in ("time",) if c in t.columns])
     n_no_time = int(t["time_msc"].isna().sum())
-    t = t[t["time_msc"].notna()].drop_duplicates()
+    t = t[t["time_msc"].notna()]
     t = t[(t["bid"] > 0) & (t["ask"] > 0)]
     if t.empty:
         return None

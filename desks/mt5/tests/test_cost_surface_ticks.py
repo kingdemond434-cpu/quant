@@ -79,7 +79,7 @@ def test_a_null_time_msc_never_costs_the_symbol_its_hours(tmp_path: Path) -> Non
     ms[:40] = np.nan                                          # recoverable from `time`
     secs = (base // 1000 + np.arange(n) // 10).astype("float64")
     secs[:10] = np.nan                                        # 10 rows have no clock at all
-    bid = np.full(n, 1.30000)
+    bid = 1.30000 + np.arange(n) * POINT                      # distinct ticks, none deduped
     df = pd.DataFrame({"time_msc": ms, "time": secs, "bid": bid, "ask": bid + 2 * POINT})
     d = tmp_path / "EURCHF"
     d.mkdir(parents=True)
