@@ -2724,8 +2724,9 @@ def test_a_diff_that_fits_the_context_but_not_one_calls_time_is_read_in_parts() 
 
 
 def test_one_hunk_over_the_time_cap_is_read_alone_and_the_rest_stay_under_it() -> None:
-    """#659 (11-11): a new 420-line file is ONE hunk over PART_CHARS. That hunk used to send the whole
-    diff back through split_diff at the context limit: "1 parts", five 30-min timeouts, UNAVAILABLE.
+    """#659 (11-11): a new 420-line file is ONE hunk over PART_CHARS. That hunk used to send the
+    whole diff back through split_diff at the context limit: "1 parts", five 30-min timeouts,
+    UNAVAILABLE.
     The big hunk is now a part of its own, read whole; every other part keeps to the cap."""
     big = ("docs/big.py", ["+" + "b" * 40_000])
     small = [(f"docs/s{i}.py", ["+" + "s" * 9_000]) for i in range(4)]
@@ -2736,7 +2737,7 @@ def test_one_hunk_over_the_time_cap_is_read_alone_and_the_rest_stay_under_it() -
     assert len(whole) == 1 and "s" * 9_000 not in whole[0]     # read whole, and alone
     assert all(len(u) <= ir.PART_CHARS for u in parts if u is not whole[0])
     assert len(parts) >= 3
-    assert ir.split_diff(d, ir.PART_CHARS) is None             # without `hard`: a refusal, as before
+    assert ir.split_diff(d, ir.PART_CHARS) is None  # without `hard`: a refusal, as before
     assert ir.split_diff(d, ir.PART_CHARS, hard=30_000) is None  # over `hard`: still a refusal
     asked: list[str] = []
     v, log = _review(d, [("qwen", "q1", _counting(*[_PASS] * 12, asked=asked)),
