@@ -1439,8 +1439,43 @@ def parse_inegi_bie(body: bytes, ctx: Ctx) -> list[Obs]:
 
 #: Banxico SIE series this row reads, id -> the desk's series name. An id is added here only
 #: after it was read from the SIE catalogue itself; none is guessed and none comes from the
-#: environment.
-BANXICO_SERIES = {"SF43707": "reserves_usd_mn"}
+#: environment. SIE answers at most 20 series a request, and this table stays within that.
+#:
+#: SF43707: weekly international reserves (the coordinator's routing of idea 618).
+#: Every other id was read on the box 2026-11-11 from SIE sector 6, "Tipos de cambio y
+#: resultados históricos de las subastas"
+#:   https://www.banxico.org.mx/SieInternet/consultarDirectorioInternetAction.do?sector=6&accion=consultarDirectorioCuadros&locale=es
+#: with its title confirmed by the API's own metadata reply; the table (CF...) that names each
+#: id is beside it, and the read is filed as reports/box_reads/mx_banxico_fx_series_2026-11-11.md.
+#: THESE ARE HISTORY: the FX commission publishes its interventions only as auction tables and
+#: none runs past 2023-11-27, so they date past interventions for event studies and say nothing
+#: about this week. Reserves are the only current series.
+BANXICO_SERIES = {
+    "SF43707": "reserves_usd_mn",
+    # CF782 "Subastas al vencimiento de coberturas cambiarias" (2017-04-05..2023-11-27)
+    "SF296154": "hedge_rollover_allotted_usd_mn",
+    "SF296152": "hedge_rollover_offered_usd_mn",
+    "SF296153": "hedge_rollover_demanded_usd_mn",
+    "SF296157": "hedge_rollover_fwd_points",
+    # CF777 "Subastas de ventas de coberturas cambiarias" (2017-03-06..2020-03-18)
+    "SF295329": "hedge_sale_allotted_usd_mn",
+    "SF295327": "hedge_sale_offered_usd_mn",
+    "SF295332": "hedge_sale_rate_mxn",
+    # CF374 "Subasta de dólares sin precio mínimo" (2009-03-09..2015-11-20)
+    "SF64982": "usd_sale_nomin_allotted_usd_mn",
+    # CF361 "Subasta de venta de dólares con precio mínimo" (2008-10-09..2016-02-17)
+    "SF63190": "usd_sale_minprice_allotted_usd_mn",
+    "SF63194": "usd_sale_minprice_rate_mxn",
+    # CF362 "Subastas Extraordinarias de Venta de Dólares" (2008-10-08..2008-10-23)
+    "SF63224": "usd_sale_extraordinary_allotted_usd_mn",
+    # CF210 "Subasta diaria de venta de dólares" (2003-05-02..2008-08-01)
+    "SF45341": "usd_sale_rule_allotted_usd_mn",
+    # CF449 "Subastas de venta de opciones de dólares de los EE.UU.A." (2010-02-26..2011-10-31)
+    "SF108619": "usd_put_options_allotted_usd_mn",
+    # CF450 "Ejercicio histórico de opciones de venta de dólares colocadas por Banco de México"
+    "SF108626": "usd_put_options_auctioned_usd_mn",
+    "SF108627": "usd_put_options_exercised_usd_mn",
+}
 _SIE_ID = re.compile(r"^S[A-Z]\d{3,7}$")
 
 
@@ -1758,7 +1793,7 @@ class Source:
     key_header: str = ""
     #: When set, `key_env` names an ENTRY of this file under data/secrets/ (read through the
     #: country lanes' own loader) instead of an environment variable.
-    key_secret_file: str = ""
+    key_file: str = ""
     series_instruments: dict[str, dict[str, int]] = field(default_factory=dict)
     note: str = ""
     #: A local read in place of a fetch (a series another organ already fetches).
@@ -2000,7 +2035,7 @@ SOURCES: tuple[Source, ...] = (
              "{from}/{to}"),
         region="MX", language="es", cadence="weekly", parse=parse_banxico_sie,
         rule=_lag_rule(6, 0, weekday=True), transform="level_dev",
-        key_env="banxico_token", key_secret_file="latam_apis.json", key_header="Bmx-Token",
+        key_env="banxico_token", key_file="latam_apis.json", key_header="Bmx-Token",
         instruments={"USDMXN": -1},
         signal_series=("reserves_usd_mn",),
         mechanism=("the central bank's own balance sheet is the footprint of the FX commission "
@@ -2029,10 +2064,12 @@ SOURCES: tuple[Source, ...] = (
               "the source until the reset; nothing retries into a blocked token. SF43707 is the "
               "weekly international reserve (USD millions) in the bank's statement of account, "
               "as of Friday and published the following Tuesday; the 6-day weekday rule is "
-              "after that. The series read are the BANXICO_SERIES constants: an FX-commission "
-              "intervention or auction id is added there only after it is read from the SIE "
-              "catalogue, never guessed. SIE serves the current vintage only, so the first "
-              "history fetch is stamped vintage=current")),
+              "after that. The series read are the BANXICO_SERIES constants, each read from the "
+              "SIE catalogue and never guessed. The FX-commission auction and hedge series are "
+              "HISTORY ONLY (none runs past 2023-11-27): they date past interventions for event "
+              "studies, they are not signal series, and reserves are the one current series. "
+              "SIE serves the current vintage only, so the first history fetch is stamped "
+              "vintage=current")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -3281,23 +3318,23 @@ CONFIG_DEFAULTS: dict[str, str] = {
 }
 
 
-#: Where a `key_secret_file` lives. Its values never leave this box and are never printed.
+#: Where a `key_file` lives. Its values never leave this box and are never printed.
 SECRETS_DIR = DESK / "data" / "secrets"
 
 
 def key_value(src: Source, environ: Any = None) -> str:
-    """The source's key, or ''. A `key_secret_file` source reads its entry from that secrets
+    """The source's key, or ''. A `key_file` source reads its entry from that secrets
     file with the country lanes' loader (one credential, one place); every other keyed source
     reads its environment variable. An explicit `environ` replaces both (the committed roster
     passes {} to state each source's status as declared)."""
     if not src.key_env:
         return ""
-    if environ is None and src.key_secret_file:
+    if environ is None and src.key_file:
         try:
             from research.countries.br.data_plane import load_secrets
         except Exception:                                      # pragma: no cover - import guard
             return ""
-        return load_secrets(SECRETS_DIR / src.key_secret_file).get(src.key_env, "")
+        return load_secrets(SECRETS_DIR / src.key_file).get(src.key_env, "")
     env: Any = os.environ if environ is None else environ
     return str(env.get(src.key_env) or "")
 

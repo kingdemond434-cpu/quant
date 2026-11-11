@@ -93,6 +93,20 @@
     ]
    },
    {
+    "idSerie": "SF296154",
+    "titulo": "Subastas al vencimiento de coberturas cambiarias, asignado (synthetic)",
+    "datos": [
+     {
+      "fecha": "20/11/2023",
+      "dato": "200.0"
+     },
+     {
+      "fecha": "27/11/2023",
+      "dato": "N/E"
+     }
+    ]
+   },
+   {
     "idSerie": "SF99999",
     "titulo": "A series the row did not ask for (synthetic)",
     "datos": [

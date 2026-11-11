@@ -855,7 +855,9 @@ def _banxico_secret(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, token: str 
 
 def test_banxico_parser_reads_every_series_and_drops_what_is_not_data() -> None:
     got = _parse("mx_banxico_sie")
-    assert {k[0] for k in got} == {"reserves_usd_mn"}      # unasked and malformed ids are dropped
+    # Unasked (SF99999) and malformed ids are dropped; a catalogued auction series is kept.
+    assert {k[0] for k in got} == {"reserves_usd_mn", "hedge_rollover_allotted_usd_mn"}
+    assert got[("hedge_rollover_allotted_usd_mn", date(2023, 11, 20))].value == 200.0
     assert got[("reserves_usd_mn", date(2026, 5, 1))].value == pytest.approx(250350.0)
     assert sum(k[0] == "reserves_usd_mn" for k in got) == 20                 # the N/E row is absent
     assert A.parse_banxico_sie(b'{"bmx": {"series": "no"}}', A.Ctx()) == []
@@ -867,7 +869,7 @@ def test_banxico_token_travels_in_the_header_and_never_in_a_url_or_artifact(
     _banxico_secret(tmp_path, monkeypatch, token)
     monkeypatch.setenv("banxico_token", "an-env-var-is-never-the-source")
     src = A.BY_ID["mx_banxico_sie"]
-    assert A.key_value(src) == token and src.key_secret_file == "latam_apis.json"
+    assert A.key_value(src) == token and src.key_file == "latam_apis.json"
     assert src.terms == "confirmed" and src.key_header == "Bmx-Token"
     assert "banxico.org.mx" in src.licence and "banxico.org.mx" in src.note     # attribution
     (req,) = A.requests_for(src, NOW, {})
@@ -883,7 +885,7 @@ def test_banxico_token_travels_in_the_header_and_never_in_a_url_or_artifact(
     paths, state = A.Paths(out), {}
     rec = A.collect(paths, src, state, NOW, fetch=True, fixtures=None, deadline=1e18,
                     getter=getter)                              # type: ignore[arg-type]
-    assert seen[0][1] == {"Bmx-Token": token} and rec["parsed"] == 20
+    assert seen[0][1] == {"Bmx-Token": token} and rec["parsed"] == 21
     assert state["sources"][src.id]["full_done"] is True
     (later,) = A.requests_for(src, NOW, state["sources"][src.id])
     assert "/datos/2026-08-01/2026-09-30" in later.url          # 60 days, not the history again
@@ -897,7 +899,9 @@ def test_banxico_is_blocked_on_its_key_by_name(
     src = A.BY_ID["mx_banxico_sie"]
     assert A.status_of(src) == "BLOCKED_ON_KEY:banxico_token"
     assert A.status_of(src, environ={}) == "BLOCKED_ON_KEY:banxico_token"     # the roster's view
-    assert "SF43707" in A.BANXICO_SERIES
+    assert "SF43707" in A.BANXICO_SERIES and len(A.BANXICO_SERIES) <= 20     # SIE's per-call cap
+    assert len(set(A.BANXICO_SERIES.values())) == len(A.BANXICO_SERIES)
+    assert src.signal_series == ("reserves_usd_mn",)        # the auction history is not a signal
     assert all(A._SIE_ID.match(i) for i in A.BANXICO_SERIES)
 
 
