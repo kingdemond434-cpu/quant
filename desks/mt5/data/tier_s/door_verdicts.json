@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-10T22:50:45.192650+00:00",
+ "generated_utc": "2026-11-11T14:54:23.721477+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -81957,6 +81957,57 @@
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
+   }
+  },
+  "external.CHFSEK.mass_screen_cond.p=0a4020ee37f5e01a": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.EURNZD.mass_screen_clock.p=832de4037be9cf08": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.NOKSEK.mass_screen_clock.p=f0b3e02916f98b97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "mass_screen_clock",
+   "theory": {
+    "n_oos": 1,
+    "confidence": 0.75,
+    "sd": 0.1936,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFDKK.mass_screen_cond.p=9c9895b4651feea8": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "mass_screen_cond",
+   "theory": {
+    "status": "UNMEASURED",
+    "n_oos": 0
+   }
+  },
+  "external.CHFNOK@M30.overnight_gap_decay.p=62b19010a137a703": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.1053,
+    "sd": 0.0491,
+    "status": "REFUTED"
    }
   }
  },
