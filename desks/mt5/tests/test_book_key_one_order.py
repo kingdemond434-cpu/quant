@@ -59,7 +59,9 @@ def test_a_name_zeroed_row_is_never_the_carrier(monkeypatch) -> None:
     keys = {n: (None if n in zeroed else "CHFNOK_carry_asia") for n in names}
     assert dc.fold_book_aliases(keys) == {}            # b2 carries; a1 is zeroed on its own
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
-    assert 'None if cert_book_zero(_s.get("name"))' in src
+    assert 'None if (cert_book_zero(_s.get("name"))' in src
+    # #540: a row DECAY_ZERO names by its own name is never the carrier either
+    assert 'or (_dz0 and _dz0(_s["name"])))' in src
 
 
 def test_rows_on_different_keys_or_off_the_book_are_never_folded() -> None:
