@@ -690,6 +690,29 @@ def live_days_by_sleeve() -> dict[str, int]:
     return {k: len(v) for k, v in days.items()}
 
 
+def stress_control_variates(daily: pd.DataFrame, book: Mapping[str, float], *,
+                            seed: int = 0) -> dict[str, Any]:
+    """One-year synchronized-block stress of `book` over the desk's daily matrix, with control
+    variates (`libs.portfolio.control_variates`). Never raises; UNMEASURED says why."""
+    try:
+        from libs.portfolio import control_variates as cvar
+        names = [str(c) for c in daily.columns]
+        if not any(float(book.get(n, 0.0)) > 0 for n in names):
+            return {"status": "UNMEASURED", "why": "no funded sleeve has a daily series"}
+        doc = cvar.stress(daily.to_numpy(dtype=float), book, names=names,
+                          horizon=min(STRESS_HORIZON_DAYS, len(daily)), seed=seed)
+        doc["headline"] = cvar.headline(doc)
+        return doc
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
+#: Stress horizon in trading days, derived from the calendar: 250 trading days is one year,
+#: the same window the macro ranks (`macro_state.RANK_WINDOW` = 250) and the prop-account
+#: drawdown clocks run on.
+STRESS_HORIZON_DAYS = 250
+
+
 def regime_state(daily: pd.DataFrame, asof: str | None = None,
                  ) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], dict[str, Any]]:
     """Per-day regime label over the matrix's own clock, and the regime mix to SIZE AGAINST.
@@ -4985,6 +5008,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # applied, and the factor model that gave `_corr_abs` a covariance for pairs with no
         # common history. Each block says UNMEASURED with a reason when it could not be built.
         "macro_regime": dict(_MACRO_META),
+        # TAIL AND STRESS OF THE CHOSEN BOOK, PLAIN AND CONTROL-VARIATE (ROMAN-0970/0971). A
+        # report: the same draws, a tighter tail estimate, and how much variance the control
+        # removed. Nothing reads it for sizing yet.
+        "stress_control_variates": stress_control_variates(daily, funded),
         "book": funded,
         # ROSTERED SLEEVES THIS SOLVE GAVE ZERO. Read by `decision_core.book_from_allocation`,
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero
