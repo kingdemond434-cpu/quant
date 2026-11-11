@@ -141,9 +141,32 @@ def test_the_tff_fetcher_refused_by_robots_makes_no_request(wire, monkeypatch):
 
 
 def test_the_tff_fetcher_sends_the_honest_ua(wire, monkeypatch):
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("FinFutYY.txt", '"Market_and_Exchange_Names","Report_Date_as_YYYY-MM-DD"\n'
+                                   '"EURO FX - CHICAGO MERCANTILE EXCHANGE","2026-08-04"\n')
     monkeypatch.setattr(fs, "robots_verdict", lambda _u: (fs.ROBOTS_ALLOWED, "ok"))
-    assert fetch_tff.load_year(2026) is None           # the stub body is not a zip
+    monkeypatch.setattr(fs.urllib.request, "urlopen", lambda req, timeout=None, context=None: (
+        wire.append(req), _Zip(buf.getvalue()))[1])
+    df = fetch_tff.load_year(2026)
+    assert df is not None and len(df) == 1
     assert len(wire) == 1 and wire[0].get_header("User-agent") == fs.UA
+
+
+class _Zip:
+    def __init__(self, body: bytes):
+        self.body = body
+
+    def read(self):
+        return self.body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_a):
+        return False
 
 
 def test_the_hourly_refetch_records_a_robots_refusal_as_no_fetch(wire, monkeypatch, tmp_path):
