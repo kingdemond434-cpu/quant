@@ -351,6 +351,48 @@ $null = Invoke-AdoptGuard @("heal", "--gateway-expected", $script:GatewayExpecte
 # old switch back (a lane failed on it, or a lane it added went silent and froze gold everywhere).
 $null = Invoke-AdoptGuard @("state-verify")
 
+# ------------------------------------------ 0a2. THE MERGE GATE'S OWN CLONE, REBUILT WHEN JAMMED
+# 2026-11-11. The box merge gate (Quant-WorkflowGate, C:\ProgramData\QuantBox) keeps a stateless
+# clone of LIVE in gate-repo. A stale lock in it made every sweep from 23:40Z 11-10 die with
+# "sparse-checkout failed (128)" before live-first or any merge, and the only fix was an
+# administrator deleting the folder by hand: the root is ACL-locked to Administrators and SYSTEM.
+# This pass runs as SYSTEM, so it does that one act itself, under exactly these conditions:
+#   - the gate's heartbeat is a clone-refresh failure (clone/sparse-checkout/fetch/checkout), and
+#   - the last three FAILED lines of its log are all that class, and
+#   - the gate's own mutex is free (no sweep is running).
+# It removes nothing else, follows no junction, and never touches bin\ or logs\. The next sweep
+# makes the clone again from origin. Best-effort: a failure is logged and never stops adoption.
+try {
+    $qb = Join-Path $env:ProgramData "QuantBox"
+    $gateRepo = Join-Path $qb "gate-repo"
+    $beatPath = Join-Path $qb "logs\workflow_gate.json"
+    $gateLog = Join-Path $qb "logs\workflow_gate.log"
+    $cloneFail = 'FAILED: (git clone|sparse-checkout|sparse config|git fetch|git checkout) failed'
+    if ((Test-Path -LiteralPath $gateRepo) -and (Test-Path -LiteralPath $beatPath) -and (Test-Path -LiteralPath $gateLog)) {
+        $beat = Get-Content -Raw -LiteralPath $beatPath | ConvertFrom-Json
+        $fails = @(Get-Content -LiteralPath $gateLog -Tail 400 | Where-Object { $_ -match ' FAILED: ' } | Select-Object -Last 3)
+        $jammed = ([int]$beat.rc -eq 1) -and ("$($beat.note)" -match $cloneFail) -and $fails.Count -eq 3 -and
+                  (@($fails | Where-Object { $_ -match $cloneFail }).Count -eq 3)
+        $item = Get-Item -LiteralPath $gateRepo -Force
+        if ($jammed -and -not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            $gm = New-Object System.Threading.Mutex($false, "Global\QuantBox-WorkflowGate")
+            if ($gm.WaitOne(0)) {
+                try {
+                    Remove-Item -LiteralPath $gateRepo -Recurse -Force -ErrorAction Stop
+                    Log "gate-heal: removed jammed $gateRepo after 3 clone-refresh failures ($($beat.note)); the next sweep re-clones"
+                } catch {
+                    Log "gate-heal: could not remove $gateRepo : $($_.Exception.Message)"
+                } finally { $gm.ReleaseMutex() }
+            } else {
+                Log "gate-heal: gate-repo jammed but a sweep holds the mutex; next pass"
+            }
+            $gm.Dispose()
+        }
+    }
+} catch {
+    Log "gate-heal: skipped: $($_.Exception.Message)"
+}
+
 # ------------------------------------------------ 0b. THE RELEASE GATE: ONLY GREEN CODE LANDS
 # 2026-09-30. Until today this box adopted the branch TIP, so a commit CI had not finished
 # judging -- or had judged red (7379cbf7 edited the sealed gauntlet and the law gate went red
@@ -693,6 +735,38 @@ if ($LASTEXITCODE -ne 0) {
     Undo-Adoption "seal update-ref refused" 5 "seal-update-ref-failed"
 }
 Log "pure seal commit $($sealCommit.Substring(0,12)) created by atomic commit-tree/update-ref"
+
+# ------------------------------------ 3a. THE MERGE GATE'S INSTALLED COPY FOLLOWS THE RELEASE
+# 2026-11-11. Quant-WorkflowGate runs C:\ProgramData\QuantBox\bin\workflow_gate.ps1, an
+# admin-only copy that only ops\box\install_unattended.ps1 wrote, so every merged fix to the gate
+# sat inert until an administrator ran the installer again. The file is PROTECTED in the audit
+# gate (zuck's own merge), and this pass has just adopted and sealed a CI-green, audited release,
+# so the copy now follows that release: the committed bytes at the sealed HEAD (never the working
+# tree), written to a temp name and moved into place only when they differ. bin\ keeps its ACL;
+# a junction there is refused. The other two bin scripts stay owner-installed.
+try {
+    $binDir = Join-Path (Join-Path $env:ProgramData "QuantBox") "bin"
+    $dst = Join-Path $binDir "workflow_gate.ps1"
+    if ((Test-Path -LiteralPath $dst) -and -not ((Get-Item -LiteralPath $binDir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        $tmpOut = Join-Path $binDir "workflow_gate.ps1.adopt"
+        $relPath = "ops/box/workflow_gate.ps1"
+        & git -C $RepoRoot cat-file -e "HEAD:$relPath" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $p = Start-Process -FilePath "git" -ArgumentList @("-C", "`"$RepoRoot`"", "show", "HEAD:$relPath") -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut
+            if ($p.ExitCode -eq 0 -and (Get-Item -LiteralPath $tmpOut).Length -gt 0) {
+                $new = (Get-FileHash -LiteralPath $tmpOut -Algorithm SHA256).Hash
+                $old = (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash
+                if ($new -ne $old) {
+                    Move-Item -LiteralPath $tmpOut -Destination $dst -Force
+                    Log ("gate-refresh: bin\workflow_gate.ps1 now the sealed release's copy (sha256 {0} -> {1})" -f $old.Substring(0, 12).ToLower(), $new.Substring(0, 12).ToLower())
+                }
+            }
+        }
+        Remove-Item -LiteralPath $tmpOut -Force -ErrorAction SilentlyContinue
+    }
+} catch {
+    Log "gate-refresh: skipped: $($_.Exception.Message)"
+}
 
 # ---------------------------------------- 4. the gateway reads the seal at start; restart it
 # THE RESIDENT IS ASKED, NOT KILLED (2026-09-16). MT5-Gateway is disabled; the sole pass runner
