@@ -613,7 +613,8 @@ def _spawn_worker(swarm: str, budget_s: float) -> int:
 
 
 def supervise(swarm: str, *, budget_s: float = PASS_BUDGET_S, spawn=None, sleep=time.sleep,
-              clock=time.monotonic, digest=None, max_workers: int | None = None) -> int:
+              clock=time.monotonic, digest=None, max_workers: int | None = None,
+              retire_after: float | None = None) -> int:
     """RESTART-ON-EXIT (BACKLOG 2026-09-29), the department supervisor reused, not copied.
 
     The swarm task used to BE the loop, so each recycle or crash left the swarm dead until the
@@ -622,12 +623,17 @@ def supervise(swarm: str, *, budget_s: float = PASS_BUDGET_S, spawn=None, sleep=
     """
     import department_resident as dr
     run_one = spawn or _spawn_worker
+    if retire_after is None:
+        # a pass is the budget plus every engine's grace and the compiler's tail
+        ceiling = budget_s + GRACE_S * len(SWARMS[swarm].get("engines", ()) or (1,)) \
+            + COMPILER_BUDGET_S
+        retire_after = dr.retire_after_s(dr.task_time_limit_s(TASK_NAMES[swarm]), ceiling)
     return dr.run_supervised(
         f"moat[{swarm}]", claim=lambda: claim_singleton(swarm),
         spawn=lambda: run_one(swarm, budget_s), say=lambda m: log(swarm, m),
         sleep=sleep, clock=clock,
         digest=digest or (lambda: dr.source_digest(Path(__file__), Path(dr.__file__))),
-        max_workers=max_workers)
+        max_workers=max_workers, retire_after=retire_after)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -679,6 +685,11 @@ def main(argv: list[str] | None = None) -> int:
             if passes >= RECYCLE_PASSES:
                 log(swarm, "recycling: the supervisor starts a fresh worker")
                 return 0
+            if a.worker:
+                import department_resident as dr
+                if dr.worker_should_retire():
+                    log(swarm, "recycling early: the supervisor is retiring inside its task limit")
+                    return 0
             time.sleep(max(PAUSE_S, MIN_CYCLE_S - (time.monotonic() - started)))
     finally:
         if handle is not None:

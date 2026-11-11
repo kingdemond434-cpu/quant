@@ -292,3 +292,15 @@ def test_the_task_entrypoint_is_the_supervisor(desk, monkeypatch):
     monkeypatch.setattr(ms, "supervise", lambda s, budget_s: called.append((s, budget_s)) or 0)
     assert ms.main(["--swarm", "exploit", "--budget-s", "900"]) == 0
     assert called == [("exploit", 900.0)]
+
+
+def test_the_swarm_supervisor_retires_inside_its_task_limit(desk, monkeypatch):
+    import department_resident as dr
+    seen: list[tuple[str, float]] = []
+    monkeypatch.setattr(dr, "task_time_limit_s", lambda task: seen.append((task, 0)) or 4 * 3600)
+    got: dict = {}
+    monkeypatch.setattr(dr, "run_supervised", lambda name, **kw: got.update(kw) or 0)
+    assert ms.supervise("exploit", budget_s=1800.0) == 0
+    assert seen == [("MT5-Moat-Exploit", 0)]
+    # a full swarm pass still fits between the retirement point and the four-hour limit
+    assert 0 < got["retire_after"] < 4 * 3600 - 1800

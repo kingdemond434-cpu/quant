@@ -393,6 +393,71 @@ WORKER_BUSY_RC = 3
 WORKER_BUSY_WAIT_S = 60
 
 
+#: THE SCHEDULER'S OWN CEILING ON A TASK RUN (audit of #1004). A supervisor lives as long as its
+#: task does, so a task ExecutionTimeLimit -- 72 h is the scheduler's default, and the hand-made
+#: resident tasks were never shown to carry anything else -- would kill it mid-run (0x41306) and
+#: orphan its worker. The supervisor therefore retires ITSELF, cleanly, after a worker exit and
+#: well inside the limit; the keep-alive starts a fresh one. An unreadable limit is taken to be
+#: this default: assuming "no limit" would be the guess that gets the supervisor killed.
+DEFAULT_TASK_LIMIT_S = 72 * 3600
+#: The environment variable a supervisor hands its worker: the epoch second after which the
+#: worker recycles at the end of its current pass, so the supervisor is free to retire.
+RETIRE_AT_ENV = "RESIDENT_RETIRE_AT"
+
+
+def _iso_duration_s(text: str) -> int | None:
+    """`PT72H`, `P3D`, `PT4H30M`, `PT0S` -> seconds (0 means "no limit"); None if unparseable."""
+    import re
+    m = re.fullmatch(r"P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?", text.strip())
+    if not m or not any(m.groups()):
+        return None
+    d, h, mi, sec = (int(g or 0) for g in m.groups())
+    return d * 86400 + h * 3600 + mi * 60 + sec
+
+
+def task_time_limit_s(task: str, *, run=None) -> int:
+    """The ExecutionTimeLimit of `task` in seconds, 0 when the task has none. Falls back to
+    DEFAULT_TASK_LIMIT_S whenever the scheduler cannot be read (off-box, timeout, odd XML)."""
+    if sys.platform != "win32" and run is None:
+        return DEFAULT_TASK_LIMIT_S
+    query = run or (lambda: subprocess.run(["schtasks", "/Query", "/TN", task, "/XML"],
+                                           capture_output=True, text=True, timeout=60,
+                                           check=False).stdout)
+    try:
+        xml = str(query() or "")
+    except (OSError, subprocess.SubprocessError):
+        return DEFAULT_TASK_LIMIT_S
+    import re
+    m = re.search(r"<ExecutionTimeLimit>([^<]+)</ExecutionTimeLimit>", xml)
+    if not m:
+        # no element in a readable definition is the scheduler's default, i.e. 72 h
+        return DEFAULT_TASK_LIMIT_S
+    secs = _iso_duration_s(m.group(1))
+    return DEFAULT_TASK_LIMIT_S if secs is None else secs
+
+
+def retire_after_s(limit_s: int, pass_ceiling_s: float) -> float | None:
+    """How long a supervisor may live under a task limit; None when the task has no limit.
+
+    The worker is asked to recycle at this point and may then finish one pass of up to
+    `pass_ceiling_s`, so a full pass plus thirty minutes of slack is kept below the limit -- and
+    never less than half the limit, so a short limit still gets a working supervisor.
+    """
+    if limit_s <= 0:
+        return None
+    return float(max(limit_s / 2.0, limit_s - pass_ceiling_s - 1800.0))
+
+
+def worker_should_retire(now_epoch: float | None = None) -> bool:
+    """True once the supervisor's retirement point has passed (read from RETIRE_AT_ENV)."""
+    raw = os.environ.get(RETIRE_AT_ENV, "")
+    try:
+        at = float(raw)
+    except ValueError:
+        return False
+    return (time.time() if now_epoch is None else now_epoch) >= at
+
+
 def source_digest(*paths: Path) -> str:
     """One digest over the supervisor's own source files; "" when one cannot be read."""
     import hashlib
@@ -422,20 +487,26 @@ def respawn_delay(rc: int | None, lived_s: float, young_deaths: int) -> tuple[fl
 
 
 def run_supervised(name: str, *, claim, spawn, say, sleep=time.sleep, clock=time.monotonic,
-                   digest, max_workers: int | None = None) -> int:
+                   digest, max_workers: int | None = None, retire_after: float | None = None,
+                   wall=time.time) -> int:
     """THE ONE SUPERVISOR every 24/7 resident family shares (departments, forests, moat swarms).
 
     `claim()` takes the resident's singleton lock (None: another supervisor or a pre-supervisor
     loop holds it, so this one exits 0 and the keep-alive stays a no-op). `spawn()` runs one worker
     to its exit and returns its code; the next worker starts after `respawn_delay`. Returns only
-    when `digest()` changes (its code was adopted, so the keep-alive starts the new supervisor)
-    or when `max_workers` (tests) is reached.
+    when `digest()` changes (its code was adopted, so the keep-alive starts the new supervisor),
+    when `retire_after` seconds have passed (it retires inside its task's ExecutionTimeLimit
+    rather than be killed with a worker still running), or when `max_workers` (tests) is reached.
     """
     started_digest = digest()
     handle = claim()
     if handle is None:
         print(f"{name}: another resident holds the slot; exiting", flush=True)
         return 0
+    retire_at = None if retire_after is None else wall() + retire_after
+    if retire_at is not None:
+        os.environ[RETIRE_AT_ENV] = f"{retire_at:.0f}"   # the worker inherits it
+        say(f"retires after {retire_after / 3600:.1f}h, inside its task's time limit")
     say(f"supervisor started pid {os.getpid()}: restarts the worker on exit "
         f"(respawn {RESPAWN_S}s, crash backoff {CRASH_BACKOFF_S}-{CRASH_BACKOFF_MAX_S}s)")
     workers = deaths = 0
@@ -455,21 +526,43 @@ def run_supervised(name: str, *, claim, spawn, say, sleep=time.sleep, clock=time
                 say("supervisor source changed on disk: exiting so the keep-alive starts the "
                     "adopted code")
                 return 0
+            if retire_at is not None and wall() >= retire_at:
+                say("retiring inside the task's time limit, with no worker running: the "
+                    "keep-alive starts a fresh supervisor")
+                return 0
             sleep(delay)
         return 0
     finally:
+        if retire_at is not None:
+            os.environ.pop(RETIRE_AT_ENV, None)
         with contextlib.suppress(OSError):
             handle.close()
 
 
 def supervise(dept: str, *, spawn=None, sleep=time.sleep, clock=time.monotonic,
-              digest=None, max_workers: int | None = None) -> int:
+              digest=None, max_workers: int | None = None,
+              retire_after: float | None = None) -> int:
     """Hold the department and keep exactly one worker running, restarting it on every exit."""
     run_one = spawn or _spawn_worker
+    if retire_after is None:
+        retire_after = retire_after_s(task_time_limit_s(_task_name(dept)), PASS_TIMEOUT_S)
     return run_supervised(f"dept[{dept}]", claim=lambda: claim_singleton(dept),
                           spawn=lambda: run_one(dept), say=lambda m: log(dept, m),
                           sleep=sleep, clock=clock, digest=digest or source_digest,
-                          max_workers=max_workers)
+                          max_workers=max_workers, retire_after=retire_after)
+
+
+def _task_name(dept: str) -> str:
+    """This department's Windows task, from the component registry; a guess only when it fails
+    to import -- and a wrong name merely falls back to the 72 h default limit."""
+    try:
+        root = str(DESK)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from ops import components
+        return str(components.department_task(dept))
+    except Exception:
+        return "MT5-Dept-" + "".join(p.capitalize() for p in dept.split("_") if p)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -512,6 +605,9 @@ def main(argv: list[str] | None = None) -> int:
                 return 0 if res["status"] == "ok" else 1
             if passes >= RECYCLE_PASSES:
                 log(dept, "recycling: the supervisor starts a fresh worker")
+                return 0
+            if a.worker and worker_should_retire():
+                log(dept, "recycling early: the supervisor is retiring inside its task limit")
                 return 0
             elapsed = time.monotonic() - started
             floor, why = cycle_floor_s()
