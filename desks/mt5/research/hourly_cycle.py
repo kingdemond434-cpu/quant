@@ -1270,6 +1270,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # THE CERT BOOK'S DOOR (2026-11-11): a journalled principal order that releases a zero pin
+    # removes it from data/CERT_BOOK_LIVE.json through an organ, never a hand edit. Seconds.
+    "cert_book_door",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5755,6 +5758,8 @@ def main() -> None:
     # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
     dmo = _costed("decay_monitor", lambda: _producer(
         "decay_monitor", "research/decay_monitor.py"))
+    cbd = _costed("cert_book_door", lambda: _producer(
+        "cert_book_door", "research/cert_book_door.py"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -6555,7 +6560,8 @@ def main() -> None:
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
-                    "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "decay_monitor": dmo, "cert_book_door": cbd, "fill_markout": fmk,
+                    "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
