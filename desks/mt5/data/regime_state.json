@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-11T04:45:06.203891+00:00",
+  "swept_at": "2026-11-11T05:00:07.343621+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -295,7 +295,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3558,
+      "shadow_exp_r": -0.3559,
       "woke_on_shadow": false
     },
     "AUDSGD|overnight_gap_decay_asia": {
@@ -669,7 +669,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 63,
-      "shadow_exp_r": 0.2989,
+      "shadow_exp_r": 0.2965,
       "woke_on_shadow": false
     },
     "CHFDKK|formula_continuous": {
@@ -845,7 +845,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2922,
+      "shadow_exp_r": -0.293,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -878,7 +878,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 62,
-      "shadow_exp_r": 0.5106,
+      "shadow_exp_r": 0.5066,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_asia": {
@@ -889,7 +889,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1199,
+      "shadow_exp_r": -0.1197,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -933,7 +933,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 61,
-      "shadow_exp_r": 0.5347,
+      "shadow_exp_r": 0.5306,
       "woke_on_shadow": false
     },
     "CHFPLN|carry_continuous": {
@@ -1802,7 +1802,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2478,
+      "shadow_exp_r": -0.2549,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -1813,7 +1813,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 60,
-      "shadow_exp_r": 0.6416,
+      "shadow_exp_r": 0.638,
       "woke_on_shadow": false
     },
     "EURZAR|formula_continuous": {
@@ -2022,7 +2022,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0054,
+      "shadow_exp_r": -0.0056,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -2055,7 +2055,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 63,
-      "shadow_exp_r": 0.2977,
+      "shadow_exp_r": 0.3014,
       "woke_on_shadow": false
     },
     "GBPCHF|overnight_gap_decay_asia": {
@@ -2077,7 +2077,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 23,
-      "shadow_exp_r": 0.5805,
+      "shadow_exp_r": 0.5906,
       "woke_on_shadow": false
     },
     "GBPDKK|cross_asset_residual_asia": {
@@ -2253,7 +2253,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4129,
+      "shadow_exp_r": -0.4054,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2286,7 +2286,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 63,
-      "shadow_exp_r": 0.6801,
+      "shadow_exp_r": 0.6795,
       "woke_on_shadow": false
     },
     "GBPMXN|macro_conditional_continuous": {
@@ -3980,7 +3980,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1295,
+      "shadow_exp_r": -0.1101,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -4024,7 +4024,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.2541,
+      "shadow_exp_r": 0.2495,
       "woke_on_shadow": false
     },
     "USDNOK|overnight_gap_decay_continuous": {
@@ -4750,7 +4750,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 39,
-      "shadow_exp_r": 0.5124,
+      "shadow_exp_r": 0.509,
       "woke_on_shadow": false
     },
     "XAUAUD|carry_continuous": {
@@ -4827,7 +4827,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1173,
+      "shadow_exp_r": 0.1143,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {

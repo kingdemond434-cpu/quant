@@ -1,52 +1,30 @@
 {
- "at": "2026-11-11T03:47:52+00:00",
- "status": "MEASURED",
+ "at": "2026-11-11T04:47:51+00:00",
+ "status": "UNMEASURED",
+ "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 995,328 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count",
  "verdicts": {
-  "status": "MEASURED",
-  "rows_total": 1603919,
-  "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-11T03:19:02+00:00",
-  "counts": {
-   "1h": 1137,
-   "24h": 25455,
-   "7d": 205652
-  },
-  "count_basis": "changed verdict events; unchanged retests do not append",
-  "first_terminal_counts": {
-   "1h": 799,
-   "24h": 13083,
-   "7d": 84941
-  },
-  "first_terminal_cells": 720644,
-  "first_terminal_per_hour": {
-   "1h": 799.0,
-   "24h": 545.125,
-   "7d": 505.601
-  },
-  "per_hour": {
-   "1h": 1137.0,
-   "24h": 1060.625,
-   "7d": 1224.119
-  }
+  "status": "UNMEASURED",
+  "rows_read": 995328,
+  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 995,328 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count"
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 21876,
-   "7d": 288626
+   "24h": 21153,
+   "7d": 288636
   },
   "per_hour": {
-   "24h": 911.5,
-   "7d": 1718.012
+   "24h": 881.375,
+   "7d": 1718.071
   }
  },
- "verdicts_per_hour": 1060.625,
- "verdicts_per_day": 25455.0,
+ "verdicts_per_hour": "UNMEASURED",
+ "verdicts_per_day": "UNMEASURED",
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 13083.0,
+ "first_judged_per_day": "UNMEASURED",
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 21876.0,
+ "created_per_day": 21153.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -58,7 +36,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-11T03:44:55+00:00",
-  "pid": 588
+  "started_at": "2026-11-11T04:44:58+00:00",
+  "pid": 26388
  }
 }
