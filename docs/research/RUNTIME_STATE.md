@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (826)
+## NEVER (827)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1047,6 +1047,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/extract_video_cells.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_CELLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/mine_channel_transcripts.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_MINING_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/video_transcript_vault.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:exit_news_tag` | `hourly_cycle:exit_news_tag` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXIT_NEWS_TAGS_SUMMARY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 
