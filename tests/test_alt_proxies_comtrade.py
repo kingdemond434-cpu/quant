@@ -44,7 +44,7 @@ def test_fixture_is_labelled_synthetic() -> None:
 def test_parser_reads_value_and_weight_per_reporter_and_flow() -> None:
     got = _by(A.parse_comtrade_hk_gold(BODY, A.Ctx()))
     sep = date(2024, 9, 30)
-    assert got[("comtrade_cn_imp_from_hk_gold_usd", sep)] == 700000000.0  
+    assert got[("comtrade_cn_imp_from_hk_gold_usd", sep)] == 700000000.0
     assert got[("comtrade_cn_imp_from_hk_gold_kg", sep)] == pytest.approx(8600.0)
     assert got[("comtrade_cn_exp_to_hk_gold_usd", sep)] == 41250000.0
     assert got[("comtrade_ch_exp_to_hk_gold_kg", sep)] == 23800.0
