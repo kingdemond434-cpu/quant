@@ -203,7 +203,8 @@ def test_a_retired_scalp_sleeve_is_killed_in_its_own_lane_and_never_re_promoted(
     assert [x["status"] for x in desk.sleeves()] == ["RETIRED"]
 
 
-def test_three_standby_rows_go_live_on_two_consecutive_admitting_readings(desk, tmp_path, fresh_tier_s_door):
+@pytest.mark.usefixtures("fresh_tier_s_door")
+def test_three_standby_rows_go_live_on_two_consecutive_admitting_readings(desk, tmp_path):
     """THE CAPITAL DOOR, END TO END (2026-09-08). The roster emits a scalp row only at status
     LIVE (decision_core.load_sleeves), and a STANDBY row -- which is what `_door_status` writes
     when the allocator has not measured the sleeve -- flips to LIVE only through

@@ -160,6 +160,7 @@ def test_a_reconcile_restore_is_refused_when_unreplicated(roster, monkeypatch) -
     assert not [e for e in EVENTS if e[1].get("door") == "RESTORED"]   # no false RESTORED
 
 
+@pytest.mark.usefixtures("fresh_tier_s_door")
 def test_a_reconcile_restore_of_a_replicated_certificate_is_written(roster, tmp_path,
                                                                    monkeypatch) -> None:
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS",

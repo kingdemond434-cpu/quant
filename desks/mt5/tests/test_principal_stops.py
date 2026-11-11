@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parents[1]
 for _p in (str(_DESK), str(_ROOT)):
@@ -122,6 +124,7 @@ def _heal(tmp: Path, monkeypatch):
     return mod
 
 
+@pytest.mark.usefixtures("fresh_tier_s_door")
 def test_the_healer_never_lifts_a_stopped_row(tmp_path, monkeypatch) -> None:
     stood_down = {**AUD, "status": "STANDBY", "risk_frac": 0.0}
     silent = {**CARRY, "status": "STANDBY"}

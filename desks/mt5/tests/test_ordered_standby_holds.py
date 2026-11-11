@@ -52,6 +52,7 @@ def test_the_stop_the_bleed_standby_reason_is_never_lifted(healer) -> None:
     assert got["audchf_gap"] == "STANDBY"
 
 
+@pytest.mark.usefixtures("fresh_tier_s_door")
 def test_any_reason_field_counts_and_a_restore_stamp_does_not(healer) -> None:
     got = healer([{"name": "a", "status": "STANDBY", "hold_reason": "principal order"},
                   {"name": "b", "status": "STANDBY", "restore_reason": "funded at 5.5% heat"}])
@@ -77,6 +78,7 @@ def test_the_promoter_records_the_reading_but_keeps_an_ordered_standby(monkeypat
     assert row["admission"]["status"] == "LIVE" and row["admit_streak"] == 2
 
 
+@pytest.mark.usefixtures("fresh_tier_s_door")
 def test_the_promoters_own_standby_is_still_restored_on_evidence(monkeypatch) -> None:
     row = _reconcile(monkeypatch, {"name": "x", "status": "STANDBY", "risk_frac": 0.0,
                                    "demote_reason": "the optimiser gives it 0.0000% heat"})
