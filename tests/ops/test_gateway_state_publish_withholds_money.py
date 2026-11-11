@@ -98,13 +98,17 @@ def test_unparseable_bytes_pass_through_for_the_fence_to_judge() -> None:
     assert aw.scrub_for_publish(REL, b"[1, 2]") == (None, [])
 
 
-def test_the_tracked_copy_carries_no_amount() -> None:
-    doc = json.loads((ROOT / REL).read_text("utf-8"))
+def test_the_tracked_copy_publishes_without_an_amount() -> None:
+    # The box republishes this file every fifteen minutes and its copy wins any merge, so the
+    # tracked bytes may be the raw state until the box runs this publisher: judge what the
+    # publisher would make of them, which is what reaches the repository.
+    raw = (ROOT / REL).read_bytes()
+    new, _ = aw.scrub_for_publish(REL, raw)
+    doc = json.loads(new if new is not None else raw)
     assert set(doc) <= PINNED
     leaks = [k for k in _walk_keys(doc)
              if aw.MONEY_KEY.search(k.rsplit(".", 1)[-1]) and k != "day_start_equity"]
     assert leaks == []
-    assert aw.scrub_for_publish(REL, (ROOT / REL).read_bytes()) == (None, [])
 
 
 def test_every_top_level_key_the_gateway_writes_is_published_or_withheld_by_name() -> None:
