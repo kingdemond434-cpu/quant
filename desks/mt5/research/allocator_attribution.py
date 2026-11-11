@@ -318,7 +318,10 @@ def _dispersion_term(forecasts: list[dict[str, Any]],
         out["volatility_ratio"] = round(real_indep / m_indep, 4)
         out["comovement_ratio"] = round((real_sd / real_indep) / (model_sd / m_indep), 4)
         out["split"] = ("volatility_ratio = realised leg dispersion / modelled; comovement_ratio"
-                        " = (realised book sd / independent) over the model's same ratio")
+                        " = (realised book sd / independent) over the model's same ratio. The "
+                        "realised side is SIMPLE daily R (both of its sds, so they agree with "
+                        "each other); the model side is daily LOG return -- read the ratios, not "
+                        "the two sds 1:1")
     return out
 
 
