@@ -180,15 +180,15 @@ def test_collect_paces_calls_holds_the_cursor_on_a_bad_reply_and_never_logs_more
     assert rec["errors"] and "backfill_to" not in state2["sources"][SID]
 
 
-def test_release_rule_is_sixty_days_after_the_month_closes_on_a_weekday() -> None:
+def test_release_rule_is_ninety_days_after_the_month_closes_on_a_weekday() -> None:
     src = A.BY_ID[SID]
     assert src.rule is A.rule_comtrade_monthly
     for d in (date(2024, 9, 30), date(2026, 1, 31), date(2026, 2, 28), date(2026, 8, 31)):
         t = src.rule(d)
-        assert t >= datetime(d.year, d.month, d.day, tzinfo=UTC) + timedelta(days=61)
+        assert t >= datetime(d.year, d.month, d.day, tzinfo=UTC) + timedelta(days=91)
         assert t.weekday() < 5 and t - datetime(d.year, d.month, d.day, tzinfo=UTC) < (
-            timedelta(days=64))
-    assert src.rule(date(2024, 9, 30)) == datetime(2024, 12, 2, tzinfo=UTC)   # Sat 30 Nov -> Mon
+            timedelta(days=94))
+    assert src.rule(date(2024, 9, 30)) == datetime(2024, 12, 30, tzinfo=UTC)   # Mon 30 Dec
 
 
 # ============================================================================ terms

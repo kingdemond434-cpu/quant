@@ -1791,10 +1791,11 @@ def rule_kr_mof_port(period: date) -> datetime:
 def rule_comtrade_monthly(period: date) -> datetime:
     """UN Comtrade monthly data land about 45+ days after the month and later for many
     reporters; there is no release calendar per reporter-month on the keyless route. Stamped
-    60 days after the month CLOSES (the day after `period`, the month-end), rolled to a weekday:
-    late-biased. The availability route (getDA, first/last released per reporter-period) would
+    90 days after the month CLOSES (the day after `period`, the month-end), rolled to a weekday:
+    late-biased, because China and other late reporters can land well past 60 days and an early
+    stamp would leak (Auditor M1, 2026-11-11). The availability route (getDA, first/last released per reporter-period) would
     be a better stamp; it is unread from here, so it is not used."""
-    t = _utc(period.year, period.month, period.day) + timedelta(days=1 + 60)
+    t = _utc(period.year, period.month, period.day) + timedelta(days=1 + 90)
     return _roll_weekday(t)
 
 
