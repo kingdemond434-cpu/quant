@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "cert_duplicates": {
+   "hypothesis": "Grouping every certificate by the rule it actually trades (symbol, chart, family, session window, side, family arguments with their defaults, applied modifiers) names the certificates that count one edge twice, the hour they are minted, so survivor counts, breadth and the forward roster are not inflated by renamed copies (BR1: CHFNOK carry M30 certified twice under two param hashes).",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "duplicate_certificates",
+    "better": "down",
+    "organ": "report:CERT_DUPLICATES.json"
+   },
+   "falsifier": {
+    "metric": "certificates",
+    "op": "<=",
+    "threshold": 0,
+    "after": "14 days in which the sweep reads no certificate on the box: it is not reading the survivors file the promoter reads"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
