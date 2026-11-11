@@ -260,6 +260,219 @@ def min_bars(timeframe: str) -> int:
 
 
 
+# ---------------------------------------------------------------------------------------------
+# THE BROKER'S FULL SYMBOL LIST, SNAPSHOTTED EVERY RUN (2026-11-11).
+#
+# MEASURED on the trading box 2026-11-11: UST10Y and UST05Y are DISABLED by the broker
+# (trade_mode 0 in the tape's contract-terms parquet; last quotes 2025-12-31 09:14Z / 09:11Z),
+# yet universe.json still carried an inferred trade_mode 3 for UST10Y and BARS_STATE read both
+# as a feed gap. The cause is below in `main`: only `trade_mode != 0` symbols are ever touched,
+# so a disabled symbol's registry row is never revisited and goes stale in silence, and the desk
+# owned no record of the broker's FULL list -- so a successor contract or a new listing was found
+# only by accident.
+#
+# So every run writes the whole list, disabled symbols included, to `symbols_snapshot.json` and
+# appends one line per change against the previous snapshot to `symbols_changes.jsonl`. The pure
+# logic (rows, diff, registry merge) takes plain objects and is tested without MetaTrader5.
+SNAPSHOT = UNIVERSE / "symbols_snapshot.json"
+CHANGES = UNIVERSE / "symbols_changes.jsonl"
+SNAPSHOT_SCHEMA = "symbols_snapshot/1"
+CHANGE_KINDS = ("listed", "delisted", "disabled", "enabled", "expiry_changed")
+
+
+def _asset_class(s) -> str:
+    """The asset class exactly as the collector loop reads it: the first segment of `path`."""
+    return str(getattr(s, "path", "")).split("\\")[0] or "Unknown"
+
+
+def _epoch_iso(value) -> str | None:
+    """Epoch seconds as an ISO UTC string; None for 0, absent or unreadable (never 1970)."""
+    try:
+        sec = int(value or 0)
+    except (TypeError, ValueError):
+        return None
+    if sec <= 0:
+        return None
+    try:
+        return datetime.fromtimestamp(sec, UTC).isoformat(timespec="seconds")
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _int_or_none(value) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def snapshot_rows(symbols) -> list[dict]:
+    """One row per symbol the terminal lists, disabled ones included, sorted by name.
+
+    `time` is the terminal's `SymbolInfo.time` rendered as UTC ISO. It is the stamp the
+    terminal returns; like every MT5 time it may sit on the broker's wall clock (see
+    `bars_state`), so read it as "when the broker last quoted", not as a sub-hour age.
+    """
+    rows = []
+    for s in symbols or ():
+        name = str(getattr(s, "name", "") or "")
+        if not name:
+            continue
+        rows.append({
+            "name": name,
+            "path": str(getattr(s, "path", "") or ""),
+            "asset_class": _asset_class(s),
+            "trade_mode": _int_or_none(getattr(s, "trade_mode", None)),
+            "expiration_time": _epoch_iso(getattr(s, "expiration_time", 0)),
+            "visible": bool(getattr(s, "visible", False)),
+            "select": bool(getattr(s, "select", False)),
+            "time": _epoch_iso(getattr(s, "time", 0)),
+        })
+    return sorted(rows, key=lambda r: r["name"])
+
+
+def build_snapshot(rows: list[dict], now: datetime) -> dict:
+    counts: dict[str, int] = {}
+    for r in rows:
+        k = str(r.get("trade_mode"))
+        counts[k] = counts.get(k, 0) + 1
+    return {"schema": SNAPSHOT_SCHEMA, "taken_at_utc": now.isoformat(timespec="seconds"),
+            "n_symbols": len(rows), "by_trade_mode": dict(sorted(counts.items())),
+            "note": ("every symbol the terminal lists, disabled (trade_mode 0) included; "
+                     "written by expand_universe each run, diffed into symbols_changes.jsonl"),
+            "symbols": rows}
+
+
+def diff_snapshots(prev_rows: list[dict], cur_rows: list[dict], at: str) -> list[dict]:
+    """One change line per listed / delisted / disabled / enabled / expiry_changed symbol."""
+    prev = {r["name"]: r for r in prev_rows if isinstance(r, dict) and r.get("name")}
+    cur = {r["name"]: r for r in cur_rows if isinstance(r, dict) and r.get("name")}
+    out: list[dict] = []
+    for name in sorted(set(prev) | set(cur)):
+        a, b = prev.get(name), cur.get(name)
+        if a is None and b is not None:
+            out.append({"kind": "listed", "symbol": name, "from": None,
+                        "to": b.get("trade_mode"), "at": at})
+            continue
+        if b is None and a is not None:
+            out.append({"kind": "delisted", "symbol": name, "from": a.get("trade_mode"),
+                        "to": None, "at": at})
+            continue
+        assert a is not None and b is not None
+        tm_a, tm_b = a.get("trade_mode"), b.get("trade_mode")
+        if tm_a is not None and tm_b is not None and (tm_a == 0) != (tm_b == 0):
+            out.append({"kind": "disabled" if tm_b == 0 else "enabled", "symbol": name,
+                        "from": tm_a, "to": tm_b, "at": at})
+        if a.get("expiration_time") != b.get("expiration_time"):
+            out.append({"kind": "expiry_changed", "symbol": name,
+                        "from": a.get("expiration_time"), "to": b.get("expiration_time"),
+                        "at": at})
+    return out
+
+
+def _write_json_safe(path: Path, doc) -> None:
+    """Temp-then-replace, via the desk's resilient writer when the repo root is importable."""
+    text = json.dumps(doc, indent=1, default=str)
+    try:
+        from libs.ops.win_write import write_text_resilient
+    except ImportError:
+        import sys
+        repo = BASE.parents[1]
+        if str(repo) not in sys.path:
+            sys.path.insert(0, str(repo))
+        from libs.ops.win_write import write_text_resilient
+    write_text_resilient(path, text)
+
+
+def write_symbols_snapshot(symbols, now: datetime, *, snapshot: Path | None = None,
+                           changes: Path | None = None) -> dict:
+    """Write the snapshot, append its diff against the prior one. Returns a small summary.
+
+    No prior snapshot: one `baseline` marker line, never a flood of `listed`.
+    An unreadable prior: the diff is SKIPPED (named in the summary and the header); it is never
+    read as "everything is new". An empty symbol list writes nothing -- a terminal that listed
+    nothing must not be recorded as the broker delisting everything.
+    """
+    snapshot = snapshot or SNAPSHOT
+    changes = changes or CHANGES
+    rows = snapshot_rows(symbols)
+    at = now.isoformat(timespec="seconds")
+    if not rows:
+        return {"written": False, "why": "terminal listed no symbols; prior snapshot kept"}
+    prior_rows = None
+    diff_note = None
+    if snapshot.exists():
+        try:
+            prior = json.loads(snapshot.read_text("utf-8"))
+            prior_rows = prior.get("symbols") if isinstance(prior, dict) else None
+            if not isinstance(prior_rows, list):
+                prior_rows, diff_note = None, "prior snapshot has no symbols list; diff skipped"
+        except (OSError, ValueError) as exc:
+            diff_note = f"prior snapshot unreadable ({type(exc).__name__}); diff skipped"
+    lines: list[dict] = []
+    if prior_rows is not None:
+        lines = diff_snapshots(prior_rows, rows, at)
+    elif diff_note is None:
+        lines = [{"kind": "baseline", "symbol": None, "from": None, "to": len(rows), "at": at}]
+    doc = build_snapshot(rows, now)
+    if diff_note:
+        doc["diff"] = diff_note
+    _write_json_safe(snapshot, doc)
+    if lines:
+        changes.parent.mkdir(parents=True, exist_ok=True)
+        with changes.open("a", encoding="utf-8") as fh:
+            for ln in lines:
+                fh.write(json.dumps(ln, default=str) + "\n")
+    return {"written": True, "n_symbols": len(rows), "changes": len(lines),
+            "diff": diff_note or ("baseline" if prior_rows is None else "diffed")}
+
+
+def merge_broker_status(registry: dict, symbols, now: datetime) -> dict[str, list[str]]:
+    """Mark registry rows the broker has disabled or stopped listing. MERGES, never deletes.
+
+    * broker trade_mode 0 -> broker_trade_mode 0, quoted false, tradeable false,
+      last_quote_utc, not_quoted_seen_at (first sighting kept).
+    * re-enabled after that -> quoted true, broker_trade_mode the new value, and tradeable put
+      back to fetch_universe's own rule (trade_mode 4) since it was this marker that cleared it.
+    * a registry symbol absent from the list -> listed false (listed true again if it returns).
+    An empty symbol list changes nothing. The row count never changes here.
+    """
+    out: dict[str, list[str]] = {"not_quoted": [], "requoted": [], "unlisted": [],
+                                 "relisted": []}
+    by_name = {str(getattr(s, "name", "")): s for s in symbols or () if getattr(s, "name", "")}
+    if not by_name:
+        return out
+    at = now.isoformat(timespec="seconds")
+    for name, row in registry.items():
+        if not isinstance(row, dict):
+            continue
+        s = by_name.get(name)
+        if s is None:
+            if row.get("listed") is not False:
+                row["listed"] = False
+                row.setdefault("unlisted_seen_at", at)
+                out["unlisted"].append(name)
+            continue
+        if row.get("listed") is False:
+            row["listed"] = True
+            row.pop("unlisted_seen_at", None)
+            out["relisted"].append(name)
+        tm = _int_or_none(getattr(s, "trade_mode", None))
+        if tm is None:
+            continue
+        if tm == 0:
+            row.update({"broker_trade_mode": 0, "quoted": False, "tradeable": False,
+                        "last_quote_utc": _epoch_iso(getattr(s, "time", 0))})
+            row.setdefault("not_quoted_seen_at", at)
+            out["not_quoted"].append(name)
+        elif row.get("quoted") is False:
+            row.update({"broker_trade_mode": tm, "quoted": True, "tradeable": tm == 4,
+                        "requoted_seen_at": at})
+            out["requoted"].append(name)
+        elif "broker_trade_mode" in row:
+            row["broker_trade_mode"] = tm
+    return out
+
 
 def main() -> int:
     import MetaTrader5 as mt5
@@ -272,6 +485,11 @@ def main() -> int:
         return 1
 
     symbols = mt5.symbols_get() or ()
+    try:
+        snap = write_symbols_snapshot(symbols, now)
+    except Exception as exc:  # the snapshot must never cost the collection pass
+        snap = {"written": False, "why": f"{type(exc).__name__}"}
+    print(f"symbols snapshot: {snap}")
     tradable = [s for s in symbols if getattr(s, "trade_mode", 0) != 0]
     _traded = _traded_symbols()
     tradable = _collection_order(tradable, _traded)
@@ -296,6 +514,10 @@ def main() -> int:
                   f"rather than rebuilding the registry from whatever this terminal shows")
             return 1
     prior_n = len(registry)
+    broker_status = merge_broker_status(registry, symbols, now)
+    if any(broker_status.values()):
+        print("broker status merged: " + ", ".join(
+            f"{k}={sorted(v)[:10]}" for k, v in broker_status.items() if v))
 
     start = now - timedelta(days=365 * YEARS)
     added, refreshed, short, failed = [], [], [], []
@@ -442,6 +664,8 @@ def main() -> int:
         "added": added, "refreshed": len(refreshed),
         "short_history": short, "failed": failed,
         "by_class": by_class,
+        "symbols_snapshot": snap,
+        "broker_status": broker_status,
         "timeframes_requested": list(TIMEFRAMES),
         "min_bars_by_timeframe": {tf: min_bars(tf) for tf in TIMEFRAMES},
         "timeframe_coverage": {tf: sum(1 for w in tf_written.values() if tf in w)

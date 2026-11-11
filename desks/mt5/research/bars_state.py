@@ -441,6 +441,24 @@ def _tape_row(sym: str, entry: Any, ticks: Path, now: datetime) -> dict[str, Any
     return row
 
 
+#: The label a bar or tape row carries when the registry says the broker has stopped quoting
+#: the symbol (`expand_universe.merge_broker_status` writes `"quoted": false` for a broker
+#: trade_mode 0). Its bars stop because the broker stopped, not because a feed broke, so it is
+#: named here and kept OUT of the newest-age summary that feed-freshness checks read.
+NOT_QUOTED = "NOT_QUOTED_BY_BROKER"
+
+
+def not_quoted_symbols(registry_path: Path) -> set[str]:
+    """Registry symbols whose row says `"quoted": false`. Unreadable -> empty set (no label)."""
+    try:
+        doc = json.loads(registry_path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    if not isinstance(doc, dict):
+        return set()
+    return {str(k) for k, v in doc.items() if isinstance(v, dict) and v.get("quoted") is False}
+
+
 def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path = TAPE_STATE,
             budget_s: float = DEFAULT_BUDGET_S,
             clock: Callable[[], float] = time.monotonic,
@@ -520,7 +538,13 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
         vals = [r[key] for r in rows if isinstance(r.get(key), (int, float))]
         return min(vals) if vals else None
 
-    nb, nt = newest(bars, "last_bar_time"), newest(tape, "last_tick")
+    unquoted = not_quoted_symbols(universe / "universe.json")
+    for r in (*bars, *tape):
+        if r.get("symbol") in unquoted:
+            r["feed_status"] = NOT_QUOTED
+    live_bars = [r for r in bars if r.get("feed_status") != NOT_QUOTED]
+    live_tape = [r for r in tape if r.get("feed_status") != NOT_QUOTED]
+    nb, nt = newest(live_bars, "last_bar_time"), newest(live_tape, "last_tick")
     bv, bshare = _verdict(bars)
     tv, tshare = _verdict(tape)
     doc: dict[str, Any] = {
@@ -540,7 +564,7 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
             "newest_bar_time_utc": nb.get("last_bar_time_utc") if nb else None,
             "newest_bar_age_h": nb.get("age_h") if nb else None,
             "newest_bar_file_mtime_age_h": youngest(
-                [r for r in bars if r.get("status") == "MEASURED"], "mtime_age_h"),
+                [r for r in live_bars if r.get("status") == "MEASURED"], "mtime_age_h"),
             "tape_symbols": len(tape),
             "tape_symbols_measured": sum(r["status"] == "MEASURED" for r in tape),
             "tape_measured_share": tshare, "tape_verdict": tv,
@@ -548,8 +572,10 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
             "newest_tick_time_utc": nt.get("last_tick_utc") if nt else None,
             "newest_tick_age_h": nt.get("age_h") if nt else None,
             "newest_tick_file_mtime_age_h": youngest(
-                [r for r in tape if r.get("status") == "MEASURED"], "mtime_age_h"),
-            "newest_tape_run_age_h": youngest(tape, "tape_state_last_run_age_h"),
+                [r for r in live_tape if r.get("status") == "MEASURED"], "mtime_age_h"),
+            "newest_tape_run_age_h": youngest(live_tape, "tape_state_last_run_age_h"),
+            "not_quoted_by_broker": sorted({str(r["symbol"]) for r in (*bars, *tape)
+                                            if r.get("feed_status") == NOT_QUOTED}),
             "measured_share_threshold": MEASURED_SHARE,
             "verdict": max((bv, tv), key=lambda v: _RANK[v]),
         },
