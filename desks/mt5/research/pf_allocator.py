@@ -2136,6 +2136,13 @@ def hazard_at_horizon(p: float, to_days: float, from_days: float | None = None) 
 
 #: Trading days to calendar days. DERIVED from the calendar: 365 calendar days per 252 trading.
 CAL_PER_TRADING_DAY = 365.0 / 252.0
+#: Rows per simulated world on a HEAVY pass: derived as 384 trading days (1.5 x 256), the
+#: horizon the heavy solve was measured at. One constant feeds both the world sampler and the
+#: decay hazard's horizon, so the two can never disagree.
+WORLD_ROWS_HEAVY = 384
+#: Rows per simulated world on a LIGHT pass: derived as 256 trading days (about one year of
+#: 252 exchange days, rounded to a power of 2 for the block bootstrap).
+WORLD_ROWS_LIGHT = 256
 
 
 def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
@@ -3848,8 +3855,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                 for k, v in list(hazard_meta["applied"].items())[:5])
             _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted ({_tilted})")
     else:
-        decay_meta = apply_decay_posterior(ev, _haz, _blanket,
-                                           world_rows=384 if heavy else 256)
+        decay_meta = apply_decay_posterior(
+            ev, _haz, _blanket, world_rows=WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT)
         hazard_meta = {"applied": {}, "n_shrunk": 0, "mode": HAZARD_MODE,
                        "superseded_by": "decay_posterior",
                        "rule": ("the hazard enters as each sleeve's own decay probability "
@@ -3902,7 +3909,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                       # The fast clock buys its speed here and nowhere else: a smaller world
                       # population, never a shortcut through the posterior or the crisis worlds.
                       n_worlds=256 if heavy else 128,
-                      n_rows=384 if heavy else 256,
+                      n_rows=WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT,
                       crisis_prob=crisis_share,
                       **(cov_cal.as_overrides() if cov_cal else {}))
 

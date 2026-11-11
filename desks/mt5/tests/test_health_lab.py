@@ -88,3 +88,13 @@ def test_the_legs_are_on_the_hourly_clock_and_billed() -> None:
     from libs.research import layers
     assert layers.LEG_LAYER["health_lab"] == "portfolio"
     assert layers.LEG_LAYER["drift_monitor"] == "portfolio"
+
+
+def test_world_rows_are_one_constant_for_sampler_and_hazard() -> None:
+    import inspect
+
+    from research import pf_allocator as pa
+    src = inspect.getsource(pa)
+    assert "384 if heavy else 256" not in src
+    assert src.count("WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT") == 2
+    assert pa.WORLD_ROWS_LIGHT < pa.WORLD_ROWS_HEAVY
