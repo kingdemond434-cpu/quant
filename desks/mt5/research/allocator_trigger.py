@@ -88,6 +88,16 @@ DEFAULT_INTERVAL_S = 20.0
 #: this long for the previous one to land. It is a DEBOUNCE, not a rate limit: a trigger that
 #: arrives during the wait is still served, just by the next pass.
 MIN_SOLVE_GAP_S = 60.0
+#: Ceiling on the failure back-off: the gap doubles per consecutive failed solve (60, 120, 240 ...)
+#: and stops at 3600 s = one hour, the cadence of the hourly `pf_allocator` backstop, so a broken
+#: solver never retries less often than the backstop and never more than once a minute.
+MAX_FAILURE_GAP_S = 3600.0
+
+
+def solve_gap(failures: int) -> float:
+    """Seconds a pending change waits after `failures` consecutive failed solves (0 -> debounce)."""
+    n = max(0, int(failures))
+    return float(min(MAX_FAILURE_GAP_S, MIN_SOLVE_GAP_S * (2.0 ** min(n, 16))))
 #: Equity band for the equity_move trigger, derived from the tightest measured daily-loss line
 #: the book trades under (E8: 2.5% of equity incl. floating). Half of it, 1.25%, means a move
 #: that has spent half a day's loss budget re-solves the book before the second half is spent;
@@ -288,6 +298,8 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
     watch: list[dict[str, Any]] = []
     now = time.time()
     last_solve = float(st.get("last_solve_at") or 0.0)
+    failures = int(st.get("failure_streak") or 0)
+    gap = solve_gap(failures)
 
     changes: list[tuple[Source, dict[str, Any] | None, str]] = []
     keys_changed: list[tuple[str, str]] = []
@@ -313,7 +325,7 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
             changes.append((src, doc, event_at))
             keys_changed.append((key, sig))
 
-    debounced = bool(changes) and (now - last_solve) < MIN_SOLVE_GAP_S
+    debounced = bool(changes) and (now - last_solve) < gap
     if changes and solve and not debounced:
         heat_before = _heat_now()
         _, alloc_before = _allocation_stamp()
@@ -352,8 +364,13 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
         # Only a solve that RAN consumes the change. rc != 0 (or a timeout) leaves it pending
         # and the next pass retries it; the debounce still spaces the retries.
         if res["rc"] == 0:
+            failures = 0
             for key, sig in keys_changed:
                 seen[key].update({"consumed": sig, "pending": None, "pending_since": None})
+        else:
+            # BACK OFF: each consecutive failure doubles the wait (to the hourly backstop), so a
+            # broken solver is not relaunched every minute; the first rc=0 resets it.
+            failures += 1
     elif changes and debounced:
         for src, _doc, event_at in changes:
             fired.append({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -362,8 +379,8 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
                           "event_at": event_at, "allocation_at": None, "latency_s": None,
                           "stood_down": "DEBOUNCED",
                           "why": f"a solve landed {now - last_solve:.0f}s ago "
-                                 f"(< {MIN_SOLVE_GAP_S:.0f}s); this trigger is served by the "
-                                 f"next pass, not dropped"})
+                                 f"(< {gap:.0f}s, failure streak {failures}); this trigger is "
+                                 f"served by the next pass, not dropped"})
     elif changes and not solve:
         for src, _doc, event_at in changes:
             fired.append({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -372,7 +389,7 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
                           "event_at": event_at, "allocation_at": None, "latency_s": None,
                           "stood_down": "SOLVE_DISABLED", "why": "--no-solve: watch only"})
 
-    st = {"seen": seen, "last_solve_at": last_solve,
+    st = {"seen": seen, "last_solve_at": last_solve, "failure_streak": failures,
           "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
     if write:
         STATE.parent.mkdir(parents=True, exist_ok=True)
@@ -451,6 +468,8 @@ def run(*, budget_s: float = 600.0, write: bool = True, solve: bool = True) -> d
         "heat_reduction_rows": heats[-4:],
         "poll_interval_s": DEFAULT_INTERVAL_S,
         "min_solve_gap_s": MIN_SOLVE_GAP_S,
+        "failure_streak": int(res["state"].get("failure_streak") or 0),
+        "current_solve_gap_s": solve_gap(int(res["state"].get("failure_streak") or 0)),
         "backstop": ("the hourly `pf_allocator` leg still runs its full solve on its own "
                      "cadence; these reactions are added to it, never instead of it"),
         "boundary": ("fires the same solver with the same heat law. It sets no fraction, no cap "

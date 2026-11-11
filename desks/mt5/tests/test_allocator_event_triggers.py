@@ -87,3 +87,32 @@ def test_legacy_state_rows_are_read_as_consumed(
     out = at.poll(state={"seen": {"macro_surprise:MACRO_VIEW.json": {"sig": sig}}},
                   write=False, solve=False)
     assert out["fired"] == [] and out["watch"][0]["changed"] is False
+
+
+def test_failed_solves_back_off_and_a_success_resets(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert at.solve_gap(0) == at.MIN_SOLVE_GAP_S
+    assert at.solve_gap(1) == 2 * at.MIN_SOLVE_GAP_S
+    assert at.solve_gap(50) == at.MAX_FAILURE_GAP_S
+    f = tmp_path / "gateway_state.json"
+    f.write_text(json.dumps({"equity": 100_000.0}), encoding="utf-8")
+    rc: list[int] = [1]
+    monkeypatch.setattr(at, "ROOT", tmp_path)
+    monkeypatch.setattr(at, "sources", lambda: [
+        at.Source("equity_move", f, ("equity",), "t", sig_fn=at._equity_band)])
+    monkeypatch.setattr(at, "_heat_now", lambda: 0.2)
+    monkeypatch.setattr(at, "_allocation_stamp", lambda: (None, None))
+    monkeypatch.setattr(at, "_solve", lambda _b: {"rc": rc[0], "wall_s": 0.0, "tail": ""})
+    st = at.poll(state={}, write=False)["state"]
+    f.write_text(json.dumps({"equity": 96_000.0}), encoding="utf-8")
+    st["last_solve_at"] = 0.0
+    st = at.poll(state=st, write=False)["state"]
+    assert st["failure_streak"] == 1
+    # 90 s after a failure is past the 60 s debounce but inside the doubled 120 s gap.
+    import time as _t
+    st["last_solve_at"] = _t.time() - 90.0
+    out = at.poll(state=st, write=False)
+    assert out["debounced"] and out["state"]["failure_streak"] == 1
+    rc[0] = 0
+    out["state"]["last_solve_at"] = 0.0
+    assert at.poll(state=out["state"], write=False)["state"]["failure_streak"] == 0
