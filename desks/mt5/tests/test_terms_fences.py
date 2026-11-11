@@ -202,3 +202,23 @@ def test_the_free_stack_proposer_mints_nothing_from_a_fenced_source(monkeypatch)
     assert "terms fence congress_trades" in skipped["congress_trades"]
     assert grid and all(r.get("evidence", {}).get("source_row") != "congress_trades"
                         for r in grid)
+
+
+def test_a_fenced_free_stack_frame_already_on_disk_is_never_read(tmp_path) -> None:
+    from mt5desk import family_exogenous_conditioner as fec
+    for name in ("fs_congress_trades", "fs_other_src"):
+        (tmp_path / f"{name}.csv").write_text("available_time,x\n", "utf-8")
+    assert fec.series_path("fs_congress_trades", tmp_path) is None
+    assert fec.series_path("fs_other_src", tmp_path) == tmp_path / "fs_other_src.csv"
+    assert fec.conditioner("fs_congress_trades", "net_all", "raw", root=tmp_path) is None
+
+
+def test_alt_state_does_not_publish_a_fenced_source(tmp_path, monkeypatch) -> None:
+    from datetime import UTC, datetime
+
+    from research import free_stack_hunter as fh
+    read: list[str] = []
+    monkeypatch.setattr(fh, "first_vintage_frame", lambda p: read.append(p.stem))
+    fh.build_alt_state(fh.Store(tmp_path), {"congress_trades": {"net_all": {}},
+                                            "other_src": {"x": {}}}, datetime.now(UTC))
+    assert read == ["other_src"]

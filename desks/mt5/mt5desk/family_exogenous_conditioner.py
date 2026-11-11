@@ -60,8 +60,28 @@ DEFAULT_Z_WINDOW = 250
 MIN_OBSERVATIONS = 30
 
 
+def _terms_fenced(source: str) -> bool:
+    """A free-stack frame (`fs_<seat>`) whose seat sits behind a closed terms fence is never read:
+    data harvested before the fence closed must not keep feeding cells. If the shared predicate
+    cannot be imported, every `fs_` frame is treated as fenced (fail closed, narrowly)."""
+    name = str(source)
+    if not name.startswith("fs_"):
+        return False
+    try:
+        from research import terms_fences
+    except ImportError:
+        try:
+            from desks.mt5.research import terms_fences
+        except ImportError:
+            return True
+    return terms_fences.seat_fenced(name[3:]) is not None
+
+
 def series_path(source: str, root: Path | None = None) -> Path | None:
-    """The pack's canonical frame, or None. Absence is UNMEASURED and emits nothing."""
+    """The pack's canonical frame, or None. Absence is UNMEASURED and emits nothing; so is a frame
+    behind a closed terms fence."""
+    if _terms_fenced(source):
+        return None
     base = root or SERIES_DIR
     for suffix in (".parquet", ".csv"):
         p = base / f"{source!s}{suffix}"

@@ -430,7 +430,10 @@ def build_alt_state(store: Store, columns: dict[str, Any], now: datetime) -> dic
     artifact the allocator MAY read; nothing here sizes, vetoes or edits the allocator."""
     import numpy as np
     per_symbol: dict[str, list[dict[str, Any]]] = {}
+    fences = terms_fences.load()
     for sid, cols in columns.items():
+        if terms_fences.seat_fenced(sid, fences) is not None:
+            continue  # harvested before its fence closed: never published as state
         df = first_vintage_frame(store.obs / f"{sid}.jsonl")
         if df is None or df.empty:
             continue
