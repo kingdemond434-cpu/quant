@@ -222,3 +222,23 @@ def test_alt_state_does_not_publish_a_fenced_source(tmp_path, monkeypatch) -> No
     fh.build_alt_state(fh.Store(tmp_path), {"congress_trades": {"net_all": {}},
                                             "other_src": {"x": {}}}, datetime.now(UTC))
     assert read == ["other_src"]
+
+
+def test_the_default_fences_are_cached_and_reread_on_change(tmp_path, monkeypatch) -> None:
+    import os
+    reg = tmp_path / "terms_fences.json"
+    reg.write_text(json.dumps({"fences": []}), "utf-8")
+    monkeypatch.setattr(tf, "REGISTRY", reg)
+    monkeypatch.setattr(tf, "_CACHE", {"key": None, "fences": None})
+    calls: list[int] = []
+    real = tf.load
+    monkeypatch.setattr(tf, "load", lambda *a, **k: calls.append(1) or real(*a, **k))
+    for _ in range(5):
+        assert tf.seat_fenced("congress_trades") is not None  # built-in, registry empty
+    assert len(calls) == 1
+    reg.write_text(json.dumps({"fences": [{"id": "x", "match": [], "seats": ["newseat"]}]}),
+                   "utf-8")
+    st = reg.stat()
+    os.utime(reg, ns=(st.st_atime_ns, st.st_mtime_ns + 10_000_000))
+    assert tf.seat_fenced("newseat") is not None
+    assert len(calls) == 2

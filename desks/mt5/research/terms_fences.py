@@ -43,6 +43,21 @@ def is_open(fence: Mapping[str, Any]) -> bool:
     return fence.get("open") is True and len(str(fence.get("permit_clause") or "").strip()) >= 20
 
 
+_CACHE: dict[str, Any] = {"key": None, "fences": None}
+
+
+def current() -> list[dict[str, Any]]:
+    """The shipped registry's fences, cached per process and re-read when the file's mtime (or
+    its presence) changes -- so a per-cell caller does not re-parse the registry every call."""
+    try:
+        key: Any = REGISTRY.stat().st_mtime_ns
+    except OSError:
+        key = "absent"
+    if _CACHE["fences"] is None or _CACHE["key"] != key:
+        _CACHE.update({"key": key, "fences": load()})
+    return list(_CACHE["fences"])
+
+
 def load(registry: Path | None = None) -> list[dict[str, Any]]:
     """The fences in force: the registry's rows, plus any built-in one the registry lacks."""
     try:
@@ -81,12 +96,12 @@ def path_fenced(path: Path | str, fences: list[dict[str, Any]] | None = None
     rel = PurePath(*parts[i + 1:]) if parts[i + 1:] else None
     if rel is None:
         return None
-    return fence_for(rel, load() if fences is None else fences)
+    return fence_for(rel, current() if fences is None else fences)
 
 
 def seat_fenced(seat: str, fences: list[dict[str, Any]] | None = None) -> dict[str, Any] | None:
     """The same question for a whole source directory or miner name (`seats` in the fence)."""
-    for f in (load() if fences is None else fences):
+    for f in (current() if fences is None else fences):
         if str(seat).lower() in {str(x).lower() for x in f.get("seats") or []}:
             return f
     return None
