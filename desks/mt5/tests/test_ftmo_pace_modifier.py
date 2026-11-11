@@ -69,13 +69,13 @@ def test_write_is_atomic(tmp_path: Path) -> None:
     assert not list(tmp_path.glob(".*.tmp"))
 
 
-def test_registered_two_sided_and_billed() -> None:
-    from libs.portfolio.capital_modifiers import REGISTRY
-    from libs.portfolio.rails import rail
+def test_two_sided_and_billed() -> None:
+    # capital_modifiers.py and rails.py are sealed; the REGISTRY/Rail rows ride the sign
+    # train with the consumer wiring. Until then: the grid is two-sided around 1.0 and the
+    # missed-growth measure exists.
     from research import missed_growth
-    m = next(x for x in REGISTRY if x.name == "ftmo_pace")
-    assert m.kind == "two_sided" and m.lo < 1.0 < m.hi
-    assert rail("ftmo_pace").measure in missed_growth.MEASURES
+    assert fpm.GRID[0] < 1.0 < fpm.GRID[-1]
+    assert "measure_ftmo_pace" in missed_growth.MEASURES
 
 
 def test_wired_as_an_hourly_leg() -> None:

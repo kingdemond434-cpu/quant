@@ -164,13 +164,6 @@ RAILS: tuple[Rail, ...] = (
     # the leg's certified risk goes undeployed: each block is journalled RAIL_BLOCKED with its
     # missed_growth_risk_usd in data/e8_gold_intents.jsonl, which
     # missed_growth.measure_e8_unowned_block reads.
-    # THE FTMO PACE MODIFIER'S DOWN SIDE (idea 625, 2026-11-11). Report-only today, so it binds
-    # nothing; registered now so the day a consumer reads it, its m < 1 readings are already
-    # billed. missed_growth.measure_ftmo_pace reads what trading at 1.0 forgoes against the
-    # modifier's pick (E[log W] and P(pass)) straight off its report.
-    Rail("ftmo_pace", "shrink",
-         "research/ftmo_pace_modifier.py -> reports/FTMO_PACE_MODIFIER.json (report only)",
-         "measure_ftmo_pace"),
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
