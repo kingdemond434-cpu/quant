@@ -1258,6 +1258,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # THE E8 PASS-TIME OPTIMISER (idea 591, 2026-11-11): report only, ~10 s on the same worlds.
+    "e8_pass_time",
     # PAID-DATASET SUBSTITUTES (principal 2026-09-30, "all paid datasets alternatives ...
     # thousands"): the hunt's queues and the three uses of every enrolled substitute are
     # refreshed hourly; ~2 s plus a bounded catalogue crawl.
@@ -1428,7 +1430,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
+    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator", "e8_pass_time",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
@@ -5712,6 +5714,10 @@ def main() -> None:
             _stamp_heavy_pass(pa)
         except Exception as exc:
             print(f"  pf_allocator: heavy stamp failed ({type(exc).__name__}: {exc})", flush=True)
+    # E8 PASS-TIME (idea 591): risk per trade vs P(pass) and days-to-pass on E8's own caps, as
+    # estimated and edges-halved. REPORT ONLY -- reports/E8_PASS_TIME.json, consumer null.
+    e8pt = _costed("e8_pass_time", lambda: _producer(
+        "e8_pass_time", "research/e8_pass_time.py"))
     # DID THE MONEY BRAIN ACTUALLY PRODUCE, PROVE AND PUBLISH -- and on what? (2026-09-23.) Runs
     # immediately after the solve, so the ages it publishes are the ages the pass ABOVE
     # conditioned on. It names every allocator output with its real path and its consumer, every
@@ -6553,7 +6559,7 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "kelly_survival": kls, "e8_pass_time": e8pt, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
