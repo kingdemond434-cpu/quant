@@ -57,6 +57,10 @@ CLOCKS = ("bars", "utc")
 #: that quietly loses a third of its events is a different study.
 _DROPPED: dict[str, int] = {}
 
+#: Events this lane DID place, by the clock that placed them (`CONVERTED` = BAR_CLOCK.json,
+#: `CONVERTED_RELEASE_SPIKE` = the release-spike reading), so provenance is never silent.
+_CONVERTED: dict[str, int] = {}
+
 #: The two claims an event permits, kept as separate modes so the family cannot pick whichever
 #: fits after seeing the data -- the same discipline `family_clock_transition` applies to its three.
 MODES = ("drift", "fade")
@@ -114,10 +118,14 @@ def _event_times(events: Sequence[dict[str, Any]], symbol: str, *,
         if ts.tzinfo is None:
             ts = ts.tz_localize("UTC")
         if clock == "utc":
-            moved, status, _why = to_bar_time(ts.to_pydatetime())
+            # OPTED IN TO THE RELEASE-SPIKE CLOCK (2026-10-21): this lane's events ARE scheduled
+            # releases from the calendar that reading is measured on, and `to_bar_time` bounds it
+            # to the season instance it measured. Which clock placed each event is counted.
+            moved, status, _why = to_bar_time(ts.to_pydatetime(), fallback=True)
             if moved is None:
                 _DROPPED[status] = _DROPPED.get(status, 0) + 1
                 continue
+            _CONVERTED[status] = _CONVERTED.get(status, 0) + 1
             ts = pd.Timestamp(moved)
         out.append(ts)
     return sorted(set(out))
