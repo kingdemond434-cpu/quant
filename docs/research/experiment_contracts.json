@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "research_pnl": {
+   "hypothesis": "Running the research P&L on its own 6 h clock with a streamed graph read keeps the bandit's per-source worth prior fresh (it was 44 days stale because the daily chain never reached the step and the whole-graph read hit MemoryError), so research effort is steered by what has actually certified and earned growth rather than by a September snapshot.",
+   "metric": {
+    "gain": "CALIBRATION",
+    "metric": "n_sources",
+    "better": "up",
+    "organ": "report:RESEARCH_PNL.json"
+   },
+   "falsifier": {
+    "metric": "graph_lines_read",
+    "op": "==",
+    "threshold": 0,
+    "after": "7 days in which every run reads 0 graph lines on the box: the organ is clocked but sees no trials, so the prior it writes is the floor everywhere"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

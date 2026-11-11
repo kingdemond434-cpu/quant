@@ -77,13 +77,61 @@ def _json(path: Path) -> dict:
     return d if isinstance(d, dict) else {}
 
 
-def _graph_rows() -> tuple[list[dict], str | None]:
+#: Lines read from the graph on the last `_graph_rows()` call (the ledger is append-only, so this
+#: is rows ever recorded, while `len(rows)` below is distinct node ids).
+LAST_GRAPH_LINES = 0
+
+
+def _graph_rows(path: Path | None = None) -> tuple[list[dict], str | None]:
+    """The LAST row of every node id, reduced to the three fields `census` reads, STREAMED.
+
+    WHY STREAMED (box read HP2, 2026-11-11): this organ died with MemoryError on 2026-09-21 and
+    has not written research_marginal.json since 09-28 -- the bandit's per-source worth prior has
+    been 44 days stale. `Graph().rows()` parses the whole ~5.7M-line ledger into dicts and keeps
+    every one (~2.8 KB a row measured, ~16 GB on the box). This keeps one small dict per node id
+    (last row wins, the same answer `census` computed) and reads the file once, line by line.
+    """
+    global LAST_GRAPH_LINES
+    from libs.research.hypothesis_graph import LEDGER
+    path = path or LEDGER
+    latest: dict[str, dict] = {}
+    n = 0
+    intern = sys.intern
     try:
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph().rows()
-    except Exception as exc:
+        with path.open("rb") as fh:
+            for ln in fh:
+                if not ln.strip():
+                    continue
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if not isinstance(r, dict) or not r.get("id"):
+                    continue
+                n += 1
+                src, fate = r.get("source"), r.get("fate")
+                latest[str(r["id"])] = {
+                    "id": str(r["id"]),
+                    "source": intern(src) if isinstance(src, str) else src,
+                    "fate": intern(fate) if isinstance(fate, str) else fate}
+    except OSError as exc:
+        LAST_GRAPH_LINES = 0
         return [], f"hypothesis graph unreadable: {type(exc).__name__}: {exc}"
+    LAST_GRAPH_LINES = n
+    rows = list(latest.values())
     return rows, (None if rows else "hypothesis graph absent or empty on this host")
+
+
+def report_age_h(now: datetime | None = None, report: Path | None = None) -> float | None:
+    """Hours since this organ last wrote, by the report's OWN stamp (never mtime)."""
+    try:
+        doc = json.loads((report or REPORT).read_text("utf-8"))
+        t = datetime.fromisoformat(str(doc.get("generated_utc")).replace("Z", "+00:00"))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return ((now or datetime.now(tz=UTC)) - t).total_seconds() / 3600
 
 
 def census(rows: list[dict]) -> dict[str, dict]:
@@ -105,10 +153,27 @@ def census(rows: list[dict]) -> dict[str, dict]:
     return out
 
 
+def _last_line(path: Path, block: int = 1 << 16) -> str:
+    """The last non-empty line, read from the end (the forecast log only ever grows)."""
+    with path.open("rb") as fh:
+        fh.seek(0, 2)
+        end = fh.tell()
+        buf = b""
+        pos = end
+        while pos > 0:
+            step = min(block, pos)
+            pos -= step
+            fh.seek(pos)
+            buf = fh.read(step) + buf
+            lines = [ln for ln in buf.splitlines() if ln.strip()]
+            if len(lines) >= 2 or (pos == 0 and lines):
+                return lines[-1].decode("utf-8")
+    raise IndexError("empty forecast log")
+
+
 def _book() -> tuple[dict[str, float], float, float, dict]:
     try:
-        lines = [ln for ln in FORECASTS.read_text("utf-8").splitlines() if ln.strip()]
-        last = json.loads(lines[-1])
+        last = json.loads(_last_line(FORECASTS))
     except (OSError, ValueError, IndexError):
         return {}, 0.0, 0.0, {"source": "pf_forecast_log absent on this host; growth is zero "
                                          "everywhere, which is a gap, not a measurement"}
@@ -259,6 +324,7 @@ def run() -> dict:
     MARGINAL.parent.mkdir(parents=True, exist_ok=True)
     MARGINAL.write_text(json.dumps(marginal, indent=1), "utf-8")
     doc = {"generated_utc": marginal["generated_utc"], "graph_rows": len(rows),
+           "graph_lines_read": LAST_GRAPH_LINES,
            "n_sources": len(per_source), "allocator_book": book_ctx, "gaps": gaps,
            "sources": dict(sorted(per_source.items())), "arms": per_arm, "sleeves": sleeves,
            "unattributed_growth_per_day": round(unattributed, 8),
@@ -276,8 +342,15 @@ def run() -> dict:
     return doc
 
 
-def main() -> int:
-    argparse.ArgumentParser().parse_args()
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--min-age-h", type=float, default=0.0,
+                    help="skip (exit 0) when RESEARCH_PNL.json is younger than this, by its stamp")
+    args = ap.parse_args(argv)
+    age = report_age_h()
+    if args.min_age_h > 0 and age is not None and age < args.min_age_h:
+        print(f"research_pnl: last run {age:.1f} h ago (< {args.min_age_h:g} h) -- skipped")
+        return 0
     d = run()
     print(f"RESEARCH PNL  {d['graph_rows']} graph rows, {d['n_sources']} sources, "
           f"book {d['allocator_book'].get('n_funded', 0)} funded, unattributed growth "
