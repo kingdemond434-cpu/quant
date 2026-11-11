@@ -95,6 +95,15 @@ YIELD_WINDOW_H = 72.0
 #: whose length is set by its forests (3,300 s caps), so one hour is the cadence and six is the
 #: point at which "slow pass" has become "not running".
 MAX_REPORT_AGE_H = 6.0
+#: Minimum spacing between two passes that FETCH. The report has two clocks -- the hourly leg and
+#: `scripts/run_research_reports.py`, which re-runs any 3600 s producer in `issue_board.CADENCE`
+#: whose artifact is past half its cadence -- and without this they would both hit GitHub in an
+#: hour the long cycle ran late. Under 1 h on purpose: the mining rate stays one pass an hour
+#: (never slowed to hush a clock); only the SECOND invocation inside the spacing skips the fetch,
+#: and it still rewrites the report ("SKIPPED", next due, the last pass's counts kept) so the
+#: report is hourly-fresh whether or not the cycle reached this leg. `policy.min_fetch_interval_h`
+#: in the seeds overrides it.
+MIN_FETCH_INTERVAL_H = 0.75
 #: The issue board raises any `<repo>/data/*_ALARM.txt` it knows (research/issue_board.ALARMS).
 ALARM = _ROOT / "data" / "GITHUB_MINER_ALARM.txt"
 #: Core API calls left for the other organs sharing this host's quota (cell_emitter's trees,
@@ -503,6 +512,15 @@ def _due(rec: dict[str, Any] | None, now: datetime, rescan_h: float) -> bool:
         return True
 
 
+def _last_fetch(history: list[dict[str, Any]]) -> datetime | None:
+    """When the latest pass that went to GitHub started (every history row is one)."""
+    for h in reversed(history):
+        with contextlib.suppress(KeyError, ValueError, TypeError):
+            t = datetime.fromisoformat(str(h["utc"]))
+            return t if t.tzinfo else t.replace(tzinfo=UTC)
+    return None
+
+
 def run(*, budget_s: float = 300.0, write: bool = True, fetch: Fetch | None = None,
         seeds: Path = SEEDS, state_path: Path = STATE, intel_dir: Path = INTEL,
         report_path: Path = REPORT, universe_path: Path = UNIVERSE,
@@ -533,6 +551,32 @@ def run(*, budget_s: float = 300.0, write: bool = True, fetch: Fetch | None = No
         doc = {"generated_utc": stamp, "organ": ORGAN, "mode": "LIVE",
                "verdict": UNMEASURED, "liveness": liveness(history, now),
                "why": f"{UNMEASURED}: universe registry {universe_path} missing or unreadable"}
+        if write:
+            _atomic(report_path, doc)
+        return doc
+
+    # THE FETCH GATE. Inside the spacing the pass reaches nothing, writes no history (it learned
+    # nothing about GitHub) and no state, and rewrites the report so its age measures this organ's
+    # clock rather than how late the cycle ran. The last pass's counts ride along, labelled as such.
+    spacing_h = float(MIN_FETCH_INTERVAL_H if policy.get("min_fetch_interval_h") is None
+                      else policy["min_fetch_interval_h"])
+    last_fetch = _last_fetch(history)
+    if last_fetch is not None and now - last_fetch < timedelta(hours=spacing_h):
+        next_due = (last_fetch + timedelta(hours=spacing_h)).isoformat(timespec="seconds")
+        prev = _load(report_path, {})
+        prev = prev if isinstance(prev, dict) else {}
+        live = liveness(history, now)
+        verdicts = {v["verdict"] for v in live.values()}
+        doc = {**prev, "generated_utc": stamp, "organ": ORGAN, "mode": "LIVE",
+               "verdict": ("RED" if "RED" in verdicts else "GREEN" if "GREEN" in verdicts
+                           else UNMEASURED),
+               "liveness": live, "fetched": False,
+               "status": (f"SKIPPED: last fetch {last_fetch.isoformat(timespec='seconds')}, "
+                          f"next due {next_due} (spacing {spacing_h:g}h)"),
+               "last_fetch_utc": last_fetch.isoformat(timespec="seconds"),
+               "next_due_utc": next_due,
+               "last_pass_generated_utc": prev.get("last_pass_generated_utc")
+               or prev.get("generated_utc")}
         if write:
             _atomic(report_path, doc)
         return doc
@@ -737,6 +781,9 @@ def run(*, budget_s: float = 300.0, write: bool = True, fetch: Fetch | None = No
     doc = {
         "generated_utc": stamp, "organ": ORGAN, "mode": "LIVE",
         "verdict": verdict, "liveness": live,
+        "fetched": True, "status": "FETCHED",
+        "last_fetch_utc": stamp, "last_pass_generated_utc": stamp,
+        "next_due_utc": (now + timedelta(hours=spacing_h)).isoformat(timespec="seconds"),
         "pass": {"online": online, "repos_reached": reached_n, "lane_reached": dict(lane_reached),
                  "rows_donated": {seat: len(rs) for seat, rs in by_seat.items()},
                  "rows_total": len(rows), "duplicates_dropped": dupes,
@@ -826,6 +873,7 @@ def main(argv: list[str] | None = None) -> int:
           f"donated {p.get('rows_donated')}, dupes {p.get('duplicates_dropped')}, "
           f"discovered {p.get('discovered')}, queue {p.get('queue_depth')}, "
           f"calls {p.get('api_calls')}, stopped_by {p.get('stopped_by')}")
+    print(f"  {doc.get('status', '')}")
     for seat, v in (doc.get("liveness") or {}).items():
         print(f"  {seat:14} {v['verdict']:10} rows_in_window={v.get('rows_in_window')}")
     return 0

@@ -264,6 +264,43 @@ def test_check_reads_absent_as_unmeasured_and_old_as_red(tmp_path: Path) -> None
     assert gm.check(tmp_path / "report.json", now=NOW + timedelta(hours=7))[0] == 1
 
 
+def test_a_pass_inside_the_spacing_rewrites_the_report_and_fetches_nothing(
+        tmp_path: Path) -> None:
+    """Two clocks reach this organ (the leg and the research-report clock). The second inside
+    the spacing must not hit GitHub, but it must rewrite the report: that is what makes the
+    issue board's 3600 s row honest rather than a row the cycle's lateness can turn STALLED."""
+    seeds = _seeds(tmp_path)
+    first = _run(tmp_path, Fake(_routes()), seeds)
+    assert first["fetched"] and first["status"] == "FETCHED"
+    state_before = (tmp_path / "state.json").read_text("utf-8")
+    later = NOW + timedelta(minutes=20)
+    fake = Fake(_routes())
+    doc = _run(tmp_path, fake, seeds, later)
+    assert fake.calls == []                                   # not even the rate-limit probe
+    assert doc["fetched"] is False and doc["status"].startswith("SKIPPED")
+    assert doc["generated_utc"] == later.isoformat(timespec="seconds")
+    assert doc["next_due_utc"] == (NOW + timedelta(hours=gm.MIN_FETCH_INTERVAL_H)).isoformat(
+        timespec="seconds")
+    assert doc["pass"] == first["pass"]                       # last results' counts kept
+    assert doc["last_pass_generated_utc"] == first["generated_utc"]
+    assert doc["verdict"] == first["verdict"]
+    assert (tmp_path / "state.json").read_text("utf-8") == state_before   # no phantom history
+    on_disk = json.loads((tmp_path / "report.json").read_text("utf-8"))
+    assert on_disk["generated_utc"] == doc["generated_utc"]
+    assert gm.check(tmp_path / "report.json", now=later)[0] == 0
+    # Past the spacing the next invocation fetches again: the mining rate stays hourly.
+    again = Fake(_routes())
+    doc = _run(tmp_path, again, seeds, NOW + timedelta(hours=1))
+    assert doc["fetched"] and again.calls
+
+
+def test_the_issue_board_watches_the_report_hourly() -> None:
+    import issue_board
+    row = next(r for r in issue_board.CADENCE if r[0] == "github_repo_miner")
+    assert row[2] == 3600 and row[3] == "research/github_repo_miner.py"
+    assert gm.MIN_FETCH_INTERVAL_H < 1.0       # spacing never slows mining below hourly
+
+
 def test_red_raises_the_issue_board_alarm_and_green_clears_it(tmp_path: Path) -> None:
     import issue_board
     assert "GITHUB_MINER_ALARM.txt" in {a[0] for a in issue_board.ALARMS}

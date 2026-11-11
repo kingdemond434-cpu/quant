@@ -183,9 +183,12 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
-    # The GitHub repo miner (intel department) and its pulse (core). The miner refreshes its own
-    # report; the pulse takes an argument, so it has no auto-repair here.
-    ("github_repo_miner", "desks/mt5/reports/GITHUB_REPO_MINER.json", 21600,
+    # The GitHub repo miner (intel department) and its pulse (core). The miner rewrites its report
+    # on EVERY invocation -- a pass inside its fetch spacing writes "SKIPPED, next due" with the
+    # last pass's counts -- so the report is hourly-fresh and this row's 3600 gives it the
+    # research-report clock as well as the cycle leg. The pulse takes an argument, so it has no
+    # auto-repair here.
+    ("github_repo_miner", "desks/mt5/reports/GITHUB_REPO_MINER.json", 3600,
      "research/github_repo_miner.py"),
     ("github_miner_alive", "desks/mt5/reports/github_miner_alive_fence.json", 3600, None),
 )
