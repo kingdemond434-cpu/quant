@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "judge_capacity": {
+   "hypothesis": "Publishing the judge's first-terminal verdicts per UTC day for seven days against the 150k/day floor, and a five-stage miners -> intake -> judge -> cert -> clock queue model with a six-hour arrival > service alarm, names the stage that caps the pipe every hour, so a starved or saturated judge is seen as a named stage and a shortfall per day instead of a single 24h number.",
+   "metric": {
+    "gain": "PRODUCTIVITY",
+    "metric": "n_alarms",
+    "better": "down",
+    "organ": "report:CAPACITY_MODEL.json"
+   },
+   "falsifier": {
+    "metric": "n_unmeasured_stages",
+    "op": ">=",
+    "threshold": 5,
+    "after": "14 days in which every stage stays UNMEASURED on the box: the model reads nothing and the artifacts it joins are not where it looks"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
