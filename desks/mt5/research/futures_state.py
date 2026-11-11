@@ -750,18 +750,65 @@ def fetch_text(url: str, timeout: float = 40.0) -> str:
     return _polite(url, "text/html,text/csv,*/*;q=0.8", timeout)
 
 
-def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
-    """robots.txt for the URL's host, read with our own UA. A missing file (404) allows, as the
-    standard says; any other failure to read it does NOT allow, so an unread policy is never
-    treated as a yes."""
+#: robots.txt verdicts (RFC 9309). ALLOWED and DISALLOWED come from rules that were read (or from
+#: a 404/410, which means there are none); REFUSED (401/403/429/451) and UNMEASURED (5xx, a network
+#: error, a challenge page, any other status) mean the policy was never read, and neither fetches.
+ROBOTS_ALLOWED, ROBOTS_DISALLOWED = "ALLOWED", "DISALLOWED"
+ROBOTS_REFUSED, ROBOTS_UNMEASURED = "REFUSED", "UNMEASURED"
+ROBOTS_NO_RULES = frozenset({404, 410})
+_CHALLENGE = ("<html", "<!doctype", "cf-chl", "captcha", "just a moment", "attention required")
+
+
+def robots_verdict(url: str, get_text: Callable[[str], str], *, ua: str = UA
+                   ) -> tuple[str, str]:
+    """(verdict, why) for fetching `url` as `ua`, by the host's robots.txt (RFC 9309).
+
+    `get_text` raises `HardStop` for 401/403/429/451 and `FetchError` / `HTTPError` (with the
+    status, or None for a network failure) for anything else that is not a 2xx. Only ALLOWED
+    may fetch."""
     import urllib.robotparser
     p = urllib.parse.urlsplit(url)
-    rp = urllib.robotparser.RobotFileParser()
+    robots = f"{p.scheme}://{p.netloc}/robots.txt"
     try:
-        rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
+        text = get_text(robots)
+    except HardStop as exc:
+        return ROBOTS_REFUSED, f"robots.txt HTTP {exc.code}"
     except (urllib.error.HTTPError, FetchError) as exc:
-        return getattr(exc, "code", None) == 404
-    return rp.can_fetch(UA, url)
+        code = getattr(exc, "code", None)
+        if code in ROBOTS_NO_RULES:
+            return ROBOTS_ALLOWED, f"robots.txt HTTP {code}: no rules"
+        if code in HARD_STOP:
+            return ROBOTS_REFUSED, f"robots.txt HTTP {code}"
+        return ROBOTS_UNMEASURED, f"robots.txt {'HTTP ' + str(code) if code else 'unreachable'}"
+    except Exception as exc:                       # a transport that raised something else
+        return ROBOTS_UNMEASURED, f"robots.txt {type(exc).__name__}"
+    head = (text or "")[:2048].lower()
+    if any(m in head for m in _CHALLENGE):
+        # An HTML page where a rules file should be is a challenge or a portal, not a policy.
+        return ROBOTS_UNMEASURED, "robots.txt answered with a page, not rules (challenge)"
+    rp = urllib.robotparser.RobotFileParser()
+    rp.parse(text.splitlines())
+    if rp.can_fetch(ua, url):
+        return ROBOTS_ALLOWED, "robots.txt allows"
+    return ROBOTS_DISALLOWED, "robots.txt disallows"
+
+
+def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
+    """True only on a robots.txt that allows our UA (or a 404/410: no rules). Any other failure
+    to read it does NOT allow, so an unread policy is never treated as a yes. A hard stop on the
+    robots file itself still propagates, so the caller records it against the source."""
+    stop: list[HardStop] = []
+
+    def _get(u: str) -> str:
+        try:
+            return get_text(u)
+        except HardStop as exc:
+            stop.append(exc)
+            raise
+    verdict, _why = robots_verdict(url, _get)
+    if stop:
+        raise stop[0]
+    return verdict == ROBOTS_ALLOWED
 
 
 def mof_sign(pair: str) -> float:

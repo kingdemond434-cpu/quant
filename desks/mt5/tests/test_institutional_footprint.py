@@ -25,6 +25,10 @@ from research.countries.institutional import ontology as onto  # noqa: E402
 
 from research import institutional_footprint as ifp  # noqa: E402
 
+#: A row whose terms were read and cited (the shape the terms gate requires before any request).
+CITED = {"terms_clause": "public data, free reuse", "terms_url": "https://p/terms",
+         "terms_read_at": "2026-11-11"}
+
 
 @pytest.fixture()
 def lake(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -271,7 +275,8 @@ def test_active_is_measured_not_declared_and_decays(lake: Path) -> None:
 
 def test_the_watcher_opens_a_future_source_when_it_publishes(lake: Path) -> None:
     rows = [{"id": "institutional.us.finra.slate_securities_lending", "declared_status": "WATCH",
-             "fetch": {"kind": "watch", "probe": "https://p", "markers": ["SLATE data is now"]}}]
+             "fetch": {"kind": "watch", "probe": "https://p", "markers": ["SLATE data is now"]},
+             **CITED}]
     st = ifp.watch(rows, lambda url: (200, b"nothing yet", ""), deadline=1e18)
     assert st[rows[0]["id"]]["status"] == "WATCH"
     st = ifp.watch(rows, lambda url: (200, b"... SLATE data is now available ...", ""),
@@ -344,7 +349,7 @@ def test_ftd_rows_are_stamped_at_the_file_posting() -> None:
 def test_a_revised_series_never_reaches_a_state_or_a_cell(lake: Path,
                                                           monkeypatch: pytest.MonkeyPatch) -> None:
     row = {"id": "institutional.us.fed.h8_bank_balance_sheet", "targets": ["US500"],
-           "pit_grade": "LATEST_REVISED",
+           "pit_grade": "LATEST_REVISED", "pit_note": "H.8 Friday 16:15 ET",
            "fetch": {"kind": "fred_csv", "series": {"bank_securities": "X"}}}
     csv = "DATE,X\n" + "\n".join(f"2020-01-{d:02d},{d}" for d in range(1, 29)) + "\n"
     monkeypatch.delenv("FRED_API_KEY", raising=False)
@@ -384,7 +389,8 @@ def test_alfred_keeps_the_first_vintage_at_its_release_day(monkeypatch: pytest.M
 def test_a_series_mints_only_with_sixty_vintages(lake: Path,
                                                  monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ifp, "_may_hunt", lambda s: True)
-    row = {"id": "institutional.us.x.y", "targets": ["US500"], "pit_grade": "FIRST_RELEASE"}
+    row = {"id": "institutional.us.x.y", "targets": ["US500"], "pit_grade": "FIRST_RELEASE",
+           "pit_note": "stamped at release"}
     for n, want in ((ifp.MIN_VINTAGES - 1, False), (ifp.MIN_VINTAGES, True)):
         df = pd.DataFrame({"event_time": pd.date_range("2020-01-01", periods=n, freq="D",
                                                        tz="UTC"), "v": np.arange(float(n))})
@@ -438,10 +444,138 @@ def test_a_role_ruling_closes_the_role_gap(lake: Path) -> None:
 
 
 def test_an_atlas_url_is_verified_on_the_box_and_a_dead_one_is_re_asked(lake: Path) -> None:
-    rows = [{"id": "institutional.xx.a.b", "url": "https://a/b"}]
+    rows = [{"id": "institutional.xx.a.b", "url": "https://a/b", **CITED}]
     st = ifp.verify_urls(rows, lambda url: (404, b"", ""), deadline=1e18)
     assert st[rows[0]["id"]]["status"] == "RETRY"
     st = ifp.verify_urls(rows, lambda url: (404, b"", ""), deadline=1e18)
     assert st[rows[0]["id"]]["status"] == "BROKEN"
     st = ifp.verify_urls(rows, lambda url: (200, b"ok", ""), deadline=1e18)
     assert st[rows[0]["id"]]["status"] == "VERIFIED"
+
+
+# ------------------------------------------------------------------ PIT: the row must say when
+def test_a_frame_without_its_atlas_row_or_pit_note_is_never_point_in_time(
+        lake: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The frame's own FIRST_RELEASE grade says the value is unrevised, never WHEN it was public.
+    A missing or unreadable roster leaves `by_id.get(sid)` None: that must refuse, not fall back
+    to the frame's grade, or the NY Fed frames pass again."""
+    sid = "institutional.us.nyfed.repo_reverse_repo_operations"
+    df = pd.DataFrame({"event_time": pd.date_range("2020-01-01", periods=80, freq="D",
+                                                   tz="UTC"), "reverse_repo": np.arange(80.0)})
+    ifp.write_frame(sid, df, lag_hours=24, pit_grade=ifp.FIRST_RELEASE)
+    frame = ifp.read_frame(sid)
+    assert not ifp.pit_ok(frame, None)
+    assert not ifp.pit_ok(frame, {"id": sid, "pit_grade": "FIRST_RELEASE"})
+    assert not ifp.pit_ok(frame, {"id": sid, "pit_note": "  "})
+    assert ifp.pit_ok(frame, {"id": sid, "pit_note": "RRP take-up 13:15 ET"})
+    for roster in (lake / "missing.yaml", lake / "unreadable.yaml"):
+        if roster.name == "unreadable.yaml":
+            roster.write_text("sources: [unclosed", "utf-8")
+        monkeypatch.setattr(ifp, "ROSTER", roster)
+        assert ifp.load_roster() == []
+        assert "nyfed.rrp_chg_z" not in ifp.macro_features()
+
+
+# ------------------------------------------------------------------ honest access
+class _Raw:
+    """A recording wire: answers by URL, counts every request that would have left the box."""
+
+    def __init__(self, answers: dict[str, tuple[int | None, bytes, str]]) -> None:
+        self.answers = answers
+        self.sent: list[tuple[str, str]] = []
+
+    def __call__(self, url: str, ua: str, binary: bool) -> tuple[int | None, bytes, str]:
+        self.sent.append((url, ua))
+        for key, ans in self.answers.items():
+            if url.endswith(key):
+                return ans
+        return 200, b"page", ""
+
+
+@pytest.mark.parametrize("robots,verdict", [
+    ((200, b"User-agent: *\nAllow: /\n", ""), "ALLOWED"),
+    ((200, b"User-agent: *\nDisallow: /\n", ""), "DISALLOWED"),
+    ((404, b"", "HTTP 404"), "ALLOWED"),
+    ((410, b"", "HTTP 410"), "ALLOWED"),
+    ((401, b"", "HTTP 401"), "REFUSED"),
+    ((403, b"", "HTTP 403"), "REFUSED"),
+    ((429, b"", "HTTP 429"), "REFUSED"),
+    ((451, b"", "HTTP 451"), "REFUSED"),
+    ((500, b"", "HTTP 500"), "UNMEASURED"),
+    ((503, b"", "HTTP 503"), "UNMEASURED"),
+    ((None, b"", "URLError: timed out"), "UNMEASURED"),
+    ((200, b"<!DOCTYPE html><title>Just a moment...</title>", ""), "UNMEASURED"),
+])
+def test_robots_follows_rfc_9309_and_only_allowed_fetches(robots: Any, verdict: str) -> None:
+    raw = _Raw({"/robots.txt": robots})
+    t = ifp.PoliteTransport(1e18, raw=raw)
+    code, _body, err = t("https://h.example/data")
+    assert t.counts.get(f"robots_{verdict.lower()}") == 1
+    pages = [u for u, _ua in raw.sent if not u.endswith("/robots.txt")]
+    if verdict == "ALLOWED":
+        assert pages == ["https://h.example/data"] and code == 200
+    else:
+        assert pages == [] and ifp.not_fetched(err) and code is None
+
+
+@pytest.mark.parametrize("status", [429, 500, 503, 403])
+def test_a_429_or_5xx_on_a_page_stops_the_host_for_the_pass_without_retry(status: int) -> None:
+    raw = _Raw({"/robots.txt": (404, b"", "HTTP 404"), "/a": (status, b"", f"HTTP {status}")})
+    t = ifp.PoliteTransport(1e18, raw=raw)
+    assert t("https://h.example/a")[0] == status
+    code, _b, err = t("https://h.example/b")
+    assert code is None and ifp.not_fetched(err) and "host stopped" in err
+    assert [u for u, _ in raw.sent if not u.endswith("robots.txt")] == ["https://h.example/a"]
+    assert t("https://other.example/b")[0] == 200       # another host is not punished
+    assert t.report()["stopped_hosts"] == {"h.example": f"HTTP {status}"}
+
+
+def test_the_identity_is_honest_and_never_a_placeholder(monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import futures_state as fs
+    monkeypatch.delenv("QUANT_EDGAR_UA", raising=False)
+    raw = _Raw({"/robots.txt": (404, b"", "HTTP 404")})
+    t = ifp.PoliteTransport(1e18, raw=raw)
+    t("https://www.sec.gov/files/data/fails-deliver-data/cnsfails202601a.zip")
+    t("https://markets.newyorkfed.org/api/x.json")
+    assert {ua for _u, ua in raw.sent} == {fs.UA}
+    monkeypatch.setenv("QUANT_EDGAR_UA", "Desk Research desk@real.example")
+    raw.sent.clear()
+    t("https://www.sec.gov/files/x.zip")
+    t("https://markets.newyorkfed.org/api/y.json")
+    assert [ua for _u, ua in raw.sent] == ["Desk Research desk@real.example"] * 2 + [fs.UA] * 2
+    src = (DESK / "research" / "institutional_footprint.py").read_text("utf-8")
+    assert "example.com" not in src and "Chrome" not in src
+
+
+def test_a_row_without_cited_terms_is_held_with_zero_requests(lake: Path) -> None:
+    sent: list[str] = []
+
+    def get(url: str) -> tuple[int | None, bytes, str]:
+        sent.append(url)
+        return 200, b"SLATE data is now available", ""
+    held = [{"id": "institutional.us.nyfed.reference_rates",
+             "fetch": {"kind": "nyfed_json", "url": "https://n/x", "date": "d", "value": "v"}},
+            {"id": "institutional.us.finra.slate_securities_lending", "declared_status": "WATCH",
+             "fetch": {"kind": "watch", "probe": "https://p", "markers": ["SLATE data is now"]}},
+            {"id": "institutional.xx.a.b", "url": "https://a/b"},
+            {"id": "institutional.xx.a.c", "url": "https://a/c", "terms_clause": "x",
+             "terms_url": "https://a/terms"}]                    # no terms_read_at: still HELD
+    fs_ = ifp.fetch_all(held, get=get, deadline=1e18)
+    ws = ifp.watch(held, get, deadline=1e18)
+    us = ifp.verify_urls(held, get, deadline=1e18)
+    assert sent == []
+    assert fs_["institutional.us.nyfed.reference_rates"]["outcome"] == "HELD"
+    assert ws["institutional.us.finra.slate_securities_lending"]["status"] == "WATCH"
+    assert us == {}
+    assert not any(ifp.terms_cited(r) for r in held)
+    assert ifp.verify_urls([{**held[2], **CITED}], get, deadline=1e18)[held[2]["id"]][
+        "status"] == "VERIFIED" and sent == ["https://a/b"]
+
+
+def test_a_url_the_transport_did_not_send_is_never_counted_broken(lake: Path) -> None:
+    rows = [{"id": "institutional.xx.a.b", "url": "https://a/b", **CITED}]
+    for _ in range(3):
+        st = ifp.verify_urls(rows, lambda url: (None, b"", "NOT_FETCHED: robots REFUSED"),
+                             deadline=1e18)
+    assert st[rows[0]["id"]]["status"] == "UNVERIFIED"
+    assert int(st[rows[0]["id"]].get("fails") or 0) == 0
