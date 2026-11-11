@@ -194,6 +194,28 @@
    "adapter": "none",
    "terms": "OWNED_ELSEWHERE",
    "note": "tick moat recorder and tape families (LCR, Breadth, Judge); not duplicated here"
+  },
+  {
+   "id": "bis_stats",
+   "adapter": "bis_sdmx",
+   "terms": "OPEN",
+   "url": "https://data.bis.org",
+   "rate_url": "https://stats.bis.org/api/v1/data/WS_CBPOL/M.{area}?format=csv&startPeriod={start}",
+   "cpi_url": "https://stats.bis.org/api/v1/data/WS_LONG_CPI/M.{areas}.628?format=csv&startPeriod={start}",
+   "areas": [
+    "GB",
+    "JP",
+    "CH",
+    "CA",
+    "AU",
+    "NZ",
+    "MX",
+    "ZA",
+    "TR"
+   ],
+   "history_start": "2000-01",
+   "citation": "Source: Bank for International Settlements, central bank policy rates (WS_CBPOL) and consumer prices (WS_LONG_CPI), BIS Data Portal, https://data.bis.org",
+   "note": "BIS statistics. Terms read from the box 2026-11-11 (data.bis.org/help/legal, 'Terms of permitted use of BIS statistics'): use is unrestricted provided the BIS is cited as the source when the statistics are reproduced, and the BIS offers the SDMX API itself. No published rate limit; the BIS may suspend an IP, so this reads at most once every 20 hours. Both key forms were confirmed on the box the same day (WS_CBPOL M.GB; WS_LONG_CPI M.GB+JP.628, unit 628 = index level). Monthly policy rates carry a long note on every row, so each area is one request and history starts in 2000 to stay under the fetcher's 2 MB reply cap. The euro-area code was not confirmed, so the ECB stays on FRED. An area the monthly price table does not carry (quarterly reporters) simply yields no bank: UNMEASURED, never filled."
   }
  ],
  "cftc_markets": [
@@ -1460,7 +1482,7 @@
    "mode": "reaction",
    "avail_lag_days": 55,
    "window": 120,
-   "note": "Central-bank reaction functions: each bank's policy rate minus a fixed-coefficient Taylor (1993) rule built from its own inflation, its own trailing average real rate and (where a series is held) its unemployment gap. Monthly, indexed by the month's first day and available 55 days later: after that month's CPI or HICP and labour releases. FRED serves the current vintage, so a seasonally revised index can differ slightly from the first print; the 12-month change keeps that small and the row says so instead of hiding it. Only banks whose series ids the desk already uses are listed. BoE, BoJ, SNB, BoC, RBA, RBNZ, Banxico, SARB and CBRT are a named gap until their CPI and unemployment ids are read from the FRED catalogue on the box: an id is never guessed.",
+   "note": "Central-bank reaction functions: each bank's policy rate minus a fixed-coefficient Taylor (1993) rule built from its own inflation, its own trailing average real rate and (where a series is held) its unemployment gap. Monthly, indexed by the month's first day and available 55 days later: after that month's CPI or HICP and labour releases. FRED serves the current vintage, so a seasonally revised index can differ slightly from the first print; the 12-month change keeps that small and the row says so instead of hiding it. THE ECB ROW IS INFLATION-ONLY: no euro-area unemployment series is held, so its gap term is zero and its residual is not comparable one-for-one with the Fed's. The other banks are in cb_reaction_bis (BIS rates and prices): the OECD ids FRED once carried for them were read on the box 2026-11-11 and are discontinued.",
    "series": [
     "DFF",
     "CPIAUCSL",
@@ -1494,6 +1516,113 @@
       "EURJPY",
       "EURGBP",
       "EURCHF"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cb_reaction_bis",
+   "mode": "reaction",
+   "bis": true,
+   "avail_lag_days": 75,
+   "window": 120,
+   "note": "The same Taylor-rule residual as cb_reaction for nine more central banks, with the policy rate and the price index from the BIS (source bis_stats) and unemployment from FRED where a live series was confirmed on the box 2026-11-11 (Japan, Canada, Australia, Mexico); the others are inflation-only, gap term zero, and not comparable one-for-one. Available 75 days after the month's first day: the national CPI prints within about seven weeks and the BIS table carried September 2026 on 11 November, so 75 days is after both. The inflation targets are each bank's published one (Switzerland's is the middle of its 0-2% range; South Africa's 4.5% was the midpoint in force over the history). A fixed target only shifts the residual's level.",
+   "series": [
+    "LRHUTTTTJPM156S",
+    "LRHUTTTTCAM156S",
+    "LRHUTTTTAUM156S",
+    "LRHUTTTTMXM156S"
+   ],
+   "banks": [
+    {
+     "id": "boe",
+     "rate": "BIS_CBPOL_GB",
+     "inflation": "BIS_CPI_GB",
+     "target": 2.0,
+     "targets": [
+      "GBPUSD",
+      "EURGBP",
+      "GBPJPY"
+     ]
+    },
+    {
+     "id": "boj",
+     "rate": "BIS_CBPOL_JP",
+     "inflation": "BIS_CPI_JP",
+     "unemployment": "LRHUTTTTJPM156S",
+     "target": 2.0,
+     "targets": [
+      "USDJPY",
+      "EURJPY",
+      "AUDJPY"
+     ]
+    },
+    {
+     "id": "snb",
+     "rate": "BIS_CBPOL_CH",
+     "inflation": "BIS_CPI_CH",
+     "target": 1.0,
+     "targets": [
+      "USDCHF",
+      "EURCHF"
+     ]
+    },
+    {
+     "id": "boc",
+     "rate": "BIS_CBPOL_CA",
+     "inflation": "BIS_CPI_CA",
+     "unemployment": "LRHUTTTTCAM156S",
+     "target": 2.0,
+     "targets": [
+      "USDCAD"
+     ]
+    },
+    {
+     "id": "rba",
+     "rate": "BIS_CBPOL_AU",
+     "inflation": "BIS_CPI_AU",
+     "unemployment": "LRHUTTTTAUM156S",
+     "target": 2.5,
+     "targets": [
+      "AUDUSD",
+      "AUDJPY"
+     ]
+    },
+    {
+     "id": "rbnz",
+     "rate": "BIS_CBPOL_NZ",
+     "inflation": "BIS_CPI_NZ",
+     "target": 2.0,
+     "targets": [
+      "NZDUSD"
+     ]
+    },
+    {
+     "id": "banxico",
+     "rate": "BIS_CBPOL_MX",
+     "inflation": "BIS_CPI_MX",
+     "unemployment": "LRHUTTTTMXM156S",
+     "target": 3.0,
+     "targets": [
+      "USDMXN"
+     ]
+    },
+    {
+     "id": "sarb",
+     "rate": "BIS_CBPOL_ZA",
+     "inflation": "BIS_CPI_ZA",
+     "target": 4.5,
+     "targets": [
+      "USDZAR"
+     ]
+    },
+    {
+     "id": "cbrt",
+     "rate": "BIS_CBPOL_TR",
+     "inflation": "BIS_CPI_TR",
+     "target": 5.0,
+     "targets": [
+      "USDTRY"
      ]
     }
    ]

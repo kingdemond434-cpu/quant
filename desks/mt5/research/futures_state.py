@@ -993,6 +993,109 @@ def _feature_cols(frame: pd.DataFrame) -> list[str]:
     return cols
 
 
+# --------------------------------------------------------------- BIS policy rates and prices
+
+#: A reply this close to the polite fetcher's 2 MB cap may have been cut, and a cut reply loses
+#: its NEWEST rows: it is refused rather than stored.
+BIS_MAX_CHARS = 1_900_000
+#: BIS refreshes these monthly tables every few days; one read a day is plenty.
+BIS_REFETCH_H = 20
+
+
+def parse_bis_csv(text: str, unit: str | None = None) -> pd.DataFrame:
+    """BIS SDMX CSV -> one column per REF_AREA, indexed by period (a month is its first day).
+
+    Columns are read by NAME (FREQ, REF_AREA, TIME_PERIOD, OBS_VALUE, and UNIT_MEASURE when
+    `unit` filters on it), because the policy-rate table carries long quoted notes with commas.
+    Anything else, a page of HTML included, parses to nothing."""
+    import csv
+    import io
+    cols: dict[str, dict[pd.Timestamp, float]] = {}
+    try:
+        rows = csv.DictReader(io.StringIO(text))
+        if not {"REF_AREA", "TIME_PERIOD", "OBS_VALUE"} <= set(rows.fieldnames or []):
+            return pd.DataFrame()
+        for r in rows:
+            if unit is not None and str(r.get("UNIT_MEASURE")) != unit:
+                continue
+            t = pd.to_datetime(str(r.get("TIME_PERIOD")), utc=True, errors="coerce")
+            v = pd.to_numeric(r.get("OBS_VALUE"), errors="coerce")
+            if pd.notna(t) and pd.notna(v):
+                cols.setdefault(str(r["REF_AREA"]), {})[t] = float(v)
+    except csv.Error:
+        return pd.DataFrame()
+    return pd.DataFrame(cols).sort_index()
+
+
+def drop_carried_tail(df: pd.DataFrame) -> pd.DataFrame:
+    """Blank a series' LAST value when it repeats the one before it exactly. A price index
+    printing the same six decimals two months running is the publisher carrying the old value
+    forward until the real one arrives (seen for Japan, 2026-09, on the box read of
+    2026-11-11); the month is re-read on a later pass. Earlier repeats are left alone."""
+    out = df.copy()
+    for c in out.columns:
+        v = out[c].dropna()
+        if len(v) >= 2 and v.iloc[-1] == v.iloc[-2]:
+            out.loc[v.index[-1], c] = np.nan
+    return out
+
+
+def bis_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
+                state: dict[str, Any], notes: list[dict[str, Any]],
+                now: datetime | None = None) -> pd.DataFrame:
+    """Monthly policy rates (WS_CBPOL) and consumer price indices (WS_LONG_CPI, unit 628) for
+    the row's areas -> columns BIS_CBPOL_<area> and BIS_CPI_<area>.
+
+    One request per area for rates (each row repeats a long note, so areas are never batched)
+    and one for all the price indices. The first read asks for history from `history_start`,
+    later reads for the last two years, and what is held is kept under what is newly read.
+    Fetches at most every BIS_REFETCH_H hours; offline or stopped, it returns what is held."""
+    sid = str(src.get("id") or "bis_stats")
+    now = now or datetime.now(UTC)
+    paths = {"CBPOL": RAW / "bis_cbpol.parquet", "CPI": RAW / "bis_cpi.parquet"}
+    held = {k: (pd.read_parquet(p) if p.exists() else pd.DataFrame()) for k, p in paths.items()}
+    areas = [str(a) for a in src.get("areas") or []]
+    last = pd.to_datetime(state.get("bis_last_fetch"), utc=True, errors="coerce")
+    due = pd.isna(last) or (pd.Timestamp(now) - last) >= pd.Timedelta(hours=BIS_REFETCH_H)
+    if get_text is not None and src.get("terms") == "OPEN" and areas and due and \
+            sid not in state.get("hard_stops", {}):
+        def start(key: str) -> str:
+            return (str(src.get("history_start", "2000-01")) if held[key].empty
+                    else f"{now.year - 2}-{now.month:02d}")
+        try:
+            got: dict[str, list[pd.DataFrame]] = {"CBPOL": [], "CPI": []}
+            jobs: list[tuple[str, str, str | None]] = [
+                ("CBPOL", str(src["rate_url"]).format(area=a, start=start("CBPOL")), None)
+                for a in areas]
+            jobs.append(("CPI", str(src["cpi_url"]).format(areas="+".join(areas),
+                                                           start=start("CPI")), "628"))
+            for key, url, unit in jobs:
+                text = get_text(url)
+                if len(text) >= BIS_MAX_CHARS:
+                    notes.append({"source": sid, "status": "TRUNCATED", "table": key})
+                    continue
+                df = parse_bis_csv(text, unit)
+                if df.empty:
+                    notes.append({"source": sid, "status": "UNPARSED", "table": key})
+                    continue
+                got[key].append(df)
+            for key, parts in got.items():
+                if parts:
+                    new = pd.concat(parts, axis=1)
+                    new = new.loc[:, ~new.columns.duplicated()]
+                    held[key] = new.combine_first(held[key]).sort_index()
+                    _atomic_parquet(paths[key], held[key])
+            state["bis_last_fetch"] = now.isoformat(timespec="seconds")
+        except HardStop as hs:
+            state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
+        except Exception as exc:
+            notes.append({"source": sid, "error": f"{type(exc).__name__}"})
+    out = [held["CBPOL"].add_prefix("BIS_CBPOL_"),
+           drop_carried_tail(held["CPI"]).add_prefix("BIS_CPI_")]
+    out = [f for f in out if not f.empty]
+    return pd.concat(out, axis=1).sort_index() if out else pd.DataFrame()
+
+
 def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any] | None,
                         state: dict[str, Any], bars: Callable[[str], pd.DataFrame | None],
                         get_text: Callable[[str], str] | None = None,
@@ -1074,6 +1177,7 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
 
     fred = sources.get("fred_rates") or {}
     fkey = next((os.environ.get(k) for k in fred.get("key_env") or [] if os.environ.get(k)), "")
+    bis: pd.DataFrame | None = None
     for cv in [*(registry.get("fred_curves") or []), *(registry.get("fred_sets") or [])]:
         if cv.get("mode") == "first_release":
             live = (get if fred.get("terms") == "OPEN" and
@@ -1108,6 +1212,12 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
         if yc.empty and raw_path.exists():
             yc = pd.read_parquet(raw_path)
         yc = yc[[c for c in cv["series"] if c in yc.columns]].dropna(how="all") if len(yc) else yc
+        if cv.get("bis"):
+            # This set's rates and prices come from the BIS; FRED adds unemployment where held.
+            if bis is None:
+                bis = bis_collect(sources.get("bis_stats") or {}, get_text, state, notes, now)
+            if not bis.empty:
+                yc = bis.join(yc, how="outer") if len(yc) else bis
         if yc.empty or len(yc) < MIN_ROWS:
             continue
         lag = cv.get("avail_lag_days")

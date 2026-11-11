@@ -670,3 +670,161 @@ def test_reaction_mode_makes_one_series_per_bank_and_the_shipped_row_is_sound() 
     need = {b[k] for b in row["banks"] for k in ("rate", "inflation", "unemployment") if k in b}
     assert need == set(row["series"])
     assert all(b["targets"] and b["target"] > 0 for b in row["banks"])
+
+
+# ------------------------------------------------------------------ BIS rates and prices
+
+_BIS_RATE_HEAD = ("FREQ,REF_AREA,UNIT_MEASURE,UNIT_MULT,TIME_FORMAT,COMPILATION,DECIMALS,"
+                  "SOURCE_REF,SUPP_INFO_BREAKS,TITLE,TIME_PERIOD,OBS_VALUE,OBS_STATUS,OBS_CONF,"
+                  "OBS_PRE_BREAK")
+_BIS_CPI_HEAD = ("FREQ,REF_AREA,UNIT_MEASURE,UNIT_MULT,TIME_FORMAT,BREAKS,COVERAGE,DECIMALS,"
+                 "TITLE_TS,TIME_PERIOD,OBS_VALUE,OBS_CONF,OBS_PRE_BREAK,OBS_STATUS")
+
+
+def _bis_rate_csv(area: str, months: pd.DatetimeIndex, level: float = 1.0) -> str:
+    # The real table repeats a long note on every row; one with commas must be quoted.
+    note = '"From 2019 onwards policy rate; before that, mid-point of the target range, 1946."'
+    rows = [f"M,{area},368,0,,{note},4,Some Central Bank,, Central bank policy rates,"
+            f"{t:%Y-%m},{level + 0.01 * i:.2f},A,F," for i, t in enumerate(months)]
+    return "\n".join([_BIS_RATE_HEAD, *rows]) + "\n"
+
+
+def _bis_cpi_csv(areas: list[str], months: pd.DatetimeIndex, carried: str | None = None) -> str:
+    rows = []
+    for a in areas:
+        vals = [100.0 * 1.002 ** i for i in range(len(months))]
+        if a == carried:
+            vals[-1] = vals[-2]
+        for t, v in zip(months, vals, strict=True):
+            rows.append(f"M,{a},628,0,,,,,,{t:%Y-%m},{v:.6f},F,,A")
+            rows.append(f"M,{a},771,0,,,,,,{t:%Y-%m},2.5,F,,A")       # the yoy unit, not wanted
+    return "\n".join([_BIS_CPI_HEAD, *rows]) + "\n"
+
+
+def _bis_src(areas: list[str]) -> dict[str, Any]:
+    return {"id": "bis_stats", "terms": "OPEN", "areas": areas, "history_start": "2000-01",
+            "rate_url": "https://bis.test/WS_CBPOL/M.{area}?startPeriod={start}",
+            "cpi_url": "https://bis.test/WS_LONG_CPI/M.{areas}.628?startPeriod={start}"}
+
+
+def test_parse_bis_csv_reads_by_column_name_and_filters_the_unit() -> None:
+    months = pd.date_range("2026-01-01", periods=9, freq="MS", tz="UTC")
+    rate = fs.parse_bis_csv(_bis_rate_csv("CH", months))
+    assert list(rate.columns) == ["CH"] and len(rate) == 9
+    assert rate.index[0] == pd.Timestamp("2026-01-01", tz="UTC")       # a month is its first day
+    assert rate["CH"].iloc[-1] == pytest.approx(1.08)                  # the note's commas are inert
+    cpi = fs.parse_bis_csv(_bis_cpi_csv(["GB", "JP"], months), "628")
+    assert sorted(cpi.columns) == ["GB", "JP"] and len(cpi) == 9
+    assert cpi["GB"].iloc[0] == pytest.approx(100.0)                   # the index, never the 2.5
+    assert fs.parse_bis_csv(_bis_cpi_csv(["GB"], months), "999").empty
+    assert fs.parse_bis_csv("<html><body>Access denied</body></html>").empty
+    assert fs.parse_bis_csv("").empty
+
+
+def test_drop_carried_tail_blanks_only_a_repeated_last_value() -> None:
+    idx = pd.date_range("2026-05-01", periods=5, freq="MS", tz="UTC")
+    df = pd.DataFrame({"JP": [119.8, 119.8, 120.4, 120.649287, 120.649287],
+                       "GB": [159.2, 159.3, 159.7, 160.5, 161.1]}, index=idx)
+    out = fs.drop_carried_tail(df)
+    assert np.isnan(out["JP"].iloc[-1]) and out["JP"].iloc[-2] == 120.649287
+    assert out["JP"].iloc[1] == 119.8                                  # an earlier repeat stays
+    pd.testing.assert_series_equal(out["GB"], df["GB"])
+    assert df["JP"].iloc[-1] == 120.649287                             # the input is not touched
+
+
+def test_bis_collect_one_request_per_area_caches_and_respects_the_refetch_gate(
+        tmp_desk: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+    (tmp_desk / "raw").mkdir()
+    months = pd.date_range("2000-01-01", periods=60, freq="MS", tz="UTC")
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        calls.append(url)
+        if "WS_CBPOL" in url:
+            return _bis_rate_csv(url.split("M.")[1].split("?")[0], months)
+        return _bis_cpi_csv(["GB", "JP"], months, carried="JP")
+
+    state: dict[str, Any] = {}
+    notes: list[dict[str, Any]] = []
+    now = datetime(2026, 11, 11, 12, tzinfo=UTC)
+    out = fs.bis_collect(_bis_src(["GB", "JP"]), get_text, state, notes, now)
+    assert calls == ["https://bis.test/WS_CBPOL/M.GB?startPeriod=2000-01",
+                     "https://bis.test/WS_CBPOL/M.JP?startPeriod=2000-01",
+                     "https://bis.test/WS_LONG_CPI/M.GB+JP.628?startPeriod=2000-01"]
+    assert sorted(out.columns) == ["BIS_CBPOL_GB", "BIS_CBPOL_JP", "BIS_CPI_GB", "BIS_CPI_JP"]
+    assert notes == [] and state["bis_last_fetch"].startswith("2026-11-11T12")
+    # Japan's last month repeats the one before: served blank, kept raw on disk.
+    assert np.isnan(out["BIS_CPI_JP"].iloc[-1]) and not np.isnan(out["BIS_CPI_GB"].iloc[-1])
+    assert pd.read_parquet(tmp_desk / "raw" / "bis_cpi.parquet")["JP"].notna().all()
+    # Inside the refetch window nothing is asked and what is held comes back.
+    again = fs.bis_collect(_bis_src(["GB", "JP"]), get_text, state, notes, now + timedelta(hours=3))
+    assert len(calls) == 3
+    pd.testing.assert_frame_equal(again, out, check_freq=False)
+    # After it, only the last two years are asked for, and history is kept underneath.
+    later = fs.bis_collect(_bis_src(["GB", "JP"]), get_text, state, notes,
+                           now + timedelta(hours=21))
+    assert len(calls) == 6 and all(u.endswith("startPeriod=2024-11") for u in calls[3:])
+    assert len(later) == 60
+    # Offline: held data, no request.
+    offline = fs.bis_collect(_bis_src(["GB", "JP"]), None, {}, notes, now)
+    pd.testing.assert_frame_equal(offline, out, check_freq=False)
+
+
+def test_bis_collect_refuses_a_cut_reply_and_records_a_hard_stop(
+        tmp_desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from datetime import UTC, datetime
+    (tmp_desk / "raw").mkdir()
+    months = pd.date_range("2000-01-01", periods=40, freq="MS", tz="UTC")
+    now = datetime(2026, 11, 11, 12, tzinfo=UTC)
+    monkeypatch.setattr(fs, "BIS_MAX_CHARS", 3000)
+
+    def big(url: str) -> str:
+        return _bis_rate_csv("GB", months) if "WS_CBPOL" in url else "<html>busy</html>"
+
+    notes: list[dict[str, Any]] = []
+    out = fs.bis_collect(_bis_src(["GB"]), big, {}, notes, now)
+    # A reply near the fetcher's cap may have lost its newest rows: refused, never stored.
+    assert out.empty and not (tmp_desk / "raw" / "bis_cbpol.parquet").exists()
+    assert [n["status"] for n in notes] == ["TRUNCATED", "UNPARSED"]
+
+    calls: list[str] = []
+
+    def refused(url: str) -> str:
+        calls.append(url)
+        raise fs.HardStop(403, url)
+
+    state: dict[str, Any] = {}
+    assert fs.bis_collect(_bis_src(["GB", "JP"]), refused, state, notes, now).empty
+    assert len(calls) == 1 and state["hard_stops"]["bis_stats"]["code"] == 403
+    assert "bis_last_fetch" not in state
+    fs.bis_collect(_bis_src(["GB", "JP"]), refused, state, notes, now)
+    assert len(calls) == 1                                             # a stop is not retried
+    # Terms not OPEN: nothing is ever asked.
+    fs.bis_collect({**_bis_src(["GB"]), "terms": "UNVERIFIED"}, refused, {}, notes, now)
+    assert len(calls) == 1
+
+
+def test_shipped_bis_reaction_row_matches_its_source() -> None:
+    import json
+    reg = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
+    src = next(s for s in reg["sources"] if s["id"] == "bis_stats")
+    row = next(r for r in reg["fred_sets"] if r["id"] == "cb_reaction_bis")
+    assert src["terms"] == "OPEN" and "Bank for International Settlements" in src["citation"]
+    assert row["bis"] is True and row["mode"] == "reaction"
+    # After the national CPI and after the BIS table has picked it up.
+    assert row["avail_lag_days"] >= 75
+    for b in row["banks"]:
+        area = b["rate"].removeprefix("BIS_CBPOL_")
+        assert area in src["areas"] and b["inflation"] == f"BIS_CPI_{area}"
+        assert b["targets"] and b["target"] > 0
+        assert b.get("unemployment") is None or b["unemployment"] in row["series"]
+    assert {b["unemployment"] for b in row["banks"] if "unemployment" in b} == set(row["series"])
+    assert len({b["id"] for b in row["banks"]}) == len(row["banks"]) == len(src["areas"])
+    # Built end to end from BIS-shaped columns: one series per bank that has both inputs.
+    n = 120
+    idx = pd.date_range("2010-01-01", periods=n, freq="MS", tz="UTC")
+    yc = pd.DataFrame({"BIS_CBPOL_GB": np.linspace(1, 4, n),
+                       "BIS_CPI_GB": 100 * 1.002 ** np.arange(n),
+                       "BIS_CBPOL_NZ": np.linspace(1, 4, n)}, index=idx)
+    assert [o[0] for o in fs.fred_outputs(row, yc)] == ["fred_cb_reaction_bis_boe"]
