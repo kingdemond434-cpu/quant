@@ -98,6 +98,9 @@ def test_cot_candidate_reader_uses_owned_history_weekly(tmp_path, monkeypatch) -
 
     cot = orthogonal_sweep._cot_frame("XAUUSD")
 
-    assert list(cot) == ["net"]
+    # "net" is the cache's column; the in-git trader-class columns (mt5desk.cot_frames) are
+    # LEFT-joined beside it on the cache's own weekly labels, never adding or moving a row.
+    assert list(cot)[0] == "net"
+    assert cot["net"].notna().all()
     assert 120 <= len(cot) <= 140
     assert cot.index.dayofweek.nunique() == 1

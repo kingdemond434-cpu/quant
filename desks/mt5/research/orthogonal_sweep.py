@@ -364,11 +364,49 @@ def _cot_frame(symbol: str | None = None):
         try:
             frame = pd.read_parquet(cache, columns=[symbol])
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
-            series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+            labels = _release_labels(series.index)
+            if labels is None:
+                # FAIL CLOSED: no release clock means no point-in-time label, so no frame at all
+                # -- not the in-git path below (it needs the same schedule) and not the unlabelled
+                # JSON fallback after it. The reason is in COT_LABEL_REFUSALS.
+                return None
+            series.index = labels
             if len(series) >= 52:
-                return series.rename("net").to_frame()
+                return _cot_enriched(series.rename("net").to_frame(), symbol)
         except Exception:
             pass
+    # THE IN-GIT REPORTS, ON THE SAME RELEASE CLOCK (2026-10-06). Legacy, TFF and disaggregated
+    # positioning per symbol live under `data/cot*/` and were read by nothing on this path, so a
+    # positioning-CHANGE cell on any trader class had no input and a tree without the box's
+    # cache built every COT cell with `cot=None`. `mt5desk.cot_frames` labels them exactly as the
+    # cache above is labelled; its "net" is the same 52-week z of legacy non-commercial net.
+    if symbol:
+        try:
+            from mt5desk import cot_frames
+        except Exception as exc:
+            # FAIL CLOSED, as `_release_labels` does: the reader that carries the release clock
+            # is unavailable, so nothing below may stand in for it with an unlabelled series.
+            COT_LABEL_REFUSALS["in_git_frame"] = (
+                f"{type(exc).__name__}: {str(exc)[:160]} -- mt5desk.cot_frames unavailable, so "
+                "no point-in-time COT frame is built")
+            return None
+        COT_LABEL_REFUSALS.pop("in_git_frame", None)
+        try:
+            got = cot_frames.frame(symbol)
+        except Exception as exc:
+            # FAIL CLOSED (#238 follow-up, 2026-11-11). This branch used to `pass` and fall
+            # through to the JSON rows below, which were indexed on the report's AS-OF date --
+            # every row readable days before the CFTC published it, feeding the LIVE
+            # `EURUSD.cot_positioning` sleeve whenever the cache was absent. A reader that
+            # raised is a reader whose release clock is not trusted: no frame, and the reason
+            # is recorded as UNMEASURED.
+            COT_LABEL_REFUSALS["in_git_frame"] = (
+                f"UNMEASURED: {type(exc).__name__}: {str(exc)[:160]} -- "
+                "mt5desk.cot_frames.frame raised, so no point-in-time COT frame is built and "
+                "no unlabelled fallback stands in for it")
+            return None
+        if got is not None and len(got) >= 52:
+            return got
     for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
         doc = _read(BASE / "data" / name)
         rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
@@ -384,10 +422,71 @@ def _cot_frame(symbol: str | None = None):
                 continue
             for ncol in ("net", "noncomm_net", "net_position"):
                 if ncol in df.columns:
-                    return df[[ncol]].rename(columns={ncol: "net"}).dropna()
+                    return _labelled_fallback(df[ncol], name)
         except Exception:
             continue
     return None
+
+
+def _labelled_fallback(series, name: str):
+    """A JSON fallback's as-of-dated rows, re-labelled at their release on the BAR clock
+    (`cot_frames.to_release_clock`, built on `futures_state.cot_usable_from` + `to_bar_clock`),
+    or None (FAIL CLOSED, recorded) when the schedule cannot label them. An as-of label is a
+    look-ahead on every row, so an unlabelled row is never returned."""
+    try:
+        from mt5desk import cot_frames
+        labelled = cot_frames.to_release_clock(series.dropna())
+    except Exception as exc:
+        COT_LABEL_REFUSALS["json_fallback"] = (
+            f"UNMEASURED: {type(exc).__name__}: {str(exc)[:160]} -- {name} could not be "
+            "labelled at its release, so none of its rows is returned")
+        return None
+    COT_LABEL_REFUSALS.pop("json_fallback", None)
+    if labelled.empty:
+        return None
+    return labelled.rename("net").to_frame()
+
+
+#: Why the last COT label attempt refused, per call site, or empty. Read by the reporters; a
+#: refusal is a recorded reason, never a silent fallback.
+COT_LABEL_REFUSALS: dict[str, str] = {}
+
+
+def _release_labels(fridays):
+    """Report-week Fridays -> the first instant each report was public, or None (FAIL CLOSED).
+
+    THE TRUE RELEASE, NOT THE NOMINAL ONE (2026-10-07). Friday + COT_RELEASE_LAG_DAYS is right for
+    a normal week and EARLY for every report the CFTC published late: a closure on the Wednesday-
+    Friday (Thanksgiving, Juneteenth, Christmas weeks: released the next business day, ~20 h after
+    the Monday label) and the 2013, 2018-19 and 2025 appropriation lapses (weeks late).
+    `mt5desk.cot_frames.release_schedule` models both and never labels a normal week differently,
+    so the cache's rows and the in-git columns share one clock.
+
+    NO SCHEDULE, NO LABELS (#238 audit, 2026-10-07). If the schedule cannot be imported or raises,
+    this returns None and records why in `COT_LABEL_REFUSALS["release_labels"]`. Falling back to
+    the nominal lag would re-introduce exactly the look-ahead the schedule removes on every
+    delayed report, so the caller builds NO frame (and therefore no tradable row) instead."""
+    try:
+        from mt5desk import cot_frames
+        labels = cot_frames.relabel_weeks(fridays)
+    except Exception as exc:
+        COT_LABEL_REFUSALS["release_labels"] = (
+            f"{type(exc).__name__}: {str(exc)[:160]} -- the CFTC release schedule "
+            "(mt5desk.cot_frames) is unavailable, so no COT row is labelled and none is traded; "
+            "the nominal lag would read every delayed report early")
+        return None
+    COT_LABEL_REFUSALS.pop("release_labels", None)
+    return labels
+
+
+def _cot_enriched(base, symbol: str):
+    """The cache's frame plus every in-git positioning column, joined on its own labels. A
+    failure leaves the cache's frame exactly as it was: enrichment never costs the default."""
+    try:
+        from mt5desk import cot_frames
+        return cot_frames.enrich(base, symbol)
+    except Exception:
+        return base
 
 
 def _legs(symbol: str) -> tuple[str, str] | None:
@@ -532,6 +631,10 @@ NOT_SOURCED_HERE = {
                     "research/learned_miners, which trains each configuration once per panel "
                     "and charges its whole grid; a per-symbol sweep here would be an uncharged "
                     "second search and a full attention training per symbol",
+    "cot_positioning_flow": "the trader-class column, transform and mode are named by "
+                            "research/cot_positioning_flow.py, which charges its whole symbol x "
+                            "column x mode grid as trials; enumerating the family here at its "
+                            "defaults would be a second, uncharged search over the same cells",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
     "event_reaction": "its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's "

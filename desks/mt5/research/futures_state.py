@@ -317,6 +317,45 @@ def cftc_available(report_date: pd.Series, calendar: Mapping[str, Any] | None = 
     return pd.Series(pd.to_datetime(out, utc=True), index=report_date.index)
 
 
+#: CFTC publishes at 15:30 New York time on the release day.
+CFTC_RELEASE_NY: tuple[int, int] = (15, 30)
+NEW_YORK = "America/New_York"
+#: The MT5 bar index is BROKER wall time under a UTC tzinfo, and the broker clock is New York
+#: wall time + 7 h in both DST regimes (UTC+2 in winter, UTC+3 in summer).
+BAR_CLOCK_NY_OFFSET_H = 7
+
+
+def cftc_calendar() -> dict[str, Any]:
+    """The registry's `cftc_release_calendar` (closures, exact catch-up releases, windows)."""
+    cal = (_read(REGISTRY, {}) or {}).get("cftc_release_calendar")
+    return cal if isinstance(cal, dict) else {}
+
+
+def cot_usable_from(report_day: Any, calendar: Mapping[str, Any] | None = None,
+                    holidays: frozenset[pd.Timestamp] | None = None) -> pd.Timestamp:
+    """THE ONE RELEASE INSTANT: the true-UTC moment a COT report dated `report_day` was public,
+    15:30 New York on `cftc_release_day` (19:30 UTC in summer, 20:30 UTC in winter).
+
+    `calendar=None` reads the registry's own calendar, so a caller that passes nothing still gets
+    the closures and the shutdown catch-ups. This is a TRUE instant: anything that places it on
+    MT5 bars must go through `to_bar_clock` first, because the bar index is not UTC."""
+    cal = cftc_calendar() if calendar is None else calendar
+    day = pd.Timestamp(cftc_release_day(pd.Timestamp(report_day), cal, holidays)).normalize()
+    hh, mm = CFTC_RELEASE_NY
+    local = (day + pd.Timedelta(hours=hh, minutes=mm)).tz_localize(NEW_YORK)
+    return local.tz_convert("UTC")
+
+
+def to_bar_clock(ts_utc: Any) -> pd.Timestamp:
+    """A true UTC instant as the MT5 bar index stamps it: New York wall time + 7 h under a UTC
+    tzinfo. A naive input is read as UTC. Comparing a true-UTC release against bar labels
+    WITHOUT this reads the release 2 h (winter) or 3 h (summer) early."""
+    t = pd.Timestamp(ts_utc)
+    t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+    wall = t.tz_convert(NEW_YORK).tz_localize(None) + pd.Timedelta(hours=BAR_CLOCK_NY_OFFSET_H)
+    return wall.tz_localize("UTC")
+
+
 def daily_available(day: pd.Series) -> pd.Series:
     """A daily close is public the next BUSINESS day (FRED posts Friday's H.15 on Monday)."""
     d = pd.to_datetime(day, utc=True, errors="coerce").dt.tz_localize(None).dt.normalize()
@@ -762,6 +801,86 @@ def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
     except (urllib.error.HTTPError, FetchError) as exc:
         return getattr(exc, "code", None) == 404
     return rp.can_fetch(UA, url)
+
+
+#: `robots_verdict` outcomes. Only ALLOWED fetches; the other three are a recorded NO.
+ROBOTS_ALLOWED, ROBOTS_DISALLOWED = "ALLOWED", "DISALLOWED"
+ROBOTS_REFUSED, ROBOTS_UNMEASURED = "REFUSED", "UNMEASURED"
+#: A robots.txt that is gone says nothing: no rules (RFC 9309 2.3.1.3, "unavailable").
+ROBOTS_NO_RULES = frozenset({404, 410})
+_CHALLENGE = ("<html", "<!doctype", "cf-chl", "captcha", "just a moment", "challenge-platform")
+
+
+class RobotsRefused(Exception):
+    """A fetch `robots_verdict` did not allow. Carries the verdict; nothing is requested."""
+
+    def __init__(self, verdict: str, url: str, why: str):
+        super().__init__(f"{verdict}: {why}")
+        self.verdict, self.url, self.why = verdict, url, why
+
+
+def robots_verdict(url: str, get_text: Callable[[str], str] | None = None) -> tuple[str, str]:
+    """(verdict, why) for fetching `url`: a THIN WRAP of `robots_allow` that keeps its rule (read
+    with our own UA; an unread policy is never a yes) and names the outcomes it folds together:
+
+      * 401/403/429/451 on robots.txt (`HARD_STOP`)      -> REFUSED (the host said no);
+      * 404 or 410                                         -> no rules, so `robots_allow` decides
+        (it reads 404 as allow already; 410 is the same "unavailable" and is treated alike);
+      * a 5xx, a network error, or a body that is an HTML/challenge page instead of rules
+                                                           -> UNMEASURED;
+      * otherwise the file's own rules                     -> ALLOWED or DISALLOWED.
+    Only ALLOWED may fetch."""
+    seen: dict[str, Any] = {}
+    reader = get_text or fetch_text
+
+    def recording(u: str) -> str:
+        try:
+            text = reader(u)
+        except HardStop as exc:
+            seen["code"] = exc.code
+            raise
+        except (urllib.error.HTTPError, FetchError) as exc:
+            seen["code"] = getattr(exc, "code", None)
+            if seen["code"] == 410:
+                return ""                              # unavailable: no rules, as 404
+            raise
+        except Exception as exc:                       # network: no status at all
+            seen["code"], seen["error"] = None, f"{type(exc).__name__}: {exc}"[:160]
+            raise FetchError(None, u, seen["error"]) from exc
+        head = str(text or "")[:2048].lower()
+        if any(m in head for m in _CHALLENGE):
+            seen["challenge"] = True
+            raise FetchError(200, u, "robots.txt answered with an HTML/challenge page")
+        return text
+
+    try:
+        ok = robots_allow(url, recording)
+    except HardStop as exc:
+        return ROBOTS_REFUSED, f"robots.txt answered HTTP {exc.code}"
+    code = seen.get("code")
+    if seen.get("challenge"):
+        return ROBOTS_UNMEASURED, "robots.txt answered with an HTML/challenge page"
+    if code in HARD_STOP:
+        return ROBOTS_REFUSED, f"robots.txt answered HTTP {code}"
+    if "code" in seen and code not in ROBOTS_NO_RULES:
+        return ROBOTS_UNMEASURED, (seen.get("error") or f"robots.txt unreadable (HTTP {code})")
+    if ok:
+        return ROBOTS_ALLOWED, (f"no robots.txt (HTTP {code}): no rules" if "code" in seen
+                                else "robots.txt allows this path for our UA")
+    return ROBOTS_DISALLOWED, "robots.txt disallows this path for our UA"
+
+
+def gated_urlopen(url: str, timeout: float, *, context: Any = None,
+                  verdict: Callable[[str], tuple[str, str]] | None = None) -> Any:
+    """`urllib.request.urlopen` for a desk fetcher that is not on `polite_fetch` yet: our honest
+    `UA`, and only after `robots_verdict` says ALLOWED. Anything else raises `RobotsRefused`
+    BEFORE a request is made. (The CFTC fetchers `fetch_tff`, `fetch_cot`, `fetch_cot_disagg`
+    use it; `libs/data/robots_gate.py` (#831) is the intended single home once it lands.)"""
+    got, why = (verdict or robots_verdict)(url)
+    if got != ROBOTS_ALLOWED:
+        raise RobotsRefused(got, url, why)
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    return urllib.request.urlopen(req, timeout=timeout, context=context)
 
 
 def mof_sign(pair: str) -> float:
