@@ -55,7 +55,7 @@ from mt5desk.decision_core import (
     CLOSE_HOUR,
     GOLD_SYMBOL,
     MAX_TOTAL_REJECTIONS,
-    PROMOTED_MIN_EQUITY,
+    FUSION_RUIN_FLOOR_EUR,
     REJECTION_STREAK_WINDOW_H,
     addon_desc,
     addon_entries,
@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
     closed_trade_r,
@@ -4938,11 +4939,7 @@ def main() -> None:
         return
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
-    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03): every sizer and the heat cap read
-    # `size_eq`; the daily-loss rail and the published equity stay on the real number.
     from mt5desk.fusion_equity_reference import sizing_equity
-    size_eq = sizing_equity(equity)
-    st["sizing_equity"] = round(size_eq, 2)
 
     # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
     # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
@@ -5009,7 +5006,7 @@ def main() -> None:
 
     sleeves = sleeve_set()
     try:
-        sleeves = minlot_override_roster(sleeves, size_eq)
+        sleeves = minlot_override_roster(sleeves, sizing_equity(equity))
     except Exception as exc:
         # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
         # is cleared, so the pass sizes exactly as sovereignty sizes it.
@@ -5112,6 +5109,11 @@ def main() -> None:
                 log(f"daily-loss rail: resting gold brackets not cancelled "
                     f"({type(exc).__name__}: {exc}); they still carry their stops")
     save_state(st)
+    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03, mt5desk.fusion_equity_reference). The
+    # daily-loss rail above and the published equity read the real number; from here on `equity`
+    # is what every sizer, the promoted-sleeve gate and the heat cap size from.
+    equity = sizing_equity(equity)
+    st["sizing_equity"] = round(equity, 2)
     # THE FUSION BOOK FOR THE OTHER ACCOUNT'S FENCE (mt5desk.cross_account), every pass, so an E8
     # lane never reads a book older than this pass. Never takes the pass down.
     # Under the placement lock, from a reading taken under it (audit round 2, must-fix 2): a
@@ -5199,10 +5201,13 @@ def main() -> None:
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
-    if size_eq < PROMOTED_MIN_EQUITY:
+    # THE RUIN LINE, NOT THE OLD SIZE LINE (zuck 2026-11-05, D-20261105-042): below EUR 300 the
+    # promoted sleeves used to go dormant wholesale; each order is now judged on its own size
+    # (sovereignty, the 10% per-trade rail), so only below the ruin floor do they stand down.
+    if equity < FUSION_RUIN_FLOOR_EUR:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():
-            log(f"equity {size_eq:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
+            log(f"equity {equity:.0f} < {FUSION_RUIN_FLOOR_EUR:.0f}: promoted sleeves dormant")
     # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
     # trade. Deferred sleeves are named in the log rather than dropped quietly.
     #
@@ -5260,6 +5265,13 @@ def main() -> None:
     # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
     # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
     _pending_legs: dict[str, float] = {}
+    # ONE ORDER PER BOOK KEY: the rows `_book_key` folds onto one allocator cell share its one
+    # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
+    # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
+    # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
+    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
+                                                    else _book_key(_s, _book))
+                                  for _s in sleeves})
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
@@ -5278,6 +5290,13 @@ def main() -> None:
             _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
             _s["book_key"] = _key
+            if str(_s["name"]) in _aliases:
+                # The cell's fraction is already sent by its carrier. Zero, still sized by the
+                # book (allocator sovereignty: a book fraction of 0 sends no order), never the
+                # base ramp a non-book row would fall back to.
+                _s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]
+                log(f"ALIAS_FOLDED {_s['name']} -> {_s['alias_of']} on book key {_key}: one "
+                    f"order per key, sized at the key's {float(_book[_key]):.5f}")
         if cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
             # forgone sleeve is a missed-growth line once per sleeve per day.
@@ -5341,8 +5360,8 @@ def main() -> None:
                         _charge_basis = f"the {_lot_charge:.2f} lots already on the book"
                     else:
                         _lot_charge, _charge_basis = bracket_lane_lot(
-                            _s, size_eq, _pend["dist"], _pend["sym"])
-                    _s["q_charge"] = realised_q(size_eq, _pend["dist"], _s["symbol"],
+                            _s, equity, _pend["dist"], _pend["sym"])
+                    _s["q_charge"] = realised_q(equity, _pend["dist"], _s["symbol"],
                                                 _pend["sym"], lot=_lot_charge)
                 except Exception as _exc:
                     # UNPRICEABLE IS NOT PLACEABLE. The placement site refuses to size a sleeve
@@ -5395,7 +5414,7 @@ def main() -> None:
             # the venue's lot floor round it. `resolve_family_order` writes no state, so the
             # signal MARK is left for the executor to apply if it acts.
             try:
-                _plan = resolve_family_order(st, _s, size_eq, pending=_pending_legs)
+                _plan = resolve_family_order(st, _s, equity, pending=_pending_legs)
             except Exception as _exc:
                 _plan = {"ok": False, "stage": "resolve_failed",
                          "why": f"{type(_exc).__name__}: {_exc}"}
@@ -5406,7 +5425,7 @@ def main() -> None:
                 _pending_legs[_s["symbol"]] = (_pending_legs.get(_s["symbol"], 0.0)
                                                + float(_plan["side"]) * float(_plan["lot"]))
                 try:
-                    _s["q_charge"] = realised_q(size_eq, _plan["dist"], _s["symbol"],
+                    _s["q_charge"] = realised_q(equity, _plan["dist"], _s["symbol"],
                                                 _plan["sym"], lot=_plan["lot"])
                     _s["dist"] = _plan["dist"]
                     _s["q_charge_basis"] = (
@@ -5436,19 +5455,19 @@ def main() -> None:
             # by slice at each one's own distance to the basket's stop, plus the slice this pass
             # would add. A sleeve holding four slices and adding none is still holding four.
             try:
-                _plan = resolve_scalp_order(st, _s, size_eq)
+                _plan = resolve_scalp_order(st, _s, equity)
             except Exception as _exc:
                 _plan = {"ok": False, "stage": "resolve_failed",
                          "why": f"{type(_exc).__name__}: {_exc}"}
             _open_q, _open_why = 0.0, "no open basket"
             try:
                 _open_q, _open_why = scalp_open_basket_q(
-                    st, _s, size_eq, _plan.get("sym") if _plan.get("ok") else None)
+                    st, _s, equity, _plan.get("sym") if _plan.get("ok") else None)
             except Exception as _exc:                       # a charge never stops the pass
                 _open_why = f"open basket unpriceable ({type(_exc).__name__}: {_exc})"
             if _plan.get("ok"):
                 try:
-                    _new_q = realised_q(size_eq, _plan["dist"], _s["symbol"], _plan["sym"],
+                    _new_q = realised_q(equity, _plan["dist"], _s["symbol"], _plan["sym"],
                                         lot=_plan["per"])
                 except Exception as _exc:
                     _plan = {"ok": False, "stage": "unpriceable",
@@ -5479,18 +5498,18 @@ def main() -> None:
             # heat ledger and the order path could come to disagree about the same leg.
             _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
                                              _s.get("decay_faded"))
-    sleeves, heat_note = cap_by_heat(sleeves, size_eq, k_eff=k_eff)
+    sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
     # Hunt-certified family sleeves run their own replay-faithful executor -- AFTER the heat
     # cap, so an inadmissible sleeve never reaches it, and OUTSIDE the bracket loop, whose
     # session-window semantics they do not share.
     try:
-        run_family_sleeves(st, sleeves, size_eq)
+        run_family_sleeves(st, sleeves, equity)
     except Exception as exc:
         log(f"FAMILY-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     try:
-        run_scalp_sleeves(st, sleeves, size_eq)
+        run_scalp_sleeves(st, sleeves, equity)
     except Exception as exc:
         log(f"SCALP-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     # The net order per symbol across every sleeve's theoretical position -- measured, never
@@ -5765,7 +5784,7 @@ def main() -> None:
                         _rails.line(_oco.RAIL, sleeve=s["name"], symbol=s["symbol"], side=_leg,
                                     day=day_key, lot=lot, risk_frac=q_real, why=_w,
                                     lane=_oco_lane,
-                                    missed_growth_risk_usd=_missed_usd(size_eq, q_real))
+                                    missed_growth_risk_usd=_missed_usd(equity, q_real))
                 for _leg, _w in _xblocked.items():
                     log(f"[{s['name']}] {_leg} NOT SENT: {_w}")
                     if _rails_seen.get(f"cross_account_opposite/{s['name']}/{_leg}") != day_key:
@@ -5773,7 +5792,7 @@ def main() -> None:
                         _rails.line("cross_account_opposite", sleeve=s["name"],
                                     symbol=s["symbol"], side=_leg, day=day_key, lot=lot,
                                     risk_frac=q_real, why=_w,
-                                    missed_growth_risk_usd=_missed_usd(size_eq, q_real))
+                                    missed_growth_risk_usd=_missed_usd(equity, q_real))
                 if {"buy_stop", "sell_stop"} <= _all_blocked:
                     log(f"[{s['name']}] bracket NOT placed: every leg is fenced this pass; "
                         f"retried next pass")
