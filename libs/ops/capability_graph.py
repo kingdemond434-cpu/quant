@@ -821,7 +821,11 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/hypotheses/conversion_debt_seeds.json"),
          reads=("desks/mt5/data/hypotheses/miner_deepening_queue.json",
                 "desks/mt5/data/hypotheses/deepening_worked.jsonl",
-                "desks/mt5/reports/DEEPENING_BACKLOG.json")),
+                "desks/mt5/reports/DEEPENING_BACKLOG.json"),
+         # Its only decision edge is the recapture seeds the world crawler fetches, whose pages
+         # the compiler turns into candidates; price it through that compiler, as with
+         # alpha_registry and intake_catchup. No downstream evidence stays UNMEASURED.
+         billed_as=("miner_candidate_compiler",)),
     # ---------------------------------------------------------------------------------
     # DECLARED 2026-09-15, because a leg that declares nothing cannot be checked for
     # completion by anything -- which is how a leg returning exit 1 every hour went six days
