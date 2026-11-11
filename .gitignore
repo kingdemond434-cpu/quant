@@ -616,3 +616,6 @@ desks/mt5/data/bar_clock_probes.summary.json.tmp
 !desks/mt5/reports/admission_heavy_pass.json
 !desks/mt5/reports/pf_allocation.json
 !desks/mt5/reports/DAILY_CYCLE_STATE.json
+# the disk census (#880, hourly leg disk_census), carried by the same $reportPaths
+!desks/mt5/reports/DISK_CENSUS.json
+!desks/mt5/reports/DISK_CENSUS_HISTORY.jsonl
