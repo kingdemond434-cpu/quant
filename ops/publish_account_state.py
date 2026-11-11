@@ -40,7 +40,15 @@ OUT = ROOT / "desks" / "mt5" / "data" / "account_state.json"
 #: sizes and stops are the live account's own. It stays on the box for restore and reconcile.
 POSITIONS_REL = "desks/mt5/data/account_positions.json"
 POSITIONS = ROOT / POSITIONS_REL
+#: The one line that names the desk's execution terminal (mt5desk/config.py TERMINAL_FILE;
+#: broker_switch writes it). Read here directly so this organ imports nothing from the gateway.
+TERMINAL_FILE = ROOT / "desks" / "mt5" / "data" / "terminal_path.txt"
+#: The live account is Fusion. Any other server on the attached terminal (FTMO, E8, a demo) is
+#: the WRONG account, and its balance must never be published as this desk's.
+EXPECTED_SERVER_PREFIX = "FusionMarkets-"
+PAGE_MARKER = "ACCOUNT STATE REFUSED:"
 sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+sys.path.insert(0, str(ROOT))
 from research.mt5_session import attach_or_initialize  # noqa: E402
 
 
@@ -60,6 +68,46 @@ def _position(p: object) -> dict[str, object]:
                           if opened else None)}
 
 
+def _terminal_path() -> str | None:
+    """The configured terminal64.exe, or None when the file is missing or empty."""
+    try:
+        p = TERMINAL_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return p or None
+
+
+def _same_terminal(configured: str, attached_dir: str | None) -> bool:
+    """`terminal_info().path` is the terminal's DIRECTORY; the file names its executable."""
+    if not attached_dir:
+        return False
+    def norm(x: str) -> str:
+        return x.replace("/", "\\").rstrip("\\").lower()
+    conf = norm(configured)
+    if conf.endswith("\\terminal64.exe"):
+        conf = conf[: -len("\\terminal64.exe")]
+    return conf == norm(attached_dir)
+
+
+def _refuse(reason: str) -> int:
+    """FAIL CLOSED: leave the previous file in place and page the principal.
+
+    2026-11-11 (Desk health AS1). `attach_or_initialize` is called with no path and attaches to
+    whatever terminal the bridge already sees. The box runs TWO logged-in terminals in session 2,
+    Fusion and FTMO. If restart order ever made FTMO the bridge's default, this organ would publish
+    FTMO's ~$99.7k as the desk's balance -- the sizing input -- with nothing in the record noticing.
+    A stale file with its own timestamp is visible; a wrong account presented as current is not.
+    """
+    msg = f"{PAGE_MARKER} {reason}; previous account_state.json left in place"
+    print(msg)
+    try:
+        from libs.ops.principal_page import page
+        page(msg, marker=PAGE_MARKER, path=ROOT / "data" / "PRINCIPAL_ACTION.md")
+    except Exception as exc:  # the page is best-effort; the refusal itself never depends on it
+        print(f"page failed: {type(exc).__name__}: {exc}")
+    return 1
+
+
 def main() -> int:
     try:
         import MetaTrader5 as mt5
@@ -67,7 +115,8 @@ def main() -> int:
         print(f"MetaTrader5 unavailable: {type(exc).__name__}: {exc}")
         return 0
 
-    if not attach_or_initialize(mt5, timeout=15000):
+    terminal = _terminal_path()
+    if not attach_or_initialize(mt5, path=terminal, timeout=15000):
         # LEAVE THE OLD FILE ALONE. Writing a null-filled record here would turn "I could not
         # reach the terminal this minute" into a published verdict that the account is empty --
         # the same confusion the dashboard already shipped once.
@@ -78,6 +127,16 @@ def main() -> int:
     if info is None:
         print("account_info() returned None; previous file left in place")
         return 1
+    server = str(getattr(info, "server", "") or "")
+    if not server.startswith(EXPECTED_SERVER_PREFIX):
+        return _refuse(f"attached terminal is on server {server or '(none)'!r}, "
+                       f"not {EXPECTED_SERVER_PREFIX}*")
+    if terminal is not None:
+        tinfo = mt5.terminal_info()
+        attached = str(getattr(tinfo, "path", "") or "") if tinfo is not None else ""
+        if not _same_terminal(terminal, attached):
+            return _refuse(f"attached terminal {attached or '(unknown)'!r} is not "
+                           f"terminal_path.txt's {terminal!r}")
 
     now = datetime.now(UTC)
     day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
