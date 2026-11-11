@@ -76,7 +76,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # The cursor's staleness WAS a real signal, just about a different organ -- the gauntlet was
     # re-testing one head of the docket forever because the rotation key never advanced. That is
     # now its own row below, where it can be read as what it is.
-    # THE LLM REASONING ORGANS (2026-10-29, Hourly pass 21). Both ran UNCONTRACTED, so the
+    # THE MODEL-REASONING ORGANS (2026-10-29, Hourly sweep 21). Both ran UNCONTRACTED, so the
     # deepening task could sit on 0x800710E0 refusals and the DeepSeek seat could 404 every call
     # while the board read neither as a fault. Each now owes the artifact it writes every pass.
     "MT5-Deepening":      ("desks/mt5/reports/DEEPENING_THROUGHPUT.json", 120,
