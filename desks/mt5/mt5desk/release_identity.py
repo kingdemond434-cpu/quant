@@ -93,7 +93,6 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/WORLD_LAB.json",
     "desks/mt5/reports/EXPRESSION_FACTORY.json",
     "desks/mt5/reports/RELEASE_GATE.json",
-    "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
     "desks/mt5/reports/ADOPTION_STATE.json",
     "desks/mt5/data/stall_watch.json",
     "desks/mt5/data/world_causal_graph.json",

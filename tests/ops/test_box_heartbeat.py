@@ -174,9 +174,23 @@ def test_the_heartbeat_and_its_sibling_reports_are_published_off_the_box() -> No
     for rel in ("desks/mt5/reports/BOX_HEARTBEAT.json", "desks/mt5/reports/JUDGING_BURNDOWN.json",
                 "desks/mt5/reports/WORLD_LAB.json", "desks/mt5/reports/EXPRESSION_FACTORY.json",
                 "desks/mt5/reports/RELEASE_GATE.json",
-                "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
                 "desks/mt5/reports/ADOPTION_STATE.json", "desks/mt5/data/stall_watch.json",
                 "desks/mt5/data/world_causal_graph.json"):
         assert rel.startswith("desks/mt5/data/") or f"!{rel}" in ignore, rel
         assert f'"{rel}"' in block, rel
         assert rel in release.NON_CODE and rel in release_identity.NON_CODE, rel
+
+
+def test_the_adoption_heartbeat_is_not_published() -> None:
+    """Auditor 2026-11-11 (#1063): ADOPTION_HEARTBEAT.json carries the box's host name and the
+    release gate's free-text reason (console tail, exception text). The repo is public, so it
+    stays on the box until it publishes only fixed codes."""
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from mt5desk import release_identity
+
+    from libs.ops import release
+    rel = "desks/mt5/reports/ADOPTION_HEARTBEAT.json"
+    sync = (ROOT / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8", errors="ignore")
+    assert f'"{rel}"' not in sync
+    assert f"!{rel}" not in (ROOT / ".gitignore").read_text("utf-8").splitlines()
+    assert rel not in release.NON_CODE and rel not in release_identity.NON_CODE
