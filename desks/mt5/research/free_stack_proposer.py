@@ -46,6 +46,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from desks.mt5.research import terms_fences  # noqa: E402
+
 SEAT = "free_stack_proposer"
 COLUMNS = DESK / "data" / "free_stack" / "columns.json"
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -109,10 +111,15 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
     """The full grid, in a stable order (source, column, symbol, chart, arm)."""
     out: list[dict[str, Any]] = []
     skipped: dict[str, str] = {}
+    fences = terms_fences.load()
     for sid in sorted(columns):
         src = roster.get(sid)
         if src is None:
             skipped[sid] = "no roster row"
+            continue
+        fence = terms_fences.seat_fenced(sid, fences)
+        if fence is not None:
+            skipped[sid] = f"terms fence {fence['id']}: {fence.get('reason', '')}"
             continue
         if not series_exists(sid):
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"

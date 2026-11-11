@@ -158,3 +158,46 @@ def test_a_registry_row_cannot_narrow_a_built_in_fence(tmp_path: Path) -> None:
     reg.write_text(json.dumps({"fences": [{"id": "bis_speeches", "match": ["extra/*"]}]}),
                    "utf-8")
     assert tf.fence_for("extra/x.json", tf.load(reg))          # adding is allowed
+
+
+def _congress_roster(tmp_path: Path) -> Path:
+    from research import free_stack_hunter as fh
+    doc = json.loads(fh.ROSTER.read_text("utf-8"))
+    rows = [r for r in doc["sources"] if r.get("id") == "congress_trades"]
+    assert rows, "the congress_trades roster row is still there, only fenced"
+    path = tmp_path / "roster.json"
+    path.write_text(json.dumps({**doc, "sources": rows}), "utf-8")
+    return path
+
+
+def test_congress_trades_is_fenced_by_default() -> None:
+    fence = tf.seat_fenced("congress_trades")
+    assert fence is not None and "13107" in fence["reason"]
+    assert any(f["id"] == "congress_trades" for f in tf.BUILT_IN)
+
+
+def test_the_free_stack_hunter_does_not_fetch_a_fenced_source(tmp_path, monkeypatch) -> None:
+    from research import free_stack_hunter as fh
+
+    def no_fetch(*_a, **_k):  # pragma: no cover - reaching it is the failure
+        raise AssertionError("a fenced source was fetched")
+
+    monkeypatch.setattr(fh, "run_source", no_fetch)
+    store = fh.Store(tmp_path)
+    fh.run(store=store, roster=_congress_roster(tmp_path), fetch=no_fetch,
+           only=["congress_trades"], live=False)
+    cursor = json.loads(store.cursor.read_text("utf-8"))
+    assert cursor["congress_trades"]["last_status"] == "REFUSED_TERMS"
+    assert cursor["congress_trades"]["missed_growth"]
+
+
+def test_the_free_stack_proposer_mints_nothing_from_a_fenced_source(monkeypatch) -> None:
+    from research import free_stack_proposer as fp
+    monkeypatch.setattr(fp, "series_exists", lambda sid: True)
+    columns = {"congress_trades": {"net_all": {"hypothesis": ["US500"]}},
+               "other_src": {"x": {"hypothesis": ["US500"]}}}
+    roster = {"congress_trades": {"id": "congress_trades"}, "other_src": {"id": "other_src"}}
+    grid, skipped = fp.build_grid(columns, roster)
+    assert "terms fence congress_trades" in skipped["congress_trades"]
+    assert grid and all(r.get("evidence", {}).get("source_row") != "congress_trades"
+                        for r in grid)

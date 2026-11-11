@@ -19,6 +19,24 @@
    "seats": [
     "bis_speeches"
    ]
+  },
+  {
+   "id": "congress_trades",
+   "match": [
+    "congress_trades/*",
+    "free_stack/congress_trades*"
+   ],
+   "reason": "5 U.S.C. 13107(c) (formerly 5 U.S.C. app. 105(c)) makes commercial use of congressional financial disclosure reports unlawful; a trading desk's use is commercial. The community mirror republishes the same reports.",
+   "clause": "\"It shall be unlawful for any person to obtain or use a report—\" ... (B) for a commercial purpose, other than by news and communications media for dissemination to the general public [5 U.S.C. 13107(c)(1); opening quoted verbatim, (B) summarised]",
+   "terms_url": "https://www.law.cornell.edu/uscode/text/5/13107",
+   "terms_read": "2026-11-11 (law.cornell.edu, subsection (c) Prohibited Uses of Reports)",
+   "open": false,
+   "permit_clause": "",
+   "permit_read": "",
+   "missed_growth": "congressional disclosure counts and net buys are not fetched or turned into index cells; the loss is that one lane, with no lawful substitute until counsel or the principal clears the use",
+   "seats": [
+    "congress_trades"
+   ]
   }
  ]
 }

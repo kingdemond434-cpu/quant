@@ -29,6 +29,12 @@ BUILT_IN: tuple[dict[str, Any], ...] = (
      "reason": "BIS terms allow noncommercial use only",
      "missed_growth": "central bank speech titles and tone from BIS are not compiled into "
                       "candidates"},
+    {"id": "congress_trades",
+     "match": ["congress_trades/*", "free_stack/congress_trades*"],
+     "seats": ["congress_trades"],
+     "reason": "5 U.S.C. 13107(c) makes commercial use of congressional disclosure reports "
+               "unlawful",
+     "missed_growth": "congressional disclosure series are not fetched or compiled into cells"},
 )
 
 

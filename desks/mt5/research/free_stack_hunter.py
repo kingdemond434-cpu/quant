@@ -52,6 +52,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from desks.mt5.research import terms_fences  # noqa: E402
 from libs.data import free_stack as fs  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -553,6 +554,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     cursor = read_json(store.cursor, {}) or {}
     columns: dict[str, Any] = read_json(store.columns, {}) or {}
     ran: list[dict[str, Any]] = []
+    fences = terms_fences.load()
     order = sorted(rows, key=lambda r: _stalest(cursor.get(r["id"]) or {}))
     for row in order:
         sid = str(row["id"])
@@ -564,6 +566,13 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         spent = time.monotonic() - t0
         if spent >= budget_s:
             break
+        fence = terms_fences.seat_fenced(sid, fences)
+        if fence is not None:
+            # a source whose own terms (or statute) forbid commercial use is never fetched
+            st.update({"last_status": "REFUSED_TERMS", "last_attempt": _iso(now),
+                       "last_error": f"terms fence {fence['id']}: {fence.get('reason', '')}",
+                       "missed_growth": fence.get("missed_growth", "")})
+            continue
         acc = access(row)
         st["access"] = acc
         if not acc["mined"]:
