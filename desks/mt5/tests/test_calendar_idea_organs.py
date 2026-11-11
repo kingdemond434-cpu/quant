@@ -283,7 +283,9 @@ def test_event_stance_fires_once_per_value_inside_its_window(tmp_path):
           "threshold": 2.0, "lag_hours": 12, "series_root": tmp_path, "side_when_high": -1}
     ev = fx.family_exogenous_conditioner(df, event_window_hours=12, **kw)
     assert [s.side for s in ev] == [-1, 1]
-    assert ev[0].time == stamps[-3] + pd.Timedelta(hours=12) and ev[0].wait_bars == 1
+    # the first bar OPENING at or after the usable instant (published + 12 h lag)
+    assert ev[0].time == (stamps[-3] + pd.Timedelta(hours=12)).ceil("h")
+    assert ev[0].wait_bars == 1
     standing = fx.family_exogenous_conditioner(df, **kw)            # default: unchanged mode
     assert len(standing) > len(ev)
 
