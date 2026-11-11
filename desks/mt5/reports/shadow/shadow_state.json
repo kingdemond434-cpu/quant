@@ -534,7 +534,7 @@
     }
   },
   "last_run": "2026-11-11",
-  "updated_at": "2026-11-11T05:19:54+00:00",
+  "updated_at": "2026-11-11T06:05:00+00:00",
   "configured_sleeves": 1016,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
@@ -13151,7 +13151,7 @@
   },
   "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True": {
     "n": 47,
-    "cum_r": 12.19777705069471,
+    "cum_r": 12.286491017294011,
     "max_dd_r": -2.207472312702984,
     "first_entry": "2026-09-28 14:00:00+00:00",
     "last_entry": "2026-11-11 01:00:00+00:00",
@@ -13162,16 +13162,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:23.798264+00:00",
     "sleeve_id": "fdec5290e6627e7ebcf2",
-    "last_attempt_at": "2026-11-11T04:55:24+00:00",
+    "last_attempt_at": "2026-11-11T06:03:42+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.2595271712913768,
+    "exp_r": 0.26141470249561727,
     "days_active": 45,
-    "forward_t": 1.452,
-    "e_value": 0.1409,
+    "forward_t": 1.463,
+    "e_value": 0.1401,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 47,
@@ -13185,7 +13185,7 @@
     "last_error_cleared": "no H1 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-11T04:55:24+00:00"
+      "at": "2026-11-11T06:03:47+00:00"
     }
   },
   "CHFNOK.carry.asia#input_symbol=CHFNOK_session=ny": {
@@ -13201,7 +13201,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:59:23+00:00",
     "sleeve_id": "b17c29e6948064ea6ba7",
-    "last_attempt_at": "2026-11-11T04:55:25+00:00",
+    "last_attempt_at": "2026-11-11T06:04:14+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -13263,13 +13263,13 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-11T04:55:25+00:00"
+      "at": "2026-11-11T06:04:14+00:00"
     },
     "certificate_drift": true
   },
   "CHFNOK.carry.asia#input_symbol=CHFNOK": {
     "n": 47,
-    "cum_r": 10.618366817779217,
+    "cum_r": 10.707080784378519,
     "max_dd_r": -2.3603060760266645,
     "first_entry": "2026-09-28 14:00:00+00:00",
     "last_entry": "2026-11-11 01:00:00+00:00",
@@ -13280,7 +13280,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-26T22:25:31.682167+00:00",
     "identity_reason": "params changed after the clock froze",
-    "last_attempt_at": "2026-11-11T04:55:25+00:00",
+    "last_attempt_at": "2026-11-11T06:04:50+00:00",
     "promotion_authority": true,
     "order_authority": false,
     "sleeve_id": "c14feb494f7e9c6a81dd",
@@ -13290,10 +13290,10 @@
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.22592269825062164,
+    "exp_r": 0.2278102294548621,
     "days_active": 45,
-    "forward_t": 1.275,
-    "e_value": 0.1554,
+    "forward_t": 1.287,
+    "e_value": 0.1544,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 47,
@@ -13304,7 +13304,7 @@
     "e_status": "MEASURED",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-11T04:55:25+00:00"
+      "at": "2026-11-11T06:04:50+00:00"
     },
     "cost_rebased_why": "cost model corrected after the clock froze (3.5->3.5 commission, 264.0->264.0 spread per lot; round-trip charge 24.9423->24.9423 in account units). forward_start unchanged; the engine replays, so every observation is repriced at the new cost."
   },
@@ -45073,7 +45073,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:59:26+00:00",
     "sleeve_id": "db5998701d9b16372d30",
-    "last_attempt_at": "2026-11-11T04:55:25+00:00",
+    "last_attempt_at": "2026-11-11T06:04:53+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -45135,7 +45135,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-11T04:55:25+00:00"
+      "at": "2026-11-11T06:04:53+00:00"
     },
     "certificate_drift": true
   },
@@ -45152,7 +45152,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T11:59:28+00:00",
     "sleeve_id": "18d88de7425ebc1d2b80",
-    "last_attempt_at": "2026-11-11T04:55:25+00:00",
+    "last_attempt_at": "2026-11-11T06:04:54+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -45214,13 +45214,13 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-11T04:55:25+00:00"
+      "at": "2026-11-11T06:04:54+00:00"
     },
     "certificate_drift": true
   },
   "CHFNOK.carry.asia#input_symbol=GBPJPY_require_quiet=True": {
     "n": 47,
-    "cum_r": 12.19777705069471,
+    "cum_r": 12.286491017294011,
     "max_dd_r": -2.207472312702984,
     "first_entry": "2026-09-28 14:00:00+00:00",
     "last_entry": "2026-11-11 01:00:00+00:00",
@@ -45231,16 +45231,16 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-27T11:23:46.283676+00:00",
     "sleeve_id": "08f10ed71d470dd20904",
-    "last_attempt_at": "2026-11-11T04:55:26+00:00",
+    "last_attempt_at": "2026-11-11T06:04:58+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": 0.2595271712913768,
+    "exp_r": 0.26141470249561727,
     "days_active": 44,
-    "forward_t": 1.452,
-    "e_value": 0.1409,
+    "forward_t": 1.463,
+    "e_value": 0.1401,
     "e_crossed_at": null,
     "e_crossed_stamp": null,
     "e_n": 47,
@@ -45254,7 +45254,7 @@
     "last_error_cleared": "no H1 bars from any source for CHFNOK covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-11-11T04:55:26+00:00"
+      "at": "2026-11-11T06:04:58+00:00"
     }
   },
   "CHFNOK.carry.asia#input_symbol=eBay_require_quiet=False_session=ny": {
@@ -55118,109 +55118,59 @@
     }
   },
   "engine_pass": {
-    "started_at": "2026-11-11T04:55:11+00:00",
-    "rows_reached": 1016,
+    "started_at": "2026-11-11T05:59:18+00:00",
+    "rows_reached": 6,
     "rows": 1016,
-    "complete": true,
-    "finished_at": "2026-11-11T05:19:54+00:00",
+    "complete": false,
     "profile": {
-      "seconds": 1487.0,
-      "rows_timed": 1016,
+      "seconds": 575.5,
+      "rows_timed": 6,
       "phase_seconds": {
-        "backtest": 130.4,
-        "fetch": 654.5,
-        "resolve": 37.2,
-        "signals": 387.3
+        "backtest": 2.8,
+        "fetch": 39.8,
+        "resolve": 0.0,
+        "signals": 206.4
       },
       "phase_calls": {
-        "backtest": 937,
-        "fetch": 160,
-        "resolve": 1009,
-        "signals": 931
+        "backtest": 5,
+        "fetch": 1,
+        "resolve": 6,
+        "signals": 5
       },
       "reused": {
-        "backtest": 72,
-        "signals": 78
+        "backtest": 1,
+        "signals": 1
       },
       "family_seconds": {
-        "cross_asset_residual": 689.1,
-        "macro_conditional": 351.6,
-        "carry": 220.3,
-        "clock_transition": 68.2,
-        "overnight_gap_decay": 57.4,
-        "pca_residual": 42.0,
-        "formula": 30.6,
-        "range_reversion": 12.7,
-        "session_range_breakout": 5.7,
-        "spread_state": 4.6,
-        "overnight_drift": 0.3
+        "carry": 339.3
       },
       "chart_seconds": {
-        "M5": 632.8,
-        "M15": 518.2,
-        "M30": 209.3,
-        "H1": 122.0
+        "H1": 339.3
       },
       "slowest_rows": [
         {
-          "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
-          "seconds": 98.0
-        },
-        {
-          "key": "USCOCOA.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 80.07
-        },
-        {
-          "key": "US30.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
-          "seconds": 45.76
-        },
-        {
-          "key": "FRA40.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 32.41
-        },
-        {
-          "key": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
-          "seconds": 28.23
-        },
-        {
-          "key": "GBPSGD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 25.84
-        },
-        {
-          "key": "AUDSGD.clock_transition.asia@M30#hold_bars=2_label=broker_rollover_lead_bars=2_mode=fade_side=1_stamp_hour=0",
-          "seconds": 17.5
-        },
-        {
-          "key": "AUDSGD.carry.asia@M15#input_symbol=AUDSGD_session=asia",
-          "seconds": 16.94
-        },
-        {
-          "key": "USDTHB.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-          "seconds": 14.15
-        },
-        {
-          "key": "BTCUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
-          "seconds": 14.09
-        },
-        {
-          "key": "EURCAD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-          "seconds": 14.03
-        },
-        {
-          "key": "GBPSGD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
-          "seconds": 14.0
-        },
-        {
-          "key": "CHFSGD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=16",
-          "seconds": 13.66
-        },
-        {
           "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
-          "seconds": 13.19
+          "seconds": 278.35
         },
         {
-          "key": "XCUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-          "seconds": 12.75
+          "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_session=ny",
+          "seconds": 29.15
+        },
+        {
+          "key": "CHFNOK.carry.asia#input_symbol=CHFNOK",
+          "seconds": 22.4
+        },
+        {
+          "key": "CHFNOK.carry.asia#input_symbol=GBPJPY_require_quiet=True",
+          "seconds": 6.05
+        },
+        {
+          "key": "CHFNOK.carry.asia#input_symbol=GBPJPY_require_quiet=False_session=ny",
+          "seconds": 2.36
+        },
+        {
+          "key": "CHFNOK.carry.asia#input_symbol=GBPJPY_require_quiet=True_session=ny",
+          "seconds": 0.99
         }
       ]
     }
