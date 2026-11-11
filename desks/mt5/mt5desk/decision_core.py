@@ -1296,31 +1296,15 @@ def fusion_daily_loss(st: dict[str, Any], equity: object, day_key: str) -> tuple
     The day's starting equity is the first readable equity seen on `day_key` (anchored once and
     kept); a latch, once set for `day_key`, holds until the day changes. An unreadable equity
     stands the pass down (fail closed) without anchoring on it.
+
+    THE ONE LATCH (2026-11-11): the body is `account_breakers.daily_loss_latch`, which every prop
+    lane now runs too (ALL ACCOUNTS IDENTICAL MECHANISMS); Fusion keeps its own state keys, its
+    FUSION_DAILY_LOSS_FRAC and its answers, unchanged.
     """
-    try:
-        eq = float(equity)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        eq = float("nan")
-    if not (math.isfinite(eq) and eq > 0.0):
-        return True, "fusion daily-loss rail: equity unreadable; no new risk this pass"
-    anchor = st.get("day_start_equity")
-    if not (isinstance(anchor, dict) and anchor.get("date") == day_key
-            and isinstance(anchor.get("equity"), (int, float))
-            and not isinstance(anchor.get("equity"), bool) and float(anchor["equity"]) > 0.0):
-        anchor = {"date": day_key, "equity": round(eq, 2)}
-        st["day_start_equity"] = anchor
-    start = float(anchor["equity"])
-    floor = start * (1.0 - FUSION_DAILY_LOSS_FRAC)
-    if st.get("daily_loss_stood_down") == day_key:
-        return True, (f"fusion daily-loss rail: stood down for {day_key} (start {start:.2f}, "
-                      f"floor {floor:.2f}, equity {eq:.2f})")
-    if eq <= floor:
-        st["daily_loss_stood_down"] = day_key
-        return True, (f"fusion daily-loss rail: equity {eq:.2f} reached {floor:.2f} "
-                      f"(-{FUSION_DAILY_LOSS_FRAC:.0%} of the day's start {start:.2f}); no new "
-                      f"risk for the rest of {day_key}")
-    return False, (f"fusion daily-loss rail: equity {eq:.2f} above the {floor:.2f} floor "
-                   f"(start {start:.2f})")
+    from mt5desk.account_breakers import daily_loss_latch
+    b = daily_loss_latch(st, equity, day_key, FUSION_DAILY_LOSS_FRAC,
+                         label="fusion daily-loss rail")
+    return b.refuse, b.why
 
 
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:

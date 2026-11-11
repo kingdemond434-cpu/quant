@@ -19,6 +19,12 @@ bill into MISSED_GROWTH.json beside the registered rails.
                                         rolls back a release (libs/ops/new_risk_hold)
     cancel_requested             veto   a resting order withdrawn on a desk request
                                         (mt5desk.cancel_pending), billed at its own risk
+    account_daily_loss           veto   any account's daily-loss latch (mt5desk.account_breakers):
+                                        its trip once per account and day, each lane's refusal
+                                        once per day and state (UNMEASURED included)
+    account_disconnect           veto   a new order refused on a disconnected terminal, trading
+                                        switched off, or a stale/undatable quote, once per lane,
+                                        state and hour
 
 Each line carries the lot and, where it can be priced, the risk fraction (`risk_frac`) that was
 forgone, clipped or added, so the bill is in the desk's own units. Never raises: a ledger that
@@ -43,7 +49,8 @@ RAILS = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
          "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
          "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
          "cert_book_zero", "e8_account_undeclared",
-         "gold_oco_direction_lock", "adopt_new_risk_hold", "cancel_requested")
+         "gold_oco_direction_lock", "adopt_new_risk_hold", "cancel_requested",
+         "account_daily_loss", "account_disconnect")
 #: Lines this process could not write (rail -> count). The gateway logs it every pass.
 WRITE_FAILURES: dict[str, int] = {}
 

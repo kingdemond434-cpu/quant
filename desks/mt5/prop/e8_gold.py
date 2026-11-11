@@ -1234,6 +1234,21 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             stood_down = True
             doc["guard"] = f"guard unreadable ({type(exc).__name__}: {exc}"[:200] + ")"
             log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
+    # THE ACCOUNT BREAKERS (mt5desk.account_breakers), the same two every account's lanes run:
+    # the account's daily-loss latch at e8-pro-v2's circuit breaker (outside the guard's own
+    # voluntary stand-down, which stays as it is), and the disconnect breaker on the terminal
+    # tick that dates every window here (a frozen terminal would place on a stale hour). Either
+    # one only stands NEW placements and re-sends down; resting legs and positions are untouched.
+    from mt5desk import account_breakers as _ab
+    _bday = e8_guard.server_day(now)
+    _dl = _ab.account_latch("e8", equity, _bday)
+    _cb = _ab.connection_breaker(tick_age=_ab.tick_age_s(getattr(tick, "time", None), now))
+    doc["account_breakers"] = {"daily_loss": _dl.as_dict(), "disconnect": _cb.as_dict()}
+    for _rail, _b in ((_ab.RAIL_DAILY_LOSS, _dl), (_ab.RAIL_DISCONNECT, _cb)):
+        if _b.refuse:
+            stood_down = True
+            log(f"{_b.why}; managing open exposure only")
+            _ab.bill(_rail, _b, account="e8", lane="e8_gold", day=_bday, now=now)
 
     bid, ask = venue.quote(SYMBOL)
     try:

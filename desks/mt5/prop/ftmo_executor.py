@@ -563,6 +563,22 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         doc.update(status="ACCOUNT_UNREADABLE", why="equity/balance unreadable")
         _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         return
+    # THE ACCOUNT BREAKERS (mt5desk.account_breakers), the same two every account's lanes run:
+    # FTMO's daily-loss latch at ftmo-2step's circuit breaker (a declared tighter daily limit
+    # tightens it) on FTMO's CET day, then the disconnect breaker on the freshest clock-symbol
+    # tick this pass already read. A refusal sends no new order; management above has run.
+    from mt5desk import account_breakers as _ab
+    _dl = _ab.account_latch("ftmo", equity, cet,
+                            declared_daily_limit=decl.get("daily_loss_frac"))
+    _cb = _ab.connection_breaker(tick_age=_ab.tick_age_s(server_epoch, now), account=acc)
+    doc["account_breakers"] = {"daily_loss": _dl.as_dict(), "disconnect": _cb.as_dict()}
+    for _rail, _b, _status in ((_ab.RAIL_DAILY_LOSS, _dl, "ACCOUNT_DAILY_LOSS"),
+                               (_ab.RAIL_DISCONNECT, _cb, "ACCOUNT_DISCONNECT")):
+        if _b.refuse:
+            _ab.bill(_rail, _b, account="ftmo", lane="ftmo_executor", day=cet, now=now)
+            doc.update(status=_status, why=_b.why)
+            _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
+            return
     risk_now, rwhy = book_stop_risk(mt5, positions, orders)
     doc["book_stop_risk"] = {"usd": None if risk_now is None else round(risk_now, 2),
                              "why": rwhy}

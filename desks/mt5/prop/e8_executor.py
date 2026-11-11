@@ -904,6 +904,23 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         doc["n_sent" if armed else "n_would_send"] = 0
         return doc
 
+    # THE ACCOUNT'S DAILY-LOSS LATCH (mt5desk.account_breakers), the one every account's lanes
+    # run, shared with E8 gold: at e8-pro-v2's circuit breaker no new entry for the rest of the
+    # server day. It never flattens -- the guard above keeps its own verdicts. This lane has no
+    # terminal to age (TradeLocker REST answers or raises per call), so the disconnect breaker
+    # runs in E8 gold, where the terminal tick dates the decision.
+    from mt5desk import account_breakers as _ab
+    _bday = e8_guard.server_day(now)
+    _dl = _ab.account_latch("e8", equity, _bday)
+    doc["account_daily_loss"] = _dl.as_dict()
+    if _dl.refuse:
+        _ab.bill(_ab.RAIL_DAILY_LOSS, _dl, account="e8", lane="e8_executor", day=_bday, now=now)
+        doc["status"] = "ACCOUNT_DAILY_LOSS"
+        doc["why"] = _dl.why
+        doc["n_considered"] = 0
+        doc["n_sent" if armed else "n_would_send"] = 0
+        return doc
+
     if open_positions is None:
         doc["status"] = "NO_BROKER_SNAPSHOT"
         doc["why"] = ("position read failed; new entries require a current broker snapshot "
