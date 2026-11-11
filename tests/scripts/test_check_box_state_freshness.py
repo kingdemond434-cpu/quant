@@ -47,7 +47,7 @@ def _git(cwd: Path, *args: str, date: str | None = None) -> None:
 
 
 def _repo(tmp_path: Path, stamp: datetime | None, commit_at: datetime,
-          author: str = "Contabo MT5 Desk") -> Path:
+          author: str = "Contabo MT5 Desk", subject: str = "state") -> Path:
     repo = tmp_path / "r"
     _git(tmp_path, "init", "-q", "-b", "live", str(repo))
     _git(repo, "config", "user.email", "b@example.com")
@@ -61,7 +61,7 @@ def _repo(tmp_path: Path, stamp: datetime | None, commit_at: datetime,
     health.write_text(json.dumps({"updated_at": stamp.isoformat() if stamp else None,
                                   "status": "OPERATING"}), "utf-8")
     _git(repo, "add", ".")
-    _git(repo, "commit", "-q", "-m", "state", date=commit_at.strftime("%Y-%m-%dT%H:%M:%S+0000"))
+    _git(repo, "commit", "-q", "-m", subject, date=commit_at.strftime("%Y-%m-%dT%H:%M:%S+0000"))
     return repo
 
 
@@ -104,6 +104,60 @@ def test_no_box_evidence_is_unmeasured_and_fails(tmp_path: Path) -> None:
     assert doc["verdict"] == "UNMEASURED", doc
 
 
+BOX_MSG = ("mt5 box state 2026-10-13_1635 (published onto origin; inbound code left to "
+           "MT5-AdoptRelease)")
+
+
+@needs_git
+def test_the_box_is_known_by_its_publisher_subject_not_its_author(tmp_path: Path) -> None:
+    """2026-10-13: the publisher commits as "Codex", the same identity the VPS uses for code, so
+    the author match found nothing and the fence read UNMEASURED while the box published every
+    fifteen minutes."""
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, now - timedelta(hours=1), now, author="Codex",
+                              subject=BOX_MSG), ref="HEAD")
+    assert doc["verdict"] == "FRESH", doc
+    assert doc["newest_box_commit"]["author"] == "Codex"
+
+
+@needs_git
+def test_a_codex_code_commit_is_not_a_box_write(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, now - timedelta(hours=1), now, author="Codex",
+                              subject="Record durable resident completions"), ref="HEAD")
+    assert doc["verdict"] == "UNMEASURED", doc
+    assert doc["stamps_ignored_not_box_written"] == {
+        "desks/mt5/reports/shadow/shadow_health.json": "Codex"}
+
+
+@needs_git
+def test_a_body_line_quoting_the_subject_is_not_a_box_commit(tmp_path: Path) -> None:
+    """git --grep anchors ^ on every line: a code commit whose BODY starts with the publisher's
+    subject must not lend the fence its commit date."""
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, None, now, author="Codex",
+                              subject=f"Fix the publisher\n\n{BOX_MSG}"), ref="HEAD")
+    assert doc["verdict"] == "UNMEASURED", doc
+    assert "newest_box_commit" not in doc
+
+
+@pytest.mark.parametrize(("author", "subject", "box"), [
+    ("Codex", BOX_MSG, True),
+    ("Contabo MT5 Desk", "anything", True),
+    ("x", "mt5 shadow state sync 2026-09-03_0820", True),
+    ("Codex", "mt5 box state is discussed here", False),
+    ("Codex", "Merge mt5 box state 2026-10-13_1635 (published onto origin", False),
+])
+def test_box_identity(author: str, subject: str, box: bool) -> None:
+    assert fence.is_box_commit(author, subject) is box
+
+
+def test_the_subject_matches_what_the_publisher_writes() -> None:
+    ps1 = (ROOT / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8", errors="ignore")
+    assert '$msg = "mt5 box state $stampNow (published onto origin;' in ps1
+    assert '.ToString("yyyy-MM-dd_HHmm")' in ps1
+
+
 @needs_git
 def test_a_fresh_stamp_written_by_ci_does_not_make_the_box_fresh(tmp_path: Path) -> None:
     """2026-10-06: CI's release seal rewrote RELEASE.json (a published path) with a fresh
@@ -119,6 +173,88 @@ def test_a_fresh_stamp_written_by_ci_does_not_make_the_box_fresh(tmp_path: Path)
     assert doc["verdict"] == "STALE", doc
     assert doc["stamps_ignored_not_box_written"] == {"desks/mt5/data/RELEASE.json": "quant-ci"}
     assert doc["age_h"] > 200
+
+
+@needs_git
+def test_a_shallow_clone_names_the_truncation_not_an_absent_box(tmp_path: Path) -> None:
+    """Audit should-fix: the box's commit lies below a --depth 1 graft."""
+    now = datetime.now(UTC)
+    src = _repo(tmp_path, None, now - timedelta(hours=1))
+    _git(src, "-c", "user.name=quant-ci", "commit", "-q", "--allow-empty", "-m", "ci on top")
+    other = src / "x.json"
+    other.write_text("{}", "utf-8")
+    _git(src, "add", ".")
+    _git(src, "-c", "user.name=quant-ci", "commit", "-q", "-m", "ci touches nothing published")
+    health = src / "desks/mt5/reports/shadow/shadow_health.json"
+    health.write_text(json.dumps({"status": "OPERATING"}), "utf-8")
+    _git(src, "add", ".")
+    _git(src, "-c", "user.name=quant-ci", "commit", "-q", "-m", "ci rewrites the stamp-less file")
+    shallow = tmp_path / "shallow"
+    _git(tmp_path, "clone", "-q", "--depth", "1", f"file://{src}", str(shallow))
+    doc = fence.measure(shallow, ref="HEAD")
+    assert doc["shallow"] is True
+    assert doc["verdict"] == "UNMEASURED" and doc["why"].startswith("shallow clone"), doc
+
+
+@needs_git
+def test_a_merge_of_box_writes_keeps_box_authorship(tmp_path: Path) -> None:
+    """Audit should-fix: a non-TREESAME merge (a conflict resolved by someone else) of two
+    box-written sides is still the box's content, not the merger's."""
+    now = datetime.now(UTC)
+    repo = _repo(tmp_path, now - timedelta(hours=1), now - timedelta(hours=1))
+    health = repo / "desks/mt5/reports/shadow/shadow_health.json"
+    _git(repo, "checkout", "-q", "-b", "side")
+    health.write_text(json.dumps({"updated_at": (now - timedelta(minutes=30)).isoformat(),
+                                  "side": 1}), "utf-8")
+    _git(repo, "commit", "-qam", "box side")
+    _git(repo, "checkout", "-q", "live")
+    health.write_text(json.dumps({"updated_at": (now - timedelta(minutes=20)).isoformat(),
+                                  "main": 1}), "utf-8")
+    _git(repo, "commit", "-qam", "box main")
+    subprocess.run(["git", "merge", "-q", "side"], cwd=str(repo), capture_output=True,
+                   check=False)
+    health.write_text(json.dumps({"updated_at": (now - timedelta(minutes=20)).isoformat(),
+                                  "main": 1, "side": 1}), "utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "-c", "user.name=quant-ci", "commit", "-q", "--no-edit")
+    plain = subprocess.run(["git", "log", "-1", "--format=%an", "--",
+                            "desks/mt5/reports/shadow/shadow_health.json"], cwd=str(repo),
+                           capture_output=True, text=True, check=True).stdout.strip()
+    assert plain == "quant-ci", "fixture must put the merger on top"
+    doc = fence.measure(repo, ref="HEAD")
+    assert doc["verdict"] == "FRESH", doc
+    assert doc["stamps_ignored_not_box_written"] == {}
+
+
+@needs_git
+def test_a_merge_with_a_non_box_side_is_not_box_written(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    repo = _repo(tmp_path, now - timedelta(days=3), now - timedelta(days=3))
+    health = repo / "desks/mt5/reports/shadow/shadow_health.json"
+    _git(repo, "checkout", "-q", "-b", "side")
+    health.write_text(json.dumps({"updated_at": now.isoformat(), "side": 1}), "utf-8")
+    _git(repo, "-c", "user.name=someone", "commit", "-qam", "not the box")
+    _git(repo, "checkout", "-q", "live")
+    health.write_text(json.dumps({"updated_at": now.isoformat(), "main": 1}), "utf-8")
+    _git(repo, "commit", "-qam", "box main")
+    subprocess.run(["git", "merge", "-q", "side"], cwd=str(repo), capture_output=True,
+                   check=False)
+    health.write_text(json.dumps({"updated_at": now.isoformat(), "both": 1}), "utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "-c", "user.name=quant-ci", "commit", "-q", "--no-edit")
+    doc = fence.measure(repo, ref="HEAD")
+    assert "desks/mt5/reports/shadow/shadow_health.json" in doc["stamps_ignored_not_box_written"]
+
+
+@pytest.mark.parametrize(("name", "ok"), [
+    ("Contabo MT5 Desk", True), ("contabo", True), ("CONTABO box", True),
+    ("Contabot", False), ("ex-Contabo", False), ("Not Contabo", False), ("", False),
+])
+def test_one_box_identity_predicate(name: str, ok: bool) -> None:
+    """Audit should-fix: the commit search and the per-file check use the SAME predicate."""
+    assert fence.is_box(name) is ok
+    src = (ROOT / "scripts/check_box_state_freshness.py").read_text("utf-8")
+    assert "--author=" not in src and ".lower() not in" not in src
 
 
 def test_it_is_a_state_fence_on_the_box_clock_never_a_push_gate() -> None:

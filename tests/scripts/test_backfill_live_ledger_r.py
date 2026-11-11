@@ -42,3 +42,41 @@ def test_cli_rewrites_in_place_only_with_apply(tmp_path: Path):
     lines = p.read_text(encoding="utf-8").splitlines()
     assert lines[0] == "not json"                       # unparsed lines are kept verbatim
     assert abs(json.loads(lines[1])["r_multiple"] - 2.0) < 1e-9
+
+
+def test_sealed_backfill_cannot_replace_evidence(tmp_path, monkeypatch):
+    import pytest
+    monkeypatch.setattr(bf, 'ROOT', tmp_path)
+    desk = tmp_path / 'desks/mt5/data'
+    desk.mkdir(parents=True)
+    p = desk / 'live_ledger.jsonl'
+    row = {'entry_price': 1.0, 'sl': 0.99, 'volume': 1.0, 'contract_size': 100.0,
+           'pl_quote': 2.0, 'r_multiple': 0.0}
+    original = (json.dumps(row) + '\n').encode()
+    p.write_bytes(original)
+    manifest = desk / 'IMMUTABLE_MANIFEST.json'
+    seal = {'append_only': {'desks/mt5/data/live_ledger.jsonl':
+                           {'records': 1, 'prefix_sha': 'preserve-this-seal'}}}
+    manifest.write_text(json.dumps(seal))
+    seal_bytes = manifest.read_bytes()
+    assert bf.main(['--ledger', str(p)]) == 0
+    with pytest.raises(RuntimeError, match='1 sealed records'):
+        bf.main(['--ledger', str(p), '--apply'])
+    assert p.read_bytes() == original
+    assert manifest.read_bytes() == seal_bytes
+    assert not p.with_suffix('.jsonl.tmp').exists()
+
+
+def test_missing_or_corrupt_canonical_seal_is_not_rewrite_authority(tmp_path, monkeypatch):
+    import pytest
+    monkeypatch.setattr(bf, 'ROOT', tmp_path)
+    p = tmp_path / 'desks/mt5/data/live_ledger.jsonl'
+    p.parent.mkdir(parents=True)
+    p.write_text('original evidence')
+    for body in (None, 'not json', '{}', '{"append_only": []}'):
+        manifest = p.parent / 'IMMUTABLE_MANIFEST.json'
+        if body is not None:
+            manifest.write_text(body)
+        with pytest.raises(RuntimeError, match='Cannot prove'):
+            bf.assert_unsealed_for_rewrite(p)
+        assert p.read_text() == 'original evidence'

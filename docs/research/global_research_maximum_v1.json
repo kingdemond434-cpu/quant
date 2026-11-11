@@ -3,7 +3,7 @@
  "status": "IMPLEMENTATION_BASELINE",
  "completion_rule": "A requirement is CURRENT_VERIFIED only when implementation, tests, consumer and fresh runtime evidence all exist. Module existence or a generated report alone is PARTIAL.",
  "frontier_rule": "Close this version only against its scope; never claim the unknowable global opportunity set is complete.",
- "addenda": ["docs/research/factory_federation_acceptance_v1.json"],
+ "addenda": ["docs/research/factory_federation_acceptance_v1.json", "docs/research/miniature_institution_acceptance_v1.json"],
  "requirements": [
   {"id":"R01","title":"permanent 24/7 operation","priority":"P0","implementation":["desks/mt5/research/hourly_cycle.py","desks/mt5/research/department_resident.py"],"tests":["desks/mt5/tests/test_hourly_cycle_leg_rotation.py"],"consumers":["desks/mt5/ops/box_tasks.manifest"],"runtime":["desks/mt5/reports/HOURLY_CYCLE.json"]},
   {"id":"R02","title":"audit before adding","priority":"P0","implementation":["scripts/check_component_registry.py"],"tests":["tests/scripts/test_check_component_registry.py"],"consumers":["scripts/run_law_gate.py"],"runtime":["desks/mt5/reports/COMPONENT_REGISTRY.json"]},
