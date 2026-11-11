@@ -707,9 +707,12 @@ def ingest_fred(fetch=None, key: str | None | bool = True,
             "ideas_only": {sid: {"terms": why, "missed_growth": FRED_IDEAS_ONLY_MISSED_GROWTH}
                            for sid, why in FRED_IDEAS_ONLY.items()},
             "vintage": {sid: d.get("vintage") for sid, d in series.items()},
-            "vintage_note": ("Per-series `vintage`: first_release = ALFRED initial print (each "
-                             "point's `k` is the date it was first published); vintage_stable = "
-                             "not revised after publication; current = today's vintage only."),
+            "vintage_note": ("Per-series `vintage`: first_release = ALFRED initial print; "
+                             "vintage_stable = not revised after publication; current = today's "
+                             "vintage only. A point's `k` is its first-publication DATE (ALFRED "
+                             "realtime_start), NOT the knowable instant: H.4.1 is out 16:30 ET "
+                             "that day, so never read k as knowable from midnight. "
+                             "knowable_lag_days stays the join authority."),
             "symbols": usd_syms, "n_symbols": len(usd_syms),
             "symbols_rule": "USD: FX legs + USD-profit indices/bonds/metals/energy (universe.json)",
             "shape": "series[sid].points -- one dated state variable each",
