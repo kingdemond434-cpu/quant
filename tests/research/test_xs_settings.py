@@ -67,9 +67,12 @@ def test_a_thin_or_unlabelled_member_falls_back_to_the_basket_never_to_zero():
 
 def test_nan_stays_nan_and_levels_are_validated():
     p = _panel([[1, np.nan, 3, 10, 20, 30]])
-    out = xss.neutralize(p, GROUPS, level="group", scale=False)
+    out = xss.neutralize(p, GROUPS, level="group", scale=False, min_members=2)
     assert np.isnan(out.loc[0, "GBPUSD"])
     assert out.loc[0, "EURUSD"] == pytest.approx(-1.0)
+    # at the default floor of 3 the two finite fx_usd members fall back to the basket
+    dflt = xss.neutralize(p, GROUPS, level="group", scale=False)
+    assert dflt.loc[0, "EURUSD"] == pytest.approx(1 - (1 + 3 + 10 + 20 + 30) / 5)
     assert xss.neutralize(p, level="none").equals(p)
     with pytest.raises(ValueError):
         xss.neutralize(p, level="sector")
