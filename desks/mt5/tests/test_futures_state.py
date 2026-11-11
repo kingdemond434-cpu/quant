@@ -302,6 +302,20 @@ def test_fred_pairs_and_levels_make_one_series_per_pair_with_its_own_targets() -
     assert lv[0][0] == "fred_res_res" and "log_chg" in lv[0][1].columns
 
 
+def test_a_pair_ends_at_its_older_legs_last_print() -> None:
+    """A leg that stopped publishing is never carried flat against the other leg's fresh prints
+    (FRED's EZ and UK 3M interbank series froze at 2026-01-01; measured 2026-11-11)."""
+    idx = pd.date_range("2018-01-01", periods=100, freq="MS", tz="UTC")
+    rng = np.random.default_rng(7)
+    ez = pd.Series(rng.normal(1, 0.1, 100), index=idx)
+    ez.iloc[90:] = np.nan                                  # the euro leg stops publishing
+    yc = pd.DataFrame({"EZ": ez, "US": rng.normal(3, 0.1, 100)}, index=idx)
+    pairs = {"id": "rd", "mode": "pairs", "window": 24,
+             "pairs": [{"id": "EURUSD", "base": "EZ", "quote": "US", "targets": ["EURUSD"]}]}
+    (_sid, frame, index, _t, _k), = fs.fred_outputs(pairs, yc)
+    assert index.max() == idx[89] and len(frame) == 90
+
+
 def test_registry_names_every_unmeasured_fx_input() -> None:
     import json
 

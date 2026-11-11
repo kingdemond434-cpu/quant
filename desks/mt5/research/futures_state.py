@@ -524,7 +524,15 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             b, q = str(pr["base"]), str(pr["quote"])
             if b not in yc.columns or q not in yc.columns:
                 continue
+            # A leg is carried forward only up to its OWN last print: a source that stops
+            # publishing must not be read as a flat rate for months against the other leg's
+            # fresh prints (measured 2026-11-11: FRED's euro-area and UK 3M interbank series end
+            # 2026-01-01, and every EUR/GBP pair read a 10-month-old differential while looking
+            # current). Cut at the older leg's last print, so stale_series names the pair STALE.
             both = yc[[b, q]].ffill().dropna()
+            ends = [yc[c].last_valid_index() for c in (b, q)]
+            if all(e is not None for e in ends):
+                both = both[both.index <= min(ends)]
             if len(both) < MIN_ROWS:
                 continue
             diff = pd.DataFrame({"diff": both[b] - both[q]}, index=both.index)
