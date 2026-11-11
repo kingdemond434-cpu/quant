@@ -316,7 +316,18 @@ def run(ledger: Path = LEDGER, out: Path = OUT, daily: pd.DataFrame | None = Non
     t0 = time.time()
     if daily is None:
         from research import pf_allocator as pa
-        daily, _ = pa.build_evidence(force=False)
+        try:
+            daily, _ = pa.build_evidence(force=False)
+        except SystemExit as exc:
+            # `build_evidence` REFUSES with SystemExit when the hunt report is absent. That is an
+            # UNMEASURED pass for this leg, published as such, never a crashed leg.
+            doc = {"generated_utc": datetime.now(UTC).isoformat(), "status": "UNMEASURED",
+                   "authority": "none: a ledger and a report; it retires and sizes nothing",
+                   "why": f"no evidence matrix: {str(exc)[:200]}", "n_scored": 0,
+                   "elapsed_s": round(time.time() - t0, 2)}
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+            return doc
     daily = daily.sort_index()
     rows = (rows_fn or _desk_rows)(daily)
     added = append_new(rows, ledger)

@@ -104,6 +104,18 @@ def test_a_desk_pass_publishes_scores_and_judges(tmp_path) -> None:
     assert json.loads(out.read_text())["authority"].startswith("none")
 
 
+def test_an_evidence_refusal_is_unmeasured_not_a_crash(tmp_path, monkeypatch) -> None:
+    from research import pf_allocator as pa
+
+    def refuse(**_k):
+        raise SystemExit("REFUSING to project")
+
+    monkeypatch.setattr(pa, "build_evidence", refuse)
+    doc = sf.run(tmp_path / "f.jsonl", tmp_path / "r.json")
+    assert doc["status"] == "UNMEASURED" and doc["n_scored"] == 0
+    assert json.loads((tmp_path / "r.json").read_text())["status"] == "UNMEASURED"
+
+
 def test_the_leg_is_on_the_hourly_clock() -> None:
     src = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '"research/sleeve_forecasts.py"' in src and '"sleeve_forecasts": sfc' in src
