@@ -550,9 +550,10 @@ def donate(source: str, candidates: list[dict[str, Any]], tests_run: int,
         # Nothing survived the door. Writing an empty contract would put a file into the intake
         # that says a proposer produced nothing, when it produced rows the door turned away.
         return None
-    prereg = _preregister(source, candidates,
-                          path=(Path(private_root) / "preregistrations_private.jsonl"
-                                if private_root is not None else None))
+    # the public call keeps its two-argument shape; only a private donation names its own ledger
+    prereg = (_preregister(source, candidates,
+                           path=Path(private_root) / "preregistrations_private.jsonl")
+              if private_root is not None else _preregister(source, candidates))
     LAST_DONATION["prereg"] = prereg
     out = Path(private_root) if private_root is not None else INTEL / source
     out.mkdir(parents=True, exist_ok=True)
