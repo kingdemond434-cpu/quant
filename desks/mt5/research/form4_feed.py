@@ -249,7 +249,8 @@ def _load(path: Path, default: Any) -> Any:
         return default
 
 
-def _ledger(path: Path = TXNS) -> list[dict[str, Any]]:
+def _ledger(path: Path | None = None) -> list[dict[str, Any]]:
+    path = path or TXNS
     out = []
     try:
         with path.open(encoding="utf-8") as fh:
