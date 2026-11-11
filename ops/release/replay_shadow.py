@@ -190,6 +190,8 @@ def scenarios() -> list[dict[str, Any]]:
                     sc["positions"] = [{**_long(day), "stopLossId": None}]
                 if acct == "stale_tick":  # the terminal's clock lags the server by 3 hours
                     sc["tick_lag_s"] = 3 * 3600
+                if acct == "flat":  # the research-input leg, at the day's last step (#249 audit)
+                    sc["research"] = True
                 out.append(sc)
     return out
 
@@ -719,6 +721,9 @@ def decisions(step: dict[str, Any]) -> dict[str, Any]:
             "intents": step.get("intents"),
             # the FTMO lane at the same step (replay_child.ftmo_step): executor and reader
             "ftmo": step.get("ftmo"),
+            # the research-input doors at the day's last step (replay_child.research_step): the
+            # macro/COT inputs and signals of a live family cell, the allocator's factor |corr|
+            "research": step.get("research"),
         }
     )
 
@@ -753,6 +758,8 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
 
 
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
+#: The research-input leg is owed where the base HAS both doors (replay_child.research_step).
+RESEARCH_DOORS = ("desks/mt5/research/orthogonal_sweep.py", "desks/mt5/research/pf_allocator.py")
 
 
 def compare(
@@ -771,6 +778,8 @@ def compare(
     # The FTMO leg is owed only where the base HAS the lane (a toy tree, or a base from before
     # the lane existed, has nothing to measure; a head that adds it is a new money file).
     ftmo_owed = (base / FTMO_EXECUTOR).is_file()
+    research_owed = all((base / f).is_file() for f in RESEARCH_DOORS)
+    research_rows = 0
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
         if "crash" in b:
@@ -802,6 +811,16 @@ def compare(
                     f"{str(ftmo_err)[:200]}"
                 )
             ftmo_rows += len((fb.get("exec") or {}).get("sleeves") or [])
+            rb = bs.get("research")
+            if isinstance(rb, dict):
+                if rb.get("error") and research_owed:
+                    # the leg must run on the base, or its agreement with the head is vacuous
+                    problems.append(
+                        f"UNMEASURED {sc['id']} @{bs['hour']}: the base research leg raised "
+                        f"{str(rb['error'])[:200]}"
+                    )
+                elif not rb.get("error"):
+                    research_rows += 1
             if bs.get("error"):
                 problems.append(f"UNMEASURED {sc['id']} @{bs['hour']}: base raised {bs['error']}")
                 continue
@@ -819,6 +838,8 @@ def compare(
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     if ftmo_owed and not ftmo_rows:
         problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
+    if research_owed and not research_rows and any(sc.get("research") for sc in grid):
+        problems.append("UNMEASURED: the base research leg ran nowhere on the grid")
     closure = import_closure(base)
     covered = imported | new_and_bounded(base, head, head_imported)
     exempt = exempt_scripts((base, head), closure)
@@ -839,6 +860,7 @@ def compare(
         "scenarios": len(grid),
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
+        "research_legs_compared": research_rows,
         "problems": problems,
         # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
         "not_money_scripts": not_money,

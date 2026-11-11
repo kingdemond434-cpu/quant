@@ -394,6 +394,135 @@ def ftmo_step(
     return out
 
 
+#: THE RESEARCH-INPUT LEG (2026-11-11, Auditor HOLD on #249). Two money-closure doors the book
+#: grid never imported: the macro and COT inputs a live `macro_conditional` / `cot_positioning`
+#: cell is rebuilt with (`mt5desk.family_inputs.resolve` -> `research.orthogonal_sweep`), and the
+#: allocator's factor model (`research.pf_allocator._MacroContext` -> `libs.portfolio.leg_factors`
+#: -> the factor-implied |corr| that sizes the book). Every input is SYNTHETIC and seeded from the
+#: scenario, written into the work directory, and the modules are pointed at it -- the same files
+#: on both trees -- so what differs between them can only be the code's reading of those files.
+RESEARCH_SYMBOL = "XAUUSD"
+RX_PAIRS = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCHF", "EURGBP", "EURJPY", "GBPJPY")
+RX_TAIL = 72  # the bars and signals compared: the last three days of the cell's chart
+
+
+def _rx_walk(rng: random.Random, n: int, start: float, sd: float) -> list[float]:
+    out, x = [], start
+    for _ in range(n):
+        x = max(1e-6, x + rng.gauss(0.0, sd))
+        out.append(round(x, 6))
+    return out
+
+
+def research_setup(work: Path, scenario: dict[str, Any], now: Any) -> dict[str, Path]:
+    """The leg's synthetic inputs. FRED daily prints run to `now` (so the publication lag binds on
+    the last prints of the chart), the COT cache is a daily forward-filled weekly report, and the
+    universe holds eight FX pairs' daily closes for the currency-leg factors."""
+    import pandas as pd
+
+    root = work / "rx"
+    (root / "desks" / "mt5" / "data").mkdir(parents=True, exist_ok=True)
+    (root / "data").mkdir(parents=True, exist_ok=True)
+    uni = root / "universe"
+    uni.mkdir(exist_ok=True)
+    rng = random.Random(f"rx:{scenario['seed']}")  # noqa: S311 -- a price path, not a secret
+    end = pd.Timestamp(now).tz_convert("UTC").normalize()
+    days = pd.date_range(end=end, periods=700, freq="D")
+    fred = {"series": {
+        sid: [[d.date().isoformat(), v] for d, v in zip(days, _rx_walk(rng, len(days), lvl, sd),
+                                                         strict=True)]
+        for sid, lvl, sd in (("DGS10", 4.2, 0.05), ("VIXCLS", 18.0, 0.9))}}
+    (root / "data" / "fred_macro.json").write_text(json.dumps(fred), "utf-8")
+    (root / "data" / "fred_macro_archive.json").write_text(json.dumps(fred), "utf-8")
+    # a weekly report (as-of Tuesday) forward-filled daily, as scripts/refresh_cot_zcache.py does
+    tues = pd.date_range(end=end, periods=160, freq="W-TUE")
+    net = _rx_walk(rng, len(tues), 0.0, 9000.0)
+    net[-3:] = [max(net) * 1.5 + 1.0] * 3  # the last reports at a multi-year extreme: a signal
+    weekly = pd.Series(net, index=tues)
+    daily = weekly.reindex(pd.date_range(tues[0], end, freq="D")).ffill()
+    pd.DataFrame({RESEARCH_SYMBOL: daily}).to_parquet(root / "data" / "cot_zcache.parquet")
+    for sym in RX_PAIRS:
+        px = _rx_walk(rng, len(days), 100.0, 0.6)
+        pd.DataFrame({"close": px}, index=days).to_parquet(uni / f"{sym}_H1.parquet")
+    return {"root": root, "universe": uni, "archive": root / "data" / "fred_macro_archive.json"}
+
+
+def _rx_signals(sigs: Any) -> list[Any]:
+    return [[str(getattr(s, "time", "")), int(getattr(s, "side", 0)),
+             round(float(getattr(s, "stop", 0.0)), 4), round(float(getattr(s, "target", 0.0)), 4)]
+            for s in list(sigs or [])[-RX_TAIL:]]
+
+
+def research_step(work: Path, scenario: dict[str, Any], now: Any, day: Any) -> dict[str, Any]:
+    """Both doors at one step: the two families' resolved inputs and signals on the cell's chart,
+    and the allocator's factor loadings and factor-implied |corr| for three sleeves."""
+    import contextlib
+
+    import numpy as np
+    import pandas as pd
+
+    paths = research_setup(work, scenario, now)
+    out: dict[str, Any] = {}
+    from mt5desk import families_orthogonal as fo
+    from mt5desk import family_inputs as fi
+
+    from research import orthogonal_sweep as osw
+
+    osw.BASE = paths["root"] / "desks" / "mt5"
+    osw._cot_frame.cache_clear()
+    h1 = pd.DataFrame(bars(scenario["shape"], scenario["seed"], day, now))
+    h1.index = pd.to_datetime(h1.pop("time"), unit="s", utc=True)
+    for family, key in (("macro_conditional", "macro"), ("cot_positioning", "cot")):
+        extra, why = fi.resolve(RESEARCH_SYMBOL, family, {}, h1)
+        row: dict[str, Any] = {"resolved": why.split(":", 1)[0]}
+        if extra is not None:
+            val = extra.get(key)
+            if isinstance(val, pd.DataFrame):
+                val = val.iloc[:, 0]
+            if isinstance(val, pd.Series):
+                tail = val.dropna().iloc[-RX_TAIL:]
+                row["input"] = [[str(t), round(float(v), 6)] for t, v in tail.items()]
+            row["signals"] = _rx_signals(fo.ORTHOGONAL_FAMILIES[family](h1, **extra))
+        out[family] = row
+
+    # The point-in-time door both readers above call (#249 moves them onto it). Imported here so
+    # the base's run holds it too; its effect on the head is measured through the two readers'
+    # outputs, which are what this leg compares.
+    with contextlib.suppress(ImportError):
+        from libs.tiers import data_os  # noqa: F401
+    from libs.portfolio import leg_factors as lf
+    from libs.portfolio import macro_state as ms
+    from research import pf_allocator as pa
+
+    ms.ARCHIVE = ms.ARCHIVE_LONG = paths["archive"]
+    ms.ALFRED_DIR = paths["root"] / "no_alfred"
+    lf.daily_factor_returns.__defaults__ = (paths["universe"], None)
+    lf.daily_factor_returns.__kwdefaults__ = {"cache": None, "max_age_s": 0.0}
+    frame = lf.daily_factor_returns()
+    dates = [str(d) for d in (frame.index[-300:] if frame is not None else [])]
+    ctx = pa._MacroContext(dates)
+    rng = np.random.default_rng(int(scenario["seed"]))
+    loads, resid, rows = [], [], {}
+    for sym in ("EURUSD", "USDJPY", RESEARCH_SYMBOL):
+        base = (frame["USD"].reindex(dates).fillna(0.0).to_numpy() if frame is not None
+                and "USD" in frame else np.zeros(len(dates)))
+        hist = 0.5 * base + rng.normal(0.0, 0.004, len(dates))
+        fl = ctx.loadings(hist, dates, sym)
+        loads.append(None if fl is None else fl.load)
+        resid.append(0.0 if fl is None else float(fl.resid_var))
+        rows[sym] = None if fl is None else {
+            "n": int(fl.n), "used": list(fl.used),
+            "betas": {k: round(float(v), 6) for k, v in sorted(fl.betas.items())}}
+    out["allocator"] = {
+        "factors": {k: v for k, v in (ctx.meta.get("factors") or {}).items()
+                    if k in ("status", "names", "macro")},
+        "factor_days": 0 if frame is None else len(frame.index),
+        "loadings": rows,
+        "corr_abs": np.round(lf.factor_corr_abs(loads, resid), 6).tolist(),
+    }
+    return out
+
+
 def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     stub = types.ModuleType("MetaTrader5")
     stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)  # type: ignore[method-assign]
@@ -512,7 +641,14 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
                 traceback.print_exc()
         else:
             ftmo = {"setup_error": ftmo_ready}
-        steps.append({"hour": hour, "doc": doc, "intents": rows, "error": err, "ftmo": ftmo})
+        step = {"hour": hour, "doc": doc, "intents": rows, "error": err, "ftmo": ftmo}
+        if scenario.get("research") and hour == scenario["hours"][-1]:
+            try:
+                step["research"] = research_step(work, scenario, clock["now"], day)
+            except Exception as exc:  # compared, and owed on the base (replay_shadow)
+                step["research"] = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+                traceback.print_exc()
+        steps.append(step)
     imported = sorted(
         {
             str(Path(m.__file__).resolve())
