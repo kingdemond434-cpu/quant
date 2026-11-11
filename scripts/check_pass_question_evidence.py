@@ -88,7 +88,7 @@ QUESTIONS: dict[str, tuple[str, list[tuple[str, str | None, str]]]] = {
     ]),
     "Q4": ("Did the allocator beat its baselines?", [
         ("baseline_contest", "reports/ALLOCATOR_PROOF.json", "scores"),
-        ("best_single_sleeve_baseline", "reports/ALLOCATOR_PROOF.json", "best_single_sleeve"),
+        ("best_single_sleeve_baseline", "reports/pf_allocation.json", "best_single_sleeve"),
         ("executable_book_after_lots_and_costs", "reports/EXECUTABLE_BOOK.json", "refusals"),
     ]),
     "Q5": ("What did stale information, costs or defects cost?", [
@@ -252,11 +252,25 @@ def allocator_vs_baselines(proof: Any) -> dict[str, Any]:
     return {"status": "MEASURED", "dynamic_robust_score": dyn,
             "baselines": dict(sorted(rivals.items())),
             "baselines_beating_dynamic": beat_by, "passed": proof.get("passed"),
-            "basis": ("sampled worlds at equal total heat (libs/portfolio/allocator_proof), "
-                      "best_single_sleeve included when the proof contests it; the executable "
-                      "book after lot rounding is read from EXECUTABLE_BOOK.json"),
-            "best_single_sleeve_contested": "best_single_sleeve" in rivals,
+            "basis": ("sampled worlds at equal total heat (libs/portfolio/allocator_proof); "
+                      "the best-single-sleeve rival is read from pf_allocation.json (kept out "
+                      "of the sealed proof's challengers) and the executable book after lot "
+                      "rounding from EXECUTABLE_BOOK.json"),
             "route": GROWTH_ALLOCATOR if beat_by else None}
+
+
+def best_single_sleeve(art: Mapping[str, Any]) -> dict[str, Any]:
+    """Q4's single-sleeve rival: does putting the whole heat on the best standalone sleeve beat
+    the funded book? Read from pf_allocation.json; a beating rival routes to the allocator."""
+    if art.get("state") != "FRESH":
+        return {"status": "UNMEASURED", "why": f"pf_allocation {art.get('state')}"}
+    row = (art.get("doc") or {}).get("best_single_sleeve")
+    if not isinstance(row, Mapping) or not isinstance(row.get("beats_funded"), bool):
+        return {"status": "UNMEASURED", "why": "pf_allocation carries no best_single_sleeve "
+                                               "row with a boolean beats_funded"}
+    return {"status": "MEASURED", "name": row.get("name"),
+            "delta_vs_funded": row.get("delta_vs_funded"), "beats_funded": row["beats_funded"],
+            "route": GROWTH_ALLOCATOR if row["beats_funded"] else None}
 
 
 def measure(root: Path = ROOT, now: datetime | None = None, since: datetime | None = None,
@@ -318,6 +332,7 @@ def measure(root: Path = ROOT, now: datetime | None = None, since: datetime | No
     proof = cache["reports/ALLOCATOR_PROOF.json"]
     q4["contest"] = (allocator_vs_baselines(proof["doc"]) if proof["state"] == "FRESH"
                      else {"status": "UNMEASURED", "why": f"ALLOCATOR_PROOF {proof['state']}"})
+    q4["best_single_sleeve"] = best_single_sleeve(cache["reports/pf_allocation.json"])
 
     unmeasured = sorted(q for q, v in questions.items() if v["status"] == "UNMEASURED")
     red = bool(unmeasured or no_organ)
