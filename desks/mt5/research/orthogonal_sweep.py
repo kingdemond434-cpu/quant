@@ -308,7 +308,6 @@ def _tape_minutes(symbol: str):
     resident = {f.stem for f in files}
     agg_dir = TAPE_AGG / symbol
     if agg_dir.exists():
-        import pandas as pd
         tag = f".v{TAPE_AGG_VERSION}.parquet"
         for a in sorted(agg_dir.glob(f"*{tag}")):
             day = a.name[: -len(tag)].rsplit(".", 1)[0]
