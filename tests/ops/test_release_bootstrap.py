@@ -9,7 +9,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 import yaml
@@ -325,9 +325,15 @@ class _Merged(_Gate):
     GATING_JOBS = ("quality",)
 
     def __init__(self, state: str, verdicts: list[dict[str, str]], merged: bool = True,
-                 merge: str = "c" * 40) -> None:  # fmt: skip
+                 merge: str = "c" * 40,
+                 rows: list[dict[str, Any]] | None = None) -> None:  # fmt: skip
         super().__init__(state, verdicts)
-        self.merged, self.merge = merged, merge
+        self.merged, self.merge, self.rows = merged, merge, rows or []
+        self.registry_read: Any = "unset"
+
+    def registry_rows(self, path: Any) -> tuple[list[dict[str, Any]], str]:
+        self.registry_read = path
+        return self.rows, ("" if self.rows else "no registry configured")
 
     def _gh(self, path: str, *a: str) -> Any:
         if path.endswith("/pulls/650"):
@@ -354,6 +360,74 @@ class _Merged(_Gate):
 def test_merge_first_pins_only_a_cleared_green_merged_head(gate_: Any, ok: bool) -> None:
     sha, bad = bg.merged_at_clear(gate_, "o/r", 650)
     assert (sha == "c" * 40) is ok and (bad == []) is ok
+
+
+A40 = "a" * 40
+
+
+@pytest.mark.parametrize("verdicts,rows,ok", [
+    ([], [{"pr": 650, "sha": A40, "verdict": "CLEAR"}], True),  # the Auditor's registry row
+    ([], [{"pr": 650, "sha": "a" * 9, "verdict": "CLEAR"}], False),  # a row names the FULL head
+    ([], [{"pr": 650, "sha": "b" * 40, "verdict": "CLEAR"}], False),
+    ([], [{"pr": 650, "sha": A40, "verdict": "CLEAR"}, {"pr": 650, "sha": A40, "verdict": "HOLD"}],
+     False),
+    ([], [{"pr": 651, "sha": A40, "verdict": "CLEAR"}], False),  # another PR's row
+    ([{"verdict": "CLEAR", "sha": "a" * 9}], [{"pr": 650, "sha": A40, "verdict": "HOLD"}], False),
+    ([{"verdict": "HOLD", "sha": "a" * 9}], [{"pr": 650, "sha": A40, "verdict": "CLEAR"}], False),
+])  # fmt: skip
+def test_merged_pin_reads_the_registry_and_any_hold_vetoes(verdicts: Any, rows: Any,
+                                                           ok: bool) -> None:  # fmt: skip
+    g = _Merged("pass", verdicts, rows=rows)
+    sha, bad = bg.merged_at_clear(g, "o/r", 650, "C:/r/registry.jsonl")
+    assert (sha == "c" * 40) is ok and (bad == []) is ok
+    assert g.registry_read == "C:/r/registry.jsonl"
+
+
+class _Runs:
+    """A fake gate for merged_genuine: one check run, one suite, one workflow run."""
+
+    WORKFLOW_OF: ClassVar[dict[str, str]] = {"quality": ".github/workflows/ci.yml"}
+
+    def __init__(self, **run: Any) -> None:
+        self.run = {"id": 9, "path": ".github/workflows/ci.yml", "head_sha": A40,
+                    "event": "pull_request", "head_branch": "feat", "pull_requests": [],
+                    "head_repository": {"full_name": "o/r"}, **run}  # fmt: skip
+
+    def _from_ci_app(self, r: Any) -> bool:
+        return True
+
+    def _gh(self, path: str, *a: str) -> Any:
+        if "check_suite_id=" in path:
+            return {"workflow_runs": [self.run]}
+        if path.endswith("/jobs?per_page=100"):
+            return [{"jobs": [{"id": 77}]}]
+        raise AssertionError(path)
+
+    def _flat_pages(self, pages: Any) -> Any:
+        return pages
+
+
+CHECK = {"name": "quality", "id": 77, "check_suite": {"id": 5}}
+
+
+@pytest.mark.parametrize("run,check,ok", [
+    ({}, CHECK, True),  # merged: pull_requests is empty, the branch and head prove it
+    ({"head_branch": "other"}, CHECK, False),
+    ({"head_repository": {"full_name": "fork/r"}}, CHECK, False),  # a fork's run of that sha
+    ({"head_sha": "b" * 40}, CHECK, False),
+    ({"path": ".github/workflows/other.yml"}, CHECK, False),
+    ({"event": "workflow_dispatch"}, CHECK, False),
+    ({}, {**CHECK, "id": 78}, False),  # a check run that is no job of the run (API-posted)
+    ({}, {**CHECK, "name": "unknown"}, False),
+])  # fmt: skip
+def test_merged_genuine_proves_a_job_without_pull_requests(run: Any, check: Any, ok: bool) -> None:
+    assert bg.merged_genuine(_Runs(**run), "o/r", A40, "feat")(check) is ok
+
+
+def test_bootstrap_finds_the_box_gh_and_passes_the_registry() -> None:
+    ps1 = (bg.HERE / "bootstrap_level2.ps1").read_text(encoding="utf-8")
+    assert ps1.index("Get-Command gh") < ps1.index("gh api user")
+    assert '--registry (Join-Path $Registry "registry.jsonl")' in ps1
 
 
 def test_bootstrap_pins_through_the_cleared_merge_check() -> None:
