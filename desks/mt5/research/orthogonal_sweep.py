@@ -254,9 +254,9 @@ def _day_minutes(src: Path, *, cache: bool):
     """The per-minute aggregate of one day file, read from or written to the cache when `cache`.
 
     The cache file is named by the source's size and mtime, so a day file that is rewritten (a
-    late tick lands by read-concat-rewrite) is aggregated again rather than served stale. The open day is
-    never cached: it is still growing. A cache that cannot be written is not an error -- the
-    aggregate is returned from memory and the next read builds it again."""
+    late tick lands by read-concat-rewrite) is aggregated again rather than served stale. The
+    open day is never cached: it is still growing. A cache that cannot be written is not an
+    error -- the aggregate is returned from memory and the next read builds it again."""
     import contextlib
     import os
     import pandas as pd
