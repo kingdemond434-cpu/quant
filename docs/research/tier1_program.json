@@ -9203,6 +9203,27 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "ERX1",
+   "item": "Earnings reactions (event lane): SEC 8-K item 2.02 acceptance times joined to each share CFD's own bar reaction (gap, +1h/+1d/+5d, abnormal vs US500, session bucket), plus a daily earnings-season breadth series for an index-side family on US500/NAS100",
+   "domain": "C",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/earnings_reactions.py",
+    "desks/mt5/tests/test_earnings_reactions.py",
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "scheduled_by": "hourly_cycle:earnings_reactions",
+   "artifact": "desks/mt5/data/earnings_breadth_daily.json",
+   "consumer": "World sensor's index-side earnings-breadth family (idea 15) reads desks/mt5/data/earnings_breadth_daily.json by_reaction_date; per-filing rows in desks/mt5/data/earnings_reactions.jsonl; census desks/mt5/reports/EARNINGS_REACTIONS.json",
+   "gap": "PARTIAL 2026-11-11: built and wired as an hourly leg; never yet run against SEC from the box (the cloud proxy refuses data.sec.gov), and the index-side family that consumes the breadth series is not yet built. Event lane only: it mints no single-name hypotheses.",
+   "next_step": "first box pass writes EARNINGS_REACTIONS.json with fetched CIKs and joined rows; then World sensor builds the US500/NAS100 earnings-breadth family on earnings_breadth_daily.json",
+   "landed": [
+    "earnings reactions 2026-11-11"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
