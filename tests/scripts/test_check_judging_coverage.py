@@ -35,7 +35,8 @@ def test_a_large_backlog_that_is_falling_is_not_a_breach(tmp_path):
     base = datetime.now(UTC) - timedelta(hours=10)
     for i, unjudged in enumerate((500_000, 480_000, 460_000, 440_000, 420_000, 400_000, 380_000)):
         out = cjc.measure(_source(tmp_path, unjudged=unjudged,
-                                  at=base + timedelta(hours=i)), rat)
+                                  at=base + timedelta(hours=i)), rat,
+                          now=base + timedelta(hours=i))
     assert out["status"] == "OK"
     assert out["breaches"] == []
     assert out["unjudged"] == 380_000
@@ -51,7 +52,8 @@ def test_a_backlog_that_never_moves_is_a_breach(tmp_path):
     out = None
     for i in range(cjc.STALL_READINGS + 1):
         out = cjc.measure(_source(tmp_path, unjudged=443_368,
-                                  at=base + timedelta(hours=i)), rat)
+                                  at=base + timedelta(hours=i)), rat,
+                          now=base + timedelta(hours=i))
     assert out["status"] == "BREACH"
     assert any("JUDGING STALLED" in b for b in out["breaches"])
     assert "443,368" in " ".join(out["breaches"])
@@ -64,7 +66,8 @@ def test_a_stall_shorter_than_the_grace_is_not_yet_a_breach(tmp_path):
     out = None
     for i in range(cjc.STALL_READINGS + 1):
         out = cjc.measure(_source(tmp_path, unjudged=443_368,
-                                  at=base + timedelta(minutes=i)), rat)
+                                  at=base + timedelta(minutes=i)), rat,
+                          now=base + timedelta(minutes=i))
     assert out["status"] == "OK", "readings spanning minutes are not a stall"
 
 
@@ -74,7 +77,8 @@ def test_an_empty_backlog_is_never_a_stall(tmp_path):
     base = datetime.now(UTC) - timedelta(hours=12)
     out = None
     for i in range(cjc.STALL_READINGS + 2):
-        out = cjc.measure(_source(tmp_path, unjudged=0, at=base + timedelta(hours=i)), rat)
+        out = cjc.measure(_source(tmp_path, unjudged=0, at=base + timedelta(hours=i)), rat,
+                          now=base + timedelta(hours=i))
     assert out["status"] == "OK" and out["judged_share"] == 1.0
 
 
@@ -143,3 +147,34 @@ def test_the_fence_rations_nothing_and_caps_nothing():
     src = Path(cjc.__file__).read_text(encoding="utf-8")
     for forbidden in ("max_cells", "limit_cells", "throttle", "cap_", "shrink"):
         assert forbidden not in src, f"a coverage fence must never {forbidden}"
+
+
+@pytest.mark.parametrize("stamp", [None, "invalid", "old", "future"])
+def test_bad_source_clock_never_advances_or_recreates_the_ratchet(tmp_path, stamp):
+    now = datetime.now(UTC)
+    rat = tmp_path / "ratchet.json"
+    src = _source(tmp_path, unjudged=50, docket=100, at=now)
+    cjc.measure(src, rat, now=now)
+    saved = rat.read_bytes()
+    doc = json.loads(src.read_text())
+    doc["at"] = ({"old": (now-timedelta(hours=cjc.STALE_H+1)).isoformat(),
+                  "future": (now+timedelta(minutes=1)).isoformat()}.get(stamp, stamp))
+    src.write_text(json.dumps(doc))
+    out = cjc.measure(src, rat, now=now)
+    assert out["status"] == "UNMEASURED" and out["ok"] is False
+    assert rat.read_bytes() == saved
+    assert "unjudged" not in out
+
+
+def test_fresh_source_after_stale_source_keeps_high_water(tmp_path):
+    now = datetime.now(UTC)
+    rat = tmp_path / "ratchet.json"
+    src = _source(tmp_path, unjudged=20, docket=100, at=now)
+    cjc.measure(src, rat, now=now)
+    out = cjc.measure(src, rat, now=now+timedelta(hours=cjc.STALE_H+1))
+    assert not out["ok"]
+    later = now+timedelta(hours=cjc.STALE_H+2)
+    src = _source(tmp_path, unjudged=10, docket=100, at=later)
+    out = cjc.measure(src, rat, now=later)
+    assert out["ok"] and out["judged_high_water"] == 90
+    assert out["source_at"] == out["measured_at"]
