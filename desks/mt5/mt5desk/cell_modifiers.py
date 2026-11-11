@@ -206,6 +206,18 @@ def _risk_symbols() -> tuple[str, ...]:
         return ("US500", "NAS100", "AUS200")
 
 
+#: Version of the modifier definitions above. Bumped whenever a regime name that used to be
+#: refused gains a definition, so judge_coverage can record the census of newly judgeable cells
+#: (and the trial charge they add) as a named cause the pass it lands, not a mystery jump.
+DEFINITIONS_VERSION = "2026-11-11.risk_on_off"
+NEWLY_DEFINED = {"2026-11-11.risk_on_off": tuple(sorted(RISK_REGIMES))}
+
+#: Per-process memo of the RISK index's PIT sign series. load_peer caches the frame on the
+#: parquet's (path, mtime), so the frame OBJECT changes exactly when the file does; the memo
+#: holds that object and is reused while load_peer keeps returning it.
+_RISK_MEMO: dict[str, object] = {}
+
+
 def _risk_series() -> tuple[str, pd.Series] | None:
     """(symbol, close) of the first RISK-role index with H1 bars here, else None."""
     from mt5desk.family_learned_propagation import load_peer
@@ -213,24 +225,35 @@ def _risk_series() -> tuple[str, pd.Series] | None:
     for sym in _risk_symbols():
         df = load_peer(sym)
         if df is not None and len(df) > RISK_LOOKBACK_BARS:
-            return sym, df["close"].astype(float).sort_index()
+            if _RISK_MEMO.get("frame") is not df:
+                _RISK_MEMO.clear()
+                _RISK_MEMO.update(frame=df, sym=sym,
+                                  close=df["close"].astype(float).sort_index())
+            return sym, _RISK_MEMO["close"]  # type: ignore[return-value]
     return None
+
+
+def _risk_sign(series: pd.Series) -> pd.Series:
+    import numpy as np
+
+    s = series[~series.index.duplicated(keep="last")].sort_index()
+    # The index bar stamped t closes at t + 1 bar; shifting one bar means the state stamped at t
+    # was fully known at t, the open of a target bar stamped t.
+    return np.sign(np.log(s).diff(RISK_LOOKBACK_BARS)).shift(1)
 
 
 def risk_state(bars: pd.DataFrame, series: pd.Series | None = None) -> pd.Series:
     """+1 risk-on, -1 risk-off, 0 no state, on `bars`' own index (see RISK_REGIMES)."""
-    import numpy as np
-
     if series is None:
         got = _risk_series()
         if got is None:
             return pd.Series(0, index=bars.index, dtype=int)
-        series = got[1]
-    s = series[~series.index.duplicated(keep="last")].sort_index()
-    ret = np.log(s).diff(RISK_LOOKBACK_BARS)
-    # The index bar stamped t closes at t + 1 bar; shifting one bar means the state stamped at t
-    # was fully known at t, the open of a target bar stamped t.
-    sign = np.sign(ret).shift(1)
+        if _RISK_MEMO.get("sign_of") is not got[1]:
+            _RISK_MEMO.update(sign_of=got[1], sign=_risk_sign(got[1]))
+        sign = _RISK_MEMO["sign"]
+        sign = sign.copy()  # type: ignore[union-attr]
+    else:
+        sign = _risk_sign(series)
     tz = getattr(bars.index, "tz", None)
     if tz is None and getattr(sign.index, "tz", None) is not None:
         sign.index = sign.index.tz_convert(None)

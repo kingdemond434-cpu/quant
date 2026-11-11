@@ -44,6 +44,8 @@ KINDS = (
     "CLOCKS_ENROLLED", "PROMOTION_DECIDED", "ALLOCATION_DECIDED",
     "RELEASE_IDENTIFIED", "STATE_PUBLISHED",
     "EXPRESSIONS_SCREENED", "MATH_CARDS_JUDGED",
+    # A modifier definition landed and turned refused cells judgeable (judge_coverage census).
+    "MODIFIER_DEFINED",
     # THE PLUMBING SPEAKS HERE TOO (principal 2026-09-23). A plumbing defect that survives a pass
     # escalates to three surfaces a human meets without asking, and this log is one of them: the
     # dashboard renders `plumbing`, docs/research/PLUMBING_ALERTS.md lists it, and a

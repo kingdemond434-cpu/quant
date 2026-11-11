@@ -3511,6 +3511,40 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     return doc
 
 
+def _row_regime(row: dict[str, Any]) -> str:
+    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    return str(row.get("regime") or params.get("regime") or "").strip().lower()
+
+
+def modifier_definitions(rows: list[dict[str, Any]], prior: dict[str, Any]) -> dict[str, Any]:
+    """THE CAUSE OF A TRIAL-CHARGE JUMP, NAMED (2026-11-11).
+
+    When `cell_modifiers` gains a definition for a regime it used to refuse, every docket cell
+    carrying that regime becomes judgeable at once, and the deflated-Sharpe denominator rises by
+    that many trials in one pass. This census counts those cells against the definitions version,
+    so the jump reads as `newly_judgeable` under a named version, not as a mystery. `changed` is
+    True on the pass whose version differs from the ratchet's; the write emits MODIFIER_DEFINED.
+    """
+    try:
+        from mt5desk import cell_modifiers as cm
+    except ImportError:
+        return {"status": "UNMEASURED", "why": "cell_modifiers not importable"}
+    version = str(getattr(cm, "DEFINITIONS_VERSION", "") or "")
+    newly = tuple(getattr(cm, "NEWLY_DEFINED", {}).get(version, ()))
+    by_regime = {r: 0 for r in newly}
+    for row in rows:
+        reg = _row_regime(row)
+        if reg in by_regime:
+            by_regime[reg] += 1
+    prior_version = str(prior.get("modifier_definitions_version") or "") or None
+    return {"status": "MEASURED", "version": version, "prior_version": prior_version,
+            "changed": prior_version != version, "newly_defined": list(newly),
+            "newly_judgeable_by_regime": by_regime,
+            "newly_judgeable": sum(by_regime.values()),
+            "why": ("docket cells whose regime gained a desk definition in this version: each "
+                    "is a trial the deflated-Sharpe and SPA/PBO charges now count")}
+
+
 def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
            ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
@@ -3911,6 +3945,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
     }
+    totals["modifier_definitions"] = modifier_definitions(rows, prior)
     return {
         "at": at.isoformat(timespec="seconds"),
         "verdict": "COVERED" if not starved else "STARVED",
@@ -4282,6 +4317,21 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
     txn.commit()
 
 
+def prior_md_version(prior: dict[str, Any]) -> Any:
+    return prior.get("modifier_definitions_version")
+
+
+def _emit_modifier_defined(md: dict[str, Any]) -> None:
+    try:
+        from libs.ops.events import emit
+        emit("MODIFIER_DEFINED", producer="judge_coverage", version=md.get("version"),
+             prior_version=md.get("prior_version"),
+             newly_judgeable=md.get("newly_judgeable"),
+             newly_judgeable_by_regime=md.get("newly_judgeable_by_regime"))
+    except Exception:  # noqa: BLE001 -- the census is in the report either way
+        return
+
+
 def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
                   ratchet: Path | None) -> None:
     target = report or REPORT
@@ -4302,6 +4352,10 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
         # A completed pass clears the previous timeout's artifact in the same commit.
         txn.delete(TIMEOUT_REPORT)
     fams = doc.get("families") or {}
+    _md = (doc.get("totals") or {}).get("modifier_definitions") or {}
+    rt_prior = _read(ratchet or RATCHET) or {}
+    if _md.get("status") == "MEASURED" and _md.get("changed") and report is None:
+        _emit_modifier_defined(_md)
     state = {
         "at": doc.get("at"),
         "families": {f: {"unjudged": int(r.get("unjudged") or 0),
@@ -4318,6 +4372,8 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
                                       or {}).get("not_ok_passes") or 0),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
+        "modifier_definitions_version": _md.get("version") if _md.get("status") == "MEASURED"
+        else prior_md_version(rt_prior),
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
                 "this backlog and still unjudged at the next reading were STARVED, because a "
                 "cell leaves a cohort exactly one way -- by being judged"),

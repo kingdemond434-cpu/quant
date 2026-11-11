@@ -219,3 +219,33 @@ def test_a_tz_naive_bar_index_reads_the_same_state() -> None:
     b = cm.risk_state(naive, _index()).to_numpy()
     assert (a == b).all()
 
+
+
+def test_the_risk_state_is_computed_once_per_index_frame(monkeypatch) -> None:
+    import mt5desk.family_learned_propagation as flp
+
+    frame = pd.DataFrame({"close": _index().to_numpy()}, index=_index().index)
+    calls = {"n": 0}
+    real = cm._risk_sign
+
+    def counting(series):
+        calls["n"] += 1
+        return real(series)
+
+    monkeypatch.setattr(cm, "_RISK_MEMO", {})
+    monkeypatch.setattr(cm, "_risk_sign", counting)
+    monkeypatch.setattr(cm, "_risk_symbols", lambda: ("US500",))
+    current = {"df": frame}
+    monkeypatch.setattr(flp, "load_peer", lambda sym: current["df"])
+    bars = _bars()
+    a = cm.risk_state(bars)
+    b = cm.risk_state(bars)
+    assert calls["n"] == 1, "same parquet (same cached frame): the sign is reused"
+    assert a.equals(b)
+    current["df"] = frame.copy()          # load_peer re-read the file: a new frame object
+    cm.risk_state(bars)
+    assert calls["n"] == 2, "a changed parquet recomputes"
+
+
+def test_the_definitions_version_names_the_risk_regimes() -> None:
+    assert set(cm.NEWLY_DEFINED[cm.DEFINITIONS_VERSION]) == set(cm.RISK_REGIMES)
