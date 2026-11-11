@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "heat_floor_ledger": {
+   "hypothesis": "Sampling each account's heat (open risk / equity) every hour against the 20% floor, and naming a known cause for every below-floor hour, turns idle capital the heat law forbids into a named, priced line within one day, so an unexplained shortfall is a breach someone sees rather than a silence.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_breaches",
+    "better": "down",
+    "organ": "report:HEAT_FLOOR_LEDGER.json"
+   },
+   "falsifier": {
+    "metric": "n_breaches",
+    "op": ">=",
+    "threshold": 1,
+    "after": "30 days in which every account's samples stay UNMEASURED: the ledger reads nothing and the venue state it watches is not published where it looks"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
