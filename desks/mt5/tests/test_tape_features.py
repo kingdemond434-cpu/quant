@@ -367,3 +367,80 @@ def test_the_report_states_how_old_the_deferred_open_day_is(
     clock["t"] += 600.0
     out = tf.run(rig, ["EURUSD"], days_back=0)
     assert out["open_days_deferred_max_age_s"] == 600.0
+
+
+def test_a_pass_out_of_budget_builds_nothing_more_but_still_writes_both_surfaces(
+        rig: ts.TapeStore, monkeypatch: pytest.MonkeyPatch) -> None:
+    """2026-11-10/11: every hourly pass was killed at the 50-min limit and none exited 0."""
+    rig_days = DAYS
+    tf.run(rig, ["EURUSD"], days_back=0)                      # every day cached once
+    first = _surface_hours(tf.COST_OUT)
+    for d in rig_days:                                         # every day changes
+        rig.write_segment("EURUSD", d, _synth(d, seed="more"), POINT, 5)
+        rig.seal_day("EURUSD", d)
+    clock = {"t": 100.0}
+    monkeypatch.setattr(tf, "_mono", lambda: clock["t"])
+    out = tf.run(rig, ["EURUSD"], days_back=0, deadline=50.0)  # already past the deadline
+    assert out["symbol_days_built"] == 0 and out["budget_exhausted"] is True
+    assert out["backlog_symbol_days"] == len(rig_days)
+    assert _surface_hours(tf.COST_OUT) == first, "cached cells still reach the surface"
+    clock["t"] = 0.0
+    done = tf.run(rig, ["EURUSD"], days_back=0, deadline=50.0)
+    assert done["symbol_days_built"] == len(rig_days) and done["budget_exhausted"] is False
+    assert done["backlog_symbol_days"] == 0
+
+
+def test_the_next_pass_starts_with_the_symbols_the_last_one_did_not_finish(
+        rig: ts.TapeStore, monkeypatch: pytest.MonkeyPatch) -> None:
+    for d in DAYS:
+        rig.write_segment("GBPUSD", d, _synth(d), POINT, 5)
+        rig.seal_day("GBPUSD", d)
+    clock = {"mono": 0.0, "wall": 1_000.0}
+    monkeypatch.setattr(tf, "_now_s", lambda: clock["wall"])
+    ticks = {"n": 0}
+    real_build = tf.build_day
+
+    def counted(*a, **kw):                                     # the budget runs out mid-pass
+        ticks["n"] += 1
+        clock["mono"] = 100.0 if ticks["n"] >= 2 else 0.0
+        return real_build(*a, **kw)
+    monkeypatch.setattr(tf, "build_day", counted)
+    monkeypatch.setattr(tf, "_mono", lambda: clock["mono"])
+    first = tf.run(rig, ["EURUSD", "GBPUSD"], days_back=0, deadline=50.0)
+    assert first["budget_exhausted"] is True
+    state = json.loads(tf.STATE.read_text("utf-8"))
+    assert "EURUSD" not in state[tf._SYMBOL_DONE] and "GBPUSD" not in state[tf._SYMBOL_DONE]
+    built_first = {k for k in state if k.startswith(("EURUSD/", "GBPUSD/"))}
+    assert built_first == {f"EURUSD/{DAYS[0]}", f"EURUSD/{DAYS[1]}"}
+
+    order: list[str] = []
+    monkeypatch.setattr(tf, "build_day", lambda store, sym, day, point: (
+        order.append(sym), real_build(store, sym, day, point))[1])
+    clock["mono"], clock["wall"] = 0.0, 2_000.0
+    second = tf.run(rig, ["EURUSD", "GBPUSD"], days_back=0, deadline=50.0)
+    assert second["budget_exhausted"] is False and second["backlog_symbol_days"] == 0
+    assert order == ["EURUSD", "GBPUSD", "GBPUSD", "GBPUSD"]
+    state = json.loads(tf.STATE.read_text("utf-8"))
+    assert state[tf._SYMBOL_DONE] == {"EURUSD": 2_000.0, "GBPUSD": 2_000.0}
+    clock["wall"] = 3_000.0
+    for d in DAYS:                                             # both change again
+        for sym in ("EURUSD", "GBPUSD"):
+            rig.write_segment(sym, d, _synth(d, seed="again"), POINT, 5)
+            rig.seal_day(sym, d)
+    state[tf._SYMBOL_DONE]["EURUSD"] = 2_500.0                 # GBPUSD finished longer ago
+    tf.STATE.write_text(json.dumps(state))
+    order.clear()
+    tf.run(rig, ["EURUSD", "GBPUSD"], days_back=0, deadline=50.0)
+    assert order[0] == "GBPUSD"
+
+
+def test_main_writes_the_report_with_its_budget_reading(
+        rig: ts.TapeStore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(tf, "PASS_BUDGET_S", 3600.0)
+    out = tmp_path / "TAPE_FEATURES.json"
+    rc = tf.main(["--root", str(rig.root), "--symbols", "EURUSD", "--days", "0",
+                  "--out", str(out)])
+    assert rc == 0
+    rep = json.loads(out.read_text("utf-8"))
+    assert rep["budget_exhausted"] is False and rep["backlog_symbol_days"] == 0
+    assert rep["budget_left_at_start_s"] is not None and rep["elapsed_s"] >= 0
