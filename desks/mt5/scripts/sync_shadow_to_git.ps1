@@ -688,6 +688,7 @@ $relPaths = @(
     # plain-English answer to "is the desk running", which until now only a person at the box saw.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/MERGE_PIPELINE.json",
+    "desks/mt5/reports/WATCHDOG_DRILL.json",
     "desks/mt5/reports/DESK_HEALTH.json",
     # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
     # hourly) names every scheduled organ that is FAILING, NOT_SCHEDULED, STALE or has no
