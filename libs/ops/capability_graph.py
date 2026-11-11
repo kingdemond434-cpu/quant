@@ -893,7 +893,10 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/data/hypotheses/external_survivors.json",
                 "desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "data/alpha_registry.sqlite",
                 "desks/mt5/data/universe/universe.json"),
-         writes=("desks/mt5/reports/CELL_CULTURE.json",)),
+         writes=("desks/mt5/reports/CELL_CULTURE.json",),
+         # Its gap list reaches a decision only by reordering the deep-forest miner's grounds,
+         # so it is priced on the miner's rent line, as cell_emitter is on the compiler's.
+         billed_as=("deep_forest_miner",)),
     Node("empty_cluster_forcer", "desks/mt5/research/empty_cluster_forcer.py",
          reads=("desks/mt5/reports/JUDGE_COVERAGE.json",
                 "desks/mt5/reports/EFFECTIVE_BREADTH.json",
