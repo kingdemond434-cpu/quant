@@ -11,9 +11,13 @@ evidence, diversification, execution quality and ruin probability justify, and m
 opportunity set is unusually strong. Nothing done today or in the past may hold that back, and
 nothing added in future may be misread as licence to do less. This fence makes that mechanical:
 
-  G1  the utilisation floor is FLAT at HEAT_TARGET (20%) and growth is FREE above it to the
-      HEAT_HARD_CEILING (30%): `heat_policy.resolve` carries `floor = target if mandate`, the
-      allocator calls it with the mandate on, and nothing multiplies the floor by readiness
+  G1  the utilisation target (20%) holds the book up WHENEVER IT IS CERTIFIED FREE on the
+      measured growth curve, and growth is FREE above it to the measured ceilings:
+      `heat_policy.resolve` carries `floor = target if (mandate and ok)`, the allocator calls it
+      with the mandate on, and nothing multiplies the floor by readiness. TWO-SIDED SINCE
+      2026-10-06 (principal: "Cash is an allocation", "allow exposure to rise or fall when
+      justified"; thread approval 15:42Z): when the curve says the target gives up real growth,
+      the growth optimum runs, down to cash -- that reduction is Rule 1 satisfied by the curve
   G2  the resolved heat is FILLED, never reported short: `pf_allocator` carries the FLOOR FILL
   G3  the gateway is WIRED to the allocator: `cap_by_heat` budgets from `allocator_heat()`,
       `promoted_lot` deploys the book's fraction un-re-shrunk (`from_book`), and
@@ -68,8 +72,9 @@ def check() -> list[dict[str, str]]:
     dc = _src("desks/mt5/mt5desk/decision_core.py")
 
     # G1 -- flat floor, growth free above it
-    if "floor = target if mandate else 0.0" not in hp:
-        f.append({"check": "G1_FLAT_FLOOR", "why": "heat_policy.resolve no longer floors at the target"})
+    if "floor = target if (mandate and (ok or unmeasured)) else 0.0" not in hp:
+        f.append({"check": "G1_CERTIFIED_FLOOR",
+                  "why": "heat_policy.resolve no longer holds the target when it is certified free"})
     if re.search(r"floor\s*=\s*target\s*\*", hp):
         f.append({"check": "G1_FLAT_FLOOR", "why": "the floor is multiplied by something (readiness?)"})
     if "elif h > target:" not in hp:
@@ -112,15 +117,22 @@ def check() -> list[dict[str, str]]:
                   "why": "live_heat_ceiling no longer requires a MEASURED survival reading -- an "
                          "unmeasured envelope must never license heat above the constant"})
     try:
-        from mt5desk.gateway_config_fallback import HEAT_HARD_CEILING, HEAT_TARGET
-        # The floor is the principal's standing instruction and is NOT part of the 2026-09-07
-        # change ("ignore the 20% heat minimum criticism"). The ceiling constant must stay at 0.30
-        # too -- not as the operative bar any more, but as the fallback every unmeasured path
-        # falls to; moving it would move what a monitoring failure permits.
-        if not (abs(HEAT_TARGET - 0.20) < 1e-9 and abs(HEAT_HARD_CEILING - 0.30) < 1e-9):
-            f.append({"check": "G1_CONSTANTS", "why": f"target {HEAT_TARGET} fallback ceiling "
-                                                       f"{HEAT_HARD_CEILING} (principal: 0.20 "
-                                                       "floor, 0.30 unmeasured fallback)"})
+        from mt5desk.gateway_config_fallback import (
+            HEAT_HARD_CEILING,
+            HEAT_TARGET,
+            HEAT_UNMEASURED_FALLBACK,
+        )
+        # THE PRINCIPAL'S 2026-10-29 LAW (D-20261029-012; "remove the 30% cap, fallback 20%"): the
+        # 20% target, NO fixed cap (the hard constant is the whole account), and an unmeasured path
+        # falls to the 20% target -- moving the fallback would move what a monitoring failure
+        # permits, and lowering the hard constant would bring a fixed cap back.
+        if not (abs(HEAT_TARGET - 0.20) < 1e-9 and abs(HEAT_HARD_CEILING - 1.00) < 1e-9
+                and abs(HEAT_UNMEASURED_FALLBACK - HEAT_TARGET) < 1e-9):
+            f.append({"check": "G1_CONSTANTS", "why": f"target {HEAT_TARGET} hard constant "
+                                                       f"{HEAT_HARD_CEILING} unmeasured fallback "
+                                                       f"{HEAT_UNMEASURED_FALLBACK} (principal: "
+                                                       "0.20 target, no fixed cap, 0.20 "
+                                                       "unmeasured fallback)"})
     except Exception as exc:
         f.append({"check": "G1_CONSTANTS", "why": f"cannot import sizing constants: {exc}"})
 

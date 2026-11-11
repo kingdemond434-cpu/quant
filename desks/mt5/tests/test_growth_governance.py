@@ -58,7 +58,7 @@ def test_floor_20_growth_free_to_30() -> None:
     assert resolve(0.08, curve=GOOD_CURVE).total_heat == pytest.approx(HEAT_TARGET)
     assert resolve(0.23, curve=GOOD_CURVE).total_heat == pytest.approx(0.23)
     assert resolve(0.30, curve=GOOD_CURVE).total_heat == pytest.approx(0.30)
-    assert resolve(0.45, curve=GOOD_CURVE).total_heat == pytest.approx(HEAT_HARD_CEILING)
+    assert resolve(0.45, curve=GOOD_CURVE).total_heat == pytest.approx(0.45)  # no fixed cap since 2026-10-29 (D-20261029-012)
     for r in (0.0, 0.3, 1.0):                                        # readiness never gates
         assert resolve(0.01, curve=GOOD_CURVE, readiness=r).total_heat == pytest.approx(0.20)
 
