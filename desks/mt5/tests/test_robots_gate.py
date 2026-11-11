@@ -219,3 +219,18 @@ def test_the_asia_collector_fetches_a_public_path(monkeypatch: pytest.MonkeyPatc
     rec, opened = _collect(monkeypatch, ("PUBLIC", "robots.txt allows this path"))
     assert opened == [URL] and rec["status"] == "UNREACHABLE"
     assert not _ledger["ledger"].exists(), "an allowed fetch is not billed"
+
+
+def test_every_matching_user_agent_group_is_combined() -> None:
+    """RFC 9309 s2.2.1: a Disallow in a SECOND group naming our agent still binds (it was
+    ignored when only the first matching group was read, which failed open)."""
+    from libs.data.robots_gate import robots_allows, robots_rules
+    txt = ("User-agent: quant-research\nAllow: /\n\n"
+           "User-agent: other\nDisallow: /\n\n"
+           "User-agent: quant-research\nDisallow: /private\n\n"
+           "User-agent: *\nDisallow: /\n")
+    rules = robots_rules(txt, "quant-research")
+    assert not robots_allows(rules, "https://x.org/private/x")
+    assert robots_allows(rules, "https://x.org/public")
+    star = robots_rules("User-agent: *\nDisallow: /a\n\nUser-agent: *\nDisallow: /b\n", "q")
+    assert not robots_allows(star, "https://x.org/b/1") and not robots_allows(star, "https://x.org/a")

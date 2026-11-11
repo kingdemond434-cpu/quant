@@ -44,7 +44,7 @@ HARD_STOP: frozenset[int] = frozenset({401, 403, 429, 451})
 
 
 def robots_rules(txt: str, agent: str = "quant-research") -> Rules:
-    """(path pattern, allow) for the group that applies to `agent`, else the '*' group."""
+    """(path pattern, allow) of every group that names `agent`, else of every '*' group."""
     groups: list[tuple[list[str], Rules]] = []
     cur_agents: list[str] = []
     cur_rules: Rules = []
@@ -69,14 +69,15 @@ def robots_rules(txt: str, agent: str = "quant-research") -> Rules:
             last_was_agent = False
     if cur_agents or cur_rules:
         groups.append((cur_agents, cur_rules))
+    # RFC 9309 s2.2.1: EVERY group that matches the product token is combined (a Disallow in a
+    # second matching group must bind; taking only the first failed open). The '*' groups,
+    # likewise combined, apply only when no group names the agent.
     a = agent.lower()
-    for agents, rules in groups:
-        if any(x != "*" and x in a for x in agents):
-            return rules
-    for agents, rules in groups:
-        if "*" in agents:
-            return rules
-    return []
+    named = [r for agents, rules in groups if any(x != "*" and x in a for x in agents)
+             for r in rules]
+    if any(any(x != "*" and x in a for x in agents) for agents, _ in groups):
+        return named
+    return [r for agents, rules in groups if "*" in agents for r in rules]
 
 
 def robots_allows(rules: Rules, url: str) -> bool:
