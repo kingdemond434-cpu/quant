@@ -201,3 +201,21 @@ def test_family_refuses_without_room_for_both_windows():
     df = _frame(vals, idx)
     assert family_cross_asset_residual(df, factors=[_frame(vals * 2, idx)],
                                        lookback=240, beta_win=240) == []
+
+
+def test_bracket_is_anchored_on_the_signal_bars_own_close():
+    """Stop and target straddle the close AT the signal bar, not the bar before it.
+
+    `i` indexes the residual series, which drops the first joined row, so a positional read of
+    the joined close lagged one bar (2026-11-06 Judge finding). Recover the anchor from the
+    bracket: target = px + k*rr, stop = px - k  =>  px = (target + rr*stop) / (1 + rr).
+    """
+    _idx, df, factors = _bars()
+    rr = 1.5
+    sigs = family_cross_asset_residual(df, factors=factors, lookback=240, beta_win=240,
+                                       entry_z=1.5, ttl_bars=8, rr=rr)
+    assert sigs
+    close = df["close"].astype(float)
+    for s in sigs:
+        px = (s.target + rr * s.stop) / (1 + rr)
+        assert px == pytest.approx(float(close.loc[s.time]), rel=1e-12), s.time
