@@ -89,7 +89,37 @@ jobs:
       law_gate: ${{ steps.evidence.outputs.law_gate }}
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
-      - uses: actions/checkout@v4
+      # THE SCOPE (2026-11-11): a PR touching only docs, reports or box state (the allowlist in
+      # .github/scripts/ci_scope.py, read from the BASE) skips the heavy steps below; the job
+      # still runs and succeeds, because audit_gate needs a success from every gating job. Any
+      # doubt, any push and any dispatch is heavy.
+      - name: Scope checkout (the base's filter)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _ci_scope
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /libs/ops/release.py
+            /ops/release/protected_paths.txt
+          persist-credentials: false
+      - name: Scope (docs, reports or state only?)
+        id: scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f _ci_scope/.github/scripts/ci_scope.py ]; then
+            python3 -I _ci_scope/.github/scripts/ci_scope.py --pr "$PR" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
         with:
           # FULL HISTORY, BLOBLESS (D-20261027-003): check_seal_clears proves the auto-sign's
           # CLEAR record only ever grew, which needs every commit that touched it. A depth-1
@@ -97,19 +127,22 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
-      - uses: actions/setup-python@v5
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
           # the base's cache scope, so a base-scope pip cache could be poisoned for these gating jobs
 
-      - name: Install (pinned dev extras)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Install (pinned dev extras)
         id: dev_install
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: LAW GATE (constitutional -- portable fences)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: LAW GATE (constitutional -- portable fences)
         # L1.37: laws were enforced on cron ticks and nowhere else, so a breach could enter the
         # tree between ticks with nothing watching. This runs the portable law fences (sealed
         # core, law families, timidity incl. all prompt surfaces, enforcement matrix, scheduler
@@ -118,20 +151,24 @@ jobs:
           set -o pipefail
           python scripts/run_law_gate.py --laws-only | tee law_gate.txt
 
-      - name: Lint (ruff)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Lint (ruff)
         run: ruff check .
 
       # desks/mt5 is excluded from the root ruff config (its style debt is large), but a name that
       # does not exist is not style: it is a NameError waiting on a code path. Held at zero here.
-      - name: Lint desks/mt5 (bug class only)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Lint desks/mt5 (bug class only)
         run: ruff check desks/mt5 --isolated --target-version py311 --select E9,F63,F7,F82
 
-      - name: Types (mypy --strict)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Types (mypy --strict)
         run: mypy
 
       # L1.37: enforce the portable constitution/family/wiring fences before a commit can enter.
       # Live-state checks remain on the VPS; a clean CI worker must not manufacture desk state.
-      - name: Laws (portable)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Laws (portable)
         run: python scripts/run_law_gate.py --laws-only
 
       # COVERAGE IS MEASURED HERE OR IT IS NOT MEASURED AT ALL. pytest-cov has been a declared
@@ -143,7 +180,7 @@ jobs:
         id: root_tests
         # Collect independent software diagnostics even when a law is red.
         # The failed law step still fails quality and all release dependents.
-        if: ${{ !cancelled() && steps.dev_install.outcome == 'success' }}
+        if: ${{ (!cancelled() && steps.dev_install.outcome == 'success') && steps.scope.outputs.heavy != 'false' }}
         run: pytest -n auto --dist loadfile --cov=libs --cov-branch --cov-report=term:skip-covered --cov-report=json:coverage.json --junitxml=quality-junit.xml
 
       # Two floors, not one: a repo-wide average lets ORDER-PATH coverage fall while a wave of
@@ -152,7 +189,7 @@ jobs:
       # Shared libs are also exercised by the desk suite. Preserve raw branch data so the
       # unchanged floor measures BOTH completed suites, not only root testpaths=[tests].
       - name: Preserve root coverage
-        if: ${{ !cancelled() && steps.root_tests.outcome == 'success' }}
+        if: ${{ (!cancelled() && steps.root_tests.outcome == 'success') && steps.scope.outputs.heavy != 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: root-coverage-${{ github.sha }}
@@ -160,7 +197,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
-      - name: Release evidence (law gate verdict + suite counts)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Release evidence (law gate verdict + suite counts)
         id: evidence
         run: python scripts/release_promotion.py counts --junit quality-junit.xml --law-log law_gate.txt >> "$GITHUB_OUTPUT"
 
@@ -178,15 +216,47 @@ jobs:
     outputs:
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
-      - uses: actions/checkout@v4
+      # THE SCOPE (2026-11-11): a PR touching only docs, reports or box state (the allowlist in
+      # .github/scripts/ci_scope.py, read from the BASE) skips the heavy steps below; the job
+      # still runs and succeeds, because audit_gate needs a success from every gating job. Any
+      # doubt, any push and any dispatch is heavy.
+      - name: Scope checkout (the base's filter)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _ci_scope
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /libs/ops/release.py
+            /ops/release/protected_paths.txt
+          persist-credentials: false
+      - name: Scope (docs, reports or state only?)
+        id: scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f _ci_scope/.github/scripts/ci_scope.py ]; then
+            python3 -I _ci_scope/.github/scripts/ci_scope.py --pr "$PR" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
           # the base's cache scope, so a base-scope pip cache could be poisoned for these gating jobs
 
-      - name: Install (pinned dev extras)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Install (pinned dev extras)
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
@@ -199,13 +269,15 @@ jobs:
       # cap. Every test still runs; xdist spreads files across the runner's cores (loadfile keeps
       # a file's tests, and their module fixtures, on one worker) and pytest-cov combines the
       # per-worker coverage before the floor below reads it.
-      - name: MT5 desk suite (branch coverage on the money path)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: MT5 desk suite (branch coverage on the money path)
         run: >-
           pytest desks/mt5/tests -q -p no:randomly --timeout=600 -n auto --dist loadfile
           --cov=libs --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
           --cov-report=term:skip-covered --cov-report=json:mt5cov.json --junitxml=mt5-junit.xml
 
-      - name: Diagnose decision-core uncovered branches
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Diagnose decision-core uncovered branches
         run: |
           python - <<'PY'
           import json
@@ -218,22 +290,26 @@ jobs:
 
       # The baselines (desks/mt5/data/coverage_high_water.json, pit_high_water.json) are
       # COMMITTED and the floor FAILS without them -- a ratchet with no memory is not a ratchet.
-      - name: Money-path coverage floor (ratcheted)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Money-path coverage floor (ratcheted)
         run: python scripts/check_mt5_coverage_floor.py --report mt5cov.json
 
       # A runner that measures HIGHER than the committed baseline rewrites the baseline on its
       # own disk and then throws that disk away. Surface the rise instead of losing it -- a
       # warning, never a failure: a higher measurement is good news that needs a commit.
-      - name: Ratchet rose on the runner? (commit the new baseline)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Ratchet rose on the runner? (commit the new baseline)
         run: >-
           git diff --exit-code desks/mt5/data/coverage_high_water.json
           desks/mt5/data/pit_high_water.json
           || echo "::warning::ratchet rose on the runner -- commit the new baseline"
 
-      - name: Capability graph (every producer reaches a decision)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Capability graph (every producer reaches a decision)
         run: python scripts/check_reachability.py
 
-      - name: Point-in-time provenance census (ratcheted)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Point-in-time provenance census (ratcheted)
         run: python scripts/check_pit.py
 
       # ARCHITECTURAL ONLY ON THE RUNNER, and that is the whole reason the fence has two modes.
@@ -246,14 +322,17 @@ jobs:
       # The auditor's own problems stay fatal in both modes: the flat 20% heat floor is the
       # principal's one fixed policy and MEASURED-without-rent is the mandate's measurement law,
       # and neither depends on which machine is asking.
-      - name: Blueprint coverage fence (mandate §4, architectural)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Blueprint coverage fence (mandate §4, architectural)
         run: python scripts/check_blueprint_coverage.py
 
-      - name: Release evidence (suite counts)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Release evidence (suite counts)
         id: evidence
         run: python scripts/release_promotion.py counts --junit mt5-junit.xml >> "$GITHUB_OUTPUT"
 
-      - name: Preserve desk coverage
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Preserve desk coverage
         uses: actions/upload-artifact@v4
         with:
           name: desk-coverage-${{ github.sha }}
@@ -266,22 +345,57 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # THE SCOPE (2026-11-11): a PR touching only docs, reports or box state (the allowlist in
+      # .github/scripts/ci_scope.py, read from the BASE) skips the heavy steps below; the job
+      # still runs and succeeds, because audit_gate needs a success from every gating job. Any
+      # doubt, any push and any dispatch is heavy.
+      - name: Scope checkout (the base's filter)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _ci_scope
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /libs/ops/release.py
+            /ops/release/protected_paths.txt
+          persist-credentials: false
+      - name: Scope (docs, reports or state only?)
+        id: scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f _ci_scope/.github/scripts/ci_scope.py ]; then
+            python3 -I _ci_scope/.github/scripts/ci_scope.py --pr "$PR" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -e ".[dev]"
-      - uses: actions/download-artifact@v4
+      - if: steps.scope.outputs.heavy != 'false'
+        run: pip install -e ".[dev]"
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/download-artifact@v4
         with:
           name: root-coverage-${{ github.sha }}
           path: coverage-input/root
-      - uses: actions/download-artifact@v4
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/download-artifact@v4
         with:
           name: desk-coverage-${{ github.sha }}
           path: coverage-input/desk
       # Same run, same code, unchanged libs population and branch denominator. Combine
       # actual executed lines/branches; never average percentages or lower the ratchet.
-      - name: Combine both suites and enforce unchanged shared-library floors
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Combine both suites and enforce unchanged shared-library floors
         run: |
           coverage combine coverage-input/root/.coverage coverage-input/desk/.coverage
           coverage json --include='libs/*' -o coverage.json
