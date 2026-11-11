@@ -250,6 +250,28 @@ def test_a_SPARSE_caller_keeps_its_sparse_settings_after_the_HEAD_checkout(tmp_p
                        capture_output=True, text=True)
 
 
+def test_a_hook_GIT_DIR_never_reaches_the_private_checkout(tmp_path: Path,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """The real mechanism: git runs pre-push with GIT_DIR = the caller's git dir, and
+    `git -C <private> sparse-checkout disable` honours it over -C. Reproduced with git 2.43."""
+    from scripts.run_law_gate import _at_head, _caller_sparse_state
+    _repo, wt = _sparse_caller(tmp_path)
+    gitdir = subprocess.run(["git", "rev-parse", "--absolute-git-dir"], cwd=wt,
+                            capture_output=True, text=True, check=True).stdout.strip()
+    monkeypatch.setenv("GIT_DIR", gitdir)
+    before = _caller_sparse_state(wt)
+    where, subject, _why = _at_head(wt)
+    try:
+        assert where != wt and (where / "b" / "y.txt").is_file()
+        assert _caller_sparse_state(wt) == before
+        assert "caller-sparse-restored" not in subject   # prevented, not merely repaired
+        monkeypatch.delenv("GIT_DIR")
+        assert _status(wt) == [" M a/x.txt"]
+    finally:
+        subprocess.run(["git", "worktree", "remove", "--force", str(where)], cwd=wt,
+                       capture_output=True, text=True)
+
+
 def test_a_moved_caller_sparse_setting_is_PUT_BACK_and_named(tmp_path: Path) -> None:
     """Whatever path moves it (a git version, a future edit), the caller is restored and the
     verdict's subject says so."""

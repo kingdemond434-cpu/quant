@@ -849,6 +849,22 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
 _CALLER_SPARSE_KEYS = ("core.sparseCheckout", "core.sparseCheckoutCone", "index.sparse")
 
 
+#: THE MECHANISM (Desk health 2026-11-11, reproduced on git 2.43): git runs the pre-push hook with
+#: GIT_DIR set to the CALLER's worktree git dir. `git -C <private> sparse-checkout disable` honours
+#: an inherited GIT_DIR over -C, so it rewrote the caller's config.worktree, not the private one's.
+#: Every command aimed at the private checkout -- and the HEAD gate re-exec'd inside it, whose
+#: fences run git too -- gets an environment with no repository-locating variable.
+_GIT_LOCATORS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
+                 "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_PREFIX")
+
+
+def _private_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """os.environ without the variables that would point git back at the caller's repository."""
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_LOCATORS}
+    env.update(extra or {})
+    return env
+
+
 def _caller_sparse_state(root: Path) -> dict[str, str | None]:
     """{key: value or None} for the caller's per-worktree sparse keys, plus its pattern file."""
     state: dict[str, str | None] = {}
@@ -940,7 +956,7 @@ def _head_checkout(root: Path, tmp: Path, wt: Path,
         # Every later command runs with -C wt. If wt is not its own worktree top level, git would
         # walk UP and act on whatever repository encloses it -- possibly the caller's. Refuse.
         top = subprocess.run(["git", "-C", str(wt), "rev-parse", "--show-toplevel"],
-                             capture_output=True, text=True, timeout=30)
+                             capture_output=True, text=True, timeout=30, env=_private_env())
         if top.returncode != 0 or Path(top.stdout.strip()).resolve() != wt.resolve():
             raise OSError(f"private checkout is not its own worktree ({top.stdout.strip()!r})")
         # Git copies the caller's sparse-checkout settings into a new worktree.
@@ -949,7 +965,8 @@ def _head_checkout(root: Path, tmp: Path, wt: Path,
         # Disable sparsity only in this private HEAD checkout; never in the caller.
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "sparse-checkout", "disable"],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=_private_env())
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
         # Individually skipped files (for example a seal added with --sparse)
@@ -958,7 +975,8 @@ def _head_checkout(root: Path, tmp: Path, wt: Path,
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "restore", "--source=HEAD", "--worktree",
                            "--ignore-skip-worktree-bits", "--", "."],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=_private_env())
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
     except (OSError, subprocess.SubprocessError) as exc:
@@ -994,8 +1012,8 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                 # unknown --in-place makes an older copy die in argparse with empty stdout (this
                 # bug, hit on the first run); an unknown env var is ignored, and an older copy
                 # then does exactly what it always did -- judge in place, no recursion possible.
-                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1",
-                       "QUANT_LAWGATE_SOURCE_VIEW": "1"}
+                env = _private_env({"QUANT_LAWGATE_IN_PLACE": "1",
+                                    "QUANT_LAWGATE_SOURCE_VIEW": "1"})
                 r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
                                     "--laws-only", "--json"], cwd=where, env=env,
                                    capture_output=True, text=True, timeout=1800)
