@@ -1,34 +1,34 @@
 {
  "schema": "gate_verdict_digest/1",
- "generated_at": "2026-11-10T16:05:08+00:00",
+ "generated_at": "2026-11-11T01:23:32+00:00",
  "status": "MEASURED",
  "producer": "desks/mt5/research/gate_verdict_digest.py (hourly, publish_state leg)",
  "ledger": {
   "source": {
    "path": "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl",
    "status": "READ",
-   "bytes": 488425799,
-   "modified_at": "2026-11-10T15:04:26+00:00"
+   "bytes": 490227667,
+   "modified_at": "2026-11-10T19:28:02+00:00"
   },
-  "rows": 1597293,
+  "rows": 1602782,
   "malformed_rows": 0,
-  "passed_rows": 7787,
-  "rejected_rows": 1589506,
+  "passed_rows": 7967,
+  "rejected_rows": 1594815,
   "first_at": "2026-09-12T17:06:46+00:00",
-  "last_at": "2026-11-10T15:04:26+00:00",
+  "last_at": "2026-11-10T19:28:02+00:00",
   "note": "the ledger appends a row only when a cell's verdict CHANGES, so these count changes of mind, not judgements",
   "rejections_by_terminal_gate": {
-   "UNKNOWN": 823253,
-   "in_sample_screen": 669032,
-   "deflated_sharpe": 89834,
-   "lockbox": 2444,
-   "stress_costs": 1543,
+   "UNKNOWN": 824032,
+   "in_sample_screen": 672811,
+   "deflated_sharpe": 90229,
+   "lockbox": 2513,
+   "stress_costs": 1616,
    "economic_prior": 1213,
-   "cpcv": 1081,
+   "cpcv": 1084,
    "symbol_eligibility": 591,
-   "swap_cost": 370,
-   "reality_check_spa": 81,
-   "walk_forward": 64
+   "swap_cost": 372,
+   "walk_forward": 273,
+   "reality_check_spa": 81
   },
   "rejections_by_family": {
    "formula": {
@@ -162,8 +162,8 @@
    },
    "multi_speed_trend": {
     "UNKNOWN": 14476,
-    "in_sample_screen": 4355,
-    "deflated_sharpe": 621,
+    "in_sample_screen": 4358,
+    "deflated_sharpe": 623,
     "symbol_eligibility": 1,
     "cpcv": 1
    },
@@ -181,9 +181,9 @@
     "walk_forward": 1
    },
    "joint_genome": {
-    "UNKNOWN": 13137,
-    "in_sample_screen": 4570,
-    "deflated_sharpe": 580
+    "UNKNOWN": 13144,
+    "in_sample_screen": 4598,
+    "deflated_sharpe": 584
    },
    "correlation_regime": {
     "in_sample_screen": 10823,
@@ -206,8 +206,8 @@
    },
    "overnight_gap_decay": {
     "UNKNOWN": 8924,
-    "in_sample_screen": 4877,
-    "deflated_sharpe": 1111,
+    "in_sample_screen": 4892,
+    "deflated_sharpe": 1126,
     "lockbox": 164,
     "swap_cost": 67,
     "stress_costs": 58,
@@ -259,9 +259,9 @@
     "cpcv": 1
    },
    "mean_reversion_bollinger": {
-    "in_sample_screen": 9112,
+    "in_sample_screen": 9115,
     "UNKNOWN": 4192,
-    "deflated_sharpe": 610,
+    "deflated_sharpe": 611,
     "cpcv": 5,
     "lockbox": 1
    },
@@ -362,9 +362,9 @@
     "stress_costs": 2
    },
    "range_reversion": {
-    "in_sample_screen": 4758,
-    "UNKNOWN": 3654,
-    "deflated_sharpe": 1354,
+    "in_sample_screen": 4766,
+    "UNKNOWN": 3656,
+    "deflated_sharpe": 1362,
     "stress_costs": 15,
     "cpcv": 9,
     "swap_cost": 5,
@@ -442,73 +442,73 @@
     "symbol_eligibility": 1
    }
   },
-  "families_omitted": 22,
+  "families_omitted": 26,
   "rejections_by_symbol_top": {
-   "USDSGD": 28504,
-   "XAUUSD": 26035,
-   "AUDSGD": 20122,
-   "AUDUSD": 18272,
-   "AUDCAD": 17243,
-   "XNGUSD": 17068,
-   "XAUAUD": 17050,
-   "XAUEUR": 16811,
-   "AUDNZD": 16701,
-   "NAS100": 16570,
-   "WHEAT": 16512,
-   "USDZAR": 16019,
-   "XAGEUR": 15656,
-   "XTIUSD": 15424,
-   "ADAUSD": 15273,
-   "EURUSD": 14876,
-   "BCHUSD": 14687,
-   "XBRUSD": 14631,
-   "BTCUSD": 14410,
-   "GBPUSD": 14397,
-   "AUS200": 14365,
-   "NZDSGD": 14194,
-   "AUDJPY": 14193,
-   "AUDCHF": 14076,
-   "XCUUSD": 14043,
-   "GBPJPY": 14022,
-   "BNBUSD": 13815,
-   "USDJPY": 13777,
-   "USDTHB": 13773,
-   "XNIUSD": 13750,
-   "AVAXUSD": 13567,
-   "GBPSGD": 13514,
-   "NZDJPY": 13479,
-   "XPTUSD": 13321,
-   "XPDUSD": 13305,
-   "XLMUSD": 13218,
-   "XAGUSD": 13092,
-   "XPBUSD": 12803,
-   "XZNUSD": 12770,
-   "HK50": 12633
+   "USDSGD": 28539,
+   "XAUUSD": 26078,
+   "AUDSGD": 20157,
+   "AUDUSD": 18312,
+   "AUDCAD": 17295,
+   "XNGUSD": 17107,
+   "XAUAUD": 17088,
+   "XAUEUR": 16849,
+   "AUDNZD": 16734,
+   "NAS100": 16610,
+   "WHEAT": 16550,
+   "USDZAR": 16052,
+   "XAGEUR": 15694,
+   "XTIUSD": 15471,
+   "ADAUSD": 15315,
+   "EURUSD": 14916,
+   "BCHUSD": 14727,
+   "XBRUSD": 14669,
+   "BTCUSD": 14452,
+   "GBPUSD": 14435,
+   "AUS200": 14404,
+   "AUDJPY": 14230,
+   "NZDSGD": 14230,
+   "AUDCHF": 14117,
+   "XCUUSD": 14081,
+   "GBPJPY": 14058,
+   "BNBUSD": 13855,
+   "USDTHB": 13820,
+   "USDJPY": 13813,
+   "NZDJPY": 13800,
+   "XNIUSD": 13788,
+   "AVAXUSD": 13606,
+   "GBPSGD": 13547,
+   "XPTUSD": 13359,
+   "XPDUSD": 13343,
+   "XLMUSD": 13256,
+   "XAGUSD": 13131,
+   "XPBUSD": 12841,
+   "XZNUSD": 12808,
+   "HK50": 12671
   },
   "by_terminal_kind": {
-   "RULED": 766253,
-   "UNMEASURED": 452367,
+   "RULED": 770783,
+   "UNMEASURED": 453146,
    "DEFECT": 370886,
-   "PASSED": 7787
+   "PASSED": 7967
   },
   "rows_carrying_the_stamp": 0,
   "rejections_by_terminal_gate_id": {
-   "in_sample_screen": 669032,
-   "deflated_sharpe": 89834,
-   "lockbox": 2444,
-   "stress_costs": 1543,
+   "in_sample_screen": 672811,
+   "deflated_sharpe": 90229,
+   "lockbox": 2513,
+   "stress_costs": 1616,
    "economic_prior": 1213,
-   "cpcv": 1081,
+   "cpcv": 1084,
    "symbol_eligibility": 591,
-   "swap_cost": 370,
-   "reality_check_spa": 81,
-   "walk_forward": 64
+   "swap_cost": 372,
+   "walk_forward": 273,
+   "reality_check_spa": 81
   },
   "unmeasured_by_reason": {
-   "no_trades": 340365,
-   "short_history_after_cut": 38975,
-   "lockbox_consumed_history": 37861,
-   "too_rare": 35166
+   "no_trades": 341101,
+   "short_history_after_cut": 38984,
+   "lockbox_consumed_history": 37863,
+   "too_rare": 35198
   },
   "not_run_by_status": {},
   "terminal_defects": {
@@ -681,10 +681,10 @@
   },
   "latest": [
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "FRA40.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "FRA40",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "USDSGD.range_reversion.p=97a5c78b37558d9c",
+    "family": "range_reversion",
+    "sym": "USDSGD",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -692,10 +692,10 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EUSTX50.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EUSTX50",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "CHFDKK.range_reversion.p=97a5c78b37558d9c",
+    "family": "range_reversion",
+    "sym": "CHFDKK",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -703,10 +703,10 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURZAR.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURZAR",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.joint_genome.p=1c8d9067c2545a20",
+    "family": "joint_genome",
+    "sym": "XTIUSD",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -714,10 +714,10 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURUSD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURUSD",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "USDTHB.joint_genome.p=987f1226b99cade6",
+    "family": "joint_genome",
+    "sym": "USDTHB",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -725,10 +725,10 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURSGD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURSGD",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "GBPUSD.joint_genome.p=d1360701fbcb87bc",
+    "family": "joint_genome",
+    "sym": "GBPUSD",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -736,350 +736,9 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURSEK.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURSEK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURPLN.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURPLN",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURNZD.entry_conditioned.p=e4dd89e9b7389858",
-    "family": "entry_conditioned",
-    "sym": "EURNZD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURNZD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURNZD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURNOK.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURNOK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURMXN.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURMXN",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURJPY.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURJPY",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURILS.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURILS",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURHUF.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURHUF",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURHKD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURHKD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURGBP.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURGBP",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURDKK.entry_conditioned.p=304001547d1285a0",
-    "family": "entry_conditioned",
-    "sym": "EURDKK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURDKK.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURDKK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURDKK.entry_conditioned.p=4f9b37848863ed77",
-    "family": "entry_conditioned",
-    "sym": "EURDKK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURCZK.entry_conditioned.p=304001547d1285a0",
-    "family": "entry_conditioned",
-    "sym": "EURCZK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURCZK.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURCZK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURCZK.entry_conditioned.p=4f9b37848863ed77",
-    "family": "entry_conditioned",
-    "sym": "EURCZK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURCHF.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURCHF",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURCAD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURCAD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURAUD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "EURAUD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "EURAUD.entry_conditioned.p=3ebe78a6f835b710",
-    "family": "entry_conditioned",
-    "sym": "EURAUD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "ETHUSD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "ETHUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "ETHUSD.entry_conditioned.p=bf1227e813a731ae",
-    "family": "entry_conditioned",
-    "sym": "ETHUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "E35.entry_conditioned.p=14287c1c95cd6d3e",
-    "family": "entry_conditioned",
-    "sym": "E35",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "E35.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "E35",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "DOTUSD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "DOTUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "DOTUSD.entry_conditioned.p=acffbe6d9d5e4793",
-    "family": "entry_conditioned",
-    "sym": "DOTUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "DOGEUSD.entry_conditioned.p=79f9e0ffc95830a6",
-    "family": "entry_conditioned",
-    "sym": "DOGEUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "DOGEUSD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "DOGEUSD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "COTTON.entry_conditioned.p=76d4fb1081ba5310",
-    "family": "entry_conditioned",
-    "sym": "COTTON",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "COTTON.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "COTTON",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CORN.entry_conditioned.p=b51f375f54a62270",
-    "family": "entry_conditioned",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "CORN.joint_genome.p=987f1226b99cade6",
+    "family": "joint_genome",
     "sym": "CORN",
     "terminal_gate": "UNKNOWN",
     "passed": false,
@@ -1088,97 +747,9 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CORN.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "CORN",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "COFROB.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "COFROB",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "COFARA.entry_conditioned.p=16b8c0a0fdf6c408",
-    "family": "entry_conditioned",
-    "sym": "COFARA",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "COFARA.entry_conditioned.p=92b010d4b3c2dd66",
-    "family": "entry_conditioned",
-    "sym": "COFARA",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "COFARA.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "COFARA",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHINAH.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "CHINAH",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFSGD.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "CHFSGD",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFSEK.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "CHFSEK",
-    "terminal_gate": "UNKNOWN",
-    "passed": false,
-    "downstream_status": null,
-    "terminal_kind": null,
-    "terminal_gate_id": null
-   },
-   {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFPLN.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "CHFPLN.joint_genome.p=6c1678c00510b778",
+    "family": "joint_genome",
     "sym": "CHFPLN",
     "terminal_gate": "UNKNOWN",
     "passed": false,
@@ -1187,9 +758,9 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFNOK.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "CHFNOK.joint_genome.p=6c1678c00510b778",
+    "family": "joint_genome",
     "sym": "CHFNOK",
     "terminal_gate": "UNKNOWN",
     "passed": false,
@@ -1198,10 +769,10 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFJPY.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "CHFJPY",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "BCHUSD.joint_genome.p=6c1678c00510b778",
+    "family": "joint_genome",
+    "sym": "BCHUSD",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -1209,10 +780,10 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFHUF.entry_conditioned.p=44136fa355b3678a",
-    "family": "entry_conditioned",
-    "sym": "CHFHUF",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "USDBRL.seasonal_window.p=335166f2ec4e3abb",
+    "family": "seasonal_window",
+    "sym": "USDBRL",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -1220,10 +791,439 @@
     "terminal_gate_id": null
    },
    {
-    "at": "2026-11-10T15:04:26+00:00",
-    "cell": "CHFDKK.entry_conditioned.p=304001547d1285a0",
-    "family": "entry_conditioned",
-    "sym": "CHFDKK",
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "ZARJPY.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "ZARJPY",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "ZARJPY.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "ZARJPY",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "ZARJPY.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "ZARJPY",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "ZARJPY.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "ZARJPY",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "ZARJPY.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "ZARJPY",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XZNUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XZNUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XZNUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XZNUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XZNUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XZNUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XZNUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XZNUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XZNUSD.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "XZNUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.regime_split.p=44136fa355b3678a",
+    "family": "regime_split",
+    "sym": "XTIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XTIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XTIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XTIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "XTIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XTIUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XTIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPTUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XPTUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPTUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XPTUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPTUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XPTUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPTUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XPTUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPTUSD.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "XPTUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPDUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XPDUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPDUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XPDUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPDUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XPDUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPDUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XPDUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPDUSD.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "XPDUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPBUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XPBUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPBUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XPBUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPBUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XPBUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPBUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XPBUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XPBUSD.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "XPBUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNIUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XNIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNIUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XNIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNIUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XNIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNIUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XNIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNIUSD.regime_split.p=8847e549e94d3bcd",
+    "family": "regime_split",
+    "sym": "XNIUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNGUSD.regime_split.p=3088664d633bb32d",
+    "family": "regime_split",
+    "sym": "XNGUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNGUSD.regime_split.p=c9c5e7428f709c87",
+    "family": "regime_split",
+    "sym": "XNGUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNGUSD.regime_split.p=d79446a8f55f80c8",
+    "family": "regime_split",
+    "sym": "XNGUSD",
+    "terminal_gate": "UNKNOWN",
+    "passed": false,
+    "downstream_status": null,
+    "terminal_kind": null,
+    "terminal_gate_id": null
+   },
+   {
+    "at": "2026-11-10T19:28:02+00:00",
+    "cell": "XNGUSD.regime_split.p=5f3c9ff103e903b1",
+    "family": "regime_split",
+    "sym": "XNGUSD",
     "terminal_gate": "UNKNOWN",
     "passed": false,
     "downstream_status": null,
@@ -1236,79 +1236,82 @@
   "source": {
    "path": "desks/mt5/reports/universal_gates_external.json",
    "status": "READ",
-   "bytes": 840105703,
-   "modified_at": "2026-11-10T15:05:38+00:00"
+   "bytes": 885345057,
+   "modified_at": "2026-11-10T19:28:30+00:00"
   },
-  "swept_at": "2026-11-10T14:57:29.495210+00:00",
-  "verdicts": 1129779,
-  "passed": 60,
-  "rejected": 1129719,
+  "swept_at": "2026-11-10T19:13:53.034399+00:00",
+  "verdicts": 1109622,
+  "passed": 347,
+  "rejected": 1109275,
   "terminal_gates": {
-   "UNKNOWN": 1045411,
-   "in_sample_screen": 78020,
-   "deflated_sharpe": 4215,
+   "UNKNOWN": 1002250,
+   "in_sample_screen": 98943,
+   "deflated_sharpe": 5536,
    "symbol_eligibility": 1684,
    "economic_prior": 247,
-   "stress_costs": 89,
-   "lockbox": 45,
-   "cpcv": 8
+   "walk_forward": 219,
+   "lockbox": 175,
+   "stress_costs": 168,
+   "cpcv": 47,
+   "swap_cost": 6
   },
   "any_fail_by_gate": {
-   "deflated_sharpe": 82235,
-   "lockbox": 80551,
-   "cpcv": 79198,
-   "walk_forward": 78481,
-   "stress_costs": 78151,
-   "in_sample_screen": 78020,
-   "expected_value": 78020,
-   "observations": 14293,
-   "swap_cost": 6384,
+   "deflated_sharpe": 104479,
+   "lockbox": 102336,
+   "cpcv": 100648,
+   "walk_forward": 100025,
+   "in_sample_screen": 98943,
+   "expected_value": 98943,
+   "stress_costs": 98493,
+   "observations": 18594,
+   "swap_cost": 7849,
    "symbol_eligibility": 1684,
    "economic_prior": 247
   },
   "terminal_gates_by_family": {
-   "formula": {
-    "UNKNOWN": 135106,
-    "in_sample_screen": 1290,
-    "symbol_eligibility": 14
-   },
    "cross_asset_residual": {
-    "UNKNOWN": 131737,
+    "UNKNOWN": 130673,
     "in_sample_screen": 58,
     "symbol_eligibility": 25,
     "deflated_sharpe": 9
    },
+   "formula": {
+    "UNKNOWN": 123131,
+    "in_sample_screen": 1133,
+    "symbol_eligibility": 14
+   },
    "execution_state": {
-    "UNKNOWN": 62984,
-    "in_sample_screen": 1041,
+    "UNKNOWN": 62973,
+    "in_sample_screen": 1048,
     "deflated_sharpe": 108,
     "symbol_eligibility": 24
    },
    "overnight_drift": {
-    "UNKNOWN": 55927,
+    "UNKNOWN": 53476,
+    "in_sample_screen": 2416,
     "symbol_eligibility": 44,
-    "in_sample_screen": 5
+    "deflated_sharpe": 40
    },
    "retail_overlap_reversal": {
-    "UNKNOWN": 27966,
-    "in_sample_screen": 2620,
+    "UNKNOWN": 27962,
+    "in_sample_screen": 2615,
     "deflated_sharpe": 96,
     "symbol_eligibility": 25,
     "stress_costs": 5
    },
    "lead_lag": {
-    "UNKNOWN": 20156,
-    "in_sample_screen": 4963,
+    "UNKNOWN": 20160,
+    "in_sample_screen": 4959,
     "deflated_sharpe": 43,
     "symbol_eligibility": 12
    },
    "clock_transition": {
-    "UNKNOWN": 24514,
+    "UNKNOWN": 24521,
     "symbol_eligibility": 42,
-    "in_sample_screen": 19
+    "in_sample_screen": 12
    },
    "pca_residual": {
-    "UNKNOWN": 19318,
+    "UNKNOWN": 18698,
     "in_sample_screen": 4515,
     "deflated_sharpe": 408,
     "symbol_eligibility": 32,
@@ -1316,92 +1319,99 @@
     "cpcv": 1
    },
    "forced_flow": {
-    "UNKNOWN": 22482,
+    "UNKNOWN": 22471,
     "symbol_eligibility": 43,
-    "in_sample_screen": 2
+    "in_sample_screen": 1
    },
    "jump": {
-    "UNKNOWN": 19123,
-    "in_sample_screen": 3054,
+    "UNKNOWN": 18951,
+    "in_sample_screen": 3049,
     "deflated_sharpe": 217,
     "symbol_eligibility": 22,
     "cpcv": 4,
     "lockbox": 1
    },
    "orderflow_imbalance": {
-    "UNKNOWN": 22073,
+    "UNKNOWN": 22072,
     "symbol_eligibility": 19
    },
    "mean_reversion_rsi": {
-    "UNKNOWN": 18774,
-    "in_sample_screen": 2768,
+    "UNKNOWN": 18769,
+    "in_sample_screen": 2760,
     "deflated_sharpe": 45,
     "symbol_eligibility": 17
    },
    "overnight_gap_decay": {
-    "UNKNOWN": 19771,
-    "in_sample_screen": 65,
+    "UNKNOWN": 17033,
+    "in_sample_screen": 2216,
+    "deflated_sharpe": 363,
+    "lockbox": 61,
+    "cpcv": 34,
     "symbol_eligibility": 23,
-    "deflated_sharpe": 1
+    "walk_forward": 10,
+    "stress_costs": 6,
+    "swap_cost": 4
    },
    "engulfing_reversal": {
-    "UNKNOWN": 19380,
+    "UNKNOWN": 19366,
     "symbol_eligibility": 18
    },
    "carry": {
-    "in_sample_screen": 10672,
-    "UNKNOWN": 7514,
+    "in_sample_screen": 10632,
+    "UNKNOWN": 7553,
     "deflated_sharpe": 633,
     "stress_costs": 69,
     "lockbox": 31,
     "symbol_eligibility": 12
    },
-   "trend_ma_cross": {
-    "UNKNOWN": 18171,
-    "symbol_eligibility": 18,
-    "in_sample_screen": 2
-   },
-   "drawdown_conditional": {
-    "UNKNOWN": 17673,
-    "in_sample_screen": 86,
-    "deflated_sharpe": 15,
-    "symbol_eligibility": 11
-   },
    "relative_value": {
-    "UNKNOWN": 13532,
-    "in_sample_screen": 3245,
-    "deflated_sharpe": 223,
+    "UNKNOWN": 14956,
+    "in_sample_screen": 3159,
+    "deflated_sharpe": 212,
     "symbol_eligibility": 33,
     "stress_costs": 8,
     "lockbox": 7
    },
+   "trend_ma_cross": {
+    "UNKNOWN": 18157,
+    "symbol_eligibility": 18,
+    "in_sample_screen": 2
+   },
+   "drawdown_conditional": {
+    "UNKNOWN": 17670,
+    "in_sample_screen": 85,
+    "deflated_sharpe": 15,
+    "symbol_eligibility": 11
+   },
    "regime_transition": {
-    "UNKNOWN": 16723,
-    "symbol_eligibility": 22
+    "UNKNOWN": 16693,
+    "symbol_eligibility": 22,
+    "in_sample_screen": 11,
+    "deflated_sharpe": 3
    },
    "vol_transition": {
-    "UNKNOWN": 16665,
+    "UNKNOWN": 16650,
     "in_sample_screen": 23,
     "symbol_eligibility": 11
    },
    "spread_state": {
-    "in_sample_screen": 8017,
-    "UNKNOWN": 7850,
-    "deflated_sharpe": 426,
+    "in_sample_screen": 8004,
+    "UNKNOWN": 7861,
+    "deflated_sharpe": 425,
     "symbol_eligibility": 19,
     "lockbox": 1,
     "stress_costs": 1
    },
    "macro_conditional": {
-    "UNKNOWN": 16218,
-    "in_sample_screen": 42,
-    "symbol_eligibility": 29
+    "UNKNOWN": 16229,
+    "symbol_eligibility": 29,
+    "in_sample_screen": 27
    },
    "ict_fvg": {
-    "UNKNOWN": 13325,
-    "in_sample_screen": 2662,
-    "deflated_sharpe": 32,
-    "symbol_eligibility": 27
+    "UNKNOWN": 13913,
+    "in_sample_screen": 2159,
+    "symbol_eligibility": 27,
+    "deflated_sharpe": 22
    },
    "session_range_breakout": {
     "UNKNOWN": 15962,
@@ -1410,44 +1420,46 @@
    },
    "style_premia": {
     "UNKNOWN": 14272,
-    "in_sample_screen": 1302,
+    "in_sample_screen": 1301,
     "deflated_sharpe": 163,
     "symbol_eligibility": 42,
     "lockbox": 1
    },
    "volume_spike": {
-    "UNKNOWN": 15595,
+    "UNKNOWN": 15579,
     "symbol_eligibility": 20,
-    "in_sample_screen": 13
+    "in_sample_screen": 12
    },
    "multi_speed_trend": {
-    "UNKNOWN": 15439,
-    "symbol_eligibility": 26,
-    "in_sample_screen": 25
+    "UNKNOWN": 13014,
+    "in_sample_screen": 2229,
+    "deflated_sharpe": 204,
+    "symbol_eligibility": 26
    },
    "vol_mean_reversion": {
-    "UNKNOWN": 12883,
-    "in_sample_screen": 2444,
+    "UNKNOWN": 12861,
+    "in_sample_screen": 2435,
     "deflated_sharpe": 82,
     "symbol_eligibility": 21
    },
    "mean_reversion_bollinger": {
-    "UNKNOWN": 15232,
-    "symbol_eligibility": 26,
-    "in_sample_screen": 14
+    "UNKNOWN": 12388,
+    "in_sample_screen": 2780,
+    "deflated_sharpe": 61,
+    "symbol_eligibility": 26
    },
    "liquidity_gamma_reversal": {
-    "UNKNOWN": 14815,
+    "UNKNOWN": 14798,
     "symbol_eligibility": 13
    },
    "adx_channel_hybrid": {
-    "UNKNOWN": 10196,
-    "in_sample_screen": 2651,
-    "deflated_sharpe": 162,
+    "UNKNOWN": 10197,
+    "in_sample_screen": 2633,
+    "deflated_sharpe": 160,
     "symbol_eligibility": 20
    },
    "correlation_regime": {
-    "UNKNOWN": 12853,
+    "UNKNOWN": 12834,
     "symbol_eligibility": 23,
     "in_sample_screen": 18
    },
@@ -1457,44 +1469,44 @@
    },
    "asia_momentum": {
     "UNKNOWN": 9688,
-    "in_sample_screen": 2351,
+    "in_sample_screen": 2330,
     "deflated_sharpe": 73,
     "symbol_eligibility": 25
    },
    "momentum_volgate": {
-    "UNKNOWN": 11466,
-    "symbol_eligibility": 24,
-    "in_sample_screen": 4
+    "UNKNOWN": 8586,
+    "in_sample_screen": 2803,
+    "deflated_sharpe": 59,
+    "symbol_eligibility": 24
    },
    "opening_range": {
-    "UNKNOWN": 8710,
-    "in_sample_screen": 2428,
+    "UNKNOWN": 8690,
+    "in_sample_screen": 2425,
     "deflated_sharpe": 122,
     "symbol_eligibility": 41
    },
    "range_reversion": {
-    "UNKNOWN": 11060,
-    "symbol_eligibility": 17
-   },
-   "exit_operated": {
-    "UNKNOWN": 10767,
-    "symbol_eligibility": 11
+    "UNKNOWN": 6757,
+    "in_sample_screen": 3882,
+    "deflated_sharpe": 236,
+    "symbol_eligibility": 17,
+    "cpcv": 2
    },
    "volatility_squeeze": {
-    "UNKNOWN": 7410,
-    "in_sample_screen": 1799,
+    "UNKNOWN": 7418,
+    "in_sample_screen": 1788,
     "deflated_sharpe": 148,
     "symbol_eligibility": 22
    },
    "monday_gap": {
-    "UNKNOWN": 6708,
-    "in_sample_screen": 2364,
+    "UNKNOWN": 6645,
+    "in_sample_screen": 2424,
     "deflated_sharpe": 120,
     "symbol_eligibility": 35
    },
    "pullback_entry": {
     "UNKNOWN": 5822,
-    "in_sample_screen": 2781,
+    "in_sample_screen": 2778,
     "deflated_sharpe": 186,
     "symbol_eligibility": 18
    },
@@ -1509,22 +1521,22 @@
     "symbol_eligibility": 22
    },
    "hedging_demand_close": {
-    "UNKNOWN": 7275,
+    "UNKNOWN": 7271,
     "symbol_eligibility": 33,
     "in_sample_screen": 1
    },
    "failed_breakout": {
-    "UNKNOWN": 3631,
-    "in_sample_screen": 2436,
+    "UNKNOWN": 3635,
+    "in_sample_screen": 2428,
     "deflated_sharpe": 209,
     "symbol_eligibility": 16
    },
    "generic": {
-    "UNKNOWN": 6212,
+    "UNKNOWN": 6208,
     "symbol_eligibility": 11
    },
    "level_breakout": {
-    "UNKNOWN": 6110,
+    "UNKNOWN": 6069,
     "symbol_eligibility": 37
    },
    "cot_change_momentum": {
@@ -1534,7 +1546,7 @@
     "deflated_sharpe": 4
    },
    "pin_bar_reversal": {
-    "UNKNOWN": 4990,
+    "UNKNOWN": 4987,
     "in_sample_screen": 846,
     "symbol_eligibility": 19,
     "deflated_sharpe": 12
@@ -1546,20 +1558,24 @@
     "deflated_sharpe": 5
    },
    "comex_settlement": {
-    "UNKNOWN": 2627,
-    "in_sample_screen": 1880,
+    "UNKNOWN": 2638,
+    "in_sample_screen": 1865,
     "deflated_sharpe": 33,
     "symbol_eligibility": 23
    },
    "london_close_momentum": {
-    "in_sample_screen": 2818,
-    "UNKNOWN": 1384,
-    "deflated_sharpe": 122,
+    "in_sample_screen": 2761,
+    "UNKNOWN": 1391,
+    "deflated_sharpe": 113,
     "symbol_eligibility": 24
    },
+   "exit_operated": {
+    "UNKNOWN": 4087,
+    "symbol_eligibility": 11
+   },
    "turn_of_month": {
-    "in_sample_screen": 1987,
-    "UNKNOWN": 1809,
+    "in_sample_screen": 1974,
+    "UNKNOWN": 1819,
     "deflated_sharpe": 267,
     "symbol_eligibility": 22,
     "stress_costs": 1,
@@ -1570,26 +1586,28 @@
     "symbol_eligibility": 11
    },
    "htf_anchor_trend": {
-    "UNKNOWN": 3929,
+    "UNKNOWN": 3868,
     "symbol_eligibility": 11
    },
    "dav_range_filter_adx": {
     "UNKNOWN": 2041,
-    "in_sample_screen": 1679,
+    "in_sample_screen": 1675,
     "deflated_sharpe": 49,
     "symbol_eligibility": 14
    },
    "fx_fixing_reversal": {
-    "UNKNOWN": 3464,
-    "in_sample_screen": 36,
+    "UNKNOWN": 3406,
+    "in_sample_screen": 27,
     "symbol_eligibility": 22
    },
    "joint_genome": {
-    "UNKNOWN": 3370,
+    "in_sample_screen": 1947,
+    "UNKNOWN": 1329,
+    "deflated_sharpe": 24,
     "symbol_eligibility": 11
    },
    "entry_conditioned": {
-    "UNKNOWN": 2710,
+    "UNKNOWN": 2706,
     "in_sample_screen": 392,
     "deflated_sharpe": 23,
     "symbol_eligibility": 11,
@@ -1598,8 +1616,14 @@
     "stress_costs": 1
    },
    "mass_screen_cond": {
-    "UNKNOWN": 2976,
-    "symbol_eligibility": 11
+    "in_sample_screen": 2411,
+    "walk_forward": 201,
+    "deflated_sharpe": 171,
+    "UNKNOWN": 140,
+    "lockbox": 47,
+    "symbol_eligibility": 11,
+    "cpcv": 2,
+    "stress_costs": 1
    }
   },
   "families_omitted": 35,
@@ -1618,9 +1642,9 @@
    "walk_forward": [],
    "stress_costs": [],
    "lockbox": [
-    "held-out window is 35 days, under the 40-day floor; no lockbox evidence exists",
-    "held-out window is 0 days, under the 40-day floor; no lockbox evidence exists",
-    "held-out window is 2 days, under the 40-day floor; no lockbox evidence exists"
+    "held-out window is 29 days, under the 40-day floor; no lockbox evidence exists",
+    "held-out window is 38 days, under the 40-day floor; no lockbox evidence exists",
+    "held-out window is 0 days, under the 40-day floor; no lockbox evidence exists"
    ],
    "expected_value": [],
    "swap_cost": [
@@ -1634,32 +1658,34 @@
     "only 13 daily observations; CPCV with purge+embargo and the walk-forward folds require 60. This is UNMEASURED, not a failure: the cell fires too rarely to be judged, which is a fact about the SEARCH t"
    ]
   },
-  "n_curable_by_forward": 162,
+  "n_curable_by_forward": 350,
   "by_terminal_kind": {
-   "NOT_RUN": 1031118,
-   "RULED": 84308,
-   "UNMEASURED": 14293,
-   "PASSED": 60
+   "NOT_RUN": 983656,
+   "RULED": 107025,
+   "UNMEASURED": 18594,
+   "PASSED": 347
   },
   "rows_carrying_the_stamp": 0,
   "rejections_by_terminal_gate_id": {
-   "in_sample_screen": 78020,
-   "deflated_sharpe": 4215,
+   "in_sample_screen": 98943,
+   "deflated_sharpe": 5536,
    "symbol_eligibility": 1684,
    "economic_prior": 247,
-   "stress_costs": 89,
-   "lockbox": 45,
-   "cpcv": 8
+   "walk_forward": 219,
+   "lockbox": 175,
+   "stress_costs": 168,
+   "cpcv": 47,
+   "swap_cost": 6
   },
   "unmeasured_by_reason": {
-   "no_trades": 12195,
-   "too_rare": 817,
-   "short_history_after_cut": 665,
-   "lockbox_consumed_history": 616
+   "no_trades": 16180,
+   "too_rare": 1032,
+   "short_history_after_cut": 742,
+   "lockbox_consumed_history": 640
   },
   "not_run_by_status": {
    "NOT_RUN_MODIFIER": 772270,
-   "NOT_RUN_BUILD_BUDGET_DEFERRED": 255802,
+   "NOT_RUN_BUILD_BUDGET_DEFERRED": 208340,
    "NOT_RUN_BUILD_FAILED": 3046
   },
   "terminal_defects": {
