@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -173,6 +174,7 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None)
     now = now or datetime.now(UTC)
     doc: dict[str, Any] = {
         "generated_at": now.isoformat(timespec="seconds"), "report_only": True, "consumer": None,
+        "intended_consumer": "E8 risk-per-trade choice (future PR; report-only until then)",
         "authority": "REPORT ONLY: sizes nothing, arms nothing, writes no CERT_BOOK block",
         "rules": {"source": "desks/mt5/prop/e8_guard.py", "start_balance": START_BALANCE,
                   "profit_target": PROFIT_TARGET, "static_drawdown": STATIC_DRAWDOWN,
@@ -237,7 +239,9 @@ def main(argv: list[str] | None = None) -> int:
     doc = build(n_paths=a.paths)
     if not a.no_write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
-        OUT.write_text(json.dumps(doc, indent=1, default=str) + "\n", encoding="utf-8")
+        tmp = OUT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str) + "\n", encoding="utf-8")
+        os.replace(tmp, OUT)
     for name, res in (doc.get("worlds") or {}).items():
         c, f, m = res["current"], res["fastest_within_current_breach"], res["max_p_pass"]
         print(f"  {name}: current {c['risk']} pass {c['p_pass']:.3f} median {c['median_days']}"
