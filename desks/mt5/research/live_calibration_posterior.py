@@ -73,7 +73,8 @@ SHADOW = (DESK / "reports" / "shadow" / "shadow_state.json",
           DESK / "reports" / "shadow" / "qquant_shadow_state.json",
           DESK / "reports" / "shadow" / "scalp_shadow_state.json",
           DESK / "reports" / "shadow" / "external_shadow_state.json")
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 INTENTS = DESK / "data" / "order_intents.jsonl"
 SLEEVES = DESK / "data" / "sleeves.json"
 ALLOCATION = DESK / "reports" / "pf_allocation.json"

@@ -79,7 +79,8 @@ UNIVERSE, MOAT_COVERAGE = DATA / "universe" / "universe.json", DATA / "moat_cove
 COST_SURFACE, COST_SURFACE_TICK = DATA / "cost_surface.json", DATA / "cost_surface_tick.json"
 SLIPPAGE_SURFACE, TRIANGLE = DATA / "tape" / "slippage_surface.json", (
     DATA / "tape" / "triangle_executable.json")
-LIVE_LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 VERDICT_LEDGER = DATA / "hypotheses" / "gate_verdict_ledger.jsonl"
 REPORT = REPORTS / "MOAT_SERIES.json"
 

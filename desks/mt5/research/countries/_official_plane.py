@@ -119,8 +119,8 @@ def lane(A: Any, src: Any, paths: Any, gains: dict[str, Any]
         row["backfill_excluded"] = n_backfill
     if getattr(src, "data_source", ""):
         row["data_source"] = src.data_source
-    # A fenced lane's lawful stand-in and its #152 verdict (COVERED only when measured).
-    cands = (getattr(A, "SUBSTITUTE_CANDIDATES", {}) or {}).get(src.id) or {}
+    # A fenced lane's lawful stand-in and its #152 verdict (VERIFIED only when measured).
+    cands = (getattr(A, "SUBSTITUTED_BY", {}) or {}).get(src.id) or ()
     if cands:
         row["substitute_candidates"] = [A.substitute_check(src.id, x) for x in cands]
     return row, pts

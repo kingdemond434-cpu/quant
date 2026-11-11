@@ -48,8 +48,13 @@ TIMEFRAME_COVERAGE = REPORTS / "TIMEFRAME_COVERAGE.json"
 SESSION_CHART_EXPANSION = REPORTS / "SESSION_CHART_EXPANSION.json"
 UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 PIT_CENSUS, LAKE_PROMOTION = REPORTS / "PIT_CENSUS.json", REPORTS / "LAKE_PROMOTION.json"
-LIVE_LEDGER, SLEEVES = DATA / "live_ledger.jsonl", DATA / "sleeves.json"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER, SLEEVES = _audited_ledger_path(DATA / "live_ledger.jsonl"), DATA / "sleeves.json"
 PROCESS_HEALTH, SYNC_MARKER = REPORTS / "process_health.json", DATA / "sync_marker.json"
+#: The per-organ silent census (scripts/check_silent_organs.py). Preferred when present: it names
+#: every organ it counts, and it counts the legs killed at their cap, which `_producer` reports
+#: with `timeout_s` and NO status -- invisible to a status-only count.
+SILENT_ORGANS = REPORTS / "SILENT_ORGANS.json"
 #: THE RECONCILED ATTRIBUTION (Tier-1 W0). The exact-name join below reads 4.6% on this box's
 #: own ledger because MetaTrader truncates the sleeve into the position comment;
 #: `research/attribution_reconcile.py` publishes the same number after the truncation and the
@@ -340,8 +345,51 @@ def _dict_get(doc: Any, key: str) -> Any:
     return doc.get(key) if isinstance(doc, dict) else None
 
 
+#: The census is an hourly leg (and an issue-board clock); three hours is two missed passes.
+SILENT_ORGANS_MAX_AGE_H = 3.0
+
+
+def _census_age_h(doc: dict[str, Any]) -> float | None:
+    """Hours since the census was measured, from its own stamp; None when undated."""
+    stamp = doc.get("measured_at") or doc.get("at")
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        t = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - t).total_seconds() / 3600.0
+
+
 def _r07_silent_failures() -> dict[str, Any]:
     dim = "silent_scheduled_failures"
+    census = _read(SILENT_ORGANS)
+    # THE CENSUS IS THE ONLY READING WHEN IT EXISTS, INCLUDING AN UNMEASURED ONE (audit
+    # 2026-09-30). The old gate accepted GREEN/AMBER/RED only, so an UNMEASURED census fell
+    # through to the summed fallback below -- the very sum the census exists to replace -- and a
+    # fence that could not see was re-read as a count. A stale census is UNMEASURED too.
+    if isinstance(census, dict) and census.get("status") in ("GREEN", "AMBER", "RED",
+                                                             "UNMEASURED"):
+        n = _num(census.get("n_silent"))
+        basis = (f"{_rel(SILENT_ORGANS)} n_silent, fence {census.get('fence')}, per organ "
+                 f"{census.get('by_verdict') or {}} (new={len(census.get('new_silent') or [])})")
+        age_h = _census_age_h(census)
+        if age_h is None or age_h > SILENT_ORGANS_MAX_AGE_H:
+            return _mk(dim, None, f"UNMEASURED: {basis}; the census is "
+                                  + ("undated" if age_h is None else f"{age_h:.1f}h old")
+                                  + f" against {SILENT_ORGANS_MAX_AGE_H:g}h -- "
+                                  "scripts/check_silent_organs.py has stopped", _stamp(census))
+        if census.get("status") == "UNMEASURED" or n is None:
+            # A floor is not a count: at least one source was unreadable.
+            return _mk(dim, None, f"UNMEASURED: {basis}; floor "
+                                  f"{census.get('n_silent_floor')} -- "
+                                  + "; ".join(str(u.get("why")) for u in
+                                              census.get("unmeasured") or []
+                                              if isinstance(u, dict))[:300],
+                       _stamp(census))
+        return _mk(dim, n, basis, _stamp(census))
     health, marker = _read(PROCESS_HEALTH), _read(SYNC_MARKER)
     read, total, bad_legs = [], 0.0, 0
     counts = _dict(health, "counts")
@@ -350,11 +398,52 @@ def _r07_silent_failures() -> dict[str, Any]:
         total += (_num(counts.get("FAILING")) or 0.0) + (_num(counts.get("NOT_SCHEDULED")) or 0.0)
     if isinstance(marker, dict):
         read.append(f"{_rel(SYNC_MARKER)} legs LEG_FAILED/TIMEOUT")
+        # A leg killed at its cap is reported by `_producer` with `timeout_s` and NO status.
         bad_legs = sum(1 for leg in marker.values() if isinstance(leg, dict)
-                       and str(leg.get("status") or "") in ("LEG_FAILED", "TIMEOUT"))
+                       and (str(leg.get("status") or "") in ("LEG_FAILED", "TIMEOUT")
+                            or (leg.get("timeout_s") and leg.get("exit_code") is None
+                                and not leg.get("status"))))
         total += bad_legs
     if not read:
-        return _gone(dim, [PROCESS_HEALTH, SYNC_MARKER])
+        return _gone(dim, [SILENT_ORGANS, PROCESS_HEALTH, SYNC_MARKER])
+    # AN UNREAD SCHEDULER IS NOT ZERO FAILURES. process_health marks every organ it could not
+    # judge SCHEDULER_UNMEASURED, which the FAILING+NOT_SCHEDULED sum never sees -- so 73 unread
+    # rows scored 0.0 and verdict AT (audit v2, 2026-10-14, measured on the committed artifact).
+    # The audit of v3 found the same zero on two neighbouring paths, both closed here:
+    #   * the brief-only reading ("OK schtasks (brief: last run and last result UNMEASURED"),
+    #     which passes an "OK " prefix test while no result code was read, so FAILING could not
+    #     have been observed -- and, the same fact row by row, an OK task row whose code is null;
+    #   * no process_health.json at all, where the legs alone used to score 0.0 AT.
+    # Each leaves this row UNMEASURED; the legs count rides in the basis as a floor.
+    floor = f"(legs={bad_legs} is a floor, not the count)"
+    if not isinstance(health, dict):
+        return _mk(dim, None, f"UNMEASURED: {_rel(PROCESS_HEALTH)} ABSENT/UNREADABLE {floor}",
+                   _stamp(marker))
+    # THE DOCUMENT'S OWN SHAPE (audit v4): a reading with no `counts` object, no `processes`
+    # list, or a headline the producer itself did not call OK/ATTENTION (its "UNMEASURED") is not
+    # a reading of zero failures either -- the legs alone used to score it 0.0 AT.
+    headline = str(health.get("status") or "")
+    procs = health.get("processes")
+    if (not isinstance(health.get("counts"), dict) or not isinstance(procs, list)
+            or headline not in ("OK", "ATTENTION")):
+        return _mk(dim, None,
+                   f"UNMEASURED: {_rel(PROCESS_HEALTH)} status {headline or 'absent'!r}, "
+                   f"counts {type(health.get('counts')).__name__}, processes "
+                   f"{type(procs).__name__} {floor}",
+                   _stamp(health) or _stamp(marker))
+    unread = _num(counts.get("SCHEDULER_UNMEASURED")) or 0.0
+    sched = str(health.get("scheduler_status") or "")
+    # A COMPONENT row is an artifact of another task (no code of its own, by construction); its
+    # owner's row carries the code, so it is not an unread result.
+    null_ok = sum(1 for r in procs if isinstance(r, dict)
+                  and r.get("verdict") == "OK" and r.get("last_result_code") is None
+                  and r.get("state") != "COMPONENT")
+    if unread > 0 or not sched.startswith("OK ") or "(brief:" in sched or null_ok:
+        return _mk(dim, None,
+                   f"UNMEASURED: {_rel(PROCESS_HEALTH)} scheduler_status "
+                   f"{sched[:80] or 'absent'!r}, SCHEDULER_UNMEASURED={unread:.0f}, "
+                   f"OK rows with no result code={null_ok} {floor}",
+                   _stamp(health) or _stamp(marker))
     return _mk(dim, total, f"{' + '.join(read)} (legs={bad_legs})",
                _stamp(health) or _stamp(marker))
 
@@ -423,9 +512,26 @@ def _r10_cross_asset() -> dict[str, Any]:
     }
     n_present = sum(present.values())
     level = 0.0 if not edges else (1.0 if n_present <= 2 else (2.0 if n_present <= 4 else 3.0))
+    # FIELDS ARE MACHINERY, ADMITTED EDGES ARE INTELLIGENCE. A graph whose every measured edge
+    # failed its deflated test carries the right columns and knows nothing tradable; grading it 3
+    # read as "above target" while zero cross-asset links had passed. Without an admitted edge the
+    # level stops at 1 (measured, nothing learned), and an absent count is read as zero.
+    if "edges_admitted" not in world and "admitted_edges" not in world:
+        # An ABSENT count is not a zero (L1.28a): the graph did not say whether anything passed.
+        return _mk(dim, None, f"UNMEASURED: {_rel(WORLD_CAUSAL_GRAPH)} edges={len(edges)} but "
+                   "carries neither edges_admitted nor admitted_edges, so whether any cross-asset "
+                   "edge passed is unknown", _stamp(world))
+    admitted = _num(world.get("edges_admitted"))
+    if not admitted:
+        admitted = len([e for e in world.get("admitted_edges") or [] if isinstance(e, dict)])
+    capped = bool(edges) and admitted <= 0 and level > 1.0
+    if capped:
+        level = 1.0
     return _mk(dim, level, f"{_rel(WORLD_CAUSAL_GRAPH)} edges={len(edges)} carrying "
                f"{sorted(k for k, v in present.items() if v) or 'NO EDGE FIELDS'}; "
-               f"edges_admitted={world.get('edges_admitted')}", _stamp(world))
+               f"edges_admitted={world.get('edges_admitted')}"
+               + ("; capped at 1: no edge admitted, fields without an admitted edge are machinery"
+                  if capped else ""), _stamp(world))
 
 
 def _r11_macro() -> dict[str, Any]:

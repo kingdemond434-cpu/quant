@@ -218,7 +218,7 @@ def test_plane_terms_are_quoted_or_fenced_and_refused_hosts_are_not_sources() ->
         if sid.startswith("kr_ecos_"):
             # the ECOS terms were never read: fenced, never confirmed without a quoted clause
             assert A.BY_ID[sid].terms == "to_confirm", sid
-            assert A.status_of(A.BY_ID[sid]) == "BLOCKED_ON_TERMS:to_confirm"
+            assert A.status_of(A.BY_ID[sid]) == _fenced(sid)
         else:
             assert A.BY_ID[sid].terms == "confirmed", sid
             assert "commercial" in ev["terms_quote"] and ev["listing_url"].startswith(
@@ -261,7 +261,8 @@ def test_one_ecos_key_name_with_the_old_name_as_alias(monkeypatch: pytest.Monkey
     assert {s.key_env for s in A.SOURCES if s.id.startswith("kr_ecos_")} == {"ECOS_API_KEY"}
     monkeypatch.delenv("ECOS_API_KEY", raising=False)
     # terms come first: fenced on terms even before the key question is asked
-    assert A.status_of(A.BY_ID["kr_ecos_call_rate"]) == "BLOCKED_ON_TERMS:to_confirm"
+    assert A.status_of(A.BY_ID["kr_ecos_call_rate"]) == (
+        "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=bis_kr_policy_rate")
     from dataclasses import replace
     assert A.status_of(replace(A.BY_ID["kr_ecos_call_rate"], terms="confirmed"),
                        {}) == "BLOCKED_ON_KEY:ECOS_API_KEY"
@@ -428,7 +429,7 @@ def test_kr_plane_reports_lanes_refusals_and_export_events(tmp_path: Path) -> No
     assert lanes["kr_exports_early"]["status"] == "PARSED"
     for sid in ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
                 "kr_ecos_export_prices"):
-        assert lanes[sid]["status"] == "BLOCKED_ON_TERMS:to_confirm", sid     # fenced
+        assert lanes[sid]["status"] == _fenced(sid), sid                      # fenced
     assert lanes["kr_krx_market_data"]["status"] == "BLOCKED_ON_TERMS:refused"
     assert lanes["kr_krx_market_data"]["terms_quote"]
     kinds = {(e["event"], e["lifecycle"]) for e in doc["events"]}
@@ -474,6 +475,14 @@ def test_department_miner_runs_dry(tmp_path: Path) -> None:
 ECOS_FENCED = ("kr_ecos_base_rate", "kr_ecos_call_rate", "kr_ecos_fx_reserves",
                "kr_ecos_export_prices", "kr_bok_card_spend")
 BIS_ID = "bis_kr_policy_rate"
+
+
+def _fenced(sid: str) -> str:
+    """A fenced ECOS row's status under the #152 law: never fetched; a row with a named
+    candidate reads BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidate> until it is measured."""
+    cands = A.SUBSTITUTED_BY.get(sid)
+    return (f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={','.join(cands)}" if cands
+            else "BLOCKED_ON_TERMS:to_confirm")
 
 
 def _bis_rows() -> list[dict[str, str]]:
@@ -566,21 +575,21 @@ def test_bis_release_rule_is_late_against_the_measured_bis_lag() -> None:
     assert A.BIS_KR_LAG_D >= 25 + 7                  # 25 days stale measured 2026-08-28
 
 
-def test_ecos_rows_stay_fenced_and_the_substitute_is_unmeasured() -> None:
+def test_ecos_rows_stay_fenced_and_the_substitute_is_unverified() -> None:
     for sid in ECOS_FENCED:
         assert A.BY_ID[sid].terms == "to_confirm", sid
         assert A.TERMS[sid][0] == "to_confirm", sid
-        assert A.status_of(A.BY_ID[sid]) == "BLOCKED_ON_TERMS:to_confirm", sid
+        assert A.status_of(A.BY_ID[sid]) == _fenced(sid), sid
     assert "kr_ecos_base_rate" not in A.NO_SUBSTITUTE
     assert {"kr_bok_card_spend", "kr_ecos_fx_reserves", "kr_ecos_export_prices"} <= set(
         A.NO_SUBSTITUTE)
     for sid in ("kr_bok_card_spend", "kr_ecos_fx_reserves", "kr_ecos_export_prices"):
         assert "single-page app" in A.NO_SUBSTITUTE[sid] and "2026-10-07" in A.NO_SUBSTITUTE[sid]
     base = A.substitute_check("kr_ecos_base_rate", BIS_ID)
-    assert base["verdict"] == "UNMEASURED" and base["verdict"] != "COVERED"
+    assert base["verdict"] == "UNVERIFIED" and base["corr"] == base["n"] == "UNMEASURED"
     assert base["relation"] == "identity_by_publisher" and "republished by the BIS" in base["why"]
     call = A.substitute_check("kr_ecos_call_rate", BIS_ID)
-    assert call["verdict"] == "UNMEASURED" and call["relation"] == "nearest_lawful_proxy"
+    assert call["verdict"] == "UNVERIFIED" and call["relation"] == "nearest_lawful_proxy"
     assert A.SUBSTITUTE_VS_ORIGINAL == {}                   # nothing measured, nothing entered
 
 
@@ -588,10 +597,11 @@ def test_the_152_law_needs_corr_and_n() -> None:
     def v(corr: float, n: int) -> str:
         m = {"kr_ecos_base_rate": {BIS_ID: {"corr": corr, "n": n}}}
         return str(A.substitute_check("kr_ecos_base_rate", BIS_ID, m)["verdict"])
-    assert v(0.99, 11) == "NOT_COVERED" and v(0.49, 400) == "NOT_COVERED"
-    assert v(0.5, 12) == "COVERED"
+    assert v(0.99, 11) == "UNVERIFIED" and v(0.49, 400) == "UNVERIFIED"
+    assert v(0.5, 12) == "VERIFIED"
     m = {"kr_ecos_base_rate": {BIS_ID: {"corr": 0.97, "n": 60}}}
-    assert A.covered_candidates("kr_ecos_base_rate", m) == (BIS_ID,)
+    assert A.verified_substitutes("kr_ecos_base_rate", m) == (BIS_ID,)
+    assert A.status_of(A.BY_ID["kr_ecos_base_rate"], {}, m) == f"BLOCKED+SUBSTITUTE:{BIS_ID}"
     assert "kr_ecos_base_rate" not in A.unsubstituted(m)
 
 
@@ -612,4 +622,4 @@ def test_bis_cells_axis_and_plane_carry_the_data_source(tmp_path: Path) -> None:
     assert lanes[BIS_ID]["mapped_instruments"] == lanes["kr_ecos_base_rate"][
         "mapped_instruments"] == ["USDKRW"]
     (cand,) = lanes["kr_ecos_base_rate"]["substitute_candidates"]
-    assert cand["substitute"] == BIS_ID and cand["verdict"] == "UNMEASURED"
+    assert cand["substitute"] == BIS_ID and cand["verdict"] == "UNVERIFIED"
