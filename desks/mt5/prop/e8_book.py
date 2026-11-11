@@ -218,7 +218,7 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:
-            reason = f"terms-fenced proposer lineage ({source})"
+            reason = f"terms-fenced input data ({source})"
         elif gate.alarm.get("blocks"):
             reason = str(gate.alarm.get("why") or "placebo gate alarm")
         else:
@@ -576,6 +576,8 @@ def main(argv: list[str] | None = None) -> int:
     doc = select(tradeable, rows=eligible)
     doc["blocked_by_integrity"] = integrity_blocked
     doc["n_blocked_by_integrity"] = len(integrity_blocked)
+    from kelly_survival import terms_fence_state
+    doc["terms_fence"] = terms_fence_state()
     doc["catalogue_source"] = source
     write(doc)
     print(f"E8 book: {doc['n_selected']} sleeve(s) at {RISK_FRAC:.2%} "

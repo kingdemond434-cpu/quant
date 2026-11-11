@@ -373,7 +373,10 @@ def test_a_live_pinned_row_is_left_to_the_ordinary_roster(tmp_path: Path) -> Non
 
 # ------------------------------------------------------------------ the gateway door: the zeros
 
-def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_never_reach_the_roster(tmp_path: Path) -> None:
+def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_rr15_never_reach_the_roster(tmp_path: Path) -> None:
+    # USDJPY rr=2.5 is no longer here: its Reddit-origin quarantine is lifted (live_sleeve_policy
+    # reddit_origin_lifted; zuck 2026-11-05, every account trades every certified sleeve through
+    # the allocator). Its other rr variants stay out: the same breakout bought again.
     rows = _committed_rows()
     live = [{**rows[n], "status": "LIVE", "risk_frac": 0.1} for n in GAP_DECAY]
     live += [
@@ -381,7 +384,7 @@ def test_gap_decay_nzdjpy_xau_scalp_and_usdjpy_never_reach_the_roster(tmp_path: 
          "exec": "family_market", "status": "LIVE", "risk_frac": 0.03},
         {"name": "xau_m5_anti_breakout_overlap", "symbol": "XAUUSD", "timeframe": "M5",
          "family": "anti_breakout", "exec": "scalp_market", "status": "LIVE", "risk_frac": 0.03},
-        {"name": "USDJPY.asia#rr=2.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
+        {"name": "USDJPY.asia#rr=1.5", "symbol": "USDJPY", "status": "LIVE", "risk_frac": 0.03},
         *({**rows[t], "status": "LIVE", "risk_frac": 0.03} for t in TWINS if t in rows),
     ]
     kept, notes = dc.load_sleeves_verbose(_sleeves_file(tmp_path, live))

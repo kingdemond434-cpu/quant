@@ -378,12 +378,13 @@ BOOK_MARGIN = 0.04            # solve against 4% so an independent sample still 
 BOOK_STEPS = (0.04, 0.02, 0.01, 0.005, 0.0025)
 BOOK_STARTS = 6
 BOOK_PATHS = 2000
-#: Terms fence (PR #162): a cell only Reddit/StockTwits proposed never enters the book. The merge's
-#: published index wins; until it exists, the docket's own genealogy decides (every row naming the
-#: cell came from a fenced platform). USDJPY.session_range_breakout is the case that put this here.
+#: Terms fence: the terms gate governs how the desk ACCESSES data, never where an idea came from
+#: (principal 2026-10-13: a Reddit origin must not block a sleeve). A cell is fenced only when its
+#: live INPUT data comes from a terms-blocked source, named in a published index whose `basis` is
+#: "input_data". A proposer's genealogy is never read: a cell that trades MT5 prices uses no
+#: platform's data, whoever first wrote the idea down.
 TERMS_FENCED_CELLS = BASE / "data" / "hypotheses" / "terms_fenced_cells.json"
-RESEARCH_QUEUE = BASE / "data" / "research_queue.json"
-FENCED_GENEALOGY = ("ext_reddit_", "ext_stocktwits_")
+FENCE_BASIS = "input_data"
 
 
 def _world_column(cell: str, sym: str, family: str, selector: str, names: list[str]) -> str | None:
@@ -394,23 +395,22 @@ def _world_column(cell: str, sym: str, family: str, selector: str, names: list[s
 
 
 def terms_fenced_cells() -> tuple[set[str], str]:
-    """(fenced `SYM.family` cells, where the verdict came from)."""
+    """(fenced `SYM.family` cells, where the verdict came from): input-data fences only."""
     idx = _read_json(TERMS_FENCED_CELLS)
-    if isinstance(idx, dict) and idx.get("cells") is not None:
+    if (isinstance(idx, dict) and idx.get("basis") == FENCE_BASIS
+            and idx.get("cells") is not None):
         return {str(c) for c in idx["cells"]}, TERMS_FENCED_CELLS.name
-    q = _read_json(RESEARCH_QUEUE)
-    rows = q if isinstance(q, list) else next(
-        (v for v in (q or {}).values() if isinstance(v, list)), [])
-    seen: dict[str, bool] = {}
-    for r in rows:
-        gid = str((r or {}).get("geneology_id") or "")
-        tail = gid.split(":", 1)[-1]
-        parts = tail.split("_", 2)
-        if not tail.startswith("ext_") or len(parts) < 3:
-            continue
-        cell = f"{parts[2].split('_', 1)[0]}.{parts[2].split('_', 1)[-1]}"
-        seen[cell] = seen.get(cell, True) and tail.startswith(FENCED_GENEALOGY)
-    return {c for c, only in seen.items() if only}, f"{RESEARCH_QUEUE.name} genealogy"
+    # Absent is not clean (L1.28a): nothing fences, and the book says the fence went unmeasured.
+    return set(), (f"UNMEASURED: no input-data fence index ({TERMS_FENCED_CELLS.name} with basis "
+                   f"{FENCE_BASIS!r}); proposer genealogy is never a fence")
+
+
+def terms_fence_state() -> dict[str, Any]:
+    """What the published book says about the terms fence: MEASURED with its cell count, or
+    UNMEASURED when no input-data index exists."""
+    cells, src = terms_fenced_cells()
+    status = "UNMEASURED" if src.startswith("UNMEASURED") else "MEASURED"
+    return {"status": status, "source": src, "n_cells": len(cells)}
 
 
 def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]:
@@ -448,7 +448,8 @@ def certified_roster(names: list[str]) -> tuple[list[str], list[dict[str, Any]]]
         elif tf == "M15":
             row["excluded"] = "M15 banned"
         elif f"{sym.upper()}.{fam}" in fenced:
-            row["excluded"] = f"TERMS_FENCED: proposed only by Reddit/StockTwits ({fence_src})"
+            row["excluded"] = ("TERMS_FENCED: live input data from a terms-blocked source "
+                               f"({fence_src})")
         else:
             col = _world_column(str(c.get("cell") or ""), sym, fam, sel, names)
             row["column"] = col
@@ -593,7 +594,7 @@ def _pattern_search(paths: np.ndarray, paths_h: np.ndarray, mask: np.ndarray, ca
 def solve_book(*, seed: int = 0) -> dict[str, Any]:
     """The max-growth book over the certified roster, per venue, inside survival (see above)."""
     out: dict[str, Any] = {"status": "OK", "haircut_for_survival": BOOK_HAIRCUT,
-                           "margin": BOOK_MARGIN}
+                           "margin": BOOK_MARGIN, "terms_fence": terms_fence_state()}
     try:
         z = np.load(WORLDS, allow_pickle=True)
     except (OSError, ValueError) as exc:
