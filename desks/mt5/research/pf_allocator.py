@@ -2227,8 +2227,9 @@ def apply_hazard_shrink(ev: list[SleeveEvidence], haz: dict[str, float]) -> dict
 #: keeps GARCH/HMM sizing changes in shadow until zuck says otherwise.
 INPUT_POLICY: dict[str, str] = {"macro": "enforce", "vix": "enforce",
                                 "regime": "shadow", "garch": "shadow"}
-#: Days a VIX rank may lag today before the live vix arm reads it as UNMEASURED (a weekend plus
-#: a US holiday is four).
+#: Days a VIX rank may lag today before the live vix arm reads it as UNMEASURED. DERIVATION:
+#: VIXCLS prints each US business day, and the longest normal gap is Friday to Tuesday after a
+#: Monday holiday = 4 calendar days; 4 is therefore the newest print that could exist.
 VIX_MAX_LAG_DAYS = 4
 
 
