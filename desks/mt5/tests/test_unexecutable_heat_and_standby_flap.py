@@ -158,7 +158,7 @@ def test_an_unrecoverable_lossy_row_keeps_yesterdays_behaviour(canon, monkeypatc
 
 # ------------------------------------------------------------------ 2. the hourly un-demotion
 @pytest.fixture()
-def healer(tmp_path, monkeypatch):
+def healer(tmp_path, monkeypatch, fresh_tier_s_door):
     path = _DESK / "scripts" / "heal_silent_demotions.py"
     spec = importlib.util.spec_from_file_location("heal_silent_demotions_t", path)
     assert spec is not None and spec.loader is not None

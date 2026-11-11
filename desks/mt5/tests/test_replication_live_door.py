@@ -401,7 +401,7 @@ def test_only_a_waiver_carrying_its_order_opens_the_door(roster, tmp_path) -> No
 
 # ------------------------------------------------------------------ the healer's restore path
 @pytest.fixture()
-def healer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def healer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fresh_tier_s_door):
     spec = importlib.util.spec_from_file_location(
         "heal_silent_demotions_r", DESK / "scripts" / "heal_silent_demotions.py")
     assert spec is not None and spec.loader is not None
