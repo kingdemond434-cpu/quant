@@ -136,3 +136,74 @@ def test_main_once_exits_with_the_pass_result(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "free_phys_mb", lambda: None)
     assert dr.main(["--dept", "intel", "--once"]) == 0
     assert (tmp_path / "logs" / "department_resident.log").exists()
+
+
+def test_hung_live_holder_past_its_own_budget_is_reclaimed_and_logged(monkeypatch, tmp_path):
+    """2026-11-11: Mathlab waited 8 h on 'bounded department slots'. A live holder hung past its
+    own budget (proctree.run's unbounded Popen.__exit__ wait after a failed tree kill) must stop
+    counting against the bound; an in-budget live holder must not."""
+    import json
+    import os
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    held = dr.claim_capacity_slot(1, dept="validate")
+    assert held is not None
+    assert dr.claim_capacity_slot(1, dept="mathlab") is None   # in budget: still busy
+    record = json.loads(dr._holder_path(held.lock_path).read_text(encoding="utf-8"))
+    assert record["pid"] == os.getpid() and record["dept"] == "validate"
+    record["admitted_epoch"] -= dr.holder_budget_s() + 60     # same live pid, now over budget
+    dr._holder_path(held.lock_path).write_text(json.dumps(record), encoding="utf-8")
+    reclaimed = dr.claim_capacity_slot(1, dept="mathlab")
+    assert reclaimed is not None, "a hung holder past its own budget kept the slot"
+    assert reclaimed.record["generation"] == 1
+    assert dr.claim_capacity_slot(1, dept="macro") is None     # still bounded for live passes
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "RECLAIM department slot 0 generation 0" in log and "dept[validate]" in log
+    reclaimed.close()
+    held.close()
+    assert not dr._holder_path(held.lock_path).exists()
+
+
+def test_locked_slot_with_dead_or_unrecorded_holder_is_busy_not_reclaimed(monkeypatch, tmp_path):
+    """The kernel frees a dead holder's lock, so a dead pid on a LOCKED slot is a new holder
+    mid-write: never a reason to over-admit. Same for a missing record (unmeasured)."""
+    import json
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    held = dr.claim_capacity_slot(1, dept="validate")
+    record = dict(held.record, admitted_epoch=0.0)
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: "dead")
+    dr._holder_path(held.lock_path).write_text(json.dumps(record), encoding="utf-8")
+    assert dr.claim_capacity_slot(1, dept="mathlab") is None
+    dr._holder_path(held.lock_path).unlink()
+    assert dr.claim_capacity_slot(1, dept="mathlab") is None
+    held.close()
+
+
+def test_abandoned_ticket_with_unmeasurable_owner_cannot_hold_the_queue_head(monkeypatch,
+                                                                              tmp_path):
+    """A hard-killed waiter skips its finally; if its PID reads alive or unmeasurable
+    (reuse, AccessDenied) the old code kept it as the FIFO head forever. A live waiter
+    refreshes its ticket every poll, so an untouched one is reclaimed and logged."""
+    import os
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)   # unmeasured = alive
+    abandoned = dr._wait_ticket("ghost")
+    live = dr._wait_ticket("mathlab")
+    old = time.time() - dr.TICKET_STALE_S - 120
+    os.utime(abandoned, (old, old))
+    assert dr._oldest_waiter() == live
+    assert not abandoned.exists()
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "RECLAIM wait ticket" in log and "dept[ghost]" in log
+    live.unlink()
+
+
+def test_waiter_heartbeats_its_ticket_and_is_admitted(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    handle = dr.wait_for_capacity("mathlab", slots=1, poll_s=1)
+    assert handle is not None and handle.record["dept"] == "mathlab"
+    handle.close()
+    assert not list((tmp_path / "locks").glob("dept_wait_*.ticket"))

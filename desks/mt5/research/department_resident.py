@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import ctypes
+import json
 import os
 import subprocess
 import sys
@@ -48,8 +49,29 @@ RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
 # while deepening/descendant/gauntlet workers held tens of GB each.  Bound cross-department
 # passes with OS-held slots.  Three keeps useful parallel discovery on the 98GB box while leaving
 # the terminal, gateway, gauntlet and core loop headroom.  A crashed process releases its byte
-# lock in the kernel, so there is no stale-file recovery path.
+# lock in the kernel -- but a LIVE holder that hangs does not (2026-11-11: MT5-Dept-Mathlab sat
+# 8 h on "waiting: bounded department slots or older pass(es) ahead").  Two leak paths, both
+# now reclaimed on liveness and logged:
+#   * a slot held by a live process past its OWN budget (pass timeout + the post-admission memory
+#     wait + the tree-kill grace).  libs/ops/proctree.run leaves `with Popen(...)` through an
+#     unbounded wait() when kill_tree cannot end the child, so the holder can sit inside run_pass
+#     forever with the slot locked.  Such a slot is no longer counted: the head waiter takes the
+#     slot's next generation file, so live, in-budget passes are still bounded at
+#     CONCURRENT_PASSES and a hung one costs nothing;
+#   * a FIFO ticket whose owner died without its `finally` (a hard kill: Task Scheduler stop,
+#     reaper, reboot) and whose PID then reads as alive or unmeasurable.  `_ticket_alive` treats
+#     unmeasured ownership as alive, and only the head ticket may claim, so that ticket blocked
+#     every department forever even with free slots.  Waiters now refresh their ticket every
+#     poll; a ticket not refreshed for TICKET_STALE_S has no owner polling it and is removed.
 CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "3")))
+#: A waiter touches its ticket every PAUSE_S; twenty missed polls means no live owner is waiting.
+TICKET_STALE_S = max(600, 20 * PAUSE_S)
+#: How long the resident itself can wait for memory after admission while holding a slot.
+POST_ADMISSION_MEMORY_WAIT_S = 1800
+#: proctree.run's communicate(timeout=10) after kill_tree, plus a margin for the log/heartbeat.
+HOLDER_GRACE_S = 600
+#: How often a still-waiting resident re-logs where it stands in the queue.
+WAIT_REPORT_S = 1800
 # A department child still has a hard timeout.  Plan strictly inside it so every admitted
 # oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
 PASS_BUDGET_FILL = min(
@@ -117,32 +139,165 @@ def claim_singleton(dept: str):
     return fh
 
 
-def claim_capacity_slot(slots: int = CONCURRENT_PASSES):
-    """Claim one of the shared department-pass slots, or None when all are busy."""
-    LOCKS.mkdir(parents=True, exist_ok=True)
-    for index in range(max(1, int(slots))):
-        path = LOCKS / f"dept_capacity_{index}.lock"
-        try:
-            fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held across the pass
-        except OSError:
-            continue
-        try:
-            if sys.platform == "win32":
-                import msvcrt
-                fh.seek(0)
-                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            fh.close()
-            continue
+def holder_budget_s(timeout_s: int | None = None) -> int:
+    """The longest a LIVE holder can legitimately keep a slot: its own measured budget."""
+    t = PASS_TIMEOUT_S if timeout_s is None else int(timeout_s)
+    return int(t + POST_ADMISSION_MEMORY_WAIT_S + HOLDER_GRACE_S)
+
+
+def _proc_create_time(pid: int) -> float | None:
+    try:
+        import psutil
+        return float(psutil.Process(pid).create_time())
+    except Exception:
+        return None
+
+
+def _pid_state(pid: int, create_time: float | None) -> str:
+    """'alive', 'dead' or 'unmeasured' -- a reused PID (another create time) is 'dead'."""
+    try:
+        import psutil
+    except ImportError:
+        return "unmeasured"
+    try:
+        proc = psutil.Process(int(pid))
+        if not proc.is_running():
+            return "dead"
+        if create_time is not None and abs(proc.create_time() - float(create_time)) > 1.0:
+            return "dead"
+        return "alive"
+    except Exception as exc:
+        if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
+            return "dead"
+        return "unmeasured"
+
+
+class CapacitySlot:
+    """A held department-pass slot: the OS byte lock plus a readable holder record.
+
+    The lock file's byte 0 is mandatorily locked on Windows, so nobody else can read who holds
+    it; the sidecar `<lock>.holder.json` says (pid, dept, admitted, budget) for the reclaim
+    check and for a box read. Closing removes the record first, then releases the lock.
+    """
+
+    def __init__(self, fh, lock_path: Path, record: dict) -> None:
+        self.fh = fh
+        self.lock_path = lock_path
+        self.record = record
+
+    def close(self) -> None:
         with contextlib.suppress(OSError):
+            _holder_path(self.lock_path).unlink(missing_ok=True)
+        self.fh.close()
+
+
+def _slot_lock_path(index: int, generation: int) -> Path:
+    if generation <= 0:
+        return LOCKS / f"dept_capacity_{index}.lock"
+    return LOCKS / f"dept_capacity_{index}.g{generation}.lock"
+
+
+def _holder_path(lock_path: Path) -> Path:
+    return lock_path.with_name(lock_path.name + ".holder.json")
+
+
+def _read_holder(lock_path: Path) -> dict | None:
+    try:
+        row = json.loads(_holder_path(lock_path).read_text(encoding="utf-8"))
+        return row if isinstance(row, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _try_lock(path: Path):
+    try:
+        fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held across the pass
+    except OSError:
+        return None
+    try:
+        if sys.platform == "win32":
+            import msvcrt
             fh.seek(0)
-            fh.truncate()
-            fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat(timespec='seconds')}\n")
-            fh.flush()
-        return fh
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    return fh
+
+
+def _holder_leaked(lock_path: Path, now: float) -> str | None:
+    """Why a LOCKED slot's holder is leaked, or None while it is a live, in-budget pass.
+
+    A dead holder's byte lock is released by the kernel, so a dead PID on a locked slot means
+    a NEW holder is between taking the lock and writing its record: busy, never reclaimed. A
+    missing or unreadable record is unmeasured, and unmeasured is busy too. Only a holder that
+    is measurably the same live process, past its own budget, is reclaimed.
+    """
+    row = _read_holder(lock_path)
+    if not row:
+        return None
+    try:
+        pid = int(row["pid"])
+        admitted = float(row["admitted_epoch"])
+        budget = float(row.get("budget_s") or holder_budget_s())
+    except (KeyError, TypeError, ValueError):
+        return None
+    age = now - admitted
+    if age <= budget:
+        return None
+    state = _pid_state(pid, row.get("pid_create_time"))
+    if state == "dead":
+        return None
+    return (f"holder pid {pid} dept[{row.get('dept', '?')}] {state}, holding "
+            f"{age:.0f}s against its own budget of {budget:.0f}s")
+
+
+_RECLAIMS_LOGGED: set[tuple[str, str]] = set()
+
+
+def claim_capacity_slot(slots: int = CONCURRENT_PASSES, dept: str = "?",
+                        budget_s: int | None = None):
+    """Claim one of the shared department-pass slots, or None when all are busy.
+
+    A slot whose live holder is past its own budget is RECLAIMED (logged): the claimant takes
+    that slot's next generation lock file, so the hung holder no longer counts against the
+    bound and every in-budget pass is still bounded at `slots`.
+    """
+    LOCKS.mkdir(parents=True, exist_ok=True)
+    budget = holder_budget_s() if budget_s is None else int(budget_s)
+    for index in range(max(1, int(slots))):
+        generation = 0
+        while True:
+            path = _slot_lock_path(index, generation)
+            fh = _try_lock(path)
+            if fh is not None:
+                record = {"pid": os.getpid(), "pid_create_time": _proc_create_time(os.getpid()),
+                          "dept": dept, "slot": index, "generation": generation,
+                          "admitted_epoch": time.time(),
+                          "admitted_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                          "budget_s": budget}
+                with contextlib.suppress(OSError):
+                    fh.seek(0)
+                    fh.truncate()
+                    fh.write(f"{os.getpid()} {record['admitted_utc']}\n")
+                    fh.flush()
+                with contextlib.suppress(OSError):
+                    tmp = _holder_path(path).with_suffix(f".{os.getpid()}.tmp")
+                    tmp.write_text(json.dumps(record), encoding="utf-8")
+                    os.replace(tmp, _holder_path(path))
+                return CapacitySlot(fh, path, record)
+            why = _holder_leaked(path, time.time())
+            if why is None:
+                break  # a live, in-budget pass holds this slot
+            key = (str(path), str((_read_holder(path) or {}).get("pid")))
+            if key not in _RECLAIMS_LOGGED:  # once per leaked holder, not once per 30 s poll
+                _RECLAIMS_LOGGED.add(key)
+                log(dept, f"RECLAIM department slot {index} generation {generation}: {why}; "
+                          f"claiming generation {generation + 1}")
+            generation += 1
     return None
 
 
@@ -170,22 +325,53 @@ def _ticket_alive(path: Path, pid: int) -> bool:
         return True
 
 
-def _oldest_waiter() -> Path | None:
-    """Return the oldest live contender; remove abandoned process tickets only."""
+def _waiters() -> list[tuple[int, str, Path]]:
+    """Every live contender, oldest first; abandoned tickets are removed and logged."""
     contenders: list[tuple[int, str, Path]] = []
+    now = time.time()
     for path in LOCKS.glob("dept_wait_*.ticket"):
         try:
-            _, _, stamp, pid, _dept = path.stem.split("_", 4)
+            _, _, stamp, pid, owner_dept = path.stem.split("_", 4)
             entered = int(stamp)
             owner = int(pid)
             if not _ticket_alive(path, owner):
                 path.unlink(missing_ok=True)
+                log(owner_dept, f"RECLAIM wait ticket {path.name}: owner pid {owner} not alive")
+                continue
+            idle = now - path.stat().st_mtime
+            if idle > TICKET_STALE_S:
+                # Liveness of the WAITER, not only of the PID: a live waiter refreshes its
+                # ticket every poll. One untouched for twenty polls has no owner in the queue,
+                # whatever psutil says about a (possibly reused, possibly unreadable) PID.
+                path.unlink(missing_ok=True)
+                log(owner_dept, f"RECLAIM wait ticket {path.name}: not refreshed for "
+                                f"{idle:.0f}s (> {TICKET_STALE_S}s) by pid {owner}")
                 continue
             contenders.append((entered, path.name, path))
         except (ValueError, OSError):
             # An unreadable ticket is not evidence of an available slot. Leave it visible.
             continue
-    return min(contenders)[2] if contenders else None
+    return sorted(contenders)
+
+
+def _oldest_waiter() -> Path | None:
+    """Return the oldest live contender; remove abandoned tickets only."""
+    contenders = _waiters()
+    return contenders[0][2] if contenders else None
+
+
+def _slot_census(slots: int) -> str:
+    """Who holds the slots right now, for the waiting log (a box read needs no other file)."""
+    now = time.time()
+    held = []
+    for index in range(max(1, int(slots))):
+        for lock in sorted(LOCKS.glob(f"dept_capacity_{index}*.lock")):
+            row = _read_holder(lock)
+            if row:
+                age = now - float(row.get("admitted_epoch") or now)
+                held.append(f"{lock.stem}={row.get('dept', '?')}/pid{row.get('pid')}/"
+                            f"{age:.0f}s")
+    return ", ".join(held) or "no holder records"
 
 
 def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
@@ -193,17 +379,29 @@ def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
     """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail."""
     announced = False
     ticket = _wait_ticket(dept)
+    started = time.monotonic()
+    reported = started
     try:
         while True:
-            if _oldest_waiter() == ticket:
-                handle = claim_capacity_slot(slots)
+            with contextlib.suppress(OSError):
+                os.utime(ticket, None)  # the waiter's own heartbeat (see TICKET_STALE_S)
+            queue = _waiters()
+            if queue and queue[0][2] == ticket:
+                handle = claim_capacity_slot(slots, dept=dept)
                 if handle is not None:
                     if announced:
-                        log(dept, f"capacity available: admitted to one of {slots} department slots")
+                        log(dept, f"capacity available after {time.monotonic() - started:.0f}s: "
+                                  f"admitted to one of {slots} department slots")
                     return handle
             if not announced:
                 log(dept, "waiting: bounded department slots or older pass(es) ahead")
                 announced = True
+                reported = time.monotonic()
+            elif time.monotonic() - reported >= WAIT_REPORT_S:
+                ahead = next((k for k, row in enumerate(queue) if row[2] == ticket), len(queue))
+                log(dept, f"still waiting {time.monotonic() - started:.0f}s: {ahead} older "
+                          f"waiter(s) ahead of {len(queue)}; slots: {_slot_census(slots)}")
+                reported = time.monotonic()
             time.sleep(max(1, int(poll_s)))
     finally:
         ticket.unlink(missing_ok=True)
