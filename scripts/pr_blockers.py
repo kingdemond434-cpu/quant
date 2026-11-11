@@ -18,6 +18,9 @@ because that is what the box sweep itself decided on that head:
     VETO_WINDOW     CLEAR on this head, CI green, inside the gate's 24 h veto window
     GATE_PATH_OFF   the gate says the registry path is off (e.g. the ROOT pin does not match)
     READY           nothing above: it waits only for the box sweep to reach it
+    UNMEASURED      a read for this PR failed this run (named, never guessed)
+
+Runs as the hourly core leg `pr_blockers`; the report is published with box state.
 
 It reads GitHub (the box login when it works, anonymously otherwise: the repo is public) and the
 audit-registry ref. It never merges, comments, re-runs or edits anything.
@@ -29,6 +32,7 @@ import argparse
 import json
 import os
 import subprocess
+import time
 import urllib.request
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
@@ -48,7 +52,9 @@ VETO_H = 24.0
 REPORT = ROOT / "desks" / "mt5" / "reports" / "PR_BLOCKERS.json"
 UA = "pr-blockers"
 ORDER = ("CONFLICT", "AUDIT_MISSING", "AUDIT_HOLD", "AUDIT_STALE", "CI_FAILED", "CI_PENDING",
-         "VETO_WINDOW", "GATE_PATH_OFF", "READY")  # fmt: skip
+         "VETO_WINDOW", "GATE_PATH_OFF", "READY", "UNMEASURED")  # fmt: skip
+#: Consecutive failed PR reads after which the rest of the run is marked UNMEASURED.
+MAX_MISSES = 5
 WORDS = {
     "CONFLICT": "cannot merge into LIVE: needs LIVE merged in",
     "AUDIT_MISSING": "no Auditor verdict yet",
@@ -59,6 +65,7 @@ WORDS = {
     "VETO_WINDOW": "inside the 24 h veto window",
     "GATE_PATH_OFF": "the box's registry merge path is off",
     "READY": "waiting only for the box sweep",
+    "UNMEASURED": "its facts could not be read this run",
 }
 _BAD = {"failure", "cancelled", "timed_out", "action_required", "startup_failure"}
 
@@ -166,8 +173,22 @@ def table(rows: list[dict[str, Any]], at: str) -> str:
 # ----------------------------------------------------------------------------- the reads
 
 
+#: The box's own gh (the gate sweep uses it); the hourly cycle does not put it on PATH.
+BOX_GH = Path(r"C:\Users\Administrator\tools\gh\bin\gh.exe")
+
+
+def _gh_bin() -> str:
+    env = os.environ.get("GH_BIN")
+    if env:
+        return env
+    try:
+        return str(BOX_GH) if BOX_GH.is_file() else "gh"
+    except OSError:
+        return "gh"
+
+
 def gh_fetch(path: str) -> Any:
-    gh = os.environ.get("GH_BIN") or "gh"
+    gh = _gh_bin()
     p = subprocess.run([gh, "api", path], capture_output=True, text=True, encoding="utf-8",
                        errors="replace", timeout=60, check=False)  # fmt: skip
     if p.returncode != 0:
@@ -189,8 +210,22 @@ def raw_registry(repo: str) -> list[str]:
         return r.read().decode("utf-8").splitlines()
 
 
+def _budget_s() -> float:
+    """The hourly cycle's cap for this leg (QUANT_LEG_BUDGET_S), less a margin to write."""
+    raw = os.environ.get("QUANT_LEG_BUDGET_S")
+    if not raw:
+        return float("inf")
+    try:
+        return max(30.0, float(raw) - 30.0)
+    except ValueError:
+        return float("inf")
+
+
 def collect(repo: str, now: datetime, fetch: Fetch,
-            registry: Callable[[str], list[str]] = raw_registry) -> list[dict[str, Any]]:  # fmt: skip
+            registry: Callable[[str], list[str]] = raw_registry,
+            clock: Callable[[], float] = time.monotonic,
+            budget_s: float | None = None) -> list[dict[str, Any]]:  # fmt: skip
+    stop = clock() + (_budget_s() if budget_s is None else budget_s)
     prs: list[dict[str, Any]] = []
     for page in range(1, 11):
         batch = fetch(f"repos/{repo}/pulls?state=open&base={LIVE}&per_page=100&page={page}") or []
@@ -199,17 +234,40 @@ def collect(repo: str, now: datetime, fetch: Fetch,
             break
     rows = newest_rows(registry(repo))
     out = []
+    misses = 0
     for p in prs:
         n, head = int(p["number"]), str(p["head"]["sha"])
-        detail = fetch(f"repos/{repo}/pulls/{n}") or {}
-        runs = (fetch(f"repos/{repo}/commits/{head}/check-runs?per_page=100") or {}).get(
-            "check_runs") or []  # fmt: skip
-        st = fetch(f"repos/{repo}/commits/{head}/status") or {}
+        if clock() >= stop:  # the leg's budget: the rest is named, never guessed
+            out.append(unmeasured(p, "not read: the leg's time budget ran out"))
+            continue
+        if misses >= MAX_MISSES:  # rate-limited or GitHub down: the rest is named, never guessed
+            out.append(unmeasured(p, f"not read: {MAX_MISSES} reads in a row failed"))
+            continue
+        try:
+            detail = fetch(f"repos/{repo}/pulls/{n}") or {}
+            runs = (fetch(f"repos/{repo}/commits/{head}/check-runs?per_page=100") or {}).get(
+                "check_runs") or []  # fmt: skip
+            st = fetch(f"repos/{repo}/commits/{head}/status") or {}
+        except (RuntimeError, OSError, ValueError) as exc:  # one 503 never loses the table
+            misses += 1
+            out.append(unmeasured(p, f"{type(exc).__name__}: {str(exc)[:80]}"))
+            continue
+        misses = 0
         gate = next((s for s in st.get("statuses") or [] if s.get("context") == GATE_STATUS), None)
         pr = {**p, "mergeable": detail.get("mergeable"),
               "mergeable_state": detail.get("mergeable_state")}  # fmt: skip
         out.append(classify(now, pr, rows.get(n), ci_state(runs), gate))
     return out
+
+
+def unmeasured(pr: Mapping[str, Any], why: str) -> dict[str, Any]:
+    """A PR whose facts could not be read this run: UNMEASURED, with the reason."""
+    return {
+        "pr": int(pr["number"]), "title": str(pr.get("title") or "")[:90],
+        "head": str((pr.get("head") or {}).get("sha") or "")[:9], "draft": bool(pr.get("draft")),
+        "blocker": "UNMEASURED", "words": WORDS["UNMEASURED"], "also": [], "audit": None,
+        "ci": {"state": "unmeasured", "jobs": []}, "gate_says": why[:160],
+    }  # fmt: skip
 
 
 def main(argv: list[str] | None = None) -> int:

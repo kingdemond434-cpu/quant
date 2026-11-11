@@ -112,3 +112,51 @@ def test_table_has_one_line_per_pr() -> None:
     rows = [pb.classify(NOW, _pr(number=n), None, _green(), None) for n in (1, 2)]
     md = pb.table(rows, "now")
     assert md.count("| #") == 2 and "AUDIT_MISSING 2" in md
+
+
+def test_a_failed_read_is_unmeasured_and_never_loses_the_table() -> None:
+    def fetch(path: str) -> Any:
+        if "/pulls?" in path:
+            return [_pr(number=n) for n in range(1, 10)]
+        raise RuntimeError("gh: HTTP 503")
+
+    rows = pb.collect("o/r", NOW, fetch, registry=lambda repo: [])
+    assert len(rows) == 9 and {r["blocker"] for r in rows} == {"UNMEASURED"}
+    assert "HTTP 503" in rows[0]["gate_says"]
+    assert "reads in a row failed" in rows[-1]["gate_says"]  # stops calling after MAX_MISSES
+
+
+def test_the_leg_budget_marks_the_rest_unmeasured() -> None:
+    t = iter(range(0, 1000, 10))
+
+    def fetch(path: str) -> Any:
+        if "/pulls?" in path:
+            return [_pr(number=n) for n in range(1, 6)]
+        return {}
+
+    rows = pb.collect("o/r", NOW, fetch, registry=lambda repo: [],
+                      clock=lambda: float(next(t)), budget_s=25)  # fmt: skip
+    assert [r["blocker"] for r in rows][:2] == ["AUDIT_MISSING", "AUDIT_MISSING"]
+    assert rows[-1]["blocker"] == "UNMEASURED" and "budget" in rows[-1]["gate_says"]
+
+
+def test_budget_reads_the_cycle_cap(monkeypatch: Any) -> None:
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    assert pb._budget_s() == float("inf")
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "600")
+    assert pb._budget_s() == 570.0
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "10")
+    assert pb._budget_s() == 30.0
+
+
+def test_it_is_an_hourly_core_leg_and_published() -> None:
+    hc = (ROOT / "desks/mt5/research/hourly_cycle.py").read_text(encoding="utf-8")
+    assert '"box_state_freshness", "desk_health", "pr_blockers",' in hc
+    assert '_producer("pr_blockers", "scripts/pr_blockers.py")' in hc
+    assert '"pr_blockers": prb' in hc
+    for f in ("libs/ops/release.py", "desks/mt5/mt5desk/release_identity.py",
+              "desks/mt5/scripts/sync_shadow_to_git.ps1"):  # fmt: skip
+        assert "desks/mt5/reports/PR_BLOCKERS.json" in (ROOT / f).read_text(encoding="utf-8")
+    assert "!desks/mt5/reports/PR_BLOCKERS.json" in (ROOT / ".gitignore").read_text()
+    oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
+    assert '"MT5-HourlyCore (pr blockers)"' in oc

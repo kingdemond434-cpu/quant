@@ -88,6 +88,7 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/reports/PR_BLOCKERS.json",
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
