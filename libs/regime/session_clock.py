@@ -42,7 +42,7 @@ MARKET_SESSIONS: dict[str, tuple[str, int, int]] = {
     # (09:55 JST), the WM/R London 4pm fix and the London/New York overlap.
     "tokyo_fix": ("Asia/Tokyo", 9, 11),
     "london_fix": ("Europe/London", 15, 17),
-    "overlap": ("America/New_York", 8, 11),
+    "ldn_ny_overlap": ("America/New_York", 8, 11),
 }
 SESSION_ALIAS = {"tokyo": "asia", "asian": "asia", "newyork": "ny", "new_york": "ny",
                  "us": "ny", "europe": "london", "eu": "london"}

@@ -128,7 +128,7 @@ SESSIONS: dict[str, tuple[int, int] | None] = {
 #: and organs that place one bar in one session (the regime router, the descendant ladder) read
 #: it as such. Before this an unknown name filtered nothing, so a cell named for one ran as `all`.
 FINE_SESSIONS: dict[str, tuple[int, int]] = {
-    "tokyo_fix": (2, 5), "london_fix": (17, 19), "overlap": (15, 18),
+    "tokyo_fix": (2, 5), "london_fix": (17, 19), "ldn_ny_overlap": (15, 18),
 }
 #: Every window a cell may be NAMED for: the filter, and every organ that names or anchors a cell.
 WINDOWS: dict[str, tuple[int, int] | None] = {**SESSIONS, **FINE_SESSIONS}

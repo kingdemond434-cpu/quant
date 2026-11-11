@@ -464,7 +464,8 @@ _HORIZON_BUCKET: dict[str, str] = {"intrabar": "1h", "sub_4h": "4h", "sub_1d": "
 _SESSION_MAP: dict[str, str] = {"asia": "asia", "tokyo": "asia", "tokyo_fix": "tokyo_fix",
                                 "london": "london", "london_am": "london",
                                 "london_fix": "london_fix", "ny": "ny", "new_york": "ny",
-                                "afternoon": "ny", "overlap": "overlap", "close": "close",
+                                "afternoon": "ny", "overlap": "overlap", "ldn_ny_overlap": "overlap",
+                                "close": "close",
                                 "gotobi": "gotobi", "holiday": "holiday", "all": ANY,
                                 "continuous": ANY, "off": ANY}
 

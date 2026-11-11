@@ -16,7 +16,7 @@ from libs.regime import session_clock  # noqa: E402
 from libs.research import coverage, family_firing  # noqa: E402
 from mt5desk import family_call  # noqa: E402
 
-FINE = ("tokyo_fix", "london_fix", "overlap")
+FINE = ("tokyo_fix", "london_fix", "ldn_ny_overlap")
 
 
 def test_every_fine_session_has_a_window_on_both_clocks() -> None:
@@ -31,7 +31,7 @@ def test_the_server_window_contains_the_fix_in_both_seasons() -> None:
     """Server stamps are New York + 7h: the market-clock instant must fall inside the server
     window in summer and in winter."""
     cases = {"tokyo_fix": ("Asia/Tokyo", "09:55"), "london_fix": ("Europe/London", "16:00"),
-             "overlap": ("America/New_York", "09:30")}
+             "ldn_ny_overlap": ("America/New_York", "09:30")}
     for s, (tz, hhmm) in cases.items():
         lo, hi = family_call.WINDOWS[s] or (0, 0)
         for day in ("2026-07-15", "2026-01-15"):
@@ -58,3 +58,11 @@ def test_the_broad_table_stays_the_partition_of_the_day() -> None:
     for s in FINE:
         assert s not in family_call.SESSIONS
         assert family_call.WINDOWS[s] == family_call.FINE_SESSIONS[s]
+
+
+def test_the_bare_overlap_name_keeps_no_window() -> None:
+    """`overlap` already tags certified sleeves judged on all hours and is a scalp family's own
+    kwarg; a window under that name would silently re-time them (Auditor HOLD on #195)."""
+    assert family_call.session_window("overlap") is None
+    assert "overlap" not in family_call.WINDOWS
+    assert family_call.session_window("ldn_ny_overlap") == (15, 18)
