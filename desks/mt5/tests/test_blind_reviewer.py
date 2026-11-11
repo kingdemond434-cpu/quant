@@ -334,3 +334,34 @@ def test_the_replay_backend_is_named_and_choosable():
     assert br.replay_backend()[0] == "engine.run_backtest"
     assert br.replay_backend("replay2")[0] == "replay2"
     assert br.replay_backend("minimal_replay")[0] == "minimal_replay"
+
+
+# ---------------------------------------------------- the fill minute's real spread (2026-11-11)
+
+def _spike_surface(minute: str, pts: float) -> dict:
+    return {"symbols": {SYMBOL: {"tick_hours": {"spike_minutes": {minute: {"p50": pts}}}}}}
+
+
+def test_fills_on_a_spike_minute_are_repriced_at_that_minutes_spread(desk):
+    """The planted ramp signals at 23:00 and fills at 00:00: a wide 00:00 kills the edge."""
+    spec, _stats = br.load_certificates(desk["survivors"])[KEY]
+    call, _why = br.call_params(spec, desk["bars"])
+    fn, _pop = br.resolve_family(FAMILY)
+    fm = br.fill_minute_reprice(fn, spec, call, desk["bars"], SYMBOL, universe=desk["universe"],
+                                surface=_spike_surface("00:00", 60_000.0))
+    assert fm is not None and fm["spike_share"] == 1.0 and fm["minutes"] == {"00:00": fm["n_fills"]}
+    assert fm["expectancy"] is not None and fm["expectancy"] < 0 < desk["stats"].expectancy
+    # A spike on a minute it never fills on changes nothing, and says so by returning None.
+    assert br.fill_minute_reprice(fn, spec, call, desk["bars"], SYMBOL, universe=desk["universe"],
+                                  surface=_spike_surface("05:00", 20_000.0)) is None
+
+
+def test_an_edge_that_dies_on_its_fill_minute_is_vetoed_by_name():
+    cert = {"expectancy": 0.2, "t": 10.0}
+    rep = {"n": 300, "expectancy": 0.2, "t": 9.0,
+           "at_fill_minute": {"expectancy": -0.03, "spike_share": 0.86,
+                              "minutes": {"01:00": 300}, "spread_pts": 55.0}}
+    verdict, why = br.judge(cert, rep, {"blocking": False})
+    assert verdict == br.VETO and "SPIKE-MINUTE ARTEFACT" in why[0] and "01:00" in why[0]
+    rep["at_fill_minute"]["expectancy"] = 0.05             # survives the real crossing
+    assert br.judge(cert, rep, {"blocking": False})[0] == br.PASS
