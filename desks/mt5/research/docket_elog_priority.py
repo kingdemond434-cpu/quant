@@ -56,6 +56,20 @@ PF_ALLOCATION = REPORTS / "pf_allocation.json"
 POSTERIOR_ALPHA = REPORTS / "POSTERIOR_ALPHA.json"
 WARM_REPORT = REPORTS / "WARM_GAUNTLET.json"
 SLEEVES = DATA / "sleeves.json"
+#: The PRIOR's inputs, by name. Survival rate is the gauntlet's own `_family_yield`, which reads
+#: these two box files (survivors per RULED cell, shrunk to the house rate); posterior edge is
+#: POSTERIOR_ALPHA `mu_mean`; rho is read from WORLDS.
+GATES_EXTERNAL = REPORTS / "universal_gates_external.json"
+SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
+PRIOR_INPUTS: dict[str, tuple[Path, ...]] = {
+    "survival_rate": (GATES_EXTERNAL, SURVIVORS),
+    "posterior_edge": (POSTERIOR_ALPHA,),
+    "rho_to_live_book": (WORLDS, SLEEVES),
+}
+
+
+def _input_name(key: str) -> str:
+    return f"{key} ({'+'.join(p.name for p in PRIOR_INPUTS[key])})"
 
 MEASURED, PRIOR, UNMEASURED = "MEASURED", "PRIOR", "UNMEASURED"
 #: The heat step the marginal is priced at: the allocator's own `next_10bp` delta.
@@ -245,8 +259,9 @@ def price(cells: dict[str, dict[str, Any]], *, names: list[str], grad: dict[str,
             sr, ed, rh = surv.get(fam), edge.get(fam), fam_rho[fam]
             if sr is None or ed is None or rh is None:
                 d, bd = None, UNMEASURED
-                missing = [k for k, v in (("survival_rate", sr), ("posterior_edge", ed),
-                                          ("rho_to_live_book", rh)) if v is None]
+                missing = [_input_name(k) for k, v in (("survival_rate", sr),
+                                                       ("posterior_edge", ed),
+                                                       ("rho_to_live_book", rh)) if v is None]
                 formula = f"{PRIOR_FORMULA}; missing: {', '.join(missing)}"
             else:
                 d, bd = sr * ed * (1.0 - min(abs(rh), 1.0)), PRIOR
@@ -257,12 +272,16 @@ def price(cells: dict[str, dict[str, Any]], *, names: list[str], grad: dict[str,
             cpu, bc = house_cpu, PRIOR
         else:
             cpu, bc = None, UNMEASURED
-        score = (d / cpu if (bd == MEASURED and bc == MEASURED and d is not None
+        # A score whenever the CPU side is MEASURED and the growth side is not UNMEASURED; its
+        # basis is MEASURED only when both sides are (the Judge blends PRIOR at family level).
+        score = (d / cpu if (bc == MEASURED and bd in (MEASURED, PRIOR) and d is not None
                              and cpu) else None)
+        score_basis = (None if score is None else MEASURED if bd == MEASURED else PRIOR)
         rows.append({"cell": cid, "family": fam, "sym": c["sym"],
                      "d_elog_per_day": None if d is None else round(d, 10),
                      "cpu_s_est": None if cpu is None else round(cpu, 4),
                      "score": None if score is None else round(score, 12),
+                     "score_basis": score_basis,
                      "basis_d_elog": bd, "basis_cpu": bc, "formula": formula})
     return rows
 
@@ -274,10 +293,16 @@ def rollup(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for fam, rs in sorted(by.items()):
         sc = [r["score"] for r in rs if r["score"] is not None]
-        bases = {r["basis_d_elog"] for r in rs}
-        basis = (MEASURED if sc else PRIOR if PRIOR in bases or MEASURED in bases else UNMEASURED)
-        out[fam] = {"score_median": statistics.median(sc) if sc else None,
-                    "n_measured": len(sc), "n_cells": len(rs), "basis": basis}
+        entry: dict[str, Any] = {"n_cells": len(rs), "n_scored": len(sc),
+                                 "score_median": statistics.median(sc) if sc else None,
+                                 "n_measured": sum(1 for r in rs
+                                                   if r.get("score_basis") == MEASURED)}
+        for key in ("basis_d_elog", "basis_cpu"):
+            cnt = {b: sum(1 for r in rs if r[key] == b) for b in (MEASURED, PRIOR, UNMEASURED)}
+            # dominant = most cells; a tie goes to the better-evidenced basis
+            entry[key] = max((MEASURED, PRIOR, UNMEASURED), key=lambda b: cnt[b])
+            entry[f"{key}_counts"] = cnt
+        out[fam] = entry
     return out
 
 
@@ -300,6 +325,8 @@ def build(*, docket: Path = DOCKET, worlds: Path = WORLDS, warm: Path = WARM_REP
         k: {b: sum(1 for x in rows if x[k] == b) for b in (MEASURED, PRIOR, UNMEASURED)}
         for k in ("basis_d_elog", "basis_cpu")}
     counts["score_non_null"] = sum(1 for x in rows if x["score"] is not None)
+    counts["score_basis"] = {b: sum(1 for x in rows if x["score_basis"] == b)
+                             for b in (MEASURED, PRIOR)}
     rows.sort(key=_rank_key)
     kept = rows[:max_rows]
     try:
@@ -313,8 +340,12 @@ def build(*, docket: Path = DOCKET, worlds: Path = WORLDS, warm: Path = WARM_REP
         "consumer": None,
         "intended_consumer": INTENDED_CONSUMER,
         "key": "cell_id({sym, family, params}) == gate_verdict_ledger.jsonl `cell`",
-        "rule": ("score = d_elog_per_day / cpu_s_est, null unless both bases are MEASURED; the "
-                 "Judge's reader uses MEASURED rows only"),
+        "rule": ("score = d_elog_per_day / cpu_s_est when basis_cpu is MEASURED and basis_d_elog "
+                 "is MEASURED or PRIOR, else null; score_basis is MEASURED only when both are"),
+        "prior_inputs": {k: [str(p.relative_to(DESK)) for p in v]
+                         for k, v in PRIOR_INPUTS.items()},
+        "missing_inputs": sorted(_input_name(k) for k, v in PRIOR_INPUTS.items()
+                                 if not all(p.exists() for p in v)),
         "step_heat": STEP_HEAT,
         "prior_formula": PRIOR_FORMULA,
         "inputs": {p.name: p.exists() for p in (docket, worlds, PF_ALLOCATION, POSTERIOR_ALPHA,
