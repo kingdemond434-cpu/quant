@@ -26,7 +26,8 @@ WHAT IT DOES, every two minutes (MT5-MemoryGuard, SYSTEM):
        PRESSURE  available memory is under the floor (or commit is near its limit), in which
                  case the LARGEST research process above MIN_STOP_MB is stopped.
        STALLED   a research process older than STALL_AGE_H that used under STALL_CPU_S of CPU
-                 on EVERY pass for at least STALL_WINDOW_S (30 min, about 15 passes). That is a job stuck on a lock or a dead handle (the
+                 on EVERY pass for at least STALL_WINDOW_S (30 min, about 15 passes). That is
+                 a job stuck on a lock or a dead handle (the
                  merge_hypotheses pass that sat 43 h holding 15 GB of commit and an inherited
                  log handle, 2026-11-11), not a slow one: a working job burns CPU every pass.
      A stop is terminate, a grace period, then kill, for the process and its children only.

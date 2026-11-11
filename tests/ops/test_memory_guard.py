@@ -221,9 +221,9 @@ def test_a_day_old_job_idle_on_every_pass_for_the_window_is_stalled() -> None:
         return [{**proc(36280, 15_000, "python -m merge_hypotheses"), "started": STARTED,
                  "cpu_s": 59.78},
                 {**proc(2, 3_000, "python -m judge"), "started": STARTED, "cpu_s": 800.0 + 50 * i}]
-    passes = int(mg.STALL_WINDOW_S // 120) + 1
-    assert _passes(at, passes)["rule"] == "CLEAR"           # idle, but not yet for the window
-    d = _passes(at, passes + 1)
+    passes = int(mg.STALL_WINDOW_S // 120)                 # first reading is the baseline
+    assert _passes(at, passes)["rule"] == "CLEAR"           # idle 28 min: not yet the window
+    d = _passes(at, passes + 1)                             # idle 30 min on every pass
     assert d["rule"] == "STALLED" and d["stop"]["pid"] == 36280
 
 
@@ -232,7 +232,9 @@ def test_one_quiet_pass_or_a_burst_of_work_resets_the_window() -> None:
         cpu = 10.0 + (30.0 if i == 10 else 0.0) + (30.0 if i > 10 else 0.0)
         return [{**proc(5, 15_000, "python -m blocked_on_io"), "started": STARTED, "cpu_s": cpu}]
     assert _passes(at, 20)["rule"] == "CLEAR"              # worked at pass 10: window restarts
-    assert _passes(at, 10 + int(mg.STALL_WINDOW_S // 120) + 2)["rule"] == "STALLED"
+    window = int(mg.STALL_WINDOW_S // 120)
+    assert _passes(at, 10 + window)["rule"] == "CLEAR"     # 28 min since the burst
+    assert _passes(at, 10 + window + 1)["rule"] == "STALLED"
 
 
 def test_stall_needs_age_the_same_instance_and_a_real_gap() -> None:
