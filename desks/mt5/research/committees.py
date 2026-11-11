@@ -77,6 +77,7 @@ and says why it cannot yet be priced.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -484,9 +485,8 @@ def deliberate(s: Subject, *, calls_left: int, branches: Sequence[str] = (),
             meter["why"] = "the pass reached its own stop before this role could be asked"
             continue
         wait = min(CALL_TIMEOUT_S, left)
-        done, reply = _bounded(lambda role=role, committee=committee, allowed=allowed,
-                               task=task: ask(
-            committee, "candidates", task=f"You are the {role.replace('_', ' ')}. {task}",
+        done, reply = _bounded(functools.partial(
+            ask, committee, "candidates", task=f"You are the {role.replace('_', ' ')}. {task}",
             grammar=_grammar(allowed, branches if s.committee == FORENSIC else ()),
             context=_context(s, said), n=2,
             validate=_valid_explanation(allowed, s.claim_type)), wait)
@@ -820,8 +820,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         if subjects is not None:
             pool = list(subjects.get(name) or [])
         else:
-            done, got = _bounded(lambda name=name: scientific_subjects() if name == SCIENTIFIC
-                                 else forensic_subjects(),
+            done, got = _bounded(scientific_subjects if name == SCIENTIFIC
+                                 else forensic_subjects,
                                  max(0.0, deadline - time.monotonic()))
             if not done:
                 entry.update({"status": UNMEASURED,
@@ -855,9 +855,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
             verdict = judge(said)
             if name == SCIENTIFIC:
                 until = min(deadline, time.monotonic() + EXPERIMENT_BUDGET_S)
-                done, outcome = _bounded(lambda s=s, verdict=verdict, until=until:
-                                         run_experiments(s, verdict, until, build=build,
-                                                         meta=meta),
+                done, outcome = _bounded(functools.partial(run_experiments, s, verdict, until,
+                                                           build=build, meta=meta),
                                          max(0.0, until - time.monotonic()) + MIN_CALL_S)
                 if not done:
                     outcome = {"status": UNMEASURED,

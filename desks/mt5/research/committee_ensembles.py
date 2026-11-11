@@ -53,6 +53,7 @@ UNMEASURED never moves budget or retires anything (L1.28a).
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import math
 import os
@@ -122,7 +123,8 @@ PER_SUBJECT_S = 30.0
 #: 300 s budget, no artifact ever written). The budget used to be checked only BETWEEN subjects,
 #: so one seat on a slow gauntlet cell, or a slow pool load, ran on until the cycle killed the
 #: tree. Every pool load and every examination now runs under a wall-clock bound, and the
-#: committees stop with POST_MARGIN_S (at most a fifth of the budget) left so the bookkeeping and the writes always land.
+#: committees stop with POST_MARGIN_S (at most a fifth of the budget) left so
+#: the bookkeeping and the writes always land.
 #: Nothing is dropped: a subject that is not examined stays due and is examined next pass, and
 #: one that overran is recorded and ordered last so it can never starve the queue.
 POST_MARGIN_S = 60.0
@@ -1776,7 +1778,7 @@ def _examine_committee(name: str, subjects: list[ce.Subject], state: dict[str, A
         if left <= 0:
             break
         cap = min(PER_SUBJECT_S, left)
-        done, ex = _bounded(lambda s=s, cap=cap: ce.examine(s, seats, state, cap),
+        done, ex = _bounded(functools.partial(ce.examine, s, seats, state, cap),
                             cap + EXAMINE_GRACE_S)
         if not done:
             # One seat ran past the subject's bound (a slow cell build, a blocking read). The
@@ -1948,9 +1950,33 @@ def _run_committee(name: str, subjects: Mapping[str, list[ce.Subject]] | None,
                traps: Any, examined_all: list[dict[str, Any]], state: dict[str, Any],
                share_s: float, now_ts: float, bank: Any
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """One committee's pass: its subject pool, then its seats. Raises; run() isolates."""
-    pool = _committee_pool(name, subjects, traps, examined_all, bank)
+    """One committee's pass: its subject pool, then its seats. Raises; run() isolates.
+
+    The pool load only READS, so it is the part that may be abandoned when the pass's own stop
+    (set by run()) arrives first; the examination writes state and stays on this thread, bounded
+    subject by subject. An abandoned load raises _PoolOverran, which run() records as
+    DEFERRED_BUDGET."""
+    stop_at = _PASS_STOP_AT[0]
+    if stop_at is None:
+        pool = _committee_pool(name, subjects, traps, examined_all, bank)
+    else:
+        seen = list(examined_all)
+        done, pool = _bounded(lambda: _committee_pool(name, subjects, traps, seen, bank),
+                              max(1.0, stop_at - time.monotonic()))
+        if not done:
+            raise _PoolOverran(name)
+        share_s = min(share_s, max(1.0, stop_at - time.monotonic()))
+    _phase(f"{name} pool={len(pool)}", _PASS_T0[0] or time.monotonic())
     return _examine_pool(name, pool, subjects, state, share_s, now_ts)
+
+
+class _PoolOverran(Exception):
+    """A committee's subject pool did not load before the pass's own stop."""
+
+
+#: The running pass's self-stop and start (monotonic), set by run(); None outside a pass.
+_PASS_STOP_AT: list[float | None] = [None]
+_PASS_T0: list[float | None] = [None]
 
 
 def _committee_pool(name: str, subjects: Mapping[str, list[ce.Subject]] | None, traps: Any,
@@ -1992,8 +2018,18 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         subjects: Mapping[str, list[ce.Subject]] | None = None,
         fates: Mapping[str, Any] | None = None, now_ts: float | None = None
         ) -> dict[str, Any]:
+    try:
+        return _run_pass(budget_s=budget_s, write=write, subjects=subjects, fates=fates,
+                         now_ts=now_ts)
+    finally:
+        _PASS_STOP_AT[0] = _PASS_T0[0] = None
+
+
+def _run_pass(*, budget_s: float, write: bool, subjects: Mapping[str, list[ce.Subject]] | None,
+              fates: Mapping[str, Any] | None, now_ts: float | None) -> dict[str, Any]:
     t0 = time.monotonic()
     stop_at = t0 + float(budget_s) - min(POST_MARGIN_S, 0.2 * float(budget_s))
+    _PASS_STOP_AT[0], _PASS_T0[0] = stop_at, t0
     _phase("start", t0)
     now_ts = time.time() if now_ts is None else now_ts
     state: dict[str, Any] = _json(STATE, {}) if write else {}
@@ -2024,21 +2060,15 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
             continue
         share_s = min(share_s, left)
         try:
-            # The pool load only READS, so it is the part that may be abandoned; the examination
-            # writes state and stays on this thread, bounded subject by subject.
-            seen = list(examined_all)
-            done, pool = _bounded(lambda name=name, seen=seen: _committee_pool(
-                name, subjects, traps, seen, bank), left)
-            if not done:
-                per[name] = {"status": "DEFERRED_BUDGET", "budget_s": round(share_s, 2),
-                             "measured": 0, "fails": 0, "unmeasured": UNMEASURED,
-                             "why": "its subject pool did not load inside the pass's time",
-                             "seconds": round(time.monotonic() - c0, 3)}
-                _phase(f"{name} pool overran", t0)
-                continue
-            _phase(f"{name} pool={len(pool)}", t0)
-            share_s = min(share_s, max(1.0, stop_at - time.monotonic()))
-            ex, counts = _examine_pool(name, pool, subjects, state, share_s, now_ts)
+            ex, counts = _run_committee(name, subjects, traps, examined_all, state, share_s,
+                                        now_ts, bank)
+        except _PoolOverran:
+            per[name] = {"status": "DEFERRED_BUDGET", "budget_s": round(share_s, 2),
+                         "measured": 0, "fails": 0, "unmeasured": UNMEASURED,
+                         "why": "its subject pool did not load inside the pass's time",
+                         "seconds": round(time.monotonic() - c0, 3)}
+            _phase(f"{name} pool overran", t0)
+            continue
         except Exception as exc:
             # ONE COMMITTEE'S DEFECT IS NOT SIX COMMITTEES' SILENCE (audit, 2026-10-06). The
             # error is published on the committee's own row as ERROR -- never a clean zero and
