@@ -433,3 +433,11 @@ def test_every_cached_day_is_reverified_within_the_period_and_not_all_at_once() 
     assert all(ti._reverify_due(k, now - ti.CACHE_REVERIFY_S, now) for k in keys)
     due = [ti._reverify_due(k, now - ti.CACHE_REVERIFY_S * 0.85, now) for k in keys]
     assert any(due) and not all(due), "re-verification must be staggered across days"
+
+
+def test_a_narrow_pass_keeps_what_it_did_not_visit_and_old_rows_expire() -> None:
+    old = {"A/2026-11-01": {"fp": "a"}, "B/2026-11-01": {"fp": "b"}, "A/2026-06-01": {"fp": "c"}}
+    out = ti._merge_cache(old, {"A/2026-11-01": {"fp": "new"}}, "2026-11-11")
+    assert out["A/2026-11-01"]["fp"] == "new"
+    assert out["B/2026-11-01"]["fp"] == "b", "a --symbols A pass must not evict B"
+    assert "A/2026-06-01" not in out

@@ -76,6 +76,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from contextlib import suppress
 from dataclasses import asdict, dataclass, field
@@ -638,10 +639,24 @@ def _load_cache(path: Path) -> dict[str, Any]:
     return rows if isinstance(rows, dict) else {}
 
 
+#: Unvisited cache rows older than this are dropped, so a cache merged across narrow passes
+#: (`--days 3`, `--symbols X`) does not grow without bound.
+CACHE_KEEP_DAYS = 60
+
+
+def _merge_cache(old: dict[str, Any], fresh: dict[str, Any], today: str) -> dict[str, Any]:
+    """This pass's rows over the previous cache: a narrow pass must not evict what it skipped."""
+    floor = (pd.Timestamp(today) - pd.Timedelta(days=CACHE_KEEP_DAYS)).date().isoformat()
+    out = {k: v for k, v in old.items() if k.rsplit("/", 1)[-1] >= floor}
+    out.update(fresh)
+    return out
+
+
 def _save_cache(path: Path, rows: dict[str, Any]) -> None:
     with suppress(OSError):
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_name(path.name + ".tmp")
+        # Per-process temp name: two overlapping passes must never interleave one temp file.
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps({"version": CACHE_VERSION, "days": rows},
                                   separators=(",", ":")), "utf-8")
         tmp.replace(path)
@@ -728,7 +743,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
         }
 
     if use_cache:
-        _save_cache(cache_path, fresh)
+        _save_cache(cache_path, _merge_cache(cache, fresh, today))
     recorder = _recorder_status()
     tally = _tally([r.verdict for r in rows])
     total_ticks = sum(r.n_ticks for r in rows)
