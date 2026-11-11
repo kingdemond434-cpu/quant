@@ -59,7 +59,8 @@ def test_a_name_zeroed_row_is_never_the_carrier(monkeypatch) -> None:
     keys = {n: (None if n in zeroed else "CHFNOK_carry_asia") for n in names}
     assert dc.fold_book_aliases(keys) == {}            # b2 carries; a1 is zeroed on its own
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
-    assert 'None if cert_book_zero(_s.get("name"))' in src
+    # the carrier walk's joins: a name-zeroed row joins no key, so it is never walked as carrier
+    assert 'None if cert_book_zero(_r.get("name")) else _book_key(_r, _book))' in src
 
 
 def test_rows_on_different_keys_or_off_the_book_are_never_folded() -> None:
@@ -68,12 +69,15 @@ def test_rows_on_different_keys_or_off_the_book_are_never_folded() -> None:
 
 
 def test_the_gateway_folds_before_sizing_and_logs_alias_folded() -> None:
+    """ONE DECISION PER KEY (#303 on LIVE): the carrier walk decides; every row it does not
+    carry sends 0 and is named `alias_of` its final carrier, with the ALIAS_FOLDED log."""
     src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
-    assert "_aliases = fold_book_aliases(" in src
-    i = src.index("_aliases = fold_book_aliases(")
-    j = src.index('_s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]')
+    assert "_aliases = fold_book_aliases(" not in src, "a second static fold could zero the carrier"
+    i = src.index("_carriers = book_carriers(_joins, _evidence)")
+    j = src.index('_s["alias_of"] = _s["book_key_carrier"]')
     k = src.index('log(f"ALIAS_FOLDED')
     assert i < j < k
+    assert src.index('_s["book_key_carrier"] = _carried[_s["book_key"]]') < j
     # the alias stays sized by the book: allocator sovereignty sends no order at 0
     assert dc.promoted_lot(10_000.0, 500, dist_usd=0.005, symbol="EURUSD",
                            risk_frac=0.0, from_book=True) == 0.0
