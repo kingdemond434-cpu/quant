@@ -1431,7 +1431,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learner", "heat_floor_ledger",
+                     "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -4661,6 +4662,11 @@ def main() -> None:
     # replacement verdicts are acted on by the daily step `loss_replace`. Forward department.
     mll = _costed("loss_learner", lambda: _producer(
         "loss_learner", "research/loss_learner.py", "--once"))
+    # THE HEAT FLOOR LEDGER (hourly-pass idea 606): per account (fusion, e8, ftmo) and UTC day,
+    # hours below the 20% heat floor, idle capital, and a known cause per hour -- an
+    # unexplained hour is a breach. Report only; sizes nothing. Forward department.
+    hfl = _costed("heat_floor_ledger", lambda: _producer(
+        "heat_floor_ledger", "research/heat_floor_ledger.py"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -6450,6 +6456,7 @@ def main() -> None:
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
                     "missed_trade_archaeologist": mta, "loss_learner": mll,
+                    "heat_floor_ledger": hfl,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,

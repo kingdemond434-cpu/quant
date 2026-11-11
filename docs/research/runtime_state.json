@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 826,
+  "NEVER": 827,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1050,
+  "attested": 1051,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -27643,6 +27643,31 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-03T23:44:49+00:00"
+  },
+  {
+   "organ": "leg:heat_floor_ledger",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/heat_floor_ledger.py"
+   ],
+   "clock": "hourly_cycle:heat_floor_ledger",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/HEAT_FLOOR_LEDGER.json",
+   "artifact_declared": "desks/mt5/reports/HEAT_FLOOR_LEDGER.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
   }
  ],
  "ratchet": {

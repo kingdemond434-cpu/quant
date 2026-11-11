@@ -888,6 +888,8 @@ def published_ftmo_executor_lines() -> dict[str, Any]:
 #: own artifact: a sweep the watchdog killed (or found dead) discards its whole wall, and a
 #: deepening pass the memory guard stopped defers tasks to the next hour.
 GAUNTLET_STALL = BASE / "reports" / "GAUNTLET_STALL.json"
+#: The heat floor ledger (idea 606) publishes its idle-heat lines on its own report.
+HEAT_FLOOR_LEDGER = BASE / "reports" / "HEAT_FLOOR_LEDGER.json"
 #: The judge's priority rule (judge_cpu_fair_share): one line per applied raise to EQUAL.
 JUDGE_PRIORITY_RAISES = BASE / "reports" / "JUDGE_PRIORITY_RAISES.json"
 #: ... and its append-only sidecar: the lines of changes that STAND although the locked write
@@ -1201,6 +1203,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
+                                    "heat_floor_ledger": organ_published_lines(
+                                        HEAT_FLOOR_LEDGER),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
