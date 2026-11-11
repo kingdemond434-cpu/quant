@@ -72,10 +72,18 @@ def test_every_system_votes_and_every_axis_is_labelled(table: pd.DataFrame) -> N
         table["trend"])
 
 
-def test_the_readings_are_causal(bars: pd.DataFrame, table: pd.DataFrame) -> None:
-    cut = bars.index[len(bars) - 24 * 150]
-    short = D.readings(daily_frame(bars[bars.index < cut]))
+@pytest.mark.parametrize("after_boundary", [3, 40])
+def test_the_readings_are_causal_across_a_yearly_refit(bars: pd.DataFrame, table: pd.DataFrame,
+                                                       after_boundary: int) -> None:
+    """Truncate the bars just past a GARCH/HMM refit boundary: every earlier row of the cached
+    entry point the family calls must be unchanged, so no segment's params saw a later day."""
+    seg_lo = [lo for _t, lo, _h in D._segments(len(table))]
+    assert len(seg_lo) >= 2
+    boundary = seg_lo[1]                                  # the second refit
+    last_day = table.index[boundary + after_boundary]
+    short = D.readings_for_bars(bars[bars.index < pd.Timestamp(last_day, tz="UTC")])
     common = short.index[:-1]
+    assert table.index.get_loc(common[-1]) >= boundary    # the overlap spans the refit
     cols = [c for c in table.columns if table[c].dtype != object]
     a = table.loc[common, cols].to_numpy(float)
     b = short.loc[common, cols].to_numpy(float)
