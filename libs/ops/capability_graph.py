@@ -924,6 +924,10 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/data/srb_basket_trials.jsonl"),
          reads=("desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json",
                 "desks/mt5/data/universe/universe.json")),
+    # GAP_MAP row 40: the critical-slowing-down early-warning state axis. Decides nothing.
+    Node("critical_slowing", "desks/mt5/research/critical_slowing_state.py",
+         writes=("desks/mt5/reports/CRITICAL_SLOWING.json",),
+         reads=("desks/mt5/data/universe/", "desks/mt5/data/sleeves.json")),
 )
 
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
@@ -933,6 +937,9 @@ HUMAN_READ = frozenset({
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
+    # The critical-slowing state axis (GAP_MAP row 40). Its allocator consumer is money-path
+    # work for the allocator's owner and is not wired; until then a person reads it.
+    "desks/mt5/reports/CRITICAL_SLOWING.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable

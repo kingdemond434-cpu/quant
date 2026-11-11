@@ -279,6 +279,8 @@ LEG_LAYER: dict[str, str] = {
     "residual_search": "information", "unseen_frontier": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
+    # GAP_MAP row 40: an early-warning STATE axis (what the market is becoming), never a sizer.
+    "critical_slowing": "information",
     "research_artifacts": "meta",
     "engine_registry": "meta",
     "counterfactual_attribution": "meta",

@@ -1407,6 +1407,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
+                     # GAP_MAP row 40: the critical-slowing-down early-warning state axis
+                     "critical_slowing",
                      "event_graph_lab",
                      "world_lab", "macro_department", "news_event_stream",
                      "event_sleeves", "macro_intelligence", "world_model",
@@ -2234,6 +2236,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_graph_lab": 1_000,
     "attribution_reconcile": 400,
     "macro_state_engine": 850,
+    # CRITICAL SLOWING (GAP_MAP row 40) stops starting symbols at its --budget-s (read from
+    # QUANT_LEG_BUDGET_S) and writes what it measured; the rest are UNMEASURED by name.
+    "critical_slowing": 300,
     "research_artifacts": 400,
     "engine_registry": 400,
     "counterfactual_attribution": 700,
@@ -4483,6 +4488,11 @@ def main() -> None:
                                                            "--budget-s", "240"))
     exd = _costed("exposure_decomposition", lambda: _producer(
         "exposure_decomposition", "research/exposure_decomposition.py"))
+    # CRITICAL SLOWING DOWN (GAP_MAP row 40): rolling lag-1 AC, variance, |skew| and flicker
+    # trends per hypothesis-lane symbol and for the live book, as a PIT state axis
+    # (reports/CRITICAL_SLOWING.json). It sizes nothing; the allocator-input half is money path.
+    csd = _costed("critical_slowing", lambda: _producer(
+        "critical_slowing", "research/critical_slowing_state.py", "--budget-s", "280"))
     # THE EVENT-RESPONSE ATLAS: measured reactions per event kind x instrument x horizon x
     # conditioner from the desk's own calendar and bars; clearing cells donated (macro dept).
     era = _costed("event_response_atlas", lambda: _producer("event_response_atlas",
@@ -6482,6 +6492,7 @@ def main() -> None:
                     "cost_truth": ctr,
                     "macro_department": mcd, **forests_out,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
+                    "critical_slowing": csd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
                     "execution_twin": et, "why_not_report": wyn, "state_replay_audit": srp,
