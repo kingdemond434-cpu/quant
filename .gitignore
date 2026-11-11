@@ -513,6 +513,7 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json
 # the noon CRO pass's 26 h landing verdict (2026-11-05, hourly leg cro_noon_freshness)
 !desks/mt5/reports/CRO_NOON_FRESHNESS.json
+!desks/mt5/reports/CRO_DUTIES.json
 # the kill ledger's writer-lock sidecar and any quarantined (corrupt) ledger copy: host-local
 desks/mt5/data/hypotheses/prescreen_verdicts.lock
 desks/mt5/data/hypotheses/prescreen_verdicts.corrupt-*.jsonl
