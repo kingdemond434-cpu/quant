@@ -5,8 +5,9 @@
 
 box_selfheal.ps1 reads LIVE's digest with this AT RUN TIME (Auditor ROOT ruling, 11-11 condition
 (d)): a pin is never compared against a remembered value. It uses the release authority's own
-`tree_digest`, the function pin_root.py and the gate's pin check use, so the three cannot disagree.
-Prints nothing and exits 1 when the revision or the policy cannot be read: UNMEASURED, never a digest.
+`tree_digest`, the function pin_root.py and the gate's pin check use, so the three cannot
+disagree. Prints nothing and exits 1 when the revision or the policy cannot be read: UNMEASURED,
+never a digest.
 """
 from __future__ import annotations
 
