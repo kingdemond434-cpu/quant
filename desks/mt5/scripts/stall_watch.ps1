@@ -606,6 +606,26 @@ if ($free -lt $DiskFloorGB) {
   }
 }
 
+# MONEY-TASK TIME-LIMIT KILLS + DISK FLOOR PAGER (2026-11-11). The 267014 rule above is for
+# research re-runs; a money task (E8-Gold, the terminal, the executors) killed by its time limit
+# twice running is paged here, and C: under the floor AFTER the ladder pages with the largest
+# .git pack dirs named. The judgement lives in desks\mt5\scripts\money_task_pager.py; it pages
+# and deletes nothing.
+$moneyPager = $null
+Push-Location 'C:\opt\quant'
+try {
+  $raw = & py -3 desks\mt5\scripts\money_task_pager.py 2>$null
+  $moneyPager = ($raw | Select-Object -Last 1) | ConvertFrom-Json
+  if ($moneyPager.facts -eq 'UNMEASURED') {
+    $actions += "MONEY TASK PAGER BLIND: the scheduled-task read returned nothing (PowerShell/CIM failed or timed out) -- time-limit kills are UNMEASURED this pass"
+  }
+  foreach ($p in @($moneyPager.pages)) {
+    $actions += ("PAGED: " + $p.title + " (delivered " + $p.delivered + " of " + $p.armed + " armed)")
+  }
+} catch {
+  $actions += "MONEY TASK PAGER UNRUNNABLE: money_task_pager.py failed ($_) -- time-limit kills and the disk floor are not paged"
+} finally { Pop-Location }
+
 @{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus; state_flow = $(if ($stateFlow) { $stateFlow.verdict } else { 'UNMEASURED' }); state_flow_watch = $(if ($flowWatch) { $flowWatch.verdict } else { 'UNMEASURED' }); alerts_armed = $(if ($flowWatch -and $flowWatch.alerts) { $flowWatch.alerts.armed } else { $null }); alerts_line = $(if ($flowWatch) { $flowWatch.alerts_line } else { 'ALERTS UNMEASURED: the state flow watcher did not run' }) } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
