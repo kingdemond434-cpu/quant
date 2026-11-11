@@ -153,3 +153,13 @@ def test_a_sender_that_raises_never_breaks_the_pass(tmp_path: Path) -> None:
         raise RuntimeError("down")
     out = mtp.run(tmp_path, facts={}, free_gb=1.0, packs=lambda: [], sender=boom, now=T0)
     assert out["pages"][0]["delivered"] == 0 and out["pages"][0]["error"] == "RuntimeError"
+
+
+def test_an_empty_task_read_is_unmeasured_not_quiet(tmp_path: Path) -> None:
+    out = mtp.run(tmp_path, facts={}, free_gb=50.0, packs=lambda: [], sender=Pager(), now=T0)
+    assert out["facts"] == "UNMEASURED"
+    assert out["killed"] == [] and out["pages"] == []
+    ok = _pass(tmp_path, Pager(), 0, OK)
+    assert ok["facts"] == "MEASURED"
+    ps1 = (SCRIPTS / "stall_watch.ps1").read_text("utf-8")
+    assert "MONEY TASK PAGER BLIND" in ps1 and "UNMEASURED" in ps1

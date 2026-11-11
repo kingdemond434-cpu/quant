@@ -616,6 +616,9 @@ Push-Location 'C:\opt\quant'
 try {
   $raw = & py -3 desks\mt5\scripts\money_task_pager.py 2>$null
   $moneyPager = ($raw | Select-Object -Last 1) | ConvertFrom-Json
+  if ($moneyPager.facts -eq 'UNMEASURED') {
+    $actions += "MONEY TASK PAGER BLIND: the scheduled-task read returned nothing (PowerShell/CIM failed or timed out) -- time-limit kills are UNMEASURED this pass"
+  }
   foreach ($p in @($moneyPager.pages)) {
     $actions += ("PAGED: " + $p.title + " (delivered " + $p.delivered + " of " + $p.armed + " armed)")
   }

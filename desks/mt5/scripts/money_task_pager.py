@@ -175,6 +175,9 @@ def run(root: Path = ROOT, *, facts: Facts | None = None, free_gb: float | None 
     send = sender or _default_sender(root)
     out: dict[str, Any] = {"checked_at": now.isoformat(timespec="seconds"),
                            "tasks_measured": len(facts), "pages": []}
+    # An empty read (PowerShell failed or timed out; ScheduledTasks is CIM-backed and CIM has
+    # hung on this box) must not pass for "no kills": a blind pager is said out loud.
+    out["facts"] = "MEASURED" if facts else "UNMEASURED"
 
     killed = judge_tasks(facts, state, now)
     if killed:
