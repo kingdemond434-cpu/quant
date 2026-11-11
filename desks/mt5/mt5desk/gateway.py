@@ -322,7 +322,9 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 must-fix 1, 2)
     GAP_DECAY_ZERO as GAP_DECAY_ZERO,
+    GOLD_ASIA_ONLY_FILE as GOLD_ASIA_ONLY_FILE,
     GOLD_ASIA_ONLY_ZERO as GOLD_ASIA_ONLY_ZERO,
+    gold_asia_only as gold_asia_only,
     PRINCIPAL_ZERO as PRINCIPAL_ZERO,
     principal_zeros as principal_zeros,
     SCALP_LANE_ZERO as SCALP_LANE_ZERO,
