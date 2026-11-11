@@ -1099,7 +1099,12 @@ def family_cross_asset_residual(
     signals: list[Signal] = []
     _a_z = z.to_numpy()
     _a_atr = atr.to_numpy()
-    _a_frame_y = frame["y"].to_numpy()
+    # THE ANCHOR IS THE SIGNAL BAR'S OWN CLOSE (fixed 2026-11-06). `i` indexes `cum`, whose index
+    # is `frame.index[ok]` -- the first joined row (a NaN log-return) and any non-finite row are
+    # dropped -- so `frame["y"].to_numpy()[i]` was the close at least one bar BEFORE `ts` while the
+    # ATR was read at `ts`. Every stop and target carried a one-bar-stale offset. Aligning by
+    # timestamp anchors the bracket on the same bar as the z-score and the ATR.
+    _a_frame_y = frame["y"].reindex(cum.index).to_numpy()
     _ts_cum = list(cum.index)
     for i in range(bwin + lookback, len(cum) - 1):
         zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
