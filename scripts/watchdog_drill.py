@@ -164,7 +164,8 @@ DRILLS: dict[str, Callable[[Path], tuple[bool, str] | None]] = {
 #: Watchdogs this file cannot drill yet, named so the gap is on the report instead of absent.
 NOT_DRILLED = {
     "stall_watch.ps1": "PowerShell; its paging leg needs a Windows drill harness",
-    "cpu_starvation": "no watchdog pages on CPU starvation of the money path: nothing to drill",
+    "money_task_pager": "pages CPU starvation by its symptom (a money task killed twice at its "
+    "time limit) once #930 lands; its drill is added when it is on LIVE",
 }
 
 
