@@ -614,6 +614,8 @@ LEG_LAYER: dict[str, str] = {
     "futures_state": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
+    # B3 / B10: broker-own tape, swaps, crowd and the CFD basis turned into series and cells.
+    "broker_signal_cells": "information", "basis_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",

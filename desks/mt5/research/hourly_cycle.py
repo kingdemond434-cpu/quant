@@ -1211,6 +1211,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
+    # B3 / B10 (approved 2026-10-13): broker-own tick volume, spread and swap repricings, the
+    # retail crowd, and the CFD-vs-public-reference basis, as stamped series and conditioner
+    # cells. Seconds each (one outlook call an hour, four FRED reads a day), so core clock.
+    "broker_signal_cells", "basis_cells",
     "fill_recorder", "cost_surfaces",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
@@ -1357,7 +1361,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
-                     "culture_gap_cells"),
+                     "culture_gap_cells",
+                     # B3 / B10: the venue's own tape, swaps and crowd, and the CFD basis.
+                     "broker_signal_cells", "basis_cells"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -2290,6 +2296,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # A recipe walk: ~20 s for the first 1,081 registry writes, well under a second after that.
     # The organ self-stops 10 s inside its --budget-s 240; the cap sits above it.
     "culture_gap_cells": 300,
+    # Bar reads (~0.1 s a symbol), the swap panel (~1.5 s), at most one outlook call and four
+    # daily FRED reads; the caps are headroom for a busy box.
+    "broker_signal_cells": 300, "basis_cells": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -6183,6 +6192,15 @@ def main() -> None:
     # day it landed on the container's data: 33 of 34 ZERO gaps left ZERO after one pass.
     cgc = _costed("culture_gap_cells", lambda: _producer(
         "culture_gap_cells", "research/culture_gap_cells.py", "--once", "--budget-s", "240"))
+    # B3 BROKER-SIDE SIGNAL CELLS and B10 CFD-VS-REFERENCE BASIS (approved 2026-10-13). The bars'
+    # own tick_volume and spread, the box's swap panel and Myfxbook's official outlook become
+    # stamped lake series; the CFD's gap to its public FRED reference becomes a dated basis.
+    # Each turns into existing-family cells (alt_conditioned / alt_series_momentum /
+    # exogenous_conditioner) through proposer_common.donate, each minted once in its life.
+    bsc = _costed("broker_signal_cells", lambda: _producer(
+        "broker_signal_cells", "research/broker_signal_cells.py", "--once"))
+    bas = _costed("basis_cells", lambda: _producer(
+        "basis_cells", "research/basis_cells.py", "--once"))
     gdp = _costed("ground_depth", lambda: _producer(
         "ground_depth", "research/ground_depth.py", "--once", "--budget-s", "600"))
     # THE SAME MECHANISM ON EVERY CHART (principal 2026-09-23). `counterfactual_timeframes`
@@ -6589,6 +6607,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "futures_state": fst,
+                    "broker_signal_cells": bsc, "basis_cells": bas,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
