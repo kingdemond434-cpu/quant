@@ -2966,7 +2966,8 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
                         "and unrestricted use for any academic, commercial, or governmental use "
                         "of any kind without fee."),
-        "robots": "data.gdeltproject.org is the documented raw-file host",
+        "robots": ("data.gdeltproject.org/robots.txt is ASKED before every pass's first fetch "
+                   "(robots_check, RFC 9309); a Disallow stops the source for the pass"),
         "credit": "The GDELT Project, https://www.gdeltproject.org/",
         "checked_at": _CHK},
     # the Translingual export is the same project, the same terms page and the same raw host
@@ -2975,7 +2976,8 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
                         "and unrestricted use for any academic, commercial, or governmental use "
                         "of any kind without fee."),
-        "robots": "data.gdeltproject.org is the documented raw-file host",
+        "robots": ("data.gdeltproject.org/robots.txt is ASKED before every pass's first fetch "
+                   "(robots_check, RFC 9309); a Disallow stops the source for the pass"),
         "credit": "The GDELT Project, https://www.gdeltproject.org/",
         "checked_at": _CHK},
     "wiki_asia_attention": {
@@ -3287,6 +3289,107 @@ def http_get(url: str) -> tuple[bytes, str]:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
+
+
+# ============================================================================ robots.txt
+#: Sources whose raw-file host is asked its robots.txt (RFC 9309) before the first fetch of every
+#: pass. A Disallow for our product token (or for "*") stops the source for the pass, by name.
+ROBOTS_GATED: frozenset[str] = frozenset({"gdelt_events_country", "gdelt_translingual_country"})
+ROBOTS_TOKEN = UA.split("/", 1)[0].lower()          # "quant-desk-alt-proxies"
+ROBOTS_MAX_BYTES = 500 * 1024                       # RFC 9309 2.5: parse at least 500 KiB
+_ROBOTS_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def fetch_robots(robots_url: str) -> tuple[int, bytes]:
+    """(HTTP status, body) for a robots.txt; status 0 = the host could not be reached."""
+    req = urllib.request.Request(robots_url, headers={"User-Agent": UA, "Accept": "text/plain"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+            return int(r.status), r.read(ROBOTS_MAX_BYTES)
+    except urllib.error.HTTPError as exc:
+        exc.close()
+        return int(exc.code), b""
+    except (OSError, ValueError):
+        return 0, b""
+
+
+def _robots_groups(text: str) -> list[tuple[list[str], list[tuple[bool, str]]]]:
+    """RFC 9309 2.1-2.2: groups of (user-agent tokens, [(allow, path pattern)])."""
+    groups: list[tuple[list[str], list[tuple[bool, str]]]] = []
+    agents: list[str] = []
+    rules: list[tuple[bool, str]] = []
+    in_rules = False
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip().lower(), val.strip()
+        if key == "user-agent":
+            if in_rules:
+                groups.append((agents, rules))
+                agents, rules, in_rules = [], [], False
+            agents.append(val.lower())
+        elif key in ("allow", "disallow"):
+            if not agents:
+                continue                                 # a rule outside any group is ignored
+            in_rules = True
+            if val:                                      # an empty Disallow allows everything
+                rules.append((key == "allow", val))
+    if agents:
+        groups.append((agents, rules))
+    return groups
+
+
+def _robots_match(pattern: str, path: str) -> bool:
+    """RFC 9309 2.2.3: "*" matches any sequence, a trailing "$" anchors the end."""
+    anchored = pattern.endswith("$")
+    body = pattern[:-1] if anchored else pattern
+    rx = ".*".join(re.escape(urllib.parse.unquote(part)) for part in body.split("*"))
+    return re.match(rx + ("$" if anchored else ""), urllib.parse.unquote(path)) is not None
+
+
+def robots_verdict(text: str, path: str, token: str = ROBOTS_TOKEN) -> tuple[bool, str]:
+    """(allowed, the deciding rule) for `path` under RFC 9309: our product token's group(s) if
+    any name it, else the "*" group(s); the longest matching rule wins and Allow wins a tie."""
+    groups = _robots_groups(text)
+    mine = [r for a, r in groups if any(x != "*" and token.startswith(x) for x in a)]
+    rules = [x for r in (mine or [r for a, r in groups if "*" in a]) for x in r]
+    best: tuple[int, bool, str] | None = None
+    for allow, pat in rules:
+        if _robots_match(pat, path or "/"):
+            cand = (len(pat), allow, f"{'Allow' if allow else 'Disallow'}: {pat}")
+            if best is None or cand[:2] > best[:2]:
+                best = cand
+    return (True, "no matching rule") if best is None else (best[1], best[2])
+
+
+def robots_check(url: str, fetcher: Callable[[str], tuple[int, bytes]] | None = None,
+                 now: datetime | None = None) -> dict[str, Any]:
+    """Ask the host's robots.txt about `url` (cached per host for the pass). RFC 9309 2.3.1:
+    a 4xx robots.txt is "unavailable" (no restriction); a 5xx or an unreachable host is
+    "unreachable" and means COMPLETE DISALLOW -- never read as permission."""
+    parts = urllib.parse.urlsplit(url)
+    robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    path = parts.path + (f"?{parts.query}" if parts.query else "")
+    cached = _ROBOTS_CACHE.get(robots_url) if fetcher is None else None
+    if cached is None:
+        status, body = (fetcher or fetch_robots)(robots_url)
+        cached = {"robots_url": robots_url, "status": status,
+                  "text": body.decode("utf-8", "replace") if 200 <= status < 300 else "",
+                  "checked_at": (now or datetime.now(UTC)).isoformat()}
+        if fetcher is None:
+            _ROBOTS_CACHE[robots_url] = cached
+    status = int(cached["status"])
+    if 200 <= status < 300:
+        allowed, rule = robots_verdict(str(cached["text"]), path)
+    elif 400 <= status < 500:
+        allowed, rule = True, f"robots.txt {status}: unavailable, no restriction (RFC 9309 2.3.1.3)"
+    else:
+        allowed, rule = False, (f"robots.txt {'unreachable' if status == 0 else status}: "
+                                "complete disallow (RFC 9309 2.3.1.4)")
+    return {"robots_url": robots_url, "status": status, "path": path, "allowed": allowed,
+            "rule": rule, "token": ROBOTS_TOKEN, "checked_at": cached["checked_at"]}
 
 
 def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
@@ -4167,7 +4270,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
                   now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
-                  getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
+                  getter: Callable[[str], tuple[bytes, str]] = http_get,
+                  robots: Callable[[str], dict[str, Any]] = robots_check) -> dict[str, Any]:
     """GDELT's own loop: read slots, fold them into their day, publish the days that closed.
 
     A 404 is a slot GDELT does not have (read, empty); any other error stops that direction for
@@ -4189,7 +4293,18 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     else:
         reqs = requests_for(src, now, sst)
     stopped: set[str] = set()
-    for req in reqs if fetch else []:
+    robots_rec: dict[str, Any] | None = None
+    if fetch and reqs and src.id in ROBOTS_GATED:
+        robots_rec = robots(reqs[0].url)
+        if not robots_rec["allowed"]:
+            errors.append(f"robots.txt refuses {robots_rec['path']} "
+                          f"({robots_rec['rule']}): nothing fetched this pass")
+            reqs_to_fetch: list[Request] = []
+        else:
+            reqs_to_fetch = reqs
+    else:
+        reqs_to_fetch = reqs
+    for req in reqs_to_fetch if fetch else []:
         direction, _, slot = req.ctx.part.partition(":")
         if direction in stopped:
             continue
@@ -4220,6 +4335,8 @@ def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[st
     done, dropped = gdelt_complete_days(acc)
     m = merge_vintages(store, src, done, now)
     return {"requests": len(reqs), "fetched": fetched, "parsed": parsed, "merge": m,
+            "robots": robots_rec if robots_rec is not None else (
+                "NOT_ASKED: no fetch this pass" if src.id in ROBOTS_GATED else "NOT_GATED"),
             "days_published": sorted({o.period.isoformat() for o in done}),
             "days_dropped_for_gaps": dropped, "days_open": len(acc), "errors": errors[:6]}
 
