@@ -693,7 +693,9 @@ def live_days_by_sleeve() -> dict[str, int]:
 def stress_control_variates(daily: pd.DataFrame, book: Mapping[str, float], *,
                             seed: int = 0) -> dict[str, Any]:
     """One-year synchronized-block stress of `book` over the desk's daily matrix, with control
-    variates (`libs.portfolio.control_variates`). Never raises; UNMEASURED says why."""
+    variates (`libs.portfolio.control_variates`). Never raises; UNMEASURED says why.
+    `elapsed_s` is the block's own wall time, so its cost inside the allocator pass is visible."""
+    t0 = time.monotonic()
     try:
         from libs.portfolio import control_variates as cvar
         names = [str(c) for c in daily.columns]
@@ -702,9 +704,11 @@ def stress_control_variates(daily: pd.DataFrame, book: Mapping[str, float], *,
         doc = cvar.stress(daily.to_numpy(dtype=float), book, names=names,
                           horizon=min(STRESS_HORIZON_DAYS, len(daily)), seed=seed)
         doc["headline"] = cvar.headline(doc)
+        doc["elapsed_s"] = round(time.monotonic() - t0, 3)
         return doc
     except Exception as exc:
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
+                "elapsed_s": round(time.monotonic() - t0, 3)}
 
 
 #: Stress horizon in trading days, derived from the calendar: 250 trading days is one year,

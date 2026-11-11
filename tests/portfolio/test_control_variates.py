@@ -80,6 +80,7 @@ def test_the_allocator_publishes_the_stress_report() -> None:
     daily = pd.DataFrame(rng.normal(0.01, 0.5, (300, 3)), columns=["a", "b", "c"])
     doc = pa.stress_control_variates(daily, {"a": 0.1, "b": 0.1})
     assert doc["status"] == "MEASURED" and doc["horizon"] == pa.STRESS_HORIZON_DAYS
+    assert isinstance(doc["elapsed_s"], float) and doc["elapsed_s"] >= 0
     assert pa.stress_control_variates(daily, {"zz": 0.2})["status"] == "UNMEASURED"
     src = (desk / "research" / "pf_allocator.py").read_text(encoding="utf-8")
     assert '"stress_control_variates": stress_control_variates(daily, funded)' in src
