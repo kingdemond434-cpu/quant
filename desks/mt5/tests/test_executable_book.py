@@ -34,9 +34,9 @@ def test_rounding_matches_the_gateway_arithmetic() -> None:
     # per-lot risk = 0.005 / 0.00001 * 1 = 500; heat 1% of 100k = 1000 -> 2.0 lots exactly
     r = xb.executable(0.01, 100_000.0, _spec())
     assert r["status"] == "EXACT" and r["lots_executable"] == pytest.approx(2.0)
-    r = xb.executable(0.0123, 100_000.0, _spec())
+    r = xb.executable(0.01234, 100_000.0, _spec())
     assert r["status"] == "STEP_RESIDUE" and r["lots_executable"] == pytest.approx(2.46)
-    assert r["heat_executable"] <= 0.0123
+    assert r["heat_executable"] <= 0.01234
     r = xb.executable(0.00001, 100_000.0, _spec())               # 0.002 lots < 0.01 minimum
     assert r["status"] == "BELOW_MINIMUM" and r["lots_executable"] == 0.0
     assert xb.executable(0.01, 100_000.0, _spec(stop_dist=None))["status"] == "UNPRICED"
