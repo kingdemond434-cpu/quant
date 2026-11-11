@@ -44,8 +44,13 @@ THE ARENA IS THE FIRM'S OWN RULE TEXT (`RULES`), CHECKED DAY BY DAY:
 THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
   1. certificates in the canonical store (`kelly_survival.certified_roster`: banned families, M15,
      the Reddit/StockTwits terms fence already out), priced by the allocator's worlds or replayed;
-  2. TIER S: the certificate's deflated-Sharpe gate passed at dsr >= 0.95 AND its Tier S door
-     verdict is CLEAR (data/tier_s/door_verdicts.json). The bar is read, never set here;
+  2. THE SAME CERTIFIED ROSTER FUSION AND E8 TRADE (principal, 2026-11-03 19:58Z: "ftmo fusion
+     etc must always have same mechanisms ... all must be just as same as each other"; standing
+     rule: FTMO copies ALL sleeves). Until 2026-11-05 FTMO alone also required Tier S (dsr >= 0.95
+     AND a CLEAR Tier S door), which left it trading the gold copy only while E8
+     (`prop/e8_book._load_survivors`) and Fusion (`kelly_survival.certified_roster`) traded every
+     certificate. Tier S is still read and published per column (`tier_s`) as an annotation; the
+     survival solve below (P(fail) <= BOOK_MARGIN in BOTH worlds) is what sizes every sleeve;
   3. LISTED on the venue's terminal (`data/ftmo_registry.json` from prop/ftmo_venue_reader.py, else
      the FTMO-terminal registry snapshot `data/cost_truth_quotes.json`);
   4. PRICED AT THE VENUE'S COST at the sleeve's own fill hour: FTMO's spread at that hour (its own
@@ -53,7 +58,13 @@ THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
      R-per-trade bias exactly as `libs.portfolio.execution_cost` does for Fusion (BASE_COST_R x
      (ratio - 1), clipped at MAX_RATIO, never a credit). A sleeve the venue cannot price is OUT;
   5. not quarantined (`live_sleeve_policy.json` empty symbol list) and not a principal zero;
-  6. NEVER OPPOSITE TO E8: a sleeve on a symbol E8's live book trades is out.
+  6. E8'S SYMBOLS ARE ELIGIBLE (principal override, zuck 2026-10-29 14:46Z: "remove the e8
+     exception"). Until then a sleeve on a symbol E8's live book trades was out. The no-opposite
+     rule now lives where it can actually be enforced, at the order: a sleeve that shares a symbol
+     with E8 is marked `e8_overlap` and its `direction_fence`, and no FTMO executor may send it
+     without the cross-account opposite-side fence (`mt5desk.cross_account.opposite_block`, the
+     gold direction lock for XAUUSD). `prop/ftmo_executor.py` is that executor: it checks the
+     Fusion and E8 books under the placement lock before every send.
 The one exception is the gold_asia COPY, and it is the principal's switch, not this solve's
 (`COPY_COLUMNS`, `copy_switch`): FTMO bans cross-firm copying and the principal overrode that with
 informed consent (2026-10-28 14:31Z). It is a column only while the principal holds it on, and the
@@ -66,8 +77,14 @@ cells. Trials are counted by the gauntlet at its fixed canonical count, so this 
 
 DEPLOYMENT. reports/FTMO_ALLOCATOR.json always. The `ftmo` block of data/CERT_BOOK_LIVE.json is
 rewritten ONLY when data/FTMO_ALLOCATOR_ARMED exists, the account state is MEASURED and fresh, the
-book validated, and only for keys an FTMO executor trades today (`FTMO_EXECUTABLE`). A sized sleeve
-with no executor is published as SIZED_NO_EXECUTOR with the J it would add.
+book validated, and only for keys an FTMO executor trades: the gold copy (`FTMO_EXECUTABLE`, the
+follower) and every non-gold sleeve whose certificate spec is published in `specs` (the sleeve
+executor, `prop/ftmo_executor.py`, 2026-10-29). The deployed book is SOLVED over those keys alone
+(audit #489 MF1), so a column with no executor (a non-copy gold window: gold has one FTMO owner)
+can never pull risk away from one that trades; the joint solve over every admitted column is
+published as `joint_book`, its extra columns as SIZED_NO_EXECUTOR, and the J they would add as
+J_missed. A key that was in the block and is no longer executable is written 0 -- a sleeve the
+solve dropped is never left funded.
 
     python desks/mt5/research/prop_challenge_allocator.py [--venue ftmo] [--paths 1500]
 """
@@ -128,8 +145,11 @@ TIE_EPS = 1e-9
 EMPTY_PROBE = (1e-4, 5e-4, 1e-3, 2e-3)
 #: The account state must be younger than this to deploy from (the reader runs every 5 minutes).
 STATE_MAX_AGE_S = 3 * 3600
-#: Keys an FTMO executor can trade today. Everything else is sized and reported, never sent.
+#: Keys the gold follower trades (prop/ftmo_follower.py). Non-gold keys are the sleeve
+#: executor's (`executor_runs`); a non-copy gold window has no FTMO executor.
 FTMO_EXECUTABLE = frozenset({"gold_asia"})
+#: Symbols the sleeve executor never trades: gold has one FTMO owner, the follower.
+EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
 #: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
 #: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
@@ -138,7 +158,7 @@ FTMO_EXECUTABLE = frozenset({"gold_asia"})
 #: inside [0, that ceiling]. The traded key in CERT_BOOK_LIVE is the solve's; the ceiling is never
 #: read back from it, so an allocator write (a zero included) can neither ratchet the ceiling down
 #: nor pause the copy. A zero or an absent file IS the principal's pause.
-#: Every other column must be the FTMO account's own Tier S sleeve, off every E8 symbol.
+#: Every other column is a certified sleeve of the same roster Fusion and E8 trade (2026-11-05).
 COPY_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
 COPY_PRINCIPAL = BASE / "data" / "FTMO_COPY_PRINCIPAL.json"
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
@@ -379,9 +399,9 @@ def tier_s_columns(screen: list[dict[str, Any]], doors: dict[str, Any]) -> dict[
         door = (rows.get(key) or {}).get("verdict")
         row["tier_s"] = {"dsr": dsr, "dsr_passed": gate.get("passed"), "door": door}
         if not (gate.get("passed") is True and isinstance(dsr, (int, float)) and dsr >= DSR_BAR):
-            row.setdefault("ftmo_excluded", f"not Tier S: dsr {dsr!r} (bar {DSR_BAR})")
+            row.setdefault("tier_s_miss", f"not Tier S: dsr {dsr!r} (bar {DSR_BAR})")
         elif door != "CLEAR":
-            row.setdefault("ftmo_excluded", f"not Tier S: door verdict {door!r}")
+            row.setdefault("tier_s_miss", f"not Tier S: door verdict {door!r}")
         elif col and not row.get("excluded"):
             out.setdefault(col, key)
     return out
@@ -524,6 +544,59 @@ def quarantined_symbols() -> set[str]:
     return {s for s, v in (allow or {}).items() if isinstance(v, list) and not v}
 
 
+def executor_runs(col: str, specs: dict[str, Any]) -> bool:
+    """Does an FTMO executor trade `col`? The follower's gold copy, or a non-gold sleeve whose
+    certificate spec the sleeve executor can rebuild."""
+    if col in FTMO_EXECUTABLE:
+        return True
+    spec = specs.get(col)
+    return isinstance(spec, dict) and str(spec.get("symbol") or "").upper() not in \
+        EXECUTOR_SKIP_SYMBOLS
+
+
+def sleeve_spec(cert_key: str) -> tuple[dict[str, Any] | None, str]:
+    """(the spec the sleeve executor runs, why): the certificate's own `shadow_spec`, in the
+    E8 book's shape (prop/e8_book._load_survivors) so one reconstruction serves both lanes."""
+    store = _read_json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    if not store.get("survivors"):
+        store = _read_json(BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    cert = (store.get("survivors") or {}).get(cert_key)
+    if not isinstance(cert, dict):
+        return None, f"certificate {cert_key} is not in the store"
+    spec = cert.get("shadow_spec") or {}
+    sym = str(spec.get("symbol") or cert.get("sym") or "").upper()
+    fam = str(spec.get("family") or "")
+    if not sym or not fam:
+        return None, f"certificate {cert_key} carries no symbol/family spec"
+    try:
+        from admission_integrity import spec_fingerprint
+        fp = spec_fingerprint(spec.get("symbol"), spec.get("family"), spec.get("selector"),
+                              spec.get("side"), spec.get("params"))
+    except Exception as exc:
+        return None, f"spec fingerprint unavailable ({type(exc).__name__})"
+    return {"key": cert_key, "symbol": sym, "family": fam,
+            "selector": spec.get("selector") or "asia", "fingerprint": fp,
+            "params": {k: v for k, v in spec.items()
+                       if k not in ("symbol", "family", "selector", "is_universe", "hunt")}}, "ok"
+
+
+def executable_columns(cols: list[str], uni: dict[str, Any]) -> set[str]:
+    """The admitted columns an FTMO executor can send: the deployed book is solved over these
+    alone."""
+    specs = uni.get("specs") or {}
+    return {c for c in cols if executor_runs(c, specs)}
+
+
+def door_block(cert_key: str) -> str | None:
+    """`libs.tiers.promotion_authority.block` -- the same door ftmo_executor and e8_executor apply
+    per order -- or its error as a block (it fails closed there, so it fails closed here)."""
+    try:
+        from libs.tiers import promotion_authority
+        return promotion_authority.block(cert_key)
+    except Exception as exc:
+        return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -550,6 +623,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     slices: list[np.ndarray] = []
     costs: dict[str, Any] = {}
     columns: dict[str, dict[str, Any]] = {}
+    specs: dict[str, dict[str, Any]] = {}
 
     deals: list[dict[str, Any]] = []
     try:
@@ -586,29 +660,53 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
+    door_blocked: list[str] = []
+    cert_of: dict[str, str] = {}
+    for row in screen:
+        if row.get("column") and not row.get("excluded"):
+            cert_of.setdefault(str(row["column"]), str(row["certificate"]))
     for k, col in enumerate(cert_cols):
         sym = _symbol_of(col)
         reason = None
         if col in columns:
             continue
-        if col not in tier_s:
-            reason = "not Tier S (dsr bar or door verdict; see screen)"
+        cert_key = tier_s.get(col) or cert_of.get(col)
+        if not cert_key:
+            reason = "no certificate in the store's screen for this column"
         elif sym not in listing:
             reason = f"NOT_LISTED on the FTMO terminal ({listing_src})"
         elif sym in quarantine:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
-        elif sym in e8_syms:
-            reason = f"E8 trades {sym}: an own FTMO sleeve could stand opposite E8"
+        else:
+            door = door_block(cert_key)
+            if door:
+                # THE EXECUTOR'S OWN DOOR, APPLIED BEFORE THE SOLVE (Auditor SF1, #769): a column
+                # the sleeve executor would refuse as TIER_S_BLOCKED must not take solve heat that
+                # never trades -- the deployed book would be quietly short (Rule 2).
+                reason = f"TIER_S_BLOCKED at the executor's door: {door}"
+                door_blocked.append(col)
         if reason:
-            columns[col] = {"admitted": False, "why": reason,
-                            "rail": ("ftmo_e8_symbol" if sym in e8_syms else "ftmo_universe")}
+            columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
-        admit(col, r_c[:, :, k], f"Tier S via {tier_s[col]}")
+        admit(col, r_c[:, :, k], (f"Tier S via {cert_key}" if col in tier_s else
+                                  f"certified via {cert_key} (the roster Fusion and E8 trade)"))
+        if columns[col].get("admitted"):
+            columns[col]["tier_s"] = col in tier_s
+            spec, swhy = sleeve_spec(cert_key)
+            if spec is not None:
+                specs[col] = spec
+            else:
+                columns[col]["no_spec"] = swhy
+        if sym in e8_syms and columns[col].get("admitted"):
+            columns[col]["e8_overlap"] = True
+            columns[col]["direction_fence"] = (
+                f"E8 also trades {sym}: an order needs the cross-account opposite-side fence "
+                "(cross_account.opposite_block / the gold direction lock) before it is sent")
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
-                "caps": caps,
+                "caps": caps, "door_blocked": door_blocked,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
                 "listing": listing, "tier_s": tier_s}
     r = np.stack(slices, axis=2)
@@ -622,7 +720,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
-            "caps": caps,
+            "caps": caps, "specs": specs, "door_blocked": door_blocked,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -803,13 +901,32 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["deployable"] = False
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
-    cols, r = uni["cols"], uni["r"]
-    solve_w, valid_w = make_worlds(r, n_paths, SIM_DAYS, seed)
+    all_cols, r = uni["cols"], uni["r"]
+    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
+    # THE DEPLOYED BOOK IS SOLVED OVER WHAT CAN BE SENT, AND NOTHING ELSE (audit #489 MF1). A joint
+    # solve over every admitted column lets the optimiser move risk from a column that trades to a
+    # correlated one with no executor, so the traded size would fall by side effect, never by
+    # evidence. The paths are drawn per row, independent of the columns, so the executable slice
+    # of the joint worlds IS the executable solve's input: adding a column with no executor can
+    # never move the deployed book. The joint solve is published beside it (`joint_book`) as the
+    # missed-growth view of the executors that do not exist yet.
+    exec_idx = [k for k, c in enumerate(all_cols) if c in executable_columns(all_cols, uni)]
+    if not exec_idx:
+        doc["status"] = "NO_EXECUTABLE_SLEEVE"
+        doc["validation_score"] = 0.0
+        doc["deployable"] = False
+        doc["sized_no_executor_columns"] = list(all_cols)
+        doc["rail_blocks"] = rail_blocks(uni)
+        return doc
+    cols = [all_cols[k] for k in exec_idx]
+    solve_w = World(full_w.est[:, :, exec_idx], full_w.halved[:, :, exec_idx])
+    valid_w = World(full_valid.est[:, :, exec_idx], full_valid.halved[:, :, exec_idx])
     rng = np.random.default_rng(seed)
     # Per-column ceiling: the venue's per-trade cap, and for the principal's copy the value the
     # principal set (an equity fraction, so in initial-balance units at today's equity).
-    cap = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
-                    else MAX_RISK_FRAC for c in cols])
+    cap_all = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
+                        else MAX_RISK_FRAC for c in all_cols])
+    cap = cap_all[exec_idx]
     # BACKWARD INDUCTION: the last challenge phase first (from a fresh account), so every earlier
     # phase is valued by what passing it is actually worth.
     chain = [st.phase]
@@ -860,21 +977,29 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["book"] = dict(now_block["risk_frac"])
     # THE EXECUTOR SIZES ON EQUITY (prop/ftmo_follower: fraction x equity); the solve sizes on the
     # initial balance. The written fraction carries the same dollars at today's equity.
-    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()
-                         if c in FTMO_EXECUTABLE}
-    doc["sized_no_executor"] = {c: v for c, v in doc["book"].items() if c not in FTMO_EXECUTABLE}
-    # Missed growth (Rule 1): what the missing executors cost, and every column a rail kept out.
-    if doc["sized_no_executor"] and now_block["status"] == "OK":
-        here = st
-        h_full = np.array([doc["book"].get(c, 0.0) for c in cols])
-        h_exec = np.array([doc["book"].get(c, 0.0) if c in FTMO_EXECUTABLE else 0.0
-                           for c in cols])
-        j_full = evaluate(valid_w, h_full, rules, st.phase, here, cont)["score"]
-        j_exec = evaluate(valid_w, h_exec, rules, st.phase, here, cont)["score"]
-        doc["missed_growth_no_executor"] = {"J_book": round(j_full, 5),
-                                            "J_executable_only": round(j_exec, 5),
-                                            "J_missed": round(j_full - j_exec, 5)}
+    specs = uni.get("specs") or {}
+    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()}
+    doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
+    doc["sized_no_executor"] = {}
+    # Missed growth (Rule 1): the joint solve over every admitted column, from the same account
+    # and the same continuation, against the deployed book -- what the missing executors cost.
+    if len(cols) < len(all_cols) and now_block["status"] == "OK":
+        h_j, v_j = search(full_w, rules, st.phase, st, cont, cap_all, rng, ks.BOOK_MARGIN)
+        if v_j > -math.inf:
+            j_joint = evaluate(full_valid, h_j, rules, st.phase, st, cont)["score"]
+            j_exec = now_block["validation"]["score"]
+            doc["joint_book"] = {c: round(float(h_j[k]), 4) for k, c in enumerate(all_cols)
+                                 if h_j[k] > 0}
+            doc["sized_no_executor"] = {c: v for c, v in doc["joint_book"].items()
+                                        if c not in cols}
+            doc["missed_growth_no_executor"] = {"J_joint": round(j_joint, 5),
+                                                "J_executable": round(j_exec, 5),
+                                                "J_missed": round(j_joint - j_exec, 5)}
     doc["rail_blocks"] = rail_blocks(uni)
+    doc["tier_s_door_blocked"] = {"n": len(uni.get("door_blocked") or []),
+                                  "columns": sorted(uni.get("door_blocked") or [])}
+    doc["e8_overlap"] = sorted(c for c, row in (uni.get("columns") or {}).items()
+                               if row.get("e8_overlap"))
     doc["status"] = now_block["status"]
     doc["validation_score"] = (now_block["validation"]["score"]
                                if now_block["status"] == "OK" else 0.0)
@@ -925,9 +1050,11 @@ def _round(x: Any) -> Any:
 # ===================================================================== gap requests
 
 def write_gap_requests(uni: dict[str, Any], now: datetime,
-                       path: Path = GAP_REQUESTS) -> dict[str, Any]:
+                       path: Path | None = None) -> dict[str, Any]:
     """FTMO-listed FX and metal symbols with no Tier S sleeve, as targeted hypotheses on the
-    families that certify elsewhere. One file, rewritten each pass, read by the miner compiler."""
+    families that certify elsewhere. One file, rewritten each pass, read by the miner compiler.
+    `path` defaults to GAP_REQUESTS read at call time, so a test's redirect reaches it."""
+    path = path or GAP_REQUESTS
     listing = uni.get("listing") or {}
     tier_s = uni.get("tier_s") or {}
     covered = {_symbol_of(c) for c in tier_s}
@@ -978,7 +1105,11 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
     if not isinstance(book, dict) or book.get("enabled") is not True:
         return {"applied": False, "why": "CERT_BOOK_LIVE.json unreadable or not enabled"}
     block = dict(book.get("ftmo") or {})
-    new = {k: float(doc["executable"].get(k, 0.0)) for k in FTMO_EXECUTABLE}
+    # Every key the solve can execute, and every numeric key already in the block: one the solve
+    # no longer funds is written 0 (fail closed), never left at its old size.
+    keys = set(FTMO_EXECUTABLE) | set(doc.get("executable") or {}) | {
+        k for k, v in block.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    new = {k: float((doc.get("executable") or {}).get(k, 0.0)) for k in sorted(keys)}
     if any(not 0.0 <= v <= MAX_RISK_FRAC for v in new.values()):
         return {"applied": False, "why": "a value lies outside [0, MAX_RISK_FRAC]"}
     ceiling = principal_ceiling(principal)

@@ -3,7 +3,10 @@ bridge alive without zuck and keep it from doing anything the hand-started bridg
 
 from __future__ import annotations
 
+import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -468,10 +471,11 @@ def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
     ]
     assert inst.index("$Checkout)) {") < inst.index("function Lock-Folder")
     body = inst.split("function Lock-Folder", 1)[1].split("\n}\n", 1)[0]
-    assert _block(body, "if (Test-Path -LiteralPath $dir) {", 6) == [
+    assert _block(body, "if (Test-Path -LiteralPath $dir) {", 7) == [
         "if (Test-Path -LiteralPath $dir) {",
         "foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {",
         "if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }",
+        "if (Test-DebugLatestLink $c $LogDir) { continue }",
         'throw "$($c.FullName) is a junction or symlink; not installing"',
         "}",
         "}",
@@ -483,9 +487,10 @@ def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
     rows = [x.strip() for x in body.splitlines()]
     at = [n for n, x in enumerate(rows) if x == loop]
     assert len(at) == 2
-    assert rows[at[1] : at[1] + 4] == [
+    assert rows[at[1] : at[1] + 5] == [
         loop,
         "if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }",
+        "if (Test-DebugLatestLink $c $LogDir) { continue }",
         'throw "$($c.FullName) is a junction or symlink; not installing"',
         "}",
     ]
@@ -526,3 +531,122 @@ def test_the_uncapped_flag_means_what_it_says(cmd: str, uncapped: bool) -> None:
     pats = re.findall(r"-notmatch '([^']+)'", line)
     assert len(pats) == 2 and line.count("-notmatch") == 2 and " -and " in line
     assert (not any(re.search(p, cmd) for p in pats)) is uncapped
+
+
+# THE CLI'S `latest` DEBUG LINK (2026-11-05, Desk health; the shape Governance set). The claude CLI
+# drops a symbolic link `logs\latest` beside its --debug-file. The child walk refused it, so every
+# watchdog run since 10-28 13:46Z exited 4 and the bridge never came back on its own. One shape is
+# exempt, identically in the three scripts; every other reparse point is still a refusal.
+LATEST_FN_HEAD = "function Test-DebugLatestLink($c, [string] $logDir) {"
+LATEST_FN = [
+    LATEST_FN_HEAD,
+    "try {",
+    "if ($c.Name -cne 'latest') { return $false }",
+    "if ([string]$c.LinkType -cne 'SymbolicLink') { return $false }",
+    "$ld = [IO.Path]::GetFullPath($logDir).TrimEnd([IO.Path]::DirectorySeparatorChar)",
+    "if ([IO.Path]::GetFullPath($c.FullName) -ne (Join-Path $ld 'latest')) { return $false }",
+    "$t = @($c.Target)",
+    "if ($t.Count -ne 1 -or -not $t[0]) { return $false }",
+    "$tp = [IO.Path]::GetFullPath([IO.Path]::Combine($ld, [string]$t[0]))",
+    "if ((Split-Path -Parent $tp) -ne $ld) { return $false }",
+    "if ((Split-Path -Leaf $tp) -cnotmatch '^rc_debug_\\d{8}_\\d{6}\\.log$') { return $false }",
+    "$f = Get-Item -LiteralPath $tp -Force -ErrorAction Stop",
+    "if ($f.PSIsContainer) { return $false }",
+    "if ($f.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }",
+    "return $true",
+    "} catch { return $false }",
+    "}",
+]
+
+
+@pytest.mark.parametrize("name", ["watchdog", "status", "installer"])
+def test_the_latest_link_exemption_is_one_identical_narrow_function(name: str) -> None:
+    """Pinned whole: a junction or mount point (LinkType), another name, a target outside the log
+    folder or in a subfolder, a non-rc_debug target, a directory or reparse-point target, and an
+    unreadable or dangling target all return $false. Only the exact shape returns $true."""
+    src = SCRIPTS[name]
+    assert src.count(LATEST_FN_HEAD) == 1
+    assert _block(src, LATEST_FN_HEAD, len(LATEST_FN)) == LATEST_FN
+
+
+@pytest.mark.parametrize("name", ["watchdog", "status"])
+def test_the_child_walk_exempts_only_through_the_function(name: str) -> None:
+    rows = [x.strip() for x in SCRIPTS[name].splitlines()]
+    refuse = (
+        "if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) "
+        '{ return "$($c.FullName) is a reparse point" }'
+    )
+    at = [n for n, x in enumerate(rows) if x == refuse]
+    assert len(at) == 1
+    assert rows[at[0] - 1] == "if (Test-DebugLatestLink $c $LogDir) { continue }"
+    walk = "foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {"
+    assert rows[at[0] - 2] == walk
+    # the folder itself and every parent stay refused outright: no exemption on those lines
+    assert sum("Test-DebugLatestLink $c" in x for x in rows) == 1
+
+
+def test_the_installer_exempts_the_same_shape_in_both_scans() -> None:
+    rows = [x.strip() for x in SCRIPTS["installer"].splitlines()]
+    assert sum(x == "if (Test-DebugLatestLink $c $LogDir) { continue }" for x in rows) == 2
+
+
+_PWSH_CASES = r"""
+$ErrorActionPreference = 'Stop'
+$base = Join-Path ([IO.Path]::GetTempPath()) ("lk_" + [guid]::NewGuid().ToString('N'))
+$ld = Join-Path $base 'logs'
+$out = @{}
+function Case([string] $label, [string] $target, [string] $name = 'latest') {
+    if (Test-Path -LiteralPath $ld) { Remove-Item -LiteralPath $ld -Recurse -Force }
+    New-Item -ItemType Directory -Path (Join-Path $ld 'sub') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $base 'elsewhere') -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $ld 'rc_debug_20261028_134611.log') -Value x
+    Set-Content -LiteralPath (Join-Path $ld 'notes.txt') -Value x
+    Set-Content -LiteralPath (Join-Path $ld 'sub/rc_debug_20261028_134611.log') -Value x
+    Set-Content -LiteralPath (Join-Path $base 'elsewhere/rc_debug_20261028_134611.log') -Value x
+    New-Item -ItemType Directory -Path (Join-Path $ld 'rc_debug_20261028_000000.log') | Out-Null
+    [void][IO.File]::CreateSymbolicLink((Join-Path $ld 'rc_debug_20261028_111111.log'),
+        (Join-Path $ld 'rc_debug_20261028_134611.log'))
+    $link = Join-Path $ld $name
+    [void][IO.File]::CreateSymbolicLink($link, $target)
+    $c = Get-ChildItem -LiteralPath $ld -Force | Where-Object { $_.Name -ceq $name }
+    $out[$label] = [bool](Test-DebugLatestLink $c $ld)
+}
+Case 'exact' (Join-Path $ld 'rc_debug_20261028_134611.log')
+Case 'relative' 'rc_debug_20261028_134611.log'
+Case 'outside' (Join-Path $base 'elsewhere/rc_debug_20261028_134611.log')
+Case 'subfolder' (Join-Path $ld 'sub/rc_debug_20261028_134611.log')
+Case 'other_name' (Join-Path $ld 'rc_debug_20261028_134611.log') 'newest'
+Case 'not_rc_debug' (Join-Path $ld 'notes.txt')
+Case 'dir_target' (Join-Path $ld 'rc_debug_20261028_000000.log')
+Case 'link_target' (Join-Path $ld 'rc_debug_20261028_111111.log')
+Case 'dangling' (Join-Path $ld 'rc_debug_20261028_222222.log')
+Remove-Item -LiteralPath $base -Recurse -Force
+$out | ConvertTo-Json -Compress
+"""
+
+
+@pytest.mark.skipif(not shutil.which("pwsh"), reason="pwsh not installed")
+def test_the_latest_link_exemption_accepts_one_shape_and_refuses_the_rest() -> None:
+    """Runs the function as shipped. A junction cannot be made off Windows; its refusal is the
+    pinned LinkType line above (a junction's LinkType is 'Junction', never 'SymbolicLink')."""
+    fn_src = WATCHDOG.split(LATEST_FN_HEAD, 1)[1]
+    fn_src = LATEST_FN_HEAD + fn_src.split("\n}\n", 1)[0].replace("\r", "") + "\n}\n"
+    r = subprocess.run(
+        ["pwsh", "-NoProfile", "-NonInteractive", "-Command", fn_src + _PWSH_CASES],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stderr
+    got = json.loads(r.stdout.strip().splitlines()[-1])
+    assert got == {
+        "exact": True,
+        "relative": True,
+        "outside": False,
+        "subfolder": False,
+        "other_name": False,
+        "not_rc_debug": False,
+        "dir_target": False,
+        "link_target": False,
+        "dangling": False,
+    }
