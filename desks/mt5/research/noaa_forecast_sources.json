@@ -1,0 +1,81 @@
+{
+ "_doc": "NOAA CPC forecast products read by research/noaa_forecast_vintage.py. A new product is a ROW here, never code: give it an id, one of the parser formats the module knows (cpc_dd7_pipe, cpc_dd_monthly_fixed), its URL (a {yyyy}/{mm}/{dd} template for a dated archive, a fixed URL for a product that is overwritten in place), its cadence and the MT5 instruments it informs. Instruments are checked against desks/mt5/data/universe/universe.json every pass; one the registry lacks is reported and dropped, never traded.",
+ "user_agent": "quant-desk-research/1.0 (NOAA CPC public-domain forecast vintages; one request at a time, robots.txt obeyed)",
+ "terms": "public_domain",
+ "terms_basis": "US Government work (17 U.S.C. 105). NWS disclaimer: https://www.weather.gov/disclaimer.php",
+ "census_divisions": {
+  "1": "new_england", "2": "middle_atlantic", "3": "east_north_central",
+  "4": "west_north_central", "5": "south_atlantic", "6": "east_south_central",
+  "7": "west_south_central", "8": "mountain", "9": "pacific", "CONUS": "conus"
+ },
+ "products": [
+  {
+   "id": "cpc_dd7_gas_hdd",
+   "format": "cpc_dd7_pipe",
+   "url": "https://ftp.cpc.ncep.noaa.gov/htdocs/degree_days/weighted/daily_forecasts_7day/{yyyy}/{mm}/{dd}/UtilityGas.Heating.txt",
+   "cadence": "daily",
+   "measure": "hdd",
+   "weights": "utility_gas",
+   "units": "degree_days_F_base65",
+   "publish_lag_hours": 24,
+   "lookback_days": 3,
+   "backfill_from": "2014-12-01",
+   "instruments": ["XNGUSD"],
+   "why": "Residential/commercial gas burn is heating load weighted by gas-heated homes: the revision of the next week's gas-weighted HDD is the weather term in storage expectations."
+  },
+  {
+   "id": "cpc_dd7_elec_hdd",
+   "format": "cpc_dd7_pipe",
+   "url": "https://ftp.cpc.ncep.noaa.gov/htdocs/degree_days/weighted/daily_forecasts_7day/{yyyy}/{mm}/{dd}/Electricity.Heating.txt",
+   "cadence": "daily",
+   "measure": "hdd",
+   "weights": "electricity",
+   "units": "degree_days_F_base65",
+   "publish_lag_hours": 24,
+   "lookback_days": 3,
+   "backfill_from": "2014-12-01",
+   "instruments": ["XNGUSD"],
+   "why": "Electric heating load is met partly by gas-fired generation: power-sector gas burn in winter."
+  },
+  {
+   "id": "cpc_dd7_pop_hdd",
+   "format": "cpc_dd7_pipe",
+   "url": "https://ftp.cpc.ncep.noaa.gov/htdocs/degree_days/weighted/daily_forecasts_7day/{yyyy}/{mm}/{dd}/Population.Heating.txt",
+   "cadence": "daily",
+   "measure": "hdd",
+   "weights": "population",
+   "units": "degree_days_F_base65",
+   "publish_lag_hours": 24,
+   "lookback_days": 3,
+   "backfill_from": "2014-12-01",
+   "instruments": ["XNGUSD"],
+   "why": "The population-weighted HDD the market quotes as 'the weather'."
+  },
+  {
+   "id": "cpc_dd7_pop_cdd",
+   "format": "cpc_dd7_pipe",
+   "url": "https://ftp.cpc.ncep.noaa.gov/htdocs/degree_days/weighted/daily_forecasts_7day/{yyyy}/{mm}/{dd}/Population.Cooling.txt",
+   "cadence": "daily",
+   "measure": "cdd",
+   "weights": "population",
+   "units": "degree_days_F_base65",
+   "publish_lag_hours": 24,
+   "lookback_days": 3,
+   "backfill_from": "2014-12-01",
+   "instruments": ["XNGUSD"],
+   "why": "Summer air-conditioning load is met at the margin by gas-fired power: CDD revisions are the power-burn term."
+  },
+  {
+   "id": "cpc_dd_monthly",
+   "format": "cpc_dd_monthly_fixed",
+   "url": "https://www.cpc.ncep.noaa.gov/pacdir/DDdir/ddforecast.txt",
+   "cadence": "monthly",
+   "measure": "hdd_cdd",
+   "weights": "population",
+   "units": "degree_days_F_base65",
+   "publish_lag_hours": 24,
+   "instruments": ["XNGUSD"],
+   "why": "CPC's long-lead monthly degree-day outlook (issued with the monthly/seasonal outlooks): the revision of the winter strip's expected HDD between issues."
+  }
+ ]
+}
