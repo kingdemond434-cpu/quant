@@ -426,9 +426,28 @@ def run(*, certs_path: Path = CERTS, fallback: Path = CANON, report_path: Path =
         e = prior.get(cid)
         return str(e.get("measured_at") or "") if isinstance(e, dict) else ""
 
+    def _age_s(cid: str) -> float:
+        try:
+            return clock - datetime.fromisoformat(_stamp(cid)).timestamp()
+        except (TypeError, ValueError):
+            return float("inf")
+
+    # A MEASUREMENT YOUNGER THAN THE REFRESH WINDOW IS KEPT, NOT REDONE (measured on the box
+    # 2026-11-10 22:03Z: 7,458 certificates, 7,446 re-measured every hour in a 300 s budget, 12
+    # always left over). Re-measuring every certificate every pass meant `complete` could never
+    # be true once the canon outgrew one budget, so the 20 h FRESH stand-down never fired, the
+    # weekly snapshot was never written, and the leg spent ~5 minutes an hour re-deriving answers
+    # it already had. Now a pass measures only what is new or older than REFRESH_S, the rest is
+    # carried with its own stamp, and the report is complete when every certificate holds a
+    # measurement inside the window. --force still re-measures everything.
     reached_all = True
     for cid in sorted(certs, key=lambda c: (_stamp(c), c)):
         cert = certs[cid]
+        prev_e = prior.get(cid)
+        if (not force and isinstance(prev_e, dict) and "status" in prev_e
+                and not prev_e.get("carried_forward") and 0.0 <= _age_s(cid) < REFRESH_S):
+            per[cid] = prev_e
+            continue
         if time.monotonic() > deadline:
             reached_all = False
             prev = prior.get(cid) if isinstance(prior.get(cid), dict) else None
