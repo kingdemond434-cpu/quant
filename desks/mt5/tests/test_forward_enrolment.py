@@ -206,3 +206,13 @@ def test_the_summary_fits_the_sync_cap_and_keeps_every_key_and_count(tmp_path,
     assert s["certificates"]["truncated"] is True and s["certificates"]["n"] == 9000
     assert s["blocked"]["n"] == 1000 and len(s["blocked"]["head"]) <= fe.SUMMARY_ROWS
     assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_a_summary_still_over_budget_at_the_floor_says_so(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(fe, "OUT", tmp_path / "FORWARD_ENROLMENT.json")
+    monkeypatch.setattr(fe, "SUMMARY_BUDGET_BYTES", 100)
+    payload = {"n_certificates": 3, "notes": ["x" * 500]}
+    fe._write_summary(payload)
+    s = json.loads((tmp_path / "FORWARD_ENROLMENT_SUMMARY.json").read_text())
+    assert s["over_budget"]["budget"] == 100 and s["over_budget"]["bytes"] > 100
+    assert payload["summary_over_budget"] == s["over_budget"]

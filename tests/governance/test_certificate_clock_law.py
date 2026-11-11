@@ -440,3 +440,12 @@ def test_a_locked_summary_keeps_the_full_artifact_and_does_not_fail_the_leg(tmp_
     full = law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
     assert json.loads(full.read_text())["verdict"] == "OK"
     assert not (tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json").exists()
+
+
+def test_a_summary_still_over_budget_at_the_floor_says_so(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(law, "SUMMARY_BUDGET_BYTES", 100)
+    doc = {"at": "t", "ok": True, "verdict": "OK", "counts": {}, "n_certificates": 0,
+           "certificates": [], "notes": ["x" * 500]}
+    law.write_artifact(doc, tmp_path / "CERTIFICATE_CLOCK_LAW.json")
+    s = json.loads((tmp_path / "CERTIFICATE_CLOCK_LAW_SUMMARY.json").read_text())
+    assert s["over_budget"]["budget"] == 100 and doc["summary_over_budget"] == s["over_budget"]

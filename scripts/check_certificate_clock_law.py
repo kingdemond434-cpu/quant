@@ -703,6 +703,16 @@ def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     while len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES and rows > 10:
         rows //= 2
         text = json.dumps(summarise(doc, rows), indent=1, default=str)
+    if len(text.encode("utf-8")) > SUMMARY_BUDGET_BYTES:
+        # Still over at the floor: the sync will skip it again. The miss is stamped in the
+        # summary, on the in-memory result the leg returns, and on stderr, never left silent.
+        over = summarise(doc, rows)
+        over["over_budget"] = {"bytes": len(text.encode("utf-8")),
+                               "budget": SUMMARY_BUDGET_BYTES, "rows": rows}
+        text = json.dumps(over, indent=1, default=str)
+        doc["summary_over_budget"] = over["over_budget"]
+        print(f"summary over the {SUMMARY_BUDGET_BYTES}-byte budget: {over['over_budget']}",
+              file=sys.stderr)
     # TEMP + REPLACE: the box sync can read this file mid-write, and a half-written summary
     # published off the box is worse than the previous whole one.
     summary = path.with_name(path.stem + "_SUMMARY.json")
