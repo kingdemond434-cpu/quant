@@ -1155,6 +1155,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
     "dsr_inputs",
+    # THE NEVER-INFLATE TRIAL MONITOR (principal 2026-10-13: "permanently monitored ... so it
+    # never inflates"). A static walk of the tree plus the re-run share: report only, every hour.
+    "trial_inflation",
     # Capacity planning and the observed verdict rate must run before every judge pass;
     # the heavy-plan rotation left its report stale while the gauntlet kept running.
     "judging_throughput",
@@ -1330,7 +1333,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
-                     "occupancy_map", "dsr_inputs"), "data"),
+                     "occupancy_map", "dsr_inputs", "trial_inflation"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
                      "market_intel", "mine",
@@ -2329,6 +2332,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # DSR inputs reads one sweep report and the trial-Sharpe ledger and writes one JSON; seconds
     # on the build box. The cap is protection against a damaged file, not a budget.
     "dsr_inputs": 300,
+    # The trial-inflation monitor parses every .py file once (an AST walk) and reads one ledger
+    # tail; measured at 21 s on the cloud tree. The cap is protection, not a budget.
+    "trial_inflation": 600,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -4898,6 +4904,12 @@ def main() -> None:
     # information layer.
     dsi = _costed("dsr_inputs", lambda: _producer("dsr_inputs", "scripts/measure_dsr_inputs.py",
                                                   "--once"))
+    # NO BAR EVER RISES WITH A TRIAL COUNT, MEASURED HOURLY (backlog 10-07/10-14). Every bar call
+    # whose N is not the owner's fixed N=5, every len-scaled correction, the sealed judge's
+    # lifetime-union charge and the re-run share, to reports/TRIAL_INFLATION.json. Report only:
+    # it reads FAIL on LIVE until the T8 re-sign (#852) lands, and the reading is the artifact.
+    tif = _costed("trial_inflation", lambda: _producer(
+        "trial_inflation", "scripts/check_trial_inflation.py", "--monitor"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     #
@@ -6479,7 +6491,7 @@ def main() -> None:
                     "judge_prescreen": jps,
                     "regional_parity": rpp,
                     "orthogonality_yield": oyz, "effective_trials": eft,
-                    "dsr_inputs": dsi,
+                    "dsr_inputs": dsi, "trial_inflation": tif,
                     "occupancy_map": ocm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "global_coverage_tensor": gct,
