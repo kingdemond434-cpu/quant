@@ -169,6 +169,7 @@ def test_a_certified_llm_derived_cell_is_never_written_live(
     # the promoter's writer, under a policy that would admit every symbol, family and lane
     monkeypatch.setattr(live_policy, "policy", lambda path=None: pol)
     monkeypatch.setattr(promoter, "plog", lambda msg: None)
+    monkeypatch.setattr(promoter, "LLM_FENCE_LEDGER", wired / "data" / "llm_fence_blocks.jsonl")
     assert promoter._apply_live_policy(rows) == len(rows) - 1
     assert all(r["status"] == "RETIRED" and r["risk_frac"] == 0.0 for r in rows[:-1])
     assert rows[-1]["status"] == "LIVE"
