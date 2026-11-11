@@ -115,7 +115,7 @@ def test_the_carrier_is_the_best_evidenced_row_with_a_stable_tie_break() -> None
     assert best == "gold_asia"
     # the gateway walks that order and falls back when the carrier does not fire, and a
     # non-carrier's signal is recorded as a shadow observation
-    assert "_carry_order = book_carrier_order(_joins, _evidence)" in _GW
+    assert "_carry_order = book_carrier_order(_joins, _evidence, _holding)" in _GW
     assert "_carrier = _carried.get(_key, _s[\"name\"])" in _GW
     assert 'reason="book_key_non_carrier"' in _GW
 
@@ -132,7 +132,7 @@ def test_a_fusion_book_override_row_carries_its_shared_key_over_a_better_evidenc
     assert dc.book_carrier_order(own, {"usdnok_carry_v2": inf})["usdnok_carry"][0] \
         == "usdnok_carry"
     i = _GW.index("_override_names = globals().get(\"MINLOT_OVERRIDE_SLEEVES\")")
-    block = _GW[i:_GW.index("_carriers = book_carriers(_joins, _evidence)", i)]
+    block = _GW[i:_GW.index("_carriers = book_carriers(_joins, _evidence, _holding)", i)]
     assert '_r.get("minlot_override") is True' in block and "_evidence[_n]" in block
 
 
