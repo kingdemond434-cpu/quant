@@ -1067,3 +1067,5 @@
 {"pr":983,"sha":"9f3e7bc4a6f57d371bd1ad9c3de28ae896fb9a93","verdict":"HOLD","at":"2026-11-11T09:25:54+00:00"}
 {"pr":979,"sha":"47302cd89e86f2e18937d63647c6e4a1422e65b3","verdict":"CLEAR","at":"2026-11-11T09:27:09+00:00"}
 {"pr":983,"sha":"08c0ad1d613875059ef88504910f25f3d691a7f0","verdict":"CLEAR","at":"2026-11-11T09:28:30+00:00"}
+{"pr":984,"sha":"bcd31e99b9454f6e5e6cdca6a945435cd4fdb975","verdict":"HOLD","at":"2026-11-11T09:48:47+00:00"}
+{"pr":984,"sha":"6d7fdea8b35ec9d68dc583461441dec2e8a03ba7","verdict":"CLEAR","at":"2026-11-11T09:49:59+00:00"}
