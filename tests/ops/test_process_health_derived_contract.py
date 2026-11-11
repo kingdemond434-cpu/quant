@@ -274,3 +274,17 @@ def test_page_newly_stale_once_with_cause(monkeypatch: pytest.MonkeyPatch, tmp_p
         raise OSError("down")
 
     assert ph.page_newly_stale({"derived_contract": {"newly_stale": new}}, boom).startswith("not")
+
+
+def test_a_retired_manifest_row_gets_no_derived_contract(tmp_path: Path) -> None:
+    man = tmp_path / ph.MANIFEST
+    man.parent.mkdir(parents=True)
+    man.write_text(
+        'TASK name="Q-Live" trigger="every 1 hour" runs="x.py" installer="NONE"\n'
+        'TASK name="Q-Gone" trigger="hourly" runs="retired 2026-11-11: reason" installer="NONE"\n'
+        'TASK name="Q-Order" runs="y.py" trigger="every 5 minutes"\n',
+        encoding="utf-8",
+    )
+    got = ph.manifest_triggers(tmp_path)
+    assert got == {"Q-Live": "every 1 hour", "Q-Gone": "", "Q-Order": "every 5 minutes"}
+    assert ph.manifest_triggers(ROOT)["MT5-CycleMidnight"] == ""  # retired by the CRO 2026-11-11

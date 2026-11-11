@@ -272,7 +272,7 @@ TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep
 # ops/organ_contract.py names it; not installed on the box 2026-09-16.
 TASK name="MT5-CertHygiene" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="research"
 # CRO cycle, Codex lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 00:00-10:59 Europe/Dublin.
-TASK name="MT5-CycleMidnight" trigger="hourly; window 00:00-10:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
+TASK name="MT5-CycleMidnight" trigger="legacy compatibility only" runs="retired 2026-11-11: Codex lane, owner said forget codex; parked under STOP MODE (CRO)" installer="NONE" lane="research"
 # CRO cycle, Claude lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 12:00-22:59 Europe/Dublin.
 TASK name="MT5-CycleNoon" trigger="hourly; window 12:00-22:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
 # scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16.

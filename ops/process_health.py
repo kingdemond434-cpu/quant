@@ -519,15 +519,26 @@ def interval_min(text: str) -> float | None:
 
 
 def manifest_triggers(root: Path) -> dict[str, str]:
-    """task name -> its `trigger=` text in the box manifest ({} when unreadable)."""
+    """task name -> its `trigger=` text in the box manifest ("" for a retired row; {} when
+    unreadable)."""
     import re
 
     try:
         text = (root / MANIFEST).read_text(encoding="utf-8")
     except OSError:
         return {}
-    pat = re.compile(r'^TASK name="([^"]+)"\s+trigger="([^"]*)"', re.M)
-    return {m.group(1): m.group(2) for m in pat.finditer(text)}
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line.startswith("TASK "):
+            continue
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', line))
+        if "name" not in attrs:
+            continue
+        # A RETIRED row (runs="retired...", the manifest's own convention) gets no derived
+        # contract: it is meant not to run, so "it has not succeeded" is the design.
+        retired = attrs.get("runs", "").strip().lower().startswith("retired")
+        out[attrs["name"]] = "" if retired else attrs.get("trigger", "")
+    return out
 
 
 def last_run_ages_min(raw: str, now_local: datetime) -> list[float] | None:
