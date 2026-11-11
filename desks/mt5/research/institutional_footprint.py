@@ -129,11 +129,11 @@ def _write_json(p: Path, doc: Any) -> None:
 
 
 # =========================================================================== the atlas
-def load_roster(path: Path = ROSTER) -> list[dict[str, Any]]:
+def load_roster(path: Path | None = None) -> list[dict[str, Any]]:
     """The atlas rows. An unreadable roster is an empty atlas and the report says so."""
     try:
         import yaml
-        doc = yaml.safe_load(Path(path).read_text("utf-8")) or {}
+        doc = yaml.safe_load(Path(path or ROSTER).read_text("utf-8")) or {}
     except Exception:
         return []
     rows = doc.get("sources") if isinstance(doc, Mapping) else doc

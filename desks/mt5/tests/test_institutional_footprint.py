@@ -540,6 +540,7 @@ def test_the_identity_is_honest_and_never_a_placeholder(monkeypatch: pytest.Monk
     assert {ua for _u, ua in raw.sent} == {fs.UA}
     monkeypatch.setenv("QUANT_EDGAR_UA", "Desk Research desk@real.example")
     raw.sent.clear()
+    t = ifp.PoliteTransport(1e18, raw=raw)          # a fresh pass reads robots.txt again
     t("https://www.sec.gov/files/x.zip")
     t("https://markets.newyorkfed.org/api/y.json")
     assert [ua for _u, ua in raw.sent] == ["Desk Research desk@real.example"] * 2 + [fs.UA] * 2
