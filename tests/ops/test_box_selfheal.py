@@ -81,7 +81,7 @@ def test_no_step_can_stop_the_seal() -> None:
 
 def test_a_throw_after_the_rename_puts_the_old_pin_back() -> None:
     body = _body("Invoke-PinRelocation")
-    assert body.index("$kept = $null") < body.index("try {")          # hoisted: the catch can see it
+    assert body.index("$kept = $null") < body.index("try {")  # hoisted: the catch sees it
     tail = body[body.index("a throw after the rename"):]                 # the outer catch
     restore = tail.index("Rename-Item -LiteralPath $kept")
     assert "$row.restored = $kept" in tail
