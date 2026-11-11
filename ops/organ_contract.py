@@ -397,6 +397,34 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # N16 (backlog 2026-10-13, wired 2026-11-11): the EXISTS-UNWIRED organs, each now an hourly
+    # leg in its department's plan. A department leg is guaranteed a run inside the leg
+    # rotation's 24 h window (libs/ops/leg_rotation.ROTATION_WINDOW_H), so 1560 min is that
+    # window plus two hours, as for the daily FrontierAudit rows above. The parent task is the
+    # department resident that runs the leg; none of these is a task of its own.
+    "MT5-Dept-Macro (garch_vol)": (
+        "desks/mt5/reports/GARCH_VOL.json", 1560,
+        "GARCH(1,1) vs EWMA one-step volatility forecasts per instrument, scored by QLIKE on "
+        "held-out days; UNMEASURED where arch is absent or history is short"),
+    "MT5-Dept-Macro (fred_macro)": (
+        "data/fred_macro.json", 1560,
+        "the FRED archive libs.portfolio.macro_state reads to give pf_allocator its regime "
+        "kernel (SleeveEvidence.macro_w); stale means the allocator's macro tilt decays to no "
+        "claim"),
+    "MT5-Dept-Intel (form4_feed)": (
+        "desks/mt5/reports/FORM4.json", 1560,
+        "SEC Form 4 insider filings for the desk's US share CFDs, clustered point-in-time by "
+        "libs/research/form4; UNMEASURED without a declared QUANT_EDGAR_UA"),
+    "MT5-Dept-Intel (external_federation)": (
+        "desks/mt5/reports/EXTERNAL_FEDERATION.json", 1560,
+        "every public research system disposed, ledgered and delta-watched (LAWS 5h)"),
+    "MT5-Dept-Meta (conversion_ledger)": (
+        "desks/mt5/data/conversion_ledger.json", 1560,
+        "every funnel conversion, its rate and its named loss reason; read by bottleneck_law, "
+        "build_allocator and trial_allocator"),
+    "MT5-Dept-Meta (llm_budget_census)": (
+        "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 1560,
+        "the model seat's daily request allowance, who spent it and what it bought"),
 }
 
 
