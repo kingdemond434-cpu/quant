@@ -68,3 +68,5 @@ def test_the_timeout_tail_survives_bytes_text_and_none():
     assert hc._text_tail(None, 10) == ""
     assert hc._text_tail(b"PHASE start +0.0s\n", 6) == "+0.0s\n"
     assert hc._text_tail("x" * 50, 5) == "xxxxx"
+    leaked = hc._text_tail("PHASE start\nkey=sk-or-v1-" + "a" * 48 + "\n", 400)
+    assert "a" * 48 not in leaked and "PHASE start" in leaked

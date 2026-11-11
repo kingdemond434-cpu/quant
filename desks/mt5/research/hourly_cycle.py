@@ -2616,12 +2616,19 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
 
 
 def _text_tail(raw: object, n: int) -> str:
-    """The last `n` characters of a captured stream, bytes or str; empty when nothing came back."""
+    """The last `n` characters of a captured stream, bytes or str; empty when nothing came back.
+
+    It is published in the cycle's report, so key-shaped substrings and secrets paths are
+    scrubbed first (the desk's own scrubber); if the scrubber cannot load, nothing is kept."""
     if raw is None:
         return ""
     if isinstance(raw, bytes):
         raw = raw.decode("utf-8", errors="replace")
-    return str(raw)[-n:]
+    try:
+        from libs.ops.agent_denials import scrub
+    except Exception:                                     # pragma: no cover - import guard
+        return ""
+    return scrub(str(raw)[-(n + 200):])[-n:]
 
 
 def execution_twin() -> dict:
