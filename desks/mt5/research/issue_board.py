@@ -202,6 +202,9 @@ ALARMS: tuple[tuple[str, str, str], ...] = (
     ("SAMEDAY_ALARM.txt", "BLIND", "the same-day pipeline fence is breached"),
     ("FENCE_ALARM.txt", "BLIND", "a standing fence is breached"),
     ("PROMPT_PREFIX_ALARM.txt", "DEGRADED", "the prompt prefix drifted"),
+    ("CONTRACT_SPEC_ALARM.txt", "DEGRADED",
+     "the broker's contract specs for a live symbol disagree with what the code assumes, or a "
+     "live symbol went CLOSE-ONLY/DISABLED (research/contract_spec_diff.py)"),
     ("JUDGE_ALIVE_ALARM.txt", "STALLED",
      "the judge's sweep was killed for making no progress (or its watchdog is wedged) and no "
      "sweep has finished since: no verdict is being written"),

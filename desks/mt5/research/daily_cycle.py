@@ -337,6 +337,22 @@ def _cost_fields() -> None:
         raise RuntimeError(f"refresh_cost_fields returned {rc}")
 
 
+def _contract_spec_diff() -> None:
+    """K2: the broker's contract specs against the registry, every day, with the broker's fix.
+
+    Right after `cost_fields`, before anything prices a cost: a contract the broker re-papered
+    (contract size, tick size, minimum lot, digits, profit currency, swap mode) or a tick value the
+    exchange rate has moved past tolerance is written back through `universe_registry.merge`, and a
+    live symbol's mismatch, CLOSE-ONLY flip or unresolvable swap mode raises
+    data/CONTRACT_SPEC_ALARM.txt. See research/contract_spec_diff.py.
+    """
+    import contract_spec_diff
+
+    rc = contract_spec_diff.main(["--apply"])
+    if rc != 0:
+        raise RuntimeError(f"contract_spec_diff returned {rc}")
+
+
 def _factor_residual() -> None:
     """Strip every instrument to its economic drivers and propose what the residual pays.
 
@@ -891,7 +907,7 @@ def _control_room() -> None:
 STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("research_gap_map", _research_gap_map),
          ("refresh_bars", _refresh_bars), ("deepen_bars", _deepen_bars),
-         ("cost_fields", _cost_fields),
+         ("cost_fields", _cost_fields), ("contract_spec_diff", _contract_spec_diff),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
          ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
