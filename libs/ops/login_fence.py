@@ -747,10 +747,14 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
 
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
-        from libs.ops import alert_channels
-        return alert_channels.send_all(
+        from libs.ops import alert_digest
+        return alert_digest.send(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl",
+            # Opt-in digest (2026-11-03): only the "cannot measure" reminder; a real fence
+            # breach never carries this prefix and pages as before.
+            digest_class=("login_fence_unmeasured"
+                          if title.startswith("LOGIN FENCE UNMEASURED") else None))
     return send
 
 
