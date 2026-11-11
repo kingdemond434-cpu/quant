@@ -214,11 +214,68 @@ def _resample_rule(timeframe: str) -> str:
 #: thousand rows however many ticks the day carried, so memory scales with days, not ticks.
 TAPE_AGG = BASE / "data" / "tape" / "agg_m1"
 #: Bumped whenever the aggregate's arithmetic changes, so a stale cache is never read as current.
-TAPE_AGG_VERSION = 1
+TAPE_AGG_VERSION = 2
 #: The aggregate's columns. `flow_in` counts only the tick-to-tick steps INSIDE a minute; the step
 #: from the previous minute's last mid to this minute's first mid is added back after the days are
 #: joined (`_tape_minutes`), so a day or file boundary drops no step the old full-tick reader made.
 TAPE_AGG_COLUMNS = ("spread_sum", "n", "flow_in", "first_mid", "last_mid")
+
+
+#: A tick stamped before this is not a tick (the dashed copies carry rows stamped 1970-01-01,
+#: ts = epoch 0 -- measured on the box 2026-11-11: 70,717 of XAUUSD 2026-09-11's 391,141 rows,
+#: and all but the last few rows of some share-CFD days). Such rows are dropped before anything
+#: is counted, so a corrupt copy can never win the one-copy-per-day choice on its row count.
+TAPE_MIN_TS = "2000-01-01"
+
+
+def _tick_times(t):
+    """The tick timestamps as tz-aware UTC, from whichever schema the copy carries, or None.
+
+    THE TWO COPIES OF A DAY DO NOT SHARE A SCHEMA (box read 2026-11-11). `YYYY-MM-DD.parquet`
+    (tape_features / mt5desk.tape) carries `ts` -- a timestamp in ns OR ms by file, or a bare
+    integer; `YYYYMMDD.parquet` (moat/moat_silver.py, raw bronze rows) carries `time_msc` (epoch
+    ms) and `time` (epoch s) and NO `ts`. The 30-file reader this replaces asked every file for
+    `ts`, so on the compact files -- the only ones its lexical tail ever reached -- the read
+    raised, was skipped, and the families were handed no tape at all."""
+    import numpy as np
+    import pandas as pd
+    if "ts" in t.columns:
+        col = t["ts"]
+        if pd.api.types.is_datetime64_any_dtype(col):
+            return pd.to_datetime(col, utc=True)
+        v = pd.to_numeric(col, errors="coerce")
+        big = float(np.nanmax(np.abs(v.to_numpy(dtype="float64")))) if len(v) else 0.0
+        unit = "ns" if big > 1e17 else "us" if big > 1e14 else "ms" if big > 1e11 else "s"
+        return pd.to_datetime(v, unit=unit, utc=True, errors="coerce")
+    if "time_msc" in t.columns:
+        return pd.to_datetime(pd.to_numeric(t["time_msc"], errors="coerce"), unit="ms",
+                              utc=True, errors="coerce")
+    if "time" in t.columns:
+        return pd.to_datetime(pd.to_numeric(t["time"], errors="coerce"), unit="s", utc=True,
+                              errors="coerce")
+    return None
+
+
+def _read_ticks(src: Path):
+    """One day file as `ts, bid, ask` with valid UTC stamps, whichever schema it was written in.
+
+    Reads only the columns needed when the parquet schema can be read without the data."""
+    import pandas as pd
+    want = ("ts", "time_msc", "time", "bid", "ask")
+    try:
+        import pyarrow.parquet as pq
+        names = set(pq.read_schema(src).names)
+        t = pd.read_parquet(src, columns=[c for c in want if c in names])
+    except ImportError:
+        t = pd.read_parquet(src)
+    if "bid" not in t.columns or "ask" not in t.columns:
+        return None
+    ts = _tick_times(t)
+    if ts is None:
+        return None
+    out = pd.DataFrame({"ts": ts, "bid": pd.to_numeric(t["bid"], errors="coerce"),
+                        "ask": pd.to_numeric(t["ask"], errors="coerce")})
+    return out[out["ts"] >= pd.Timestamp(TAPE_MIN_TS, tz="UTC")]
 
 
 def _day_minutes_from_ticks(t):
@@ -274,7 +331,10 @@ def _day_minutes(src: Path, *, cache: bool):
         except Exception:
             pass
     try:
-        agg = _day_minutes_from_ticks(pd.read_parquet(src, columns=["ts", "bid", "ask"]))
+        ticks = _read_ticks(src)
+        if ticks is None:
+            return None
+        agg = _day_minutes_from_ticks(ticks)
     except Exception:
         return None
     if cache:

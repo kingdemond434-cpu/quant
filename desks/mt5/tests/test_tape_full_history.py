@@ -203,3 +203,70 @@ def test_a_day_written_twice_is_read_once_from_its_fuller_copy(rig: Path) -> Non
         pd.testing.assert_series_equal(a, b)
     assert ow.TAPE_READ_STATS[SYM]["days_with_two_files"] == 1
     assert ow.TAPE_READ_STATS[SYM]["days"] == 3
+
+
+def _as_compact(src: Path, dst: Path) -> None:
+    """Rewrite a `ts, bid, ask` day in the compact copy's own schema: bronze rows with
+    `time_msc` (epoch ms) and `time` (epoch s), and no `ts` column."""
+    t = pd.read_parquet(src)
+    ms = pd.to_datetime(t["ts"], utc=True).astype("int64") // 1_000_000
+    pd.DataFrame({"time": ms // 1000, "time_msc": ms, "bid": t["bid"], "ask": t["ask"],
+                  "last": 0.0, "volume": 0, "flags": 6}).to_parquet(dst)
+
+
+def test_the_compact_schema_is_read(rig: Path) -> None:
+    """`YYYYMMDD.parquet` carries `time_msc`/`time` and no `ts`. The 30-file reader asked every
+    file for `ts`, so every compact file raised and was skipped: the families got no tape."""
+    days = ["2026-10-01", "2026-10-02", "2026-10-03"]
+    _write_days(rig, days)
+    index = pd.date_range("2026-10-01", "2026-10-03 23:00", freq="60min", tz="UTC")
+    before = ow._tape_series(SYM, index, "H1")
+    for day in days:
+        src = rig / SYM / f"{day}.parquet"
+        _as_compact(src, src.with_name(day.replace("-", "") + ".parquet"))
+        src.unlink()
+    for f in (ow.TAPE_AGG / SYM).glob("*.parquet"):
+        f.unlink()
+    ow._tape_minutes.cache_clear()
+    after = ow._tape_series(SYM, index, "H1")
+    for a, b in zip(before, after, strict=True):
+        pd.testing.assert_series_equal(a, b)
+
+
+@pytest.mark.parametrize("unit", ["ns", "ms"])
+def test_an_integer_ts_is_read_in_its_own_unit(rig: Path, unit: str) -> None:
+    days = ["2026-10-01", "2026-10-02"]
+    _write_days(rig, days)
+    index = pd.date_range("2026-10-01", "2026-10-02 23:00", freq="60min", tz="UTC")
+    before = ow._tape_series(SYM, index, "H1")
+    p = rig / SYM / "2026-10-01.parquet"
+    t = pd.read_parquet(p)
+    ns = pd.to_datetime(t["ts"], utc=True).astype("int64")
+    t["ts"] = ns if unit == "ns" else ns // 1_000_000
+    t.to_parquet(p)
+    for f in (ow.TAPE_AGG / SYM).glob("*.parquet"):
+        f.unlink()
+    ow._tape_minutes.cache_clear()
+    after = ow._tape_series(SYM, index, "H1")
+    for a, b in zip(before, after, strict=True):
+        pd.testing.assert_series_equal(a, b)
+
+
+def test_epoch_zero_rows_never_count_and_never_win_the_copy_choice(rig: Path) -> None:
+    """Box 2026-11-11: some dashed copies are mostly rows stamped 1970-01-01. Counted raw, such a
+    copy can out-number the clean compact copy; counted after the stamps are checked, it loses."""
+    days = ["2026-10-01", "2026-10-02"]
+    _write_days(rig, days)
+    index = pd.date_range("2026-10-01", "2026-10-02 23:00", freq="60min", tz="UTC")
+    before = ow._tape_series(SYM, index, "H1")
+    dashed = rig / SYM / "2026-10-02.parquet"
+    _as_compact(dashed, rig / SYM / "20261002.parquet")              # the clean copy
+    t = pd.read_parquet(dashed)
+    junk = pd.DataFrame({"ts": pd.Timestamp(0, tz="UTC"), "bid": 1.0, "ask": 1.1},
+                        index=range(len(t) * 3))
+    pd.concat([junk, t.iloc[-5:]], ignore_index=True).to_parquet(dashed)  # 3x rows, mostly 1970
+    ow._tape_minutes.cache_clear()
+    after = ow._tape_series(SYM, index, "H1")
+    for a, b in zip(before, after, strict=True):
+        pd.testing.assert_series_equal(a, b)
+    assert ow.TAPE_READ_STATS[SYM]["days_with_two_files"] == 1
