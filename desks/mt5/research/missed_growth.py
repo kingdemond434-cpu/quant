@@ -653,6 +653,32 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
                     "published rather than priced as zero")}
 
 
+FTMO_PACE = BASE / "reports" / "FTMO_PACE_MODIFIER.json"
+
+
+def measure_ftmo_pace(r: Any, _alloc: dict[str, Any],
+                      _fv: dict[str, Any]) -> dict[str, Any]:
+    """The FTMO pace modifier's line, read off its own report. It is report-only, so it binds
+    nothing: NOT_BINDING, with what the book at 1.0 forgoes against the modifier's pick published
+    (E[log W] and P(pass)) so the cost is on the ledger before any consumer reads it. A report
+    that is absent or UNMEASURED is UNMEASURED, said with its reason."""
+    doc: Any
+    try:
+        doc = json.loads(FTMO_PACE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"verdict": UNMEASURED, "why": "no FTMO_PACE_MODIFIER.json on this host"}
+    if not isinstance(doc, dict) or doc.get("status") not in ("OK", "SURVIVAL_BELOW_GRID"):
+        return {"verdict": UNMEASURED,
+                "why": f"pace modifier {(doc or {}).get('status')}: {(doc or {}).get('why')}"}
+    mg = doc.get("missed_growth") or {}
+    return {"verdict": NOT_BINDING if doc.get("consumer") is None else UNMEASURED,
+            "multiplier": doc.get("multiplier"), "direction": doc.get("direction"),
+            "elog_w_forgone_at_1": mg.get("elog_w_forgone_at_1"),
+            "p_pass_forgone_at_1": mg.get("p_pass_forgone_at_1"),
+            "why": "report only (consumer null): the book trades at 1.0 and the modifier's pick "
+                   "is published as what that forgoes"}
+
+
 #: The hourly stop-geometry re-solve's report. Its robustness gate registers no rail (the rail
 #: register is a sealed immutable-evaluator file), so its missed-growth lines are PUBLISHED on
 #: that artifact in `forward_slot_ranker`'s shape and carried here, never appended to LEDGER.
