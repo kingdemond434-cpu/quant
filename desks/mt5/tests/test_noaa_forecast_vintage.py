@@ -305,3 +305,25 @@ def test_leg_is_wired_into_the_hourly_cycle_and_a_layer() -> None:
     assert "noaa_forecasts" in hc.CORE_LEGS
     assert any("noaa_forecasts" in v for v in hc.LEG_DEPARTMENT.values()) or \
         "noaa_forecasts" in hc.LEG_DEPARTMENT
+
+
+@pytest.mark.parametrize("code", [404, 410, 400])
+def test_an_absent_robots_file_is_any_plain_4xx(tmp_path: Path, code: int) -> None:
+    """RFC 9309: 404, 410 and other 4xx (not the hard stops) mean no robots.txt -- fetch."""
+    host = FakeHost({_url("2026-11-10"): (200, _fx("UtilityGas.Heating.20261110.txt"))},
+                    robots=(code, ""))
+    rep = _run(tmp_path, host)
+    p = rep["products"]["cpc_dd7_gas_hdd"]
+    assert p["status"] == "OK" and p["new_issues"] == 1
+
+
+def test_a_recent_issue_first_seen_after_its_assumed_lag_is_flagged(tmp_path: Path) -> None:
+    gas = _fx("UtilityGas.Heating.20261110.txt")
+    on_time = _run(tmp_path / "a", FakeHost({_url("2026-11-10"): (200, gas)}),
+                   now=datetime(2026, 11, 10, 18, tzinfo=UTC))
+    assert on_time["products"]["cpc_dd7_gas_hdd"]["first_seen_after_lag"] == []
+    late = _run(tmp_path / "b", FakeHost({_url("2026-11-10"): (200, gas)}),
+                now=datetime(2026, 11, 11, 6, tzinfo=UTC))
+    flag = late["products"]["cpc_dd7_gas_hdd"]["first_seen_after_lag"]
+    assert [f["issue"] for f in flag] == ["2026-11-10T00:00:00+00:00"]
+    assert flag[0]["age_h"] == 30.0 and flag[0]["assumed_lag_h"] == 24.0

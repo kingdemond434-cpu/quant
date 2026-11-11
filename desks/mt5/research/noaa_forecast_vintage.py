@@ -74,6 +74,9 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 REPORT = DESK / "reports" / "NOAA_FORECAST_VINTAGES.json"
 
 HARD_STOP = frozenset({401, 403, 429, 451})
+#: An issue younger than this was due to be seen by the live (non-backfill) fetches; first seeing
+#: one older than its assumed publish lag is the signal that the lag is optimistic.
+LIVE_WINDOW_H = 72.0
 HARD_STOP_COOLDOWN = timedelta(hours=24)
 #: Product files fetched per pass, all products together. The 7-day archive is ~365 files a year
 #: per weighting; at this rate the backfill drains in weeks while the host sees a slow reader.
@@ -487,8 +490,10 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
                 robots_cache[host_base] = None
             elif st is not None and 200 <= st < 300:
                 robots_cache[host_base] = txt
-            elif st == 404:
-                robots_cache[host_base] = ""     # no robots.txt: nothing is disallowed
+            elif st is not None and 400 <= st < 500:
+                # RFC 9309 2.3.1.3: 404, 410 and any other 4xx (the hard stops are caught above)
+                # mean there is no robots.txt, so nothing is disallowed
+                robots_cache[host_base] = ""
             else:
                 robots_cache[host_base] = None
         return robots_cache[host_base]
@@ -506,6 +511,7 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
                              "cadence": product.get("cadence"), "instruments": ok_syms,
                              "instruments_absent": absent, "new_issues": 0, "fetched": 0,
                              "not_yet_posted": 0, "parse_failed": 0, "same_issue_changed": 0,
+                             "first_seen_after_lag": [],
                              "robots_refused": 0, "errors": []}
         rep["products"][pid] = p
         if absent:
@@ -595,6 +601,15 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
                         held[it] = rows[0]["content_sha256"]
                         held_rows.extend(rows)
                         p["new_issues"] += 1
+                        # THE PIT CHECK ON THE INFERRED BOUND: a RECENT issue (inside the live
+                        # window, so a pass should have seen it) first seen later than the
+                        # assumed publish lag means that lag is optimistic for this product.
+                        lag_h = float(product.get("publish_lag_hours", 24))
+                        age_h = (now - issue).total_seconds() / 3600.0
+                        if lag_h < age_h <= LIVE_WINDOW_H:
+                            p["first_seen_after_lag"].append(
+                                {"issue": it, "first_seen": _iso(now), "age_h": round(age_h, 1),
+                                 "assumed_lag_h": lag_h})
                     if key != "current":
                         done_dates.add(key)
                 if status is None:
