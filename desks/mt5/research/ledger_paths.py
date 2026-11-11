@@ -594,10 +594,10 @@ def _write_census(engine: str, sd: Path, acct: dict[str, Any]) -> None:
         merged = dict(doc.get(part) or {})
         merged.update(acct[part])
         doc[part] = merged
-    # A file that failed once and moved later is no longer a failure.
-    for part in ("collided", "renamed", "superseded"):
-        for name in acct[part]:
-            doc["failed"].pop(name, None)
+    # A file that failed once and moved later is no longer a failure: it is recorded under the
+    # part it moved to, so the failure row is superseded by that record, not lost.
+    moved = {n for part in ("collided", "renamed", "superseded") for n in doc[part]}
+    doc["failed"] = {n: v for n, v in doc["failed"].items() if n not in moved}
     doc.update({
         "engine": engine, "updated_at": acct["at"],
         "rule": ("one forward ledger per sleeve key (desks/mt5/research/ledger_paths.py). "
