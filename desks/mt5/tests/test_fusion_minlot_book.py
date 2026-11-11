@@ -230,7 +230,7 @@ def test_only_named_and_active_entries_are_marked_and_a_written_mark_is_popped()
 
 def test_below_the_ruin_line_nothing_is_marked() -> None:
     rows = [{"name": n} for n in FOUR]
-    notes = dc.stamp_minlot_override(rows, frozenset(FOUR), dc.PROMOTED_MIN_EQUITY - 1)
+    notes = dc.stamp_minlot_override(rows, frozenset(FOUR), dc.FUSION_RUIN_FLOOR_EUR - 1)
     assert not any(r.get("minlot_override") for r in rows) and len(notes) == 6
     dc.stamp_minlot_override(rows, frozenset(FOUR), float("nan"))
     assert not any(r.get("minlot_override") for r in rows)
