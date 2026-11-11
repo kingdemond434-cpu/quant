@@ -201,6 +201,20 @@ def _entry_hour(row: Mapping) -> int | None:
     return None
 
 
+#: Ledger timestamp bases that are TRUE UTC instants. Everything else is a broker STAMP: the
+#: desk's bar ledgers are written from `h1_source` bars whose `utc=True` is a label, not a
+#: conversion (shadow_forward writes `str(t.entry_time)` from them, "+00:00" and all), and the
+#: live ledger declares `timestamp_basis: broker_deal_epoch`. A stamp's hour IS its phase hour;
+#: only a declared UTC instant needs the venue offset (audit HOLD 2026-11-11).
+UTC_BASES = frozenset({"utc", "true_utc", "utc_instant"})
+
+
+def row_basis(row: Mapping) -> str:
+    """'utc' when the row declares a true-UTC timestamp basis, else 'broker' (the stamp clock)."""
+    raw = row.get("timestamp_basis", row.get("time_basis"))
+    return "utc" if str(raw or "").strip().lower() in UTC_BASES else "broker"
+
+
 def _venue_offset_at(at: datetime) -> int | None:
     """The venue clock's offset in force at `at`, or None when the clock cannot be read."""
     try:
@@ -241,9 +255,11 @@ def returns_in_phase(rows: Iterable[Mapping], phase: str, *,
     position now", and the hour it happened to close in is not something the desk knows at
     decision time. Using exit hour would leak the future into the conditional mean.
 
-    `broker_utc_offset_h=None` reads the venue clock AT EACH TRADE'S OWN TIME (2026-09-30): the
-    clock moves with US DST, so one offset for every past trade mislabels everything on the far
-    side of a clock change. A trade whose time or offset cannot be read is dropped, not guessed.
+    `broker_utc_offset_h=None` labels each row on ITS OWN declared basis (2026-11-11): a broker
+    stamp (every ledger this desk writes, see `row_basis`) is already on the phase clock, so its
+    hour is its phase hour with no offset; a row declaring a true-UTC basis gets the venue
+    offset in force at its own instant, because the clock moves with US DST. A trade whose time
+    or offset cannot be read is dropped, not guessed.
     """
     out: list[float] = []
     for row in rows:
@@ -251,6 +267,8 @@ def returns_in_phase(rows: Iterable[Mapping], phase: str, *,
         if hour is None:
             continue
         off = broker_utc_offset_h
+        if off is None and row_basis(row) == "broker":
+            off = 0
         if off is None:
             at = _entry_at(row)
             off = _venue_offset_at(at) if at is not None else None

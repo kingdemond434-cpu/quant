@@ -1280,9 +1280,16 @@ def _trade_hours(name: str, trades_by_sleeve: dict[str, list[dict]] | None,
             dt = datetime.fromisoformat(when.replace("Z", "+00:00"))
         except ValueError:
             continue
-        if dt.tzinfo is None:
-            # Broker-clock stamps are naive: converted on the venue clock AT THAT STAMP (it moves
-            # with US DST), falling back to the offset the caller resolved for today.
+        try:
+            from session_phase import row_basis
+            broker = row_basis(r) == "broker"
+        except Exception:
+            broker = dt.tzinfo is None
+        if broker:
+            # A broker STAMP, naive or labelled "+00:00" (h1_source's label is not a conversion):
+            # converted on the venue clock AT THAT STAMP (it moves with US DST), falling back to
+            # the offset the caller resolved for today.
+            dt = dt.replace(tzinfo=None)
             try:
                 from session_phase import stamp_to_utc
                 dt = stamp_to_utc(dt)
@@ -1332,7 +1339,9 @@ def _state_returns(name: str, phase: str | None,
             when = str(r.get("entry_time") or r.get("opened_at") or "")
             if not when:
                 continue
-            t = Trade(sleeve=name, when=when, r=float(r.get("r_multiple", 0.0)))
+            from session_phase import row_basis
+            t = Trade(sleeve=name, when=when, r=float(r.get("r_multiple", 0.0)),
+                      basis=row_basis(r))
             ok = True
             for d, cur in extra:
                 fn = fns.get(d)
