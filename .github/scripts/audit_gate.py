@@ -61,6 +61,18 @@ the next one. Only zuck's own typing counts -- author_association OWNER, not pos
 GitHub App (a Claude session's comment carries `performed_via_github_app`), never edited. Claude
 never posts it or any substitute.
 
+STANDING APPROVAL (2026-11-10 16:07Z, zuck: "No change the design n do them for me im boss").
+His daily comment is retired for everything but the gate itself. An `APPROVE MERGES` he types at
+or after STANDING_FROM (the minute of that order) is STANDING: it also covers every CLEAR that
+comes AFTER it, so an Auditor CLEAR of the exact head is then enough to merge, with no further
+comment from him. Three things it never does. It never covers a PROTECTED PR (this controller,
+the workflows, ops/release/): a change to what approves merges still needs his own comment newer
+than its CLEAR, so the approving machinery never approves a change to itself. It never outlives a
+`DEACTIVATE RELEASE CONTROLLER`, which anyone trusted may post: after one, only an approval newer
+than the CLEAR counts, until he types `ACTIVATE RELEASE CONTROLLER` again. And it removes nothing
+else: the CLEAR must still name the head (or the same diff), an AUDIT HOLD still stops the PR,
+the gating jobs must still be green, and the merge is still pinned to the head sha.
+
 TWO TIERS (2026-10-28, zuck: "eliminate recurring manual merge approvals"). A PR is LOW tier
 only when EVERY file it touches (both sides of a rename) is prose no program reads: a .md or image
 under docs/, context/, desks/mt5/docs/ or reports/, whose path and file name appear in no code
@@ -140,6 +152,9 @@ STATUS_CONTEXT = "audit/clear"
 #: The issue zuck approves merges on, and his approval line (the whole comment, nothing else).
 APPROVALS_ISSUE = 453
 APPROVE = "APPROVE MERGES"
+#: zuck's order of this minute made his approval standing (see STANDING APPROVAL above). Only an
+#: approval typed at or after it is standing; every earlier one keeps its old, one-shot meaning.
+STANDING_FROM = "2026-11-10T16:07:38Z"
 ACTIVATE = "ACTIVATE RELEASE CONTROLLER"
 DEACTIVATE = "DEACTIVATE RELEASE CONTROLLER"
 #: LOW tier: where, what kind of file, and what it may never be named.
@@ -410,10 +425,19 @@ def activated(comments: Iterable[Mapping[str, Any]], phrase: str = ACTIVATE) -> 
     return last[1], f"`{phrase}` is {'ON' if last[1] else 'OFF'} since {last[0]}"
 
 
-def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
-    """Does zuck's latest approval cover this CLEAR? Only a CLEAR given BEFORE it does."""
+def standing(level: str, board: Iterable[Mapping[str, Any]]) -> bool:
+    """May zuck's approval stand for CLEARs that come after it, on a PR of this tier? Never for
+    a PROTECTED (or unclassified) PR, and never while the controller is switched off."""
+    return level in ("LOW", "AUTO") and activated(board)[0]
+
+
+def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> tuple[bool, str]:
+    """Does zuck's latest approval cover this CLEAR? A CLEAR given BEFORE it, always; a later
+    one only when the approval is standing (`stands`, and typed at or after STANDING_FROM)."""
     if at is None:
         return False, f"no `{APPROVE}` from zuck on #{APPROVALS_ISSUE} yet"
+    if clear["at"] >= at and stands and at >= STANDING_FROM:
+        return True, f"covered by zuck's standing approval of {at}"
     if clear["at"] >= at:
         return False, (
             f"the CLEAR ({clear['at']}) came after zuck's latest approval ({at}): "
@@ -1200,7 +1224,11 @@ def run(
         # the CLEAR names this change: its head, or the same diff carried over (as cleared() reads
         # it), so a rebased identical change zuck approved keeps his override (#537 audit S1)
         ours = last["sha"] == head or same_change(last["sha"])
-        if ours and boards and approved(last, approval_at(boards[-1]))[0]:
+        if (
+            ours
+            and boards
+            and approved(last, approval_at(boards[-1]), standing(level, boards[-1]))[0]
+        ):
             return "zuck approved its CLEAR of this head"
         return None
 
@@ -1288,7 +1316,8 @@ def run(
                 "--paginate",
                 "--slurp",
             )
-            ok, awhy = approved(clear, approval_at(_flat(ap)))
+            board = _flat(ap)
+            ok, awhy = approved(clear, approval_at(board), standing(level, board))
             if ok or not registry:
                 return (clear if ok else None), f"{why}; {awhy}"
             why = f"{why}; {awhy}"
