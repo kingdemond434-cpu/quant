@@ -111,9 +111,10 @@ def run(state: dict[str, Any], term: Term, rule: brk.VenueRule | None = E8, *,
                         confirm=lambda: reading(second, at))
 
 
-def warm(state: dict[str, Any], term: Term, at: datetime = T0 - timedelta(minutes=5)) -> None:
-    """One earlier reading on the same venue day, then a reconcile: the ordinary steady state."""
-    run(state, term, at=at)
+def warm(state: dict[str, Any], term: Term, at: datetime = T0 - timedelta(seconds=60)) -> None:
+    """One earlier reading on the same venue day (its deal history read: no deals today), then a
+    reconcile: the ordinary steady state."""
+    run(state, term, at=at, derived=term.balance)
     brk.note_reconcile(state, "OK")
 
 
@@ -309,7 +310,7 @@ def test_the_anchor_never_loosens_on_a_late_first_pass() -> None:
 
 def test_the_deal_history_restores_the_days_start_balance() -> None:
     state: dict[str, Any] = {}
-    term = Term(equity=98_400.0, balance=98_400.0)
+    term = Term(equity=97_400.0, balance=97_400.0)
     v = run(state, term, derived=100_000.0)
     assert state["anchor"]["value"] == pytest.approx(100_000.0) and v.tripped
 
@@ -355,7 +356,7 @@ def test_the_main_book_has_no_daily_breaker() -> None:
 
 def test_an_order_that_would_enter_the_trip_zone_is_refused() -> None:
     state: dict[str, Any] = {}
-    term = Term(equity=98_300.0)
+    term = Term(equity=98_150.0)         # 650 above the 97,500 floor
     warm(state, term)
     v = run(state, term)
     assert v.new_risk_ok
