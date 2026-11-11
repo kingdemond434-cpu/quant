@@ -1244,7 +1244,7 @@ def _xs_neutral(vals: np.ndarray, cols: Sequence[str], min_members: int,
                                  scale=False, min_members=min_members)
         out = xss.truncate(neutral, truncation).to_numpy(dtype=float)
     out[np.isfinite(vals).sum(axis=1) < min_members, :] = np.nan
-    return out
+    return np.asarray(out, dtype=float)
 
 
 def seed_panels(expr: Expr, frames: Mapping[str, Mapping[str, pd.Series]],
