@@ -720,15 +720,73 @@ def _hold_of(params: dict[str, Any]) -> int:
     return DEFAULT_HOLD_BARS
 
 
-def _graph_state() -> tuple[set[str], dict[str, dict[str, list[float]]], str]:
+def _graph_state(families: set[str] | None = None
+                 ) -> tuple[set[str], dict[str, dict[str, list[float]]], str]:
+    """(node ids already in the graph, the enumerated grid per family/param, a note), for the
+    FAMILIES OF THE LIVE SLEEVES ONLY, streamed.
+
+    WHY STREAMED (2026-11-11). This read the whole hypothesis graph through
+    `Graph.rows()` -- `json.loads` of every line into one list. On the trading box that file is
+    4.59 GB, and the hourly leg timed out at its 720 s deadline on 11 of 11 runs from 11-08 to
+    11-10 without ever writing LOSS_LEARNER.json. A variant is a one-step neighbour of a live
+    sleeve's identity, so it can only collide with, or step on the grid of, a node of the SAME
+    family: rows of any other family are skipped before they are parsed (a byte test for the
+    family's quoted name, confirmed on the parsed row). Nothing the organ decides changes; it
+    stops parsing what it never used."""
     try:
         from research import survivor_distiller as sd
-        skipped: dict[str, str] = {}
-        rows = sd._graph_rows(skipped)
-        return set(sd._current(rows)), sd.grid_values(rows), (
-            "; ".join(f"{k}: {v}" for k, v in skipped.items()) or f"{len(rows)} graph rows")
     except Exception as exc:
+        return set(), {}, f"UNMEASURED: survivor_distiller unimportable ({type(exc).__name__})"
+    fams = {f for f in (families or set()) if f}
+    if not fams:
+        return set(), {}, "no live family to read the graph for"
+    keys = [json.dumps(f).encode("utf-8") for f in sorted(fams)]
+    existing: set[str] = set()
+    grid: dict[str, dict[str, set[float]]] = {}
+    seen = parsed = 0
+    try:
+        with Path(sd.GRAPH).open("rb") as fh:
+            for line in fh:
+                seen += 1
+                if not any(k in line for k in keys):
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                fam = str(r.get("family") or "") if isinstance(r, dict) else ""
+                if fam not in fams:
+                    continue
+                parsed += 1
+                if r.get("id"):
+                    existing.add(str(r["id"]))
+                if isinstance(r.get("params"), dict):
+                    num, _ = sd.flatten(r["params"])
+                    for k, v in num.items():
+                        grid.setdefault(fam, {}).setdefault(k, set()).add(float(v))
+    except OSError as exc:
         return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__}: {exc})"
+    out = {f: {k: sorted(v) for k, v in by.items()} for f, by in grid.items()}
+    return existing, out, (f"{seen} graph rows streamed, {parsed} parsed for "
+                           f"{len(fams)} live famil{'y' if len(fams) == 1 else 'ies'}")
+
+
+class _Stages:
+    """Wall-clock seconds per stage, published in the report so the next slow pass names its
+    own slow stage instead of only timing out."""
+
+    def __init__(self) -> None:
+        import time
+        self._t = time.monotonic
+        self._last = self._t()
+        self.seconds: dict[str, float] = {}
+
+    def mark(self, stage: str) -> None:
+        now = self._t()
+        self.seconds[stage] = round(now - self._last, 2)
+        self._last = now
+        # flushed per stage, so a pass the leg's deadline kills still names how far it got
+        print(f"loss_learner: {stage} {self.seconds[stage]}s", flush=True)
 
 
 def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
@@ -740,7 +798,13 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
     pins = cert_book.get("e8_pins") if isinstance(cert_book, dict) else {}
     live = live_sleeves(sleeves_doc, cert_book, minlot_scope())
     lineage = lineage_rows()
-    existing, grid, graph_note = _graph_state()
+    clock = _Stages()
+    clock.mark("inputs")
+    idents = {name: resolve_identity(name, info.get("row"), registry, pins)
+              for name, info in live.items()}
+    existing, grid, graph_note = _graph_state(
+        {str(i["family"]) for i, _ in idents.values() if i and i.get("family")})
+    clock.mark("graph")
     existing |= {str(r.get("id")) for r in lineage if r.get("id")}
     try:
         from research import proposer_common as pc
@@ -752,7 +816,7 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
     new_lineage: list[dict[str, Any]] = []
     bars_cache: dict[str, Any] = {}
     for name, info in sorted(live.items()):
-        ident, how = resolve_identity(name, info.get("row"), registry, pins)
+        ident, how = idents[name]
         trades = [r for r in rows if r.get("sleeve") in (name, name[:27])]
         rep: dict[str, Any] = {"books": sorted(info["books"]), "frac": info["frac"],
                                "identity": ident, "identity_how": how,
@@ -800,6 +864,7 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
                                 "lineage_trial": trials})
         rep["minted"] = [v["operator"] for v in variants]
 
+    clock.mark("diagnose")
     donated: dict[str, Any] = {"donated": 0}
     if to_donate and not dry_run and pc is not None:
         pc.donate(SOURCE, to_donate, tests_run=len(to_donate))
@@ -813,8 +878,11 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
                 fh.write(json.dumps(r, sort_keys=True, default=str) + "\n")
         lineage = lineage + new_lineage
 
+    clock.mark("donate")
     replacements = judge_replacements(lineage)
+    clock.mark("replacements")
     report = {"generated_at": now.isoformat(timespec="seconds"), "source": SOURCE,
+              "stage_seconds": clock.seconds,
               "trail_days": TRAIL_DAYS, "books": book_state, "graph": graph_note,
               "sleeves": per, "minted": len(new_lineage),
               "donation": {k: donated.get(k) for k in ("donated", "refused_unstamped",

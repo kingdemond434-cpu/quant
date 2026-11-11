@@ -413,7 +413,25 @@ def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(LL, "minlot_scope", lambda: (frozenset(), None))
     monkeypatch.setattr(LL, "FUSION_LEDGER", tmp_path / "live_ledger.jsonl")
     monkeypatch.setattr(LL, "PROP_LEDGER", tmp_path / "prop.jsonl")
-    monkeypatch.setattr(LL, "_graph_state", lambda: (set(), {}, "stub"))
+    monkeypatch.setattr(LL, "_graph_state", lambda _f=None: (set(), {}, "stub"))
     rep = LL.run(dry_run=True)
     assert rep["books"]["e8"].startswith("UNMEASURED")
     assert list(tmp_path.iterdir()) == []
+
+
+def test_the_graph_is_streamed_for_live_families_only(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import survivor_distiller as sd
+    g = tmp_path / "graph.jsonl"
+    g.write_text("\n".join(json.dumps(r) for r in [
+        {"id": "a", "family": "breakout", "params": {"rr": 1.5, "ttl_bars": 8}},
+        {"id": "b", "family": "breakout", "params": {"rr": 2.0}},
+        {"id": "c", "family": "carry", "params": {"rr": 9.0}},
+        {"id": "d", "family": "x", "note": "mentions \"breakout\" in prose"},
+    ]) + "\nnot json\n", "utf-8")
+    monkeypatch.setattr(sd, "GRAPH", g)
+    existing, grid, note = LL._graph_state({"breakout"})
+    assert existing == {"a", "b"}
+    assert grid == {"breakout": {"rr": [1.5, 2.0], "ttl_bars": [8.0]}}
+    assert note.startswith("5 graph rows streamed, 2 parsed")
+    assert LL._graph_state(set())[0] == set()
