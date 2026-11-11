@@ -71,3 +71,14 @@ def test_unmeasured_on_missing_input(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(ept, "CERT_BOOK", tmp_path / "book.json")
     monkeypatch.setattr(ks, "WORLDS", tmp_path / "no_worlds.npz")
     assert ept.build(n_paths=10)["status"].startswith("UNMEASURED")
+
+
+def test_live_equity_above_start_passes_sooner() -> None:
+    rng = np.random.default_rng(2)
+    w = rng.normal(0.3, 1.0, (8, 256, 1))
+    from prop_challenge_allocator import draw_paths
+    paths = draw_paths(w, 400, 300, 0)
+    fresh = ept.simulate(paths, np.array([0.005]), start=e8_guard.START_BALANCE)
+    ahead = ept.simulate(paths, np.array([0.005]), start=e8_guard.START_BALANCE * 1.022)
+    assert ahead["median_days"] < fresh["median_days"]
+    assert ahead["p_pass"] >= fresh["p_pass"]

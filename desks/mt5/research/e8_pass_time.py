@@ -9,7 +9,11 @@ THE ARENA comes from `prop/e8_guard.py`, never re-typed here: START_BALANCE, PRO
 STATIC_DRAWDOWN, DAILY_DRAWDOWN, DAILY_PROFIT_CAP, STAND_DOWN. The rules as simulated:
 
   * a day is one server day (00:00 server = 17:00 America/New_York, e8_guard's anchor); one
-    world row is one server day.
+    world row is one server day, with gold_asia's two bracket legs ALREADY SUMMED into it: the
+    losses-first ordering and STAND_DOWN act across sleeves, never inside the bracket (both legs
+    rest at once, so a both-legs day cannot be truncated -- which matches the venue).
+  * the walk STARTS at live E8 equity (E8_GOLD.json) when it reads, else at START_BALANCE (noted);
+    the floor and target stay anchored to START_BALANCE.
   * DAILY LOSS counts floating P&L from day-start equity and is judged at the INTRADAY WORST
     point: within a day every losing leg is taken before any winning leg (losses ordered first).
   * STAND_DOWN is the desk's voluntary stop inside the 2.5%: once the day's running P&L reaches
@@ -221,13 +225,17 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None)
     equity, eq_src = ks.e8_equity()
     doc["inputs"] = {"worlds": str(ks.WORLDS.name), "sleeves": sleeves, "posterior": live_note,
                      "e8_equity": equity, "e8_equity_source": eq_src}
+    ok = isinstance(equity, (int, float)) and math.isfinite(equity) and equity > 0
+    start = float(equity) if ok else float(START_BALANCE)
+    doc["inputs"]["start_equity"] = start
+    doc["inputs"]["start_source"] = "live_e8_equity" if ok else "START_BALANCE (live equity unread)"
     current = np.array(list(sleeves.values()))
     mu = r.mean(axis=(0, 1))
     worlds = {"as_estimated": r, "edges_halved": r - HALVE * np.maximum(mu, 0.0)}
     doc["worlds"] = {}
     for name, world in worlds.items():
         paths = draw_paths(world, n_paths, DAYS, seed)
-        doc["worlds"][name] = optimise(paths, current, start=START_BALANCE)
+        doc["worlds"][name] = optimise(paths, current, start=start)
     return doc
 
 
@@ -245,6 +253,7 @@ def main(argv: list[str] | None = None) -> int:
     for name, res in (doc.get("worlds") or {}).items():
         c, f, m = res["current"], res["fastest_within_current_breach"], res["max_p_pass"]
         print(f"  {name}: current {c['risk']} pass {c['p_pass']:.3f} median {c['median_days']}"
+              f" unresolved {c['p_unresolved']:.3f}"
               f" | fastest {f and f['risk']} median {f and f['median_days']}"
               f" | max-pass {m['risk']} {m['p_pass']:.3f}")
     print(f"  e8_pass_time: {doc['status']}")
