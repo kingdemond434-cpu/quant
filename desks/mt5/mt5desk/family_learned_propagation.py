@@ -1,4 +1,6 @@
-"""Trade an instrument on a LEARNED next-day forecast: graph propagation or attention.
+"""Trade an instrument on a LEARNED next-day forecast: graph propagation, attention, random
+convolutions (rocket_ts), autoencoder latent factors (ae_latent) or rough-path signatures
+(sig_path).
 
     gnn_propagation:  pred_i,t = ridge( [x_i,t , (A x_t)_i , (A^2 x_t)_i] )
     attention_ts:     pred_i,t = ridge( [attention(x_i,t-L+1..t) , x_i,t] )
@@ -248,3 +250,81 @@ def family_attention_ts(
         symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
         hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
         tag=f"attention_ts:h{int(heads)}:L{int(lookback)}")
+
+
+def family_rocket_ts(
+    df: pd.DataFrame,
+    *,
+    symbol: str,
+    peer_symbols: Sequence[str],
+    peers: Mapping[str, pd.DataFrame] | None = None,
+    kernels: int = 64,
+    lookback: int = 32,
+    entry_z: float = 1.0,
+    norm: int = 120,
+    hold_bars: int = 20,
+    signal_hour: int = 2,
+    atr_n: int = 20,
+    stop_atr: float = 8.0,
+    rr: float = 1.5,
+) -> list[Signal]:
+    """Non-linear path shapes read by random dilated convolutions (ROCKET), ridge readout."""
+    if int(kernels) not in (64, 128) or int(lookback) not in (16, 32):
+        return []
+    return _learned_signals(
+        df, model="rocket", config={"kernels": int(kernels), "lookback": int(lookback)},
+        symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
+        hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
+        tag=f"rocket_ts:k{int(kernels)}:L{int(lookback)}")
+
+
+def family_sig_path(
+    df: pd.DataFrame,
+    *,
+    symbol: str,
+    peer_symbols: Sequence[str],
+    peers: Mapping[str, pd.DataFrame] | None = None,
+    depth: int = 2,
+    lookback: int = 20,
+    entry_z: float = 1.0,
+    norm: int = 120,
+    hold_bars: int = 20,
+    signal_hour: int = 2,
+    atr_n: int = 20,
+    stop_atr: float = 8.0,
+    rr: float = 1.5,
+) -> list[Signal]:
+    """Order and area of the recent own-vs-market path, read by its rough-path signature."""
+    if int(depth) not in (2, 3) or int(lookback) not in (10, 20):
+        return []
+    return _learned_signals(
+        df, model="signature", config={"depth": int(depth), "lookback": int(lookback)},
+        symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
+        hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
+        tag=f"sig_path:d{int(depth)}:L{int(lookback)}")
+
+
+def family_ae_latent(
+    df: pd.DataFrame,
+    *,
+    symbol: str,
+    peer_symbols: Sequence[str],
+    peers: Mapping[str, pd.DataFrame] | None = None,
+    latent: int = 3,
+    hidden: int = 16,
+    entry_z: float = 1.0,
+    norm: int = 120,
+    hold_bars: int = 20,
+    signal_hour: int = 2,
+    atr_n: int = 20,
+    stop_atr: float = 8.0,
+    rr: float = 1.5,
+) -> list[Signal]:
+    """Non-linear latent cross-asset factors from a deep autoencoder over the whole panel."""
+    if int(latent) not in (3, 6) or int(hidden) not in (16, 32):
+        return []
+    return _learned_signals(
+        df, model="autoencoder", config={"latent": int(latent), "hidden": int(hidden)},
+        symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
+        hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
+        tag=f"ae_latent:k{int(latent)}:h{int(hidden)}")

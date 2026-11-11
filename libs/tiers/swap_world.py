@@ -82,9 +82,14 @@ def _on_rollover_bar(t: Any) -> bool:
 
 
 def stress_r(trades: Iterable[Any], *, swap_per_lot: float, spread_per_lot: float,
-             contract: float, engine_charged_swap: bool = True) -> tuple[list[float], int]:
+             contract: float, engine_charged_swap: bool = True,
+             swap_per_lot_per_price: float = 0.0) -> tuple[list[float], int]:
     """(stressed R per trade, trades the world touched). A trade needs entry/exit times, entry,
-    stop, r_multiple and units (the engine's `Trade`)."""
+    stop, r_multiple and units (the engine's `Trade`).
+
+    `swap_per_lot_per_price` is the price-linked part of a night (swap_mode 5/6: an annual
+    percent of notional, `engine.Costs.swap_per_lot_per_price`), charged at the trade's own
+    entry price. Without it a mode-5 symbol's stress is a stress of nothing."""
     out: list[float] = []
     touched = 0
     contract = float(contract) or 1.0
@@ -97,7 +102,8 @@ def stress_r(trades: Iterable[Any], *, swap_per_lot: float, spread_per_lot: floa
         units = float(getattr(t, "units", 1.0) or 1.0)
         nights = stressed_nights(t.entry_time, t.exit_time)
         base = baseline_nights(t.entry_time, t.exit_time) if engine_charged_swap else 0.0
-        extra_swap = max(0.0, SWAP_MULT * nights - base) * float(swap_per_lot)
+        night = float(swap_per_lot) + float(swap_per_lot_per_price) * float(t.entry)
+        extra_swap = max(0.0, SWAP_MULT * nights - base) * night
         legs = int(_on_rollover_bar(t.entry_time)) + int(_on_rollover_bar(t.exit_time))
         extra_spread = legs * (ROLLOVER_SPREAD_MULT - 1.0) * float(spread_per_lot) / 2.0
         charge = (extra_swap + extra_spread) / contract * units / stop_dist

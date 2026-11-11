@@ -1,0 +1,17 @@
+{
+  "state": "TESTED_NOT_DEPLOYED",
+  "observed_watchdog_instance": "222a2e01-52fd-4ae6-9cba-eb642d2340e4",
+  "observed_watchdog_started_utc": "2026-10-17T21:20:01Z",
+  "blocked_native_query_pid": 20208,
+  "query_started_utc": "2026-10-17T21:22:35Z",
+  "native_query_parent": 21620,
+  "watchdog_task_root": 4944,
+  "duplicate_trigger_event": 322,
+  "per_query_operation_timeout_seconds": 5,
+  "scope": "Same10required root tasks; read-only census; all actuator and money exclusions unchanged",
+  "pure_native_controls_passed": 8,
+  "actual_required_tasks_present": 10,
+  "actual_query_elapsed_s": 32.5011073,
+  "real_query_scope": "Same10required root tasks; no task changes or actuator invocation",
+  "preserves": "Duplicate/stall/memory/disk/feed/protection rules unchanged"
+}

@@ -101,7 +101,7 @@ sources:
     - desks/mt5/data/cot_tff/*.parquet
     - desks/mt5/data/cot_disagg/*.parquet
   pit_grade: FIRST_RELEASE
-  pit_note: 'released on the CFTC calendar: Friday 21:00 UTC, holiday weeks the next business day, shutdown backlogs per countries/institutional/cftc_release_calendar.json'
+  pit_note: 'released on the CFTC calendar: Friday 21:00 UTC, holiday weeks the next business day, shutdown backlogs per the cftc_release_calendar in research/futures_state_sources.json'
   atlas_id: institutional.us.cftc.cot_tff
   aliases:
   - cftc_cot

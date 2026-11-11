@@ -322,12 +322,18 @@ def test_cot_follows_the_cftc_calendar() -> None:
     rel = ifp.cot_release_times(rd)
     assert rel.iloc[0] == pd.Timestamp("2024-06-28 21:00", tz="UTC")     # Friday, after 15:30 ET
     assert rel.iloc[1] == pd.Timestamp("2024-07-08 21:00", tz="UTC")     # July 4 week: Monday
-    assert rel.iloc[2] >= pd.Timestamp("2026-01-31", tz="UTC")          # 2025 shutdown backlog
+    # The 2025 shutdown backlog: the CFTC's own catch-up date, from futures_state's calendar.
+    assert rel.iloc[2] == pd.Timestamp("2025-11-21 21:00", tz="UTC")
     assert rel.iloc[3] == pd.Timestamp("2026-02-06 21:00", tz="UTC")
     # Winter release is 20:30 UTC: the stamp is never before it.
-    assert (rel.dt.hour >= 21).all() or rel.iloc[2].hour == 0
-    assert ifp.cot_release_times(rd, {"exact": {"2025-10-07": "2025-11-19T20:30:00Z"}}).iloc[2] \
-        == pd.Timestamp("2025-11-19 20:30", tz="UTC")
+    assert (rel.dt.hour >= 21).all()
+    # One calendar on the desk: the same stamps futures_state gives, and its schema overrides.
+    from research import futures_state as fs
+    cal = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))["cftc_release_calendar"]
+    assert rel.equals(fs.cftc_available(rd, cal))
+    assert ifp.cot_release_times(rd, {"releases": {"2025-10-07": "2025-11-19"}}).iloc[2] \
+        == pd.Timestamp("2025-11-19 21:00", tz="UTC")
+    assert not hasattr(ifp, "COT_CALENDAR")
 
 
 def test_ftd_rows_are_stamped_at_the_file_posting() -> None:

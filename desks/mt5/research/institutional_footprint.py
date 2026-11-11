@@ -585,66 +585,29 @@ COT_MAP: dict[str, tuple[str, str, int]] = {
     "cot_tff/nasdaq100": ("tff", "NAS100", 1),
     "cot_disagg/gold": ("disagg", "XAUUSD", 1), "cot_disagg/silver": ("disagg", "XAGUSD", 1),
 }
-#: The CFTC's release calendar exceptions: shutdown backlogs and any exact release dates the box
-#: learns. Committed beside the ontology; a report date it cannot place is UNMEASURED, never early.
-COT_CALENDAR = Path(__file__).resolve().parent / "countries" / "institutional" / \
-    "cftc_release_calendar.json"
-#: Friday 15:30 ET is 19:30 UTC in summer and 20:30 UTC in winter; 21:00 UTC covers both.
-COT_RELEASE_HOUR_UTC = 21
-
-
-def _us_holidays(lo: pd.Timestamp, hi: pd.Timestamp) -> set[pd.Timestamp]:
-    from pandas.tseries.holiday import USFederalHolidayCalendar
-    return {pd.Timestamp(d).normalize() for d in
-            USFederalHolidayCalendar().holidays(lo.tz_localize(None), hi.tz_localize(None))}
+#: THE CFTC'S RELEASE CALENDAR IS `futures_state`'S (2026-10-19), NOT A SECOND ONE HERE. This organ
+#: once carried its own JSON calendar; `research/futures_state_sources.json` now holds the exact
+#: catch-up dates from the CFTC's notices (`cftc_release_calendar`: releases, windows, closures)
+#: and `futures_state.cftc_available` is the one rule both lanes stamp COT by.
 
 
 def cot_release_times(report_dates: pd.Series, calendar: Mapping[str, Any] | None = None
                       ) -> pd.Series:
-    """When each Tuesday snapshot was PUBLIC, on the CFTC's real calendar.
-
-    Normal week: the Friday of the snapshot's week, 21:00 UTC. A federal holiday from the
-    Monday to the Friday of that week moves the release to the next business day after the
-    Friday (the CFTC publishes the following Monday), and a holiday on that Monday moves it again.
-    A report date inside a declared disruption (the 2013, 2018-19 and Oct-Nov 2025 shutdowns, whose
-    backlogs came out over weeks) is stamped at the disruption's `available_not_before`, the date
-    the backlog was fully out; an `exact` entry wins over everything. Late is safe; early is
-    lookahead, so every rule here errs late."""
-    cal = dict(calendar if calendar is not None else _read_json(COT_CALENDAR, {}))
-    exact = {pd.Timestamp(k).normalize(): pd.Timestamp(v) for k, v in
-             (cal.get("exact") or {}).items()}
-    delays = [(pd.Timestamp(d["report_date_from"]).normalize(),
-               pd.Timestamp(d["report_date_to"]).normalize(),
-               pd.Timestamp(d["available_not_before"]))
-              for d in cal.get("disruptions") or []]
-    rd = pd.to_datetime(report_dates, utc=True, errors="coerce").dt.tz_localize(None).dt.normalize()
-    valid = rd.dropna()
-    if valid.empty:
-        return pd.Series(pd.NaT, index=report_dates.index, dtype="datetime64[ns, UTC]")
-    hol = _us_holidays(valid.min() - pd.Timedelta(days=7), valid.max() + pd.Timedelta(days=14))
-    out = []
-    for d in rd:
-        if pd.isna(d):
-            out.append(pd.NaT)
-            continue
-        if d in exact:
-            t = exact[d]
-            out.append(t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC"))
-            continue
-        monday = d - pd.Timedelta(days=d.weekday())
-        friday = monday + pd.Timedelta(days=4)
-        rel = friday
-        if any(monday + pd.Timedelta(days=i) in hol for i in range(5)):
-            rel = friday + pd.Timedelta(days=3)
-            while rel in hol or rel.weekday() >= 5:
-                rel += pd.Timedelta(days=1)
-        t = rel + pd.Timedelta(hours=COT_RELEASE_HOUR_UTC)
-        for lo, hi, nb in delays:
-            if lo <= d <= hi:
-                nb = nb.tz_localize(None) if nb.tzinfo is not None else nb
-                t = max(t, nb)
-        out.append(t.tz_localize("UTC"))
-    return pd.Series(out, index=report_dates.index, dtype="datetime64[ns, UTC]")
+    """When each Tuesday snapshot was PUBLIC, on the CFTC's real calendar, at 21:00 UTC (after
+    15:30 ET in both DST regimes). The rule and the calendar are `futures_state`'s: the Friday
+    after the snapshot; a federal holiday or CFTC closure before that Friday moves it to the next
+    business day; `releases` holds exact shutdown catch-up dates and `windows` a not-before date
+    where they are not on record. `calendar` overrides the registry's (same schema). A registry
+    this cannot read stamps nothing: every row is NaT, which is UNMEASURED, never early."""
+    from research import futures_state as fs
+    cal = calendar
+    if cal is None:
+        cal = (_read_json(fs.REGISTRY, {}) or {}).get("cftc_release_calendar")
+        if not isinstance(cal, Mapping) or not cal:
+            return pd.Series(pd.NaT, index=report_dates.index, dtype="datetime64[ns, UTC]")
+    out = fs.cftc_available(report_dates, cal)
+    return pd.Series(pd.to_datetime(out, utc=True), index=report_dates.index,
+                     dtype="datetime64[ns, UTC]")
 
 
 def _main_market(df: pd.DataFrame) -> pd.DataFrame:
