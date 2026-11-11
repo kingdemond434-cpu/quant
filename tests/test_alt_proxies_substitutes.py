@@ -845,7 +845,8 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
 
 # ============================================================================ BNM Kijang Emas
 def test_bnm_kijang_emas_reads_the_box_body_and_the_list_form() -> None:
-    one = _parse("my_bnm_kijang_emas")                         # the copied box read
+    one = {(o.series, o.period): o for o in A.parse_bnm_kijang_emas(       # the copied box read
+        (FIX / "my_bnm_kijang_emas.json").read_bytes(), A.Ctx())}
     d = date(2026, 11, 10)
     assert one[("kijang_emas_1oz_selling_myr", d)].value == 17818
     assert one[("kijang_emas_1oz_buying_myr", d)].value == 17101
