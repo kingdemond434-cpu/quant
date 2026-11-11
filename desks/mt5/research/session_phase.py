@@ -31,7 +31,7 @@ import numpy as np
 _DESK = Path(__file__).resolve().parent.parent
 
 
-def broker_utc_offset_h() -> tuple[int | None, str]:
+def broker_utc_offset_h(at: datetime | None = None) -> tuple[int | None, str]:
     """The feed's offset from UTC, and where the answer came from. `None` means UNKNOWN.
 
     ONE RULE, EVERY CONSUMER. This resolution used to live inside `pf_allocator._live_state`, and
@@ -39,7 +39,9 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
     does this broker think it is" is precisely the drift that produces a certificate earned in one
     clock and traded in another, so there is one, here, next to the phases it defines.
 
-    LIVE TERMINAL, THEN THE RECORDED MEASUREMENT, THEN THE BARS, THEN NOTHING.
+    THE VENUE CLOCK, THEN THE RECORDED MEASUREMENT, THEN THE BARS, THEN NOTHING. `at` is the
+    UTC instant the offset is wanted for (default now): the venue clock moves with US DST, so a
+    trade from January and one from July do not share an offset.
     `data/broker_clock.json` is a measurement the desk made when it last had a terminal, which is
     a far better answer than UTC. `data/broker_clock_measured.json` is an INFERENCE from this
     desk's own H1 volume profile -- worse than a measurement, enormously better than None -- and
@@ -54,12 +56,15 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
     majors' volume troughs place it at +2 against the winter rollover with the overlap peak at
     +3 -- the same clock, measured a second way, years later, from different data.
     """
+    # FIRST: THE VENUE'S MEASURED CLOCK, NEW YORK + 7 H (2026-09-30). Every non-holiday EURUSD
+    # week 2018-2026 opens Monday 00:00 stamp = Sunday 17:00 New York, the US/EU DST-split weeks
+    # included (pinned by tests/regime/test_session_clock.py), so the offset is a function of the
+    # instant: +3 under US daylight time, +2 otherwise. It replaces the "live terminal" tier,
+    # which read `h1_source.broker_utc_offset_hours` -- a function that returns 0.0 by
+    # construction -- and recorded that 0 into broker_clock.json on 2026-09-11, so every session
+    # phase on every host has been labelled three hours off all summer.
     try:
-        import MetaTrader5 as _mt5
-        from h1_source import broker_utc_offset_hours
-        off = round(float(broker_utc_offset_hours(_mt5)))
-        _record_broker_clock(off)
-        return off, "live_terminal"
+        return _ny_plus_7_offset(at), "venue_clock_ny_plus_7"
     except Exception:
         pass
     try:
@@ -87,6 +92,15 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
     except Exception:
         pass
     return None, "unknown"
+
+
+def _ny_plus_7_offset(at: datetime | None) -> int:
+    import sys
+    root = str(_DESK.parent.parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.regime.session_clock import utc_offset_h
+    return int(utc_offset_h(at))
 
 
 BROKER_CLOCK = _DESK / "data" / "broker_clock.json"
@@ -187,21 +201,62 @@ def _entry_hour(row: Mapping) -> int | None:
     return None
 
 
+def _venue_offset_at(at: datetime) -> int | None:
+    """The venue clock's offset in force at `at`, or None when the clock cannot be read."""
+    try:
+        return _ny_plus_7_offset(at)
+    except Exception:
+        return None
+
+
+def _entry_at(row: Mapping) -> datetime | None:
+    """The UTC instant of a ledger row's entry (a naive time is read as UTC), or None."""
+    from datetime import UTC
+    for key in ("entry_time", "time", "ts"):
+        raw = row.get(key)
+        if raw is None:
+            continue
+        try:
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        return dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt
+    return None
+
+
+def stamp_to_utc(stamp: datetime) -> datetime:
+    """A naive broker stamp as the true UTC instant, on the venue's DST-aware clock."""
+    import pandas as pd
+    _ny_plus_7_offset(None)                       # puts the repo root on sys.path
+    from libs.regime.session_clock import server_to_utc
+    return server_to_utc(pd.DatetimeIndex([stamp]))[0].to_pydatetime()
+
+
 def returns_in_phase(rows: Iterable[Mapping], phase: str, *,
-                     broker_utc_offset_h: int,
+                     broker_utc_offset_h: int | None,
                      value_key: str = "r_multiple") -> np.ndarray:
     """This sleeve's realised R for trades ENTERED in `phase`.
 
     Entry time, not exit: the allocation question is "what is this sleeve worth if it opens a
     position now", and the hour it happened to close in is not something the desk knows at
     decision time. Using exit hour would leak the future into the conditional mean.
+
+    `broker_utc_offset_h=None` reads the venue clock AT EACH TRADE'S OWN TIME (2026-09-30): the
+    clock moves with US DST, so one offset for every past trade mislabels everything on the far
+    side of a clock change. A trade whose time or offset cannot be read is dropped, not guessed.
     """
     out: list[float] = []
     for row in rows:
         hour = _entry_hour(row)
         if hour is None:
             continue
-        if phase_for_hour((hour + int(broker_utc_offset_h)) % 24) != phase:
+        off = broker_utc_offset_h
+        if off is None:
+            at = _entry_at(row)
+            off = _venue_offset_at(at) if at is not None else None
+            if off is None:
+                continue
+        if phase_for_hour((hour + int(off)) % 24) != phase:
             continue
         try:
             out.append(float(row.get(value_key)))

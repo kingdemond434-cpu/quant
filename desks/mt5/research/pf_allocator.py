@@ -1281,8 +1281,13 @@ def _trade_hours(name: str, trades_by_sleeve: dict[str, list[dict]] | None,
         except ValueError:
             continue
         if dt.tzinfo is None:
-            # Broker-clock stamps are naive; the offset the caller already resolved converts them.
-            dt = dt.replace(tzinfo=UTC) - timedelta(hours=int(broker_utc_offset_h or 0))
+            # Broker-clock stamps are naive: converted on the venue clock AT THAT STAMP (it moves
+            # with US DST), falling back to the offset the caller resolved for today.
+            try:
+                from session_phase import stamp_to_utc
+                dt = stamp_to_utc(dt)
+            except Exception:
+                dt = dt.replace(tzinfo=UTC) - timedelta(hours=int(broker_utc_offset_h or 0))
         hours.add(int(dt.astimezone(UTC).hour))
     return tuple(sorted(hours))
 
@@ -1303,7 +1308,8 @@ def _state_returns(name: str, phase: str | None,
         return np.array([], dtype=float)
     try:
         from session_phase import returns_in_phase
-        base = returns_in_phase(rows, phase, broker_utc_offset_h=broker_utc_offset_h)
+        # None: each trade is labelled on the venue clock in force at its own entry, not today's.
+        base = returns_in_phase(rows, phase, broker_utc_offset_h=None)
     except Exception as exc:
         _log(f"state conditioning unavailable for {name}: {type(exc).__name__}: {exc}")
         return np.array([], dtype=float)
@@ -1337,7 +1343,8 @@ def _state_returns(name: str, phase: str | None,
                 keep.append(r)
         if not keep:
             return base
-        return returns_in_phase(keep, phase, broker_utc_offset_h=broker_utc_offset_h)
+        # Same as the main path: each trade on the venue clock in force at its own entry.
+        return returns_in_phase(keep, phase, broker_utc_offset_h=None)
     except Exception as exc:
         _log(f"extra-dimension conditioning unavailable for {name}: "
              f"{type(exc).__name__}: {exc}; session-only bucket used")

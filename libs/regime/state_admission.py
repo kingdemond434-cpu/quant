@@ -258,7 +258,11 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
         def _session(t: Trade) -> str:
             from datetime import datetime
             try:
-                return str(phase_at(datetime.fromisoformat(t.when), broker_utc_offset_h=off))
+                when = datetime.fromisoformat(t.when)
+                # The offset IN FORCE AT THE TRADE: the venue clock moves with US DST, so one
+                # constant mislabels every trade on the other side of a clock change by an hour.
+                at_off = broker_utc_offset_h(at=when)[0]
+                return str(phase_at(when, broker_utc_offset_h=off if at_off is None else at_off))
             except (TypeError, ValueError):
                 return ""
         return _session
