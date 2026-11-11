@@ -15,13 +15,15 @@ import pandas as pd  # noqa: E402
 from libs.regime import session_clock  # noqa: E402
 from libs.research import coverage, family_firing  # noqa: E402
 from mt5desk import family_call  # noqa: E402
+from research import coverage_tensor  # noqa: E402
 
 FINE = ("tokyo_fix", "london_fix", "ldn_ny_overlap")
 
 
 def test_every_fine_session_has_a_window_on_both_clocks() -> None:
     for s in FINE:
-        assert s in coverage.SESSIONS
+        # the tensor counts each fine lane under a cell it declares (ldn_ny_overlap -> overlap)
+        assert coverage_tensor._SESSION_MAP[s] in coverage.SESSIONS
         assert family_call.session_window(s) is not None
         assert s in session_clock.MARKET_SESSIONS
         assert s in family_firing.SESSION_NAMES
