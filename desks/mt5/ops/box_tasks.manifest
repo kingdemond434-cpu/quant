@@ -184,6 +184,9 @@ TASK name="MT5-OffsiteBackup"      trigger="every 6 hours"    runs="desks/mt5/sc
 # rollback and is never scheduled. Register: the same script with no switch, daily.
 TASK name="MT5-PrivateNetAudit"    trigger="daily at 06:40"   runs="desks/mt5/scripts/install_private_net.ps1" installer="NONE" lane="ops"
 TASK name="MT5-ReapGitWriters"     trigger="every 15 minutes" runs="scripts/reap_hung_git_writers.py" installer="desks/mt5/scripts/install_reap_git_writers_task.ps1" lane="ops"
+# THE MEMORY GUARD (2026-11-11). A research organ grew past 30 GB of commit and no desk session
+# had the right to stop it. SYSTEM, every two minutes; acts only on research python.
+TASK name="MT5-MemoryGuard"        trigger="every 2 minutes"  runs="ops/memory_guard.py"           installer="desks/mt5/scripts/install_memory_guard_task.ps1" lane="ops"
 # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
 # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
 TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="ops"
