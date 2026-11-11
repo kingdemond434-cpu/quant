@@ -121,11 +121,39 @@ def _write_axis(path: Path, doc: dict[str, Any], n: int) -> dict[str, Any]:
             "preserved_n": prev}
 
 
+#: The seat these cells are donated under: data/intelligence/axis_ingest_all/discoveries_*.json.
+SEAT = "axis_ingest_all"
+
+
+def _lake_and_cells(ai: Any, name: str, doc: dict[str, Any] | None,
+                    cells: list[dict[str, Any]]) -> dict[str, Any]:
+    """Publish one axis to the lake and append its exogenous_conditioner cells to `cells`."""
+    if doc is None:
+        try:
+            doc = json.loads((OUT_DIR / f"{name}.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"written": False, "why": "no fetch landed and no axis file on disk"}
+    pub = ai.publish_lake(name, doc)
+    if not pub.get("written"):
+        return pub
+    try:
+        from research.miner_candidate_compiler import known_symbols
+        universe = set(known_symbols())
+    except Exception as exc:
+        return {**pub, "cells": 0, "why": f"universe unreadable ({type(exc).__name__})"}
+    new = ai.lake_cells(name, list(pub.get("signals") or []), universe)
+    cells.extend(new)
+    return {**{k: v for k, v in pub.items() if k != "signals"},
+            "n_signals": len(pub.get("signals") or []), "cells": len(new)}
+
+
 def run_all(apply: bool) -> dict[str, Any]:
     import axis_ingest as ai
 
     now = datetime.now(tz=UTC)
     axes: dict[str, Any] = {}
+    lake: dict[str, Any] = {}
+    cells: list[dict[str, Any]] = []
     for name in sorted(ai.INGESTERS):
         try:
             doc = ai.INGESTERS[name]()
@@ -135,6 +163,8 @@ def run_all(apply: bool) -> dict[str, Any]:
                           "error": f"{type(exc).__name__}: {exc}",
                           "why": ("a failed fetch is not evidence that the axis is barren; the "
                                   "previous per-axis file on disk still stands")}
+            if apply and hasattr(ai, "publish_lake") and name in getattr(ai, "LAKE_AXES", {}):
+                lake[name] = _lake_and_cells(ai, name, None, cells)
             continue
         n = _count(doc)
         axes[name] = {
@@ -148,7 +178,18 @@ def run_all(apply: bool) -> dict[str, Any]:
         if apply:
             OUT_DIR.mkdir(parents=True, exist_ok=True)
             axes[name].update(_write_axis(OUT_DIR / f"{name}.json", doc, n))
+            # THE AXIS BECOMES CELLS (2026-11-11): written to the lake frame the exogenous
+            # conditioner family reads, then minted as cells on the instruments it bears on.
+            # From the fetch in hand when it landed, else from the axis file it preserved.
+            if hasattr(ai, "publish_lake") and name in getattr(ai, "LAKE_AXES", {}):
+                lake[name] = _lake_and_cells(ai, name, doc if n else None, cells)
+        del doc
 
+    donation: dict[str, Any] = {"donated_total": 0, "tests_run_total": 0}
+    if cells:
+        from research import proposer_common as pcm
+        donation = pcm.donate_per_family(SEAT, cells,
+                                         ledger=pcm.DONATION_LEDGERS / f"{SEAT}.jsonl")
     ok = [k for k, v in axes.items() if v.get("state") == "OK"]
     refused = [k for k, v in axes.items()
                if v.get("write_state") == "EMPTY_REFUSED_OVERWRITE"]
@@ -163,6 +204,9 @@ def run_all(apply: bool) -> dict[str, Any]:
         "n_write_refused": len(refused),
         "write_refused": refused,
         "axes": axes,
+        "lake": lake,
+        "cells_offered": len(cells),
+        "donation": donation,
         "rule": ("every axis runs on every pass and each writes its own file. The shared report "
                  "is a UNION, never the last writer's result -- a board that shows one lane's "
                  "worst pass and hides three healthy ones teaches the reader to stop looking."),

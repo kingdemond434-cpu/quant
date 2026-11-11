@@ -31,6 +31,7 @@ runs the other way.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import io
 import json
@@ -437,6 +438,174 @@ def ingest_attention_forecast():
     """The attention miner's walk-forward next-day forecast, same shape and same clock."""
     import learned_miners
     return learned_miners.forecast_axis("attention")
+
+
+# ------------------------------------------------------------------ axis -> lake -> cells
+#: WHY THE BIS AND ECB AXES REACHED NO CELL (2026-11-11). They were ingested faithfully -- 464,803
+#: BIS policy-rate rows across 33 pairs, three ECB series -- and then only DESCRIBED: the axis
+#: files are read by reporters (alpha_dsl's field catalogue, counterfactual attribution, the
+#: causal lab, the pit audit), and no registered family takes `data/axes/*.json` as an input. COT
+#: reaches `cot_positioning` through `family_inputs`; nothing did the same for these.
+#:
+#: THE EXISTING DOOR FOR A DATED EXOGENOUS SERIES IS THE LAKE. `family_exogenous_conditioner`
+#: loads `data/lake/series/<source>.(parquet|csv)` by name, joins it on its own `available_time`
+#: and lags it a publication day before it may condition a bar -- the sealed gauntlet and the
+#: forward clock rebuild the same signals from the cell's params alone. So an axis becomes cells
+#: by being WRITTEN THERE in that frame (`publish_lake`), and minted as exogenous_conditioner
+#: cells on the instruments it bears on (`lake_cells`). No family is invented and no input
+#: resolver is touched.
+#:
+#: WHICH INSTRUMENTS, STATED: a per-pair axis (BIS carry) conditions its OWN pair; a one-currency
+#: state (ECB: euro area; FRED: United States) conditions every hypothesis-lane two-leg symbol
+#: carrying that currency. COT is left out on purpose: `cot_positioning` already consumes it.
+LAKE_DIR = DESK / "data" / "lake" / "series"
+LAKE_AXES: dict[str, dict] = {
+    "bis": {"fields": ("carry_differential",)},
+    "ecb": {"currency": "EUR"},
+    "fred": {"currency": "USD"},
+}
+#: How each cell reads its column: level and change, each at a 1-sigma extreme of its own history,
+#: and BOTH signs of the stance -- the direction is the gauntlet's to find, never a preference.
+LAKE_TRANSFORMS: tuple[str, ...] = ("level_z", "delta_z")
+LAKE_SIDES: tuple[int, ...] = (1, -1)
+LAKE_THRESHOLD = 1.0
+
+
+def lake_source(axis: str) -> str:
+    """The lake id an axis is published under; the cell's `source` param."""
+    return f"axis_{axis}"
+
+
+def _available(day: str):
+    """When a dated value was knowable: the day AFTER the date it describes (a monthly value: the
+    day after its month ends). The family then lags it another publication day on top."""
+    import pandas as pd
+    day = str(day).strip()
+    try:
+        if len(day) == 7:
+            return (pd.Period(day, freq="M").end_time.normalize()
+                    + pd.Timedelta(days=1)).tz_localize("UTC")
+        return pd.Timestamp(day[:10], tz="UTC") + pd.Timedelta(days=1)
+    except (ValueError, TypeError):
+        return None
+
+
+def lake_frame(axis: str, doc: dict):
+    """The axis as ONE wide frame: `available_time` plus one numeric column per series, named
+    exactly as `axis_proposer.axis_series` keys them after the `<axis>:` prefix. None when the
+    axis is not a lake axis or carries nothing."""
+    import pandas as pd
+    spec = LAKE_AXES.get(axis)
+    if spec is None or not isinstance(doc, dict):
+        return None
+    cols: dict[str, pd.Series] = {}
+    for name, ser in (doc.get("series") or {}).items():
+        pts = (ser or {}).get("points") or []
+        idx = [_available(p.get("d")) for p in pts]
+        vals = pd.to_numeric([p.get("v") for p in pts], errors="coerce")
+        s = pd.Series(vals, index=pd.DatetimeIndex(idx)).dropna()
+        s = s[s.index.notna()]
+        if len(s):
+            cols[str(name)] = s[~s.index.duplicated(keep="last")].sort_index()
+    rows = doc.get("rows") or []
+    fields = tuple(spec.get("fields") or ())
+    if fields and rows:
+        by_sym: dict[str, list[dict]] = {}
+        for r in rows:
+            if isinstance(r, dict) and r.get("symbol") and r.get("knowable_at"):
+                by_sym.setdefault(str(r["symbol"]), []).append(r)
+        for sym, rs in by_sym.items():
+            # A daily print supersedes the monthly one for the same instrument; a symbol the
+            # publisher only reports monthly keeps its monthly values.
+            daily = [r for r in rs if len(str(r["knowable_at"]).strip()) >= 10]
+            use = daily or rs
+            idx = pd.DatetimeIndex([_available(r["knowable_at"]) for r in use])
+            for f in fields:
+                s = pd.Series(pd.to_numeric([r.get(f) for r in use], errors="coerce"),
+                              index=idx).dropna()
+                s = s[s.index.notna()]
+                if len(s):
+                    cols[f"{sym}.{f}"] = s[~s.index.duplicated(keep="last")].sort_index()
+    if not cols:
+        return None
+    frame = pd.DataFrame(cols).sort_index()
+    frame.index.name = "available_time"
+    return frame.reset_index()
+
+
+def publish_lake(axis: str, doc: dict, out_dir: Path | None = None) -> dict:
+    """Write the axis's lake frame atomically; report what landed. Never raises."""
+    import os
+    try:
+        frame = lake_frame(axis, doc)
+    except Exception as exc:                       # a malformed axis is UNMEASURED, not fatal
+        return {"axis": axis, "written": False, "why": f"{type(exc).__name__}: {exc}"[:200]}
+    if frame is None or frame.empty:
+        return {"axis": axis, "written": False, "why": "no dated numeric series in the axis"}
+    base = out_dir or LAKE_DIR
+    path = base / f"{lake_source(axis)}.csv"
+    tmp = path.with_suffix(".csv.tmp")
+    try:
+        base.mkdir(parents=True, exist_ok=True)
+        frame.to_csv(tmp, index=False, date_format="%Y-%m-%dT%H:%M:%SZ")
+        os.replace(tmp, path)
+    except OSError as exc:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return {"axis": axis, "written": False, "why": f"{type(exc).__name__}: {exc}"[:200]}
+    signals = [c for c in frame.columns if c != "available_time"]
+    return {"axis": axis, "written": True, "path": str(path), "source": lake_source(axis),
+            "rows": len(frame), "signals": signals}
+
+
+def lake_targets(axis: str, signal: str, universe: set[str]) -> list[str]:
+    """The instruments one lake column bears on, by the rule stated above, lane-filtered."""
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:                                # pragma: no cover - desk-root runs
+        def may_hypothesise(_s, _f=None):            # type: ignore[misc]
+            return True
+    spec = LAKE_AXES.get(axis) or {}
+    if spec.get("fields"):
+        sym = signal.split(".", 1)[0]
+        cand = [sym] if sym in universe else []
+    else:
+        ccy = str(spec.get("currency") or "")
+        cand = sorted(s for s in universe
+                      if len(s) == 6 and s.isupper() and ccy in (s[:3], s[3:]))
+    out = []
+    for s in cand:
+        try:
+            if may_hypothesise(s, "exogenous_conditioner"):
+                out.append(s)
+        except Exception:
+            out.append(s)
+    return out
+
+
+def lake_cells(axis: str, signals: list[str], universe: set[str],
+               transforms: tuple[str, ...] = LAKE_TRANSFORMS) -> list[dict]:
+    """exogenous_conditioner cells for every (column, target, transform, side) of one axis."""
+    src = lake_source(axis)
+    out: list[dict] = []
+    for sig in signals:
+        for sym in lake_targets(axis, sig, universe):
+            for tr in transforms:
+                for side in LAKE_SIDES:
+                    out.append({
+                        "source": "axis_ingest_all", "kind": "hypothesis", "symbol": sym,
+                        "family": "exogenous_conditioner",
+                        "params": {"source": src, "signal": sig, "transform": tr,
+                                   "threshold": LAKE_THRESHOLD, "side_when_high": side},
+                        "mechanism": (f"the {axis} axis series {sig} ({tr}) at a 1-sigma extreme "
+                                      f"of its own history conditions {sym}; stance "
+                                      f"{'with' if side > 0 else 'against'} the extreme"),
+                        "title": f"{axis}:{sig} -> {sym}", "url": "",
+                        "falsifier": ("no net forward return on the bars where the series sits "
+                                      "beyond 1 sigma, after cost, out of sample"),
+                        "required_data": [f"data/lake/series/{src}.csv"],
+                        "lineage": {"axis": axis, "axis_file": f"data/axes/{axis}.json"}})
+    return out
 
 
 INGESTERS = {"cot": ingest_cot, "bis": ingest_bis,
