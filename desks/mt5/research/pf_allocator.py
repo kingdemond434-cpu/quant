@@ -3676,8 +3676,9 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
 
 
 #: How many sleeves `best_single_sleeve` scores: the strongest by standalone mean/sd. Each score
-#: is one objective evaluation on the full world population (~25 ms at the desk's size), so 40
-#: is about a second and covers every sleeve that could plausibly win alone.
+#: is one objective evaluation on the full world population, measured on the box 2026-11-11 at
+#: ~25 ms (the admission scan's 19-iteration solves took 5.5 s against ~5 s of setup), so 40 is
+#: about one second of a pass and covers every sleeve that could plausibly win alone.
 BEST_SINGLE_CANDIDATES = 40
 
 
