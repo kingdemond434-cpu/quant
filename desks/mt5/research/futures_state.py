@@ -57,6 +57,7 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
@@ -559,6 +560,176 @@ def fred_curve(curve: Mapping[str, Any], key: str, get: Callable[[str], Any]) ->
     return pd.DataFrame(cols).sort_index()
 
 
+# ------------------------------------------------------------- scheduled-release first prints
+
+#: ALFRED's "initial release only" view: one row per observation period, stamped with the day it
+#: was FIRST published (realtime_start). That is the number a trader saw at the release, never a
+#: later revision, which is what makes a jobs or CPI print usable on the bar clock at all.
+ALFRED_INITIAL = "4"
+#: Releases come out at a fixed wall-clock time in New York; the bar may use the print only after
+#: it. The default is 08:30, the slot of payrolls, CPI, claims, retail sales and PCE.
+RELEASE_TZ = "America/New_York"
+RELEASE_GRACE = pd.Timedelta(minutes=5)
+#: Prior first-print changes a shock is scored against. Strictly earlier releases only.
+SHOCK_WINDOW = 36
+
+
+def alfred_first_prints(series: str, key: str, get: Callable[[str], Any],
+                        weekdays: Sequence[int] | None = None,
+                        counts: dict[str, int] | None = None) -> pd.DataFrame:
+    """[period, released, value]: each period's FIRST published value and the day it came out.
+
+    A realtime_start shared by several periods is an archive bulk-load (ALFRED's vintages begin
+    where its archive begins), not a release, so those rows are dropped: stamping thirty years of
+    payrolls with the archive's first day would put them all on one fictitious date.
+
+    realtime_start is the day ALFRED recorded the value, which can trail the real release by a day
+    (late stamping is safe). It must never fall on a day the series cannot be released: a weekend,
+    or outside `weekdays` when the series has a fixed schedule (payrolls on Friday, claims on
+    Thursday, each with the holiday-shifted day before). Such rows are dropped and counted.
+    """
+    q = urllib.parse.urlencode({"series_id": series, "api_key": key, "file_type": "json",
+                                "realtime_start": "1776-07-04", "realtime_end": "9999-12-31",
+                                "output_type": ALFRED_INITIAL})
+    doc = get(f"https://api.stlouisfed.org/fred/series/observations?{q}") or {}
+    rows = doc.get("observations") or []
+    tally = counts if counts is not None else {}
+    if not rows:
+        return pd.DataFrame(columns=["period", "released", "value"])
+    d = pd.DataFrame(rows)
+    out = pd.DataFrame({
+        "period": pd.to_datetime(d.get("date"), errors="coerce"),
+        "released": pd.to_datetime(d.get("realtime_start"), errors="coerce"),
+        "value": pd.to_numeric(d.get("value"), errors="coerce"),
+    }).dropna()
+    bulk = out["released"].map(out["released"].value_counts()) > 1
+    tally["dropped_bulk_load"] = int(bulk.sum())
+    out = out[~bulk].sort_values("period").drop_duplicates("period", keep="first")
+    # a first print released before its own period ended is impossible; one released before
+    # the previous period's print is an archive artefact -- either would reorder history
+    n0 = len(out)
+    out = out[out["released"] >= out["period"]]
+    out = out[out["released"].cummax() == out["released"]]
+    tally["dropped_out_of_order"] = n0 - len(out)
+    allowed = set(weekdays) if weekdays else {0, 1, 2, 3, 4}
+    ok = out["released"].dt.weekday.isin(allowed)
+    tally["dropped_off_schedule"] = int((~ok).sum())
+    return out[ok].reset_index(drop=True)
+
+
+def release_shock(prints: pd.DataFrame, transform: str = "diff",
+                  window: int = SHOCK_WINDOW) -> pd.DataFrame:
+    """Per release: the first-print change and how unusual it was against EARLIER releases.
+
+    `first_chg` compares this period's first print with the PREVIOUS period's first print, both
+    as published at the time; across a missing period it is NaN, never a two-period change scored
+    as one. `shock_z` scores it against the trailing `window` releases, shifted so a release
+    never sees itself. This is a shock against the series' own history, not against a consensus
+    forecast: the free calendar's consensus exists only forward from when the desk began
+    capturing it, and is joined separately where it does.
+
+    Two columns only, on purpose: every column mints cells and every cell is charged to the
+    program's family-wise budget, so near-duplicates (|z|, a rank of the same change) are not
+    added. `first_chg` is a change and so is asked only as level_z by the cell plan.
+    """
+    v = prints["value"].astype(float).reset_index(drop=True)
+    per = pd.to_datetime(prints["period"]).reset_index(drop=True)
+    if transform == "logdiff":
+        chg = np.log(v.where(v > 0)).diff() * 100.0
+    else:
+        chg = v.diff()
+    step = per.diff()
+    typical = step.median() if step.notna().any() else pd.NaT
+    if pd.notna(typical):
+        chg = chg.where(step <= typical * 1.5)
+    past = chg.shift(1)
+    mu = past.rolling(window, min_periods=MIN_ROWS // 2).mean()
+    sd = past.rolling(window, min_periods=MIN_ROWS // 2).std(ddof=0)
+    return pd.DataFrame({"first_chg": chg.to_numpy(),
+                         "shock_z": ((chg - mu) / sd.replace(0.0, np.nan)).to_numpy()})
+
+
+def release_available(released: pd.Series, at: str = "08:30") -> pd.Series:
+    """The UTC instant a release became public: its New York release time plus a short grace."""
+    hh, mm = (int(x) for x in str(at).split(":"))
+    local = (pd.to_datetime(released).dt.normalize()
+             + pd.Timedelta(hours=hh, minutes=mm)).dt.tz_localize(
+        RELEASE_TZ, nonexistent="shift_forward", ambiguous=False)
+    return local.dt.tz_convert("UTC") + RELEASE_GRACE
+
+
+#: Scheduled-release instants recovered from the first prints, for the event families. Kept OUT
+#: of `data/intelligence/`: the candidate compiler reads every row there as a donation and would
+#: mint a cell per historical release.
+CALENDAR_BACKFILL = DESK / "data" / "calendar_backfill"
+
+
+def write_release_calendar(oid: str, rel: Mapping[str, Any], prints: pd.DataFrame) -> Path | None:
+    """One JSON-lines file of this series' release instants (UTC), newest state replacing old.
+
+    The instant is the New York release time on the day ALFRED first recorded the value, with no
+    grace added: it is the event, not when a bar may use the number. `instant_basis` says so,
+    because ALFRED can record a release a day late for a series it loads late.
+    """
+    if prints.empty:
+        return None
+    hh, mm = (int(x) for x in str(rel.get("at") or "08:30").split(":"))
+    when = (pd.to_datetime(prints["released"]).dt.normalize()
+            + pd.Timedelta(hours=hh, minutes=mm)).dt.tz_localize(
+        RELEASE_TZ, nonexistent="shift_forward", ambiguous=False).dt.tz_convert("UTC")
+    lines = [json.dumps({"event_date": t.isoformat(), "currency": "USD", "country": "USD",
+                         "title": str(rel.get("title") or rel["series"]), "impact": "High",
+                         "series": str(rel["series"]), "source": "alfred_first_release",
+                         "instant_basis": "alfred_realtime_start", "backfill": True},
+                        sort_keys=True) for t in when]
+    CALENDAR_BACKFILL.mkdir(parents=True, exist_ok=True)
+    p = CALENDAR_BACKFILL / f"backfill_{oid}.jsonl.gz"
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    with gzip.open(tmp, "wt", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    _replace(tmp, p)
+    return p
+
+
+def first_release_outputs(cv: Mapping[str, Any], key: str, get: Callable[[str], Any] | None,
+                          raw_dir: Path, notes: list[dict[str, Any]]
+                          ) -> list[tuple[str, pd.DataFrame, dict[str, Any]]]:
+    """Each configured release -> one stamped frame, keyed on its release instant."""
+    out: list[tuple[str, pd.DataFrame, dict[str, Any]]] = []
+    for rel in cv.get("releases") or []:
+        ser = str(rel["series"])
+        oid = f"fred_{cv['id']}_{ser.lower()}"
+        raw = raw_dir / f"{oid}.parquet"
+        prints = pd.DataFrame()
+        counts: dict[str, int] = {}
+        if get is not None and key:
+            try:
+                prints = alfred_first_prints(ser, key, get, rel.get("weekdays"), counts)
+                if not prints.empty:
+                    _atomic_parquet(raw, prints, index=False)
+            except HardStop:
+                raise
+            except Exception as exc:
+                notes.append({"source": oid, "error": f"{type(exc).__name__}"})
+        if prints.empty and raw.exists():
+            prints = pd.read_parquet(raw)
+        if len(prints) < MIN_ROWS:
+            continue
+        try:
+            write_release_calendar(oid, rel, prints)
+        except OSError as exc:
+            notes.append({"source": oid, "calendar_backfill": f"{type(exc).__name__}"})
+        feat = release_shock(prints, str(rel.get("transform") or "diff"),
+                             int(cv.get("window", SHOCK_WINDOW)))
+        at = release_available(prints["released"], str(rel.get("at") or "08:30"))
+        frame = stamped(feat, at, oid, pd.to_datetime(prints["released"], utc=True))
+        out.append((oid, frame, {"targets": list(rel.get("targets") or cv.get("targets") or []),
+                                 "kind": "release_first_print", "rows": len(frame),
+                                 "last_event": str(prints["released"].max()),
+                                 "why": str(rel.get("why") or ""), "dropped": counts}))
+    return out
+
+
 # ----------------------------------------------------------------------- Japan MoF intervention
 
 #: MoF publishes intervention two ways. The historical CSV holds every intervention DAY since
@@ -898,6 +1069,19 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
     fred = sources.get("fred_rates") or {}
     fkey = next((os.environ.get(k) for k in fred.get("key_env") or [] if os.environ.get(k)), "")
     for cv in [*(registry.get("fred_curves") or []), *(registry.get("fred_sets") or [])]:
+        if cv.get("mode") == "first_release":
+            live = (get if fred.get("terms") == "OPEN" and
+                    "fred_rates" not in state.get("hard_stops", {}) else None)
+            if not fkey:
+                notes.append({"source": f"fred_{cv['id']}", "status": "NEEDS_KEY",
+                              "key_env": fred.get("key_env")})
+            try:
+                for oid, frame, meta in first_release_outputs(cv, fkey, live, RAW, notes):
+                    frames[oid] = frame
+                    built[oid] = meta
+            except HardStop as hs:
+                state.setdefault("hard_stops", {})["fred_rates"] = {"code": hs.code, "at": _now()}
+            continue
         cv = {**cv, "series": cv.get("series") or sorted(
             {str(p[k]) for p in cv.get("pairs") or [] for k in ("base", "quote")})}
         sid = f"fred_{cv['id']}"
@@ -998,7 +1182,7 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
 _HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
-             "roll_yield", "curvature", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
+             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
 
@@ -1122,7 +1306,10 @@ def lab_inputs(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame]
 
 
 #: Wall-clock budget for one pass's network reads; past it every source serves what it holds.
-FETCH_BUDGET_S = 600.0
+#: The leg is killed at its planned 720s, and the series writes, the mint and the report come
+#: after the reads: at 600s the only pass in the ledger was killed at 778s with no report written
+#: (2026-11-05). 420s leaves the rest of the pass room to finish.
+FETCH_BUDGET_S = 420.0
 
 
 def stale_series(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame],
