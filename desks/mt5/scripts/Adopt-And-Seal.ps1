@@ -374,7 +374,12 @@ try {
         $jammed = ([int]$beat.rc -eq 1) -and ("$($beat.note)" -match $cloneFail) -and $fails.Count -eq 3 -and
                   (@($fails | Where-Object { $_ -match $cloneFail }).Count -eq 3)
         $item = Get-Item -LiteralPath $gateRepo -Force
-        if ($jammed -and -not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        # PowerShell 5.1's Remove-Item -Recurse can follow a junction INSIDE the folder (audit SF1),
+        # so any reparse point anywhere under it refuses the removal outright.
+        $links = @(Get-ChildItem -LiteralPath $gateRepo -Force -Recurse -ErrorAction SilentlyContinue |
+                   Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint } | Select-Object -First 1)
+        if ($jammed -and $links.Count -gt 0) { Log "gate-heal: gate-repo holds a junction or symlink; not removing" }
+        if ($jammed -and $links.Count -eq 0 -and -not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
             $gm = New-Object System.Threading.Mutex($false, "Global\QuantBox-WorkflowGate")
             if ($gm.WaitOne(0)) {
                 try {
@@ -747,13 +752,26 @@ Log "pure seal commit $($sealCommit.Substring(0,12)) created by atomic commit-tr
 try {
     $binDir = Join-Path (Join-Path $env:ProgramData "QuantBox") "bin"
     $dst = Join-Path $binDir "workflow_gate.ps1"
-    if ((Test-Path -LiteralPath $dst) -and -not ((Get-Item -LiteralPath $binDir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    # ONLY A RELEASE THE GATE APPROVED (audit MF2): never on OVERRIDE_TIP, which adopts a tip CI never
+    # judged, so a PROTECTED gate file could not arrive without the audit gate.
+    $decision = if ($script:ReleaseGate) { [string]$script:ReleaseGate.decision } else { "" }
+    # ONLY THE SEAL (audit MF1): the commit this pass just made, and HEAD must still be it.
+    $headIs = (git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim()
+    if ($decision -notin @("ADOPT_TIP", "ADOPT_RELEASE")) {
+        Log "gate-refresh: release decision '$decision' is not an approved release; bin\workflow_gate.ps1 left as it is"
+    } elseif (-not $sealCommit -or $headIs -ne $sealCommit) {
+        Log "gate-refresh: HEAD ($headIs) is not the seal just made ($sealCommit); bin\workflow_gate.ps1 left as it is"
+    } elseif ((Test-Path -LiteralPath $dst) -and -not ((Get-Item -LiteralPath $binDir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         $tmpOut = Join-Path $binDir "workflow_gate.ps1.adopt"
         $relPath = "ops/box/workflow_gate.ps1"
-        & git -C $RepoRoot cat-file -e "HEAD:$relPath" 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            $p = Start-Process -FilePath "git" -ArgumentList @("-C", "`"$RepoRoot`"", "show", "HEAD:$relPath") -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut
-            if ($p.ExitCode -eq 0 -and (Get-Item -LiteralPath $tmpOut).Length -gt 0) {
+        $want = (git -C $RepoRoot rev-parse "${sealCommit}:$relPath" 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -eq 0 -and $want -match '^[0-9a-f]{40}$') {
+            $p = Start-Process -FilePath "git" -ArgumentList @("-C", "`"$RepoRoot`"", "cat-file", "blob", $want) -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut
+            # THE BYTES ARE THE SEAL'S BLOB, PROVEN BEFORE THE MOVE (audit MF3)
+            $got = if ($p.ExitCode -eq 0) { (git -C $RepoRoot hash-object --no-filters -- $tmpOut 2>$null | Out-String).Trim() } else { "" }
+            if ($got -ne $want) {
+                Log "gate-refresh: written bytes hash $got, the seal's blob is $want; refused"
+            } elseif ((Get-Item -LiteralPath $tmpOut).Length -gt 0) {
                 $new = (Get-FileHash -LiteralPath $tmpOut -Algorithm SHA256).Hash
                 $old = (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash
                 if ($new -ne $old) {

@@ -34,15 +34,28 @@ def test_the_clone_is_removed_only_on_three_clone_failures_with_the_mutex_free()
     assert removes == [ln for ln in removes if "$gateRepo" in ln] and len(removes) == 1
 
 
-def test_the_installed_gate_follows_only_the_sealed_heads_committed_bytes() -> None:
-    assert '"show", "HEAD:$relPath"' in REFRESH
+def test_the_installed_gate_follows_only_the_seal_just_made() -> None:
+    # audit MF1: the seal commit, with HEAD proven to still be it, never the symbolic HEAD
+    assert 'rev-parse "${sealCommit}:$relPath"' in REFRESH
+    assert "$headIs -ne $sealCommit" in REFRESH
+    assert '"HEAD:$relPath"' not in REFRESH
+    # audit MF2: only a release the gate approved, never OVERRIDE_TIP
+    assert '$decision -notin @("ADOPT_TIP", "ADOPT_RELEASE")' in REFRESH
+    assert "OVERRIDE_TIP" not in REFRESH.replace("never on OVERRIDE_TIP", "")
+    # audit MF3: the written bytes hash to the seal's blob before the move
+    checked = REFRESH.index("$got -ne $want")
+    assert "hash-object --no-filters" in REFRESH
+    assert checked < REFRESH.index("Move-Item -LiteralPath $tmpOut -Destination $dst")
     assert 'relPath = "ops/box/workflow_gate.ps1"' in REFRESH
-    assert "$new -ne $old" in REFRESH
-    assert "Move-Item -LiteralPath $tmpOut -Destination $dst" in REFRESH
     # only the PROTECTED gate script; the other bin scripts stay owner-installed
     code = [ln for ln in REFRESH.splitlines() if not ln.lstrip().startswith("#")]
     assert not any("unattended_boot" in ln or "sign_train" in ln for ln in code)
     assert PS.index("pure seal commit") < PS.index("3a. THE MERGE GATE'S INSTALLED COPY")
+
+
+def test_the_heal_refuses_a_junction_anywhere_inside_the_clone() -> None:
+    assert "-Recurse -ErrorAction SilentlyContinue" in HEAL
+    assert "$links.Count -eq 0" in HEAL
 
 
 def test_the_gate_script_it_copies_is_protected() -> None:
