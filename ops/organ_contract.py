@@ -432,6 +432,9 @@ BOX_TASK_CONTRACTS: dict[str, tuple[str, int, str]] = {
                                "the supervisor's child table, rewritten every pass"),
     "MT5-AllocatorPulse": ("desks/mt5/data/allocator_trigger_state.json", 15,
                            "the 5-minute allocator trigger's own state"),
+    "MT5-FTMO-Allocator": ("desks/mt5/reports/FTMO_ALLOCATOR.json", 180,
+                           "prop_challenge_allocator.py rewrites it every hourly :50 pass, "
+                           "armed or not"),
     "MT5-Deepening":    ("desks/mt5/reports/DEEPENING_MEMORY_GUARD.json", 180,
                          "the deepening worker's per-pass memory guard (published to git)"),
     "MT5-DeepSeek":     ("desks/mt5/logs/MT5-DeepSeek.log", 180,
