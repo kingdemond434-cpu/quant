@@ -531,12 +531,31 @@ def research_step(work: Path, scenario: dict[str, Any], now: Any, day: Any) -> d
         rows[sym] = None if fl is None else {
             "n": int(fl.n), "used": list(fl.used),
             "betas": {k: round(float(v), 6) for k, v in sorted(fl.betas.items())}}
+    # THE FRACTIONS (#249 audit): the book the robust E[log W] solver sizes from those loadings.
+    # The three sleeves trade disjoint blocks of days, so no pair has a common day and the
+    # solver's |corr| is the factor model's alone (`robust_elog._corr_abs`): a change in the
+    # loadings reaches the heat it hands each sleeve, and nothing else in the solve can differ.
+    from libs.portfolio import robust_elog as re_
+
+    blk = max(1, len(dates) // 3)
+    ev = []
+    for i, sym in enumerate(("EURUSD", "USDJPY", RESEARCH_SYMBOL)):
+        r = np.full(len(dates), np.nan)
+        r[i * blk:(i + 1) * blk] = rng.normal(0.06, 1.0, blk)
+        ev.append(re_.SleeveEvidence(
+            name=f"rx_{sym}", daily_r=r, family=f"rx{i}", symbol=sym, n_trials=1,
+            factor_load=() if loads[i] is None else tuple(float(x) for x in loads[i]),
+            factor_resid_var=resid[i]))
+    book = re_.optimise(ev, hard_cap=0.30, cfg=re_.WorldConfig(seed=int(scenario["seed"])),
+                        iterations=200)
     out["allocator"] = {
         "factors": {k: v for k, v in (ctx.meta.get("factors") or {}).items()
                     if k in ("status", "names", "macro")},
         "factor_days": 0 if frame is None else len(frame.index),
         "loadings": rows,
         "corr_abs": np.round(lf.factor_corr_abs(loads, resid), 6).tolist(),
+        "fractions": {k: round(float(v), 6) for k, v in sorted(book.heat.items())},
+        "total_heat": round(float(book.total_heat), 6),
     }
     return out
 

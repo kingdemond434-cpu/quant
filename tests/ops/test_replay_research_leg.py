@@ -96,6 +96,8 @@ def test_the_leg_is_not_vacuous_and_is_deterministic(tmp_path: Path) -> None:
     assert {"d_vix", "d_r10"} <= set(alloc["factors"]["names"])
     assert all(v is not None for v in alloc["loadings"].values())
     assert any({"d_vix", "d_r10"} & set(v["used"]) for v in alloc["loadings"].values())
+    # the solver sized a book from those loadings: a leg that funds nothing compares nothing
+    assert alloc["total_heat"] > 0 and any(v > 0 for v in alloc["fractions"].values())
     assert _run(tmp_path / "b") == a
 
 
