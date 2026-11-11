@@ -3328,6 +3328,41 @@ def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
 class Request:
     url: str
     ctx: Ctx
+    #: Asked of the host's robots.txt before it is fetched. Every request path added since the
+    #: robots ruling (#204) sets it; the source URLs that predate it wait for the shared gate.
+    robots: bool = False
+
+
+#: robots.txt answers that stop every gated fetch to the host for the rest of the pass: the host
+#: refused to tell us its rules, or refused us.
+ROBOTS_STOP_CODES = frozenset({401, 403, 429, 451})
+#: robots.txt answers that mean "no rules" (RFC 9309 2.3.1.3): everything is allowed.
+ROBOTS_ABSENT_CODES = frozenset({404, 410})
+
+
+def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]],
+                   cache: dict[str, Any]) -> str:
+    """`allow`, `disallow`, `stop` (the host refused robots.txt: nothing more to it this pass) or
+    `unread` (5xx or unreachable: no fetch, never read as a yes). Read once per host per pass,
+    with this organ's own honest UA."""
+    import urllib.robotparser
+    parts = urllib.parse.urlsplit(url)
+    host = f"{parts.scheme}://{parts.netloc}"
+    if host not in cache:
+        rp = urllib.robotparser.RobotFileParser()
+        try:
+            body, _ = getter(f"{host}/robots.txt")
+            rp.parse(body.decode("utf-8", errors="replace").splitlines())
+            cache[host] = rp
+        except urllib.error.HTTPError as exc:
+            cache[host] = ("allow" if exc.code in ROBOTS_ABSENT_CODES else
+                           "stop" if exc.code in ROBOTS_STOP_CODES else "unread")
+        except Exception:
+            cache[host] = "unread"
+    got = cache[host]
+    if isinstance(got, str):
+        return got
+    return "allow" if got.can_fetch(UA, url) else "disallow"
 
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
@@ -3412,7 +3447,8 @@ def _nbs_listing_requests(src: Source, now: datetime, state: dict[str, Any]) -> 
     done = int(state.get("backfill_to") or 0)
     if done < NBS_BACKFILL_PAGES:
         upto = min(NBS_BACKFILL_PAGES, done + NBS_PAGES_PER_PASS)
-        reqs += [Request(f"{base}index_{k}.html", Ctx(part=f"page_{k}", fetched_at=now))
+        reqs += [Request(f"{base}index_{k}.html", Ctx(part=f"page_{k}", fetched_at=now),
+                         robots=True)
                  for k in range(done + 1, upto + 1)]
         state["backfill_to_next"] = upto
     return reqs
@@ -4163,6 +4199,21 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     reqs = requests_for(src, now, sst)
     parsed = fetched = followed = 0
     errors: list[str] = []
+    robots: dict[str, Any] = {}
+    robots_skipped: list[str] = []
+
+    def _robots_ok(url: str) -> bool:
+        """A disallowed path is skipped and counted; a refused or unread robots.txt is an error,
+        so a history walk holds its place rather than stepping past a page it never asked."""
+        v = robots_verdict(url, getter, robots)
+        if v == "allow":
+            return True
+        if v == "disallow":
+            robots_skipped.append(url)
+        else:
+            errors.append(f"robots {v}: {urllib.parse.urlsplit(url).netloc}")
+        return False
+
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
@@ -4173,6 +4224,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             if body is None:
                 continue
         elif fetch:
+            if req.robots and not _robots_ok(req.url):
+                continue
             try:
                 body, ctype = getter(req.url)
                 fetched += 1
@@ -4189,6 +4242,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                     errors.append("budget reached: the remaining releases are owed to the next "
                                   "pass")
                     break
+                if not _robots_ok(link):
+                    continue
                 try:
                     lbody, lctype = getter(link)
                     fetched += 1
@@ -4216,6 +4271,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 "errors": errors[:6], "store_rows": len(store)})
     if src.follow is not None:
         rec["followed"] = followed
+    if robots:
+        rec["robots_skipped"] = len(robots_skipped)
+        rec["robots_skipped_urls"] = robots_skipped[:6]
     if not parsed and not errors:
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
     _atomic(store_p, store)

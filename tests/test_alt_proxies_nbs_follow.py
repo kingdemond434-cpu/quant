@@ -8,6 +8,7 @@ parsed as if it were the release. Every page here is SYNTHETIC, shaped like the 
 from __future__ import annotations
 
 import sys
+import urllib.error
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -79,6 +80,8 @@ def test_a_pass_follows_the_listing_into_the_store(tmp_path: Path) -> None:
 
     def getter(url: str) -> tuple[bytes, str]:
         calls.append(url)
+        if url.endswith("/robots.txt"):
+            return b"User-agent: *\nDisallow: /admin/\n", "text/plain"
         return pages.get(url, b"<html><body>no releases here</body></html>"), "text/html"
 
     state: dict[str, object] = {}
@@ -86,8 +89,11 @@ def test_a_pass_follows_the_listing_into_the_store(tmp_path: Path) -> None:
                     deadline=1e18, getter=getter)
     assert rec["followed"] == 2 and rec["parsed"] == 4 and rec["errors"] == []
     assert rec["store_rows"] > 0
-    # the listing, the two releases it named, then its first three history pages
-    assert calls == [src.url, *list(pages)[1:]] + [f"{LISTING}index_{k}.html" for k in (1, 2, 3)]
+    # the listing, robots.txt once for the host, the two releases it named, then its first three
+    # history pages
+    assert calls == ([src.url, "https://www.stats.gov.cn/robots.txt", *list(pages)[1:]]
+                     + [f"{LISTING}index_{k}.html" for k in (1, 2, 3)])
+    assert rec["robots_skipped"] == 0
     assert state["sources"]["cn_nbs_retail"]["backfill_to"] == 3   # type: ignore[index]
 
 
@@ -95,6 +101,8 @@ def test_the_history_walk_holds_its_place_when_a_page_fails(tmp_path: Path) -> N
     src = A.BY_ID["cn_nbs_retail"]
 
     def getter(url: str) -> tuple[bytes, str]:
+        if url.endswith("/robots.txt"):
+            raise urllib.error.HTTPError(url, 404, "nf", None, None)  # type: ignore[arg-type]
         if url.endswith("index_2.html"):
             raise OSError("reset")
         return b"<html></html>", "text/html"
@@ -111,3 +119,56 @@ def test_the_history_walk_stops_at_its_depth() -> None:
     sst = {"backfill_to": A.NBS_BACKFILL_PAGES}
     reqs = A.requests_for(src, NOW, sst)
     assert [r.url for r in reqs] == [src.url] and "backfill_to_next" not in sst
+
+
+def _robots_pass(tmp_path: Path, robots: bytes | int) -> tuple[dict, list[str]]:
+    src = A.BY_ID["cn_nbs_retail"]
+    pages = {src.url: LIST_HTML,
+             "https://www.stats.gov.cn/sj/zxfb/202611/t20261114_1961768.html": RELEASE_OCT,
+             "https://www.stats.gov.cn/sj/zxfb/202610/t20261019_1965614.html": RELEASE_SEP}
+    calls: list[str] = []
+
+    def getter(url: str) -> tuple[bytes, str]:
+        calls.append(url)
+        if url.endswith("/robots.txt"):
+            if isinstance(robots, int):
+                raise urllib.error.HTTPError(url, robots, "x", None, None)  # type: ignore[arg-type]
+            return robots, "text/plain"
+        return pages.get(url, b"<html></html>"), "text/html"
+
+    state: dict[str, object] = {}
+    rec = A.collect(A.Paths(tmp_path / "desk"), src, state, NOW, fetch=True, fixtures=None,
+                    deadline=1e18, getter=getter)
+    return rec, calls
+
+
+def test_a_release_path_robots_disallows_is_skipped_and_counted(tmp_path: Path) -> None:
+    rec, calls = _robots_pass(tmp_path, b"User-agent: *\nDisallow: /sj/zxfb/202611/\n")
+    assert "https://www.stats.gov.cn/sj/zxfb/202611/t20261114_1961768.html" not in calls
+    assert "https://www.stats.gov.cn/sj/zxfb/202610/t20261019_1965614.html" in calls
+    assert rec["robots_skipped"] == 1 and rec["followed"] == 1
+
+
+def test_robots_naming_this_organ_is_obeyed(tmp_path: Path) -> None:
+    rec, calls = _robots_pass(tmp_path, b"User-agent: quant-desk-alt-proxies\nDisallow: /\n")
+    assert calls[:2] == [A.BY_ID["cn_nbs_retail"].url, "https://www.stats.gov.cn/robots.txt"]
+    assert len(calls) == 2 and rec["followed"] == 0 and rec["robots_skipped"] == 5
+
+
+@pytest.mark.parametrize("code", [401, 403, 429, 451])
+def test_a_refused_robots_file_stops_the_host_for_the_pass(tmp_path: Path, code: int) -> None:
+    rec, calls = _robots_pass(tmp_path, code)
+    assert len(calls) == 2 and rec["followed"] == 0
+    assert any(e.startswith("robots stop") for e in rec["errors"])
+
+
+@pytest.mark.parametrize("code", [500, 503])
+def test_an_unreadable_robots_file_is_never_a_yes(tmp_path: Path, code: int) -> None:
+    rec, calls = _robots_pass(tmp_path, code)
+    assert len(calls) == 2 and any(e.startswith("robots unread") for e in rec["errors"])
+
+
+@pytest.mark.parametrize("code", [404, 410])
+def test_an_absent_robots_file_allows(tmp_path: Path, code: int) -> None:
+    rec, _ = _robots_pass(tmp_path, code)
+    assert rec["followed"] == 2 and rec["robots_skipped"] == 0 and rec["errors"] == []
