@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from collections.abc import Mapping
@@ -104,6 +105,67 @@ def scrub_for_publish(rel: str, data: bytes) -> tuple[bytes | None, list[str]]:
                                                                        for k in dropped]
 
 
+#: FREE TEXT THAT IS PUBLISHED HOURLY (Auditor, 2026-11-11). The CRO cycle ledger's rows carry an
+#: agent's own words (binding constraints, work items, blockers), which can quote an account
+#: figure or a trade server. Each string value is scrubbed of money figures, hosts and
+#: addresses, and `server=`-style pairs; counts, shas, dates and file names are left as written so
+#: the ledger stays readable. Only lines that change are re-serialised; every other line keeps
+#: its exact bytes.
+TEXT_SCRUBBED: frozenset[str] = frozenset({"desks/mt5/data/cro_cycle_ledger.jsonl"})
+
+_MONEY_KV = re.compile(r"(?i)\b(balance|equity|margin|free_margin|profit|pnl|p&l|nav)"
+                       r"(\s*[=:]?\s*)[-+]?[$£€]?\s?\d[\d,]*(?:\.\d+)?")
+_CURRENCY = re.compile(r"(?:[$£€]|\b(?:USD|GBP|EUR)\s?)[-+]?\d[\d,]*(?:\.\d+)?(?:\s?[kKmM]\b)?")
+_SERVER_KV = re.compile(r"(?i)\b(server|login|host)(\s*[=:]\s*)\S+")
+_IPLIKE = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b")
+_HOSTLIKE = re.compile(r"\b[A-Za-z][A-Za-z0-9-]*(?:\.[A-Za-z0-9-]+)*\.(?:com|net|org|io|co|uk|"
+                       r"xyz|ai|dev|cloud|app|host|server|ltd|biz|info)(?::\d+)?\b", re.I)
+
+
+def public_text(text: str) -> str:
+    """`text` with money figures, `server=`/`login=`/`host=` values, IP addresses and host
+    names replaced. Counts, shas, dates and file names are untouched. Never raises."""
+    s = _SERVER_KV.sub(lambda m: f"{m.group(1)}{m.group(2)}[withheld]", text)
+    s = _MONEY_KV.sub(lambda m: f"{m.group(1)}{m.group(2)}[money]", s)
+    s = _CURRENCY.sub("[money]", s)
+    s = _IPLIKE.sub("[addr]", s)
+    return _HOSTLIKE.sub("[host]", s)
+
+
+def _scrub_values(node: Any) -> Any:
+    if isinstance(node, str):
+        return public_text(node)
+    if isinstance(node, list):
+        return [_scrub_values(v) for v in node]
+    if isinstance(node, dict):
+        return {k: _scrub_values(v) for k, v in node.items()}
+    return node
+
+
+def scrub_text_for_publish(rel: str, data: bytes) -> tuple[bytes | None, int]:
+    """(scrubbed bytes, lines changed) for a TEXT_SCRUBBED JSONL path; (None, 0) when the path
+    is not scrubbed or nothing changed. A line that is not JSON keeps its bytes (the login fence
+    judges it)."""
+    if rel not in TEXT_SCRUBBED:
+        return None, 0
+    out: list[bytes] = []
+    changed = 0
+    for raw in data.splitlines(keepends=True):
+        body = raw.rstrip(b"\r\n")
+        try:
+            row = json.loads(body.decode("utf-8-sig"))
+        except (UnicodeDecodeError, ValueError, RecursionError):
+            out.append(raw)
+            continue
+        clean = _scrub_values(row)
+        if clean == row:
+            out.append(raw)
+            continue
+        changed += 1
+        out.append(json.dumps(clean, ensure_ascii=False).encode("utf-8") + raw[len(body):])
+    return (b"".join(out), changed) if changed else (None, 0)
+
+
 def _git(repo: Path, *args: str, data: bytes | None = None) -> bytes:
     return subprocess.run(["git", "-C", str(repo), *args], input=data, capture_output=True,
                           check=True, timeout=120).stdout
@@ -121,6 +183,12 @@ def main(argv: list[str] | None = None) -> int:
         if not sep:
             continue
         blob, rel = blob.strip(), rel.strip().replace("\\", "/")
+        if rel in TEXT_SCRUBBED:
+            text, n = scrub_text_for_publish(rel, _git(args.repo, "cat-file", "blob", blob))
+            if text is not None:
+                blob = _git(args.repo, "hash-object", "-w", "--stdin", data=text).decode().strip()
+                print(f"text scrub: {rel}: {n} line(s) scrubbed (values withheld)",
+                      file=sys.stderr)
         if rel in SCRUBBED:
             new, dropped = scrub_for_publish(rel, _git(args.repo, "cat-file", "blob", blob))
             if new is not None:
