@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-14T02:03:50+00:00",
+ "generated_utc": "2026-11-10T23:41:38+00:00",
  "trees": [
   "desks/mt5/research",
   "desks/mt5/mt5desk",
@@ -28,7 +28,7 @@
   "wgc_goldhub",
   "xauusd_scalp_bars"
  ],
- "readers": 66,
+ "readers": 71,
  "routed": {
   "desks/mt5/research/alt_proxies.py": [
    "gdelt"
@@ -51,6 +51,9 @@
    "cot_fx",
    "fred_macro"
   ],
+  "desks/mt5/research/futures_state.py": [
+   "cot_fx"
+  ],
   "desks/mt5/research/macro_state_engine.py": [
    "lbma_vaults",
    "sge_benchmark",
@@ -63,6 +66,9 @@
    "event_calendar",
    "fred_macro",
    "macro_state"
+  ],
+  "desks/mt5/research/paid_substitute_engine.py": [
+   "gdelt"
   ],
   "desks/mt5/research/run_edges_macro_fusion_sweep.py": [
    "cross_asset_anchors"
@@ -91,6 +97,9 @@
   "desks/mt5/mt5desk/families_orthogonal.py": [
    "event_calendar",
    "macro_state"
+  ],
+  "libs/research/bar_clock_release.py": [
+   "event_calendar"
   ],
   "libs/research/country_lab.py": [
    "cot"
@@ -158,6 +167,9 @@
    ],
    "desks/mt5/research/fund_playbook.py": [
     "event_calendar"
+   ],
+   "desks/mt5/research/global_coverage_tensor.py": [
+    "gdelt"
    ],
    "desks/mt5/research/hourly_cycle.py": [
     "cross_asset_anchors",
@@ -253,6 +265,14 @@
     "basis": "reads the macro_state snapshot's current z per series with its own last_date/updated stamp carried as `last_at` on the row",
     "assumed": false
    },
+   "desks/mt5/research/fire_inputs.py": {
+    "sources": [
+     "cot_fx"
+    ],
+    "route": "via_provider",
+    "basis": "asks whether cot_positioning can fire by calling orthogonal_sweep._cot_frame, which applies COT_RELEASE_LAG_DAYS; it joins nothing to a bar itself",
+    "assumed": false
+   },
    "desks/mt5/research/research_gap_map.py": {
     "sources": [
      "cot_fx",
@@ -334,14 +354,14 @@
   ]
  },
  "accounting": {
-  "readers": 66,
-  "joining": 15,
-  "joining_routed": 15,
-  "no_join_routed_in_code": 37,
-  "no_join_declared": 12,
+  "readers": 71,
+  "joining": 18,
+  "joining_routed": 18,
+  "no_join_routed_in_code": 38,
+  "no_join_declared": 13,
   "undeclared": 2,
   "offenders": 0,
-  "routed_or_declared": 64
+  "routed_or_declared": 69
  },
  "floor": [],
  "arrived": [],
