@@ -638,6 +638,9 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
                          "tail": obs[-3:]},
         "cells": cells,
         "terms": dict(zip(("ok", "why"), bridge.terms(), strict=True)),
+        # MANDATORY UNDER THE COPERNICUS SENTINEL DATA LEGAL NOTICE (read 2026-11-11, see
+        # data/terms_clearances.json): the tank-fill indices are modified Sentinel data.
+        "attribution": f"Contains modified Copernicus Sentinel data {now.year}",
         "errors": errors[:10], "elapsed_s": round(time.time() - t0, 1),
     }
     if not dry_run:
