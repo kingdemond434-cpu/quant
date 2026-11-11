@@ -800,7 +800,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
         # THE CLUSTER LOOP RESUMES WHERE THE LAST ONE STOPPED. Largest first, but a pass that ran
         # out of clock starts the next one at the first cluster it did not reach, so the small
         # clusters at the tail are interrogated eventually rather than never.
-        ordered = sorted(clusters.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        ordered = sorted(clusters.items(), key=lambda kv: -len(kv[1]))
         resume = cursor.get("cluster_next")
         keys = ["|".join(k) for k, _v in ordered]
         if isinstance(resume, str) and resume in keys:
