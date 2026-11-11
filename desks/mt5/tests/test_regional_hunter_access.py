@@ -132,3 +132,13 @@ def test_requests_say_who_we_are_and_never_retry() -> None:
 def test_the_suite_runs_the_hunters_inside_its_own_timeout() -> None:
     import run_all_miners as ram
     assert ("regional_survivors", ram.regional_survivors_mine) in ram.ALL_MINERS
+
+
+def test_every_matching_user_agent_group_is_combined() -> None:
+    txt = ("User-agent: quant-research\nDisallow: /a\n\nUser-agent: *\nDisallow: /\n\n"
+           "User-agent: quant-research\nDisallow: /b\n")
+    rules = robots_rules(txt)
+    assert not robots_allows(rules, "https://h/a") and not robots_allows(rules, "https://h/b")
+    assert robots_allows(rules, "https://h/c")          # '*' does not apply when we are named
+    star = robots_rules("User-agent: *\nDisallow: /x\n\nUser-agent: *\nDisallow: /y\n")
+    assert not robots_allows(star, "https://h/x") and not robots_allows(star, "https://h/y")
