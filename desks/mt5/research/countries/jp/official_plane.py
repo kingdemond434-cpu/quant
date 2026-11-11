@@ -453,8 +453,8 @@ def jquants_cells(paths: Any = None, now: datetime | None = None, *, donate: boo
                   "data_source": JQ_DATA_SOURCE, "private_use": True,
                   "available_time": stamp, "event_time": stamp})
         # LINEAGE: jquants_private, e8_ineligible (coordinator ruling, 2026-10-07). E8 trades
-        # the prop firm's capital, not the registered individual's own money; the E8 book
-        # (prop/e8_book.py) refuses any survivor that carries this tag at any depth.
+        # the prop firm's capital, not the registered individual's own money; the tag is for
+        # the E8 book (prop/e8_book.py) to refuse on -- that veto is protected e8 work, not here.
         T.mark_private_lineage(c)
         cands.append(c)
     root = private_root or _private_root()

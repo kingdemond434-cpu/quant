@@ -496,7 +496,8 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     tok = (_token_refresh.get_token(key_env) if key_env in _token_refresh.MANAGED else None)
     if tok is not None and tok.private_use:
         # private_use=True, lineage "jquants_private", e8_ineligible=True: every record (and so
-        # every cell derived from it) carries the lineage the E8 book refuses on.
+        # every cell derived from it) carries the lineage an E8 consumer must refuse on (the
+        # E8 book's own veto is protected e8 work, not wired by this lane).
         _token_refresh.mark_private_lineage(rec)
     if tok is not None and tok.attribution:
         # The licence's source notice rides on every record this token path produces (CDSE:

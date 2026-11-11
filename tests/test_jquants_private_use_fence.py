@@ -7,7 +7,8 @@ FOUR LAYERS (audit of #218, 2026-10-07; a planted print in `_print_summary` pass
   (c) a downstream grep, after a planted run, over EVERY unignored file of a scratch repository
       carrying this repository's .gitignore, sync_marker.json included, and over this
       repository's own tracked and unignored files;
-  (d) private-lineage cells never reach the E8 book (prop capital is not the individual's own).
+  (d) private records carry the private-use lineage and the e8_ineligible flag. (The E8 book's
+      own veto on that flag is a protected e8 change and is NOT part of this PR.)
 
 J-Quants is permitted for the registered individual's private use only (art. 8; the principal's
 answer of 2026-10-06, recorded in libs.ops.token_refresh.TERMS_EVIDENCE["jquants"]). This runs the
@@ -439,33 +440,3 @@ def test_private_records_carry_the_lineage_and_are_e8_ineligible(
                            .glob("*.attribution.json")).read_text("utf-8"))
     assert side["terms_url"] and side["permitting_url"] == "https://jpx-jquants.com/en/help/usage"
     assert side["conditions"]["corporate_use_permitted"] is False and side["e8_ineligible"]
-
-
-def _survivor(sym: str, fam: str, **spec_extra: Any) -> dict[str, Any]:
-    return {"shadow_spec": {"symbol": sym, "family": fam, "selector": "asia", **spec_extra},
-            "gates": {"expected_value": {"ev": 0.3}, "stress_costs": {"exp_x3": 0.1}},
-            "days": 200}
-
-
-def test_e8_book_refuses_private_lineage(monkeypatch: pytest.MonkeyPatch,
-                                         tmp_path: Path) -> None:
-    """COORDINATOR RULING (2026-10-07): J-Quants-derived cells never feed an E8 sleeve; the
-    refusal is named in the book. A Fusion-only cell is unaffected."""
-    from prop import e8_book as B
-
-    surv = tmp_path / "UNIVERSAL_SURVIVORS.json"
-    surv.write_text(json.dumps({"survivors": {
-        "pub": _survivor("USDJPY", "session_range_breakout"),
-        "priv_spec": _survivor("JP225", "overnight_gap_decay", lineage=T.PRIVATE_LINEAGE),
-        "priv_flag": {**_survivor("EURJPY", "carry"), "e8_ineligible": True},
-        "priv_parent": {**_survivor("GBPJPY", "carry"),
-                        "parents": [{"source": "jpx_jquants", "private_use": True}]},
-    }}), encoding="utf-8")
-    monkeypatch.setattr(B, "SURVIVORS", surv)
-    monkeypatch.setattr(B, "_family_banned", lambda fam: False)
-    doc = B.select(tradeable=None)
-    chosen = {r["key"] for r in doc["sleeves"]}
-    refused = {r["key"] for r in doc["refused_private_lineage"]}
-    assert "pub" in chosen
-    assert refused == {"priv_spec", "priv_flag", "priv_parent"} and not (chosen & refused)
-    assert doc["n_refused_private_lineage"] == 3

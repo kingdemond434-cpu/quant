@@ -160,7 +160,7 @@ def test_cells_are_screened_deflated_and_donated_privately(scratch: dict[str, An
     from libs.ops import token_refresh as T
     for c in doc["discoveries"]:
         assert c["data_source"] == "jquants:investor_types" and c["private_use"] is True
-        # the lineage the E8 book refuses on survives the donation door
+        # the private-use lineage and the e8_ineligible flag survive the donation door
         assert c["lineage"] == T.PRIVATE_LINEAGE and c["e8_ineligible"] is True
         assert c["family"] == "exogenous_conditioner" and c["available_time"]
         assert c["evidence"]["n_tests_sweep"] == lane["looks"]
@@ -379,8 +379,8 @@ def test_fence_the_whole_private_chain_prints_and_publishes_nothing_private(
     """(a) stdout/stderr of EVERY organ the private lane passes through -- the Japan plane, the
     compiler's main pass, global_research_os's Japan department and runtime attestation -- and
     the results each returns; (c) a downstream grep over every file of the scratch repository
-    that git would carry (force-tracked paths included); (d) the private candidates are refused
-    by the E8 book; and this repository's own tracked files are untouched."""
+    that git would carry (force-tracked paths included); and this repository's own tracked files
+    are untouched."""
     from countries.jp import official_plane as J
 
     from research import miner_candidate_compiler as M
@@ -451,22 +451,6 @@ def test_fence_the_whole_private_chain_prints_and_publishes_nothing_private(
     bad = [f for f in files
            if _leaks((repo / f).read_text("utf-8", errors="replace"))]
     assert not bad, f"J-Quants content on a path git carries: {bad}"
-
-    # (d) E8: a survivor built from a private candidate is refused, a public one is not
-    from prop import e8_book as B
-    priv = json.loads((desk / "data" / "hypotheses_private"
-                       / "miner_candidates_private.json").read_text("utf-8"))["hypotheses"][0]
-    surv = repo.parent / "SURV.json"
-    surv.write_text(json.dumps({"survivors": {
-        "priv": {"shadow_spec": {**priv, "selector": "asia"}, "days": 300,
-                 "gates": {"expected_value": {"ev": 0.9}}},
-        "pub": {"shadow_spec": {"symbol": "EURUSD", "family": "carry", "selector": "asia"},
-                "days": 300, "gates": {"expected_value": {"ev": 0.1}}}}}), "utf-8")
-    monkeypatch.setattr(B, "SURVIVORS", surv)
-    monkeypatch.setattr(B, "_family_banned", lambda fam: False)
-    book = B.select(tradeable=None)
-    assert {r["key"] for r in book["refused_private_lineage"]} == {"priv"}
-    assert {r["key"] for r in book["sleeves"]} == {"pub"}
 
     assert _tracked_status() == before, "the fence run wrote into this repository's tracked files"
 

@@ -357,7 +357,8 @@ def mark_private_lineage(rec: dict[str, Any]) -> dict[str, Any]:
 def has_private_lineage(obj: Any, _depth: int = 0) -> bool:
     """True when a record, a cell, or anything nested in it (a spec, a parent, a candidate's
     source list) carries the private lineage, `private_use=True` or `e8_ineligible=True`.
-    A consumer that must keep private-lineage candidates out (the E8 book) calls this on the
+    A consumer that must keep private-lineage candidates out (the E8 book, once its protected
+    veto lands) calls this on the
     whole candidate; it reads every nesting level up to a bound, so a tag on the spec counts."""
     if _depth > 6:
         return False
