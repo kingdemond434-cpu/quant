@@ -29,7 +29,6 @@ import json
 import math
 import re
 import urllib.parse
-import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -38,7 +37,15 @@ from typing import Any
 
 import numpy as np
 
-from libs.geoint.cog import COG, Fetch, GeoTransform, http_fetch
+from libs.geoint.cog import (
+    COG,
+    Fetch,
+    GeoTransform,
+    SourceRefused,
+    SourceUnavailable,
+    http_fetch,
+    open_url,
+)
 
 BUCKET_URL = "https://sentinel-cogs.s3.us-west-2.amazonaws.com"
 PREFIX = "sentinel-s2-l2a-cogs"
@@ -59,9 +66,9 @@ Getter = Callable[[str], bytes]
 
 
 def http_get(url: str, timeout: float = 60.0) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "quant-geoint/1"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return bytes(resp.read())
+    """GET `url` (the desk's User-Agent; 401/403/429/451 -> SourceRefused, 5xx ->
+    SourceUnavailable)."""
+    return open_url(url, timeout=timeout)
 
 
 # ============================================================================== UTM
@@ -271,6 +278,8 @@ def read_window(scene: Scene, bbox_utm: tuple[float, float, float, float], band:
                                                                                      strict=True)}
         else:
             scl_counts = {"UNMEASURED": int(dn.size)}
+    except SourceRefused:
+        raise   # a refusal ends the pass; it is never read as a cloudy mask
     except Exception as exc:  # an unreadable mask is recorded, never read as clear
         scl_counts = {"UNMEASURED": int(dn.size), f"error:{type(exc).__name__}": 1}
         valid[:] = False
@@ -279,6 +288,7 @@ def read_window(scene: Scene, bbox_utm: tuple[float, float, float, float], band:
                   bytes_read=read)
 
 
-__all__ = ["BUCKET_URL", "SCL_BAD", "SCL_ROOF_BAD", "Scene", "Window", "list_objects",
+__all__ = ["BUCKET_URL", "SCL_BAD", "SCL_ROOF_BAD", "Scene", "SourceRefused",
+           "SourceUnavailable", "Window", "list_objects",
            "load_metadata", "lonlat_to_utm", "parse_time", "read_window", "search", "tile_prefix",
            "utm_to_lonlat", "utm_zone"]

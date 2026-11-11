@@ -345,3 +345,145 @@ def test_a_white_roof_classed_as_cloud_is_measured_when_its_ground_is_clear():
     m2 = tk.measure_tank(img, cloud, tr, t, sun_azimuth=SUN_AZ, sun_elevation=SUN_EL,
                          roof_valid=roof)
     assert m2["status"] == "REFUSED"
+
+
+# ============================================================================== source manners
+class _Resp:
+    def __init__(self, body: bytes) -> None:
+        self.body = body
+
+    def __enter__(self) -> _Resp:
+        return self
+
+    def __exit__(self, *a: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self.body
+
+
+def _http_error(code: int):
+    import urllib.error
+
+    def opener(req, timeout=None):
+        raise urllib.error.HTTPError(req.full_url, code, "x", {}, None)  # type: ignore[arg-type]
+    return opener
+
+
+def test_every_fetch_says_who_we_are(monkeypatch):
+    seen = []
+
+    def opener(req, timeout=None):
+        seen.append((req.get_header("User-agent"), req.get_header("Range")))
+        return _Resp(b"ok")
+    monkeypatch.setattr(cogmod.urllib.request, "urlopen", opener)
+    assert s2.http_get("https://example.test/a") == b"ok"
+    assert cogmod.http_fetch("https://example.test/b", 0, 9) == b"ok"
+    assert seen == [(cogmod.USER_AGENT, None), (cogmod.USER_AGENT, "bytes=0-9")]
+    assert cogmod.USER_AGENT == "quant-desk-collector/1.0 (+public data collection)"
+
+
+@pytest.mark.parametrize("code", [401, 403, 429, 451])
+def test_a_refusal_is_named_and_final(monkeypatch, code):
+    monkeypatch.setattr(cogmod.urllib.request, "urlopen", _http_error(code))
+    with pytest.raises(cogmod.SourceRefused) as ei:
+        s2.http_get("https://example.test/a")
+    assert ei.value.status == code
+    with pytest.raises(cogmod.SourceRefused):
+        cogmod.http_fetch("https://example.test/b", 0, 9)
+
+
+@pytest.mark.parametrize("code", [500, 502, 503])
+def test_a_server_fault_is_a_skip_not_a_refusal(monkeypatch, code):
+    monkeypatch.setattr(cogmod.urllib.request, "urlopen", _http_error(code))
+    with pytest.raises(cogmod.SourceUnavailable):
+        s2.http_get("https://example.test/a")
+
+
+def test_a_404_stays_an_ordinary_error(monkeypatch):
+    import urllib.error
+    monkeypatch.setattr(cogmod.urllib.request, "urlopen", _http_error(404))
+    with pytest.raises(urllib.error.HTTPError) as ei:
+        s2.http_get("https://example.test/a")
+    assert not isinstance(ei.value, (cogmod.SourceRefused, cogmod.SourceUnavailable))
+
+
+def test_a_refused_mask_read_is_never_recorded_as_cloud(monkeypatch):
+    from types import SimpleNamespace as NS
+    calls = []
+
+    class FakeCog:
+        def __init__(self, url, f):
+            calls.append(url)
+            if url.endswith("SCL.tif"):
+                raise cogmod.SourceRefused(url, 403)
+            self.bytes_read = 1
+
+        def read_bbox(self, *b):
+            return np.ones((2, 2), np.uint16), GeoTransform(0, 0, 10, 10)
+    monkeypatch.setattr(s2, "COG", FakeCog)
+    scene = NS(url=lambda a: f"https://example.test/{a}", dn_offset=0.0)
+    with pytest.raises(cogmod.SourceRefused):
+        s2.read_window(scene, (0, 0, 1, 1), "B08")  # type: ignore[arg-type]
+
+
+def _pass_world(monkeypatch, tmp_path, outcomes):
+    from desks.mt5.research import geoint_tank_fill as g
+    scenes = [s2.Scene(scene_id=f"S2A_14SPE_2026110{i}_0_L2A", tile="14SPE", prefix=f"p{i}/")
+              for i in range(1, len(outcomes) + 1)]
+    reg = {"status": "DERIVED", "derived_at": "x", "n_tanks": 1,
+           "tanks": [{"tank_id": "T001", "x": 1.0, "y": 2.0, "radius_m": 30.0}]}
+    regp = tmp_path / "reg.json"
+    regp.write_text(json.dumps(reg))
+    monkeypatch.setattr(g, "REGISTRY", regp)
+    monkeypatch.setattr(g, "REPO", tmp_path)
+    monkeypatch.setattr(g, "list_scenes", lambda full, today: list(scenes))
+    monkeypatch.setattr(g, "load_store", lambda: {})
+    stored: list[dict] = []
+    monkeypatch.setattr(g, "append_store", lambda row: stored.append(dict(row)))
+    monkeypatch.setattr(g, "load_eia", lambda: ([], "no archive in the test"))
+    asked: list[str] = []
+
+    def measure(sc, tanks, bbox, reg_id):
+        asked.append(sc.scene_id)
+        out = outcomes[scenes.index(sc)]
+        if isinstance(out, Exception):
+            raise out
+        return {"scene_id": sc.scene_id, "registry": reg_id, "status": "OK"}
+    monkeypatch.setattr(g, "measure_scene", measure)
+    rep = g.run(max_scenes=10, emit=False, dry_run=True, report_path=tmp_path / "r.json")
+    return rep, stored, asked, scenes
+
+
+def test_a_refusal_stops_the_pass_where_it_lands(monkeypatch, tmp_path):
+    # newest first: scene 3 is asked first, refuses, and scenes 2 and 1 are never asked
+    outcomes = [None, None, cogmod.SourceRefused("https://example.test/x", 429)]
+    rep, stored, asked, scenes = _pass_world(monkeypatch, tmp_path, outcomes)
+    assert asked == [scenes[2].scene_id]
+    assert stored == []
+    assert rep["stopped_by_source"]["status"] == 429
+    assert rep["user_agent"] == cogmod.USER_AGENT
+
+
+def test_a_server_fault_skips_the_scene_without_spending_an_attempt(monkeypatch, tmp_path):
+    outcomes = [None, cogmod.SourceUnavailable("https://example.test/x", 503), None]
+    rep, stored, asked, scenes = _pass_world(monkeypatch, tmp_path, outcomes)
+    assert len(asked) == 3                       # the pass went on past the fault
+    assert [r["scene_id"] for r in stored] == [scenes[2].scene_id, scenes[0].scene_id]
+    assert not any(r.get("status") == "ERROR" for r in stored)
+    assert rep["scenes"]["skipped_source_unavailable"] == [scenes[1].scene_id]
+    assert rep["stopped_by_source"] is None
+
+
+def test_a_refused_listing_stops_before_any_scene(monkeypatch, tmp_path):
+    from desks.mt5.research import geoint_tank_fill as g
+    rep0 = _pass_world(monkeypatch, tmp_path, [None])[0]
+    assert rep0["stopped_by_source"] is None
+
+    def refuse(full, today):
+        raise cogmod.SourceRefused("https://example.test/list", 403)
+    monkeypatch.setattr(g, "list_scenes", refuse)
+    rep = g.run(max_scenes=10, emit=False, dry_run=True, report_path=tmp_path / "r2.json")
+    assert rep["stopped_by_source"] == {"status": 403, "url": "https://example.test/list",
+                                        "at": "listing"}
+    assert rep["scenes"]["measured_this_pass"] == 0

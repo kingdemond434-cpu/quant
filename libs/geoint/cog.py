@@ -22,6 +22,7 @@ memory and read it back through the same code path the pilot uses over HTTP.
 from __future__ import annotations
 
 import struct
+import urllib.error
 import urllib.request
 import zlib
 from collections.abc import Callable
@@ -44,13 +45,47 @@ class CogUnsupported(ValueError):
     """The file is a TIFF this reader does not decode; the reason is the message."""
 
 
+# One honest identity for every fetch this package makes (the robots/terms posture the desk
+# holds everywhere: say who we are, take a refusal as final for the pass).
+USER_AGENT = "quant-desk-collector/1.0 (+public data collection)"
+# The server said NO (auth, forbidden, rate limit, legal): the whole pass stops, never retries.
+STOP_STATUSES = frozenset({401, 403, 429, 451})
+
+
+class SourceRefused(RuntimeError):
+    """The source refused us (401/403/429/451). The pass stops; nothing retries this hour."""
+
+    def __init__(self, url: str, status: int) -> None:
+        super().__init__(f"HTTP {status} from {url}: source refused, pass stopped")
+        self.url, self.status = url, status
+
+
+class SourceUnavailable(OSError):
+    """The source failed on its side (5xx). The item is skipped and retried next pass, never
+    recorded as an attempt against it."""
+
+    def __init__(self, url: str, status: int) -> None:
+        super().__init__(f"HTTP {status} from {url}: source unavailable, item skipped")
+        self.url, self.status = url, status
+
+
+def open_url(url: str, headers: dict[str, str] | None = None, timeout: float = 60.0) -> bytes:
+    """GET `url` with the desk's User-Agent; refusals and server faults become named errors."""
+    req = urllib.request.Request(url, headers={**(headers or {}), "User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return bytes(resp.read())
+    except urllib.error.HTTPError as exc:
+        if exc.code in STOP_STATUSES:
+            raise SourceRefused(url, exc.code) from exc
+        if 500 <= exc.code < 600:
+            raise SourceUnavailable(url, exc.code) from exc
+        raise
+
+
 def http_fetch(url: str, start: int, end: int, timeout: float = 60.0) -> bytes:
     """Bytes [start, end] inclusive of `url` by an HTTP Range request (urllib; proxy from env)."""
-    req = urllib.request.Request(url, headers={"Range": f"bytes={start}-{end}",
-                                               "User-Agent": "quant-geoint/1"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = bytes(resp.read())
-    return data
+    return open_url(url, {"Range": f"bytes={start}-{end}"}, timeout)
 
 
 @dataclass(frozen=True)

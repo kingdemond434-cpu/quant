@@ -59,6 +59,7 @@ REPO = BASE.parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from libs.geoint import cog  # noqa: E402
 from libs.geoint import sensor_bridge as bridge  # noqa: E402
 from libs.geoint import sentinel2 as s2  # noqa: E402
 from libs.geoint import tanks as tk  # noqa: E402
@@ -186,6 +187,9 @@ def list_scenes(full: bool, today: date, listing_path: Path = LISTING) -> list[s
             continue
         try:
             cache[key] = [sc.scene_id for sc in s2.search(TILE, [ym])]
+        except s2.SourceRefused:
+            _write_json(listing_path, cache)
+            raise   # the source said no: the pass stops, nothing further is asked of it
         except Exception as exc:  # a failed listing is recorded, the month is retried next pass
             cache.pop(key, None)
             print(f"[geoint] listing {key} failed: {type(exc).__name__}: {str(exc)[:80]}")
@@ -207,6 +211,8 @@ def build_registry(candidates: Sequence[s2.Scene], bbox: tuple[float, float, flo
     for sc in candidates:
         try:
             m = s2.load_metadata(sc)
+        except s2.SourceRefused:
+            raise
         except Exception:
             continue
         if (m.cloud_cover is None or m.cloud_cover > 2.0 or m.sun_elevation is None
@@ -214,6 +220,8 @@ def build_registry(candidates: Sequence[s2.Scene], bbox: tuple[float, float, flo
             continue
         try:
             w = s2.read_window(m, bbox, BAND)
+        except s2.SourceRefused:
+            raise
         except Exception:
             continue
         if float(w.valid.mean()) < 0.9:
@@ -519,17 +527,28 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
     if full_listing is None:
         full_listing = last_full is None or (now - last_full) > timedelta(hours=24)
     errors: list[str] = []
+    # A refusal (401/403/429/451) ends the pass where it lands: no further request this hour.
+    stopped: dict[str, Any] | None = None
     try:
         scenes = list_scenes(bool(full_listing), now.date())
+    except s2.SourceRefused as exc:
+        scenes = []
+        stopped = {"status": exc.status, "url": exc.url, "at": "listing"}
     except Exception as exc:
         scenes = []
         errors.append(f"listing: {type(exc).__name__}: {str(exc)[:120]}")
     reg = _read_json(REGISTRY)
-    if not isinstance(reg, dict) or not reg.get("tanks"):
+    if stopped is None and (not isinstance(reg, dict) or not reg.get("tanks")):
         summer = [s for s in scenes if s.scene_id.split("_")[2][4:6] in ("06", "07")]
-        reg = build_registry(list(reversed(summer)), bbox)
+        try:
+            reg = build_registry(list(reversed(summer)), bbox)
+        except s2.SourceRefused as exc:
+            reg = {"status": UNMEASURED, "why": "source refused during derivation", "tanks": []}
+            stopped = {"status": exc.status, "url": exc.url, "at": "registry"}
         if reg.get("tanks"):
             _write_json(REGISTRY, reg)
+    if not isinstance(reg, dict):
+        reg = {"status": UNMEASURED, "tanks": []}
     tanks = registry_tanks(reg)
     reg_id = registry_id(reg)
     store = load_store()
@@ -544,11 +563,20 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
     else:
         todo = list(reversed(todo))   # newest first: the current state before the backfill
     measured = 0
-    for sc in todo[:max_scenes] if tanks else []:
+    skipped: list[str] = []
+    for sc in todo[:max_scenes] if (tanks and stopped is None) else []:
         if time.time() - t0 > budget_s:
             break
         try:
             row = measure_scene(sc, tanks, bbox, reg_id)
+        except s2.SourceRefused as exc:
+            stopped = {"status": exc.status, "url": exc.url, "at": sc.scene_id}
+            break
+        except s2.SourceUnavailable as exc:
+            # the server's fault, not the scene's: skipped, retried next pass, no attempt spent
+            skipped.append(sc.scene_id)
+            errors.append(f"{sc.scene_id}: skipped, HTTP {exc.status}")
+            continue
         except Exception as exc:
             row = {"scene_id": sc.scene_id, "registry": reg_id, "status": "ERROR",
                    "why": f"{type(exc).__name__}: {str(exc)[:160]}",
@@ -608,7 +636,10 @@ def run(*, max_scenes: int = 6, budget_s: float = 600.0, full_listing: bool | No
                      "status": reg.get("status"), "n_tanks": len(tanks),
                      "derived_from": [s.get("scene_id") for s in
                                       (reg.get("derived_from") or {}).get("scenes") or []]},
+        "stopped_by_source": stopped,
+        "user_agent": cog.USER_AGENT,
         "scenes": {"listed": len(scenes), "measured_this_pass": measured,
+                   "skipped_source_unavailable": skipped,
                    "by_status": statuses, "series_n": len(series)},
         "mirror_lag_after_generation_h": (
             {"n": len(lat), "median": round(float(np.median(lat)), 3),
