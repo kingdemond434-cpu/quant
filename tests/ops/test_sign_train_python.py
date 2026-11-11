@@ -22,5 +22,9 @@ def test_resolves_the_machine_wide_install_the_other_box_tasks_use() -> None:
     body = PS.split("try {", 1)[1]
     venv = body.index(r"C:\opt\quant\.venv\Scripts\python.exe")
     machine = body.index(r"C:\Program Files\Python314\python.exe")
-    assert venv < machine < body.index("Get-Command python")
-    assert body.index("Get-Command python") < body.index('throw "no desk Python found')
+    user = body.index(r"Programs\Python\Python314\python.exe")
+    assert venv < machine < user < body.index('throw "no desk Python found')
+
+
+def test_fails_closed_never_signs_with_whatever_leads_path() -> None:
+    assert "Get-Command python" not in PS

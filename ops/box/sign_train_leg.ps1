@@ -107,18 +107,16 @@ if (Test-Path -LiteralPath $mergerEnv) { . $mergerEnv; $null = Use-MergerIdentit
 try {
     if (-not $Python) {
         # Same order the box's other legs use: a venv if one is ever made, then the machine-wide
-        # install every box task is registered with, then the per-user install, then PATH.
+        # install every box task is registered with, then the per-user install. Never PATH.
         foreach ($cand in @(
             "C:\opt\quant\.venv\Scripts\python.exe",
             "C:\Program Files\Python314\python.exe",
             "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe"
         )) { if (Test-Path -LiteralPath $cand) { $Python = $cand; break } }
-        if (-not $Python) {
-            $c = Get-Command python -ErrorAction SilentlyContinue
-            if ($c) { $Python = $c.Source }
-        }
+        # FAIL CLOSED past the three fixed paths: a SYSTEM task must never sign with whatever
+        # `python` happens to lead PATH (audit should-fix, #905).
     }
-    if (-not $Python -or -not (Test-Path -LiteralPath $Python)) { throw "no desk Python found (venv, Program Files\Python314, per-user, PATH)" }
+    if (-not $Python -or -not (Test-Path -LiteralPath $Python)) { throw "no desk Python found (venv, Program Files\Python314, per-user Python314)" }
     Say "python: $Python"
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
 
