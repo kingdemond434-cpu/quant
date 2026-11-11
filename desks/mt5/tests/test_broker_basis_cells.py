@@ -377,3 +377,16 @@ def test_held_myfxbook_terms_fetch_nothing(tmp_path: Path) -> None:
                         robots=lambda u: calls.append(u) or None, raw=tmp_path / "r.jsonl")
     assert r["status"] == "TERMS_HELD" and calls == []
     assert B.MYFXBOOK_TERMS == "HELD"
+
+
+def test_raw_reference_and_crowd_readings_stay_off_the_public_repo() -> None:
+    """FRED NASDAQ100 is Nasdaq copyright and Myfxbook's terms are unread: neither raw store,
+    nor any lake series, may be committable (the box snapshot runs `git add -A`)."""
+    import subprocess
+    root = Path(__file__).resolve().parents[3]
+    for rel in ("desks/mt5/data/broker_signals/basis_raw/NASDAQ100.json",
+                "desks/mt5/data/broker_signals/myfxbook_outlook.jsonl",
+                "desks/mt5/data/lake/series/basis_NAS100.parquet"):
+        rc = subprocess.run(["git", "check-ignore", "-q", rel], cwd=root, check=False).returncode
+        assert rc == 0, f"{rel} is committable"
+

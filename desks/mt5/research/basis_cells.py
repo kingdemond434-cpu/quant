@@ -82,12 +82,14 @@ TRANSFORMS: tuple[str, ...] = ("level_z", "delta_z")
 #: CFD -> its public spot reference on FRED, at the reference's own fixing minute.
 PAIRS: tuple[dict[str, str], ...] = (
     {"symbol": "XTIUSD", "ref": "DCOILWTICO", "tz": "America/New_York", "at": "14:30",
-     "terms": "PUBLIC_DOMAIN", "note": "EIA WTI Cushing spot; anchor the NYMEX settle window"},
+     "terms": "PUBLIC_DOMAIN", "note": "EIA WTI Cushing spot; anchor the NYMEX settle window. The 14:30 ET fix is read "
+              "at the 14:00 ET H1 bar open, ~30 min early: fine for a level_z basis, not a print"},
     {"symbol": "XBRUSD", "ref": "DCOILBRENTEU", "tz": "Europe/London", "at": "16:30",
      "terms": "PUBLIC_DOMAIN", "note": "EIA Europe Brent spot FOB; anchor the London close"},
     {"symbol": "XNGUSD", "ref": "DHHNGSP", "tz": "America/New_York", "at": "14:30",
      "terms": "PUBLIC_DOMAIN",
-     "note": "EIA Henry Hub spot is a day-ahead index; the NYMEX close anchor adds timing noise"},
+     "note": "EIA Henry Hub spot is a day-ahead index; the NYMEX close anchor adds timing noise. "
+              "The 14:30 ET fix is read at the 14:00 ET H1 bar open, ~30 min early"},
     {"symbol": "NAS100", "ref": "NASDAQ100", "tz": "America/New_York", "at": "16:00",
      "terms": "CITATION_REQUIRED", "note": "Nasdaq-100 cash close; FRED asks for citation"},
 )
