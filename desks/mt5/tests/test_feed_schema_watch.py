@@ -126,4 +126,4 @@ def test_the_organ_never_writes_code() -> None:
 def test_the_leg_is_wired() -> None:
     src = inspect.getsource(hourly_cycle.main)
     assert '_costed("feed_schema_watch"' in src and '"feed_schema_watch": fsw' in src
-    assert hourly_cycle.department_of("feed_schema_watch") == "intel"
+    assert hourly_cycle.department_of("feed_schema_watch") == "data"
