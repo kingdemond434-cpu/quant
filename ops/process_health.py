@@ -443,6 +443,118 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+# THE DERIVED CONTRACT (2026-11-11, Hourly pass idea 589). A task with no artifact contract used to
+# read UNCONTRACTED -- reported, never a fault -- so one that simply STOPPED running (rc 0 the last
+# time it ran, three days ago) was invisible: "this process could stop and nothing would notice"
+# was the board describing its own blind spot. Every such task now carries an automatic contract
+# derived from its own schedule: it must have RUN within DERIVED_PERIODS x its interval. A breach
+# reads STALE, which never_stale already answers by starting the task once. No human curates it,
+# so a task added tomorrow is covered tomorrow.
+#
+# THE INTERVAL comes from the scheduler's own "Repeat: Every" column when it has one, else from the
+# task's `trigger=` in desks/mt5/ops/box_tasks.manifest. A task with neither (at startup, resident,
+# UNDECLARED, one-shot) gets no derived contract and stays UNCONTRACTED: guessing an interval would
+# manufacture alarms. A task the manifest marks as running only inside a daily WINDOW is judged
+# against a day, never its in-window cadence, so the overnight gap is not a breach.
+#
+# THE LAST-RUN TIME is printed in the box's locale with no zone. Day-first and month-first both
+# parse "05/11/2026", so the age is computed under EVERY reading that parses, and the task is
+# STALE only when ALL of them say so: a date format can withhold an alarm, never invent one.
+DERIVED_PERIODS = 2.0
+#: ... and never tighter than this: a one-minute task between two runs on a loaded box is not late.
+DERIVED_FLOOR_MIN = 20.0
+MANIFEST = Path("desks") / "mt5" / "ops" / "box_tasks.manifest"
+_LAST_RUN_FORMATS = (
+    "%d/%m/%Y %H:%M:%S", "%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y %H:%M:%S",
+    "%Y-%m-%d %H:%M:%S", "%d.%m.%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
+)
+#: schtasks prints this for a task that has never run.
+_NEVER_RAN_YEAR = 1999
+
+
+def interval_min(text: str) -> float | None:
+    """Minutes between runs from a schtasks "Repeat: Every" cell ("0 Hour(s), 10 Minute(s)") or a
+    manifest trigger ("every 15 minutes, at :05", "hourly", "daily 04:20", "every 6 hours"). None
+    for anything without a clear cadence -- never a guess."""
+    import re
+
+    t = (text or "").strip().lower()
+    if not t or t in ("disabled", "n/a", "undeclared"):
+        return None
+    if "window" in t:
+        return 24 * 60.0
+    m = re.match(r"^(\d+)\s*hour\(s\),\s*(\d+)\s*minute\(s\)", t)
+    if m:
+        v = int(m.group(1)) * 60 + int(m.group(2))
+        return float(v) if v > 0 else None
+    if not t.startswith(("every", "hourly", "daily", "weekly")):
+        if "every" not in t:  # at startup, resident, legacy: no cadence of its own
+            return None
+        t = "every" + t.split("every", 1)[1]  # "at logon + every 10 minutes": the keep-alive
+    m = re.match(r"^every\s+(\d+)\s*(minute|hour|day)", t)
+    if m:
+        return float(int(m.group(1)) * {"minute": 1, "hour": 60, "day": 1440}[m.group(2)])
+    if t.startswith("hourly"):
+        return 60.0
+    if t.startswith("daily"):
+        return 1440.0
+    if t.startswith("weekly"):
+        return 7 * 1440.0
+    return None
+
+
+def manifest_triggers(root: Path) -> dict[str, str]:
+    """task name -> its `trigger=` text in the box manifest ({} when unreadable)."""
+    import re
+
+    try:
+        text = (root / MANIFEST).read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    pat = re.compile(r'^TASK name="([^"]+)"\s+trigger="([^"]*)"', re.M)
+    return {m.group(1): m.group(2) for m in pat.finditer(text)}
+
+
+def last_run_ages_min(raw: str, now_local: datetime) -> list[float] | None:
+    """Minutes since the last run under every locale reading of `raw` that parses and is not in
+    the future. [] when it never ran; None when nothing parses."""
+    s = (raw or "").strip()
+    ages: list[float] = []
+    parsed = False
+    for fmt in _LAST_RUN_FORMATS:
+        try:
+            t = datetime.strptime(s, fmt).replace(tzinfo=now_local.tzinfo)
+        except ValueError:
+            continue
+        parsed = True
+        if t.year <= _NEVER_RAN_YEAR:
+            return []
+        age = (now_local - t).total_seconds() / 60.0
+        if age >= -5.0:
+            ages.append(max(age, 0.0))
+    return ages if parsed and ages else ([] if s.upper() == "N/A" else None)
+
+
+def derived_contract(
+    task: dict[str, str], trigger: str, now_local: datetime
+) -> tuple[str, str] | None:
+    """("STALE", why) or ("OK", why) for an uncontracted task, or None when no contract can be
+    derived (no cadence, or a last-run time nothing parses)."""
+    every = interval_min(task.get("Repeat: Every", "")) or interval_min(trigger)
+    if every is None:
+        return None
+    limit = max(DERIVED_PERIODS * every, DERIVED_FLOOR_MIN)
+    ages = last_run_ages_min(task.get("Last Run Time", ""), now_local)
+    if ages is None:
+        return None
+    if not ages:
+        return "STALE", (f"auto-contract: it has never run, on a {every:.0f} min cadence")
+    if min(ages) > limit:
+        return "STALE", (f"auto-contract: last ran {min(ages):.0f} min ago, against "
+                         f"{limit:.0f} min ({DERIVED_PERIODS:g} x its {every:.0f} min cadence)")
+    return "OK", f"auto-contract: ran {min(ages):.0f} min ago (limit {limit:.0f} min)"
+
+
 #: Account-key states that are a definite fault: every stamp fails closed until a human restores
 #: the key from backup (libs/ops/provenance.RESTORE_STEP). `absent` is not one: a writer creates it.
 KEY_FAULT_STATES = frozenset({"short", "unreadable"})
@@ -490,6 +602,8 @@ def build() -> dict[str, Any]:
     seen: set[str] = set()
     TIMEOUTS.clear()
     tasks, scheduler_status = _tasks()
+    triggers = manifest_triggers(ROOT)
+    now_local = datetime.now(tz=UTC).astimezone()  # schtasks prints the box's local wall clock
 
     for t in tasks:
         name = (t.get("TaskName") or "").strip().lstrip("\\")
@@ -537,6 +651,10 @@ def build() -> dict[str, Any]:
                                                     "succeeded is UNMEASURED")
         elif code is not None and code not in (0, 267009, 267011) and not _running:
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
+        elif not artifact and not _running and not result_unmeasured and (
+            derived := derived_contract(t, triggers.get(name, ""), now_local)
+        ) is not None:
+            verdict, why = derived
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
                                             "nothing would notice")
