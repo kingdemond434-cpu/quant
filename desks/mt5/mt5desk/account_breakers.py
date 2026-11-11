@@ -67,10 +67,11 @@ RAIL_DAILY_LOSS = "account_daily_loss"
 RAIL_DISCONNECT = "account_disconnect"
 
 #: A last quote older than this is no evidence the terminal is live, so no new order is sent on
-#: it. Every lane reads a liquid symbol (XAUUSD, or the freshest of the FTMO clock symbols), which
-#: ticks several times a second while its market is open; the Fusion gateway's own 30-minute idle
-#: gate still decides "market closed" above this.
-QUOTE_MAX_AGE_S = 120.0
+#: it. It is the Fusion gateway's own idle gate (gateway.py: `age_sec > 1800` -> idle), the one
+#: quote-age bar already in production, so no lane refuses a quote the desk trades on today
+#: (audit HOLD f39234fbf: a tighter bar rests on an unmeasured tick rate). Tighten it only from a
+#: measured tick-gap distribution per lane.
+QUOTE_MAX_AGE_S = 1800.0
 #: A tick stamped this far AHEAD of the wall clock cannot be dated (box clock or broker clock
 #: wrong); refused as UNMEASURED rather than read as fresh.
 QUOTE_MAX_LEAD_S = 120.0
@@ -138,7 +139,7 @@ def trip_frac(account: str, declared_daily_limit: object = None) -> tuple[float,
 
 
 def daily_loss_latch(st: dict[str, Any], equity: object, day_key: str, frac: float, *,
-                     label: str) -> Breaker:
+                     label: str, anchor: object = None) -> Breaker:
     """(stand down for the rest of the day?) Updates `st` in place. THE ONE LATCH.
 
     The day's starting equity is the first readable equity seen on `day_key` (anchored once and
@@ -152,7 +153,16 @@ def daily_loss_latch(st: dict[str, Any], equity: object, day_key: str, frac: flo
         eq = float("nan")
     if not (math.isfinite(eq) and eq > 0.0):
         return Breaker(True, "UNMEASURED", f"{label}: equity unreadable; no new risk this pass")
+    venue = _positive(anchor)
     anchor = st.get("day_start_equity")
+    if venue is not None:
+        # THE VENUE'S OWN DAY ANCHOR when the lane measured it (FTMO: the CET-midnight balance
+        # from the deal history, ftmo_follower.day_start_balance). A first read taken after a
+        # loss would anchor below the firm's and fire past its limit (audit HOLD f39234fbf).
+        if not (isinstance(anchor, dict) and anchor.get("date") == day_key
+                and anchor.get("equity") == round(venue, 2)):
+            anchor = {"date": day_key, "equity": round(venue, 2), "source": "venue"}
+            st["day_start_equity"] = anchor
     if not (isinstance(anchor, dict) and anchor.get("date") == day_key
             and isinstance(anchor.get("equity"), (int, float))
             and not isinstance(anchor.get("equity"), bool) and float(anchor["equity"]) > 0.0):
@@ -203,8 +213,19 @@ def _save(doc: dict[str, Any], path: Path) -> bool:
         return False
 
 
+def _positive(x: object) -> float | None:
+    if isinstance(x, bool):
+        return None
+    try:
+        v = float(x)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) and v > 0.0 else None
+
+
 def account_latch(account: str, equity: object, day_key: str, *,
-                  declared_daily_limit: object = None, path: Path | None = None) -> Breaker:
+                  declared_daily_limit: object = None, path: Path | None = None,
+                  anchor: object = None) -> Breaker:
     """`daily_loss_latch` for a prop account, on this file's account-keyed state.
 
     The lanes of one account (E8 gold and the E8 executor) share one anchor and one latch: the
@@ -217,13 +238,13 @@ def account_latch(account: str, equity: object, day_key: str, *,
     doc, bad = _load(p)
     if doc is None:
         sub: dict[str, Any] = {}
-        b = daily_loss_latch(sub, equity, day_key, frac, label=label)
+        b = daily_loss_latch(sub, equity, day_key, frac, label=label, anchor=anchor)
         if b.state != "UNMEASURED":
             _save({account: sub}, p)
         return Breaker(True, "UNMEASURED", f"{label}: {bad}; no new risk this pass")
     sub = doc.get(account) if isinstance(doc.get(account), dict) else {}
     before = json.dumps(sub, sort_keys=True)
-    b = daily_loss_latch(sub, equity, day_key, frac, label=label)
+    b = daily_loss_latch(sub, equity, day_key, frac, label=label, anchor=anchor)
     if json.dumps(sub, sort_keys=True) != before:
         doc[account] = sub
         if not _save(doc, p) and b.state == "TRIPPED":
@@ -263,6 +284,12 @@ def connection_breaker(*, tick_age: float | None, terminal: Any = NOT_READ,
         return Breaker(True, "UNMEASURED", "disconnect breaker: the terminal did not answer "
                                            "terminal_info; no new orders this pass")
     if not isinstance(terminal, _NotRead):
+        if _flag(terminal, "connected") is None:
+            # The gateway returns True for a terminal that attached but would not describe
+            # itself: no `connected` answer is no evidence of a connection (audit HOLD f39234fbf).
+            return Breaker(True, "UNMEASURED", "disconnect breaker: terminal_info() carries no "
+                                               "readable `connected` flag; no new orders this "
+                                               "pass")
         if _flag(terminal, "connected") is False:
             return Breaker(True, "DISCONNECTED", "disconnect breaker: terminal_info().connected "
                                                  "is False (no broker connection); no new orders "
@@ -293,6 +320,15 @@ def connection_breaker(*, tick_age: float | None, terminal: Any = NOT_READ,
 
 
 # ------------------------------------------------------------------ the ledger line
+def forgone_risk_frac(account: str) -> float | None:
+    """The per-entry risk fraction of `account`'s profile: the growth one withheld entry costs."""
+    from mt5desk import account_profile as _ap
+    prof = _ap.PROFILES.get(ACCOUNT_PROFILE.get(account, ""))
+    rf = getattr(prof, "risk_frac", None)
+    return float(rf) if isinstance(rf, (int, float)) and not isinstance(rf, bool) else None
+
+
+
 def bill(rail: str, b: Breaker, *, account: str, lane: str, day: str,
          now: datetime | None = None, **fields: Any) -> bool:
     """One rails-ledger line for a trip or a refusal, never for an OK. A trip is billed once per
@@ -302,6 +338,16 @@ def bill(rail: str, b: Breaker, *, account: str, lane: str, day: str,
     if not b.refuse:
         return False
     from mt5desk import fusion_rails as _rails
+    # PRICED (audit HOLD f39234fbf, MF2): missed_growth sums `risk_frac` and `lot` per rail. The
+    # breaker stands down before any candidate is sized, so a lane that has no sized order passes
+    # none and the line carries the account's per-entry risk_frac as the forgone floor (one new
+    # entry withheld), named so in `forgone_basis`. A lane that sized one passes lot/risk_frac.
+    if "risk_frac" not in fields or fields.get("risk_frac") is None:
+        fields["risk_frac"] = forgone_risk_frac(account)
+        fields.setdefault("forgone_basis", "one_entry_at_profile_risk_frac")
+    else:
+        fields.setdefault("forgone_basis", "sized_order")
+    fields.setdefault("lot", None)
     if b.state == "TRIPPED":
         key = f"{account}/{day}/TRIPPED"
     elif rail == RAIL_DISCONNECT:

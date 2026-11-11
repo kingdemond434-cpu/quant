@@ -1390,7 +1390,10 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     ns = {
         "gateway_paused": _cfg.gateway_paused, "mt5": mt5, "datetime": _Clock, "json": json,
         "STATE": state_file, "PAUSED": pause, "log": logs.append, "decay_factor": decay_factor,
-        "connect": lambda: calls.append("connect") or True,
+        # A terminal that describes itself: a bare True (attached, no terminal_info) is refused
+        # as UNMEASURED by the disconnect breaker (audit HOLD f39234fbf).
+        "connect": lambda: calls.append("connect") or SimpleNamespace(connected=True,
+                                                                       trade_allowed=True),
         "sleeve_set": lambda: dc.roster({}, [])[0],
         "manage_open_positions": lambda st, sleeves: None,
         "release_gate": lambda: (True, "release identity ok (test)"),

@@ -310,7 +310,8 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_t
     # its terminal tick against the wall clock, and every E8 gold harness stamps its fake tick at
     # a fixed historical instant (the window under test), so the real 120 s limit would refuse
     # every placement those tests are about. tests/test_account_breakers.py puts the real limit
-    # back and drives each lane into the refusal.
+    # back: it drives ftmo_executor into the refusal and checks the other lanes' wiring by source
+    # (driving the gateway, E8 gold and the FTMO follower harnesses into it is still owed).
     monkeypatch.setattr(account_breakers, "QUOTE_MAX_AGE_S", float("inf"))
     yield d
 

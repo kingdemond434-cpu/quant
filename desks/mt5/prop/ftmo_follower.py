@@ -955,10 +955,19 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     # already read. Measured every pass; obeyed only at "the one order" below, so a resting
     # entry, a position and its stop management are never touched by either.
     from mt5desk import account_breakers as _ab
+    # FTMO's own day anchor (audit HOLD f39234fbf): the CET-midnight balance from the deal
+    # history, the one loss_guard below measures from; unmeasurable -> this lane's carried
+    # first-read balance of the CET day (_carry_day_start), never a later equity read.
+    _acct_doc = doc["account"] or {}
+    try:
+        _anchor: Any = day_start_balance(mt5, float(_acct_doc.get("balance")), cet_midnight, now,
+                                         server_epoch=float(tick.time))
+    except Exception:
+        _anchor = _acct_doc.get("day_start_balance")
     _breakers = (
         (_ab.RAIL_DAILY_LOSS, _ab.account_latch(
-            "ftmo", (doc["account"] or {}).get("equity"), cet,
-            declared_daily_limit=decl.get("daily_loss_frac"))),
+            "ftmo", _acct_doc.get("equity"), cet,
+            declared_daily_limit=decl.get("daily_loss_frac"), anchor=_anchor)),
         (_ab.RAIL_DISCONNECT, _ab.connection_breaker(
             tick_age=_ab.tick_age_s(getattr(tick, "time", None), now))))
     doc["account_breakers"] = {r: b.as_dict() for r, b in _breakers}

@@ -29,7 +29,7 @@ from mt5desk import account_profile as ap  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
 from mt5desk import fusion_rails  # noqa: E402
 
-REAL_QUOTE_MAX_AGE_S = 120.0
+REAL_QUOTE_MAX_AGE_S = 1800.0
 NOW = datetime(2026, 11, 11, 3, 0, tzinfo=UTC)
 
 
@@ -47,7 +47,8 @@ def _lines() -> list[dict]:
 # ------------------------------------------------------------------ thresholds from the profile
 def test_each_venue_threshold_comes_from_account_profile() -> None:
     assert ab.trip_frac("e8")[0] == pytest.approx(ap.E8_PRO.daily_circuit_breaker) == 0.015
-    assert ab.trip_frac("ftmo")[0] == pytest.approx(0.03)
+    # AT the firm's 5% (audit HOLD f39234fbf MF1), the same 5% the lanes' loss_guard enforces.
+    assert ab.trip_frac("ftmo")[0] == pytest.approx(0.05)
     assert ap.PROFILES["ftmo-2step"].daily_loss_limit == 0.05
     # Fusion has no venue limit: its own FUSION_DAILY_LOSS_FRAC stands, unchanged.
     assert ap.LIVE.daily_loss_limit is None and ap.LIVE.daily_circuit_breaker is None
@@ -55,10 +56,10 @@ def test_each_venue_threshold_comes_from_account_profile() -> None:
 
 
 def test_a_declared_tighter_daily_limit_tightens_and_a_looser_one_never_loosens() -> None:
-    assert ab.trip_frac("ftmo", 0.03)[0] == pytest.approx(0.018)        # FTMO 1-Step
-    assert ab.trip_frac("ftmo", 0.10)[0] == pytest.approx(0.03)
+    assert ab.trip_frac("ftmo", 0.03)[0] == pytest.approx(0.03)         # FTMO 1-Step
+    assert ab.trip_frac("ftmo", 0.10)[0] == pytest.approx(0.05)
     for junk in (None, "x", float("nan"), -1.0, 0.0):
-        assert ab.trip_frac("ftmo", junk)[0] == pytest.approx(0.03)
+        assert ab.trip_frac("ftmo", junk)[0] == pytest.approx(0.05)
 
 
 # ------------------------------------------------------------------ the daily-loss latch
@@ -78,9 +79,9 @@ def test_trips_at_the_threshold_and_latches_for_the_rest_of_the_day(tmp_path) ->
 def test_no_trip_just_above_the_threshold(tmp_path) -> None:
     p = tmp_path / "s.json"
     ab.account_latch("ftmo", 100_000.0, "2026-11-11", path=p)
-    b = ab.account_latch("ftmo", 97_000.01, "2026-11-11", path=p)       # floor 97,000
+    b = ab.account_latch("ftmo", 95_000.01, "2026-11-11", path=p)       # floor 95,000
     assert not b.refuse and b.state == "OK"
-    assert ab.account_latch("ftmo", 97_000.0, "2026-11-11", path=p).state == "TRIPPED"
+    assert ab.account_latch("ftmo", 95_000.0, "2026-11-11", path=p).state == "TRIPPED"
 
 
 def test_the_broker_day_resets_the_anchor_and_the_latch(tmp_path) -> None:
@@ -194,10 +195,10 @@ def test_trading_switched_off_refuses(real_limit) -> None:
 
 def test_a_stale_quote_refuses_and_a_fresh_one_passes(real_limit) -> None:
     live = SimpleNamespace(connected=True, trade_allowed=True)
-    assert not ab.connection_breaker(tick_age=119.0, terminal=live, account=SimpleNamespace(
+    assert not ab.connection_breaker(tick_age=1799.0, terminal=live, account=SimpleNamespace(
         trade_allowed=True)).refuse
-    b = ab.connection_breaker(tick_age=121.0, terminal=live)
-    assert b.refuse and b.state == "STALE_QUOTE" and "121s old" in b.why
+    b = ab.connection_breaker(tick_age=1801.0, terminal=live)
+    assert b.refuse and b.state == "STALE_QUOTE" and "1801s old" in b.why
 
 
 @pytest.mark.parametrize("kw", [
@@ -274,8 +275,10 @@ from test_ftmo_executor import NOW as FX_NOW  # noqa: E402
 from test_ftmo_executor import fx, world  # noqa: E402,F401
 
 
-def test_ftmo_executor_refuses_a_stale_quote_and_bills_it(world, real_limit) -> None:  # noqa: F811
-    # 200 s without a tick: inside the clock check's 300 s skew, past the breaker's 120 s.
+def test_ftmo_executor_refuses_a_stale_quote_and_bills_it(world, monkeypatch) -> None:  # noqa: F811
+    # The real 1800 s bar sits past the executor's own 300 s clock skew check, so the lane is
+    # driven into the breaker with a bar inside it: 200 s without a tick, past a 120 s bar.
+    monkeypatch.setattr(ab, "QUOTE_MAX_AGE_S", 120.0)
     world.mt5.tick_epoch -= 200
     doc = fx.run(world.mt5, armed=True, now=FX_NOW)
     assert doc["status"] == "ACCOUNT_DISCONNECT" and world.mt5.sent == []
@@ -285,7 +288,7 @@ def test_ftmo_executor_refuses_a_stale_quote_and_bills_it(world, real_limit) -> 
 def test_ftmo_executor_trips_the_latch_sends_nothing_new_and_touches_nothing_open(
         world, real_limit) -> None:  # noqa: F811
     fx.run(world.mt5, armed=False, now=FX_NOW)                     # anchors the CET day
-    world.mt5.acc = SimpleNamespace(equity=96_900.0, balance=100_000.0)   # -3.1% floating
+    world.mt5.acc = SimpleNamespace(equity=94_900.0, balance=100_000.0)   # -5.1% floating
     resting = SimpleNamespace(ticket=1, symbol="EURUSD", type=2, magic=0, sl=1.0, price_open=1.1,
                               volume_current=0.1, volume_initial=0.1, tp=0.0)
     world.mt5.orders.append(resting)
@@ -294,3 +297,39 @@ def test_ftmo_executor_trips_the_latch_sends_nothing_new_and_touches_nothing_ope
     assert world.mt5.sent == [] and world.mt5.orders == [resting]
     rows = [r for r in _lines() if r["rail"] == "account_daily_loss"]
     assert [r["state"] for r in rows] == ["TRIPPED"] and rows[0]["account"] == "ftmo"
+
+
+# ------------------------------------------------------------------ audit HOLD f39234fbf
+def test_the_venue_anchor_wins_over_a_first_read_taken_after_a_loss(tmp_path) -> None:
+    path = tmp_path / "s.json"
+    # First read of the day is already 4% down; FTMO's midnight balance was 100k.
+    late = ab.account_latch("ftmo", 96_000.0, "2026-11-11", path=path)
+    assert not late.refuse
+    b = ab.account_latch("ftmo", 94_900.0, "2026-11-11", path=path, anchor=100_000.0)
+    assert b.state == "TRIPPED", b
+    # Without the venue anchor the first read (96k) would have held the floor at 91.2k.
+    assert json.loads(path.read_text())["ftmo"]["day_start_equity"]["source"] == "venue"
+
+
+def test_a_terminal_with_no_connected_flag_is_unmeasured() -> None:
+    b = ab.connection_breaker(tick_age=1.0, terminal=True)
+    assert b.refuse and b.state == "UNMEASURED"
+    b = ab.connection_breaker(tick_age=1.0, terminal=SimpleNamespace(trade_allowed=True))
+    assert b.refuse and b.state == "UNMEASURED"
+    ok = ab.connection_breaker(tick_age=1.0, terminal=SimpleNamespace(connected=True,
+                                                                       trade_allowed=True))
+    assert not ok.refuse
+
+
+def test_every_line_is_priced_for_missed_growth() -> None:
+    trip = ab.Breaker(True, "TRIPPED", "t")
+    assert ab.bill(ab.RAIL_DAILY_LOSS, trip, account="ftmo", lane="ftmo_executor", day="d1")
+    cb = ab.Breaker(True, "STALE_QUOTE", "s")
+    assert ab.bill(ab.RAIL_DISCONNECT, cb, account="e8", lane="e8_gold", day="d1",
+                   risk_frac=0.004, lot=0.2)
+    rows = {r["rail"]: r for r in _lines()}
+    dl, dc_ = rows["account_daily_loss"], rows["account_disconnect"]
+    assert dl["risk_frac"] == pytest.approx(ap.PROFILES["ftmo-2step"].risk_frac)
+    assert dl["forgone_basis"] == "one_entry_at_profile_risk_frac" and dl["lot"] is None
+    assert dc_["risk_frac"] == 0.004 and dc_["lot"] == 0.2
+    assert dc_["forgone_basis"] == "sized_order"
