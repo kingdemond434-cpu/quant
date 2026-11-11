@@ -18,17 +18,24 @@ if str(_DESK) not in sys.path:
 from mt5desk import fill_surface as fs  # noqa: E402
 
 
-def _intent(ticket: int, intended: float, hour: int) -> dict:
+_KEYS = {1: "sha256:" + "a" * 16, 2: "sha256:" + "b" * 16}
+_SERVERS = {1: "Fusion-Live", 2: "FTMO-Server"}
+
+
+def _acct(n: int) -> dict:
+    return {"account_key": _KEYS[n], "server": _SERVERS[n], "account_kind": "live"}
+
+
+def _intent(ticket: int, intended: float, hour: int, acct: int = 1) -> dict:
     return {"ticket": ticket, "intended": intended, "side": "buy_stop", "sl": intended - 10.0,
             "tp": intended + 20.0, "lot": 0.01, "symbol": "XAUUSD", "sleeve": "gold_asia",
-            "time": f"2026-11-0{1 + ticket % 9}T{hour:02d}:00:00+00:00"}
+            "time": f"2026-11-0{1 + ticket % 9}T{hour:02d}:00:00+00:00", **_acct(acct)}
 
 
-def _deal(ticket: int, fill: float, login: int = 1) -> dict:
+def _deal(ticket: int, fill: float, acct: int = 1) -> dict:
     return {"entry_order": ticket, "position_id": ticket, "entry_price": fill,
             "fill_price": fill + 5.0, "sl": fill - 10.0, "risk_quote": 10.0, "side": 1,
-            "symbol": "XAUUSD", "sleeve": "gold_asia", "deal": ticket * 10,
-            "login": login, "server": "Fusion-Live", "account_kind": "live"}
+            "symbol": "XAUUSD", "sleeve": "gold_asia", "deal": ticket * 10, **_acct(acct)}
 
 
 def test_each_intent_gets_its_own_entry_fill_and_nothing_else():
@@ -42,8 +49,21 @@ def test_each_intent_gets_its_own_entry_fill_and_nothing_else():
 def test_a_ledger_holding_two_accounts_still_joins_each_ticket():
     """`markout.compute` refuses a mixed ledger for STATISTICS; a fill is a fact about its own
     ticket, so each account's deals are joined on their own and the facts merged."""
-    intents = [_intent(1, 2000.0, 4), _intent(2, 2100.0, 5)]
-    assert fs.join_fills(intents, [_deal(1, 2000.3, login=1), _deal(2, 2100.4, login=2)]) == 2
+    intents = [_intent(1, 2000.0, 4, acct=1), _intent(2, 2100.0, 5, acct=2)]
+    assert fs.join_fills(intents, [_deal(1, 2000.3, acct=1), _deal(2, 2100.4, acct=2)]) == 2
+
+
+def test_the_same_ticket_on_two_brokers_never_trades_fills():
+    """Ticket numbers are per broker. Fusion ticket 7 and FTMO ticket 7 are different orders;
+    a join on the bare number would give one the other's fill and invent a $500 slip."""
+    fusion, ftmo = _intent(7, 2000.0, 4, acct=1), _intent(7, 2500.0, 4, acct=2)
+    n = fs.join_fills([fusion, ftmo], [_deal(7, 2000.3, acct=1), _deal(7, 2500.2, acct=2)])
+    assert n == 2
+    assert (fusion["fill"], ftmo["fill"]) == (2000.3, 2500.2)
+
+    lone = _intent(7, 2500.0, 4, acct=2)
+    assert fs.join_fills([lone], [_deal(7, 2000.3, acct=1)]) == 0
+    assert lone.get("fill") is None
 
 
 def test_the_surface_fits_on_joined_fills_where_it_never_could_before(tmp_path):
@@ -66,3 +86,15 @@ def test_the_gateway_fits_its_surface_on_joined_rows():
     src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
     body = src.split("def _fill_surface():", 1)[1].split("\ndef ", 1)[0]
     assert "fill_surface.load_joined(" in body
+
+
+def test_an_intent_from_before_provenance_joins_only_an_unambiguous_ticket():
+    legacy = {k: v for k, v in _intent(9, 2000.0, 4).items()
+              if k not in ("account_key", "server", "account_kind")}
+    assert fs.join_fills([legacy], [_deal(9, 2000.4, acct=1)]) == 1
+    assert legacy["fill"] == 2000.4
+
+    shared = {k: v for k, v in _intent(9, 2000.0, 4).items()
+              if k not in ("account_key", "server", "account_kind")}
+    assert fs.join_fills([shared], [_deal(9, 2000.4, acct=1), _deal(9, 2000.6, acct=2)]) == 0
+    assert shared.get("fill") is None, "a ticket two accounts share was guessed"

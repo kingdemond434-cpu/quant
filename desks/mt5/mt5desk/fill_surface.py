@@ -171,20 +171,33 @@ def join_fills(intents: list[dict[str, Any]], deals: list[dict[str, Any]]) -> in
     choice (market / limit / stop / split) was made against a cost of nearly zero.
 
     The join is `markout.compute`'s (entry order / position id, then the stop/target echo), run
-    ONE ACCOUNT AT A TIME: a fill is a fact about its ticket, but `compute` refuses a mixed
-    ledger, so each account's deals are joined separately and the facts merged.
+    ONE ACCOUNT'S DEALS AT A TIME and keyed by (account, ticket). Ticket numbers are per broker:
+    an FTMO ticket can equal a Fusion one, and a join on the bare number would hand one
+    account's fill to another's intent and fabricate a slip of whatever the two prices differ by.
+    An intent that names its account takes a fill from that account only. An intent written
+    before provenance stamping (no account fields at all -- 222 of the 294 ticketed intents
+    measured 2026-11-11) takes a fill only when exactly one account holds that ticket; a ticket
+    two accounts share stays unfilled, never guessed.
     """
     from mt5desk.markout import compute
-    from mt5desk.provenance import split_by_account
+    from mt5desk.provenance import row_account, split_by_account
 
-    fills: dict[str, float] = {}
-    for group in (split_by_account(deals).values() if deals else ()):
+    fills: dict[tuple[Any, str], float] = {}
+    for acct, group in (split_by_account(deals).items() if deals else ()):
         for r in compute(intents, list(group)).rows:
             if r.get("order") is not None and r.get("fill") is not None:
-                fills[str(r["order"])] = float(r["fill"])
+                fills[(acct, str(r["order"]))] = float(r["fill"])
+    by_ticket: dict[str, list[float]] = {}
+    for (_acct, ticket), fill in fills.items():
+        by_ticket.setdefault(ticket, []).append(fill)
     n = 0
     for it in intents:
-        f = fills.get(str(it.get("ticket")))
+        ticket = str(it.get("ticket"))
+        if any(it.get(k) is not None for k in ("account_key", "server", "account_kind")):
+            f = fills.get((row_account(it), ticket))
+        else:
+            only = by_ticket.get(ticket) or []
+            f = only[0] if len(only) == 1 else None
         if f is not None and it.get("fill") is None:
             it["fill"] = f
             n += 1
