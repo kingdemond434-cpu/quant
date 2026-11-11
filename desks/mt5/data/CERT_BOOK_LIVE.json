@@ -5,17 +5,38 @@
  "source": "context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md (final sizes table); solver research/kelly_survival.py --book, PR #216",
  "rule": "gateway.allocator_book() lays the fusion block over the allocator's book; prop/e8_gold.window_risk and prop/e8_executor size the e8 keys from the e8 block. A key not named here keeps the allocator's fraction (or the venue's RISK_FRAC). enabled=false, a missing file or any invalid value leaves today's sizing untouched. Every value must lie in [0, sizing.MAX_RISK_FRAC].",
  "fusion": {
-  "EURZAR_overnight_gap_decay_asia": 0.098,
-  "USDZAR_overnight_gap_decay_asia": 0.1,
-  "AUDCHF_overnight_gap_decay_asia": 0.1,
-  "gold_asia": 0.082
+  "EURZAR_overnight_gap_decay_asia": 0.0,
+  "USDZAR_overnight_gap_decay_asia": 0.0,
+  "AUDCHF_overnight_gap_decay_asia": 0.0,
+  "gold_london_am": 0.0,
+  "gold_afternoon": 0.0,
+  "xau_m5_anti_breakout_overlap": 0.0,
+  "xau_m15_anti_breakout": 0.0,
+  "xau_m5_anti_momentum_ny": 0.0
  },
  "e8": {
-  "gold_asia": 0.01,
-  "AUDCHF_overnight_gap_decay_asia": 0.01
+  "gold_asia": 0.006,
+  "gold_london_am": 0.0,
+  "gold_afternoon": 0.0,
+  "USDJPY_session_range_breakout_asia": 0.0,
+  "NZDJPY_clock_transition_asia": 0.0,
+  "AUDCHF_overnight_gap_decay_asia": 0.0
+ },
+ "ftmo": {
+  "gold_asia": 0.009
+ },
+ "ftmo_by": "coordinator 2026-10-21 (FTMO follower, URGENT): gold_asia at 0.009 of equity per trade, read only by prop/ftmo_follower.py, which places one order a day in E8's filled gold_asia direction and is standby until data/FTMO_FOLLOWER_ARMED exists.",
+ "e8_by": "principal zuck 2026-10-20 21:52Z: \"trade only gold asia for fusion and mt5 and increase risk fr gold asia to maximum for max pass probability while max speed on e8\" -- gold_asia at 0.006 (the box's value, coordinator 2026-10-20 after the audit HOLD on r5: Max-growth, sizing/e8_gold_asia_max_pass_2026-10-20.md -- 0.006 stands while both legs trade; 0.007 only with the cross-account OCO; supersedes 0.0095), gold_london_am and gold_afternoon at 0.0 (also code pins, decision_core.PRINCIPAL_ZERO[\"e8\"]). Supersedes zuck 2026-10-20 16:55Z max-pass solve, re-confirmed 17:16Z: gold_asia, gold_london_am and gold_afternoon at 0.0075 each. USDJPY, NZDJPY and AUDCHF stay at 0.0 (zuck 17:02Z: USDJPY is not added to either account). Supersedes: principal zuck, decision card cmsg_012XFUfE12Rvggnu86fDb8pr1miNkYN9MrEoqLvGcMpBDA option 'Add USDJPY' 2026-10-14T05:54:44Z (USDJPY at 0.004, gold_asia at 0.0075), over the 2026-10-13 21:25Z book cmsg_012XFUfE12Rvggnu86fDb8prYF2bx4BV24eVPLfJMbNLxD. USDJPY is held at 0.0, FORWARD-ONLY, until certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 is re-certified from a clean lineage (live_sleeve_policy reddit_lineage_quarantine; CERT_BOOK_LIVE excluded). The approved target, once certified, is 0.004.",
+ "e8_pins": {
+  "gold_asia": "gateway window gold_asia, clock XAUUSD.asia",
+  "USDJPY_session_range_breakout_asia": "certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12, clock USDJPY.asia#rr=2.5 (alias usdjpy_session_range_breakout_asia_rr25_wb12); FORWARD-ONLY at 0.0"
+ },
+ "e8_pending": {
+  "USDJPY_session_range_breakout_asia": 0.004
  },
  "excluded": {
   "USDJPY_session_range_breakout_asia": "Reddit-only lineage (PR #162); quarantined in live_sleeve_policy.json until re-certified from a clean lineage",
   "CHFNOK_carry_asia": "carry lookahead, pending re-judge (PR #269); quarantined in live_sleeve_policy.json"
- }
+ },
+ "fusion_by": "principal zuck, BOOKS_PATCH v5 (approved 2026-10-13): the three gap_decay keys stay at 0.0 (never an empty block: load_cert_book returns None on {}); gold_asia's 0.082 is removed. gold_asia (zuck 2026-10-20 21:52Z: gold_london_am and gold_afternoon at 0.0 here) and the three FX book sleeves trade at max(0.01 lot, the lot at 0.75% risk at its own stop; coordinator 2026-10-20 after the audit HOLD on 50ef074f9) through decision_core.MINLOT_OVERRIDE_SLEEVES, not through this block. The three XAU scalp sleeves (xau_m5_anti_breakout_overlap, xau_m15_anti_breakout, xau_m5_anti_momentum_ny) are at 0.0: the scalp lane's stand-down (zuck 2026-09-29; retired 2026-09-30), pinned here after the allocator's pf.book was found still funding xau_m5_anti_breakout_overlap at 0.042909 (coordinator, box read 2026-10-20 23:15Z). Every 0.0 here is ALSO a code pin (decision_core.PRINCIPAL_ZERO), so a void block cannot unpin it."
 }

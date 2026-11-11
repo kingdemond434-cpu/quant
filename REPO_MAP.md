@@ -165,9 +165,10 @@ as deprecated is how a working path gets deleted by a future cleanup.
 - This is NOT the retired `run_mt5_*` scripts listed above. It is a standalone desk executing
   on the local Windows host (`C:\Users\dell\mt5-research`); this VPS directory is a
   visibility/coordination copy only — do not run it here.
-- Read `desks/mt5/docs/MT5_DESK.md` + `MT5_DESK_STATE.json`: armed gateway, 4 decorrelated daily
-  breakout sleeves on XAUUSD, combined SR 2.34 backtest, ~116%/yr model at 0.01 lot/sleeve, worst
-  DD -51%.
+- Read `desks/mt5/docs/MT5_DESK.md`, then the box-published state: `desks/mt5/data/sleeves.json`
+  (live sleeves), `desks/mt5/data/account_state.json`, `desks/mt5/data/gateway_state.json` and
+  `desks/mt5/reports/DESK_HEALTH.json`. `MT5_DESK_STATE.json` is RETIRED (2026-10-13): it described
+  the 2026-08 Vantage gold desk and nothing regenerated it.
 - Forward validation started 2026-08-17 07:00 UTC (50 trades + 14 days gate).
 - **The money path**, end to end: `desks/mt5/research/` (hypothesis → `universal_gate.py` ten-gate
   gauntlet → `shadow_forward.py` → `promoter.py`) hands an approved sleeve to
