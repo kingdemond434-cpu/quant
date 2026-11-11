@@ -62,19 +62,47 @@ def register(card: dict[str, Any], *, source: str, path: Path = LEDGER,
         row["spec_id"] = spec_id
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(row, default=str) + "\n")
+        fh.write(_line_start(path) + json.dumps(row, default=str) + "\n")
     return h
 
 
+def _line_start(path: Path) -> str:
+    """"\n" when the ledger's last byte is not a newline, else "".
+
+    A TORN TAIL (2026-11-11, Judge via Desk health): a writer killed mid-append -- the
+    MergeDocket reaper (#984), a reboot, a scheduler time limit -- leaves a partial last line.
+    Appending straight after it would glue the next card onto that fragment, so the next card
+    would be unreadable too: every reader skips an unparsable line, and the card that line held
+    would be lost while its rows were stamped PREREGISTERED. Starting a fresh line first leaves
+    the fragment on a line of its own, which every reader skips, and the ledger still only grows
+    (tier_s seals it as grow-only: it is never truncated or rewritten here)."""
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, 2)
+            if fh.tell() == 0:
+                return ""
+            fh.seek(-1, 2)
+            return "" if fh.read(1) == b"\n" else "\n"
+    except OSError:
+        return ""
+
+
 def cards(path: Path = LEDGER) -> dict[str, dict[str, Any]]:
+    """prereg_hash -> card. An unparsable line (a torn tail) is skipped, never the rest."""
     out: dict[str, dict[str, Any]] = {}
     try:
-        for ln in path.read_text("utf-8").splitlines():
-            if ln.strip():
-                r = json.loads(ln)
-                out[str(r.get("prereg_hash"))] = r
-    except (OSError, ValueError):
-        pass
+        text = path.read_text("utf-8", errors="replace")
+    except OSError:
+        return out
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            out[str(r.get("prereg_hash"))] = r
     return out
 
 
@@ -356,9 +384,10 @@ def register_docket(rows: list[dict[str, Any]], *, judged: Container[str] = froz
     at = (now or datetime.now(tz=UTC)).isoformat()
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
+        lead = _line_start(p)
         with p.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"prereg_hash": h, "registered_utc": at, "source": source,
-                                 **card}, default=str) + "\n")
+            fh.write(lead + json.dumps({"prereg_hash": h, "registered_utc": at, "source": source,
+                                        **card}, default=str) + "\n")
     except OSError as exc:
         out["error"] = f"ledger unwritable: {type(exc).__name__}: {exc}"
         for rs in new.values():
