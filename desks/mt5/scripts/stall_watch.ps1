@@ -81,6 +81,44 @@ function Get-ResearchTreeCpuSeconds {
   return $totalCpu
 }
 
+function Get-GauntletLauncherAncestor {
+  param([object]$Candidate, [object[]]$Snapshot)
+  $byId = @{}
+  foreach ($item in $Snapshot) { $byId[[int]$item.ProcessId] = $item }
+  $visited = @{}
+  $cursor = $Candidate
+  while ($null -ne $cursor) {
+    $cursorId = [int]$cursor.ProcessId
+    if ($visited.ContainsKey($cursorId)) { return $null }
+    $visited[$cursorId] = $true
+    if ([string]$cursor.CommandLine -match '[\\/]run_sharded_gauntlet\.py(?:["\s]|$)') {
+      return $cursorId
+    }
+    $parentId = [int]$cursor.ParentProcessId
+    if (-not $byId.ContainsKey($parentId)) { return $null }
+    $parent = $byId[$parentId]
+    if ($parent.CreationDate -and $cursor.CreationDate -and
+        $parent.CreationDate -gt $cursor.CreationDate) { return $null }
+    $cursor = $parent
+  }
+  return $null
+}
+
+function Get-ResearchStackedDisposition {
+  param([string]$Pattern, [object]$Keeper, [object]$Candidate, [object[]]$Snapshot)
+  if ($Candidate.ParentProcessId -eq $Keeper.ProcessId -or
+      $Candidate.ParentProcessId -eq $Keeper.ParentProcessId) { return 'KEEP_RELATED' }
+  if ($Pattern -eq 'external_gauntlet' -and
+      [string]$Keeper.CommandLine -match 'shard_worker\(' -and
+      [string]$Candidate.CommandLine -match 'shard_worker\(') {
+    $keeperRoot = Get-GauntletLauncherAncestor -Candidate $Keeper -Snapshot $Snapshot
+    $candidateRoot = Get-GauntletLauncherAncestor -Candidate $Candidate -Snapshot $Snapshot
+    if ($null -eq $keeperRoot -or $null -eq $candidateRoot) { return 'UNMEASURED_ANCESTRY' }
+    if ($keeperRoot -eq $candidateRoot) { return 'KEEP_SHARD_TREE' }
+  }
+  return 'KILL_DUPLICATE'
+}
+
 foreach ($pat in $patterns) {
   $procs = Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
            Where-Object { $_.CommandLine -match $pat } | Sort-Object CreationDate
@@ -96,7 +134,12 @@ foreach ($pat in $patterns) {
   # (rc 75) are what serialise those, not STACKED.
   $keeper = $procs[0]
   foreach ($p in ($procs | Select-Object -Skip 1)) {
-    if ($p.ParentProcessId -ne $keeper.ProcessId -and $p.ParentProcessId -ne $keeper.ParentProcessId) {
+    $disposition = Get-ResearchStackedDisposition -Pattern $pat -Keeper $keeper -Candidate $p -Snapshot $allProcs
+    if ($disposition -eq 'UNMEASURED_ANCESTRY') {
+      $actions += "ANCESTRY UNMEASURED ${pat}: pid $($p.ProcessId) left alone; shard launcher identity unavailable"
+      continue
+    }
+    if ($disposition -eq 'KILL_DUPLICATE') {
       Stop-Process -Id $p.ProcessId -Force
       $actions += "STACKED ${pat}: killed duplicate pid $($p.ProcessId) (kept oldest $($keeper.ProcessId))"
     }
@@ -325,10 +368,42 @@ try {
 $requiredTasks = @('MT5-Gauntlet','MT5-Shadow','MT5-Hourly','MT5-DeskState','MT5-MoatRecorder',
                    'MT5-MoatSilver','MT5-StallWatch','MT5-Universe','MT5-ShadowSync',
                    'MT5-TerminalBoot')
-$present = (schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | ForEach-Object { $_.TaskName -replace '^\\','' })
-foreach ($rt in $requiredTasks) {
-  if ($present -notcontains $rt) {
+# A whole-machine schtasks /Query can block this watchdog for hours. Query only the
+# same required root tasks, with a per-operation bound. An unreadable inventory is
+# UNMEASURED, never proof that a task was deleted. This census changes no task.
+function Get-RequiredTaskPresence {
+  param([string[]]$TaskNames, [scriptblock]$Query = {
+    param([string]$TaskName)
+    $escapedName = $TaskName.Replace("'", "''")
+    Get-CimInstance -Namespace 'Root/Microsoft/Windows/TaskScheduler' `
+      -ClassName MSFT_ScheduledTask -Filter "TaskName='$escapedName' AND TaskPath='\\'" `
+      -OperationTimeoutSec 5 -ErrorAction Stop
+  })
+  foreach ($taskName in $TaskNames) {
+    $state = 'UNMEASURED'
+    $reason = ''
+    try {
+      $rows = @(& $Query $taskName)
+      if ($rows.Count -eq 0) {
+        $state = 'MISSING'
+      } elseif (@($rows | Where-Object { $_.TaskName -eq $taskName -and $_.TaskPath -eq '\' }).Count -gt 0) {
+        $state = 'PRESENT'
+      } else {
+        $reason = 'query returned no matching root task'
+      }
+    } catch {
+      $reason = $_.Exception.GetType().Name
+    }
+    [pscustomobject]@{ TaskName = $taskName; State = $state; Reason = $reason }
+  }
+}
+
+foreach ($taskPresence in @(Get-RequiredTaskPresence -TaskNames $requiredTasks)) {
+  $rt = $taskPresence.TaskName
+  if ($taskPresence.State -eq 'MISSING') {
     $actions += "TASK MISSING: $rt is not registered at all -- re-register from ops/ (deletion, not failure)"
+  } elseif ($taskPresence.State -eq 'UNMEASURED') {
+    $actions += "TASK CENSUS UNMEASURED: $rt could not be verified ($($taskPresence.Reason)); no deletion inferred"
   }
 }
 
@@ -466,7 +541,9 @@ try {
 #   RELEASE.json, LIVE_MANIFEST.jsonl, sleeve_registry.json -- the identity chain
 # A candidate under one of these is skipped, not trimmed. The floor is never worth the moat.
 $DiskFloorGB = 5
-$Protected = @('\data\tape', '\data\secrets', '\data\universe',
+# The judge's in-flight shard plan lives under gauntlet_cache\shards: deleting it mid-sweep makes
+# every shard fail closed and discards the whole sweep (the sweep removes its own files).
+$Protected = @('\data\tape', '\data\secrets', '\data\universe', '\gauntlet_cache\shards',
                'RELEASE.json', 'LIVE_MANIFEST.jsonl', 'sleeve_registry.json')
 
 function Test-DeskProtected([string]$Path) {
@@ -480,13 +557,20 @@ if ($free -lt $DiskFloorGB) {
   # cheapest first. `age` prunes files older than N days; `all` takes the whole pool.
   $tiers = @(
     @{ name = 'logs>14d';        path = "$base\logs";                    age = 14 },
-    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 0  },
+    # THE JUDGE'S OWN DEAD-KEY RULE FIRST, EVERYTHING ELSE LAST (2026-10-20, audit should-fix).
+    # A key carries its data-day, but "older than a day" is NOT dead: a weekend or a frozen
+    # symbol keeps one data-day for days, and a cache hit never touches mtime. The judge prunes
+    # its own cache at > 3 days by mtime at the start of every sweep (external_gauntlet main), so
+    # this tier deletes only what the next sweep would delete itself. Younger entries -- today's
+    # pre-warm output among them -- go only as the very last tier.
+    @{ name = 'gauntlet_cache';  path = "$base\reports\gauntlet_cache";  age = 3  },
     @{ name = 'pycache';         path = $q;                              age = -1 },
     @{ name = 'logs>3d';         path = "$base\logs";                    age = 3  },
     @{ name = 'free_data_cache'; path = "$base\data\free_data_cache";    age = 0  },
     @{ name = 'alloc_cache';     path = "$base\data\pf_allocator_cache"; age = 0  },
     @{ name = 'reports>7d';      path = "$base\reports";                 age = 7  },
-    @{ name = 'temp';            path = $env:TEMP;                       age = 1  }
+    @{ name = 'temp';            path = $env:TEMP;                       age = 1  },
+    @{ name = 'gauntlet_cache_today'; path = "$base\reports\gauntlet_cache"; age = 0 }
   )
   $before = $free
   foreach ($t in $tiers) {
