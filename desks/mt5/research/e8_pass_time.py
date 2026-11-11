@@ -129,8 +129,8 @@ def simulate(paths_r: np.ndarray, risks: np.ndarray, *, start: float = START_BAL
     low = np.minimum(run.min(axis=2), 0.0)
     close = np.minimum(run[..., -1], DAILY_PROFIT_CAP)
 
-    target = start * (1.0 + PROFIT_TARGET)
-    floor = start * (1.0 - STATIC_DRAWDOWN)
+    target = START_BALANCE * (1.0 + PROFIT_TARGET)   # anchored to the account, not the walk
+    floor = START_BALANCE * (1.0 - STATIC_DRAWDOWN)
     bal = np.full(n, start)
     state = np.zeros(n, dtype=int)            # 0 live, 1 pass, 2 daily, 3 static
     days = np.full(n, t_n)
