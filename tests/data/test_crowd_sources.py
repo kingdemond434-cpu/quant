@@ -111,7 +111,7 @@ def test_the_real_terms_table_is_fail_closed_and_a_blocked_venue_is_never_reques
     calls = _stub(monkeypatch, "{}")
     assert real.TERMS and all(v[0] == "BLOCKED_TERMS" for v in real.TERMS.values())
     for name, fn in real.CROWD_FNS.items():
-        arts, err = fn("x")
+        arts, err = fn("host.test::x" if name == "discourse" else "x")
         assert arts == [] and err and "BLOCKED_TERMS" in err, name
     assert calls == []
     assert real.terms_allow("unknown_venue")[0] is False

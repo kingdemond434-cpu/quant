@@ -67,7 +67,7 @@ _UA: Final[dict[str, str]] = {
 #: PER-VENUE TERMS, FAIL-CLOSED (Auditor HOLD on #660, 2026-11-11). A venue is fetched ONLY when
 #: its terms were READ and permit automated collection for this desk's use, which is commercial.
 #: Read 2026-11-11 (quotes in desks/mt5/research/grounds/crowd_venues.json):
-#:   niconico  -- Snapshot API terms 1-2: "本API及び本ドキュメントを、営利目的に利用することはできません"
+#:   niconico  -- Snapshot API terms 1-2 forbid commercial use (営利目的の利用不可)
 #:   discourse -- TradingQnA and ValuePickr license user content CC BY-NC-SA 3.0 (non-commercial)
 #:   fivech    -- "コンテンツの無断複写、転載を禁じます" and robots.txt disallows *.dat
 #:   yahoo_jp_board / naver_board / guba / tieba -- terms could not be loaded: UNREAD
