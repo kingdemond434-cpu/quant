@@ -21,6 +21,14 @@ path's blob replaced by the scrubbed blob (written with `git hash-object -w`). I
 login fence, so the fence still judges the final bytes -- a file this could not scrub (not JSON,
 an `account` that is not a mapping) passes through unchanged and the fence refuses it. Any
 failure exits non-zero and the publisher publishes nothing. Nothing here prints a value.
+
+`account_state.json` IS PUBLISHED UNIT-FREE (2026-11-11, Auditor ruling). Its writer
+(ops/publish_account_state.py) records balance, equity, margin and today's P&L in the account
+currency, and the box reads those amounts locally. The public repository gets
+`unit_free_account(doc)` instead: the descriptive keys in `ACCOUNT_PUBLIC_KEYS` plus percentages
+derived from the amounts (today's P&L against the day's opening equity, margin used against
+equity). No currency amount leaves the box. The git history before this change still holds the
+earlier copies; that residual is journalled, not rewritten.
 """
 from __future__ import annotations
 
@@ -40,6 +48,11 @@ ACCOUNT_FIELDS = ("currency", "company", "server", "margin_mode", "leverage")
 
 #: published path -> the key path of the account mapping inside it, and how its writer dumps it.
 SCRUBBED: dict[str, dict[str, Any]] = {
+    "desks/mt5/data/account_state.json": {
+        "publish_view": "unit_free",
+        "dump": {"indent": 1},
+        "newline": False,
+        "writer": "ops/publish_account_state.py"},
     "desks/mt5/data/cost_truth_quotes.json": {
         "account_at": ("account",),
         "dump": {"indent": 1, "sort_keys": True},
@@ -80,12 +93,72 @@ def withhold_login(account: Mapping[str, Any]) -> tuple[dict[str, Any], list[str
     return kept, dropped
 
 
+#: The keys of account_state.json published as written: none of them is an amount.
+#: `margin_level` is MetaTrader's equity / margin in percent.
+ACCOUNT_PUBLIC_KEYS: frozenset[str] = frozenset({
+    "updated_at", "source", "venue", "server", "login_withheld", "currency", "open_positions",
+    "margin_level", "positions_file",
+})
+
+#: derived key -> (numerator amount, basis). Basis "open" is the day's opening equity
+#: (equity - today_pnl); "equity" is current equity. Percent, rounded to 4 places.
+ACCOUNT_DERIVED: dict[str, tuple[str, str]] = {
+    "today_pnl_pct": ("today_pnl", "open"),
+    "today_closed_pnl_pct": ("today_closed_pnl", "open"),
+    "today_floating_pnl_pct": ("today_floating_pnl", "open"),
+    "today_swap_pct": ("today_swap", "open"),
+    "margin_used_pct": ("margin", "equity"),
+    "margin_free_pct": ("margin_free", "equity"),
+}
+
+
+def _amount(doc: Mapping[str, Any], key: str) -> float | None:
+    v = doc.get(key)
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    return float(v)
+
+
+def unit_free_account(doc: Mapping[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """(the publishable view of account_state.json, key NAMES dropped -- never a value).
+
+    Already-derived percentages pass through, so a published view maps to itself."""
+    view: dict[str, Any] = {k: v for k, v in doc.items()
+                            if k in ACCOUNT_PUBLIC_KEYS or k in ACCOUNT_DERIVED}
+    dropped = sorted(str(k) for k in doc if k not in view)
+    equity, pnl = _amount(doc, "equity"), _amount(doc, "today_pnl")
+    bases = {"equity": equity,
+             "open": (equity - pnl) if equity is not None and pnl is not None else None}
+    for out, (num_key, basis) in ACCOUNT_DERIVED.items():
+        num, base = _amount(doc, num_key), bases[basis]
+        if num is None:
+            continue
+        view[out] = round(100.0 * num / base, 4) if base and base > 0 else None
+    return view, dropped
+
+
+def _publish_view(spec: Mapping[str, Any], data: bytes) -> tuple[bytes | None, list[str]]:
+    try:
+        doc = json.loads(data.decode("utf-8-sig"))
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        return None, []
+    if not isinstance(doc, dict):
+        return None, []
+    view, dropped = unit_free_account(doc)
+    if not dropped and view == doc:
+        return None, []
+    tail = "\n" if spec.get("newline", True) else ""
+    return (json.dumps(view, **spec["dump"]) + tail).encode("utf-8"), dropped
+
+
 def scrub_for_publish(rel: str, data: bytes) -> tuple[bytes | None, list[str]]:
     """(scrubbed bytes, dropped key names) for a SCRUBBED path; (None, []) when the path is not
     scrubbed, the file is already clean, or it cannot be parsed (the login fence judges it)."""
     spec = SCRUBBED.get(rel)
     if spec is None:
         return None, []
+    if spec.get("publish_view") == "unit_free":
+        return _publish_view(spec, data)
     try:
         doc = json.loads(data.decode("utf-8-sig"))
     except (UnicodeDecodeError, ValueError, RecursionError):
