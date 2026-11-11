@@ -900,11 +900,15 @@ _NBS_RETAIL = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月份?\s*[，,]?\s*社�
 
 #: The release body as NBS actually writes it: the month WITHOUT its year (`10月份`, a
 #: fullwidth comma, `社会消费品零售总额46291亿元`, `同比增长2.9%`); the year is the one the
-#: TITLE gives that month (`2025年10月份社会消费品零售总额增长2.9%`). A digit or a dash before
+#: TITLE gives that month (see `_NBS_RETAIL_TITLE`). A digit or a dash before
 #: the month is a cumulative `1—10月份` figure and never matches.
 _NBS_RETAIL_BODY = re.compile(r"(?<![\d—\-－~至])(\d{1,2})\s*月份\s*[，,]?\s*社会消费品零售总额\s*"  # noqa: RUF001
                               r"([\d.,]+)\s*亿元\s*[，,]?\s*(?:同比)?(增长|下降)\s*([\d.]+)\s*%")  # noqa: RUF001
-_NBS_RETAIL_TITLE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月份?\s*社会消费品零售总额")
+#: The title gives the year either for the month alone or for the year-to-date window ending in
+#: it (`2026年1—9月份社会消费品零售总额增长1.1%`, as the box's 11-09 listing shows): either way
+#: the window's LAST month is the month the release's monthly sentence is about.
+_NBS_RETAIL_TITLE = re.compile(r"(\d{4})\s*年\s*(?:\d{1,2}\s*[—\-－~至]\s*)?(\d{1,2})\s*月份?\s*"  # noqa: RUF001
+                               r"社会消费品零售总额")
 
 
 def parse_nbs_retail(body: bytes, ctx: Ctx) -> list[Obs]:

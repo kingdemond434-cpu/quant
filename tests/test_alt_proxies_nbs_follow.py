@@ -39,9 +39,14 @@ def test_the_release_body_is_read_with_the_year_its_title_gives() -> None:
     assert len(obs) == 2                       # the 1—10月份 cumulative figure is never read
 
 
-def test_a_fall_is_negative_and_a_body_with_no_titled_year_is_not_guessed() -> None:
+def test_a_year_to_date_title_dates_the_monthly_sentence_and_a_fall_is_negative() -> None:
+    # the title form the box's 11-09 listing carries: `2026年1—9月份...`
     obs = {(o.series, o.period): o for o in A.parse_nbs_retail(RELEASE_SEP, A.Ctx())}
     assert obs[("retail_yoy", date(2026, 9, 30))].value == pytest.approx(-0.4)
+    assert len(obs) == 2
+
+
+def test_a_body_with_no_titled_year_is_not_guessed() -> None:
     untitled = (NBS / "release_2026_10.html").read_bytes().split(b"<p>10", 1)[1]
     untitled = b"<p>10" + untitled.split(b"</p>", 1)[0] + b"</p>"
     assert A.parse_nbs_retail(untitled, A.Ctx()) == []
@@ -51,7 +56,7 @@ def test_the_listing_itself_parses_nothing_and_names_the_retail_releases() -> No
     assert A.parse_nbs_retail(LIST_HTML, A.Ctx()) == []
     links = A.follow_nbs_retail(LIST_HTML, LISTING)
     assert links == ["https://www.stats.gov.cn/sj/zxfb/202611/t20261114_1961768.html",
-                     "https://www.stats.gov.cn/sj/zxfb/202610/t20261020_1961500.html"]
+                     "https://www.stats.gov.cn/sj/zxfb/202610/t20261019_1965614.html"]
 
 
 def test_follow_is_capped_and_never_leaves_the_listing_host() -> None:
@@ -68,7 +73,7 @@ def test_a_pass_follows_the_listing_into_the_store(tmp_path: Path) -> None:
     pages = {
         src.url: LIST_HTML,
         "https://www.stats.gov.cn/sj/zxfb/202611/t20261114_1961768.html": RELEASE_OCT,
-        "https://www.stats.gov.cn/sj/zxfb/202610/t20261020_1961500.html": RELEASE_SEP,
+        "https://www.stats.gov.cn/sj/zxfb/202610/t20261019_1965614.html": RELEASE_SEP,
     }
     calls: list[str] = []
 
