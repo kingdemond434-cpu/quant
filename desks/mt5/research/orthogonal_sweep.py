@@ -510,6 +510,12 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "intraday_momentum": "the session and window grid is charged once by tier1_idea_proposer (U1)",
+    "overnight_day_tug": "the session and side grid is charged once by tier1_idea_proposer (U2)",
+    "implied_realised_gap": "the implied series and band grid is charged once by tier1_idea_proposer (U3)",
+    "weekend_crypto_gap": "the driver and side grid is charged once by tier1_idea_proposer (U4)",
+    "equity_gap_breadth": "the breadth grid is charged once by tier1_idea_proposer (U5)",
+    "holiday_drift": "the venue calendar and leg grid is charged once by tier1_idea_proposer (N1)",
     "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
                          "reads the world dataset hunter's per-symbol exposure and charges its own "
                          "band x direction x hold grid; a sweep that paired every symbol with "

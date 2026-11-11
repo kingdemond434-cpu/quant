@@ -65,7 +65,11 @@ FRED_FIELDS = {"DGS2", "DGS10", "T10Y2Y", "DFEDTARU", "DFF", "SOFR", "RRPONTSYD"
                "CPIAUCSL", "CPILFESL", "RETAILSMxSA", "UMCSENT", "VIXCLS",
                "GOLDAMGBD228NLBM", "DCOILWTICO", "DTWEXBGS", "DTWEXM",
                "CP0000EZ19M086NEST", "JPNCPIALLMINMEI", "BAMLH0A0HYM2",
-               "DEXJPUS", "DEXUSEU", "DEXCAUS", "DEXUSUK", "DEXCHUS"}
+               "DEXJPUS", "DEXUSEU", "DEXCAUS", "DEXUSUK", "DEXCHUS",
+               # Tier-1 idea rows (2026-11-11): CBOE gold and oil implied vol (U3), the
+               # Kim-Wright 10y term premium (U6) and the Treasury General Account, the leg
+               # WALCL and RRPONTSYD were missing for net liquidity (N3, World sensor's #904).
+               "GVZCLS", "OVXCLS", "THREEFYTP10", "WTREGEN"}
 
 
 def fred_series(series_id: str, start: str = "2010-01-01",
