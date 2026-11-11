@@ -755,6 +755,9 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert "$env:GIT_CONFIG_COUNT = $ownConfig" in ps  # G2: no App header in the train's child
     # G1 (Auditor): every git call in the leg reads an empty hooks folder, never the PR tree's
     assert "$env:GIT_CONFIG_KEY_3 = 'core.hooksPath'" in ps and "$ownConfig = '4'" in ps
+    # ...and the count covers it from the first git call (an entry past the count is ignored)
+    count = ps.index("$env:GIT_CONFIG_COUNT = '4'")
+    assert count < ps.index("& git ") and "$env:GIT_CONFIG_COUNT = '3'" not in ps
     assert "is not empty; no git call runs" in ps
     assert 'Wait $branch "the PR branch moved off $short before the push' in ps  # G5
     assert "Python314" in ps and ".venv" not in ps  # BH2

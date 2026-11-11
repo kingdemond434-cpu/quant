@@ -114,7 +114,7 @@ $env:GH_PROMPT_DISABLED = '1'
 $env:GIT_TERMINAL_PROMPT = '0'
 # Command-scope config only. autocrlf off: the manifest pins the committed bytes, and a CRLF
 # checkout would read every sealed file as moved.
-$env:GIT_CONFIG_COUNT = '3'
+$env:GIT_CONFIG_COUNT = '4'  # safe.directory x2, autocrlf, hooksPath; merger_env appends after these
 $env:GIT_CONFIG_KEY_0 = 'safe.directory'
 $env:GIT_CONFIG_VALUE_0 = ($Clone -replace '\\', '/')
 $env:GIT_CONFIG_KEY_1 = 'core.autocrlf'
