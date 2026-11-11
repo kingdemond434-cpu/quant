@@ -21,7 +21,32 @@ import pandas as pd
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "futures_curves"
 REPORT = BASE / "reports" / "futures_curve_coverage.json"
-UA = "Mozilla/5.0 (compatible; quant-research/1.0)"
+# An honest tool name, like every other desk fetcher (Governance 2026-11-11 00:41Z): never a
+# browser string.
+UA = "quant-desk-futures-curves/1.0 (+public data collection)"
+#: The registry row this collector's output belongs to. Its class travels with every row and the
+#: report, and `curve_strategy_screen.mint_permission` reads it before any cell is minted.
+SOURCE_ID = "yahoo_futures"
+REGISTRY = BASE / "research" / "futures_state_sources.json"
+#: A refusal aimed at us on a data URL stops the whole pass; it is never retried or routed
+#: around by moving to the next contract.
+HARD_STOP = frozenset({401, 403, 418, 429, 451})
+
+
+class HardStop(RuntimeError):
+    """The publisher refused a data request; the pass ends here."""
+
+
+def source_class(registry: Path = REGISTRY) -> str:
+    """The registry's terms class for SOURCE_ID; UNREADABLE when the row cannot be read."""
+    try:
+        doc = json.loads(registry.read_text(encoding="utf-8"))
+        for row in doc.get("sources") or []:
+            if isinstance(row, dict) and row.get("id") == SOURCE_ID:
+                return str(row.get("terms") or "MISSING")
+    except (OSError, ValueError, AttributeError):
+        return "UNREADABLE"
+    return "MISSING"
 MONTH_CODE = dict(zip(range(1, 13), "FGHJKMNQUVXZ", strict=True))
 PRODUCTS = {
     "GC": {"suffix": "CMX", "months": (2, 4, 6, 8, 10, 12)},
@@ -57,6 +82,8 @@ def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
         with urllib.request.urlopen(req, timeout=45) as response:
             payload = json.load(response)
     except urllib.error.HTTPError as exc:
+        if exc.code in HARD_STOP:
+            raise HardStop(f"HTTP {exc.code} on {symbol}") from exc
         if exc.code in (400, 404):
             return pd.DataFrame(), {"symbol": symbol, "status": "NOT_LISTED"}
         raise
@@ -122,13 +149,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     year = datetime.now(UTC).year
     coverage, usable = [], 0
+    klass, stopped = source_class(), None
     for root, spec in PRODUCTS.items():
+        if stopped:
+            break
         frames = []
         for y in range(year - args.years_back, year + args.years_forward + 1):
             for month in spec["months"]:
+                if stopped:
+                    break
                 symbol = contract_symbol(root, y, month)
                 try:
                     frame, row = fetch_contract(symbol)
+                except HardStop as exc:
+                    stopped = str(exc)
+                    frame, row = pd.DataFrame(), {"symbol": symbol, "status": "HARD_STOP",
+                                                  "error": stopped}
                 except Exception as exc:
                     frame, row = pd.DataFrame(), {"symbol": symbol, "status": "FAILED",
                                                   "error": f"{type(exc).__name__}: {exc}"}
@@ -138,12 +174,16 @@ def main(argv: list[str] | None = None) -> int:
                 time.sleep(max(args.sleep, 0.0))
         if frames:
             panel = build_curve(frames, root)
+            panel["source_id"], panel["source_class"] = SOURCE_ID, klass
             OUT.mkdir(parents=True, exist_ok=True)
             panel.to_parquet(OUT / f"{root}_curve.parquet", index=False, compression="zstd")
             usable += int(panel["annualized_roll_yield"].notna().sum())
     report = {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "source": "Yahoo delayed contract quotes; research only",
+        "source_id": SOURCE_ID,
+        "source_class": klass,
+        "hard_stop": stopped,
         "contracts": coverage,
         "usable_curve_dates": usable,
         "promotion_authority": False,
