@@ -1274,7 +1274,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
     # 48h law-gate rotation and the health check ran on no clock at all.
-    "box_state_freshness", "desk_health",
+    "box_state_freshness", "desk_health", "incident_ledger",
     # HOW FRESH THE BOX'S BARS AND TICKS ARE (2026-10-21): parquet footers only, ~0.4 s and one
     # report (data/BARS_STATE.json) that `publish_state` right after it carries. Bars never cross
     # the wire, so this is the only off-box evidence that the feed is alive. Non-money-path.
@@ -6367,6 +6367,10 @@ def main() -> None:
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
+    # THE INCIDENT LEDGER (ideas 622, 626), AFTER the monitors it reads (desk health above; merge
+    # flow and SLO status when present): opens and closes incidents, MTTD/MTTR, freeze minutes.
+    inc = _costed("incident_ledger", lambda: _producer(
+        "incident_ledger", "scripts/incident_ledger.py"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -6564,7 +6568,7 @@ def main() -> None:
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
-                    "box_state_freshness": bsf, "desk_health": dhl,
+                    "box_state_freshness": bsf, "desk_health": dhl, "incident_ledger": inc,
                     "bars_state": bst,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
