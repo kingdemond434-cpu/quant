@@ -521,7 +521,12 @@ NODES: tuple[Node, ...] = (
     # EARNINGS BREADTH (2026-11-11): cached SEC 8-K 2.02 filings x the reporters' share-CFD bars
     # -> screened `earnings_breadth` cells on the US index CFDs, donated into the intake the
     # compiler merges. Its report is the reach and park state for a person.
-    Node("earnings_breadth_proposer", "desks/mt5/research/earnings_breadth_proposer.py",
+    # The EDGAR cell (run hourly by sandbox_runner --allow-network) caches the full-text hits it
+    # fetched; with no User-Agent configured it fetches nothing and the cache stays absent, which
+    # the proposer reports as earnings_breadth_absent.
+    Node("edgar_transmission", "desks/mt5/research/sandboxes/edgar_transmission.py",
+         writes=("desks/mt5/data/edgar_cache/",)),
+    Node("earnings_breadth_proposer","desks/mt5/research/earnings_breadth_proposer.py",
          reads=("desks/mt5/data/edgar_cache/", "desks/mt5/data/universe/"),
          writes=("desks/mt5/reports/EARNINGS_BREADTH_PROPOSER.json",
                  "desks/mt5/data/intelligence/earnings_breadth/")),
