@@ -21,18 +21,24 @@ from typing import Any
 try:  # package import in tests; direct import when invoked as a script by the supervisor
     from .fetch_dukascopy import (
         POINT,
+        USER_AGENT,
+        FeedSaysStop,
         check_scale,
         fetch_hour,
         instrument_map,
+        robots_gate,
         unmapped_reasons,
         vendor_code,
     )
 except ImportError:  # pragma: no cover - exercised by the real script entry point
     from fetch_dukascopy import (
         POINT,
+        USER_AGENT,
+        FeedSaysStop,
         check_scale,
         fetch_hour,
         instrument_map,
+        robots_gate,
         unmapped_reasons,
         vendor_code,
     )
