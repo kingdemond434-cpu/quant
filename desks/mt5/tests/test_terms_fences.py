@@ -41,15 +41,16 @@ def _titles() -> set[str]:
     return {str(r.get("title")) for _, r in mc.recent_rows(mc.datetime.now(tz=mc.UTC))}
 
 
-def test_the_shipped_registry_fences_bis_and_nothing_is_open() -> None:
+def test_the_shipped_registry_fences_bis_and_congress_and_nothing_is_open() -> None:
     fences = tf.load()
-    assert [f["id"] for f in fences] == ["bis_speeches"]
+    assert [f["id"] for f in fences] == ["bis_speeches", "congress_trades"]
     assert "noncommercial" in fences[0]["reason"] and "noncommercial" in fences[0]["clause"]
     assert tf.fence_for("bis_speeches/discoveries_20260901_0022.json", fences)
     assert tf.fence_for(Path("central_banks") / "bis_speech_tone.jsonl", fences)
     for free in ("central_banks/official_speech_tone.jsonl", "central_banks/cb_documents.jsonl",
                  "central_banks/discoveries_20260901_0002.json", "world/bis_speeches.json"):
         assert tf.fence_for(free, fences) is None, free
+    assert not any(tf.is_open(f) for f in fences)
 
 
 def test_bis_rows_are_parked_counted_and_left_on_disk(roots) -> None:

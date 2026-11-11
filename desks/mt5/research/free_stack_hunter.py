@@ -572,6 +572,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
             st.update({"last_status": "REFUSED_TERMS", "last_attempt": _iso(now),
                        "last_error": f"terms fence {fence['id']}: {fence.get('reason', '')}",
                        "missed_growth": fence.get("missed_growth", "")})
+            write_json(store.cursor, cursor)
             continue
         acc = access(row)
         st["access"] = acc
