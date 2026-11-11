@@ -418,6 +418,10 @@ def _proposers() -> None:
                  # control-room regime at a time, purged walk-forward as the kill, survivors
                  # donated as family `regime_split` to the same gauntlet.
                  "regime_split_miner",
+                 # REGIME DISAGREEMENT (ROMAN-0806, 2026-11-11): our own regime systems (EWMA,
+                 # GARCH, HMM, Kalman, BOCPD, control room) vote; where they agree or split
+                 # gates every price-only family, donated as `regime_disagreement`.
+                 "regime_disagreement_miner",
                  # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
