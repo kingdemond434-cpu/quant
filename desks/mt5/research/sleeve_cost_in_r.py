@@ -21,8 +21,9 @@ WHERE EACH NUMBER COMES FROM
   * spread at hour: data/cost_surface.json (the bar tape's spread x broker-hour surface, p50).
     A venue other than Fusion is read from data/cost_surface_<venue>.json when that file
     exists (same schema); absent, the venue is UNMEASURED by name.
-  * entry hours: the sleeve's own live entries in live_ledger.jsonl (UTC -> broker clock,
-    UTC+3 in EU summer time, UTC+2 otherwise); else the session window's placement hour
+  * entry hours: the sleeve's own live entries in live_ledger.jsonl, read AS BROKER CLOCK
+    (the gateway stamps MT5 deal.time, which is trade-server wall time, with a false +00:00;
+    see ledger_broker_hm); else the session window's placement hour
     (research/entry_timing.WINDOWS, broker clock); else UNMEASURED.
   * stop distance: median |entry - sl| over the sleeve's own live entries; else the cert-
     implied stop (see below); else spec stop_atr x H1 ATR20 for an H1 sleeve; else UNMEASURED.
@@ -186,8 +187,16 @@ def ledger_entries(name: str, ledger: list[dict[str, Any]]) -> list[dict[str, An
     return out
 
 
+def ledger_broker_hm(ts: datetime) -> tuple[int, int]:
+    """live_ledger entry_time is ALREADY broker wall-clock: gateway.py writes
+    datetime.fromtimestamp(deal.time_msc/1000, tz=UTC) and MT5 deal times are trade-server
+    seconds, so the +00:00 is a mislabel. Never pass these through broker_hour (that would add
+    the +2/+3 twice); broker_hour is for genuine UTC inputs only."""
+    return ts.hour, ts.minute
+
+
 def entry_hours(item: dict[str, Any], entries: list[dict[str, Any]]) -> dict[str, Any]:
-    hours = [broker_hour(ts) for r in entries if (ts := _parse_ts(r.get("entry_time")))]
+    hours = [ledger_broker_hm(ts)[0] for r in entries if (ts := _parse_ts(r.get("entry_time")))]
     if hours:
         counts: dict[int, int] = {}
         for h in hours:
@@ -213,7 +222,7 @@ def entry_minutes(item: dict[str, Any], entries: list[dict[str, Any]]) -> dict[s
     for r in entries:
         ts = _parse_ts(r.get("entry_time"))
         if ts:
-            fills.append((-1, -1) if resting else (broker_hour(ts), ts.minute))
+            fills.append((-1, -1) if resting else ledger_broker_hm(ts))
     if fills:
         return {"fills": fills, "source": "live_ledger"}
     spec = item.get("spec") or {}

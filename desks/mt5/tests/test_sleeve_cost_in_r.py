@@ -219,3 +219,12 @@ def test_unlisted_minute_is_measured_not_a_spike(monkeypatch: pytest.MonkeyPatch
     assert r["not_in_sm1"] is True
     assert f["minute"]["spike_share"] == 0.0
     assert f["cost_R_minute"] == pytest.approx(f["cost_R_measured"]["total_R"], abs=1e-5)
+
+
+def test_ledger_stamps_are_broker_clock_not_utc() -> None:
+    # gateway stamps MT5 deal.time (broker wall clock) with a false +00:00 (Auditor HOLD 11-11)
+    ts = datetime.fromisoformat("2026-07-01T07:00:00+00:00")
+    assert sc.ledger_broker_hm(ts) == (7, 0)
+    row = {"entry_time": "2026-07-01T07:00:00+00:00"}
+    assert sc.entry_minutes({"spec": {}}, [row])["fills"] == [(7, 0)]
+    assert sc.entry_hours({"spec": {}}, [row])["hours"] == {7: 1}
