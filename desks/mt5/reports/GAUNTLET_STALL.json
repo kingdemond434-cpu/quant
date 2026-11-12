@@ -1,5 +1,4 @@
 {
- "status": "STALLED",
  "reason": "died_unrecorded",
  "detail": "sweep pid 16160 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 58861s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) before it could record why",
  "stalled_utc": "2026-11-12T11:26:07+00:00",
@@ -111,6 +110,7 @@
    "why": "sweep pid 16160 died_unrecorded: sweep pid 16160 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 58861s old in phase build_shards: it was killed from outside (OOM, reboot, hand kill) . Every unfinished shard is re-planned by the next sweep, so this wall bought no verdict; its E[log W] price is not measured"
   }
  ],
- "last_clear_utc": "2026-11-11T10:48:59+00:00",
- "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged"
+ "last_clear_utc": "2026-11-12T16:36:46+00:00",
+ "next_run": "starts fresh: the sealed protocol re-plans every unfinished shard's cells; nothing from the stalled run was marked judged",
+ "status": "CLEAR"
 }
