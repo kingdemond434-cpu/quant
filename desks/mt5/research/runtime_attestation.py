@@ -707,6 +707,15 @@ def ratchet_update(paths: Paths, host: str, census: dict[str, int],
     return {"floor": floor, "lowered": lowered}
 
 
+#: Organs --only-missing never appends, with the reason. A merge-resolution pass on any PR must
+#: not mint a row for an organ whose own PR has not landed: the row then rides an unrelated PR
+#: and is attested by a host that does not run it (2026-11-11, LIVE 23cad12f..74354fa3).
+ONLY_MISSING_DEFERRED: dict[str, str] = {
+    "task:MT5-FTMO-Allocator": "its row lands with the FTMO allocator's own PR, never in "
+                               "another PR's merge resolution",
+}
+
+
 def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]:
     """APPEND rows for organs the committed attestation has no row for, and touch nothing else.
 
@@ -733,7 +742,8 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     doc: dict[str, Any] = _doc
     have = {str(r.get("organ")) for r in doc["organs"] if isinstance(r, dict)}
     rows, _scope = organ_rows(paths, budget_s)
-    added = [r for r in rows if str(r["organ"]) not in have]
+    added = [r for r in rows
+             if str(r["organ"]) not in have and str(r["organ"]) not in ONLY_MISSING_DEFERRED]
     if not added:
         return {"doc": doc, "added": []}
     # A ROW'S STATE IS A FACT ABOUT THE HOST THAT MEASURED IT. LIVE/STALE/MISSING are read off

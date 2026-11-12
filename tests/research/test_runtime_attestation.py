@@ -361,6 +361,17 @@ def test_only_missing_appends_new_organs_and_leaves_existing_rows_byte_identical
         block = json.dumps(r, indent=1, default=str).replace("\n", "\n  ")
         assert block in text_after
 
+def test_only_missing_never_appends_a_deferred_organ(tmp_path: Path, monkeypatch) -> None:
+    """2026-11-11: a merge-resolution pass appended task:MT5-FTMO-Allocator to an unrelated PR."""
+    path = _committed(tmp_path)
+    fresh = [_row("old_a"), _row("new_c"), {**_row("x"), "organ": "task:MT5-FTMO-Allocator"}]
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert [r["organ"] for r in after["organs"]] == ["old_a", "old_b", "new_c"]
+    assert "MT5-FTMO-Allocator" not in ra.Paths.at(tmp_path).out_md.read_text(encoding="utf-8")
+
+
 def test_only_missing_is_idempotent(tmp_path: Path, monkeypatch) -> None:
     path = _committed(tmp_path)
     fresh = [_row("old_a"), _row("new_c")]
