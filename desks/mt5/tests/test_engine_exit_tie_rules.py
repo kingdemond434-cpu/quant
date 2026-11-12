@@ -19,7 +19,10 @@ sys.path.insert(0, str(_DESK))
 
 from mt5desk.engine import Costs, Signal, Trade, run_backtest  # noqa: E402
 
-FREE = Costs(spread_per_lot=0.0, commission_per_lot=0.0, contract_oz=1.0)
+# Built through the registry constructor (the literal-site ratchet). Its 0.05/lot floor over a
+# 1e9-unit contract is 5e-11 in price, so these exit-rule assertions read the gross R.
+FREE = Costs.from_symbol({"median_spread_pts": 0.0, "tick_size": 0.01, "contract_size": 1e9,
+                          "tick_value": 0.01}, commission_per_lot=0.0)
 
 
 def _frame(rows: list[tuple[float, float, float, float]]) -> pd.DataFrame:
