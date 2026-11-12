@@ -1107,6 +1107,12 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "attestation_remint": {3: "REMINT_BREACH"},
+    # `halt_rail` 2 -- a latched halt, or a ruin-rail input too stale to judge while the desk is
+    # halted; 3 -- the rail's inputs cannot be read at all. Both stay FAILURES rather than
+    # verdict exits, for the reason recorded against `silent_organs` below: a declared verdict
+    # records as `verdict_exit=N`, which every streak reader counts as ok, and a RED nobody is
+    # paged for is exactly how this desk ran 11.7 days halted with one reachable rail.
+    "halt_rail": {2: "HALT_RAIL_RED", 3: "HALT_RAIL_UNMEASURED"},
     # pf_allocator exits 3 when it stands down behind a lock it may not reclaim (a live,
     # heartbeating holder); the named stand-down is reports/ALLOCATOR_STANDDOWN.json.
     "pf_allocator": {3: "LOCK_REFUSED"},
@@ -1185,6 +1191,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # Whether each ruin rail can reach its input, and the halt's REAL age -- capital-path class, so
+    # it runs every pass and never waits for a rotation (scripts/check_halt_rail_integrity.py).
+    "halt_rail",
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
@@ -6396,6 +6405,15 @@ def main() -> None:
     # when an organ went silent since the last reading.
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
+    # CAN EACH RUIN RAIL ACTUALLY FIRE, AND HOW OLD IS THE HALT REALLY (noon CRO, 2026-11-11).
+    # The Fusion gateway had been halted 11.7 days -- 26,043 consecutive paused passes -- while
+    # `check_research_health` reported "TRADING HALTED for 0.0 day(s)" every pass, because it aged
+    # the marker the ruin rail rewrites every five minutes. Under it, the halt had frozen
+    # `gateway_state.json`, the rail's ONLY input, so five of its seven rails could not fire at all
+    # and the sixth re-affirmed a dead equity. Two small file reads and a bounded log tail; it is
+    # capital-path class, so it rides the core clock like `placement_interlock` and `judge_alive`.
+    hri = _costed("halt_rail", lambda: _producer(
+        "halt_rail", "scripts/check_halt_rail_integrity.py"))
     # NO PRODUCER IS DARK (LAWS 7). Every seat, miner and organ the component registry knows,
     # with its clock, its last production and its verdict -- and the RELIGHT of every dark row
     # in the same pass, judged by the producer's own output moving, never by a zero exit code.
@@ -6639,7 +6657,8 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
+                    "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
+                    "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
