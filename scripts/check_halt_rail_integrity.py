@@ -74,9 +74,14 @@ import argparse
 import contextlib
 import json
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+if str(Path(__file__).resolve().parent.parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from libs.ops.fence_exit import fence_exit
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
@@ -90,6 +95,8 @@ GATEWAY_LOG = DESK / "logs" / "gateway.log"
 ORIGIN = DESK / "data" / "halt_origin.json"
 OUT = DESK / "reports" / "HALT_RAIL_INTEGRITY.json"
 
+#: R0237: name the passing verdicts; every other verdict (RED, and any added later) fails.
+_PASSING = frozenset({"OK"})
 #: The line the gateway logs on a paused pass, verbatim from `gateway.main()`.
 PAUSED_LINE = "gateway paused"
 #: Lines in the gateway log that are NOT a gateway pass and so cannot end a paused streak. The
@@ -448,7 +455,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - {b}")
     if rep["verdict"] == "UNMEASURED":
         return 3
-    return 2 if rep["verdict"] == "RED" else 0
+    return fence_exit(rep["verdict"], _PASSING)
 
 
 if __name__ == "__main__":
