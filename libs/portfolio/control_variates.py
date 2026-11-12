@@ -129,7 +129,8 @@ def stationary_indices(n: int, length: int, draws: int, mean_block: float,
 def _max_dd_log(cum: np.ndarray) -> np.ndarray:
     peak = np.maximum.accumulate(np.concatenate([np.zeros((cum.shape[0], 1)), cum], axis=1),
                                  axis=1)[:, 1:]
-    return np.max(peak - cum, axis=1)
+    out: np.ndarray = np.max(peak - cum, axis=1)
+    return out
 
 
 def stress(returns: np.ndarray, weights: Sequence[float] | Mapping[str, float] | np.ndarray, *,
