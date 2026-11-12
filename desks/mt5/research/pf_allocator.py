@@ -3675,6 +3675,28 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
     return digest.hexdigest()
 
 
+def book_daily_sd(worlds: Any, book: Mapping[str, float]) -> dict[str, float | None]:
+    """The model's DAILY dispersion of `book` on `worlds`: the median over worlds of the
+    within-world sd of daily log book return (`expected_daily_sd`), and the same with every
+    sleeve independent (`expected_daily_sd_independent`, the root of the summed per-sleeve
+    variances). Their ratio is the co-movement the model assumes. None when unmeasurable."""
+    none: dict[str, float | None] = {"expected_daily_sd": None,
+                                     "expected_daily_sd_independent": None}
+    try:
+        names = list(worlds.names)
+        h = np.array([float(book.get(n, 0.0)) for n in names], dtype=np.float64)
+        if not np.any(h > 0.0):
+            return none
+        r = np.asarray(worlds.r, dtype=np.float64)                       # (W, T, N)
+        port = np.einsum("wtn,n->wt", r, h)
+        g = np.log(np.clip(1.0 + port, 1e-12, None))
+        indep = np.sqrt((np.var(r * h[None, None, :], axis=1)).sum(axis=1))
+        return {"expected_daily_sd": round(float(np.median(g.std(axis=1))), 8),
+                "expected_daily_sd_independent": round(float(np.median(indep)), 8)}
+    except Exception:
+        return none
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -5176,6 +5198,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 "expected_log_per_day": art["growth"]["mean_log_per_day"],
                 "expected_cvar_per_day": art["growth"]["cvar_log_per_day"],
                 "prob_annual_loss": art["growth"]["prob_annual_loss"],
+                # THE MODEL'S DAILY DISPERSION OF THIS BOOK, on the scale the realised book is
+                # measured on: |CVaR - mean| above is the spread of each world's MEAN over its
+                # rows, ~sqrt(n_rows) smaller than a daily sd, and reading it as one made the
+                # attribution's correlation term say "moved together 3.6x more than modelled"
+                # (2026-11-11) when like for like it was ~1.7x.
+                **book_daily_sd(worlds, funded),
                 "book": funded,
                 "regime": dict(probs),
                 "n_universe": len(ev),
