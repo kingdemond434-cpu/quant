@@ -374,21 +374,37 @@ def _job(text: str, name: str) -> str:
 def test_ci_promotes_only_green_live_pushes_and_never_forces() -> None:
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     promote = _job(ci, "promote")
-    assert "needs: [quality, mt5-money-path, coverage-floor, seal]" in promote
+    # ONE HOP ON LIVE (2026-11-11): coverage-floor and seal run as promote's own first steps.
+    assert "needs: [quality, mt5-money-path]" in promote
     assert "github.event_name == 'push'" in promote
     assert f"github.ref == 'refs/heads/{LIVE}'" in promote
     assert "python scripts/release_promotion.py promote" in promote
-    assert "needs.seal.outputs.release_commit" in promote
+    assert "steps.push.outputs.release_commit" in promote
     assert "needs.quality.outputs.law_gate" in promote
     assert "needs.quality.outputs.suite" in promote
     assert "needs.mt5-money-path.outputs.suite" in promote
     assert "--force" not in promote and " -f " not in promote
     seal = _job(ci, "seal")
     assert "needs: [quality, mt5-money-path, coverage-floor]" in seal
-    # the seal step is reused, not duplicated, and it now says which commit it released
-    assert ci.count("release_manifest.py --seal") == 2           # first seal + retry re-seal
+    assert "github.ref == 'refs/heads/desk-sync-clean'" in seal
+    assert f"refs/heads/{LIVE}'" not in seal.split("needs:")[0]   # LIVE seals inside promote
     assert "release_commit=" in seal
-    assert "release_manifest.py" not in promote
+    # the gates are the SAME steps, byte for byte, in the same order: floors, then seal, then
+    # the promotion -- nothing on LIVE is skipped or weakened by the fold
+    cov = _job(ci, "coverage-floor")
+    end_cov = "check_coverage_floors.py --report coverage.json"
+    start_cov = cov.index('      - run: pip install -e ".[dev]"')
+    cov_steps = cov[start_cov:cov.index(end_cov) + len(end_cov)]
+    end_seal = 'echo "::error::could not push the seal after 3 attempts"; exit 1'
+    seal_steps = seal[seal.index("      - name: Seal the tested release"):
+                      seal.index(end_seal) + len(end_seal)]
+    assert cov_steps in promote and seal_steps in promote
+    assert (promote.index(cov_steps) < promote.index(seal_steps)
+            < promote.index("python scripts/release_promotion.py promote"))
+    assert ci.count("release_manifest.py --seal") == 4   # seal job + promote, each seal + retry
+    cov_if = cov.split("needs:")[0]
+    assert "!((github.event_name == 'push' || github.event_name == 'workflow_dispatch')" in cov_if
+    assert f"github.ref == 'refs/heads/{LIVE}')" in cov_if
     for job in ("quality", "mt5-money-path"):
         body = _job(ci, job)
         assert "--junitxml=" in body and "release_promotion.py counts" in body, job
