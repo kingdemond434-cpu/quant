@@ -35,7 +35,8 @@ class _FakeProc:
 
     def __init__(self, pid: int, name: str, age_s: float, tape: list[tuple[float, int]],
                  cmd: str = "git merge", parent_alive: bool | None = None,
-                 tcp: int | str | None = None) -> None:
+                 tcp: int | str | None = None,
+                 child_tape: list[float] | None = None) -> None:
         self.pid = pid
         self._name = name
         self.info = {"pid": pid, "name": name,
@@ -47,6 +48,29 @@ class _FakeProc:
         #: None: no connection table at all (the pre-2026-11-12 double). An int: that many
         #: ESTABLISHED sockets. "DENIED": the table exists but this account cannot read it.
         self._tcp = tcp
+        #: CPU seconds this process's descendants have burnt, played back per sample. None means
+        #: no child subtree is modelled at all (the pre-2026-11-12 double).
+        self._child_tape = child_tape
+        self._child_n = 0
+
+    def children(self, recursive: bool = False) -> list[Any]:
+        del recursive
+        if self._child_tape is None:
+            raise NotImplementedError
+        cpu = self._child_tape[min(self._child_n, len(self._child_tape) - 1)]
+        self._child_n += 1
+        outer = self
+
+        class _Child:
+            pid = outer.pid + 10_000
+
+            @staticmethod
+            def cpu_times() -> Any:
+                class _T:
+                    user = cpu
+                    system = 0.0
+                return _T()
+        return [_Child()]
 
     def net_connections(self, kind: str = "inet") -> list[Any]:
         del kind
@@ -167,6 +191,41 @@ def test_a_push_blocked_on_the_network_is_spared(monkeypatch: pytest.MonkeyPatch
     rep = gwl.hung_writers(sleep=_no_sleep)
     assert rep["hung"] == [], "a transfer in flight is not a wedge"
     assert any(r["pid"] == 301 and "blocked on the network" in r["why"] for r in rep["spared"])
+
+
+def test_a_push_waiting_on_its_pre_push_hook_is_spared(monkeypatch: pytest.MonkeyPatch,
+                                                       _no_sleep: Any) -> None:
+    """MEASURED 2026-11-12, AFTER THE SOCKET RULE WAS NOT ENOUGH. The scheduled reaper killed the
+    same push a THIRD time, at 920s, with `tcp_established = 0`:
+
+        SPARED pid 3736 git.exe age_s 921 tcp 0  cmd: git.exe push origin HEAD:refs/heads/...
+
+    A push on this box runs `ops/githooks/pre-push` first -- all four gates, about fifteen
+    minutes of `compileall` over scripts, libs, desks and tests -- and only opens a socket
+    afterwards. During the hook the git process computes nothing, writes no file and holds no
+    connection, so the socket rule cannot reach it. Its child is burning a core.
+    """
+    hooked = _FakeProc(305, "git.exe", 0.26 * 3600, [(5.0, 1000), (5.0, 1000)],
+                       cmd="git push origin HEAD:refs/heads/cro/noon", tcp=0,
+                       child_tape=[12.0, 47.5])
+    _install(monkeypatch, [hooked])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert rep["hung"] == [], "a writer waiting on its own live child is not a wedge"
+    assert any(r["pid"] == 305 and "waiting on its own live child" in r["why"]
+               for r in rep["spared"])
+
+
+def test_a_wedge_whose_child_is_also_blocked_is_still_reaped(monkeypatch: pytest.MonkeyPatch,
+                                                             _no_sleep: Any) -> None:
+    """THE 2026-09-24 CASE EXACTLY, and why the discriminator is movement in the subtree rather
+    than the existence of a subtree: `git stash create` was waiting on `git update-index --stdin`,
+    which was blocked on a pipe nobody would ever write to. Neither moved."""
+    wedge = _FakeProc(306, "git.exe", 3.2 * 3600, [(5.0, 1000), (5.0, 1000)],
+                      cmd="git stash create", tcp=0, child_tape=[3.0, 3.0])
+    _install(monkeypatch, [wedge])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert [r["pid"] for r in rep["hung"]] == [306]
+    assert "stopped, not slow" in rep["hung"][0]["why"]
 
 
 def test_the_local_index_wedge_this_reaper_was_built_for_is_still_reaped(

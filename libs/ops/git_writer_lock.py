@@ -667,6 +667,36 @@ def _ancestor_pids(psutil_mod: Any) -> set[int]:
     return pids
 
 
+def _descendant_cpu_s(proc: Any) -> float | None:
+    """Total CPU seconds burnt by this process's descendants, or None when unreadable.
+
+    WHY A WRITER'S CHILDREN COUNT (measured 2026-11-12, after the socket rule below was not
+    enough). A `git push` on this box runs `ops/githooks/pre-push`, which runs all four gates --
+    `compileall` over scripts, libs, desks and tests takes about fifteen minutes here. During it
+    the GIT process computes nothing, writes no file, and holds no socket yet, because the
+    transfer has not started. So it is motionless by every measure this reaper had, and the
+    scheduled reaper killed the same push a THIRD time at 920s with `tcp_established = 0` --
+    the socket rule cannot help a push that has not reached its socket.
+
+    Its hook child, meanwhile, was burning a core. A writer waiting on its own live child is the
+    `git gc` case generalised: slow, not stopped. The 2026-09-24 wedge this organ exists for is
+    still reaped on the same proof, because THAT child (`git update-index --stdin`, blocked on a
+    pipe nobody would write to) burnt no CPU either -- the discriminator is movement in the
+    subtree, not the existence of a subtree.
+    """
+    try:
+        total = 0.0
+        for child in proc.children(recursive=True):
+            try:
+                times = child.cpu_times()
+                total += float(times.user) + float(times.system)
+            except Exception:
+                continue            # one unreadable child does not make the subtree unmeasured
+        return total
+    except Exception:
+        return None
+
+
 def _established_tcp(proc: Any) -> int | None:
     """How many ESTABLISHED TCP connections this process holds, or None when unreadable.
 
@@ -718,6 +748,7 @@ def _writer_sample(psutil_mod: Any) -> dict[int, dict[str, Any]]:
                 "cmd": cmdline[:200],
                 "parent_alive": parent_alive,
                 "tcp_established": _established_tcp(proc),
+                "child_cpu_s": _descendant_cpu_s(proc),
             }
         except Exception:  # a process that exits mid-iteration is not an error
             continue
