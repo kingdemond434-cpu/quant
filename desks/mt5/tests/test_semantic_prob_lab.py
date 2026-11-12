@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -40,6 +41,10 @@ def wired(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (intel / "discoveries_x.json").write_text(json.dumps({"discoveries": [
         {"title": f"Headline number {i}: the dollar moved on central bank remarks"}
         for i in range(8)]}))
+    # The intake is read point-in-time by file time, so the file must be stamped inside the
+    # lookback of the fixed NOW, not at whatever wall-clock day the suite happens to run.
+    stamp = (NOW - timedelta(hours=1)).timestamp()
+    os.utime(intel / "discoveries_x.json", (stamp, stamp))
     monkeypatch.setattr(lab, "INTEL_ROOTS", (tmp_path / "intel",))
     return tmp_path
 
