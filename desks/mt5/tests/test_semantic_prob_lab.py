@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 _DESK = Path(__file__).resolve().parent.parent
-for _p in (str(_DESK), str(_DESK.parent.parent)):
+for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
