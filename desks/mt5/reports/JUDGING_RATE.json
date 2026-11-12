@@ -1,52 +1,52 @@
 {
- "at": "2026-11-12T21:47:17+00:00",
+ "at": "2026-11-12T22:45:24+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1613615,
+  "rows_total": 1622094,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-12T16:18:37+00:00",
+  "last_verdict_at": "2026-11-12T21:54:59+00:00",
   "counts": {
-   "1h": 0,
-   "24h": 9025,
-   "7d": 160396
+   "1h": 8479,
+   "24h": 17504,
+   "7d": 168875
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
-   "1h": 0,
-   "24h": 6939,
-   "7d": 70712
+   "1h": 5967,
+   "24h": 12906,
+   "7d": 76679
   },
-  "first_terminal_cells": 727610,
+  "first_terminal_cells": 733577,
   "first_terminal_per_hour": {
-   "1h": 0.0,
-   "24h": 289.125,
-   "7d": 420.905
+   "1h": 5967.0,
+   "24h": 537.75,
+   "7d": 456.423
   },
   "per_hour": {
-   "1h": 0.0,
-   "24h": 376.042,
-   "7d": 954.738
+   "1h": 8479.0,
+   "24h": 729.333,
+   "7d": 1005.208
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 14787,
-   "7d": 293701
+   "24h": 24018,
+   "7d": 297565
   },
   "per_hour": {
-   "24h": 616.125,
-   "7d": 1748.22
+   "24h": 1000.75,
+   "7d": 1771.22
   }
  },
- "verdicts_per_hour": 376.042,
- "verdicts_per_day": 9025.0,
+ "verdicts_per_hour": 729.333,
+ "verdicts_per_day": 17504.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 6939.0,
+ "first_judged_per_day": 12906.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 14787.0,
+ "created_per_day": 24018.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -58,7 +58,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-12T21:46:06+00:00",
-  "pid": 28124
+  "started_at": "2026-11-12T22:43:47+00:00",
+  "pid": 10936
  }
 }

@@ -1,33 +1,31 @@
 {
- "at": "2026-11-12T22:16:02+00:00",
+ "at": "2026-11-12T22:46:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.35,
-   "why": "no new verdict for 0.4h (last 2026-11-12T21:54:59+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.85,
+   "why": "no new verdict for 0.9h (last 2026-11-12T21:54:59+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
-   "open": true,
-   "low": true,
+   "open": false,
+   "low": false,
    "floor": 4.0,
-   "docket_depth": 1379024,
-   "busy_judge_cores": 0.98,
-   "busy_other_cores": 15.26,
-   "why": "judge tree at 0.98 cores (others 15.26) with a docket pending (resident SWEEPING, queue depth 1379024); floor 4; under the floor on every reading for 2.4h (limit 1h)",
-   "low_since": "2026-11-12T19:51:08+00:00",
-   "hours": 2.42
+   "docket_depth": 1426042,
+   "busy_judge_cores": 4.89,
+   "busy_other_cores": 11.77,
+   "why": "judge tree at 4.89 cores (others 11.77) with a docket pending (resident SWEEPING, queue depth 1426042); floor 4"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.0,
+   "heartbeat_age_min": 0.5,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 1624: heartbeat 0.0 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 1624: heartbeat 0.5 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 0.2,
+   "hours": 0.7,
    "limit_h": 25.59,
-   "why": "0.2h since the last sweep ended (2026-11-12T22:04:07+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.7h since the last sweep ended (2026-11-12T22:04:07+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -43,10 +41,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "plan",
-   "hours": 0.2,
+   "phase": "prewarm",
+   "hours": 0.48,
    "known_phase": true,
-   "why": "sweep phase plan has run 0.2h since 2026-11-12T22:04:13+00:00 (limit 4.5h)"
+   "why": "sweep phase prewarm has run 0.5h since 2026-11-12T22:17:13+00:00 (limit 5.86h)"
   },
   "host_unreadable": {
    "open": false,
@@ -91,16 +89,14 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 1624,
-  "heartbeat_utc": "2026-11-12T22:16:00+00:00",
+  "heartbeat_utc": "2026-11-12T22:45:33+00:00",
   "last_sweep_ended_utc": "2026-11-12T22:04:07+00:00",
   "last_rc": 0
  },
  "host": "trading box",
  "page": {
   "sent": false,
-  "open": [
-   "cores_idle"
-  ],
+  "open": [],
   "opened": [],
   "reminded": [],
   "resolved": []

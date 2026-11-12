@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-12T21:45:09.013542+00:00",
+ "generated_utc": "2026-11-12T22:42:57.649304+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -86477,6 +86477,105 @@
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
+   }
+  },
+  "external.GBPDKK@M30.overnight_gap_decay.p=62b19010a137a703": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDNZD.overnight_gap_decay.p=b48fdee0934bfdda": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDMXN.overnight_gap_decay.p=b48fdee0934bfdda": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDZAR.overnight_gap_decay.p=b48fdee0934bfdda": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFSGD@M30.overnight_gap_decay.p=e15216860f665dd7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CADJPY@M30.formula.p=53fbb43da9894731": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
+   }
+  },
+  "external.CADJPY@M30.formula.p=a7da69abfed4a67e": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
+   }
+  },
+  "external.CHFSGD@M30.formula.p=e1bee36cfdcf0ed2": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
+   }
+  },
+  "external.CHFSGD@M30.formula.p=e4a914e66cde608c": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 17,
+    "confidence": 0.15,
+    "sd": 0.0558,
+    "status": "REFUTED"
    }
   }
  },
