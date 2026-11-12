@@ -3675,6 +3675,47 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
     return digest.hexdigest()
 
 
+#: How many sleeves `best_single_sleeve` scores: the strongest by standalone mean/sd. Each score
+#: is one objective evaluation on the full world population, measured on the box 2026-11-11 at
+#: ~25 ms (the admission scan's 19-iteration solves took 5.5 s against ~5 s of setup), so 40 is
+#: about one second of a pass and covers every sleeve that could plausibly win alone.
+BEST_SINGLE_CANDIDATES = 40
+
+
+def best_single_sleeve(ev: list[SleeveEvidence], funded: Mapping[str, float], *,
+                       cfg: WorldConfig, worlds: Worlds | None) -> dict[str, Any]:
+    """The book that puts the funded total heat on ONE sleeve, the one that scores best alone,
+    scored against the funded book on the same worlds. Report only. Never raises."""
+    total = float(sum(v for v in funded.values() if v > 0.0))
+    if worlds is None or total <= 0.0 or not ev:
+        return {"status": "UNMEASURED", "why": "no funded book or no world population"}
+    try:
+        from libs.portfolio.robust_elog import _corr_abs
+        corr = _corr_abs(ev)
+
+        def _ratio(e: SleeveEvidence) -> float:
+            r = np.asarray(e.daily_r, dtype=float)
+            r = r[np.isfinite(r)]
+            return float(r.mean() / r.std()) if r.size > 1 and r.std() > 0 else -np.inf
+
+        pool = sorted(ev, key=_ratio, reverse=True)[:BEST_SINGLE_CANDIDATES]
+        scored = {e.name: score_book(ev, {e.name: total}, cfg=cfg, worlds=worlds,
+                                     corr_abs=corr) for e in pool}
+        name, best = max(scored.items(), key=lambda kv: float(kv[1]["robust_score"]))
+        mine = score_book(ev, dict(funded), cfg=cfg, worlds=worlds, corr_abs=corr)
+        delta = float(best["robust_score"]) - float(mine["robust_score"])
+        return {"status": "MEASURED", "name": name, "heat": round(total, 6),
+                "robust_score": round(float(best["robust_score"]), 10),
+                "mean_log_growth": round(float(best["mean_log_growth"]), 10),
+                "funded_robust_score": round(float(mine["robust_score"]), 10),
+                "delta_vs_funded": round(delta, 10) if np.isfinite(delta) else None,
+                "beats_funded": bool(np.isfinite(delta) and delta > 0.0),
+                "n_scored": len(scored),
+                "role": "report only: not a proof rival and never the fallback"}
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -5019,6 +5060,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # The best baseline at the same heat: `gateway.allocator_book` sizes the floor with it
         # whenever the dynamic weights have no fresh passing proof.
         "book_fallback": fallback,
+        # THE BEST SINGLE SLEEVE (CRO row 111 Q4, ARCH-30): the whole funded heat on the one
+        # sleeve that scores best alone, on the same worlds. REPORT ONLY -- it is not a proof
+        # rival and never the fallback, because a one-sleeve book is a concentration no rail
+        # here was sized for; what it answers is whether diversification is earning its keep.
+        "best_single_sleeve": best_single_sleeve(ev, funded, cfg=cfg, worlds=worlds),
         "floor_fill": fill_note,
         # Whether the published book had to be brought back to the resolved ceiling, and from what.
         "ceiling_guard": ceiling_guard,
