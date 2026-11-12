@@ -405,8 +405,3 @@ def run(now: datetime | None = None) -> dict[str, Any]:
             _atomic(PUBLIC_OUT, {"generated_at": now.isoformat(timespec="seconds"),
                                  "status": "ERROR", "why_codes": ["RUN_ERROR"]})
         return {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"[:300]}
-
-
-if __name__ == "__main__":
-    d = run()
-    print(json.dumps({k: d.get(k) for k in ("status", "phase", "why", "pace")}, default=str))
