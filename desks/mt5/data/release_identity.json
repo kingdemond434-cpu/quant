@@ -1,26 +1,31 @@
 {
  "ok": false,
- "running_sha": "8b16ac6ea5cde1b250c6cb9e4b7d9c47a707f417",
+ "running_sha": "6109ad0d0d8048728511924fb4695f03fcfac3be",
  "release_sha": "bb527d650cfa11b0f152f7915951d8d6c188b12e",
- "reason": "running 8b16ac6ea5cd carries 2 path(s) the sealed release bb527d650cfa never named: ['desks/mt5/research/mt5_session.py', 'desks/mt5/tests/test_mt5_session.py']",
- "age_h": 50.195,
+ "reason": "running 6109ad0d0d80 carries 7 path(s) the sealed release bb527d650cfa never named: ['desks/mt5/research/hourly_cycle.py', 'desks/mt5/research/job_lock.py', 'desks/mt5/research/miner_candidate_compiler.py', 'desks/mt5/research/mt5_session.py', 'desks/mt5/tests/test_job_lock_liveness.py', 'desks/mt5/tests/test_mt5_session.py']",
+ "age_h": 51.197,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
  "source": "git",
  "release_id": "f33df7bc018c",
  "changed_paths": [
+  "desks/mt5/research/hourly_cycle.py",
+  "desks/mt5/research/job_lock.py",
+  "desks/mt5/research/miner_candidate_compiler.py",
   "desks/mt5/research/mt5_session.py",
-  "desks/mt5/tests/test_mt5_session.py"
+  "desks/mt5/tests/test_job_lock_liveness.py",
+  "desks/mt5/tests/test_mt5_session.py",
+  "tests/ops/test_published_state_withholds_login.py"
  ],
  "drift": [],
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-11-12T18:36:05+00:00",
+ "at": "2026-11-12T19:36:14+00:00",
  "tested_sha": "UNMEASURED",
  "tested_gates": "UNMEASURED",
- "allocator_certificate": "6133f71feef8ff72@2026-11-12T18:04:26.753793+00:00 proof=FAILED book=posterior",
+ "allocator_certificate": "491594dda25f65b8@2026-11-12T19:17:37.646940+00:00 proof=FAILED book=multiperiod",
  "ci_run_id": "UNMEASURED",
  "allows_new_risk": false,
  "verdict": "REFUSED"
