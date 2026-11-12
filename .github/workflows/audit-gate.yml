@@ -73,9 +73,15 @@ jobs:
     # A completed check run on a PR: the same gate, same rule, one look per PR the run names.
     # The gate's code and the base come from LIVE, never from the PR; the PR numbers are the
     # event's own integers.
+    # A CANCELLED run is skipped (2026-11-12, zuck "do the first 2"): it was cancelled because a
+    # newer push superseded it, and that push's own run triggers its own look. MEASURED 11-11
+    # 18:00Z to 11-12 18:30Z: 53 of 374 completed ci/release-gates PR runs were cancelled, each
+    # one a runner slot spent on a look at a head that no longer exists. Failures still look:
+    # the gate quarantines a failing LOW/AUTO PR.
     if: >-
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion != 'cancelled' &&
       github.event.workflow_run.head_repository.full_name == github.repository
     concurrency:
       group: audit-gate-after-${{ github.event.workflow_run.head_sha }}

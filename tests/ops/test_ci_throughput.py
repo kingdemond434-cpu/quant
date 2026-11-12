@@ -371,6 +371,14 @@ def test_a_second_merger_looks_when_checks_complete() -> None:
     assert "github.event.workflow_run.event == 'pull_request'" in job
 
 
+def test_the_second_merger_skips_a_cancelled_run_but_not_a_failed_one() -> None:
+    text = (WF / "audit-gate.yml").read_text(encoding="utf-8")
+    cond = text.split("  after-checks:", 1)[1].split("concurrency:", 1)[0]
+    # a superseded (cancelled) run spends no runner; a FAILED run still gets its look (quarantine)
+    assert "github.event.workflow_run.conclusion != 'cancelled'" in cond
+    assert "'failure'" not in cond and "== 'success'" not in cond
+
+
 def test_every_gh_call_of_the_gate_can_time_out() -> None:
     src = (ROOT / ".github/scripts/audit_gate.py").read_text(encoding="utf-8")
     # #571 moved the subprocess call into _gh_run; _gh turns its timeout into a RuntimeError
