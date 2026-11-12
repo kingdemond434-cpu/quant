@@ -16,7 +16,7 @@
  "last_sweep_s": 18649.8,
  "uptime_s": 18649.8,
  "last_sweep_ended_utc": "2026-11-12T16:36:52+00:00",
- "heartbeat_utc": "2026-11-12T17:04:42+00:00",
+ "heartbeat_utc": "2026-11-12T18:04:51+00:00",
  "sweep_phase": {
   "pid": 18592,
   "sweep_started_utc": "2026-11-12T16:37:06+00:00",
@@ -87,32 +87,37 @@
      }
     },
     "prewarm": {
-     "samples": 52,
+     "samples": 412,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 50,
-       "share": 0.962
+       "n": 408,
+       "share": 0.99
+      },
+      {
+       "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 2,
+       "share": 0.005
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 1,
-       "share": 0.019
+       "share": 0.002
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 1,
-       "share": 0.019
+       "share": 0.002
       }
      ],
      "process": {
-      "cpu_s": 166.0,
-      "page_faults": 8620222.0,
-      "read_bytes": 4103947.0,
-      "write_bytes": 10273434535.0,
-      "sampled_s": 510.0,
+      "cpu_s": 196.0,
+      "page_faults": 10379285.0,
+      "read_bytes": 4878855.0,
+      "write_bytes": 12235656509.0,
+      "sampled_s": 4110.0,
       "rss_mb_max": 3412.9,
-      "cpu_share_of_wall": 0.325
+      "cpu_share_of_wall": 0.048
      }
     }
    }
