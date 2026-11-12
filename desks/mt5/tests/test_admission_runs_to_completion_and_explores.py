@@ -280,3 +280,53 @@ def test_run_explores_before_the_proof_on_the_published_book_and_never_moves_the
     assert 'strftime("%Y%m%d")' in src, "one draw per UTC day"
     assert "total_heat=float(sum(explored.values()))" in src
     assert 'book.total_heat if nt.get("binding") else verdict.total_heat' in src
+
+
+def test_a_ruinous_carried_start_is_re_solved_from_the_incumbent_not_refused() -> None:
+    """THE STALE WARM START (measured on the box 2026-11-10 19:26Z: 170 of 196 scored candidates
+    refused as "wiped out", every one warm-started, 0 or 1 iterations). A carried book that is
+    ruinous on this pass's worlds cannot be ascended off at equal heat, so the reading was the
+    START, not the candidate. The scan re-solves from the incumbent, which is finite."""
+    held, diversifier, _star = _book_and_two_candidates()
+    r = diversifier.daily_r.copy()
+    r[::50] = -6.0                                     # a -6R day: at 20% heat it is ruin
+    crashy = SleeveEvidence(name=diversifier.name, daily_r=r, family="carry", symbol="EURJPY",
+                            n_trials=50, forward_days=40, live_days=0, cost_r=0.02)
+    ev = [*held, crashy]
+    cfg = WorldConfig(seed=3, n_worlds=96, n_rows=200)
+    worlds = sample_worlds(ev, cfg)
+    common = {"incumbent": {e.name: 0.05 for e in held},
+              "bounds": {e.name: 0.20 for e in ev}, "total_heat": 0.20}
+    ruinous = {crashy.name: {crashy.name: 0.20}}
+    doc = pa.marginal_admission(ev, worlds, cfg, prefer={crashy.name}, warm=ruinous,
+                                budget_s=-1.0, **common)
+    row = doc["candidates"][crashy.name]
+    assert row["restarted_from_incumbent"] is True and row["warm_started_from_last_pass"] is True
+    assert doc["n_restarted_from_incumbent"] == 1
+    assert doc["restarted_from_incumbent"] == [crashy.name]
+    assert "wiped out" not in row["why"] and row["delta_elogw_per_day"] is not None
+    cold = pa.marginal_admission(ev, worlds, cfg, budget_s=-1.0, **common)
+    assert cold["candidates"][crashy.name]["restarted_from_incumbent"] is False
+    assert doc["admitted"] == cold["admitted"] and doc["refused"] == cold["refused"]
+    # no ascent at all on a ruinous start is unscored, never a refusal
+    src = inspect.getsource(pa.marginal_admission)
+    assert "stopped before its first step on a ruinous start; NOT a verdict" in src
+
+
+def test_the_scan_builds_the_correlation_matrix_once_and_it_changes_nothing(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE BUDGET BUYS ASCENT, NOT SETUP (2026-11-10 19:26Z: 190 re-solves at 0 iterations,
+    setup ~5 s of the 8 s budget, almost all of it the O(n^2) correlation build)."""
+    from libs.portfolio import robust_elog as re_mod
+    held, diversifier, star = _book_and_two_candidates()
+    before = _scan(held, diversifier, star)
+    calls: list[int] = []
+    real = re_mod._corr_abs
+    monkeypatch.setattr(pa, "_corr_abs", lambda ev: (calls.append(1), real(ev))[1])
+    monkeypatch.setattr(re_mod, "_corr_abs", lambda ev: (calls.append(1), real(ev))[1])
+    after = _scan(held, diversifier, star)
+    assert len(calls) <= 2, "one build for the scan (and at most one for the incumbent solve)"
+    assert after["admitted"] == before["admitted"] and after["refused"] == before["refused"]
+    for name, row in after["candidates"].items():
+        assert row["delta_elogw_per_day"] == pytest.approx(
+            before["candidates"][name]["delta_elogw_per_day"], abs=1e-12)
