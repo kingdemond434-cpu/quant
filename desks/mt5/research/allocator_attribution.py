@@ -272,29 +272,57 @@ def _dispersion_term(forecasts: list[dict[str, Any]],
     size up.
     """
     obs: list[float] = []
+    legs: dict[str, list[float]] = {}
     for f in forecasts:
         day = str(f["t"])[:10]
         book = {str(k): float(v) for k, v in (f.get("book") or {}).items()}
-        got = [h * realized.get(n, {}).get(day, 0.0) for n, h in book.items()
-               if realized.get(n, {}).get(day) is not None]
+        got = {n: h * realized[n][day] for n, h in book.items()
+               if realized.get(n, {}).get(day) is not None}
         if len(got) > 1:
-            obs.append(sum(got))
+            obs.append(sum(got.values()))
+            for n, v in got.items():
+                legs.setdefault(n, []).append(v)
     if len(obs) < MIN_DAYS:
         return {"value": UNMEASURED, "scored_days": len(obs),
                 "why": f"{len(obs)} scored day(s), need {MIN_DAYS}"}
     real_sd = statistics.pstdev(obs)
-    # The forecast's own tail rate is the model's dispersion claim: CVaR is a quantile of the
-    # world population, so |CVaR - mean| scales with how spread out the model thought it was.
-    claims = [abs(float(f.get("expected_cvar_per_day") or 0.0)
+    # LIKE FOR LIKE (2026-11-11). The model's DAILY book sd, published per pass as
+    # `expected_daily_sd`; the old claim |CVaR - mean| is the spread of each world's MEAN over
+    # its rows (~sqrt(n_rows) smaller) and is kept only as `legacy_proxy`, never compared.
+    daily = [float(f["expected_daily_sd"]) for f in forecasts
+             if isinstance(f.get("expected_daily_sd"), (int, float))]
+    indep = [float(f["expected_daily_sd_independent"]) for f in forecasts
+             if isinstance(f.get("expected_daily_sd_independent"), (int, float))]
+    legacy = [abs(float(f.get("expected_cvar_per_day") or 0.0)
                   - float(f.get("expected_log_per_day") or 0.0)) for f in forecasts]
-    model_sd = statistics.fmean(claims) if claims else 0.0
-    return {
-        "value": round(model_sd - real_sd, 8),
-        "realized_sd": round(real_sd, 8), "model_sd": round(model_sd, 8),
-        "scored_days": len(obs),
-        "reading": ("the book moved TOGETHER more than modelled" if model_sd < real_sd
-                    else "the book was more dispersed than modelled"),
-    }
+    out: dict[str, Any] = {
+        "realized_sd": round(real_sd, 8), "scored_days": len(obs),
+        "legacy_proxy": {"model_spread_of_world_means": round(statistics.fmean(legacy), 8)
+                         if legacy else None,
+                         "why": "not a daily sd; reported for continuity, never compared"}}
+    if not daily:
+        out.update({"value": UNMEASURED,
+                    "why": "no forecast carries expected_daily_sd yet (published from "
+                           "2026-11-11); the old proxy is a different quantity"})
+        return out
+    model_sd = statistics.fmean(daily)
+    # THE SPLIT: realised book sd over the sd the same legs would have had independently, against
+    # the model's same ratio. Above 1 the legs moved together more than modelled (correlation);
+    # the independent sd ratio says whether the legs themselves were more volatile (volatility).
+    real_indep = math.sqrt(sum(statistics.pvariance(v) for v in legs.values() if len(v) > 1))
+    out.update({"value": round(model_sd - real_sd, 8), "model_sd": round(model_sd, 8),
+                "reading": ("the book moved more than modelled" if model_sd < real_sd
+                            else "the book moved less than modelled")})
+    if indep and real_indep > 0.0 and statistics.fmean(indep) > 0.0 and model_sd > 0.0:
+        m_indep = statistics.fmean(indep)
+        out["volatility_ratio"] = round(real_indep / m_indep, 4)
+        out["comovement_ratio"] = round((real_sd / real_indep) / (model_sd / m_indep), 4)
+        out["split"] = ("volatility_ratio = realised leg dispersion / modelled; comovement_ratio"
+                        " = (realised book sd / independent) over the model's same ratio. The "
+                        "realised side is SIMPLE daily R (both of its sds, so they agree with "
+                        "each other); the model side is daily LOG return -- read the ratios, not "
+                        "the two sds 1:1")
+    return out
 
 
 def _regime_term(forecasts: list[dict[str, Any]]) -> dict[str, Any]:

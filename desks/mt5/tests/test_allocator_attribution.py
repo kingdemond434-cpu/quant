@@ -319,3 +319,43 @@ def test_the_daily_artifact_keeps_its_pinned_nine_term_shape(desk: Path) -> None
         "alpha", "selection", "state", "sizing", "diversification", "execution", "exit",
         "cost", "veto")
     assert "entry" in doc and "per_sleeve" in doc and "information" in doc
+
+
+# ------------------------------------------------- the correlation term, measured like for like
+def test_the_dispersion_term_compares_daily_sd_and_splits_volatility_from_comovement() -> None:
+    """2026-11-11: the term compared a realised DAILY sd with |CVaR - mean| of each world's mean
+    over its rows (~sqrt(n_rows) smaller) and read "moved together 3.6x more than modelled". It
+    now compares the model's published daily sd, and splits the gap into leg volatility and
+    co-movement against the model's own independent sd."""
+    days = [f"2026-11-{d:02d}" for d in range(1, 9)]
+    a = [0.4, -0.3, 0.5, -0.6, 0.2, -0.1, 0.7, -0.5]
+    realized = {"A": dict(zip(days, a, strict=True)), "B": dict(zip(days, a, strict=True))}
+    base = {"book": {"A": 0.1, "B": 0.1}, "expected_log_per_day": 0.001,
+            "expected_cvar_per_day": -0.002}
+    legacy = [{**base, "t": d} for d in days]
+    old = attr._dispersion_term(legacy, realized)
+    assert old["value"] == UNMEASURED and "expected_daily_sd" in old["why"]
+    assert old["legacy_proxy"]["model_spread_of_world_means"] == pytest.approx(0.003)
+    rows = [{**base, "t": d, "expected_daily_sd": 0.05, "expected_daily_sd_independent": 0.05}
+            for d in days]
+    got = attr._dispersion_term(rows, realized)
+    # two identical legs: the book sd is twice one leg's, the independent sd is sqrt(2) of it
+    assert got["comovement_ratio"] == pytest.approx(2 ** 0.5, abs=1e-4)
+    assert got["model_sd"] == pytest.approx(0.05) and got["value"] < 0
+
+
+def test_the_allocator_publishes_the_daily_sd_it_is_scored_against() -> None:
+    import numpy as np
+    from research import pf_allocator as pa
+    r = np.zeros((4, 10, 2), dtype=np.float32)
+    r[:, ::2, :] = 0.1
+    r[:, 1::2, :] = -0.1
+    worlds = type("W", (), {"names": ("A", "B"), "r": r})()
+    sd = pa.book_daily_sd(worlds, {"A": 0.5, "B": 0.5})
+    assert sd["expected_daily_sd"] == pytest.approx(0.1, rel=0.02)          # perfectly together
+    leg = (np.log(1.05) - np.log(0.95)) / 2.0                                # one leg's log sd
+    assert sd["expected_daily_sd_independent"] == pytest.approx(leg * 2 ** 0.5, rel=1e-6)
+    assert pa.book_daily_sd(worlds, {}) == {"expected_daily_sd": None,
+                                            "expected_daily_sd_independent": None}
+    src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
+    assert "**book_daily_sd(worlds, funded)," in src
