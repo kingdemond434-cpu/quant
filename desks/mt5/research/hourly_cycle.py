@@ -4892,10 +4892,36 @@ def main() -> None:
     # information layer.
     jps = _costed("judge_prescreen", lambda: _producer("judge_prescreen",
                                                        "research/judge_prescreen.py", "--once"))
+    # REUSE_STALE MUST FALL BACK TO COMPUTING, OR THE ARTIFACT NEVER REFRESHES AGAIN
+    # (measured 2026-11-12). `--reuse-fresh` computes nothing: it verifies that
+    # `merge_hypotheses` published this cycle's coverage and exits 4 otherwise, leaving the
+    # report untouched -- which is right, because restamping a stale table as fresh would be
+    # the worse failure. But nothing else recomputes it, so when merge stops publishing the
+    # table simply stops existing in any current form. `JUDGE_COVERAGE_REUSE.json` had been
+    # saying so, correctly and uselessly, for two days:
+    #
+    #     verdict STALE, report_untouched true, report_at 2026-11-10T07:59:10Z,
+    #     report_age_s 203899.5, why ["report predates this cycle",
+    #                                 "merge_report.json is not this cycle's"]
+    #
+    # `JUDGE_COVERAGE.json` was 52h old and FOUR DUTIES read UNMEASURED off it (D4 backlog
+    # guard, D38 judge efficiency, D39 effective breadth, and judging-sweep items b and e),
+    # while `tier1_gap` quoted its two-day-old backlog as current -- 1,021,315 against the
+    # 937,600 a fresh pass measures, and an oldest cell of 1,446h against 1,506h.
+    #
+    # The compute pass itself was never the problem: run by hand on this box it finished and
+    # COMMITTED in ~180 s, inside the leg's own 300 s cap. It had simply never been asked.
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--reuse-fresh",
                                                       "--budget-s", "120"))
+    if isinstance(jcv, dict) and jcv.get("exit_code") == 4:
+        # The declared budget rises with the work: 120 s is what the REUSE check needs, and a
+        # compute pass measured ~180 s here (its own build_input_probe phase alone took 166 s
+        # on the run that found this). 240 s keeps the cap's commit margin intact.
+        jcv = _costed("judge_coverage_compute",
+                      lambda: _producer("judge_coverage", "research/judge_coverage.py",
+                                        "--once", "--budget-s", "240"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
     # identities within each mechanism), publishes the ratio, and writes the corrected campaign

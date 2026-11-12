@@ -403,6 +403,11 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # The same leg's COMPUTE path, costed separately so the ledger shows how often the cheap
+    # `--reuse-fresh` check has to fall back to recomputing. Added 2026-11-12, when the reuse
+    # check had been correctly reporting the table STALE -- and touching nothing -- for 52h,
+    # leaving four duties UNMEASURED off a two-day-old artifact.
+    "judge_coverage_compute": "information",
     # What the judge's pre-build screen WOULD remove from the docket, and the measured cost of
     # that (true survivors a sibling rule would have taken, by a time-ordered ledger replay). It
     # buys INFORMATION about the docket before any signal is built.
