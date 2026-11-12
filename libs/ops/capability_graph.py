@@ -891,20 +891,32 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/data/deep_forest_claims.jsonl",
                 "desks/mt5/reports/CELL_CULTURE.json"),
          writes=("desks/mt5/reports/REGION_YIELD.json",),
-         freshness_s={"desks/mt5/reports/REGION_YIELD.json": 3 * 3600}),
+         freshness_s={"desks/mt5/reports/REGION_YIELD.json": 3 * 3600},
+         # Its RED regions reach a decision only by reordering the deep-forest miner's grounds,
+         # so it is priced on the miner's rent line.
+         billed_as=("deep_forest_miner",)),
     # The hourly `judge_coverage` leg publishes the family census the breadth mandate counts
     # from; `cell_culture_index` publishes the culture summary the forest scheduler's gap list
     # and region_yield's cell counts read. Both were read in the graph with no declared writer.
     Node("judge_coverage", "desks/mt5/research/judge_coverage.py",
          reads=("desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
                 "desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json"),
-         writes=("desks/mt5/reports/JUDGE_COVERAGE.json",)),
+         writes=("desks/mt5/reports/JUDGE_COVERAGE.json",),
+         # Its docket order and census reach a decision through the cells the forcer mints into
+         # the compiler's intake, so it is priced there, as cell_emitter and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
     Node("cell_culture_index", "desks/mt5/research/cell_culture_index.py",
-         writes=("desks/mt5/reports/CELL_CULTURE.json",)),
+         writes=("desks/mt5/reports/CELL_CULTURE.json",),
+         # Its gap list reaches a decision only by reordering the deep-forest miner's grounds,
+         # so it is priced on the miner's rent line, as cell_emitter is on the compiler's.
+         billed_as=("deep_forest_miner",)),
     Node("leg_artifact_liveness", "scripts/check_leg_artifact_liveness.py",
          reads=("desks/mt5/reports/BREADTH_MANDATE.json",
                 "desks/mt5/reports/REGION_YIELD.json", "desks/mt5/data/sync_marker.json"),
-         writes=("desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json",)),
+         writes=("desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json",),
+         # Its GREEN/RED reading gates the forcer factor in the docket order and the RED-region
+         # lift in the forest scheduler, so it is priced on those two consumers' lines.
+         billed_as=("miner_candidate_compiler", "deep_forest_miner")),
     Node("exogenous_search", "desks/mt5/research/unknown_unknowns.py",
          writes=("desks/mt5/reports/UNKNOWN_UNKNOWNS.json",)),
     Node("falsifier_run", "desks/mt5/research/falsifier_run.py",
@@ -958,7 +970,10 @@ NODES: tuple[Node, ...] = (
     Node("compute_ledger", "libs/ops/compute_ledger.py",
          writes=("desks/mt5/data/compute_ledger.jsonl",)),
     Node("hourly_cycle", "desks/mt5/research/hourly_cycle.py",
-         writes=("desks/mt5/data/sync_marker.json",)),
+         writes=("desks/mt5/data/sync_marker.json",),
+         # The sync marker reaches a decision only through the liveness fence's staleness
+         # reading, so it is priced on the lines that fence is billed to.
+         billed_as=("miner_candidate_compiler", "deep_forest_miner")),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
