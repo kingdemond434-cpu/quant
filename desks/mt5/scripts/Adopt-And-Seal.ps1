@@ -656,7 +656,12 @@ if ($dirty.Count -gt 0) {
     $dirty | Select-Object -First 12 | ForEach-Object { Log "    $_" }
     Undo-Adoption "$($dirty.Count) code path(s) dirty after adoption" 3 "dirty-code-path"
 }
+# THE ORIGIN COMMIT THIS ADOPTION TOOK (idea 624): the box seals its own commit, which origin never
+# sees, so the seal also records the release gate's target and whether the code matches it. Set for
+# this one call only.
+$env:QUANT_ADOPTED_ORIGIN_SHA = [string]$gateTarget
 & $py @pyArgs -c "from libs.ops import release; d=release.seal(by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))"
+Remove-Item Env:\QUANT_ADOPTED_ORIGIN_SHA -ErrorAction SilentlyContinue
 if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Undo-Adoption "release.seal failed" 4 "seal-failed" }
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit
