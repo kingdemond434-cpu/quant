@@ -68,6 +68,7 @@ from mt5desk.decision_core import (
     fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
+    frame_is_current,
     closed_trade_r,
     diagnose,
     entry_is_legal,
@@ -3645,6 +3646,17 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     return call_params, ""
 
 
+def _venue_clock(st: dict) -> pd.Timestamp | None:
+    """This pass's venue clock in the bars' convention: the broker wall-clock tick `main` stamps
+    as `placement_tick_broker` (naive). None when absent or unreadable, which reads the current
+    UTC time downstream -- on a server ahead of UTC that can only look fresher, never refuse."""
+    try:
+        stamp = st.get("placement_tick_broker")
+        return pd.Timestamp(str(stamp)) if stamp else None
+    except (ValueError, TypeError):
+        return None
+
+
 def resolve_family_order(st: dict, s: dict, equity: float,
                          pending: dict[str, float] | None = None) -> dict:
     """The order this family sleeve would send THIS pass, priced -- read-only, no state written.
@@ -3698,6 +3710,21 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     frame = h1_frame(h1)
     closed = frame.iloc[:-1]
     call_params: dict | None = None
+    # A STALLED FEED IS NOT A SIGNAL (#926): the frame is current only while its FORMING row is
+    # the bar in progress on the venue's broker wall clock (`frame_is_current`); after a weekend
+    # or a session break the venue prints a new forming bar, so the first decision after a gap is
+    # taken exactly as the replay takes it. A refused frame leaves its reason and a count in the
+    # pass state, never a silent None. An unreadable clock refuses nothing.
+    _venue_now = _venue_clock(st)
+    _tf_min = int(_BAR_MINUTES.get(tf, 60))
+    if _venue_now is not None and len(frame) and not frame_is_current(
+            frame.index[-1], now=_venue_now, bar_minutes=_tf_min):
+        _stale = st.setdefault("stale_frames", {})
+        _stale["count"] = int(_stale.get("count") or 0) + 1
+        _why = (f"refused: stale frame -- the forming {tf} bar opened {frame.index[-1]} and the "
+                f"venue clock reads {_venue_now}; the feed stopped printing")
+        _stale.setdefault("rows", {})[name] = _why
+        return {"ok": False, "stage": "stale_frame", "why": _why}
     if population == "hunt16":
         # ONE DECISION A DAY AT THE CERTIFIED HOUR.
         last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]))
