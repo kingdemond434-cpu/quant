@@ -209,7 +209,7 @@ def test_static_qb002_reads_the_rotation_rule() -> None:
 
 # ------------------------------------------------------------------ seal carriers
 CSPEC = importlib.util.spec_from_file_location(
-    "check_seal_carriers", ROOT / "scripts" / "check_seal_carriers.py"
+    "check_seal_clears", ROOT / "scripts" / "check_seal_clears.py"
 )
 assert CSPEC and CSPEC.loader
 fence = importlib.util.module_from_spec(CSPEC)
@@ -294,20 +294,20 @@ def test_the_fence_judges_carriers_and_refuses_them_under_ci(repo: dict[str, obj
     _live, head, bundle, patch = _carrier(repo)
     clone = _fresh_clone(repo, "pusher")
     _git(clone, "update-ref", f"refs/remotes/origin/{fence.LIVE}", _git(clone, "rev-parse", "HEAD"))
-    assert fence.judge(clone, ci=False)["verdict"] == "PASS"
+    assert fence.judge_carriers(clone, ci=False)["verdict"] == "PASS"
     folder = clone / st.CARRIERS
     folder.mkdir(parents=True)
     (folder / f"{head}.bundle").write_bytes(bundle)
     (folder / f"{head}.patch").write_bytes(patch)
-    assert fence.judge(clone, ci=False)["verdict"] == "PASS"
-    assert fence.judge(clone, ci=True)["verdict"] == "BREACH"
+    assert fence.judge_carriers(clone, ci=False)["verdict"] == "PASS"
+    assert fence.judge_carriers(clone, ci=True)["verdict"] == "BREACH"
     (folder / f"{head}.patch").write_bytes(patch + b"x")
-    assert fence.judge(clone, ci=False)["verdict"] == "BREACH"
+    assert fence.judge_carriers(clone, ci=False)["verdict"] == "BREACH"
     (folder / f"{head}.patch").unlink()
-    assert fence.judge(clone, ci=False)["verdict"] == "BREACH"  # a bundle alone is refused
+    assert fence.judge_carriers(clone, ci=False)["verdict"] == "BREACH"  # a bundle alone is refused
     _git(clone, "update-ref", "-d", f"refs/remotes/origin/{fence.LIVE}")
     (folder / f"{head}.patch").write_bytes(patch)
-    assert fence.judge(clone, ci=False)["verdict"] == "BREACH"  # no LIVE ref: unjudged
+    assert fence.judge_carriers(clone, ci=False)["verdict"] == "BREACH"  # no LIVE ref: unjudged
 
 
 def test_the_leg_reads_a_carrier_commit_and_signs_its_head(repo: dict[str, object]) -> None:

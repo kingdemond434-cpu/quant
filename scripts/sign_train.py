@@ -559,7 +559,7 @@ def sign_root(root: Path, target: str, live_head: str) -> int:
 #: gate refuses unsigned sealed bytes from every clone, so a cleared head H can never reach a
 #: branch for the train to find. A CARRIER does: a branch commits H as a git bundle (one tip, H)
 #: plus `git format-patch` of H, here. The bytes are inert data in the tree, the law fence
-#: (scripts/check_seal_carriers.py) judges the carrier itself on every push, the leg re-checks it
+#: (scripts/check_seal_clears.py) judges the carrier itself on every push, the leg re-checks it
 #: with LIVE's code before G1-G10 run unchanged, and the carrier never merges: under CI the same
 #: fence refuses any tree that holds one, so LIVE never does.
 CARRIERS = "desks/mt5/data/seal_carriers"
