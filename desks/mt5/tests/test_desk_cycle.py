@@ -394,3 +394,25 @@ def test_the_end_row_carries_the_enforced_misses_not_the_agents_claim() -> None:
     for field in ("duties_missed", "pass_questions_missed", "judging_sweep_missed"):
         assert f"{field} = $enforced.{field}" in src, field
     assert 'duties_missed = "UNMEASURED"' in src
+
+
+def test_a_refused_firing_is_not_recorded_as_a_pass_that_missed_duties() -> None:
+    """MEASURED 2026-11-12. Twelve noon firings -- 12:02 through 19:02 -- each ended in 1.5 to
+    11.4 minutes with rc=1, an empty `completed`, an empty `work_items` and a 22-entry
+    `duties_missed` list, so the ledger carried twelve rows that read like twelve passes which
+    had run and missed twenty-two duties each. Every one had died on its first turn with the
+    CLI's own line in the log: "You've hit your weekly limit - resets Nov 17".
+
+    A duty nobody checked is UNMEASURED, and keeping that apart from a duty that was checked and
+    missed is the whole point of the duty table. Each firing also incremented `resumed` (it
+    reached 12) and the resume brief then told the next agent that stages were ALREADY COMPLETE
+    when none were.
+    """
+    src = LAUNCHER.read_text("utf-8")
+    assert "$usageLimited = $false" in src
+    assert "hit your weekly limit" in src and "rate_limit_error" in src
+    assert "blocked_reason" in src and "agent_usage_limit" in src
+    # it does not consume a resume slot
+    assert "$state.usage_limited" in src and "usage_limited = $usageLimited" in src
+    # the exit code is untouched: a lane that cannot run is still a defect in the task history
+    assert "It changes no exit code" in src

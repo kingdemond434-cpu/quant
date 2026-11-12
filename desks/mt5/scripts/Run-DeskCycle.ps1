@@ -423,7 +423,13 @@ Set-CycleState @{
     pid = $PID; started_at = (Get-Date -Format "o")
     completed = $done
     work_items = $(if ($resuming -and $state.work_items) { @($state.work_items) } else { @() })
-    resumed = $(if ($resuming) { [int]$state.resumed + 1 } else { 0 })
+    # A FIRING THE CLI REFUSED IS NOT A RESUME. The counter means "real passes cut off mid-work";
+    # it reached 12 on 2026-11-12 purely from usage-limit refusals, and the resume brief then told
+    # the next agent that stages were already complete when none were. See the usage-limit block
+    # further down for the measurement.
+    resumed = $(if (-not $resuming) { 0 }
+                elseif ($state.usage_limited) { [int]$state.resumed }
+                else { [int]$state.resumed + 1 })
     controller = $Controller; lease_epoch = $LeaseEpoch
     why = "written by Run-DeskCycle.ps1; the agent appends to completed[] and work_items[]"
 }
@@ -533,7 +539,43 @@ if ($agentName -eq "codex") {
 # EVERY REFUSED STEP IS A MISSED STEP, AND IT LEAVES A ROW. The recorder reads the teed stream,
 # writes the pass's result text into the human log, appends one UNMEASURED / counts_as MISSED row
 # per refused tool call to the CRO ledger, and marks the duty each refused step served MISSED in
-# the TIER1_BREADTH_REVIEW.json this pass wrote. Its failure is logged, never the task's exit code.
+# A PASS THAT NEVER RAN MUST NOT BE RECORDED AS A PASS THAT FAILED (measured 2026-11-12).
+#
+# Twelve noon firings that day -- 12:02 through 19:02 -- each ended in 1.5 to 11.4 minutes with
+# rc=1, an empty `completed`, an empty `work_items`, and a 22-entry `duties_missed` list. The
+# ledger therefore carried twelve rows that read exactly like twelve passes which had run and
+# missed twenty-two duties each. Every one of them had in fact died on its first turn, with the
+# CLI's own line in the log:
+#
+#     ---- agent result ----
+#     You've hit your weekly limit - resets Nov 17, 4pm (Europe/Berlin)
+#
+# Two separate costs. The ledger's: 22 duties scored MISSED by a pass that never looked at them,
+# which is a fabricated measurement, not a conservative one -- a duty nobody checked is
+# UNMEASURED, and the whole duty table exists to keep those two apart. And the checkpoint's:
+# every firing incremented `resumed` (it reached 12), and the resume brief told the next agent
+# "these stages are ALREADY COMPLETE" followed by nothing, because `completed` held one empty
+# object. The resume machinery was being driven by passes that had never started.
+#
+# So the launcher now recognises the refusal, says so once in the log, names it in the end row,
+# and does not let it consume a resume slot. It changes no exit code: the task history must still
+# show the firing as failed, because a lane that cannot run IS a defect.
+$usageLimited = $false
+if ($streamJson -and (Test-Path -LiteralPath $Stream)) {
+    try {
+        $usageLimited = [bool](Select-String -LiteralPath $Stream -SimpleMatch -Quiet `
+            -Pattern "hit your weekly limit", "hit your usage limit", "usage limit reached", `
+                     "rate_limit_error", "Claude usage limit reached")
+    } catch {
+        Write-Cycle ("usage-limit check UNMEASURED: {0}" -f $_.Exception.Message)
+    }
+}
+if ($usageLimited) {
+    Write-Cycle ("BLOCKED: the agent CLI refused this firing on a usage limit, so NO step of " +
+                 "the cycle ran. The duty verdicts below are the launcher's own measurement of " +
+                 "this host, not this pass's work, and this firing does not count as a resume.")
+}
+
 $deniedCount = $null
 if ($streamJson) {
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
@@ -592,6 +634,7 @@ if ($code -eq 0) {
         controller = $Controller; lease_epoch = $LeaseEpoch
         research_supervisor = $supState
         resumed = $(if ($final) { $final.resumed } else { 0 })
+        usage_limited = $usageLimited
     }
     Write-Cycle ("marked DONE for {0} ({1} stage(s) recorded)" -f $Today, $completed.Count)
 } else {
@@ -602,7 +645,11 @@ if ($code -eq 0) {
         binding_constraint = $binding; report = $report
         controller = $Controller; lease_epoch = $LeaseEpoch
         resumed = $(if ($final) { $final.resumed } else { 0 })
-        why = "left RUNNING on a non-clean exit so the next hourly firing resumes it"
+        usage_limited = $usageLimited
+        why = $(if ($usageLimited) {
+            "the agent CLI refused this firing on a usage limit: NO stage ran, so the checkpoint " +
+            "is left exactly as the last real pass left it and this firing is not a resume"
+        } else { "left RUNNING on a non-clean exit so the next hourly firing resumes it" })
     }
     Write-Cycle ("left RESUMABLE: rc={0}, {1} stage(s) complete" -f $code, $completed.Count)
 }
@@ -617,6 +664,9 @@ Add-LedgerRow @{
     completed = $completed; work_items = $items; binding_constraint = $binding
     research_supervisor = $supState
     permission_denials = $deniedCount
+    # Named so a reader can tell a pass that ran and missed duties from a firing that was refused
+    # before its first step. Absent on every ordinary row.
+    blocked_reason = $(if ($usageLimited) { "agent_usage_limit" } else { $null })
     duties_missed = $enforced.duties_missed
     pass_questions_missed = $enforced.pass_questions_missed
     judging_sweep_missed = $enforced.judging_sweep_missed
