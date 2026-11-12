@@ -380,6 +380,47 @@ def compute(intents: list[dict], deals: list[dict],
         account_kind=kind, attributed_deals=len(chain), chain=chain)
 
 
+#: Fills a sleeve needs before its markout can gate anything: the promoter's first retirement
+#: door reads a sleeve's expectancy only once 10 trades exist, and a re-arm gate is the same
+#: question asked of live fills, so it takes the same floor. Below it the verdict is UNMEASURED.
+REARM_MIN_FILLS = 10
+
+
+def rearm_shadow(m: Markout, min_fills: int = REARM_MIN_FILLS) -> dict[str, Any]:
+    """SHADOW ONLY (idea 586): would each sleeve be re-armed on Fusion if re-arming were gated
+    on its OWN markout? Per sleeve: matched fills, mean realised R and mean entry slip in R from
+    the same join `compute` made. WOULD_REARM when the sleeve's fills earned money (mean realised
+    R > 0) over at least `min_fills`; WOULD_HOLD when they did not; UNMEASURED below the floor.
+    Nothing reads this to size or arm -- it is the evidence a money tap would need first."""
+    per: dict[str, dict[str, list[float]]] = {}
+    for link in m.chain:
+        name = str(link.get("sleeve") or "")
+        r = link.get("realized_r")
+        if not name or not isinstance(r, (int, float)):
+            continue
+        per.setdefault(name, {"r": [], "slip": []})["r"].append(float(r))
+    for row in m.rows:
+        name = str(row.get("sleeve") or "")
+        if name in per and isinstance(row.get("slip_r"), (int, float)):
+            per[name]["slip"].append(float(row["slip_r"]))
+    sleeves: dict[str, dict[str, Any]] = {}
+    for name, v in sorted(per.items()):
+        n, mr = len(v["r"]), sum(v["r"]) / len(v["r"])
+        verdict = ("UNMEASURED" if n < min_fills else "WOULD_REARM" if mr > 0.0
+                   else "WOULD_HOLD")
+        sleeves[name] = {"fills": n, "mean_realized_r": round(mr, 6),
+                         "mean_slip_r": (round(sum(v["slip"]) / len(v["slip"]), 6)
+                                         if v["slip"] else None),
+                         "verdict": verdict}
+    counts: dict[str, int] = {}
+    for s in sleeves.values():
+        counts[s["verdict"]] = counts.get(s["verdict"], 0) + 1
+    return {"mode": "SHADOW", "min_fills": min_fills, "counts": counts, "sleeves": sleeves,
+            "account_kind": m.account_kind,
+            "rule": ("re-arm a sleeve only when its own matched fills earned money (mean realised "
+                     "R > 0) over at least min_fills; report only, no sizing or arming reads it")}
+
+
 def _attribution_line(m: Markout) -> str:
     share = m.attributed_share
     return (f"  attributed deals     {m.attributed_deals}/{m.n_deals}"
