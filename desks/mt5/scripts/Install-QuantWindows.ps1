@@ -167,16 +167,21 @@ $tasks = @(
        Script = "research\\pf_allocator.py"
        Args = "--mode fast"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionInterval (New-TimeSpan -Minutes 15) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
+       # AN HONEST CADENCE (2026-11-11). Measured on the box from MT5-AllocatorFast.log: a fast
+       # pass runs ~10 min (23:57 -> 00:07 -> 00:17), so a 5-minute trigger fired into a running
+       # instance and Task Scheduler refused the start (0x800710E0) twice out of every three; the
+       # real cadence was ~10-15 min while the task claimed 5. Fifteen is what it delivers, and
+       # it matches the manifest row. decision_core._ALLOC_MAX_AGE_S (3600) is still met 4x over.
        # THE ALLOCATOR'S OWN FAST CLOCK, which its docstring names and nothing ever ran.
-       # `--mode fast` reuses the cached scenario population and re-solves the book in ~5 min,
+       # `--mode fast` reuses the cached scenario population and re-solves the book (~10 min measured),
        # so the per-sleeve growth-maximising fractions track the account between hourly passes.
        # `decision_core._ALLOC_MAX_AGE_S` is 3600, so without a sub-hourly clock the book spends
        # most of every hour close to expiry; with one it is always fresh. The file holds a single
        # job lock across all three modes, so a fast pass that collides with the hourly `normal`
        # one waits instead of thrashing beside it.
-       Desc = "E[log W] per-sleeve heat, fast clock: re-solve the book every 5 minutes." },
+       Desc = "E[log W] per-sleeve heat, fast clock: re-solve the book every 15 minutes." },
     @{ Name = "MT5-NewsDesk"
        Script = "research\\news_desk.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `

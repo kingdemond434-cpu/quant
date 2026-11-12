@@ -152,3 +152,10 @@ def test_the_memory_refusal_is_named_no_room(locks, monkeypatch) -> None:
     with JL.exclusive_job("pf_allocator") as go:              # a later admitted pass clears it
         assert go is True
     assert "pf_allocator" not in JL.LAST_REFUSAL
+
+
+def test_a_hung_holder_is_reclaimed_after_three_median_passes() -> None:
+    """HP91 (2026-11-11): a fast pass runs ~10 min; a holder silent 3x that is hung, not slow."""
+    from research import pf_allocator as pa
+    assert pa.LOCK_HEARTBEAT_STALE_S == 30 * 60.0
+    assert pa.LOCK_BUSY_HEARTBEAT_S < pa.LOCK_HEARTBEAT_STALE_S
