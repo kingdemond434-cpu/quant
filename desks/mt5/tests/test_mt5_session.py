@@ -144,6 +144,55 @@ def test_an_attach_that_spawns_a_terminal_is_refused(monkeypatch) -> None:
     assert fake.shutdowns == 1
 
 
+def test_every_attach_stamps_which_terminal_answered(tmp_path, monkeypatch) -> None:
+    """THE DETECTOR THIS INCIDENT NEEDED. Two terminals were up, the pinned path timed out, and
+    MT5 answers from whichever one owns the IPC pipe -- so an organ asking for Fusion could be
+    reading FTMO with no artifact saying so. Every successful attach now stamps what was asked
+    for against what answered, and never the login."""
+    import json as _json
+    import types
+
+    class Identified(FakeMT5):
+        def initialize(self, **kwargs):
+            self.initialize_calls.append(kwargs)
+            return "path" not in kwargs
+
+        def terminal_info(self):
+            return types.SimpleNamespace(path=r"C:\FTMO", connected=True, trade_allowed=True)
+
+        def account_info(self):
+            return types.SimpleNamespace(company="FTMO Global Markets Ltd",
+                                         server="FTMO-Server2", login=5551234)
+
+    out = tmp_path / "mt5_attach_identity.json"
+    monkeypatch.setattr(mt5_session, "ATTACH_IDENTITY", out)
+    _terminal_already_running(monkeypatch)
+    monkeypatch.setattr(mt5_session, "windows_session_id", lambda pid=None: 0)
+
+    fake = Identified()
+    # terminal_info() answers here, so go through attach_running directly: attach_or_initialize's
+    # fast path would short-circuit on it.
+    assert mt5_session.attach_running(fake, path=r"C:\Fusion\terminal64.exe") is True
+    rec = _json.loads(out.read_text(encoding="utf-8"))
+    assert rec["requested_path"] == r"C:\Fusion\terminal64.exe"
+    assert rec["attached_path"] == r"C:\FTMO"
+    assert rec["company"] == "FTMO Global Markets Ltd"
+    assert rec["path_substituted"] is True
+    assert "5551234" not in out.read_text(encoding="utf-8")
+    assert list(tmp_path.iterdir()) == [out]
+
+
+def test_identity_stamp_never_breaks_an_attach(tmp_path, monkeypatch) -> None:
+    """Best-effort: an unwritable artifact path must not cost the desk its terminal."""
+    monkeypatch.setattr(mt5_session, "ATTACH_IDENTITY",
+                        tmp_path / "no" / "such" / "dir" / "x" / "id.json")
+    monkeypatch.setattr(mt5_session.Path, "mkdir",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("read-only")))
+    _terminal_already_running(monkeypatch)
+    fake = FakeMT5()
+    assert mt5_session.attach_running(fake, path="terminal64.exe") is True
+
+
 def test_attach_running_refuses_when_nothing_is_running(monkeypatch) -> None:
     fake = FakeMT5()
     _no_terminal_running(monkeypatch)

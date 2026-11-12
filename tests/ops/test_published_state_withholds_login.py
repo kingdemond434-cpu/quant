@@ -106,6 +106,7 @@ def test_position_count_and_floating_pnl_share_one_broker_snapshot(tmp_path, mon
 
 
 def test_account_publisher_cannot_autostart_terminal_in_session_zero(tmp_path, monkeypatch):
+    """Session 0 with NO terminal running never starts one, and never publishes a guess."""
     from research import mt5_session
 
     terminal = _fake_mt5()
@@ -113,6 +114,7 @@ def test_account_publisher_cannot_autostart_terminal_in_session_zero(tmp_path, m
     terminal.terminal_info = lambda: None
     terminal.initialize = lambda **kwargs: calls.append(kwargs)
     monkeypatch.setitem(sys.modules, "MetaTrader5", terminal)
+    monkeypatch.setattr(mt5_session, "terminal_pids", lambda path=None: set())
     monkeypatch.setattr(mt5_session, "windows_session_id", lambda: 0)
     mod = _load("account_session_zero", ROOT / "ops" / "publish_account_state.py")
     out = tmp_path / "account_state.json"
@@ -121,6 +123,24 @@ def test_account_publisher_cannot_autostart_terminal_in_session_zero(tmp_path, m
     assert mod.main() == 1
     assert calls == []
     assert out.read_bytes() == b"previous"
+
+
+def test_account_publisher_attaches_to_a_terminal_already_running(tmp_path, monkeypatch):
+    """THE 2026-11-12 OUTAGE. The Fusion terminal came up in Session 0 and the session guard
+    then refused this organ 53 times running, so the desk's most-read account number went 23h
+    stale while an authenticated terminal sat there answering. Attaching to a terminal that is
+    already up starts nothing, so it is allowed and the file is published."""
+    from research import mt5_session
+
+    monkeypatch.setitem(sys.modules, "MetaTrader5", _fake_mt5())
+    monkeypatch.setattr(mt5_session, "terminal_pids", lambda path=None: {4242})
+    monkeypatch.setattr(mt5_session, "windows_session_id", lambda: 0)
+    mod = _load("account_session_zero_attach", ROOT / "ops" / "publish_account_state.py")
+    out = tmp_path / "account_state.json"
+    monkeypatch.setattr(mod, "OUT", out)
+    monkeypatch.setattr(mod, "POSITIONS", tmp_path / "account_positions.json")
+    assert mod.main() == 0
+    assert json.loads(out.read_text(encoding="utf-8"))["equity"] == 101.5
 
 
 def test_cost_truth_snapshot_and_page_withhold_the_login(monkeypatch: pytest.MonkeyPatch) -> None:

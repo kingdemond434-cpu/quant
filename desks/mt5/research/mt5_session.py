@@ -2,9 +2,21 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import sys
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
+
+#: WHICH TERMINAL IS THE DESK ACTUALLY TALKING TO.  Nothing on the box answered that question
+#: before 2026-11-12, and the whole day's outage turned on it: two terminals were up (Fusion in
+#: Session 0, FTMO in Session 1), the pinned Fusion path answered `(-10005, 'IPC timeout')`, and
+#: MT5's bridge serves whichever terminal owns the machine's IPC pipe -- so an organ that asked
+#: for Fusion could be reading FTMO and no artifact would say so.  Every successful attach stamps
+#: this file with what was ASKED FOR and what ANSWERED, so a venue substitution is measurable
+#: instead of a guess.  Best-effort: a failed write never costs an attach.
+ATTACH_IDENTITY = (Path(__file__).resolve().parents[1] / "data" / "mt5_attach_identity.json")
 
 
 def windows_session_id(pid: int | None = None) -> int | None:
@@ -63,6 +75,36 @@ def terminal_pids(path: str | None = None) -> set[int]:
             continue
         pids.add(process.pid)
     return pids
+
+
+def record_attach_identity(mt5: Any, requested: str | None, *, substituted: bool) -> None:
+    """Stamp ``ATTACH_IDENTITY`` with the terminal that answered.  Never raises.
+
+    The login is never written: this is the same rule the account publisher follows, and the
+    repository is public.  ``company``/``server`` are what identify the venue.
+    """
+    temporary = ATTACH_IDENTITY.with_suffix(f".json.tmp{os.getpid()}")
+    try:
+        info = mt5.terminal_info()
+        account = mt5.account_info()
+        record = {
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "requested_path": requested,
+            "attached_path": getattr(info, "path", None),
+            "company": str(getattr(account, "company", "") or "") or None,
+            "server": str(getattr(account, "server", "") or "") or None,
+            "connected": getattr(info, "connected", None),
+            "trade_allowed": getattr(info, "trade_allowed", None),
+            "windows_session": windows_session_id(),
+            "pid": os.getpid(),
+            "path_substituted": substituted,
+        }
+        ATTACH_IDENTITY.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(json.dumps(record, indent=1), encoding="utf-8")
+        temporary.replace(ATTACH_IDENTITY)
+    except Exception:
+        with contextlib.suppress(Exception):
+            temporary.unlink()
 
 
 def attach_running(
@@ -136,6 +178,7 @@ def attach_running(
                 print(f"mt5_session: attached to the terminal holding the IPC pipe, not the "
                       f"pinned {path}; check account_info().company if the venue matters",
                       file=sys.stderr)
+            record_attach_identity(mt5, path, substituted=bool(n and path))
             return True
         with contextlib.suppress(Exception):
             mt5.shutdown()
@@ -178,4 +221,7 @@ def attach_or_initialize(
         kwargs["path"] = path
     if timeout is not None:
         kwargs["timeout"] = timeout
-    return bool(mt5.initialize(**kwargs))
+    launched = bool(mt5.initialize(**kwargs))
+    if launched:
+        record_attach_identity(mt5, path, substituted=False)
+    return launched
