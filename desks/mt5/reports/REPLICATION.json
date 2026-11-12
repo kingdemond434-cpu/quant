@@ -1,5 +1,5 @@
 {
- "at": "2026-11-12T17:38:42+00:00",
+ "at": "2026-11-12T21:44:53+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -27,10 +27,10 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=f932b3284ae44d01",
-   "certificate": "external.GBPSGD.formula.p=f932b3284ae44d01",
-   "fp": "c79c80533003267d",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=705c52f5c6b7c620",
+   "certificate": "external.NZDCAD.formula.p=705c52f5c6b7c620",
+   "fp": "a9fa2a261dde5a6a",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -41,10 +41,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=eb8b34c8190e8dad",
-   "certificate": "external.GBPSGD.formula.p=eb8b34c8190e8dad",
-   "fp": "5f5cc903e29ff5bb",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=f0847d846cad8a63",
+   "certificate": "external.NZDCAD.formula.p=f0847d846cad8a63",
+   "fp": "bc66d84069529d81",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -55,10 +55,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=bfb6cb20d3703b6f",
-   "certificate": "external.GBPSGD.formula.p=bfb6cb20d3703b6f",
-   "fp": "1650c941231e29ff",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=43529ae48ce9f71a",
+   "certificate": "external.NZDCAD.formula.p=43529ae48ce9f71a",
+   "fp": "93edb60d14245cef",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -69,10 +69,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=d3f322c33a9d1b55",
-   "certificate": "external.GBPSGD.formula.p=d3f322c33a9d1b55",
-   "fp": "f4590dd46c3799c5",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=3e94d9a031702405",
+   "certificate": "external.NZDCAD.formula.p=3e94d9a031702405",
+   "fp": "d3f50538148d45db",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -83,10 +83,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=362f69fffa8946b6",
-   "certificate": "external.GBPSGD.formula.p=362f69fffa8946b6",
-   "fp": "fdc7fe8383288b2e",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=9af2ac7d1f779b7a",
+   "certificate": "external.NZDCAD.formula.p=9af2ac7d1f779b7a",
+   "fp": "734c48f1d0f1ee3a",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -97,10 +97,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=021e4716d8a071c2",
-   "certificate": "external.GBPSGD.formula.p=021e4716d8a071c2",
-   "fp": "8e6ddae95ff5331f",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=5561fb16c40c7729",
+   "certificate": "external.NZDCAD.formula.p=5561fb16c40c7729",
+   "fp": "2c40b46a40429a97",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -111,10 +111,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.formula.p=e462d335a54d82f3",
-   "certificate": "external.GBPSGD.formula.p=e462d335a54d82f3",
-   "fp": "8e6d2f364f519aa2",
-   "symbol": "GBPSGD",
+   "key": "NZDCAD.formula.p=75fbd8cb7caa23e4",
+   "certificate": "external.NZDCAD.formula.p=75fbd8cb7caa23e4",
+   "fp": "f44a6349f0008086",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -125,10 +125,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPZAR.formula.p=6d027e5a5023054e",
-   "certificate": "external.GBPZAR.formula.p=6d027e5a5023054e",
-   "fp": "341f0754ef6818ec",
-   "symbol": "GBPZAR",
+   "key": "NZDCAD.formula.p=afd62eec4b40cf24",
+   "certificate": "external.NZDCAD.formula.p=afd62eec4b40cf24",
+   "fp": "1e8dbc3405069cd4",
+   "symbol": "NZDCAD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -139,383 +139,384 @@
   },
   {
    "lane": "forward",
-   "key": "EURNZD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-   "symbol": "EURNZD",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 2 rebuilt vs 19 in the ledger",
-    "only 2/19 ledger trades have a rebuilt fill on the same bar and side",
-    "summed P&L disagrees in SIGN: ledger +1.70R, rebuilt -0.75R"
-   ],
-   "ours": {
-    "n_fills": 2,
-    "pnl_R": -0.75,
-    "cost": {
-     "spread_per_lot": 3.0000000000000004,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 1.96979,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 19,
-    "cost_fields": {
-     "spread_per_lot": 3.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 1.96979,
-     "swap_per_lot_per_night": 3.73
-    },
-    "forward_start": "2026-10-31T23:58:31+00:00"
-   },
-   "divergence": {
-    "n_ledger": 19,
-    "n_rebuilt": 2,
-    "matched": 2,
-    "match_share": 0.105,
-    "fill_ratio": 0.105,
-    "median_abs_dR": 0.1797,
-    "pnl_ledger_R": 1.701,
-    "pnl_rebuilt_R": -0.75,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "GBPDKK.overnight_gap_decay.asia#regime=high_vol_representation=macro",
-   "symbol": "GBPDKK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 1 rebuilt vs 16 in the ledger",
-    "only 1/16 ledger trades have a rebuilt fill on the same bar and side"
-   ],
-   "ours": {
-    "n_fills": 1,
-    "pnl_R": 0.395,
-    "cost": {
-     "spread_per_lot": 39.00000000000001,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 7.47508,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 16,
-    "cost_fields": {
-     "spread_per_lot": 39.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 7.47508,
-     "swap_per_lot_per_night": 70.18
-    },
-    "forward_start": "2026-10-31T23:58:34.095881+00:00"
-   },
-   "divergence": {
-    "n_ledger": 16,
-    "n_rebuilt": 1,
-    "matched": 1,
-    "match_share": 0.062,
-    "fill_ratio": 0.062,
-    "median_abs_dR": 0.0,
-    "pnl_ledger_R": 4.042,
-    "pnl_rebuilt_R": 0.395,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "NZDCHF.overnight_gap_decay.asia#session=asia",
-   "symbol": "NZDCHF",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 2 rebuilt vs 20 in the ledger",
-    "only 2/20 ledger trades have a rebuilt fill on the same bar and side"
-   ],
-   "ours": {
-    "n_fills": 2,
-    "pnl_R": 0.891,
-    "cost": {
-     "spread_per_lot": 2.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 0.92089,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 20,
-    "cost_fields": {
-     "spread_per_lot": 2.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 0.92089,
-     "swap_per_lot_per_night": 5.82
-    },
-    "forward_start": "2026-10-31T23:59:55+00:00"
-   },
-   "divergence": {
-    "n_ledger": 20,
-    "n_rebuilt": 2,
-    "matched": 2,
-    "match_share": 0.1,
-    "fill_ratio": 0.1,
-    "median_abs_dR": 0.0,
-    "pnl_ledger_R": 11.451,
-    "pnl_rebuilt_R": 0.891,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "USDMXN.overnight_gap_decay.asia#representation=price_only_session=asia",
-   "symbol": "USDMXN",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 3 rebuilt vs 37 in the ledger",
-    "only 3/37 ledger trades have a rebuilt fill on the same bar and side"
-   ],
-   "ours": {
-    "n_fills": 3,
-    "pnl_R": 0.284,
-    "cost": {
-     "spread_per_lot": 404.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 21.03636,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 37,
-    "cost_fields": {
-     "spread_per_lot": 404.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 21.03636
-    },
-    "forward_start": "2026-11-01T00:00:24+00:00"
-   },
-   "divergence": {
-    "n_ledger": 37,
-    "n_rebuilt": 3,
-    "matched": 3,
-    "match_share": 0.081,
-    "fill_ratio": 0.081,
-    "median_abs_dR": 0.0148,
-    "pnl_ledger_R": 16.995,
-    "pnl_rebuilt_R": 0.284,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "USDMXN.overnight_gap_decay.asia#representation=price_only_session=overlap",
-   "symbol": "USDMXN",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 3 rebuilt vs 37 in the ledger",
-    "only 3/37 ledger trades have a rebuilt fill on the same bar and side"
-   ],
-   "ours": {
-    "n_fills": 3,
-    "pnl_R": 0.284,
-    "cost": {
-     "spread_per_lot": 404.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 21.03636,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 37,
-    "cost_fields": {
-     "spread_per_lot": 404.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 21.03636
-    },
-    "forward_start": "2026-11-01T00:00:47.206276+00:00"
-   },
-   "divergence": {
-    "n_ledger": 37,
-    "n_rebuilt": 3,
-    "matched": 3,
-    "match_share": 0.081,
-    "fill_ratio": 0.081,
-    "median_abs_dR": 0.0148,
-    "pnl_ledger_R": 16.995,
-    "pnl_rebuilt_R": 0.284,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "AUDSGD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-   "symbol": "AUDSGD",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 1 rebuilt vs 34 in the ledger",
-    "only 1/34 ledger trades have a rebuilt fill on the same bar and side"
-   ],
-   "ours": {
-    "n_fills": 1,
-    "pnl_R": 0.6,
-    "cost": {
-     "spread_per_lot": 3.0000000000000004,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 1.43135,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 34,
-    "cost_fields": {
-     "spread_per_lot": 3.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 1.43135,
-     "swap_per_lot_per_night": 11.05
-    },
-    "forward_start": "2026-11-01T16:50:22+00:00"
-   },
-   "divergence": {
-    "n_ledger": 34,
-    "n_rebuilt": 1,
-    "matched": 1,
-    "match_share": 0.029,
-    "fill_ratio": 0.029,
-    "median_abs_dR": 0.0479,
-    "pnl_ledger_R": 19.104,
-    "pnl_rebuilt_R": 0.6,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "GBPAUD.asia#rr=1.5_session=asia",
-   "symbol": "GBPAUD",
+   "key": "XAUUSD.asia#rr=1.5_session=asia_vol_filter=high",
+   "symbol": "XAUUSD",
    "family": "session_range_breakout",
    "verdict": "MISMATCH",
    "why": [
-    "FILLS disagree: 2 rebuilt vs 57 in the ledger",
-    "only 2/57 ledger trades have a rebuilt fill on the same bar and side",
-    "per-trade R disagrees: median |dR| = 0.281 > 0.25",
-    "summed P&L disagrees in SIGN: ledger +2.10R, rebuilt -0.09R"
+    "FILLS disagree: 1 rebuilt vs 59 in the ledger",
+    "only 1/59 ledger trades have a rebuilt fill on the same bar and side",
+    "summed P&L disagrees in SIGN: ledger +13.26R, rebuilt -1.00R"
    ],
    "ours": {
-    "n_fills": 2,
-    "pnl_R": -0.088,
+    "n_fills": 1,
+    "pnl_R": -1.004,
     "cost": {
-     "spread_per_lot": 3.0000000000000004,
+     "spread_per_lot": 7.000000000000001,
      "commission_per_lot": 2.0,
-     "quote_per_account": 1.62972,
+     "quote_per_account": 1.15844,
      "basis": "universe_registry"
     },
     "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
    },
    "theirs": {
-    "n_trades": 57,
+    "n_trades": 59,
     "cost_fields": {
-     "spread_per_lot": 3.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 1.62972,
-     "swap_per_lot_per_night": 9.64
-    },
-    "forward_start": "2026-11-05T14:55:08+00:00"
-   },
-   "divergence": {
-    "n_ledger": 57,
-    "n_rebuilt": 2,
-    "matched": 2,
-    "match_share": 0.035,
-    "fill_ratio": 0.035,
-    "median_abs_dR": 0.2812,
-    "pnl_ledger_R": 2.102,
-    "pnl_rebuilt_R": -0.088,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 1.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 1.0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.asia#session=asia_ttl_bars=24",
-   "symbol": "XAUAUD",
-   "family": "session_range_breakout",
-   "verdict": "MISMATCH",
-   "why": [
-    "FILLS disagree: 2 rebuilt vs 39 in the ledger",
-    "only 1/39 ledger trades have a rebuilt fill on the same bar and side",
-    "summed P&L disagrees in SIGN: ledger +19.28R, rebuilt -0.96R"
-   ],
-   "ours": {
-    "n_fills": 2,
-    "pnl_R": -0.962,
-    "cost": {
-     "spread_per_lot": 23.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 1.59601,
-     "basis": "universe_registry"
-    },
-    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
-   },
-   "theirs": {
-    "n_trades": 39,
-    "cost_fields": {
-     "spread_per_lot": 23.0,
+     "spread_per_lot": 7.0,
      "commission_per_lot": 2.0,
      "contract_oz": 100.0,
-     "quote_per_account": 1.59601,
-     "swap_per_lot_per_night": 95.87
+     "quote_per_account": 1.15844,
+     "swap_per_lot_per_night": 65.02
     },
-    "forward_start": "2026-11-05T14:55:16+00:00"
+    "forward_start": "2026-11-05T14:56:32+00:00"
    },
    "divergence": {
-    "n_ledger": 39,
-    "n_rebuilt": 2,
+    "n_ledger": 59,
+    "n_rebuilt": 1,
     "matched": 1,
-    "match_share": 0.026,
-    "fill_ratio": 0.051,
-    "median_abs_dR": 0.0083,
-    "pnl_ledger_R": 19.279,
-    "pnl_rebuilt_R": -0.962,
+    "match_share": 0.017,
+    "fill_ratio": 0.017,
+    "median_abs_dR": 0.0048,
+    "pnl_ledger_R": 13.263,
+    "pnl_rebuilt_R": -1.004,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "XAUUSD.asia#session=asia_vol_filter=high",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 1 rebuilt vs 59 in the ledger",
+    "only 1/59 ledger trades have a rebuilt fill on the same bar and side",
+    "summed P&L disagrees in SIGN: ledger +13.26R, rebuilt -1.00R"
+   ],
+   "ours": {
+    "n_fills": 1,
+    "pnl_R": -1.004,
+    "cost": {
+     "spread_per_lot": 7.000000000000001,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 1.15844,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 59,
+    "cost_fields": {
+     "spread_per_lot": 7.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100.0,
+     "quote_per_account": 1.15844,
+     "swap_per_lot_per_night": 65.02
+    },
+    "forward_start": "2026-11-05T14:56:38+00:00"
+   },
+   "divergence": {
+    "n_ledger": 59,
+    "n_rebuilt": 1,
+    "matched": 1,
+    "match_share": 0.017,
+    "fill_ratio": 0.017,
+    "median_abs_dR": 0.0048,
+    "pnl_ledger_R": 13.263,
+    "pnl_rebuilt_R": -1.004,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "XAUUSD.asia#rr=2.5_session=asia_vol_filter=high",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 1 rebuilt vs 59 in the ledger",
+    "only 1/59 ledger trades have a rebuilt fill on the same bar and side",
+    "summed P&L disagrees in SIGN: ledger +13.26R, rebuilt -1.00R"
+   ],
+   "ours": {
+    "n_fills": 1,
+    "pnl_R": -1.004,
+    "cost": {
+     "spread_per_lot": 7.000000000000001,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 1.15844,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 59,
+    "cost_fields": {
+     "spread_per_lot": 7.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100.0,
+     "quote_per_account": 1.15844,
+     "swap_per_lot_per_night": 65.02
+    },
+    "forward_start": "2026-11-05T14:56:41+00:00"
+   },
+   "divergence": {
+    "n_ledger": 59,
+    "n_rebuilt": 1,
+    "matched": 1,
+    "match_share": 0.017,
+    "fill_ratio": 0.017,
+    "median_abs_dR": 0.0048,
+    "pnl_ledger_R": 13.263,
+    "pnl_rebuilt_R": -1.004,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "AUDCHF.carry.asia@M15#input_symbol=AUDCHF_session=asia",
+   "symbol": "AUDCHF",
+   "family": "carry",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 10 rebuilt vs 228 in the ledger",
+    "only 7/228 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 10,
+    "pnl_R": 3.658,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars."
+   },
+   "theirs": {
+    "n_trades": 228,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089,
+     "swap_per_lot_per_night": 10.11
+    },
+    "forward_start": "2026-11-05T18:55:26+00:00"
+   },
+   "divergence": {
+    "n_ledger": 228,
+    "n_rebuilt": 10,
+    "matched": 7,
+    "match_share": 0.031,
+    "fill_ratio": 0.044,
+    "median_abs_dR": 0.0242,
+    "pnl_ledger_R": 53.618,
+    "pnl_rebuilt_R": 3.658,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "AUDCHF.carry.asia@M15#input_symbol=CHFNOK_require_quiet=True_session=asia",
+   "symbol": "AUDCHF",
+   "family": "carry",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 10 rebuilt vs 228 in the ledger",
+    "only 7/228 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 10,
+    "pnl_R": 3.658,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars."
+   },
+   "theirs": {
+    "n_trades": 228,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089,
+     "swap_per_lot_per_night": 10.11
+    },
+    "forward_start": "2026-11-05T18:55:32+00:00"
+   },
+   "divergence": {
+    "n_ledger": 228,
+    "n_rebuilt": 10,
+    "matched": 7,
+    "match_share": 0.031,
+    "fill_ratio": 0.044,
+    "median_abs_dR": 0.0242,
+    "pnl_ledger_R": 53.618,
+    "pnl_rebuilt_R": 3.658,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "AUDCHF.carry.asia@M15#input_symbol=CHFNOK_session=asia",
+   "symbol": "AUDCHF",
+   "family": "carry",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 10 rebuilt vs 228 in the ledger",
+    "only 7/228 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 10,
+    "pnl_R": 3.658,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars."
+   },
+   "theirs": {
+    "n_trades": 228,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089,
+     "swap_per_lot_per_night": 10.11
+    },
+    "forward_start": "2026-11-05T18:55:38+00:00"
+   },
+   "divergence": {
+    "n_ledger": 228,
+    "n_rebuilt": 10,
+    "matched": 7,
+    "match_share": 0.031,
+    "fill_ratio": 0.044,
+    "median_abs_dR": 0.0242,
+    "pnl_ledger_R": 53.618,
+    "pnl_rebuilt_R": 3.658,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "AUDCHF.carry.asia@M15#input_symbol=GBPJPY_session=asia",
+   "symbol": "AUDCHF",
+   "family": "carry",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 10 rebuilt vs 228 in the ledger",
+    "only 7/228 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 10,
+    "pnl_R": 3.658,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars."
+   },
+   "theirs": {
+    "n_trades": 228,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089,
+     "swap_per_lot_per_night": 10.11
+    },
+    "forward_start": "2026-11-05T18:55:43+00:00"
+   },
+   "divergence": {
+    "n_ledger": 228,
+    "n_rebuilt": 10,
+    "matched": 7,
+    "match_share": 0.031,
+    "fill_ratio": 0.044,
+    "median_abs_dR": 0.0242,
+    "pnl_ledger_R": 53.618,
+    "pnl_rebuilt_R": 3.658,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 1.0,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 1.0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "AUDCHF.carry.asia@M15#session=asia",
+   "symbol": "AUDCHF",
+   "family": "carry",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 10 rebuilt vs 228 in the ledger",
+    "only 7/228 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 10,
+    "pnl_R": 3.658,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars."
+   },
+   "theirs": {
+    "n_trades": 228,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089,
+     "swap_per_lot_per_night": 10.11
+    },
+    "forward_start": "2026-11-05T18:55:46+00:00"
+   },
+   "divergence": {
+    "n_ledger": 228,
+    "n_rebuilt": 10,
+    "matched": 7,
+    "match_share": 0.031,
+    "fill_ratio": 0.044,
+    "median_abs_dR": 0.0242,
+    "pnl_ledger_R": 53.618,
+    "pnl_rebuilt_R": 3.658,
     "open_ledger": false,
     "open_rebuilt": false,
     "cost_ratio_spread_per_lot": 1.0,
@@ -525,57 +526,57 @@
   }
  ],
  "quarantined": [
-  "EURNZD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-  "GBPDKK.overnight_gap_decay.asia#regime=high_vol_representation=macro",
-  "NZDCHF.overnight_gap_decay.asia#session=asia",
-  "USDMXN.overnight_gap_decay.asia#representation=price_only_session=asia",
-  "USDMXN.overnight_gap_decay.asia#representation=price_only_session=overlap",
-  "AUDSGD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-  "GBPAUD.asia#rr=1.5_session=asia",
-  "XAUAUD.asia#session=asia_ttl_bars=24"
+  "XAUUSD.asia#rr=1.5_session=asia_vol_filter=high",
+  "XAUUSD.asia#session=asia_vol_filter=high",
+  "XAUUSD.asia#rr=2.5_session=asia_vol_filter=high",
+  "AUDCHF.carry.asia@M15#input_symbol=AUDCHF_session=asia",
+  "AUDCHF.carry.asia@M15#input_symbol=CHFNOK_require_quiet=True_session=asia",
+  "AUDCHF.carry.asia@M15#input_symbol=CHFNOK_session=asia",
+  "AUDCHF.carry.asia@M15#input_symbol=GBPJPY_session=asia",
+  "AUDCHF.carry.asia@M15#session=asia"
  ],
  "unmeasured": [
   {
-   "what": "GBPSGD.formula.p=f932b3284ae44d01",
+   "what": "NZDCAD.formula.p=705c52f5c6b7c620",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=eb8b34c8190e8dad",
+   "what": "NZDCAD.formula.p=f0847d846cad8a63",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=bfb6cb20d3703b6f",
+   "what": "NZDCAD.formula.p=43529ae48ce9f71a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=d3f322c33a9d1b55",
+   "what": "NZDCAD.formula.p=3e94d9a031702405",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=362f69fffa8946b6",
+   "what": "NZDCAD.formula.p=9af2ac7d1f779b7a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=021e4716d8a071c2",
+   "what": "NZDCAD.formula.p=5561fb16c40c7729",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.formula.p=e462d335a54d82f3",
+   "what": "NZDCAD.formula.p=75fbd8cb7caa23e4",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPZAR.formula.p=6d027e5a5023054e",
+   "what": "NZDCAD.formula.p=afd62eec4b40cf24",
    "why": "no written specification in the spec book for family 'formula'"
   }
  ],
  "recorded": {
   "quarantined": 8,
   "memory": 8,
-  "candidates": 1888
+  "candidates": 4428
  },
  "cursor": {
-  "forward": 1853,
-  "at": "2026-11-12T16:39:46+00:00",
+  "forward": 1861,
+  "at": "2026-11-12T17:38:42+00:00",
   "certificates": 1411
  },
  "notes": [],
@@ -593,24 +594,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNZD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPAUD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 122.11
+ "seconds": 485.14
 }
