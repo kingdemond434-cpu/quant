@@ -32,13 +32,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      # THE SCOPE (2026-11-11): a PR touching only docs, reports or box state (the allowlist in
+      # .github/scripts/ci_scope.py, read from the BASE) skips the heavy steps below; the job
+      # still runs and succeeds, because audit_gate needs a success from every gating job. Any
+      # doubt, any push and any dispatch is heavy.
+      - name: Scope checkout (the base's filter)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _ci_scope
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /libs/ops/release.py
+            /ops/release/protected_paths.txt
+          persist-credentials: false
+      - name: Scope (docs, reports or state only?)
+        id: scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f _ci_scope/.github/scripts/ci_scope.py ]; then
+            python3 -I _ci_scope/.github/scripts/ci_scope.py --pr "$PR" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Take the ceilings, suites and their tests from the base
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Take the ceilings, suites and their tests from the base
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -46,24 +77,28 @@ jobs:
           grep -v -e '^#' -e '^$' ops/release/risk_suites.txt > "$RUNNER_TEMP/suites"
           xargs -a "$RUNNER_TEMP/suites" git checkout "$BASE" --
 
-      - uses: actions/setup-python@v5
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
           # the base's cache scope, so a base-scope pip cache could be poisoned for these gating jobs
 
-      - name: Install (pinned dev extras)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Install (pinned dev extras)
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Ceilings and rail lists (static, from git)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Ceilings and rail lists (static, from git)
         run: >-
           python -I ops/release/risk_invariants.py
           --head "${{ github.event.pull_request.head.sha }}"
           --base "${{ github.event.pull_request.base.sha }}"
 
-      - name: Risk suites (base tests, PR code)
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Risk suites (base tests, PR code)
         run: xargs -a "$RUNNER_TEMP/suites" pytest -q -p no:randomly -p no:cacheprovider --timeout=600
 
   replay-shadow:
@@ -71,8 +106,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # THE SCOPE (2026-11-11): a PR touching only docs, reports or box state (the allowlist in
+      # .github/scripts/ci_scope.py, read from the BASE) skips the heavy steps below; the job
+      # still runs and succeeds, because audit_gate needs a success from every gating job. Any
+      # doubt, any push and any dispatch is heavy.
+      - name: Scope checkout (the base's filter)
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: _ci_scope
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/scripts/
+            /libs/ops/release.py
+            /ops/release/protected_paths.txt
+          persist-credentials: false
+      - name: Scope (docs, reports or state only?)
+        id: scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f _ci_scope/.github/scripts/ci_scope.py ]; then
+            python3 -I _ci_scope/.github/scripts/ci_scope.py --pr "$PR" --head "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=true" >> "$GITHUB_OUTPUT"
+          fi
       # The harness is the base's, in a directory the PR's tree never touches.
-      - uses: actions/checkout@v4
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: harness
@@ -80,7 +145,8 @@ jobs:
           persist-credentials: false
 
       # Each tree holds on disk only what the live book imports and reads (code, books, state).
-      - uses: actions/checkout@v4
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
@@ -100,7 +166,8 @@ jobs:
             /pyproject.toml
           persist-credentials: false
 
-      - uses: actions/checkout@v4
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: head
@@ -118,7 +185,8 @@ jobs:
             /desks/mt5/research/admission_integrity.py
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - if: steps.scope.outputs.heavy != 'false'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
@@ -126,7 +194,8 @@ jobs:
 
       # The base's declared dependencies only, never the project itself: an installed copy of
       # either tree would answer imports the other tree is missing.
-      - name: Install the base's dependencies
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Install the base's dependencies
         working-directory: base
         run: |
           python -m pip install --upgrade pip
@@ -138,7 +207,8 @@ jobs:
 
       # Every changed path, both sides of a rename, from the PR's paginated file list (the
       # compare API stops at 300 files). The count must match the PR's own, on this very head.
-      - name: The PR's changed paths
+      - if: steps.scope.outputs.heavy != 'false'
+        name: The PR's changed paths
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
@@ -162,7 +232,8 @@ jobs:
           fi
           sort -u "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/previous.txt" > "$RUNNER_TEMP/changed.txt"
 
-      - name: Replay the live E8 book, base against PR
+      - if: steps.scope.outputs.heavy != 'false'
+        name: Replay the live E8 book, base against PR
         run: >-
           python -I harness/ops/release/replay_shadow.py --base base --head head
           --changed "$RUNNER_TEMP/changed.txt" --report "$RUNNER_TEMP/replay_shadow.json"
