@@ -109,7 +109,7 @@ def test_a_body_can_never_ping_or_break_the_marker(tmp_path: Path) -> None:
     f = Fake()
     relay.run(f, REPO, tmp_path, NOW)
     body = f.cmts[0]["body"]
-    assert "@someone" not in body and "@​someone" in body
+    assert "@someone" not in body and "@\u200bsomeone" in body
     assert relay.marks(f.cmts) == ({"a1"}, None)
 
 

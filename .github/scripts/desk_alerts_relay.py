@@ -99,7 +99,7 @@ def _ts(x: Any) -> datetime | None:
 
 def defuse(text: str) -> str:
     """No body relayed here can mention anyone or close the marker comment."""
-    return str(text).replace("@", "@​").replace("-->", "--​>")[:MAX_BODY // 4]
+    return str(text).replace("@", "@\u200b").replace("-->", "--\u200b>")[:MAX_BODY // 4]
 
 
 def find_issue(call: Call, repo: str) -> dict[str, Any] | None:
