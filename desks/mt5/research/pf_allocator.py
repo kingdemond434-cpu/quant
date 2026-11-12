@@ -96,6 +96,13 @@ DONE = BASE / "reports" / "DONE_pf_allocation"
 #: are distinguishable from disk alone. It is read by `research/allocator_liveness.py` and
 #: `scripts/check_allocator_liveness.py`; it sizes nothing.
 STANDDOWN = BASE / "reports" / "ALLOCATOR_STANDDOWN.json"
+#: WHO IS HOLDING THE BOOK, WHEN IT IS STALE (idea 610, 2026-11-11: pf_allocation 183 min old
+#: against its contract while every fast pass exited 0). Written on every stand-down; HOLD when
+#: the standing allocation is past ALLOCATION_CONTRACT_S, FRESH once a pass publishes.
+ALLOCATION_HOLD = BASE / "reports" / "PF_ALLOCATION_HOLD.json"
+#: The book's freshness contract, derived from ops/organ_contract.py's MT5-AllocatorFast row (90 min) for
+#: "the book the gateway sizes from".
+ALLOCATION_CONTRACT_S = 90 * 60
 #: The change-point report `research/drift_monitor.py` writes. Read by the crisis overlay below;
 #: absent or stale, the crisis-world share is exactly what it was.
 DRIFT = BASE / "reports" / "DRIFT.json"
@@ -5219,8 +5226,42 @@ def _record_stand_down(mode: str, reason: str, why: str, **extra: Any) -> None:
                        "goes on sizing from it until its certificate expires"),
             **extra,
         }, indent=1, default=str) + "\n", encoding="utf-8")
+        _write_allocation_hold(mode, reason, age_s, extra.get("holder"))
     except Exception as exc:                                   # pragma: no cover - report only
         _log(f"stand-down NOT recorded ({type(exc).__name__}: {exc})")
+
+
+def allocation_hold(age_s: float | None, holder: Mapping[str, Any] | None, *, mode: str,
+                    reason: str, contract_s: float = ALLOCATION_CONTRACT_S) -> dict[str, Any]:
+    """The hold report: HOLD (past contract) naming the lock holder and its start, STANDING
+    (inside contract), or UNMEASURED (the allocation's age unreadable). Pure."""
+    h = dict(holder or {})
+    doc: dict[str, Any] = {
+        "at": datetime.now(UTC).isoformat(timespec="seconds"), "mode": mode, "reason": reason,
+        "allocation_age_s": age_s, "contract_s": contract_s,
+        "holder": {k: h.get(k) for k in ("pid", "host", "started_at", "heartbeat_age_s",
+                                         "owner", "reason") if k in h} or None}
+    if age_s is None:
+        doc["status"] = "UNMEASURED"
+    elif age_s > contract_s:
+        doc["status"] = "HOLD"
+        doc["why"] = (f"the book is {age_s / 60:.0f} min old against its {contract_s / 60:.0f}-min "
+                      f"contract and this pass stood down ({reason})"
+                      + (f"; the lock is held by pid {h.get('pid')} since {h.get('started_at')}"
+                         if h.get("pid") else ""))
+    else:
+        doc["status"] = "STANDING"
+    return doc
+
+
+def _write_allocation_hold(mode: str, reason: str, age_s: float | None,
+                           holder: Mapping[str, Any] | None) -> None:
+    try:
+        ALLOCATION_HOLD.write_text(json.dumps(allocation_hold(
+            age_s, holder, mode=mode, reason=reason), indent=1, default=str) + "\n",
+            encoding="utf-8")
+    except Exception as exc:                                   # pragma: no cover - report only
+        _log(f"allocation hold NOT recorded ({type(exc).__name__}: {exc})")
 
 
 def _clear_stand_down(mode: str) -> None:
@@ -5233,6 +5274,10 @@ def _clear_stand_down(mode: str) -> None:
             "why": "the pass completed and wrote a fresh allocation",
             "previous_allocation": str(OUT.relative_to(ROOT)).replace("\\", "/"),
         }, indent=1, default=str) + "\n", encoding="utf-8")
+        ALLOCATION_HOLD.write_text(json.dumps({
+            "at": datetime.now(UTC).isoformat(timespec="seconds"), "status": "FRESH",
+            "mode": mode, "allocation_age_s": 0.0, "contract_s": ALLOCATION_CONTRACT_S,
+            "holder": None}, indent=1) + "\n", encoding="utf-8")
     except Exception as exc:                                   # pragma: no cover - report only
         _log(f"stand-down NOT cleared ({type(exc).__name__}: {exc})")
 
