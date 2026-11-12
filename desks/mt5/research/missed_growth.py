@@ -1032,6 +1032,31 @@ ADMISSION_CADENCE_WAIT_H = 6.1
 SLEEVES = BASE / "data" / "sleeves.json"
 
 
+def evidence_unmeasured_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """The formula evidence hold, BOTH WAYS, as a published line (Auditor, 2026-11-10).
+
+    COST: the paper fractions the book carried on certificates now held as UNMEASURED evidence
+    are removed; what growth that forgoes cannot be priced, because the evidence that priced it
+    is the thing in question -- so the verdict is UNMEASURED, with the fractions named. EARN:
+    no capital rests on a verdict the desk cannot stand behind, and the freed heat is not idle:
+    `refilled_into` names where the solve put it and `book_total` shows the book is no smaller.
+    """
+    ev = alloc.get("evidence_unmeasured") if isinstance(alloc, dict) else None
+    if not isinstance(ev, dict):
+        return {"verdict": UNMEASURED, "why": "pf_allocation.json carries no evidence_unmeasured"}
+    if ev.get("status") != "HELD":
+        return {"verdict": NOT_BINDING, "n_certificates": 0}
+    return {"verdict": UNMEASURED,
+            "n_certificates": ev.get("n_certificates"), "n_cells": ev.get("n_cells"),
+            "paper_fractions_removed": ev.get("paper_fractions_removed"),
+            "freed_heat": ev.get("freed_heat"), "refilled_into": ev.get("refilled_into"),
+            "book_total": ev.get("book_total"), "rows_zeroed": len(ev.get("rows_zeroed") or {}),
+            "why": ("formula certificates that read unrecorded bar inputs are held as UNMEASURED "
+                    "evidence until the Judge re-judges them: their paper growth is unpriced "
+                    "(cost side), no capital rests on an invalid verdict and the freed heat is "
+                    "redeployed (earn side)")}
+
+
 def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
     """What the 4-hourly heavy scan costs in forward log-wealth, as a published line.
 
@@ -1201,7 +1226,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "formula_evidence_unmeasured": evidence_unmeasured_line(
+                                        alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

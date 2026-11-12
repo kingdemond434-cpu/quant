@@ -345,4 +345,10 @@ libs/research/source_provenance.py
 desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
+desks/mt5/research/admission_integrity.py
+desks/mt5/research/clock_ledger.py
+desks/mt5/research/gate_policy.py
+desks/mt5/research/session_runtime_window.py
+desks/mt5/research/shadow_admission.py
+desks/mt5/research/shadow_forward.py
 desks/mt5/research/decay_regime.py
