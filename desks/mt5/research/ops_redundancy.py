@@ -156,11 +156,19 @@ def journal_replay(data: Path = DATA) -> dict[str, Any]:
                         "time_reversals": back, "_rows": rows}
     intents = stores.get("order_intents", {}).get("_rows") or []
     deals = stores.get("live_ledger", {}).get("_rows") or []
-    ids = [str(r.get("intent_id")) for r in intents if r.get("intent_id")]
     deal_ids = [str(r.get("deal")) for r in deals if r.get("deal") is not None]
-    dup_intents = len(ids) - len(set(ids))
     dup_deals = len(deal_ids) - len(set(deal_ids))
     accepted = [r for r in intents if int(r.get("retcode") or 0) in DONE_RETCODES]
+    # AN INTENT ID IS AN ADDRESS, NOT AN ORDER NUMBER (2026-11-11). The gateway derives it from
+    # symbol|sleeve|side|minute (gateway._intent_id), so a retry in the same minute that the
+    # broker REFUSED shares its address with the order that filled. Counting every row made the
+    # drill FAIL on 2026-09-16 01:21 (XAUUSD anti_breakout: one 10009 fill, one 10016 refusal,
+    # ticket 0) although only one position ever existed. A duplicate the drill must catch is two
+    # ACCEPTED orders at one address; shared addresses among all rows are still reported.
+    ids = [str(r.get("intent_id")) for r in accepted if r.get("intent_id")]
+    dup_intents = len(ids) - len(set(ids))
+    all_ids = [str(r.get("intent_id")) for r in intents if r.get("intent_id")]
+    shared_addresses = len(all_ids) - len(set(all_ids))
     closed_positions = {str(r.get("position_id")) for r in deals if r.get("position_id")}
     closed_orders = {str(r.get("entry_order")) for r in deals if r.get("entry_order")}
     open_by_journal = sorted(str(r.get("ticket")) for r in accepted
@@ -179,6 +187,7 @@ def journal_replay(data: Path = DATA) -> dict[str, Any]:
         "stores": stores,
         "intents": len(intents), "accepted": len(accepted), "closing_deals": len(deals),
         "duplicate_intent_ids": dup_intents, "duplicate_deals": dup_deals,
+        "shared_intent_addresses": shared_addresses,
         "open_by_replay": len(open_by_journal), "open_tickets_by_replay": open_by_journal[:50],
         "open_by_gateway_state": gw_open,
         "status": ("UNMEASURED" if "order_intents" not in present or
