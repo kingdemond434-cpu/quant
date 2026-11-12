@@ -479,6 +479,10 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
 !desks/mt5/reports/MERGE_PIPELINE.json
 !desks/mt5/reports/DESK_HEALTH.json
+!desks/mt5/reports/INCIDENTS.json
+desks/mt5/data/incident_ledger.jsonl
+desks/mt5/data/incident_state.json
+desks/mt5/data/incident_state.json.tmp
 !desks/mt5/reports/process_health.json
 # BACKUP_STATE (v5f): whether the box is backed up and a restore was rehearsed, scheme only
 # (ops/backup_state.py, written on MT5-ProcessHealth's hourly clock).
