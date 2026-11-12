@@ -556,10 +556,15 @@ def _task_name(dept: str) -> str:
     """This department's Windows task, from the component registry; a guess only when it fails
     to import -- and a wrong name merely falls back to the 72 h default limit."""
     try:
-        root = str(DESK)
-        if root not in sys.path:
-            sys.path.insert(0, root)
-        from ops import components
+        # Loaded by FILE, never as bare `ops`: the repo root has an `ops/` too, and a bare import
+        # resolves to whichever comes first on sys.path (test_gateway_loop_finds_libs pins this).
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_dr_components",
+                                                      DESK / "ops" / "components.py")
+        if spec is None or spec.loader is None:
+            raise ImportError("desks/mt5/ops/components.py has no loader")
+        components = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(components)
         return str(components.department_task(dept))
     except Exception:
         return "MT5-Dept-" + "".join(p.capitalize() for p in dept.split("_") if p)
