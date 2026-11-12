@@ -496,8 +496,29 @@ def orphan_stale(path: Path, heartbeat_stale_s: float) -> str | None:
 @contextmanager
 def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                   deadline_s: float | None = None, evsi: float | None = None,
-                  heartbeat_stale_s: float | None = None) -> Iterator[bool]:
+                  heartbeat_stale_s: float | None = None,
+                  peak_measured_by_child: bool = False) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
+
+    `peak_measured_by_child` -- THE METER MUST MEASURE THE JOB, NOT ITS LAUNCHER (2026-11-12).
+    `peak_rss_mb()` reads THIS process's high-water RSS, which is the job's own footprint only
+    when the job runs in-process. `hourly_cycle.catch_up_intake` holds the
+    `miner_candidate_compiler` lane and then runs the compiler as a SUBPROCESS, so the ledger
+    recorded the hourly cycle's own 381-384MB eight runs running, and `measured_need_mb` printed
+
+        miner_candidate_compiler: declared 14000MB (p75 of 8 runs: 384MB)
+
+    every pass. That line reads as a 36x over-declaration and it is not one: the compiler charges
+    BYTES_PER_ROW = 32768 and claims FREE_MEMORY_SHARE = 0.25 of free physical memory, so on this
+    box it plans for ~14GB, and it has already been OS-killed TWICE on a 2KiB-per-row estimate.
+    A CRO pass read that line, concluded the declaration was a guess, and was one edit away from
+    lowering a floor that is correct -- which is the failure mode this whole module exists to
+    prevent, arriving through its own diagnostics.
+
+    Worse than misleading: the correction can only ever RAISE admission from measured peaks, so a
+    subprocess job that grows is never held to what it grew to. The launcher therefore records no
+    peak at all for these lanes (UNMEASURED is a real answer, L1.28a) and the child records its
+    own under the same lane name. The declaration stays the floor until real measurement moves it.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
     beside the miners. A per-name lock stops a job racing itself; it has nothing to say about
@@ -650,7 +671,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     finally:
         # WHAT IT ACTUALLY USED, recorded before anything else, so the next admission is made on
         # measurement instead of on a comment. A job that overran its declaration says so.
-        _hwm = peak_rss_mb()
+        _hwm = None if peak_measured_by_child else peak_rss_mb()
         if _hwm:
             record_peak(name, _hwm)
             if need_mb and _hwm > need_mb:

@@ -289,6 +289,50 @@ def test_the_history_is_bounded_so_a_job_that_got_lighter_is_believed(tmp_path, 
     assert jl.measured_need_mb("gauntlet", 1200)[0] == 1200
 
 
+def test_a_launcher_never_records_a_peak_it_did_not_produce(tmp_path, monkeypatch):
+    """THE METER MUST MEASURE THE JOB, NOT ITS LAUNCHER (measured 2026-11-12).
+
+    `hourly_cycle.catch_up_intake` holds the `miner_candidate_compiler` lane and then runs the
+    compiler as a SUBPROCESS, so `peak_rss_mb()` was reading the hourly cycle's own footprint.
+    The ledger held 381, 382, 383, 384, 382, 383, 384, 384 -- eight runs of the launcher -- and
+    the admission line read "declared 14000MB (p75 of 8 runs: 384MB)" against a declaration that
+    is CORRECT (the compiler charges 32768 bytes a row over a quarter of free physical memory and
+    has been OS-killed twice on a smaller estimate). A CRO pass read that line as a 36x
+    over-declaration and came one edit from lowering a real floor. An UNMEASURED lane is a real
+    answer; a confident wrong number is not.
+    """
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path)
+    monkeypatch.setattr(jl, "peak_rss_mb", lambda: 384)
+
+    with jl.exclusive_job("compiler_lane", peak_measured_by_child=True) as owned:
+        assert owned is True
+    assert jl.observed_peaks("compiler_lane") == [], \
+        "the launcher's own RSS must never enter the child's admission ledger"
+
+    with jl.exclusive_job("in_process_lane") as owned:
+        assert owned is True
+    assert jl.observed_peaks("in_process_lane") == [384], \
+        "an in-process job still measures itself; only the launcher case is UNMEASURED"
+
+
+def test_the_child_can_record_the_peak_its_launcher_cannot(tmp_path, monkeypatch):
+    """The other half of the wire: the process that does the work writes the measurement, under
+    the lane name its launcher held, so admission self-corrects from truth."""
+    import sys as _sys
+
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path)
+    monkeypatch.setattr(jl, "peak_rss_mb", lambda: 9001)
+    monkeypatch.setitem(_sys.modules, "research.job_lock", jl)
+
+    from research import miner_candidate_compiler as mc
+    mc._record_own_peak()
+    assert jl.observed_peaks("miner_candidate_compiler")[-1] == 9001
+    assert jl.measured_need_mb("miner_candidate_compiler", 14000)[0] == 14000, \
+        "the declaration is still the floor; measurement may only raise it"
+
+
 def test_an_unwritable_ledger_never_costs_the_run(tmp_path, monkeypatch):
     """Note-taking that fails is worth strictly less than the job it was taking notes about."""
     import job_lock as jl

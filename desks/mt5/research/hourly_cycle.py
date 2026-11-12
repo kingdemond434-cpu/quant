@@ -3349,7 +3349,12 @@ def catch_up_intake() -> dict:
     """
     from research.job_lock import exclusive_job
 
-    with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
+    # peak_measured_by_child: the compiler runs as a SUBPROCESS below, so this process's
+    # high-water RSS is the hourly cycle's footprint, not the compiler's. Recording it put
+    # 381-384MB in the compiler's peak ledger eight runs running and made the admission line
+    # read like a 36x over-declaration against a floor that is correct. The child records its own.
+    with exclusive_job("miner_candidate_compiler", need_mb=14000,
+                       peak_measured_by_child=True) as acquired:
         if not acquired:
             return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
         compiled = compile_candidates()

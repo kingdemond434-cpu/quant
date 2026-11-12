@@ -2102,10 +2102,36 @@ def main() -> int:
     return 0
 
 
+def _record_own_peak() -> None:
+    """Put THIS process's high-water RSS in the `miner_candidate_compiler` admission ledger.
+
+    The lane is held by `hourly_cycle.catch_up_intake`, which then launches this file as a
+    SUBPROCESS -- so `exclusive_job`'s meter was recording the hourly cycle's footprint
+    (381-384MB, eight runs running) under this job's name, and the admission line read
+    "declared 14000MB (p75 of 8 runs: 384MB)" against a declaration that is CORRECT: this
+    organ charges BYTES_PER_ROW=32768 over FREE_MEMORY_SHARE=0.25 of free physical memory and
+    has already been OS-killed twice on a smaller estimate. Only the process that does the work
+    can measure the work, so it measures itself here; the launcher now records nothing.
+    """
+    try:
+        from research.job_lock import peak_rss_mb, record_peak
+
+        peak = peak_rss_mb()
+        if peak:
+            record_peak("miner_candidate_compiler", peak)
+            print(f"compiler: peak {peak}MB recorded for lane admission")
+    except Exception as exc:          # a ledger write never costs the run that was writing it
+        print(f"compiler: peak not recorded ({type(exc).__name__}: {exc})")
+
+
 if __name__ == "__main__":
     import argparse
     _ap = argparse.ArgumentParser()
     _ap.add_argument("--budget-s", type=float, default=None,
                      help="stop reading at 35%% and compiling at 85%% of this, then resume")
     _set_budget(_ap.parse_args().budget_s)
-    raise SystemExit(main())
+    try:
+        _rc = main()
+    finally:
+        _record_own_peak()
+    raise SystemExit(_rc)
