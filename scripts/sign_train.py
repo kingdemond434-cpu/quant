@@ -53,10 +53,11 @@ ROTATIONS = {
     "desks/mt5/research/promoter.py": "PROMOTER_SEAL_ROTATION",
     "libs/portfolio/allocator_proof.py": "ALLOCATOR_PROOF_SEAL_ROTATION",
     "desks/mt5/scripts/external_gauntlet.py": "GAUNTLET_SEAL_ROTATION",
+    "libs/regime/state_admission.py": "STATE_ADMISSION_SEAL_ROTATION",
 }
 # Sealed in QB-002 but with no rotation constant yet: a change here needs a new constant and a
 # probe entry, which is a code change for audit, not a re-pin.
-NO_ROTATION = ("libs/regime/state_admission.py",)
+NO_ROTATION: tuple[str, ...] = ()  # state_admission.py got its constant 2026-11-11
 # Bytes the principal has ruled are never signed, whatever the audit says.
 DENIED = ("1aa4b33f",)
 
