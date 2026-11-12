@@ -12,7 +12,7 @@
  "consecutive_hangs": 0,
  "sweep_started_utc": "2026-11-12T11:26:02+00:00",
  "hang_limit_s": 172800.0,
- "heartbeat_utc": "2026-11-12T15:19:50+00:00",
+ "heartbeat_utc": "2026-11-12T15:49:58+00:00",
  "sweep_phase": {
   "pid": 3672,
   "sweep_started_utc": "2026-11-12T11:26:07+00:00",
@@ -216,42 +216,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 113,
+     "samples": 271,
      "top": [
       {
        "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
        "n": 21,
-       "share": 0.186
+       "share": 0.077
       },
       {
        "stack": "datetimelike.py:asi8:332 < datetimes.py:__iter__:660 < gate_policy.py:lockbox_cut:164 < external_gauntlet.py:run_gauntlet:3013 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844",
        "n": 18,
-       "share": 0.159
+       "share": 0.066
+      },
+      {
+       "stack": "_methods.py:_var:168 < _methods.py:_std:219 < dsr.py:sharpe_ratio:24 < gate_policy.py:lockbox_stage:207 < external_gauntlet.py:run_gauntlet:3205 < external_gauntlet.py:main:3883",
+       "n": 13,
+       "share": 0.048
       },
       {
        "stack": "gate_policy.py:lockbox_cut:164 < external_gauntlet.py:run_gauntlet:3013 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 10,
-       "share": 0.088
-      },
-      {
-       "stack": "datetimes.py:__iter__:668 < gate_policy.py:lockbox_cut:164 < external_gauntlet.py:run_gauntlet:3013 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 9,
-       "share": 0.08
+       "share": 0.037
       },
       {
        "stack": "datetimelike.py:_cmp_method:1045 < arraylike.py:__lt__:48 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__lt__:48 < common.py:new_method:76",
-       "n": 8,
-       "share": 0.071
+       "n": 9,
+       "share": 0.033
       }
      ],
      "process": {
-      "cpu_s": 1012.1,
-      "page_faults": 5700945.0,
-      "read_bytes": 3308215685.0,
-      "write_bytes": 218871.0,
-      "sampled_s": 1120.0,
-      "rss_mb_max": 9056.2,
-      "cpu_share_of_wall": 0.904
+      "cpu_s": 2310.5,
+      "page_faults": 232487493.0,
+      "read_bytes": 3308262691.0,
+      "write_bytes": 526519.0,
+      "sampled_s": 2700.0,
+      "rss_mb_max": 11162.0,
+      "cpu_share_of_wall": 0.856
      }
     }
    }
