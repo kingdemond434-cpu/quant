@@ -173,6 +173,14 @@ NON_CODE: frozenset[str] = frozenset({
     # The box merge sweep's pipeline report (workflow_gate.ps1), so the hourly pass sees a stall.
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    "desks/mt5/reports/BOX_HEARTBEAT.json",
+    "desks/mt5/reports/JUDGING_BURNDOWN.json",
+    "desks/mt5/reports/WORLD_LAB.json",
+    "desks/mt5/reports/EXPRESSION_FACTORY.json",
+    "desks/mt5/reports/RELEASE_GATE.json",
+    "desks/mt5/reports/ADOPTION_STATE.json",
+    "desks/mt5/data/stall_watch.json",
+    "desks/mt5/data/world_causal_graph.json",
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
