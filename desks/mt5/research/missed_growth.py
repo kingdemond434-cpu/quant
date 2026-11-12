@@ -1032,6 +1032,23 @@ ADMISSION_CADENCE_WAIT_H = 6.1
 SLEEVES = BASE / "data" / "sleeves.json"
 
 
+def gateway_scale_down_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """The heat the gateway cuts from the published book (it deploys min(heat.total, its live
+    ceiling)), as a published line: COSTS with the measured dE[log W]/day of the cut, NOT_BINDING
+    when nothing is cut, UNMEASURED when the allocator did not price it."""
+    sd = (alloc.get("heat") or {}).get("gateway_scale_down") if isinstance(alloc, dict) else None
+    if not isinstance(sd, dict):
+        return {"verdict": UNMEASURED, "why": "pf_allocation.json carries no gateway_scale_down"}
+    if sd.get("status") == "NOT_BINDING":
+        return {"verdict": NOT_BINDING, **{k: sd.get(k) for k in ("book_total", "deployed")}}
+    d = _num(sd.get("d_elogw_per_day"))
+    if sd.get("status") != "SCALED" or d is None:
+        return {"verdict": UNMEASURED, "why": str(sd.get("why") or sd.get("status"))}
+    return {"verdict": COSTS if d < 0 else NOT_BINDING, "value_logw_per_day": d,
+            "book_total": sd.get("book_total"), "deployed": sd.get("deployed"),
+            "cap_why": sd.get("cap_why")}
+
+
 def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
     """What the 4-hourly heavy scan costs in forward log-wealth, as a published line.
 
@@ -1201,7 +1218,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "gateway_scale_down": gateway_scale_down_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
