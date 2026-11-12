@@ -49,8 +49,8 @@
   },
   "desks/mt5/reports/SLEEVE_COST_IN_R.json": {
     "path": "docs/cro/evidence/20261111/journal-archives/SLEEVE_COST_IN_R.json",
-    "sha256": "12b0539db3ddc310da9635622aa2e7f6e410cdf7151c12fe27d35b526fe7f943",
+    "sha256": "50d25bcd40620b4a535b797586bcdaaf9cfdc34d16457d1bef5679c259191865",
     "original_sha256": "12b0539db3ddc310da9635622aa2e7f6e410cdf7151c12fe27d35b526fe7f943",
-    "redacted": false
+    "redacted": true
   }
 }
