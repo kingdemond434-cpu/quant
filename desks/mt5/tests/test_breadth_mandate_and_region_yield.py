@@ -198,7 +198,10 @@ def test_stress_arm_a_touch_only_edge_disappears_under_trade_through(monkeypatch
     for j in range(62, 120):
         px = 100.0 + 0.05 * (j - 61)
         df.loc[df.index[j], ["open", "high", "low", "close"]] = [px, px + 0.05, px - 0.02, px]
-    costs = Costs(spread_per_lot=0.05, commission_per_lot=0.0, contract_oz=1.0)
+    # 5 pts x 0.01 tick x 1.0 contract = 0.05 spread per lot, priced from symbol metadata
+    costs = Costs.from_symbol({"contract_size": 1.0, "tick_size": 0.01,
+                               "median_spread_pts": 5.0}, commission_per_lot=0.0)
+    assert costs.spread_per_lot == pytest.approx(0.05) and costs.contract_oz == 1.0
     # TOUCH arm (the old rule): a vanishing trade-through reproduces the engine's touch fill
     touch = reach.family_entry_alpha(df, offset_atr=0.5, wait_bars=4,
                                      spread_price_override=1e-12)
