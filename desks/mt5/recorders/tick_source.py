@@ -148,12 +148,19 @@ class Mt5TickSource:
     def initialize(self) -> bool:
         """Connect, or say why not. Idempotent: safe to call every cycle after a restart."""
         mt5 = self._mt5()
-        if mt5.terminal_info() is not None:
+        # require_path: THIS RECORDER IS THE OWN-OBSERVATION MOAT (constitution §18) AND ITS
+        # QUOTES ARE ATTRIBUTED TO A VENUE. MT5's bridge answers from whichever terminal owns the
+        # machine's IPC pipe, and on 2026-11-12 two were up (Fusion in Session 0, FTMO in Session
+        # 1) with the pinned Fusion path returning (-10005, 'IPC timeout'). An attach that lands
+        # on the other broker would write ITS spreads and ticks into this one's tape -- and a
+        # missing observation can be collected later while a wrong one poisons the cost surface
+        # for ever. So this caller takes UNAVAILABLE over a substitute.
+        if attach_or_initialize(mt5, path=self._terminal_path, timeout=15000,
+                                require_path=True):
             self._initialised = True
             return True
-        ok = attach_or_initialize(mt5, path=self._terminal_path, timeout=15000)
-        self._initialised = ok
-        return ok
+        self._initialised = False
+        return False
 
     def alive(self) -> bool:
         try:

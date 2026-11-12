@@ -193,6 +193,54 @@ def test_identity_stamp_never_breaks_an_attach(tmp_path, monkeypatch) -> None:
     assert mt5_session.attach_running(fake, path="terminal64.exe") is True
 
 
+def test_a_venue_attributed_caller_refuses_a_substituted_terminal(monkeypatch) -> None:
+    """THE HAZARD THE PATHLESS FALLBACK WOULD OTHERWISE OPEN. Two terminals are up and MT5's
+    bridge answers from whichever holds the machine's IPC pipe, so a recorder pinned to Fusion
+    could attach to FTMO and write ITS spreads and ticks into the Fusion tape. A missing
+    observation can be collected later; a wrong one poisons the cost surface for ever
+    (constitution §18), so these callers take UNAVAILABLE over a substitute."""
+    import types
+
+    class Elsewhere(FakeMT5):
+        def initialize(self, **kwargs):
+            self.initialize_calls.append(kwargs)
+            return "path" not in kwargs          # only the pathless attach succeeds
+
+        def terminal_info(self):
+            if not self.initialize_calls:
+                return None
+            return types.SimpleNamespace(path=r"C:\Program Files\OtherBroker MT5")
+
+    _terminal_already_running(monkeypatch)
+    monkeypatch.setattr(mt5_session, "windows_session_id", lambda: 0)
+
+    pinned = r"C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe"
+    strict = Elsewhere()
+    assert mt5_session.attach_running(strict, path=pinned, require_path=True) is False
+    assert strict.shutdowns >= 1, "the handle must be released, not left open"
+
+    # the default stays permissive: an account read or a book that trades elsewhere wants the
+    # pipe holder, which is what the desk measurably ran on for 12,915 e8 passes
+    loose = Elsewhere()
+    assert mt5_session.attach_running(loose, path=pinned) is True
+
+
+def test_attached_path_matches_compares_the_terminal_directory(monkeypatch) -> None:
+    """`terminal_info().path` is the terminal's DIRECTORY while callers pin the executable."""
+    import types
+
+    class Here(FakeMT5):
+        def terminal_info(self):
+            return types.SimpleNamespace(path=r"C:\Program Files\Fusion Markets MetaTrader 5")
+
+    fake = Here()
+    assert mt5_session.attached_path_matches(
+        fake, r"C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe") is True
+    assert mt5_session.attached_path_matches(
+        fake, r"C:\Program Files\FTMO Global Markets MT5 Terminal\terminal64.exe") is False
+    assert mt5_session.attached_path_matches(fake, None) is None, "no pin, nothing to compare"
+
+
 def test_attach_running_refuses_when_nothing_is_running(monkeypatch) -> None:
     fake = FakeMT5()
     _no_terminal_running(monkeypatch)

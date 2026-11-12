@@ -107,11 +107,31 @@ def record_attach_identity(mt5: Any, requested: str | None, *, substituted: bool
             temporary.unlink()
 
 
+def attached_path_matches(mt5: Any, path: str | None) -> bool | None:
+    """Is the terminal that answered the one at `path`?  None when it cannot be told.
+
+    `terminal_info().path` is the terminal's DIRECTORY (measured: `C:\\Program Files\\FTMO Global
+    Markets MT5 Terminal`), while callers pin the executable, so the comparison is against the
+    pinned path's parent.
+    """
+    if not path:
+        return None
+    try:
+        attached = getattr(mt5.terminal_info(), "path", None)
+    except Exception:
+        return None
+    if not attached:
+        return None
+    wanted = os.path.dirname(os.path.normpath(path)) or os.path.normpath(path)
+    return os.path.normcase(os.path.normpath(attached)) == os.path.normcase(wanted)
+
+
 def attach_running(
     mt5: Any,
     *,
     path: str | None = None,
     timeout: int | None = None,
+    require_path: bool = False,
 ) -> bool:
     """Attach to a terminal that is ALREADY RUNNING, in any session, and never spawn one.
 
@@ -174,11 +194,26 @@ def attach_running(
                   file=sys.stderr)
             return False
         if ok:
-            if n and path:
+            substituted = bool(n and path)
+            # A CALLER THAT RECORDS VENUE-ATTRIBUTED DATA MUST NOT TAKE THE SUBSTITUTE.  The
+            # pathless fallback restores what the desk measurably ran on for 12,915 e8 passes,
+            # but it is only safe where the venue is incidental (an account read, a gold tick for
+            # a book that trades elsewhere).  A tick or bar recorder pinned to Fusion that
+            # attaches to FTMO would write another broker's quotes and spreads into the
+            # own-observation moat, which is the one input that cannot be reconstructed later
+            # (constitution §18).  Those callers pass require_path and get UNAVAILABLE instead.
+            if require_path and attached_path_matches(mt5, path) is False:
+                with contextlib.suppress(Exception):
+                    mt5.shutdown()
+                print(f"mt5_session: refusing the attach -- asked for {path} and a different "
+                      f"terminal answered; this caller records venue-attributed data",
+                      file=sys.stderr)
+                return False
+            if substituted:
                 print(f"mt5_session: attached to the terminal holding the IPC pipe, not the "
                       f"pinned {path}; check account_info().company if the venue matters",
                       file=sys.stderr)
-            record_attach_identity(mt5, path, substituted=bool(n and path))
+            record_attach_identity(mt5, path, substituted=substituted)
             return True
         with contextlib.suppress(Exception):
             mt5.shutdown()
@@ -191,6 +226,7 @@ def attach_or_initialize(
     path: str | None = None,
     timeout: int | None = None,
     allow_autostart: bool = True,
+    require_path: bool = False,
 ) -> bool:
     """Attach to MT5 without ever spawning it from Windows Session 0.
 
@@ -208,10 +244,11 @@ def attach_or_initialize(
     """
     try:
         if mt5.terminal_info() is not None:
-            return True
+            # already attached in this process; honour the venue pin before believing it
+            return not (require_path and attached_path_matches(mt5, path) is False)
     except Exception:
         pass
-    if attach_running(mt5, path=path, timeout=timeout):
+    if attach_running(mt5, path=path, timeout=timeout, require_path=require_path):
         return True
     session = windows_session_id()
     if not allow_autostart or session == 0 or competing_terminal(session, path):

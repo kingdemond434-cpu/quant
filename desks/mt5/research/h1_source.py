@@ -345,7 +345,11 @@ def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
             if terminal is not None:
                 mt5.shutdown()
                 from mt5_session import attach_or_initialize
-                if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+                # require_path: this loop asks each CANDIDATE terminal in turn, so an attach that
+                # silently landed on a different one would hand this candidate's bars the other
+                # broker's prices. The pipe holder is not the pinned terminal on this box.
+                if not attach_or_initialize(mt5, path=terminal, timeout=15_000,
+                                            require_path=True):
                     continue
             account = mt5.account_info()
             server = str(getattr(account, "server", "unknown"))

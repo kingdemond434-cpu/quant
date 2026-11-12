@@ -1033,7 +1033,10 @@ def main(argv: list[str] | None = None) -> int:
     from mt5desk.config import terminal_path
     from research.mt5_session import attach_or_initialize
 
-    if not attach_or_initialize(mt5, path=terminal_path(), timeout=5000):
+    # require_path: the spread tape is venue-attributed and it PRICES EVERY CELL through the cost
+    # surface. MT5's bridge answers from whichever terminal owns the machine's IPC pipe, so an
+    # attach that lands on another broker would write its spreads here. UNAVAILABLE beats wrong.
+    if not attach_or_initialize(mt5, path=terminal_path(), timeout=5000, require_path=True):
         print(f"mt5 init failed: {_explain(mt5.last_error())}")
         return 1
 
