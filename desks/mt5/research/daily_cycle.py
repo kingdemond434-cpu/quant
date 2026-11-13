@@ -214,6 +214,17 @@ def _decay() -> None:
     decay_monitor.main()
 
 
+def _hand_refit() -> None:
+    """Decay re-search for the HAND-SPECIFIED families (cross_asset_residual, macro_conditional,
+    carry): a forward clock whose edge lived and then broke gets one-axis parameter moves,
+    pre-registered and donated through the intake door with the trials charged. Never arms
+    anything. Writes reports/HAND_REFIT.json."""
+    import hand_refit
+    doc = hand_refit.run()
+    dlog(f"hand_refit: {doc.get('status')}, history {doc.get('triggered_by_history')}, "
+         f"{doc.get('proposals_n', 0)} variant(s) donated")
+
+
 def _loss_replace() -> None:
     """Apply the loss learner's REPLACE verdicts, after decay has judged the same day's book: a
     parent is retired only when its forward-superior variant already holds capital."""
@@ -901,6 +912,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("execution", _execution), ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
+         ("hand_refit", _hand_refit),
          ("loss_replace", _loss_replace),
          ("state_research_feedback", _state_research_feedback),
          ("research_memory", _research_memory),
