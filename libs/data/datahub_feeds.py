@@ -97,21 +97,23 @@ UA = "quant-desk-datahub/1.0 (research; robots-respecting)"
 _ROBOTS: dict[str, str | None] = {}
 
 
-def robots_refusal(url: str) -> str | None:
+def robots_refusal(url: str, agent: str = "") -> str | None:
     """None when robots.txt allows `url`, else why not. FAIL CLOSED (Governance 2026-11-10):
     404/410 means no rules; 401/403/429/451 is a hard stop; anything unreadable, a 5xx, or an
-    HTML body in place of robots rules refuses."""
+    HTML body in place of robots rules refuses. `agent` is the User-Agent the fetch will send;
+    robots is read and evaluated under that same agent (datahub's own UA by default)."""
     import urllib.error
     import urllib.parse
     import urllib.request
     import urllib.robotparser
     parts = urllib.parse.urlsplit(url)
-    key = f"{parts.scheme}://{parts.netloc}{parts.path}"
+    ua = agent or UA
+    key = f"{ua}|{parts.scheme}://{parts.netloc}{parts.path}"
     if key in _ROBOTS:
         return _ROBOTS[key]
     rp = urllib.robotparser.RobotFileParser()
     req = urllib.request.Request(f"{parts.scheme}://{parts.netloc}/robots.txt",
-                                 headers={"User-Agent": UA})
+                                 headers={"User-Agent": ua})
     out: str | None
     try:
         with urllib.request.urlopen(req, timeout=15.0) as r:
@@ -120,7 +122,7 @@ def robots_refusal(url: str) -> str | None:
             out = "robots.txt answered HTML"
         else:
             rp.parse(body.splitlines())
-            out = None if rp.can_fetch(UA, url) else "robots.txt disallows this path"
+            out = None if rp.can_fetch(ua, url) else "robots.txt disallows this path"
     except urllib.error.HTTPError as e:
         out = None if e.code in (404, 410) else f"robots.txt HTTP {e.code}"
     except Exception as e:

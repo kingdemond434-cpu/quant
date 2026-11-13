@@ -385,7 +385,10 @@ def fetch_pages(get: Callable[..., Any] | None = None,
         get = pf.get
     if refusal is None:
         from libs.data.datahub_feeds import robots_refusal
-        refusal = robots_refusal
+
+        def refusal(url: str) -> str | None:
+            # Robots is evaluated for the agent this module actually sends (Auditor MF1).
+            return robots_refusal(url, agent=HONEST_UA)
     gate: Callable[[str], str | None] = refusal
     pages: dict[str, str | None] = {}
     refused: dict[str, str] = {}
@@ -400,8 +403,11 @@ def fetch_pages(get: Callable[..., Any] | None = None,
         else:
             code = getattr(r, "status", None)
             pages[pid] = None
+            # Only a status code or an exception TYPE is published, never exception text
+            # (Auditor MF2): polite_fetch's error reads "<Type>: <message>".
+            kind = str(getattr(r, "error", "") or "").split(":", 1)[0].strip()[:40]
             refused[pid] = (f"HTTP {code}" if code else
-                            f"unreachable ({getattr(r, 'error', '') or 'no body'})")
+                            f"unreachable ({kind or 'no body'})")
     return pages, refused
 
 

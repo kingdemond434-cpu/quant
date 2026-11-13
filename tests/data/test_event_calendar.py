@@ -133,3 +133,45 @@ def test_the_hand_written_calendar_is_due_and_its_health_is_judged() -> None:
            "events": [{"utc": "2027-12-08T19:00:00Z"}]}
     assert ec.due(old, NOW)
     assert ec.health(old, NOW)["state"] == "STALE"          # 76 days unrefreshed
+
+
+def test_robots_is_evaluated_for_the_agent_the_calendar_sends(monkeypatch) -> None:
+    """A robots.txt that disallows only quant-desk-calendar refuses the page, though it
+    allows every other agent (Auditor MF1)."""
+    import io
+    import urllib.request
+
+    from libs.data import datahub_feeds as F
+
+    robots = b"User-agent: quant-desk-calendar\nDisallow: /\n\nUser-agent: *\nAllow: /\n"
+    seen: list[str] = []
+
+    def fake(req, *_a, **_k):
+        seen.append(req.get_header("User-agent"))
+        return io.BytesIO(robots)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    F._ROBOTS.clear()
+    url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    assert F.robots_refusal(url) is None                          # datahub's agent: allowed
+    assert F.robots_refusal(url, agent=ec.HONEST_UA)              # the calendar's: refused
+    assert seen[-1] == ec.HONEST_UA
+
+    sent: list[str] = []
+
+    def get(u, headers=None, **_kw):
+        sent.append(u)
+        return SimpleNamespace(ok=True, status=200, text="<p>x</p>", error="")
+
+    pages, refused = ec.fetch_pages(get)
+    assert sent == [] and all(v.startswith("ROBOTS_REFUSED") for v in refused.values())
+    F._ROBOTS.clear()
+
+
+def test_a_transport_error_publishes_its_type_never_its_text() -> None:
+    def get(u, headers=None, **_kw):
+        return SimpleNamespace(ok=False, status=None, text="",
+                               error="URLError: <urlopen error [Errno -2] host.internal:3128>")
+
+    _, refused = ec.fetch_pages(get, lambda u: None)
+    assert refused["fed_fomc"] == "unreachable (URLError)"
