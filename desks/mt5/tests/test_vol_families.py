@@ -106,13 +106,15 @@ def test_registered_buildable_exogenous_and_mapped(name):
     from research import gauntlet_buildability as gb
     from research import orthogonal_sweep as osw
     assert fo.ORTHOGONAL_FAMILIES[name] is fs.SPECIALIST_FAMILIES[name]
-    assert name in fo.FAMILY_INPUTS and name in fo.FAMILY_TIMEFRAMES
+    assert name in fo.FAMILY_INPUTS
     assert not fo.FAMILY_INPUTS[name][0].lower().startswith("price only")
     v, why = gb.family_verdict(name)
     assert v == gb.BUILDABLE and "not price-only" in why
     assert gb.information_class(name) == gb.EXOGENOUS
     assert gb.cell_verdict(name, CASES[name])[0] == gb.BUILDABLE
-    assert gb.cell_verdict(name, CASES[name], "H4")[0] == gb.TIMEFRAME_REFUSED
+    # the event family decides at a broker hour (H1 only); the operators follow their base
+    want_h4 = gb.TIMEFRAME_REFUSED if name == "iv_shock" else gb.BUILDABLE
+    assert gb.cell_verdict(name, CASES[name], "H4")[0] == want_h4
     assert axis_registry.classify_family(name)[1] == "cross_asset"
     assert classify_family(name) == "options_implied"
     assert name in osw.NOT_SOURCED_HERE

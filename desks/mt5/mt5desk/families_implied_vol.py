@@ -416,9 +416,14 @@ INPUTS: dict[str, tuple[str, str]] = {
                  "`iv_ticker`, read as of each decision bar with a D+1 00:00 UTC lag -- not "
                  "price-only", "data/vol_archive/reference/<iv_ticker>.json"),
 }
-TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = dict.fromkeys(
-    IMPLIED_VOL_FAMILIES,
-    (("H1",), "reads a DAILY implied-vol close against this broker's realised vol from the H1 "
-              "store and decides at a broker hour; on a coarser chart the decision hour does "
-              "not exist, and on a finer one the daily series would be joined to a clock it "
-              "does not carry"))
+#: Only the event family is held to H1: it decides once a day at a broker HOUR, which does not
+#: exist on a four-hour or daily chart. The two OPERATORS run on whatever chart their base cell
+#: carries -- the implied value is read at the signal's true UTC instant and the realised leg is
+#: built from the chart's own last bar per broker date, which is the same daily close on every
+#: rung of the ladder -- so restricting them would narrow the ladder for no reason.
+TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
+    "iv_shock": (("H1",), "decides once a day at a broker decision HOUR against a DAILY "
+                          "implied-vol close; on a four-hour or daily chart the decision hour "
+                          "does not exist, and below the hour it would be one daily fact joined "
+                          "to a finer clock than it carries"),
+}
