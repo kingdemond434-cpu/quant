@@ -59,7 +59,7 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 @pytest.mark.parametrize("url", BANNED[:6] + BANNED[-3:])
 def test_no_transport_sends_a_request(url: str, no_network: list[str]) -> None:
     r = polite_fetch.get(url, gate=None, opener=lambda *a, **k: no_network.append(url))
-    assert r.status is None and "off-limits" in r.error
+    assert r.status is None and r.error == off_limits(url)
     with pytest.raises(free_stack.FetchError, match="off_limits"):
         free_stack.http_fetch(url)
     with pytest.raises(PermissionError):
