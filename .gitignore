@@ -607,3 +607,7 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# K4 P&L EXPLAIN (2026-11-13): the per-account daily explain carries account-currency amounts and
+# an account label, so it stays on the box. desks/mt5/reports/PNL_EXPLAIN.json is already caught by
+# `**/reports/*`; the publishable view is reports/PNL_EXPLAIN_RATIOS.json (ratios and counts only).
+desks/mt5/data/pnl_explain_daily.jsonl

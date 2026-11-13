@@ -33,6 +33,13 @@ P&L the gateway booked: deal profit + commission + swap + fee + allocated entry 
                     trade with |residual| above RESIDUAL_TOL_ACCT is listed by deal, because an
                     unexplained dollar is a bookkeeping defect somewhere upstream.
 
+THE RESIDUAL TESTS SAME-CURRENCY TRADES ONLY. On a cross-currency trade rate_exit is IMPLIED
+from the deal profit, so fx_conversion is labelled `fx_basis = IMPLIED_FROM_DEAL_PROFIT` and
+the residual is zero by construction: such a trade's `residual_status` is UNMEASURED and every
+aggregate counts `n_residual_tested` separately, so a clean residual is never read as a check
+that never ran. A trade with no exit or open time is UNDATED: it counts as unexplainable in the
+account total (`n_undated`) and is never placed on a fabricated day.
+
 UNMEASURED IS A REAL ANSWER (L1.28a). No matching intent -> slippage is UNMEASURED and the
 split is reported as `signal_plus_slippage` (never a zero slip); no conversion rate -> FX is
 UNMEASURED and stays inside `signal`; an unknowable direction or entry -> the trade is listed as
@@ -48,9 +55,13 @@ fills, FTMO/E8 lanes), data/order_intents.jsonl and the prop intents files (inte
 data/universe/universe.json (profit currency, contract size), data/universe/*_H1.parquet (entry
 conversion rate), data/account_state.json (account currency of the account it describes).
 
-OUTPUTS: reports/PNL_EXPLAIN.json (per account: daily table, sleeve table, cost-drag ratios,
+OUTPUTS (amount-bearing ones stay on the box: reports/* is gitignored and the daily jsonl is
+named in .gitignore): reports/PNL_EXPLAIN.json (per account: daily table, sleeve table, cost-drag ratios,
 coverage, the trades that do not reconcile) and data/pnl_explain_daily.jsonl (one row per
-account x CLOSED UTC day, appended once and never rewritten). Hourly leg `pnl_explain`.
+account x CLOSED UTC day, appended once and never rewritten), and the PUBLISHABLE
+reports/PNL_EXPLAIN_RATIOS.json (signed component shares, coverage and counts per account kind;
+no amount, server, key fragment or deal id). Stdout prints the ratios view only. Hourly leg
+`pnl_explain`.
 
     python desks/mt5/research/pnl_explain.py [--days 90] [--no-write]
 """
@@ -82,10 +93,16 @@ INTENT_FILES = (DATA / "order_intents.jsonl", DATA / "e8_intents.jsonl",
 UNIVERSE = DATA / "universe" / "universe.json"
 ACCOUNT_STATE = DATA / "account_state.json"
 REPORT = DESK / "reports" / "PNL_EXPLAIN.json"
+#: The PUBLISHABLE view: ratios, coverage and counts only -- no amount, no server, no key fragment.
+RATIOS = DESK / "reports" / "PNL_EXPLAIN_RATIOS.json"
 DAILY = DATA / "pnl_explain_daily.jsonl"
 
 MEASURED = "MEASURED"
 UNMEASURED = "UNMEASURED"
+#: Cross-currency trades: the exit rate IS deal profit / quote_gross, so FX absorbs whatever the
+#: other components miss and the residual is zero by construction -- it tests nothing there.
+IMPLIED = "IMPLIED_FROM_DEAL_PROFIT"
+UNDATED = "UNDATED"
 #: A trade whose components miss its booked net by more than this (account currency) is listed.
 RESIDUAL_TOL_ACCT = 0.05
 #: |quote_gross| below this (profit currency) cannot yield an implied exit rate.
@@ -320,7 +337,9 @@ class Explained:
     swap: float = 0.0
     fees: float = 0.0
     fx_conversion: float | None = None
+    fx_basis: str = UNMEASURED
     residual: float | None = None
+    residual_status: str = UNMEASURED
     signal_plus_slippage: float | None = None
     slippage_status: str = UNMEASURED
     fx_status: str = UNMEASURED
@@ -331,12 +350,17 @@ class Explained:
 def explain_trade(r: Mapping[str, Any], acct_key: str, acct_ccy: str, meta: Mapping[str, Any],
                   intents: Mapping[str, float], rates: RateBook) -> Explained:
     net = _f(r.get("pl_quote")) or 0.0
-    when = _ts(r.get("exit_time")) or _ts(r.get("time")) or datetime(1970, 1, 1, tzinfo=UTC)
+    when = _ts(r.get("exit_time")) or _ts(r.get("time"))
     ex = Explained(deal=str(r.get("deal") or r.get("position_id") or ""), account=acct_key,
-                   day=when.date().isoformat(), sleeve=str(r.get("sleeve") or "?"),
+                   day=when.date().isoformat() if when else UNDATED,
+                   sleeve=str(r.get("sleeve") or "?"),
                    symbol=str(r.get("symbol") or "?"), net=round(net, 4),
                    commission=_f(r.get("commission")) or 0.0, swap=_f(r.get("swap")) or 0.0,
                    fees=_fees(r))
+    if when is None:
+        ex.explainable = False
+        ex.why.append("undated: no exit_time or time on the ledger row")
+        return ex
     m = meta.get(ex.symbol) if isinstance(meta.get(ex.symbol), dict) else None
     g = _trade_geometry(r, m or {})
     prof = _deal_profit(r)
@@ -350,7 +374,8 @@ def explain_trade(r: Mapping[str, Any], acct_key: str, acct_ccy: str, meta: Mapp
     rate_e, rate_why = rates.rate(pccy, acct_ccy, entry_at, ex.symbol, g["entry"])
     qg = g["quote_gross"]
     rate_x = prof / qg if abs(qg) >= MIN_QUOTE_GROSS else None
-    if pccy and pccy == acct_ccy.upper():
+    same_ccy = bool(pccy) and pccy == acct_ccy.upper()
+    if same_ccy:
         # SAME CURRENCY: the exit rate is 1 by definition. A booked profit that differs from the
         # price move is a bookkeeping gap and belongs in the residual, never in FX.
         rate_x = 1.0
@@ -362,6 +387,8 @@ def explain_trade(r: Mapping[str, Any], acct_key: str, acct_ccy: str, meta: Mapp
         ex.fx_status = MEASURED
         rate_e_used = rate_e
         ex.fx_conversion = qg * ((rate_x if rate_x is not None else rate_e) - rate_e)
+        ex.fx_basis = ("SAME_CURRENCY" if same_ccy else
+                       IMPLIED if rate_x is not None else "ENTRY_RATE_ONLY")
     intended, iwhy = _intended(r, intents)
     at_entry_rate = qg * rate_e_used
     if intended:
@@ -375,6 +402,11 @@ def explain_trade(r: Mapping[str, Any], acct_key: str, acct_ccy: str, meta: Mapp
                  + (ex.entry_slippage or 0.0) + ex.commission + ex.swap + ex.fees
                  + (ex.fx_conversion or 0.0))
     ex.residual = net - explained
+    # Only a trade whose exit rate is KNOWN independently of its own booked profit tests the
+    # identity; on an implied-rate trade the residual is the identity restated.
+    ex.residual_status = MEASURED if same_ccy else UNMEASURED
+    if ex.residual_status == UNMEASURED:
+        ex.why.append("residual untested: exit FX rate implied from the deal's own profit")
     if abs(ex.residual) > RESIDUAL_TOL_ACCT:
         ex.why.append(f"residual {ex.residual:+.2f} exceeds {RESIDUAL_TOL_ACCT}")
     return ex
@@ -382,7 +414,8 @@ def explain_trade(r: Mapping[str, Any], acct_key: str, acct_ccy: str, meta: Mapp
 
 # --------------------------------------------------------------------------------- aggregates
 def _blank() -> dict[str, Any]:
-    return {"n_trades": 0, "n_unexplainable": 0, "net": 0.0, "signal": 0.0,
+    return {"n_trades": 0, "n_unexplainable": 0, "n_undated": 0, "n_residual_tested": 0,
+            "net": 0.0, "signal": 0.0,
             "signal_plus_slippage_unsplit": 0.0, "entry_slippage": 0.0, "commission": 0.0,
             "swap": 0.0, "fees": 0.0, "fx_conversion": 0.0, "residual": 0.0,
             "abs_net": 0.0, "abs_net_slip_measured": 0.0, "abs_net_fx_measured": 0.0}
@@ -394,7 +427,11 @@ def _add(b: dict[str, Any], e: Explained) -> None:
     b["abs_net"] += abs(e.net)
     if not e.explainable:
         b["n_unexplainable"] += 1
+        if e.day == UNDATED:
+            b["n_undated"] += 1
         return
+    if e.residual_status == MEASURED:
+        b["n_residual_tested"] += 1
     if e.signal is not None:
         b["signal"] += e.signal
     if e.signal_plus_slippage is not None:
@@ -416,6 +453,8 @@ def _finish(b: dict[str, Any]) -> dict[str, Any]:
     an = b["abs_net"]
     out["coverage_slippage"] = round(b["abs_net_slip_measured"] / an, 3) if an else UNMEASURED
     out["coverage_fx"] = round(b["abs_net_fx_measured"] / an, 3) if an else UNMEASURED
+    nx = b["n_trades"] - b["n_unexplainable"]
+    out["coverage_residual_test"] = round(b["n_residual_tested"] / nx, 3) if nx else UNMEASURED
     gross_edge = b["signal"] + b["signal_plus_slippage_unsplit"]
     costs = b["entry_slippage"] + b["commission"] + b["swap"] + b["fees"]
     out["cost_drag"] = round(costs, 2)
@@ -476,6 +515,14 @@ def explain(*, days: int = 90, now: datetime | None = None,
         for r in arows:
             e = explain_trade(r, label, ccy, meta, idx, rates)
             trades_all.append(e)
+            if e.day == UNDATED:
+                # Unknowable WHEN, so unknowable whether it is in the window: the total counts it
+                # (as unexplainable) so it can never vanish; no day or sleeve table receives it.
+                _add(total, e)
+                unreconciled.append({k: v for k, v in asdict(e).items()
+                                     if k in ("deal", "day", "sleeve", "symbol", "net",
+                                              "residual", "why")})
+                continue
             if date.fromisoformat(e.day) < since:
                 continue
             _add(daily[e.day], e)
@@ -503,6 +550,55 @@ def explain(*, days: int = 90, now: datetime | None = None,
         report["status"] = "OK"
     report["latest_trades"] = [asdict(e) for e in sorted(trades_all, key=lambda e: e.day)[-60:]]
     return report
+
+
+#: Ratio fields copied into the public view; every one is dimensionless or a count.
+_RATIO_KEYS = ("n_trades", "n_unexplainable", "n_undated", "n_residual_tested",
+               "coverage_slippage", "coverage_fx", "coverage_residual_test",
+               "cost_drag_share_of_gross")
+
+
+def _shares(b: Mapping[str, Any]) -> dict[str, Any]:
+    """Each component as a share of gross |component| mass: signs kept, amounts gone."""
+    comps = {k: float(b.get(k) or 0.0) for k in
+             ("signal", "signal_plus_slippage_unsplit", "entry_slippage", "commission", "swap",
+              "fees", "fx_conversion", "residual")}
+    mass = sum(abs(v) for v in comps.values())
+    if mass <= 1e-12:
+        return {k: UNMEASURED for k in comps}
+    return {k: round(v / mass, 4) for k, v in comps.items()}
+
+
+def ratios_view(report: Mapping[str, Any]) -> dict[str, Any]:
+    """The publishable K4 view: no amount, no server, no key fragment, no deal id.
+
+    Accounts are labelled by KIND plus an ordinal ("live#1", "prop#2"), stable within one report.
+    Every component is a signed share of the total component mass, so the shape of the P&L
+    (how much was signal, how much fill, broker, carry, FX) survives without a single amount.
+    """
+    out: dict[str, Any] = {
+        "generated_at": report.get("generated_at"), "organ": report.get("organ"),
+        "finding": "K4", "status": report.get("status"),
+        "units": "component shares of total |component| mass (signed); counts; coverage ratios",
+        "window_days": report.get("window_days"), "accounts": {}}
+    ordinal: dict[str, int] = defaultdict(int)
+    for _label, a in sorted((report.get("accounts") or {}).items()):
+        kind = str(a.get("kind") or "account")
+        ordinal[kind] += 1
+        tot = a.get("total") or {}
+        out["accounts"][f"{kind}#{ordinal[kind]}"] = {
+            "account_currency": a.get("account_currency"),
+            "total": {**{k: tot.get(k) for k in _RATIO_KEYS}, "shares": _shares(tot)},
+            "n_days": len(a.get("daily") or {}),
+            "n_unreconciled": a.get("n_unreconciled", 0),
+            "by_sleeve": {s: {**{k: b.get(k) for k in ("n_trades", "coverage_slippage",
+                                                        "cost_drag_share_of_gross")},
+                              "shares": _shares(b)}
+                          for s, b in (a.get("by_sleeve") or {}).items()},
+        }
+    if report.get("why"):
+        out["why"] = report["why"]
+    return out
 
 
 def append_closed_days(report: Mapping[str, Any], path: Path = DAILY,
@@ -536,6 +632,10 @@ def write_report(report: Mapping[str, Any], path: Path = REPORT) -> None:
     os.replace(tmp, path)
 
 
+def write_ratios(report: Mapping[str, Any], path: Path = RATIOS) -> None:
+    write_report(ratios_view(report), path)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--days", type=int, default=90)
@@ -545,14 +645,16 @@ def main(argv: list[str] | None = None) -> int:
     n_days = 0
     if not a.no_write:
         write_report(rep)
+        write_ratios(rep)
         n_days = append_closed_days(rep)
-    for label, acc in rep["accounts"].items():
+    # STDOUT IS LOGGED AND MAY BE PUBLISHED: ratios and counts only, never an amount or a label.
+    for label, acc in ratios_view(rep)["accounts"].items():
         t = acc["total"]
-        print(f"  {label:<44} {acc['account_currency']:<4} n={t['n_trades']:<4} "
-              f"net={t['net']:>9.2f} signal={t['signal']:>9.2f} "
-              f"slip={t['entry_slippage']:>7.2f} comm={t['commission']:>7.2f} "
-              f"swap={t['swap']:>7.2f} fx={t['fx_conversion']:>7.2f} resid={t['residual']:>7.2f}"
-              f" cov_slip={t['coverage_slippage']}")
+        print(f"  {label:<10} n={t['n_trades']} unexplainable={t['n_unexplainable']} "
+              f"undated={t['n_undated']} cov_slip={t['coverage_slippage']} "
+              f"cov_fx={t['coverage_fx']} cov_resid_test={t['coverage_residual_test']} "
+              f"cost_drag_share={t['cost_drag_share_of_gross']} "
+              f"unreconciled={acc['n_unreconciled']}")
     print(f"pnl_explain: status={rep['status']} accounts={len(rep['accounts'])} "
           f"closed_days_appended={n_days}")
     return 0

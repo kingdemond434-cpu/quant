@@ -520,6 +520,7 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/order_intents.jsonl",
                 "desks/mt5/data/universe/"),
          writes=("desks/mt5/reports/PNL_EXPLAIN.json",
+                 "desks/mt5/reports/PNL_EXPLAIN_RATIOS.json",
                  "desks/mt5/data/pnl_explain_daily.jsonl")),
     Node("style_premia_sweep", "desks/mt5/research/style_premia_sweep.py",
          reads=("desks/mt5/data/universe/",),
@@ -1117,6 +1118,8 @@ EXTERNAL_READERS = {
                                            "each component has a different owner (signal -> "
                                            "research, slippage -> execution, commission/swap -> "
                                            "venue and hold design, FX -> hedge policy)"),
+    "desks/mt5/reports/PNL_EXPLAIN_RATIOS.json": ("the publishable K4 view (ratios, coverage and "
+                                                  "counts only) for the dashboard and SCOREBOARD"),
     "desks/mt5/data/pnl_explain_daily.jsonl": ("pnl_explain (its own once-per-day idempotence "
                                                "key) and the Hourly pass trend read"),
     "desks/mt5/data/intelligence/anomaly_cursor.json": "anomaly_miner (its own rotation cursor)",
