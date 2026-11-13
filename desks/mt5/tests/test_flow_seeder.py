@@ -65,9 +65,10 @@ def test_cot_report_enters_only_after_release_and_flips_for_the_quote_side(cot_s
     assert len(fade) > 60
     usable = set(ff.cot_net_share("tff", "mkt", "lev_money").index)
     for s in fade:
-        # every entry sits on or after a report's usable instant (Tuesday + 6 = Monday)
+        # every entry sits on or after a report's usable instant: the Monday after a normal
+        # Friday release, the Wednesday in a federal-holiday week (market_calendar, MF3)
         assert any(pd.Timedelta(0) <= s.time - u <= pd.Timedelta(days=4) for u in usable)
-        assert pd.Timestamp(s.time).dayofweek == 0 and s.wait_bars == 1
+        assert pd.Timestamp(s.time).dayofweek in (0, 2) and s.wait_bars == 1
     assert [s.side for s in fade] == [-s.side for s in follow]
     assert [s.side for s in fade] == [-s.side for s in flipped]
 
@@ -110,8 +111,10 @@ def test_cot_positioning_has_an_in_tree_fallback_lagged_and_signed(tmp_path: Pat
                   "noncomm_positions_short_all": 4.0}).to_parquet(tmp_path / "jpy.parquet")
     monkeypatch.setattr(mdata, "_COT", tmp_path)
     got = osw._cot_frame_in_tree("USDJPY")
-    assert got is not None and (got.index - tuesdays == pd.Timedelta(days=6)).all()
-    assert (got.index.dayofweek == 0).all()
+    from mt5desk.market_calendar import cot_usable_index
+    assert got is not None and got.index.equals(cot_usable_index(tuesdays))
+    lag = got.index - tuesdays
+    assert set(lag) <= {pd.Timedelta(days=6), pd.Timedelta(days=8)} and pd.Timedelta(days=8) in set(lag)
     assert (got["net"] == -6.0).all()                     # long yen futures = short USDJPY
     assert osw._cot_frame_in_tree("NOPE") is None
 
@@ -164,7 +167,7 @@ def test_expiry_gamma_fires_only_on_its_window_and_sees_no_future() -> None:
 
 def test_strike_pin_trades_toward_the_grid_only_before_comex_gold_expiry() -> None:
     assert ff.comex_gold_option_expiry(2026, 11) == date(2026, 11, 24)   # Nov 30 Mon - 4
-    assert ff.comex_gold_option_expiry(2026, 1) == date(2026, 1, 26)     # Jan 30 Fri - 4
+    assert ff.comex_gold_option_expiry(2026, 1) == date(2026, 1, 27)     # 4th last bd of Jan
     d = _bars(1500, start="2019-01-07") * 20.0                           # ~2000: a $25 grid
     pin = ff.family_strike_pin(d, day_from=-3, day_to=0, mode="pin", max_frac=0.5)
     unpin = ff.family_strike_pin(d, day_from=-3, day_to=0, mode="unpin", max_frac=0.5)
