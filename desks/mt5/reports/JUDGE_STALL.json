@@ -1,50 +1,43 @@
 {
- "at": "2026-11-13T22:16:02+00:00",
+ "at": "2026-11-13T22:31:01+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.18,
-   "why": "no new verdict for 0.2h (last 2026-11-13T22:05:00+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.43,
+   "why": "no new verdict for 0.4h (last 2026-11-13T22:05:00+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
-   "open": true,
-   "low": true,
+   "open": null,
+   "low": null,
    "floor": 4.0,
    "docket_depth": null,
    "busy_judge_cores": 0.0,
-   "busy_other_cores": 15.13,
-   "why": "judge tree at 0.00 cores (others 15.13) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 1.3h (limit 1h)",
-   "low_since": "2026-11-13T20:56:16+00:00",
-   "hours": 1.33
+   "busy_other_cores": 16.03,
+   "why": "UNMEASURED: judge at 0.00 cores, but neither a sweep in flight nor a readable queue depth says whether a docket is pending"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.1,
+   "heartbeat_age_min": 0.0,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 1624: heartbeat 0.1 min old (limit 10), pid alive"
+   "why": "resident BACKOFF pid 1624: heartbeat 0.0 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 6.13,
-   "limit_h": 25.59,
-   "why": "6.1h since the last sweep ended (2026-11-13T16:08:31+00:00), status SWEEPING; limit 25.59h"
+   "hours": 0.0,
+   "limit_h": 1.0,
+   "why": "0.0h since the last sweep ended (2026-11-13T22:30:58+00:00), status BACKOFF; limit 1h"
   },
   "zero_judged_sweep": {
-   "open": null,
-   "read": "first 1048576 and last 262144 bytes",
-   "why": "UNMEASURED: universal_gates_external.json carries no result stamped inside the last sweep (2026-11-13T10:02:30+00:00 .. 2026-11-13T16:08:31+00:00) -- an rc-0 sweep that wrote no result reads this way"
+   "open": false,
+   "why": "last sweep rc 75: not a completed sweep"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 25964,
-   "why": "sweep child pid 25964 alive"
+   "why": "resident BACKOFF: no sweep in flight"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.91,
-   "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.9h since 2026-11-13T21:21:19+00:00 (limit 3h)"
+   "why": "resident BACKOFF: no sweep in flight"
   },
   "host_unreadable": {
    "open": false,
@@ -87,18 +80,16 @@
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
-  "status": "SWEEPING",
+  "status": "BACKOFF",
   "pid": 1624,
-  "heartbeat_utc": "2026-11-13T22:15:56+00:00",
-  "last_sweep_ended_utc": "2026-11-13T16:08:31+00:00",
-  "last_rc": 0
+  "heartbeat_utc": "2026-11-13T22:30:59+00:00",
+  "last_sweep_ended_utc": "2026-11-13T22:30:58+00:00",
+  "last_rc": 75
  },
  "host": "trading box",
  "page": {
   "sent": false,
-  "open": [
-   "cores_idle"
-  ],
+  "open": [],
   "opened": [],
   "reminded": [],
   "resolved": []
