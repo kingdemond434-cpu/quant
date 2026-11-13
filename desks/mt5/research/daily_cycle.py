@@ -1250,7 +1250,7 @@ class ChainLock:
         except LockUnavailable as exc:
             if self.state != "unavailable":
                 dlog(f"chain lock UNAVAILABLE ({exc}); running without it, recorded in the stamp")
-            self.state, self.error = "unavailable", str(exc)
+            self.state, self.error = "unavailable", f"{type(exc).__name__}: {exc}"
             return False
         if fh is None:
             if self.state != "unavailable":
