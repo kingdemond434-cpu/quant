@@ -632,12 +632,28 @@ SEC_PHRASES: dict[int, tuple[str, ...]] = {
 }
 
 
+#: Where the SEC fair-access User-Agent may be configured, in order. The box's key list names it
+#: EDGAR_UA; the desk's other EDGAR readers use QUANT_EDGAR_UA; libs.core.secrets uses the
+#: QP_SECRET_ prefix. Reading only the first of these left SEC UNCONFIGURED on every box pass
+#: (ANALYST_VIEWS 2026-11-13 14:50Z). The value is never logged or written to a report.
+EDGAR_UA_ENV = ("QUANT_EDGAR_UA", "EDGAR_UA", "QP_SECRET_EDGAR_UA")
+
+
+def edgar_ua() -> str:
+    for name in EDGAR_UA_ENV:
+        v = os.environ.get(name, "").strip()
+        if v:
+            return v
+    return ""
+
+
 def fetch_sec(get: Getter, state: dict[str, Any], deadline: float, *, now: datetime
               ) -> tuple[list[AnalystView], dict[str, Any]]:
-    ua = os.environ.get("QUANT_EDGAR_UA", "").strip()
+    ua = edgar_ua()
     if not ua:
         return [], {"status": "UNCONFIGURED", "attempted": 0,
-                    "why": "no QUANT_EDGAR_UA: the SEC's fair-access policy requires a declared "
+                    "why": "no QUANT_EDGAR_UA / EDGAR_UA: the SEC's fair-access policy requires "
+                           "a declared "
                            "User-Agent, so nothing was fetched (a configuration gap, not a "
                            "closed source)"}
     since = (now - timedelta(days=3)).date().isoformat()
@@ -769,6 +785,94 @@ def fetch_tdnet(get: Getter, state: dict[str, Any], deadline: float
     return views, {"status": "FETCHED", "attempted": 1, "ok": 1, "errors": {}}
 
 
+# ------------------------------------------------------------------------------ access gate
+#: WHAT EACH SOURCE'S OWN TERMS SAY (read 2026-11-13; fetch rules: unclear terms fail closed,
+#: robots Disallow / unreadable / 5xx / HTML refuses, an honest User-Agent, no ToS-banned
+#: source). Only `confirmed` is fetched. A source moves to `confirmed` here, with its quote,
+#: when someone reads terms that allow automated collection -- never by default.
+TERMS: dict[str, dict[str, str]] = {
+    "yahoo_upgrades": {
+        "terms": "refused", "checked_at": "2026-11-13",
+        "url": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+        "quote": "s2(d)(9): may not 'access or collect data ... from our Services using any "
+                 "automated means ... without our express, prior permission'"},
+    "sec_8k_guidance": {
+        "terms": "confirmed", "checked_at": "2026-11-13",
+        "url": "https://www.sec.gov/os/accessing-edgar-data",
+        "quote": "'Anyone can access and download this information for free.' Fair access: "
+                 "max 10 requests/second with a declared User-Agent (QUANT_EDGAR_UA)"},
+    "eastmoney_reports": {
+        "terms": "to_confirm", "checked_at": "2026-11-13",
+        "url": "https://reportapi.eastmoney.com/robots.txt",
+        "quote": "reportapi/data.eastmoney.com robots unreadable from the build box; no "
+                 "user agreement located on www.eastmoney.com"},
+    "naver_research": {
+        "terms": "to_confirm", "checked_at": "2026-11-13",
+        "url": "https://policy.naver.com/rules/service.html",
+        "quote": "finance.naver.com robots and Naver's service terms not readable from the "
+                 "build box"},
+    "tdnet_revisions": {
+        "terms": "to_confirm", "checked_at": "2026-11-13",
+        "url": "https://webapi.yanoshin.jp/",
+        "quote": "unofficial TDnet mirror; robots allows /webapi/tdnet/list/ but no usage or "
+                 "redistribution terms are stated, and TDnet's own robots refuse its terms page"},
+}
+ROBOTS_AGENT = "quant-desk-research"
+HONEST_UA = f"{ROBOTS_AGENT}/1.0 (alpha_capture; research; honours robots.txt)"
+_ROBOTS: dict[str, str | None] = {}
+
+#: What a refused source costs, for the missed-growth ledger (Growth Governance rule 1).
+MISSED_GROWTH = ("source not fetched: its analyst views never reach analyst_revision_drift / "
+                 "analyst_cross_market_lead cells or the analyst_views axis until its terms "
+                 "read confirmed")
+
+
+def _honest(get: Getter) -> Getter:
+    """Every request this organ makes says what it is: a declared UA unless the caller set one
+    (SEC passes its own fair-access UA). polite_fetch's default is a browser string."""
+    def _get(url: str, **kw: Any) -> Any:
+        h = dict(kw.pop("headers", None) or {})
+        h.setdefault("User-Agent", HONEST_UA)
+        return get(url, headers=h, **kw)
+    return _get
+
+
+def _probe_url(sid: str) -> str:
+    return str(SOURCES[sid]["url"]).replace("{ticker}", "AAPL")
+
+
+def access_refusal(get: Getter, sid: str) -> str | None:
+    """None when the source may be fetched, else why not -- terms first, then robots.txt for the
+    source's own path (fail closed: only 404/410 means no rules)."""
+    import urllib.parse
+    import urllib.robotparser
+    t = TERMS.get(sid) or {}
+    if t.get("terms") == "refused":
+        return f"TERMS_REFUSED: {t.get('quote', '')} ({t.get('url', '')})"
+    if t.get("terms") != "confirmed":
+        return f"TERMS_UNCONFIRMED: {t.get('quote', 'no terms read')} ({t.get('url', '')})"
+    url = _probe_url(sid)
+    parts = urllib.parse.urlsplit(url)
+    host = f"{parts.scheme}://{parts.netloc}"
+    if host not in _ROBOTS:
+        resp = get(f"{host}/robots.txt", headers={"User-Agent": HONEST_UA}, retries=0,
+                   leg="alpha_capture:robots")
+        status = getattr(resp, "status", None)
+        body = str(getattr(resp, "text", "") or "")
+        if status in (404, 410):
+            _ROBOTS[host] = None
+        elif not _ok(resp):
+            _ROBOTS[host] = f"ROBOTS_REFUSED: robots.txt {_err(resp)}"
+        elif body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+            _ROBOTS[host] = "ROBOTS_REFUSED: robots.txt answered HTML"
+        else:
+            rp = urllib.robotparser.RobotFileParser()
+            rp.parse(body.splitlines())
+            _ROBOTS[host] = None if rp.can_fetch(ROBOTS_AGENT, url) else \
+                f"ROBOTS_REFUSED: robots.txt disallows {parts.path}"
+    return _ROBOTS[host]
+
+
 def _due(state: Mapping[str, Any], sid: str, now: datetime) -> bool:
     last = av.parse_time((state.get(sid) or {}).get("last_attempt"))
     return last is None or (now - last).total_seconds() >= float(SOURCES[sid]["cadence_s"])
@@ -779,7 +883,7 @@ def collect(*, now: datetime, budget_s: float, get: Getter | None = None,
             yahoo_opener: Any = None) -> tuple[list[AnalystView], dict[str, Any],
                                                dict[str, Any]]:
     """Fetch every due source inside the budget. Returns (views, per-source report, state)."""
-    get = get or _default_get()
+    get = _honest(get or _default_get())
     state = dict(state if state is not None else _read_json(STATE, {}))
     began = time.monotonic()
     views: list[AnalystView] = []
@@ -796,6 +900,15 @@ def collect(*, now: datetime, budget_s: float, get: Getter | None = None,
         share = remaining / max(1, len(todo) - i)
         deadline = time.monotonic() + share
         sstate = dict(state.get(sid) or {})
+        try:
+            refused = access_refusal(get, sid)
+        except Exception as exc:                      # an unreadable gate refuses
+            refused = f"ROBOTS_REFUSED: robots.txt unreadable ({type(exc).__name__})"
+        if refused:
+            report[sid] = {"status": refused.split(":", 1)[0], "why": refused,
+                           "missed_growth": MISSED_GROWTH, "attempted": 0,
+                           "views_parsed": 0, "errors": {}}
+            continue
         try:
             if sid == "yahoo_upgrades":
                 got, rep = fetch_yahoo(get, sstate, deadline, opener=yahoo_opener)
