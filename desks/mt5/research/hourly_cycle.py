@@ -1438,7 +1438,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology",
+                     # tail index + the tape's microstructure noise: survival and cost inputs
+                     "survival_inputs_lab"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -2275,6 +2277,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alt_proxies": 400,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
+    # The survival inputs lab stops itself inside its own --budget-s 900 and writes; cap above.
+    "survival_inputs_lab": 1_020,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -6421,6 +6425,13 @@ def main() -> None:
     # the knowledge graph, and has no capital, gate, promotion, risk or order authority.
     msc = _costed("mission_control", lambda: _producer(
         "mission_control", "research/mission_control.py"))
+    # THE SURVIVAL INPUTS LAB (GAP_MAP Max-growth; Max-growth (cost) + State-engine, 2026-11-13):
+    # per-symbol and per-sleeve tail index (Hill + POT), what the tail costs in growth-optimal
+    # size (spliced empirical+GPD vs mu/s^2, two-sided), and the microstructure-noise ratio and
+    # signature plot per symbol from the venue's own tape. Report only, with an out-of-sample
+    # log-growth verdict; late in the pass so its budget delays no money-path leg.
+    sil = _costed("survival_inputs_lab", lambda: _producer(
+        "survival_inputs_lab", "research/survival_inputs_lab.py", "--once", "--budget-s", "900"))
     # THE FINAL RESEARCH DASHBOARD (Tier-5 mandate 162), here for the same reason `publish_state`
     # is: it JOINS the artifacts this pass wrote, so the dashboard is the hour that just ran and
     # not the one before it. It reports and never gates.
@@ -6468,6 +6479,7 @@ def main() -> None:
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
+                    "survival_inputs_lab": sil,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
