@@ -106,28 +106,47 @@ _PRIVATE_KEY = re.compile(
 _NOT_ACCOUNT_KEYS = frozenset({"capacity_usd"})
 _JSON_KEY = re.compile(rb'"([A-Za-z0-9_]{1,80})"\s*:')
 _TEXT_SUFFIXES = (".json", ".jsonl", ".md", ".csv", ".txt", "")
+#: Markers _private_keys returns when it CANNOT read a file's fields. The check fails closed: a
+#: file whose fields were not read is withheld exactly like one that holds a private field
+#: (#687 re-audit MF1 -- an unsafe table name or an unlisted file type used to pass unchecked).
+UNSCANNABLE = "<unscannable>"
+UNSAFE_TABLE = "<unsafe-table-name>"
 
 
 def _private_keys(f: Path) -> list[str]:
-    """The private-looking keys a file holds: JSON-style keys in a text file, column names in a
-    sqlite file. An unreadable file reports nothing here -- the copy then lists it as unread."""
+    """The private-looking keys a file holds: JSON-style keys (and a CSV header) in a text file,
+    column names in a sqlite file. FAILS CLOSED: a sqlite table that cannot be inspected, a file
+    type not listed in _TEXT_SUFFIXES, or a text file that is not UTF-8 returns a marker, and
+    the caller withholds the file. A file that cannot be opened at all reports nothing here --
+    the copy then lists it as unread, which is never published either."""
     try:
         head = f.read_bytes()
     except OSError:
         return []
     if head.startswith(b"SQLite format 3"):
-        con = sqlite3.connect(f"file:{f}?mode=ro", uri=True)
         try:
-            cols = [str(r[1]) for t in con.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-                if _SAFE_IDENT.fullmatch(t[0])
-                for r in con.execute(f'PRAGMA table_info("{t[0]}")')]
-        finally:
-            con.close()
+            con = sqlite3.connect(f"file:{f}?mode=ro", uri=True)
+            try:
+                cols: list[str] = []
+                for (t,) in con.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+                    if not _SAFE_IDENT.fullmatch(str(t)):
+                        return [UNSAFE_TABLE]
+                    cols += [str(r[1]) for r in con.execute(f'PRAGMA table_info("{t}")')]
+            finally:
+                con.close()
+        except sqlite3.Error:
+            return [UNSCANNABLE]
         return sorted({c for c in cols if _PRIVATE_KEY.search(c) and c not in _NOT_ACCOUNT_KEYS})
     if f.suffix.lower() not in _TEXT_SUFFIXES:
-        return []
+        return [UNSCANNABLE]
+    try:
+        text = head.decode("utf-8")
+    except UnicodeDecodeError:
+        return [UNSCANNABLE]
     keys = {m.decode("ascii") for m in _JSON_KEY.findall(head)}
+    if f.suffix.lower() == ".csv":
+        keys |= {c.strip().strip('"') for c in text.split("\n", 1)[0].split(",")}
     return sorted(k for k in keys if _PRIVATE_KEY.search(k) and k not in _NOT_ACCOUNT_KEYS)
 
 

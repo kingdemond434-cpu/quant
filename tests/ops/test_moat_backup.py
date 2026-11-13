@@ -296,3 +296,43 @@ def test_no_tracked_replica_holds_an_account_field():
                              capture_output=True, text=True).stdout.split()
     leaks = {f: _private_keys(root / f) for f in tracked if (root / f).is_file()}
     assert not {f: k for f, k in leaks.items() if k}
+
+
+def test_a_sqlite_table_that_cannot_be_inspected_withholds_the_store(tmp_path):
+    """Fails closed (#687 re-audit MF1 a): an unsafe table name used to skip its columns."""
+    from scripts.run_moat_backup import UNSAFE_TABLE
+
+    _seed(tmp_path)
+    rel = next(r for r, k in _STORES.values() if k == "sqlite")
+    con = sqlite3.connect(str(tmp_path / rel))
+    con.execute('CREATE TABLE "acct;x" (balance REAL)')
+    con.commit()
+    con.close()
+    rep = build_backup(tmp_path, free_pct=50.0)
+    st = next(s for s in rep["stores"].values() if s["path"] == rel)
+    assert st["status"] == "WITHHELD" and st["private_keys"] == [UNSAFE_TABLE]
+
+
+@pytest.mark.parametrize("name", ["ledger.tmp", "run.log", "cfg.yaml", "x.parquet"])
+def test_a_file_type_that_is_not_scanned_is_withheld(tmp_path, name):
+    """Fails closed (#687 re-audit MF1 b): an unlisted type used to be copied unchecked."""
+    from scripts.run_moat_backup import UNSCANNABLE
+
+    _seed(tmp_path)
+    (tmp_path / "data/moat/execution_tape" / name).write_text("equity: 101234.5\n", "utf-8")
+    rep = build_backup(tmp_path, free_pct=50.0)
+    held = rep["private_withheld"]
+    assert len(held) == 1 and held[0]["file"].endswith(name)
+    assert held[0]["keys"] == [UNSCANNABLE]
+    assert not (tmp_path / "backups/moat/execution_tape" / name).exists()
+
+
+def test_a_csv_header_and_a_non_utf8_file_are_checked_too(tmp_path):
+    from scripts.run_moat_backup import UNSCANNABLE, _private_keys
+
+    csv = tmp_path / "fills.csv"
+    csv.write_text("ts,price,account_balance\n1,2,3\n", "utf-8")
+    assert _private_keys(csv) == ["account_balance"]
+    blob = tmp_path / "blob.json"
+    blob.write_bytes(b"\xff\xfe\x00binary")
+    assert _private_keys(blob) == [UNSCANNABLE]
