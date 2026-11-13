@@ -14,9 +14,11 @@ trading, which starved E8 when tried (2026-10-08). The measured cost of equality
 else, and 15,625 first-terminal verdicts in 24h -- 10.4% of the 150k/day floor.
 
 THE MECHANISM: processor AFFINITY on the research processes, never on the judge or live.
-  * `reserve` logical CPUs (the highest-numbered) are taken out of the affinity of every MINER
-    and AUDIT process (`judge_priority.classify`: unclaimed python and the frontier lane). Those
-    cores then run only the judge, live trading, the terminal and non-research processes.
+  * `reserve` logical CPUs (the highest-numbered) are taken out of the affinity of POSITIVELY
+    IDENTIFIED mining and audit processes only (`confinable`: the mining residents named in
+    MINER_SCRIPTS and their children, and the frontier audit lane; never a PROTECTED money or
+    clock script or its child, never an unknown script). Those cores then run only the judge,
+    live trading, the terminal and every process not on that list.
   * The judge's own affinity is never touched: it keeps every core, so it still uses any core
     the miners leave idle (borrowing in the plain sense), and the live processes keep every core
     and their higher class -- trading always preempts everything here.
@@ -80,10 +82,38 @@ SLACK_BORROW = 1.5
 SATURATED = 0.5
 RESTRICT = frozenset({"miner", "audit"})
 JUDGE = frozenset({"judge", "judge_warm"})
+#: THE CONFINED SET IS AN ALLOWLIST (audit HOLD MF1 of 3697de46). `judge_priority.classify`
+#: calls every UNCLAIMED python process a miner, which is harmless where it only sets the
+#: judge's own class and wrong here, where the class decides whose cores are taken: the FTMO
+#: executor, the promoter's hourly cycle and the forward clocks are unclaimed python too. So a
+#: process is confined only when it, or an ancestor born before it, runs one of these MINING
+#: residents (the box's research tasks in ops/box_tasks.manifest, and their department, forest,
+#: swarm and deepening children) or the frontier audit lane -- and NEVER when it or any ancestor
+#: up to that miner runs a PROTECTED script, so a money or clock organ started under a miner is
+#: still left alone. An unknown python script is never confined.
+MINER_SCRIPTS = frozenset({
+    "department_resident.py",    # MT5-Dept-*, MT5-Forest-* (dept:* plans run no core leg)
+    "moat_swarms.py",            # MT5-Moat-Exploit / Explore / Resurrect
+    "scout_swarm.py", "forest_runner.py", "deep_forest_miner.py", "qd_frontier.py",
+    "deepening_worker.py",       # MT5-Deepening
+    "moat_miner.py",             # MT5-MoatMiner
+})
+AUDIT_MARK = "run_frontier_audit.cmd"
+PROTECTED_SCRIPTS = frozenset({
+    # live money and its guards
+    "gateway_resident.py", "run_gateway_loop.py", "gateway.py", "e8_executor.py", "e8_gold.py",
+    "e8_guard.py", "e8_window_guard.py", "ftmo_executor.py", "ftmo_follower.py", "ftmo_follow.py",
+    "fusion_deadman.py", "allocator_trigger.py", "scalp_exec.py",
+    # promotion and the forward clocks
+    "promoter.py", "shadow_forward.py", "forward_clock.py", "qquant_shadow.py",
+    "box_heartbeat.py", "stall_watch.py",
+})
 RAIL = "judge_core_share"
 HISTORY = 200
-APPROVAL = ("principal zuck 2026-11-13 23:10:40Z 'Yes give judging 6 cores'; "
-            "23:12:39Z 'Yes adaptive'")
+APPROVAL = ("principal zuck 2026-11-13, project timeline: "
+            "cmsg_012XFUfE12Rvggnu86fDb8pr59X51zLTU2AVN3ARu8Zb2T 23:10:40Z "
+            "'Yes give judging 6 cores'; "
+            "cmsg_012XFUfE12Rvggnu86fDb8prNjscKHSai3YwEysTRsHbP9 23:12:39Z 'Yes adaptive'")
 
 
 def _env_int(name: str, default: int, lo: int, hi: int) -> int:
@@ -136,6 +166,46 @@ def judge_demand(rows: Iterable[dict[str, Any]]) -> int:
     judge = [r for r in rows if r.get("cls") in JUDGE]
     parents = {int(r.get("ppid") or 0) for r in judge}
     return sum(1 for r in judge if int(r.get("pid") or 0) not in parents)
+
+
+def _scripts(cmdline: Any) -> set[str]:
+    out = set()
+    for a in (cmdline or []):
+        name = str(a).replace("\\", "/").rsplit("/", 1)[-1].lower()
+        if name.endswith((".py", ".cmd")):
+            out.add(name)
+    return out
+
+
+def confinable(rows: list[dict[str, Any]]) -> set[int]:
+    """Pids this rule may confine: positively identified mining or audit work only (see
+    MINER_SCRIPTS). Never a judge, live or protected process, never an unknown script."""
+    by_pid = {int(r["pid"]): r for r in rows if r.get("pid") is not None}
+
+    def born_before(parent: dict[str, Any], child: dict[str, Any]) -> bool:
+        p, c = parent.get("create_time"), child.get("create_time")
+        return isinstance(p, (int, float)) and isinstance(c, (int, float)) and p <= c
+
+    out: set[int] = set()
+    for pid, r in by_pid.items():
+        if r.get("cls") not in RESTRICT:
+            continue
+        cur, seen, ok = r, 0, False
+        while cur is not None and seen < 32:
+            sc = _scripts(cur.get("cmdline"))
+            if sc & PROTECTED_SCRIPTS:
+                break                       # a money or clock organ, or a child of one
+            joined = " ".join(str(a) for a in (cur.get("cmdline") or [])).lower()
+            if sc & MINER_SCRIPTS or AUDIT_MARK in joined:
+                ok = True
+                break
+            parent = by_pid.get(int(cur.get("ppid") or 0))
+            if parent is None or parent is cur or not born_before(parent, cur):
+                break
+            cur, seen = parent, seen + 1
+        if ok:
+            out.add(pid)
+    return out
 
 
 def decide(ncpu: int, *, demand: int, reserved_now: int, miner_busy: float | None,
@@ -327,8 +397,12 @@ class Enforcer:
             touched.pop(k)                       # the process is gone: nothing to restore
         changes = []
         allowed_set = set(allowed)
+        mine = confinable(rows)
         for r in rows:
-            if r.get("cls") not in RESTRICT or r.get("pid") is None:
+            if r.get("pid") is None:
+                continue
+            k0 = _key(r["pid"], r.get("create_time"))
+            if int(r["pid"]) not in mine and not (restore and k0 in touched):
                 continue
             cur = r.get("affinity")
             if not isinstance(cur, list) or not cur:

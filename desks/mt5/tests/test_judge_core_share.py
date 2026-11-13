@@ -92,9 +92,12 @@ class Box:
             {"pid": 100, "ppid": 0, "cls": "judge", "create_time": 1.0},
             *({"pid": 101 + i, "ppid": 100, "cls": "judge", "create_time": 2.0}
               for i in range(18)),
-            {"pid": 200, "ppid": 0, "cls": "miner", "create_time": 3.0},
-            {"pid": 201, "ppid": 0, "cls": "audit", "create_time": 3.0},
+            {"pid": 200, "ppid": 0, "cls": "miner", "create_time": 3.0,
+             "cmdline": ["python", "C:\\opt\\quant\\desks\\mt5\\research\\department_resident.py"]},
+            {"pid": 201, "ppid": 0, "cls": "audit", "create_time": 3.0, "name": "cmd.exe",
+             "cmdline": ["cmd.exe", "/c", "C:\\opt\\quant\\ops\\run_frontier_audit.cmd"]},
             {"pid": 202, "ppid": 0, "cls": "miner", "create_time": 3.0,
+             "cmdline": ["python", "moat_swarms.py", "--swarm", "explore"],
              "affinity_start": [0, 1, 2, 3]},
             {"pid": 300, "ppid": 0, "cls": "live", "create_time": 4.0},
             {"pid": 400, "ppid": 0, "cls": "other", "create_time": 5.0},
@@ -141,6 +144,41 @@ def test_it_confines_only_miners_and_audit(box) -> None:
         assert b.aff[pid] == list(range(18)), pid      # judge, live, other, warmer: never touched
     touched = {pid for pid, _ in b.calls}
     assert touched == {200, 201}
+
+
+def _row(pid: int, ppid: int, script: str, ct: float = 7.0, cls: str = "miner") -> dict:
+    return {"pid": pid, "ppid": ppid, "cls": cls, "create_time": ct,
+            "cmdline": ["python", "-W", "ignore", f"C:/opt/quant/desks/mt5/x/{script}"]}
+
+
+def test_only_positively_identified_mining_is_confined() -> None:
+    """Audit HOLD MF1 of 3697de46: judge_priority calls every unclaimed python a miner; the FTMO
+    executor, the promoter, the hourly cycle and the forward clocks must never lose cores."""
+    rows = [_row(1, 0, "department_resident.py", 1.0),
+            _row(2, 1, "hourly_cycle.py", 2.0),                 # a dept:* pass: mining
+            {"pid": 3, "ppid": 2, "cls": "miner", "create_time": 3.0,
+             "cmdline": ["python", "-c", "from multiprocessing.spawn import spawn_main"]},
+            _row(4, 1, "promoter.py", 2.0),                     # protected, even under a miner
+            {"pid": 5, "ppid": 4, "cls": "miner", "create_time": 3.0, "cmdline": ["python", "-c"]},
+            _row(10, 0, "ftmo_executor.py"), _row(11, 0, "promoter.py"),
+            _row(12, 0, "hourly_cycle.py"),                     # the core hourly (MT5Hourly.cmd)
+            _row(13, 0, "shadow_forward.py"), _row(14, 0, "forward_clock.py"),
+            _row(15, 0, "some_unknown_tool.py"), _row(16, 0, "e8_executor.py", cls="live"),
+            _row(17, 0, "run_sharded_gauntlet.py", cls="judge"),
+            _row(18, 0, "moat_swarms.py"), _row(19, 18, "deepening_worker.py", 8.0)]
+    assert jcs.confinable(rows) == {1, 2, 3, 18, 19}
+
+
+def test_a_reused_parent_pid_is_not_an_ancestor() -> None:
+    rows = [_row(1, 0, "department_resident.py", 9.0),         # born AFTER its "child"
+            {"pid": 2, "ppid": 1, "cls": "miner", "create_time": 3.0, "cmdline": ["python", "-c"]}]
+    assert jcs.confinable(rows) == {1}
+
+
+def test_the_ftmo_lane_is_live_to_judge_priority() -> None:
+    from scripts import judge_priority as jp
+    for script in ("ftmo_executor.py", "ftmo_follower.py"):
+        assert jp.own_class("python.exe", ["python", f"C:/q/desks/mt5/prop/{script}"]) == "live"
 
 
 def test_release_restores_the_recorded_affinity(box) -> None:
