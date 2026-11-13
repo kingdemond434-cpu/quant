@@ -24,7 +24,36 @@ MERGES). It also FAILS when:
   margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
 - the base tree cannot run a scenario, or places nothing anywhere on the grid (UNMEASURED);
-- the PR's tree raises where the base did not.
+- the PR's tree raises where the base did not;
+- a family decides differently on the signal leg's grid, or a gateway pass intends different
+  orders (`signal_problems`).
+
+THE SIGNAL LEG (2026-11-13): the scenario legs stub the family code out, so a change to a family
+module was money path the replay never ran. When a changed money-path Python file is still
+uncovered after the scenarios, replay_child.py `--signals` runs every family the desk resolves on
+both trees (synthetic H1 frames, both sides, default and first-grid parameters) and line-traces
+the uncovered files. Such a file counts as measured only when EVERY statement the PR changed (on
+the PR's side) and every statement it removed or replaced (on the base's side) executed inside a
+family call that traded on the base and decided identically on both trees, or at import
+(`signal_measured`). Imported is not enough there, and a file the leg never reached stays
+UNMEASURED with the reason.
+
+THE CERTIFIED CELLS (2026-11-13): the signal leg also runs each family with the params its
+certificates carry (`cert_cells`: the base's sleeves.json and canon, then FIXTURE_CERTS for the
+families those books leave short), its inputs rebuilt by `family_inputs.resolve` from fixture
+loaders (replay_child.Fixtures: peer, factor and driver bars, macro, COT, tape, swap terms, world
+series), so an input-hungry family (carry, ensemble, regime_split, world_macro_state, the macro
+and COT families) trades on the grid and its changed lines can run.
+
+THE FUSION GATEWAY LEG (2026-11-13): replay_child.py `--gateway` runs the gateway's family lane
+(`resolve_family_order` for every sleeve, `cap_by_heat`, `run_family_sleeves` armed) on a copy of
+the tree, against a fake terminal (fixed account, contract terms, positions, ticks and bars on a
+frozen clock), for one sleeve per certified cell, 24 passes from each of two account states. A
+pass's decision is every resolved plan, what the cap admitted and every request that reached
+`order_send`; passes are compared and line-traced exactly like signal-leg calls, so gateway.py,
+fusion_rails.py, order_door.py, cross_account.py and the rest count as measured only when every
+changed statement ran inside a pass that intended an order on the base and decided the same on
+the PR, and any differing pass FAILS.
 
 LIMIT: the PR's code runs in the child that writes its own result, so a PR written to fool this
 check can. That is the reviewer's job (independent-review); this check catches regressions.
@@ -37,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import difflib
 import json
 import os
 import re
@@ -128,6 +158,10 @@ HOURS = (0.5, 6.95, 7.03, 7.25, 8.0, 10.0, 13.03, 13.5, 15.0, 17.03, 17.5, 19.0,
 SHAPES = ("range", "up_break", "down_break", "wide", "gap")
 DAYS = ("2026-10-13", "2026-10-15")
 TIMEOUT_S = 300
+#: The signal leg runs once per tree: every family, every frame, both sides.
+SIGNAL_TIMEOUT_S = 1800
+#: How many signal-leg divergences are spelled out (the rest are counted).
+SIGNAL_SHOWN = 40
 
 
 def _long(day: str, qty: float = 0.15) -> dict[str, Any]:
@@ -753,6 +787,497 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
 
 
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
+#: research/ modules count as measured only by executed lines, never by import (MF1) ...
+RESEARCH_DIR = "desks/mt5/research/"
+#: ... except the one CI checked out (and so import-covered) before the signal leg existed.
+IMPORT_COVERED_RESEARCH = frozenset({"desks/mt5/research/admission_integrity.py"})
+
+
+#: Families no certificate in the base's books names, with the params their certificates carry
+#: (synthetic, shaped like the real ones), so their input paths run too. A book row for the same
+#: family is preferred; these fill the gaps only.
+FIXTURE_CERTS: tuple[dict[str, Any], ...] = (
+    {"family": "carry", "symbol": "AUDJPY", "params": {}},
+    {
+        "family": "ensemble",
+        "symbol": "EURUSD",
+        "params": {
+            "members": [
+                {"symbol": "EURUSD", "family": "trend_ma_cross", "params": {}},
+                {"symbol": "EURUSD", "family": "mean_reversion_rsi", "params": {}},
+            ],
+            "weights": [1.0, 1.0],
+            "threshold": 0.5,
+        },
+    },
+    {
+        "family": "regime_split",
+        "symbol": "XAUUSD",
+        "params": {"base_family": "trend_ma_cross", "vol": "high", "trend": "", "liq": ""},
+    },
+    {
+        "family": "regime_split",
+        "symbol": "EURUSD",
+        "params": {"base_family": "mean_reversion_rsi", "vol": "", "trend": "range", "liq": ""},
+    },
+    {
+        "family": "world_macro_state",
+        "symbol": "EURUSD",
+        "params": {
+            "series_key": "fixture.cpi_yoy",
+            "z_obs": 24,
+            "z_lo": 0.5,
+            "z_hi": 99.0,
+            "direction": "long",
+        },
+    },
+    {
+        "family": "world_macro_state",
+        "symbol": "XAUUSD",
+        "params": {
+            "series_key": "fixture.policy_rate",
+            "z_obs": 12,
+            "z_lo": -99.0,
+            "z_hi": -0.5,
+            "direction": "short",
+        },
+    },
+    {"family": "macro_conditional", "symbol": "XAUUSD", "params": {}},
+    {"family": "cot_positioning", "symbol": "XAUUSD", "params": {}},
+    {"family": "cot_comm_follow", "symbol": "XAUUSD", "params": {}},
+    {
+        "family": "cross_asset_residual",
+        "symbol": "XAUUSD",
+        "params": {"factor_symbols": ["EURUSD", "USDJPY"]},
+    },
+    {"family": "relative_value", "symbol": "EURUSD", "params": {"peer_symbol": "GBPUSD"}},
+    {"family": "lead_lag", "symbol": "EURUSD", "params": {"driver_symbol": "XAUUSD"}},
+    {"family": "liquidity_regime", "symbol": "EURUSD", "params": {}},
+    {"family": "orderflow_imbalance", "symbol": "XAUUSD", "params": {}},
+    {"family": "event_reaction", "symbol": "EURUSD", "params": {}},
+)
+#: How many certificates per family the leg runs (book rows first, sorted, then the fixtures).
+CERTS_PER_FAMILY = 2
+#: The base's books a certificate's family, symbol and params are read from.
+CERT_BOOKS = ("desks/mt5/data/sleeves.json", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json")
+
+
+def cert_cells(base: Path) -> list[dict[str, Any]]:
+    """The certified cells the signal and gateway legs run: per family, up to CERTS_PER_FAMILY
+    distinct (symbol, params) from the BASE's books (the richest params first: a lossy row that
+    kept only its chart says least), then FIXTURE_CERTS for the families the books leave short.
+    Read from the base only, so both trees run exactly the same cells."""
+    rows: list[dict[str, Any]] = []
+    for book in CERT_BOOKS:
+        try:
+            doc = json.loads(read(base, book) or "null")
+        except ValueError:
+            continue
+        if isinstance(doc, dict) and isinstance(doc.get("sleeves"), list):
+            rows += [r for r in doc["sleeves"] if isinstance(r, dict)]
+        elif isinstance(doc, dict) and isinstance(doc.get("survivors"), dict):
+            rows += [
+                {**(v.get("shadow_spec") or {})}
+                for v in doc["survivors"].values()
+                if isinstance(v, dict) and isinstance(v.get("shadow_spec"), dict)
+            ]
+    seen: dict[str, dict[str, dict[str, Any]]] = {}
+    for r in rows:
+        fam, sym, params = r.get("family"), r.get("symbol"), r.get("params")
+        if not (isinstance(fam, str) and fam and isinstance(sym, str) and isinstance(params, dict)):
+            continue
+        cell = {"family": fam, "symbol": sym, "params": params}
+        seen.setdefault(fam, {})[json.dumps(cell, sort_keys=True, default=str)] = cell
+    out: list[dict[str, Any]] = []
+    for fam in sorted(seen):
+        ranked = sorted(seen[fam].items(), key=lambda kv: (-len(kv[1]["params"]), kv[0]))
+        out += [cell for _k, cell in ranked[:CERTS_PER_FAMILY]]
+    have: dict[str, int] = {}
+    for c in out:
+        have[c["family"]] = have.get(c["family"], 0) + 1
+    for c in FIXTURE_CERTS:
+        if have.get(c["family"], 0) < CERTS_PER_FAMILY:
+            out.append(json.loads(json.dumps(c)))
+            have[c["family"]] = have.get(c["family"], 0) + 1
+    return out
+
+
+def run_signals(
+    tree: Path, trace: list[str], certs: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """The signal leg on one tree, in a fresh process and an empty directory, line-tracing the
+    repository files `trace` names, over the grid and the certified cells `certs`."""
+    with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
+        work = Path(tmp)
+        spec = {"trace": sorted(trace), "certs": certs or []}
+        (work / "spec.json").write_text(json.dumps(spec), "utf-8")
+        out = work / "out.json"
+        try:
+            p = subprocess.run(
+                [sys.executable, "-I", str(CHILD), "--signals", str(tree.resolve()),
+                 str(work / "spec.json"), str(out)],
+                cwd=work, capture_output=True, text=True, timeout=SIGNAL_TIMEOUT_S, check=False,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired:
+            return {"crash": f"timed out after {SIGNAL_TIMEOUT_S}s"}
+        if p.returncode != 0 or not out.exists():
+            return {"crash": f"rc {p.returncode}: {(p.stderr or p.stdout)[-600:]}"}
+        doc: dict[str, Any] = json.loads(out.read_text("utf-8"))
+        return doc
+
+
+#: The gateway leg runs once per tree: every certified cell as a sleeve, 2 accounts x 8 passes.
+GATEWAY_TIMEOUT_S = 1800
+
+
+#: The gateway leg's frozen clock (#1097 audit SF2): a fixed historical WEDNESDAY at 14:10 UTC,
+#: the London/New York overlap and the gold_afternoon window. Its GATEWAY_PASSES hourly passes
+#: run back to Tuesday 15:10 UTC, so every pass is a weekday and the window crosses every session
+#: hour the gateway gates on (gold_asia 04:00, gold_london_am 10:00, gold_afternoon 14:00, the
+#: 19:30 close). It was this hour of the CI run, so WHICH paths ran depended on when CI fired.
+GATEWAY_ANCHOR = "2026-11-11T14:10:00+00:00"
+
+
+def gateway_anchor() -> str:
+    """The gateway leg's frozen clock, the same for every comparison and both trees: it never
+    reads the wall clock. The child feeds every clock the gateway reads from it (`datetime`,
+    `time.time`, even a function-local `import time`, and the copy's file mtimes), so a freshness
+    check ages its input on the frozen clock and the digest does not depend on when CI ran."""
+    return GATEWAY_ANCHOR
+
+
+def run_gateway(
+    tree: Path, trace: list[str], certs: list[dict[str, Any]], anchor: str
+) -> dict[str, Any]:
+    """The Fusion gateway leg on one tree (replay_child.py --gateway): a copy of the tree's CI
+    file set in an empty directory, a fake terminal, the frozen clock `anchor`."""
+    with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
+        work = Path(tmp)
+        spec = {"trace": sorted(trace), "certs": certs, "anchor": anchor}
+        (work / "spec.json").write_text(json.dumps(spec), "utf-8")
+        out = work / "out.json"
+        try:
+            p = subprocess.run(
+                [sys.executable, "-I", str(CHILD), "--gateway", str(tree.resolve()),
+                 str(work / "spec.json"), str(out)],
+                cwd=work, capture_output=True, text=True, timeout=GATEWAY_TIMEOUT_S, check=False,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired:
+            return {"crash": f"timed out after {GATEWAY_TIMEOUT_S}s"}
+        if p.returncode != 0 or not out.exists():
+            return {"crash": f"rc {p.returncode}: {(p.stderr or p.stdout)[-600:]}"}
+        doc: dict[str, Any] = json.loads(out.read_text("utf-8"))
+        return doc
+
+
+def merge_legs(sig: dict[str, Any], gw: dict[str, Any]) -> dict[str, Any]:
+    """One tree's signal and gateway legs as one document (the gateway's keys are prefixed
+    `gateway|` by the child, so no key of one leg can stand for the other's)."""
+    lines = {k: dict(v) for k, v in (sig.get("lines") or {}).items()}
+    for key, per in (gw.get("lines") or {}).items():
+        mine = lines.setdefault(key, {})
+        for f, got in per.items():
+            mine[f] = sorted({*(mine.get(f) or []), *got})
+    return {
+        "names": [*(sig.get("names") or []), *(gw.get("names") or [])],
+        "calls": {**(sig.get("calls") or {}), **(gw.get("calls") or {})},
+        "lines": lines,
+        "imported": sorted({*(sig.get("imported") or []), *(gw.get("imported") or [])}),
+    }
+
+
+def _traded(call: dict[str, Any]) -> bool:
+    return "digest" in call and int(call.get("n") or 0) > 0
+
+
+def _signal_diff(x: dict[str, Any], y: dict[str, Any]) -> str:
+    """What differs, short: the outcome, the count, and the fields of the first signals that
+    differ (the child keeps the first two of each call)."""
+    if "digest" not in x or "digest" not in y:
+
+        def said(c: dict[str, Any]) -> str:
+            if "digest" in c:
+                return f"{c.get('n')} signals"
+            return f"raised {c.get('error')} ({str(c.get('detail') or '')[:120]})"
+
+        return f"base {said(x)}; PR {said(y)}"
+    parts = [] if x.get("n") == y.get("n") else [f"signals {x.get('n')} -> {y.get('n')}"]
+    for i, (a, b) in enumerate(zip(x.get("first") or [], y.get("first") or [], strict=False)):
+        if isinstance(a, dict) and isinstance(b, dict):
+            keys = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+            parts += [f"#{i} {k} {a.get(k)} -> {b.get(k)}" for k in keys[:4]]
+    return "; ".join(parts)[:300] or "a later signal differs (digests differ)"
+
+
+#: Key suffixes a leg records when it could not load what it runs: `gateway|import` (the
+#: gateway module did not import) and `<family>|<tag>|resolve` (a family did not resolve).
+LOAD_FAILURE_SUFFIXES = ("|import", "|resolve")
+
+
+def _load_failure(key: str) -> bool:
+    return key.endswith(LOAD_FAILURE_SUFFIXES)
+
+
+def signal_problems(b: dict[str, Any], h: dict[str, Any]) -> tuple[list[str], set[str]]:
+    """(problems, agreed): every call both trees made, compared. A call that returned on both
+    must return the same signals; an exception is compared by its type; a call that returned on
+    the base and raised or timed out on the PR is the PR's failure. A base timeout is not
+    compared. `agreed` holds the calls that TRADED on the base and decided the same on the PR:
+    the only calls whose executed lines can measure a change (`signal_measured`).
+
+    The key sets are compared too (#1097 audit SF1): a call the base made and the PR never made
+    is the PR's divergence (a PR that breaks `from mt5desk import gateway` makes none of the
+    base's passes), and a load failure (`LOAD_FAILURE_SUFFIXES`) the PR alone records is one as
+    well. A load failure only the BASE records is UNMEASURED (the base cannot run it), and a
+    call only the PR makes measures nothing; both still never pass."""
+    bc, hc = b.get("calls") or {}, h.get("calls") or {}
+    diverged: list[str] = []
+    unmeasured: list[str] = []
+    agreed: set[str] = set()
+    for key in sorted(set(hc) - set(bc)):
+        if _load_failure(key):
+            y = hc[key]
+            diverged.append(
+                f"{key}: the PR's tree fails to load what the base ran: "
+                f"{y.get('error')} ({str(y.get('detail') or '')[:120]})"
+            )
+    for key in sorted(set(bc) - set(hc)):
+        x = bc[key]
+        if _load_failure(key):
+            unmeasured.append(
+                f"UNMEASURED signal leg: {key}: the base tree fails to load it: "
+                f"{x.get('error')} ({str(x.get('detail') or '')[:120]})"
+            )
+        elif not x.get("timeout"):
+            diverged.append(f"{key}: the base made this call and the PR's tree never did")
+    for key in sorted(set(bc) & set(hc)):
+        x, y = bc[key], hc[key]
+        if x.get("timeout"):
+            continue
+        if y.get("timeout"):
+            diverged.append(f"{key}: the PR's tree timed out where the base returned")
+            continue
+        vx = x.get("digest") or f"raised {x.get('error')}"
+        vy = y.get("digest") or f"raised {y.get('error')}"
+        if vx != vy:
+            diverged.append(f"{key}: the PR decides differently: {_signal_diff(x, y)}")
+        elif _traded(x):
+            agreed.add(key)
+    problems = [f"signal leg: {d}" for d in diverged[:SIGNAL_SHOWN]]
+    if len(diverged) > SIGNAL_SHOWN:
+        problems.append(f"signal leg: {len(diverged) - SIGNAL_SHOWN} more family calls differ")
+    problems += unmeasured[:SIGNAL_SHOWN]
+    if len(unmeasured) > SIGNAL_SHOWN:
+        problems.append(
+            f"UNMEASURED signal leg: {len(unmeasured) - SIGNAL_SHOWN} more base load failures"
+        )
+    return problems, agreed
+
+
+#: Nodes a changed line is charged to: statements, and `except` clauses (not statements in ast).
+_STMT = (ast.stmt, ast.excepthandler)
+#: Compound statements whose own lines are only a header: the body's statements are their own.
+_HEADED = (ast.If, ast.For, ast.AsyncFor, ast.While, ast.With, ast.AsyncWith, ast.ClassDef,
+           ast.ExceptHandler, ast.Match)  # fmt: skip
+
+
+def _docstrings(tree: ast.AST) -> set[int]:
+    """Line numbers of every docstring (prose: never a decision)."""
+    out: set[int] = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+            body = n.body
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                out |= set(range(body[0].lineno, (body[0].end_lineno or body[0].lineno) + 1))
+    return out
+
+
+def changed_statements(old: str, new: str) -> set[tuple[int, int]]:
+    """The statements of `new` that the change from `old` touches, each as the line span of
+    which at least one line must have EXECUTED for the change to count as run: a simple
+    statement's own lines; a compound statement's header (its test, target, bases); a function's
+    body (it must have been CALLED, not merely defined). Blank lines, comment-only lines and
+    docstrings are prose and charge nothing. A changed line no statement holds charges (0, -1),
+    which no execution can satisfy (fail closed). Raises SyntaxError when `new` cannot parse."""
+    return set(changed_spans(old, new))
+
+
+#: The only statements import-time execution may vouch for (#364ad6aa7 audit MF2): a class
+#: header and an import. Every other touched statement, a module-level table, list, call or
+#: assignment included, must have run inside a call that traded and agreed; a def's span is its
+#: body, which only a call runs.
+_IMPORT_OK = (ast.ClassDef, ast.Import, ast.ImportFrom)
+
+
+def _class_shape(node: ast.ClassDef) -> tuple[str, str, str, str]:
+    """A class header without its name: bases, keywords (metaclass included), decorators, and
+    the body (so a renamed class is matched only to the class it was)."""
+    return (
+        ast.dump(ast.Tuple(elts=node.bases, ctx=ast.Load())),
+        ";".join(ast.dump(k) for k in node.keywords),
+        ";".join(ast.dump(d) for d in node.decorator_list),
+        ";".join(ast.dump(b) for b in node.body),
+    )
+
+
+def _name_only(node: ast.ClassDef, old_classes: list[ast.ClassDef]) -> bool:
+    """Whether a touched class header changed nothing but (at most) the class's name: the
+    same-named class of the old text has the same bases, keywords and decorators, or, for a
+    rename, a class the new text no longer names had the same header AND body."""
+    shape = _class_shape(node)
+    same = [c for c in old_classes if c.name == node.name]
+    if same:
+        return any(_class_shape(c)[:3] == shape[:3] for c in same)
+    return any(_class_shape(c) == shape for c in old_classes)
+
+
+def changed_spans(old: str, new: str) -> dict[tuple[int, int], bool]:
+    """`changed_statements`, each span mapped to whether a line run AT IMPORT may satisfy it
+    (`_IMPORT_OK`). A span charged by two statements is import-satisfiable only if both are."""
+    tree = ast.parse(new)
+    new_lines, old_lines = new.splitlines(), old.splitlines()
+    sm = difflib.SequenceMatcher(None, old_lines, new_lines, autojunk=False)
+    touched = {
+        j + 1
+        for tag, _i1, _i2, j1, j2 in sm.get_opcodes()
+        if tag in ("replace", "insert")
+        for j in range(j1, j2)
+    }
+    prose = _docstrings(tree)
+    touched = {
+        ln for ln in touched
+        if ln not in prose and new_lines[ln - 1].strip()
+        and not new_lines[ln - 1].lstrip().startswith("#")
+    }  # fmt: skip
+    nodes: list[tuple[int, int, ast.AST]] = []
+    for n in ast.walk(tree):
+        if isinstance(n, _STMT):
+            deco = [d.lineno for d in getattr(n, "decorator_list", [])]
+            nodes.append((min([n.lineno, *deco]), n.end_lineno or n.lineno, n))
+    try:
+        old_classes = [n for n in ast.walk(ast.parse(old)) if isinstance(n, ast.ClassDef)]
+    except SyntaxError:
+        old_classes = []
+    spans: dict[tuple[int, int], bool] = {}
+
+    def add(span: tuple[int, int], import_ok: bool) -> None:
+        spans[span] = spans.get(span, True) and import_ok
+
+    for ln in touched:
+        holders = [x for x in nodes if x[0] <= ln <= x[1]]
+        if not holders:
+            add((0, -1), False)
+            continue
+        start, end, node = min(holders, key=lambda x: (x[1] - x[0], -x[0]))
+        ok = isinstance(node, _IMPORT_OK)
+        if isinstance(node, ast.ClassDef) and not _name_only(node, old_classes):
+            # bases, metaclass, keywords or decorators changed: method resolution may differ,
+            # so the class's own code must have run inside an agreed call (#6704c691c audit SF)
+            add((node.body[0].lineno, end), False)
+            continue
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            add((node.body[0].lineno, end), False)
+        elif isinstance(node, _HEADED):
+            first = (
+                node.cases[0].pattern.lineno if isinstance(node, ast.Match) else node.body[0].lineno
+            )
+            add((start, max(start, first - 1)), ok)
+        else:
+            add((start, end), ok)
+    return spans
+
+
+def _ran(
+    spans: set[tuple[int, int]] | dict[tuple[int, int], bool],
+    executed: set[int],
+    at_import: set[int] | None = None,
+) -> list[tuple[int, int]]:
+    """The spans of which no line executed: in `executed` (inside an agreed call), or, for a
+    span `changed_spans` marks import-satisfiable, in `at_import`."""
+    ok = spans if isinstance(spans, dict) else dict.fromkeys(spans, False)
+    imp = at_import or set()
+    return sorted(
+        sp for sp, may in ok.items()
+        if not any(sp[0] <= ln <= sp[1] for ln in (executed | imp if may else executed))
+    )  # fmt: skip
+
+
+def signal_measured(
+    base: Path,
+    head: Path,
+    files: list[str],
+    b: dict[str, Any],
+    h: dict[str, Any],
+    agreed: set[str],
+) -> tuple[set[str], dict[str, str]]:
+    """({files the signal leg measured}, {file: why it did not}). A file is measured when it was
+    imported on every tree that has it, and every statement the PR touched ran on the PR's tree
+    and every statement it removed or replaced ran on the base's, at import or inside a call in
+    `agreed`. A deleted file is never measured here.
+
+    Import-time lines vouch only for a class header or an import (`_IMPORT_OK`, #364ad6aa7
+    audit MF2): a module-level table, list, assignment or call runs at import whatever it says,
+    so it counts only when it ran inside an agreed call (a lazy import there); otherwise the
+    file stays UNMEASURED (and a changed UPPER_CASE knob fails in `knob_changes` regardless)."""
+
+    def executed(doc: dict[str, Any], f: str, *, at_import: bool) -> set[int]:
+        out: set[int] = set()
+        for key, per in (doc.get("lines") or {}).items():
+            if (key == "<import>") == at_import and (at_import or key in agreed):
+                out |= set(per.get(f) or [])
+        return out
+
+    measured: set[str] = set()
+    why: dict[str, str] = {}
+    for f in files:
+        was, now = read(base, f), read(head, f)
+        if now is None:
+            why[f] = "the PR deletes it"
+            continue
+        hb, hh = executed(b, f, at_import=False), executed(h, f, at_import=False)
+        ib, ih = executed(b, f, at_import=True), executed(h, f, at_import=True)
+        imported_h = any(x.endswith("/" + f) for x in h.get("imported") or [])
+        imported_b = was is None or any(x.endswith("/" + f) for x in b.get("imported") or [])
+        if not (imported_h and imported_b):
+            why[f] = "the signal leg never imported it"
+            continue
+        try:
+            miss_h = _ran(changed_spans(was or "", now), hh, ih)
+            miss_b = _ran(changed_spans(now, was), hb, ib) if was is not None else []
+        except SyntaxError as exc:
+            why[f] = f"cannot be parsed ({exc.msg})"
+            continue
+        if miss_h or miss_b:
+            show = [f"PR {a}-{z}" for a, z in miss_h[:6]] + [f"base {a}-{z}" for a, z in miss_b[:6]]
+            why[f] = (
+                f"{len(miss_h) + len(miss_b)} changed statement(s) never ran in a family call "
+                f"or gateway pass that traded and agreed: lines {', '.join(show)}"
+            )
+            continue
+        measured.add(f)
+    return measured, why
+
+
+def unmeasured_reason(f: str, why: dict[str, str], signal: dict[str, Any]) -> str:
+    """The headline's reason a changed money-path file stayed UNMEASURED, per file (#1097 audit
+    SF3): imported with changed statements that never ran is not the same finding as never
+    imported, and the headline said the latter for both. The full line list stays in
+    `signal_leg.unmeasured`."""
+    w = why.get(f)
+    if w is None:
+        if signal.get("ran") and f in (signal.get("traced") or []):
+            return "the signal and gateway legs did not complete on both trees"
+        return "the replay never imported it"
+    if "never ran" in w:
+        return "imported, " + w.split(": lines", 1)[0]
+    if w == "the signal leg never imported it":
+        return "never imported by the signal or gateway legs"
+    return w
 
 
 def compare(
@@ -820,7 +1345,14 @@ def compare(
     if ftmo_owed and not ftmo_rows:
         problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
     closure = import_closure(base)
-    covered = imported | new_and_bounded(base, head, head_imported)
+    # MF1 (#364ad6aa7 audit): research/ is checked out for the signal leg, so a research module
+    # the scenario legs merely import must not count as measured by that import; only the line
+    # rule (the signal leg's, below) can measure it. The admission gate was checked out and
+    # import-covered before the signal leg existed, and keeps that standing.
+    covered = {
+        f for f in imported | new_and_bounded(base, head, head_imported)
+        if not f.startswith(RESEARCH_DIR) or f in IMPORT_COVERED_RESEARCH
+    }  # fmt: skip
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
@@ -830,8 +1362,65 @@ def compare(
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
+    # THE SIGNAL AND GATEWAY LEGS, only when a changed money-path Python file is still
+    # uncovered (a PR that touches no such file pays nothing for them)
+    signal: dict[str, Any] = {"ran": False}
+    gateway: dict[str, Any] = {"ran": False}
+    why: dict[str, str] = {}
+    candidates = [f for f in uncovered if f.endswith(".py")]
+    if candidates:
+        certs = cert_cells(base)
+        sb, sh = run_signals(base, candidates, certs), run_signals(head, candidates, certs)
+        anchor = gateway_anchor()
+        gb, gh = (
+            run_gateway(base, candidates, certs, anchor),
+            run_gateway(head, candidates, certs, anchor),
+        )
+        signal = {"ran": True, "traced": candidates, "certs": len(certs)}
+        gateway = {"ran": True, "anchor": anchor}
+        if "crash" in gb:
+            # nothing it ran counts; every file it would have measured stays UNMEASURED below
+            gateway["unmeasured"] = f"the base tree cannot run it ({gb['crash'][-300:]})"
+            gb = gh = {}
+        elif "crash" in gh:
+            problems.append(f"gateway leg: the PR's tree crashed ({gh['crash']})")
+            gb = gh = {}
+        if "crash" in sb:
+            problems.append(f"UNMEASURED signal leg: the base tree cannot run it ({sb['crash']})")
+        elif "crash" in sh:
+            problems.append(f"signal leg: the PR's tree crashed ({sh['crash']})")
+        else:
+            mb, mh = merge_legs(sb, gb), merge_legs(sh, gh)
+            diverged, agreed = signal_problems(mb, mh)
+            problems += diverged
+            measured, why = signal_measured(base, head, candidates, mb, mh, agreed)
+            uncovered = [f for f in uncovered if f not in measured]
+            both = set(mb.get("calls") or {}) & set(mh.get("calls") or {})
+            gw_keys = {k for k in both if k.startswith("gateway|")}
+            signal.update(
+                families=len(sb.get("names") or []),
+                calls_compared=len(both - gw_keys),
+                # skipped, never compared: the base itself ran past the call budget
+                calls_base_timeout=sum(
+                    1 for k in both - gw_keys if (mb["calls"][k] or {}).get("timeout")
+                ),
+                calls_agreed_trading=len(agreed - gw_keys),
+                fixtures=sb.get("fixtures") or [],
+                measured=sorted(measured),
+                unmeasured=why,
+            )
+            gateway.update(
+                sleeves=len(gb.get("names") or []),
+                passes_compared=len(gw_keys),
+                passes_base_timeout=sum(
+                    1 for k in gw_keys if (mb["calls"][k] or {}).get("timeout")
+                ),
+                passes_agreed_trading=len(agreed & gw_keys),
+                intended_orders=sum(int((mb["calls"][k] or {}).get("n") or 0) for k in gw_keys),
+            )
     problems += [
-        f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
+        f"UNMEASURED money-path change ({unmeasured_reason(f, why, signal)}): {f}"
+        for f in uncovered
     ]
     problems += knob_changes(base, head, changed, closure, exempt)
     return {
@@ -844,6 +1433,11 @@ def compare(
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
+        # the signal leg: what it ran, compared and measured, and why a file stayed UNMEASURED
+        # (the gateway leg's measurements are folded into `measured` / `unmeasured` there)
+        "signal_leg": signal,
+        # the Fusion gateway leg: its passes, what they intended, and what agreed
+        "gateway_leg": gateway,
     }
 
 
