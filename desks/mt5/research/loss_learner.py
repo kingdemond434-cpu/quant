@@ -651,7 +651,9 @@ def variant_clock_keys(ids: set[str]) -> tuple[dict[str, str], str]:
                 out[nid] = sf.sleeve_key(sym, win, params, fam, side)
         return out, "MEASURED"
     except Exception as exc:
-        return {}, f"UNMEASURED: forward enrolment unreadable ({type(exc).__name__}: {exc})"
+        print(f"loss_learner: forward enrolment unreadable: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
+        return {}, f"UNMEASURED: forward enrolment unreadable ({type(exc).__name__})"
 
 
 def replacement_verdict(parent_rows: list[tuple[datetime, float]],
@@ -728,7 +730,8 @@ def _graph_state() -> tuple[set[str], dict[str, dict[str, list[float]]], str]:
         return set(sd._current(rows)), sd.grid_values(rows), (
             "; ".join(f"{k}: {v}" for k, v in skipped.items()) or f"{len(rows)} graph rows")
     except Exception as exc:
-        return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__}: {exc})"
+        print(f"loss_learner: graph unreadable: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return set(), {}, f"UNMEASURED: graph unreadable ({type(exc).__name__})"
 
 
 def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
@@ -817,8 +820,11 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
     report = {"generated_at": now.isoformat(timespec="seconds"), "source": SOURCE,
               "trail_days": TRAIL_DAYS, "books": book_state, "graph": graph_note,
               "sleeves": per, "minted": len(new_lineage),
-              "donation": {k: donated.get(k) for k in ("donated", "refused_unstamped",
-                                                       "refused_wrong_lane", "path")},
+              # the donation file by NAME only: the doc is published and a full path names the box
+              "donation": {**{k: donated.get(k) for k in ("donated", "refused_unstamped",
+                                                          "refused_wrong_lane")},
+                           "path": Path(str(donated["path"])).name if donated.get("path")
+                           else None},
               "lineage_total": len(lineage), "replacements": replacements,
               "dry_run": dry_run,
               "rule": ("variants are hypotheses: the gauntlet judges each at the charged trial "
@@ -1001,7 +1007,8 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                          if d["action"] == "RETIRED_PARENT"],
                         path=sp.parent / "RETIRED_CLOSE_QUEUE.json")
         except Exception as exc:
-            done.append({"action": "CLOSE_QUEUE_FAILED", "why": f"{type(exc).__name__}: {exc}"})
+            print(f"loss_learner: close queue failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            done.append({"action": "CLOSE_QUEUE_FAILED", "why": type(exc).__name__})
     for d in done:
         d.pop("_door", None)
     if done:
@@ -1036,7 +1043,8 @@ def _write_roster(sp: Path, doc: Any) -> tuple[bool, str]:
     try:
         tmp.write_text(body, "utf-8")
     except OSError as exc:
-        return False, f"temp write failed: {type(exc).__name__}: {exc}"
+        print(f"loss_learner: roster temp write failed: {exc}", file=sys.stderr)
+        return False, f"temp write failed: {type(exc).__name__}"
     last: Exception | None = None
     try:
         for _ in range(REPLACE_TRIES):
@@ -1048,9 +1056,12 @@ def _write_roster(sp: Path, doc: Any) -> tuple[bool, str]:
                 time.sleep(REPLACE_SLEEP_S)
         try:
             sp.write_text(body, "utf-8")
-            return True, f"in-place write after {REPLACE_TRIES} refused replaces ({last})"
+            return True, (f"in-place write after {REPLACE_TRIES} refused replaces "
+                          f"({type(last).__name__})")
         except OSError as exc:
-            return False, f"replace refused ({last}) and in-place write failed: {exc}"
+            print(f"loss_learner: roster write failed: {last}; {exc}", file=sys.stderr)
+            return False, (f"replace refused ({type(last).__name__}) and in-place write "
+                           f"failed: {type(exc).__name__}")
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink()

@@ -589,8 +589,33 @@ def test_one_committees_error_is_published_and_the_other_five_still_run(desk, mo
     monkeypatch.setattr(ens, "_run_committee", flaky)
     doc = ens.run(budget_s=60, fates={}, now_ts=1_000_000.0)
     row = doc["committees"][ens.FORENSIC]
-    assert row["status"] == "ERROR" and "numpy" in row["error"]
+    assert row["status"] == "ERROR" and row["error"] == "ModuleNotFoundError"
     assert row["unmeasured"] == ce.UNMEASURED and row["measured"] == 0
     assert all(doc["committees"][c]["status"] == "RAN" for c in ens.COMMITTEES
                if c != ens.FORENSIC)
 
+
+def test_the_published_health_carries_no_box_path_and_no_account_money(desk, monkeypatch):
+    """COMMITTEE_HEALTH.json ships to the public repo: an error is a type name only (an OSError's
+    text names the box's absolute path), and the live book's exposure is shares of gross, never
+    the quote-currency P&L amounts it is summed from."""
+    real = _fake_committee(False)
+    secret_path = r"C:\\opt\\quant\\desks\\mt5\\data\\secret_dir\\x.json"
+
+    def flaky(name, *a):
+        if name == ens.FORENSIC:
+            raise FileNotFoundError(2, "No such file", secret_path)
+        return real(name, *a)
+    monkeypatch.setattr(ens, "_run_committee", flaky)
+    ens.run(budget_s=60, fates={}, now_ts=1_000_000.0)
+    text = ens.HEALTH.read_text()
+    assert "secret_dir" not in text and "No such file" not in text
+    monkeypatch.setattr(ens, "_live_rows", lambda: [
+        {"sleeve": "a", "time": "2026-11-13T10:00", "r_multiple": 1.0, "symbol": "EURUSD",
+         "pl_quote": 1234.5},
+        {"sleeve": "b", "time": "2026-11-13T11:00", "r_multiple": -1.0, "symbol": "XAUUSD",
+         "pl_quote": -765.5}])
+    book = next(s for s in ens.portfolio_subjects() if s.keys == {"book": "live"})
+    exposure = book.evidence["exposure"]
+    assert exposure == pytest.approx({"EURUSD": 1234.5 / 2000.0, "XAUUSD": 765.5 / 2000.0})
+    assert 1234.5 not in exposure.values()

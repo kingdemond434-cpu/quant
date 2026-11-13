@@ -1070,6 +1070,10 @@ def portfolio_subjects() -> list[ce.Subject]:
         if pl is not None:
             gross[str(r.get("symbol") or "?")] = gross.get(str(r.get("symbol") or "?"), 0.0) + \
                 abs(pl)
+    # Shares, never amounts: pl_quote is account money, and the subjects reach the published
+    # COMMITTEE_HEALTH.json. The concentration seat is scale-free, so its verdict is unchanged.
+    tot = sum(gross.values())
+    gross = {k: v / tot for k, v in gross.items()} if tot > 0 else {}
     try:
         import portfolio_evidence as pe  # type: ignore[import-not-found]
         forward = pe.daily_series()
@@ -1953,7 +1957,10 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
             # error is published on the committee's own row as ERROR -- never a clean zero and
             # never swallowed -- and the other five still run. An errored pass measures nothing,
             # so it moves no budget and can never count toward retirement.
-            per[name] = {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"[:500],
+            # the doc is published: type name only there, the full text (which can carry a
+            # box path) goes to the log
+            print(f"committee {name} ERROR: {type(exc).__name__}: {exc}", file=sys.stderr)
+            per[name] = {"status": "ERROR", "error": type(exc).__name__,
                          "budget_s": round(share_s, 2), "measured": 0, "fails": 0,
                          "unmeasured": UNMEASURED,
                          "seconds": round(time.monotonic() - c0, 3)}
