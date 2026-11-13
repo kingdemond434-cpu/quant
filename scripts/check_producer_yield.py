@@ -466,6 +466,8 @@ def _stem(key: str) -> str:
     k = str(key or "").strip().lower()
     if k.startswith("leg:"):
         return k[4:]
+    if k.startswith("seat:") and ":" not in k[5:]:
+        return k[5:]
     if k.startswith("executable:"):
         return Path(k.split(":", 1)[1]).stem
     return k
@@ -507,6 +509,26 @@ def _merge_aliases(rows: list[Any]) -> list[dict[str, Any]]:
                 merged["clock"] = next((r.get("clock") for r in g if r.get("clock")), None)
         out.append(merged)
     return out
+
+def _own_cells(per: dict[str, Any], key: str) -> dict[str, int]:
+    """A producer's own cells under every key the registry files them by. discovery_compiler
+    records a seat's donations with generator `seat:<dir>` (discovery_compiler.py:570) while the
+    census keys the producer bare, so paradigm_router (2.5 cells/h), standing_questions (1.92/h),
+    research_tree (1.58/h) and event_response_atlas sat on OWING while feeding the judge (Tier S,
+    P119). Sum the bare, alias-stem and `seat:` keys; a key is never counted twice."""
+    keys = {key, _stem(key)}
+    st = _stem(key)
+    if ":" not in st:
+        keys.add(f"seat:{st}")
+    out: dict[str, int] = {}
+    for k in keys:
+        v = per.get(k)
+        if isinstance(v, dict):
+            for f, n in v.items():
+                if isinstance(n, (int, float)):
+                    out[f] = out.get(f, 0) + int(n)
+    return out
+
 
 def _child_cells(per: dict[str, Any], key: str) -> dict[str, int]:
     """Cells attributed to a parent's sub-generators. The census prices compute on the parent
@@ -551,10 +573,10 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         if not isinstance(src, dict):
             continue
         key = str(src.get("key") or src.get("producer") or "").strip().lower()
-        if not key or key in seen:
+        if not key or key in seen or _stem(key) in seen:
             continue
-        seen.add(key)
-        m = per.get(key) or per.get(_stem(key)) or {}
+        seen.update({key, _stem(key)})
+        m = _own_cells(per, key)
         kids = _child_cells(per, key)
         hours = src.get("compute_hours")
         hours = float(hours) if isinstance(hours, (int, float)) else None

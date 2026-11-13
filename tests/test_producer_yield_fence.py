@@ -226,3 +226,15 @@ def test_child_generators_count_toward_their_parent() -> None:
     assert fence._child_cells(per, "grave")["n"] == 0
     # a child key never rolls up further
     assert fence._child_cells(per, "graveyard_resurrection:repair")["n"] == 0
+
+
+def test_seat_generator_cells_credit_the_bare_producer() -> None:
+    per = {
+        "seat:paradigm_router": {"cells_to_judge": 60, "unique_cells": 50, "cells_emitted": 60},
+        "paradigm_router": {"cells_to_judge": 4, "unique_cells": 4, "cells_emitted": 4},
+    }
+    m = fence._own_cells(per, "paradigm_router")
+    assert m["unique_cells"] == 54 and m["cells_to_judge"] == 64
+    # the seat key itself, as a census row, maps to the same producer and is not double counted
+    assert fence._stem("seat:paradigm_router") == "paradigm_router"
+    assert fence._own_cells(per, "seat:paradigm_router")["unique_cells"] == 54
