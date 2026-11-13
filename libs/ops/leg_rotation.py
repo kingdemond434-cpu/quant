@@ -112,12 +112,10 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     "record_tape", "promoter", "forward_reconcile", "heal_clocks",
     "smoke_release", "health", "publish_state",
     # THE PROMOTION DOOR'S WRITER (2026-09-30). The door fails closed on a missing or stale
-    # (> 6h) verdict, so a deferred `tier_s` pass withholds every new LIVE row: it is on the
-    # money path now, and it runs every hour.
-    "tier_s",
+    # (> 6h) verdict, so a deferred door pass withholds every new LIVE row: it is on the money
+    # path and runs every hour. The FULL `tier_s` pass and the replication writer moved to
+    # DUE_BY_AGE_H (2026-11-05): their outputs are fresh-within-6h inputs, not hourly ones.
     "tier_s_door",
-    # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
-    "replication_civilization",
     # Without this, the core rotation can leave the judge's worker plan and measured
     # verdict rate stale while the five-minute gauntlet task continues to fire.
     "judging_throughput",
@@ -127,7 +125,87 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
     # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
     "bars_state",
+    # CHEAP FENCES THAT GATE MONEY OR HEALTH, PINNED (2026-11-05, overlay 27d "pin cheap readers
+    # (<60 s) that gate money or promotion"). With always-run cost above the 2640 s core budget,
+    # greedy admission had no room left, so these sat in LEG_ROTATION's never_run/outside_window
+    # for days: decay_live.json 55 h stale (last decay_monitor run 11-02, 3.87 s), and the
+    # placement interlock -- "a silent halt costs a window an hour" -- unread. Each reads a few
+    # small files and writes one report, so pinning them costs seconds, not the research legs.
+    # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
+    # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
+    "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
 })
+
+
+#: DUE-BY-AGE LEGS (2026-11-05): heavy legs whose consumer needs them FRESH, not EVERY HOUR.
+#:
+#: MEASURED: the always-run set planned 3,651-4,121 s against the core's 2,640 s budget, so the
+#: rotation admitted the always-run legs and NOTHING ELSE -- 11 of 162 legs, every pass, with
+#: governance, acceptance, clock_liveness, pit_canaries and certificate_clock_law deferred for
+#: days. Two members carried most of that: the full Tier S pass (~1,500 s cap) and the
+#: replication writer (900 s budget, timing out at ~1,035 s). Neither is needed hourly:
+#:
+#:   tier_s                    Its money-path outputs (PROMOTION_FREEZE, ONLINE_FDR_ROWS) are read
+#:                             by the promotion door, which fails closed past
+#:                             libs.tiers.promotion_authority.MAX_AGE_H (6 h). The door ITSELF
+#:                             (`tier_s_door`, review+door) stays always-run.
+#:   replication_civilization  reports/REPLICATION.json, the door's fourth input, same 6 h expiry.
+#:
+#: The rule: a due-by-age leg is FORCED into the pass (ahead of rotation, never yielded on
+#: overrun) once its age reaches SOFT hours; at most ONE leg is forced on the soft rule per pass,
+#: so two heavy legs do not land on the same hour; any leg at or past HARD hours is forced
+#: whatever else is forced. Below SOFT it competes in ordinary rotation and still runs whenever
+#: the budget has room -- this is a floor on freshness, never a ceiling on runs. SOFT = half the
+#: door's expiry or less, and HARD + one core period + the leg's cap < the expiry.
+#:
+#: NOT A THROTTLE. The same seconds are spent; they stop being spent on the same two legs every
+#: hour while ~150 legs wait. The never-run tier still outranks everything but forced legs.
+DUE_BY_AGE_H: dict[str, tuple[float, float]] = {
+    "tier_s": (2.5, 4.0),
+    "replication_civilization": (2.5, 4.0),
+}
+
+#: THE CLOCK IS THE ARTIFACT, NOT THE RUN (Auditor MF1, 2026-11-05). Attendance stamps a leg when
+#: it RAN, whatever the outcome, so a forced run that timed out with nothing written would reset
+#: the clock while the door's input kept aging. Due age is therefore the OLDER of the run age and
+#: the age of each file the door reads from the leg (absent, unreadable or undated = infinite):
+#: a failed run stays forced on every pass, which is never worse than ALWAYS_RUN was.
+#: Paths and stamp keys mirror libs.tiers.promotion_authority (REPLICATION/FDR_ROWS/FREEZE);
+#: tests/libs/test_leg_rotation.py pins them equal.
+DUE_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
+    "tier_s": (("reports/tier_s/ONLINE_FDR_ROWS.json", "generated_utc"),
+               ("data/tier_s/PROMOTION_FREEZE.json", "at")),
+    "replication_civilization": (("reports/REPLICATION.json", "at"),),
+}
+
+#: MF2: a due leg is checked at pass START, so it is forced at an age in [hard, hard + period) and
+#: its output lands one runtime later. hard + CORE_PERIOD_H + the leg's cap must stay under the
+#: door's 6 h expiry (pinned in desks/mt5/tests/test_hourly_cycle_leg_rotation.py). Both legs
+#: are on the hourly core plan.
+CORE_PERIOD_H = 1.0
+
+
+def _artifact_age_h(leg: str, now: datetime, desk: Path | None = None) -> float:
+    """Hours since the OLDEST door input this leg writes was stamped; inf when any is missing."""
+    base = DESK if desk is None else desk
+    worst = 0.0
+    for rel, key in DUE_ARTIFACTS.get(leg, ()):
+        try:
+            doc = json.loads((base / rel).read_text(encoding="utf-8-sig"))
+            at = datetime.fromisoformat(str(doc[key]).replace("Z", "+00:00"))
+            if at.tzinfo is None:
+                at = at.replace(tzinfo=UTC)
+            worst = max(worst, (now - at).total_seconds() / 3600.0)
+        except (OSError, ValueError, TypeError, KeyError):
+            return float("inf")
+    return worst
+
+
+def _due_age_h(leg: str, att: Attendance, now: datetime) -> float | None:
+    """Due age of a due-by-age leg (the older of run age and artifact age), else None."""
+    if leg not in DUE_BY_AGE_H:
+        return None
+    return max(att.age_s(leg, now) / 3600.0, _artifact_age_h(leg, now))
 
 
 def legs_in_order(source: Path | None = None) -> list[str]:
@@ -272,6 +350,10 @@ class Decision:
     roster: list[str] = field(default_factory=list)
     planned_s: float = 0.0
     why: dict[str, str] = field(default_factory=dict)
+    forced: set[str] = field(default_factory=set)
+    #: legs whose cost exceeds what the budget can EVER give them after the always-run and forced
+    #: legs: "it leads the next pass" would be false for them, every pass (see plan_pass)
+    unschedulable: dict[str, float] = field(default_factory=dict)
 
     def runs(self, leg: str) -> bool:
         """Does `leg` run in this pass? An unknown leg always runs (rotation never invents a veto
@@ -293,7 +375,7 @@ class Decision:
         """
         if leg in self.deferred:
             return False, self.why.get(leg, "deferred by rotation")
-        if leg in ALWAYS_RUN:
+        if leg in ALWAYS_RUN or leg in self.forced:
             return True, ""
         if self.budget_s > 0 and elapsed_s > self.budget_s and att.runs.get(leg, 0) > 0:
             return False, (f"budget overrun at {elapsed_s:.0f}s of {self.budget_s:.0f}s: this "
@@ -322,8 +404,9 @@ def budget_for(plan: str, env: dict[str, str] | None = None) -> float:
 
 def _rank(leg: str, att: Attendance, now: datetime,
           order: dict[str, int]) -> tuple[int, float, int]:
-    """Sort key: always-run first, then never-run, then oldest-first, then file order."""
-    if leg in ALWAYS_RUN:
+    """Sort key: always-run and due legs first, then never-run, then oldest-first, file order."""
+    due = _due_age_h(leg, att, now)
+    if leg in ALWAYS_RUN or (due is not None and due >= DUE_BY_AGE_H[leg][0]):
         tier = 0
     elif att.runs.get(leg, 0) <= 0:
         tier = 1
@@ -365,6 +448,13 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
         dec.planned_s = sum(att.cost_s(leg) for leg in roster)
         return dec
     spent = 0.0
+    soft_forced = False
+    # the seconds no rotation can reclaim: always-run legs plus every leg forced by age this pass
+    fixed_s = sum(att.cost_s(leg) for leg in roster if leg in ALWAYS_RUN)
+    for leg in roster:
+        due = _due_age_h(leg, att, t0)
+        if due is not None and due >= DUE_BY_AGE_H[leg][1]:
+            fixed_s += att.cost_s(leg)
     for leg in sorted(roster, key=lambda n: _rank(n, att, t0, order)):
         cost = att.cost_s(leg)
         if leg in ALWAYS_RUN:
@@ -372,6 +462,20 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
             spent += cost
             dec.why[leg] = "always-run: irreversible or on the money path"
             continue
+        due = _due_age_h(leg, att, t0)
+        if due is not None:
+            soft_h, hard_h = DUE_BY_AGE_H[leg]
+            if due >= hard_h or (due >= soft_h and not soft_forced):
+                dec.admitted.add(leg)
+                dec.forced.add(leg)
+                spent += cost
+                if due < hard_h:
+                    soft_forced = True
+                age_txt = ("never run or no door input" if due == float("inf")
+                           else f"door input {due:.1f}h old")
+                dec.why[leg] = (f"due by age: {age_txt} >= "
+                                f"{hard_h if due >= hard_h else soft_h:g}h; forced")
+                continue
         if spent + cost <= bud:
             dec.admitted.add(leg)
             spent += cost
@@ -380,8 +484,21 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                             f"rotation: idle {att.age_s(leg, t0) / 3600.0:.1f}h")
         else:
             dec.deferred.add(leg)
-            dec.why[leg] = (f"deferred this pass: {cost:.0f}s would pass the "
-                            f"{bud:.0f}s budget ({spent:.0f}s planned); it leads the next pass")
+            room = bud - fixed_s
+            if cost > room:
+                # THE LEG THAT CAN NEVER FIT (2026-11-05): prop_challenge_allocator (722 s, the
+                # only writer of FTMO's live book) sat behind always-run legs leaving < 722 s of
+                # room, deferred every pass since 10-29 under a "leads the next pass" that could
+                # not come true. Leading the order does not help when the room itself is too
+                # small, so the defect is named instead: such a leg needs its own clock (a
+                # dedicated task) or a smaller cost -- never a silent wait.
+                dec.unschedulable[leg] = round(cost - room, 1)
+                dec.why[leg] = (f"UNSCHEDULABLE in this plan: {cost:.0f}s > the {room:.0f}s the "
+                                f"{bud:.0f}s budget leaves after always-run and forced legs; "
+                                "it needs its own clock or a smaller cost")
+            else:
+                dec.why[leg] = (f"deferred this pass: {cost:.0f}s would pass the "
+                                f"{bud:.0f}s budget ({spent:.0f}s planned); it leads the next pass")
     dec.planned_s = spent
     return dec
 
@@ -411,6 +528,9 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "n_deferred": len(dec.deferred),
         "ran_this_pass": list(ran),
         "deferred_this_pass": sorted(dec.deferred),
+        "forced_due_by_age": sorted(dec.forced),
+        "unschedulable_over_s": dict(sorted(dec.unschedulable.items())),
+        "due_by_age_h": {k: {"soft_h": v[0], "hard_h": v[1]} for k, v in DUE_BY_AGE_H.items()},
         # THE TWO LINES THE FENCE READS. A leg that never ran is a claim the desk cannot cash
         # (L1.49), so it is published by name rather than inferred from an absent artifact.
         "never_run": list(dec.never_run),

@@ -2,16 +2,16 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1550805,
+  "docket_unique_cells": 1670109,
   "sample": 6000,
   "overlay": [],
-  "complete": false,
-  "stage": "siblings_minted",
-  "utc_day": "2026-10-28",
-  "started_at": "2026-10-28T01:35:18+00:00",
-  "written_at": "2026-10-28T01:39:19+00:00",
-  "cells_planned": 6164,
-  "cells_visited": 0,
+  "complete": true,
+  "stage": "complete",
+  "utc_day": "2026-11-13",
+  "started_at": "2026-11-13T03:27:45+00:00",
+  "written_at": "2026-11-13T04:02:55+00:00",
+  "cells_planned": 6000,
+  "cells_visited": 6000,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -20,60 +20,161 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 70088,
-    "rss_cap_mb": 17522,
-    "peak_rss_mb": 502
+    "available_mb": 38320,
+    "rss_cap_mb": 9580,
+    "peak_rss_mb": 1006
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 211.4,
+  "lockbox_cut": "2022-03-23",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 782,
+  "elapsed_s": 2104.9,
   "siblings": {
     "status": "MEASURED",
-    "peerless_rows": 277,
-    "siblings": 164,
+    "peerless_rows": 15,
+    "siblings": 0,
     "unfilled_by_family": {
-      "correlation_regime": 8,
-      "pca_residual": 16,
-      "triangle": 42,
-      "cross_asset_residual": 22,
-      "lead_lag": 19,
-      "relative_value": 6
+      "triangle": 15
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
-    "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "cells": 6000,
+    "gate0_rejected": {
+      "symbol_eligibility": 43
+    },
+    "preflight_refused": 2764,
+    "build_failed": 3,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 3
+    },
+    "deferred": 770,
+    "judged_built": 2420,
+    "unknown": 497,
+    "unknown_share_of_judged": 0.2054,
+    "wilson95": [
+      0.1897,
+      0.2219
+    ],
+    "unknown_by_reason": {
+      "no_signals": 364,
+      "too_rare": 50,
+      "short_history_after_cut": 45,
+      "lockbox_consumed_history": 38
+    },
+    "unknown_by_cause": {
+      "never_fires": 151,
+      "session_excludes_fire_hour": 117,
+      "input_absent:orderflow_imbalance": 83,
+      "short_history_after_cut": 45,
+      "lockbox_consumed_history": 38,
+      "too_rare": 34,
+      "session_thins_below_60": 16,
+      "input_absent:liquidity_regime": 13
+    },
+    "unknown_by_family": {
+      "formula": 101,
+      "orderflow_imbalance": 83,
+      "session_range_breakout": 49,
+      "overnight_drift": 20,
+      "htf_anchor_trend": 17,
+      "regime_transition": 17,
+      "exogenous_conditioner": 16,
+      "vol_transition": 15,
+      "multi_speed_trend": 14,
+      "liquidity_regime": 13,
+      "forced_flow": 11,
+      "jump": 10,
+      "exit_operated": 9,
+      "asia_momentum": 8,
+      "joint_genome": 7
+    },
+    "unknown_by_chart": {
+      "H1": 205,
+      "M30": 75,
+      "M15": 65,
+      "M5": 56,
+      "M1": 47,
+      "H4": 26,
+      "D1": 23
+    },
+    "judged_by_chart": {
+      "H1": 1001,
+      "M30": 485,
+      "M15": 405,
+      "M5": 335,
+      "H4": 86,
+      "M1": 76,
+      "D1": 32
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
-    "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
-    "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "cells": 6000,
+    "gate0_rejected": {
+      "symbol_eligibility": 43
+    },
+    "preflight_refused": 2764,
+    "build_failed": 3,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 3
+    },
+    "deferred": 770,
+    "judged_built": 2420,
+    "unknown": 497,
+    "unknown_share_of_judged": 0.2054,
+    "wilson95": [
+      0.1897,
+      0.2219
+    ],
+    "unknown_by_reason": {
+      "no_signals": 364,
+      "too_rare": 50,
+      "short_history_after_cut": 45,
+      "lockbox_consumed_history": 38
+    },
+    "unknown_by_cause": {
+      "never_fires": 151,
+      "session_excludes_fire_hour": 117,
+      "input_absent:orderflow_imbalance": 83,
+      "short_history_after_cut": 45,
+      "lockbox_consumed_history": 38,
+      "too_rare": 34,
+      "session_thins_below_60": 16,
+      "input_absent:liquidity_regime": 13
+    },
+    "unknown_by_family": {
+      "formula": 101,
+      "orderflow_imbalance": 83,
+      "session_range_breakout": 49,
+      "overnight_drift": 20,
+      "htf_anchor_trend": 17,
+      "regime_transition": 17,
+      "exogenous_conditioner": 16,
+      "vol_transition": 15,
+      "multi_speed_trend": 14,
+      "liquidity_regime": 13,
+      "forced_flow": 11,
+      "jump": 10,
+      "exit_operated": 9,
+      "asia_momentum": 8,
+      "joint_genome": 7
+    },
+    "unknown_by_chart": {
+      "H1": 205,
+      "M30": 75,
+      "M15": 65,
+      "M5": 56,
+      "M1": 47,
+      "H4": 26,
+      "D1": 23
+    },
+    "judged_by_chart": {
+      "H1": 1001,
+      "M30": 485,
+      "M15": 405,
+      "M5": 335,
+      "H4": 86,
+      "M1": 76,
+      "D1": 32
+    }
   },
   "siblings_only": {
     "cells": 0,

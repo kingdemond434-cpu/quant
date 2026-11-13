@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from collections.abc import Container, Iterable, Mapping
 from dataclasses import dataclass, field
@@ -308,6 +309,46 @@ def region_key(symbol: str, family: str, params: dict[str, Any]) -> str:
     return f"{str(symbol).upper()}.{family}{{{parts}}}"
 
 
+_FATE_ID = re.compile(rb'^\{"id": "([^"\\]*)"')
+_FATE_FATE = re.compile(rb', "fate": "([A-Za-z_]*)"')
+
+
+def current_fates(path: Path = LEDGER) -> dict[str, str]:
+    """`node id -> its present fate` (last row wins), WITHOUT materialising the rows.
+
+    WHY THIS EXISTS (CRO noon 2026-09-30: `descendants` timed out every pass and moved nothing).
+    A caller that needs only fates used `Graph.current()`, which parses every row into a dict and
+    keeps them all: measured on the 108,189-line checkout it took 8.2 s and 392 MB peak, and the
+    box's graph is ~5.7M lines -- ~50x that, before the organ's own budget clock had started.
+
+    Rows are written by `Node.to_row` through `json.dumps`, so `id` is the first key and `fate` a
+    top-level string; both are read by pattern and any line the pattern does not fully explain
+    (a second "fate", an escaped id, a torn append) falls back to `json.loads`. Measured on the
+    same checkout: 0.22 s, and identical to `Graph.current()` on every id.
+    """
+    out: dict[str, str] = {}
+    try:
+        fh = path.open("rb")
+    except OSError:
+        return out
+    with fh:
+        for ln in fh:
+            m = _FATE_ID.match(ln)
+            f = _FATE_FATE.findall(ln) if m else None
+            if m and f is not None and len(f) == 1:
+                out[m.group(1).decode("utf-8", "replace")] = f[0].decode() or BORN
+                continue
+            if not ln.strip():
+                continue
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                out[str(r.get("id"))] = str(r.get("fate") or BORN)
+    return out
+
+
 class Graph:
     """The ledger with a read cache keyed on (mtime, size): the backfilled graph holds ~47,000
     rows, and the deepening worker asks `prior_failures` once per queued task, so re-parsing
@@ -373,6 +414,37 @@ class Graph:
             self._current = None
             self._buried = None
         return self._rows
+
+    def projected_rows(self, fields: tuple[str, ...]) -> list[dict[str, Any]]:
+        """Every row, keeping only `fields`, read line by line and never cached.
+
+        FOR READERS THAT NEED A FEW COLUMNS OF A VERY LARGE LEDGER. Measured on the box
+        2026-11-10: the ledger is 4.59 GB and 7.31M rows. `rows()` holds every row whole, and
+        the research bandit asked for it twice per run; that step held MT5-Daily silent for nine
+        hours on 2026-11-09 until the PT10H kill. Keeping only the named keys bounds memory by
+        what the reader uses rather than by everything ever recorded.
+
+        A line that does not parse is SKIPPED, not fatal. `rows()` drops the whole ledger on one
+        bad line, and the judge appends while readers read, so a torn last line is ordinary.
+        """
+        if self._snapshot:
+            return [{k: r[k] for k in fields if k in r} for r in self._rows
+                    if isinstance(r, dict)]
+        out: list[dict[str, Any]] = []
+        try:
+            with self.path.open(encoding="utf-8", errors="replace") as ledger:
+                for ln in ledger:
+                    if not ln.strip():
+                        continue
+                    try:
+                        r = json.loads(ln)
+                    except ValueError:
+                        continue
+                    if isinstance(r, dict):
+                        out.append({k: r[k] for k in fields if k in r})
+        except OSError:
+            return []
+        return out
 
     def current(self) -> dict[str, dict[str, Any]]:
         """Last row per node id -- the present fate of every hypothesis ever recorded."""
@@ -601,7 +673,8 @@ def seed_key_of(c: Mapping[str, Any]) -> str:
     by `lead_schema.compiler_parent_key` -- the ONLY deterministic join from a mined row to the
     cells it became, which is why it is kept in its own field rather than overwritten.
     """
-    return hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
+    from libs.research.source_provenance import seed_url_of
+    return hashlib.sha256(json.dumps({"u": seed_url_of(c), "t": c.get("source_title"),
                                       "s": c.get("source")}, sort_keys=True,
                                      default=str).encode()).hexdigest()[:16]
 

@@ -55,7 +55,7 @@ from mt5desk.decision_core import (
     CLOSE_HOUR,
     GOLD_SYMBOL,
     MAX_TOTAL_REJECTIONS,
-    PROMOTED_MIN_EQUITY,
+    FUSION_RUIN_FLOOR_EUR,
     REJECTION_STREAK_WINDOW_H,
     addon_desc,
     addon_entries,
@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    fold_book_aliases,
     bracket_deadline,
     bracket_from_bars,
     closed_trade_r,
@@ -1545,7 +1546,14 @@ def expire_stale_brackets(st: dict) -> int:
         setup = getattr(o, "time_setup", None)
         if not setup:
             continue
-        placed = datetime.fromtimestamp(int(setup), tz=UTC)
+        # `time_setup` is BROKER wall-clock seconds (New York + 7 h), not a UTC epoch: read as
+        # the true UTC instant, or the date test below and the age in the log run 2-3 h ahead.
+        from mt5desk.broker_clock import broker_epoch_to_utc
+        placed = broker_epoch_to_utc(setup)
+        if placed is None:
+            log(f"TTL sweep: {o.symbol} order {o.ticket} has an unreadable time_setup "
+                f"({setup!r}); left to the broker expiry")
+            continue
         # THE SAME PER-SESSION RULE THE ORDER WAS PLACED UNDER, recovered from its own label, so
         # the sweep and the broker expiry can never disagree. A flat cutoff here would defeat the
         # point: it would keep an afternoon bracket alive hours past the force-close the broker
@@ -4207,7 +4215,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 _e8_book, _e8_why = _xa.read_book("e8")
                 _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
-                                           why_absent=_e8_why)
+                                           why_absent=_e8_why) \
+                    or _xa.ftmo_block(s["symbol"], side)
             # THE GOLD DIRECTION LOCK (OCO v2s, MF-A): an XAU send here asks the bracket path's
             # own gate, under this same lock -- the day's direction and every gold lane (FTMO
             # included), fail closed.
@@ -4739,7 +4748,8 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 _e8_book, _e8_why = _xa.read_book("e8")
                 _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
-                                           why_absent=_e8_why)
+                                           why_absent=_e8_why) \
+                    or _xa.ftmo_block(s["symbol"], side)
             # THE GOLD DIRECTION LOCK (OCO v2s, MF-A), as on the family lane: the same gate as
             # the bracket path, under this same lock.
             _owhy = gold_oco_send_refusal(s["symbol"], side, tick) \
@@ -4974,6 +4984,7 @@ def main() -> None:
         return
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
+    from mt5desk.fusion_equity_reference import sizing_equity
 
     # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
     # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
@@ -5001,20 +5012,35 @@ def main() -> None:
         _DESK_STALE = None
         log(f"desk staleness unreadable ({type(_exc).__name__}: {_exc}); pass continues")
 
+    # `tnow` is the BROKER's wall clock (New York + 7h) under a UTC label, and `today`, `hour`,
+    # `day_key` and CLOSE_HOUR stay in it on purpose: the bars and the certified windows are
+    # written in that clock. Anything compared with the wall clock uses `tick_utc` instead.
     tnow = pd.Timestamp(tick.time, unit="s", tz="UTC")
+    from mt5desk.broker_clock import broker_to_utc
+    tick_utc = broker_to_utc(tnow)
     today = tnow.date()
     hour = tnow.hour + tnow.minute / 60.0
     day_key = str(today)
     # ONE PASS, ONE IDENTITY: `note_placement` counts rejection PASSES, and every sleeve placed in
     # this pass carries this stamp so two sleeves refused in one minute are one pass, not two.
-    st["placement_pass"] = tnow.isoformat()
+    # REAL UTC, MARKED SO (ledger L3, 2026-10-13): it was the broker stamp under a +00:00 label,
+    # three hours "in the future" to every reader. `libs.ops.gateway_clock` reads the mark.
+    _now_utc = datetime.now(tz=UTC)
+    st["placement_pass"] = _now_utc.isoformat(timespec="seconds")
+    st["placement_pass_clock"] = "utc"
+    st["placement_tick_broker"] = tnow.tz_localize(None).isoformat()   # naive: broker wall clock
+    st["placement_tick_utc"] = tick_utc.isoformat(timespec="seconds")
+    st["broker_utc_offset_h"] = round((tnow - tick_utc) / pd.Timedelta(hours=1))
 
-    # stale tick (weekend/holiday/terminal dead): never trade a closed market
-    age_sec = (datetime.now(tz=UTC) - tnow).total_seconds()
+    # stale tick (weekend/holiday/terminal dead): never trade a closed market. On the TICK's true
+    # UTC instant: a broker stamp read as UTC made every tick three hours younger than it was, so
+    # a quote up to ~3.5h old passed this 30-minute gate.
+    age_sec = (_now_utc - tick_utc).total_seconds()
     if age_sec > 1800:
         st = reconcile(st)
         save_state(st)
-        log(f"idle: tick stale {age_sec/60:.0f} min (last {tnow}); market closed")
+        log(f"idle: tick stale {age_sec/60:.0f} min (last {tick_utc:%Y-%m-%d %H:%M:%S} UTC, "
+            f"broker {tnow:%Y-%m-%d %H:%M:%S}); market closed")
         mt5.shutdown()
         return
 
@@ -5025,7 +5051,7 @@ def main() -> None:
 
     sleeves = sleeve_set()
     try:
-        sleeves = minlot_override_roster(sleeves, equity)
+        sleeves = minlot_override_roster(sleeves, sizing_equity(equity))
     except Exception as exc:
         # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
         # is cleared, so the pass sizes exactly as sovereignty sizes it.
@@ -5128,6 +5154,11 @@ def main() -> None:
                 log(f"daily-loss rail: resting gold brackets not cancelled "
                     f"({type(exc).__name__}: {exc}); they still carry their stops")
     save_state(st)
+    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03, mt5desk.fusion_equity_reference). The
+    # daily-loss rail above and the published equity read the real number; from here on `equity`
+    # is what every sizer, the promoted-sleeve gate and the heat cap size from.
+    equity = sizing_equity(equity)
+    st["sizing_equity"] = round(equity, 2)
     # THE FUSION BOOK FOR THE OTHER ACCOUNT'S FENCE (mt5desk.cross_account), every pass, so an E8
     # lane never reads a book older than this pass. Never takes the pass down.
     # Under the placement lock, from a reading taken under it (audit round 2, must-fix 2): a
@@ -5215,10 +5246,13 @@ def main() -> None:
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
-    if equity < PROMOTED_MIN_EQUITY:
+    # THE RUIN LINE, NOT THE OLD SIZE LINE (zuck 2026-11-05, D-20261105-042): below EUR 300 the
+    # promoted sleeves used to go dormant wholesale; each order is now judged on its own size
+    # (sovereignty, the 10% per-trade rail), so only below the ruin floor do they stand down.
+    if equity < FUSION_RUIN_FLOOR_EUR:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():
-            log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
+            log(f"equity {equity:.0f} < {FUSION_RUIN_FLOOR_EUR:.0f}: promoted sleeves dormant")
     # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
     # trade. Deferred sleeves are named in the log rather than dropped quietly.
     #
@@ -5276,6 +5310,13 @@ def main() -> None:
     # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
     # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
     _pending_legs: dict[str, float] = {}
+    # ONE ORDER PER BOOK KEY: the rows `_book_key` folds onto one allocator cell share its one
+    # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
+    # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
+    # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
+    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
+                                                    else _book_key(_s, _book))
+                                  for _s in sleeves})
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
@@ -5294,6 +5335,13 @@ def main() -> None:
             _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
             _s["book_key"] = _key
+            if str(_s["name"]) in _aliases:
+                # The cell's fraction is already sent by its carrier. Zero, still sized by the
+                # book (allocator sovereignty: a book fraction of 0 sends no order), never the
+                # base ramp a non-book row would fall back to.
+                _s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]
+                log(f"ALIAS_FOLDED {_s['name']} -> {_s['alias_of']} on book key {_key}: one "
+                    f"order per key, sized at the key's {float(_book[_key]):.5f}")
         if cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
             # forgone sleeve is a missed-growth line once per sleeve per day.
@@ -5753,7 +5801,8 @@ def main() -> None:
                     _e8_book, _e8_why = _xa.read_book("e8")
                     for _leg in ("buy_stop", "sell_stop"):
                         _w = _xa.opposite_block(_e8_book, s["symbol"], _leg, account="e8",
-                                                why_absent=_e8_why)
+                                                why_absent=_e8_why) \
+                            or _xa.ftmo_block(s["symbol"], _leg)
                         if _w:
                             _xblocked[_leg] = _w
                 # THE GOLD DIRECTION LOCK (mt5desk.gold_oco): read under the same lock, every

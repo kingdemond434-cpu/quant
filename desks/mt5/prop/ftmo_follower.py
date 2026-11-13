@@ -83,6 +83,7 @@ for _p in (str(DESK), str(ROOT)):
 from mt5desk import cancel_pending as _cancel_req  # noqa: E402
 from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
+from mt5desk import mt5_manage as _mm  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
     BRACKET_TTL_HOURS,
@@ -292,6 +293,37 @@ def entry_order_kind(side: str, level: float, bid: float, ask: float) -> str:
     return "sell_stop" if bid > level else "sell_limit"
 
 
+#: A LATE FOLLOW ENTERS AT MARKET, NOT AT A LIMIT IT WILL NEVER SEE (2026-11-04, measured): E8's
+#: gold_asia buy stop filled at 05:36:25Z and ran to its target (+1,166.49 on E8); FTMO's copy
+#: reached the venue at 05:41:34Z, the price already through the level, so it rested a BUY LIMIT
+#: at 3964.85 that never filled and was cancelled at 11:00Z -- the whole day's edge missed for
+#: the sake of the level. A breakout that filled does not come back to its trigger often enough
+#: to wait for it. So while the market is through E8's level by at most this share of E8's own
+#: stop distance, the follow is a MARKET order with E8's own stop and target, sized on the
+#: distance from the actual entry (so the risk in money is the same). DERIVATION: entering x R
+#: late with the same stop and target turns a payoff of RR into (RR - x) / (1 + x); at x = 0.10
+#: and RR 2 that is 1.73, a 14% cut of the win against the 100% cut of not trading -- positive
+#: E[log W] at any win rate that made the certificate. Past the bound the old limit at the level
+#: stands (a pullback can still fill it), so the bound only ever adds trades the limit would miss.
+LATE_ENTRY_MAX_R = 0.10
+
+
+def entry_plan(side: str, level: float, sl: float, bid: float, ask: float,
+               max_late_r: float = LATE_ENTRY_MAX_R) -> tuple[str, float]:
+    """(order kind, entry price for sizing). A stop while the price is short of E8's level; a
+    MARKET order at the touch while it is through the level by at most `max_late_r` of E8's stop
+    distance; a limit at the level beyond that (a pullback may still fill it)."""
+    kind = entry_order_kind(side, level, bid, ask)
+    if not kind.endswith("_limit"):
+        return kind, level
+    dist = abs(level - sl)
+    touch = ask if side == "long" else bid
+    late = (touch - level) if side == "long" else (level - touch)
+    if dist > 0 and 0 <= late <= max_late_r * dist:
+        return ("buy_market" if side == "long" else "sell_market"), touch
+    return kind, level
+
+
 def lot_for(frac: float, equity: float, dist: float, contract: float, *, vmin: float,
             vstep: float, vmax: float) -> float:
     """`frac` of equity at risk to the stop, floored to the volume step; 0 below the minimum."""
@@ -361,14 +393,84 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
     return local.date().isoformat(), midnight.astimezone(UTC)
 
 
-def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime) -> float:
+#: How far a tick may sit from a whole-hour server offset to be read as the server clock: the
+#: box clock's skew plus the tick's age. A single tick cannot tell a stale tick from a skewed
+#: clock (a 70-minute-old tick on UTC+3 reads exactly like a 10-minute-old one on UTC+2), so only
+#: a FRESH tick is read at all; a quiet market or gold's daily break refuses, billed by the caller.
+TICK_SKEW_S = 300.0
+
+
+#: Liquid symbols whose freshest tick stands for the server clock: FX trades through gold's
+#: daily break, so one stale market never decides the offset alone.
+CLOCK_SYMBOLS = ("EURUSD", "GBPUSD", "USDJPY", "XAUUSD")
+
+
+def freshest_tick_epoch(mt5: Any, symbols: tuple[str, ...] = CLOCK_SYMBOLS) -> float:
+    """The latest tick time across `symbols` (server wall clock as an epoch), or 0.0."""
+    best = 0.0
+    for sym in symbols:
+        try:
+            t = mt5.symbol_info_tick(sym)
+        except Exception:
+            continue
+        v = getattr(t, "time", 0) if t is not None else 0
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v > best:
+            best = float(v)
+    return best
+
+
+def server_offset_from_tick(server_epoch: float, now: datetime) -> int:
+    """The server's UTC offset in hours, read off a tick's time (MT5 stamps server wall time as
+    if it were UTC). RAISES ValueError when the tick cannot be the server clock: none, more than
+    TICK_SKEW_S off a whole hour (stale, or the box clock off), or outside UTC+0..+4."""
+    if not server_epoch:
+        raise ValueError("no tick to read the server clock from")
+    lag = float(server_epoch) - now.timestamp()
+    off = round(lag / 3600.0)
+    if not 0 <= off <= 4 or abs(lag - off * 3600.0) > TICK_SKEW_S:
+        raise ValueError(f"a tick {lag / 3600.0:+.2f}h off the box clock is not the server "
+                         f"clock (not within {TICK_SKEW_S:.0f}s of a whole-hour offset)")
+    return off
+
+
+def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime, *,
+                      server_epoch: float | None = None) -> float:
     """The balance at FTMO's midnight: today's balance less every deal's result since then.
-    RAISES when the deal history cannot be read (the guard then refuses)."""
-    deals = mt5.history_deals_get(since, now + timedelta(minutes=5))
+    RAISES when it cannot be measured (the guard then refuses): an unreadable deal history, a
+    deal with no readable time, or a server clock that cannot be read off a live tick.
+
+    ON THE SERVER CLOCK (audit MF4, 2026-10-29). MT5 stamps a deal with the server's wall clock
+    as if it were UTC, and the API reads its datetime window the same way, so a window in real UTC
+    was shifted by the server offset: it counted the last two or three hours of the previous CET
+    day as today's and DROPPED the last two or three hours of today's deals (the most recent
+    losses, the ones the daily-loss rail most needs). The query is wide (a day each side) and
+    each deal is kept when its own server stamp is at or after CET midnight on the server clock.
+
+    THE OFFSET IS MEASURED, NEVER ASSUMED (audit 2026-10-29): read off the freshest of the
+    caller's `server_epoch` and the CLOCK_SYMBOLS ticks. FTMO's server is not
+    asserted to be NY+7: on an EET server the two differ for a week each spring and autumn, and a
+    loss in the first CET hour then fell out of today. A tick that cannot be the server clock
+    (`server_offset_from_tick`) RAISES. A deal with no readable time RAISES too: counted as
+    today's, a profit or a deposit among them would understate today's loss."""
+    # the freshest of several liquid symbols (and the caller's own tick): a single tick cannot
+    # tell stale from a different offset, so the clock is read where the market is trading
+    server_epoch = max(float(server_epoch or 0.0), freshest_tick_epoch(mt5))
+    try:
+        off = server_offset_from_tick(float(server_epoch or 0.0), now)
+    except ValueError as exc:
+        raise ValueError(f"the server clock is unreadable ({exc}); today's start is "
+                         f"unmeasurable") from exc
+    deals = mt5.history_deals_get(since - timedelta(days=1), now + timedelta(days=1))
     if deals is None:
         raise ValueError("the deal history is unreadable")
+    start = since.timestamp() + off * 3600.0
     moved = 0.0
     for d in deals:
+        ts = getattr(d, "time", None)
+        if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
+            raise ValueError(f"a deal ({getattr(d, 'ticket', '?')}) has no readable time")
+        if ts < start:
+            continue
         for k in ("profit", "commission", "swap", "fee"):
             v = getattr(d, k, 0.0)
             if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -394,6 +496,39 @@ def mirrored_stop(e8_doc: dict[str, Any], e8_position_id: str, side: str,
         if best is None or sign * (stop - best) > 0:
             best = stop
     return best if best is not None and best != current else None
+
+
+def native_stop(mt5: Any, st: dict[str, Any], p: Any) -> tuple[float | None, str, bool]:
+    """THE SAME STOP MANAGEMENT AS EVERY OTHER ACCOUNT (zuck 2026-11-03: "ftmo fusion etc must
+    always have same mechanisms"): `mt5_manage.stop_move`, the Fusion gateway's own decision -- the
+    costed break-even floor and the H1 chandelier -- on THIS account's position, bars, quote and
+    commission. Until this, FTMO only copied E8's acknowledged stop, so it was managed only while
+    E8 was alive, held the same position, and published the move.
+
+    (new stop or None, why, failed). `failed` is True only when the decision could not be MADE (no
+    open price, no symbol, a read raised); a decided "no move" is False, and then FTMO keeps its
+    own stop exactly as Fusion would -- never E8's tighter one (audit of 730b0952c MF)."""
+    opened = getattr(p, "price_open", None)
+    if not isinstance(opened, (int, float)) or not opened > 0:
+        return None, "the position carries no readable open price", True
+    opened_sl, comm = _mm.opening_facts(mt5, int(p.ticket))
+    dist, captured = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}),
+                                                int(p.ticket), float(opened),
+                                                float(getattr(p, "sl", 0.0) or 0.0), opened_sl)
+    if dist is None:
+        return None, "no stop on the position; none invented", True
+    if captured:
+        log(f"[{WINDOW}] manage capture: ticket {int(p.ticket)} initial stop distance {dist:.5f} "
+            f"({'opening order' if opened_sl else 'first sight'})")
+    info = mt5.symbol_info(SYMBOL)
+    if info is None:
+        return None, "no symbol_info this pass", True
+    try:
+        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=False,
+                             commission_per_lot_side=comm)
+    except Exception as exc:  # a read this pass could not make never takes the pass down
+        return None, f"own ratchet unavailable this pass ({type(exc).__name__}: {exc})"[:200], True
+    return move.new_stop, move.why, False
 
 
 def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str]:
@@ -733,7 +868,7 @@ def order_risk_usd(mt5: Any, order: Any) -> float | None:
     """The account-currency risk of a resting MAGIC entry to its stop: volume x |price - sl| x
     the contract size. None when any of them is unreadable (the bill is then UNPRICED, never 0)."""
     try:
-        vol = float(getattr(order, "volume_current", None) or getattr(order, "volume_initial"))
+        vol = float(getattr(order, "volume_current", None) or order.volume_initial)
         dist = abs(float(order.price_open) - float(order.sl))
         contract = float(mt5.symbol_info(SYMBOL).trade_contract_size)
     except (AttributeError, TypeError, ValueError):
@@ -975,6 +1110,9 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
              for p in own_pos]
     _flat = {r["id"] for r in _oco.positions_to_flatten(entry if entry_why is None else None,
                                                         _rows, date=today)}
+    _live = {str(int(p.ticket)) for p in own_pos}
+    st["orig_stop_dist"] = {k: v for k, v in (st.get("orig_stop_dist") or {}).items()
+                            if k in _live}
     for p in own_pos:
         side = "long" if int(getattr(p, "type", -1)) == 0 else "short"
         if int(p.ticket) in _flat or hour >= CLOSE_HOUR:
@@ -1001,18 +1139,33 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["shadow"] = True
             doc["actions"].append(act)
             continue
-        e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
-        if not isinstance(e8_doc, dict) or not e8_pid:
-            continue
         cur = float(getattr(p, "sl", 0.0) or 0.0) or None
-        new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
+        new, how, failed = native_stop(mt5, st, p)
+        if new is None and failed:
+            # E8's acknowledged stop is the fallback only: when this terminal cannot read the bars
+            # or the ATR its own ratchet needs, the position is still not left unmanaged.
+            e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
+            if isinstance(e8_doc, dict) and e8_pid:
+                new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
+                how = f"E8's acknowledged stop (own ratchet: {how})"
         if new is None or cur is None:
+            if how:
+                doc.setdefault("manage_notes", []).append(f"#{int(p.ticket)}: {how}")
+            continue
+        # NO NO-OP MODIFIES (Desk health 2026-11-03: the terminal journal showed a "sl unchanged,
+        # skipped" request every minute after a mirror, each one spent from FTMO's daily request
+        # budget). Only a move the venue can represent -- one tick, else one point -- is sent.
+        _info = mt5.symbol_info(SYMBOL)
+        _step = (float(getattr(_info, "trade_tick_size", 0.0) or 0.0)
+                 or float(getattr(_info, "point", 0.0) or 0.0)) if _info is not None else 0.0
+        if not _pm.tightens_by_min_step(side=1 if side == "long" else -1, new_stop=float(new),
+                                        current_stop=float(cur), step=_step):
             continue
         sgn: Any = 1 if side == "long" else -1
         rests, rwhy = _pm.stop_rests_at_venue(stop=new, side=sgn, bid=float(tick.bid),
                                               ask=float(tick.ask))
         act = {"act": "ratchet_stop", "position": int(p.ticket), "before": cur, "after": new,
-               "ok": False}
+               "how": how, "ok": False}
         if not rests:
             act["why"] = rwhy
         elif armed:
@@ -1026,6 +1179,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["why"] = f"{type(exc).__name__}: {exc}"[:160]
         else:
             act["shadow"] = True
+        # EVERY STOP MOVE IS LOGGED, sent or not (Desk health 2026-11-03: only failures were, so
+        # an FTMO stop that ran an hour ahead of E8's could not be traced afterwards).
+        log(f"[{WINDOW}] stop {int(p.ticket)} {cur} -> {new} ({how}): "
+            f"{'shadow' if act.get('shadow') else ('ok' if act['ok'] else act.get('why'))}")
         doc["actions"].append(act)
 
     # ---------------------------------------------------------------- the fills ledger
@@ -1147,7 +1304,9 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         _skip(doc, st, "account_unreadable", "equity, balance or the contract is unreadable",
               today=today, now=now)
         return
-    dist = abs(float(sig["price"]) - float(sig["sl"]))
+    kind, entry = entry_plan(side, float(sig["price"]), float(sig["sl"]), float(tick.bid),
+                             float(tick.ask))
+    dist = abs(entry - float(sig["sl"]))
     want_usd = float(frac) * equity
     lot = lot_for(float(frac), equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
     if not lot > 0:
@@ -1174,7 +1333,8 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         lot = capped
     risk = trade_risk(lot, dist, contract)
     try:
-        start = day_start_balance(mt5, balance, cet_midnight, now)
+        start = day_start_balance(mt5, balance, cet_midnight, now,
+                                  server_epoch=float(tick.time))
     except Exception as exc:
         _skip(doc, st, "loss_guard", f"today's starting balance is unmeasurable ({exc})",
               today=today, now=now, missed_usd=want_usd)
@@ -1185,9 +1345,9 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     if not ok:
         _skip(doc, st, "loss_guard", gwhy, today=today, now=now, missed_usd=want_usd)
         return
-    kind = entry_order_kind(side, float(sig["price"]), float(tick.bid), float(tick.ask))
     row = {"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
            "side": side, "kind": kind, "price": sig["price"], "sl": sig["sl"], "tp": sig["tp"],
+           "entry": entry,
            "lot": lot, "risk_frac": frac, "risk_usd_with_slip": round(risk, 2),
            "e8_position_id": sig["e8_position_id"], "armed": bool(armed)}
     if not armed:
@@ -1199,10 +1359,23 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         return
     types = {"buy_stop": mt5.ORDER_TYPE_BUY_STOP, "sell_stop": mt5.ORDER_TYPE_SELL_STOP,
              "buy_limit": mt5.ORDER_TYPE_BUY_LIMIT, "sell_limit": mt5.ORDER_TYPE_SELL_LIMIT}
-    req = {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
-           "type": types[kind], "price": float(sig["price"]), "sl": float(sig["sl"]),
-           "tp": float(sig["tp"]), "deviation": 20, "magic": MAGIC, "comment": COMMENT,
-           "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}
+    if kind.endswith("_market"):
+        # At the touch read under the lock; the deviation bounds the fill to the same late-entry
+        # rule (never more than LATE_ENTRY_MAX_R of the stop distance past E8's level).
+        room = LATE_ENTRY_MAX_R * abs(float(sig["price"]) - float(sig["sl"]))
+        point = float(getattr(mt5.symbol_info(SYMBOL), "point", 0.0) or 0.0)
+        late = abs(entry - float(sig["price"]))
+        dev = int(max((room - late) / point, 0)) if point > 0 else 20
+        req = {"action": mt5.TRADE_ACTION_DEAL, "symbol": SYMBOL, "volume": lot,
+               "type": mt5.ORDER_TYPE_BUY if side == "long" else mt5.ORDER_TYPE_SELL,
+               "price": entry, "sl": float(sig["sl"]), "tp": float(sig["tp"]),
+               "deviation": dev, "magic": MAGIC, "comment": COMMENT,
+               "type_filling": mt5.ORDER_FILLING_IOC}
+    else:
+        req = {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
+               "type": types[kind], "price": float(sig["price"]), "sl": float(sig["sl"]),
+               "tp": float(sig["tp"]), "deviation": 20, "magic": MAGIC, "comment": COMMENT,
+               "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}
     # WRITE-AHEAD: the follow is marked spent, and the state written atomically, BEFORE the send,
     # so a crash or a lost reply can never send a second order for this E8 fill.
     st["followed"][str(sig["e8_position_id"])] = row["at"]
@@ -1222,13 +1395,41 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     try:
         res = _send(mt5, st, req, cet=cet)
     except Exception as exc:
-        row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-        _record(row)
-        log(f"[{WINDOW}] REJECTED: {row['why']}")
-        return
+        res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
     code = getattr(res, "retcode", None)
-    row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED", "retcode": code,
-                "order_id": getattr(res, "order", None)})
+    if kind.endswith("_market") and code == 10010:
+        # DONE_PARTIAL (10010) IS A FILL, NEVER A REJECTION (Auditor HOLD on a506aaeda): a
+        # full-lot fallback beside a partly filled IOC deal would hold up to twice the intended
+        # risk, uncounted by the fallback's loss guard. The filled part stands alone.
+        row.update({"partial": True, "venue_retcode": 10010,
+                    "filled_volume": getattr(res, "volume", None)})
+        code = 10009
+    if kind.endswith("_market") and code not in (10008, 10009):
+        # A REJECTED MARKET FOLLOW NEVER LOSES THE TRADE THE OLD LIMIT WOULD HAVE KEPT (Auditor
+        # HOLD on #746): a requote, a changed price or off-quotes (10004/10020/10021) or a
+        # filling refusal (10030) on a moving breakout falls back, in this same locked pass and
+        # under the same write-ahead, to the pending order the old path placed: entry_order_kind
+        # at E8's level, sized on E8's own distance and re-checked against the loss guard.
+        fb = _fallback_pending(mt5, side, sig, tick, frac=float(frac), equity=equity,
+                               contract=contract, vmin=vmin, vstep=vstep, vmax=vmax, cap=cap,
+                               decl=decl, start=start, types=types)
+        row["market_attempt"] = {"kind": kind, "entry": entry, "lot": lot, "retcode": code,
+                                 "why": row.pop("why", None)}
+        if fb.get("req") is None:
+            row.update({"status": "REJECTED", "retcode": code, "order_id": None,
+                        "why": f"market follow rejected ({code}); no fallback: {fb['why']}"})
+        else:
+            kind, lot, req = fb["kind"], fb["req"]["volume"], fb["req"]
+            row.update({"kind": kind, "entry": float(sig["price"]), "lot": lot,
+                        "risk_usd_with_slip": fb["risk"], "fallback": True})
+            try:
+                res = _send(mt5, st, req, cet=cet)
+            except Exception as exc:
+                res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
+            code = getattr(res, "retcode", None)
+    if row.get("status") != "REJECTED":
+        row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED",
+                    "retcode": code, "order_id": getattr(res, "order", None)})
     _record(row)
     # ONE ORDER A DAY: the window is spent once a send was attempted, whatever the venue said.
     st["windows"][WINDOW] = {"placed_at": row["at"], "placed_hour": hour, "side": side,
@@ -1240,6 +1441,32 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     after = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
                            holder="ftmo_follower:sent")
     doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
+
+
+def _fallback_pending(mt5: Any, side: str, sig: dict[str, Any], tick: Any, *, frac: float,
+                      equity: float, contract: float, vmin: float, vstep: float, vmax: float,
+                      cap: float, decl: dict[str, Any], start: float,
+                      types: dict[str, Any]) -> dict[str, Any]:
+    """The old path's pending order at E8's level, for a market follow the venue refused:
+    {"req", "kind", "risk"} or {"req": None, "why"}. Same sizing, cap and loss guard."""
+    level, sl = float(sig["price"]), float(sig["sl"])
+    kind = entry_order_kind(side, level, float(tick.bid), float(tick.ask))
+    dist = abs(level - sl)
+    lot = lot_for(frac, equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
+    if lot > cap:
+        lot = cap if cap >= vmin else 0.0
+    if not lot > 0:
+        return {"req": None, "why": "the level's lot is below the minimum or the cap"}
+    risk = trade_risk(lot, dist, contract)
+    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity, risk,
+                          daily_frac=float(decl.get("daily_loss_frac") or DAILY_LOSS_FRAC))
+    if not ok:
+        return {"req": None, "why": gwhy}
+    return {"kind": kind, "risk": round(risk, 2),
+            "req": {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
+                    "type": types[kind], "price": level, "sl": sl, "tp": float(sig["tp"]),
+                    "deviation": 20, "magic": MAGIC, "comment": COMMENT,
+                    "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}}
 
 
 def _atomic_write(path: Path, text: str) -> None:
