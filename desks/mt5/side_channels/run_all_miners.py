@@ -4,12 +4,12 @@ Runs all miners and saves combined discoveries.
 Can be invoked standalone or imported by hourly_controller.
 """
 
-import sys
-import os
 import json
 import multiprocessing
+import os
 import stat
-from datetime import datetime, timezone
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Hard wall-clock budget per miner (seconds). A miner that exceeds it is killed
@@ -21,6 +21,11 @@ process_ctx = multiprocessing.get_context("spawn")
 
 def _run_miner_inner(name, fn_ref, q):
     try:
+        try:
+            from side_channels import net_gate
+        except ModuleNotFoundError:
+            import net_gate
+        net_gate.install()            # every request this miner sends goes through the door
         disc = fn_ref()
         q.put(("ok", disc))
     except Exception as e:
@@ -57,80 +62,62 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 if _dir not in sys.path:
     sys.path.insert(0, _dir)
 
-# --- Tier 1: Social/Web miners ---
-from youtube_miner import run_and_save as youtube_mine
-from github_miner import run_and_save as github_mine
-from mql5_codebase import run_and_save as mql5_codebase_mine
-from mql5_articles import run_and_save as mql5_articles_mine
-from mql5_signals import run_and_save as mql5_signals_mine
-from mql5_forum import run_and_save as mql5_forum_mine
-from tradingview_miner import run_and_save as tradingview_mine
-from quantconnect_miner import run_and_save as quantconnect_mine
-from reddit_miner import run_and_save as reddit_mine
-
-# --- Tier 2: Institutional/Calendar miners ---
+# Only channels with a clear machine-access verdict are imported at all. A channel blocked on its
+# owner's terms is listed in BLOCKED_ON_TERMS below with the reason and never loaded, so it
+# cannot fetch even if the allowlist is widened by mistake (Hourly pass ask, 2026-11-13).
 from central_bank_miner import run_and_save as central_bank_mine
-from forexfactory_miner import run_and_save as forexfactory_mine
-from cot_miner import run_and_save as cot_mine
-from sec_edgar_miner import run_and_save as sec_edgar_mine
-from earnings_miner import run_and_save as earnings_mine
-
-# --- Tier 3: Sentiment miners ---
-from aaii_sentiment_miner import run_and_save as aaii_mine
-from cnn_fear_greed_miner import run_and_save as fear_greed_mine
-from investing_miner import run_and_save as investing_mine
-from google_trends_miner import run_and_save as google_trends_mine
-
-# --- Tier 4: Academic/Research miners ---
-from academic_miner import run_and_save as academic_mine
-
-# --- Tier 5: Macro/Physical miners ---
 from correlation_miner import run_and_save as correlation_mine
+from cot_miner import run_and_save as cot_mine
+from github_miner import run_and_save as github_mine
 from seasonality_miner import run_and_save as seasonality_mine
+from sec_edgar_miner import run_and_save as sec_edgar_mine
 from weather_miner import run_and_save as weather_mine
-from shipping_miner import run_and_save as shipping_mine
-
-# --- Tier 6: Regional miners ---
-from china_miner import run_and_save as china_mine
-from korea_miner import run_and_save as korea_mine
-
-# truth_social_miner is class-based (TruthSocialCollector), no run_and_save.
-# Silently skipped.
-
 
 ALL_MINERS = [
-    # Social/Web
-    ("youtube", youtube_mine),
-    ("github", github_mine),
-    ("mql5_codebase", mql5_codebase_mine),
-    ("mql5_articles", mql5_articles_mine),
-    ("mql5_signals", mql5_signals_mine),
-    ("mql5_forum", mql5_forum_mine),
-    ("tradingview", tradingview_mine),
-    ("quantconnect", quantconnect_mine),
-    ("reddit", reddit_mine),
-    # Institutional/Calendar
-    ("central_bank", central_bank_mine),
-    ("forexfactory", forexfactory_mine),
-    ("cot", cot_mine),
-    ("sec_edgar", sec_edgar_mine),
-    ("earnings", earnings_mine),
-    # Sentiment
-    ("aaii", aaii_mine),
-    ("fear_greed", fear_greed_mine),
-    ("investing", investing_mine),
-    ("google_trends", google_trends_mine),
-    # Academic
-    ("academic", academic_mine),
-    # Macro/Physical
-    ("correlations", correlation_mine),
-    ("seasonality", seasonality_mine),
-    ("weather", weather_mine),
-    ("shipping", shipping_mine),
-    # Regional
-    ("china", china_mine),
-    ("korea", korea_mine),
+    ("github", github_mine),            # GitHub REST API, token from env
+    ("central_bank", central_bank_mine),  # central banks' own RSS feeds
+    ("cot", cot_mine),                  # CFTC Public Reporting (Socrata), US gov open data
+    ("sec_edgar", sec_edgar_mine),      # data.sec.gov JSON, SEC fair-access UA
+    ("correlations", correlation_mine),  # local bars
+    ("seasonality", seasonality_mine),  # local bars
+    ("weather", weather_mine),          # NOAA NHC (US gov); Open-Meteo refused at the door
 ]
+
+#: Every channel taken out of the suite on its owner's terms, by name, with the reason. The
+#: summary reports each as BLOCKED_ON_TERMS, so a removed channel is never a silent zero. Each
+#: carries its missed-growth line: what the desk loses is that channel's discoveries, and the
+#: free stand-in that replaces it where one exists.
+BLOCKED_ON_TERMS: dict[str, str] = {
+    # Terms READ and refusing (2026-11-13):
+    "youtube": "hard rule: the box never contacts YouTube; no YouTube API key",
+    "earnings": "Yahoo terms 2(d)(ix): no automated collection without prior permission "
+                "(stand-in: sec_edgar filings)",
+    "quantconnect": "QuantConnect terms 2.6 bar extracting data by any means, API included "
+                    "(stand-in: github)",
+    "google_trends": "trends.google.com robots disallows /explore?; Google terms bar automated "
+                     "access against robots (stand-in: none free)",
+    "mql5_codebase": "mql5.com robots disallows /code/viewcode/ and /code/download/; site terms "
+                     "unreadable to an honest agent, so unclear fails closed (#262)",
+    # Terms UNREAD or UNCLEAR for commercial automated use, so they fail closed until read:
+    "mql5_articles": "MQL5 terms unreadable to an honest agent: unclear fails closed (#262)",
+    "mql5_signals": "MQL5 terms unreadable to an honest agent: unclear fails closed (#262)",
+    "mql5_forum": "MQL5 terms unreadable to an honest agent: unclear fails closed (#262)",
+    "tradingview": "TradingView terms not confirmed for automated use: fails closed",
+    "reddit": "Reddit Data API terms page refuses automated readers; commercial use needs an "
+              "agreement: fails closed",
+    "forexfactory": "Forex Factory terms unreadable; feed has no terms of its own: fails closed "
+                    "(stand-in: central banks' own calendars)",
+    "aaii": "AAII survey terms not confirmed (member content): fails closed "
+            "(stand-in: cot positioning, FFAJ retail FX)",
+    "fear_greed": "cnn.com robots refuses automated readers; CNN terms unread: fails closed",
+    "investing": "Investing.com terms not confirmed; robots fences several paths: fails closed",
+    "shipping": "Trading Economics / Investing.com terms not confirmed: fails closed "
+                "(stand-in: IMF PortWatch route)",
+    "china": "Zhihu / Eastmoney off-limits (#1091; stand-in: asia_collector official sources)",
+    "korea": "Naver robots and terms refuse automated readers: fails closed",
+    "academic": "arXiv API terms allow personal or research use and do not address commercial "
+                "use; SSRN terms unreadable: fails closed until read",
+}
 
 
 #: Channels that need a configured credential or contact before they may fetch at all.
@@ -176,15 +163,21 @@ def run_all_miners() -> dict:
             print(f"  {name}: FAILED ({payload})")
     for name, why in set_aside.items():
         print(f"  {name}: SET_ASIDE ({why})")
+    for name, why in BLOCKED_ON_TERMS.items():
+        results[name] = {"status": "BLOCKED_ON_TERMS", "why": why}
+        print(f"  {name}: BLOCKED_ON_TERMS ({why})")
 
     ok = sum(1 for r in results.values() if (r.get("count") or 0) > 0)
     results["summary"] = {
         "total_miners": len(ALL_MINERS),
         "ran": len(ALL_MINERS) - len(set_aside),
         "set_aside": sorted(set_aside),
+        "blocked_on_terms": sorted(BLOCKED_ON_TERMS),
+        "producing": sorted(k for k, r in results.items()
+                            if isinstance(r, dict) and (r.get("count") or 0) > 0),
         "total_discoveries": total,
         "successful_miners": ok,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     return results
 

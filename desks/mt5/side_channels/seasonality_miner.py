@@ -5,8 +5,7 @@ Some patterns are well-known (sell in May, January effect).
 Others may be unique to each pair.
 """
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -25,10 +24,33 @@ KNOWN_PATTERNS = {
 }
 
 
+#: |t| across years at or above this emits a row. Years are few (bars start 2018), so this is a
+#: screen for the judge, not a significance claim.
+T_MIN = 2.0
+MIN_YEARS = 5
+
+
+def month_effect(close: "pd.Series | None", month: int) -> dict | None:
+    """{mean, t, n, hit} of the log return of calendar `month` across years, or None."""
+    if close is None or len(close) < 400:
+        return None
+    m = np.log(close.resample("ME").last().dropna()).diff().dropna()
+    x = m[m.index.month == month].to_numpy(dtype="float64")
+    x = x[np.isfinite(x)]
+    if len(x) < MIN_YEARS:
+        return None
+    sd = float(x.std(ddof=1))
+    if not np.isfinite(sd) or sd <= 0:
+        return None
+    mean = float(x.mean())
+    return {"mean": mean, "t": mean / (sd / np.sqrt(len(x))), "n": len(x),
+            "hit": float((x > 0).mean())}
+
+
 def mine_seasonality() -> list[dict]:
     """Calculate current seasonality signals."""
     discoveries = []
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month = now.month
     day = now.day
 
@@ -46,46 +68,42 @@ def mine_seasonality() -> list[dict]:
                 "description": f"Seasonal pattern '{pattern_name}' active (month {month})",
             })
 
-    # Calculate actual seasonality from data
-    universe_dir = BASE / "data" / "universe"
-    for sym_file in sorted(universe_dir.glob("*.parquet")):
-        sym = sym_file.stem
-        try:
-            df = pd.read_parquet(sym_file)
-            if len(df) < 1000:
+    # Measured seasonality: each year's return in this calendar month, per hypothesis-lane symbol,
+    # and its t-statistic across years. A row is a HYPOTHESIS for the judge, not a verdict: the
+    # judge charges the trial and applies its own multiple-testing bar.
+    try:
+        from side_channels._bars import daily_close, hypothesis_symbols
+    except ModuleNotFoundError:
+        from _bars import daily_close, hypothesis_symbols
+    for target, label in ((month, "this_month"), (month % 12 + 1, "next_month")):
+        for sym in hypothesis_symbols():
+            row = month_effect(daily_close(sym), target)
+            if row is None or abs(row["t"]) < T_MIN:
                 continue
-
-            # Group by month
-            df["month"] = df.index.month
-            monthly_returns = df.groupby("month")["close"].pct_change().dropna()
-            monthly_mean = monthly_returns.groupby(df["month"].iloc[1:]).mean()
-
-            if month in monthly_mean.index:
-                current_month_return = monthly_mean[month]
-                avg_return = monthly_mean.mean()
-                if abs(current_month_return) > abs(avg_return) * 1.5:
-                    direction = "bullish" if current_month_return > 0 else "bearish"
-                    discoveries.append({
-                        "source": "seasonality",
-                        "type": "historical_pattern",
-                        "symbol": sym,
-                        "month": month,
-                        "avg_return": round(float(current_month_return) * 100, 4),
-                        "overall_avg": round(float(avg_return) * 100, 4),
-                        "direction": direction,
-                        "symbols": [sym],
-                        "confidence": min(0.6, abs(current_month_return) / abs(avg_return) * 0.3),
-                        "description": f"{sym} historically {direction} in month {month} (avg {current_month_return*100:.3f}%)",
-                    })
-        except Exception:
-            continue
+            direction = "bullish" if row["mean"] > 0 else "bearish"
+            discoveries.append({
+                "source": "seasonality",
+                "type": "historical_pattern",
+                "symbol": sym,
+                "month": target,
+                "window": label,
+                "years": row["n"],
+                "avg_return": round(row["mean"] * 100, 4),
+                "hit_rate": round(row["hit"], 3),
+                "t_stat": round(row["t"], 2),
+                "direction": direction,
+                "symbols": [sym],
+                "confidence": round(min(0.6, abs(row["t"]) / 6), 3),
+                "description": (f"{sym} {direction} in calendar month {target}: mean "
+                                f"{row['mean']*100:.2f}% over {row['n']} years, t={row['t']:.2f}"),
+            })
 
     return discoveries
 
 
 def run_and_save() -> list[dict]:
     discoveries = mine_seasonality()
-    out_file = OUT / f"discoveries_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
+    out_file = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
     try:
         from side_channels.discovery_io import write_discoveries
     except ModuleNotFoundError:
