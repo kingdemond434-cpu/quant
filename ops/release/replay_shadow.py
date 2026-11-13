@@ -800,7 +800,13 @@ def _signal_diff(x: dict[str, Any], y: dict[str, Any]) -> str:
     """What differs, short: the outcome, the count, and the fields of the first signals that
     differ (the child keeps the first two of each call)."""
     if "digest" not in x or "digest" not in y:
-        return f"base {x.get('error') or x.get('n')} PR {y.get('error') or y.get('n')}"
+
+        def said(c: dict[str, Any]) -> str:
+            if "digest" in c:
+                return f"{c.get('n')} signals"
+            return f"raised {c.get('error')} ({str(c.get('detail') or '')[:120]})"
+
+        return f"base {said(x)}; PR {said(y)}"
     parts = [] if x.get("n") == y.get("n") else [f"signals {x.get('n')} -> {y.get('n')}"]
     for i, (a, b) in enumerate(zip(x.get("first") or [], y.get("first") or [], strict=False)):
         if isinstance(a, dict) and isinstance(b, dict):
