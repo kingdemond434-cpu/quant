@@ -69,6 +69,14 @@ def main() -> int:
     ap.add_argument("--out", default=str(BASE / "reports" / "cb_tone_screen.json"))
     args = ap.parse_args()
 
+    import sys
+    if str(BASE.parent.parent) not in sys.path:
+        sys.path.insert(0, str(BASE.parent.parent))
+    from desks.mt5.research import terms_fences
+    if terms_fences.path_fenced(SERIES) is not None:
+        print(f"{SERIES.name} is built from the BIS corpus (noncommercial terms) and is behind "
+              "the terms fence: UNMEASURED, not screened", file=sys.stderr)
+        return 2
     rows = [json.loads(ln) for ln in SERIES.read_text().splitlines() if ln.strip()]
     tone: dict[str, dict[pd.Timestamp, float]] = defaultdict(dict)
     for r in rows:

@@ -46,6 +46,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from desks.mt5.research import terms_fences  # noqa: E402
+
 SEAT = "free_stack_proposer"
 COLUMNS = DESK / "data" / "free_stack" / "columns.json"
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -109,10 +111,15 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
     """The full grid, in a stable order (source, column, symbol, chart, arm)."""
     out: list[dict[str, Any]] = []
     skipped: dict[str, str] = {}
+    fences = terms_fences.load()
     for sid in sorted(columns):
         src = roster.get(sid)
         if src is None:
             skipped[sid] = "no roster row"
+            continue
+        fence = terms_fences.seat_fenced(sid, fences)
+        if fence is not None:
+            skipped[sid] = f"terms fence {fence['id']}: {fence.get('reason', '')}"
             continue
         if not series_exists(sid):
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"
@@ -165,6 +172,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     t0 = time.monotonic()
+    # Before reading anything: fenced frames leave the series dir (kept, hashed, ledgered), so a
+    # source harvested before its fence closed stops feeding the exogenous conditioner.
+    try:
+        quarantined: Any = terms_fences.quarantine_fenced_frames(SERIES)
+    except OSError as exc:
+        quarantined = f"SWEEP_FAILED: {exc}"
     columns = _read(COLUMNS, {}) or {}
     roster = roster_rows()
     grid, skipped = build_grid(columns, roster)
@@ -172,7 +185,10 @@ def main(argv: list[str] | None = None) -> int:
                            "writer": "research/free_stack_proposer.py", "seat": SEAT,
                            "sources_with_columns": len(columns), "skipped": skipped,
                            "grid_total": len(grid),
-                           "cn_exchange": cn_exchange_block(grid, roster, columns, skipped)}
+                           "cn_exchange": cn_exchange_block(grid, roster, columns, skipped),
+                           "terms_quarantine": (
+                               {"moved_this_pass": len(quarantined), "lines": quarantined}
+                               if isinstance(quarantined, list) else {"error": quarantined})}
     if not grid:
         doc.update({"built": 0, "minted": 0, "status": "NO_SERIES" if columns else "NO_COLUMNS",
                     "why": ("no free-stack source has published a series on this host yet; "

@@ -52,6 +52,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from desks.mt5.research import terms_fences  # noqa: E402
+
 from libs.data import free_stack as fs  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -429,7 +431,10 @@ def build_alt_state(store: Store, columns: dict[str, Any], now: datetime) -> dic
     artifact the allocator MAY read; nothing here sizes, vetoes or edits the allocator."""
     import numpy as np
     per_symbol: dict[str, list[dict[str, Any]]] = {}
+    fences = terms_fences.load()
     for sid, cols in columns.items():
+        if terms_fences.seat_fenced(sid, fences) is not None:
+            continue  # harvested before its fence closed: never published as state
         df = first_vintage_frame(store.obs / f"{sid}.jsonl")
         if df is None or df.empty:
             continue
@@ -549,10 +554,19 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     store = store or Store()
     fetch = fetch or fs.http_fetch
     now = now or _now()
+    # FIRST, BEFORE ANYTHING IS READ: frames a source published before its terms fence closed
+    # are moved out of the series dir the exogenous conditioner reads (kept, hashed, ledgered).
+    try:
+        quarantined: Any = terms_fences.quarantine_fenced_frames(
+            store.series, store.root / "terms_quarantine",
+            store.root / "terms_quarantine.jsonl", now)
+    except OSError as exc:
+        quarantined = f"SWEEP_FAILED: {exc}"
     rows, complaints = load_roster(roster)
     cursor = read_json(store.cursor, {}) or {}
     columns: dict[str, Any] = read_json(store.columns, {}) or {}
     ran: list[dict[str, Any]] = []
+    fences = terms_fences.load()
     order = sorted(rows, key=lambda r: _stalest(cursor.get(r["id"]) or {}))
     for row in order:
         sid = str(row["id"])
@@ -564,6 +578,14 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         spent = time.monotonic() - t0
         if spent >= budget_s:
             break
+        fence = terms_fences.seat_fenced(sid, fences)
+        if fence is not None:
+            # a source whose own terms (or statute) forbid commercial use is never fetched
+            st.update({"last_status": "REFUSED_TERMS", "last_attempt": _iso(now),
+                       "last_error": f"terms fence {fence['id']}: {fence.get('reason', '')}",
+                       "missed_growth": fence.get("missed_growth", "")})
+            write_json(store.cursor, cursor)
+            continue
         acc = access(row)
         st["access"] = acc
         if not acc["mined"]:
@@ -618,6 +640,10 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     alloc = build_alt_state(store, columns, now)
     report = build_report(rows, complaints, cursor, columns, ran, store, now,
                           seconds=time.monotonic() - t0, alloc=alloc, live=live)
+    report["terms_quarantine"] = (
+        {"moved_this_pass": len(quarantined), "lines": quarantined,
+         "ledger": str(store.root / "terms_quarantine.jsonl")}
+        if isinstance(quarantined, list) else {"error": quarantined})
     write_json(store.report, report)
     return report
 

@@ -173,6 +173,14 @@ def main() -> int:
                     help="drop rows dated after this (look-ahead guard); pass the run date")
     args = ap.parse_args()
 
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    from desks.mt5.research import terms_fences
+    if terms_fences.seat_fenced("bis_speeches") is not None:
+        print("BIS speeches are behind the terms fence (noncommercial terms): nothing is "
+              "scored or written. UNMEASURED, not empty (L1.28a)", file=sys.stderr)
+        return 2
     zip_path = Path(args.zip)
     if not zip_path.exists():
         print(f"corpus absent: {zip_path} -- UNMEASURED, not empty (L1.28a)", file=sys.stderr)

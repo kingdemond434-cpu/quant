@@ -242,7 +242,9 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
     assert per["akshare"]["status"] == "OK"
-    assert per["congress_trades"]["status"] == "OK"
+    # 5 U.S.C. 13107(c) forbids commercial use: the terms fence stops it before any fetch
+    assert per["congress_trades"]["status"] == "REFUSED_TERMS"
+    assert per["congress_trades"]["attempts"] == 0
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
     # a live yield is never claimed from a fixture run

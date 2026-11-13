@@ -1012,6 +1012,8 @@ def _replay_paths() -> list[Path]:
     """Every evidence artifact the replay may read, in a STABLE order so the cursor means
     something across passes. The rule-based donations themselves are excluded."""
     out: list[Path] = []
+    from desks.mt5.research import terms_fences
+    fences = terms_fences.load()
     for root in INTEL_ROOTS:
         if not root.exists():
             continue
@@ -1021,6 +1023,8 @@ def _replay_paths() -> list[Path]:
             rel = p.relative_to(root)
             if _is_operational_state(rel) or rel.parts[0] == RULE_DONATIONS.name:
                 continue
+            if terms_fences.fence_for(rel, fences) is not None:
+                continue            # noncommercial terms: parked, as in the compiler
             out.append(p)
     return sorted(out, key=lambda p: p.as_posix())
 
