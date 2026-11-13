@@ -1017,11 +1017,12 @@ def snb_available(obs: pd.Series, published: Any = None) -> pd.Series:
     local = rolled + pd.Timedelta(hours=SNB_RELEASE_HOUR)
     out = local.dt.tz_localize(SNB_RELEASE_TZ).dt.tz_convert("UTC")
     pub = _snb_local(published) if published is not None else None
-    if pub is not None and len(out) and d.notna().any():
-        last = d.idxmax()
-        if pd.notna(out.loc[last]) and pub > out.loc[last]:
-            out.loc[last] = pub
-    return out
+    if pub is None or not d.notna().any():
+        return out
+    last = d.idxmax()
+    if pd.isna(out.loc[last]) or pub <= out.loc[last]:
+        return out
+    return out.where(out.index != last, pub)
 
 
 def snb_publishing_date(text: str) -> str | None:
