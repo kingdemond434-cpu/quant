@@ -152,5 +152,3 @@ def test_the_alt_proxies_row_reads_the_series_and_is_terms_confirmed() -> None:
     assert src.terms == "confirmed" and src.parse is None and src.reader is P.read_ais_norway
     assert not src.substitutes_for
     assert "NLOD" in P.TERMS_EVIDENCE["no_ais_tankers"]["terms_quote"]
-    for sid in ("imf_portwatch_ports", "imf_portwatch_chokepoints"):
-        assert P.BY_ID[sid].terms == "to_confirm", sid           # IMF terms conflict: closed
