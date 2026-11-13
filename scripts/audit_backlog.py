@@ -10,7 +10,9 @@ learn that a PR had waited a day for a verdict was for someone to notice.
 WHAT IS OWED. An open PR into LIVE whose CURRENT head carries no verdict from a trusted author
 (the same reading the audit gate makes: .github/scripts/audit_gate.py `verdicts`, so an edited
 comment is a HOLD and a verdict on an older head does not count). A PR held at its current head
-is not owed -- it waits on its author -- and is listed apart. A draft is owed too: the gate
+is not owed -- it waits on its author -- and is listed apart; so is one whose head conflicts with
+LIVE (CONFLICTED: a CLEAR would die with the non-clean merge-in), and a draft idle past a week
+(STALE_DRAFT: the WIP cap's to close). A draft is owed too: the gate
 marks a CLEARed draft ready, so a draft is not a reason to wait.
 
 THE ORDER (strictest first; ties go oldest first):
@@ -40,12 +42,15 @@ unless --strict and the ALARM is up.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
+import threading
 from collections.abc import Callable, Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -156,6 +161,10 @@ def item(
     state = "OWED" if v is None else ("HELD" if v.get("verdict") == "HOLD" else "CLEARED")
     if state == "OWED" and pr.get("draft") and age_h > STALE_DRAFT_H:
         state = "STALE_DRAFT"
+    elif state == "OWED" and pr.get("mergeable_state") == "dirty":
+        # A head that conflicts with LIVE is its author's to merge LIVE into first: a CLEAR on it
+        # dies with the non-clean merge-in (the gate keeps a CLEAR only across a clean one).
+        state = "CONFLICTED"
     return {
         "pr": int(pr["number"]),
         "title": str(pr.get("title") or "")[:120],
@@ -200,6 +209,7 @@ def summarise(items: list[dict[str, Any]], now: datetime, adopt: dict[str, Any])
         "breaches": len(breaches) + (1 if p0_breach else 0),
         "held": sum(1 for i in items if i["state"] == "HELD"),
         "stale_drafts": sorted(i["pr"] for i in items if i["state"] == "STALE_DRAFT"),
+        "conflicted": sorted(i["pr"] for i in items if i["state"] == "CONFLICTED"),
         "cleared_unmerged": sum(1 for i in items if i["state"] == "CLEARED"),
         "sla_h": SLA_H,
         "max_depth": MAX_DEPTH,
@@ -214,25 +224,55 @@ def summarise(items: list[dict[str, Any]], now: datetime, adopt: dict[str, Any])
 # ---------------------------------------------------------------------------------- GitHub I/O
 
 
+#: Set when GitHub says to slow down (429, a secondary/abuse-limit 403, or any Retry-After): every
+#: reader stops at once and the snapshot is written UNMEASURED (the #1116 pattern). Retrying into
+#: a secondary limit from eight threads is how a measuring tool takes the CI queue's quota down.
+RATE_LIMITED = threading.Event()
+_LIMIT_MARKS = ("secondary rate limit", "abuse", "rate limit exceeded", "retry-after", "http 429")
+#: Below this many core reads left, the run does not start: the drain and CI need them more.
+MIN_REMAINING = 2000
+#: An unchanged head's mergeable state is re-read this often (LIVE moving can make it conflict).
+MERGEABLE_TTL_H = 6.0
+
+
+class RateLimited(RuntimeError):
+    """GitHub asked us to slow down; the snapshot is UNMEASURED, not partial."""
+
+
+def _rate_limited(stderr: str) -> bool:
+    low = stderr.lower()
+    return any(m in low for m in _LIMIT_MARKS)
+
+
 def _gh(path: str, tries: int = 4) -> Any:
-    """One REST read, retried with backoff: a 5xx or a proxy reset on one of ~1,500 reads must
-    not kill the whole snapshot."""
+    """One REST read. A 5xx or a proxy reset is retried with backoff; a rate-limit answer is
+    never retried: it sets RATE_LIMITED and every reader stops."""
     import time
 
     for n in range(tries):
+        if RATE_LIMITED.is_set():
+            raise RateLimited("an earlier read was rate-limited")
         try:
-            out = subprocess.run(
+            p = subprocess.run(
                 ["gh", "api", "-H", "Accept: application/vnd.github+json", path],
                 capture_output=True,
                 text=True,
-                check=True,
+                check=False,
                 timeout=120,
-            ).stdout
-            return json.loads(out)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError):
+            )
+        except subprocess.TimeoutExpired:
             if n == tries - 1:
                 raise
             time.sleep(2 * (n + 1))
+            continue
+        if p.returncode == 0:
+            return json.loads(p.stdout)
+        if _rate_limited(p.stderr):
+            RATE_LIMITED.set()
+            raise RateLimited(p.stderr.strip().splitlines()[-1][:200] if p.stderr.strip() else "")
+        if n == tries - 1:
+            raise subprocess.CalledProcessError(p.returncode, "gh api", p.stdout, p.stderr)
+        time.sleep(2 * (n + 1))
     raise AssertionError("unreachable")
 
 
@@ -247,34 +287,136 @@ def _pages(path: str, cap: int = 30) -> list[Any]:
     return rows
 
 
-def _one(repo: str, pr: dict[str, Any]) -> tuple[dict[str, Any], list[str], list[Any], str | None]:
-    n = pr["number"]
-    files = [str(f.get("filename")) for f in _pages(f"repos/{repo}/pulls/{n}/files")]
-    comments = _pages(f"repos/{repo}/issues/{n}/comments")
-    try:  # the list endpoint carries no diff, unlike commits/{sha}
-        c = _gh(f"repos/{repo}/commits?sha={pr['head']['sha']}&per_page=1")
-        pushed = c[0]["commit"]["committer"]["date"]
+def remaining() -> int | None:
+    """Core reads left this hour (the rate_limit endpoint itself costs none); None if unknown."""
+    try:
+        return int(_gh("rate_limit", tries=2)["resources"]["core"]["remaining"])
     except (
         subprocess.CalledProcessError,
         subprocess.TimeoutExpired,
         KeyError,
-        IndexError,
         ValueError,
+        TypeError,
     ):
-        pushed = None
-    return pr, files, comments, pushed
+        return None
+
+
+def _slim(c: Mapping[str, Any]) -> dict[str, Any]:
+    """The fields the gate's verdict reader looks at, and nothing else."""
+    return {
+        "id": c.get("id"),
+        "body": str(c.get("body") or "")[:2000],
+        "author_association": c.get("author_association"),
+        "user": {"login": (c.get("user") or {}).get("login")},
+        "created_at": c.get("created_at"),
+        "updated_at": c.get("updated_at"),
+    }
+
+
+def merge_comments(
+    have: dict[str, list[dict[str, Any]]], new: Iterable[Mapping[str, Any]]
+) -> dict[str, list[dict[str, Any]]]:
+    """Fold repo-wide comments (each names its PR in `issue_url`) into the per-PR cache, by
+    comment id: an edit replaces the old copy, so the gate still reads it as an edit."""
+    out = {k: {c["id"]: c for c in v} for k, v in have.items()}
+    for c in new:
+        n = str(c.get("issue_url") or "").rsplit("/", 1)[-1]
+        if n.isdigit():
+            out.setdefault(n, {})[c.get("id")] = _slim(c)
+    return {
+        k: sorted(v.values(), key=lambda c: str(c.get("created_at") or "")) for k, v in out.items()
+    }
+
+
+def _one(repo: str, pr: dict[str, Any], seen: Mapping[str, Any], now: datetime) -> dict[str, Any]:
+    """This PR's head facts: from the cache when the head has not moved, else read fresh."""
+    n, head = pr["number"], pr["head"]["sha"]
+    if seen.get("sha") == head:
+        rec = dict(seen)
+        at = _ts(rec.get("mergeable_at"))
+        if at is None or (now - at).total_seconds() > MERGEABLE_TTL_H * 3600:
+            with contextlib.suppress(subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                rec["mergeable_state"] = _gh(f"repos/{repo}/pulls/{n}").get("mergeable_state")
+                rec["mergeable_at"] = now.isoformat()
+        return rec
+    rec: dict[str, Any] = {"sha": head, "mergeable_state": None, "mergeable_at": None}
+    # The list endpoint omits mergeable_state; only the single-PR read computes it.
+    with contextlib.suppress(subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        rec["mergeable_state"] = _gh(f"repos/{repo}/pulls/{n}").get("mergeable_state")
+        rec["mergeable_at"] = now.isoformat()
+    rec["files"] = [str(f.get("filename")) for f in _pages(f"repos/{repo}/pulls/{n}/files")]
+    try:  # the list endpoint carries no diff, unlike commits/{sha}
+        c = _gh(f"repos/{repo}/commits?sha={head}&per_page=1")
+        rec["pushed"] = c[0]["commit"]["committer"]["date"]
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, KeyError, IndexError):
+        rec["pushed"] = None
+    return rec
 
 
 def fetch(
-    repo: str, workers: int = 8
+    repo: str, cache: dict[str, Any], now: datetime, workers: int = 8
 ) -> list[tuple[dict[str, Any], list[str], list[Any], str | None]]:
-    """Every open PR into LIVE with its files, comments and head push time, read in parallel:
-    serially a 100-PR board took over 15 minutes, longer than the cadence it reports on."""
+    """Every open PR into LIVE with its files, comments and head push time. Incremental: a head
+    already read is not read again, and comments come repo-wide since the last run, so a steady
+    board costs a few dozen reads, not thousands (Auditor MF3 on #1121)."""
     from concurrent.futures import ThreadPoolExecutor
 
     prs = _pages(f"repos/{repo}/pulls?state=open&base={LIVE}")
+    heads: dict[str, Any] = cache.get("heads") or {}
+    comments: dict[str, list[dict[str, Any]]] = cache.get("comments") or {}
+    since = cache.get("comments_since")
+    if since:
+        comments = merge_comments(comments, _pages(f"repos/{repo}/issues/comments?since={since}"))
+    missing = [pr for pr in prs if str(pr["number"]) not in comments]
+
+    def _all_comments(pr: Mapping[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+        rows = _pages(f"repos/{repo}/issues/{pr['number']}/comments")
+        return str(pr["number"]), [_slim(c) for c in rows]
+
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        return list(pool.map(lambda pr: _one(repo, pr), prs))
+        comments.update(dict(pool.map(_all_comments, missing)))
+        recs = list(pool.map(lambda pr: _one(repo, pr, heads.get(str(pr["number"]), {}), now), prs))
+    open_ = {str(pr["number"]) for pr in prs}
+    cache["heads"] = {str(pr["number"]): r for pr, r in zip(prs, recs, strict=True)}
+    cache["comments"] = {k: v for k, v in comments.items() if k in open_}
+    # A small overlap: comments are keyed by id, so re-reading the last minutes costs nothing.
+    cache["comments_since"] = (now - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return [
+        (
+            {**pr, "mergeable_state": r.get("mergeable_state")},
+            list(r.get("files") or []),
+            cache["comments"].get(str(pr["number"]), []),
+            r.get("pushed"),
+        )
+        for pr, r in zip(prs, recs, strict=True)
+    ]
+
+
+def registry_verdicts(rows: Iterable[Mapping[str, Any]], pr: int) -> list[dict[str, str]]:
+    """The Auditor's registry rows for `pr` as verdicts (Auditor MF1 on #1121): a head CLEARed or
+    HELD there is not owed even before its comment is posted."""
+    out = []
+    for r in rows:
+        if r.get("pr") == pr and r.get("verdict") in ("CLEAR", "HOLD") and r.get("sha"):
+            out.append(
+                {
+                    "verdict": str(r["verdict"]),
+                    "sha": str(r["sha"]),
+                    "at": str(r.get("at") or ""),
+                    "method": "merge",
+                    "by": "registry",
+                }
+            )
+    return out
+
+
+def combined(comment_v: list[Mapping[str, str]], reg_v: list[Mapping[str, str]]) -> list[dict]:
+    """Comment and registry verdicts on one clock, oldest first; the newer of the two wins."""
+    out = []
+    for v in [*comment_v, *reg_v]:
+        t = _ts(v.get("at"))
+        out.append({**v, "at": t.isoformat() if t else ""})
+    return sorted(out, key=lambda v: v["at"])
 
 
 def adoption(repo_dir: Path | None, now: datetime) -> dict[str, Any]:
@@ -322,7 +464,8 @@ def adoption(repo_dir: Path | None, now: datetime) -> dict[str, Any]:
             "age_h": round((now - since).total_seconds() / 3600.0, 2) if unc else 0.0,
         }
     except Exception as exc:
-        return {"measured": False, "error": f"{type(exc).__name__}: {exc}"[:300]}
+        # The type only (Auditor MF2 on #1121): an exception's text can carry a host path.
+        return {"measured": False, "error": type(exc).__name__}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -330,6 +473,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=REPO)
     ap.add_argument("--repo-dir", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=ROOT / "reports" / "audit")
+    ap.add_argument("--registry", default=None, help="REGISTRY_ROWS.jsonl (else env)")
+    ap.add_argument("--cache", type=Path, default=None)
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
@@ -337,16 +482,54 @@ def main(argv: list[str] | None = None) -> int:
     now = datetime.now(UTC)
     g = gate()
     money, money_ok = money_path()
-    items = [
-        item(pr, files, g.verdicts(comments), pushed, now, money, money_ok, g.is_protected)
-        for pr, files, comments, pushed in fetch(a.repo)
-    ]
-    snap = summarise(items, now, adoption(a.repo_dir, now))
+    reg_path = a.registry or os.environ.get("QUANT_AUDIT_REGISTRY")
+    reg_rows, reg_why = g.registry_rows(reg_path)
+    a.out.mkdir(parents=True, exist_ok=True)
+    cache_path = a.cache or (a.out / ".audit_backlog_cache.json")
+    try:
+        cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+    except (OSError, ValueError):
+        cache = {}
+    left = remaining()
+    try:
+        if left is not None and left < MIN_REMAINING:
+            raise RateLimited(f"only {left} core reads left this hour (< {MIN_REMAINING})")
+        rows = fetch(a.repo, cache, now)
+    except RateLimited as exc:
+        snap = {
+            "generated_utc": now.isoformat(),
+            "verdict": "UNMEASURED",
+            "why": [f"rate-limited: {exc}"[:240]],
+            "depth": None,
+        }
+    else:
+        items = [
+            item(
+                pr,
+                files,
+                combined(g.verdicts(comments), registry_verdicts(reg_rows, int(pr["number"]))),
+                pushed,
+                now,
+                money,
+                money_ok,
+                g.is_protected,
+            )
+            for pr, files, comments, pushed in rows
+        ]
+        snap = summarise(items, now, adoption(a.repo_dir, now))
+        snap["registry"] = {"rows": len(reg_rows), "unread": reg_why or None}
+        if reg_why:
+            snap["why"].append(f"registry unread: {reg_why}")
+            snap["verdict"] = "ALARM"
+        snap["reads_left_before"] = left
+        tmp = cache_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(cache), encoding="utf-8")
+        os.replace(tmp, cache_path)
 
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "AUDIT_BACKLOG.json").write_text(json.dumps(snap, indent=1) + "\n", encoding="utf-8")
     hist = {
-        k: snap[k]
+        k: snap.get(k)
         for k in (
             "generated_utc",
             "verdict",
@@ -357,8 +540,9 @@ def main(argv: list[str] | None = None) -> int:
             "held",
         )
     }
-    hist["stale_drafts"] = len(snap["stale_drafts"])
-    hist["cleared_unmerged"] = snap["cleared_unmerged"]
+    hist["stale_drafts"] = len(snap.get("stale_drafts") or [])
+    hist["conflicted"] = len(snap.get("conflicted") or [])
+    hist["cleared_unmerged"] = snap.get("cleared_unmerged")
     with (a.out / "AUDIT_BACKLOG_HISTORY.jsonl").open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(hist, sort_keys=True) + "\n")
 
@@ -366,13 +550,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(snap, indent=1))
     else:
         print(
-            f"AUDIT BACKLOG {snap['verdict']}: depth {snap['depth']} {snap['by_priority']}, "
-            f"oldest {snap['oldest_owed_h']} h, {snap['breaches']} breach(es)"
+            f"AUDIT BACKLOG {snap['verdict']}: depth {snap['depth']} {snap.get('by_priority')}, "
+            f"oldest {snap.get('oldest_owed_h')} h, {snap.get('breaches')} breach(es)"
             + (f" -- {'; '.join(snap['why'])}" if snap["why"] else "")
         )
-        for n in snap["next"]:
+        for n in snap.get("next") or []:
             print(f"  next: #{n['pr']} {n['priority']} {n['age_h']} h")
-    return 1 if a.strict and snap["verdict"] == "ALARM" else 0
+    return 1 if a.strict and snap["verdict"] != "OK" else 0
 
 
 if __name__ == "__main__":

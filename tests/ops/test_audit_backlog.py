@@ -122,3 +122,83 @@ def test_a_draft_idle_past_a_week_is_the_wip_caps_not_owed() -> None:
     assert ready["state"] == "OWED"  # a non-draft is owed whatever its age
     snap = ab.summarise([old, ready], NOW, {"measured": True, "uncovered": []})
     assert snap["depth"] == 1 and snap["stale_drafts"] == [1]
+
+
+def test_a_conflicted_head_is_its_authors_not_owed() -> None:
+    pr = {**_pr(), "mergeable_state": "dirty"}
+    it = ab.item(pr, ["libs/x.py"], [], NOW.isoformat(), NOW, MONEY, True, _never)
+    assert it["state"] == "CONFLICTED"
+    snap = ab.summarise([it], NOW, {"measured": True, "uncovered": []})
+    assert snap["depth"] == 0 and snap["conflicted"] == [1]
+
+
+# ------------------------------------------------ Auditor must-fixes on #1121 (f7ed63d7a)
+
+
+def test_mf1_a_registry_only_clear_at_the_head_reads_cleared() -> None:
+    reg = ab.registry_verdicts(
+        [{"pr": 1, "sha": HEAD, "verdict": "CLEAR", "at": "2026-11-13T19:00:00+00:00"}], 1
+    )
+    assert _item(["libs/x.py"], ab.combined([], reg))["state"] == "CLEARED"
+    assert ab.registry_verdicts([{"pr": 2, "sha": HEAD, "verdict": "CLEAR"}], 1) == []
+
+
+def test_mf1_the_newer_of_comment_and_registry_wins() -> None:
+    com = [_v("CLEAR", HEAD, "2026-11-13T10:00:00Z")]
+    reg = ab.registry_verdicts(
+        [{"pr": 1, "sha": HEAD, "verdict": "HOLD", "at": "2026-11-13T11:00:00+00:00"}], 1
+    )
+    assert _item(["a.py"], ab.combined(com, reg))["state"] == "HELD"
+    reg_old = ab.registry_verdicts(
+        [{"pr": 1, "sha": HEAD, "verdict": "HOLD", "at": "2026-11-13T09:00:00+00:00"}], 1
+    )
+    assert _item(["a.py"], ab.combined(com, reg_old))["state"] == "CLEARED"
+
+
+def test_mf2_an_adoption_error_publishes_the_type_only(tmp_path) -> None:
+    got = ab.adoption(tmp_path / "C:" / "secret" / "nowhere", NOW)
+    assert got["measured"] is False and "/" not in got["error"] and "\\" not in got["error"]
+
+
+def test_mf3_a_rate_limit_stops_every_reader(monkeypatch) -> None:
+    import subprocess
+
+    import pytest
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 1, "", "gh: You have exceeded a secondary rate limit. (HTTP 403)"
+        )
+
+    monkeypatch.setattr(ab.subprocess, "run", fake_run)
+    ab.RATE_LIMITED.clear()
+    try:
+        with pytest.raises(ab.RateLimited):
+            ab._gh("repos/x/y/pulls")
+        assert len(calls) == 1  # never retried into the limit
+        with pytest.raises(ab.RateLimited):
+            ab._gh("repos/x/y/pulls/2")
+        assert len(calls) == 1  # every later read stops before sending
+    finally:
+        ab.RATE_LIMITED.clear()
+    assert ab._rate_limited("HTTP 429") and not ab._rate_limited("HTTP 404: Not Found")
+
+
+def test_mf3_incremental_comments_replace_an_edited_copy_by_id() -> None:
+    have = {"7": [{"id": 1, "body": "AUDIT CLEAR x", "created_at": "a", "updated_at": "a"}]}
+    new = [
+        {
+            "id": 1,
+            "issue_url": "https://api.github.com/repos/o/r/issues/7",
+            "body": "edited",
+            "created_at": "a",
+            "updated_at": "b",
+            "author_association": "OWNER",
+            "user": {"login": "z"},
+        }
+    ]
+    got = ab.merge_comments(have, new)
+    assert len(got["7"]) == 1 and got["7"][0]["updated_at"] == "b"
