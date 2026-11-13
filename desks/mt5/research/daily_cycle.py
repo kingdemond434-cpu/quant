@@ -1453,7 +1453,24 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
     if lock is not None:
         new["chain_lock"] = lock.record()
     _atomic_write(STAMP, json.dumps(new, indent=2))
+    _mirror_stamp(new)
     return True
+
+
+#: A READ-ONLY COPY OF THE STAMP FOR THE BRANCH (2026-11-13). The stamp itself must never be
+#: shared between machines (.gitignore: a pulled stamp makes another box skip its day), so it is
+#: never published. This copy sits under reports/, is read by nothing that decides a run, and is
+#: what `sync_shadow_to_git.ps1` carries, so the day's chain is verifiable off the box.
+STAMP_REPORT = BASE / "reports" / "DAILY_CYCLE_STATE.json"
+
+
+def _mirror_stamp(doc: dict) -> None:
+    """Write the published copy. Never raises: the stamp above is the record, this is its view."""
+    try:
+        _atomic_write(STAMP_REPORT, json.dumps({**doc, "mirror_of": "data/daily_cycle_state.json"},
+                                               indent=2))
+    except OSError as exc:
+        dlog(f"stamp mirror NOT written ({type(exc).__name__}: {exc}); the stamp itself stands")
 
 
 #: How many quarantined `.corrupt-<ts>` stamps are kept (v1.3): enough evidence to diagnose a

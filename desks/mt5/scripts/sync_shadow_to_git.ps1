@@ -870,6 +870,27 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13). Built, scheduled and
+    # writing on the box, and absent from every branch, so no audit could read them:
+    #   weak_signal_compiler, TRIAL_ALLOCATION, admission_heavy_pass, pf_allocation (the
+    #   allocator's fractions), RESEARCH_PNL, PRODUCTIVITY_CENSUS, MATH_LAB, DISK_CENSUS, the
+    #   prop lanes' own reports (FTMO_ACCOUNT_STATE, E8_GOLD, E8_EXEC), every account against
+    #   every mechanism (ACCOUNT_PARITY), and the daily chain's stamp as its read-only mirror
+    #   (DAILY_CYCLE_STATE: the stamp itself is per-box and stays unpublished). Balances and
+    #   phases only; the login fence above refuses any file carrying a login.
+    "desks/mt5/reports/weak_signal_compiler.json",
+    "desks/mt5/reports/FTMO_ACCOUNT_STATE.json",
+    "desks/mt5/reports/E8_GOLD.json",
+    "desks/mt5/reports/E8_EXEC.json",
+    "desks/mt5/reports/TRIAL_ALLOCATION.json",
+    "desks/mt5/reports/DAILY_CYCLE_STATE.json",
+    "desks/mt5/reports/admission_heavy_pass.json",
+    "desks/mt5/reports/pf_allocation.json",
+    "desks/mt5/reports/RESEARCH_PNL.json",
+    "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
+    "desks/mt5/reports/MATH_LAB.json",
+    "desks/mt5/reports/DISK_CENSUS.json",
+    "desks/mt5/reports/ACCOUNT_PARITY.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
