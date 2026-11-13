@@ -48,6 +48,15 @@ SEED_QUERIES = [
 ]
 LINK_RE = re.compile(r"https?://[^\s)\"']+")
 
+#: zuck's requested channels (QuantGuild, Algovibes, ...) live in the transcript miner's config;
+#: the corpus follows every one of them too, so a blocked caption route never blinds discovery.
+CHANNEL_CONFIG = ROOT / "config" / "video_mining_channels.json"
+
+
+def configured_handles() -> list[str]:
+    cfg = read_json(CHANNEL_CONFIG, {})
+    return [str(c.get("handle", "")).lstrip("@") for c in cfg.get("channels", []) if c.get("handle")]
+
 
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
     if spent[0] + cost > UNIT_BUDGET:
@@ -115,8 +124,9 @@ def main() -> int:
         # guessed from the seed name with spaces stripped; a miss falls back to ONE budgeted
         # search only when the search quota works at all this run.
         search_dead = False
-        unresolved = [q for q in SEED_QUERIES if q not in reg["channels"]
-                      and q not in reg["discovered"]][:6]
+        seeds = configured_handles() + [q for q in SEED_QUERIES if q not in configured_handles()]
+        unresolved = [q for q in seeds if q not in reg["channels"]
+                      and q not in reg["discovered"]][:12]
         for q in unresolved:
             handle = "@" + re.sub(r"[^A-Za-z0-9]", "", q)
             try:
