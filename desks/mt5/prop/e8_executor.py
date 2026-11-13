@@ -1334,7 +1334,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                         # BOUNDED UNDER THE LOCK (audit round 4): a hung call raises
                         # LockedCallTimeout -> REJECTED below; it may still have landed.
                         row["order_id"] = _xa.bounded(
-                            lambda: venue.place(sym, side, lot, stop=float(g.stop),
+                            lambda sym=sym, side=side, lot=lot, g=g: venue.place(sym, side, lot, stop=float(g.stop),
                                                 take_profit=float(g.target)),
                             what=f"e8_executor:{sym} send", account="e8", symbol=sym)
                         row["status"] = "SENT"

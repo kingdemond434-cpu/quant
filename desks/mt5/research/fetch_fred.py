@@ -22,8 +22,13 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
-OUT.mkdir(parents=True, exist_ok=True)
+#: WRITE WHERE THE READER LOOKS (2026-10-06). This was `C:\Users\dell\mt5-research\data\lake`,
+#: the retired laptop's checkout, while `research/free_shadows.py` reads `fred_*.parquet` from the
+#: desk's own `data/lake`. Writer and reader never met, so the FRED half of the state lake was
+#: frozen at whatever the laptop last copied over -- and `data/states/free_states.parquet` ends
+#: 2026-08-14. `fetch_cot.py`, `fetch_cot_disagg.py` and `fetch_tff.py` had the same defect and
+#: were repointed at `config.DATA`; this one was missed. Same fix, same single source of truth.
+OUT = Path(__file__).resolve().parents[1] / "data" / "lake"
 
 SERIES = {
     "DGS2": "2y nominal yield",
@@ -69,23 +74,51 @@ def fetch(sid: str) -> pd.DataFrame:
     return df
 
 
-def main() -> None:
-    summary = {}
+class FredFetchFailed(RuntimeError):
+    """Every series failed (or came back empty): the pass fetched NOTHING."""
+
+
+def main() -> int:
+    """Fetch every series; record each outcome in `fred_fetch_state.json`.
+
+    A TOTAL FAILURE IS A FAILURE (audit of #222, 2026-10-07). This returned None whatever
+    happened, so a pass where FRED refused every request (a proxy 403, DNS down, the CSV endpoint
+    moved) was recorded `OK` by `state_lake_refresh` -- which then did not retry it for a day --
+    while the state file said only that each series had an `error`. An EMPTY frame is a failure
+    too: a 200 with no rows is not a series. So: every series failed -> the state file says
+    `status: FAILED` and this RAISES `FredFetchFailed` (the refresh driver records FAILED and
+    retries next pass); some failed -> `status: PARTIAL` with the failures named (a series the
+    state lake needs is refused downstream by `free_shadows`, by name); all fetched -> `OK`. A
+    failed series never overwrites the parquet already on disk."""
+    OUT.mkdir(parents=True, exist_ok=True)
+    summary: dict[str, dict] = {}
+    failed: list[str] = []
     for sid, note in SERIES.items():
         try:
             df = fetch(sid)
+            if df.empty:
+                raise ValueError("fetched 0 rows")
             df.to_parquet(OUT / f"fred_{sid}.parquet")
             summary[sid] = {"bars": len(df), "first": str(df.index.min()),
                             "last": str(df.index.max()), "note": note}
             print(f"{sid}: {len(df)} rows {df.index.min().date()} -> {df.index.max().date()}")
         except Exception as e:  # noqa: BLE001
             summary[sid] = {"error": repr(e)}
+            failed.append(sid)
             print(f"{sid}: FAILED {e!r}")
+    n_ok = len(SERIES) - len(failed)
+    status = "OK" if not failed else ("FAILED" if n_ok == 0 else "PARTIAL")
     (OUT / "fred_fetch_state.json").write_text(
         json.dumps({"fetched_at": datetime.now(timezone.utc).isoformat(),
+                    "status": status, "n_ok": n_ok, "n_failed": len(failed),
+                    "failed": failed,
                     "revision_policy": "current vintage only; ALFRED API key = point-in-time upgrade",
                     "series": summary}, indent=2), encoding="utf-8")
+    if status == "FAILED":
+        raise FredFetchFailed(f"all {len(SERIES)} FRED series failed or came back empty "
+                              f"(first: {summary[failed[0]]['error'][:200]})")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

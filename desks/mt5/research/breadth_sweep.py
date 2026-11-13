@@ -537,13 +537,25 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
 def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
     """Merge, deduped on the executable spec, at most `max_new` per run (the input order is
     most-intraday-first), so a daily clock cannot grow the docket without bound and one run
-    never hands the gauntlet a docket it has to load whole."""
-    from research.job_lock import exclusive_job
+    never hands the gauntlet a docket it has to load whole.
 
-    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
-        if not owned:
-            raise RuntimeError("Canonical docket writer lane or memory admission refused")
-        return _apply_locked(new, max_new)
+    A refused writer lane or memory admission DEFERS, it does not raise: the rows are retried
+    with backoff inside the pass and, failing that, persisted and merged first next pass
+    (`merge_hypotheses.merge_or_defer`). Returns (0, -1) when deferred."""
+    from research.merge_hypotheses import merge_or_defer
+
+    return merge_or_defer("breadth_sweep", list(new),
+                          lambda rows: _apply_locked(rows, max_new), _docket_key)
+
+
+def _drain_locked(rows: list[dict]) -> tuple[int, int]:
+    """Another writer holding the lane merges this writer's deferred rows: same per-run cap."""
+    return _apply_locked(rows, MAX_NEW_PER_RUN)
+
+
+def _docket_key(r: dict) -> str:
+    return json.dumps([r.get("symbol") or r.get("sym"), r.get("family"), r.get("params") or {}],
+                      sort_keys=True, default=str)
 
 
 def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
@@ -554,14 +566,10 @@ def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
     if not isinstance(docket, list):
         raise SystemExit(f"{DOCKET} is not a list; refusing to overwrite a docket I cannot read")
 
-    def key(r: dict) -> str:
-        return json.dumps([r.get("symbol") or r.get("sym"), r.get("family"), r.get("params") or {}],
-                          sort_keys=True, default=str)
-
-    seen = {key(r) for r in docket if isinstance(r, dict)}
+    seen = {_docket_key(r) for r in docket if isinstance(r, dict)}
     add = []
     for row in new:
-        ident = key(row)
+        ident = _docket_key(row)
         if ident not in seen and len(add) < max(0, int(max_new)):
             add.append(row)
             seen.add(ident)
@@ -620,6 +628,11 @@ def main(argv: list[str] | None = None) -> int:
         print("  --apply not given; nothing written to the docket")
         return 0
     added, total = apply(new)
+    if total < 0:
+        write_report(new, syms, None, None)
+        print("  docket lane refused after retries; this pass's cells are DEFERRED (not lost) "
+              "and merge first next pass")
+        return 0
     write_report(new, syms, added, total)
     print(f"  merged {added} new cell(s); docket now {total} row(s)")
     if not added:

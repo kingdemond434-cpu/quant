@@ -2075,7 +2075,7 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                 # check and placement lock as a first send. A fenced leg stays dropped, is not
                 # counted as an attempt, and is retried on a later pass while its window holds.
                 oid, xwhy = fenced_send(mt5, venue, doc, holder=f"e8_gold:{name}:retry",
-                                        side=side, send=lambda: venue.place_stop(
+                                        side=side, send=lambda side=side, leg=leg: venue.place_stop(
                                             SYMBOL, "buy" if side == "buy_stop" else "sell",
                                             float(leg["lot"]), price=float(leg["price"]),
                                             stop=float(leg["sl"]), take_profit=float(leg["tp"])))

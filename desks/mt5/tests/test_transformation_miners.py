@@ -171,7 +171,18 @@ def test_interaction_crosses_every_other_information_axis(ctx):
     got = {k["information"] for k in kids}
     assert "price_only" not in got
     assert got == set(TM.INFORMATION_AXES) - {"price_only"}
-    assert all(k["params"]["conditioner"] == k["information"] for k in kids)
+    sym = PARENT["symbol"].upper()
+    for k in kids:
+        want = (f"pit:{k['information']}:{sym}" if k["information"] in TM.PIT_AXES
+                else k["information"])
+        assert k["params"]["conditioner"] == want
+
+
+def test_the_per_symbol_axes_agree_with_the_modifier_that_applies_them():
+    from mt5desk import cell_modifiers as cm
+
+    assert TM.PIT_AXES == cm.PIT_AXES
+    assert TM.PIT_AXES <= set(TM.INFORMATION_AXES)
 
 
 def test_inverse_is_refused_where_the_mechanism_is_directional(ctx):

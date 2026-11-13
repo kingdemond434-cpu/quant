@@ -165,7 +165,7 @@ def test_the_input_appearing_turns_the_answer_present(uni, monkeypatch, row, lab
     (_row("EURGBP", "relative_value", {"peer_symbol": "AUDNZD", "timeframe": "M5"}), "gate 0"),
     ({**_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD"}),
       "mechanism_status": "STATISTICAL_ONLY"}, "gate 0"),
-    (_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD", "regime": "risk_on"}),
+    (_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD", "regime": "no_such_regime"}),
      "preflight conserves"),
 ])
 def test_what_the_probe_cannot_prove_is_unmeasured(uni, row, why) -> None:
