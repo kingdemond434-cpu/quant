@@ -1049,7 +1049,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/video_transcript_vault.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:halt_rail` | `hourly_cycle:halt_rail` | UNMEASURED UNMEASURED | `desks/mt5/reports/HALT_RAIL_INTEGRITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:index_discovery` | `hourly_cycle:index_discovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/INDEX_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-FTMO-Allocator` | `MT5-FTMO-Allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/FTMO_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:degree_day_revision_proposer` | `hourly_cycle:degree_day_revision_proposer` | UNMEASURED UNMEASURED | `desks/mt5/reports/DEGREE_DAY_REVISION_PROPOSER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 

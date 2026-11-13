@@ -518,6 +518,17 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
                  "desks/mt5/data/intelligence/style_premia/")),
+    # DEGREE-DAY REVISION (2026-11-11): NOAA CPC 7-day degree-day forecast revisions (the lake's
+    # PIT series) -> screened `degree_day_revision` cells on XNGUSD donated into the intake the
+    # compiler merges. Its report is the per-product reach and park state for a person.
+    # ITS LAKE READ (desks/mt5/data/lake/series/noaa_<product>.parquet) IS NOT DECLARED YET ON
+    # PURPOSE: its producer, research/noaa_forecast_vintage.py, is not on this branch, so the read
+    # would be a true DEAD_CONSUMER. The proposer parks every product by name until it lands; the
+    # producer's own node adds the lake path to both ends when it does.
+    Node("degree_day_revision_proposer", "desks/mt5/research/degree_day_revision_proposer.py",
+         reads=("desks/mt5/data/universe/",),
+         writes=("desks/mt5/reports/DEGREE_DAY_REVISION_PROPOSER.json",
+                 "desks/mt5/data/intelligence/degree_day_revision/")),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -935,6 +946,9 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
+    # The degree-day revision proposer's per-product reach and park state; its decision output
+    # is the donation under data/intelligence/degree_day_revision/, declared below.
+    "desks/mt5/reports/DEGREE_DAY_REVISION_PROPOSER.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
     # output is external_survivors.json, whose certificate consumer is declared above.
     "desks/mt5/data/hypotheses/merge_report.json",
@@ -1118,6 +1132,7 @@ EXTERNAL_READERS = {
     "desks/mt5/data/repo_cache/": "repo_miner (its own cache)",
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/style_premia/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/degree_day_revision/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/cross_asset_graph/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
