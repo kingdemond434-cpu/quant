@@ -285,6 +285,9 @@ CLOCKED_GATEWAY = TOY_GATEWAY.replace(
     '    flag = os.path.join(os.environ["MT5_DESK_ROOT"], "data", "GENERIC_EXEC_ENABLED")\n'
     "    seen = (datetime.now().isoformat(), _t.time(), _t.time() - os.stat(flag).st_mtime)\n",
 ).replace('"entry_ref": tick.ask}', '"entry_ref": tick.ask, "seen": repr(seen)}')
+CLOCKED_GATEWAY = CLOCKED_GATEWAY.replace(
+    '"price": plan["entry_ref"]})', '"price": plan["entry_ref"], "seen": plan["seen"]})'
+)
 
 
 def test_the_gateway_anchor_never_reads_the_wall_clock(tmp_path: Path, monkeypatch: Any) -> None:
