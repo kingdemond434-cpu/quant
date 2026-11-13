@@ -43,8 +43,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import MetaTrader5 as mt5
 import pandas as pd
 from mt5desk import account_profile as _acct
-from mt5desk import order_door as _door
 from mt5desk import decision_core as _core
+from mt5desk import order_door as _door
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
 from mt5desk.config import desk_root, gateway_paused, terminal_path
@@ -106,6 +106,7 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 #: (`close_retired_positions` reads and drains it).
 RETIRED_CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LOG = BASE / "logs" / "gateway.log"
 #: The pause flag `gateway_paused()` reads. Named here so the desk can set the
@@ -142,6 +143,12 @@ mt5 = _door.guard(mt5, caller="gateway", log=lambda m: log(m))
 #: built -- the comment is also the tag that matches a sleeve to its open positions, and a
 #: truncation that differs between the send path and the match path would orphan positions.
 COMMENT_MAX = 29
+#: Hex characters of the name's sha1 a long name's tag carries (`order_comment`). Derived from
+#: the collision bound: tags can only collide inside one group of names sharing a 20-character
+#: prefix, the largest group measured 2026-10-13 is 39 names (86 groups over 901 standing rows),
+#: and 6 hex = 16^6 = 16,777,216 values gives a birthday probability of 39*38/2 / 16.7M = 4.4e-5
+#: for that group -- and 29 = "DW" + 20 + 1 + 6 is the venue's measured comment bound.
+TAG_HASH = 6
 
 
 def order_comment(name: str) -> str:
@@ -152,7 +159,99 @@ def order_comment(name: str) -> str:
     truncated differently the desk would open a position it could never afterwards recognise as
     its own -- and would then re-open it on the next pass, forever.
     """
+    tag = f"DW{name}"
+    if len(tag) <= COMMENT_MAX:
+        return tag
+    # A UNIQUE TAG FOR A LONG NAME (2026-10-13). Plain truncation kept "DW" + the first 27
+    # characters, and every sibling of one family cell on one symbol shares those 27: measured
+    # that day, four groups of roster rows (up to nine names each) carried ONE tag, so a TTL or
+    # retired-close for one sleeve would close its sibling's position, and the 731 certified rows
+    # the policy-lifted restore returns to STANDBY would put more such groups in front of the
+    # allocator. The long form keeps a readable 20-character prefix and adds 6 hex of the name's
+    # sha1: "DW" + 20 + "~" + 6 = 29, the terminal's bound.
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:TAG_HASH]
+    # "_" and not "~": an underscore is in every tag the terminal has accepted since 2026-09 (the
+    # names are snake_case), while no tag containing "~" has ever been measured going through
+    # `order_send` (audit 2026-10-13). A comment the terminal refuses is an order never sent.
+    return f"DW{name[:COMMENT_MAX - 3 - TAG_HASH]}_{digest}"
+
+
+def legacy_order_comment(name: str) -> str:
+    """The tag positions opened before 2026-10-13 carry: plain truncation at COMMENT_MAX."""
     return f"DW{name}"[:COMMENT_MAX]
+
+
+#: How many roster names carry each LEGACY tag, refreshed from the roster on every pass by
+#: `note_roster_tags`. A legacy tag is accepted as a sleeve's own only when no other roster name
+#: carries it; a shared legacy tag cannot say whose position it is, so it is never acted on as
+#: anyone's (an empty map, before the first pass, accepts every legacy tag as before).
+_ROSTER_LEGACY: dict[str, int] = {}
+
+
+def note_roster_tags(sleeves: list[dict[str, object]]) -> None:
+    _ROSTER_LEGACY.clear()
+    for s in sleeves:
+        n = str(s.get("name") or "")
+        if n:
+            t = legacy_order_comment(n)
+            _ROSTER_LEGACY[t] = _ROSTER_LEGACY.get(t, 0) + 1
+
+
+def position_tags(name: str, *, in_roster: bool = True) -> frozenset[str]:
+    """Every comment that marks a position as `name`'s: its tag, and its legacy tag while that
+    is unambiguous (held by `name` alone in the roster, or by nobody when `name` has left it)."""
+    tag, legacy = order_comment(name), legacy_order_comment(name)
+    if legacy == tag:
+        return frozenset({tag})
+    others = _ROSTER_LEGACY.get(legacy, 0) - (1 if in_roster and _ROSTER_LEGACY else 0)
+    return frozenset({tag, legacy}) if others <= 0 else frozenset({tag})
+
+
+#: Position ticket -> the FULL name of the sleeve whose intent opened it, read from
+#: data/order_intents.jsonl by `note_ticket_owners` on every pass. A legacy tag several roster
+#: names share says nothing about whose position it is (86 such groups on 2026-10-13, the
+#: largest 39 names); the intent that sent the order does, exactly, by the venue's own ticket.
+_TICKET_OWNER: dict[int, str] = {}
+
+
+def note_ticket_owners(path: Path | None = None) -> None:
+    """Refresh `_TICKET_OWNER` from the intent journal. Never raises: an unreadable journal
+    leaves the map empty, and an ambiguous legacy tag then stays nobody's, as before."""
+    _TICKET_OWNER.clear()
+    try:
+        lines = (path or INTENTS).read_text(encoding="utf-8").splitlines()
+    except (OSError, NameError):
+        return
+    for line in lines:
+        try:
+            r = json.loads(line)
+            ticket = int(r.get("ticket") or 0)
+        except (ValueError, TypeError, AttributeError):
+            continue
+        if ticket and r.get("sleeve"):
+            _TICKET_OWNER[ticket] = str(r["sleeve"])
+
+
+def tag_owner(comment: str, ticket: object, by_tag: dict[str, str]) -> str | None:
+    """The sleeve a position or deal belongs to: the name its unique tag maps to in `by_tag`,
+    else the sleeve whose intent opened this ticket -- when the comment is that sleeve's own tag
+    or legacy tag, so a ticket can never hand a position to a sleeve whose tag it does not wear."""
+    name = by_tag.get(comment)
+    if name:
+        return name
+    try:
+        owner = _TICKET_OWNER.get(int(ticket or 0))  # type: ignore[call-overload]
+    except (TypeError, ValueError):
+        return None
+    if owner and comment in (order_comment(owner), legacy_order_comment(owner)):
+        return owner
+    return None
+
+
+def owns(comment: str, ticket: object, name: str, *, in_roster: bool = True) -> bool:
+    """Whether the position or deal with this comment and ticket is `name`'s."""
+    return comment in position_tags(name, in_roster=in_roster) \
+        or tag_owner(comment, ticket, {}) == name
 
 #: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
 #: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
@@ -213,6 +312,12 @@ from mt5desk.decision_core import (
     ABSOLUTE_SIM_MAX as ABSOLUTE_SIM_MAX,
 )
 from mt5desk.decision_core import (
+    ALLOCATOR_SOVEREIGN as ALLOCATOR_SOVEREIGN,
+)
+from mt5desk.decision_core import (
+    ALLOCATOR_SOVEREIGN_FILE as ALLOCATOR_SOVEREIGN_FILE,
+)
+from mt5desk.decision_core import (
     CONTRACT_OZ as CONTRACT_OZ,
 )
 from mt5desk.decision_core import (
@@ -257,10 +362,13 @@ from mt5desk.decision_core import (
     allocator_order as allocator_order,
 )
 from mt5desk.decision_core import (
-    bracket_spec as bracket_spec,
+    allocator_sovereign as allocator_sovereign,
 )
 from mt5desk.decision_core import (
     book_direction as book_direction,
+)
+from mt5desk.decision_core import (
+    bracket_spec as bracket_spec,
 )
 from mt5desk.decision_core import (
     day_range as day_range,
@@ -272,19 +380,10 @@ from mt5desk.decision_core import (
     gold_book_lot as gold_book_lot,
 )
 from mt5desk.decision_core import (
-    ALLOCATOR_SOVEREIGN as ALLOCATOR_SOVEREIGN,
-)
-from mt5desk.decision_core import (
-    ALLOCATOR_SOVEREIGN_FILE as ALLOCATOR_SOVEREIGN_FILE,
-)
-from mt5desk.decision_core import (
-    allocator_sovereign as allocator_sovereign,
+    heat_budget as heat_budget,
 )
 from mt5desk.decision_core import (
     implementable_lot as implementable_lot,
-)
-from mt5desk.decision_core import (
-    heat_budget as heat_budget,
 )
 from mt5desk.decision_core import (
     live_heat_ceiling as live_heat_ceiling,
@@ -2219,8 +2318,9 @@ def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
     """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
     close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
     `run_scalp_sleeves`), so the tag is the lane."""
-    return frozenset(order_comment(s["name"]) for s in sleeves
-                     if s.get("exec") == "scalp_market" and s.get("name"))
+    return frozenset(t for s in sleeves
+                     if s.get("exec") == "scalp_market" and s.get("name")
+                     for t in (order_comment(s["name"]), legacy_order_comment(s["name"])))
 
 
 def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
@@ -2228,8 +2328,9 @@ def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
     end-of-day close must leave alone. Same tag, same reason as `scalp_position_tags`: a family
     sleeve's exit is its certified `ttl_bars`, run by the TTL housekeeping in
     `run_family_sleeves`, never the 19:30 UTC backstop."""
-    return frozenset(order_comment(s["name"]) for s in sleeves
-                     if s.get("exec") == "family_market" and s.get("name"))
+    return frozenset(t for s in sleeves
+                     if s.get("exec") == "family_market" and s.get("name")
+                     for t in (order_comment(s["name"]), legacy_order_comment(s["name"])))
 
 
 def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset()) -> None:
@@ -2354,8 +2455,9 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     unchanged level. Nothing is cached that could disagree with the account, which is what makes
     this idempotent and acknowledgement-driven rather than merely hopeful.
     """
-    _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
-                   for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
+    _fixed_tags = {t: str(s["name"]) for s in sleeves
+                   if s.get("exec") == "family_market" and s.get("name")
+                   for t in position_tags(str(s["name"]))}
     # A REFUSED SLEEVE KEEPS ITS CERTIFIED EXITS (2026-10-13). The live policy drops a
     # quarantined row from the roster (no new entries), but its open position was opened under
     # the family lane's fixed bracket. Keyed by the roster alone, it lost both: on a symbol
@@ -2364,9 +2466,17 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     # the family lane has state for is a family_market sleeve by construction, so it keeps its
     # fixed-bracket treatment, and the symbols its open positions sit on are managed.
     for _gname in st.get("generic") or {}:
-        _fixed_tags.setdefault(order_comment(str(_gname)), str(_gname))
-    _exit_only_syms = {str(p.symbol) for p in (mt5.positions_get() or [])
-                       if str(getattr(p, "comment", "") or "") in _fixed_tags}
+        for _t in position_tags(str(_gname), in_roster=False):
+            _fixed_tags.setdefault(_t, str(_gname))
+    _fixed_names = set(_fixed_tags.values())
+
+    def _is_fixed(p: object) -> bool:
+        # The same ownership read the bracket check below uses (`tag_owner`), so a position under
+        # an ambiguous legacy tag is resolved by its ticket's intent here too.
+        return tag_owner(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None),
+                         _fixed_tags) in _fixed_names
+
+    _exit_only_syms = {str(p.symbol) for p in (mt5.positions_get() or []) if _is_fixed(p)}
     _roster_syms = {s["symbol"] for s in sleeves} | {"XAUUSD"}
     symbols = list(_roster_syms | _exit_only_syms)
     for symbol in symbols:
@@ -2374,8 +2484,7 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
         if symbol not in _roster_syms:
             # A symbol managed only for a refused sleeve's exits: its tagged positions, never an
             # untagged or manual position that happens to sit on it.
-            positions = [p for p in positions
-                         if str(getattr(p, "comment", "") or "") in _fixed_tags]
+            positions = [p for p in positions if _is_fixed(p)]
         if not positions:
             continue
         info = mt5.symbol_info(symbol)
@@ -2401,7 +2510,12 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             # the floor alone, which cannot tighten inside the bracket and can only refuse to
             # leave a stop under water after the trade has already run 0.85R.
             _floor_only = False
-            _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
+            # An ambiguous legacy tag is resolved by the ticket's own intent (`tag_owner`): a
+            # family position under a tag its siblings share was trailed like a gold position.
+            _fam_name = tag_owner(str(getattr(p, "comment", "") or ""),
+                                  getattr(p, "ticket", None), _fixed_tags)
+            if _fam_name not in _fixed_names:
+                _fam_name = None
             if _fam_name is not None:
                 _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
                                .get("trail_k") or 0.0)
@@ -2633,6 +2747,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     """
     if not st["armed"]:
         return
+    _tag_names = {t: str(s["name"]) for s in sleeves if s.get("name")
+                  for t in position_tags(str(s["name"]))}
 
     # ALREADY-RECORDED DEALS, so the window below can be widened without duplicating rows.
     # The ledger is append-only JSONL and `deal` is the venue's own ticket, unique per fill.
@@ -2730,6 +2846,14 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # name is taken from the comment when it is there and marked unattributed when it is not,
         # which is a recoverable gap, unlike never recording the fill at all.
         sleeve = sleeve_from_comment(comment, "UNATTRIBUTED")
+        # THE LEDGER KEEPS THE FULL NAME (2026-10-13). A long name's tag is now unique but
+        # unreadable ("<20 chars>_<hash>"), so the tag is resolved to the sleeve -- through the
+        # roster, else through the ticket's own intent, which also covers a retired or demoted
+        # sleeve -- and the FULL name is written: the readers join on `name` or `name[:27]`
+        # (`hazard_engine`, `decay_monitor`), and the full name satisfies both.
+        sleeve_full = tag_owner(comment, getattr(d, "position_id", None), _tag_names)
+        if sleeve_full:
+            sleeve = sleeve_full
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
@@ -2753,7 +2877,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                                                                 0.0) or 0.0),
                                        tick_size=float(getattr(sym_info, "trade_tick_size",
                                                                0.0) or 0.0))
-        rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
+        rec = {"time": now(), "sleeve": sleeve, "sleeve_full": sleeve_full, "symbol": d.symbol,
                # Preserve the legacy close-deal side, but expose the actual position side
                # separately: a closing BUY belongs to a SHORT position.
                "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
@@ -3126,7 +3250,7 @@ def _record_closed_market_book(deal, ctx: dict, sleeves: list[dict]) -> None:
         return
     candidates = [s for s in sleeves if s.get("exec") in ("family_market", "scalp_market")
                   and s.get("symbol") == symbol
-                  and order_comment(s["name"]) == str(ctx.get("comment") or "")]
+                  and owns(str(ctx.get("comment") or ""), pid, s["name"])]
     if len(candidates) != 1 or not ctx.get("entry_cost_measured"):
         return
     volume = float(ctx.get("entry_volume") or 0.0)
@@ -3811,7 +3935,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         _deals = mt5.history_deals_get(_from_s, _from_s + _bar_min * 60) or []
     except Exception:
         _deals = []                                  # UNMEASURED: the state mark still stands
-    _traded = bar_already_traded(_deals, order_comment(name))
+    _traded = next((t for t in (bar_already_traded(_deals, tag)
+                                for tag in sorted(position_tags(name))) if t is not None), None)
     if _traded is not None:
         return {"ok": False, "stage": "bar_traded", "considered": True, "sep": " ",
                 "mark": True, "last_bar": last_bar,
@@ -4270,11 +4395,12 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             srec.pop("open_ttl_until", None)
 
 
-def _sleeve_positions(symbol: str, name: str) -> list:
-    """Open positions this sleeve owns: the order comment is the sleeve's tag."""
-    tag = order_comment(name)
+def _sleeve_positions(symbol: str, name: str, *, in_roster: bool = True) -> list:
+    """Open positions this sleeve owns: the order comment is the sleeve's tag. An OFF-roster
+    name passes in_roster=False, so a legacy tag a roster sleeve still carries is never its."""
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
-            if str(getattr(p, "comment", "") or "") == tag]
+            if owns(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None), name,
+                    in_roster=in_roster)]
 
 
 def close_retired_positions(st: dict) -> None:
@@ -4297,9 +4423,11 @@ def close_retired_positions(st: dict) -> None:
         return
     remaining: list[str] = []
     for name in names:
-        tag = order_comment(name)
+        # A retired name's legacy tag is read only when no roster sleeve still carries it: a
+        # shared 27-character stem is how a retired sibling's close could take a LIVE position.
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if owns(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None), name,
+                        in_roster=False)]
         if not held:
             log(f"[{name}] RETIRED: no open position under its tag; dropped from the close queue")
             continue
@@ -4342,9 +4470,10 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
     every other close here; the roster's own sleeves are left to their own loop.
     """
     on_roster = {str(s.get("name") or "") for s in sleeves}
-    # order_comment cuts a tag to COMMENT_MAX, so an off-roster name can share its tag with a
-    # LIVE row (the *_principal_20261007 gap-decay rows did). Closing by that tag would take the
-    # live sleeve's position on the retired name's deadline: a shared tag is never closed here.
+    # A plain-truncated tag could be shared by an off-roster name and a LIVE row (the
+    # *_principal_20261007 gap-decay rows were). Closing by that tag would take the live
+    # sleeve's position on the retired name's deadline: a shared tag is never closed here. Tags
+    # are unique now, so this guards a hash collision; legacy tags are judged by `owns` below.
     roster_tags = {order_comment(n) for n in on_roster if n}
     gstate = st.get("generic") or {}
     now_iso = datetime.now(tz=UTC).isoformat()
@@ -4358,19 +4487,23 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
             srec.pop("open_ttl_until", None)
             continue
+        # Ownership, not one tag: since tags became unique (2026-10-13) a position this name
+        # opened earlier wears its LEGACY tag, which is read only while no roster sleeve carries
+        # it (in_roster=False) -- else by the ticket's own intent -- exactly as the retired close.
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if owns(str(getattr(p, "comment", "") or ""), getattr(p, "ticket", None),
+                        str(name), in_roster=False)]
         for symbol in sorted({str(p.symbol) for p in held}):
             _book_target(str(name), symbol, 0.0, "ttl")
             if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
                 log(f"[{name}] OFF-ROSTER TTL: closing its {symbol} position(s)")
-                close_sleeve_positions(st, symbol, str(name))
+                close_sleeve_positions(st, symbol, str(name), in_roster=False)
             else:
                 log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
         srec.pop("open_ttl_until", None)
 
 
-def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
+def close_sleeve_positions(st: dict, symbol: str, name: str, *, in_roster: bool = True) -> None:
     """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
 
     `close_positions` closes every position on the symbol, which on XAUUSD would take the armed
@@ -4379,7 +4512,7 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
     if not st.get("armed"):
         log(f"[{name}] SHADOW would close its open position(s)")
         return
-    for p in _sleeve_positions(symbol, name):
+    for p in _sleeve_positions(symbol, name, in_roster=in_roster):
         tick = mt5.symbol_info_tick(symbol)
         if tick is None:
             continue
@@ -5013,6 +5146,8 @@ def main() -> None:
         for _s in sleeves:
             _s.pop("minlot_override", None)
         log(f"MINLOT_OVERRIDE off this pass ({type(exc).__name__}: {exc})")
+    note_roster_tags(sleeves)
+    note_ticket_owners()
 
     # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
     # restart: before management and before anything new is placed, the venue's own book under

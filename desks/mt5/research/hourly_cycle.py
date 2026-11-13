@@ -1157,6 +1157,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
+    # EVERY LIVE SLEEVE TRADABLE ON FUSION AND E8, EVERY ORDER TRACEABLE (principal 2026-10-13):
+    # small file reads, every hour, so a newly promoted sleeve that cannot trade fails loudly.
+    "live_tradability",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1497,7 +1500,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
-                     "research_live_identity", "cro_noon_freshness",
+                     "research_live_identity", "live_tradability", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2360,6 +2363,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
+    "live_tradability": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -5206,6 +5210,10 @@ def main() -> None:
         "desk_self_heal", "research/run_desk_self_heal.py", "--apply"))
     # DOCTRINE -> RUNTIME ACCEPTANCE. The static fence proves the ledger tells no repository lie;
     # this host proof makes every LIVE row show CURRENT, STALE or MISSING each core pass.
+    # EVERY LIVE SLEEVE CAN PLACE ON BOTH VENUES AND EVERY ORDER WALKS BACK TO ITS DECISION
+    # (principal 2026-10-13: "all sleeves n all future must too"). Reads only; exit 1 is the alarm.
+    ltr = _costed("live_tradability", lambda: _producer(
+        "live_tradability", "scripts/check_live_tradability.py"))
     t5a = _costed("tier5_acceptance", lambda: _producer(
         "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
         "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
@@ -6527,6 +6535,7 @@ def main() -> None:
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "live_tradability": ltr,
                     "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,
