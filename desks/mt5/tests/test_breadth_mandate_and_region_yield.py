@@ -507,3 +507,19 @@ def test_the_judge_lifts_forced_families_and_demotes_none(monkeypatch):
         base["jump"]["ev_per_cell"] * (1.0 + jc.EMPTY_CLUSTER_LIFT))
     assert lifted["trend_ma_cross"]["ev_per_cell"] == pytest.approx(
         base["trend_ma_cross"]["ev_per_cell"])
+
+
+def test_an_unreadable_ledger_publishes_its_type_never_its_path(tmp_path, monkeypatch):
+    """Audit HOLD on #1038: an OSError's text carries the box path into REGION_YIELD.json."""
+    from research import region_yield as ry
+    p = tmp_path / "secret_dir" / "ledger.jsonl"
+    p.parent.mkdir()
+    p.write_text('{"region": "asia"}\n', encoding="utf-8")
+
+    def _boom(self, *a, **k):
+        raise PermissionError(13, "Permission denied", str(self))
+    monkeypatch.setattr(Path, "open", _boom)
+    counts, basis = ry._count_jsonl(p)
+    assert counts is None
+    assert basis == "ledger.jsonl unreadable: PermissionError"
+    assert str(tmp_path) not in basis and "secret_dir" not in basis

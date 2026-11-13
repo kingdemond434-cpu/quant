@@ -104,7 +104,7 @@ def _count_jsonl(p: Path, key: str = "region") -> tuple[Counter[str] | None, str
                         out[_region(row.get(key))] += 1
                         lines += 1
     except OSError as exc:
-        return None, f"{p.name} unreadable: {exc}"
+        return None, f"{p.name} unreadable: {type(exc).__name__}"
     basis = f"{lines} line(s) of {p.name}" + (" (last 512 MB only)" if partial else "")
     return out, basis
 
