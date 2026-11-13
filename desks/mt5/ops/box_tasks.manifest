@@ -338,3 +338,6 @@ TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scrip
 # Clear-access channels only (QUANT_MINERS_ALLOW in the runner): official APIs, open data and
 # local computation. Scrapers and youtube are SET_ASIDE by name; the box never contacts YouTube.
 TASK name="Quant-SideChannelMiners" trigger="every 2 hours at :45" runs="ops/run_side_channel_miners.cmd" installer="scripts/install_side_channel_miners_task.ps1" lane="research" also_runs="desks/mt5/side_channels/run_all_miners.py"
+
+# Desk log rotation (ops/rotate_logs.py): whole-file gzip archive, verified, never discards (2026-11-13).
+TASK name="MT5-RotateLogs" trigger="daily 03:40" runs="ops/rotate_logs.py" installer="desks/mt5/scripts/install_rotate_logs_task.ps1" lane="ops"
