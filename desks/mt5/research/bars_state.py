@@ -102,6 +102,25 @@ FUTURE_SKEW = timedelta(minutes=10)
 BROKER_MAX_LEAD = timedelta(hours=3)
 #: A summary verdict reads MEASURED only when at least this share of its rows measured.
 MEASURED_SHARE = 0.8
+#: ROTATION AND CARRY (row 74, 2026-11-03). On the trading box one 20 s pass read 251 of 1,722 bar
+#: footers (14.6%) and the tape got nothing, so every pass measured the SAME alphabetical head and
+#: 79 of 86 FX symbols never had a freshness check at all. Each pass now reads the files checked
+#: LONGEST AGO first and carries every other file's last reading forward, so the whole universe is
+#: read within ceil(files / files-per-pass) passes (about ten, at the box's measured rate). A
+#: carried reading older than CARRY_MAX_H is UNMEASURED -- an unread file never stays "fresh".
+CARRY_MAX_H = 24.0
+#: The bars loop may spend this share of the budget; the tape gets the rest, so neither starves.
+BARS_BUDGET_SHARE = 0.7
+#: THE FX FENCE: every FX symbol owes a file on each of these, fresh, every pass.
+FX_TIMEFRAMES = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+#: Open-market staleness bound per timeframe, hours from the newest bar's OPEN stamp (true UTC).
+#: Measured 2026-11-03 15:16Z on the box: FX H1 2.3h, H4 5.3h, M15 1.0h, M1 0.8h, D1 41.3h (the
+#: D1 file holds the last CLOSED day, so 48h is normal mid-week). Each bound is that shape plus
+#: room for one missed writer pass.
+FX_STALE_H: dict[str, float] = {"M1": 6.0, "M5": 6.0, "M15": 6.0, "M30": 7.0, "H1": 8.0,
+                                "H4": 12.0, "D1": 54.0}
+#: Added to the bound when a Saturday lies between the newest bar and now (the FX weekend).
+FX_WEEKEND_H = 50.0
 #: A run of this many digits or more, anywhere in a name, key or string, is treated as an account
 #: number and redacted.
 ACCOUNT_LIKE_DIGITS = 5
@@ -115,7 +134,10 @@ _MEASUREMENT_KEYS = frozenset({
     "bars_measured_share", "newest_bar_age_h", "newest_bar_file_mtime_age_h", "tape_symbols",
     "tape_symbols_measured", "tape_measured_share", "newest_tick_age_h",
     "newest_tick_file_mtime_age_h", "newest_tape_run_age_h", "measured_share_threshold",
-    "redacted_names", "peak_rss_mb"})
+    "redacted_names", "peak_rss_mb", "check_age_h", "carry_max_h", "bar_files_read_this_pass",
+    "bar_files_carried", "oldest_bar_check_age_h", "tape_symbols_read_this_pass",
+    "tape_symbols_carried", "fx_symbols", "fx_cells", "fx_fresh", "fx_stale", "fx_missing",
+    "fx_unmeasured", "stale_limit_h"})
 _LOGIN_TOKENS = ("login", "acct", "account", "passw", "secret", "token", "apikey")
 
 
@@ -441,17 +463,171 @@ def _tape_row(sym: str, entry: Any, ticks: Path, now: datetime) -> dict[str, Any
     return row
 
 
+def _checked_at(row: Any) -> datetime | None:
+    if not isinstance(row, dict):
+        return None
+    return _utc_iso_or_none(row.get("checked_at"))
+
+
+def _prior_rows(prior: Any) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """(bar file name -> row, tape symbol -> row) from the previous report; empty when absent."""
+    if not isinstance(prior, dict):
+        return {}, {}
+    bars = {str(r["file"]): r for r in (prior.get("bars") or [])
+            if isinstance(r, dict) and r.get("file") and r.get("file") != REDACTED}
+    tape = {str(r["symbol"]): r for r in (prior.get("tape") or [])
+            if isinstance(r, dict) and r.get("symbol") and r.get("symbol") != REDACTED}
+    return bars, tape
+
+
+def read_prior(path: Path = OUT) -> dict[str, Any] | None:
+    """The last report this organ wrote, the carry's only input. None when unreadable."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def _carry_bar(prev: Any, path: Path, sym: str, tf: str, now: datetime) -> dict[str, Any]:
+    """A file this pass did not read: its last reading, or UNMEASURED when there is none in
+    CARRY_MAX_H. An UNCHANGED file (same mtime as at its check) still holds the same newest bar,
+    so its age is recomputed against now and a dead feed ages into STALE between reads; a file
+    rewritten since its check keeps the age it had when read, flagged, until its turn comes."""
+    base = {"symbol": sym, "timeframe": tf, "file": path.name, "time_clock": "broker"}
+    checked = _checked_at(prev)
+    if checked is None:
+        return {**base, "status": "UNMEASURED", "reason": "time budget exhausted",
+                "carry": "never read; queued first next pass"}
+    check_age = _age_h(now, checked)
+    if check_age is None or check_age > CARRY_MAX_H:
+        return {**base, "status": "UNMEASURED", "reason": "time budget exhausted",
+                "checked_at": _iso(checked), "check_age_h": check_age,
+                "carry": f"last read {check_age}h ago, beyond the {CARRY_MAX_H:g}h carry bound"}
+    row = {**prev, "carried": True, "checked_at": _iso(checked), "check_age_h": check_age}
+    mt = _mtime(path)
+    row["mtime_age_h"] = _age_h(now, mt)
+    if prev.get("status") == "MEASURED":
+        if _iso(mt) == prev.get("file_mtime"):
+            utc = _utc_iso_or_none(prev.get("last_bar_time_utc"))
+            if utc is not None:
+                row["age_h"] = _age_h(now, utc)
+        else:
+            row["changed_since_check"] = True
+    return row
+
+
+def _carry_tape(prev: Any, sym: str, now: datetime) -> dict[str, Any]:
+    """A tape symbol this pass did not read: its last reading within CARRY_MAX_H, ages from now."""
+    checked = _checked_at(prev)
+    check_age = _age_h(now, checked) if checked else None
+    if checked is None or check_age is None or check_age > CARRY_MAX_H:
+        return {"symbol": sym, "status": "UNMEASURED", "reason": "time budget exhausted",
+                "carry": ("never read; queued first next pass" if checked is None else
+                          f"last read {check_age}h ago, beyond the {CARRY_MAX_H:g}h carry bound")}
+    row = {**prev, "carried": True, "checked_at": _iso(checked), "check_age_h": check_age}
+    utc = _utc_iso_or_none(prev.get("last_tick_utc"))
+    if utc is not None:
+        row["age_h"] = _age_h(now, utc)
+    return row
+
+
+def _fx_classifier() -> Callable[[str], bool] | None:
+    """FX by ASSET CLASS from MetaTrader's registry (universe_policy), never a symbol list."""
+    try:
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from research.universe_policy import asset_class_of
+    except Exception:
+        return None
+
+    def is_fx(sym: str) -> bool:
+        klass = str(asset_class_of(sym) or "").lower()
+        return klass.startswith("fx") or "forex" in klass
+    return is_fx
+
+
+def _weekend_between(lo: datetime, hi: datetime) -> bool:
+    d = lo.date()
+    while d <= hi.date():
+        if d.weekday() == 5:
+            return True
+        d += timedelta(days=1)
+    return False
+
+
+def fx_freshness(bars: list[dict[str, Any]], now: datetime, *,
+                 classify: Callable[[str], bool] | None = None) -> dict[str, Any]:
+    """THE FX FENCE: every FX symbol x FX_TIMEFRAMES cell is FRESH, STALE, MISSING or UNMEASURED.
+
+    RED when any cell is not FRESH -- a missing timeframe, a stale newest bar, or a file nobody
+    read within the carry bound. UNMEASURED (never GREEN) when the asset classes cannot be read
+    or no FX symbol is classified: zero FX cells judged is not a clean feed."""
+    is_fx = classify if classify is not None else _fx_classifier()
+    if is_fx is None:
+        return {"verdict": "UNMEASURED", "why": "asset-class registry unavailable"}
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    fx_syms: set[str] = set()
+    for r in bars:
+        sym, tf = str(r.get("symbol") or ""), str(r.get("timeframe") or "")
+        if not sym or sym == REDACTED:
+            continue
+        try:
+            fx = bool(is_fx(sym))
+        except Exception:
+            fx = False
+        if fx:
+            fx_syms.add(sym)
+            rows[(sym, tf)] = r
+    if not fx_syms:
+        return {"verdict": "UNMEASURED", "why": "no FX symbol classified among the bar files"}
+    counts = {"FRESH": 0, "STALE": 0, "MISSING": 0, "UNMEASURED": 0}
+    offenders: list[dict[str, Any]] = []
+    for sym in sorted(fx_syms):
+        for tf in FX_TIMEFRAMES:
+            r = rows.get((sym, tf))
+            cell: dict[str, Any] = {"symbol": sym, "timeframe": tf}
+            if r is None:
+                state, cell["why"] = "MISSING", "no bar file for this timeframe"
+            elif r.get("status") != "MEASURED" or not isinstance(r.get("age_h"), (int, float)):
+                state = "UNMEASURED"
+                cell["why"] = str(r.get("reason") or r.get("age_reason") or "no true-UTC age")
+            else:
+                last = _utc_iso_or_none(r.get("last_bar_time_utc"))
+                limit = FX_STALE_H[tf] + (FX_WEEKEND_H if last and _weekend_between(last, now)
+                                          else 0.0)
+                cell.update(age_h=r["age_h"], stale_limit_h=limit,
+                            check_age_h=r.get("check_age_h"))
+                state = "STALE" if r["age_h"] > limit else "FRESH"
+            counts[state] += 1
+            if state != "FRESH":
+                offenders.append({**cell, "state": state})
+    bad = counts["STALE"] + counts["MISSING"] + counts["UNMEASURED"]
+    return {
+        "verdict": "RED" if bad else "GREEN",
+        "fx_symbols": len(fx_syms), "fx_cells": sum(counts.values()),
+        "fx_fresh": counts["FRESH"], "fx_stale": counts["STALE"],
+        "fx_missing": counts["MISSING"], "fx_unmeasured": counts["UNMEASURED"],
+        "timeframes": list(FX_TIMEFRAMES), "carry_max_h": CARRY_MAX_H,
+        "offenders": offenders[:200],
+    }
+
+
 def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path = TAPE_STATE,
             budget_s: float = DEFAULT_BUDGET_S,
             clock: Callable[[], float] = time.monotonic,
-            now: datetime | None = None) -> dict[str, Any]:
-    """The whole report. Stops at `budget_s` and marks what it did not reach UNMEASURED."""
+            now: datetime | None = None, prior: dict[str, Any] | None = None,
+            classify: Callable[[str], bool] | None = None) -> dict[str, Any]:
+    """The whole report. Reads the files checked longest ago first until `budget_s`, carries
+    every other file's last reading (bounded by CARRY_MAX_H), and judges the FX fence."""
     t0 = clock()
     at = now or datetime.now(UTC)
     exhausted = False
 
     def over() -> bool:
         return clock() - t0 > budget_s
+
+    prior_bars, prior_tape = _prior_rows(prior)
 
     bars: list[dict[str, Any]] = []
     bar_reason = None
@@ -461,25 +637,38 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
         bar_files = sorted(universe.glob("*.parquet"))
     except OSError as exc:
         bar_files, bar_reason = [], f"universe directory unreadable: {_exc_reason(exc)}"
+    # OLDEST CHECK FIRST: a file never read sorts before every file read, then by when it was last
+    # read, so the head of the alphabet cannot take every pass's budget again.
+    bar_files = sorted(bar_files, key=lambda p: (
+        _checked_at(prior_bars.get(p.name)) or datetime.min.replace(tzinfo=UTC), p.name))
+    bars_over_at = budget_s * BARS_BUDGET_SHARE
+    read_now = 0
+    placed: list[tuple[str, dict[str, Any]]] = []
     for path in bar_files:
         named = split_bar_name(path)
         if named is None:
             continue
         sym, tf = named
         if account_like(sym):
-            bars.append({"symbol": REDACTED, "timeframe": tf, "file": REDACTED,
-                         "status": "UNMEASURED", "reason": "name looks like an account number"})
+            placed.append((path.name, {"symbol": REDACTED, "timeframe": tf, "file": REDACTED,
+                                       "status": "UNMEASURED",
+                                       "reason": "name looks like an account number"}))
             continue
-        if exhausted or over():
+        if exhausted or over() or clock() - t0 > bars_over_at:
             exhausted = True
-            bars.append({"symbol": sym, "timeframe": tf, "file": path.name,
-                         "status": "UNMEASURED", "reason": "time budget exhausted"})
+            placed.append((path.name,
+                           _carry_bar(prior_bars.get(path.name), path, sym, tf, at)))
             continue
         try:
-            bars.append(_bar_row(path, sym, tf, at))
+            row = _bar_row(path, sym, tf, at)
         except Exception as exc:
-            bars.append({"symbol": sym, "timeframe": tf, "file": path.name,
-                         "status": "UNMEASURED", "reason": _exc_reason(exc)})
+            row = {"symbol": sym, "timeframe": tf, "file": path.name,
+                   "status": "UNMEASURED", "reason": _exc_reason(exc)}
+        row["checked_at"] = _iso(at)
+        row["check_age_h"] = 0.0
+        read_now += 1
+        placed.append((path.name, row))
+    bars = [row for _name, row in sorted(placed, key=lambda x: x[0])]
 
     state, state_reason = _read_tape_state(tape_state)
     symbols: set[str] = {str(k) for k in state}
@@ -490,23 +679,30 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
         pass
     tape: list[dict[str, Any]] = []
     redacted_tape = 0
-    for sym in sorted(symbols):
+    tape_read_now = 0
+    tape_exhausted = False
+    for sym in sorted(symbols, key=lambda x: (
+            _checked_at(prior_tape.get(x)) or datetime.min.replace(tzinfo=UTC), x)):
         if account_like(sym):
             redacted_tape += 1
             tape.append({"symbol": REDACTED, "status": "UNMEASURED",
                          "reason": "name looks like an account number"})
             continue
-        if exhausted or over():
-            exhausted = True
-            tape.append({"symbol": sym, "status": "UNMEASURED",
-                         "reason": "time budget exhausted"})
+        if tape_exhausted or over():
+            tape_exhausted = exhausted = True
+            tape.append(_carry_tape(prior_tape.get(sym), sym, at))
             continue
         try:
-            tape.append(_tape_row(sym, state.get(sym), ticks, at))
+            row = _tape_row(sym, state.get(sym), ticks, at)
         except Exception as exc:
             # ONE BAD ENTRY COSTS ITS OWN ROW, NEVER THE REPORT (audit: NaN / 1e20 at :249).
-            tape.append({"symbol": sym, "status": "UNMEASURED",
-                         "reason": f"bad tape entry: {_exc_reason(exc)}"})
+            row = {"symbol": sym, "status": "UNMEASURED",
+                   "reason": f"bad tape entry: {_exc_reason(exc)}"}
+        row["checked_at"] = _iso(at)
+        row["check_age_h"] = 0.0
+        tape_read_now += 1
+        tape.append(row)
+    tape.sort(key=lambda r: str(r.get("symbol")))
 
     def newest(rows: list[dict[str, Any]], key: str) -> dict[str, Any] | None:
         best = None
@@ -552,7 +748,16 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
             "newest_tape_run_age_h": youngest(tape, "tape_state_last_run_age_h"),
             "measured_share_threshold": MEASURED_SHARE,
             "verdict": max((bv, tv), key=lambda v: _RANK[v]),
+            "carry_max_h": CARRY_MAX_H,
+            "bar_files_read_this_pass": read_now,
+            "bar_files_carried": sum(bool(r.get("carried")) for r in bars),
+            "oldest_bar_check_age_h": max(
+                (r["check_age_h"] for r in bars if isinstance(r.get("check_age_h"), (int, float))),
+                default=None),
+            "tape_symbols_read_this_pass": tape_read_now,
+            "tape_symbols_carried": sum(bool(r.get("carried")) for r in tape),
         },
+        "fx_freshness": fx_freshness(bars, at, classify=classify),
         "bars": bars,
         "tape": tape,
         "notes": {"bars_reason": bar_reason, "tape_state_reason": state_reason,
@@ -810,7 +1015,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(_scrub(rep), indent=1))
         return {"AGREES": 0, "DISAGREES": 1}.get(rep["verdict"], 2)
     doc = measure(universe=a.universe, ticks=a.ticks, tape_state=a.tape_state,
-                  budget_s=a.budget_s)
+                  budget_s=a.budget_s, prior=read_prior(a.out))
     try:
         write(doc, a.out)
     except Exception as exc:
@@ -818,7 +1023,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     s = doc["summary"]
     print(json.dumps({"out": str(a.out), "elapsed_s": doc["elapsed_s"],
-                      "budget_exhausted": doc["budget_exhausted"], **s}))
+                      "budget_exhausted": doc["budget_exhausted"],
+                      "fx_freshness": doc["fx_freshness"].get("verdict"), **s}))
     return 0
 
 
