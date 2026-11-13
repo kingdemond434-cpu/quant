@@ -145,10 +145,88 @@ LOCKS = _DESK / "data" / ".job_locks"
 COMPETITION_LEDGER = _DESK / "data" / "trader_genome_competition.jsonl"
 #: Per-vector attempts / successes / rows / last error, beside the frontier file.
 VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
-_UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+#: AN HONEST USER AGENT (2026-11-13). This used to impersonate desktop Chrome, which the desk's
+#: fetch rules forbid: a site may only be read under a name that says what is reading it, so its
+#: robots.txt can address us. ROBOTS_AGENT is the token robots rules are matched against.
+ROBOTS_AGENT = "quant-desk-research"
+_UA = {"User-Agent": f"{ROBOTS_AGENT}/1.0 (deep_forest_miner; research; honours robots.txt)",
        "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
                   "*/*;q=0.8")}
+
+#: HOSTS WHOSE OWN TERMS FORBID AUTOMATED READING, read 2026-11-13 (report:
+#: /mnt/project-files/reports/terms_reads/). Never fetched, on any route, until the site grants
+#: written consent. A host here is a refusal, not a label.
+TERMS_REFUSED: dict[str, str] = {
+    "bigquant.com": ("用户使用协议 bans '使用任何机器人、爬虫、脚本...或其他类似的"
+                     "自动数据收集或提取工具' without BigQuant's prior written consent"),
+    "genport.newsystock.com": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+    "newsystock.com": "이용약관 11(3)(5) bans '무단 크롤링 혹은 데이터 수집'",
+}
+#: A page that is a region wall, not content: the site serves it to every address outside
+#: mainland China. It is recorded as REGION_BLOCKED and never parsed (no proxy, no VPN: that
+#: would be routing around the publisher's own access control).
+REGION_WALL_MARKERS: tuple[str, ...] = ("当前地区暂不支持访问",
+                                        "does not support access from IP addresses outside")
+
+
+class RobotsRefused(OSError):
+    """robots.txt (or a host's own terms) says no; the fetch never happens."""
+
+
+_ROBOTS: dict[str, Any] = {}
+_ROBOTS_LOCK = threading.Lock()
+
+
+def _host_of(url: str) -> str:
+    return (urlparse(url).hostname or "").lower()
+
+
+def access_refusal(url: str) -> str | None:
+    """None when this URL may be fetched, else why not. FAIL CLOSED (Governance ruling
+    2026-11-10, PR #819; principal's fetch rules): a host whose terms forbid automated reading
+    refuses; robots.txt is read once per host per process; 404/410 means no rules;
+    401/403/429/451 is a hard stop; a 5xx, a transport failure or an HTML page in place of rules
+    refuses; a Disallow covering this path for our agent refuses."""
+    host = _host_of(url)
+    if not host:
+        return "no host"
+    for h, why in TERMS_REFUSED.items():
+        if host == h or host.endswith("." + h):
+            return f"TERMS_REFUSED: {why}"
+    parts = urlparse(url)
+    if parts.path == "/robots.txt":
+        return None
+    key = f"{parts.scheme}://{parts.netloc}"
+    with _ROBOTS_LOCK:
+        rules = _ROBOTS.get(key)
+    if rules is None:
+        import urllib.robotparser
+        r = pf.get(f"{key}/robots.txt", headers=dict(_UA), timeout=15.0, retries=1, leg=LEG,
+                   max_bytes=500_000)
+        rp = urllib.robotparser.RobotFileParser()
+        if r.ok:
+            body = r.text or ""
+            if body.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+                rules = "robots.txt answered HTML"
+            else:
+                rp.parse(body.splitlines())
+                rules = rp
+        elif r.status in (404, 410):
+            rp.parse([])
+            rules = rp
+        elif r.status is not None:
+            rules = f"robots.txt HTTP {r.status}"
+        else:
+            rules = "robots.txt unreadable"
+        with _ROBOTS_LOCK:
+            _ROBOTS[key] = rules
+    if isinstance(rules, str):
+        return f"ROBOTS_REFUSED: {rules}"
+    if not rules.can_fetch(ROBOTS_AGENT, url):
+        return "ROBOTS_REFUSED: robots.txt disallows this path"
+    return None
+
+
 GRADE = {"competition": "COMPETITION_RECORD", "interview": "INTERVIEW",
          "community": "COMMUNITY_POST", "forum": "COMMUNITY_POST", "qa": "COMMUNITY_POST",
          "social": "COMMUNITY_POST", "blog": "COMMUNITY_POST", "column": "COMMUNITY_POST",
@@ -281,6 +359,9 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "")
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
     on a transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
+    refused = access_refusal(url)
+    if refused:
+        raise RobotsRefused(refused)
     hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
@@ -900,8 +981,16 @@ class _Run:
         try:
             body = _http(url, referer=referer, lang=self.lang)
             self._note_net(True)
+            if any(m in body for m in REGION_WALL_MARKERS):
+                self.counts["region_walled"] = self.counts.get("region_walled", 0) + 1
+                self.status.append({"url": url, "blocked": "REGION_BLOCKED"})
+                return ""
             self.counts["pages"] += 1
             return body
+        except RobotsRefused as exc:
+            self.counts["access_refused"] = self.counts.get("access_refused", 0) + 1
+            self.status.append({"url": url, "refused": str(exc)[:160]})
+            return ""
         except urllib.error.HTTPError as exc:
             self._note_net(True)
             self.status.append({"url": url, "http": exc.code})
@@ -912,6 +1001,11 @@ class _Run:
             return ""
 
     def rendered(self, url: str) -> str:
+        refused = access_refusal(url)
+        if refused:
+            self.counts["access_refused"] = self.counts.get("access_refused", 0) + 1
+            self.status.append({"url": url, "refused": refused[:160]})
+            return ""
         try:
             from libs.data.render_fetch import render
             page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
@@ -919,6 +1013,10 @@ class _Run:
             page, err = "", f"{type(exc).__name__}: {str(exc)[:80]}"
         if err:
             self.status.append({"url": url, "render": err[:120]})
+            return ""
+        if any(m in page for m in REGION_WALL_MARKERS):
+            self.counts["region_walled"] = self.counts.get("region_walled", 0) + 1
+            self.status.append({"url": url, "blocked": "REGION_BLOCKED"})
             return ""
         self.counts["rendered"] += 1
         return page
@@ -1465,6 +1563,7 @@ class _Run:
         urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
+        st0 = len(self.status)
         try:
             if route == "http":
                 out = self.ground_http(g)
@@ -1506,6 +1605,15 @@ class _Run:
                                             "items", "tweets", "channels", "feeds", "articles")
                       ) or self.counts["claims_seen_before"] > seen_before
         status = "PRODUCTIVE" if n_claims else ("REACHED_NO_CLAIMS" if reached else "BLOCKED")
+        # WHY A GROUND RETURNED NOTHING, NAMED (2026-11-13): 450 attempts a ground with "no
+        # blocker" was a robots refusal, a terms refusal or a region wall nobody could see.
+        walls = [str(x.get("refused") or x.get("blocked")) for x in self.status[st0:]
+                 if isinstance(x, dict) and (x.get("refused") or x.get("blocked"))]
+        if status == "BLOCKED" and walls and not out.get("error"):
+            out = {**out, "why": walls[0],
+                   "missed_growth": ("this ground's claims stay unread until its robots.txt, "
+                                     "terms or region wall admits the desk; no route around it "
+                                     "is taken")}
         classes: dict[str, int] = {}
         for c in self.ground_claims:
             k = str(c.get("mechanism_class"))
