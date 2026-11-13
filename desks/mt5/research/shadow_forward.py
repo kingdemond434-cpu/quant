@@ -825,6 +825,51 @@ def _stalest_symbols_first(enrolled: list, state: dict) -> list:
     return [row for sym in order for row in groups[sym]]
 
 
+#: TOO-GOOD IS FAST-TRACKED, NEVER AUTO-REJECTED (zuck 2026-11-11 14:50Z). The gauntlet's
+#: plausibility forensics list every flagged cell that cleared all its leak tests
+#: (MONSTER_CANDIDATE / DELAY_FRAGILE) here; forward shadow replays those first so a cut pass
+#: never strands them. Order only: every certificate is still clocked by
+#: `checkpoint_enrolments` before any replay, and no sizing rail reads this file.
+FAST_TRACK = BASE / "data" / "plausibility" / "FAST_TRACK.json"
+
+
+def _params_id(params) -> str:
+    try:
+        return json.dumps(params or {}, sort_keys=True, default=str)
+    except (TypeError, ValueError):
+        return repr(params)
+
+
+def fast_track_cells(path: Path | None = None) -> set[tuple[str, str, str]]:
+    """(symbol, family, params) of every fast-tracked cell; empty when the file is absent or
+    unreadable (an unread list reorders nothing, it never drops a row)."""
+    try:
+        doc = json.loads((path or FAST_TRACK).read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    out = set()
+    for c in (doc.get("cells") or []) if isinstance(doc, dict) else []:
+        if isinstance(c, dict) and c.get("sym") and c.get("family"):
+            out.add((str(c["sym"]), str(c["family"]), _params_id(c.get("params"))))
+    return out
+
+
+def _fast_track_first(enrolled: list, cells: set[tuple[str, str, str]]) -> tuple[list, int]:
+    """Move every SYMBOL group holding a fast-tracked row to the front, keeping each group whole
+    (one bar fetch per symbol) and the existing order within both halves. Returns the rows and
+    how many rows matched."""
+    if not cells:
+        return enrolled, 0
+    hit = [row for row in enrolled
+           if (row[0], row[3] if len(row) > 3 else "session_range_breakout",
+               _params_id(row[2])) in cells]
+    if not hit:
+        return enrolled, 0
+    syms = {row[0] for row in hit}
+    first = [row for row in enrolled if row[0] in syms]
+    return first + [row for row in enrolled if row[0] not in syms], len(hit)
+
+
 
 def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     """Evaluate a set of forward rows and write their ledger.
@@ -862,6 +907,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     enrolled.sort(key=lambda row: (row[0], timeframe_of(row[2]), row[1], row[3],
                                    repr(sorted(row[2].items()))))
     enrolled = _stalest_symbols_first(enrolled, state)
+    enrolled, n_fast = _fast_track_first(enrolled, fast_track_cells())
+    if n_fast:
+        slog(f"plausibility fast-track: {n_fast} certified row(s) replayed first")
     pass_started = datetime.now(UTC).isoformat(timespec="seconds")
     last_save = time.monotonic()
     cached_symbol: str | None = None
