@@ -2586,7 +2586,13 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
 #: or a publisher's written "anyone may use this". Everything else is `to_confirm` until a human
 #: reads the terms, and a `to_confirm` or `refused` source is NEVER fetched (BLOCKED_ON_TERMS).
 TERMS: dict[str, tuple[str, str]] = {
-    "kr_exports_early": ("confirmed", "KOGL public-sector open licence"),
+    # 2026-11-13: the licence is open (KOGL), but customs.go.kr's robots.txt disallows the press
+    # path /*/na/ntt/ for every crawler it names (Googlebot, Yeti, Daum, Bingbot) and has no `*`
+    # group. Read as the site's intent and respected; the press list is also JS-driven. The
+    # route left is the 10-day statistics OpenAPI on data.go.kr (needs a portal key) or
+    # tradedata.go.kr, each to be read before wiring.
+    "kr_exports_early": ("refused", "customs.go.kr robots intent: /*/na/ntt/ disallowed for "
+                                    "every named crawler"),
     "us_tsa_throughput": ("confirmed", "US federal work, public domain"),
     "us_census_marts_ex_autos": ("confirmed", "US Census documented public API, public domain"),
     "jp_jnto_arrivals": ("refused", "JNTO site policy: unauthorised duplication or transmission of "
@@ -2902,8 +2908,15 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "judgement": ("Korea Customs Service's own licence on the national portal for its "
                       "10-day provisional trade statistics, the statistics its 1-10 / 1-20 day "
                       "press releases print; customs.go.kr's copyright page timed out"),
-        "robots": "customs.go.kr copyright page timed out 2026-09-30 (not read)",
-        "checked_at": _CHK},
+        "robots": ("customs.go.kr/robots.txt read on the box 2026-11-13: HTTP 200, groups for "
+                   "Googlebot, Yeti, Daum and Bingbot each with Disallow: /*/na/ntt/ (the press "
+                   "release path this source read), no `*` group -- respected as the site's "
+                   "intent, so the press route is refused"),
+        "missed_growth": ("Korea's 1-10 / 1-20 day exports and semis series stop refreshing, so "
+                          "their USDKRW / NAS100 / chip-share conditioned cells hold as "
+                          "SERIES_ABSENT until the data.go.kr OpenAPI (key) or tradedata.go.kr "
+                          "route is read and wired"),
+        "checked_at": "2026-11-13"},
     "us_tsa_throughput": {
         "terms_url": "https://catalog.data.gov/dataset/covid-19-passenger-throughput",
         "terms_quote": "License: https://www.usa.gov/government-works",
