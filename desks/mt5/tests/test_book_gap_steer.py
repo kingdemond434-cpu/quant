@@ -108,3 +108,14 @@ def test_the_quota_holds_with_the_steer_switched_off(tmp_path: Path,
     out, rep = bg.apply(ordered, sleeves=tmp_path / "absent.json", class_of=_exo_class)
     assert out[0]["symbol"] == "EURUSD" and out[-1]["symbol"] == "USDZAR"
     assert rep["status"].startswith("OFF") and rep["exotic_quota"]["all"]["exotic_share"] == 0.1
+
+
+def test_an_unreadable_class_counts_as_exotic(tmp_path: Path) -> None:
+    def broken(s: str) -> str:
+        if s == "ZZZYYY":
+            raise RuntimeError("registry down")
+        return "forex"
+    assert bg.is_exotic({"symbol": "ZZZYYY"}, broken)
+    ordered = [_cand("ZZZYYY", 0.9)] + [_cand("EURUSD", 0.5) for _ in range(9)]
+    out, _ = bg.apply(ordered, sleeves=tmp_path / "absent.json", class_of=broken)
+    assert out[-1]["symbol"] == "ZZZYYY"

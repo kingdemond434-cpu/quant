@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections import Counter
+from collections import Counter, deque
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -178,10 +178,12 @@ class Steer:
 
 
 def is_exotic(row: Mapping[str, Any], class_of: Callable[[str], str]) -> bool:
+    """FAILS CLOSED: a symbol whose class cannot be read counts against the exotic share, so a
+    broken registry can only shrink the exotic slice, never smuggle exotics into the 90%."""
     try:
         return "exotic" in str(class_of(str(row.get("symbol") or "").upper()) or "").lower()
     except Exception:
-        return False
+        return True
 
 
 def exotic_quota(ordered: list[dict[str, Any]], class_of: Callable[[str], str],
@@ -192,7 +194,7 @@ def exotic_quota(ordered: list[dict[str, Any]], class_of: Callable[[str], str],
     `exotic_quota_deferred` -- kept and reported, never dropped, reached only once the
     non-exotic docket is spent. Returns the order and how many were deferred."""
     out: list[dict[str, Any]] = []
-    waiting: list[dict[str, Any]] = []
+    waiting: deque[dict[str, Any]] = deque()
     n_exo = 0
     for c in ordered:
         if not is_exotic(c, class_of):
@@ -200,11 +202,11 @@ def exotic_quota(ordered: list[dict[str, Any]], class_of: Callable[[str], str],
         else:
             waiting.append(c)
         while waiting and (n_exo + 1) <= share * (len(out) + 1):
-            out.append(waiting.pop(0))
+            out.append(waiting.popleft())
             n_exo += 1
     for c in waiting:
         c["exotic_quota_deferred"] = True
-    return out + waiting, len(waiting)
+    return out + list(waiting), len(waiting)
 
 
 def split(rows: list[Mapping[str, Any]], class_of: Callable[[str], str]) -> dict[str, Any]:
