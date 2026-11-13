@@ -1051,6 +1051,39 @@ def _sustained_doc(counts: dict[str, int], unknown: dict[str, int]) -> dict[str,
             "named_per_hour_24h": round((counts["24h"] - unknown["24h"]) / 24.0, 3)}
 
 
+def supply_vs_consume(*, prior_at: datetime | None, now: datetime, supplied: int,
+                      supplied_judged: int, drained: int | None, carried: int | None,
+                      backlog: int) -> dict[str, Any]:
+    """NEVER-JUDGED CELLS SUPPLIED vs CONSUMED PER HOUR, and which side binds the volume goal.
+
+    `supplied`: docket cells first seen since the prior reading. `consumed`: cells the judge
+    ruled for the first time since then -- the prior backlog's cohort that left by being judged
+    (`drained`) plus the new arrivals already ruled. The binding side is read off the carried
+    cohort, which leaves only by being judged: if any cell waited a whole interval unjudged, the
+    JUDGE binds; if none did, the judge took everything offered and INTAKE binds. No prior
+    reading (or a re-based one) is UNMEASURED, never a guess.
+    """
+    if prior_at is None or drained is None or carried is None:
+        return {"status": "UNMEASURED", "binding": "UNMEASURED",
+                "why": "no comparable prior reading: supply and consumption are unmeasured"}
+    hours = (now.timestamp() - prior_at.timestamp()) / 3600.0
+    if hours < 0.25:
+        return {"status": "UNMEASURED", "binding": "UNMEASURED", "hours": round(hours, 3),
+                "why": "the prior reading is under 15 minutes old"}
+    consumed = int(drained) + int(supplied_judged)
+    binding = "judge" if (int(carried) > 0 and backlog > 0) else "intake"
+    return {"status": "MEASURED", "hours": round(hours, 3),
+            "supplied": int(supplied), "consumed": consumed,
+            "supplied_per_hour": round(supplied / hours, 1),
+            "consumed_per_hour": round(consumed / hours, 1),
+            "consumed_per_day": round(consumed / hours * 24.0, 1),
+            "carried_unjudged": int(carried), "binding": binding,
+            "why": ("cells waited a whole interval unjudged: the judge's throughput binds"
+                    if binding == "judge" else
+                    "no cell waited a whole interval: the judge took everything offered, "
+                    "so intake binds")}
+
+
 def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None,
           prior_at: datetime | None, now: datetime, parked: int = 0,
           rebased: str | None = None) -> dict[str, Any]:
@@ -3579,9 +3612,19 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # Counted in the SAME pass over the docket as the backlog (one walk of 1.6M rows, not two).
     carried: dict[str, int] = {}
     parked_since: dict[str, int] = {}
+    # SUPPLY AND DEMAND FOR NEVER-JUDGED CELLS (hourly pass idea 612): every docket cell first
+    # seen since the prior reading, and how many of those the judge has already ruled.
+    supplied_since: int = 0
+    supplied_judged: int = 0
     for row in rows:
         fam = str(row.get("family") or "")
         cid = row.get("_cell")
+        if prior_ts is not None and fam not in banned:
+            _new = _first_seen(row)
+            if _new is not None and _new.timestamp() > prior_ts:
+                supplied_since += 1
+                if cid and cid in judged_cells:
+                    supplied_judged += 1
         if cid and cid in judged_cells:
             continue
         if fam in banned:
@@ -3910,6 +3953,14 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "judging_failures": failures,
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
+        # WHICH SIDE BINDS (idea 612): never-judged cells supplied vs consumed per hour.
+        "supply_vs_consume": supply_vs_consume(
+            prior_at=prior_at, now=at, supplied=supplied_since,
+            supplied_judged=supplied_judged,
+            drained=(sum(int(r.get("drained") or 0) for r in table.values())
+                     if prior_at is not None else None),
+            carried=sum(carried.values()) if prior_at is not None else None,
+            backlog=sum(backlog.values())),
     }
     return {
         "at": at.isoformat(timespec="seconds"),
