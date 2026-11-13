@@ -163,7 +163,7 @@ def test_expiry_gamma_fires_only_on_its_window_and_sees_no_future() -> None:
 
 
 def test_strike_pin_trades_toward_the_grid_only_before_comex_gold_expiry() -> None:
-    assert ff.comex_gold_option_expiry(2026, 11) == date(2026, 11, 23)   # Nov 30 Mon - 4
+    assert ff.comex_gold_option_expiry(2026, 11) == date(2026, 11, 24)   # Nov 30 Mon - 4
     assert ff.comex_gold_option_expiry(2026, 1) == date(2026, 1, 26)     # Jan 30 Fri - 4
     d = _bars(1500, start="2019-01-07") * 20.0                           # ~2000: a $25 grid
     pin = ff.family_strike_pin(d, day_from=-3, day_to=0, mode="pin", max_frac=0.5)
