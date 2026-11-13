@@ -285,6 +285,15 @@ def test_a_hard_stop_lapses_after_its_cooloff_and_is_reported_never_silent(
         assert calls and all(c.endswith("robots.txt") for c in calls)
         state = json.loads(sp.read_text())
         assert "hard_stop" not in state and state["hard_stops_lapsed"][-1]["code"] == code
+    # a 451 is a legal block: permanent, however old, and never retried
+    sp = tmp_path / "s451.json"
+    sp.write_text(json.dumps({"hard_stop": {"code": 451, "at": "2020-01-01T00:00:00+00:00"}}))
+    hits: list[str] = []
+    d = AD.build(get=lambda u: hits.append(u) or "", enqueue=None, state_path=sp,
+                 series_dir=tmp_path, universe=frozenset())
+    assert d["access"]["status"] == "HARD_STOP" and hits == []
+    assert d["access"]["hard_stop"]["permanent"] is True
+    assert d["access"]["hard_stop"]["expired"] is False
     # a stop younger than its cool-off still holds, and says when it lapses
     sp = tmp_path / "young.json"
     sp.write_text(json.dumps({"hard_stop": {"code": 429,

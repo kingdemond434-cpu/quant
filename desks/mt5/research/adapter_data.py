@@ -62,11 +62,13 @@ OUT = DESK / "reports" / "ADAPTER_DATA.json"
 UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; adapter_data)"
 HARD_STOP = frozenset({401, 403, 429, 451})
 #: A hard stop is honoured for a cool-off, never forever and never silently (Auditor SF
-#: 2026-11-13). A 429 is a rate limit: one day. 401/403/451 are refusals: thirty days, then
+#: 2026-11-13). A 429 is a rate limit: one day. 401/403 are refusals: thirty days, then
 #: robots.txt is read again and ONE request is made; a second refusal starts a new cool-off.
+#: 451 is a LEGAL block and is permanent: it never lapses and is never retried by this leg.
 #: The stop's start, age and expiry are published in ADAPTER_DATA.json every pass.
 HARD_STOP_COOLOFF_H = {429: 24.0}
 HARD_STOP_COOLOFF_DEFAULT_H = 24.0 * 30
+HARD_STOP_PERMANENT = frozenset({451})
 REFRESH_H = 24.0
 LAG_DAYS = 45
 MIN_ROWS = 30
@@ -283,6 +285,9 @@ def hard_stop_view(stop: Mapping[str, Any] | None, now: datetime) -> dict[str, A
     if not stop:
         return None
     code = stop.get("code")
+    if int(code or 0) in HARD_STOP_PERMANENT:
+        return {"code": code, "at": stop.get("at"), "age_h": None, "cooloff_h": None,
+                "expires_at": None, "expired": False, "permanent": True}
     cool = HARD_STOP_COOLOFF_H.get(int(code or 0), HARD_STOP_COOLOFF_DEFAULT_H)
     try:
         at = datetime.fromisoformat(str(stop.get("at")))
