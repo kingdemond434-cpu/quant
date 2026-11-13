@@ -150,7 +150,8 @@ MECHANISM_ACTOR = {
 _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence price_only market": "anti_three_bar_momentum h4_momentum momentum_volgate"
                                            " multi_speed_trend trend_ma_cross"
-                                           " htf_anchor_trend",
+                                           " htf_anchor_trend kalman_trend gp_forecast"
+                                           " particle_regime",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
     "session_handover price_only market": "asia_momentum clock_transition monday_gap"
@@ -172,7 +173,8 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
                                                      " cross_sectional_class_value"
-                                                     " cross_sectional_class_low_vol",
+                                                     " cross_sectional_class_low_vol"
+                                                     " kalman_pair copula_pair",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead"
@@ -207,12 +209,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     # day state) through the registry door, so it sits with its base family.
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion hunt16_cell",
-    "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
+    "range_reversion price_only market": "engulfing_reversal pin_bar_reversal ou_reversion",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
                                           " session_range_breakout",
     "breakout_liquidity price_only limit": "failed_breakout",
-    "volatility_shock price_only market": "jump vol_mean_reversion",
+    "volatility_shock price_only market": "jump vol_mean_reversion garch_shock",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
                                            " regime_transition vol_transition",

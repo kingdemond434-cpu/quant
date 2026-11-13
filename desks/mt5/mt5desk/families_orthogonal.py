@@ -2607,3 +2607,26 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+# THE QUANT-FRAMEWORK FAMILIES (2026-11-10, PASS_COVERAGE "Quant-framework coverage" items 52, 53,
+# 56, 57). GARCH, Kalman and copulas existed on this desk only as a stand-in (EWMA), inside a macro
+# factor model, or untested; an OU half-life existed nowhere. Each is now a mechanism the gauntlet
+# judges like any other: walk-forward GJR-GARCH shocks, the Kalman local-linear-trend slope, a
+# Kalman time-varying hedge ratio, a Student-t/Gaussian copula mispricing index, and OU reversion
+# that only trades a half-life it can hold for. Price only, except the two pair families, which
+# carry their second leg by value as `pair_symbol` and read its H1 closes from the bar store
+# themselves (the specialist families' contract), so the sealed gauntlet builds them through its
+# ordinary `fn(h1, **params)` call with no input branch.
+from mt5desk.family_state_space import FAMILIES as _STATE_SPACE  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(_STATE_SPACE)
+# `particle_regime` and `gp_forecast` are item 58 of the same audit: price only, single leg.
+for _fam in ("garch_shock", "kalman_trend", "ou_reversion", "particle_regime", "gp_forecast"):
+    FAMILY_INPUTS[_fam] = ("price only", None)
+for _fam in ("kalman_pair", "copula_pair"):
+    FAMILY_INPUTS[_fam] = ("the H1 closes of the instrument named by `pair_symbol`, matched to "
+                           "this cell's stamps", "data/universe/<pair_symbol>_H1.parquet")
+    FAMILY_TIMEFRAMES[_fam] = (
+        ("H1",),
+        "the second leg is read from the H1 bar store and matched stamp for stamp; on any other "
+        "chart the join would pair this cell's bars with a peer close from a different clock")

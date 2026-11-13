@@ -1040,6 +1040,19 @@ _FAMILY_VOCAB: dict[str, tuple[str, ...]] = {
                              "post-drawdown", "after a selloff"),
     "spread_state": ("spread widening", "wide spread", "spread regime", "spread compression"),
     "comex_settlement": ("comex settlement", "comex close", "gold settlement", "comex fix"),
+    # The quant-framework families (2026-11-10, mt5desk/family_state_space.py). Single-leg only:
+    # `kalman_pair` and `copula_pair` need a peer and, like relative_value, stay out of here.
+    # Phrases name the TRADE, not the tool: a bare "garch" or "kalman filter" also describes
+    # GARCH-for-sizing and Kalman pairs, which these two families are not.
+    "garch_shock": ("garch shock", "garch standardized return", "garch standardised return",
+                    "garch-standardized return", "conditional volatility shock",
+                    "standardized return shock", "standardised return shock",
+                    "volatility-adjusted shock"),
+    "kalman_trend": ("kalman trend", "kalman filter trend", "kalman filter slope",
+                     "kalman slope", "local linear trend"),
+    "ou_reversion": ("ornstein-uhlenbeck", "ornstein uhlenbeck", "ou process",
+                     "mean reversion half-life", "half-life of mean reversion",
+                     "half life of mean reversion", "mean-reversion half-life"),
 }
 
 _SESSION_VOCAB: dict[str, tuple[str, ...]] = {
