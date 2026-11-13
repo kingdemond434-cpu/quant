@@ -1,0 +1,108 @@
+{
+ "_doc": "Global flow registry (global_flow.py, run inside futures_state's hourly pass). Rows, never code: add a source here. adapter=none is a NAMED GAP with blocked_by. class: retail | institutional | dealer | central_bank | sovereign | etf | cross_border | forced. Every series is an exogenous_conditioner QUESTION for the judge, never a sized edge. avail_lag_days + avail_hour_utc stamp publication conservatively after the observation date. Named-gap rows and the already-live census ride the follow-up PR (#710) to keep this diff reviewable.",
+ "sources": [
+  {
+   "id": "snb_sight",
+   "class": "central_bank",
+   "region": "CH",
+   "adapter": "snb_cube",
+   "url": "https://data.snb.ch/api/cube/snbgwdzid/data/csv/en",
+   "avail_lag_days": 3,
+   "avail_hour_utc": 23,
+   "window": 104,
+   "targets": [
+    "EURCHF",
+    "USDCHF",
+    "CHFJPY",
+    "GBPCHF"
+   ],
+   "why": "SNB buys foreign currency by crediting banks' sight deposits:"
+  },
+  {
+   "id": "gld_holdings",
+   "class": "etf",
+   "region": "US",
+   "adapter": "gld_archive",
+   "url": "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv",
+   "avail_lag_days": 1,
+   "avail_hour_utc": 6,
+   "window": 252,
+   "log_change_cols": [
+    "tonnes"
+   ],
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "why": "GLD creations and redemptions are Western investment demand for physical gold; tonnes change against price separates investor flow from central-bank and Asian physical buying.",
+   "pit_source": "spdr_gld_holdings"
+  },
+  {
+   "id": "nse_part_oi",
+   "class": "retail",
+   "region": "IN",
+   "adapter": "nse_daily",
+   "url": "https://archives.nseindia.com/content/nsccl/fao_participant_oi_{ddmmyyyy}.csv",
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 156,
+   "targets": [
+    "USDINR",
+    "HK50",
+    "CHINAH",
+    "US500"
+   ],
+   "why": "NSE splits every derivatives contract by owner:"
+  },
+  {
+   "id": "mof_weekly",
+   "class": "cross_border",
+   "region": "JP",
+   "adapter": "mof_weekly",
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/itn_transactions_in_securities/week.csv",
+   "avail_lag_days": 5,
+   "avail_hour_utc": 0,
+   "window": 104,
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "AUDJPY",
+    "JPN225"
+   ],
+   "why": "Japanese lifers, pensions and toshin buying foreign bonds sell yen; foreign buying of Japanese stocks buys it."
+  }
+ ],
+ "already_live": [],
+ "player_classes": [
+  "retail",
+  "institutional",
+  "dealer",
+  "cta",
+  "central_bank",
+  "sovereign",
+  "etf",
+  "cross_border",
+  "forced",
+  "corporate_hedger"
+ ],
+ "regions": [
+  "US",
+  "EU",
+  "UK",
+  "CH",
+  "JP",
+  "CN",
+  "CN/HK",
+  "KR",
+  "IN",
+  "TR",
+  "AU",
+  "BR",
+  "MX",
+  "ZA",
+  "global"
+ ],
+ "_grid_doc": "Every (player_class x region) cell with no live or gap row is UNSEARCHED; each hourly pass must turn at least one UNSEARCHED or gap cell into a live row (standing rule, zuck 2026-11-03: maximise every player's footprint everywhere)."
+}
