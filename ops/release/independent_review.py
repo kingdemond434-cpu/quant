@@ -98,7 +98,13 @@ VOTES = 2
 #: Above this the diff is not reviewed in part: the PR fails and takes the manual path.
 MAX_DIFF_CHARS = 600_000
 #: How long the job keeps trying free models before it reports UNAVAILABLE.
-BUDGET_S = 150 * 60
+#: CUT 150 -> 60 min (2026-11-11, Autonomy). MEASURED: of the last 150 completed independent-review
+#: jobs, every success took 7 min and every decisive failure 4-19 min; none landed after 19 min.
+#: Meanwhile 8 of the repo's ~15 running Actions slots sat in this job 1.5-2.5 h each (14:25Z);
+#: the queue grew 1,258 -> 1,451 and no run finished for 3 h. Running out of budget only ever
+#: ends UNAVAILABLE (exit 75, re-queued); it can never PASS a PR, so a shorter budget frees the
+#: runner sooner without loosening the review. CALL_TIMEOUT_S stays: parts are sized near 15 min.
+BUDGET_S = 60 * 60
 CALL_TIMEOUT_S = 1800
 #: The largest prompt (without the rubric) one LOCAL call is given when the diff can be cut.
 #: MEASURED on the hosted runner's CPU (2026-11-05): qwen2.5-coder:7b took 4 min on a 3.7k diff,
