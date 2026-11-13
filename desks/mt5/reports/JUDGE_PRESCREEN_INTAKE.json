@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-03T14:09:43+00:00",
+ "generated_at": "2026-11-13T17:21:36+00:00",
  "mode": "SHADOW",
- "rows": 1652092,
- "rows_already_ruled_not_screened": 710182,
+ "rows": 1668858,
+ "rows_already_ruled_not_screened": 788903,
  "would_kill": {
-  "needs_data": 975,
+  "needs_data": 1286,
   "chart_short": 0,
-  "sibling_dead": 268883
+  "sibling_dead": 266295
  },
- "would_kill_total": 269858,
- "would_kill_share": 0.163343,
+ "would_kill_total": 267581,
+ "would_kill_share": 0.160338,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 268883,
-  "10": 207866,
-  "20": 126754,
-  "40": 55357,
-  "80": 25684
+  "5": 266295,
+  "10": 213462,
+  "20": 132045,
+  "40": 60013,
+  "80": 26989
  },
- "ms_per_row": 2.57414,
- "seconds": 4252.711,
+ "ms_per_row": 1.2882,
+ "seconds": 2149.818,
  "samples": {
   "needs_data": [
    {
@@ -112,225 +112,225 @@
     "why": "orthogonal_sweep._cot_frame('HK50') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    },
    {
-    "cell": "EURZAR.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:EURZAR",
-    "why": "orthogonal_sweep._cot_frame('EURZAR') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+    "cell": "COFROB.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:COFROB",
+    "why": "orthogonal_sweep._cot_frame('COFROB') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    },
    {
-    "cell": "EUSTX50.cot_positioning.p=af2630cc374bc191",
+    "cell": "E35.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:E35",
+    "why": "orthogonal_sweep._cot_frame('E35') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURJPY.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:EURJPY",
+    "why": "orthogonal_sweep._cot_frame('EURJPY') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURPLN.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:EURPLN",
+    "why": "orthogonal_sweep._cot_frame('EURPLN') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EUSTX50.cot_positioning.p=0d8318b9505543ec",
     "missing_input": "cot_series:EUSTX50",
     "why": "orthogonal_sweep._cot_frame('EUSTX50') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    },
    {
-    "cell": "FRA40.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:FRA40",
-    "why": "orthogonal_sweep._cot_frame('FRA40') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
-   },
-   {
-    "cell": "GBPAUD.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:GBPAUD",
-    "why": "orthogonal_sweep._cot_frame('GBPAUD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
-   },
-   {
-    "cell": "GBPCAD.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:GBPCAD",
-    "why": "orthogonal_sweep._cot_frame('GBPCAD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
-   },
-   {
-    "cell": "GBPCHF.cot_positioning.p=af2630cc374bc191",
+    "cell": "GBPCHF.cot_positioning.p=0d8318b9505543ec",
     "missing_input": "cot_series:GBPCHF",
     "why": "orthogonal_sweep._cot_frame('GBPCHF') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    },
    {
-    "cell": "GBPDKK.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:GBPDKK",
-    "why": "orthogonal_sweep._cot_frame('GBPDKK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+    "cell": "GBPSEK.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:GBPSEK",
+    "why": "orthogonal_sweep._cot_frame('GBPSEK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    },
    {
-    "cell": "GBPHUF.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:GBPHUF",
-    "why": "orthogonal_sweep._cot_frame('GBPHUF') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+    "cell": "GER40.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:GER40",
+    "why": "orthogonal_sweep._cot_frame('GER40') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    },
    {
-    "cell": "GBPJPY.cot_positioning.p=af2630cc374bc191",
-    "missing_input": "cot_series:GBPJPY",
-    "why": "orthogonal_sweep._cot_frame('GBPJPY') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+    "cell": "USDCNH.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:USDCNH",
+    "why": "orthogonal_sweep._cot_frame('USDCNH') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
    }
   ],
   "chart_short": [],
   "sibling_dead": [
    {
-    "cell": "AUDNZD.session_range_breakout.p=43e6069cd2eff1e2",
-    "bucket": "AUDNZD|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD.session_range_breakout.p=06e87ea875ed4acb",
-    "bucket": "AUDNZD|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD.session_range_breakout.p=5c85e68697159afa",
-    "bucket": "AUDNZD|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDNZD.session_range_breakout.p=603d87f19ac5a542",
-    "bucket": "AUDNZD|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDUSD.asia_momentum.p=f67aa9941088a869",
-    "bucket": "AUDUSD|H1|asia_momentum",
-    "named_cells": 9,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDUSD.session_range_breakout.p=43e6069cd2eff1e2",
-    "bucket": "AUDUSD|H1|session_range_breakout",
-    "named_cells": 15,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "AUDUSD.session_range_breakout.p=06e87ea875ed4acb",
-    "bucket": "AUDUSD|H1|session_range_breakout",
-    "named_cells": 15,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "EURUSD.session_range_breakout.p=43e6069cd2eff1e2",
-    "bucket": "EURUSD|H1|session_range_breakout",
-    "named_cells": 13,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "EURUSD.session_range_breakout.p=06e87ea875ed4acb",
-    "bucket": "EURUSD|H1|session_range_breakout",
-    "named_cells": 13,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "EURUSD.session_range_breakout.p=5c85e68697159afa",
-    "bucket": "EURUSD|H1|session_range_breakout",
-    "named_cells": 13,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "EURUSD.session_range_breakout.p=603d87f19ac5a542",
-    "bucket": "EURUSD|H1|session_range_breakout",
-    "named_cells": 13,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "NZDUSD.session_range_breakout.p=43e6069cd2eff1e2",
-    "bucket": "NZDUSD|H1|session_range_breakout",
-    "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "NZDUSD.session_range_breakout.p=06e87ea875ed4acb",
-    "bucket": "NZDUSD|H1|session_range_breakout",
-    "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "US500.session_range_breakout.p=43e6069cd2eff1e2",
-    "bucket": "US500|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "US500.session_range_breakout.p=06e87ea875ed4acb",
-    "bucket": "US500|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "US500.session_range_breakout.p=5c85e68697159afa",
-    "bucket": "US500|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "US500.session_range_breakout.p=603d87f19ac5a542",
-    "bucket": "US500|H1|session_range_breakout",
-    "named_cells": 12,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USDCHF.session_range_breakout.p=43e6069cd2eff1e2",
-    "bucket": "USDCHF|H1|session_range_breakout",
-    "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USDCHF.session_range_breakout.p=06e87ea875ed4acb",
-    "bucket": "USDCHF|H1|session_range_breakout",
-    "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USDCHF.session_range_breakout.p=5c85e68697159afa",
-    "bucket": "USDCHF|H1|session_range_breakout",
-    "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USDCHF.session_range_breakout.p=603d87f19ac5a542",
-    "bucket": "USDCHF|H1|session_range_breakout",
-    "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "USDINR@M30.session_range_breakout.p=ff910ceb442ce5d5",
-    "bucket": "USDINR|M30|session_range_breakout",
-    "named_cells": 26,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "ADAUSD@M30.session_range_breakout.p=2231ce2a1205ce26",
-    "bucket": "ADAUSD|M30|session_range_breakout",
+    "cell": "EURSEK@M5.session_range_breakout.p=4f569fbdd5c4c7f3",
+    "bucket": "EURSEK|M5|session_range_breakout",
     "named_cells": 42,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "ADAUSD.session_range_breakout.p=14ee5e84081cca92",
-    "bucket": "ADAUSD|H1|session_range_breakout",
-    "named_cells": 7,
+    "cell": "EURPLN@M5.session_range_breakout.p=73efa2b1e954e0cb",
+    "bucket": "EURPLN|M5|session_range_breakout",
+    "named_cells": 44,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "ADAUSD.session_range_breakout.p=f9ee4beb515adb38",
-    "bucket": "ADAUSD|H1|session_range_breakout",
-    "named_cells": 7,
+    "cell": "GBPHUF@M5.session_range_breakout.p=56fbec9ebd929bbf",
+    "bucket": "GBPHUF|M5|session_range_breakout",
+    "named_cells": 45,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "USDHUF@M5.session_range_breakout.p=cfc2cb86a87f6147",
+    "bucket": "USDHUF|M5|session_range_breakout",
+    "named_cells": 41,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDNZD@M5.session_range_breakout.p=27465e2f40c355ac",
+    "bucket": "AUDNZD|M5|session_range_breakout",
+    "named_cells": 40,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "GBPSEK@M5.session_range_breakout.p=23a79b6eddaeceff",
+    "bucket": "GBPSEK|M5|session_range_breakout",
+    "named_cells": 43,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "SEKJPY@M5.session_range_breakout.p=9a4d7a8457575789",
+    "bucket": "SEKJPY|M5|session_range_breakout",
+    "named_cells": 43,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "XNGUSD@M5.session_range_breakout.p=1efa90c2456645fc",
+    "bucket": "XNGUSD|M5|session_range_breakout",
+    "named_cells": 47,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "USDHKD@M5.session_range_breakout.p=29a876e1392f92b1",
+    "bucket": "USDHKD|M5|session_range_breakout",
+    "named_cells": 43,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=ef63a35959cac5ea",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=1118b394c86bef29",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=e8341d583736f903",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=94443788479d204d",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=b2d67be296aeab98",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=9569f83d6d424793",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=950082d20e963390",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=35a6dddda605607b",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=54809d4a3e665a1d",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=2aa7bb49dfd00a25",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 48,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCAD@M15.session_range_breakout.p=60888bf222a98605",
+    "bucket": "AUDCAD|M15|session_range_breakout",
+    "named_cells": 42,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCAD@M15.session_range_breakout.p=23308a43a32c621e",
+    "bucket": "AUDCAD|M15|session_range_breakout",
+    "named_cells": 42,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=943a5d4c5c488a5a",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=448fca7c25e85ff1",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=48bc2e1087e0d2ef",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.session_range_breakout.p=89ac328d7c2defb5",
+    "bucket": "AUDCHF|M5|session_range_breakout",
+    "named_cells": 33,
     "cleared_cells": 0,
     "k": 5
    }
@@ -338,8 +338,8 @@
  },
  "missed_growth": [
   {
-   "day": "2026-11-03",
-   "at": "2026-11-03T14:09:43+00:00",
+   "day": "2026-11-13",
+   "at": "2026-11-13T17:21:36+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -353,14 +353,14 @@
    },
    "would_act_sibling_dead": {
     "k": 5,
-    "true_survivors_killed": 15,
-    "cleared_in_sample_killed": 1594,
+    "true_survivors_killed": 25,
+    "cleared_in_sample_killed": 2164,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
-   "day": "2026-11-03",
-   "at": "2026-11-03T14:09:43+00:00",
+   "day": "2026-11-13",
+   "at": "2026-11-13T17:21:36+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.1300531050178823,
-   "would_free_seconds_if_all_rules_acted": 35095.9
+   "seconds_per_cell": 0.107504404694359,
+   "would_free_seconds_if_all_rules_acted": 28766.1
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
