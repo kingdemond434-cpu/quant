@@ -94,6 +94,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from collections import Counter, defaultdict
@@ -462,13 +463,14 @@ from research.conversion_handoff_steer import (  # noqa: E402
     asset_class,
     load_steer,
     steer_group,
+    unsteered_share,
 )
 
 
 def _breadth_counts(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[str, Any]],
                     steer: list[dict[str, Any]], selected: Counter[str],
                     group_of: Callable[[Mapping[str, Any]], str],
-                    class_of: Callable[[str], str]) -> dict[str, Any]:
+                    class_of: Callable[[str], str], share: float = 1.0) -> dict[str, Any]:
     """This pass's conversions per asset class and per steer group (parents and child cells),
     so every cycle reports where the converted breadth went."""
     parent = {str(r.get("key")): r for r in work}
@@ -485,6 +487,7 @@ def _breadth_counts(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[st
             tgt["parents"] += 1
             tgt["child_cells"] += int(rec.get("trials_charged") or 0)
     return {"steer": [str(g["name"]) for g in steer],
+            "unsteered_share": share,
             "selected_by_group": {(k or "unsteered"): v for k, v in sorted(selected.items())},
             "converted_by_asset_class": {k: dict(v) for k, v in sorted(by_class.items())},
             "converted_by_steer_group": {k: dict(v) for k, v in sorted(by_group.items())},
@@ -504,6 +507,7 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
              input_present: Callable[[str], bool | None] | None = None,
              now: datetime | None = None,
              steer: list[dict[str, Any]] | None = None,
+             steer_share: float | None = None,
              class_of: Callable[[str], str] | None = None,
              clock: Callable[[], float] = time.monotonic) -> dict[str, Any]:
     handoff = handoff or HANDOFF
@@ -674,13 +678,45 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
     for f, (a, b) in queues.items():
         for row_q in a + b:
             lanes[group_of(row_q)].setdefault(f, []).append(row_q)
-    work = list(restored)
-    for n in [*names, UNSTEERED]:
-        room = examine_cap - (len(work) - len(restored))
-        if room <= 0:
+    # EVERY STEER LANE ROTATES (Auditor MF1): a steered row moves no family cursor, so each
+    # (group, family) lane keeps its own -- the last steered cell examined -- and the next pass
+    # starts after it. A steered row left unresolved is re-examined only after the rest of its
+    # lane has had a turn, never pinned at the head of the queue.
+    steer_cursors: dict[str, str] = {str(k): str(v) for k, v in
+                                     dict(cur.get("steer_cursors") or {}).items()}
+    steer_cursors_in = dict(steer_cursors)
+    for n in names:
+        for f, rows_l in lanes[n].items():
+            rows_l.sort(key=lambda r: str(r.get("cell") or ""))
+            mark = steer_cursors.get(f"{n}|{f}", "")
+            cut = next((i for i, r in enumerate(rows_l) if str(r.get("cell") or "") > mark), 0)
+            rows_l[:] = rows_l[cut:] + rows_l[:cut]
+    # THE UNSTEERED FLOOR (Auditor MF2): a fixed share of the examined rows is unsteered, and the
+    # two are interleaved, so the steer reorders the queue without starving the rest of it --
+    # in examination and in the per-pass conversion cap alike.
+    share = (unsteered_share() if steer_share is None else steer_share) if names else 1.0
+    steered: list[dict[str, Any]] = []
+    for n in names:
+        if len(steered) >= examine_cap:
             break
-        work += round_robin(lanes[n], room, fam_order)
-    steer_selected = Counter(group_of(r) for r in work[len(restored):])
+        steered += round_robin(lanes[n], examine_cap - len(steered), fam_order)
+    rest = round_robin(lanes[UNSTEERED], examine_cap, fam_order)
+    floor_n = min(len(rest), math.ceil(share * examine_cap))
+    steered = steered[:examine_cap - floor_n]
+    rest = rest[:examine_cap - len(steered)]
+    mixed: list[dict[str, Any]] = []
+    i_s = i_r = 0
+    while i_s < len(steered) or i_r < len(rest):
+        take_rest = i_r < len(rest) and (i_s >= len(steered)
+                                         or i_r + 1 <= share * (len(mixed) + 1))
+        if take_rest:
+            mixed.append(rest[i_r])
+            i_r += 1
+        else:
+            mixed.append(steered[i_s])
+            i_s += 1
+    work = list(restored) + mixed
+    steer_selected = Counter(group_of(r) for r in mixed)
     charged_children: dict[str, str] = dict(led["charged_children"])
     converted_parents: dict[str, list[str]] = dict(led["converted_parents"])
     params_by_cell = lookup(work, time_ok) if work and time_ok() else {}
@@ -718,8 +754,11 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
                 "family": fam, "trial_family": tfam, "at": at}
         # a steered row is served out of turn, so it never moves its family's cursor: the cursor
         # stays the unsteered queue's place, and a steered row once resolved is skipped by key
+        grp = group_of(parent)
+        if grp != UNSTEERED:
+            steer_cursors[f"{grp}|{tfam}"] = cell
         settled = (tfam not in fam_deferred and reason != INPUT_MISSING
-                   and group_of(parent) == UNSTEERED)
+                   and grp == UNSTEERED)
         prior = converted_parents.get(parent_key(reason, cell))
         if prior:
             # THE SAME CELL, PARKED AGAIN: its children exist and were charged once.
@@ -856,7 +895,9 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
             family_cursors[tfam] = cell
     cursor_doc = {"cursor_cell": max(family_cursors.values()) if family_cursors else
                   legacy_cursor, "family_cursors": dict(sorted(family_cursors.items())),
-                  "laps": lap, "at": at, "handoff_generated_utc": head.get("generated_utc"),
+                  "laps": lap, "steer_cursors": dict(sorted(
+                      (steer_cursors_in if donation_failed else steer_cursors).items())),
+                  "at": at, "handoff_generated_utc": head.get("generated_utc"),
                   "rule": ("each trial_family's rows are worked in the handoff's cell order from "
                            "its own cursor; families are interleaved round-robin")}
     _atomic_write(cursor_path, cursor_doc)
@@ -953,7 +994,8 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
                  "MIN_PEER_HISTORY_DAYS": MIN_PEER_HISTORY_DAYS,
                  "MIN_PEER_LEAD_DAYS": MIN_PEER_LEAD_DAYS, "RETRY_H": RETRY_H},
         "cursor": cursor_doc,
-        "breadth": _breadth_counts(recs, work, steer, steer_selected, group_of, class_of),
+        "breadth": _breadth_counts(recs, work, steer, steer_selected, group_of, class_of,
+                                   share),
         "budget": {"requested_s": budget_s, "work_limit_s": round(limit, 1),
                    "elapsed_s": round(clock() - t0, 2), "examined": examined,
                    "selected": len(work), "not_examined": len(work) - examined,

@@ -606,3 +606,35 @@ def test_an_empty_steer_keeps_the_old_order(world: dict[str, Any]) -> None:
     (rec,) = [r for r in _ledger(world) if r["status"] == C.CONVERTED]
     assert rec["cell"] == "P0"
     assert doc["breadth"]["selected_by_group"] == {"unsteered": 2}
+
+
+def test_a_deferred_steered_row_is_not_pinned_and_the_unsteered_floor_holds(
+        world: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor MF1 + MF2: two examined rows a pass, half kept for unsteered cells. The steered
+    family is capped after its first conversion, so its later rows stay unresolved; the lane
+    rotates past each one instead of re-examining it, and every unsteered row is reached."""
+    monkeypatch.setattr(C, "MAX_EXAMINED_PER_PASS", 2)
+    monkeypatch.setattr(C, "EXAMINE_FACTOR", 0)
+    rows = []
+    for i in range(4):
+        world["params"][f"T{i}"] = {"lookback": 20 + i}
+        rows.append(_row(f"T{i}", "short_history_after_cut", family="tokyo_open_fade"))
+    for i, fam in enumerate(("fam_a", "fam_b", "fam_c")):
+        world["params"][f"P{i}"] = {"lookback": 30 + i}
+        rows.append(_row(f"P{i}", "short_history_after_cut", family=fam))
+    _write(world["handoff"], rows)
+    examined_steered = []
+    for _ in range(3):
+        doc = world["run"](max_per_family_day=1, steer=STEER, steer_share=0.5)
+        assert doc["breadth"]["selected_by_group"] == {"asia_window": 1, "unsteered": 1}
+        cur = json.loads((world["tmp"] / "cursor.json").read_text("utf-8"))
+        examined_steered.append(cur["steer_cursors"]["asia_window|tokyo_open_fade"])
+    assert examined_steered == ["T0", "T1", "T2"]     # rotated, never pinned on T1
+    conv = sorted(r["cell"] for r in _ledger(world) if r["status"] == C.CONVERTED)
+    assert conv == ["P0", "P1", "P2", "T0"]           # every unsteered row reached
+
+
+def test_the_unsteered_floor_is_a_quarter_by_default() -> None:
+    from research import conversion_handoff_steer as S
+    assert S.unsteered_share() == 0.25
+    assert S.unsteered_share(Path("/nonexistent/steer.json")) == S.DEFAULT_UNSTEERED_SHARE

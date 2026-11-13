@@ -22,6 +22,9 @@ from research.conversion_handoff_common import DESK
 
 STEER = DESK / "data" / "breadth_steer.json"
 UNSTEERED = ""
+#: The share of every pass's examined rows kept for unsteered cells (Auditor MF2), unless the
+#: steer file names its own `unsteered_share`.
+DEFAULT_UNSTEERED_SHARE = 0.25
 
 
 def load_steer(path: Path = STEER) -> list[dict[str, Any]]:
@@ -32,6 +35,16 @@ def load_steer(path: Path = STEER) -> list[dict[str, Any]]:
         return []
     groups = doc.get("groups") if isinstance(doc, dict) else None
     return [g for g in groups or [] if isinstance(g, dict) and g.get("name")]
+
+
+def unsteered_share(path: Path = STEER) -> float:
+    """The floor of unsteered rows per pass, in [0, 1]; the default when the file says none."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        v = float(doc.get("unsteered_share", DEFAULT_UNSTEERED_SHARE))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return DEFAULT_UNSTEERED_SHARE
+    return min(1.0, max(0.0, v)) if v == v else DEFAULT_UNSTEERED_SHARE
 
 
 def _class_of(symbol: str) -> str:
