@@ -1380,6 +1380,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
                 "why": f"{type(exc).__name__}: {exc}"}
+    rate["market_split"] = market_split(now)
     if write:
         rate["attempt"] = attempt.pointer()
         _write_atomic(RATE_OUT, rate)
@@ -1751,6 +1752,33 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         "workers_last_sweep": queue.get("workers_last_sweep", UNMEASURED),
         "cores_basis": decision.get("cores_basis", UNMEASURED),
     }
+
+
+def market_split(now: datetime | None = None, *, ledger: Path | None = None,
+                 coverage: Path | None = None, state: Path | None = None) -> dict[str, Any]:
+    """THE REALISED SPLIT OF THE JUDGE'S TRIALS (principal, 2026-11-13 19:46Z).
+
+    Ruled trials by market group over the last 24h, the exotic share against its 10% ceiling and
+    its yield-earned target (`research/market_quota.py`), and the families holding queued cells
+    that have never had a single ruled trial. Never raises: a broken read is UNMEASURED by name.
+    """
+    try:
+        try:
+            import market_quota as mq
+        except ImportError:
+            from research import market_quota as mq  # type: ignore[no-redef]
+        st = mq.scan_ledger(ledger, state, now=now)
+        cov = _read_json(JUDGE_COVERAGE if coverage is None else coverage, {}) or {}
+        fams = (cov.get("families") or {}) if isinstance(cov, dict) else {}
+        queued = {f for f, r in fams.items()
+                  if isinstance(r, dict) and int(r.get("queued") or r.get("unjudged") or 0) > 0}
+        unmined = sorted(cov.get("unmined_live_families") or []) if isinstance(cov, dict) else []
+        out = mq.realised_split(st, now=now, live_families=queued)
+        out["families_with_queue"] = len(queued)
+        out["families_never_mined"] = unmined
+        return out
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
 
 
 def render(payload: dict[str, Any]) -> str:

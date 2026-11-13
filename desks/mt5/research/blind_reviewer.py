@@ -115,6 +115,14 @@ MIN_BARS = 60
 #: Half. A reviewer that vetoes on a 10% gap is prosecuting two cost models, not a claim.
 T_RATIO = 0.5
 
+#: THE EXOTIC COST BAR (principal, 2026-11-13 19:46Z). An exotic edge (`market_quota.is_exotic`:
+#: the registry's "Forex Exotics" class, or a pair on an exotic currency) must still be positive
+#: when charged this many times its live spread AND its swap cost before it may be promoted. The
+#: gauntlet's own gates are untouched; this is the promotion door's extra bar for the class whose
+#: quoted costs lie most (USDZAR's fill-hour spread is 6.2x its pooled median; see
+#: `engine.Costs.from_symbol`).
+EXOTIC_COST_MULT = 2.0
+
 #: Every string this module is allowed to write ABOUT a certificate's numbers -- labels it wrote
 #: itself, never a word the certificate wrote. The blindness is that no prose crosses.
 STAT_BASES = frozenset({"recorded_per_trade_r", "gate_expected_value_daily_r",
@@ -123,7 +131,8 @@ STAT_BASES = frozenset({"recorded_per_trade_r", "gate_expected_value_daily_r",
 RULE = ("VETO when the reproduced expectancy disagrees in sign with the certificate's, or the "
         f"reproduced t is below {T_RATIO:g}x the certified t, or the hostile roster blocks, or "
         "the edge is not positive once every fill on a measured spike minute (the post-rollover "
-        "minute above all) pays that minute's real tick spread. "
+        "minute above all) pays that minute's real tick spread, or the cell is an EXOTIC whose "
+        f"edge is not positive at {EXOTIC_COST_MULT:g}x its live spread and swap. "
         "UNMEASURED when bars, family, parameters or inputs cannot be loaded, or the "
         f"reproduction made fewer than {MIN_TRADES} trades -- absence is never a clean verdict "
         "and never a veto. A VETO withholds a certificate from PROMOTION and touches nothing "
@@ -449,6 +458,15 @@ def judge(certified: dict[str, Any], reproduced: dict[str, Any],
                    f"those minutes' real tick spread ({fm.get('spread_pts')} pts fill-weighted) "
                    f"the edge is {fm_exp:+.4f} per-trade R. Bid-only bars show a profit a real "
                    "order on that minute does not earn")
+    xb = reproduced.get("exotic_cost_bar")
+    if isinstance(xb, dict) and xb.get("status") == "MEASURED":
+        xb_exp = _num(xb.get("expectancy"))
+        if xb_exp is None or xb_exp <= 0.0:
+            why.append(f"EXOTIC COST BAR: at {xb.get('mult')}x the live spread "
+                       f"({xb.get('spread_pts')} pts) and swap the edge is "
+                       f"{xb_exp if xb_exp is not None else float('nan'):+.4f} per-trade R on "
+                       f"{xb.get('n')} trade(s); an exotic must survive twice its costs to be "
+                       "promoted")
     if why:
         return VETO, why
     return PASS, [f"reproduced expectancy {exp:+.4f} per-trade R on {n} trade(s), t="
@@ -520,6 +538,15 @@ def review_cell(key: str, spec: dict[str, Any], stats: dict[str, Any], *,
     fm = fill_minute_reprice(fn, spec, call, bars, symbol, universe=universe, replay=backend)
     if fm is not None:
         reproduced["at_fill_minute"] = fm
+    xb = exotic_cost_bar(fn, spec, call, bars, symbol, universe=universe, replay=backend,
+                         fill_minute=fm)
+    if xb is not None:
+        reproduced["exotic_cost_bar"] = xb
+        if xb.get("status") != "MEASURED":
+            # AN EXOTIC WHOSE DOUBLED COST COULD NOT BE PRICED IS NOT PROMOTABLE ON SILENCE, and
+            # is not vetoed on silence either (L1.28a): it is UNMEASURED by name.
+            return done(UNMEASURED, [f"exotic cost bar unmeasured: {xb.get('why')}"],
+                        reproduced=reproduced, basis=basis)
     if time.monotonic() - t0 > budget_s:
         return done(UNMEASURED, [f"budget: the reproduction alone took past {budget_s:g}s"],
                     reproduced=reproduced, basis=basis)
@@ -568,6 +595,69 @@ def fill_minute_reprice(fn: Any, spec: dict[str, Any], params: dict[str, Any], b
         return {**priced, "status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:200]}
     return {**priced, "base_spread_pts": base, "n": int(st.n),
             "expectancy": _num(st.expectancy), "t": _num(st.t_stat)}
+
+
+def _symbol_row(symbol: str, universe: Path | None = None) -> dict[str, Any] | None:
+    try:
+        meta = json.loads(((universe or UNIVERSE) / "universe.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    row = meta.get(symbol) if isinstance(meta, dict) else None
+    return row if isinstance(row, dict) else None
+
+
+def doubled_costs(costs: Any, mult: float = EXOTIC_COST_MULT) -> Any:
+    """`costs` with the spread and every swap CHARGE scaled by `mult`. A swap CREDIT (negative
+    financing) is left as it is: multiplying a credit would pay the edge more, not charge it."""
+    import dataclasses
+    kw: dict[str, Any] = {"spread_per_lot": float(costs.spread_per_lot) * float(mult)}
+    fixed = float(getattr(costs, "swap_per_lot_per_night", 0.0) or 0.0)
+    if fixed > 0:
+        kw["swap_per_lot_per_night"] = fixed * float(mult)
+    per_price = getattr(costs, "swap_per_lot_per_price", None)
+    if per_price is not None and float(per_price) > 0:
+        kw["swap_per_lot_per_price"] = float(per_price) * float(mult)
+    return dataclasses.replace(costs, **kw)
+
+
+def exotic_cost_bar(fn: Any, spec: dict[str, Any], params: dict[str, Any], bars: Any,
+                    symbol: str, *, universe: Path | None = None,
+                    replay: Callable[[Any, list[Any], Any], list[float]] | None = None,
+                    fill_minute: dict[str, Any] | None = None,
+                    mult: float = EXOTIC_COST_MULT) -> dict[str, Any] | None:
+    """The same trades at `mult` x the LIVE spread and swap, for an exotic symbol; None otherwise.
+
+    "Live" is the larger of the registry's measured median spread and the fill-weighted spread
+    `fill_minute_reprice` measured on the spike minutes these fills actually land on: a bar that
+    doubled the median of an hour the strategy never trades in would double the wrong number.
+    """
+    try:
+        import market_quota
+    except Exception as exc:                           # pragma: no cover - import environment
+        return {"status": UNMEASURED, "why": f"market_quota unimportable: {exc}"[:200]}
+    if not market_quota.is_exotic(symbol):
+        return None
+    row = _symbol_row(symbol, universe)
+    if row is None or _hostile is None:
+        return {"status": UNMEASURED, "mult": mult,
+                "why": f"{symbol} has no registry row to price its spread and swap from"}
+    try:
+        from mt5desk.engine import Costs
+        base = _num(row.get("median_spread_pts")) or 0.0
+        live = _num((fill_minute or {}).get("spread_pts"))
+        pts = max(base, live) if live is not None else base
+        costs = doubled_costs(Costs.from_symbol(row, spread_pts=pts), mult)
+        if getattr(costs, "swap_unmeasured", None):
+            return {"status": UNMEASURED, "mult": mult, "spread_pts": pts,
+                    "why": f"swap unpriced: {costs.swap_unmeasured}"}
+        st = make_evaluate(fn, side=int(spec.get("side") or 1), params=dict(params),
+                           costs=costs, replay=replay or _engine_replay)(bars)
+    except Exception as exc:
+        return {"status": UNMEASURED, "mult": mult,
+                "why": f"{type(exc).__name__}: {exc}"[:200]}
+    return {"status": "MEASURED", "mult": mult, "spread_pts": pts,
+            "spread_basis": "fill_minute" if live is not None and live > base else "median",
+            "n": int(st.n), "expectancy": _num(st.expectancy), "t": _num(st.t_stat)}
 
 
 def _run_hostile(evaluate: Callable[[Any], Any], bars: Any, *, seed: int,
@@ -647,7 +737,19 @@ def order_cells(keys: Sequence[str], ledger_path: Path | None = None) -> list[st
     last: dict[str, str] = {}
     for row in ledger_rows(ledger_path):
         last[str(row["cell"])] = str(row.get("at") or "")
-    return sorted(keys, key=lambda k: (k in last, last.get(k, ""), k))
+    # EXOTICS FIRST WITHIN EACH TIER (2026-11-13): the 2x cost bar only withholds a certificate
+    # once this organ has reviewed it, so the class it exists for is reviewed before the rest.
+    try:
+        import market_quota
+
+        def _ex(k: str) -> int:
+            # `<hunt>.<SYMBOL>.<family>...`: whichever segment is a six-letter pair names it.
+            segs = [x for x in str(k).split(".") if len(x) == 6 and x.isalpha() and x.isupper()]
+            return 0 if any(market_quota.is_exotic(x) for x in segs) else 1
+    except Exception:                                  # pragma: no cover - import environment
+        def _ex(k: str) -> int:
+            return 1
+    return sorted(keys, key=lambda k: (k in last, _ex(k), last.get(k, ""), k))
 
 
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:

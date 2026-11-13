@@ -1262,6 +1262,28 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
               f"{n_followers} more ride on a twin being built this round -- "
               f"{n_before_eq - len(order_)} build(s) saved; each is still judged under its own id")
 
+    # THE MARKET AND FAMILY QUOTA (principal, 2026-11-13 19:46Z; `research/market_quota.py`).
+    # The keep arrives family-BLOCKED from the sealed trim, so the gate-room cut below and the
+    # build budget ended every round before the families that sort late -- 53 of 125 families
+    # had never been judged. This interleaves the build list so every prefix holds each market
+    # group at its yield-earned share (exotics at most 10%, earned, decaying toward zero) and
+    # each family at least its exploration share. A permutation plus a hold: exotic cells over
+    # their share keep their docket place for a later round; nothing is dropped.
+    quota_report: dict | None = None
+    n_quota_held = 0
+    try:
+        import market_quota as MQ
+        order_, quota_held, quota_report = MQ.apply_quota(order_)
+        n_quota_held = len(quota_held)
+        print(f"  market quota: exotic target {quota_report['exotic_target_share']:.1%}, "
+              f"{n_quota_held} exotic cell(s) held for a later round, "
+              f"{quota_report['families_in_intake']} famil(ies) interleaved")
+    except Exception as exc:
+        # FAIL OPEN ON THE ORDER, NEVER SILENT: the round builds the sealed order as before and
+        # the census says the quota did not run.
+        quota_report = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        print(f"  market quota unavailable ({type(exc).__name__}: {exc}); sealed order kept")
+
     room = gate_room()
     n_room_held = 0
     if room.get("status") == "MEASURED":
@@ -1274,6 +1296,14 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                   f"{n_room_held} cold cell(s) wait for the next data day's room -- a sweep "
                   f"killed at its limit publishes nothing")
 
+    if quota_report and "status" not in quota_report:
+        with contextlib.suppress(Exception):
+            # WHERE EACH FAMILY'S CELLS STOP, stage by stage. A family the judge never reaches
+            # is either cut by ORDER (fixed above) or never arrives -- banned, trimmed, no bars,
+            # already warm, deferred -- and this names which, per family, every round.
+            quota_report = MQ.head_report(quota_report, order_, funnel={
+                "docket": specs, "sealed_keep": keep, "keyed": keyed, "cold": cold,
+                "held_deferred": held, "built": order_})
     counts = {"warmed": 0, "missing": 0, "failed": 0, "hit": 0}
     fanned = served_now
     never_warmed = 0
@@ -1443,6 +1473,11 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
         "modifier_refused_not_sent": 0,
         "order_census": order_census,
         "gate_room": room, "held_for_gate_room": n_room_held,
+        "market_quota": ({k: quota_report.get(k) for k in
+                          ("status", "why", "exotic_target_share", "target_shares",
+                           "held_exotic", "families_in_intake", "built_this_round")}
+                         if quota_report else None),
+        "held_for_market_quota": n_quota_held,
         "seconds": round(secs, 1),
         "finished_ts": round(time.time(), 3),
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
