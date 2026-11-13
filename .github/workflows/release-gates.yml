@@ -178,7 +178,11 @@ jobs:
       group: independent-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 200
+    # 350 (GitHub ends a hosted job at 360): a PR whose money-path files must be read in one part
+    # needs about an hour for that one call on this runner's CPU (independent_review.py
+    # LOCAL_S_PER_KCHAR). The review's own budget (REVIEW_BUDGET_MIN below) ends 40 minutes
+    # before this, so the job always ends with a verdict or REVIEW_UNAVAILABLE, never killed.
+    timeout-minutes: 350
     steps:
       # the base only: the PR's code never runs in the reviewer's job. LIVE'S TIP, NOT THE EVENT'S
       # BASE SHA, for a PR into LIVE (2026-11-03): a re-run replays the original event, so with
@@ -231,6 +235,7 @@ jobs:
 
       - name: Review the whole diff
         env:
+          REVIEW_BUDGET_MIN: "310"
           OPENROUTER_FREE_KEY: ${{ secrets.OPENROUTER_FREE_KEY }}
           GEMINI_FREE_KEY: ${{ secrets.GEMINI_FREE_KEY }}
           GH_TOKEN: ${{ github.token }}
