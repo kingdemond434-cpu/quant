@@ -4925,9 +4925,29 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     return float(mode), f"fixed lot {float(mode):.2f} from the sleeve row"
 
 
+def _paused_account_reading() -> None:
+    """A PAUSED GATEWAY STILL READS THE ACCOUNT (2026-11-13). The Fusion deadman judges its ruin
+    rail on gateway_state.json's `equity`, and a pause stopped every write: from 2026-10-30 the
+    rail read the same 266.01 for two weeks, so no recovery or deposit could ever lift the halt it
+    had written. Read-only -- equity into the state file, no order, no reconcile, no sizing."""
+    try:
+        if not connect():
+            return
+        acc = mt5.account_info()
+        if acc is None:
+            return
+        st = load_state()
+        st["equity"] = round(float(acc.equity), 2)
+        st["paused_reading_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+        save_state(st)
+    except Exception as exc:  # a reading must never take the paused gateway down
+        log(f"paused: account reading failed ({type(exc).__name__}: {exc})")
+
+
 def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
+        _paused_account_reading()
         return
     if not connect():
         return
