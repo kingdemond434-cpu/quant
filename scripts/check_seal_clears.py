@@ -79,7 +79,8 @@ def judge_carriers(root: Path = ROOT, ci: bool | None = None) -> dict[str, objec
     folder = root / sign_train.CARRIERS
     names = sorted(p.name for p in folder.iterdir()) if folder.is_dir() else []
     if not names:
-        return {"verdict": "PASS", "carriers": 0, "why": "no seal carrier in the tree"}
+        clean = "PASS"
+        return {"verdict": clean, "carriers": 0, "why": "no seal carrier in the tree"}
     if ci if ci is not None else os.environ.get("CI") == "true":
         return {
             "verdict": "BREACH",
