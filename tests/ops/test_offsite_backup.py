@@ -21,6 +21,12 @@ import offsite_backup as ob  # noqa: E402
 NOW = datetime(2026, 9, 30, 12, tzinfo=UTC)
 
 
+@pytest.fixture(autouse=True)
+def _roomy_drive(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The guard reads the test machine's real disk otherwise; its own tests pass free_gb."""
+    monkeypatch.setattr(ob, "_drive_free_gb", lambda path: 10_000.0)
+
+
 def _restored_fixture_path(target: Path, source: Path) -> Path:
     """A restic archive path under its restore root, including a Windows drive."""
     return target / source.as_posix().lstrip("/").replace(":", "")
@@ -311,3 +317,55 @@ def test_init_local_arms_once_and_never_prints_the_key(tmp_path: Path) -> None:
     assert doc["password"] not in msg and doc["key_escrowed_off_box"] is False
     assert ob.init_local(r"D:\other", cfg).startswith("kept")
     assert json.loads(cfg.read_text()) == doc   # the only key to its snapshots is never replaced
+
+
+def test_disk_guard_never_lets_a_local_repository_fill_the_drive(tmp_path: Path) -> None:
+    f = tmp_path / "ticks.bin"
+    f.write_bytes(b"x" * 1024)
+    floor = ob.LOCAL_MIN_FREE_GB
+    assert ob.disk_guard("s3:https://x/b", [str(f)], first=True, free_gb=0.0)["ok"]
+    assert ob.disk_guard(str(tmp_path), [str(f)], first=True, free_gb=floor + 1)["ok"]
+    low = ob.disk_guard(str(tmp_path), [str(f)], first=False, free_gb=floor - 1)
+    assert not low["ok"] and "floor" in low["why"]
+    # the first snapshot counts the whole source against the room
+    sparse = tmp_path / "sparse.bin"
+    with sparse.open("wb") as fh:
+        fh.truncate(2 * 1024 ** 3)
+    big = ob.disk_guard(str(tmp_path), [str(sparse)], first=True, free_gb=floor + 1)
+    assert not big["ok"] and big["projected_gb"] >= 2.0
+
+
+def test_a_guarded_run_writes_nothing_to_the_repository_and_says_why(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ob, "_drive_free_gb", lambda path: 1.0)
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "a.json").write_text("{}")
+    cfg = tmp_path / "c.json"
+    cfg.write_text(json.dumps({"repository": str(tmp_path / "repo"), "password": "K"}))
+    calls: list[list[str]] = []
+
+    def runner(cmd: list[str], env: dict[str, str]) -> Any:
+        calls.append(cmd)
+        raise AssertionError("restic must not run under the disk guard")
+    d = ob.run(config=cfg, out=tmp_path / "o.json", sources=(str(src),), restic="restic",
+               runner=runner, now=NOW)
+    assert d["status"] == "DISK_GUARD" and calls == []
+    assert ob.verdict(d, NOW)[0] == "DISK_GUARD"
+    assert "K" not in json.dumps(d.get("disk_guard"))
+
+
+def test_a_local_repository_backs_up_the_small_stores_only_and_never_memecoin(
+        tmp_path: Path) -> None:
+    assert not set(ob.LOCAL_SOURCES) & {r"C:\moat\bronze"}
+    assert all(s in ob.SOURCES for s in ob.LOCAL_SOURCES)
+    (tmp_path / "memecoin_capture").mkdir()
+    (tmp_path / "memecoin_capture" / "capture.db").write_text("x")
+    (tmp_path / "memecoin.sqlite").write_text("x")
+    (tmp_path / "ledger.jsonl").write_text("x")
+    assert [Path(f).name for f in ob.files_to_ship([str(tmp_path)])] == ["ledger.jsonl"]
+    cfg = tmp_path / "c.json"
+    cfg.write_text(json.dumps({"repository": str(tmp_path / "repo"), "password": "K"}))
+    d = ob.run(config=cfg, out=tmp_path / "o.json", restic="", now=NOW)
+    assert d["retention"] == " ".join(ob.LOCAL_RETENTION)
+    assert d["included"] + d["missing"] == list(ob.LOCAL_SOURCES)
