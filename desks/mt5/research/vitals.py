@@ -10,10 +10,11 @@ is not. It writes nothing else and touches no terminal.
 
 ON THE WIRE (#1075, Auditor MF2): no account number and no absolute money. Accounts are named by
 alias (e8, ftmo, fusion); P&L and drawdown are ratios. The file is published by MT5-ShadowSync
-($reportPaths); `scripts/check_vitals_fresh.py` turns a stale heartbeat into a red exit.
+($reportPaths); `vitals.py --check` turns a stale heartbeat into a red exit.
 
     python desks/mt5/research/vitals.py            # one write
     python desks/mt5/research/vitals.py --serve    # rewrite every --every seconds (resident)
+    python desks/mt5/research/vitals.py --check    # RED and exit 1 on a stale heartbeat
 """
 from __future__ import annotations
 
@@ -273,11 +274,37 @@ def write(doc: dict[str, Any], out: Path = OUT) -> Path:
     return out
 
 
+def verdict(path: Path, max_age_s: float, now: datetime | None = None) -> tuple[bool, str]:
+    """A STALE HEARTBEAT IS RED. (ok, line): not ok when VITALS is older than `max_age_s`, absent
+    or unreadable -- absence is never a clean verdict."""
+    now = now or datetime.now(UTC)
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+        at = datetime.fromisoformat(str(doc["heartbeat_at"]).replace("Z", "+00:00"))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return False, f"RED: VITALS unreadable at {path} ({type(exc).__name__}) -- {UNMEASURED}"
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    age = (now - at).total_seconds()
+    if age > max_age_s:
+        return False, f"RED: VITALS heartbeat {age:.0f}s old (limit {max_age_s:.0f}s), at {at}"
+    return True, f"OK: VITALS heartbeat {age:.0f}s old"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--serve", action="store_true")
     ap.add_argument("--every", type=float, default=5.0)
+    # --check: read, never write. Exit 1 with a RED line when the heartbeat is stale. A reader of
+    # the published mirror (every 15 min) passes --max-age-s 1200.
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--path", default=str(OUT))
+    ap.add_argument("--max-age-s", type=float, default=120.0)
     a = ap.parse_args(argv)
+    if a.check:
+        ok, msg = verdict(Path(a.path), a.max_age_s)
+        print(msg)
+        return 0 if ok else 1
     while True:
         try:
             write(build())

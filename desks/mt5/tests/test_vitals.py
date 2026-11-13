@@ -3,12 +3,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
-REPO = DESK.parents[1]
 
 
 def _vitals(monkeypatch, root: Path):
@@ -79,9 +77,8 @@ def test_absent_sources_read_unmeasured_not_zero(tmp_path, monkeypatch) -> None:
     assert doc["breadth"]["certs"] == "UNMEASURED"
 
 
-def test_a_stale_heartbeat_is_red(tmp_path) -> None:
-    sys.path.insert(0, str(REPO / "scripts"))
-    import check_vitals_fresh as cv
+def test_a_stale_heartbeat_is_red(tmp_path, monkeypatch) -> None:
+    cv = _vitals(monkeypatch, tmp_path)
 
     p = tmp_path / "VITALS.json"
     now = datetime.now(UTC)

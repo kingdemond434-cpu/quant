@@ -799,7 +799,7 @@ $relPaths = @(
 $ReportCapBytes = 4MB
 $reportPaths = @(
     # the desk's live state in one file (2026-11-13, research/vitals.py, resident MT5-Vitals):
-    # ratios only on the wire; scripts/check_vitals_fresh.py makes a stale heartbeat red
+    # ratios only on the wire; research/vitals.py --check makes a stale heartbeat red
     "desks/mt5/reports/VITALS.json",
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
