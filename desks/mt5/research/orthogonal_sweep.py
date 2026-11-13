@@ -430,7 +430,9 @@ def _cot_frame_in_tree(symbol: str):
     series = series[series.index.notna() & ~series.index.duplicated(keep="last")]
     if len(symbol) == 6 and symbol[3:] == _COT_SLUG_CCY.get(str(slug)):
         series = -series
-    series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS + 3)
+    from mt5desk.market_calendar import cot_usable_index
+    series.index = cot_usable_index(series.index)        # holiday weeks D+8, shutdowns dropped
+    series = series[series.index.notna()]
     return series.rename("net").to_frame() if len(series) >= 52 else None
 
 

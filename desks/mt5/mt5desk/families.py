@@ -1091,7 +1091,12 @@ def _cot_entries(
     for rd, s in zip(cot["report_date"], side):
         if s == 0 or pd.isna(rd):
             continue
-        monday = rd + pd.Timedelta(days=6)
+        # USABLE, not "Tuesday + 6": a holiday-week report is released a business day late and
+        # a shutdown-delayed one is dropped (market_calendar; Auditor MF3 on #845, 2026-11-13).
+        from mt5desk.market_calendar import cot_usable_at
+        monday = cot_usable_at(rd)
+        if monday is None:
+            continue
         loc = int(np.searchsorted(idx_ns, np.int64(pd.Timestamp(monday).value)))
         if loc + 1 >= len(h1):
             continue

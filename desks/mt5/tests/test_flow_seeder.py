@@ -325,3 +325,29 @@ def test_the_sealed_build_cell_builds_every_flow_cell(tape: pd.DataFrame) -> Non
     for sym, fam, bars, params in cases:
         cell = eg.build_cell(sym, fam, params, {}, h1_override=bars)
         assert cell is not None and len(cell.get("sigs") or []) > 0, fam
+
+
+# ------------------------------------------------------- Auditor HOLD on #845 (2026-11-13) ---
+def test_cot_is_never_read_before_a_holiday_week_release() -> None:
+    """MF3: Veterans Day (Mon 2024-11-11) moved the release to Monday 15:30 ET, so the report as
+    of Tue 2024-11-12 is not usable on Monday 2024-11-18 00:00 -- only from Wednesday."""
+    from mt5desk.market_calendar import cot_usable_at
+    assert cot_usable_at(date(2024, 11, 5)) == pd.Timestamp("2024-11-11", tz="UTC")
+    assert cot_usable_at(date(2024, 11, 12)) == pd.Timestamp("2024-11-20", tz="UTC")
+    assert cot_usable_at(date(2024, 12, 24)) == pd.Timestamp("2025-01-01", tz="UTC")
+    for d in (date(2013, 10, 8), date(2019, 1, 15), date(2025, 10, 14)):
+        assert cot_usable_at(d) is None                 # shutdown-delayed: dropped, not guessed
+
+
+def test_comex_gold_and_third_friday_respect_the_exchange_calendar() -> None:
+    from mt5desk.families_flow import comex_gold_option_expiry, third_friday
+    assert comex_gold_option_expiry(2025, 7) == date(2025, 7, 28)       # SF1: Aug-25 options
+    assert third_friday(2026, 6) == date(2026, 6, 18)                   # SF2: Juneteenth Friday
+    assert third_friday(2025, 4) == date(2025, 4, 17)                   # Good Friday 2025-04-18
+    assert third_friday(2026, 3) == date(2026, 3, 20)
+
+
+def test_no_exception_message_reaches_state_or_report() -> None:
+    """MF4: the sealed builder's `BLOCKED_DATA: ...: OSError: <box path>` keeps its type only."""
+    why = fsd.safe_why("BLOCKED_DATA: raw COT for XAUUSD: OSError: [Errno 2] C:\\opt\\quant\\x")
+    assert why == "BLOCKED_DATA: raw COT for XAUUSD: OSError" and "opt" not in why

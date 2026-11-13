@@ -36,7 +36,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
 from collections import Counter
@@ -55,6 +54,9 @@ OUT = BASE / "reports" / "FLOW_SEEDER.json"
 STATE = BASE / "data" / "flow_seeder_state.json"
 SEED_FLOOR = 66
 REMEASURE_DAYS = 7
+#: Seconds between state saves inside a pass, so a leg killed at its budget keeps what it
+#: measured instead of repeating it every hour (Auditor SF3 on #845, 2026-11-13).
+SAVE_EVERY_S = 30.0
 #: A COT file whose newest report is older than this cannot fire forward.
 COT_STALE_DAYS = 14
 
@@ -89,7 +91,9 @@ GAMMA_INDICES: tuple[tuple[str, ...], ...] = (
 #: (label, day_from, day_to) in weekdays from the third Friday.
 GAMMA_WINDOWS = (("opex_week", -4, 0), ("opex_day", 0, 0), ("monday_after", 1, 1),
                  ("week_after", 1, 5))
-GAMMA_HOURS = (16, 22)                 # broker clock: the US cash open, and the US afternoon
+#: Broker clock (New York + 7): 16 = 09:00 NY, the decision bar just BEFORE the 09:30 cash open
+#: (entry at the next bar, 10:00 NY); 22 = 15:00 NY, the last hour into the cash close.
+GAMMA_HOURS = (16, 22)
 TAPE_PRIORITY: tuple[str, ...] = (
     "XAUUSD", "XAGUSD", "US500", "NAS100", "USTEC", "US30", "GER40", "UK100", "JPN225",
     "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD")
@@ -218,10 +222,38 @@ def cot_freshness(today: date | None = None) -> dict[str, Any]:
                 continue
             last = table["report_date"].max().date()
             age = (today - last).days
-            usable_at = last + timedelta(days=COT_RELEASE_LAG_D)
+            from mt5desk.market_calendar import cot_usable_at
+            when = cot_usable_at(last)
+            usable_at = (when.date() if when is not None
+                         else last + timedelta(days=COT_RELEASE_LAG_D))
             out[key] = {"last_report": last.isoformat(), "usable_at": usable_at.isoformat(),
                         "age_days": age,
                         "status": "STALE" if age > COT_STALE_DAYS else "FRESH"}
+    return out
+
+
+def tape_freshness(today: date | None = None) -> dict[str, Any]:
+    """Per tape symbol: how many silver days exist and whether today's is built yet. A cell on a
+    tape whose current day is absent cannot fire forward, and that is said, never left silent
+    (Auditor SF4 on #845, 2026-11-13)."""
+    from mt5desk.families_flow import tape_days
+    today = today or datetime.now(tz=UTC).date()
+    out: dict[str, Any] = {}
+    for sym in TAPE_PRIORITY:
+        days = tape_days(sym)
+        if not days:
+            continue
+        last = days[-1].split(".")[0]
+        try:
+            lag = (today - date.fromisoformat(last[:10])).days
+        except ValueError:
+            out[sym] = {"days": len(days), "last_day": last, "status": "UNMEASURED"}
+            continue
+        out[sym] = {"days": len(days), "last_day": last, "floor_trade_days": SEED_FLOOR,
+                    # today's silver day is built after the day closes, so a 1-day lag is
+                    # normal and still means today's bars cannot fire yet; 2+ is a stalled tape
+                    "status": ("CURRENT" if lag <= 0 else "TAPE_NOT_BUILT_TODAY" if lag == 1
+                               else f"TAPE_BEHIND_{lag}_DAYS")}
     return out
 
 
@@ -240,13 +272,11 @@ def _save_state(state: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
-_EXC_TAIL = re.compile(r"((?:raised|failed:)\s+[A-Za-z_][A-Za-z0-9_.]*)\s*:.*$", re.S)
-
-
 def safe_why(why: object) -> str:
-    """A build refusal with any exception MESSAGE cut off after its class name: the sealed
-    builder's own text can carry `str(exc)`, and only the type may reach a report."""
-    return _EXC_TAIL.sub(r"\1", str(why))[:160]
+    """A build refusal with any exception MESSAGE cut off after its class name (one rule:
+    `specialist_cell.safe_why`; Auditor MF4 -- `BLOCKED_DATA: raw COT for X: OSError: <path>`)."""
+    from research.specialist_cell import safe_why as _safe
+    return _safe(why)
 
 
 def _stale(day: str | None, today: date) -> bool:
@@ -261,6 +291,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     from research import specialist_cell as sc
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
     started = time.monotonic()
+    last_save = started
     today = datetime.now(tz=UTC).date()
     grid = plan() if cells is None else cells
     meta = sc._meta()
@@ -293,6 +324,9 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                      **{k: c[k] for k in ("bucket", "symbol", "family", "mechanism", "params")}}
             cs[ident] = prior
             measured_now.append(c)
+            if not dry_run and time.monotonic() - last_save > SAVE_EVERY_S:
+                _save_state(state)
+                last_save = time.monotonic()
             row["measured_this_pass"] += 1
         if not prior.get("built"):
             row["input_gap"] += 1
@@ -363,6 +397,10 @@ def main(argv: list[str] | None = None) -> int:
         rep["cot_data"] = cot_freshness()
     except Exception as exc:
         rep["cot_data"] = {"status": f"UNMEASURED: {type(exc).__name__}"}
+    try:
+        rep["tape_data"] = tape_freshness()
+    except Exception as exc:
+        rep["tape_data"] = {"status": f"UNMEASURED: {type(exc).__name__}"}
     rep["generated_utc"] = _now()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUT.with_suffix(".tmp")

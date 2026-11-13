@@ -48,6 +48,9 @@ OUT = BASE / "reports" / "HUNT16_SEEDER.json"
 STATE = BASE / "data" / "hunt16_seeder_state.json"
 SEED_FLOOR = 66
 REMEASURE_DAYS = 7
+#: Seconds between state saves inside a pass, so a leg killed at its budget keeps what it
+#: measured instead of repeating it every hour (Auditor SF3 on #845, 2026-11-13).
+SAVE_EVERY_S = 30.0
 #: run_hunt16.WINDOWS signal hours (asia's is its range start), plus None = every hour.
 SIGNAL_HOURS: tuple[int | None, ...] = (None, 7, 13, 14, 17)
 DAY_STATES: tuple[str | None, ...] = (None, "TREND_DAY", "NORMAL_DAY")
@@ -128,6 +131,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     from research import specialist_cell as sc
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
     started = time.monotonic()
+    last_save = started
     today = datetime.now(tz=UTC).date()
     cells = plan(symbols)
     meta = sc._meta()
@@ -159,6 +163,9 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                      **{k: c[k] for k in ("bucket", "symbol", "family", "base_family", "params")}}
             cs[ident] = prior
             measured_now.append(c)
+            if not dry_run and time.monotonic() - last_save > SAVE_EVERY_S:
+                _save_state(state)
+                last_save = time.monotonic()
             row["measured_this_pass"] += 1
         if not prior.get("built"):
             row["input_gap"] += 1

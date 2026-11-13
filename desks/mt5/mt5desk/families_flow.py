@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
-from datetime import date, timedelta
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -70,7 +70,9 @@ COT_GROUPS: dict[str, dict[str, tuple[str, str, str]]] = {
                         "open_interest_all")},
 }
 COT_MODES = ("extreme_fade", "extreme_follow", "change_follow", "change_fade")
-#: Tuesday as-of + 3 days to the Friday release + 3 days to the Monday after it.
+#: Tuesday as-of + 3 days to the Friday release + 3 days to the Monday after it -- a NORMAL week.
+#: Holiday weeks (D+8) and shutdown-delayed reports (dropped) are `market_calendar.cot_usable_at`;
+#: every COT reader here goes through it (Auditor MF3, 2026-11-13).
 COT_RELEASE_LAG_D = 6
 #: A usable report whose first bar is further away than this is a data hole, not an entry.
 COT_MAX_ENTRY_GAP_D = 4
@@ -140,8 +142,10 @@ def cot_net_share(report: str, market: str, group: str) -> pd.Series | None:
                   for c in cols)
     with np.errstate(divide="ignore", invalid="ignore"):
         share = np.where(oi > 0, (lo - sh) / oi, np.nan)
-    usable = table["report_date"] + pd.Timedelta(days=COT_RELEASE_LAG_D)
-    s = pd.Series(share, index=pd.DatetimeIndex(usable)).dropna()
+    from mt5desk.market_calendar import cot_usable_index
+    usable = cot_usable_index(table["report_date"])
+    s = pd.Series(share, index=usable)
+    s = s[s.index.notna()].dropna()
     return s if not s.empty else None
 
 
@@ -214,21 +218,16 @@ def family_cot_report(
 
 # --------------------------------------------------------------------------- expiry calendar ---
 def third_friday(year: int, month: int) -> date:
-    """The monthly equity-option expiry: `forced_flow_calendar.nth_weekday(y, m, FRIDAY, 3)`,
-    computed here from the date alone so the family needs no research import."""
-    first = date(year, month, 1)
-    return first + timedelta(days=(4 - first.weekday()) % 7 + 14)
+    """The monthly equity-option expiry: the third Friday, or the business day before it when it
+    is an exchange holiday (Good Friday, Juneteenth; Auditor SF2) -- `market_calendar`."""
+    from mt5desk.market_calendar import monthly_option_expiry
+    return monthly_option_expiry(year, month)
 
 
 def add_weekdays(day: date, n: int) -> date:
-    """`day` moved `n` weekdays (Mon-Fri; no holiday table, as the family's docstring says)."""
-    step = 1 if n >= 0 else -1
-    out = day
-    for _ in range(abs(int(n))):
-        out += timedelta(days=step)
-        while out.weekday() >= 5:
-            out += timedelta(days=step)
-    return out
+    """`day` moved `n` exchange BUSINESS days (weekends and NYSE/CME holidays skipped)."""
+    from mt5desk.market_calendar import add_business_days
+    return add_business_days(day, n)
 
 
 def expiry_days(lo: date, hi: date, expiry: str, day_from: int, day_to: int) -> set[date]:
@@ -327,14 +326,11 @@ PIN_MODES = ("pin", "unpin")
 
 
 def comex_gold_option_expiry(year: int, month: int) -> date:
-    """COMEX gold (OG) options on the contract whose delivery month FOLLOWS (year, month): trading
-    terminates four business days before the last business day of (year, month). Weekdays only,
-    no exchange holiday table -- the same limit `expiry_gamma` states."""
-    nxt = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
-    last = nxt - timedelta(days=1)
-    while last.weekday() >= 5:
-        last -= timedelta(days=1)
-    return add_weekdays(last, -4)
+    """COMEX gold (OG) options on the contract whose delivery month FOLLOWS (year, month): the 4th
+    last business day of (year, month), one business day earlier when that is a Friday or the
+    day before an exchange holiday (Auditor SF1: Aug-25 options expired Jul 28, not Jul 25)."""
+    from mt5desk.market_calendar import comex_gold_option_expiry as _expiry
+    return _expiry(year, month)
 
 
 def family_strike_pin(

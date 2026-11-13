@@ -56,6 +56,7 @@ import argparse
 import hashlib
 import itertools
 import json
+import re
 import sys
 import time
 from collections import Counter
@@ -469,6 +470,17 @@ def _meta() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+_EXC_TAIL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Warning|Exit|Interrupt))"
+                       r"\s*:.*$", re.S)
+
+
+def safe_why(why: object) -> str:
+    """A refusal with any exception MESSAGE cut after its class name. The sealed builder's
+    LAST_BUILD_FAILURE can carry `{Type}: {exc}` (an OSError names a box path) and these reasons
+    reach published reports and committed state (Auditor MF4 on #845, 2026-11-13)."""
+    return _EXC_TAIL.sub(r"\1", str(why))[:160]
+
+
 def measure(sym: str, family: str, params: dict[str, Any], meta: dict[str, Any]
             ) -> dict[str, Any]:
     """Build the cell through the SEALED `build_cell` and count how it fires on what it built."""
@@ -481,8 +493,8 @@ def measure(sym: str, family: str, params: dict[str, Any], meta: dict[str, Any]
         # HUNT16_SEEDER.json) and free exception text can carry paths or data (Auditor MF1).
         return {"built": False, "why": f"build_cell raised {type(exc).__name__}"}
     if cell is None:
-        return {"built": False, "why": str(getattr(eg, "LAST_BUILD_FAILURE", None)
-                                           or "build_cell returned None")[:240]}
+        return {"built": False, "why": safe_why(getattr(eg, "LAST_BUILD_FAILURE", None)
+                                                or "build_cell returned None")}
     got = firing(list(cell.get("sigs") or []), cell["df"])
     return {"built": True, **got}
 
