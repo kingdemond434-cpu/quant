@@ -415,6 +415,37 @@ class Graph:
             self._buried = None
         return self._rows
 
+    def projected_rows(self, fields: tuple[str, ...]) -> list[dict[str, Any]]:
+        """Every row, keeping only `fields`, read line by line and never cached.
+
+        FOR READERS THAT NEED A FEW COLUMNS OF A VERY LARGE LEDGER. Measured on the box
+        2026-11-10: the ledger is 4.59 GB and 7.31M rows. `rows()` holds every row whole, and
+        the research bandit asked for it twice per run; that step held MT5-Daily silent for nine
+        hours on 2026-11-09 until the PT10H kill. Keeping only the named keys bounds memory by
+        what the reader uses rather than by everything ever recorded.
+
+        A line that does not parse is SKIPPED, not fatal. `rows()` drops the whole ledger on one
+        bad line, and the judge appends while readers read, so a torn last line is ordinary.
+        """
+        if self._snapshot:
+            return [{k: r[k] for k in fields if k in r} for r in self._rows
+                    if isinstance(r, dict)]
+        out: list[dict[str, Any]] = []
+        try:
+            with self.path.open(encoding="utf-8", errors="replace") as ledger:
+                for ln in ledger:
+                    if not ln.strip():
+                        continue
+                    try:
+                        r = json.loads(ln)
+                    except ValueError:
+                        continue
+                    if isinstance(r, dict):
+                        out.append({k: r[k] for k in fields if k in r})
+        except OSError:
+            return []
+        return out
+
     def current(self) -> dict[str, dict[str, Any]]:
         """Last row per node id -- the present fate of every hypothesis ever recorded."""
         rows = self.rows()
