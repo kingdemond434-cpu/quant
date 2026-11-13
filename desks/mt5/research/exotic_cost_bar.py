@@ -18,7 +18,8 @@ the exotic candidates fill at broker hour 00-01, the rollover dead book:
 
 So a forward clock read +0.6R on a book whose real entry cost was a full R or more. The live
 ledger agrees: of the six exotics that reached the account, five closed net negative (USDNOK -21
-over 23 trades, CHFNOK -10 over 17, EURZAR, GBPSEK, GBPMXN) and one is flat (USDMXN, 1 trade). The research gauntlet already charges the fill hour
+over 23 trades, CHFNOK -10 over 17, EURZAR, GBPSEK, GBPMXN) and one is flat (USDMXN, 1 trade).
+The research gauntlet already charges the fill hour
 (`external_gauntlet.build_cell`) and stresses that spread at 3x, so a fresh STILL_PASSES re-grade
 covers the backtest side; THIS covers the forward clock, which never did.
 
@@ -62,7 +63,7 @@ RULE = ("principal 2026-11-13 19:46Z 'do the strict cost bar': an exotic FX cloc
         "fill-hour spread and 2x the worse-side swap; unmeasured fails closed")
 
 
-def _read(path: Path) -> dict:
+def _read(path: Path) -> dict[str, Any]:
     try:
         doc = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
@@ -70,20 +71,21 @@ def _read(path: Path) -> dict:
     return doc if isinstance(doc, dict) else {}
 
 
-def exotic_symbols(universe: dict) -> frozenset[str]:
+def exotic_symbols(universe: dict[str, Any]) -> frozenset[str]:
     """Every symbol MetaTrader's registry classes as an exotic. Never a hand list."""
     return frozenset(str(s).upper() for s, m in universe.items()
-                     if isinstance(m, dict) and "exotic" in str(m.get("asset_class") or "").lower())
+                     if isinstance(m, dict)
+                     and "exotic" in str(m.get("asset_class") or "").lower())
 
 
-def _symbol_family(key: str, st: dict) -> tuple[str, str]:
+def _symbol_family(key: str, st: dict[str, Any]) -> tuple[str, str]:
     sym = str(st.get("symbol") or key.split(".", 1)[0]).upper()
     parts = key.split(".")
     fam = str(st.get("family") or (parts[1] if len(parts) > 1 else ""))
     return sym, fam
 
 
-def _fill_hours(st: dict) -> list[int]:
+def _fill_hours(st: dict[str, Any]) -> list[int]:
     hours = set()
     for f in ("first_entry", "last_entry"):
         v = str(st.get(f) or "")
@@ -92,14 +94,15 @@ def _fill_hours(st: dict) -> list[int]:
     return sorted(hours)
 
 
-def _hour_spread(surface: dict, sym: str, hour: int) -> float | None:
+def _hour_spread(surface: dict[str, Any], sym: str, hour: int) -> float | None:
     cell = (((surface.get("symbols") or {}).get(sym) or {}).get("hours") or {}).get(str(hour))
-    if not isinstance(cell, dict) or cell.get("status") != "MEASURED" or cell.get("p50") is None:
+    if (not isinstance(cell, dict) or cell.get("status") != "MEASURED"
+            or cell.get("p50") is None):
         return None
     return float(cell["p50"])
 
 
-def _swap_worse_pts(meta: dict) -> float | None:
+def _swap_worse_pts(meta: dict[str, Any]) -> float | None:
     try:
         from mt5desk.engine import swap_night_points
     except ImportError:                                    # pragma: no cover - desk path only
@@ -115,15 +118,15 @@ def _swap_worse_pts(meta: dict) -> float | None:
     return worst
 
 
-def judge(key: str, st: dict, universe: dict, surface: dict,
+def judge(key: str, st: dict[str, Any], universe: dict[str, Any], surface: dict[str, Any],
           mult: float = COST_MULTIPLIER) -> dict[str, Any]:
     """PASS / FAIL / UNMEASURED for one exotic clock, with every number that decided it."""
     sym, fam = _symbol_family(key, st)
     out: dict[str, Any] = {"symbol": sym, "family": fam, "multiplier": mult}
     meta = universe.get(sym) or {}
     try:
-        exp = float(st.get("exp_r"))
-    except (TypeError, ValueError):
+        exp = float(st["exp_r"])
+    except (KeyError, TypeError, ValueError):
         return {**out, "verdict": "UNMEASURED", "why": "no forward expectancy on the clock"}
     hours = _fill_hours(st)
     if not hours:
@@ -133,10 +136,11 @@ def judge(key: str, st: dict, universe: dict, surface: dict,
         return {**out, "verdict": "UNMEASURED", "fill_hours": hours,
                 "why": "fill-hour spread not measured on the cost surface"}
     atr = ((surface.get("symbols") or {}).get(sym) or {}).get("atr20_h1_pts")
-    pooled = meta.get("median_spread_pts")
-    if not atr or float(atr) <= 0 or pooled is None:
+    pooled_raw = meta.get("median_spread_pts")
+    if not atr or float(atr) <= 0 or pooled_raw is None:
         return {**out, "verdict": "UNMEASURED", "why": "ATR20 or pooled spread missing"}
     r_pts = 2.0 * float(atr)
+    pooled = float(pooled_raw)
     hs = max(float(s) for s in spreads if s is not None)
     swap = 0.0
     if any(f in fam for f in OVERNIGHT_FAMILIES):
@@ -154,9 +158,10 @@ def judge(key: str, st: dict, universe: dict, surface: dict,
             "net_r_at_1x": round(net_1x, 4), "net_r_at_bar": round(net_mx, 4)}
 
 
-def build(lanes: list[dict], universe: dict, surface: dict) -> dict[str, Any]:
+def build(lanes: list[dict[str, Any]], universe: dict[str, Any],
+          surface: dict[str, Any]) -> dict[str, Any]:
     exo = exotic_symbols(universe)
-    rows: dict[str, dict] = {}
+    rows: dict[str, dict[str, Any]] = {}
     for lane in lanes:
         states = lane.get("sleeves") if isinstance(lane.get("sleeves"), dict) else lane
         for k, st in (states or {}).items():

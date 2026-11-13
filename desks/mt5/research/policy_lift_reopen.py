@@ -219,7 +219,7 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict],
 
 
 def _write_reopen_report(report: dict[str, dict], recert_why: str) -> None:
-    """reports/REOPEN_VERIFICATION.json: every policy-retired candidate, verified or not, and why."""
+    """reports/REOPEN_VERIFICATION.json: every policy-retired candidate, verified or not, why."""
     reasons: dict[str, int] = {}
     for r in report.values():
         for w in r["why_not"]:
