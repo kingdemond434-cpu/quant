@@ -214,6 +214,34 @@ def _decay() -> None:
     decay_monitor.main()
 
 
+def _vol_forecast() -> None:
+    """GARCH vs EWMA per instrument, out of sample (principal 2026-11-13, "yes use garch"):
+    writes reports/GARCH_VS_EWMA.json and data/VOL_FORECASTER.json, the per-symbol forecaster
+    choice (GARCH by default; EWMA or the blend only where GARCH fails to fit or scores worse).
+    Daily because the returns it scores are daily. Sizes nothing by itself."""
+    import garch_vs_ewma
+    rep = garch_vs_ewma.run(budget_s=1800.0)
+    dlog(f"vol_forecast: {rep.get('symbols_tested')} symbol(s), "
+         f"choices {(rep.get('pooled') or {}).get('choices')}")
+    # THE RULE-1 PROOF A FORECAST NEEDS BEFORE IT SIZES: does scaling each sleeve by its
+    # symbol's normal/forecast vol raise the book's E[log W], against both the unscaled book and
+    # a leverage-matched one? Writes reports/VOL_MANAGED_SIZING.json. Sizes nothing.
+    import vol_managed_sizing
+    vm = vol_managed_sizing.run()
+    dlog(f"vol_managed_sizing: {vm.get('status')}, verdict "
+         f"{ {k: (v or {}).get('EARNS') for k, v in (vm.get('verdict') or {}).items()} }")
+
+
+def _conditioner_study() -> None:
+    """HMM, GARCH and empirical-Bayes as CONDITIONERS of many weak members, the way funds use
+    them (principal 2026-11-13), scored out of sample against equal weight with Holm-adjusted
+    block-bootstrap charges. Writes reports/CONDITIONER_STUDY.json. Sizes nothing."""
+    import conditioner_study
+    rep = conditioner_study.run(budget_s=2400.0)
+    dlog(f"conditioner_study: {rep.get('status')}, earns "
+         f"{ {k: v.get('EARNS') for k, v in (rep.get('vs_ew') or {}).items()} }")
+
+
 def _loss_replace() -> None:
     """Apply the loss learner's REPLACE verdicts, after decay has judged the same day's book: a
     parent is retired only when its forward-superior variant already holds capital."""
@@ -900,6 +928,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
+         ("vol_forecast", _vol_forecast), ("conditioner_study", _conditioner_study),
          ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
          ("loss_replace", _loss_replace),
          ("state_research_feedback", _state_research_feedback),
