@@ -344,7 +344,7 @@ def test_registry_rows_all_have_an_adapter_targets_and_no_key_values() -> None:
 
 def test_futures_state_mints_official_outputs_as_conditioner_cells(
         monkeypatch: pytest.MonkeyPatch) -> None:
-    frame = fs.stamped(pd.DataFrame({"surprise": np.arange(40.0), "surprise_z": 0.5}),
+    frame = fs.stamped(pd.DataFrame({"surprise": np.arange(40.0), "surprise_z": np.sin(np.arange(40.0))}),
                        pd.Series(pd.date_range("2024-01-04", periods=40, freq="7D", tz="UTC")),
                        "os_x", pd.Series(pd.date_range("2024-01-01", periods=40, freq="7D")))
     monkeypatch.setattr(osx, "collect", lambda **k: [("os_x", frame, {"targets": ["XNGUSD"],
