@@ -238,3 +238,9 @@ def test_seat_generator_cells_credit_the_bare_producer() -> None:
     # the seat key itself, as a census row, maps to the same producer and is not double counted
     assert fence._stem("seat:paradigm_router") == "paradigm_router"
     assert fence._own_cells(per, "seat:paradigm_router")["unique_cells"] == 54
+
+
+def test_seat_label_is_canonical_bare_stem() -> None:
+    rows = fence._merge_aliases([{"producer": "seat:research_tree", "key": "seat:research_tree"},
+                                 {"producer": "research_tree", "key": "research_tree"}])
+    assert [r["key"] for r in rows] == ["research_tree"]

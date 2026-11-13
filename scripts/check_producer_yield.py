@@ -573,6 +573,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         if not isinstance(src, dict):
             continue
         key = str(src.get("key") or src.get("producer") or "").strip().lower()
+        if key.startswith("seat:") and ":" not in key[5:]:
+            key = key[5:]  # canonical bare label, whatever order the rows arrive in
         if not key or key in seen or _stem(key) in seen:
             continue
         seen.update({key, _stem(key)})
@@ -591,7 +593,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         # rather than accused (L1.28a).
         spent = (led >= MIN_COMPUTE_HOURS) or (reg_h > 0.0)
         row = {
-            "producer": src.get("producer") or key,
+            "producer": key if str(src.get("producer") or "").lower().startswith("seat:")
+            else (src.get("producer") or key),
             "key": key,
             "clock": src.get("clock"),
             "compute_hours_window7d": hours if hours is not None else UNMEASURED_STR,
