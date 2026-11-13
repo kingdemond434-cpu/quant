@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-13T22:12:00Z",
+ "updated_at": "2026-11-13T22:40:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -143,6 +143,41 @@
    ],
    "mechanism": "jump-diffusion jump intensity (Merton/Bates-style; estimated as realised variance minus bipower variation on intraday bars) as an event-risk conditioner: (a) a high recent jump share signals scheduled-event or liquidity-gap risk that persists, so stops widen and intraday edges degrade; against (b) jumps are one-off and mean-revert, so the conditioner carries nothing. Separating test: next-day jump share and the hit rate of the desk's live intraday sleeves by prior jump-share quintile",
    "falsifier": "next-day jump share and intraday sleeve hit rate are flat across prior jump-share quintiles"
+  },
+  {
+   "id": "IQ-705",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "traditions": [
+    "stochastic_processes",
+    "survival_hazard"
+   ],
+   "mechanism": "in the two Asia sessions before COMEX gold option (OG) expiry, M5 return autocorrelation turns negative and price centres on the 25 USD strike grid (dealer long-gamma pin, proxied from the desk's own tick tape). Competing explanations: dealer hedging pin against generic thin-Asia mean reversion against CTA roll flow. Separating test: expiry weeks against matched low-liquidity non-expiry weeks; the pin must centre on grid strikes and vanish after expiry",
+   "falsifier": "autocorrelation and distance to the 25 USD grid are the same in expiry weeks and matched non-expiry weeks, or the pin persists after expiry"
+  },
+  {
+   "id": "IQ-706",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross"
+   ],
+   "symbols": [
+    "EURUSD",
+    "GBPUSD"
+   ],
+   "traditions": [
+    "stochastic_processes",
+    "change_point"
+   ],
+   "mechanism": "variance risk premium (VIX minus 20-day realised vol, from vol_archive) below its 10th percentile conditions London-open EURUSD/GBPUSD range breakouts to follow through more after costs (complacency precedes realised expansion). Competing explanations: vol-of-vol clustering against mechanical VIX mean reversion against macro calendar coincidence. Separating test: drop event days (EVENT_WINDOW_POLICY calendar); placebo with the premium lagged 20 days. Linked to IQ-OPT-VRP",
+   "falsifier": "breakout follow-through after costs is the same in the low-premium decile and the 20-day-lagged placebo once event days are dropped"
   }
  ]
 }
