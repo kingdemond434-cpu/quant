@@ -143,6 +143,7 @@ LEG_LAYER: dict[str, str] = {
     "sge_premium": "information",
     "ais_norway": "information",
     "event_calendar": "information",
+    "crowding_conditioner": "information",
     "asia_collector": "information",
     "asia_parser": "information",
     "index_discovery": "information",

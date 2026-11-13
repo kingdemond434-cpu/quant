@@ -1335,7 +1335,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "ais_norway",
-                     "event_calendar",
+                     "event_calendar", "crowding_conditioner",
                      "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
@@ -2279,6 +2279,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "ais_norway": 260,
     # Weekly in practice: one file read unless a refresh is due, then ten robots-gated pages.
     "event_calendar": 240,
+    # Daily in practice (rebuilds when its artifact is 20h old): 17 CFTC reads plus the test.
+    "crowding_conditioner": 300,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -5899,6 +5901,10 @@ def main() -> None:
     # fetches only when a weekly refresh is due and exits 2 (red) when the calendar is STALE.
     evc = _costed("event_calendar", lambda: _producer(
         "event_calendar", "research/event_calendar_refresh.py"))
+    # Who is already on the trade: CFTC positioning extremes as a two-sided cell modifier,
+    # proposed only as far as the lake's history evidences it (trader-brain gap #9).
+    crw = _costed("crowding_conditioner", lambda: _producer(
+        "crowding_conditioner", "research/crowding_conditioner.py"))
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
@@ -6582,7 +6588,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp, "ais_norway": ais,
-                    "event_calendar": evc,
+                    "event_calendar": evc, "crowding_conditioner": crw,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
