@@ -1097,11 +1097,15 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
     # registry, robots-gated, read through the same hard-stop state, minted as cells below.
     try:
         from research import official_surprises as osx
-        for oid, frame, meta in osx.collect(
-                text=None if get is None else osx.polite_text, state=state, notes=notes,
-                frames=frames, now=now, deadline=budget):
+        os_notes: list[dict[str, Any]] = []
+        os_outs = osx.collect(text=None if get is None else osx.polite_text, state=state,
+                              notes=os_notes, frames=frames, now=now, deadline=budget)
+        notes.extend(os_notes)
+        for oid, frame, meta in os_outs:
             frames[oid] = frame
             built[oid] = meta
+        if get is not None:
+            osx.write_report(os_outs, os_notes)
     except HardStop:
         raise
     except Exception as exc:

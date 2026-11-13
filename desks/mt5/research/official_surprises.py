@@ -58,12 +58,11 @@ HOW, end to end -- each stage leaves an artifact:
      writes `data/lake/series/<oid>.parquet` and mints each (column x transform x target x chart)
      ONCE as an `exogenous_conditioner` candidate. The hourly `futures_state` leg is the clock.
 
-    python desks/mt5/research/official_surprises.py --offline      # features from held raw only
-    python desks/mt5/research/official_surprises.py                # one live pass, report only
+    python desks/mt5/research/futures_state.py --once --dry-run   # this module runs inside it
+    python desks/mt5/research/futures_state.py --once --offline   # features from held raw only
 """
 from __future__ import annotations
 
-import argparse
 import gzip
 import io
 import json
@@ -963,20 +962,11 @@ def report(outs: Sequence[Out], notes: Sequence[Mapping[str, Any]],
             "of": len(rows), "notes": list(notes)}
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--offline", action="store_true")
-    a = ap.parse_args(argv)
-    reg = fs._read(REGISTRY, {}) or {}
-    state = fs._read(fs.STATE, {}) or {}
-    notes: list[dict[str, Any]] = []
-    outs = collect(text=None if a.offline else polite_text, state=state, notes=notes,
-                   registry=reg, deadline=time.monotonic() + 300)
+def write_report(outs: Sequence[Out], notes: Sequence[Mapping[str, Any]],
+                 registry: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """reports/OFFICIAL_SURPRISES.json: per row PRODUCING or why not. Written by the futures_state
+    leg after every pass (this module has no clock of its own; that leg is its clock)."""
+    reg = registry if registry is not None else (fs._read(REGISTRY, {}) or {})
     doc = report(outs, notes, reg)
     fs._write(REPORT, doc)
-    print(json.dumps({k: doc[k] for k in ("producing", "of")}))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    return doc
