@@ -1547,18 +1547,123 @@ _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 _DEADLINE_EVERY = 4096
 
 
+#: THE LEDGER INDEX (2026-11-05, Hourly pass idea 466). Box-local (desks/mt5/logs/ is never
+#: committed). The verdict ledger is append-only, so a pass need only read the rows appended since
+#: the last one: this file holds the byte offset reached, two fingerprints that prove the bytes
+#: before it are unchanged, and the per-row stamps the window counts are computed from. Measured
+#: 2026-11-05 11:55Z: the full stream hit its 150 s deadline after 360,448 of ~1.43M rows on a
+#: paging box, so the rate was UNMEASURED every pass while the ledger kept growing.
+VERDICT_INDEX = BASE / "logs" / "gate_verdict_index.npz"
+#: The ledger the index describes. Only that ledger is indexed by default: a caller (or a test)
+#: pointing `GATE_LEDGER` elsewhere reads in full unless it names its own index.
+_LIVE_GATE_LEDGER = GATE_LEDGER
+_INDEX_VERSION = 1
+#: Bytes fingerprinted at the head of the ledger, and just before the indexed offset.
+_INDEX_HEAD_BYTES = 65536
+_INDEX_TAIL_BYTES = 4096
+
+
+def _cell_key(cell: str) -> int:
+    """A 64-bit identity for a cell id (collision odds ~1e-8 at a million cells)."""
+    import hashlib
+    return int.from_bytes(hashlib.blake2b(cell.encode("utf-8", "replace"),
+                                          digest_size=8).digest(), "little")
+
+
+def _fingerprint(fh, start: int, n: int) -> str:
+    import hashlib
+    fh.seek(max(0, start))
+    return hashlib.sha256(fh.read(max(0, n))).hexdigest()
+
+
+def _empty_index() -> dict[str, Any]:
+    import numpy as np
+    return {"offset": 0, "head_sha": "", "tail_sha": "", "rows_total": 0, "unstamped": 0,
+            "stamps": np.zeros(0, dtype=np.int64), "ft_stamps": np.zeros(0, dtype=np.int64),
+            "ft_cells": np.zeros(0, dtype=np.uint64)}
+
+
+def _load_index(index: Path, fh, size: int) -> tuple[dict[str, Any], str]:
+    """The saved index if it still describes a prefix of this ledger, else an empty one + why."""
+    import numpy as np
+    if not index.exists():
+        return _empty_index(), "no index yet"
+    try:
+        with np.load(index, allow_pickle=False) as z:
+            meta = json.loads(str(z["meta"]))
+            idx = {"stamps": np.array(z["stamps"], dtype=np.int64),
+                   "ft_stamps": np.array(z["ft_stamps"], dtype=np.int64),
+                   "ft_cells": np.array(z["ft_cells"], dtype=np.uint64)}
+    except Exception as exc:
+        return _empty_index(), f"index unreadable ({type(exc).__name__})"
+    if meta.get("version") != _INDEX_VERSION:
+        return _empty_index(), "index version changed"
+    offset = int(meta.get("offset") or 0)
+    if offset > size:
+        return _empty_index(), "ledger shrank below the indexed offset"
+    head_n = min(_INDEX_HEAD_BYTES, offset)
+    tail_start = max(0, offset - _INDEX_TAIL_BYTES)
+    if (_fingerprint(fh, 0, head_n) != meta.get("head_sha")
+            or _fingerprint(fh, tail_start, offset - tail_start) != meta.get("tail_sha")):
+        return _empty_index(), "ledger bytes before the indexed offset changed"
+    idx.update({"offset": offset, "head_sha": meta.get("head_sha"),
+                "tail_sha": meta.get("tail_sha"),
+                "rows_total": int(meta.get("rows_total") or 0),
+                "unstamped": int(meta.get("unstamped") or 0)})
+    return idx, ""
+
+
+def _save_index(index: Path, idx: dict[str, Any], fh) -> str:
+    """Write the index atomically. Returns "" or why it could not; never raises."""
+    import numpy as np
+    offset = int(idx["offset"])
+    tail_start = max(0, offset - _INDEX_TAIL_BYTES)
+    meta = {"version": _INDEX_VERSION, "offset": offset,
+            "head_sha": _fingerprint(fh, 0, min(_INDEX_HEAD_BYTES, offset)),
+            "tail_sha": _fingerprint(fh, tail_start, offset - tail_start),
+            "rows_total": int(idx["rows_total"]), "unstamped": int(idx["unstamped"])}
+    tmp = index.with_name(f".{index.name}.{os.getpid()}.tmp")
+    try:
+        index.parent.mkdir(parents=True, exist_ok=True)
+        with open(tmp, "wb") as out:
+            np.savez(out, meta=np.array(json.dumps(meta)), stamps=idx["stamps"],
+                     ft_stamps=idx["ft_stamps"], ft_cells=idx["ft_cells"])
+        os.replace(tmp, index)
+        return ""
+    except OSError as exc:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return f"{type(exc).__name__}: {exc}"
+
+
 def _verdict_counts(now: datetime, path: Path | None = None,
                     deadline_s: float | None = None,
-                    extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
+                    extra_cuts: dict[str, str] | None = None,
+                    index: Path | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
-    Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
-    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts.
+    Reads only each row's `at` stamp (and, for ruled rows, its cell). An absent ledger is
+    UNMEASURED -- never zero verdicts.
 
-    BOUNDED BY `deadline_s` (2026-10-21). On a box paging at ~1.6 GB free the ~970k-row stream is
-    the slowest step of the pass; past the deadline it stops and the counts are UNMEASURED with
-    the rows read and the reason -- a prefix of the ledger is never published as its rate."""
+    INCREMENTAL (2026-11-05). The ledger is append-only, so the rows already read are kept in
+    `index` (default `VERDICT_INDEX` for the live ledger only; any other ledger is read in full
+    unless the caller names an index)
+    and a pass reads only the bytes appended since. The index is trusted only while the ledger
+    still starts with the same bytes and still holds the same bytes just before the indexed
+    offset; otherwise it is discarded and the ledger re-read from the start. Only complete lines
+    are indexed, so a row being written is read next pass, whole.
+
+    BOUNDED BY `deadline_s` (2026-10-21). Past the deadline the counts are UNMEASURED with the
+    rows read and the reason -- a prefix of the ledger is never published as its rate -- but the
+    rows read ARE kept in the index, so the next pass continues from there and a full re-read
+    completes across passes instead of restarting every hour.
+
+    One difference from a full re-read, and only with an index: a row stamped AFTER the pass that
+    indexed it (a writer clock ahead of the reader) stays counted as unstamped. The writer and
+    this reader share the box clock."""
     import time as _time
+
+    import numpy as np
 
     try:
         from research.judging_burndown import classify
@@ -1566,52 +1671,74 @@ def _verdict_counts(now: datetime, path: Path | None = None,
         from desks.mt5.research.judging_burndown import classify  # type: ignore[no-redef]
 
     p = GATE_LEDGER if path is None else path
+    if index is None and path is None and GATE_LEDGER == _LIVE_GATE_LEDGER:
+        index = VERDICT_INDEX
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
-    cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
-            for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
+    t_now = now.astimezone(UTC).replace(microsecond=0)
+    cuts = {w: (t_now - timedelta(hours=h)) for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
     # A named cut at an absolute instant (the build step's regime start), counted in the same
-    # pass: `at >= cut` on second-precision ISO-8601 UTC strings, exactly as the windows are.
+    # pass: `at >= cut` at second precision in UTC, exactly as the windows are.
     for w, cut in (extra_cuts or {}).items():
         t_cut = _parse_utc(cut)
         if t_cut is not None and w not in cuts:
-            cuts[w] = t_cut.astimezone(UTC).isoformat(timespec="seconds")
-    counts = dict.fromkeys(cuts, 0)
-    first_counts = dict.fromkeys(cuts, 0)
-    first_terminal_cells: set[str] = set()
-    total, unstamped, last = 0, 0, ""
+            cuts[w] = t_cut.astimezone(UTC).replace(microsecond=0)
+    cut_s = {w: int(c.timestamp()) for w, c in cuts.items()}
+    now_s = int(t_now.timestamp())
     t_start = _time.monotonic()
     stop_at = None if deadline_s is None else t_start + float(deadline_s)
     try:
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for n_line, line in enumerate(fh):
+        fh = p.open("rb")
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    with fh:
+        try:
+            size = os.fstat(fh.fileno()).st_size
+            if index is not None:
+                idx, reset_why = _load_index(index, fh, size)
+            else:
+                idx, reset_why = _empty_index(), ""
+            resumed_from = int(idx["offset"])
+            known = idx["ft_cells"]          # sorted
+            new_stamps: list[int] = []
+            new_ft_stamps: list[int] = []
+            new_cells: set[int] = set()
+            rows, unstamped = 0, 0
+            offset = resumed_from
+            fh.seek(offset)
+            overran = False
+            n_line = 0
+            while True:
                 if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
                         and _time.monotonic() > stop_at):
-                    return {"status": UNMEASURED, "rows_read": total,
-                            "why": (f"{p.name} stream overran its {float(deadline_s):.0f} s "
-                                    f"deadline after {total:,} rows "
-                                    f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
-                                    "UNMEASURED this pass, never a partial count")}
+                    overran = True
+                    break
+                raw = fh.readline()
+                if not raw or not raw.endswith(b"\n"):
+                    break                    # end of file, or a row still being written
+                n_line += 1
+                offset += len(raw)
+                line = raw.decode("utf-8", errors="replace")
                 if not line.strip():
                     continue
-                total += 1
+                rows += 1
                 m = _AT.search(line)
                 if not m:
                     unstamped += 1
                     continue
                 try:
                     stamp = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
-                    if stamp.tzinfo is None or stamp > now:
+                    if stamp.tzinfo is None:
                         unstamped += 1
                         continue
-                    at = stamp.astimezone(UTC).isoformat(timespec="seconds")
+                    at_s = int(stamp.astimezone(UTC).replace(microsecond=0).timestamp())
+                    if at_s > now_s or stamp > now:
+                        unstamped += 1
+                        continue
                 except ValueError:
                     unstamped += 1
                     continue
-                last = max(last, at)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        counts[w] += 1
+                new_stamps.append(at_s)
                 # The writer appends only when a terminal verdict changes. Repeated cells
                 # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
                 # completed evidence judgements either. Preserve the raw event count above.
@@ -1624,25 +1751,61 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                 cell = str(row.get("cell", ""))
                 if not cell or classify(row) != "ruled":
                     continue
-                if cell in first_terminal_cells:
+                key = _cell_key(cell)
+                if key in new_cells:
                     continue
-                first_terminal_cells.add(cell)
-                for w, cut in cuts.items():
-                    if at >= cut:
-                        first_counts[w] += 1
-    except OSError as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
-    return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
-            "last_verdict_at": last or None, "counts": counts,
+                pos = int(np.searchsorted(known, np.uint64(key)))
+                if pos < len(known) and int(known[pos]) == key:
+                    continue
+                new_cells.add(key)
+                new_ft_stamps.append(at_s)
+            idx["offset"] = offset
+            idx["rows_total"] = int(idx["rows_total"]) + rows
+            idx["unstamped"] = int(idx["unstamped"]) + unstamped
+            idx["stamps"] = np.concatenate([idx["stamps"],
+                                            np.asarray(new_stamps, dtype=np.int64)])
+            idx["ft_stamps"] = np.concatenate([idx["ft_stamps"],
+                                               np.asarray(new_ft_stamps, dtype=np.int64)])
+            if new_cells:
+                idx["ft_cells"] = np.unique(np.concatenate(
+                    [known, np.fromiter(new_cells, dtype=np.uint64, count=len(new_cells))]))
+            save_why = ""
+            if index is not None and offset != resumed_from:
+                save_why = _save_index(index, idx, fh)
+        except OSError as exc:
+            return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    index_rec: dict[str, Any] = {"used": index is not None, "resumed_from_byte": resumed_from,
+                                 "rows_read_this_pass": rows, "offset": int(idx["offset"])}
+    if reset_why:
+        index_rec["reset"] = reset_why
+    if save_why:
+        index_rec["save_failed"] = save_why
+    if overran:
+        return {"status": UNMEASURED, "rows_read": int(idx["rows_total"]), "index": index_rec,
+                "why": (f"{p.name} stream overran its {float(deadline_s):.0f} s "
+                        f"deadline after {int(idx['rows_total']):,} rows "
+                        f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
+                        "UNMEASURED this pass, never a partial count"
+                        + ("; the rows read are kept and the next pass continues from there"
+                           if index is not None and not save_why else ""))}
+    stamps, ft_stamps = idx["stamps"], idx["ft_stamps"]
+    counts = {w: int(np.count_nonzero(stamps >= c)) for w, c in cut_s.items()}
+    first_counts = {w: int(np.count_nonzero(ft_stamps >= c)) for w, c in cut_s.items()}
+    last = (datetime.fromtimestamp(int(stamps.max()), UTC).isoformat(timespec="seconds")
+            if len(stamps) else None)
+    return {"status": "MEASURED", "rows_total": int(idx["rows_total"]),
+            "rows_unstamped": int(idx["unstamped"]),
+            "last_verdict_at": last, "counts": counts,
             "count_basis": "changed verdict events; unchanged retests do not append",
             "first_terminal_counts": first_counts,
-            "first_terminal_cells": len(first_terminal_cells),
+            "first_terminal_cells": int(len(idx["ft_cells"])),
             "first_terminal_per_hour": {
                 "1h": float(first_counts["1h"]),
                 "24h": round(first_counts["24h"] / 24.0, 3),
                 "7d": round(first_counts["7d"] / 168.0, 3)},
             "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
-                         "7d": round(counts["7d"] / 168.0, 3)}}
+                         "7d": round(counts["7d"] / 168.0, 3)},
+            "index": index_rec}
 
 
 def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
