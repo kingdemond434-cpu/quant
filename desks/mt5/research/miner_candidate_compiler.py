@@ -21,6 +21,11 @@ import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+#: When this process began, as near as the module can see it: everything below (the imports, the
+#: corpus listing) is spent from the SAME cap the parent kills at, so the stops are measured from
+#: here, never from the moment argparse ran.
+_PROCESS_T0 = time.monotonic()
+
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 if str(ROOT) not in sys.path:
@@ -357,12 +362,97 @@ PROVENANCE_FLOOR = BASE / "data" / "hypotheses" / "provenance_floor.json"
 PROVENANCE_SEEN = BASE / "logs" / "provenance_seen.json"        # box-local, hourly churn
 
 
+#: Box-local (desks/mt5/logs/ is never committed): the phases of the current/last pass, so a pass
+#: the parent kills still says where its wall clock went, and the next pass can size its stop.
+PROGRESS = BASE / "logs" / "miner_compiler_progress.json"
+#: The least the write phase is reserved, and the factor on its measured duration.
+WRITE_RESERVE_MIN_S = 120.0
+WRITE_RESERVE_FACTOR = 1.5
+#: Margin kept between the planned finish and the parent's kill.
+KILL_MARGIN_S = 15.0
+#: However large the reserve, a pass compiles at least this share of its cap, so it always moves.
+MIN_COMPILE_SHARE = 0.10
+_PROGRESS: dict = {}
+
+
+def _progress(phase: str, **extra: object) -> None:
+    """Record that `phase` was reached, with seconds since process start. Never raises."""
+    if not _PROGRESS:
+        return
+    _PROGRESS["phases"].append({"phase": phase,
+                                "t_s": round(time.monotonic() - _PROCESS_T0, 1), **extra})
+    _PROGRESS["updated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
+    with contextlib.suppress(Exception):
+        _atomic_json(PROGRESS, _PROGRESS)
+
+
+def _measured_write_s(prior: dict) -> float | None:
+    """Seconds the last pass's post-compile phase took -- or, if it was killed there, at least.
+
+    A finished pass gives the exact span compile_done -> done. A pass killed after compile_done
+    gives a LOWER bound: its cap minus compile_done, which is how a kill teaches the next pass."""
+    phases = {str(p.get("phase")): float(p.get("t_s") or 0.0)
+              for p in (prior.get("phases") or []) if isinstance(p, dict)}
+    if "compile_done" not in phases:
+        return None
+    if "done" in phases:
+        return max(0.0, phases["done"] - phases["compile_done"])
+    cap = float(prior.get("cap_s") or 0.0)
+    last = max(phases.values())
+    return max(0.0, max(cap, last) - phases["compile_done"])
+
+
 def _set_budget(budget_s: float | None) -> None:
+    """The intake and compile stops, measured from PROCESS START and kept inside the parent's cap.
+
+    WHY (2026-11-05): the compiler had not finished a pass since 2026-10-03. Every hourly run was
+    killed at its 720 s cap (compute_ledger: 746-752 s wall, 48-470 s CPU), so the cursor and
+    miner_candidates.json stayed frozen for 33 days with 23,521 files deferred. The stops were
+    timed from argparse (after the imports and with no knowledge of the corpus listing) at 85%
+    of `--budget-s`, leaving whatever the parent's cap had over that for every post-compile
+    step: the graph, the priors, the net ranks, the stamps and the writes. Nothing measured that
+    span, so nothing could size it. Now: the parent's cap (QUANT_LEG_BUDGET_S) is the hard end,
+    the write phase is reserved from what the LAST pass measured (a killed pass counts as a lower
+    bound), and every phase is written to PROGRESS as it is reached."""
     _CLOCK.clear()
-    if budget_s and budget_s > 0:
-        t0 = time.monotonic()
-        _CLOCK.update({"intake_by": t0 + INTAKE_SHARE * budget_s,
-                       "compile_by": t0 + COMPILE_SHARE * budget_s, "budget_s": budget_s})
+    prior: dict = {}
+    with contextlib.suppress(Exception):
+        prior = json.loads(PROGRESS.read_text("utf-8"))
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0.0)
+    except ValueError:
+        cap = 0.0
+    measured = _measured_write_s(prior) if isinstance(prior, dict) else None
+    reserve = max(WRITE_RESERVE_MIN_S, WRITE_RESERVE_FACTOR * (measured or 0.0))
+    _PROGRESS.clear()
+    _PROGRESS.update({"pid": os.getpid(), "started_utc": datetime.now(UTC).isoformat(
+        timespec="seconds"), "budget_s": budget_s, "cap_s": cap or None,
+        "write_reserve_s": round(reserve, 1),
+        "prior_write_s": None if measured is None else round(measured, 1), "phases": []})
+    if not (budget_s and budget_s > 0) and not cap:
+        _PROGRESS.clear()
+        return
+    t0 = _PROCESS_T0
+    compile_by = t0 + COMPILE_SHARE * budget_s if budget_s and budget_s > 0 else float("inf")
+    if cap:
+        compile_by = min(compile_by, t0 + cap - KILL_MARGIN_S - reserve)
+        floor = time.monotonic() + MIN_COMPILE_SHARE * cap
+        if compile_by < floor:
+            # NAMED, NOT SILENT: the measured write phase alone leaves no room inside the cap, so
+            # this pass compiles its minimum slice and is likely to be killed in the writes again.
+            # The fix is the write phase (or the cap), and the artifact says which number binds.
+            _PROGRESS["state"] = "WRITE_PHASE_EXCEEDS_CAP"
+            print(f"compiler: WRITE_PHASE_EXCEEDS_CAP -- the last pass's write phase "
+                  f"({measured or 0.0:.0f}s measured, {reserve:.0f}s reserved) leaves no room "
+                  f"inside the {cap:.0f}s cap; compiling the {MIN_COMPILE_SHARE:.0%} minimum slice",
+                  flush=True)
+        compile_by = max(compile_by, floor)
+    intake_by = t0 + (compile_by - t0) * (INTAKE_SHARE / COMPILE_SHARE)
+    _CLOCK.update({"intake_by": intake_by, "compile_by": compile_by,
+                   "budget_s": budget_s or cap})
+    _PROGRESS.update({"intake_by_s": round(intake_by - t0, 1),
+                      "compile_by_s": round(compile_by - t0, 1)})
+    _progress("budget_set")
 
 
 def _past(key: str) -> bool:
@@ -402,6 +492,14 @@ def _save_cursor() -> None:
     nxt = _LAST_INTAKE.get("cursor_next")
     if not nxt:
         return
+    if _LAST_INTAKE.get("cursor_file_size") is None:
+        # A cursor advanced to the start of a file: fingerprint it now, once.
+        try:
+            size = Path(nxt).stat().st_size
+            _LAST_INTAKE.update({"cursor_file_size": size,
+                                 "cursor_prefix_sha256": _prefix_sha256(Path(nxt), size)})
+        except OSError:
+            _LAST_INTAKE.update({"cursor_file_size": 0, "cursor_prefix_sha256": None})
     CURSOR.parent.mkdir(parents=True, exist_ok=True)
     _atomic_json(CURSOR, {
         "updated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -443,6 +541,37 @@ def _is_operational_state(rel: Path) -> bool:
     enough that a per-source `coverage_registry.json` would plausibly hold rows.
     """
     return len(rel.parts) == 1 and rel.name in _OPERATIONAL_STATE
+
+
+def _list_artifacts(root: Path) -> dict[Path, float]:
+    """Every `.json`/`.jsonl` evidence file under `root`, with its mtime, from ONE directory walk.
+
+    `rglob` + `is_file()` + a `stat()` per sort comparison paid several metadata calls per file;
+    `os.scandir` hands back the type and (on Windows) the mtime with the listing itself. Same
+    files, same exclusions. Unreadable entries and directories are skipped."""
+    found: dict[Path, float] = {}
+    stack = [root]
+    while stack:
+        here = stack.pop()
+        try:
+            with os.scandir(here) as it:
+                for entry in it:
+                    try:
+                        if entry.is_dir(follow_symlinks=False):
+                            stack.append(Path(entry.path))
+                            continue
+                        if not entry.is_file():
+                            continue
+                        path = Path(entry.path)
+                        if (path.suffix.lower() not in {".json", ".jsonl"}
+                                or _is_operational_state(path.relative_to(root))):
+                            continue
+                        found[path] = entry.stat().st_mtime
+                    except OSError:
+                        continue
+        except OSError:
+            continue
+    return found
 
 
 def recent_rows(now: datetime) -> list[tuple[str, dict]]:
@@ -498,13 +627,14 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                          "cursor_row_offset": 0, "cursor_file_size": 0,
                          "cursor_prefix_sha256": None, "cycle_cutoff_utc": None})
     all_paths: list[Path] = []
+    mtimes: dict[Path, float] = {}
     for root in INTEL_ROOTS:
         if not root.exists():
             continue
-        all_paths.extend(sorted((p for p in root.rglob("*")
-                                 if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
-                                 and not _is_operational_state(p.relative_to(root))),
-                                key=lambda p: p.stat().st_mtime, reverse=True))
+        listed = _list_artifacts(root)
+        mtimes.update(listed)
+        all_paths.extend(sorted(listed, key=lambda p: listed[p], reverse=True))
+    _progress("listed", files=len(all_paths))
     start, start_row, saved_cutoff = _cursor_start(all_paths)
     cutoff = saved_cutoff or current_cutoff
     _LAST_INTAKE["cycle_cutoff_utc"] = cutoff.isoformat(timespec="seconds")
@@ -514,10 +644,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
         all_paths = [*all_paths[start:], *all_paths[:start]]
         _LAST_INTAKE["cursor_start"] = str(all_paths[0])
     for i, path in enumerate(all_paths):
-        try:
-            if datetime.fromtimestamp(path.stat().st_mtime, tz=UTC) < cutoff:
-                continue
-        except OSError:
+        if datetime.fromtimestamp(mtimes[path], tz=UTC) < cutoff:
             continue
         _LAST_INTAKE["files_seen"] = i + 1
         row_start = start_row if i == 0 else 0
@@ -561,11 +688,11 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                       f"must checkpoint and resume, not raise a constant.")
                 return found
         if all_paths:
+            # The NEXT file's identity is fingerprinted once, when the cursor is saved -- not
+            # here, which re-read every following file in full as each one was finished.
             next_path = all_paths[(i + 1) % len(all_paths)]
             _LAST_INTAKE.update({"cursor_next": str(next_path), "cursor_row_offset": 0,
-                                 "cursor_file_size": next_path.stat().st_size,
-                                 "cursor_prefix_sha256": _prefix_sha256(
-                                     next_path, next_path.stat().st_size)})
+                                 "cursor_file_size": None, "cursor_prefix_sha256": None})
     # The frozen cycle is fully drained. The next pass starts a new recency window; an item can
     # never age out while waiting behind the memory bound, but old completed cycles do not replay.
     _LAST_INTAKE["cycle_cutoff_utc"] = current_cutoff.isoformat(timespec="seconds")
@@ -1654,6 +1781,7 @@ def main() -> int:
     # trial allocator can order on it.
     sources_by_identity: dict[str, set[str]] = {}
     rows = recent_rows(now)
+    _progress("intake_done", rows=len(rows))
     # THE BLINDING COUNTER IS PUBLISHED BEFORE ANY ROW IS COMPILED: organ_market reads the ledger
     # and withholds a seat whose output carried outcomes from the independent-discovery count.
     # (the ledger sits beside OUT's data/ tree: desks/mt5/data/tier_s/blinding_runtime.jsonl)
@@ -1814,6 +1942,7 @@ def main() -> int:
         stats["owes_convertible_rows"] = convertible - converted
         stats["convertible_conversion_rate"] = (
             round(converted / convertible, 6) if convertible else 1.0)
+    _progress("compile_done", candidates=len(candidates), deepening=len(deepening))
     seats = seat_summary(per_source)
     seats_dark = [s for s, st in seats.items() if not st["rows"]]
     for s, st in seats.items():
@@ -1888,6 +2017,7 @@ def main() -> int:
     # held no compiler row at all -- this block was failing every hour and `except: pass` made
     # it look like a graph with nothing to say.
     graph_note: dict = {"updated": False, "premortem": False}
+    _progress("graph")
     try:
         from libs.research.hypothesis_graph import record_candidates
         g = _graph_snapshot()
@@ -1947,6 +2077,7 @@ def main() -> int:
         graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
         print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
 
+    _progress("net_ranks")
     # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
     # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
     # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
@@ -2021,6 +2152,7 @@ def main() -> int:
               f"(fail closed: {_rep['fail_closed']})")
     except Exception as exc:
         steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+    _progress("stamp")
     from libs.data.pit import stamp_or_refuse
 
     # These rules were compiled in this pass; source event dates cannot backdate a rule.
@@ -2035,6 +2167,7 @@ def main() -> int:
          for task in deepening.values()], "miner_deepening_queue")
     if refused_tasks:
         raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+    _progress("write")
     _atomic_json(OUT, {
         "compiled_at": now.isoformat(timespec="seconds"),
         "hypotheses": emitted,
@@ -2095,8 +2228,11 @@ def main() -> int:
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
             os.replace(tmp, target)
     _save_cursor()
+    _progress("cursor_saved", next_path=_LAST_INTAKE.get("cursor_next"),
+              row_offset=_LAST_INTAKE.get("cursor_row_offset"))
     if bank is not None:
         bank.flush()
+    _progress("done")
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0
