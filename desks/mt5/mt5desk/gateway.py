@@ -2572,23 +2572,32 @@ def _position_context(deal: object) -> tuple[float, float, float, str]:
     return e["entry_price"], e["sl"], e["tp"], e["comment"]
 
 
-def _broker_utc(epoch: object, symbol: object) -> tuple[str | None, str, int | None]:
-    """(UTC ISO, basis, offset used) for a broker-wall epoch from this gateway's own session.
+def _broker_utc(epoch: object, symbol: object) -> tuple[str | None, str, int | None, dict]:
+    """(UTC ISO, basis, offset at the deal, the full reading) for a broker-wall epoch.
 
     THE STAMPS ARE BROKER TIME (row 247/239): `deal.time` and `time_msc` count the venue's wall
-    clock. The offset is measured off a fresh tick of `symbol` against this host's real clock
-    (`gateway_clock.measured_offset_h`); with no fresh tick (market closed) the Fusion server's
-    calendar rule (New York + 7 h) answers, which is this venue's clock and is DST-aware."""
+    clock. Each epoch is converted by the Fusion server's calendar rule AT ITS OWN INSTANT (New
+    York + 7 h, DST-aware), so a deal from before a clock change keeps the offset it was stamped
+    under (audit of #518: one offset measured NOW applied to every deal in the pass stamped a
+    Friday-open/Monday-close across a US change one hour wrong). The offset measured off a fresh
+    tick of `symbol` is a CROSS-CHECK only: `gateway_clock.fusion_epoch_to_utc` flags a mismatch
+    when the two disagree for a deal inside the measured offset's own regime."""
+    import time as _time
+
     from libs.ops import gateway_clock as _gc
     off: int | None = None
+    wall = _time.time()
     try:
         tick = mt5.symbol_info_tick(str(symbol)) if symbol else None
         if tick is not None:
-            off = _gc.measured_offset_h(getattr(tick, "time", None), time.time())
+            off = _gc.measured_offset_h(getattr(tick, "time", None), wall)
     except Exception:
         off = None
-    iso, basis = _gc.broker_epoch_to_utc(epoch, off, calendar=True)
-    return iso, basis, off
+    reading = _gc.fusion_epoch_to_utc(epoch, off, wall)
+    if reading.get("mismatch"):
+        log(f"broker clock MISMATCH: epoch {epoch} calendar +{reading.get('offset_h')}h vs "
+            f"measured +{off}h ({symbol})")
+    return reading["utc"], reading["basis"], reading["offset_h"], reading
 
 
 #: MT5 `deal.reason` codes -> the exit a closing deal records, as documented in MetaQuotes'
@@ -2652,7 +2661,10 @@ def _position_entry(pid) -> dict:
             # Converted once, after the loop: a clock that cannot answer leaves the stamp unset
             # (UNMEASURED) and never costs the entry price, stop or cost this loop gathered.
             try:
-                out["entry_time"] = _broker_utc(out["entry_epoch_broker"], _entry_symbol)[0]
+                _e = _broker_utc(out["entry_epoch_broker"], _entry_symbol)
+                out["entry_time"] = _e[0]
+                out["entry_utc_offset_h"] = _e[2]
+                out["entry_clock_mismatch"] = _e[3].get("mismatch")
             except Exception as exc:
                 log(f"position {pid}: entry clock unconvertible ({type(exc).__name__})")
     except Exception as exc:
@@ -2791,7 +2803,8 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # BROKER EPOCHS ARE CONVERTED TO UTC HERE, in this gateway's own session (row 247/239);
         # the raw epochs ride along, and `timestamp_basis` names how. Rows before 2026-10-29
         # carry "broker_deal_epoch" and are read through `gateway_clock.row_utc`, never rewritten.
-        _exit_iso, _basis, _off = _broker_utc(getattr(d, "time", 0), d.symbol)
+        _exit_iso, _basis, _off, _clk = _broker_utc(getattr(d, "time", 0), d.symbol)
+        _flags = (_clk.get("mismatch"), ctx.get("entry_clock_mismatch"))
         _reason = getattr(d, "reason", None)
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
                # Preserve the legacy close-deal side, but expose the actual position side
@@ -2799,6 +2812,12 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
                "exit_time": _exit_iso,
                "timestamp_basis": _basis, "broker_utc_offset_h": _off,
+               "entry_utc_offset_h": ctx.get("entry_utc_offset_h"),
+               # The fresh-tick offset NOW, and whether it disagreed with the calendar for a stamp
+               # inside its own regime (None: no fresh tick, or the stamp predates the regime).
+               "broker_utc_offset_measured_h": _clk.get("measured_h"),
+               "broker_clock_mismatch": (True if True in _flags
+                                         else False if False in _flags else None),
                "entry_epoch_broker": ctx.get("entry_epoch_broker"),
                "exit_epoch_broker": (float(d.time) if getattr(d, "time", 0) else None),
                # WHY THE POSITION CLOSED: the venue's own deal reason (sl, tp, so for a stop-out,

@@ -560,7 +560,8 @@ def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str
 
 def _iso_epoch(ts: object, offset_h: int | None = None) -> str | None:
     """A broker-wall MT5 epoch as UTC (row 247/239): minus the offset MEASURED in this lane's own
-    session (`gateway_clock.measured_offset_h`). FTMO's server is not the Fusion calendar
+    session (`gateway_clock.measured_offset_h`), passed only once `_regime_offset` has found the
+    epoch inside that offset's regime. FTMO's server is not the Fusion calendar
     (New York + 7 h), so an unmeasured offset leaves the stamp unconverted -- and the row's
     `timestamp_basis` says so -- rather than guessing it."""
     if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
@@ -568,6 +569,28 @@ def _iso_epoch(ts: object, offset_h: int | None = None) -> str | None:
     from libs.ops.gateway_clock import broker_epoch_to_utc
     iso, _basis = broker_epoch_to_utc(float(ts), offset_h, calendar=False)
     return None if iso is None else datetime.fromisoformat(iso).isoformat(timespec="seconds")
+
+
+def _regime_offset(offset_h: int | None, epochs: list[object], recorded_at: str) -> int | None:
+    """The measured offset if it may stamp EVERY epoch of one row, else None (audit of #518).
+
+    The offset was measured NOW, off a fresh tick; it names a past deal's offset only inside the
+    same offset regime -- the deal within 24 h of now and no clock change in the venue's zone
+    between (`gateway_clock.regime_epoch_to_utc`). FTMO has no calendar rule here, so a row with
+    any epoch outside the regime is left wholly unconverted (BASIS_UNMEASURED): a row never mixes
+    a converted entry with an unconverted exit."""
+    if offset_h is None:
+        return None
+    try:
+        now_epoch = datetime.fromisoformat(str(recorded_at).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return None
+    for ts in epochs:
+        if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
+            continue
+        if _gc.regime_epoch_to_utc(ts, offset_h, now_epoch)[1] != _gc.BASIS_MEASURED:
+            return None
+    return offset_h
 
 
 def deal_fees(deals: list[Any]) -> tuple[dict[str, float | None], list[str], str]:
@@ -652,16 +675,18 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
         fees, fees_measured, fees_status = deal_fees([e, *outs])
         pl_quote = (round(sum(float(x) for x in pl), 2)
                     if all(isinstance(x, (int, float)) for x in pl) else None)
+        row_off = _regime_offset(offset_h, [getattr(e, "time", None),
+                                            getattr(last, "time", None)], recorded_at)
         rows.append({
             "schema": PROP_SCHEMA, "book": LANE, "venue": "mt5", "lane": "ftmo_follower",
             "provenance": "ftmo_follower:mt5_deal_history", "recorded_at": recorded_at,
-            "time": _iso_epoch(getattr(last, "time", None), offset_h), "sleeve": CERT_KEY,
+            "time": _iso_epoch(getattr(last, "time", None), row_off), "sleeve": CERT_KEY,
             "symbol": SYMBOL, "entry_side": 0 if dirn == 1 else 1, "side": 1 if dirn == 1 else 0,
-            "entry_time": _iso_epoch(getattr(e, "time", None), offset_h),
-            "exit_time": _iso_epoch(getattr(last, "time", None), offset_h),
-            "timestamp_basis": (_gc.BASIS_MEASURED if offset_h is not None
-                                else "mt5_server_epoch"),
-            "broker_utc_offset_h": offset_h,
+            "entry_time": _iso_epoch(getattr(e, "time", None), row_off),
+            "exit_time": _iso_epoch(getattr(last, "time", None), row_off),
+            "timestamp_basis": (_gc.BASIS_MEASURED if row_off is not None
+                                else _gc.BASIS_UNMEASURED),
+            "broker_utc_offset_h": row_off, "broker_utc_offset_measured_h": offset_h,
             "entry_epoch_broker": getattr(e, "time", None),
             "exit_epoch_broker": getattr(last, "time", None),
             "venue_clock_skew_ms": None,

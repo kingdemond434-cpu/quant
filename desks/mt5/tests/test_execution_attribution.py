@@ -219,6 +219,40 @@ def test_entry_context_keeps_execution_timestamp_and_opening_direction():
     assert env["_position_entry"](None)["entry_time"] is None
 
 
+def test_the_gateway_converts_each_deal_at_its_own_instant_not_by_the_offset_now():
+    """Audit of #518: a Fusion deal from the Friday before the US DST change (UTC+2), read while a
+    fresh tick measures +3, is stamped at +2 -- the measured offset is a cross-check only."""
+    import time as _t
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    fri = datetime(2027, 3, 12, 20, 0, tzinfo=UTC)
+
+    class Venue(_FakeMT5):
+        @staticmethod
+        def symbol_info_tick(symbol):
+            return SimpleNamespace(time=_t.time() + 3 * 3600)              # measures +3 now
+
+    env = _gateway_func("_broker_utc", ns={"mt5": Venue})
+    iso, basis, off, reading = env["_broker_utc"]((fri + timedelta(hours=2)).timestamp(),
+                                                  "XAUUSD")
+    assert iso == fri.isoformat() and off == 2
+    assert basis == "utc_from_broker_epoch:calendar_ny+7"
+    assert reading["measured_h"] == 3 and reading["mismatch"] is None
+
+
+def test_the_row_records_the_offset_and_the_mismatch_flag():
+    import ast
+
+    tree = ast.parse(_GATEWAY_SRC)
+    fn = next(n for n in ast.walk(tree)
+              if isinstance(n, ast.FunctionDef) and n.name == "record_trades")
+    src = ast.get_source_segment(_GATEWAY_SRC, fn) or ""
+    for field in ("broker_utc_offset_h", "broker_utc_offset_measured_h", "broker_clock_mismatch",
+                  "entry_utc_offset_h"):
+        assert f'"{field}"' in src, field
+
+
 def test_the_intent_row_carries_the_market_it_was_sent_into():
     """Slippage without the conditions it was paid in averages over every situation at once."""
     import ast

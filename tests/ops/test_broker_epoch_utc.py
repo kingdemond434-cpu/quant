@@ -90,5 +90,85 @@ def test_ftmo_fills_convert_only_on_a_measured_offset() -> None:
     assert rows[0]["exit_time"] == TRUE_UTC and rows[0]["timestamp_basis"] == gc.BASIS_MEASURED
     raw = F.compose_fills([entry, exit_], [order], set(), account_key="k", contract=100.0,
                           recorded_at="2026-10-29T09:09:15+00:00")
-    assert raw[0]["timestamp_basis"] == "mt5_server_epoch"           # unmeasured: not guessed
+    assert raw[0]["timestamp_basis"] == gc.BASIS_UNMEASURED           # unmeasured: not guessed
     assert raw[0]["exit_time"] == "2026-10-29T12:09:01+00:00"
+
+
+# ---------------------------------------------------------------- audit of #518: the offset regime
+#: US daylight time starts Sunday 2027-03-14: New York is UTC-5 before it, UTC-4 after, so the
+#: Fusion server clock (New York + 7 h) is UTC+2 on the Friday and UTC+3 on the Monday.
+FRI_PRE_SWITCH_UTC = datetime(2027, 3, 12, 20, 0, tzinfo=UTC)
+MON_POST_SWITCH = datetime(2027, 3, 15, 10, 0, tzinfo=UTC)
+
+
+def test_a_fusion_deal_from_before_the_us_switch_keeps_its_pre_switch_offset() -> None:
+    """Opened Friday before the US change, converted on Monday with a fresh +3 h tick: the stamp
+    is converted at ITS OWN instant (+2 h), never by the offset measured now."""
+    epoch = (FRI_PRE_SWITCH_UTC + timedelta(hours=2)).timestamp()       # broker wall 22:00 Fri
+    out = gc.fusion_epoch_to_utc(epoch, 3, MON_POST_SWITCH.timestamp())
+    assert out["utc"] == FRI_PRE_SWITCH_UTC.isoformat()
+    assert out["offset_h"] == 2 and out["basis"] == gc.BASIS_CALENDAR
+    assert out["measured_h"] == 3
+    assert out["mismatch"] is None          # outside the measured offset's regime: no cross-check
+    # The defect the audit named, pinned as what must NOT happen: now's offset would be 1 h off.
+    assert gc.broker_epoch_to_utc(epoch, 3)[0] != FRI_PRE_SWITCH_UTC.isoformat()
+
+
+def test_the_mismatch_flag_fires_when_measured_and_calendar_disagree() -> None:
+    now = datetime(2026, 11, 13, 12, 0, tzinfo=UTC)                     # Fusion is UTC+2
+    deal_utc = now - timedelta(hours=1)
+    epoch = (deal_utc + timedelta(hours=2)).timestamp()
+    agree = gc.fusion_epoch_to_utc(epoch, 2, now.timestamp())
+    assert agree["utc"] == deal_utc.isoformat() and agree["mismatch"] is False
+    bad = gc.fusion_epoch_to_utc(epoch, 3, now.timestamp())
+    assert bad["mismatch"] is True
+    assert bad["utc"] == deal_utc.isoformat() and bad["offset_h"] == 2   # calendar still stamps
+    assert gc.fusion_epoch_to_utc(epoch, None, now.timestamp())["mismatch"] is None
+    assert gc.fusion_epoch_to_utc(0, 2, now.timestamp())["basis"] == gc.BASIS_UNMEASURED
+
+
+def test_the_regime_bound_is_24h_and_no_transition() -> None:
+    now = datetime(2026, 11, 13, 12, 0, tzinfo=UTC)
+    zones = gc.FTMO_REGIME_ZONES
+    assert gc.same_offset_regime(now - timedelta(hours=23), now, zones)
+    assert not gc.same_offset_regime(now - timedelta(hours=25), now, zones)
+    assert not gc.same_offset_regime(now + timedelta(hours=1), now, zones)
+    # Within 24 h but across New York's 2026-11-01 06:00 UTC change: not the same regime.
+    nov1 = datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
+    assert not gc.same_offset_regime(nov1 - timedelta(hours=8), nov1, zones)
+    # Within 24 h but across the EU's 2026-10-25 01:00 UTC change: FTMO's regime ends there too.
+    oct25 = datetime(2026, 10, 25, 12, 0, tzinfo=UTC)
+    assert not gc.same_offset_regime(oct25 - timedelta(hours=12), oct25, zones)
+    assert gc.same_offset_regime(oct25 - timedelta(hours=12), oct25, gc.FUSION_REGIME_ZONES)
+
+
+def test_an_ftmo_deal_older_than_the_bound_stays_unmeasured() -> None:
+    import sys
+    from pathlib import Path
+    from types import SimpleNamespace
+    desk = Path(__file__).resolve().parents[2] / "desks" / "mt5"
+    for p in (str(desk), str(desk.parent.parent)):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    from prop import ftmo_follower as F
+
+    base = {"symbol": F.SYMBOL, "position_id": 9, "commission": 0.0, "fee": 0.0, "swap": 0.0,
+            "volume": 0.01, "order": 5, "profit": 1.0, "reason": 4}
+    order = SimpleNamespace(ticket=5, sl=3990.0, tp=4020.0, price_open=4000.0)
+    # Read 2026-10-31 09:09 UTC, two days after the close: past the 24 h bound.
+    later = "2026-10-31T09:09:15+00:00"
+    entry = SimpleNamespace(**base, magic=F.MAGIC, entry=0, type=0, price=4000.0,
+                            time=EPOCH - 3600)
+    exit_ = SimpleNamespace(**base, magic=F.MAGIC, entry=1, type=1, price=4001.0, time=EPOCH)
+    rows = F.compose_fills([entry, exit_], [order], set(), account_key="k", contract=100.0,
+                           recorded_at=later, offset_h=3)
+    assert rows[0]["timestamp_basis"] == gc.BASIS_UNMEASURED
+    assert rows[0]["exit_time"] == "2026-10-29T12:09:01+00:00"           # raw, not converted
+    assert rows[0]["broker_utc_offset_h"] is None
+    assert rows[0]["broker_utc_offset_measured_h"] == 3
+    # A recent exit with an entry older than the bound: the whole row stays unconverted.
+    old_entry = SimpleNamespace(**{**vars(entry), "time": EPOCH - 30 * 3600})
+    mixed = F.compose_fills([old_entry, exit_], [order], set(), account_key="k", contract=100.0,
+                            recorded_at="2026-10-29T09:09:15+00:00", offset_h=3)
+    assert mixed[0]["timestamp_basis"] == gc.BASIS_UNMEASURED
+    assert mixed[0]["entry_time"] == datetime.fromtimestamp(EPOCH - 30 * 3600, tz=UTC).isoformat()
