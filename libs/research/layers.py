@@ -569,6 +569,9 @@ LEG_LAYER: dict[str, str] = {
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
     "allocator_trigger": "portfolio",
+    # cleaned correlation, factor risk, neutralisation, diversification multiplier, crowding:
+    # evidence about how the book is composed, judged on out-of-sample log growth
+    "allocator_structure_lab": "portfolio",
     # `input_ablation` re-solves the allocator with each input switched off and judges it against
     # the plain solve out of sample: evidence about how the book is composed, so it bills to the
     # same layer as the allocator it judges.

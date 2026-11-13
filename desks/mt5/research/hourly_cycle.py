@@ -1447,6 +1447,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
+                     "allocator_structure_lab",
                      "forward_calibration"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
@@ -2081,6 +2082,9 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The structure lab stops its walk-forward at 85% of its own --budget-s 600 and writes; the
+    # cap sits above that so the report is always published.
+    "allocator_structure_lab": 720,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6429,6 +6433,18 @@ def main() -> None:
                                                           "--once", "--budget-s", "300"))
     # (bars_state, box_state_freshness and desk_health moved to the head of the pass, 2026-11-10:
     # see the comment beside `health`.)
+    # THE ALLOCATOR'S STRUCTURE LAB (GAP_MAP Max-growth / Growth allocator overhaul / H6,
+    # 2026-11-13): random-matrix cleaning of the sleeve correlation, the factor risk model and
+    # neutralisation, the diversification multiplier and crowding -- each with a walk-forward
+    # out-of-sample log-growth verdict against the plain sample-covariance Kelly book. Report
+    # only: an input earns capital authority by its ADOPT verdict in a later, audited change.
+    # LAST PRODUCER OF THE PASS, ON PURPOSE (#1137 audit MF1): it can spend its whole 600 s
+    # budget, and sitting between the allocator trigger and the promoter it delayed promotion and
+    # the decay_monitor writes by up to 12 minutes every hour. Here it delays nothing a later leg
+    # reads; publish_state below still carries its artifact out the same pass.
+    asl = _costed("allocator_structure_lab", lambda: _producer(
+        "allocator_structure_lab", "research/allocator_structure_lab.py", "--once",
+        "--budget-s", "600"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -6658,6 +6674,7 @@ def main() -> None:
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "allocator_structure_lab": asl,
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
