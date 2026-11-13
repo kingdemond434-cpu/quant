@@ -120,6 +120,10 @@ WORLD = _DESK / "data" / "intelligence" / "world"
 PROVENANCE = _DESK / "data" / "mined_sources.jsonl"
 MAX_TASKS = 400
 PAGE_FETCH_PER_QUERY = 3
+#: The sitemap fallback: how many sitemap files to open and how many of the newest listed pages
+#: to read per ground per pass. Bounded, so a large news site costs a handful of requests.
+SITEMAP_MAX_INDEXES = 3
+SITEMAP_PAGES = 6
 DEEP_LINKS_PER_GROUND = 6
 MIN_PAGE_TEXT = 1500
 #: A ground's time share is its weight's share of the run budget, spread over SPREAD runs so a
@@ -175,6 +179,25 @@ class RobotsRefused(OSError):
 
 _ROBOTS: dict[str, Any] = {}
 _ROBOTS_LOCK = threading.Lock()
+
+
+_LOC = re.compile(r"<(?:url|sitemap)>(.*?)</(?:url|sitemap)>", re.S | re.I)
+_LOC_URL = re.compile(r"<loc>\s*(.*?)\s*</loc>", re.S | re.I)
+_LOC_MOD = re.compile(r"<lastmod>\s*(.*?)\s*</lastmod>", re.S | re.I)
+
+
+def sitemap_entries(xml: str) -> list[tuple[str, str]]:
+    """(loc, lastmod) pairs from a sitemap or a sitemap index; lastmod '' when absent."""
+    out: list[tuple[str, str]] = []
+    for block in _LOC.findall(xml):
+        m = _LOC_URL.search(block)
+        if not m:
+            continue
+        loc = _html.unescape(m.group(1).strip())
+        if loc.startswith(("http://", "https://")):
+            mod = _LOC_MOD.search(block)
+            out.append((loc, mod.group(1).strip() if mod else ""))
+    return out
 
 
 def _host_of(url: str) -> str:
@@ -1219,8 +1242,62 @@ class _Run:
                                                   f"search:{engine}:page")
                     time.sleep(1.0)
             time.sleep(1.5)
-        return {"queries": len(g.get("queries") or []), "engines": engines, "pages": pages,
-                "claims": claims, "errors": errors[:4]}
+        out: dict[str, Any] = {"queries": len(g.get("queries") or []), "engines": engines,
+                               "pages": pages, "claims": claims, "errors": errors[:4]}
+        # THE SITE'S OWN INDEX WHEN THE ENGINES ANSWER NOTHING (2026-11-13). On the box's
+        # ALT_DATA_YIELD of 19:29Z, 1,938 of 6,582 vectors last failed here on a bing "anti-bot
+        # shell" or a duckduckgo timeout, and an engine's results page is robots-disallowed for
+        # an honest agent anyway.
+        # The site itself publishes what it wants read: robots.txt Sitemap lines, or
+        # /sitemap.xml. Its newest pages are read through the same robots gate.
+        if not claims and site and not self.over() and self._net_ok():
+            sm = self.ground_sitemap(g)
+            out = {**out, "sitemap": sm, "fetched": sm.get("fetched", 0),
+                   "claims": claims + int(sm.get("claims") or 0)}
+        return out
+
+    def ground_sitemap(self, g: dict[str, Any]) -> dict[str, Any]:
+        """Read the newest pages a site lists in its own sitemap(s)."""
+        site = str(g.get("site") or g.get("url") or "")
+        host = urlparse(site if "//" in site else f"https://{site}").netloc
+        if not host:
+            return {"sitemaps": 0, "fetched": 0, "claims": 0, "why": "no host"}
+        base = f"https://{host}"
+        robots = self.page(f"{base}/robots.txt")
+        maps = [ln.split(":", 1)[1].strip() for ln in robots.splitlines()
+                if ln.lower().startswith("sitemap:")][:SITEMAP_MAX_INDEXES] or [
+                    f"{base}/sitemap.xml"]
+        locs: list[tuple[str, str]] = []
+        seen_maps = 0
+        queue = list(maps)
+        while queue and seen_maps < SITEMAP_MAX_INDEXES * 2 and not self.over():
+            sm_url = queue.pop(0)
+            if sm_url.endswith(".gz"):
+                continue
+            xml = self.page(sm_url)
+            seen_maps += 1
+            if not xml:
+                continue
+            entries = sitemap_entries(xml)
+            if "<sitemapindex" in xml[:2000].lower():
+                newest = sorted(entries, key=lambda e: e[1], reverse=True)
+                queue.extend(u for u, _ in newest[:SITEMAP_MAX_INDEXES])
+                continue
+            locs.extend(entries)
+        terms = [t.lower() for q in (g.get("queries") or []) for t in str(q).split()
+                 if t.isascii() and len(t) >= 4]
+        locs.sort(key=lambda e: (any(t in e[0].lower() for t in terms), e[1]), reverse=True)
+        fetched = claims = 0
+        for url, _mod in locs[:SITEMAP_PAGES]:
+            if self.over():
+                break
+            body = self.page(url, referer=base)
+            if len(html_text(body)) >= MIN_PAGE_TEXT:
+                fetched += 1
+                claims += self._read_page(g, body, url, "", "sitemap:page")
+            time.sleep(1.0)
+        return {"sitemaps": seen_maps, "listed": len(locs), "fetched": fetched,
+                "claims": claims}
 
     def ground_cn_api(self, g: dict[str, Any]) -> dict[str, Any]:
         from libs.data import cn_sources

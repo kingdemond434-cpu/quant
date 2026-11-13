@@ -102,3 +102,43 @@ def test_a_region_wall_is_recorded_and_never_parsed(monkeypatch) -> None:
     assert run.status[-1] == {"url": "https://www.joinquant.com/view/community/list",
                               "blocked": "REGION_BLOCKED"}
     assert run.counts["pages"] == 0
+
+
+SITEMAP = """<?xml version="1.0"?><urlset>
+<url><loc>https://forum.example/t/old-gold-post</loc><lastmod>2025-01-01</lastmod></url>
+<url><loc>https://forum.example/t/new-post</loc><lastmod>2026-11-12</lastmod></url>
+<url><loc>https://forum.example/private/x</loc><lastmod>2026-11-13</lastmod></url>
+</urlset>"""
+
+
+def test_sitemap_entries_read_locs_and_lastmods() -> None:
+    got = dfm.sitemap_entries(SITEMAP)
+    assert ("https://forum.example/t/new-post", "2026-11-12") in got and len(got) == 3
+
+
+def test_search_falls_back_to_the_sites_own_sitemap_through_the_robots_gate(monkeypatch
+                                                                           ) -> None:
+    robots = "User-agent: *\nDisallow: /private/\nSitemap: https://forum.example/sm.xml\n"
+    pages = {"https://forum.example/robots.txt": robots, "https://forum.example/sm.xml": SITEMAP}
+    fetched: list[str] = []
+
+    def fake(url, **_kw):
+        fetched.append(url)
+        body = pages.get(url, "<p>" + "gold rallies after the London fix. " * 80 + "</p>")
+        return pf.Response(url=url, status=200, text=body)
+
+    monkeypatch.setattr(dfm.pf, "get", fake)
+    monkeypatch.setattr(dfm, "engine_search", lambda *a, **k: ([], "none", ["anti-bot"]))
+    monkeypatch.setattr(dfm.time, "sleep", lambda s: None)
+    run = dfm._Run.__new__(dfm._Run)
+    run.status, run.counts = [], {"pages": 0, "queries": 0}
+    run._net_ok = lambda: True                                    # type: ignore[method-assign]
+    run._note_net = lambda ok: None                               # type: ignore[method-assign]
+    run.over = lambda: False                                      # type: ignore[method-assign]
+    run.ground = {"language": "en"}
+    read: list[str] = []
+    run._read_page = lambda g, body, url, t, r: read.append(url) or 1  # type: ignore[method-assign]
+    out = run.ground_search({"site": "forum.example", "queries": ["gold fix"]})
+    assert out["claims"] == 2 and out["fetched"] == 2
+    assert "https://forum.example/private/x" not in fetched       # Disallow holds
+    assert read == ["https://forum.example/t/old-gold-post", "https://forum.example/t/new-post"]
