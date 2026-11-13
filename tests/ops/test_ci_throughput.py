@@ -860,3 +860,19 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     assert reruns == ["repos/o/r/actions/runs/10/rerun"]
     assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
     assert not lf.never_started([]) and lf.never_started(jobs[10])
+
+
+def test_the_gate_clone_fetches_before_it_checks_out_and_logs_git() -> None:
+    """2026-11-11: `sparse-checkout set` ran before the fetch, re-applied the patterns to the old
+    head of a blobless clone, lazily fetched blob by blob, and the sweep died with a bare 128
+    three times running -- before live-first or any merge. The patterns are config now, the
+    fetch comes first, git's own lines are logged, and a failed refresh re-clones once."""
+    ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    body = ps[ps.index("function Refresh-GateClone") :]
+    assert "& git -C $Clone sparse-checkout" not in ps
+    fetch, checkout = body.index("fetch -q"), body.index("checkout -q -f --detach")
+    assert body.index('"sparse-checkout"') < fetch < checkout
+    assert 'Say "fetch: $_"' in body and 'Say "checkout: $_"' in body
+    retry = ps[ps.index("$why = Refresh-GateClone") :]
+    assert "Remove-Item -LiteralPath $Clone" in retry and retry.count("Refresh-GateClone") == 2
+    assert ps.index("$why = Refresh-GateClone") < ps.index("live_first_ci.py")

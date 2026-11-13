@@ -121,19 +121,41 @@ try {
         Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
     }
 
-    if (-not (Test-Path -LiteralPath (Join-Path $Clone ".git"))) {
-        & git clone -q --filter=blob:none --no-checkout "https://github.com/$Repo.git" $Clone 2>&1 | ForEach-Object { Say "clone: $_" }
-        if ($LASTEXITCODE -ne 0) { throw "git clone failed ($LASTEXITCODE)" }
+    # THE GATE CLONE, REFRESHED WITHOUT A LAZY FETCH (2026-11-11). `sparse-checkout set` used to run
+    # FIRST, and it re-applies the patterns to the OLD detached HEAD at once. On this blobless clone
+    # every newly matched file was then fetched one blob at a time from the promisor remote, and
+    # when that failed the sweep died with "sparse-checkout failed (128)" and nothing else: three
+    # sweeps (23:40-00:00Z 11-10) never reached live-first or a single merge, and git's own error
+    # was never logged. Now the patterns are written as config, the fetch comes first, and the one
+    # checkout of origin/LIVE fetches every blob it needs in one batch. Every git line is logged.
+    # If the refresh still fails, the clone is removed and made again once; it holds no state.
+    $patterns = @('/.github/scripts/audit_gate.py', '*.py', '*.ps1', '*.sh', '*.cmd', '*.txt', '*.yml',
+                  '*.yaml', '*.toml', '*.manifest', '*.service', '/ops/githooks/')
+    function Refresh-GateClone {
+        if (-not (Test-Path -LiteralPath (Join-Path $Clone ".git"))) {
+            & git clone -q --filter=blob:none --no-checkout "https://github.com/$Repo.git" $Clone 2>&1 | ForEach-Object { Say "clone: $_" }
+            if ($LASTEXITCODE -ne 0) { return "git clone failed ($LASTEXITCODE)" }
+        }
+        & git -C $Clone config core.sparseCheckout true 2>&1 | ForEach-Object { Say "sparse: $_" }
+        & git -C $Clone config core.sparseCheckoutCone false 2>&1 | ForEach-Object { Say "sparse: $_" }
+        if ($LASTEXITCODE -ne 0) { return "sparse config failed ($LASTEXITCODE)" }
+        $info = Join-Path $Clone ".git\info"
+        if (-not (Test-Path -LiteralPath $info)) { New-Item -ItemType Directory -Path $info -Force | Out-Null }
+        [IO.File]::WriteAllText((Join-Path $info "sparse-checkout"), (($patterns -join "`n") + "`n"))
+        & git -C $Clone fetch -q --no-tags --filter=blob:none origin "+refs/heads/${Live}:refs/remotes/origin/${Live}" 2>&1 | ForEach-Object { Say "fetch: $_" }
+        if ($LASTEXITCODE -ne 0) { return "git fetch failed ($LASTEXITCODE)" }
+        & git -C $Clone checkout -q -f --detach "origin/$Live" 2>&1 | ForEach-Object { Say "checkout: $_" }
+        if ($LASTEXITCODE -ne 0) { return "git checkout failed ($LASTEXITCODE)" }
+        return ""
     }
-    # every run, so a moved gate script is followed. The code files come too: the LOW-tier check
-    # greps LIVE's code for any program that reads a document, and a checkout fetches their
-    # blobs in one batch (a grep over a blobless tree would fetch them one by one).
-    & git -C $Clone sparse-checkout set --no-cone /.github/scripts/audit_gate.py '*.py' '*.ps1' '*.sh' '*.cmd' '*.txt' '*.yml' '*.yaml' '*.toml' '*.manifest' '*.service' /ops/githooks/
-    if ($LASTEXITCODE -ne 0) { throw "sparse-checkout failed ($LASTEXITCODE)" }
-    & git -C $Clone fetch -q --no-tags origin "+refs/heads/${Live}:refs/remotes/origin/${Live}" 2>&1 | ForEach-Object { Say "fetch: $_" }
-    if ($LASTEXITCODE -ne 0) { throw "git fetch failed ($LASTEXITCODE)" }
-    & git -C $Clone checkout -q -f --detach "origin/$Live" 2>&1 | ForEach-Object { Say "checkout: $_" }
-    if ($LASTEXITCODE -ne 0) { throw "git checkout failed ($LASTEXITCODE)" }
+    $why = Refresh-GateClone
+    if ($why) {
+        Say "gate clone refresh failed: $why; removing the clone and making it again once"
+        Remove-Item -LiteralPath $Clone -Recurse -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $Clone) { throw "$why, and the gate clone could not be removed" }
+        $why = Refresh-GateClone
+        if ($why) { throw $why }
+    }
     $at = (& git -C $Clone rev-parse --short=9 HEAD)
 
     # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
