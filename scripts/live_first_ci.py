@@ -101,6 +101,17 @@ WORKERS = 8
 WRITE_TIMEOUT_S = 20
 
 
+#: Set when GitHub says to slow down (429, a secondary/abuse-limit 403, or any Retry-After): no
+#: further call goes out in this call; what is left carries to the next one (Auditor MF1).
+RATE_LIMITED = threading.Event()
+_LIMIT_MARKS = ("secondary rate limit", "abuse", "rate limit exceeded", "retry-after", "http 429")
+
+
+def _rate_limited(stderr: str) -> bool:
+    low = stderr.lower()
+    return any(m in low for m in _LIMIT_MARKS)
+
+
 def _gh(path: str, method: str = "GET") -> Any:
     gh = os.environ.get("GH_BIN") or "gh"
     args = [gh, "api", path] + (["-X", method] if method != "GET" else [])
@@ -112,6 +123,8 @@ def _gh(path: str, method: str = "GET") -> Any:
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"gh api {method} {path}: timed out") from exc
     if p.returncode != 0:
+        if _rate_limited(p.stderr):
+            RATE_LIMITED.set()
         raise RuntimeError(f"gh api {method} {path}: {p.stderr.strip()[:300]}")
     return json.loads(p.stdout) if p.stdout.strip() else None
 
@@ -422,7 +435,8 @@ def _cancel_batch(
             row = {"id": rid, "attempt": int((cur[rid] or {}).get("run_attempt") or 1), "calls": 0}
             with lock:
                 rows.append(row)
-                _save(state, {"at": at, "owed": owed + rows})
+                mine = {r["id"] for r in rows}  # a run owed already and ahead again: once (SF)
+                _save(state, {"at": at, "owed": [r for r in owed if r["id"] not in mine] + rows})
         try:
             _gh(f"repos/{repo}/actions/runs/{rid}/cancel", "POST")
         except RuntimeError as exc:
@@ -430,7 +444,9 @@ def _cancel_batch(
 
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         list(pool.map(cancel, go))
-    if over():
+    if RATE_LIMITED.is_set():
+        print("  GitHub rate limit: no more calls this call; the rest carry to the next one")
+    elif over():
         print("  budget spent: the remaining runs keep their place until the next call")
     return rows
 
@@ -453,11 +469,13 @@ def run(
     # of it reading comments and the call cancelled nothing ("budget spent" before rule 2).
     cleared_stop = t0 + CLEARED_SHARE * budget
 
+    RATE_LIMITED.clear()
+
     def over() -> bool:
-        return clock() >= stop
+        return RATE_LIMITED.is_set() or clock() >= stop
 
     def over_cleared() -> bool:
-        return clock() >= cleared_stop
+        return RATE_LIMITED.is_set() or clock() >= cleared_stop
 
     now = datetime.now(UTC)
     at = now.isoformat(timespec="seconds")

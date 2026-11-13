@@ -194,3 +194,50 @@ def test_live_first_cancels_before_any_comment_read_and_in_parallel(tmp_path: Pa
 
     owed = json.loads((tmp_path / "s.json").read_text())["owed"]
     assert sorted(r["id"] for r in owed) == [100 + i for i in range(24)]
+
+
+def test_a_rate_limit_stops_every_further_write_in_the_call(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Auditor MF1 @ 35dc54538: with 8 writes in flight, a secondary-limit 403 must stop the
+    call's writes, not be printed while the pool keeps firing. `_gh` sets RATE_LIMITED on a 429,
+    an abuse/secondary-limit 403 or a Retry-After; over() honours it; the owed rows carry."""
+    import subprocess
+    from types import SimpleNamespace
+
+    lf = _lf()
+    err = "gh: You have exceeded a secondary rate limit. (HTTP 403)"
+    monkeypatch.setattr(
+        subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr=err)
+    )
+    with pytest.raises(RuntimeError):
+        lf._gh("repos/o/r/actions/runs/1/cancel", "POST")
+    assert lf.RATE_LIMITED.is_set()
+    assert lf._rate_limited("HTTP 429") and not lf._rate_limited("HTTP 404: Not Found")
+
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": OLD,
+            "status": "queued"}  # fmt: skip
+    prs = [{"id": 100 + i, "event": "pull_request", "head_branch": f"b{i}", "head_sha": f"h{i}",
+            "created_at": "1999-12-31T00:00:00Z", "status": "queued", "run_attempt": 1}
+           for i in range(30)]  # fmt: skip
+    posts: list[str] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        if method == "POST":
+            posts.append(path)
+            if len(posts) == 1:
+                lf.RATE_LIMITED.set()  # what _gh does on that 403
+                raise RuntimeError(err)
+            return None
+        if "status=queued" in path:
+            return {"workflow_runs": [live, *prs]}
+        if "/pulls?" in path:
+            return [{"number": i + 1, "head": {"ref": f"b{i}", "sha": f"h{i}"}} for i in range(30)]
+        if "/comments" in path:
+            return []
+        return {"workflow_runs": []}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    monkeypatch.setattr(lf, "WORKERS", 1)  # deterministic: the first POST is the limited one
+    lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None)
+    assert len(posts) == 1  # nothing after GitHub said stop
