@@ -144,17 +144,23 @@ def withhold_login(account: Mapping[str, Any]) -> tuple[dict[str, Any], list[str
 
 def scrub_for_publish(rel: str, data: bytes) -> tuple[bytes | None, list[str]]:
     """(scrubbed bytes, dropped key names) for a SCRUBBED path; (None, []) when the path is not
-    scrubbed, the file is already clean, or it cannot be parsed (the login fence judges it)."""
+    scrubbed or the file is already clean. A login-only path that cannot be parsed passes through
+    for the login fence to judge; a money path that cannot be parsed is WITHHELD whole."""
     spec = SCRUBBED.get(rel)
     if spec is None:
         return None, []
+    money = spec.get("redact") == "money"
+    # A MONEY REDACTION FAILS CLOSED (Auditor SF on #1073): the login fence downstream judges
+    # logins, not equity, so a truncated or non-object gateway_state.json passed through raw would
+    # publish the amounts. It is replaced by a placeholder that names why, never by the raw blob.
+    withheld = (json.dumps({"withheld": "unparseable"}) + "\n").encode("utf-8")
     try:
         doc = json.loads(data.decode("utf-8-sig"))
     except (UnicodeDecodeError, ValueError, RecursionError):
-        return None, []
-    if spec.get("redact") == "money":
+        return (withheld, ["<unparseable>"]) if money else (None, [])
+    if money:
         if not isinstance(doc, dict):
-            return None, []
+            return withheld, ["<not an object>"]
         view, gone = redact_money(doc)
         if not gone:
             return None, []

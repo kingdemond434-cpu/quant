@@ -95,9 +95,13 @@ def test_the_publisher_reserialises_like_the_gateway_and_leaves_clean_bytes_alon
     assert again is None and gone == []
 
 
-def test_unparseable_bytes_pass_through_for_the_fence_to_judge() -> None:
-    assert aw.scrub_for_publish(REL, b"not json") == (None, [])
-    assert aw.scrub_for_publish(REL, b"[1, 2]") == (None, [])
+def test_an_unparseable_money_file_is_withheld_whole_never_passed_through() -> None:
+    raw = b'{"armed": true, "day_start_equity": {"equity": 123456.78, "date": "2026-11-1'
+    for blob, why in ((raw, "<unparseable>"), (b"not json", "<unparseable>"),
+                      (b'[{"equity": 123456.78}]', "<not an object>")):
+        new, gone = aw.scrub_for_publish(REL, blob)
+        assert new is not None and b"123456" not in new and gone == [why]
+        assert json.loads(new) == {"withheld": "unparseable"}
 
 
 def test_the_tracked_copy_publishes_without_an_amount() -> None:
