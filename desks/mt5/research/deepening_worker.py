@@ -91,6 +91,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -1573,6 +1574,41 @@ _SYSTEM_BY_KIND = {
 }
 
 
+#: Consecutive unavailable rows after which the local lane stands down for the pass.
+LOCAL_OUTAGE_BREAK = 3
+
+
+def run_local_lane(rest: list[dict], work: Any, commit: Any, blocked: Any,
+                   out_of_time: Any) -> int:
+    """Work `rest` on the local rung, one row at a time, while the box is idle. Returns rows done.
+
+    AN OUTAGE BREAKER (audit of 538cb964, SF10): a local server that is down costs its whole
+    timeout on every row, so LOCAL_OUTAGE_BREAK unavailable rows in a row end the lane for this
+    pass. The rows left keep their place, exactly as when the box is busy.
+    """
+    done = outages = 0
+    for task in rest:
+        if out_of_time():
+            break
+        why_busy = blocked()
+        if why_busy:
+            dlog(f"local lane yielded: {why_busy}; {len(rest) - done} row(s) keep their place")
+            break
+        t0 = time.monotonic()
+        try:
+            candidates, disposition = work(task)
+        except Exception as exc:
+            candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
+        commit(task, candidates, disposition, time.monotonic() - t0)
+        done += 1
+        outages = outages + 1 if is_outage(disposition) else 0
+        if outages >= LOCAL_OUTAGE_BREAK:
+            dlog(f"local lane stood down: {outages} outage(s) in a row; "
+                 f"{len(rest) - done} row(s) keep their place")
+            break
+    return done
+
+
 def is_outage(disposition: str) -> bool:
     """Is this row the seat being unavailable rather than a decision about the source?"""
     return (disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:")
@@ -2008,6 +2044,7 @@ def _work(argv: list[str] | None = None) -> int:
     write_lock = threading.Lock()
     decided_ids: set[str] = set()
 
+    touched: set[str] = set()
     served: dict[str, int] = {}
     by_family: dict[str, int] = {}
     by_culture: dict[str, int] = {}
@@ -2022,6 +2059,8 @@ def _work(argv: list[str] | None = None) -> int:
             donated[0] += donate(hyps)
         cls = task_class(task)
         head = disposition.split(":")[0]
+        if not is_outage(disposition):
+            touched.add(task_id(task))
         entry = {"id": task_id(task), "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                  "source": task.get("source"), "url": task.get("url"),
                  "disposition": disposition, "n_candidates": len(candidates),
@@ -2210,6 +2249,30 @@ def _work(argv: list[str] | None = None) -> int:
             dlog("seat lane stopped: the provider refused the DAY's allowance, not a burst. The "
                  "remaining rows keep their place and their published age, and the rule lane has "
                  "already had its turn at every row it can decide")
+
+    # ---- THE LOCAL LANE: the hours AFTER the free allowance (2026-10-13) --------------------
+    # `_seat_budget` measured that OpenRouter's free allowance is per ACCOUNT per day, so once it
+    # is spent the seat lane stands down for the rest of the day. A local open-weight model on
+    # the box has no allowance: when one is DECLARED (QUANT_LOCAL_LLM_URLS), the rows the seat
+    # lane did not reach go to it, one at a time, and only while the box is idle --
+    # `free_chain.local_blocked` yields to the judge and the miners on every call. The same
+    # `work_task` -> `validate` -> `compile_row` door applies: a local model's quote must be in
+    # the row's own text exactly as a cloud model's must.
+    with contextlib.suppress(Exception):
+        from libs.ops import free_chain
+        if seat_tasks and free_chain.local_declared() and not out_of_time():
+            rest = [t for t in seat_tasks if task_id(t) not in touched][:budget]
+
+            def local_chat(prompt: str, **kw: Any) -> tuple[str, str | None]:
+                kw.pop("timeout", None)
+                return free_chain.seat_compatible_chat(prompt, local_only=True, **kw)
+
+            def work_local(task: dict) -> tuple[list[dict], str]:
+                return work_task(task, universe, chat=local_chat)
+
+            done_local = run_local_lane(rest, work_local, commit, free_chain.local_blocked,
+                                        out_of_time)
+            dlog(f"local lane: {done_local} row(s) worked on the local open-weight rung")
 
     if universe:
         publish_rule_report(served, by_family, by_culture, rule_cands, replay_note, donated[0],

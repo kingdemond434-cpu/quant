@@ -570,6 +570,7 @@ desks/mt5/data/hypotheses/steer_ledger.jsonl
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+desks/mt5/data/llm_lab/openrouter_key.json
 # The box's account declarations ("<login>@<server>" keys): box-local, never published (audit v5).
 desks/mt5/data/ACCOUNT_PROFILES.json
 
@@ -607,3 +608,9 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# atomic_json (libs/ops/atomic_json.py): the OS lock file it leaves beside a locked target, and a
+# temp body a failed replace kept (swept after a day) -- neither is state, never commit them.
+desks/mt5/data/llm_lab/**/*.lock
+desks/mt5/data/llm_lab/**/*.tmp
+desks/mt5/data/lake/series/*.tmp
+desks/mt5/data/intelligence/llm_lab/**/*.tmp
