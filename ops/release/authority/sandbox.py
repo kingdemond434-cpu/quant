@@ -28,6 +28,18 @@ ROOT = HERE.parents[2]
 H1, H2 = "1" * 40, "2" * 40
 BASE_SHA = "b" * 40
 T0 = datetime(2026, 11, 4, 12, 0, tzinfo=UTC)
+#: The sealed service's runtime files (root_path.SEALED_RUNTIME, listed here so the sandbox's
+#: base reader serves them without importing root_path first).
+RUNTIME = (
+    "ops/release/authority/repin.py",
+    "ops/release/authority/root_path.py",
+    "ops/release/authority/notify.py",
+    "ops/release/authority/ROOT_POLICY.json",
+)
+
+
+def _repin() -> Any:
+    return _load("sandbox_repin", HERE / "repin.py")
 
 
 def _load(name: str, path: Path) -> Any:
@@ -79,6 +91,7 @@ class FakeGitHub:
         self.conclusion = dict.fromkeys((*ag.GATING_JOBS, *ag.AUTO_JOBS), "success")
         self.trusted_eval: str | None = "success"
         self.writes: list[tuple[str, str, dict[str, Any]]] = []
+        self.clock: Clock | None = None
 
     @property
     def head(self) -> str:
@@ -91,20 +104,29 @@ class FakeGitHub:
             sid = 1 if wf.endswith("ci.yml") else 2
             out.append({"id": i, "name": name, "status": "completed", "conclusion": concl,
                         "app": {"slug": "github-actions"}, "check_suite": {"id": sid},
-                        "started_at": "2026-11-04T00:00:00Z"})  # fmt: skip
+                        "started_at": "2026-11-04T00:00:00Z",
+                        "completed_at": "2026-11-04T00:00:00Z"})  # fmt: skip
         return out
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
         if "-X" in args:
             self.writes.append((args[args.index("-X") + 1], path, dict(data or {})))
+            if args[args.index("-X") + 1] == "POST" and path.endswith("/issues/41/comments"):
+                at = (self.clock.t if self.clock else datetime.now(UTC)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
+                self.comments.append({"body": (data or {}).get("body"), "created_at": at,
+                                      "updated_at": at, "author_association": "OWNER",
+                                      "performed_via_github_app": None})  # fmt: skip
             return None
         if f"/issues/{self.ag.APPROVALS_ISSUE}/comments" in path:
             return [self.board]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
         if "/annotations" in path:
-            return []
+            notes = [{"title": "", "message": "Process completed with exit code 1."}]
+            return [notes] if "--slurp" in args else notes
         if "/check-runs" in path:
             return (
                 [{"check_runs": self.runs()}] if "--slurp" in args else {"check_runs": self.runs()}
@@ -156,12 +178,24 @@ class Sandbox:
         self.att = self.auth.att
         self.gh = FakeGitHub(self.ag, files)
         self.clock = Clock(T0)
+        self.gh.clock = self.clock
+        #: GitHub enforces the authority's status on LIVE (Level 2), and the sealed re-pin
+        #: service is installed: both off by default, as on the box before the sitting
+        self.level2 = False
+        #: the sealed re-pin service's folder (root_path.SEALED_HOME): install_repin() fills it
+        self.sealed = tmp / "sealed"
+        self.sealed.mkdir()
         self.notices: list[str] = []
         self.deliver = True
         self.folder = tmp / "attestations"
         self.folder.mkdir()
         self.registry = tmp / "registry.jsonl"
         self.registry.write_text("", encoding="utf-8")
+        # the ROOT path (root_path.py): the Auditor's synced rows and the ROOT notice channel
+        self.auditor_rows = tmp / "auditor_rows.jsonl"
+        self.auditor_rows.write_text("", encoding="utf-8")
+        self.root_notices: list[tuple[str, str]] = []
+        self.root_notify_out: tuple[int | None, str] = (0, "armed 1, delivered 1")
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import ed25519
 
@@ -187,7 +221,8 @@ class Sandbox:
     def wired(self) -> Iterator[None]:
         ag = self.ag
         names = ("_gh", "_git", "patch_id", "up_to_date", "referenced_by_code", "datetime",
-                 "run_notify")  # fmt: skip
+                 "run_notify", "_show", "_show_bytes", "root_level2",
+                 "_authority_mod")  # fmt: skip
         saved = {k: getattr(ag, k) for k in names}
         env = {
             ag.REGISTRY_ENV: str(self.registry),
@@ -202,14 +237,27 @@ class Sandbox:
         def git_bytes(*args: str) -> bytes | None:
             if args and args[0] == "show":
                 rev, _, name = args[1].partition(":")
-                src = self.head_text if rev == self.gh.head else self.base_text
-                t = src.get(name)
-                return t.encode() if t is not None else None
+                if rev.endswith("audit-registry"):
+                    return self.auditor_rows.read_bytes()
+                return show_bytes(rev, name)
             return saved_bytes(*args)
+
+        def show_bytes(rev: str, name: str) -> bytes | None:
+            src = self.head_text if rev == self.gh.head else self.base_text
+            t = src.get(name)
+            if t is None and name in RUNTIME and rev != self.gh.head:
+                return (ROOT / name).read_bytes()  # the base's sealed runtime: this checkout's
+            return t.encode() if t is not None else None
 
         def notify(title: str, body: str) -> bool:
             self.notices.append(title)
             return self.deliver
+
+        def show(rev: str, name: str) -> str | None:
+            if rev.endswith("audit-registry"):
+                return self.auditor_rows.read_text(encoding="utf-8")
+            src = self.head_text if rev == self.gh.head else self.base_text
+            return src.get(name)
 
         ag._gh = self.gh
         ag._git = lambda *a: ""
@@ -218,6 +266,19 @@ class Sandbox:
         ag.referenced_by_code = lambda base, n: False
         ag.datetime = fake_datetime(self.clock)
         ag.run_notify = notify
+        ag._show = show
+        ag._show_bytes = show_bytes
+        ag.root_level2 = lambda repo, base: (self.level2, "sandbox Level 2")
+        real_mod = saved["_authority_mod"]
+
+        def authority_mod(name: str) -> Any:
+            mod = real_mod(name)
+            if name == "root_path":
+                mod.SEALED_HOME = str(self.sealed)
+            return mod
+
+        ag._authority_mod = authority_mod
+        self.auth.pol.root_path().SEALED_HOME = str(self.sealed)
         self.auth._git_bytes = git_bytes
         try:
             yield
@@ -234,14 +295,49 @@ class Sandbox:
     def authority(self) -> tuple[str, list[str]]:
         """One authority pass over #41: decide, and sign CLEAR/HOLD into the folder."""
         with self.wired():
-            f = self.auth.facts(self.ag, "o/r", 41, self.ag.LIVE, self.policy)
+            f = self.auth.facts(self.ag, "o/r", 41, self.ag.LIVE, self.policy,
+                                enforced=self.level2)  # fmt: skip
             verdict, reasons = self.auth.pol.decide(f)
+            if verdict == "NOTIFY":
+                self.auth.ask_notice(self.folder, f, self.clock.t)
             if verdict in ("CLEAR", "HOLD"):
                 key, kid = self.att.load_private(self.key_pem)
                 env = self.auth.issue(f, verdict, reasons, repo="o/r", digest=self.digest,
                                       key=key, kid=kid, ttl_h=48, now=self.clock.t)  # fmt: skip
                 self.auth.write(self.folder, env, 41, f["head"], verdict, self.digest)
+        self.serve()
         return verdict, reasons
+
+    def install_repin(self) -> None:
+        """install_repin.ps1: the sealed service's files, as LIVE has them."""
+        for rel in RUNTIME:
+            (self.sealed / rel.rsplit("/", 1)[-1]).write_bytes((ROOT / rel).read_bytes())
+
+    def serve(self) -> None:
+        """One pass of the sealed service's notice side (repin.serve_notices), on the fake clock,
+        through a fake channel."""
+        if not (self.sealed / "repin.py").exists():
+            return
+        rp = self.auth.pol.root_path()
+
+        def send(title: str, body: str) -> tuple[int, str]:
+            self.root_notices.append((title, body))
+            rc, out = self.root_notify_out
+            return int(rc or 0), out
+
+        _repin().serve_notices(self.tmp, self.sealed, rp, send, self.clock.t)
+
+    def audit_clear(self, head: str | None = None, comment: bool = True, row: bool = True) -> None:
+        """The Auditor's two records for `head`: its CLEAR comment and its synced registry row."""
+        head = head or self.gh.head
+        at = self.clock.t.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if comment:
+            self.gh.comments.append({"body": f"AUDIT CLEAR {head}", "created_at": at,
+                                     "updated_at": at, "author_association": "OWNER",
+                                     "performed_via_github_app": None})  # fmt: skip
+        if row:
+            with self.auditor_rows.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"pr": 41, "sha": head, "verdict": "CLEAR", "at": at}) + "\n")
 
     def gate(self) -> int:
         with self.wired():

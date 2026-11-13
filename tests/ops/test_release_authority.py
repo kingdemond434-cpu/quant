@@ -163,19 +163,40 @@ def test_an_expired_attestation_is_refused(sb: Any) -> None:
 
 @pytest.mark.parametrize("path", [
     ".github/scripts/audit_gate.py",
-    "ops/release/authority/ROOT_POLICY.json",
-    "ops/release/authority/attestation.py",
-    ".github/workflows/trusted-eval.yml",
     "ops/box/workflow_gate.ps1",
 ])  # fmt: skip
-def test_a_pr_that_changes_the_authority_or_the_merger_is_root_and_held(
+def test_a_root_pr_waits_while_the_root_path_is_off_and_never_takes_the_24h_path(
     tmp_path: Path, path: str
 ) -> None:
+    # THE ROOT PATH (root_path.py) is off until GitHub enforces the authority's status (Level 2)
+    # and the sealed re-pin service is installed: nothing is signed, nothing merges
     sb = sb_mod.Sandbox(tmp_path, files=(path,))
     v, why = sb.authority()
-    assert v == "HOLD" and "ROOT" in why[0]
+    assert v == "WAIT" and "Level 2" in why[0]
     _through_window(sb)
-    assert sb.gh.merges() == []
+    assert sb.gh.merges() == [] and sb.notices == []
+
+
+@pytest.mark.parametrize("path", [
+    "ops/release/authority/ROOT_POLICY.json",
+    "ops/release/authority/root_path.py",
+    "ops/release/authority/attestation.py",
+    "ops/release/authority/policy.py",
+    "ops/release/authority/repin.py",
+    ".github/workflows/trusted-eval.yml",
+    "scripts/check_immutable_evaluator.py",
+])  # fmt: skip
+def test_a_pr_that_changes_the_sealed_core_is_held_for_zuck(tmp_path: Path, path: str) -> None:
+    sb = sb_mod.Sandbox(tmp_path, files=(path,))
+    sb.level2 = True
+    sb.install_repin()
+    v, why = sb.authority()
+    assert v == "HOLD" and "SEALED CORE" in why[0]
+    sb.audit_clear()
+    _through_window(sb)
+    sb.clock.advance(hours=80)
+    sb.gate()
+    assert sb.gh.merges() == [] and sb.root_notices == []
 
 
 def test_a_grow_only_list_may_grow_but_never_shrink(tmp_path: Path) -> None:
@@ -446,8 +467,16 @@ def test_first_signed_reads_the_earliest_statement(tmp_path: Path) -> None:
 
 def test_status_is_failure_outside_the_delegated_classes_even_on_clear() -> None:
     a = _auth()
-    for cls in ("ROOT", "REFUSED", None):
+    for cls in ("REFUSED", None):
         assert a.status_for({"cls": cls}, "CLEAR", [], since=None, veto_h=24)[0] == "failure"
+    for verdict in ("HOLD", "WAIT", "FAIL"):  # a ROOT PR that is not CLEAR is never success
+        assert a.status_for({"cls": "ROOT"}, verdict, [], since=None, veto_h=24)[0] != "success"
+
+
+def test_a_root_status_is_success_only_on_the_authoritys_full_root_clear() -> None:
+    # root_path.authority_verdict signs CLEAR only with every condition and its 72 h window met
+    a = _auth()
+    assert a.status_for({"cls": "ROOT"}, "CLEAR", [], since=None, veto_h=24)[0] == "success"
 
 
 def _check_ruleset() -> Any:

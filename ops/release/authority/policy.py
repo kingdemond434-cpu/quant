@@ -6,8 +6,12 @@ CLASSES (strictest file wins):
   ROOT        -- a file in ROOT_POLICY.json root_files (or in enforced_root_files while GitHub
                  does not yet enforce the authority's status on LIVE), ROOT_POLICY.json
                  itself, a shrunk grow_only list, or a ceiling change the envelope does not
-                 allow. The authority
-                 never CLEARs ROOT; it signs a HOLD saying so, and zuck's own path decides.
+                 allow, or a SEALED CORE change (root_path.py). A ROOT PR that is ROOT only
+                 because it changes root files, and touches nothing sealed, takes THE ROOT PATH
+                 (root_path.authority_verdict: every ROOT job and the base-run trusted-eval on
+                 the exact head); its CLEAR is signed as class ROOT, and the gate still needs the
+                 Auditor's two records, a 72 h delivered window and one-at-a-time. Every other
+                 ROOT PR gets a signed HOLD, and zuck's own path decides.
   CONTROLLER  -- the gate's PROTECTED tier (a check that judges PRs: .github/, ops/release/, test
                  configuration). Needs the base-run `trusted-eval` job on top of every gating and
                  AUTO job: the PR's own `pull_request` runs are self-attested for these files.
@@ -23,7 +27,6 @@ WAIT or HOLD, never CLEAR.
 from __future__ import annotations
 
 import fnmatch
-import hashlib
 import json
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
@@ -33,6 +36,22 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
 POLICY_FILE = HERE / "ROOT_POLICY.json"
 CEILINGS = "ops/release/ceilings.json"
+_ROOT_PATH: Any = None
+
+
+def root_path() -> Any:
+    """The SEALED ROOT-path module (root_path.py) from THIS checkout, loaded once."""
+    global _ROOT_PATH
+    if _ROOT_PATH is None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_policy_root_path", HERE / "root_path.py")
+        if spec is None or spec.loader is None:
+            raise ImportError("root_path")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _ROOT_PATH = mod
+    return _ROOT_PATH
 
 
 def load_policy(path: Path = POLICY_FILE) -> dict[str, Any]:
@@ -45,17 +64,9 @@ def _match(name: str, pats: Iterable[str]) -> bool:
 
 
 def root_digest(read: Callable[[str], bytes | None], names: Iterable[str], policy: Mapping) -> str:
-    """sha256 over (path, sha256(bytes)) of every root file present in the tree `read` serves.
-    `names`: every path in that tree (git ls-files). A missing root file hashes as absent, so
-    deleting one changes the digest too."""
-    pats = list(policy["root_files"])
-    rows = {}
-    for n in sorted(set(names)):
-        if _match(n, pats) and "__pycache__" not in n:
-            data = read(n)
-            rows[n] = hashlib.sha256(data).hexdigest() if data is not None else "absent"
-    blob = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()
-    return hashlib.sha256(blob).hexdigest()
+    """The root digest: root_path.root_digest (sealed), the one function the authority, the gate
+    and the re-pin service all use."""
+    return str(root_path().root_digest(read, names, policy))
 
 
 def _lines(text: str | None) -> set[str]:
@@ -143,6 +154,8 @@ def classify(
     if not enforced:
         root += [f for f in machinery if f not in root]
     reasons = [f"root file {f}" for f in root]
+    # a change to the SEALED CORE or a sealed constant is ROOT, and never takes the ROOT path
+    reasons += root_path().sealed_touch(files, read_base, read_head)
     for f in files:
         if _match(f, policy.get("grow_only") or ()):
             lost = _lines(read_base(f)) - _lines(read_head(f))
@@ -182,8 +195,10 @@ def decide(f: Mapping[str, Any]) -> tuple[str, list[str]]:
     if not (f.get("open") and f.get("same_repo") and f.get("base_ok")):
         return "WAIT", ["not an open same-repo PR into LIVE"]
     cls = f.get("cls")
-    if cls in ("REFUSED", "ROOT"):
+    if cls == "REFUSED":
         return "HOLD", [f"{cls}: " + "; ".join(f.get("cls_reasons") or [])]
+    if cls == "ROOT":  # the ROOT path (root_path.py): never the sealed core, never zuck's by-pass
+        return root_path().authority_verdict(f)
     if cls not in ("CONTROLLER", "AUTO", "LOW"):
         return "HOLD", [f"unknown class {cls!r}: fail closed"]
     if f.get("hold"):

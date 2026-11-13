@@ -1,6 +1,7 @@
 {
   "_doc": "THE ROOT POLICY of the release authority (ops/release/authority/ONE_TIME_AUTHORISATION.md). Everything here is ROOT: a PR that changes this file, or any file in root_files, is never CLEARed by the authority; it takes zuck's own CLEAR + APPROVE MERGES path, and after it merges zuck re-pins the root digest on the box (pin_root.py). The authority and the gate both refuse to act when the digest of these files on LIVE differs from the box pin, so a root change that reached LIVE any other way switches the attestation path off instead of on.",
   "version": 1,
+  "_residual_doc": "ACCEPTED RESIDUAL (Auditor 2026-11-11, ROOT path root_path.py): every Claude session posts to GitHub with the same identity, and a session lands the Auditor's rows on the audit-registry ref, so the AUDIT comment and the registry row are records, not independent keys. The ROOT veto notice is NOT one of them: the authority requests it in its own folder and the sealed re-pin service sends and records it. Against a deliberate forge of the comment and row, the 72 h delivered notice to zuck is DETECTION, not prevention, until an authenticated Auditor channel exists.",
   "root_files": [
     "ops/release/authority/*",
     ".github/scripts/audit_gate.py",
