@@ -1,4 +1,5 @@
-"""Grounds the principal has put off-limits: no request ever reaches them.
+"""Grounds no request may ever reach: the principal's off-limits list, and congressional
+disclosure reports (5 U.S.C. 13107(c), see STATUTE_HOSTS).
 
 zuck's standing order: WeChat and Baidu are off-limits as data grounds. That covers every Baidu
 host (index.baidu.com, huiyan.baidu.com, tieba.baidu.com, ...), WeChat itself (weixin.qq.com,
@@ -7,7 +8,8 @@ zhihu.sogou.com) are the route into WeChat. A share CFD named Baidu is an instru
 ground, and is untouched.
 
 FAIL CLOSED: every transport that can fetch a URL (`polite_fetch.get`, `cn_sources`,
-`free_stack.http_fetch`, `alt_proxies.http_get`, `asia_collector`) asks `off_limits(url)` first
+`free_stack.http_fetch`, `free_stack_hunter.run`, `alt_proxies.http_get`, `asia_collector`)
+asks `off_limits(url)` first
 and refuses on a hit, without touching the network. The refusal lives here, in code, rather than
 in the rosters under desks/mt5/data/ (money path for replay-shadow): a roster row that names one
 of these hosts (baidu_index, cn_baidu_migration, cn_zhihu via Sogou, the Sogou-WeChat ground)
@@ -25,6 +27,14 @@ OFF_LIMITS_DOMAINS: tuple[str, ...] = ("baidu.com", "sogou.com", "weixin.qq.com"
 STATUS = "BLOCKED_TERMS"
 WHY = ("principal off-limits ground (WeChat/Baidu, incl. the Sogou route into WeChat): "
        "never fetched")
+#: Congressional financial disclosure reports and their mirrors: 5 U.S.C. 13107(c) makes it
+#: unlawful to obtain or use them for a commercial purpose, and a trading desk's use is one.
+STATUTE_HOSTS: tuple[str, ...] = (
+    "disclosures-clerk.house.gov", "efdsearch.senate.gov",
+    "house-stock-watcher-data.s3-us-west-2.amazonaws.com",
+    "senate-stock-watcher-data.s3-us-west-2.amazonaws.com")
+WHY_STATUTE = ("5 U.S.C. 13107(c): congressional financial disclosure reports may not be "
+               "obtained or used for a commercial purpose; never fetched")
 
 
 def off_limits(url: str) -> str | None:
@@ -36,4 +46,6 @@ def off_limits(url: str) -> str | None:
     for dom in OFF_LIMITS_DOMAINS:
         if host == dom or host.endswith("." + dom):
             return f"{WHY} [{host}]"
+    if host in STATUTE_HOSTS:
+        return f"{WHY_STATUTE} [{host}]"
     return None

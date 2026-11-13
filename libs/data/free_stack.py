@@ -18,9 +18,8 @@ WHAT IS HERE, one fetcher per source row of `desks/mt5/data/free_stack_sources.j
                        data), clustered by IPC subclass, momentum per applicant company
     gtrends            Google Trends interest over time via the public widget API (the route
                        `pytrends` wraps -- pytrends is not in the requirements files)
-    congress_house / congress_stockwatcher
-                       US House periodic-transaction-report filings (the Clerk's public
-                       index) and the community transaction mirror
+    (congress_house / congress_stockwatcher REMOVED: 5 U.S.C. 13107(c); cn_zhihu via Sogou
+    REMOVED: an off-limits ground. Both rows are refused by libs/data/off_limits.py.)
     coinpaprika        keyless coin market data, for Fusion's crypto CFDs ONLY -- the bases are
                        read off the broker registry, never an exchange universe
     reddit / telegram  public subreddit listings and public channel web previews, as datasets of
@@ -58,7 +57,6 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
-import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -668,29 +666,6 @@ def parse_guba(raw: bytes | None, now: datetime) -> list[dict[str, Any]]:
     return out
 
 
-def parse_sogou_zhihu(raw: bytes | None) -> list[dict[str, Any]]:
-    """Zhihu answers through Sogou's public Zhihu index -- the lawful public route while Zhihu's
-    own API answers 403 to every unauthenticated request."""
-    if not raw:
-        return []
-    page = raw.decode("utf-8", "replace")
-    if "antispider" in page or "请输入验证码" in page:
-        raise FetchError("anti_bot", "sogou zhihu challenge")
-    out: list[dict[str, Any]] = []
-    for block in re.split(r'<div class="(?:txt-box|result-about-list|box-result)"', page)[1:]:
-        t = re.search(r"<a\b[^>]*>(.*?)</a>", block, re.S)
-        p = re.search(r"<p\b[^>]*>(.*?)</p>", block, re.S)
-        if not t:
-            continue
-        title = _text(t.group(1))
-        body = _text(p.group(1)) if p else ""
-        href = re.search(r'href="([^"]+)"', block)
-        out.append({"id": "zh" + hashlib.sha1((href.group(1) if href else title).encode())
-                    .hexdigest()[:16], "text": f"{title} {body}".strip(),
-                    "author": "", "followers": None, "statuses": None, "created": None})
-    return out
-
-
 CN_ROUTES: dict[str, dict[str, Any]] = {
     "cn_weibo": {"url": ("https://m.weibo.cn/api/container/getIndex?containerid="
                          "{cid}&page_type=searchall"), "parse": "weibo",
@@ -698,9 +673,6 @@ CN_ROUTES: dict[str, dict[str, Any]] = {
     "cn_xueqiu": {"url": ("https://xueqiu.com/query/v1/search/status.json?"
                           "sortId=2&q={kw}&count=20&page=1"), "parse": "xueqiu",
                   "referer": "https://xueqiu.com/", "cookie_from": "https://xueqiu.com/"},
-    "cn_zhihu": {"url": "https://zhihu.sogou.com/zhihu?query={kw}", "parse": "zhihu",
-                 "referer": "https://zhihu.sogou.com/",
-                 "direct_probe": "https://www.zhihu.com/api/v4/search_v3?t=general&q={kw}"},
     "cn_guba": {"url": "https://guba.eastmoney.com/list,{board}.html", "parse": "guba",
                 "referer": "https://guba.eastmoney.com/"},
 }
@@ -749,8 +721,8 @@ def fetch_cn_forum(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, An
             url = route["url"].format(kw=urllib.parse.quote(kw))
         raw = _get(fetch, h, url, headers)
         try:
-            posts = {"weibo": parse_weibo, "xueqiu": parse_xueqiu,
-                     "zhihu": parse_sogou_zhihu}.get(route["parse"], lambda r: [])(raw) \
+            posts = {"weibo": parse_weibo, "xueqiu": parse_xueqiu}.get(
+                route["parse"], lambda r: [])(raw) \
                 if route["parse"] != "guba" else parse_guba(raw, now)
         except FetchError as exc:
             h.failures[exc.reason] += 1
@@ -1076,95 +1048,9 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
 
 
 # ============================================================ 5b. congressional trades
-HOUSE_FD_ZIP = "https://disclosures-clerk.house.gov/public_disc/financial-pdfs/{year}FD.zip"
-STOCKWATCHER = ("https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/"
-                "all_transactions.json")
-
-
-def parse_house_fd_index(raw: bytes | None) -> list[dict[str, str]]:
-    """The Clerk's yearly index (XML inside the zip): one row per filing. FilingType P is a
-    periodic transaction report. Names are dropped; the filing date is what is kept."""
-    if not raw:
-        return []
-    try:
-        zf = zipfile.ZipFile(io.BytesIO(raw))
-    except zipfile.BadZipFile:
-        return []
-    name = next((n for n in zf.namelist() if n.lower().endswith(".xml")), None)
-    if name is None:
-        return []
-    xml = zf.read(name).decode("utf-8", "replace")
-    out: list[dict[str, str]] = []
-    for m in re.finditer(r"<Member>(.*?)</Member>", xml, re.S):
-        block = m.group(1)
-
-        def tag(t: str, _b: str = block) -> str:
-            g = re.search(rf"<{t}>(.*?)</{t}>", _b, re.S)
-            return g.group(1).strip() if g else ""
-        out.append({"type": tag("FilingType"), "date": tag("FilingDate"), "doc": tag("DocID")})
-    return out
-
-
-def _us_date(s: str) -> str | None:
-    for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(s.strip(), fmt).replace(tzinfo=UTC).date().isoformat()
-        except ValueError:
-            continue
-    return None
-
-
-def parse_stockwatcher(raw: bytes | None) -> list[dict[str, Any]]:
-    doc = _json(raw)
-    out: list[dict[str, Any]] = []
-    for r in doc if isinstance(doc, list) else []:
-        if not isinstance(r, dict):
-            continue
-        typ = str(r.get("type") or "").lower()
-        side = 1 if "purchase" in typ else -1 if "sale" in typ else 0
-        disc = _us_date(str(r.get("disclosure_date") or ""))
-        if not side or not disc:
-            continue
-        out.append({"ticker": str(r.get("ticker") or "").upper().strip(), "side": side,
-                    "disclosed": disc})
-    return out
-
-
-def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
-                   now: datetime) -> Harvest:
-    """Disclosure-dated, never trade-dated: a congressional trade becomes public on its
-    DISCLOSURE date (up to 45 days late), so that is the only date a series may carry."""
-    h = Harvest(str(row["id"]))
-    h.columns["ptr_filings"] = {"hypothesis": ["US500", "NAS100"], "event": [],
-                                "why": "House periodic transaction reports filed per day"}
-    for year in (now.year - 1, now.year):
-        for r in parse_house_fd_index(_get(fetch, h, HOUSE_FD_ZIP.format(year=year))):
-            if r["type"] != "P":
-                continue
-            d = _us_date(r["date"])
-            if d:
-                h.raw.append({"kind": "ptr", "day": d, "doc": r["doc"]})
-    per_day = Counter(r["day"] for r in h.raw if r.get("kind") == "ptr")
-    h.obs += [{"key": "ptr_filings", "period_end": d, "value": n}
-              for d, n in sorted(per_day.items())]
-    tx = parse_stockwatcher(_get(fetch, h, str(row.get("mirror_url") or STOCKWATCHER)))
-    net: dict[tuple[str, str], int] = defaultdict(int)
-    for t in tx:
-        net[("net_all", t["disclosed"])] += t["side"]
-        cfd = TICKER_CFD.get(t["ticker"])
-        if cfd:
-            net[(f"net_{t['ticker']}", t["disclosed"])] += t["side"]
-            h.columns.setdefault(f"net_{t['ticker']}", {
-                "hypothesis": list(proxies_for_company(cfd)), "event": [cfd],
-                "why": f"congressional net buys disclosed, {t['ticker']}"})
-    if tx:
-        h.columns["net_all"] = {"hypothesis": ["US500", "NAS100", "US30"], "event": [],
-                                "why": "congressional net buys disclosed, all tickers"}
-    h.obs += [{"key": k, "period_end": d, "value": v} for (k, d), v in sorted(net.items())]
-    if not h.obs:
-        h.status = "BLOCKED" if h.failures else "EMPTY"
-        h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no filings"
-    return h
+# REMOVED (2026-11-13): 5 U.S.C. 13107(c) bars obtaining or using congressional disclosure
+# reports for a commercial purpose. The `congress_trades` roster row is refused before any fetch
+# (libs/data/off_limits.STATUTE_HOSTS, read by free_stack_hunter.run); there is no fetcher.
 
 
 # ===================================================================== 5c. CoinPaprika
@@ -1645,7 +1531,7 @@ from libs.data.free_stack_cnx import fetch_cn_exchange  # noqa: E402  (imports H
 
 FETCHERS: dict[str, Callable[..., Harvest]] = {
     "app_rank_apple": fetch_app_rank_apple, "cn_forum": fetch_cn_forum, "jp_ir": fetch_jp_ir,
-    "jp_patents": fetch_jp_patents, "gtrends": fetch_gtrends, "congress": fetch_congress,
+    "jp_patents": fetch_jp_patents, "gtrends": fetch_gtrends,
     "coinpaprika": fetch_coinpaprika, "reddit": fetch_reddit, "telegram": fetch_telegram,
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,

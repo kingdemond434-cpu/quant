@@ -25,9 +25,13 @@ from research import alt_proxies, asia_collector  # noqa: E402
 BANNED = ("https://index.baidu.com/", "https://huiyan.baidu.com/migration/historycurve.jsonp",
           "https://tieba.baidu.com/f?kw=x", "https://weixin.sogou.com/weixin?type=2&query=x",
           "https://zhihu.sogou.com/zhihu?query=x", "https://mp.weixin.qq.com/s/abc",
-          "https://www.wechat.com/", "HTTPS://WWW.BAIDU.COM./duty/", "baidu.com/x")
+          "https://www.wechat.com/", "HTTPS://WWW.BAIDU.COM./duty/", "baidu.com/x",
+          "https://disclosures-clerk.house.gov/public_disc/financial-pdfs/2026FD.zip",
+          "https://efdsearch.senate.gov/search/",
+          "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all.json")
 ALLOWED = ("https://juejin.cn/search", "https://notbaidu.com/", "https://baidu.com.example.org/",
-           "https://www.qq.com/", "https://www.federalreserve.gov/")
+           "https://www.qq.com/", "https://www.federalreserve.gov/", "https://www.house.gov/",
+           "https://other-bucket.s3-us-west-2.amazonaws.com/x")
 
 
 @pytest.mark.parametrize("url", BANNED)
@@ -52,7 +56,7 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     return calls
 
 
-@pytest.mark.parametrize("url", BANNED[:6])
+@pytest.mark.parametrize("url", BANNED[:6] + BANNED[-3:])
 def test_no_transport_sends_a_request(url: str, no_network: list[str]) -> None:
     r = polite_fetch.get(url, gate=None, opener=lambda *a, **k: no_network.append(url))
     assert r.status is None and "off-limits" in r.error
@@ -100,7 +104,8 @@ def test_no_roster_url_naming_an_off_limits_ground_can_be_fetched() -> None:
         doc = yaml.safe_load(text) if rel.endswith(".yaml") else json.loads(text)
         for url in _urls(doc):
             host = url.split("/")[2].lower()
-            if re.search(r"weixin|wechat|sogou|baidu", host):
+            if re.search(r"weixin|wechat|sogou|baidu|disclosures-clerk|efdsearch|stock-watcher",
+                         host):
                 named += 1
                 assert off_limits(url), f"{rel}: {url} would be fetched"
     assert named >= 3          # the rows exist and are refused, not silently missing
