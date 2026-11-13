@@ -9203,6 +9203,26 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "U_ADAPTERS_REAL",
+   "item": "EVERY FEDERATED ADAPTER DOES REAL WORK OR CARRIES A MEASURED REASON (audit 2026-11-13: 25 of ~141 adapters were import probes feeding no cell; the census found 8 more). Three classes: (a) a DataHub contract on a clock whose series route to cells, (b) a research engine -- a numpy rebuild donating exact family recipes through the sandbox runner, or an independent verifier extending the replica -- or (c) a measured cannot-work reason in the registry row; an adapter that still only probes is named in ADAPTER_CENSUS.json probe_only as a DEFECT",
+   "domain": "U",
+   "phase": 3,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/adapter_census.py:72-118 `adapter_rows` derives each adapter's class (declared CENSUS_CLASS, else PROBE_ONLY when the source still calls api_probe and nothing is rebuilt) and :177-233 `build` counts donated/judged/survived cells per generator and per lake series, status DEFECT when probe_only is non-empty",
+    "libs/data/datahub_adapters.py:52-66 `CONTRACTS` cnmkt.akshare, cnmkt.tushare, oecd.cli registered on desk_hub (libs/data/datahub.py:159-160)",
+    "desks/mt5/research/adapter_data.py:274 `build`: OECD composite leading indicators, honest UA, robots, hard stops, first-vintage point-in-time merge, cells minted through the exogenous conditioner",
+    "libs/validation/engine_replicas.py:67-151 LEAN gap-at-open fills and Nautilus adaptive bar path on the independent replica's own signals; desks/mt5/research/engine_replicas.py:95 `run` replays every promoted certificate then the canon",
+    "libs/research/adapter_kit.py: the shared numpy kit for 16 rebuilt adapters (qlib, finrl, rd_agent, ml_quant_trading, kronos, ai_hedge_fund, tradingagents, quantagent, autohedge, alphaquanter, atlas_gic, autohypothesis, inalpha, nexquant, ai_scientist, alpha_search)",
+    "tests/research/test_adapter_census_and_rebuilds.py:1-342 rebuilds donate exact recipes, causality, cannot-work reasons, census counts from a registry, adapter_data vintages and hard stops, both engines, leg wiring"
+   ],
+   "scheduled_by": "hourly_cycle:adapter_census, hourly_cycle:adapter_data, hourly_cycle:engine_replicas, hourly_cycle:sandbox_runner, hourly_cycle:free_stack_hunt",
+   "artifact": "desks/mt5/reports/ADAPTER_CENSUS.json, desks/mt5/reports/ADAPTER_DATA.json, desks/mt5/reports/ENGINE_REPLICAS.json",
+   "consumer": "desks/mt5/research/sandbox_roster.py reads ADAPTER_CENSUS.json into each roster row (census_class / census_clock / census_reason) -> reports/SANDBOX_ROSTER; ADAPTER_CENSUS reads ENGINE_REPLICAS and ADAPTER_DATA; adapter_data cells and rebuilt-adapter cells reach the judge through the alpha registry",
+   "gap": "LANDED 2026-11-13 on claude/audit-adapters-real. Open: the OECD SDMX URL and CSV shape were unreachable from the build container (proxy 403) and are verified on the box's first pass -- a failure publishes UNMEASURED with the exception type; tushare cells need TUSHARE_TOKEN on the box; cell counts are UNMEASURED wherever data/alpha_registry.sqlite is absent; ENGINE_REPLICAS feeds no gate (making it one is a threshold change and the principal's call)"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
