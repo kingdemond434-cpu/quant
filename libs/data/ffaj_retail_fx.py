@@ -29,7 +29,8 @@ from typing import Any
 
 import pandas as pd
 
-INDEX = "https://www.ffaj.or.jp/library/performance/fx_flash/"
+HOST = "https://www.ffaj.or.jp"
+INDEX = HOST + "/library/performance/fx_flash/"
 FILE_RE = re.compile(r'href="([^"]*/wp-content/uploads/[^"]*trading_vol_and_position\.xls)"', re.I)
 UA = "quant-desk-research/1.0 (research; robots-respecting)"
 AVAILABLE_LAG_D = 20
@@ -103,7 +104,9 @@ def fetch(get: Callable[[str], tuple[int | None, bytes]],
     links = FILE_RE.findall(page.decode("utf-8", "replace"))
     if not links:
         return pd.DataFrame(), "index carries no trading_vol_and_position.xls link"
-    url = links[0] if links[0].startswith("http") else "https://www.ffaj.or.jp" + links[0]
+    url = links[0] if links[0].startswith("http") else HOST + links[0]
+    if not url.startswith(HOST + "/"):
+        return pd.DataFrame(), "workbook link points off the FFAJ host"
     why = refusal(url)
     if why:
         return pd.DataFrame(), f"ROBOTS_REFUSED: {why}"
@@ -121,9 +124,16 @@ def fetch(get: Callable[[str], tuple[int | None, bytes]],
 def http_get(url: str) -> tuple[int | None, bytes]:
     import urllib.error
     import urllib.request
+    class _SameHost(urllib.request.HTTPRedirectHandler):
+        """A redirect off the FFAJ host would skip that host's robots check: refuse it."""
+        def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+            if not newurl.startswith(HOST + "/"):
+                return None
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.build_opener(_SameHost).open(req, timeout=30) as r:
             return int(r.status), r.read(20_000_000)
     except urllib.error.HTTPError as e:
         return e.code, b""

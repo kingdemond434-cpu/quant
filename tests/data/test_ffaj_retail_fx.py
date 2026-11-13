@@ -54,3 +54,14 @@ def test_fetch_picks_the_uploads_workbook_not_navigation_files() -> None:
     assert asked[1] == ("https://www.ffaj.or.jp/wp-content/uploads/2026/10/"
                         "trading_vol_and_position.xls")
     assert df.empty and why == "workbook HTTP 404"
+
+
+def test_fetch_refuses_a_workbook_link_on_another_host() -> None:
+    page = b'<a href="https://evil.example/wp-content/uploads/trading_vol_and_position.xls">f</a>'
+    asked: list[str] = []
+
+    def get(url: str) -> tuple[int | None, bytes]:
+        asked.append(url)
+        return 200, page
+    df, why = FF.fetch(get, lambda u: None)
+    assert df.empty and "off the FFAJ host" in why and asked == [FF.INDEX]
