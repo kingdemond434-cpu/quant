@@ -1523,6 +1523,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
     # breadth-first page per dataset per visit -- a global layer, like the forests above.
     "world_dataset_hunt": "regions", "world_macro_proposer": "regions",
+    # central-bank speech tone as dated events: the tone corpus's judged consumer
+    "cb_tone_proposer": "regions",
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
     # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
@@ -2095,6 +2097,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
     # --budget-s 900; a symbol cursor carries the sweep across hours.
     "world_macro_proposer": 1_020,
+    # THE CENTRAL-BANK TONE PROPOSER stops itself at --budget-s 600; a symbol cursor in its own
+    # report carries the sweep across hours.
+    "cb_tone_proposer": 700,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
     # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
@@ -5170,6 +5175,12 @@ def main() -> None:
     # reports/WORLD_MACRO_PROPOSER.json.
     wmp = _costed("world_macro_proposer", lambda: _producer(
         "world_macro_proposer", "research/world_macro_proposer.py", "--once", "--budget-s", "900"))
+    # CENTRAL-BANK TONE AS DATED EVENTS: mints `cb_tone_event` cells (a currency's published
+    # speeches leaning hawkish or dovish x direction x hold, each speech keyed on its
+    # publication date) for every symbol priced in that currency -- gold reads the Fed -- and
+    # donates the screened ones to the docket. Writes reports/CB_TONE_PROPOSER.json.
+    cbt = _costed("cb_tone_proposer", lambda: _producer(
+        "cb_tone_proposer", "research/cb_tone_proposer.py", "--once", "--budget-s", "600"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
     # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
     # runs after the country OS so newly declared regional sources enter the census in the same
@@ -6519,6 +6530,7 @@ def main() -> None:
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
+                    "cb_tone_proposer": cbt,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
