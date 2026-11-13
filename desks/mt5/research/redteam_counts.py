@@ -88,6 +88,15 @@ def tally(doc: Any) -> dict[str, Any]:
             "n_non_enum": non_enum}
 
 
+#: ONLY KEYS THAT NAME A COUNT cross (Auditor SF on #639): an allowlist, never "any integer", so
+#: a future top-level `login`, `account`, `balance_usd` or `equity` integer can never ride out.
+COUNT_KEY = re.compile(r"^(n_[a-z0-9_]{1,36}|[a-z0-9_]{1,34}_(count|n)|live_sleeves)$")
+
+
+def is_count(key: str) -> bool:
+    return bool(COUNT_KEY.match(key))
+
+
 def summarise(path: Path) -> dict[str, Any]:
     try:
         doc = json.loads(path.read_text("utf-8"))
@@ -99,8 +108,7 @@ def summarise(path: Path) -> dict[str, Any]:
     if isinstance(doc, dict):
         out["stamp"] = _stamp(doc)
         out["top_counts"] = {k: v for k, v in sorted(doc.items())
-                             if isinstance(v, int) and not isinstance(v, bool)
-                             and re.match(r"^[a-z0-9_]{1,40}$", k)}
+                             if isinstance(v, int) and not isinstance(v, bool) and is_count(k)}
     out.update(tally(doc))
     return out
 

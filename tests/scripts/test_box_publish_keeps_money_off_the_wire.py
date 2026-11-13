@@ -66,7 +66,8 @@ def test_the_red_team_tally_is_published() -> None:
 
 def test_the_red_team_tally_copies_no_text(tmp_path) -> None:
     import redteam_counts as rc
-    doc = {"generated_utc": "2026-11-13T21:00:00+00:00", "n_cells": 4,
+    doc = {"generated_utc": "2026-11-13T21:00:00+00:00", "n_cells": 4, "login": 52012345,
+           "balance_usd": 100000, "equity": 99500, "kill_count": 2,
            "rows": [{"verdict": "KILLED"}, {"verdict": "PASSED"}, {"verdict": "KILLED"},
                     {"verdict": "UNMEASURED", "why": r"OSError: C:\opt\quant\x on HOST-1"},
                     {"status": r"failed at C:\Users\someone"}]}
@@ -76,5 +77,6 @@ def test_the_red_team_tally_copies_no_text(tmp_path) -> None:
     text = repr(out)
     assert "C:" not in text and "HOST-1" not in text and "someone" not in text
     assert out["counts"]["verdict"] == {"KILLED": 2, "PASSED": 1, "UNMEASURED": 1}
-    assert out["n_non_enum"] == 1 and out["top_counts"] == {"n_cells": 4}
+    assert out["n_non_enum"] == 1 and out["top_counts"] == {"kill_count": 2, "n_cells": 4}
+    assert "52012345" not in text and "100000" not in text and "99500" not in text
     assert out["stamp"] == "2026-11-13T21:00:00+00:00"
