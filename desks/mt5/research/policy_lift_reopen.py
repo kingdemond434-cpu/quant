@@ -130,11 +130,70 @@ def fill_hour_verdict(key: str, st: dict) -> dict:
             _FH_INPUTS["surf"] = ecb._read(ecb.SURFACE)
         return ecb.judge(key, st, _FH_INPUTS["uni"], _FH_INPUTS["surf"], mult=1.0)
     except Exception as exc:
-        return {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        return {"verdict": "UNMEASURED", "why": f"fill-hour inputs unreadable ({type(exc).__name__})"}
+
+
+#: The desk's missed-growth ledger (research/missed_growth.py reads it). GROWTH GOVERNANCE Rule 1:
+#: a veto writes what it may be costing, so the anti-timid loop can see it.
+MISSED_GROWTH_LEDGER = BASE / "data" / "missed_growth.jsonl"
+FILL_HOUR_RAIL = "fill_hour_cost"
+
+
+def _nonneg(v: object) -> float:
+    try:
+        return max(0.0, float(v))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def record_fill_hour_refusals(refused: dict[str, dict], now: datetime | None = None) -> int:
+    """One missed-growth line per clock FILL_HOUR_COST refused today (deduplicated per day).
+
+    `value` is the growth the refusal may be forgoing: the clock's own forward R as charged
+    (pooled spread), floored at 0 -- an upper bound, since the refusal's claim is that the true
+    net is lower. Returns the number of NEW lines written."""
+    if not refused:
+        return 0
+    stamp = (now or datetime.now(tz=UTC))
+    day = stamp.date().isoformat()
+    seen: set[str] = set()
+    try:
+        for line in MISSED_GROWTH_LEDGER.read_text(encoding="utf-8").splitlines():
+            if FILL_HOUR_RAIL in line and day in line:
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if row.get("rail") == FILL_HOUR_RAIL and row.get("day") == day:
+                    seen.add(str(row.get("cell")))
+    except OSError:
+        pass
+    new = [{"day": day, "rail": FILL_HOUR_RAIL,
+            "value": _nonneg(v.get("exp_r_clock")),
+            "at": stamp.isoformat(timespec="seconds"), "cell": k,
+            "symbol": v.get("symbol"), "verdict": v.get("verdict"),
+            "net_r_at_fill_hour": v.get("net_r_at_bar"), "why": v.get("why") or
+            "net R negative once the fill-hour spread is charged", "two_sided": True}
+           for k, v in sorted(refused.items()) if k not in seen]
+    if not new:
+        return 0
+    try:
+        MISSED_GROWTH_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with MISSED_GROWTH_LEDGER.open("a", encoding="utf-8") as fh:
+            for row in new:
+                fh.write(json.dumps(row, default=str) + "\n")
+    except OSError as exc:
+        plog(f"missed-growth ledger not written ({type(exc).__name__})")
+        return 0
+    return len(new)
+
+
+_real_fill_hour_verdict = fill_hour_verdict
 
 
 def edge_verdict(key: str, st: dict, cert: str, recert: dict[str, dict],
-                 recert_why: str) -> list[str]:
+                 recert_why: str, fill_hour_refused: dict[str, dict] | None = None
+                 ) -> list[str]:
     """Every reason this clock is NOT a verified net-of-cost edge (empty = verified)."""
     why: list[str] = []
     if not cert:
@@ -166,6 +225,9 @@ def edge_verdict(key: str, st: dict, cert: str, recert: dict[str, dict],
     if _fh.get("verdict") != "PASS":
         _detail = _fh.get("why") or f"net {_fh.get('net_r_at_bar')}R at the fill-hour spread"
         why.append(f"FILL_HOUR_COST {_fh.get('verdict')}: {_detail}")
+        if fill_hour_refused is not None:
+            fill_hour_refused[key] = {**_fh, "exp_r_clock": _fh.get("exp_r_clock",
+                                                                   st.get("exp_r"))}
     if EDGE_VENUE not in str(st.get("evidence_venue") or ""):
         why.append(f"NON_VENUE_EVIDENCE: {st.get('evidence_venue')!r}")
     return why
@@ -207,6 +269,7 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict],
     pol = policy()
     stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
     reopened: set[str] = set()
+    fill_hour_refused: dict[str, dict] = {}
     for row in sleeves:
         name = str(row.get("name") or "")
         if (str(row.get("status") or "").upper() != "RETIRED"
@@ -224,7 +287,8 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict],
             continue
         if verify:
             cert = certs.get(name) or (name if name in recert else "")
-            failed = edge_verdict(name, candidates[name], cert, recert, recert_why)
+            failed = edge_verdict(name, candidates[name], cert, recert, recert_why,
+                                  fill_hour_refused)
             report[name] = {"certificate": cert or None, "verified": not failed,
                             "why_not": failed}
             if failed:
@@ -238,11 +302,14 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict],
         reopened.add(name)
         plog(f"LIVE POLICY lifted for {name}: retired row superseded, clock re-judged this pass")
     if verify:
-        _write_reopen_report(report, recert_why)
+        n_new = record_fill_hour_refusals(fill_hour_refused)
+        _write_reopen_report(report, recert_why, fill_hour_refused, n_new)
     return reopened
 
 
-def _write_reopen_report(report: dict[str, dict], recert_why: str) -> None:
+def _write_reopen_report(report: dict[str, dict], recert_why: str,
+                         fill_hour_refused: dict[str, dict] | None = None,
+                         missed_growth_lines: int = 0) -> None:
     """reports/REOPEN_VERIFICATION.json: every policy-retired candidate, verified or not, why."""
     reasons: dict[str, int] = {}
     for r in report.values():
@@ -257,7 +324,14 @@ def _write_reopen_report(report: dict[str, dict], recert_why: str) -> None:
            "recert_status": recert_why or "FRESH",
            "n_candidates": len(report),
            "n_verified": sum(1 for r in report.values() if r["verified"]),
-           "fail_reasons": reasons, "rows": report}
+           "fail_reasons": reasons,
+           "fill_hour_cost_refused": {
+               "n": len(fill_hour_refused or {}),
+               "n_unmeasured": sum(1 for v in (fill_hour_refused or {}).values()
+                                   if v.get("verdict") == "UNMEASURED"),
+               "missed_growth_lines_written": missed_growth_lines,
+               "ledger": "desks/mt5/data/missed_growth.jsonl (rail fill_hour_cost)"},
+           "rows": report}
     try:
         REOPEN_REPORT.parent.mkdir(parents=True, exist_ok=True)
         tmp = REOPEN_REPORT.with_suffix(".json.tmp")

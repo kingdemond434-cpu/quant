@@ -130,6 +130,45 @@ def test_a_clock_negative_at_its_fill_hour_spread_is_not_a_real_edge(monkeypatch
     assert any(w.startswith("FILL_HOUR_COST UNMEASURED") for w in why)
 
 
+def test_an_unmeasured_fill_hour_refusal_leaves_a_missed_growth_line(monkeypatch, tmp_path) -> None:
+    import policy_lift_reopen as pr
+    led = tmp_path / "missed_growth.jsonl"
+    monkeypatch.setattr(pr, "MISSED_GROWTH_LEDGER", led)
+    monkeypatch.setattr(pr, "REOPEN_REPORT", tmp_path / "r.json")
+    monkeypatch.setattr(pr, "LOG", tmp_path / "log")
+    monkeypatch.setattr(lp, "policy", lambda path=None: lp.Policy(live_symbols=frozenset({"*"})))
+    monkeypatch.setattr(pr, "clock_certificates", lambda: {"a": "c.a"})
+    monkeypatch.setattr(pr, "recert_rows", lambda now=None: ({"c.a": {"status": "STILL_PASSES"}},
+                                                             ""))
+    monkeypatch.setattr(pr, "fill_hour_verdict",
+                        lambda key, st: {"verdict": "UNMEASURED", "why": "no fill hour"})
+    sleeves = [{"name": "a", "symbol": "EURUSD", "status": "RETIRED", "retired_by": "live_policy"}]
+    assert pr.reopen_policy_retirements(sleeves, [{"a": dict(GOOD, exp_r=0.4)}]) == set()
+    lines = [json.loads(x) for x in led.read_text().splitlines()]
+    assert len(lines) == 1 and lines[0]["rail"] == "fill_hour_cost"
+    assert lines[0]["cell"] == "a" and lines[0]["verdict"] == "UNMEASURED"
+    assert lines[0]["value"] == 0.4
+    rep = json.loads((tmp_path / "r.json").read_text())["fill_hour_cost_refused"]
+    assert rep["n"] == 1 and rep["n_unmeasured"] == 1 and rep["missed_growth_lines_written"] == 1
+    # the same day does not write the same clock twice
+    assert pr.reopen_policy_retirements(sleeves, [{"a": dict(GOOD, exp_r=0.4)}]) == set()
+    assert len(led.read_text().splitlines()) == 1
+
+
+def test_an_unreadable_input_publishes_only_the_exception_class(monkeypatch) -> None:
+    import exotic_cost_bar as ecb
+    import policy_lift_reopen as pr
+    monkeypatch.setattr(pr, "fill_hour_verdict", pr.__dict__["_real_fill_hour_verdict"])
+    monkeypatch.setattr(pr, "_FH_INPUTS", {})
+
+    def boom(_p):
+        raise RuntimeError("C:\\secret\\path leaked")
+    monkeypatch.setattr(ecb, "_read", boom)
+    v = pr.fill_hour_verdict("a", {})
+    assert v["verdict"] == "UNMEASURED" and "secret" not in v["why"]
+    assert "RuntimeError" in v["why"]
+
+
 def test_no_fresh_cost_regrade_means_nothing_reopens(monkeypatch, tmp_path) -> None:
     import policy_lift_reopen as pr
     monkeypatch.setattr(lp, "policy", lambda path=None: lp.Policy(live_symbols=frozenset({"*"})))
