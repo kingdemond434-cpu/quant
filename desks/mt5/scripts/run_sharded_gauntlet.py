@@ -3737,6 +3737,12 @@ def _sweep_logged() -> int:
             _phase("done")
             with contextlib.suppress(Exception):   # bookkeeping: never a reason to fail a sweep
                 record_resume_delay(rc)
+            # WHAT THE SPREAD FILL RULE DID, by file, and every held run it left alone
+            # (research/input_fill_census.py; at most once per 6 h; a report, never a failure).
+            with contextlib.suppress(Exception):
+                from research.input_fill_census import publish as _fill_census
+                print(f"{datetime.now(UTC).isoformat()} input fill census: {_fill_census()}",
+                      flush=True)
             if rc == 0:
                 _sweep_succeeded()
             return rc
