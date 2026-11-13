@@ -2938,7 +2938,7 @@ def _win(at: Any = _OLD) -> Callable[[], tuple[Any, str]]:
 def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)  # the window mechanism, if one is ever set
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)  # the window mechanism, whatever LIVE sets
     got, why = ag.registry_clear([_row()], 9, _H, _win(), _NOW)
     assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
     assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # no carry-over

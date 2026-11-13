@@ -130,7 +130,7 @@ def test_an_unreadable_patch_or_empty_list_fails_closed():
 
 
 def test_no_clear_a_hold_a_moved_head_or_a_young_window_waits(monkeypatch):
-    monkeypatch.setattr(mg.ag, "REGISTRY_HOLD_H", 24.0)  # the window, if one is ever set
+    monkeypatch.setattr(mg.ag, "REGISTRY_HOLD_H", 24.0)  # the window, whatever LIVE sets
     assert _decide(rows=[])[0] == "wait"
     hold = [*ROW, {"pr": 143, "sha": HEAD, "verdict": "HOLD", "at": NOW.isoformat()}]
     assert _decide(rows=hold)[0] == "wait"
