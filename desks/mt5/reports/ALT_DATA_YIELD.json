@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-13T06:03:19+00:00",
+ "generated_utc": "2026-11-13T07:02:47+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 9,
@@ -79249,15 +79249,15 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 147,
+   "runs": 153,
    "fetches": 6644,
    "ok": 4245,
    "http_errors": 397,
    "transport_errors": 2002,
-   "seconds": 12659.0,
+   "seconds": 12761.2,
    "rows": 101,
-   "last_run": "2026-11-13T00:30:44+00:00",
-   "fetches_per_s": 0.5248,
+   "last_run": "2026-11-13T07:02:47+00:00",
+   "fetches_per_s": 0.5206,
    "success_rate": 0.6389,
    "wall_s_24h": 313.9,
    "cpu_s_24h": 18.3
@@ -79287,8 +79287,8 @@
    "last_run": "2026-11-13T06:03:18+00:00",
    "fetches_per_s": 0.4699,
    "success_rate": 0.5746,
-   "wall_s_24h": 956.8,
-   "cpu_s_24h": 183.2
+   "wall_s_24h": 1586.2,
+   "cpu_s_24h": 272.5
   },
   "forest_china": {
    "runs": 24,
@@ -79389,16 +79389,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 27,
-   "fetches": 2523,
-   "ok": 1602,
+   "runs": 26,
+   "fetches": 2432,
+   "ok": 1511,
    "http_errors": 53,
    "transport_errors": 868,
-   "seconds": 7435.2,
-   "rows": 315,
+   "seconds": 7095.4,
+   "rows": 294,
    "last_run": "2026-11-13T05:29:30+00:00",
-   "fetches_per_s": 0.3393,
-   "success_rate": 0.635,
+   "fetches_per_s": 0.3428,
+   "success_rate": 0.6213,
    "wall_s_24h": 1065.2,
    "cpu_s_24h": 175.6
   },
@@ -79431,16 +79431,16 @@
    "cpu_s_24h": 216.5
   },
   "forest_north_america": {
-   "runs": 26,
-   "fetches": 9945,
-   "ok": 7350,
-   "http_errors": 1830,
-   "transport_errors": 765,
-   "seconds": 12320.4,
-   "rows": 1308,
+   "runs": 25,
+   "fetches": 9575,
+   "ok": 7065,
+   "http_errors": 1759,
+   "transport_errors": 751,
+   "seconds": 11856.9,
+   "rows": 1256,
    "last_run": "2026-11-13T05:55:53+00:00",
-   "fetches_per_s": 0.8072,
-   "success_rate": 0.7391,
+   "fetches_per_s": 0.8075,
+   "success_rate": 0.7379,
    "wall_s_24h": 2049.0,
    "cpu_s_24h": 282.5
   },
