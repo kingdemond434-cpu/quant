@@ -66,10 +66,11 @@ TRAIN_WINDOW = 1000
 #:      against y[s], known at s+1) feeds a one-sided Page CUSUM for a DOWNWARD shift from the
 #:      model's reference IC mu0 (the mean of every earlier out-of-sample row, at least
 #:      DECAY_REF_MIN of them, and only when its t-statistic is at least DECAY_REF_T -- a model
-#:      that never had a measured edge cannot decay). The drift allowance is kappa = mu0 / 2 (the CUSUM tuned to detect the edge going
-#:      to ZERO) and the threshold h is calibrated by bootstrap on the model's own reference ICs
-#:      so that a model whose edge has NOT moved alarms once per DECAY_ARL0 rows on average. On an alarm at
-#:      row t (it read ICs of rows < t only) the model is refitted at t on rows from the CUSUM's
+#:      that never had a measured edge cannot decay). The drift allowance is kappa = mu0 / 2
+#:      (the CUSUM tuned to detect the edge going to ZERO) and the threshold h is calibrated by
+#:      bootstrap on the model's own reference ICs so that a model whose edge has NOT moved
+#:      alarms once per DECAY_ARL0 rows on average. On an alarm at row t (it read ICs of rows
+#:      < t only) the model is refitted at t on rows from the CUSUM's
 #:      change-point estimate (the last row its statistic was zero) onward, at least
 #:      POST_BREAK_MIN of them. The statistic resets at every decay refit, never on the clock.
 REGIME_LONG = 250
