@@ -3681,9 +3681,62 @@ def _publish_priority(key: str, value: Any) -> str:
     return status
 
 
+#: Every this many seconds the sweep's EVERY thread stack is written to its own file
+#: (`faulthandler`, a C-level timer: it dumps even when the interpreter is wedged on the GIL or a
+#: lock, which no Python-level sampler can). Why (2026-11-05): sweep pid 31752 sat in
+#: collect_and_cut from 11:01Z with 64 threads, ~0.3% of one core, a flat 98 MB working set and
+#: zero IO; its wall sampler stopped ~11:25Z and its heartbeat at 11:46Z, so nothing on the box
+#: could say where it was blocked, and no verdict landed for over six hours.
+STACK_DUMP_EVERY_S = 600.0
+#: Stack files kept from earlier sweeps (newest first); older ones are deleted at arm time.
+STACK_DUMP_KEEP = 3
+_STACK_DUMP: dict[str, Any] = {}
+
+
+def _arm_stack_dumps(log_dir: Path | None = None, every_s: float | None = None) -> Path | None:
+    """Start the periodic all-thread stack dump for THIS sweep. Never raises; returns its path."""
+    import faulthandler
+
+    d = (DESK / "logs") if log_dir is None else log_dir
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+        old = sorted(d.glob("MT5-Gauntlet.stacks.*.log"),
+                     key=lambda p: p.stat().st_mtime, reverse=True)
+        for stale in old[max(0, STACK_DUMP_KEEP - 1):]:
+            with contextlib.suppress(OSError):
+                stale.unlink()
+        path = d / f"MT5-Gauntlet.stacks.{os.getpid()}.log"
+        fh = path.open("a", encoding="utf-8")
+        fh.write(f"# sweep pid {os.getpid()} armed {datetime.now(UTC).isoformat()}; "
+                 f"all-thread stacks every {STACK_DUMP_EVERY_S if every_s is None else every_s:.0f}s"
+                 f" (the file's mtime is the last dump)\n")
+        fh.flush()
+        faulthandler.dump_traceback_later(
+            STACK_DUMP_EVERY_S if every_s is None else float(every_s), repeat=True, file=fh)
+        _STACK_DUMP.update({"fh": fh, "path": path})
+        return path
+    except Exception as exc:
+        with contextlib.suppress(Exception):
+            print(f"sweep stack dumps NOT armed ({type(exc).__name__}: {exc})", flush=True)
+        return None
+
+
+def _disarm_stack_dumps() -> None:
+    import faulthandler
+
+    with contextlib.suppress(Exception):
+        faulthandler.cancel_dump_traceback_later()
+    fh = _STACK_DUMP.pop("fh", None)
+    if fh is not None:
+        with contextlib.suppress(Exception):
+            fh.close()
+    _STACK_DUMP.clear()
+
+
 def _sweep_logged() -> int:
     log_path = DESK / "logs" / "MT5-Gauntlet.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    _arm_stack_dumps(log_path.parent)
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
         old_out, old_err = sys.stdout, sys.stderr
         # WHERE THE PLAN IS (judge_plan_progress): the judge's own log lines name its step, and
@@ -3742,6 +3795,7 @@ def _sweep_logged() -> int:
             return rc
         finally:
             sys.stdout, sys.stderr = old_out, old_err
+            _disarm_stack_dumps()
 
 
 if __name__ == "__main__":
