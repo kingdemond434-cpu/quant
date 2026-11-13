@@ -870,6 +870,11 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # THE WEAK-SIGNAL COMBINER'S OWN REPORT (2026-11-11, hourly leg weak_signals). Never on
+    # origin before, so nobody off the box could tell whether the combiner ran, how many members
+    # it had or why builds failed; its `coverage` block is eligible vs ingested power-only cells
+    # with the reason for each one left out, which the hourly scorecard's P5b row reads.
+    "desks/mt5/reports/weak_signal_compiler.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,

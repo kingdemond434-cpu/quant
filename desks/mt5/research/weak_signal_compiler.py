@@ -32,6 +32,7 @@ import json
 import sys
 import time
 from collections import Counter
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -109,12 +110,15 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
     `stages` is read first and `gates` kept as a fallback, so a future schema that renames it back
     does not silently re-empty this the way the original did.
     """
+    ELIGIBLE.clear()
     try:
         doc = json.loads(GATES.read_text("utf-8"))
     except (OSError, ValueError):
+        ELIGIBLE["gates_unreadable"] = True
         return {}
     docket = _docket_by_cell()
     out: dict[str, list[dict]] = {}
+    lost: list[dict] = []
     for v in doc.get("verdicts") or []:
         if not isinstance(v, dict) or v.get("unmeasured"):
             continue
@@ -128,11 +132,14 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
         fam = str(v.get("family") or "")
         if not sym or not fam or fam == "ensemble":
             continue
+        ELIGIBLE["eligible"] = int(ELIGIBLE.get("eligible", 0)) + 1
         # PARAMS COME FROM THE DOCKET, NEVER FROM THE VERDICT. The verdict carries a digest; a
         # member built with `{}` because the real params could not be found is a DIFFERENT
         # strategy wearing the cell's name, and it would be combined under that name.
         row = docket.get(str(v.get("cell") or ""))
         if row is None:
+            lost.append({"cell": str(v.get("cell") or ""), "symbol": sym, "family": fam,
+                         "why": "no docket row carries its params"})
             continue
         params = row.get("params")
         out.setdefault(sym, []).append({
@@ -141,8 +148,22 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
             "cell": str(v.get("cell") or ""),
             "sharpe": float((stages.get("in_sample_screen") or {}).get("sharpe") or 0.0)})
     for sym in out:
-        out[sym] = sorted(out[sym], key=lambda m: -abs(m["sharpe"]))[:max_per_symbol]
+        ranked = sorted(out[sym], key=lambda m: -abs(m["sharpe"]))
+        out[sym] = ranked[:max_per_symbol]
+        lost += [{"cell": m["cell"], "symbol": sym, "family": m["family"],
+                  "why": f"over the {max_per_symbol}-member cap for its symbol"}
+                 for m in ranked[max_per_symbol:]]
+    ELIGIBLE["not_pooled"] = lost
     return out
+
+
+#: The pool's census from the last `power_deficient()` call: how many power-only cells the
+#: gauntlet produced ("eligible") and every one that never reached a symbol's pool, with why.
+ELIGIBLE: dict = {}
+#: cell -> why an eligible, pooled member was NOT ingested into a combination this pass.
+NOT_INGESTED: dict[str, str] = {}
+#: cells whose signals were built and that entered a symbol's combination this pass.
+INGESTED: set[str] = set()
 
 
 #: Why members could not be built, counted by cause. A bare `except: return []` is indistinguishable
@@ -261,13 +282,53 @@ def _fit_shrunk_weights(train: pd.DataFrame, keep: list[int], *,
     return weights / (np.abs(weights).sum() or 1.0)
 
 
+def _not_ingested(members: list[dict], why: str) -> None:
+    for m in members:
+        NOT_INGESTED.setdefault(str(m.get("cell") or ""), why)
+
+
+def coverage(pool: Mapping[str, list[dict]]) -> dict:
+    """ELIGIBLE VS INGESTED, so a weak signal that never reaches a combination is named, not lost.
+
+    eligible = every cell that passed every validity gate and failed only power gates;
+    ingested = those whose signals were built and entered a symbol's combination this pass.
+    Every eligible cell that was not ingested is listed with the reason, so the hourly
+    scorecard can mark each one RED instead of reading a count it cannot act on.
+    """
+    if ELIGIBLE.get("gates_unreadable"):
+        return {"verdict": "UNMEASURED", "why": f"{GATES.name} unreadable"}
+    missing = list(ELIGIBLE.get("not_pooled") or [])
+    for sym, members in pool.items():
+        for m in members:
+            cell = str(m.get("cell") or "")
+            if cell in INGESTED:
+                continue
+            missing.append({"cell": cell, "symbol": sym, "family": m.get("family"),
+                            "why": NOT_INGESTED.get(cell, "not reached this pass")})
+    eligible = int(ELIGIBLE.get("eligible", 0))
+    ingested = len(INGESTED)
+    why = Counter(str(m["why"]) for m in missing)
+    return {"eligible": eligible, "pooled": sum(len(v) for v in pool.values()),
+            "ingested": ingested,
+            "ingested_share": round(ingested / eligible, 4) if eligible else None,
+            "not_ingested": len(missing),
+            "not_ingested_by_reason": dict(why.most_common()),
+            "not_ingested_cells": missing[:COVERAGE_LIST_CAP],
+            "list_truncated": len(missing) > COVERAGE_LIST_CAP}
+
+
+COVERAGE_LIST_CAP = 3000
+
+
 def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
                    budget_s: float = 600.0) -> list[dict]:
     d = pc.bars(sym)
     if d is None or len(d) < 24 * 400:
+        _not_ingested(members, "the symbol has too few bars (needs 9,600)")
         return []
     cost = pc.cost_frac(sym, meta, d["close"])
     if cost is None:
+        _not_ingested(members, "no cost model for the symbol")
         return []
     unfillable = pc.artifact_hours(d)
     runner = _runner_factory(meta)
@@ -275,13 +336,19 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
     sig_by_member: dict[int, list] = {}
     for k, m in enumerate(members):
         if time.monotonic() - started > budget_s:
+            _not_ingested(members[k:], "the symbol's build budget ran out first")
             break
         sigs = runner(m["symbol"], m["family"], m["params"], d)
         if len(sigs) >= 20:
             sig_by_member[k] = sigs
+        else:
+            _not_ingested([m], "built fewer than 20 signals")
     if len(sig_by_member) < MIN_MEMBERS:
+        _not_ingested([members[k] for k in sig_by_member],
+                      f"fewer than {MIN_MEMBERS} of its symbol's members built")
         return []
     keep = sorted(sig_by_member)
+    INGESTED.update(str(members[k].get("cell") or "") for k in keep)
     ret = pd.DataFrame({k: _member_returns(d, sig_by_member[k], hold) for k in keep})
     n = len(d)
     edges = [int(n * i / N_BLOCKS) for i in range(N_BLOCKS + 1)]
@@ -360,6 +427,8 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
 
 def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
     meta = pc.universe_meta()
+    NOT_INGESTED.clear()
+    INGESTED.clear()
     pool = power_deficient()
     if symbols:
         want = {s.upper() for s in symbols}
@@ -370,9 +439,11 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
     for sym, members in sorted(pool.items(), key=lambda kv: -len(kv[1])):
         if time.monotonic() - started > budget_s:
             skipped[sym] = "budget exhausted"
+            _not_ingested(members, "the pass's budget ran out before its symbol")
             continue
         if len(members) < MIN_MEMBERS:
             skipped[sym] = f"{len(members)} power-deficient members, needs {MIN_MEMBERS}"
+            _not_ingested(members, f"its symbol has fewer than {MIN_MEMBERS} eligible members")
             continue
         got = compile_symbol(sym, members, meta, budget_s=max(60.0, budget_s / max(1, len(pool))))
         if not got:
@@ -405,6 +476,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
               # family that genuinely has no signal. This is the difference, published.
               "build_failures": dict(BUILD_FAILURES.most_common(20)),
               "cells_proposed": len(proposals), "skipped": skipped,
+              "coverage": coverage(pool),
               "proposals": proposals, "all": rows,
               "member_source": str(GATES),
               "note": ("members are cells that passed every validity gate and failed only "
