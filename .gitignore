@@ -570,6 +570,10 @@ desks/mt5/data/hypotheses/steer_ledger.jsonl
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
 desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
+# K3 leverage history (research/leverage_watch.py): box-local, one row per account change or hour.
+# The repository is public and the rows carry each account's equity and margin; the published
+# fold is reports/LEVERAGE_WATCH.json. The writer also trims it to its own retention window.
+desks/mt5/data/leverage_history.jsonl
 # The box's account declarations ("<login>@<server>" keys): box-local, never published (audit v5).
 desks/mt5/data/ACCOUNT_PROFILES.json
 
