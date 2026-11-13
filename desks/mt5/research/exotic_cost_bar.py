@@ -37,8 +37,9 @@ whose cost cannot be priced is not an edge anyone has measured (principal 2026-0
 COST IS UNKNOWN EDGE").
 
 A library, not a process: the hourly leg `policy_lift_reopen` builds and writes
-reports/EXOTIC_COST_BAR.json on every pass, immediately before the promoter. It is read by `mt5desk.live_policy.refuse` (promoter, gateway and
-the reopen leg all go through it) whenever data/live_sleeve_policy.json carries `exotic_cost_bar`.
+reports/EXOTIC_COST_BAR.json on every pass, immediately before the promoter. It is read by
+`mt5desk.live_policy.refuse` (promoter, gateway and the reopen leg all go through it)
+whenever data/live_sleeve_policy.json carries `exotic_cost_bar`.
 """
 from __future__ import annotations
 
