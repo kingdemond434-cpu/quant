@@ -1452,20 +1452,24 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
                   "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
                   "gold_one_at_risk", "cancel_gold_against_direction",
                   "flatten_gold_against_direction", "_missed_usd", "gold_follow_state",
-                  "gold_follow_grace_min", "_iso_utc"), ns)
+                  "gold_follow_grace_min", "_iso_utc", "_paused_account_reading"), ns)
 
 
-def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
+def test_main_with_the_pause_file_present_sends_nothing_and_writes_only_equity(
         tmp_path, monkeypatch) -> None:
-    """The pause is consulted before the terminal is touched: no connect, no read, no order,
-    no state file, one log line saying why."""
+    """The pause is consulted before any trading: no order, no decision, no intent, one log line
+    saying why. Since 2026-11-13 the paused pass still READS the account and writes its equity
+    (and nothing else) to the state file: the Fusion deadman judges its ruin rail on that
+    number, and a pause that froze it could never see the recovery that lifts the pause."""
     rows = _gold_rows()
     mt5 = _Terminal(rows, *_quote(rows))
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=True, state=None)
     assert _cfg.gateway_paused() is True
     ns["main"]()
-    assert mt5.sent == [] and ns["_calls"] == []
-    assert not ns["_state_file"].exists()
+    assert mt5.sent == [] and ns["_calls"] == ["connect"]
+    st = json.loads(ns["_state_file"].read_text("utf-8"))
+    assert st["equity"] == round(float(mt5.account_info().equity), 2)
+    assert "paused_reading_at" in st and not st.get("brackets")
     assert ns["_decisions"] == [] and ns["_intents"] == []
     assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass"]
 
