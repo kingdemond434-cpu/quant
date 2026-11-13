@@ -1197,6 +1197,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
+    # The bandit's per-source worth prior (research_marginal.json). It ran only at the tail of the
+    # daily chain, which has not reached it since 09-24 (box read HP2, 2026-11-11): 44 days stale.
+    # Core so rotation cannot starve it; it skips itself unless its own stamp is 6 h old.
+    "research_pnl",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -2944,6 +2948,15 @@ def session_chart_expansion() -> dict:
     returns 2.0.
     """
     return _producer("session_chart_expansion", "research/session_chart_equivalents.py", "--apply")
+
+
+def research_pnl() -> dict:
+    """`research_pnl`: per-source trials, certificates and book growth, and the bandit's prior.
+
+    Writes reports/RESEARCH_PNL.json and data/research_marginal.json (read by
+    `libs.research.bandit._research_pnl_worth`). Streams the hypothesis graph.
+    """
+    return _producer("research_pnl", "research/research_pnl.py", "--min-age-h", "6")
 
 
 def stamp_freshness() -> dict:
@@ -5872,6 +5885,7 @@ def main() -> None:
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
+    rpnl = _costed("research_pnl", research_pnl)
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
     swr = _costed("swap_rejudge", swap_rejudge)
@@ -6560,6 +6574,7 @@ def main() -> None:
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
+                    "research_pnl": rpnl,
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
                     "swap_rejudge": swr,
