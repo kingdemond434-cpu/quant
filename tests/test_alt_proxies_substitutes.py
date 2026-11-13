@@ -345,11 +345,15 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
     assert A.BY_ID["cn_maoyan_box_office"].terms == "refused"
 
 
+#: Terms reviews read on a later date than the 2026-09-30 sweep.
+CHECKED_AT = {"un_comtrade_hk_gold": "2026-11-11", "un_comtrade_sa_gold": "2026-11-11"}
+
+
 def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
-        assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
+        assert ev["robots"] and ev["checked_at"] == CHECKED_AT.get(sid, "2026-09-30"), sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
     assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES} - {"za_statssa_retail"}
