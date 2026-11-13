@@ -413,18 +413,19 @@ def test_an_absent_series_is_a_named_refusal_not_a_never_firing_cell(box):
     from mt5desk.family_world_macro import WorldSeriesUnavailable, family_world_macro_state
     with pytest.raises(WorldSeriesUnavailable, match="wdeadbeef0000"):
         family_world_macro_state(_bars(2000), series_key="wdeadbeef0000", **PARAMS)
-    # a recipe that names NO series is incomplete, never a cell that silently never fires
-    with pytest.raises(WorldSeriesUnavailable, match="names no series_key"):
-        family_world_macro_state(_bars(2000), series_key="", **PARAMS)
-    with pytest.raises(TypeError, match="series_key"):
-        family_world_macro_state(_bars(2000), **PARAMS)
-    assert gauntlet.build_cell("AUDUSD", "world_macro_state", {}, {},
-                               h1_override=_bars(2000)) is None
-    assert "series_key" in str(gauntlet.LAST_BUILD_FAILURE)
+    # A recipe that names NO series is incomplete: buildability names it MISSING_PARAMS before
+    # any build, while the executor's own call path keeps base's answer (no signals, no raise),
+    # which the replay-shadow signal leg compares family by family.
+    assert family_world_macro_state(_bars(2000), series_key="", **PARAMS) == []
+    assert family_world_macro_state(_bars(2000), **PARAMS) == []
+    from mt5desk.family_call import signals
+    assert signals(family_world_macro_state, _bars(2000), side=1, params={}) == []
+    assert signals(family_world_macro_state, _bars(2000), side=-1, params={}) == []
     from research.gauntlet_buildability import MISSING_PARAMS, cell_verdict
     assert cell_verdict("world_macro_state", {})[0] == MISSING_PARAMS
     assert cell_verdict("world_macro_state", {"timeframe": "H4", "session": "asia"})[0] \
         == MISSING_PARAMS
+    assert cell_verdict("world_macro_state", {"series_key": " "})[0] == MISSING_PARAMS
     params = {"series_key": "wdeadbeef0000", **PARAMS}
     assert gauntlet.build_cell("AUDUSD", "world_macro_state", params, {},
                                h1_override=_bars(2000)) is None

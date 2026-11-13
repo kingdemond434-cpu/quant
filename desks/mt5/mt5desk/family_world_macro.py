@@ -22,8 +22,8 @@ THE Z IS TAKEN ON THE SERIES' OWN OBSERVATIONS, NOT ON THE BAR CLOCK: a monthly 
 filled onto hourly bars is constant for ~500 bars, and a bar-clock z of a constant is undefined.
 The z is computed where the value changes, then carried causally onto the bars.
 
-REFUSES (returns []) with too little history or an unknown direction; a recipe with no
-`series_key` is incomplete and raises (the parameter has no default).
+REFUSES (returns []) with too little history, an unknown direction or no `series_key` (an
+incomplete recipe, which `gauntlet_buildability.cell_verdict` names MISSING_PARAMS first).
 
 AN ABSENT SERIES IS A NAMED REFUSAL, NOT A CELL THAT NEVER FIRES (2026-11-10). A `series_key`
 this host's store cannot resolve -- no `keys.json`, the key not in it, or its parquet gone --
@@ -75,13 +75,15 @@ def family_world_macro_state(
     df: pd.DataFrame,
     *,
     side: int | None = None,
-    # REQUIRED, WITH NO DEFAULT (2026-11-10). It defaulted to "", and a docket row minted from
-    # the family's "defaults" (params {} -- 1,059 such rows, 0 judged, 168 parked never_fires,
-    # measured on the box) built a cell with no series and no signals: a recipe that names no
-    # statistic read as a market that never moved. With no default, the signature itself says
-    # the recipe is incomplete: `gauntlet_buildability.cell_verdict` answers MISSING_PARAMS for
-    # such a cell, and the sealed builder names the TypeError instead of filing zero trades.
-    series_key: str,
+    # DEFAULTS TO "" AND AN UNNAMED SERIES RETURNS [] (2026-11-13). The executor calls every
+    # family through `family_call.signals` with whatever params the cell carries, and the
+    # replay-shadow signal leg showed that requiring this key (or raising on "") turned base's
+    # "no signals" into an exception on that path: 20 divergences. The incomplete recipe is
+    # caught BEFORE any build instead: `gauntlet_buildability.cell_verdict` answers
+    # MISSING_PARAMS for a world_macro_state cell with no series_key (1,059 such rows, 0 judged,
+    # 168 parked never_fires, measured on the box 2026-11-10), and the input probe leaves an
+    # unnamed series UNMEASURED.
+    series_key: str = "",
     z_obs: int = 24,
     z_lo: float = 1.0,
     z_hi: float = 99.0,
@@ -97,9 +99,7 @@ def family_world_macro_state(
     del side
     flip = DIRECTIONS.get(str(direction))
     if not series_key:
-        raise WorldSeriesUnavailable(
-            "the recipe names no series_key: world_macro_state has no default statistic, so "
-            "the cell is incomplete and unjudged")
+        return []   # an incomplete recipe; cell_verdict names it MISSING_PARAMS before a build
     if flip is None or float(z_hi) <= float(z_lo):
         return []
     raw, align = _series(str(series_key))
