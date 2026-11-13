@@ -1,0 +1,606 @@
+{
+ "phase": "C",
+ "items": [
+  {
+   "id": "H1",
+   "item": "Formal verification of money path",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "#55 on LIVE. The `check_formal_claim --require-state` fence is present. The drill is green, and the gateway no-quote and crash fixes (`fa51bc5a`) close the 2 send-path defects. The cloud FORMAL.json is committed."
+   ],
+   "gap": "A VERIFIED claim, meaning the gateway backs every invariant (it backs 0/6). A box FORMAL.json. Green CI.",
+   "owner": "Tier S",
+   "code": [
+    "scripts/check_formal_claim.py"
+   ],
+   "artifacts": [
+    "FORMAL.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:894",
+   "tests": []
+  },
+  {
+   "id": "H2",
+   "item": "Independent evaluator civilization",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The seal is consistent: 0/18, and QB-002 agrees. The door now fails closed on a load error (DOOR_ERROR). T ✗: `test_certificate_single_writer` (the gauntlet archive-recovery source check) fails."
+   ],
+   "gap": "Resolve the archive-recovery test (stale or a regression). A separate evaluator stack. Green CI.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:895",
+   "tests": [
+    "desks/mt5/tests/test_certificate_single_writer.py"
+   ]
+  },
+  {
+   "id": "H3",
+   "item": "Architecture evolution, sealed suites",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "S33 (`gauntlet_arena.py`) is on LIVE: genomes are judged against the real gauntlet's verdicts."
+   ],
+   "gap": "Adoption must change the real gauntlet, scheduler or execution.",
+   "owner": "Tier S",
+   "code": [
+    "libs/tiers/gauntlet_arena.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:896",
+   "tests": []
+  },
+  {
+   "id": "H4",
+   "item": "Immutable meta-benchmark, thousands of cases",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "QB-002 re-pinned with normalised line endings (`1ed475a9`). `test_quantbench` passes, so T ✓. The sealed suite of 448 cases is cited only in a commit message."
+   ],
+   "gap": "A committed immune score from the box. Thousands of cases. A release gate on the score.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:897",
+   "tests": [
+    "desks/mt5/tests/test_quantbench.py"
+   ]
+  },
+  {
+   "id": "H5",
+   "item": "Active information acquisition (EVOI)",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "T ✗: `test_event_surprise` (grounds file absent) and `test_macro_regime` real yield (empty series; the file does not collect standalone). Both fail on pandas 2.3.3 as well."
+   ],
+   "gap": "A value-driven data buy. Green data tests (#97 addresses event_surprise after d30be2ce).",
+   "owner": "Tier S",
+   "code": [
+    "desks/mt5/research/event_surprise.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:898",
+   "tests": [
+    "desks/mt5/tests/test_event_surprise.py"
+   ]
+  },
+  {
+   "id": "H6",
+   "item": "Research-search frontier estimator",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "A cloud FRONTIER.json is on LIVE."
+   ],
+   "gap": "The estimator is floored at 1.0. No box artifact.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [
+    "FRONTIER.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:899",
+   "tests": []
+  },
+  {
+   "id": "H7",
+   "item": "Epistemic uncertainty engine, 5 levels",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "A cloud EPISTEMIC.json exists. It has no acting reader."
+   ],
+   "gap": "A consumer that refuses on \"not enough evidence\".",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [
+    "EPISTEMIC.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:900",
+   "tests": []
+  },
+  {
+   "id": "H8",
+   "item": "Cross-engine independent replication",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`live_door.json` is published by the box sync. Grep shows the promoter still does not read it."
+   ],
+   "gap": "A second engine. A reader for live_door.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [
+    "live_door.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:901",
+   "tests": []
+  },
+  {
+   "id": "H9",
+   "item": "Counterfactual failure search, architecture level",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Report-only, on LIVE."
+   ],
+   "gap": "A search that changes the factory or allocator.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:902",
+   "tests": []
+  },
+  {
+   "id": "H10",
+   "item": "Compute OS",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged."
+   ],
+   "gap": "CPU seconds only. No authoritative budget.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:903",
+   "tests": []
+  },
+  {
+   "id": "H11",
+   "item": "Global state replay at any second",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "A cloud REPLAY.json exists. It has no reader."
+   ],
+   "gap": "Market, model and budget state. A consumer.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [
+    "REPLAY.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:904",
+   "tests": []
+  },
+  {
+   "id": "H12",
+   "item": "Continual recovery / chaos experiments",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The drill is green. The gateway no-quote and crash fixes land. A cloud CHAOS.json exists."
+   ],
+   "gap": "A real kill, disconnect or VPS-loss drill. The drill must gate something. A box artifact.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [
+    "CHAOS.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:905",
+   "tests": []
+  },
+  {
+   "id": "H13",
+   "item": "Mechanism discovery from non-finance fields",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "On LIVE."
+   ],
+   "gap": "A judged or certified conversion on the box.",
+   "owner": "Tier S",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:906",
+   "tests": []
+  },
+  {
+   "id": "H14",
+   "item": "Automated abstraction discovery",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`grammar_bias` is consumed by expression_factory and alpha_evolution. `data/tier_s/grammar.json` is ABSENT."
+   ],
+   "gap": "Grammar at the path that is consumed. Learned primitives > 0.",
+   "owner": "Tier S",
+   "code": [
+    "libs/tiers/grammar_bias.py",
+    "desks/mt5/research/expression_factory.py",
+    "desks/mt5/research/alpha_evolution.py"
+   ],
+   "artifacts": [
+    "data/tier_s/grammar.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:907",
+   "tests": []
+  },
+  {
+   "id": "H15",
+   "item": "Scientific memory compression",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Failure memory orders `breadth_sweep`."
+   ],
+   "gap": "Consumed as authority.",
+   "owner": "Tier S",
+   "code": [
+    "desks/mt5/research/breadth_sweep.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:908",
+   "tests": []
+  },
+  {
+   "id": "H16",
+   "item": "Human–machine separation of powers",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "promoter.py and rails.py are re-signed in the reviewed pass (`1ed475a9`). The manifest is 0/18."
+   ],
+   "gap": "S01 is BLOCKED_ON_USER.",
+   "owner": "Tier S",
+   "code": [
+    "desks/mt5/research/promoter.py",
+    "libs/portfolio/rails.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:909",
+   "tests": []
+  },
+  {
+   "id": "ADM",
+   "item": "Subsystem admission rule (8 gains)",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`check_tier_s_program` rc 0: 43 BUILT / 1 PARTIAL / 2 BLOCKED / 0 DONE. A cloud CONTRACTS.json exists."
+   ],
+   "gap": "Nothing is removed. No box attestation.",
+   "owner": "Tier S",
+   "code": [
+    "scripts/check_tier_s_program.py"
+   ],
+   "artifacts": [
+    "CONTRACTS.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:910",
+   "tests": []
+  },
+  {
+   "id": "DP1",
+   "item": "Finish/wire everything",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "T ✗: 4 failing test files. `universe_producers_merge` fails only under a bare invocation (it passes under the CI xdist shape)."
+   ],
+   "gap": "Box attestation for 43 BUILT. Green tests and CI.",
+   "owner": "Institutional",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:911",
+   "tests": []
+  },
+  {
+   "id": "DP2",
+   "item": "Remove dormant/partial components",
+   "phase": "C",
+   "status": "MISSING",
+   "gate": "none",
+   "claim": "OPEN",
+   "verdict_0930": "MISSING",
+   "marks": {
+    "I": false,
+    "W": false,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": false,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Nothing is deleted."
+   ],
+   "gap": "A retirement pass with a deletion ledger.",
+   "owner": "Inst / TS",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:912",
+   "tests": []
+  },
+  {
+   "id": "DP3",
+   "item": "Repair the validation defects",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "#52 is merged. Measured DSR variance of 0.0002, lockbox v4 with three reads, and the per-day trade sum are live, with their tests green. T ✗: `test_certificate_single_writer` (gauntlet archive recovery). R ✗: the 15/130 and 0/318 result is not committed, and the certificates have not been re-judged or migrated on the box."
+   ],
+   "gap": "Commit the sealed-suite result. A box re-judge of standing certificates under v4. Resolve the archive-recovery test.",
+   "owner": "Institutional",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:913",
+   "tests": [
+    "desks/mt5/tests/test_certificate_single_writer.py"
+   ]
+  }
+ ]
+}

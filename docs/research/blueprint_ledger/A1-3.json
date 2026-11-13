@@ -1,0 +1,191 @@
+{
+ "phase": "A1",
+ "items": [
+  {
+   "id": "AC10",
+   "item": "Green deterministic CI/release on clean hardware",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "See CS6. The law gate fails and CI was cancelled"
+   ],
+   "gap": "A green run that blocks merges",
+   "owner": "INST",
+   "code": [
+    "scripts/run_law_gate.py",
+    "scripts/check_birth_obligations.py",
+    "desks/mt5/research/judging_burndown.py",
+    "scripts/check_formal_claim.py",
+    "scripts/check_tier_s_program.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:484",
+   "tests": []
+  },
+  {
+   "id": "AC11",
+   "item": "One source of truth for cert, clock, sleeve, allocation",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "See CS4/D12"
+   ],
+   "gap": "The migration",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/certificate_truth.py"
+   ],
+   "artifacts": [
+    "CERTIFICATE_TRUTH.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:485",
+   "tests": []
+  },
+  {
+   "id": "AC12",
+   "item": "Long forward/live history with attribution and drift",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "time",
+   "claim": "PARTIAL",
+   "verdict_0930": "TIME-BOUND",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. There is no drift_monitor test"
+   ],
+   "gap": "Unchanged",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/drift_monitor.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:486",
+   "tests": []
+  },
+  {
+   "id": "AC13",
+   "item": "Research methods compete experimentally",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`red_queen`, `meta_benchmark` and the gauntlet arena are on LIVE through the `tier_s` leg (`tier_s.py:76,883,1020-1088`). The one committed run is from the cloud and says \"NOT box evidence\""
+   ],
+   "gap": "Adoption must change the real gauntlet or scheduler. Box evidence",
+   "owner": "TS",
+   "code": [
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/red_queen.py",
+    "libs/tiers/meta_benchmark.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:487",
+   "tests": []
+  },
+  {
+   "id": "AC14",
+   "item": "Second machine/data/broker; recovery tested",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (broker part EXCLUDED)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged"
+   ],
+   "gap": "A restore drill and failover",
+   "owner": "INST",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:488",
+   "tests": []
+  },
+  {
+   "id": "AC15",
+   "item": "Reproduce any trade/cert from hashes alone",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `test_trade_identity` passes"
+   ],
+   "gap": "The identity is not stamped on fills",
+   "owner": "TS",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:489",
+   "tests": [
+    "tests/research/test_trade_identity.py"
+   ]
+  }
+ ]
+}

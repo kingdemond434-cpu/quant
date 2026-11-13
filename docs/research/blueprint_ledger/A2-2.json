@@ -1,0 +1,224 @@
+{
+ "phase": "A2",
+ "items": [
+  {
+   "id": "I15",
+   "item": "Independent implementation verifier",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**A changed from ✗ to ✓.** `promotion_authority._replication` (`:113-126`) blocks a NEW promotion on MISMATCH, and the promoter calls it at `:1925,2070`. `replication_civilization` writes `verdicts` rows with a `key`, a format the door reads. **Rows already LIVE are not covered:** `live_door.json` has no reader. `test_replication_civilization` passes on pandas 2.3.3 and fails 2 parquet tests on pandas 3"
+   ],
+   "gap": "A reader for `live_door.json` (retirement on MISMATCH). Trade- and timestamp-level comparison. Commit REPLICATION.json",
+   "owner": "Tier S",
+   "code": [
+    "libs/tiers/promotion_authority.py",
+    "desks/mt5/research/replication_civilization.py"
+   ],
+   "artifacts": [
+    "live_door.json",
+    "REPLICATION.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:595",
+   "tests": [
+    "desks/mt5/tests/test_replication_civilization.py"
+   ]
+  },
+  {
+   "id": "I16",
+   "item": "Continuous placebo/adversarial tests with audit-recall",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**A changed from ✗ to ✓ (partly).** `promotion_authority._freeze` honours the immune FREEZE on promotion, and `allocator_tilts` applies a freeze factor. The door exempts a suspended immune organ. The power-greater-than-zero claim (15/130) is uncommitted. PLACEBO_AUDIT still has no direct consumer"
+   ],
+   "gap": "Commit the recall/power evidence. Remove the suspension escape or put it behind a gate. Commit the artifact",
+   "owner": "Tier S",
+   "code": [
+    "libs/tiers/promotion_authority.py",
+    "libs/tiers/allocator_tilts.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:596",
+   "tests": []
+  },
+  {
+   "id": "I17",
+   "item": "Live attribution as final judge; overstating priors downweighted",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Now also reaches pf_allocator through `allocator_tilts.capture_factor` (live mean R vs forward expectancy, heat-neutral). This is inert while matched_fills = 0, when the factor reads UNMEASURED and equals 1.0"
+   ],
+   "gap": "matched fills > 0. Commit the artifact",
+   "owner": "Tier S",
+   "code": [
+    "libs/tiers/allocator_tilts.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:597",
+   "tests": []
+  },
+  {
+   "id": "I18",
+   "item": "Human experimentation in a separate budgeted sleeve",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. Overrides are still in-book (`principal_override` on the LIVE rows). `discretionary_sleeve.py` has no caller"
+   ],
+   "gap": "Split the budget and ledger in the money path",
+   "owner": "Unowned",
+   "code": [
+    "libs/execution/discretionary_sleeve.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:598",
+   "tests": []
+  },
+  {
+   "id": "I19",
+   "item": "Operational redundancy (second broker EXCLUDED)",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": null,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The Tier S `gateway_drill`/`chaos` organs now run hourly and `test_tier_s_gateway_drill.py` passes. `dr_drill.py` and `run_restore_drill.py` still have no tests. There is no standby, no failover and no encrypted backup"
+   ],
+   "gap": "A standby with failover. Drills on real box state. Encrypted backups. A committed drill artifact. The broker part is EXCLUDED",
+   "owner": "Tier S (chaos) / Unowned",
+   "code": [
+    "desks/mt5/scripts/dr_drill.py",
+    "scripts/run_restore_drill.py",
+    "libs/tiers/gateway_drill.py",
+    "libs/tiers/chaos.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:599",
+   "tests": [
+    "desks/mt5/tests/test_tier_s_gateway_drill.py"
+   ]
+  },
+  {
+   "id": "I20",
+   "item": "Let time complete: forward/live evidence",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "time",
+   "claim": "PARTIAL",
+   "verdict_0930": "TIME-BOUND",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. 31 UNMEASURED LIVE rows. The committed canon is not exact policy under v4, so clock backing depends on an uncommitted re-certification"
+   ],
+   "gap": "Time, plus a committed tracker artifact and certificate-backed clocks",
+   "owner": "n/a",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:600",
+   "tests": []
+  },
+  {
+   "id": "P1",
+   "item": "Pipeline with no bypass arrow",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "See the arrows below. The lockbox, allocator and multiplicity arrows are now closed in code. The forward-clock and live-door arrows are still bypassed"
+   ],
+   "gap": "Migrate the certificates. A reader for live_door. Cost fail-closed on the live book. A green suite",
+   "owner": "Both",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:601",
+   "tests": []
+  }
+ ]
+}

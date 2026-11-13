@@ -1,0 +1,699 @@
+{
+ "phase": "B1",
+ "items": [
+  {
+   "id": "L1",
+   "item": "Truth Kernel",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "truth_kernel, constitution; door withholds loosened constitution; fail-closed in block AND in promoter wrapper"
+   ],
+   "gap": "S01 blocked (gauntlet ignores constitution); box R",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/truth_kernel.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:671",
+   "tests": []
+  },
+  {
+   "id": "L2",
+   "item": "World Data OS",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "macro-fusion sweep conditions via `BitemporalStore.latest_known` (S02)"
+   ],
+   "gap": "One sweep only; no provenance on main data path; box R",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:672",
+   "tests": []
+  },
+  {
+   "id": "L3",
+   "item": "World Model",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "world_edges → compiler rows"
+   ],
+   "gap": "Hypothesis generation only; stale graph; no flows/regional",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/world_edges.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:673",
+   "tests": []
+  },
+  {
+   "id": "L4",
+   "item": "Researcher Civilization",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "researcher_prices → cycle_pricing; runtime blinding strips outcomes (S04)"
+   ],
+   "gap": "No new non-LLM processes; box R",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/cycle_pricing.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:674",
+   "tests": []
+  },
+  {
+   "id": "L5",
+   "item": "Hypothesis Ecology",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "QD/genomes/theory rows to intelligence/tier_s"
+   ],
+   "gap": "Populations decide nothing",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:675",
+   "tests": []
+  },
+  {
+   "id": "L6",
+   "item": "Research-Program Evolution",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "program_evolution in hourly tier_s leg"
+   ],
+   "gap": "Challengers report only",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/program_evolution.py",
+    "desks/mt5/research/tier_s.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:676",
+   "tests": []
+  },
+  {
+   "id": "L7",
+   "item": "Adversarial Science",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "prejudge flags in run_external_backtest; merge_hypotheses demotes in-family; S33 on real verdicts"
+   ],
+   "gap": "Reorder-only; box R",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/side_channels/run_external_backtest.py",
+    "desks/mt5/research/merge_hypotheses.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:677",
+   "tests": []
+  },
+  {
+   "id": "L8",
+   "item": "Universal Validation",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**Now fails closed end to end** (promoter.py:1685 DOOR_ERROR); seal clean; #52 merged"
+   ],
+   "gap": "live_door.json unconsumed; REPLICATION.json freshness depends on validate resident; box R",
+   "owner": "Both threads",
+   "code": [
+    "desks/mt5/research/promoter.py"
+   ],
+   "artifacts": [
+    "live_door.json",
+    "REPLICATION.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:678",
+   "tests": []
+  },
+  {
+   "id": "L9",
+   "item": "Alpha Topology",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "alpha_rank two-sided in cycle_pricing; **ALPHA_RANK.json now produced (cloud)**"
+   ],
+   "gap": "Box ALPHA_RANK; two rank organs",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/alpha_rank.py",
+    "desks/mt5/research/cycle_pricing.py"
+   ],
+   "artifacts": [
+    "ALPHA_RANK.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:679",
+   "tests": []
+  },
+  {
+   "id": "L10",
+   "item": "Portfolio Intelligence",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "clamp fix; **FREEZE → allocator_tilts (freeze_factor)**; #53 merged"
+   ],
+   "gap": "Exchange zero zeroes mean not weight; ex×cap×fz not renormalised after clip; tilts cloud-only",
+   "owner": "Other slices",
+   "code": [
+    "libs/tiers/allocator_tilts.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:680",
+   "tests": []
+  },
+  {
+   "id": "L11",
+   "item": "Execution Intelligence",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "S23 alpha/exec-drag split; capture_factor into tilts"
+   ],
+   "gap": "0 matched fills → inert",
+   "owner": "Other slices",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:681",
+   "tests": []
+  },
+  {
+   "id": "L12",
+   "item": "Live Reality Engine",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "THEORY_REFUTED withholds; forward_reconcile.json; review_live → live_door.json"
+   ],
+   "gap": "live_door reaches no retirement (no reader); R here is the forward_reconcile box artifact, the Tier S half has none",
+   "owner": "Other slices",
+   "code": [
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "artifacts": [
+    "forward_reconcile.json",
+    "live_door.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:682",
+   "tests": []
+  },
+  {
+   "id": "L13",
+   "item": "Meta-Science",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "research_bandit leg (core, hourly) publish()"
+   ],
+   "gap": "research_budget.json authoritative:false",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/research_bandit.py"
+   ],
+   "artifacts": [
+    "research_budget.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:683",
+   "tests": []
+  },
+  {
+   "id": "L14",
+   "item": "Architecture Evolution",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "twin, self_model (+twin consumer test), shadow_desk, rollback"
+   ],
+   "gap": "S30 blocked; propose-only",
+   "owner": "Other slices",
+   "code": [
+    "libs/tiers/self_model.py",
+    "libs/tiers/shadow_desk.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:684",
+   "tests": []
+  },
+  {
+   "id": "L15",
+   "item": "Operational Kernel",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "gateway drill passes; drill in organ_chaos"
+   ],
+   "gap": "Report only; no standby/failover",
+   "owner": "Other slices",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:685",
+   "tests": []
+  },
+  {
+   "id": "T1",
+   "item": "Truth Kernel spec",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "journal, seal (clean), constitution withhold"
+   ],
+   "gap": "S01; no order-time lineage",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:686",
+   "tests": []
+  },
+  {
+   "id": "T2",
+   "item": "World Data OS spec",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "PIT reads in macro sweep"
+   ],
+   "gap": "Not on acquire_datasets; no € costs",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/acquire_datasets.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:687",
+   "tests": []
+  },
+  {
+   "id": "T3",
+   "item": "World model graphs",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "world_edges classification"
+   ],
+   "gap": "No flows/regional; decides nothing",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/world_edges.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:688",
+   "tests": []
+  },
+  {
+   "id": "T4",
+   "item": "Researcher civilization + blinding",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "runtime blinding, blinding_runtime.jsonl"
+   ],
+   "gap": "No independent-discovery evidence",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [
+    "blinding_runtime.jsonl"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:689",
+   "tests": []
+  },
+  {
+   "id": "T5",
+   "item": "AlphaEvolve-for-alpha",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "evolution, program_evolution"
+   ],
+   "gap": "No LLM-in-loop code evolution",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/program_evolution.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:690",
+   "tests": []
+  },
+  {
+   "id": "T6",
+   "item": "MAP-Elites 12 axes",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "qd_axes"
+   ],
+   "gap": "Steers nothing",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/qd_axes.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:691",
+   "tests": []
+  },
+  {
+   "id": "T7",
+   "item": "Researcher genomes",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "RESEARCHER_GENES"
+   ],
+   "gap": "Steers tier_s rows only",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/tier_s.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:692",
+   "tests": []
+  },
+  {
+   "id": "T8",
+   "item": "Researcher market",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "prices 0.15 + bandit 0.20 → cycle_pricing"
+   ],
+   "gap": "FLOOR 1.0: nothing loses compute",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/cycle_pricing.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:693",
+   "tests": []
+  }
+ ]
+}

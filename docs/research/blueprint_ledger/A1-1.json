@@ -1,0 +1,516 @@
+{
+ "phase": "A1",
+ "items": [
+  {
+   "id": "CS1",
+   "item": "True reserved lockbox; re-certify every survivor",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Gate 9 is `gate_policy.lockbox_stage(lock_daily, …, dev=arr, sr0=dsr.sr0_threshold)` (`external_gauntlet.py:~2618`). It is v4: the held-out Sharpe, the last-30% Sharpe and the half-split z all clear sr0. `test_canonical_reserved_lockbox`, `test_lockbox_independence` and `test_lockbox_bar_and_daily_series` pass"
+   ],
+   "gap": "No survivor has been re-certified. `UNIVERSAL_SURVIVORS.json` is still v2 with 58 rows from 09-16. The \"15/130 real, 0/318 traps\" result has no committed artifact: `dsr/LOCKBOX_BAR.md`, cited in the code, does not exist. The law gate fails at HEAD, and the tip seal is broken",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/research/gate_policy.py"
+   ],
+   "artifacts": [
+    "UNIVERSAL_SURVIVORS.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:437",
+   "tests": [
+    "desks/mt5/tests/test_canonical_reserved_lockbox.py",
+    "desks/mt5/tests/test_lockbox_independence.py",
+    "desks/mt5/tests/test_lockbox_bar_and_daily_series.py"
+   ]
+  },
+  {
+   "id": "CS2",
+   "item": "Unmeasured costs fail closed (swap, instrument execution)",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The `swap_cost` stage now passes only when a registry basis or the live cost is measured (`external_gauntlet.py:2663`, \"UNMEASURED cost fails closed\"). The promoter demotes LIVE rows with no cost basis (`promoter.py:344-356`)"
+   ],
+   "gap": "`COST_SURFACES.json` still has no consumer and no committed artifact. Costs are not measured from fills (0 matched). There is no box pass showing the fail-closed path",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/research/promoter.py"
+   ],
+   "artifacts": [
+    "COST_SURFACES.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:438",
+   "tests": []
+  },
+  {
+   "id": "CS3",
+   "item": "Allocator sovereignty: zero→no order; below-min→skip",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`decision_core.py:564-666,743-760`: `allocator_sovereign()` is on by default, and `implementable_lot` refuses to size below `volume_min`. The gold floor is bypassed when sovereign. The gateway's `if not (lot > 0)` skips at `gateway.py:3226,3650,4372`. `test_allocator_sovereignty` passes"
+   ],
+   "gap": "No box evidence of a zero or below-minimum allocation sending no order. The `ALLOCATOR_SOVEREIGN.json` file-switch revert is kept. It contradicts the committed Tier-1 P1 row and `CLAUDE.md` (0.02 gold floor, \"NEVER REDUCE AGGRESSIVENESS\"), which carry no recorded principal order dated 09-29",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/mt5desk/decision_core.py",
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "artifacts": [
+    "ALLOCATOR_SOVEREIGN.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:439",
+   "tests": [
+    "desks/mt5/tests/test_allocator_sovereignty.py"
+   ]
+  },
+  {
+   "id": "CS4",
+   "item": "Certificate-truth migration; banned discovered physically absent",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. The law gate reports \"migrate once on the box: certificate_truth.py --once --apply\""
+   ],
+   "gap": "Run `--apply` and commit `CERTIFICATE_TRUTH.json`. 24 `discovered` rows are still LIVE",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/certificate_truth.py"
+   ],
+   "artifacts": [
+    "CERTIFICATE_TRUTH.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:440",
+   "tests": []
+  },
+  {
+   "id": "CS5",
+   "item": "No LIVE sleeve with UNMEASURED marginal indefinitely",
+   "phase": "A1",
+   "status": "MISSING",
+   "gate": "none",
+   "claim": "OPEN",
+   "verdict_0930": "MISSING",
+   "marks": {
+    "I": false,
+    "W": false,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": false,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`promoter.py:1431-1434` still reads \"not a refusal… risk already held is not removed\". `2efe53b3` (same-mechanism join) may shrink the count, but it adds no time bound"
+   ],
+   "gap": "A time bound or quarantine rule, a test, and a committed demotion",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/promoter.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:441",
+   "tests": []
+  },
+  {
+   "id": "CS6",
+   "item": "Law gate + MT5 money-path CI green on clean machine",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The d30be2ce CI run was cancelled and no green run exists. `run_law_gate.py --laws-only` FAILS at HEAD on `check_birth_obligations` (judging_burndown, check_formal_claim, check_tier_s_program). The tip seal breaks via 4678fe4f"
+   ],
+   "gap": "Attest the three executables. A completed green run. CI must block merges to the box branch",
+   "owner": "INST",
+   "code": [
+    "scripts/run_law_gate.py",
+    "scripts/check_birth_obligations.py",
+    "desks/mt5/research/judging_burndown.py",
+    "scripts/check_formal_claim.py",
+    "scripts/check_tier_s_program.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:442",
+   "tests": []
+  },
+  {
+   "id": "CS7",
+   "item": "Margin/survival above aggressiveness",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The margin clause is now armed by default (`pf_allocator.py:3526`, revert with `MARGIN_CLAUSE_DISABLED`). The test was flipped to \"feeds by default\""
+   ],
+   "gap": "The gateway heat check is still a tripwire. No artifact shows the clause bind. It contradicts the Tier-1 P13 row (\"pins the REFUSAL\") and `CLAUDE.md` (\"P13 REFUSED\")",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:443",
+   "tests": []
+  },
+  {
+   "id": "CS8",
+   "item": "Attack the 55k judging backlog, not the generator",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "A new hourly leg `judging_burndown` (`hourly_cycle.py:974,4519`) sits beside `judging_throughput`"
+   ],
+   "gap": "No committed `JUDGING_RATE` or `JUDGING_BURNDOWN`. `merge_report` (09-23) is 57,538. `judging_burndown.py` is one of the law-gate birth-obligation breaches",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/judging_burndown.py",
+    "desks/mt5/research/judging_throughput.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:444",
+   "tests": []
+  },
+  {
+   "id": "CS9",
+   "item": "Measure effective independent breadth",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `effective_breadth.jsonl` last row is 09-16, 2.057/160. Tier S topology is now on LIVE (`libs/tiers/`)"
+   ],
+   "gap": "Breadth does not reach sizing or admission. The artifact is 2 weeks stale (R now ✗)",
+   "owner": "TS/INST",
+   "code": [
+    "libs/research/effective_breadth.py"
+   ],
+   "artifacts": [
+    "effective_breadth.jsonl"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:445",
+   "tests": []
+  },
+  {
+   "id": "CS10",
+   "item": "Research-budget allocation authoritative",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `research_budget.json` is `authoritative:false`"
+   ],
+   "gap": "Authoritative, with evidence",
+   "owner": "TS",
+   "code": [],
+   "artifacts": [
+    "research_budget.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:446",
+   "tests": []
+  },
+  {
+   "id": "CS11",
+   "item": "Independent broker/data/execution domain",
+   "phase": "A1",
+   "status": "REFUSED",
+   "gate": "principal",
+   "claim": "EXCLUDED",
+   "verdict_0930": "EXCLUDED",
+   "marks": {
+    "I": null,
+    "W": null,
+    "A": null,
+    "T": null,
+    "R": null,
+    "D": null,
+    "C": null
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [],
+   "gap": "REFUSED: multi-venue / second-broker work, excluded by the principal (standing order); Multi-venue excluded by user",
+   "owner": "—",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:447",
+   "tests": []
+  },
+  {
+   "id": "CS12",
+   "item": "Accumulate untouched forward/live evidence",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "time",
+   "claim": "PARTIAL",
+   "verdict_0930": "TIME-BOUND",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": true,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged"
+   ],
+   "gap": "The forward verdict does not gate LIVE (D9)",
+   "owner": "INST",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:448",
+   "tests": []
+  },
+  {
+   "id": "D1",
+   "item": "lockbox_sharpe = wf_oos (58/58 certs equal)",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The code now reads a reserved tail (see CS1)"
+   ],
+   "gap": "The committed 58 certificates are still the v2 lockbox==WF rows. Re-certify and commit",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/research/gate_policy.py"
+   ],
+   "artifacts": [
+    "UNIVERSAL_SURVIVORS.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:454",
+   "tests": []
+  },
+  {
+   "id": "D2",
+   "item": "Fixed DSR n_trials=597 / var 0.014863",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`gate_spec.yaml:70` sets `fixed_variance_of_sharpes: 0.0002`, still a **constant** (\"both inputs remain constants\"). The trial charge is now `max(campaign, family lifetime)` (`charged_lifetime_trials`, `external_gauntlet.py:2345,2568`). sr0 at 109 trials drops from 0.312 to **0.036** (~9× lower bar)"
+   ],
+   "gap": "The variance is calibrated on the benchmark it is scored on, not measured from the desk's own trials. No survivor has been re-judged. `gate_spec.yaml` is unsealed. `effective_trials.py:309` still falls back to 0.014863",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/research/effective_trials.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:455",
+   "tests": []
+  },
+  {
+   "id": "D3",
+   "item": "swap UNMEASURED → passed",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`external_gauntlet.py:2663-2676` fails closed. `test_heal_identity_cost_and_swap` passes"
+   ],
+   "gap": "No box certificate judged under it. No broker-measured swap artifact",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:456",
+   "tests": [
+    "desks/mt5/tests/test_heal_identity_cost_and_swap.py"
+   ]
+  },
+  {
+   "id": "D4",
+   "item": "sleeves.json 40 LIVE all artifact.ok=false \"no cost basis\"",
+   "phase": "A1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL (was MISSING branch-only)",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`promoter.save_sleeves` demotes to STANDBY when there is no cost basis. `cost_basis_of` gives 28/40 a basis, so 12 would demote. `test_live_rows_need_a_cost_basis` and `test_residual_cost_basis_fence` pass"
+   ],
+   "gap": "The committed `sleeves.json` (09-28) still shows 40/40 `artifact.ok` false. The 12 rows need registry cost fields, not only demotion. There is no box pass",
+   "owner": "INST",
+   "code": [
+    "desks/mt5/research/promoter.py",
+    "libs/research/sleeves.py"
+   ],
+   "artifacts": [
+    "sleeves.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:457",
+   "tests": [
+    "desks/mt5/tests/test_live_rows_need_a_cost_basis.py",
+    "desks/mt5/tests/test_residual_cost_basis_fence.py"
+   ]
+  }
+ ]
+}
