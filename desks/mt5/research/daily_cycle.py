@@ -223,6 +223,13 @@ def _vol_forecast() -> None:
     rep = garch_vs_ewma.run(budget_s=1800.0)
     dlog(f"vol_forecast: {rep.get('symbols_tested')} symbol(s), "
          f"choices {(rep.get('pooled') or {}).get('choices')}")
+    # THE RULE-1 PROOF A FORECAST NEEDS BEFORE IT SIZES: does scaling each sleeve by its
+    # symbol's normal/forecast vol raise the book's E[log W], against both the unscaled book and
+    # a leverage-matched one? Writes reports/VOL_MANAGED_SIZING.json. Sizes nothing.
+    import vol_managed_sizing
+    vm = vol_managed_sizing.run()
+    dlog(f"vol_managed_sizing: {vm.get('status')}, verdict "
+         f"{ {k: (v or {}).get('EARNS') for k, v in (vm.get('verdict') or {}).items()} }")
 
 
 def _loss_replace() -> None:
