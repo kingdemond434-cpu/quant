@@ -228,3 +228,11 @@ def test_the_in_tree_held_schemas_match_what_the_refresher_writes() -> None:
         want = {"tff": set(R.TFF_RENAME.values())}.get(t.family, set(
             ("report_date," + R.SELECT[t.family].split(",", 1)[1]).split(",")))
         assert cols == want, (t.family, t.slug, cols ^ want)
+
+
+def test_vix_positioning_is_refreshed_in_legacy_and_tff() -> None:
+    """Mining v1 ask (2026-11-13): CFTC VIX futures positioning as a US500/NAS100 conditioner.
+    Names as the CFTC serves them (read 2026-11-13: code 1170E1, history from 2006-08-29)."""
+    got = {(t.family, t.slug): t.names for t in R.TARGETS if t.slug == "vix"}
+    assert got == {("legacy", "vix"): ("VIX FUTURES",),
+                   ("tff", "vix"): ("VIX FUTURES - CBOE FUTURES EXCHANGE",)}

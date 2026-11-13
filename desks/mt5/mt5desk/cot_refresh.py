@@ -97,12 +97,16 @@ TARGETS: tuple[Target, ...] = (
         ("eur", ("EURO FX",)), ("gbp", ("BRITISH POUND", "BRITISH POUND STERLING")),
         ("cad", ("CANADIAN DOLLAR",)), ("aud", ("AUSTRALIAN DOLLAR",)),
         ("nzd", ("NZ DOLLAR", "NEW ZEALAND DOLLAR")), ("chf", ("SWISS FRANC",)),
-        ("dxy", ("USD INDEX", "U.S. DOLLAR INDEX")), ("nasdaq100", ("NASDAQ MINI",)))),
+        ("dxy", ("USD INDEX", "U.S. DOLLAR INDEX")), ("nasdaq100", ("NASDAQ MINI",)),
+        # CFTC VIX futures positioning (Cboe Futures Exchange, code 1170E1, from 2006): the
+        # lawful implied-vol conditioner for US500/NAS100 now Yahoo and FRED are refused.
+        ("vix", ("VIX FUTURES",)))),
     # The big S&P 500 contract stopped trading in 2021; its file is kept, never extended with
     # the E-mini (a different contract on the same dates would contaminate it).
     Target("legacy", "sp500", ("S&P 500 STOCK INDEX",), delisted=True),
     Target("disagg", "gold", ("GOLD",)),
     Target("disagg", "silver", ("SILVER",)),
+    Target("tff", "vix", ("VIX FUTURES - CBOE FUTURES EXCHANGE",)),
     *(Target("tff", s, tuple(n + _CME for n in names)) for s, names in (
         ("jpy", ("JAPANESE YEN",)), ("eur", ("EURO FX",)),
         ("gbp", ("BRITISH POUND", "BRITISH POUND STERLING")), ("cad", ("CANADIAN DOLLAR",)),
