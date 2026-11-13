@@ -154,10 +154,6 @@ def copy_allowed(license_: str) -> bool:
 def desk_hub() -> DataHub:
     """The contracts the MT5 desk actually serves, bound to its existing loaders."""
     hub = DataHub()
-    # The federation's data-source adapters (akshare, tushare, openbb): their contracts, clocks
-    # and consumers live beside the census that measures them (libs/data/datahub_adapters.py).
-    from libs.data.datahub_adapters import extend as _extend_adapters
-    _extend_adapters(hub)
 
     def _bars(symbol: str, tf: str = "H1") -> Any:
         import pandas as pd

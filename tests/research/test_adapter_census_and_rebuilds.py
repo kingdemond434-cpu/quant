@@ -107,9 +107,10 @@ def test_every_cannot_work_adapter_names_its_measured_reason(name: str,
 
 
 def test_data_adapters_are_contracts_on_the_desk_hub_with_known_clocks() -> None:
-    from libs.data.datahub import desk_hub
-    from libs.data.datahub_adapters import CONTRACTS, RESERVED_PREFIXES
-    hub = desk_hub()
+    from libs.data.datahub_adapters import CONTRACTS, RESERVED_PREFIXES, adapter_hub
+    hub = adapter_hub()
+    base = len(adapter_hub().contracts())
+    assert base == len(hub.contracts())   # idempotent: extending twice never double-registers
     names = set(hub.contracts())
     for c in CONTRACTS:
         assert c.name in names

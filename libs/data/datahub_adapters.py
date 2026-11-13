@@ -89,3 +89,16 @@ def extend(hub: Any) -> Any:
         hub.register(Contract(c.name, "frame", description=c.description,
                               providers=[Provider(f"lake:{c.series}", _loader(c), "primary")]))
     return hub
+
+
+def adapter_hub() -> Any:
+    """`desk_hub()` with every adapter contract registered on it -- the hub the census, the
+    adapter_data leg and the tests read. `libs/data/datahub.py` is in the money closure
+    (ops/money_closure.txt), so desk_hub itself calls `extend` only once an Auditor clears that
+    one-line change; until then this is the door, and it serves the same contracts."""
+    from libs.data.datahub import desk_hub
+    hub = desk_hub()
+    held = set(hub.contracts())
+    if not any(c.name in held for c in CONTRACTS):
+        extend(hub)
+    return hub
