@@ -52,13 +52,15 @@ def test_a_first_sighting_starts_nothing(box) -> None:
     assert doc["status"] == "OK" and box["started"] == []
 
 
-def test_a_fill_restarts_the_ftmo_allocator_only(box) -> None:
+def test_a_fill_restarts_the_ftmo_allocator_and_the_growth_book(box) -> None:
     _run(box, NOW)
     _write(at.FTMO_STATE, _ftmo(open_positions=[{"symbol": "XAUUSD", "side": "long",
                                                   "volume": 0.5}]))
     doc = _run(box, NOW + timedelta(minutes=5))
-    assert box["started"] == ["MT5-FTMO-Allocator"]
+    assert box["started"] == ["MT5-FTMO-Allocator", "MT5-AllocatorFast"]
     assert doc["subscribers"]["ftmo_allocator"]["events"] == ["FILL"]
+    # the growth book hears every account; E8's book does not hear FTMO's fill
+    assert doc["subscribers"]["fusion_allocator"]["events"] == ["FILL"]
     rows = [json.loads(x) for x in Path(at.LEDGER).read_text("utf-8").splitlines()]
     assert rows[0]["subscriber"] == "ftmo_allocator" and rows[0]["events"] == ["FILL"]
 
@@ -71,7 +73,7 @@ def test_equity_toward_the_daily_limit_and_back_both_trigger(box) -> None:
     _run(box, NOW + timedelta(minutes=30))
     _write(at.FTMO_STATE, _ftmo(equity=100_100.0))          # still quarter 0: no event
     _run(box, NOW + timedelta(minutes=45))
-    assert box["started"] == ["MT5-FTMO-Allocator", "MT5-FTMO-Allocator"]
+    assert box["started"].count("MT5-FTMO-Allocator") == 2
 
 
 def test_a_phase_change_triggers(box) -> None:
@@ -96,10 +98,11 @@ def test_a_burst_is_debounced_and_kept_pending(box) -> None:
     _run(box, NOW + timedelta(minutes=1))
     _write(at.FTMO_STATE, _ftmo(open_positions=[]))
     doc = _run(box, NOW + timedelta(minutes=2))                 # inside the 600 s debounce
-    assert box["started"] == ["MT5-FTMO-Allocator"]
+    assert box["started"].count("MT5-FTMO-Allocator") == 1
+    assert box["started"].count("MT5-AllocatorFast") == 2       # its debounce is 60 s
     assert doc["subscribers"]["ftmo_allocator"]["pending"] == ["FILL"]
     doc = _run(box, NOW + timedelta(minutes=12))                # the gap has passed
-    assert box["started"] == ["MT5-FTMO-Allocator"] * 2
+    assert box["started"].count("MT5-FTMO-Allocator") == 2
     assert doc["subscribers"]["ftmo_allocator"]["pending"] == ["FILL"]  # what it dispatched
     assert at._read(at.STATE)["pending"]["ftmo_allocator"] == []
 
@@ -113,7 +116,8 @@ def test_new_acknowledged_door_rows_are_an_order_event(box) -> None:
         fh.write(json.dumps({"at": "2026-11-16T09:01:00+00:00", "caller": "e8_gold:oco_watch",
                              "outcome": "acknowledged"}) + "\n")
     doc = _run(box, NOW + timedelta(minutes=5))
-    assert box["started"] == ["E8-Book"] and doc["subscribers"]["e8_book"]["events"] == ["ORDER"]
+    assert box["started"] == ["E8-Book", "MT5-AllocatorFast"]
+    assert doc["subscribers"]["e8_book"]["events"] == ["ORDER"]
 
 
 def test_e8_daily_room_from_the_guard(box) -> None:

@@ -58,7 +58,10 @@ ROOM_STEP = 0.25
 SUBSCRIBERS: dict[str, tuple[str, str | None, int]] = {
     "ftmo_allocator": ("MT5-FTMO-Allocator", "ftmo", 600),
     "e8_book": ("E8-Book", "e8", 600),
-    "fusion_allocator": ("MT5-AllocatorFast", "fusion", 300),
+    # pf_allocator, the growth book (Max-growth's row, 2026-11-13): growth sizing depends on every
+    # account, so it hears all events; a fast pass is cheap. Not MT5-AllocatorPulse, which
+    # fires the same fast mode off allocator_resolve_request.json and would double-fire.
+    "fusion_allocator": ("MT5-AllocatorFast", None, 60),
 }
 #: order-door caller prefixes per account
 CALLERS = {"ftmo": ("ftmo",), "e8": ("e8",), "fusion": ("gateway", "mt5desk")}
