@@ -1729,9 +1729,10 @@ def retry_budget_hold(budget: dict[str, Any] | None, name: str, side: str, leg: 
     own = float((detail.get("retrying_legs") or {}).get(f"{today}/{name}/{side}") or 0.0)
     held = max(0.0, float(budget.get("committed") or 0.0) - own)
     new_risk = stop * lot * contract
+    # The same check a first send passes: committed slip counted once, the leg's own stop risk
+    # under SLIP_BUFFER (no explicit slip on it at this step).
     fits, why = risk_budget_allows(
-        held, new_risk, float(budget.get("room") or 0.0), committed_slip_counted=slip > 0,
-        new_slip_usd=slip * lot * contract if slip > 0 else None)
+        held, new_risk, float(budget.get("room") or 0.0), committed_slip_counted=slip > 0)
     if not fits:
         return (_ev.R_RISK_BUDGET, f"re-send held: concurrent risk would reach today's floor: "
                                    f"{why}", RISK_BUDGET_RAIL)
@@ -2612,17 +2613,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         book = _CutBook(sized, leg_risk, dists, contract, risk_usd, cuts)
         _apply = book.apply
         # SLIP CHARGED ONCE (should-fix 1): `committed` carries its own fill-through whenever
-        # `committed_risk` measured it with a positive slip, and each leg carries `slip_pts` of
-        # its own; SLIP_BUFFER stands in only where neither is explicit.
+        # `committed_risk` measured it with a positive slip, so it is not grossed up again. The
+        # new leg's stop risk carries no explicit slip at this step (its slip is charged in the
+        # ceiling fit and the floor step), so SLIP_BUFFER still stands in for it here.
         _committed_slip_counted = float(
             (doc.get("committed_risk") or {}).get("slip_points") or 0.0) > 0
-
-        def _leg_slip_usd(side: str, _pts: float = float(slip_pts),
-                          _sized: dict[str, tuple[float, str]] = sized,
-                          _c: float = float(contract)) -> float | None:
-            if not _pts > 0:
-                return None
-            return _pts * float(_sized[side][0]) * _c
 
         def _defer_budget(at_risk: float, budget_why: str, *, window: str = name,
                           held: float = float(committed or 0.0)) -> None:
@@ -2655,15 +2650,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 # A leg the ceiling did NOT shrink is held to the budget exactly as LIVE held the
                 # whole window before the ceiling existed: deferred, never shrunk under a rail
                 # that did not bind it.
-                uncapped = [k for k in sized if k not in before]
+                uncapped = [leg_risk[k] for k in sized if k not in before]
                 if uncapped:
-                    worst = max(uncapped, key=lambda k: leg_risk[k] + _leg_slip_usd(k))
                     fits, budget_why = risk_budget_allows(
-                        committed or 0.0, leg_risk[worst], room,
-                        committed_slip_counted=_committed_slip_counted,
-                        new_slip_usd=_leg_slip_usd(worst))
+                        committed or 0.0, max(uncapped), room,
+                        committed_slip_counted=_committed_slip_counted)
                     if not fits:
-                        _defer_budget(leg_risk[worst], budget_why)
+                        _defer_budget(max(uncapped), budget_why)
                         continue
                 over = ", ".join(f"{k} {v:g}" for k, v in sorted(before.items()))
                 _apply(capped, before, LOT_CEILING_RAIL, LOT_CEILING_REASON,
@@ -2699,14 +2692,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             else:
                 # Only an UNSHRUNK window reaches the exempt R_RISK_BUDGET deferral: the ceiling
                 # fit above runs first and never defers (audit HOLD on v4, must-fix 2).
-                if leg_risk:
-                    worst = max(leg_risk, key=lambda k: leg_risk[k] + _leg_slip_usd(k))
-                    unshrunk_risk, unshrunk_slip = leg_risk[worst], _leg_slip_usd(worst)
-                else:
-                    unshrunk_risk, unshrunk_slip = risk_usd, None
+                unshrunk_risk = max(leg_risk.values()) if leg_risk else risk_usd
                 fits, budget_why = risk_budget_allows(
                     committed or 0.0, unshrunk_risk, room,
-                    committed_slip_counted=_committed_slip_counted, new_slip_usd=unshrunk_slip)
+                    committed_slip_counted=_committed_slip_counted)
                 if not fits:
                     _defer_budget(unshrunk_risk, budget_why)
                     continue
