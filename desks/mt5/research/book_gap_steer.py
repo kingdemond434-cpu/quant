@@ -17,6 +17,11 @@ jumps a priced one: the steer only reorders, so the judge's budget reaches the g
 It re-derives itself every pass from the live book, so as gold or index sleeves go LIVE their gap
 closes on its own. An unreadable or empty book is UNMEASURED and leaves the order exactly as the
 net-edge ranking gave it. Revert path: QUANT_BOOK_GAP_STEER=0.
+
+THE EXOTIC QUOTA (zuck, 2026-11-13 19:46Z) runs after the gap order, always: at most 10% of
+every leading slice of the docket is an exotic (the broker's "forex exotics" class), so at least
+90% of the judge's compute goes to non-exotic markets whatever its budget. Excess exotics wait
+behind every non-exotic, marked `exotic_quota_deferred`; the report carries the realised split.
 """
 
 from __future__ import annotations
@@ -39,6 +44,9 @@ ASIA_SESSIONS = frozenset({"asia", "tokyo", "tokyo_fix", "sydney", "asia_open"})
 CROSS_LEGS = frozenset({"USD", "JPY", "EUR"})
 CROWDED_LEGS = frozenset({"NOK", "CHF"})
 METAL_PREFIXES = ("XAU", "XAG", "XPT", "XPD")
+#: zuck's standing rule (2026-11-13 19:46Z): at least 90% of mining compute goes to non-exotic
+#: markets, at most 10% to exotics. "Exotic" is the broker's own class label ("forex exotics").
+EXOTIC_SHARE = 0.10
 
 
 def _legs(symbol: str) -> tuple[str, ...]:
@@ -169,6 +177,43 @@ class Steer:
         return keyed(priced) + keyed(unpriced)
 
 
+def is_exotic(row: Mapping[str, Any], class_of: Callable[[str], str]) -> bool:
+    try:
+        return "exotic" in str(class_of(str(row.get("symbol") or "").upper()) or "").lower()
+    except Exception:
+        return False
+
+
+def exotic_quota(ordered: list[dict[str, Any]], class_of: Callable[[str], str],
+                 share: float = EXOTIC_SHARE) -> tuple[list[dict[str, Any]], int]:
+    """A HARD prefix quota: in every leading slice the judge can take, exotics hold at most
+    `share` of the slots. An exotic is placed only while (exotics so far + 1) <= share * (slot);
+    the rest wait, in their own order, behind every non-exotic and are marked
+    `exotic_quota_deferred` -- kept and reported, never dropped, reached only once the
+    non-exotic docket is spent. Returns the order and how many were deferred."""
+    out: list[dict[str, Any]] = []
+    waiting: list[dict[str, Any]] = []
+    n_exo = 0
+    for c in ordered:
+        if not is_exotic(c, class_of):
+            out.append(c)
+        else:
+            waiting.append(c)
+        while waiting and (n_exo + 1) <= share * (len(out) + 1):
+            out.append(waiting.pop(0))
+            n_exo += 1
+    for c in waiting:
+        c["exotic_quota_deferred"] = True
+    return out + waiting, len(waiting)
+
+
+def split(rows: list[Mapping[str, Any]], class_of: Callable[[str], str]) -> dict[str, Any]:
+    n = len(rows)
+    exo = sum(1 for c in rows if is_exotic(c, class_of))
+    return {"n": n, "exotic": exo, "non_exotic": n - exo,
+            "exotic_share": round(exo / n, 4) if n else None}
+
+
 def report(before: Iterable[Mapping[str, Any]], after: list[Mapping[str, Any]], steer: Steer,
            top_n: int = 1000) -> dict[str, Any]:
     """Counts per ask: candidates this pass, and how many sit in the first `top_n` before/after."""
@@ -192,12 +237,23 @@ def report(before: Iterable[Mapping[str, Any]], after: list[Mapping[str, Any]], 
 
 
 def apply(ordered: list[dict[str, Any]], *, sleeves: Path = SLEEVES,
-          class_of: Callable[[str], str] | None = None
+          class_of: Callable[[str], str] | None = None, top_n: int = 1000
           ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """The book-gap order, then the 90/10 exotic quota. The quota is a standing rule, so it
+    applies whether the gap steer is measured, unmeasured or switched off."""
     steer = Steer(live_book(sleeves), class_of)
-    if os.environ.get("QUANT_BOOK_GAP_STEER", "1") == "0":
-        rep = report(ordered, ordered, steer)
+    off = os.environ.get("QUANT_BOOK_GAP_STEER", "1") == "0"
+    out = list(ordered) if off else steer.order(list(ordered))
+    out, deferred = exotic_quota(out, steer.class_of)
+    rep = report(ordered, out, steer, top_n)
+    if off:
         rep["status"] = "OFF: QUANT_BOOK_GAP_STEER=0 (revert path)"
-        return ordered, rep
-    out = steer.order(list(ordered))
-    return out, report(ordered, out, steer)
+    rep["exotic_quota"] = {
+        "rule": f"at most {EXOTIC_SHARE:.0%} of every leading slice is exotic "
+                "(broker class 'forex exotics'); the excess waits behind all non-exotics",
+        "max_share": EXOTIC_SHARE, "deferred": deferred,
+        f"first_{top_n}": split(out[:top_n], steer.class_of),
+        "all": split(out, steer.class_of),
+        "before_quota_first_{0}".format(top_n): split(list(ordered)[:top_n], steer.class_of),
+    }
+    return out, rep

@@ -14,7 +14,9 @@ for _p in (str(DESK), str(DESK.parent.parent)):
 
 from research import book_gap_steer as bg  # noqa: E402
 
-CLASSES = {"USDNOK": "forex exotics", "EURNOK": "forex exotics", "USDCHF": "forex",
+# the gap tests label NOK pairs plain forex so the exotic quota does not move them;
+# the quota tests below use the broker's real label
+CLASSES = {"USDNOK": "forex", "EURNOK": "forex", "USDCHF": "forex",
            "EURJPY": "forex", "US500": "indices", "XAUUSD": "commodities"}
 
 
@@ -73,3 +75,36 @@ def test_revert_switch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_the_compiler_carries_the_steer() -> None:
     src = (DESK / "research" / "miner_candidate_compiler.py").read_text("utf-8")
     assert "book_gap_steer as _bg" in src and '"book_gap_steer": gap_note' in src
+
+
+EXOTIC = {"USDNOK": "forex exotics", "USDZAR": "forex exotics", "EURUSD": "forex"}
+
+
+def _exo_class(s: str) -> str:
+    return EXOTIC.get(s, "")
+
+
+def test_exotics_never_exceed_ten_percent_of_any_leading_slice(tmp_path: Path) -> None:
+    ordered = ([_cand("USDNOK", 1.0 - i / 100) for i in range(10)]
+               + [_cand("EURUSD", 0.5 - i / 1000) for i in range(40)])
+    out, rep = bg.apply(ordered, sleeves=tmp_path / "absent.json", class_of=_exo_class,
+                        top_n=20)
+    exo = 0
+    for n, c in enumerate(out, start=1):
+        exo += c["symbol"] == "USDNOK"
+        if n <= 40:                                    # while non-exotics remain to place
+            assert exo <= 0.10 * n, (n, exo)
+    assert len(out) == 50                              # nothing dropped
+    assert rep["exotic_quota"]["deferred"] == 6        # 4 fit in 40 non-exotic slots
+    assert all(c.get("exotic_quota_deferred") for c in out[-6:])
+    assert rep["exotic_quota"]["first_20"]["exotic"] == 2
+    assert rep["exotic_quota"]["before_quota_first_20"]["exotic"] == 10
+
+
+def test_the_quota_holds_with_the_steer_switched_off(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QUANT_BOOK_GAP_STEER", "0")
+    ordered = [_cand("USDZAR", 0.9)] + [_cand("EURUSD", 0.5) for _ in range(9)]
+    out, rep = bg.apply(ordered, sleeves=tmp_path / "absent.json", class_of=_exo_class)
+    assert out[0]["symbol"] == "EURUSD" and out[-1]["symbol"] == "USDZAR"
+    assert rep["status"].startswith("OFF") and rep["exotic_quota"]["all"]["exotic_share"] == 0.1
