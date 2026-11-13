@@ -1,6 +1,7 @@
 """Crowding is measured from CFTC positioning, proposed two-sided, and only as far as evidenced."""
 from __future__ import annotations
 
+import contextlib
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -97,3 +98,43 @@ def test_tff_rows_parse_leveraged_funds_net_of_open_interest() -> None:
     s = C._net_tff(rows)
     assert abs(float(s.iloc[0]) - 0.2) < 1e-12
     assert C._net_tff([{"report_date_as_yyyy_mm_dd": "2026-11-03"}]).empty
+
+
+def test_robots_is_evaluated_for_the_agent_cot_source_sends(monkeypatch) -> None:
+    """robots.txt disallowing only the agent the CFTC fetch sends refuses it (audit MF3)."""
+    import io
+    import urllib.request
+
+    from libs.data import datahub_feeds as F
+
+    sent: list[str] = []
+
+    def fake(req, *_a, **_k):
+        ua = req.get_header("User-agent")
+        sent.append(ua)
+        if req.full_url.endswith("/robots.txt"):
+            return io.BytesIO(b"User-agent: quant-research\nDisallow: /\n\n"
+                              b"User-agent: *\nAllow: /\n")
+        raise AssertionError("a refused feed was requested")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    F._ROBOTS.clear()
+    gate = C.robots_gate()
+    assert gate(C.CS._BASE) and gate(C.TFF_BASE)
+    assert F.robots_refusal(C.CS._BASE) is None        # datahub's agent would have passed
+    assert set(sent) == {C.COT_AGENT, F.UA}
+    F._ROBOTS.clear()
+
+
+def test_the_gate_agent_is_the_agent_cot_source_sends(monkeypatch) -> None:
+    import urllib.request
+    seen: list[str] = []
+
+    def fake(req, *_a, **_k):
+        seen.append(req.get_header("User-agent"))
+        raise OSError("stop")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    with contextlib.suppress(OSError):
+        C.CS._get("https://publicreporting.cftc.gov/resource/x.json")
+    assert seen == [C.COT_AGENT]

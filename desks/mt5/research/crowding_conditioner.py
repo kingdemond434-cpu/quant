@@ -216,6 +216,18 @@ def build(*, legacy: Callable[[str], pd.Series], tff: Callable[[str], pd.Series]
     return doc
 
 
+#: The User-Agent `cot_source._get` sends; robots is evaluated for exactly this agent (audit MF3).
+COT_AGENT = "quant-research"
+
+
+def robots_gate() -> Callable[[str], str | None]:
+    from libs.data.datahub_feeds import robots_refusal
+
+    def gate(url: str) -> str | None:
+        return robots_refusal(url, agent=COT_AGENT)
+    return gate
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--offline", action="store_true", help="no network: refuse both feeds")
@@ -230,9 +242,8 @@ def main(argv: list[str] | None = None) -> int:
     if not a.force and age_h is not None and age_h < REBUILD_H:
         print(json.dumps({"fresh": True, "age_h": round(age_h, 2)}))
         return 0
-    from libs.data.datahub_feeds import robots_refusal
     refuse: Callable[[str], str | None] = (
-        (lambda _u: "offline run") if a.offline else robots_refusal)
+        (lambda _u: "offline run") if a.offline else robots_gate())
     doc = build(legacy=CS.fetch_net_spec, tff=fetch_tff, refusal=refuse,
                 closes=_load_closes(), now=now)
     OUT.parent.mkdir(parents=True, exist_ok=True)
