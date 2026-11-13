@@ -94,6 +94,17 @@ from shipping_miner import run_and_save as shipping_mine
 from china_miner import run_and_save as china_mine
 from korea_miner import run_and_save as korea_mine
 
+
+def regional_survivors_mine() -> list:
+    """The fourteen regional copy-trade / PAMM grounds (equiti_copy, octa_masters, hfm_pamm,
+    followme_cn, minfx_jp, ...). Their only clock was the VPS seed-miner timer, whose ship
+    stopped 2026-11-03, so every one of those seats went dark. The hunters carry their own
+    access gate (robots.txt, hard stops, terms and login rows), and the run is budgeted inside
+    this suite's per-miner timeout so it is never killed mid-write."""
+    from regional_survivor_hunters import run_and_save as _hunt
+    res = _hunt(budget_s=max(30.0, MINER_TIMEOUT_S - 45.0))
+    return [r for v in res.values() for r in v.get("discoveries", [])]
+
 # truth_social_miner is class-based (TruthSocialCollector), no run_and_save.
 # Silently skipped.
 
@@ -130,6 +141,7 @@ ALL_MINERS = [
     # Regional
     ("china", china_mine),
     ("korea", korea_mine),
+    ("regional_survivors", regional_survivors_mine),
 ]
 
 
