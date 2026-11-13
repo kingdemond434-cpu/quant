@@ -33,6 +33,8 @@ PINNED = {
     "placement_health", "placement_pass", "placement_pass_clock", "placement_tick_broker",
     "placement_tick_utc", "position", "rails_logged", "restart_reconcile", "scalp",
     "vetoed_today",
+    # the recovery gates' state (#1071): verdicts, deal-clock stamps and residual volumes
+    "book_consistency", "book_inconsistent", "close_residual", "position_snapshot_msc",
 }
 
 
