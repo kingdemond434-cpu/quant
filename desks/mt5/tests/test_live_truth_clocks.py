@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,9 @@ from libs.execution.digital_twin import join_cases  # noqa: E402
 from research import decay_monitor as D  # noqa: E402
 
 NAME = "gold_asia"
-T = "2026-09-29T09:00:00+00:00"
+# Inside decay_monitor.TRAIL_DAYS (45) of NOW, not a fixed date: the fixed 2026-09-29 aged out of
+# the trailing window on 2026-11-13 and every decay test here read zero trades.
+T = (datetime.now(tz=UTC) - timedelta(days=1)).replace(microsecond=0).isoformat()
 
 
 def _ledger(tmp_path, monkeypatch, rows: list[dict]) -> None:
