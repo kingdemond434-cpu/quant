@@ -195,4 +195,7 @@ def desk_hub() -> DataHub:
                           providers=[Provider("broker_swaps", _swap, "primary")]))
     hub.register(Contract("calendar.events", "rows", description="ForexFactory vintage rows",
                           providers=[Provider("ff_calendar_vintage", _calendar, "primary")]))
-    return hub
+    # The rest of the desk's contracts, with the clock that refreshes each and the families that
+    # read it, live beside the coverage audit that checks both (libs/data/datahub_desk.py).
+    from libs.data.datahub_desk import extend
+    return extend(hub)

@@ -1334,6 +1334,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
+                     "flow_toxicity", "datahub_coverage", "tool_registry",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
@@ -3772,6 +3773,41 @@ def tape_features() -> dict:
     return _producer("tape_features", "recorders/tape_features.py", ("--days", "10"))
 
 
+def flow_toxicity() -> dict:
+    """TICK-TAPE FLOW, TOXICITY, IMPACT AND SPREAD REGIME, accumulated past the tape's window.
+
+    `research/flow_toxicity_miner.py` folds every new tick day file into
+    `data/lake/series/micro_<SYM>.parquet` (tick-rule flow, sign-only quote imbalance, VPIN-style
+    toxicity, Kyle-lambda impact, spread-regime rank per H1 bar, stamped at bar close), proposes
+    `exogenous_conditioner` / `alt_series_momentum` cells on those series through the shared
+    proposer screen and donor door, and re-probes venue depth weekly. Writes
+    `reports/FLOW_TOXICITY.json`. On a host with no tape it says UNMEASURED and why.
+    """
+    return _producer("flow_toxicity", "research/flow_toxicity_miner.py", "--budget-s", "600")
+
+
+def datahub_coverage() -> dict:
+    """WHICH DATAHUB CONTRACTS ARE REFRESHED AND REACH JUDGED CELLS, per contract, every hour.
+
+    `scripts/datahub_coverage.py` (logic in `libs/data/datahub_desk.py`) resolves each contract's
+    declared clocks with the Tier-1 checker's own resolver and counts the judged verdicts its
+    cells have earned; writes `reports/DATAHUB_COVERAGE.json`. A contract with no clock or no
+    consumer is named as a defect there.
+    """
+    return _producer("datahub_coverage", "scripts/datahub_coverage.py")
+
+
+def tool_registry() -> dict:
+    """THE TYPED REGISTRY OF THE DESK'S ANALYTICS TOOLS, verified importable every hour.
+
+    `scripts/build_tool_registry.py` (logic in `libs/research/tool_registry.py`) imports every
+    registered tool, checks its declared inputs against its real signature and its DataHub
+    contracts against `desk_hub()`, and writes `reports/TOOL_REGISTRY.json` -- the catalogue the
+    research agents and LLM seats discover tools from. Propose-only: no tool has sizing authority.
+    """
+    return _producer("tool_registry", "scripts/build_tool_registry.py")
+
+
 def futures_lead_lag() -> dict:
     """THE CLOCK THE DESK'S BARS ARE ON, measured against a venue whose clock cannot be wrong.
 
@@ -4239,6 +4275,9 @@ def main() -> None:
     mx = _costed("microstructure_census", microstructure_census)
     sp = _costed("spread_provenance", spread_provenance)
     tf = _costed("tape_features", tape_features)
+    ftx = _costed("flow_toxicity", flow_toxicity)
+    dhc = _costed("datahub_coverage", datahub_coverage)
+    treg = _costed("tool_registry", tool_registry)
     fll = _costed("futures_lead_lag", futures_lead_lag)
     bcp = _costed("bar_clock_probe", bar_clock_probe)
     tj = _costed("time_joins", time_joins)
@@ -6650,6 +6689,7 @@ def main() -> None:
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
+                    "flow_toxicity": ftx, "datahub_coverage": dhc, "tool_registry": treg,
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
                     "fred_macro": fm,
