@@ -184,7 +184,7 @@ class _CancelVenue(_RetryVenue):
 def test_an_abandoned_send_that_had_landed_is_landed_abandoned(monkeypatch, tmp_path) -> None:
     sent_ms = g._iso_ms(_LEG["first_at"])
     book = [{"id": 42, "side": "buy", "stopPrice": 4340.0, "tradableInstrumentId": 316,
-             "qty": 0.5, "createdDate": sent_ms + 2_000}]
+             "qty": 0.5, "type": "stop", "createdDate": sent_ms + 2_000}]
     v = _CancelVenue()
     st = _retry_state()
     d = _retry(monkeypatch, tmp_path, v, st, hour=13.5, open_orders=book)

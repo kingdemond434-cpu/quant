@@ -368,7 +368,7 @@ def test_a_successful_re_send_is_a_placed_row(monkeypatch, tmp_path) -> None:
 def test_an_adopted_landed_send_is_a_placed_row(monkeypatch, tmp_path) -> None:
     sent_ms = g._iso_ms(_LEG["first_at"])
     book = [{"id": 42, "side": "buy", "stopPrice": 4340.0, "tradableInstrumentId": 316,
-             "qty": 0.5, "createdDate": sent_ms + 2_000}]
+             "qty": 0.5, "type": "stop", "createdDate": sent_ms + 2_000}]
     v = _RetryVenue()
     d = _retry(monkeypatch, tmp_path, v, _retry_state(), open_orders=book)
     assert v.sent == [] and _outcomes(d) == [("asia", ev.PLACED, ev.R_PLACED)]
