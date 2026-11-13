@@ -265,6 +265,81 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "execution_reconcile": {
+   "hypothesis": "Joining the venue's positions, the order door's ledger, the intents and the deal ledger every hour, and drilling the join in shadow against planted partial fills, lost acknowledgements, stopless restarts and duplicate messages, surfaces any execution or accounting inconsistency as a named BREAK before it compounds.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "live.breaks",
+    "better": "down",
+    "organ": "report:EXECUTION_RECONCILE.json"
+   },
+   "falsifier": {
+    "metric": "drill.passed",
+    "op": "<=",
+    "threshold": 7,
+    "after": "any reading in which fewer than 8 of the drill's scenarios pass: the join no longer catches the breaks it was built to catch and its live verdict means nothing"
+   }
+  },
+  "load_isolation": {
+   "hypothesis": "Timing the gateway's own pure decision code hourly while one busy worker per core runs a priority class below it, with an equal-priority control arm, and censusing every research process's priority against the trading side's, turns 'experimental work is separated from trading' from a convention in task installers into a measured PASS/FAIL before research load ever starves a live placement.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "load.separated_p99_ratio",
+    "better": "down",
+    "organ": "report:LOAD_ISOLATION.json"
+   },
+   "falsifier": {
+    "metric": "load.equal_p99_ratio",
+    "op": "<=",
+    "threshold": 1.0,
+    "after": "14 days of box readings in which the equal-priority control never degrades the probe's p99: the drill cannot see starvation on this host and its PASS means nothing"
+   }
+  },
+  "component_use": {
+   "hypothesis": "Joining every clocked organ with its declared role, its tests, its consumers and whether any consumer is tested, hourly, and ratcheting the gapped count down in the law gate, turns 'every component is used, not a museum' into a falling number: organs that run without a tested reader are named until they get one or are declared zero-weight redundant.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.GAPPED",
+    "better": "down",
+    "organ": "report:COMPONENT_USE.json"
+   },
+   "falsifier": {
+    "metric": "used_share",
+    "op": "<",
+    "threshold": 0.6,
+    "after": "any reading in which fewer than 60% of clocked organs are USED (0.672 at the 2026-11-10 baseline): new organs are landing without tested readers faster than gaps close, so the fence is not stopping the museum"
+   }
+  },
+  "acceptance_drills": {
+   "hypothesis": "Grading the eight acceptance drills ARCH-18 names from the recovery scorecard every hour and publishing each as a runtime proof the acceptance package audits keeps the package from reading a function CURRENT_VERIFIED while the drill that proves it has never run or has failed.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.FAIL",
+    "better": "down",
+    "organ": "report:ACCEPTANCE_DRILLS.json"
+   },
+   "falsifier": {
+    "metric": "counts.UNMEASURED",
+    "op": ">=",
+    "threshold": 8,
+    "after": "30 days of box readings in which all eight drills stay UNMEASURED: the scorecard it grades is not running and the board proves nothing"
+   }
+  },
+  "institution_design": {
+   "hypothesis": "Deriving one consolidated design from the component registry every hour -- interfaces, timing, state ownership, uncertainty, failure handling and resource budgets -- and naming every contradiction between them with its precedence rule replaces addenda with a single current design whose contradiction count the desk can drive down.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "contradictions.n",
+    "better": "down",
+    "organ": "report:INSTITUTION_DESIGN.json"
+   },
+   "falsifier": {
+    "metric": "contradictions.n",
+    "op": ">",
+    "threshold": 160,
+    "after": "30 days of box readings in which the contradiction count rises past 1.5x its 2026-11-10 baseline of 106: the design names conflicts nobody resolves, so it is one more addendum"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

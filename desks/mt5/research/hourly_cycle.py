@@ -1190,7 +1190,13 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
-    "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    "stamp_freshness", "time_joins", "layer_census", "opportunity_cost",
+    # ARCH-33: every clocked organ's role, test, consumer and tested consumer; the census after it
+    # carries its counts.
+    "component_use", "dead_architecture",
+    # ONE CONSOLIDATED DESIGN (ARCH-31): interfaces, timing, ownership, budgets and the named
+    # contradictions between them, derived from the registry every pass (~6 s).
+    "institution_design",
     # Whether each ruin rail can reach its input, and the halt's REAL age -- capital-path class, so
     # it runs every pass and never waits for a rotation (scripts/check_halt_rail_integrity.py).
     "halt_rail",
@@ -1263,7 +1269,15 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
-    "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
+    # THE EXECUTION RECONCILIATION (ARCH-06) runs just before the scorecard that grades it
+    # (`recovery_drills` row `reconciliation`): it joins the account book to the order door's
+    # ledger, the intents and the deals, and drills the join in shadow.
+    # THE LOAD AND SEPARATION DRILLS (ARCH-07) run just before the scorecard that grades them
+    # (`recovery_drills` rows `load` and `workload_separation`): ~8 s of one-class-lower load.
+    # THE EIGHT ACCEPTANCE DRILLS (ARCH-18) are graded from the scorecard just written and
+    # published as runtime proofs for the acceptance package.
+    "ops_redundancy", "execution_reconcile", "load_isolation", "recovery_drills",
+    "acceptance_drills", "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -2081,6 +2095,16 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ARCH-07 load drill: three 2 s arms plus worker start-up (~8 s measured); the cap leaves room
+    # for an interpreter cold start on a loaded box and is far below any search leg.
+    "load_isolation": 90,
+    # ARCH-33 component use: the dead-architecture census (~15 s measured) plus one pass over the
+    # test files' import lines; the cap covers a cold disk on the box.
+    "component_use": 180,
+    # ARCH-18 acceptance drills: reads one scorecard and writes nine small files (<1 s measured).
+    "acceptance_drills": 60,
+    # ARCH-31 institution design: one registry build (~6-16 s measured) and a few joins.
+    "institution_design": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6347,8 +6371,20 @@ def main() -> None:
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
         "ops_redundancy", "research/ops_redundancy.py"))
+    # ARCH-06: the positions / door ledger / intents reconciliation, graded by recovery_drills.
+    xrc = _costed("execution_reconcile", lambda: _producer(
+        "execution_reconcile", "research/execution_reconcile.py"))
+    # ARCH-07: the trading path's latency under research load, and every research process's
+    # priority below the trading side's -- graded by recovery_drills.
+    lis = _costed("load_isolation", lambda: _producer(
+        "load_isolation", "research/load_isolation_drill.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
+    # ARCH-18: replay, information freshness, model-to-decision, no duplicate execution,
+    # reconciliation, rollback+restore, research under load and latency without excess trading,
+    # each graded from the scorecard above and published as an acceptance runtime proof.
+    acd = _costed("acceptance_drills", lambda: _producer(
+        "acceptance_drills", "research/acceptance_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -6364,6 +6400,15 @@ def main() -> None:
     slw = _costed("scaling_laws", lambda: _producer("scaling_laws", "libs/ops/scaling_laws.py"))
     # WHICH ORGANS HAVE ANYTHING ON THE OTHER END (Tier-1 item I4). Report only: nothing is
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
+    # EVERY SCHEDULED COMPONENT USED, NOT A MUSEUM (ARCH-33): a role, a test, a consumer and a
+    # tested consumer per clocked organ; GAPPED ratchets down in the law gate's state fences.
+    cus = _costed("component_use", lambda: _producer(
+        "component_use", "scripts/check_component_use.py"))
+    # THE CONSOLIDATED DESIGN, DERIVED (ARCH-31): the component registry's interfaces, timing,
+    # state ownership, uncertainty, failure handling and budgets, and every contradiction between
+    # them with its precedence rule. Report only.
+    ids = _costed("institution_design", lambda: _producer(
+        "institution_design", "scripts/build_institution_design.py"))
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
     # EVERY SILENT ORGAN, BY NAME (CRO noon 2026-09-30: "101 silent scheduled failures" was a sum
@@ -6619,11 +6664,13 @@ def main() -> None:
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "recovery_drills": rcd,
+                    "execution_reconcile": xrc, "load_isolation": lis,
+                    "recovery_drills": rcd, "acceptance_drills": acd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
-                    "producer_census": prdc,
+                    "component_use": cus, "institution_design": ids,
+                    "dead_architecture": dac, "silent_organs": sil,
+                    "halt_rail": hri, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,

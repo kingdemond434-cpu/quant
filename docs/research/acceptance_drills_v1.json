@@ -1,0 +1,220 @@
+{
+ "specification": "ACCEPTANCE_DRILLS_V1_20261007",
+ "status": "ARCHITECTURAL_ACCEPTANCE",
+ "scope": "the eight acceptance drills ARCH-18 names, each run in shadow by the organ that owns it and graded from recovery_drills' scorecard by desks/mt5/research/acceptance_drills.py; never evidence of alpha",
+ "source": "principal directive 2026-10-07 (ARCH-18, institutional truth discipline fixes)",
+ "requirements": [
+  {
+   "id": "AD01",
+   "title": "acceptance drill in shadow -- replay: a decision reproduced from its recorded state",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/research/state_replay_audit.py",
+    "desks/mt5/research/ops_redundancy.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/replay.json"
+   ],
+   "proving_rows": [
+    "reproducibility",
+    "journal_replay"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD02",
+   "title": "acceptance drill in shadow -- fresh, stale and revised information handled point in time",
+   "priority": "P0",
+   "lane": "research",
+   "implementation": [
+    "scripts/check_pit_canaries.py",
+    "desks/mt5/mt5desk/desk_staleness.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/information_freshness.json"
+   ],
+   "proving_rows": [
+    "stale_data",
+    "stale_quote",
+    "revision_leakage"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD03",
+   "title": "acceptance drill in shadow -- model to decision: malformed beliefs refused, missing quote refused",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/research/forecast_contract.py",
+    "desks/mt5/mt5desk/gateway.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/model_to_decision.json"
+   ],
+   "proving_rows": [
+    "malformed_forecast",
+    "no_quote"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD04",
+   "title": "acceptance drill in shadow -- no duplicate execution: in-doubt resend refused, one order authority",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/mt5desk/order_door.py",
+    "desks/mt5/research/ops_redundancy.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/no_duplicate_execution.json"
+   ],
+   "proving_rows": [
+    "duplicate_delivery",
+    "duplicate_positions",
+    "missing_ack"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD05",
+   "title": "acceptance drill in shadow -- reconciliation: positions, deals and the internal ledger agree",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/research/execution_reconcile.py",
+    "desks/mt5/research/recovery_drills.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/reconciliation.json"
+   ],
+   "proving_rows": [
+    "reconciliation",
+    "account_ledger",
+    "restore_reconcile"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD06",
+   "title": "acceptance drill in shadow -- rollback to the last sealed release and restore from backup",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "libs/tiers/rollback.py",
+    "desks/mt5/scripts/offsite_backup.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/rollback_restore.json"
+   ],
+   "proving_rows": [
+    "rollback",
+    "backup_restore",
+    "offbox_restore"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD07",
+   "title": "acceptance drill in shadow -- research under load leaves the trading path its latency and priority",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/research/load_isolation_drill.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/research_under_load.json"
+   ],
+   "proving_rows": [
+    "load",
+    "workload_separation"
+   ],
+   "blockers": []
+  },
+  {
+   "id": "AD08",
+   "title": "acceptance drill in shadow -- latency without excess trading: the trading path stays fast and sends no duplicate or unintended order",
+   "priority": "P0",
+   "lane": "production",
+   "implementation": [
+    "desks/mt5/research/load_isolation_drill.py",
+    "desks/mt5/research/execution_reconcile.py",
+    "desks/mt5/research/acceptance_drills.py"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_acceptance_drills.py",
+    "desks/mt5/tests/test_recovery_drills.py"
+   ],
+   "consumers": [
+    "desks/mt5/research/global_research_acceptance.py"
+   ],
+   "runtime": [
+    "desks/mt5/reports/acceptance_drills/latency_without_excess_trading.json"
+   ],
+   "proving_rows": [
+    "load",
+    "duplicate_positions",
+    "reconciliation"
+   ],
+   "blockers": []
+  }
+ ]
+}

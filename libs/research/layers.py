@@ -97,6 +97,8 @@ LEG_LAYER: dict[str, str] = {
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
+    "component_use": "meta",
+    "institution_design": "meta",
     "silent_organs": "meta",
     # Whether each ruin rail can reach its input, and how old the trading halt really is: this
     # measures the ORDER path's own brakes, not the research machine, so it is execution rather
@@ -258,7 +260,8 @@ LEG_LAYER: dict[str, str] = {
     "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
-    "recovery_drills": "meta",
+    "recovery_drills": "meta", "execution_reconcile": "execution",
+    "load_isolation": "meta", "acceptance_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",

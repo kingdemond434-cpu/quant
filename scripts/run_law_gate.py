@@ -262,6 +262,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # canon holding n=0 and 46.7h stale. Portable: it reads the tree and one tracked module, so a
     # fresh clone and the box get the same answer; no desk state required.
     ("check_no_retirement_on_absence.py", ()),
+    # FIXTURE ISOLATION (ARCH-17, 2026-11-10). The adversary's poison canaries and the placebo
+    # audit's positive control are synthetic strategies handed to the real gauntlet every hour,
+    # and the positive control is built to pass it. This reads the survivor register, the
+    # certificate provenance, the sleeve roster and registry, the forward reconcile and the live
+    # deal ledger, and fails when one of those identities stands in any of them. The markers are
+    # proved from the producers' own source. It removes nothing; an absent record is UNMEASURED.
+    ("check_fixture_isolation.py", ()),
     # REGIONAL PARITY (LAWS 5n, principal 2026-09-19). No region absent: every regional forest
     # resolves a country pack or runs a dedicated region package. Depth, coverage debt and the
     # Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute +
@@ -624,6 +631,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # timer or trim a budget, which would be a reduction in aggressiveness with no E[log W] proof.
     # Portable: it reads the tree and the manifest, so it means the same in CI and on the box.
     ("check_dead_architecture.py", ("--ratchet",)),
+    # EVERY SCHEDULED COMPONENT USED (ARCH-33, principal 2026-10-07: "not a museum"). Each clocked
+    # organ needs a role (layer or box task), a test, a consumer and a tested consumer, or a
+    # declared ZERO_WEIGHT redundancy; the GAPPED count ratchets DOWN only. STATE, like the census
+    # it extends: a red here must not wedge the push that heals it. It removes nothing.
+    ("check_component_use.py", ("--ratchet", "--no-write")),
     # THE MONEY BRAIN PRODUCED, PROVED AND PUBLISHED THIS CYCLE (principal 2026-09-23). The heat
     # fence above asks whether the FLOOR is deployed; this one asks whether the allocator RAN at
     # all, whether its certificate is still alive, whether each input it conditioned on is inside

@@ -911,6 +911,22 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/compute_ledger.jsonl",)),
     Node("hourly_cycle", "desks/mt5/research/hourly_cycle.py",
          writes=("desks/mt5/data/sync_marker.json",)),
+    # ARCH-07: the trading path's latency under research load and the research/trading priority
+    # census, hourly; graded by recovery_drills (rows `load`, `workload_separation`).
+    Node("load_isolation", "desks/mt5/research/load_isolation_drill.py",
+         writes=("desks/mt5/reports/LOAD_ISOLATION.json",)),
+    # ARCH-33: role, test, consumer and tested consumer per clocked organ, hourly; the
+    # dead-architecture census carries its counts.
+    Node("component_use", "scripts/check_component_use.py",
+         writes=("desks/mt5/reports/COMPONENT_USE.json",)),
+    # ARCH-18: the eight acceptance drills graded from recovery_drills' scorecard, published as
+    # the runtime proofs the acceptance addendum (docs/research/acceptance_drills_v1.json) reads.
+    Node("acceptance_drills", "desks/mt5/research/acceptance_drills.py",
+         writes=("desks/mt5/reports/ACCEPTANCE_DRILLS.json",
+                 "desks/mt5/reports/acceptance_drills/")),
+    # ARCH-31: the consolidated design derived from the component registry, hourly.
+    Node("institution_design", "scripts/build_institution_design.py",
+         writes=("desks/mt5/reports/INSTITUTION_DESIGN.json",)),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
@@ -929,6 +945,9 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # ARCH-31's derived design: read by a person, and rendered into
+    # docs/research/INSTITUTION_DESIGN.md; its contradictions name owners to act. Decides nothing.
+    "desks/mt5/reports/INSTITUTION_DESIGN.json",
     # The SRB basket judgement: no organ reads it yet (no basket is promotable from it -- the
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
@@ -1054,6 +1073,16 @@ HUMAN_READ = frozenset({
 #: prospector's targets, the box's PowerShell reads the manifest. DECLARED, so a DEAD_PRODUCER
 #: verdict cannot be silenced by an unnamed "something reads it".
 EXTERNAL_READERS = {
+    "desks/mt5/reports/LOAD_ISOLATION.json": ("recovery_drills (rows load and "
+                                              "workload_separation), the failure-mode "
+                                              "scorecard read by the acceptance package"),
+    "desks/mt5/reports/COMPONENT_USE.json": ("scripts/check_dead_architecture.py (its "
+                                             "component_use block) and the law gate's "
+                                             "check_component_use --ratchet state fence"),
+    "desks/mt5/reports/ACCEPTANCE_DRILLS.json": ("a person (the drill board); the per-drill "
+                                                 "proofs beside it are what the audit reads"),
+    "desks/mt5/reports/acceptance_drills/": ("global_research_acceptance.audit via the "
+                                             "ACCEPTANCE_DRILLS_V1 addendum (AD01-AD08)"),
     "desks/mt5/reports/STYLE_NOVELTY.json": ("judge_coverage.rank_by_value's novelty factor and "
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),

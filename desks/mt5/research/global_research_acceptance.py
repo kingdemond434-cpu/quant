@@ -113,6 +113,24 @@ def _runtime_proof(path: Path, *, instant: datetime,
             "claimed_release": claimed_release or None, "proof_errors": reasons}, reasons
 
 
+def publication(req: dict[str, Any], runtime_rows: list[dict[str, Any]], missing: list[str],
+                release: str) -> dict[str, Any]:
+    """ARCH-18's six fields per requirement, in one place a reader does not have to assemble:
+    where it is implemented, which release ran it, what behaviour its tests pin, when its newest
+    runtime evidence was stamped, what still blocks it, and whether it touches research or
+    production. Derived from the same checks as the status; nothing here is asserted."""
+    ages = [r.get("age_h") for r in runtime_rows if isinstance(r.get("age_h"), (int, float))]
+    return {"implementation_path": list(req.get("implementation") or []),
+            "runtime_identity": {"release": release,
+                                 "claimed": sorted({str(r.get("claimed_release"))
+                                                    for r in runtime_rows
+                                                    if r.get("claimed_release")})},
+            "tested_behaviour": list(req.get("tests") or []),
+            "evidence_age_h": min(ages) if ages else None,
+            "remaining_blocker": missing[0] if missing else None,
+            "impact": req.get("lane") or "UNDECLARED"}
+
+
 def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT,
           now: datetime | None = None) -> dict[str, Any]:
     instant = now or datetime.now(tz=UTC)
@@ -170,7 +188,8 @@ def audit(*, root: Path = ROOT, manifest: Path = MANIFEST, report: Path = REPORT
                      "specification": req.get("specification") or spec["specification"],
                      "lane": req.get("lane") or "UNDECLARED",
                      "status": "CURRENT_VERIFIED" if not missing else "PARTIAL",
-                     "missing_evidence": missing, "blockers": blockers, "checks": checks})
+                     "missing_evidence": missing, "blockers": blockers, "checks": checks,
+                     "publication": publication(req, runtime_rows, missing, release)})
     counts = {status: sum(r["status"] == status for r in rows)
               for status in ("CURRENT_VERIFIED", "PARTIAL")}
     by_spec: dict[str, dict[str, int]] = {}

@@ -46,6 +46,8 @@ FORECAST = REPORTS / "FORECAST_CONTRACT.json"
 REPLAY = REPORTS / "STATE_REPLAY_PARITY.json"
 RELEASE = DATA / "release_identity.json"
 LIMITS = REPORTS / "LIMITS_CENSUS.json"
+RECONCILE = REPORTS / "EXECUTION_RECONCILE.json"
+LOAD = REPORTS / "LOAD_ISOLATION.json"
 ACCOUNT = DATA / "account_state.json"
 STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 
@@ -271,6 +273,31 @@ def _account(now: datetime) -> dict[str, Any]:
                 f"balance, equity, margin and swap; {n_book} position(s) in the book")
 
 
+def _reconciliation(now: datetime) -> dict[str, Any]:
+    """ARCH-06: positions vs the door ledger vs the intents, drilled and live."""
+    doc, miss = _artifact(RECONCILE, 3.0, now)
+    if miss:
+        return miss
+    d = doc or {}
+    dr, lv = d.get("drill") or {}, d.get("live") or {}
+    ev = "reports/EXECUTION_RECONCILE.json"
+    if dr.get("verdict") == "FAIL":
+        bad = [s.get("scenario") for s in dr.get("scenarios") or [] if s.get("verdict") == "FAIL"]
+        return _row(FAIL, ev, f"the reconciliation drill missed {bad}")
+    if lv.get("verdict") == "BREAKS":
+        kinds = [f.get("check") for f in lv.get("findings") or []
+                 if f.get("severity") == "BREAK"]
+        return _row(FAIL, ev, f"{lv.get('breaks')} live ledger break(s): {kinds[:6]}")
+    if dr.get("verdict") != "PASS":
+        return _row(UNMEASURED, ev, f"drill {dr.get('verdict')}")
+    if lv.get("verdict") != "RECONCILED":
+        return _row(UNMEASURED, ev, f"drill {dr.get('passed')}/{dr.get('n')} passed in shadow; "
+                                    f"the live join is {lv.get('verdict')} "
+                                    f"(absent {lv.get('absent')})")
+    return _row(PASS, ev, f"drill {dr.get('passed')}/{dr.get('n')}; live positions, door ledger "
+                          f"and intents reconcile ({lv.get('rows')})")
+
+
 def _resources(now: datetime) -> dict[str, Any]:
     p = next((x for x in STALL if x.exists()), STALL[0])
     doc, miss = _artifact(p, 1.0, now)
@@ -295,6 +322,17 @@ def _resources(now: datetime) -> dict[str, Any]:
                 "research and never touches the money path",
                 gap="research yields cores, but nothing at the OS level reserves CPU or memory "
                     "for the gateway ahead of research")
+
+
+def _load_part(part: str, label: str, now: datetime) -> dict[str, Any]:
+    """ARCH-07: one half of reports/LOAD_ISOLATION.json (the hourly `load_isolation` leg)."""
+    doc, miss = _artifact(LOAD, 3.0, now)
+    if miss:
+        return miss
+    d = (doc or {}).get(part) or {}
+    v = str(d.get("verdict") or "")
+    return _row(v if v in (PASS, FAIL) else UNMEASURED, f"reports/LOAD_ISOLATION.json {part}",
+                f"{label}: {d.get('why') or 'no reading'}")
 
 
 def _replay(now: datetime) -> dict[str, Any]:
@@ -348,6 +386,10 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
      _gap("no sequencing of broker updates anywhere in mt5desk/: a stale positions read after "
           "a newer deal is taken at face value",
           FILL_ORDER_SPEC)),
+    ("load", "research under load: the trading path keeps its latency",
+     lambda n: _load_part("load", "trading-path p99 under one-class-lower research load", n)),
+    ("workload_separation", "experimental workloads separated from trading",
+     lambda n: _load_part("separation", "research vs trading process priorities", n)),
     ("stale_data", "stale data / stale source", _stale),
     ("stale_quote", "one symbol's quote stale while the terminal is connected",
      lambda n: _gateway(("stale_tick",), n)),
@@ -368,6 +410,8 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
      lambda n: _ops_component("terminal_health", n, "terminal")),
     ("reboot", "box reboot and recovery", _reboot),
     ("account_ledger", "authoritative positions, cash, margin, financing", _account),
+    ("reconciliation", "positions vs deals vs the internal ledger: partial fills, missing "
+     "acks, restarts, duplicate messages", _reconciliation),
     ("reproducibility", "reproduce a decision from its inputs", _replay),
     ("secrets", "secrets never published",
      _ci("tests/ops/test_live_infrastructure_is_not_published.py",

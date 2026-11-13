@@ -1,0 +1,4 @@
+{
+ "doc": "ARCH-33: components kept scheduled at zero weight because they are redundant with another. Each entry needs path (repo-relative), reason and redundant_with; scripts/check_component_use.py counts them ZERO_WEIGHT instead of GAPPED. Empty means no redundancy has been declared.",
+ "components": []
+}
