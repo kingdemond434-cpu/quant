@@ -59,7 +59,7 @@ import json
 import sys
 import time
 from collections import OrderedDict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 
@@ -272,6 +272,12 @@ MACRO_PUBLICATION_LAG_D = 1
 MACRO_RANK_MIN_OBS = 250
 
 
+def _data_os():
+    """`libs.tiers.data_os` -- the point-in-time doors (the repo root is on sys.path above)."""
+    from libs.tiers import data_os
+    return data_os
+
+
 def _macro_series(index, name: str | None = None):
     """A POINT-IN-TIME macro regime series on the bar clock, or None. Never a broadcast scalar.
 
@@ -313,8 +319,14 @@ def _macro_series(index, name: str | None = None):
         rank = s.expanding(min_periods=MACRO_RANK_MIN_OBS).rank(pct=True).dropna()
         if rank.empty:
             continue
-        rank.index = rank.index + pd.Timedelta(days=MACRO_PUBLICATION_LAG_D)
-        out = rank.reindex(rank.index.union(index)).ffill().reindex(index)
+        # READ AS KNOWN AT EACH BAR, THROUGH THE BITEMPORAL STORE (Tier S AC3, 2026-10-06):
+        # `data_os.pit_align` is `BitemporalStore.latest_known` at every bar stamp, knowledge =
+        # valid + the DECLARED fred_macro lag (27h: a day plus the broker offset) or the series'
+        # own cadence entry -- and never less than MACRO_PUBLICATION_LAG_D. The old shift applied
+        # 24h on a bar index stamped in BROKER time (+2/+3), so the last hours of the broker day
+        # read a print FRED had not yet posted.
+        out = _data_os().pit_align(rank, index, source="fred_macro", series_id=key,
+                                   min_lag=timedelta(days=MACRO_PUBLICATION_LAG_D))
         return out if out.notna().sum() >= MACRO_RANK_MIN_OBS else None
     return None
 
@@ -364,7 +376,14 @@ def _cot_frame(symbol: str | None = None):
         try:
             frame = pd.read_parquet(cache, columns=[symbol])
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
-            series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+            # THROUGH THE BITEMPORAL STORE (Tier S AC3, 2026-10-06). Valid time is the report's
+            # own TUESDAY (the W-FRI label less three days); knowledge time is the later of the
+            # declared `cot_fx` lag (Tuesday + 4d) and this reader's stricter label + 3d (Monday
+            # 00:00) -- so the store records what the report describes and when the desk could
+            # hold it, and the result is the release-lagged series this provider always served.
+            series.index = series.index - pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+            series = _data_os().known_series(
+                series, "cot_fx", min_lag=timedelta(days=2 * COT_RELEASE_LAG_DAYS))
             if len(series) >= 52:
                 return series.rename("net").to_frame()
         except Exception:
