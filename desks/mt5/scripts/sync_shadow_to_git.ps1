@@ -891,6 +891,10 @@ $reportPaths = @(
     "desks/mt5/reports/MATH_LAB.json",
     "desks/mt5/reports/DISK_CENSUS.json",
     "desks/mt5/reports/ACCOUNT_PARITY.json",
+    # the loss loop's two readings (Loss loop thread, 2026-11-13): origin held the 2026-09-04
+    # decay_live.json because no list carried it, and LOSS_LEARNER.json had never crossed
+    "desks/mt5/data/decay_live.json",
+    "desks/mt5/reports/LOSS_LEARNER.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
