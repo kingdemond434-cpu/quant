@@ -288,23 +288,38 @@ def says_risk_up(words: str) -> bool:
 #: failed on such boilerplate from one 7b model while the diff was sound (Desk health 10-29).
 #: Only the named boilerplate: a generic modal ("may lose money", "could martingale") is NOT a
 #: hedge, so a FAIL worded that way stays a FAIL whatever the flags say (#538 audit v3 MF-1).
+#: 2026-11-11 (Auditor should-fix, #743/#857/#782): three more boilerplate FAILs from the same 7b
+#: model, all overruled, worded "could potentially lead to ... if the flags are used incorrectly",
+#: "may not have been thoroughly tested", "unexpected behavior if not handled correctly".
 _HEDGE = re.compile(
     r"\b(unclear|not clear|complexity|complex|without sufficient|insufficient"
-    r"|introduces? new (variables|logic|code|functionality|behaviou?r))\b",
+    r"|introduces? new (variables|logic|code|functionality|behaviou?r)"
+    r"|potentially|unexpected behaviou?r|misinterpret\w*"
+    r"|may not have been (\w+ )?tested"
+    r"|if (it is |they are )?not (properly|correctly|carefully) (handled|used|configured|managed)"
+    r"|if (it is |they are )?(used|handled|configured) (incorrectly|improperly|wrongly))\b",
     re.IGNORECASE,
 )
 _PLACE = re.compile(r"[\w/.-]+\.\w+:\d+|\bline \d+", re.IGNORECASE)
 #: A finding or summary that names a risk, a guard or money machinery is never boilerplate, however
 #: it hedges: "may bypass the daily loss guard" is a defect, not a vague FAIL (#538 audit MF1).
 _MECHANISM = re.compile(
-    r"\b(risk\w*|danger\w*|unsafe|lots?|max_?\w*|min_?\w*|size|sizing|sized|loss(es)?|guards?"
+    r"\b(unsafe|lots?|max_?\w*|min_?\w*|size|sizing|sized|loss(es)?|guards?"
     r"|heat|floors?|caps?|ceilings?|limits?|stops?|leverage|margin|exposure|drawdown|equity"
-    r"|account|deadman|kill\w*|rails?|fences?|checks?|thresholds?|orders?|positions?|trades?"
+    r"|account|deadman|kill\w*|rails?|fences?|thresholds?|orders?|positions?|trades?"
     r"|hosts?|network|urls?|https?|endpoints?|secrets?|credentials?|tokens?|keys?|passwords?"
     r"|bypass\w*|disabl\w*|remov\w*|delet\w*|skip\w*|weaken\w*|doubl\w*|blow\w*|raises?"
     r"|lower\w*|loosen\w*|exec|eval|subprocess|shell)\b|\b[A-Z][A-Z0-9]*_[A-Z0-9_]*FRAC\b",
     re.IGNORECASE,
 )
+#: Words every boilerplate FAIL uses ("could introduce risks", "lacks checks", "potentially
+#: dangerous"). They name a mechanism only when the same answer also names WHAT: a place
+#: (file:line), a backticked symbol, or a code identifier (snake_case, CONSTANT_CASE, a.b). The
+#: unconditional list above still holds every guard, money and host word, and a reviewer that says
+#: risk goes UP (says_risk_up) or sets either flag is never vague, so "may bypass the daily loss
+#: guard" and "could increase risk" both keep their FAIL (#538 audit MF1).
+_WEAK_MECHANISM = re.compile(r"\b(risk\w*|danger\w*|checks?)\b", re.IGNORECASE)
+_SYMBOL = re.compile(r"`[^`\s][^`]*`|\b[A-Za-z]\w*_\w+\b|\b[A-Za-z_]\w*\.[A-Za-z_]\w*\b")
 #: Said to a model whose FAIL was vague, before its one re-ask (trusted text, never from the diff).
 VAGUE_NOTE = (
     "Your previous answer was FAIL, but no finding named a concrete defect. Answer again. FAIL "
@@ -369,6 +384,8 @@ def vague_fail(answer: dict[str, Any]) -> bool:
             return False
     words = words.translate(_CONFUSABLE)
     if says_risk_up(words) or _MECHANISM.search(words) or _PLACE.search(words):
+        return False
+    if _WEAK_MECHANISM.search(words) and _SYMBOL.search(words):
         return False
     return bool(found) and all(_HEDGE.search(f) for f in found)
 

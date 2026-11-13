@@ -3042,3 +3042,56 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ------------------- three more boilerplate FAILs, all overruled (#743, #857, #782; 2026-11-11)
+
+_FLAGS_OFF = {"verdict": "FAIL", "risk_increasing": False, "touches_control": False, "summary": "x"}
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [
+        "The new test could potentially lead to misinterpretation of script behavior or security "
+        "issues if the flags are used incorrectly.",
+        "Setting the flag could lead to unexpected behavior if not handled correctly.",
+        "The change may not have been thoroughly tested and could potentially introduce risks.",
+        "Potentially dangerous if not properly handled; the new checks may not have been tested.",
+    ],
+)
+def test_the_overruled_boilerplate_is_vague(finding: str) -> None:
+    assert ir.vague_fail({**_FLAGS_OFF, "findings": [finding]})
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [  # a generic word tied to a named symbol or place names a mechanism
+        "`rule_sets_side` could potentially introduce risks in the replication lane",
+        "replication_civilization.rebuild potentially skips the side check",
+        "the new checks in RuleSpec.rule_sets_side may not have been tested",
+        "potentially dangerous at research/x.py:12",
+    ],
+)
+def test_a_generic_word_tied_to_a_symbol_is_not_vague(finding: str) -> None:
+    assert not ir.vague_fail({**_FLAGS_OFF, "findings": [finding]})
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [  # MF1 holds with both flags OFF: a guard, money or host word keeps the FAIL however it hedges
+        "could potentially bypass the daily loss guard",
+        "potentially raises the lot cap if not properly handled",
+        "may not have been tested and could disable the deadman",
+        "could potentially lead to unexpected behavior in order sizing",
+        "potentially calls a new network host if used incorrectly",
+        "could potentially increase risk",
+    ],
+)
+def test_a_hedged_mechanism_keeps_its_fail_with_flags_off(finding: str) -> None:
+    assert not ir.vague_fail({**_FLAGS_OFF, "findings": [finding]})
+
+
+def test_one_unhedged_finding_keeps_the_fail() -> None:
+    ans = {**_FLAGS_OFF, "findings": ["could potentially lead to unexpected behavior",
+                                      "the parser accepts an empty file"]}  # fmt: skip
+    assert not ir.vague_fail(ans)
