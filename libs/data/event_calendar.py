@@ -339,7 +339,7 @@ def build(pages: dict[str, str | None], fetched_at: datetime,
         coverage[pid] = {"status": "OK", "url": url, "events": len(evs),
                          "through": max(e.utc for e in evs).date().isoformat()}
     horizons = [coverage[p].get("through") for p in CORE]
-    valid = min(horizons) if all(horizons) else None   # type: ignore[type-var]
+    valid = min(str(h) for h in horizons) if all(horizons) else None
     events.sort(key=lambda r: (r["utc"], r["name"]))
     return {"valid_through": valid or "", "generated_at": stamp,
             "source": "official publisher schedules (libs/data/event_calendar.py)",
@@ -384,11 +384,13 @@ def fetch_pages(get: Callable[..., Any] | None = None,
         from libs.data import polite_fetch as pf
         get = pf.get
     if refusal is None:
-        from libs.data.datahub_feeds import robots_refusal as refusal
+        from libs.data.datahub_feeds import robots_refusal
+        refusal = robots_refusal
+    gate: Callable[[str], str | None] = refusal
     pages: dict[str, str | None] = {}
     refused: dict[str, str] = {}
     for pid, url in PAGES.items():
-        why = refusal(url)
+        why = gate(url)
         if why:
             pages[pid], refused[pid] = None, f"ROBOTS_REFUSED: {why}"
             continue
