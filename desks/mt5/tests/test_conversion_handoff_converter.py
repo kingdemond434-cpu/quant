@@ -577,20 +577,19 @@ def test_steer_groups_name_gold_indices_the_three_crosses_and_asia() -> None:
     assert S.load_steer(Path("/nonexistent/steer.json")) == []
 
 
-def test_the_steer_serves_the_cross_first_and_reports_breadth_per_class(
+def test_the_steer_serves_the_asia_family_first_and_reports_breadth_per_class(
         world: dict[str, Any]) -> None:
-    for cell, sym in (("P0", "USDNOK"), ("P1", "EURUSD")):
+    for cell in ("P0", "P1"):
         world["params"][cell] = {"lookback": 20}
-    _write(world["handoff"], [_row("P0", "short_history_after_cut", symbol="USDNOK"),
-                              _row("P1", "short_history_after_cut", symbol="EURUSD")])
+    _write(world["handoff"], [_row("P0", "short_history_after_cut", family="carry"),
+                              _row("P1", "short_history_after_cut", family="tokyo_open_fade")])
     doc = world["run"](max_per_pass=1, steer=STEER)
     (rec,) = [r for r in _ledger(world) if r["status"] == C.CONVERTED]
-    assert rec["cell"] == "P1"                       # the steered cross went first
+    assert rec["cell"] == "P1"                       # the steered Asia-window family went first
     b = doc["breadth"]
     assert b["steer"] == [x["name"] for x in STEER]
-    assert b["selected_by_group"] == {"unsteered": 1, "usd_jpy_eur_crosses": 1}
-    assert b["converted_by_steer_group"] == {"usd_jpy_eur_crosses": {"parents": 1,
-                                                                     "child_cells": 1}}
+    assert b["selected_by_group"] == {"asia_window": 1, "unsteered": 1}
+    assert b["converted_by_steer_group"] == {"asia_window": {"parents": 1, "child_cells": 1}}
     assert b["converted_by_asset_class"] == {"forex": {"parents": 1, "child_cells": 1}}
     # nothing dropped: the unsteered row is deferred, then converted on the next pass
     assert doc["counts"]["short_history_after_cut"] == {C.CONVERTED: 1, C.DEFERRED_BUDGET: 1}
