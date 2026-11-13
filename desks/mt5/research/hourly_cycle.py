@@ -1279,6 +1279,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # ...and what the desk DOES about a decayed learned edge: re-fit it on its event-driven
+    # schedule and send it back through the gauntlet (GAP_MAP rows 29/35). A proposer, no authority.
+    "decay_refit_trigger",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -2361,6 +2364,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
     "mission_control": 180,
+    # The certified-spec door (authorized_runs) plus four JSON reads and, when a learned cell
+    # decayed, one intake donation: tens of seconds; 300 is the ceiling.
+    "decay_refit_trigger": 300,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
     # already started, which would leave a producer half-run and the census judging the stub.
@@ -5813,6 +5819,11 @@ def main() -> None:
     # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
     dmo = _costed("decay_monitor", lambda: _producer(
         "decay_monitor", "research/decay_monitor.py"))
+    # DECAY-AWARE REFIT (GAP_MAP rows 35 + 29), straight after the verdicts it reads: a decayed
+    # or regime-broken live/forward cell of a learned family is re-proposed with refit="decay" /
+    # "regime" through the intake, ruled by the full gauntlet, charged as a trial. Arms nothing.
+    drf = _costed("decay_refit_trigger", lambda: _producer(
+        "decay_refit_trigger", "research/decay_refit_trigger.py", "--once"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -6617,7 +6628,8 @@ def main() -> None:
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
-                    "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "decay_monitor": dmo, "decay_refit_trigger": drf,
+                    "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

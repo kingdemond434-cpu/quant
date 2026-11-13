@@ -27,7 +27,9 @@ rebuilds them from (symbol, family, params) with no new wiring -- the family res
 peer panel.
 
 EVERY CONFIGURATION IS A TRIAL. The model grids are declared in `libs/models/learned_propagation`
-(four configurations each, fixed before any result). Each (configuration x symbol x entry
+(four configurations each, plus the primary on each event-driven refit schedule -- "regime",
+refitted after a panel vol-regime break, and "decay", refitted when a CUSUM on the model's own
+out-of-sample IC alarms -- all fixed before any result). Each (configuration x symbol x entry
 threshold) the miner evaluates is charged, whether or not the screen could score it, and the
 deflation uses that attempted count -- never the count of rows that happened to screen. The same
 trials are priced by `libs/research/trial_ledger` (effective count beside raw) and appended to
