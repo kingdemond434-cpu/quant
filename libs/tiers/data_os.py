@@ -594,6 +594,10 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "desks/mt5/research/asia_transmission.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names sge_benchmark as a not-yet-collected proxy; reads no values"},
+    "desks/mt5/research/state_lake_refresh.py": {
+        "route": "mention", "sources": ("cot_fx",),
+        "basis": "schedules the COT fetchers and names data/cot/ in its docstring; it reads "
+                 "only the state lake's last index stamp and joins no COT value to a bar"},
     "desks/mt5/research/research_gap_map.py": {
         "route": "mention", "sources": ("cot_fx", "macro_state"),
         "basis": "maps families to data paths to test existence; reads no values"},

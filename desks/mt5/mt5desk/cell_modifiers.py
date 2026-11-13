@@ -387,7 +387,7 @@ def refusal(mods: dict[str, Any]) -> str | None:
     elif regime not in NO_OP_REGIMES and regime not in VOL_REGIMES \
             and regime not in CALENDAR_REGIMES:
         return (f"regime={mods.get('regime')!r} has no desk definition (volatility and month/"
-                "quarter-end are defined; a risk-on/off state needs a named risk series first)")
+                "quarter-end and risk_on/risk_off are defined)")
     side = _s(mods.get("side_mode"))
     if side not in SIDE_MODES:
         return f"side_mode={mods.get('side_mode')!r} has no declared meaning"
