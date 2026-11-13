@@ -1372,6 +1372,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
+                     # the other end of judge_coverage's conversion handoff: every parked cell
+                     # re-queued, repaired, re-parameterised, deferred or abandoned by name
+                     "conversion_handoff_consumer",
                      "intake_catchup", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
@@ -2293,6 +2296,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # oracle measurements for keys never measured, one sidecar write and a bounded donation
     # through the registry door. The cap sits above it and must never bind.
     "session_variant_remap": 300,
+    # The handoff consumer stops itself at --budget-s 420: one streaming handoff read, one
+    # streaming docket read, fire probes in psutil-sized worker processes, four atomic writes.
+    # The cap sits above it and must never bind.
+    "conversion_handoff_consumer": 540,
     # The attribution census stops itself at --budget-s 240: two registry scans and one
     # bounded backfill that commits per chunk and resumes. The cap sits above it.
     "attribution_census": 300,
@@ -3542,16 +3549,27 @@ def bars_wanted_symbols(report: Path | None = None) -> list[str]:
         doc = json.loads((report or (BASE / "reports" / "JUDGE_COVERAGE.json"))
                          .read_text("utf-8"))
     except (OSError, ValueError):
-        return []
+        doc = None
     wanted = doc.get("bars_wanted") if isinstance(doc, dict) else None
     if not isinstance(wanted, dict):
-        return []
+        if report is not None:
+            return []
+        wanted = {}
     by_sym: dict[str, int] = {}
     for key, n in wanted.items():
         sym = str(key).rsplit("_", 1)[0].strip().upper()
         if sym:
             by_sym[sym] = by_sym.get(sym, 0) + int(n or 0)
-    return [s for s, _ in sorted(by_sym.items(), key=lambda kv: -kv[1])][:BARS_WANTED_PER_HOUR]
+    ranked = [s for s, _ in sorted(by_sym.items(), key=lambda kv: -kv[1])]
+    # THE DATA-DEPTH BACKLOG (2026-11-13): short-history cells the handoff consumer parked by
+    # chart, where a deeper pull could hold more. Ranked after the judge's own missing charts.
+    if report is None:
+        try:
+            from research.conversion_handoff_consumer import depth_symbols
+            ranked += [s for s in depth_symbols() if s not in ranked]
+        except Exception:
+            pass
+    return ranked[:BARS_WANTED_PER_HOUR]
 
 
 def deep_forest() -> dict:
@@ -4325,6 +4343,14 @@ def main() -> None:
     svr = _costed("session_variant_remap", lambda: _producer(
         "session_variant_remap", "research/session_variant_remap.py", "--once",
         "--budget-s", "240"))
+    # THE CONVERSION HANDOFF'S CONSUMER (2026-11-13). judge_coverage hands ~734k parked cells to
+    # the converter every pass and nothing read them. This leg books every one per reason:
+    # build failures repaired and re-emitted, never-firing specs diagnosed and re-parameterised
+    # (children charged as trials), short histories routed to the depth backlog and re-queued
+    # (data/hypotheses/conversion_requeue.json, read by judge_coverage) once the bars suffice.
+    chc = _costed("conversion_handoff_consumer", lambda: _producer(
+        "conversion_handoff_consumer", "research/conversion_handoff_consumer.py", "--once",
+        "--budget-s", "420"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
@@ -6455,7 +6481,8 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
-                    "session_variant_remap": svr, "candidate_conservation": ccv,
+                    "session_variant_remap": svr, "conversion_handoff_consumer": chc,
+                    "candidate_conservation": ccv,
                     "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
