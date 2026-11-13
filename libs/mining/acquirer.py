@@ -253,7 +253,9 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
 
 
 def _blocked_on_terms(row: Mapping[str, Any]) -> bool:
-    """A row whose own status says its terms forbid this desk's use is never fetched (fail-closed)."""
+    """A row whose own status says its terms forbid this desk's use is never fetched.
+
+    Fail-closed: the row is loaded disabled, so `acquire` logs DISABLED and fetches nothing."""
     return str(row.get("status") or "").upper().startswith("BLOCKED_TERMS")
 
 
@@ -899,7 +901,8 @@ _DDG = re.compile(r'(?is)<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<
 
 def fetch_search_route(src: Source, cursor: dict[str, Any], ctx: FetchContext
                        ) -> Iterator[Item]:
-    """Search-engine `site:` routes for grounds a link walk never reaches (Zhihu, Naver cafes, 5ch, X, Discord invites). Results are kept as snippet records; links that
+    """Search-engine `site:` routes for grounds a link walk never reaches (Zhihu, Naver cafes,
+    5ch, X, Discord invites). Results are kept as snippet records; links that
     match `discover_regex` are handed to `discover_into` (another source's cursor)."""
     cfg = src.config
     seen = _seen(cursor)
