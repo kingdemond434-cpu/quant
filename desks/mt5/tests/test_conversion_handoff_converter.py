@@ -551,3 +551,59 @@ def test_an_unknown_reason_is_counted_unhandled_never_skipped(world: dict[str, A
     assert doc["unhandled_reasons"]["by_reason"] == {"brand_new_reason": 2}
     assert doc["accounting"]["every_row_accounted"] is True
     assert doc["accounting"]["rows_read"] == 3
+
+
+STEER = [{"name": "gold", "symbol_prefixes": ["XAU"]},
+         {"name": "indices", "asset_classes": ["indices", "index"]},
+         {"name": "usd_jpy_eur_crosses", "currency_set": ["USD", "JPY", "EUR"]},
+         {"name": "asia_window", "text_tokens": ["asia", "tokyo", "sydney"]}]
+
+
+def test_steer_groups_name_gold_indices_the_three_crosses_and_asia() -> None:
+    from research import conversion_handoff_steer as S
+    cls = {"US500": "indices", "GER40": "indices"}.get
+
+    def g(sym: str, family: str = "carry") -> str:
+        return S.steer_group({"symbol": sym, "family": family, "cell": "c"}, STEER,
+                             lambda s: cls(s) or "forex")
+
+    assert g("XAUUSD") == "gold" and g("XAUEUR") == "gold"
+    assert g("US500") == "indices" and g("GER40") == "indices"
+    assert g("USDJPY") == g("EURUSD") == g("EURJPY") == "usd_jpy_eur_crosses"
+    assert g("USDNOK") == g("USDCHF") == S.UNSTEERED
+    assert g("USDNOK", family="asia_range_fade") == "asia_window"
+    # the repository's steer file carries the same four groups, in this order
+    assert [x["name"] for x in S.load_steer()] == [x["name"] for x in STEER]
+    assert S.load_steer(Path("/nonexistent/steer.json")) == []
+
+
+def test_the_steer_serves_the_cross_first_and_reports_breadth_per_class(
+        world: dict[str, Any]) -> None:
+    for cell, sym in (("P0", "USDNOK"), ("P1", "EURUSD")):
+        world["params"][cell] = {"lookback": 20}
+    _write(world["handoff"], [_row("P0", "short_history_after_cut", symbol="USDNOK"),
+                              _row("P1", "short_history_after_cut", symbol="EURUSD")])
+    doc = world["run"](max_per_pass=1, steer=STEER)
+    (rec,) = [r for r in _ledger(world) if r["status"] == C.CONVERTED]
+    assert rec["cell"] == "P1"                       # the steered cross went first
+    b = doc["breadth"]
+    assert b["steer"] == [x["name"] for x in STEER]
+    assert b["selected_by_group"] == {"unsteered": 1, "usd_jpy_eur_crosses": 1}
+    assert b["converted_by_steer_group"] == {"usd_jpy_eur_crosses": {"parents": 1,
+                                                                     "child_cells": 1}}
+    assert b["converted_by_asset_class"] == {"forex": {"parents": 1, "child_cells": 1}}
+    # nothing dropped: the unsteered row is deferred, then converted on the next pass
+    assert doc["counts"]["short_history_after_cut"] == {C.CONVERTED: 1, C.DEFERRED_BUDGET: 1}
+    world["run"](max_per_pass=1, steer=STEER)
+    assert sorted(r["cell"] for r in _ledger(world) if r["status"] == C.CONVERTED) == ["P0", "P1"]
+
+
+def test_an_empty_steer_keeps_the_old_order(world: dict[str, Any]) -> None:
+    for cell in ("P0", "P1"):
+        world["params"][cell] = {"lookback": 20}
+    _write(world["handoff"], [_row("P0", "short_history_after_cut", symbol="USDNOK"),
+                              _row("P1", "short_history_after_cut", symbol="EURUSD")])
+    doc = world["run"](max_per_pass=1, steer=[])
+    (rec,) = [r for r in _ledger(world) if r["status"] == C.CONVERTED]
+    assert rec["cell"] == "P0"
+    assert doc["breadth"]["selected_by_group"] == {"unsteered": 2}
