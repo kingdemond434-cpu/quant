@@ -32,12 +32,16 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+import logging
 import sys
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+#: Reports carry an exception's TYPE NAME only (Auditor MF1); the full text goes to the log.
+_LOG = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
@@ -181,7 +185,8 @@ def verify(tool: Tool, contracts: set[str] | None) -> dict[str, Any]:
     try:
         fn = resolve(tool)
     except Exception as exc:
-        row.update({"status": "IMPORT_FAILED", "why": f"{type(exc).__name__}: {str(exc)[:160]}"})
+        _LOG.warning("tool %s failed to import: %r", tool.name, exc)
+        row.update({"status": "IMPORT_FAILED", "why": type(exc).__name__})
         return row
     try:
         params = set(inspect.signature(fn).parameters)
@@ -211,7 +216,8 @@ def build() -> dict[str, Any]:
         contracts: set[str] | None = set(desk_hub().contracts())
         hub_status = "OK"
     except Exception as exc:
-        contracts, hub_status = None, f"UNMEASURED: {type(exc).__name__}: {exc}"
+        _LOG.warning("desk_hub unavailable: %r", exc)
+        contracts, hub_status = None, f"UNMEASURED: {type(exc).__name__}"
     rows = [verify(t, contracts) for t in TOOLS]
     counts: dict[str, int] = {}
     for r in rows:

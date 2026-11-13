@@ -37,12 +37,18 @@ Nothing here sizes, vetoes or gates anything; it is a door and a measurement.
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+#: Reports carry an exception's TYPE NAME only (Auditor MF1): free exception text can hold a URL,
+#: a token or an absolute box path, and these reports are published. The full text goes to the
+#: log, never into the payload.
+_LOG = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
@@ -268,7 +274,8 @@ def _ledger_series_hits(prefix: str, identities: set[str], path: Path,
                     continue
                 judged += 1
     except OSError as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        _LOG.warning("gate ledger scan failed: %r", exc)
+        return {"status": UNMEASURED, "why": type(exc).__name__}
     return {"status": "MEASURED", "lines_naming_series": lines, "judged": judged,
             "scanned_tail_bytes": min(tail, size)}
 
@@ -287,9 +294,11 @@ def _probe(hub: Any, name: str, kw: dict[str, Any]) -> dict[str, Any]:
     try:
         got = hub.get(name, **kw)
     except LookupError as exc:
-        return {"status": UNMEASURED, "why": str(exc)[:200]}
+        _LOG.warning("datahub probe %s: %r", name, exc)
+        return {"status": UNMEASURED, "why": type(exc).__name__}
     except Exception as exc:
-        return {"status": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+        _LOG.warning("datahub probe %s: %r", name, exc)
+        return {"status": "ERROR", "why": type(exc).__name__}
     payload = got.get("payload")
     n = None
     try:

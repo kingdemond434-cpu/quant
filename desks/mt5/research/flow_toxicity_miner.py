@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import math
 import os
 import subprocess
@@ -66,6 +67,11 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from mt5desk import flow_toxicity as ft  # noqa: E402
+
+#: Reports carry an exception's TYPE NAME only (Auditor MF1): free exception text can hold a URL,
+#: a token or an absolute box path, and these reports are published. The full text goes to the
+#: log, never into the payload.
+_LOG = logging.getLogger(__name__)
 
 SOURCE = "flow_toxicity"
 #: The series prefix. `micro_<SYM>` in the lake-series directory; the DataHub contract
@@ -96,6 +102,15 @@ OOS_FRACTION = 0.30
 
 
 # ------------------------------------------------------------------------------- helpers
+def _published_path(path: Path) -> str:
+    """A path as a published report may name it: relative to the repo root, else the bare file
+    name. Never an absolute box path (Auditor MF1)."""
+    try:
+        return path.relative_to(_ROOT).as_posix() if path.is_relative_to(_ROOT) else path.name
+    except ValueError:
+        return path.name
+
+
 def _now() -> datetime:
     return datetime.now(tz=UTC)
 
@@ -251,8 +266,7 @@ def accumulate(symbol: str, point: float, state: dict, *, tick_root: Path,
         frame = pd.read_parquet(path)
     measured = frame["tick_intensity"].notna()
     reading.update({
-        "status": "MEASURED", "series": str(path.relative_to(_ROOT)) if path.is_relative_to(
-            _ROOT) else str(path),
+        "status": "MEASURED", "series": _published_path(path),
         "bars": len(frame), "bars_measured": int(measured.sum()),
         "first_bar": str(frame.index.min()), "last_bar": str(frame.index.max()),
         "quote_imbalance_basis": "sign_only",
@@ -384,7 +398,8 @@ def propose(readings: list[dict], *, series_root: Path, budget_end: float | None
         counts = pc.donation_counts()
     identities = [pc.identity(c["symbol"], c["family"], c["params"]) for c in cands]
     return {"tests_run": len(rows), "symbols_screened": len(screened),
-            "cells_proposed": len(proposals), "donated_path": str(donated) if donated else None,
+            "cells_proposed": len(proposals),
+            "donated_path": _published_path(Path(donated)) if donated else None,
             "donation": {k: counts.get(k) for k in ("donated", "refused_unstamped",
                                                     "refused_wrong_lane")} if counts else {},
             "identities": identities, "skipped": skipped,
@@ -413,8 +428,9 @@ def refresh_depth_probe(*, max_age_d: float = DEPTH_PROBE_MAX_AGE_D,
         age_d = (_now() - datetime.fromisoformat(str(at))).total_seconds() / 86400.0
     except (TypeError, ValueError):
         age_d = None
-    out: dict[str, Any] = {"probe": str(probe.relative_to(_ROOT)) if probe.is_relative_to(
-        _ROOT) else str(probe), "at": at, "age_d": None if age_d is None else round(age_d, 2),
+    out: dict[str, Any] = {
+        "probe": _published_path(probe), "at": at,
+        "age_d": None if age_d is None else round(age_d, 2),
         "symbols_with_real_depth": (doc or {}).get("symbols_with_real_depth"),
         "n_probed": len((doc or {}).get("symbols") or {})}
     if age_d is not None and age_d < max_age_d:
@@ -436,7 +452,8 @@ def refresh_depth_probe(*, max_age_d: float = DEPTH_PROBE_MAX_AGE_D,
         rc = runner()
     except Exception as exc:
         out["status"] = "PROBE_FAILED"
-        out["why"] = f"{type(exc).__name__}: {exc}"
+        _LOG.warning("depth probe failed: %r", exc)
+        out["why"] = type(exc).__name__
         return out
     fresh = _read_json(probe, {})
     out.update({"status": "REPROBED" if rc == 0 else "PROBE_FAILED", "returncode": rc,
@@ -487,8 +504,8 @@ def run(symbols: list[str] | None = None, *, budget_s: float = 900.0, propose_ce
             readings.append(accumulate(sym, pt, state, tick_root=tick_root,
                                        series_root=series_root, budget_end=accumulate_end))
         except Exception as exc:
-            readings.append({"symbol": sym, "status": "ERROR",
-                             "why": f"{type(exc).__name__}: {str(exc)[:120]}"})
+            _LOG.warning("flow_toxicity accumulate %s: %r", sym, exc)
+            readings.append({"symbol": sym, "status": "ERROR", "why": type(exc).__name__})
     state["_cursor"] = next_cursor
     if not dry_run:
         _write_atomic(state_path, json.dumps(state, indent=0, sort_keys=True))
@@ -505,7 +522,7 @@ def run(symbols: list[str] | None = None, *, budget_s: float = 900.0, propose_ce
         "status": ("MEASURED" if measured else "UNMEASURED"),
         "why": ("" if measured else
                 "no tick tape on this host (the tape is recorded on the trading box)"),
-        "tape_root": str(tick_root), "series_dir": str(series_root),
+        "tape_root": _published_path(tick_root), "series_dir": _published_path(series_root),
         "datahub_contract": "micro.flow_bars", "signals": list(ft.SIGNAL_COLUMNS),
         "quote_imbalance_basis": "sign_only",
         "symbols_on_tape": len(have), "symbols_measured": len(measured),
