@@ -344,11 +344,11 @@ if (-not $WhatIfOnly) {
     # controller; without the takeover every hourly resume exited 5 until the lease aged out and
     # the day's pass was lost (MT5-CycleNoon, 2026-11-13). The takeover is fenced to the exact
     # epoch the dead pass recorded, so another controller's lease, or a newer one, still refuses.
-    $claimArgs = @("scripts\controller_checkpoint.py", "claim", "--controller", $Controller, "--ttl-seconds", "39600")
+    $takeover = @()
     if ($resuming -and $state.lease_epoch -and $state.controller -eq $Controller) {
-        $claimArgs += @("--takeover-epoch", "$([int]$state.lease_epoch)")
+        $takeover = @("--takeover-epoch", "$([int]$state.lease_epoch)")
     }
-    $claimJson = (& $Python @claimArgs 2>&1 | Out-String)
+    $claimJson = (& $Python scripts\controller_checkpoint.py claim --controller $Controller --ttl-seconds 39600 @takeover 2>&1 | Out-String)
     Pop-Location
     $ErrorActionPreference = $prevEap
     try { $lease = $claimJson | ConvertFrom-Json } catch { $lease = $null }

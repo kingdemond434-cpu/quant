@@ -401,6 +401,6 @@ def test_a_resumed_pass_takes_over_only_its_own_dead_lease() -> None:
     only when resuming under the same controller -- a fresh pass never takes over anything."""
     src = LAUNCHER.read_text("utf-8")
     assert '"--takeover-epoch"' in src
-    guard = src[src.index("$claimArgs = @(") : src.index("$claimJson = ")]
+    guard = src[src.index("$takeover = @()") : src.index("$claimJson = ")]
     assert "if ($resuming -and $state.lease_epoch -and $state.controller -eq $Controller)" in guard
-    assert "& $Python @claimArgs" in src
+    assert "--ttl-seconds 39600 @takeover" in src
