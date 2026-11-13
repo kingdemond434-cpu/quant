@@ -53,8 +53,10 @@ def test_a_family_that_names_the_key_keeps_it() -> None:
     assert cm.split(native, {"regime": "high_vol"}) == ({"regime": "high_vol"}, {})
 
 
-def test_unapplicable_variants_are_refused_by_name() -> None:
-    assert "risk" in cm.refusal({"regime": "risk_off"})
+def test_unapplicable_variants_are_refused_by_name(monkeypatch) -> None:
+    assert "no desk definition" in cm.refusal({"regime": "bull_market"})
+    monkeypatch.setattr(cm, "_risk_series", lambda: None)
+    assert "UNMEASURED" in cm.refusal({"regime": "risk_off"})
     assert "fill model" in cm.refusal({"execution_style": "limit"})
     assert "conditioning series" in cm.refusal({"conditioner": "carry"})
     assert "residualise" in cm.refusal({"residual": "usd", "residual_tag": "residual"})
@@ -153,4 +155,112 @@ def test_family_call_applies_the_same_modifiers_the_gauntlet_does():
     selected = fc.signals(fam, bars, side=1, params={"lookback": 3, "selector": "asia"})
     assert selected == plain
     with pytest.raises(ValueError, match="NOT_RUN_MODIFIER"):
-        fc.signals(fam, bars, side=1, params={"regime": "risk_off"})
+        fc.signals(fam, bars, side=1, params={"execution_style": "limit"})
+
+
+# ------------------------------------------------------------------------- risk-on / risk-off
+def _index(n: int = 400, up_until: int = 200) -> pd.Series:
+    """An H1 index that rises for `up_until` bars and falls after, on the _bars() clock."""
+    idx = pd.date_range("2026-01-01", periods=n, freq="h", tz="UTC")
+    steps = np.where(np.arange(n) < up_until, 0.001, -0.001)
+    return pd.Series(100 * np.exp(np.cumsum(steps)), index=idx)
+
+
+def test_risk_regimes_are_defined_when_a_risk_index_is_on_the_box(monkeypatch) -> None:
+    monkeypatch.setattr(cm, "_risk_series", lambda: ("US500", _index()))
+    assert cm.refusal({"regime": "risk_on"}) is None
+    assert cm.refusal({"regime": "risk_off", "side_mode": "revert"}) is None
+
+
+def test_risk_state_reads_only_closed_index_bars() -> None:
+    """The state at bar t uses index bars closed by t: the turn at bar 200 shows from bar
+    200 + RISK_LOOKBACK_BARS / 2 + 1 at the earliest, never before the index has turned."""
+    bars, ix = _bars(), _index()
+    st = cm.risk_state(bars, ix)
+    lb = cm.RISK_LOOKBACK_BARS
+    assert (st.iloc[: lb + 1] == 0).all(), "no state until a full lookback is known"
+    assert (st.iloc[lb + 1: 200 + 1] == 1).all(), "rising index: risk-on, read one bar late"
+    first_off = int(np.argmax(st.to_numpy() == -1))
+    assert first_off > 200 + lb // 2, "the state cannot turn before the trailing return does"
+    # Shifting the index forward a bar moves the state a bar later: nothing is read early.
+    later = cm.risk_state(bars, ix.shift(1).dropna())
+    assert int(np.argmax(later.to_numpy() == -1)) == first_off + 1
+
+
+def test_the_two_risk_states_partition_every_bar_that_has_a_state() -> None:
+    bars = _bars()
+    st = cm.risk_state(bars, _index())
+    on, off = (st == 1), (st == -1)
+    assert not (on & off).any() and ((on | off) == (st != 0)).all()
+    assert on.sum() > 0 and off.sum() > 0
+
+
+def test_a_dead_index_feed_has_no_state_rather_than_an_old_one() -> None:
+    bars = _bars(400)
+    ix = _index(250)                                  # the index stops at bar 249
+    st = cm.risk_state(bars, ix)
+    cut = 250 + int(cm.RISK_STALE_H)
+    assert (st.iloc[cut + 1:] == 0).all() and (st.iloc[200:249] != 0).all()
+
+
+def test_apply_keeps_a_signal_only_in_its_own_risk_state(monkeypatch) -> None:
+    monkeypatch.setattr(cm, "_risk_series", lambda: ("US500", _index()))
+    bars = _bars()
+    sigs = [_sig(bars, 150), _sig(bars, 390)]
+    assert [s.time for s in cm.apply(sigs, bars, {"regime": "risk_on"})] == [bars.index[150]]
+    assert [s.time for s in cm.apply(sigs, bars, {"regime": "risk_off"})] == [bars.index[390]]
+
+
+def test_mixed_clocks_are_refused_never_guessed() -> None:
+    """A naive bar index beside a tz-aware risk index (or the reverse) cannot say which wall it
+    carries; converting would read the state hours early. Refused both ways, loudly."""
+    bars = _bars()
+    naive = bars.copy()
+    naive.index = naive.index.tz_convert(None)
+    with pytest.raises(ValueError, match="mixed clocks"):
+        cm.risk_state(naive, _index())
+    ix = _index()
+    naive_ix = pd.Series(ix.to_numpy(), index=ix.index.tz_convert(None))
+    with pytest.raises(ValueError, match="mixed clocks"):
+        cm.risk_state(bars, naive_ix)
+
+
+def test_one_clock_on_both_sides_reads_the_same_state() -> None:
+    bars = _bars()
+    naive = bars.copy()
+    naive.index = naive.index.tz_convert(None)
+    ix = _index()
+    naive_ix = pd.Series(ix.to_numpy(), index=ix.index.tz_convert(None))
+    a = cm.risk_state(bars, ix).to_numpy()
+    b = cm.risk_state(naive, naive_ix).to_numpy()
+    assert (a == b).all()
+
+
+def test_the_risk_state_is_computed_once_per_index_frame(monkeypatch) -> None:
+    import mt5desk.family_learned_propagation as flp
+
+    frame = pd.DataFrame({"close": _index().to_numpy()}, index=_index().index)
+    calls = {"n": 0}
+    real = cm._risk_sign
+
+    def counting(series):
+        calls["n"] += 1
+        return real(series)
+
+    monkeypatch.setattr(cm, "_RISK_MEMO", {})
+    monkeypatch.setattr(cm, "_risk_sign", counting)
+    monkeypatch.setattr(cm, "_risk_symbols", lambda: ("US500",))
+    current = {"df": frame}
+    monkeypatch.setattr(flp, "load_peer", lambda sym: current["df"])
+    bars = _bars()
+    a = cm.risk_state(bars)
+    b = cm.risk_state(bars)
+    assert calls["n"] == 1, "same parquet (same cached frame): the sign is reused"
+    assert a.equals(b)
+    current["df"] = frame.copy()          # load_peer re-read the file: a new frame object
+    cm.risk_state(bars)
+    assert calls["n"] == 2, "a changed parquet recomputes"
+
+
+def test_the_definitions_version_names_the_risk_regimes() -> None:
+    assert set(cm.NEWLY_DEFINED[cm.DEFINITIONS_VERSION]) == set(cm.RISK_REGIMES)
