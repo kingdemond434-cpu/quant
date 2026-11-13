@@ -35,6 +35,8 @@ from side_channels.sources.strategy import component_harvesting as ch  # noqa: E
 
 # ------------------------------------------------------------------------------ atlas
 
+FAR = pd.Timestamp("2099-01-01", tz="UTC")
+
 
 def _broker(t_utc: pd.Timestamp) -> pd.Timestamp:
     """The broker stamp for a true-UTC instant (NY wall time + 7h), naive."""
@@ -99,7 +101,8 @@ def test_atlas_learns_a_planted_leader_and_donates_a_lead_lag_row(tmp_path: Path
     _calendar(cal, instants)
     work, rep = tmp_path / "work", tmp_path / "rep.json"
     kw = dict(budget_s=120, calendar_root=cal, ticks_root=ticks, universe_root=uni, out_dir=out,
-              work_dir=work, report_path=rep, watch=("USDJPY", "XAUUSD"))
+              work_dir=work, report_path=rep, watch=("USDJPY", "XAUUSD"),
+              cut_provider=lambda: FAR)
     doc = la.run(**kw)
     assert doc["events_new_this_pass"] == 16 and doc["donated"] >= 1
     assert doc["bh_rejected"] >= 1 and doc["keys_tested"] >= doc["bh_rejected"]
@@ -171,7 +174,11 @@ def test_release_lead_lag_family_fires_only_after_the_release() -> None:
         drv.iloc[i:, 0] *= 1.01
     sigs = family_release_lead_lag(tgt, driver=drv, driver_symbol="DRV", event_type="X",
                                    lag=2, direction="opposite", bar_events=ev)
-    assert [s.time for s in sigs] == ev and all(s.side == -1 for s in sigs)
+    # entry one bar before the measured catch-up: e + lag - 1
+    assert [s.time for s in sigs] == [idx[idx.get_loc(e) + 1] for e in ev]
+    assert all(s.side == -1 and s.ttl_bars == 5 for s in sigs)
+    one = family_release_lead_lag(tgt, driver=drv, event_type="X", lag=1, bar_events=ev)
+    assert [s.time for s in one] == ev and all(s.side == 1 for s in one)
     assert family_release_lead_lag(tgt, driver=drv, event_type="", bar_events=ev) == []
     assert family_release_lead_lag(tgt, driver=drv, event_type="X", regime="calm",
                                    bar_events=ev) == []          # < MIN_PRIOR prior releases
@@ -276,7 +283,7 @@ def test_informative_entry_is_harvested_and_bad_exit_named(monkeypatch: pytest.M
         return [s for s in sigs if s.time in df.index]
     monkeypatch.setattr("mt5desk.families.get_family_func", lambda name: fam_spy)
     kw = dict(bars_for=lambda s, c: bars, enqueue=enqueue, out_dir=tmp_path, claim_ledger=led,
-              lane_ok=lambda s, f: True)
+              lane_ok=lambda s, f: True, cut_provider=lambda: FAR)
     doc = ch.harvest_pass(rejected=rej, **kw)
     # the screen never reads the lockbox side of the cut
     assert built and max(built) < cut
@@ -349,3 +356,73 @@ def test_both_organs_are_hourly_legs_with_a_layer() -> None:
     assert "side_channels/sources/strategy/component_harvesting.py" in src
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER.get("leadership_atlas") and LEG_LAYER.get("component_harvest")
+
+
+# ------------------------------------------------------------------------------ the campaign cut
+
+
+def test_campaign_cut_is_read_from_the_gauntlet_report(tmp_path: Path) -> None:
+    from research import lockbox_cut as lc
+    rep = tmp_path / "universal_gates_external.json"
+    rep.write_text(json.dumps({"verdicts": [
+        {"stages": {"lockbox": {"cut": "2025-06-02", "cut_basis": "campaign"}}},
+        {"stages": {"lockbox": {"cut": "2025-01-01", "cut_basis": "cell_own_tail (late)"}}}],
+        "report": {"lockbox_cut": "2025-07-01"}}), "utf-8")
+    out = tmp_path / "LOCKBOX_CUT.json"
+    assert lc.campaign_cut(rep, publish_to=out) == pd.Timestamp("2025-06-02", tz="UTC")
+    assert json.loads(out.read_text("utf-8"))["state"] == "MEASURED"
+    assert lc.campaign_cut(tmp_path / "absent.json") is None          # fails closed
+
+
+def test_neither_organ_reads_past_the_campaign_cut(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """A short-history cell under a long union calendar: its own cut is LATER than the campaign
+    cut, and both organs stop at the campaign cut."""
+    bars = _bars()                                     # 2024-01-01 .. ~2024-05-05, hourly
+    sigs = _planted(bars)
+    own = ch.screen_cut(bars)
+    campaign = pd.Timestamp("2024-02-15", tz="UTC")
+    assert campaign < own
+    seen_max: list[pd.Timestamp] = []
+
+    def fam(df: pd.DataFrame, *, lookback: int = 20, stop_atr: float = 2.0, rr: float = 1.5,
+            ttl_bars: int = 24) -> list[Any]:
+        seen_max.append(df.index.max())
+        return [s for s in sigs if s.time in df.index]
+    monkeypatch.setattr("mt5desk.families.get_family_func", lambda name: fam)
+    rej = [{"id": "c_short", "family": "f", "symbol": "NOSUCH", "chart": "M5",
+            "params_json": "{}"}]
+    doc = ch.harvest_pass(rejected=rej, bars_for=lambda s, c: bars, enqueue=None, write=False,
+                          lane_ok=lambda s, f: True, cut_provider=lambda: campaign)
+    assert seen_max and max(seen_max) < campaign and doc["tally"]["campaign_cut_binds"] == 1
+    # no readable cut: nothing is screened
+    none = ch.harvest_pass(rejected=[{**rej[0], "id": "c2"}], bars_for=lambda s, c: bars,
+                           enqueue=None, write=False, cut_provider=lambda: None)
+    assert none["examined_this_pass"] == 0 and none["state"].startswith("UNMEASURED")
+
+    # the atlas: events whose post window reaches the cut are never read
+    ticks, cal, uni = (tmp_path / x for x in ("ticks", "cal", "uni"))
+    uni.mkdir()
+    inst = [pd.Timestamp("2025-01-10 13:30", tz="UTC") + pd.DateOffset(months=i)
+            for i in range(6)]
+    for i, t in enumerate(inst):
+        _write_ticks(ticks, "USDJPY", t, 20, 1, seed=i)
+    _calendar(cal, inst)
+    reads: list[pd.Timestamp] = []
+    real = la.load_mid
+
+    def spy(sym: str, start: pd.Timestamp, end: pd.Timestamp, root: Any = None) -> pd.Series:
+        reads.append(end)
+        return real(sym, start, end, root)
+    monkeypatch.setattr(la, "load_mid", spy)
+    acut = pd.Timestamp("2025-04-01", tz="UTC")
+    d = la.run(budget_s=60, calendar_root=cal, ticks_root=ticks, universe_root=uni,
+               out_dir=tmp_path / "o", work_dir=tmp_path / "w", report_path=tmp_path / "r.json",
+               watch=("USDJPY",), cut_provider=lambda: acut)
+    assert reads and max(reads) < acut
+    assert d["events_new_this_pass"] == 3 and d["events_at_or_after_campaign_cut"] == 3
+    d0 = la.run(budget_s=60, calendar_root=cal, ticks_root=ticks, universe_root=uni,
+                out_dir=tmp_path / "o2", work_dir=tmp_path / "w2", report_path=tmp_path / "r2.json",
+                watch=("USDJPY",), cut_provider=lambda: None)
+    assert d0["events_new_this_pass"] == 0 and d0["donated"] == 0
+    assert d0["state"].startswith("UNMEASURED")

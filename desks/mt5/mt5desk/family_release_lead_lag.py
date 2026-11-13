@@ -4,7 +4,14 @@
         z    = driver's log return over that bar / the driver's 1-bar sigma over the `norm`
                bars BEFORE the release
         side = sign(z) x direction                   when |z| >= entry_z
-    one signal per release, held `hold_bars` (default 2 x lag + 1), stop `stop_atr` ATR.
+    entry at the close of bar e + lag - 1: the last bar before the follower's measured catch-up
+    (the atlas's lag, in this chart's bars, from the leader's first move); one signal per
+    release, held `hold_bars` (default 2 x lag + 1), stop `stop_atr` ATR.
+
+THE LAG IS THE CLAIM, NOT ONLY THE HOLD (Auditor SF1 on #1146). Entering at bar e would test
+"the follower moves within the hold window"; entering at e + lag - 1 tests what the atlas measured
+-- the follower has NOT yet moved one bar before its measured lag, and moves after. lag = 1 is
+entry at e itself.
 
 WHY A FAMILY OF ITS OWN AND NOT `lead_lag` (Auditor HOLD on #1146, MF2). The atlas measures a
 lead that exists only around one release type, in one causal regime, on a minute chart. Mapped
@@ -135,11 +142,17 @@ def family_release_lead_lag(
         if abs(z) < float(entry_z):
             continue
         side = int(np.sign(z)) * flip
-        px = close[e]
-        out.append(Signal(time=idx[e], side=side, stop=px - side * stop_atr * a,
+        k = e + max(0, int(lag) - 1)                      # one bar before the measured catch-up
+        if k >= len(idx) - 1:
+            continue
+        a = atr[k]
+        if not np.isfinite(a) or a <= 0:
+            continue
+        px = close[k]
+        out.append(Signal(time=idx[k], side=side, stop=px - side * stop_atr * a,
                           target=px + side * stop_atr * a * rr, ttl_bars=hold,
                           tag=f"release_lead_lag:{event_type}:{driver_symbol or 'driver'}:"
                               f"{direction}:{regime}",
                           trigger=None, wait_bars=1))
-        last = e
+        last = k
     return out

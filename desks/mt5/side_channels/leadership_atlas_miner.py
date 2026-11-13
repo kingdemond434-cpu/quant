@@ -354,7 +354,12 @@ def get_expected_leadership(event_type: str) -> dict:
 #      on the recipe and the chart pinned -- the claim the atlas measured, not an unconditional
 #      lead-lag on every chart. Only NEW or CHANGED edges are donated (SF2): a re-donation would
 #      bump the registry's search_count for a test already charged.
-#   7. NEVER COUNTED TWICE, AND BOUNDED (SF6). Processed event ids are kept (newest
+#   7. NEVER READS THE JUDGE'S LOCKBOX (Auditor HOLD on #1146, round 2). An event is processed
+#      only when its whole post window ends a full day before the campaign lockbox cut the
+#      gauntlet last used (`research.lockbox_cut`, published to reports/LOCKBOX_CUT.json; the day
+#      covers the broker clock running ahead of UTC). Later events wait, unmarked, until the cut
+#      moves past them. No readable cut: nothing is processed and nothing is donated.
+#   8. NEVER COUNTED TWICE, AND BOUNDED (SF6). Processed event ids are kept (newest
 #      MAX_PROCESSED), lags per key are capped at MAX_LAGS, and the state lives in the gitignored
 #      `data/leadership_atlas/`, never in data/intelligence.
 #
@@ -610,8 +615,13 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
         vintages_root: Path | None = None, ticks_root: Path | None = None,
         universe_root: Path | None = None, out_dir: Path | None = None,
         work_dir: Path | None = None, report_path: Path | None = None,
-        watch: tuple[str, ...] | None = None, write: bool = True) -> dict[str, Any]:
+        watch: tuple[str, ...] | None = None, write: bool = True,
+        cut_provider: Any = None) -> dict[str, Any]:
     t_end = time.monotonic() + budget_s
+    campaign = (cut_provider or _campaign_cut)()
+    if campaign is not None:
+        campaign = pd.Timestamp(campaign)
+        campaign = campaign.tz_localize("UTC") if campaign.tzinfo is None else campaign
     od = out_dir or LEAD_DIR
     wd = work_dir or WORK_DIR
     state_p, report_p = wd / STATE.name, report_path or REPORT
@@ -628,7 +638,7 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
     evs = calendar_events(calendar_root, vintages_root or (
         Path(calendar_root) / "_no_vintages" if calendar_root else None), cal_counts)
     new = [e for e in evs if not ar.is_processed(f"{e['event_type']}|{e['time'].isoformat()}")]
-    deferred = 0
+    deferred = after_cut = 0
     for e in new:
         if time.monotonic() > t_end:
             deferred += 1
@@ -636,6 +646,10 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
         t0: pd.Timestamp = e["time"]
         if t0 > pd.Timestamp.now(tz="UTC") - pd.Timedelta(seconds=POST_S):
             continue                                       # its post window has not closed yet
+        if campaign is None or (t0 + pd.Timedelta(seconds=POST_S) + pd.Timedelta(days=1)
+                                >= campaign):
+            after_cut += 1                                 # in (or unknown vs) the lockbox
+            continue
         moves: dict[str, dict[str, Any]] = {}
         for s in tick_syms:
             mid = load_mid(s, t0 - pd.Timedelta(seconds=PRE_S), t0 + pd.Timedelta(seconds=POST_S),
@@ -657,7 +671,7 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
     atlas = LeadershipAtlas()
     atlas.edges = {tuple(k.split("|")[:4]): v for k, v in edges.items() if k.endswith("|all")}
     donations, too_fast, unchanged, fdr_held = [], [], 0, 0
-    for key, e in sorted(edges.items()):
+    for key, e in sorted(edges.items()) if campaign is not None else ():
         if e.sample_size < MIN_EVENTS or e.wilson_lb < MIN_WILSON:
             continue
         if abs(e.direction_agreement - 0.5) < MIN_AGREE_GAP or not np.isfinite(e.lag_seconds):
@@ -703,7 +717,8 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
     doc = {"generated_utc": datetime.now(UTC).isoformat(),
            "events_held": len(evs), "calendar_skipped": cal_counts,
            "events_new_this_pass": ar.events_seen,
-           "events_deferred_budget": deferred, "events_total_processed": len(ar.processed),
+           "events_deferred_budget": deferred, "events_at_or_after_campaign_cut": after_cut,
+           "campaign_cut": None if campaign is None else campaign.isoformat(), "events_total_processed": len(ar.processed),
            "symbols_watched": syms, "symbols_with_ticks": tick_syms,
            "symbols_without_ticks": sorted(set(syms) - set(tick_syms)),
            "unmeasured_by_symbol": ar.unmeasured, "edges": len(edges),
@@ -715,7 +730,9 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
            "thresholds": {"min_events": MIN_EVENTS, "min_wilson": MIN_WILSON,
                           "min_agree_gap": MIN_AGREE_GAP, "k_sigma": K_SIGMA, "fdr_q": FDR_Q,
                           "min_prior": MIN_PRIOR},
-           "state": ("PRODUCING" if donations else
+           "state": ("UNMEASURED: no readable campaign lockbox cut (reports/LOCKBOX_CUT.json); "
+                     "nothing processed or donated" if campaign is None else
+                     "PRODUCING" if donations else
                      "UNMEASURED: no tick tape around any held release" if not tick_syms or
                      not ar.processed else "ACCRUING")}
     if write:
@@ -737,6 +754,14 @@ def run(*, budget_s: float = 240.0, calendar_root: Path | None = None,
         report_p.parent.mkdir(parents=True, exist_ok=True)
         report_p.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     return doc
+
+
+def _campaign_cut() -> pd.Timestamp | None:
+    try:
+        from research.lockbox_cut import PUBLISHED, campaign_cut
+        return campaign_cut(publish_to=PUBLISHED)
+    except Exception:
+        return None
 
 
 def _edge_key_matches(raw: str, edge_key: str) -> bool:

@@ -443,10 +443,13 @@ def generate_component_hypotheses(components: list[StrategyComponent]) -> list[d
 #      so the walk never stalls on a top-N (SF1).
 #
 # WHAT THE AUDITOR HELD AND HOW IT IS PAID (HOLD on #1146, MF1, 2026-11-13):
-#   * THE SCREEN NEVER SEES THE LOCKBOX. Every screen reads only the bars dated before the
-#      screen cut: the last SCREEN_HOLDOUT of the symbol's calendar (twice the gauntlet's own
-#      lockbox fraction, so the cut sits before the gauntlet's union-calendar cut on any cell
-#      whose history is not more than twice as long as the shortest) is never read here.
+#   * THE SCREEN NEVER SEES THE LOCKBOX. Every screen reads only the bars dated before
+#      min(own cut, campaign cut): the own cut withholds the last SCREEN_HOLDOUT of the cell's
+#      calendar; the campaign cut is the one the gauntlet LAST USED on its union calendar, read
+#      through `research.lockbox_cut` (published to reports/LOCKBOX_CUT.json). A late-starting
+#      M1 cell under long H1 histories is therefore cut where the Judge's lockbox begins, not
+#      where its own dates would put it. No readable campaign cut: nothing is screened and the
+#      cursor does not move (fail closed).
 #   * THE SEARCH IS CHARGED. A re-mate carries `claim_family = harvest:<parent>` and
 #      `claim_selection_trials = screened looks this pass (cells x horizons) + the parent's own
 #      search_count`, in its lineage (lifted onto the docket row by `libs.moat.docket_feed`) and in
@@ -701,11 +704,20 @@ def _may_hypothesise(symbol: str, family: str) -> bool:
         return False
 
 
+def _campaign_cut() -> pd.Timestamp | None:
+    try:
+        from research.lockbox_cut import PUBLISHED, campaign_cut
+        return campaign_cut(publish_to=PUBLISHED)
+    except Exception:
+        return None
+
+
 def harvest_pass(*, budget_s: float = 240.0, per_pass: int = PER_PASS,
                  rejected: list[dict[str, Any]] | None = None,
                  bars_for: Any = None, enqueue: Any = None, write: bool = True,
                  out_dir: Path | None = None, report_path: Path | None = None,
-                 claim_ledger: Path | None = None, lane_ok: Any = None) -> dict[str, Any]:
+                 claim_ledger: Path | None = None, lane_ok: Any = None,
+                 cut_provider: Any = None) -> dict[str, Any]:
     """One hourly pass over rejected cells not yet examined.
 
     Screens each cell on the bars before its screen cut only; enqueues re-mates AFTER the pass,
@@ -720,6 +732,13 @@ def harvest_pass(*, budget_s: float = 240.0, per_pass: int = PER_PASS,
     seen = list(st.get("seen_injected") or [])
     seen_set = set(seen)
     tally: dict[str, int] = defaultdict(int)
+    campaign = (cut_provider or _campaign_cut)()
+    if campaign is not None:
+        campaign = pd.Timestamp(campaign)
+        campaign = campaign.tz_localize("UTC") if campaign.tzinfo is None else campaign
+    if campaign is None:
+        tally["CAMPAIGN_CUT_UNREADABLE"] += 1
+        rejected = []                                  # fail closed: screen nothing
     if rejected is None:
         try:
             todo = _rejected_after(cursor, per_pass)
@@ -765,11 +784,17 @@ def harvest_pass(*, budget_s: float = 240.0, per_pass: int = PER_PASS,
                 bars.columns):
             tally["no_bars"] += 1
             continue
-        cut = screen_cut(bars)
-        if cut is None:
+        own = screen_cut(bars)
+        if own is None:
             tally["no_bars"] += 1
             continue
-        screen = bars[pd.DatetimeIndex(bars.index).normalize() < cut]
+        own = own.tz_localize("UTC") if own.tzinfo is None else own.tz_convert("UTC")
+        cut = min(own, campaign) if campaign is not None else own
+        if cut < own:
+            tally["campaign_cut_binds"] += 1
+        bix = pd.DatetimeIndex(bars.index)
+        bix = bix.tz_localize("UTC") if bix.tz is None else bix.tz_convert("UTC")
+        screen = bars[bix.normalize() < cut]
         if len(screen) < 300:
             tally["screen_too_short"] += 1
             continue
@@ -878,7 +903,10 @@ def harvest_pass(*, budget_s: float = 240.0, per_pass: int = PER_PASS,
                      "screen_holdout": SCREEN_HOLDOUT},
            "external_ea_components": ("UNMEASURED: no parsed external EA corpus is held; the "
                                       "ComponentExtractor runs when one is"),
-           "state": ("PRODUCING" if donated else "EXAMINING" if ledger else
+           "campaign_cut": None if campaign is None else campaign.isoformat(),
+           "state": ("UNMEASURED: no readable campaign lockbox cut (reports/LOCKBOX_CUT.json); "
+                     "nothing screened" if campaign is None else
+                     "PRODUCING" if donated else "EXAMINING" if ledger else
                      "UNMEASURED: no rejected cells reachable" if not held else "IDLE")}
     if write:
         od.mkdir(parents=True, exist_ok=True)
