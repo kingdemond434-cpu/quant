@@ -820,7 +820,7 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     now = datetime.now(UTC)
     ts = (now - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     older = (now - timedelta(minutes=40)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    stale = (now - timedelta(hours=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stale = (now - timedelta(hours=80)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def run_(i: int, sha: str = "h1", attempt: int = 1, wf: int = 7, at: str = ts) -> dict:
         return {"id": i, "event": "pull_request", "status": "completed",
@@ -860,3 +860,55 @@ def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
     assert reruns == ["repos/o/r/actions/runs/10/rerun"]
     assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
     assert not lf.never_started([]) and lf.never_started(jobs[10])
+
+
+def test_cancelled_gate_runs_are_requeued_first_and_only_while_the_queue_has_room(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Autonomy 2026-11-13: after the 16:27Z mass cancel, #1041 (CLEAR, approved, all else green)
+    sat with a cancelled, never-started audit-gate run that rule 4 never listed: it read only
+    `pull_request` runs. Rule 4b re-runs never-started `pull_request_target` runs too, gate runs
+    first, reads every page, and re-runs nothing while REQUEUE_QMAX or more runs are queued."""
+    lf = _lf()
+    ts = (datetime.now(UTC) - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def run_(i: int, event: str, wf: int, branch: str = "b1") -> dict:
+        return {"id": i, "event": event, "status": "completed", "conclusion": "cancelled",
+                "run_attempt": 1, "head_branch": branch, "head_sha": "h1", "workflow_id": wf,
+                "created_at": ts}  # fmt: skip
+
+    gate = run_(20, "pull_request_target", 5)
+    ci = run_(21, "pull_request", 6)
+    filler = [run_(1000 + i, "pull_request", 9000 + i, "gone") for i in range(100)]
+    queued_n = {"n": 0}
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {
+                "workflow_runs": [
+                    {"id": 5000 + i, "event": "schedule"} for i in range(queued_n["n"])
+                ]
+            }
+        if "/pulls?" in path:
+            return [{"number": 1, "head": {"ref": "b1", "sha": "h1"}}]
+        if "status=cancelled&event=pull_request_target" in path:
+            return {"workflow_runs": [gate]}
+        if "status=cancelled&event=pull_request" in path:
+            return {"workflow_runs": filler if path.endswith("&page=1") else [ci]}  # ci: page 2
+        if path.endswith("/jobs?per_page=100"):
+            return {"jobs": [{"steps": [], "runner_name": None, "runner_id": 0}]}
+        if "head_sha=" in path:
+            return {"workflow_runs": [gate, ci]}
+        return None
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    queued_n["n"] = lf.REQUEUE_QMAX  # the queue is full: nothing is re-run
+    lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None)
+    assert not [p for m, p in calls if p.endswith("/rerun")]
+    calls.clear()
+    queued_n["n"] = 0
+    lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None)
+    reruns = [p for m, p in calls if p.endswith("/rerun")]
+    assert reruns == ["repos/o/r/actions/runs/20/rerun", "repos/o/r/actions/runs/21/rerun"]
