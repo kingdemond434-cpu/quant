@@ -2060,7 +2060,7 @@ def test_an_allocator_that_decides_the_same_book_is_measured(tmp_path: Path) -> 
     """A changed allocator whose every changed line ran and whose book is identical is no longer
     UNMEASURED; its stamps (time, duration) are not decisions."""
     base = _alloc_tree(tmp_path / "base")
-    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("scale = 1.0", "scale = 2.0 / 2.0"))
+    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("scale = 1.0", "scale = float(1.0)"))
     rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
     assert rep["verdict"] == "PASS", rep["problems"]
     assert rep["allocator"]["ran"] and rep["allocator"]["fraction_deltas"] == {}
@@ -2114,7 +2114,7 @@ def test_a_moved_threshold_the_evidence_never_crosses_stays_unmeasured(tmp_path:
     rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
     assert rep["verdict"] == "FAIL" and rep["allocator"]["fraction_deltas"] == {}
     assert any("a numeric literal or comparison moved" in p for p in rep["problems"])
-    assert rep["allocator"]["moved_thresholds"] == {"base": [10], "pr": [10]}
+    assert rep["allocator"]["moved_thresholds"] == {"base": [12], "pr": [12]}
     flipped = _alloc_tree(tmp_path / "op", _ALLOC.replace("if scale > 5.0:", "if scale >= 5.0:"))
     rep = rs.compare(base, flipped, [rs.ALLOCATOR], _grid())
     assert any("a numeric literal or comparison moved" in p for p in rep["problems"])
@@ -2122,8 +2122,12 @@ def test_a_moved_threshold_the_evidence_never_crosses_stays_unmeasured(tmp_path:
 
 def test_a_refactor_that_moves_no_number_stays_measured(tmp_path: Path) -> None:
     base = _alloc_tree(tmp_path / "base")
-    # rename a local, split its binding in two: no number and no operator moves
-    renamed = _ALLOC.replace("scale", "k").replace("    k = 1.0", "    unit = 1.0\n    k = unit")
+    # rename a parameter, split a binding in two: no number and no operator moves
+    renamed = (
+        _ALLOC.replace('mode="normal"', 'clock="normal"')
+        .replace('"mode": mode', '"mode": clock')
+        .replace("    scale = 1.0", "    unit = 1.0\n    scale = unit")
+    )
     head = _alloc_tree(tmp_path / "head", renamed)
     rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
     assert rep["verdict"] == "PASS", rep["problems"]
