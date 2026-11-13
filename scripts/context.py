@@ -56,13 +56,24 @@ def read_journal(path: Path = JOURNAL) -> list[dict[str, Any]]:
 
 def next_id(rows: list[dict[str, Any]], day: str) -> str:
     prefix = f"D-{day}-"
+    # The serial is the first field after the day; a tagged id (D-day-NNN-tag) counts too.
     serials = [int(suffix) for r in rows
                if str(r.get("id", "")).startswith(prefix)
-               and (suffix := str(r["id"])[len(prefix):]).isdigit()]
+               and (suffix := str(r["id"])[len(prefix):].split("-")[0]).isdigit()]
     # Recovery and handoff can leave gaps. Counting receipts reuses an existing
     # high serial, silently giving two decisions one identity.
     n = max(serials, default=0)
     return f"D-{day}-{n + 1:03d}"
+
+
+def row_tag(at: str, by: str, title: str, decision: str) -> str:
+    """Six hex of the row's own content, appended to the serial (2026-11-11).
+
+    MEASURED 2026-11-11: four open PRs (#593, #918, #926, #934) minted ids another open PR
+    already held. Each session fetches only its own branch, so `committed_rows` cannot see the
+    others, and the serial alone collided. Two rows minted apart now differ in this tag even
+    when their serials coincide, so no id is ever shared. The serial stays for reading order."""
+    return hashlib.sha256(f"{at}|{by}|{title}|{decision}".encode()).hexdigest()[:6]
 
 
 #: The branches whose journals a new id must clear: LIVE, and every claude/* PR branch, whose
@@ -120,7 +131,9 @@ def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
         raise SystemExit(f"evidence pointer does not resolve: {bad} (use a repo path, pr:N, sha:X, url: or thread:)")
     rows = read_journal(path) + committed_rows(path)
     now = datetime.now(UTC)
-    row = {"id": next_id(rows, now.strftime("%Y%m%d")), "at": now.isoformat(timespec="seconds"),
+    at = now.isoformat(timespec="seconds")
+    rid = f"{next_id(rows, now.strftime('%Y%m%d'))}-{row_tag(at, a.by, a.title, a.decision)}"
+    row = {"id": rid, "at": at,
            "title": a.title, "decision": a.decision, "why": a.why, "by": a.by,
            "owner": a.owner or "", "evidence": list(a.evidence or []),
            "supersedes": a.supersedes or ""}
