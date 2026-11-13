@@ -5,6 +5,7 @@ import ast
 import inspect
 import json
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -41,7 +42,9 @@ def test_cash_incumbent_heavy_scan_refreshes_but_short_clock_carries(tmp_path, h
           for name, mean in (("POSITIVE", .08), ("NEGATIVE", -.08))]
     cfg = WorldConfig(seed=18, n_worlds=48, n_rows=100)
     worlds = sample_worlds(ev, cfg)
+    # `t0` is the pass's start, which the heavy scan's pass deadline is measured from.
     scope = {**vars(pa), "heavy": heavy, "mode": "heavy" if heavy else "normal",
+             "t0": time.time(),
              "OUT": output, "ev": ev, "worlds": worlds, "cfg": cfg, "seed": 18,
              "funded": {}, "book": SimpleNamespace(total_heat=0.), "dd": {},
              "free": SimpleNamespace(marginal={}), "_log": lambda message: None,
