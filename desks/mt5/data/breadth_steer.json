@@ -5,6 +5,9 @@
  "rule": "steered parked cells are converted and judged FIRST, in this group order; every other cell keeps its place behind them. A steer reorders the queue and never removes a cell from it.",
  "unsteered_share": 0.25,
  "unsteered_share_rule": "a quarter of every pass's examined rows, interleaved, are unsteered cells, so the steer reorders the queue without starving it",
+ "exotic_share_max": 0.10,
+ "exotic_share_rule": "zuck 2026-11-13 19:46Z: at least 90% of mining and conversion compute on non-exotic markets (majors, minor crosses, gold and metals, indices, other liquid markets); at most 10% on exotics. A hard quota on each pass's examined rows.",
+ "exotic_currencies": ["NOK", "SEK", "ZAR", "MXN", "TRY", "PLN", "HUF", "CZK", "HKD", "SGD", "CNH", "DKK", "ILS", "THB"],
  "groups": [
   {"name": "gold", "symbol_prefixes": ["XAU"]},
   {"name": "indices", "asset_classes": ["indices", "index"]},

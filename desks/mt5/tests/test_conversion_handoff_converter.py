@@ -625,7 +625,8 @@ def test_a_deferred_steered_row_is_not_pinned_and_the_unsteered_floor_holds(
     _write(world["handoff"], rows)
     examined_steered = []
     for _ in range(3):
-        doc = world["run"](max_per_family_day=1, steer=STEER, steer_share=0.5)
+        doc = world["run"](max_per_family_day=1, steer=STEER, steer_share=0.5,
+                           exotic_share=1.0)
         assert doc["breadth"]["selected_by_group"] == {"asia_window": 1, "unsteered": 1}
         cur = json.loads((world["tmp"] / "cursor.json").read_text("utf-8"))
         examined_steered.append(cur["steer_cursors"]["asia_window|tokyo_open_fade"])
@@ -638,3 +639,36 @@ def test_the_unsteered_floor_is_a_quarter_by_default() -> None:
     from research import conversion_handoff_steer as S
     assert S.unsteered_share() == 0.25
     assert S.unsteered_share(Path("/nonexistent/steer.json")) == S.DEFAULT_UNSTEERED_SHARE
+
+
+def test_exotics_are_classified_by_registry_class_and_by_leg() -> None:
+    from research import conversion_handoff_steer as S
+    cls = {"USDNOK": "forex", "USDTRY": "forex exotics", "EURUSD": "forex", "XAUUSD": "commodities",
+           "US500": "indices", "BTCUSD": "crypto"}.get
+
+    def ex(sym: str) -> bool:
+        return S.is_exotic(sym, lambda s: cls(s) or "")
+
+    assert ex("USDNOK") and ex("USDTRY") and ex("EURSEK")
+    assert not ex("EURUSD") and not ex("XAUUSD") and not ex("US500") and not ex("BTCUSD")
+    assert S.exotic_quota() == 0.10
+    assert S.exotic_quota(Path("/nonexistent/steer.json")) == S.DEFAULT_EXOTIC_SHARE
+
+
+def test_the_exotic_quota_is_hard_and_its_split_is_reported(
+        world: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    """zuck 19:46Z: at most 10% of a pass's examined rows are exotic, however many are queued."""
+    monkeypatch.setattr(C, "MAX_EXAMINED_PER_PASS", 10)
+    monkeypatch.setattr(C, "EXAMINE_FACTOR", 0)
+    rows = [_row(f"N{i:02d}", "short_history_after_cut", symbol="USDNOK") for i in range(20)]
+    rows += [_row(f"E{i:02d}", "short_history_after_cut", symbol="EURUSD") for i in range(20)]
+    _write(world["handoff"], rows)
+    doc = world["run"](steer=[])
+    q = doc["breadth"]["exotic_quota"]
+    assert q["quota_max_exotic_share"] == 0.10
+    assert q["examined"] == {"non_exotic": 9, "exotic": 1, "exotic_share": 0.1}
+    assert q["selected_exotic_rows"] == 1 and q["exotic_rows_held_by_quota"] == 9
+    # with nothing else queued, exotics still use only their own share of the pass
+    _write(world["handoff"], rows[:20])
+    doc2 = world["run"](steer=[])
+    assert doc2["breadth"]["exotic_quota"]["examined"]["exotic"] == 1

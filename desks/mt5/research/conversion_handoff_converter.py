@@ -461,10 +461,55 @@ from research.conversion_handoff_routes import (  # noqa: E402
 from research.conversion_handoff_steer import (  # noqa: E402
     UNSTEERED,
     asset_class,
+    exotic_quota,
+    is_exotic,
     load_steer,
     steer_group,
     unsteered_share,
 )
+
+
+def _exotic_split(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[str, Any]],
+                  examined_rows: Sequence[Mapping[str, Any]],
+                  exotic: Callable[[Mapping[str, Any]], bool], quota: float,
+                  selected: int, held: int) -> dict[str, Any]:
+    """The realised non-exotic vs exotic split of this pass: rows examined, parents converted
+    and child cells minted, with the quota and what it held back."""
+    parent = {str(r.get("key")): r for r in work}
+
+    def split(pairs: Sequence[tuple[Mapping[str, Any], int]]) -> dict[str, Any]:
+        ex = sum(n for r, n in pairs if exotic(r))
+        tot = sum(n for _, n in pairs)
+        return {"non_exotic": tot - ex, "exotic": ex,
+                "exotic_share": round(ex / tot, 4) if tot else None}
+
+    conv = [(parent.get(str(r.get("key"))) or r, int(r.get("trials_charged") or 0))
+            for r in recs if r.get("status") == CONVERTED]
+    return {"quota_max_exotic_share": quota,
+            "selected_exotic_rows": selected, "exotic_rows_held_by_quota": held,
+            "examined": split([(r, 1) for r in examined_rows]),
+            "converted_parents": split([(r, 1) for r, _ in conv]),
+            "child_cells": split(conv),
+            "rule": ("zuck 2026-11-13 19:46Z: at most 10% of mining and conversion compute on "
+                     "exotic-currency markets; a hard quota on each pass's examined rows "
+                     "(desks/mt5/data/breadth_steer.json exotic_share_max)")}
+
+
+def _interleave(first: list[dict[str, Any]], second: list[dict[str, Any]],
+                share: float) -> list[dict[str, Any]]:
+    """Both lists whole, `second` spread through `first` so that it never holds more than
+    `share` of any prefix while `first` still has rows (the floor or quota holds under every
+    per-pass cap, not only over the whole list)."""
+    out: list[dict[str, Any]] = []
+    i = j = 0
+    while i < len(first) or j < len(second):
+        if j < len(second) and (i >= len(first) or j + 1 <= share * (len(out) + 1)):
+            out.append(second[j])
+            j += 1
+        else:
+            out.append(first[i])
+            i += 1
+    return out
 
 
 def _breadth_counts(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[str, Any]],
@@ -508,6 +553,7 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
              now: datetime | None = None,
              steer: list[dict[str, Any]] | None = None,
              steer_share: float | None = None,
+             exotic_share: float | None = None,
              class_of: Callable[[str], str] | None = None,
              clock: Callable[[], float] = time.monotonic) -> dict[str, Any]:
     handoff = handoff or HANDOFF
@@ -695,26 +741,39 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
     # two are interleaved, so the steer reorders the queue without starving the rest of it --
     # in examination and in the per-pass conversion cap alike.
     share = (unsteered_share() if steer_share is None else steer_share) if names else 1.0
-    steered: list[dict[str, Any]] = []
+    # THE EXOTIC QUOTA (zuck's standing rule, 2026-11-13 19:46Z): at most `exotic_share` (10%)
+    # of every pass's examined rows are exotic-currency cells; the rest of the capacity goes to
+    # majors, minor crosses, metals, indices and the other liquid markets. A HARD quota on the
+    # pass's capacity, not a priority: an exotic row over it is not examined this pass (it keeps
+    # its queue place and is counted DEFERRED_BUDGET), whatever its steer group.
+    q = exotic_quota() if exotic_share is None else min(1.0, max(0.0, exotic_share))
+    exotic_memo: dict[str, bool] = {}
+
+    def exotic(row: Mapping[str, Any]) -> bool:
+        k = str(row.get("key") or "")
+        if k not in exotic_memo:
+            exotic_memo[k] = is_exotic(str(row.get("symbol") or ""), class_of)
+        return exotic_memo[k]
+
+    steered_all: list[dict[str, Any]] = []
     for n in names:
-        if len(steered) >= examine_cap:
+        if len(steered_all) >= examine_cap:
             break
-        steered += round_robin(lanes[n], examine_cap - len(steered), fam_order)
-    rest = round_robin(lanes[UNSTEERED], examine_cap, fam_order)
-    floor_n = min(len(rest), math.ceil(share * examine_cap))
-    steered = steered[:examine_cap - floor_n]
-    rest = rest[:examine_cap - len(steered)]
-    mixed: list[dict[str, Any]] = []
-    i_s = i_r = 0
-    while i_s < len(steered) or i_r < len(rest):
-        take_rest = i_r < len(rest) and (i_s >= len(steered)
-                                         or i_r + 1 <= share * (len(mixed) + 1))
-        if take_rest:
-            mixed.append(rest[i_r])
-            i_r += 1
-        else:
-            mixed.append(steered[i_s])
-            i_s += 1
+        steered_all += round_robin(lanes[n], examine_cap - len(steered_all), fam_order)
+    rest_all = round_robin(lanes[UNSTEERED], examine_cap, fam_order)
+    ex_cap = math.floor(q * examine_cap)
+    ex_rows = [r for r in steered_all + rest_all if exotic(r)][:ex_cap]
+    major_cap = examine_cap - len(ex_rows)
+    steered = [r for r in steered_all if not exotic(r)]
+    rest = [r for r in rest_all if not exotic(r)]
+    floor_n = min(len(rest), math.ceil(share * major_cap))
+    steered = steered[:major_cap - floor_n]
+    rest = rest[:major_cap - len(steered)]
+    majors = _interleave(steered, rest, share)
+    exotic_selected = len(ex_rows)
+    exotic_held = sum(1 for r in steered_all + rest_all if exotic(r)) - exotic_selected
+    mixed = _interleave(majors, ex_rows,
+                        q if majors else 1.0)
     work = list(restored) + mixed
     steer_selected = Counter(group_of(r) for r in mixed)
     charged_children: dict[str, str] = dict(led["charged_children"])
@@ -994,8 +1053,10 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
                  "MIN_PEER_HISTORY_DAYS": MIN_PEER_HISTORY_DAYS,
                  "MIN_PEER_LEAD_DAYS": MIN_PEER_LEAD_DAYS, "RETRY_H": RETRY_H},
         "cursor": cursor_doc,
-        "breadth": _breadth_counts(recs, work, steer, steer_selected, group_of, class_of,
-                                   share),
+        "breadth": {**_breadth_counts(recs, work, steer, steer_selected, group_of, class_of,
+                                      share),
+                    "exotic_quota": _exotic_split(recs, work, work[:examined], exotic, q,
+                                                  exotic_selected, exotic_held)},
         "budget": {"requested_s": budget_s, "work_limit_s": round(limit, 1),
                    "elapsed_s": round(clock() - t0, 2), "examined": examined,
                    "selected": len(work), "not_examined": len(work) - examined,

@@ -47,6 +47,52 @@ def unsteered_share(path: Path = STEER) -> float:
     return min(1.0, max(0.0, v)) if v == v else DEFAULT_UNSTEERED_SHARE
 
 
+#: zuck's standing rule (2026-11-13 19:46Z): at most this share of compute on exotics.
+DEFAULT_EXOTIC_SHARE = 0.10
+#: Exotic currencies named in the rule ("and similar" is the registry's own `forex exotics`).
+DEFAULT_EXOTIC_CURRENCIES = ("NOK", "SEK", "ZAR", "MXN", "TRY", "PLN", "HUF", "CZK", "HKD", "SGD",
+                             "CNH", "DKK", "ILS", "THB")
+
+
+def _doc(path: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def exotic_quota(path: Path = STEER) -> float:
+    """The most of each pass's examined rows that may be exotic, in [0, 1]."""
+    try:
+        v = float(_doc(path).get("exotic_share_max", DEFAULT_EXOTIC_SHARE))
+    except (TypeError, ValueError):
+        return DEFAULT_EXOTIC_SHARE
+    return min(1.0, max(0.0, v)) if v == v else DEFAULT_EXOTIC_SHARE
+
+
+def exotic_currencies(path: Path = STEER) -> frozenset[str]:
+    got = _doc(path).get("exotic_currencies")
+    if isinstance(got, list) and got:
+        return frozenset(str(c).upper() for c in got)
+    return frozenset(DEFAULT_EXOTIC_CURRENCIES)
+
+
+def is_exotic(symbol: str, class_of: Any = None,
+              currencies: frozenset[str] | None = None) -> bool:
+    """An exotic-currency market: the registry files it under `forex exotics`, or the symbol is a
+    six-letter pair with an exotic leg. Metals, indices and every non-FX class never are."""
+    sym = symbol.upper()
+    if not sym or sym.startswith(("XAU", "XAG", "XPT", "XPD")):
+        return False
+    cls = str((class_of or _class_of)(sym) or "").lower()
+    if "exotic" in cls:
+        return True
+    pair = _pair(sym)
+    cur = exotic_currencies() if currencies is None else currencies
+    return bool(pair) and bool(set(pair) & cur) and cls in ("", "forex", "fx")
+
+
 def _class_of(symbol: str) -> str:
     try:
         import research.universe_policy as up
