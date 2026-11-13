@@ -211,7 +211,8 @@ def test_a_push_waiting_on_its_pre_push_hook_is_spared(monkeypatch: pytest.Monke
     _install(monkeypatch, [hooked])
     rep = gwl.hung_writers(sleep=_no_sleep)
     assert rep["hung"] == [], "a writer waiting on its own live child is not a wedge"
-    assert any(r["pid"] == 305 and "waiting on its own live child" in r["why"]
+    # Spared by the bounded descendant-CPU rule (#708, TREE_SPARE_MAX_AGE_S).
+    assert any(r["pid"] == 305 and "a hook at work under it" in r["why"]
                for r in rep["spared"])
 
 
