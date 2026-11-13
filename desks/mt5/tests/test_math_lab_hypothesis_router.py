@@ -249,3 +249,26 @@ def test_quant_guild_cards_are_intake_with_orig_where_the_mechanism_is_new():
                                      donation_dirs=[])
     assert out and all(h["generator"] == "quant_guild" for h in out)
     assert sum(h["original"] for h in out) > 0 and not out[-1]["original"]
+
+
+def test_llm_lab_revisions_rank_with_originals_and_the_separating_test_is_the_first_test(tmp_path):
+    lab = tmp_path / "llm_lab"
+    lab.mkdir()
+    (lab / "discoveries_20261113T2200.json").write_text(json.dumps({"discoveries": [
+        {"symbol": "EURUSD", "mechanism": "plain idea", "cell_id": "p1"},
+        {"symbol": "EURUSD", "mechanism": "hardened idea", "lab": "REVISION", "cell_id": "r1",
+         "competing_explanations": ["flow", "common dollar shock"],
+         "separating_test": "lead-lag controlling the dollar index"}]}), "utf-8")
+    queue = tmp_path / "orig_ideas.json"
+    queue.write_text(json.dumps({"ideas": [
+        {"id": "q-false", "orig": False, "symbols": ["EURUSD"], "mechanism": "a crowded idea"},
+        {"id": "q-unsaid", "symbols": ["EURUSD"], "mechanism": "an [ORIG] row"}]}), "utf-8")
+    out, _ = HR.load_file_ideas(["EURUSD"], idea_files=[queue], donation_dirs=[lab])
+    by_id = {h["hypothesis_id"]: h for h in out}
+    assert by_id["q-false"]["original"] is False, "an explicit orig=false is honoured"
+    assert by_id["q-unsaid"]["original"] is True
+    assert by_id["r1"]["refereed_revision"] is True
+    assert by_id["r1"]["first_test"] == "lead-lag controlling the dollar index"
+    assert "common dollar shock" in by_id["r1"]["mechanism"]
+    order = [h["hypothesis_id"] for h in out]
+    assert order.index("r1") < order.index("p1") and order.index("r1") < order.index("q-false")

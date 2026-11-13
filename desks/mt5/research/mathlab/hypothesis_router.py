@@ -324,9 +324,17 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path | tuple[str, Pa
                 status["set_aside_no_huntable_symbol"] += 1
                 continue
             tags = _gap_tags(row)
+            # An explicit `"orig": false` is honoured on every source; only an IDEA_QUEUE row
+            # that says nothing defaults to original, because that file mirrors [ORIG] rows.
             original = bool(row.get("orig", generator == "idea_queue"))
+            competing = row.get("competing_explanations") or []
+            if isinstance(competing, (list, tuple)):
+                competing = " ".join(str(c) for c in competing)
             mechanism = " ".join(str(row.get(k) or "") for k in (
-                "mechanism_class", "mechanism", "falsifier", "title")).strip()
+                "mechanism_class", "mechanism", "title")).strip() + " " + " ".join(
+                str(v) for v in (competing, row.get("separating_test"), row.get("falsifier"))
+                if v)
+            revision = str(row.get("lab") or "").upper() == "REVISION"
             hid = str(row.get("id") or row.get("cell_id") or f"{path.stem}:{i}")
             for target in targets[:2]:
                 out.append({"hypothesis_id": hid, "generator": generator,
@@ -335,9 +343,16 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path | tuple[str, Pa
                                 row.get("at") or row.get("created_at") or ""),
                             "original": original, "breadth_gap": tags,
                             "traditions": [str(t) for t in row.get("traditions") or []],
+                            # The first test to formalise: the LLM lab's separating test, then
+                            # the falsifier (LLM lab hand-off, 2026-11-13).
+                            "first_test": str(row.get("separating_test")
+                                              or row.get("falsifier") or "")[:400],
+                            "refereed_revision": revision,
                             "gap_weight": gap_weight(target) + (1 if tags else 0),
                             "exotic": is_exotic(target)})
-    out.sort(key=lambda h: (not h["original"], -h["gap_weight"]))
+    # Original ideas and referee-hardened revisions first, then breadth gaps; nothing is
+    # dropped, so the breadth of what the labs propose is kept and only the order changes.
+    out.sort(key=lambda h: (not (h["original"] or h["refereed_revision"]), -h["gap_weight"]))
     status.update(status="MEASURED", kept=len(out),
                   original=sum(1 for h in out if h["original"]))
     return out, status
@@ -409,6 +424,7 @@ def plan(hypotheses: list[dict[str, Any]], registry: Any, max_targets: int, *,
         log.append({"hypothesis_id": h["hypothesis_id"], "target": h["target"],
                     "generator": h["generator"], "origin": h["origin"],
                     "original": bool(h["original"]),
+                    "first_test": str(h.get("first_test") or "")[:200],
                     "breadth_gap": list(h.get("breadth_gap") or []),
                     "mechanism": h["mechanism"][:160], "tools": tools})
         score[h["target"]] = score.get(h["target"], 0.0) + 1.0 + 2.0 * float(h["original"]) \
