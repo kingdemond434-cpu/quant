@@ -55,12 +55,15 @@ class Article:
 
 
 def _get(url: str, *, referer: str, timeout: float = 25.0) -> str:
-    from libs.data.off_limits import off_limits
+    from libs.data.off_limits import off_limits, redirected_off_limits
     refused = off_limits(url)
     if refused:
         raise PermissionError(refused)
     req = urllib.request.Request(url, headers={**_UA, "Referer": referer})
     with urllib.request.urlopen(req, timeout=timeout) as fh:
+        hop = redirected_off_limits(url, fh.geturl())
+        if hop:
+            raise PermissionError(hop)
         body: str = fh.read().decode("utf8", errors="ignore")
     return body
 

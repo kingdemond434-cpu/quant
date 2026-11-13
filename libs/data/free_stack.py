@@ -100,7 +100,7 @@ def classify(exc: BaseException) -> str:
 def http_fetch(url: str, headers: Mapping[str, str] | None = None,
                body: bytes | None = None) -> bytes:
     """The live transport. urllib only: `requests` is pinned but adds nothing here."""
-    from libs.data.off_limits import off_limits
+    from libs.data.off_limits import off_limits, redirected_off_limits
     if off_limits(url):
         raise FetchError("off_limits", url)
     hdr = {"User-Agent": UA, "Accept": "*/*"}
@@ -109,6 +109,8 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
                                  method="POST" if body is not None else "GET")
     try:
         with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+            if redirected_off_limits(url, resp.geturl()):
+                raise FetchError("off_limits", f"redirect from {url}")
             raw: bytes = resp.read(MAX_BYTES + 1)
     except urllib.error.HTTPError as exc:
         raise FetchError(f"http_{exc.code}", url) from exc

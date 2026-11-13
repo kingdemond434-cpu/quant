@@ -378,7 +378,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
     from libs.data.off_limits import STATUS as OFF_STATUS
-    from libs.data.off_limits import off_limits
+    from libs.data.off_limits import off_limits, redirected_off_limits
     refused = off_limits(url)
     if refused:                       # an off-limits ground: no request, no key, ever
         rec.update({"status": OFF_STATUS, "why": refused})
@@ -423,6 +423,10 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     req = urllib.request.Request(url, data=body_out, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+            hop = redirected_off_limits(url, r.geturl())
+            if hop:                       # redirected into an off-limits ground: body unread
+                rec.update({"status": OFF_STATUS, "why": hop})
+                return rec
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")

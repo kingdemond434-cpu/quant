@@ -3234,12 +3234,15 @@ def _redact(url: str, src: Source) -> str:
 
 
 def http_get(url: str) -> tuple[bytes, str]:
-    from libs.data.off_limits import off_limits
+    from libs.data.off_limits import off_limits, redirected_off_limits
     refused = off_limits(url)
     if refused:
         raise PermissionError(refused)
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+        hop = redirected_off_limits(url, r.geturl())
+        if hop:
+            raise PermissionError(hop)
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 

@@ -38,14 +38,25 @@ WHY_STATUTE = ("5 U.S.C. 13107(c): congressional financial disclosure reports ma
 
 
 def off_limits(url: str) -> str | None:
-    """The refusal reason when `url` points at an off-limits host, else None."""
+    """The refusal reason when `url` points at an off-limits host, else None. A URL whose host
+    cannot be read is refused too (fail closed)."""
     try:
         host = (urlsplit(url if "//" in url else f"//{url}").hostname or "").lower().rstrip(".")
     except ValueError:
-        return None
+        return f"unparseable URL, refused (fail closed): {url[:80]!r}"
     for dom in OFF_LIMITS_DOMAINS:
         if host == dom or host.endswith("." + dom):
             return f"{WHY} [{host}]"
     if host in STATUTE_HOSTS:
         return f"{WHY_STATUTE} [{host}]"
     return None
+
+
+def redirected_off_limits(requested: str, final: str | None) -> str | None:
+    """After a fetch that may have followed redirects: the refusal when the FINAL hop is an
+    off-limits host. Callers drop the body unread, so an allowed host can never launder a
+    banned one through a 30x."""
+    if not final or final == requested:
+        return None
+    refused = off_limits(final)
+    return f"redirected into an off-limits host, body discarded: {refused}" if refused else None

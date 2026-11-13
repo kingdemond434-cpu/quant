@@ -7,7 +7,7 @@ import re
 import sys
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 import yaml
@@ -117,3 +117,44 @@ def test_alt_proxies_never_fetches_an_off_limits_source() -> None:
         host = url.split("/")[2].lower() if "//" in url else ""
         if re.search(r"weixin|wechat|sogou|baidu", host):
             assert off_limits(url), src.id
+
+
+def test_a_malformed_url_fails_closed() -> None:
+    assert off_limits("http://[::1")                   # unparseable host: refused, not None
+
+
+class _Redirected:
+    """A response whose final hop (after urllib followed a 30x) is an off-limits host."""
+
+    url = "https://www.baidu.com/landing"
+    status = 200
+    headers: ClassVar[dict[str, str]] = {}
+
+    def __enter__(self) -> _Redirected:
+        return self
+
+    def __exit__(self, *a: object) -> None:
+        return None
+
+    def geturl(self) -> str:
+        return self.url
+
+    def read(self, *a: Any) -> bytes:
+        raise AssertionError("the body of an off-limits hop was read")
+
+
+def test_a_redirect_into_an_off_limits_host_is_discarded_unread(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.data.off_limits import redirected_off_limits
+    assert redirected_off_limits("https://ok.example/", "https://ok.example/") is None
+    assert redirected_off_limits("https://ok.example/", "https://x.sogou.com/")
+    r = polite_fetch.get("https://ok.example/a", gate=None, retries=0,
+                         opener=lambda *a, **k: _Redirected())
+    assert "redirected into an off-limits host" in r.error and not r.text
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: _Redirected())
+    with pytest.raises(free_stack.FetchError, match="off_limits"):
+        free_stack.http_fetch("https://ok.example/a")
+    with pytest.raises(PermissionError):
+        alt_proxies.http_get("https://ok.example/a")
+    with pytest.raises(PermissionError):
+        cn_sources._get("https://ok.example/a", referer="https://ok.example/")
