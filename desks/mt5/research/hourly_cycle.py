@@ -5765,6 +5765,12 @@ def main() -> None:
         _pa_mode = "heavy"
     pa = _costed("pf_allocator", lambda: _producer(
         "pf_allocator", "research/pf_allocator.py", "--mode", _pa_mode))
+    # THE ALLOCATOR'S BELIEFS, KEPT AND SCORED (ALLOC-08/24/28, DECAY-05/07). Each sleeve's
+    # posterior forecast is appended once per evidence cutoff to an append-only ledger before
+    # its outcome exists; matured rows are scored (PIT calibration) and an anytime-valid e-BH
+    # test names sleeves whose outcomes run worse than forecast. Report only.
+    sfc = _costed("sleeve_forecasts", lambda: _producer(
+        "sleeve_forecasts", "research/sleeve_forecasts.py"))
     if _pa_mode == "heavy":
         try:
             _stamp_heavy_pass(pa)
@@ -6658,6 +6664,7 @@ def main() -> None:
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "sleeve_forecasts": sfc,
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
