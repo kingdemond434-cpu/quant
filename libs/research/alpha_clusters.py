@@ -267,6 +267,8 @@ FAMILY_CLUSTER: dict[str, str] = {
     "vrp_conditioned": "options_implied",
     "iv_term_gated": "options_implied",
     "iv_shock": "options_implied",
+    "iv_level_state": "options_implied",
+    "iv_level_conditioned": "options_implied",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",

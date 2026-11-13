@@ -592,7 +592,8 @@ NOT_SOURCED_HERE = {
                     "research/specialist_cell enumerates each asset-class desk's catalogue, "
                     "builds every cell through the sealed build_cell and charges its own trials; "
                     "sweeping it here would charge them twice"),
-    **dict.fromkeys(("vrp_conditioned", "iv_term_gated", "iv_shock"),
+    **dict.fromkeys(("vrp_conditioned", "iv_term_gated", "iv_shock", "iv_level_state",
+                     "iv_level_conditioned"),
                     "research/specialist_cell enumerates the implied-vol grid on the instruments "
                     "the CBOE indices map to, builds every cell through the sealed build_cell "
                     "and charges its own trials; sweeping it here would charge them twice"),

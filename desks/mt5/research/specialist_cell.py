@@ -25,7 +25,8 @@ THE CATALOGUE (`SPECIALISTS`):
   implied  on the instruments the CBOE vol indices map to (US500, NAS100, US30, XAUUSD, EURUSD,
            `IV_OF`), minted by their own class desks: variance_risk_premium (a conditioner over
            a base cell), vix_term_regime (a VIX term-structure gate, indices only) and iv_shock
-           (a day-over-day implied-vol jump, fade or follow). Public series: crowding-checked
+           (a day-over-day implied-vol jump, fade or follow), iv_level_regime (the IV's
+           percentile in its year / its 5-day change z, at onset and as a filter; from #234). Public series: crowding-checked
            conditioners, not a moat (`mt5desk/families_implied_vol.py`).
 
 BUILDABLE BY THE SEALED GAUNTLET, OR NOT MINTED. Every cell is asked twice. First
@@ -171,6 +172,12 @@ IV_BASES: dict[str, list[tuple[str, dict[str, Any]]]] = {
 #: The VIX term pairs (short, long) the regime gate reads: the front kink and the 1-to-3-month
 #: slope. Only the S&P curve has published tenors, so the gate is minted on the US indices only.
 VIX_TERM_PAIRS: tuple[tuple[str, str], ...] = (("^VIX9D", "^VIX"), ("^VIX", "^VIX3M"))
+#: The implied-vol LEVEL states (label, feature, op, threshold), ported from #234's declared
+#: conditions minus the ones this catalogue already mints (VRP, term inversion, shock). Fixed, so
+#: the grid's width is the multiplicity it is charged for.
+IV_LEVEL_STATES: tuple[tuple[str, str, str, float], ...] = (
+    ("iv_high", "iv_pct_1y", "ge", 0.8), ("iv_low", "iv_pct_1y", "le", 0.2),
+    ("iv_rising", "iv_chg_5d_z", "ge", 1.5), ("iv_falling", "iv_chg_5d_z", "le", -1.5))
 
 
 def _implied_vol(sym: str, klass: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
@@ -193,6 +200,15 @@ def _implied_vol(sym: str, klass: str) -> list[tuple[str, str, list[dict[str, An
     out.append(("iv_shock", "iv_shock",
                 _grid({"iv_ticker": [iv], "mode": ["fade", "follow"], "k_sd": [1.5, 2.0],
                        "hold_d": [1, 3]})))
+    # the level state: DIRECT at its onset (both directions, a one-day hold) and INDIRECT over
+    # the trend base every mapped instrument shares -- one mechanism, two families
+    out.append(("iv_level_regime", "iv_level_state",
+                [{"iv_ticker": iv, "feature": f, "op": op, "threshold": thr, "direction": dr,
+                  "ttl_bars": 24} for _lbl, f, op, thr in IV_LEVEL_STATES for dr in (1, -1)]))
+    out.append(("iv_level_regime", "iv_level_conditioned",
+                [{"base_family": "trend_ma_cross", "base_params": {}, "symbol": sym,
+                  "iv_ticker": iv, "feature": f, "op": op, "threshold": thr}
+                 for _lbl, f, op, thr in IV_LEVEL_STATES]))
     return out
 
 
@@ -286,6 +302,10 @@ _IV_PRIORS = {
     "vix_term_regime": "the VIX curve sits in contango in calm and inverts in stress; risk "
                        "models that read yesterday's regime reposition late. Public series: a "
                        "crowding-checked regime gate, not a moat",
+    "iv_level_regime": "implied vol at the top of its own year leaves dealers short gamma "
+                       "hedging into moves; at the bottom, long gamma pinning the underlying; a "
+                       "five-session surge or crush is the hedge being bought or unwound (ported "
+                       "from #234). Public series, crowding-checked",
     "iv_shock": "a jump in implied vol forces option dealers and vol-targeting books to re-hedge "
                 "the underlying on the next session; the move is either over-done (fade) or "
                 "the start of a deleveraging (follow). Public series, crowding-checked",
@@ -373,6 +393,7 @@ _MECH_CULTURE: dict[str, tuple[str, str]] = {
     "variance_risk_premium": ("US", "institutional"),
     "vix_term_regime": ("US", "institutional"),
     "iv_shock": ("US", "institutional"),
+    "iv_level_regime": ("US", "institutional"),
 }
 
 

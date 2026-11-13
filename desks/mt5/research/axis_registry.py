@@ -207,7 +207,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     # is `cross_asset` (another market's -- the options market's -- price of the instrument), and
     # `exogenous` in `gauntlet_buildability.information_class`; never price-only.
     "gamma_hedging_state cross_asset market": "vrp_conditioned",
-    "regime_transition cross_asset market": "iv_term_gated",
+    "regime_transition cross_asset market": "iv_term_gated iv_level_state iv_level_conditioned",
     "volatility_shock cross_asset market": "iv_shock",
     "calendar_seasonality cross_asset market": "month_end_rebalance",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
