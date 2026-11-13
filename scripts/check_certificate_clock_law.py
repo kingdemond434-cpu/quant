@@ -314,7 +314,7 @@ def group_gap_hours(rows: dict[str, dict[str, Any]],
     """group -> (MEASURED hours of clock exposure per forward observation, newest observation).
 
     The family median is the right yardstick for a busy symbol and the wrong one for a quiet
-    cross: overnight_gap_decay on USDSGD or NZDSGD fires 0-1 times a fortnight (box readout
+    cross: an overnight-gap clock on USDSGD or NZDSGD fires 0-1 times a fortnight (box readout
     2026-11-13), so the family's 48.7h gap convicted every such clock of FROZEN_ROWS while its
     sibling on the same bars was accruing. This is the same derivation at the grain of the data
     the clock reads: total clock-hours across the group's clocks over total observations. A
