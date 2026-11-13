@@ -769,6 +769,10 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
 
 
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
+#: research/ modules count as measured only by executed lines, never by import (MF1) ...
+RESEARCH_DIR = "desks/mt5/research/"
+#: ... except the one CI checked out (and so import-covered) before the signal leg existed.
+IMPORT_COVERED_RESEARCH = frozenset({"desks/mt5/research/admission_integrity.py"})
 
 
 def run_signals(tree: Path, trace: list[str]) -> dict[str, Any]:
@@ -873,6 +877,19 @@ def changed_statements(old: str, new: str) -> set[tuple[int, int]]:
     body (it must have been CALLED, not merely defined). Blank lines, comment-only lines and
     docstrings are prose and charge nothing. A changed line no statement holds charges (0, -1),
     which no execution can satisfy (fail closed). Raises SyntaxError when `new` cannot parse."""
+    return set(changed_spans(old, new))
+
+
+#: The only statements import-time execution may vouch for (#364ad6aa7 audit MF2): a class
+#: header and an import. Every other touched statement, a module-level table, list, call or
+#: assignment included, must have run inside a call that traded and agreed; a def's span is its
+#: body, which only a call runs.
+_IMPORT_OK = (ast.ClassDef, ast.Import, ast.ImportFrom)
+
+
+def changed_spans(old: str, new: str) -> dict[tuple[int, int], bool]:
+    """`changed_statements`, each span mapped to whether a line run AT IMPORT may satisfy it
+    (`_IMPORT_OK`). A span charged by two statements is import-satisfiable only if both are."""
     tree = ast.parse(new)
     new_lines, old_lines = new.splitlines(), old.splitlines()
     sm = difflib.SequenceMatcher(None, old_lines, new_lines, autojunk=False)
@@ -893,28 +910,43 @@ def changed_statements(old: str, new: str) -> set[tuple[int, int]]:
         if isinstance(n, _STMT):
             deco = [d.lineno for d in getattr(n, "decorator_list", [])]
             nodes.append((min([n.lineno, *deco]), n.end_lineno or n.lineno, n))
-    spans: set[tuple[int, int]] = set()
+    spans: dict[tuple[int, int], bool] = {}
+
+    def add(span: tuple[int, int], import_ok: bool) -> None:
+        spans[span] = spans.get(span, True) and import_ok
+
     for ln in touched:
         holders = [x for x in nodes if x[0] <= ln <= x[1]]
         if not holders:
-            spans.add((0, -1))
+            add((0, -1), False)
             continue
         start, end, node = min(holders, key=lambda x: (x[1] - x[0], -x[0]))
+        ok = isinstance(node, _IMPORT_OK)
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
-            spans.add((node.body[0].lineno, end))
+            add((node.body[0].lineno, end), False)
         elif isinstance(node, _HEADED):
             first = (
                 node.cases[0].pattern.lineno if isinstance(node, ast.Match) else node.body[0].lineno
             )
-            spans.add((start, max(start, first - 1)))
+            add((start, max(start, first - 1)), ok)
         else:
-            spans.add((start, end))
+            add((start, end), ok)
     return spans
 
 
-def _ran(spans: set[tuple[int, int]], executed: set[int]) -> list[tuple[int, int]]:
-    """The spans of which no line executed."""
-    return sorted(sp for sp in spans if not any(sp[0] <= ln <= sp[1] for ln in executed))
+def _ran(
+    spans: set[tuple[int, int]] | dict[tuple[int, int], bool],
+    executed: set[int],
+    at_import: set[int] | None = None,
+) -> list[tuple[int, int]]:
+    """The spans of which no line executed: in `executed` (inside an agreed call), or, for a
+    span `changed_spans` marks import-satisfiable, in `at_import`."""
+    ok = spans if isinstance(spans, dict) else dict.fromkeys(spans, False)
+    imp = at_import or set()
+    return sorted(
+        sp for sp, may in ok.items()
+        if not any(sp[0] <= ln <= sp[1] for ln in (executed | imp if may else executed))
+    )  # fmt: skip
 
 
 def signal_measured(
@@ -928,12 +960,17 @@ def signal_measured(
     """({files the signal leg measured}, {file: why it did not}). A file is measured when it was
     imported on every tree that has it, and every statement the PR touched ran on the PR's tree
     and every statement it removed or replaced ran on the base's, at import or inside a call in
-    `agreed`. A deleted file is never measured here."""
+    `agreed`. A deleted file is never measured here.
 
-    def executed(doc: dict[str, Any], f: str) -> set[int]:
+    Import-time lines vouch only for a class header or an import (`_IMPORT_OK`, #364ad6aa7
+    audit MF2): a module-level table, list, assignment or call runs at import whatever it says,
+    so it counts only when it ran inside an agreed call (a lazy import there); otherwise the
+    file stays UNMEASURED (and a changed UPPER_CASE knob fails in `knob_changes` regardless)."""
+
+    def executed(doc: dict[str, Any], f: str, *, at_import: bool) -> set[int]:
         out: set[int] = set()
         for key, per in (doc.get("lines") or {}).items():
-            if key == "<import>" or key in agreed:
+            if (key == "<import>") == at_import and (at_import or key in agreed):
                 out |= set(per.get(f) or [])
         return out
 
@@ -944,15 +981,16 @@ def signal_measured(
         if now is None:
             why[f] = "the PR deletes it"
             continue
-        hb, hh = executed(b, f), executed(h, f)
+        hb, hh = executed(b, f, at_import=False), executed(h, f, at_import=False)
+        ib, ih = executed(b, f, at_import=True), executed(h, f, at_import=True)
         imported_h = any(x.endswith("/" + f) for x in h.get("imported") or [])
         imported_b = was is None or any(x.endswith("/" + f) for x in b.get("imported") or [])
         if not (imported_h and imported_b):
             why[f] = "the signal leg never imported it"
             continue
         try:
-            miss_h = _ran(changed_statements(was or "", now), hh)
-            miss_b = _ran(changed_statements(now, was), hb) if was is not None else []
+            miss_h = _ran(changed_spans(was or "", now), hh, ih)
+            miss_b = _ran(changed_spans(now, was), hb, ib) if was is not None else []
         except SyntaxError as exc:
             why[f] = f"cannot be parsed ({exc.msg})"
             continue
@@ -1032,7 +1070,14 @@ def compare(
     if ftmo_owed and not ftmo_rows:
         problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
     closure = import_closure(base)
-    covered = imported | new_and_bounded(base, head, head_imported)
+    # MF1 (#364ad6aa7 audit): research/ is checked out for the signal leg, so a research module
+    # the scenario legs merely import must not count as measured by that import; only the line
+    # rule (the signal leg's, below) can measure it. The admission gate was checked out and
+    # import-covered before the signal leg existed, and keeps that standing.
+    covered = {
+        f for f in imported | new_and_bounded(base, head, head_imported)
+        if not f.startswith(RESEARCH_DIR) or f in IMPORT_COVERED_RESEARCH
+    }  # fmt: skip
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
@@ -1058,9 +1103,12 @@ def compare(
             problems += diverged
             measured, why = signal_measured(base, head, candidates, sb, sh, agreed)
             uncovered = [f for f in uncovered if f not in measured]
+            both = set(sb.get("calls") or {}) & set(sh.get("calls") or {})
             signal.update(
                 families=len(sb.get("names") or []),
-                calls_compared=len(set(sb.get("calls") or {}) & set(sh.get("calls") or {})),
+                calls_compared=len(both),
+                # skipped, never compared: the base itself ran past the call budget
+                calls_base_timeout=sum(1 for k in both if (sb["calls"][k] or {}).get("timeout")),
                 calls_agreed_trading=len(agreed),
                 measured=sorted(measured),
                 unmeasured=why,

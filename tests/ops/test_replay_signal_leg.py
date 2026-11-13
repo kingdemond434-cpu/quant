@@ -215,3 +215,80 @@ def test_signal_problems_compares_outcomes() -> None:
     assert "moved: the PR decides differently: #0 stop 1.0 -> 2.0" in text
     assert "slow_pr: the PR's tree timed out" in text
     assert "slow_base" not in text and "raises" not in text and "quiet" not in text
+
+
+def test_a_module_level_table_no_agreed_call_ran_stays_unmeasured(tmp_path: Path) -> None:
+    """#364ad6aa7 audit MF2: a module-level statement runs at import whatever it says, so import
+    time never measures it; only a run inside an agreed call does."""
+    base_src = TOY_FAMILY + "\n\n_weights = {'a': 1.0, 'b': [1, 2]}\n"
+    head_src = TOY_FAMILY + "\n\n_weights = {'a': 2.0, 'b': [1, 3]}\n"
+    base = _tree(tmp_path / "base", base_src)
+    head = _tree(tmp_path / "head", head_src)
+    sb, sh = rs.run_signals(base, [FAMILY]), rs.run_signals(head, [FAMILY])
+    problems, agreed = rs.signal_problems(sb, sh)
+    measured, why = rs.signal_measured(base, head, [FAMILY], sb, sh, agreed)
+    assert not problems and agreed  # the families traded and agreed ...
+    assert FAMILY not in measured  # ... and still the table is not measured by its import
+    assert "never ran" in why[FAMILY]
+
+
+def test_an_added_import_is_measured_by_import(tmp_path: Path) -> None:
+    head = TOY_FAMILY.replace('"""\n\n\n', '"""\n\nimport math  # noqa: F401\n\n\n', 1)
+    assert head != TOY_FAMILY
+    problems, measured, why = _leg(tmp_path, head)
+    assert not problems
+    assert measured == {FAMILY}, why
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "want"),
+    [
+        ("import a\n", "import b\n", {(1, 1): True}),
+        ("class A:\n    x = 1\n", "class A(B):\n    x = 1\n", {(1, 1): True}),
+        ("class A:\n    x = 1\n", "class A:\n    x = 2\n", {(2, 2): False}),
+        ("T = {1: 2}\n", "T = {1: 3}\n", {(1, 1): False}),
+        ("f()\n", "g()\n", {(1, 1): False}),
+        ("def f():\n    return 1\n", "def f():\n    return 2\n", {(2, 2): False}),
+    ],
+)
+def test_changed_spans_import_satisfiable(
+    old: str, new: str, want: dict[tuple[int, int], bool]
+) -> None:
+    assert rs.changed_spans(old, new) == want
+
+
+def test_research_import_never_covers_a_research_change(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#364ad6aa7 audit MF1: research/ is checked out for the signal leg, so a research module the
+    scenario legs merely import is not measured by that import. A body change in
+    research/prop_challenge_allocator.py stays UNMEASURED (or FAILS)."""
+    pca = "desks/mt5/research/prop_challenge_allocator.py"
+    entry = "desks/mt5/prop/e8_executor.py"
+    trees = {}
+    for side, ret in (("base", "0.01"), ("head", "0.02")):
+        t = _tree(tmp_path / side, TOY_FAMILY)
+        (t / "desks/mt5/research").mkdir(parents=True, exist_ok=True)
+        (t / "desks/mt5/research/__init__.py").write_text("", "utf-8")
+        (t / pca).write_text(f"def risk_fraction(x):\n    return {ret}\n", "utf-8")
+        (t / "desks/mt5/prop").mkdir(parents=True, exist_ok=True)
+        (t / entry).write_text("from research import prop_challenge_allocator\n", "utf-8")
+        trees[side] = t
+    base, head = trees["base"], trees["head"]
+    assert pca in rs.import_closure(base)  # money path through the E8 executor
+
+    def fake(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
+        root = str(tree.resolve())
+        return {
+            "steps": [{"hour": 1.0, "intents": [{"side": 1}], "doc": {}}],
+            "imported": [f"{root}/{pca}", f"{root}/{entry}"],
+        }
+
+    monkeypatch.setattr(rs, "run_tree", fake)
+    rep = rs.compare(base, head, [pca], grid=[{"id": "toy", "hours": [1.0]}])
+    assert rep["verdict"] == "FAIL"
+    assert f"UNMEASURED money-path change (the replay never imported it): {pca}" in rep[
+        "problems"
+    ], rep["problems"]
+    assert rep["signal_leg"]["ran"] and pca in rep["signal_leg"]["unmeasured"]
+    assert rep["signal_leg"]["calls_base_timeout"] == 0
