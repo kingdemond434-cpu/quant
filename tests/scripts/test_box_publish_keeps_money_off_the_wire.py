@@ -17,7 +17,8 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5"))
 NEVER = ("E8_GOLD.json", "E8_EXEC.json", "FTMO_ACCOUNT_STATE.json", "pf_allocation.json",
          "DISK_CENSUS.json", "MATH_LAB.json", "PRODUCTIVITY_CENSUS.json",
          "weak_signal_compiler.json", "data/daily_cycle_state.json",
-         "data/decay_live.json")
+         "data/decay_live.json", "COMMITTEE_IDEA_MINER.json", "COMMITTEES.json",
+         "FALSIFIER_VERDICTS.json")
 
 
 def _report_paths() -> list[str]:
@@ -57,3 +58,23 @@ def test_stamp_view_keeps_verdicts_and_drops_free_text() -> None:
     assert v["chain_lock_error_class"] == "PermissionError"
     assert v["last_run"] == "2026-11-13"
     assert "pid" not in text
+
+
+def test_the_red_team_tally_is_published() -> None:
+    assert "desks/mt5/reports/REDTEAM_COUNTS.json" in _report_paths()
+
+
+def test_the_red_team_tally_copies_no_text(tmp_path) -> None:
+    import redteam_counts as rc
+    doc = {"generated_utc": "2026-11-13T21:00:00+00:00", "n_cells": 4,
+           "rows": [{"verdict": "KILLED"}, {"verdict": "PASSED"}, {"verdict": "KILLED"},
+                    {"verdict": "UNMEASURED", "why": r"OSError: C:\opt\quant\x on HOST-1"},
+                    {"status": r"failed at C:\Users\someone"}]}
+    p = tmp_path / "r.json"
+    p.write_text(__import__("json").dumps(doc), "utf-8")
+    out = rc.summarise(p)
+    text = repr(out)
+    assert "C:" not in text and "HOST-1" not in text and "someone" not in text
+    assert out["counts"]["verdict"] == {"KILLED": 2, "PASSED": 1, "UNMEASURED": 1}
+    assert out["n_non_enum"] == 1 and out["top_counts"] == {"n_cells": 4}
+    assert out["stamp"] == "2026-11-13T21:00:00+00:00"

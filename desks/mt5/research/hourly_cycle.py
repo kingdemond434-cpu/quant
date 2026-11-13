@@ -1283,6 +1283,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # THE RED TEAM'S KILL RATE, IN A FORM THAT MAY CROSS THE WIRE (2026-11-13): enum verdict
+    # tallies from the committees, ensembles, falsifier battery and decay walk, whose own reports
+    # carry free exception text and so are never published. Reads four files, well under a second.
+    "redteam_counts",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5919,6 +5923,9 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # The red-team verdict tallies, after decay_monitor so the decay walk's newest reading counts.
+    rtc = _costed("redteam_counts", lambda: _producer(
+        "redteam_counts", "research/redteam_counts.py"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
@@ -6631,6 +6638,7 @@ def main() -> None:
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "redteam_counts": rtc,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

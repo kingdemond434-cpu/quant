@@ -888,6 +888,12 @@ $reportPaths = @(
     # data/decay_live.json is NOT here yet: decay_monitor writes free exception text into it
     # (Auditor, 2026-11-13); it joins this list with the writer that cuts that to a type name.
     "desks/mt5/reports/LOSS_LEARNER.json",
+    # THE RED TEAM, MEASURABLE FROM ORIGIN (hourly-pass sweep, 2026-11-13). The committees, the
+    # ensembles, the falsifier battery and decay_live all carry free exception text and stay off
+    # the wire; REDTEAM_COUNTS is their enum-only tally (research/redteam_counts.py). The regime
+    # hierarchy carries labels and probabilities only.
+    "desks/mt5/reports/REDTEAM_COUNTS.json",
+    "desks/mt5/reports/REGIME_HIERARCHY.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
