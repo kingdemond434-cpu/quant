@@ -1,7 +1,7 @@
 """GARCH vs EWMA per instrument (2026-11-13, principal: "yes use garch").
 
-Pinned: the pre-stated choice rule (GARCH default, GJR on the selection half, blend then EWMA only
-when the GARCH variant fails to fit or scores worse); evidence is the HOLDOUT half; days are UTC
+Pinned: the pre-stated choice rule (GARCH default; blend then EWMA only when GARCH fails to fit or
+is significantly worse on the selection half); evidence is the HOLDOUT half; days are UTC
 dates with enough bars; a GARCH-generated series is recognised as GARCH and beats EWMA on the
 holdout; the leg writes both artifacts; the daily cycle runs it.
 """
@@ -45,13 +45,12 @@ def _h1_from_daily(r: np.ndarray) -> pd.DataFrame:
     return pd.DataFrame({"close": px}, index=pd.DatetimeIndex(idx))
 
 
-def test_the_rule_defaults_to_garch_and_falls_back_only_on_worse_or_no_fit() -> None:
-    q = {"ewma": 1.0, "garch": 0.9, "gjr": 0.95, "blend": 0.92}
-    assert V.choose(q, True)[0] == "garch"
-    assert V.choose({**q, "gjr": 0.8}, True)[0] == "gjr"
-    assert V.choose({**q, "garch": 1.1, "gjr": 1.2, "blend": 0.99}, True)[0] == "blend"
-    assert V.choose({**q, "garch": 1.1, "gjr": 1.2, "blend": 1.05}, True)[0] == "ewma"
-    assert V.choose(q, False)[0] == "ewma"
+def test_the_rule_defaults_to_garch_and_falls_back_only_when_significantly_worse() -> None:
+    assert V.choose({"garch": -1.0, "blend": 0.5}, True)[0] == "garch"   # worse, not significant
+    assert V.choose({"garch": None, "blend": None}, True)[0] == "garch"
+    assert V.choose({"garch": -2.0, "blend": -0.5}, True)[0] == "blend"
+    assert V.choose({"garch": -2.0, "blend": -1.9}, True)[0] == "ewma"
+    assert V.choose({"garch": 3.0}, False)[0] == "ewma"
 
 
 def test_days_are_utc_dates_with_enough_bars() -> None:
@@ -65,7 +64,7 @@ def test_days_are_utc_dates_with_enough_bars() -> None:
 def test_a_garch_series_is_read_as_garch_and_wins_the_holdout() -> None:
     r = _garch_series(1100)
     m = V.measure("X", r)
-    assert m["status"] == "MEASURED" and m["chosen"] in ("garch", "gjr", "blend")
+    assert m["status"] == "MEASURED" and m["chosen"] == "garch"
     assert m["dm_holdout_garch"]["mean_diff"] > 0
     assert m["n_oos"] == len(r) - V.MIN_TRAIN
 

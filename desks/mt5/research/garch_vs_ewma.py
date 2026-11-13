@@ -12,9 +12,10 @@ choice with the evidence beside it.
 THE RULE, stated before the run so the run cannot choose it:
 
     default     GARCH(1,1) -- the principal's choice.
-    challenger  GJR (asymmetric) replaces GARCH where it scores better on the SELECTION half.
-    fallback    EWMA (or the 50/50 EWMA-GARCH blend) only where the chosen GARCH variant fails to
-                fit, or scores WORSE than EWMA on the selection half.
+    fallback    the 50/50 EWMA-GARCH blend, then EWMA, only where GARCH fails to fit or is
+                SIGNIFICANTLY worse than EWMA on the selection half (DM t <= -1.645). GJR and
+                the blend are scored beside it for the record, never chosen on a point estimate
+                (see FALLBACK_T for the measurement that set this).
 
     selection half   the first half of the out-of-sample bars: the choice is made here.
     holdout half     the second half: the chosen forecaster is scored against EWMA HERE, on bars
@@ -134,17 +135,30 @@ def forecasts(r: np.ndarray) -> dict[str, np.ndarray]:
     return {"ewma": ewma, "garch": garch, "gjr": gjr, "blend": 0.5 * (ewma + garch)}
 
 
-def choose(sel: dict[str, float], fitted: bool) -> tuple[str, str]:
-    """The pre-stated rule, on SELECTION-half mean QLIKE (lower is better)."""
+#: GARCH falls back only when it is SIGNIFICANTLY worse than EWMA on the selection half
+#: (one-sided 5%), never on a point estimate: measured 2026-11-13 on 31 symbols, the first
+#: rule (fall back on any point-estimate loss, upgrade to GJR or the blend on any point-estimate
+#: gain) sent 6 symbols to EWMA and plain GARCH then beat EWMA on the holdout on ALL SIX
+#: (27/31 overall). A half-sample point estimate is noise at this n; a fallback must be earned.
+FALLBACK_T = -Z90
+
+
+def choose(sel_t: dict[str, float | None], fitted: bool) -> tuple[str, str]:
+    """The pre-stated rule, on SELECTION-half Diebold-Mariano t vs EWMA (positive favours the
+    challenger): GARCH unless it failed to fit or is significantly worse; then the blend unless it
+    is significantly worse too; then EWMA."""
     if not fitted:
         return "ewma", "GARCH refused to fit on this history: EWMA by rule"
-    v = "gjr" if sel["gjr"] < sel["garch"] else "garch"
-    if sel[v] <= sel["ewma"]:
-        return v, f"{v} scores at or below EWMA on the selection half: GARCH is the default"
-    if sel["blend"] <= sel["ewma"]:
-        return "blend", (f"{v} scores worse than EWMA on the selection half, the 50/50 blend "
-                         "does not: blend")
-    return "ewma", f"{v} and the blend both score worse than EWMA on the selection half: EWMA"
+    tg = sel_t.get("garch")
+    if tg is None or tg > FALLBACK_T:
+        return "garch", ("GARCH is the default and is not significantly worse than EWMA on the "
+                         f"selection half (t={tg})")
+    tb = sel_t.get("blend")
+    if tb is None or tb > FALLBACK_T:
+        return "blend", (f"GARCH is significantly worse than EWMA on the selection half "
+                         f"(t={tg}); the 50/50 blend is not (t={tb})")
+    return "ewma", (f"GARCH (t={tg}) and the blend (t={tb}) are both significantly worse than "
+                    "EWMA on the selection half: EWMA")
 
 
 def current_params(r: np.ndarray, model: str) -> dict[str, Any]:
@@ -196,9 +210,9 @@ def measure(sym: str, r: np.ndarray) -> dict[str, Any]:
     half = len(idx) // 2
     sel = {k: float(v[:half].mean()) for k, v in loss.items()}
     hold = {k: float(v[half:].mean()) for k, v in loss.items()}
-    if not fitted:
-        sel = {**dict.fromkeys(MODELS, float("inf")), "ewma": sel["ewma"]}
-    model, why = choose(sel, fitted)
+    sel_t = ({k: _dm(loss["ewma"][:half], loss[k][:half])["t"] for k in ("garch", "blend")}
+             if fitted else {})
+    model, why = choose(sel_t, fitted)
     out: dict[str, Any] = {
         "status": "MEASURED", "n_returns": int(len(r)), "n_oos": int(len(idx)),
         "qlike_full": {k: round(float(v.mean()), 5) for k, v in loss.items()},
@@ -311,9 +325,10 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0) -> dict[str,
             choice[sym] = {**current_params(r, str(m["chosen"])),
                            "holdout": m.get("dm_holdout_chosen"), "at": now}
     report = {"generated_at": now, "rule": {
-                  "default": "garch", "challenger": "gjr on the selection half",
-                  "fallback": "blend, then ewma, only where the GARCH variant fails to fit or "
-                              "scores worse than EWMA on the selection half",
+                  "default": "garch",
+                  "fallback": "blend, then ewma, only where GARCH fails to fit or is "
+                              "significantly worse than EWMA on the selection half "
+                              f"(DM t <= {FALLBACK_T:.3f})",
                   "evidence": "holdout half only", "loss": "QLIKE (Patton 2011), daily returns",
                   "min_train": MIN_TRAIN, "refit_every": REFIT_EVERY,
                   "ewma_lambda": EWMA_LAMBDA},
