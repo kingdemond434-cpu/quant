@@ -95,9 +95,15 @@ def test_no_synced_row_carries_an_exception_message(tmp_path, monkeypatch) -> No
         raise RuntimeError(planted)
 
     hot = np.abs(np.random.default_rng(2).normal(0.5, 0.2, 300))
-    row = pa.examine({"df": df, "sigs": _leak(df), "costs": None}, _boom,
-                     lambda d, s, c: pd.Series(hot) if s is not None and len(s) > 300
-                     else _boom())
+    calls = {"n": 0}
+
+    def _daily_then_boom(*_a, **_k):
+        calls["n"] += 1
+        if calls["n"] == 1:  # the cell's own series; every forensic arm then fails
+            return pd.Series(hot)
+        return _boom()
+
+    row = pa.examine({"df": df, "sigs": _leak(df), "costs": None}, _boom, _daily_then_boom)
     pa._write_lists([{"certificate": "x", **row}], {"x"})
     blob = json.dumps(row, default=str) + "".join(
         p.read_text() for p in tmp_path.iterdir() if p.is_file())
