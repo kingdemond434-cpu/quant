@@ -426,3 +426,15 @@ def test_the_box_key_name_configures_sec(monkeypatch: pytest.MonkeyPatch) -> Non
     assert ac.edgar_ua() == ""
     monkeypatch.setenv("EDGAR_UA", "desk research contact")
     assert ac.edgar_ua() == "desk research contact"
+
+
+def test_sec_robots_is_read_under_the_fair_access_ua(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ac, "_ROBOTS", {})
+    monkeypatch.setenv("QUANT_EDGAR_UA", "desk research ops@example.invalid")
+    seen: list[str] = []
+
+    def get(url: str, **kw: Any) -> _Resp:
+        seen.append((kw.get("headers") or {}).get("User-Agent", ""))
+        return _Resp(url, 404, error="HTTP 404")
+    assert ac.access_refusal(get, "sec_8k_guidance") is None
+    assert seen == ["desk research ops@example.invalid"]

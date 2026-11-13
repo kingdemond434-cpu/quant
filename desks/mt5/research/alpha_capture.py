@@ -861,7 +861,10 @@ def access_refusal(get: Getter, sid: str) -> str | None:
     parts = urllib.parse.urlsplit(url)
     host = f"{parts.scheme}://{parts.netloc}"
     if host not in _ROBOTS:
-        resp = get(f"{host}/robots.txt", headers={"User-Agent": HONEST_UA}, retries=0,
+        # The robots read goes out under the same agent the source's own requests will use:
+        # SEC answers 403 to an agent without its fair-access contact, robots.txt included.
+        ua = (edgar_ua() or HONEST_UA) if sid == "sec_8k_guidance" else HONEST_UA
+        resp = get(f"{host}/robots.txt", headers={"User-Agent": ua}, retries=0,
                    leg="alpha_capture:robots")
         status = getattr(resp, "status", None)
         body = str(getattr(resp, "text", "") or "")
