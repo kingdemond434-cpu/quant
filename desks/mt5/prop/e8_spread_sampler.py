@@ -28,6 +28,12 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 for _p in (str(ROOT / "desks" / "mt5"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+try:  # money runs above research (libs/ops/money_priority.py); never blocks this sampler
+    from libs.ops.money_priority import enter as _money_priority
+
+    _money_priority()
+except ImportError:
+    pass
 logging.disable(logging.ERROR)
 
 from prop.tradelocker_venue import TradeLockerVenue  # noqa: E402
