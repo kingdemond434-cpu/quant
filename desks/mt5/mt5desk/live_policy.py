@@ -97,6 +97,11 @@ class Policy:
     banned_execs: frozenset[str] = DEFAULT_BANNED_EXECS
     live_sleeves: Mapping[str, frozenset[str]] = field(
         default_factory=lambda: dict(DEFAULT_LIVE_SLEEVES))
+    #: NAMED rows that may not hold live capital, whatever their symbol (2026-11-13). The lift of
+    #: the symbol whitelist kept three principal quarantines that had been spelled as EMPTY
+    #: `live_sleeves` lists -- which also blocked every other sleeve on the same symbol. A name
+    #: here blocks only that row.
+    quarantined_sleeves: frozenset[str] = frozenset()
     source: str = "defaults"
     by: str = ORDER
 
@@ -106,6 +111,7 @@ class Policy:
                 "banned_families": sorted(self.banned_families),
                 "banned_execs": sorted(self.banned_execs),
                 "live_sleeves": {k: sorted(v) for k, v in self.live_sleeves.items()},
+                "quarantined_sleeves": sorted(self.quarantined_sleeves),
                 "source": self.source, "by": self.by}
 
 
@@ -142,7 +148,10 @@ def policy(path: Path | None = None) -> Policy:
             # could turn a truncated edit into an unrestricted symbol is the one not taken.
             if isinstance(names, list):
                 live_sl[str(sym).upper()] = frozenset(str(n) for n in names)
-    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl, source=str(p),
+    quar = doc.get("quarantined_sleeves")
+    quarantined = frozenset(str(n) for n in quar) if isinstance(quar, list) else frozenset()
+    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl,
+                  quarantined_sleeves=quarantined, source=str(p),
                   by=str(doc.get("by") or ORDER))
 
 
@@ -156,6 +165,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     sym = str(row.get("symbol") or "").strip().upper()
     if not sym:
         return "row carries no symbol; it cannot be admitted to the live account"
+    name_q = str(row.get("name") or "").strip()
+    if name_q and name_q in p.quarantined_sleeves:
+        return f"{name_q!r} is quarantined from live capital by name -- {p.by}"
     if "*" not in p.live_symbols and sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()

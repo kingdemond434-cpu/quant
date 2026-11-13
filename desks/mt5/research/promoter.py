@@ -288,6 +288,60 @@ def _apply_live_policy(rows: list[dict]) -> int:
     return n
 
 
+#: The status a policy-retired row takes when the policy that retired it no longer refuses it and
+#: its clock is still a candidate: it stays in sleeves.json as the record, and the clock is judged
+#: again through every promotion door on the same pass.
+POLICY_REOPENED = "SUPERSEDED_POLICY_LIFTED"
+
+
+def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict]) -> set[str]:
+    """RE-OPEN every row the LIVE POLICY retired whose policy now admits it (2026-11-13).
+
+    The principal lifted the live symbol whitelist (zuck 2026-11-13 19:17:59Z decision card,
+    and 19:18Z: "All the promoted ones can we put them all on live accounts now I didn't mean to
+    white list"). Measured that day: all 170 shadow PROMOTION CANDIDATEs had been written LIVE and
+    RETIRED on the same pass by `_apply_live_policy` (retired_by live_policy, "SYM is outside the
+    live sleeve universe"). A retired name stays in `existing`, so lifting the policy alone would
+    never bring one back.
+
+    ONLY rows `_apply_live_policy` retired, ONLY when `live_policy.refuse` now returns None, and
+    ONLY when a lane still holds that clock as a promotion candidate. Such a row is marked
+    POLICY_REOPENED (kept as the record) and dropped from `existing`, so the lane's ordinary loop
+    re-promotes it through EVERY door on this pass: banned family, cost re-grade, blind review,
+    Tier S, executor and the allocator's capital verdict. A row retired on its own forward
+    evidence (retired_by absent) is never touched: the one-way door stays one-way."""
+    try:
+        from mt5desk.live_policy import policy, refuse
+    except ImportError:                                    # pragma: no cover - box path only
+        return set()
+    candidates: set[str] = set()
+    for st in lane_states:
+        rows = st.get("sleeves") if isinstance(st.get("sleeves"), dict) else st
+        for k, v in (rows or {}).items():
+            if isinstance(v, dict) and str(v.get("status") or "").replace("_", " ") \
+                    == "PROMOTION CANDIDATE":
+                candidates.add(str(k))
+    pol = policy()
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    reopened: set[str] = set()
+    for row in sleeves:
+        name = str(row.get("name") or "")
+        if (str(row.get("status") or "").upper() != "RETIRED"
+                or row.get("retired_by") != "live_policy" or name not in candidates):
+            continue
+        if refuse(row, pol):
+            continue
+        row["status"] = POLICY_REOPENED
+        row["reopened_at"] = stamp
+        row["reopened_why"] = ("the live policy that retired this row admits it now; the clock "
+                               "is re-judged through every promotion door")
+        reopened.add(name)
+        plog(f"LIVE POLICY lifted for {name}: retired row superseded, clock re-judged this pass")
+    # A name with any OTHER live/standby/retired row is not reopened twice.
+    held = {str(r.get("name")) for r in sleeves if r.get("status") != POLICY_REOPENED}
+    return reopened - held
+
+
 UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"
 #: Registry fields the engine prices a symbol's round trip and financing from.
 _COST_FIELDS = ("median_spread_pts", "tick_size", "tick_value", "contract_size",
@@ -2193,13 +2247,19 @@ def main() -> None:
     acc = account_in_hand()
     ledger = load_ledger(acc)
     all_rows = _all_ledger_rows()          # account-agnostic, for the void rule's rule (b)
-    existing = {s["name"] for s in sleeves}
+    # THE LIVE POLICY WAS LIFTED (principal 2026-11-13): rows it alone retired come back through
+    # the promotion doors on this pass when their clock is still a candidate.
+    reopened = reopen_policy_retirements(
+        sleeves, [shadow, load_qquant_shadow(), load_scalp_shadow()])
+    existing = {s["name"] for s in sleeves if s.get("status") != POLICY_REOPENED}
+    changed_reopen = bool(reopened)
     gate_authority = authorized_specs(BASE)
     regrade_fails = regrade_failures()
     identities = clock_identities()
     changed = False
     # Certificates hygiene has evicted as UNRUNNABLE leave the roster before anything is judged
     # or restored on them (2026-09-16).
+    changed = changed_reopen or changed
     changed = retire_unrunnable(sleeves) or changed
     # And rows of a family the principal has banned (data/banned_families.json).
     changed = retire_banned(sleeves, identities) or changed
