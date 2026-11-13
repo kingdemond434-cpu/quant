@@ -494,6 +494,9 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "regime_disagreement": "the base family and the state are named by "
+                           "regime_disagreement_miner, which charges every family x state cell "
+                           "to its own lifetime union and kills with purged walk-forward",
     "regime_split": "the base family and the regime are named by regime_split_miner, which "
                     "deflates over every family x regime cell it tried and kills with purged "
                     "walk-forward; a sweep that enumerated the split here would be a second "

@@ -1291,6 +1291,56 @@ def family_regime_split(
     return out
 
 
+def family_regime_disagreement(
+    df: pd.DataFrame,
+    *,
+    base_family: str = "",
+    vol: str = "",
+    trend: str = "",
+    transition: str = "",
+    **base_params: object,
+) -> list[Signal]:
+    """A price-only family traded ONLY when our regime systems agree, or disagree, about it.
+
+    ROMAN-0806, RE-SCOPED WITHOUT THE EXTERNAL API (2026-11-11). Four vol systems (control-room
+    percentile, EWMA, GARCH, HMM) and four trend systems (control-room, Kalman, time-series
+    momentum, HMM) read the instrument's own daily closes, plus a BOCPD change-point reading;
+    `libs.regime.disagreement` turns each axis into its ensemble mutual information, ranked
+    against the instrument's trailing year. `vol` / `trend` name "split" or "consensus";
+    `transition` names "fresh" (a likely change point in the last 5 days) or "settled".
+
+    The state of the LAST COMPLETED DAY before the signal gates it, and every system is causal
+    (fitted only on data before the segment it reads), so no label carries information from
+    after the bar it gates. An empty axis means "any". An unknown base family, or bars too short
+    to read, return NO SIGNALS.
+    """
+    fn = getattr(_families_mod(), f"family_{base_family}", None) or \
+        ORTHOGONAL_FAMILIES.get(str(base_family))
+    if fn is None or base_family in ("regime_split", "regime_disagreement"):
+        return []
+    want = {k: v for k, v in {"vol": vol, "trend": trend, "transition": transition}.items() if v}
+    if not want:
+        return []
+    try:
+        from libs.regime.disagreement import readings_for_bars
+        lab = readings_for_bars(df)
+    except Exception:
+        return []
+    days = lab.index.to_numpy(dtype=str)
+    if days.size == 0:
+        return []
+    cols = {k: lab[k].to_numpy(dtype=object) for k in want}
+    out: list[Signal] = []
+    for s in fn(df, **base_params):
+        day = str(pd.Timestamp(s.time).date())
+        k = int(np.searchsorted(days, day, side="left")) - 1
+        if k < 0:
+            continue
+        if all(cols[a][k] == v for a, v in want.items()):
+            out.append(s)
+    return out
+
+
 def _families_mod():
     from mt5desk import families as _fam
     return _fam
@@ -1308,6 +1358,7 @@ ORTHOGONAL_FAMILIES.update({
     "event_reaction": family_event_reaction,
     "drawdown_conditional": family_drawdown_conditional,
     "regime_split": family_regime_split,
+    "regime_disagreement": family_regime_disagreement,
 })
 
 #: What each family NEEDS. The router uses this to route a discovery to a family that can
@@ -1333,6 +1384,8 @@ FAMILY_INPUTS = {
     "overnight_gap_decay": ("price only", None),
     "drawdown_conditional": ("price only", None),
     "regime_split": ("price only (its base family's own inputs, which must be price only)", None),
+    "regime_disagreement": ("price only (its base family's own inputs, which must be price "
+                            "only)", None),
 }
 
 
