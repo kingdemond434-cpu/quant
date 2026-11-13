@@ -524,7 +524,247 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------------------------
+# THE SIGNAL LEG (2026-11-13). The scenario legs above stub the family code out (the FTMO leg's
+# `families.get_family_func` is a fixed stub), so a change to a family module was money path the
+# replay never ran: UNMEASURED, every time, whatever it did. This leg runs EVERY family the desk
+# can resolve, through the two resolvers the order path uses (`executables.resolve_family`, the
+# gateway's; `families.get_family_func`, the prop executors') and the call the forward clock and
+# the live executor share (`family_call.signals`, `family_call.hunt16_signals`), over a fixed grid
+# of synthetic H1 frames, both sides, with its default parameters and its grid's first point.
+# What each call decided (a digest of every signal's time, side, stop, target, ttl and the rest of
+# the record) is compared between the trees by replay_shadow.signal_problems.
+#
+# IT ALSO RECORDS WHICH LINES RAN. Importing a module proves nothing about the change inside it,
+# so the parent counts a changed family-path file as measured only when every changed statement
+# executed inside a call that returned on BOTH trees and was compared (replay_shadow.
+# signal_measured). The lines are traced only in the files the parent names (`trace`), so the
+# cost is one cheap global hook per Python call.
+
+#: The frames: symbol x price shape, each SIGNAL_BARS closed H1 bars ending on a fixed day.
+SIGNAL_SYMBOLS = {"XAUUSD": 4300.0, "EURUSD": 1.10}
+SIGNAL_SHAPES = ("range", "up_break", "down_break", "wide", "gap")
+SIGNAL_BARS = 1500
+SIGNAL_END = "2026-10-15 23:00"
+#: One call's budget. A call past it is recorded as a timeout and none of its lines count.
+SIGNAL_CALL_S = 60
+
+
+def signal_frame(symbol: str, shape: str) -> Any:
+    """SIGNAL_BARS H1 bars for `symbol` in `shape`, deterministic in (symbol, shape), with the
+    columns a terminal's rates carry (tick_volume, spread, real_volume)."""
+    import pandas as pd
+
+    rng = random.Random(f"signal:{symbol}:{shape}")  # noqa: S311 -- a price path, not a secret
+    base = SIGNAL_SYMBOLS[symbol]
+    unit = base / 1000.0
+    idx = pd.date_range(end=pd.Timestamp(SIGNAL_END, tz="UTC"), periods=SIGNAL_BARS, freq="h")
+    px, rows = base, []
+    for i, t in enumerate(idx):
+        step = rng.gauss(0.0, (9.0 if shape == "wide" else 3.0) * unit)
+        if shape == "up_break" and i % 120 > 100:
+            step = abs(step) + 4.0 * unit
+        elif shape == "down_break" and i % 120 > 100:
+            step = -abs(step) - 4.0 * unit
+        elif shape == "gap" and t.hour == 0 and t.dayofweek == 0:
+            step += 40.0 * unit
+        elif shape == "range":
+            step *= 0.3
+        o = px
+        px = max(base / 10.0, px + step)
+        span = abs(rng.gauss(0.0, 1.5 * unit))
+        rows.append(
+            {
+                "open": round(o, 6),
+                "high": round(max(o, px) + span, 6),
+                "low": round(min(o, px) - span, 6),
+                "close": round(px, 6),
+                "tick_volume": rng.randint(100, 5000),
+                "spread": rng.randint(1, 30),
+                "real_volume": 0,
+            }
+        )
+    return pd.DataFrame(rows, index=idx)
+
+
+def signal_record(sig: Any) -> Any:
+    """One signal as plain data: every field it carries, floats to 8 places, times as text."""
+    import dataclasses
+
+    if dataclasses.is_dataclass(sig) and not isinstance(sig, type):
+        raw: Any = dataclasses.asdict(sig)
+    elif isinstance(sig, dict):
+        raw = dict(sig)
+    elif hasattr(sig, "__dict__"):
+        raw = dict(vars(sig))
+    else:
+        raw = sig
+
+    def plain(v: Any) -> Any:
+        if isinstance(v, dict):
+            return {str(k): plain(x) for k, x in sorted(v.items(), key=lambda kv: str(kv[0]))}
+        if isinstance(v, list | tuple):
+            return [plain(x) for x in v]
+        if isinstance(v, bool) or v is None or isinstance(v, str):
+            return v
+        if isinstance(v, int):
+            return int(v)
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return str(v)
+        return None if f != f else round(f, 8)
+
+    return plain(raw)
+
+
+class _CallTimeout(BaseException):
+    """Raised by the alarm inside a family call: a BaseException, so no family's own
+    `except Exception` can swallow it."""
+
+
+def signal_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
+    import hashlib
+    import os
+    import signal as _signal
+
+    stub = types.ModuleType("MetaTrader5")
+    stub.__getattr__ = lambda name: mock.MagicMock(name="MetaTrader5." + name)  # type: ignore[method-assign]
+    sys.modules["MetaTrader5"] = stub
+    sys.path[:0] = [str(tree), str(tree / "desks" / "mt5")]
+    os.environ.pop("QUANT_PROP_ACCOUNT", None)
+    root = str(tree) + os.sep
+    traced = {str((tree / p).resolve()): p for p in spec.get("trace") or []}
+    lines: dict[str, dict[str, set[int]]] = {}
+    bucket: dict[str, Any] = {"key": "<import>"}
+
+    def local(frame: Any, event: str, arg: Any) -> Any:
+        if event == "line":
+            rel = traced[frame.f_code.co_filename]
+            lines.setdefault(bucket["key"], {}).setdefault(rel, set()).add(frame.f_lineno)
+        return local
+
+    def hook(frame: Any, event: str, arg: Any) -> Any:
+        if frame.f_code.co_filename in traced:
+            return local(frame, event, arg)
+        return None
+
+    def on_alarm(signum: int, frame: Any) -> None:
+        raise _CallTimeout
+
+    _signal.signal(_signal.SIGALRM, on_alarm)
+    import pandas  # noqa: F401 -- imported outside the trace: not repository code
+
+    sys.settrace(hook)
+    try:
+        from mt5desk import executables, families, family_call
+
+        names = sorted(set(families.live_family_names()))
+    finally:
+        sys.settrace(None)
+    frames = {f"{s}/{sh}": signal_frame(s, sh) for s in SIGNAL_SYMBOLS for sh in SIGNAL_SHAPES}
+    hunt16 = executables.hunt16_families()
+    calls: dict[str, Any] = {}
+
+    def run(key: str, fn: Any) -> None:
+        bucket["key"] = key
+        _signal.setitimer(_signal.ITIMER_REAL, SIGNAL_CALL_S)
+        sys.settrace(hook)
+        try:
+            sigs = fn()
+            rec = [signal_record(x) for x in sigs]
+            blob = json.dumps(rec, sort_keys=True, default=str)
+            calls[key] = {
+                "n": len(rec),
+                "digest": hashlib.sha256(blob.encode()).hexdigest(),
+                "first": rec[:2],
+            }
+        except _CallTimeout:
+            calls[key] = {"timeout": True}
+            lines.pop(key, None)
+        except Exception as exc:  # the verdict IS the exception type: compared, lines dropped
+            calls[key] = {"error": type(exc).__name__, "detail": str(exc)[:160]}
+            lines.pop(key, None)
+        finally:
+            sys.settrace(None)
+            _signal.setitimer(_signal.ITIMER_REAL, 0)
+
+    for name in names:
+        resolvers: dict[str, Any] = {}
+        for tag, get in (
+            ("gateway", executables.resolve_family),
+            ("executor", families.get_family_func),
+        ):
+            try:
+                fn = get(name)
+            except Exception as exc:
+                calls[f"{name}|{tag}|resolve"] = {"error": type(exc).__name__}
+                continue
+            if fn is None:
+                calls[f"{name}|{tag}|resolve"] = {"error": "None"}
+                continue
+            if any(fn is f for f in resolvers.values()):
+                continue  # the same constructor: one set of calls
+            resolvers[tag] = fn
+        for tag, fn in resolvers.items():
+            is_h16 = hunt16.get(name) is fn
+            param_sets: list[dict[str, Any]] = [{}]
+            if not is_h16:
+                try:
+                    grid = families.get_param_grid(name) or {}
+                    first = {k: v[0] for k, v in grid.items() if isinstance(v, list) and v}
+                except Exception:
+                    first = {}
+                if first:
+                    param_sets.append(first)
+            for fk, df in frames.items():
+                for side in (1, -1):
+                    for params in param_sets:
+                        pkey = json.dumps(params, sort_keys=True, default=str)
+                        key = f"{name}|{tag}|{fk}|{side}|{pkey}"
+                        if is_h16:
+                            run(
+                                key,
+                                lambda f=fn, d=df, s=side: family_call.hunt16_signals(
+                                    f, d.copy(), s
+                                ),
+                            )
+                        else:
+                            run(
+                                key,
+                                lambda f=fn, d=df, s=side, p=params: family_call.signals(
+                                    f, d.copy(), side=s, params=dict(p)
+                                ),
+                            )
+
+    files = (getattr(m, "__file__", None) for m in list(sys.modules.values()))
+    imported = sorted(
+        {str(Path(f).resolve()) for f in files if f and str(Path(f).resolve()).startswith(root)}
+    )
+    out_path.write_text(
+        json.dumps(
+            {
+                "names": names,
+                "calls": calls,
+                "lines": {k: {f: sorted(v) for f, v in d.items()} for k, d in lines.items()},
+                "imported": imported,
+            },
+            default=str,
+        ),
+        "utf-8",
+    )
+    return 0
+
+
 if __name__ == "__main__":
+    if sys.argv[1] == "--signals":
+        raise SystemExit(
+            signal_main(
+                Path(sys.argv[2]).resolve(),
+                json.loads(Path(sys.argv[3]).read_text()),
+                Path(sys.argv[4]),
+            )
+        )
     raise SystemExit(
         main(
             Path(sys.argv[1]).resolve(),

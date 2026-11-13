@@ -24,7 +24,18 @@ MERGES). It also FAILS when:
   margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
 - the base tree cannot run a scenario, or places nothing anywhere on the grid (UNMEASURED);
-- the PR's tree raises where the base did not.
+- the PR's tree raises where the base did not;
+- a family decides differently on the signal leg's grid (`signal_problems`).
+
+THE SIGNAL LEG (2026-11-13): the scenario legs stub the family code out, so a change to a family
+module was money path the replay never ran. When a changed money-path Python file is still
+uncovered after the scenarios, replay_child.py `--signals` runs every family the desk resolves on
+both trees (synthetic H1 frames, both sides, default and first-grid parameters) and line-traces
+the uncovered files. Such a file counts as measured only when EVERY statement the PR changed (on
+the PR's side) and every statement it removed or replaced (on the base's side) executed inside a
+family call that traded on the base and decided identically on both trees, or at import
+(`signal_measured`). Imported is not enough there, and a file the leg never reached stays
+UNMEASURED with the reason.
 
 LIMIT: the PR's code runs in the child that writes its own result, so a PR written to fool this
 check can. That is the reviewer's job (independent-review); this check catches regressions.
@@ -37,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import difflib
 import json
 import os
 import re
@@ -128,6 +140,10 @@ HOURS = (0.5, 6.95, 7.03, 7.25, 8.0, 10.0, 13.03, 13.5, 15.0, 17.03, 17.5, 19.0,
 SHAPES = ("range", "up_break", "down_break", "wide", "gap")
 DAYS = ("2026-10-13", "2026-10-15")
 TIMEOUT_S = 300
+#: The signal leg runs once per tree: every family, every frame, both sides.
+SIGNAL_TIMEOUT_S = 1800
+#: How many signal-leg divergences are spelled out (the rest are counted).
+SIGNAL_SHOWN = 40
 
 
 def _long(day: str, qty: float = 0.15) -> dict[str, Any]:
@@ -755,6 +771,196 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
 
 
+def run_signals(tree: Path, trace: list[str]) -> dict[str, Any]:
+    """The signal leg on one tree, in a fresh process and an empty directory, line-tracing the
+    repository files `trace` names."""
+    with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
+        work = Path(tmp)
+        (work / "spec.json").write_text(json.dumps({"trace": sorted(trace)}), "utf-8")
+        out = work / "out.json"
+        try:
+            p = subprocess.run(
+                [sys.executable, "-I", str(CHILD), "--signals", str(tree.resolve()),
+                 str(work / "spec.json"), str(out)],
+                cwd=work, capture_output=True, text=True, timeout=SIGNAL_TIMEOUT_S, check=False,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired:
+            return {"crash": f"timed out after {SIGNAL_TIMEOUT_S}s"}
+        if p.returncode != 0 or not out.exists():
+            return {"crash": f"rc {p.returncode}: {(p.stderr or p.stdout)[-600:]}"}
+        doc: dict[str, Any] = json.loads(out.read_text("utf-8"))
+        return doc
+
+
+def _traded(call: dict[str, Any]) -> bool:
+    return "digest" in call and int(call.get("n") or 0) > 0
+
+
+def _signal_diff(x: dict[str, Any], y: dict[str, Any]) -> str:
+    """What differs, short: the outcome, the count, and the fields of the first signals that
+    differ (the child keeps the first two of each call)."""
+    if "digest" not in x or "digest" not in y:
+        return f"base {x.get('error') or x.get('n')} PR {y.get('error') or y.get('n')}"
+    parts = [] if x.get("n") == y.get("n") else [f"signals {x.get('n')} -> {y.get('n')}"]
+    for i, (a, b) in enumerate(zip(x.get("first") or [], y.get("first") or [], strict=False)):
+        if isinstance(a, dict) and isinstance(b, dict):
+            keys = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+            parts += [f"#{i} {k} {a.get(k)} -> {b.get(k)}" for k in keys[:4]]
+    return "; ".join(parts)[:300] or "a later signal differs (digests differ)"
+
+
+def signal_problems(b: dict[str, Any], h: dict[str, Any]) -> tuple[list[str], set[str]]:
+    """(problems, agreed): every call both trees made, compared. A call that returned on both
+    must return the same signals; an exception is compared by its type; a call that returned on
+    the base and raised or timed out on the PR is the PR's failure. A base timeout is not
+    compared. `agreed` holds the calls that TRADED on the base and decided the same on the PR:
+    the only calls whose executed lines can measure a change (`signal_measured`)."""
+    bc, hc = b.get("calls") or {}, h.get("calls") or {}
+    diverged: list[str] = []
+    agreed: set[str] = set()
+    for key in sorted(set(bc) & set(hc)):
+        x, y = bc[key], hc[key]
+        if x.get("timeout"):
+            continue
+        if y.get("timeout"):
+            diverged.append(f"{key}: the PR's tree timed out where the base returned")
+            continue
+        vx = x.get("digest") or f"raised {x.get('error')}"
+        vy = y.get("digest") or f"raised {y.get('error')}"
+        if vx != vy:
+            diverged.append(f"{key}: the PR decides differently: {_signal_diff(x, y)}")
+        elif _traded(x):
+            agreed.add(key)
+    problems = [f"signal leg: {d}" for d in diverged[:SIGNAL_SHOWN]]
+    if len(diverged) > SIGNAL_SHOWN:
+        problems.append(f"signal leg: {len(diverged) - SIGNAL_SHOWN} more family calls differ")
+    return problems, agreed
+
+
+#: Nodes a changed line is charged to: statements, and `except` clauses (not statements in ast).
+_STMT = (ast.stmt, ast.excepthandler)
+#: Compound statements whose own lines are only a header: the body's statements are their own.
+_HEADED = (ast.If, ast.For, ast.AsyncFor, ast.While, ast.With, ast.AsyncWith, ast.ClassDef,
+           ast.ExceptHandler, ast.Match)  # fmt: skip
+
+
+def _docstrings(tree: ast.AST) -> set[int]:
+    """Line numbers of every docstring (prose: never a decision)."""
+    out: set[int] = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Module | ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
+            body = n.body
+            if (
+                body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                out |= set(range(body[0].lineno, (body[0].end_lineno or body[0].lineno) + 1))
+    return out
+
+
+def changed_statements(old: str, new: str) -> set[tuple[int, int]]:
+    """The statements of `new` that the change from `old` touches, each as the line span of
+    which at least one line must have EXECUTED for the change to count as run: a simple
+    statement's own lines; a compound statement's header (its test, target, bases); a function's
+    body (it must have been CALLED, not merely defined). Blank lines, comment-only lines and
+    docstrings are prose and charge nothing. A changed line no statement holds charges (0, -1),
+    which no execution can satisfy (fail closed). Raises SyntaxError when `new` cannot parse."""
+    tree = ast.parse(new)
+    new_lines, old_lines = new.splitlines(), old.splitlines()
+    sm = difflib.SequenceMatcher(None, old_lines, new_lines, autojunk=False)
+    touched = {
+        j + 1
+        for tag, _i1, _i2, j1, j2 in sm.get_opcodes()
+        if tag in ("replace", "insert")
+        for j in range(j1, j2)
+    }
+    prose = _docstrings(tree)
+    touched = {
+        ln for ln in touched
+        if ln not in prose and new_lines[ln - 1].strip()
+        and not new_lines[ln - 1].lstrip().startswith("#")
+    }  # fmt: skip
+    nodes: list[tuple[int, int, ast.AST]] = []
+    for n in ast.walk(tree):
+        if isinstance(n, _STMT):
+            deco = [d.lineno for d in getattr(n, "decorator_list", [])]
+            nodes.append((min([n.lineno, *deco]), n.end_lineno or n.lineno, n))
+    spans: set[tuple[int, int]] = set()
+    for ln in touched:
+        holders = [x for x in nodes if x[0] <= ln <= x[1]]
+        if not holders:
+            spans.add((0, -1))
+            continue
+        start, end, node = min(holders, key=lambda x: (x[1] - x[0], -x[0]))
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            spans.add((node.body[0].lineno, end))
+        elif isinstance(node, _HEADED):
+            first = (
+                node.cases[0].pattern.lineno if isinstance(node, ast.Match) else node.body[0].lineno
+            )
+            spans.add((start, max(start, first - 1)))
+        else:
+            spans.add((start, end))
+    return spans
+
+
+def _ran(spans: set[tuple[int, int]], executed: set[int]) -> list[tuple[int, int]]:
+    """The spans of which no line executed."""
+    return sorted(sp for sp in spans if not any(sp[0] <= ln <= sp[1] for ln in executed))
+
+
+def signal_measured(
+    base: Path,
+    head: Path,
+    files: list[str],
+    b: dict[str, Any],
+    h: dict[str, Any],
+    agreed: set[str],
+) -> tuple[set[str], dict[str, str]]:
+    """({files the signal leg measured}, {file: why it did not}). A file is measured when it was
+    imported on every tree that has it, and every statement the PR touched ran on the PR's tree
+    and every statement it removed or replaced ran on the base's, at import or inside a call in
+    `agreed`. A deleted file is never measured here."""
+
+    def executed(doc: dict[str, Any], f: str) -> set[int]:
+        out: set[int] = set()
+        for key, per in (doc.get("lines") or {}).items():
+            if key == "<import>" or key in agreed:
+                out |= set(per.get(f) or [])
+        return out
+
+    measured: set[str] = set()
+    why: dict[str, str] = {}
+    for f in files:
+        was, now = read(base, f), read(head, f)
+        if now is None:
+            why[f] = "the PR deletes it"
+            continue
+        hb, hh = executed(b, f), executed(h, f)
+        imported_h = any(x.endswith("/" + f) for x in h.get("imported") or [])
+        imported_b = was is None or any(x.endswith("/" + f) for x in b.get("imported") or [])
+        if not (imported_h and imported_b):
+            why[f] = "the signal leg never imported it"
+            continue
+        try:
+            miss_h = _ran(changed_statements(was or "", now), hh)
+            miss_b = _ran(changed_statements(now, was), hb) if was is not None else []
+        except SyntaxError as exc:
+            why[f] = f"cannot be parsed ({exc.msg})"
+            continue
+        if miss_h or miss_b:
+            show = [f"PR {a}-{z}" for a, z in miss_h[:6]] + [f"base {a}-{z}" for a, z in miss_b[:6]]
+            why[f] = (
+                f"{len(miss_h) + len(miss_b)} changed statement(s) never ran in a family call "
+                f"that traded and agreed: lines {', '.join(show)}"
+            )
+            continue
+        measured.add(f)
+    return measured, why
+
+
 def compare(
     base: Path, head: Path, changed: list[str], grid: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:
@@ -830,6 +1036,29 @@ def compare(
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
+    # THE SIGNAL LEG, only when a changed money-path Python file is still uncovered (a PR that
+    # touches no such file pays nothing for it)
+    signal: dict[str, Any] = {"ran": False}
+    candidates = [f for f in uncovered if f.endswith(".py")]
+    if candidates:
+        sb, sh = run_signals(base, candidates), run_signals(head, candidates)
+        signal = {"ran": True, "traced": candidates}
+        if "crash" in sb:
+            problems.append(f"UNMEASURED signal leg: the base tree cannot run it ({sb['crash']})")
+        elif "crash" in sh:
+            problems.append(f"signal leg: the PR's tree crashed ({sh['crash']})")
+        else:
+            diverged, agreed = signal_problems(sb, sh)
+            problems += diverged
+            measured, why = signal_measured(base, head, candidates, sb, sh, agreed)
+            uncovered = [f for f in uncovered if f not in measured]
+            signal.update(
+                families=len(sb.get("names") or []),
+                calls_compared=len(set(sb.get("calls") or {}) & set(sh.get("calls") or {})),
+                calls_agreed_trading=len(agreed),
+                measured=sorted(measured),
+                unmeasured=why,
+            )
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
@@ -844,6 +1073,8 @@ def compare(
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
+        # the signal leg: what it ran, compared and measured, and why a file stayed UNMEASURED
+        "signal_leg": signal,
     }
 
 
