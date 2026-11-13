@@ -33,7 +33,9 @@ never stop mining. Logins, paywalls and hard statuses on the DATA URL are refuse
 always were. This module answers one question -- may our agent read this exact path, by the
 site's robots.txt -- and writes down every time the answer was no.
 
-    python -m research.robots_gate            # print today's count from the ledger
+A library, not a scheduled organ: every collector call that refuses or counts writes the ledger
+row and republishes reports/ROBOTS_SET_ASIDE.json itself, so the report is as fresh as the
+collectors that use the gate.
 """
 from __future__ import annotations
 
@@ -254,7 +256,7 @@ def record(row: dict[str, Any], *, ledger: Path | None = None,
         except OSError:
             return False
         # A failed report write loses nothing: the ledger holds the line and the next call,
-        # or `python -m research.robots_gate`, republishes from it.
+        # republishes from it.
         with contextlib.suppress(OSError):
             publish(ledger, report)
     return True
@@ -274,17 +276,3 @@ def note_absent(organ: str, source: str, url: str, why: str, *,
     never billed as one: it says how often the desk reads a site that states no rules."""
     return record({"organ": organ, "source": source, "url": url, "status": ABSENT_FETCHED,
                    "access_label": ROBOTS_ABSENT, "why": why}, ledger=ledger, report=report)
-
-
-def main() -> int:
-    doc = publish()
-    print(f"robots gate: {doc['refused_today']} fetch(es) refused today, "
-          f"{doc['absent_fetched_today']} fetched with no robots.txt ({doc['status']})")
-    for day, d in list((doc.get("daily") or {}).items())[-7:]:
-        print(f"  {day}  refused={d['total']}  {d['by_label']}  {d['by_organ']}  "
-              f"absent_fetched={d['absent_fetched']}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
