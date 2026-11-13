@@ -1335,6 +1335,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "ais_norway",
+                     "event_calendar",
                      "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
@@ -2276,6 +2277,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alt_proxies": 400,
     # Reads Norway's open AIS socket for --window-s 180, then rebuilds the daily series.
     "ais_norway": 260,
+    # Weekly in practice: one file read unless a refresh is due, then ten robots-gated pages.
+    "event_calendar": 240,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -5892,6 +5895,10 @@ def main() -> None:
     # BEFORE alt_proxies so its `no_ais_tankers` reader sees the day the pass just closed.
     ais = _costed("ais_norway", lambda: _producer(
         "ais_norway", "research/ais_norway.py", "--window-s", "180"))
+    # The scheduled-event calendar event_guard blocks on, from the publishers' own pages; it
+    # fetches only when a weekly refresh is due and exits 2 (red) when the calendar is STALE.
+    evc = _costed("event_calendar", lambda: _producer(
+        "event_calendar", "research/event_calendar_refresh.py"))
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
@@ -6575,6 +6582,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp, "ais_norway": ais,
+                    "event_calendar": evc,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

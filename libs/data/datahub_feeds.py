@@ -169,6 +169,19 @@ def _oecd_cli_openbb(country: str = "all") -> Any:
     return openbb_call("oecd", "economy.composite_leading_indicator", country=country)
 
 
+def _official_events() -> Any:
+    """The robots-gated publisher calendar (libs/data/event_calendar.py), as written."""
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[2] / "data" / "event_calendar.json"
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or "coverage" not in doc:
+        return None
+    return doc.get("events") or None
+
+
 def live_hub() -> DataHub:
     """`desk_hub()` plus the free-terminal contracts."""
     hub = desk_hub()
@@ -198,6 +211,10 @@ def live_hub() -> DataHub:
                                       "purpose incl. commercial, credit the OECD)",
                           providers=[Provider("openbb.oecd", _oecd_cli_openbb, "free",
                                               version="openbb-v5")]))
+    hub.register(Contract("calendar.official_events", "rows",
+                          description="scheduled releases from the Fed, BLS, BEA, ECB, BoE, "
+                                      "BoJ, SNB and BoC pages, UTC (event_calendar_refresh)",
+                          providers=[Provider("publisher_pages", _official_events, "free")]))
     return hub
 
 
@@ -206,7 +223,8 @@ def census() -> dict[str, Any]:
     hub = live_hub()
     probes: dict[str, dict[str, Any]] = {
         "tanker.port_calls": {}, "tanker.floating_storage": {}, "ais.positions": {},
-        "macro.fred_series": {"series_id": "DGS10"}, "macro.oecd_cli": {}}
+        "macro.fred_series": {"series_id": "DGS10"}, "macro.oecd_cli": {},
+        "calendar.official_events": {}}
     out: dict[str, Any] = {}
     for name, kw in probes.items():
         try:
