@@ -870,6 +870,9 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # tokens per accepted row, per box LLM job (2026-11-11, hourly via the issue board): counts,
+    # organ and model names only -- the hourly pass's token-waste row reads it off the box
+    "desks/mt5/reports/LLM_TOKENS_PER_ACCEPTED.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
