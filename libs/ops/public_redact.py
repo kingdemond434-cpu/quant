@@ -114,6 +114,11 @@ DROP_KEYS: frozenset[str] = frozenset(_norm(k) for k in (
     "api_key", "apikey", "access_token", "private_key", "authorization", "cookie", "cookies",
     "session_id", "email", "phone", "working_directory", "cwd", "home", "userprofile",
     "credential", "credentials", "headers",
+    # MONEY (Auditor SF 2026-11-13): no source publishes an amount today, and none ever will by
+    # accident -- an account's equity, balance, margin or P&L is dropped, never projected.
+    "equity", "balance", "margin", "margin_free", "free_margin", "margin_level", "margin_used",
+    "profit", "pnl", "realized_pnl", "unrealized_pnl", "nav", "cash", "credit", "deposit",
+    "withdrawal", "account_equity", "account_balance",
 ))
 _DROP_SUBSTR = ("secret", "password", "passwd", "token", "apikey", "credential", "cookie",
                 "hostname", "machineid", "cmdline", "privatekey")

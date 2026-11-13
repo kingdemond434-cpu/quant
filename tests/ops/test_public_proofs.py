@@ -185,6 +185,19 @@ def test_redactor_reduces_errors_to_their_type_and_keeps_repo_paths() -> None:
     assert R.violations("desks/mt5/reports/public/ALPHA_CAPTURE_ALLOCATION_INTEL.json") == []
 
 
+def test_account_amounts_are_never_published() -> None:
+    """A planted equity, balance, margin or P&L, at any depth, never reaches a published file."""
+    doc = {"verdict": "OK", "equity": 101234.56, "Balance": 99876.54,
+           "risk": {"margin_free": 87654.32, "Margin-Level": 4321.0, "nav": 100500.0},
+           "rows": [{"pnl": -1234.5, "profit": 777.77, "cash": 5000.0, "n": 3}]}
+    proj, removed = R.public_fields(doc)
+    text = R.dumps_public(proj)
+    for amount in ("101234", "99876", "87654", "4321", "100500", "1234.5", "777.77", "5000"):
+        assert amount not in text
+    assert proj["verdict"] == "OK" and proj["rows"][0]["n"] == 3
+    assert removed["dropped_keys"] >= 8
+
+
 def test_every_published_path_is_listed_by_the_sync_and_not_ignored() -> None:
     src = (DESK / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
     start = src.index("$reportPaths = @(")
