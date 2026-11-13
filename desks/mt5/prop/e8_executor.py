@@ -950,6 +950,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
     cert = load_cert_book(CERT_BOOK_FILE, "e8") or {}
     doc["cert_book"] = cert or None
+    import real_edge as _real_edge
+    edges, doc["real_edge"] = _real_edge.load()
     committed_usd = 0.0
     try:
         resting_orders = venue.orders()
@@ -1078,9 +1080,18 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             continue
         cert_id = str(s.get("key") or "")
         book_key = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
-        if not (cert.get(book_key, 0) > 0):
+        # ONLY REAL EDGES, AND EVERY REAL ONE (principal 2026-11-13; research/real_edge.py): the
+        # same judge e8_book applies, re-read here so a verdict that turned since the book was
+        # written is honoured at the door. A verified edge sizes at the book's RISK_FRAC.
+        edge_refused = _real_edge.refusal(cert_id, edges)
+        if edge_refused:
+            row.update(status="NOT_A_REAL_EDGE", why=edge_refused)
+            doc["sleeves"].append(row)
+            continue
+        if not (cert.get(book_key, 0) > 0 or _real_edge.verified(cert_id, edges)):
             row.update(status="NOT_IN_PRINCIPAL_BOOK",
-                       why="no positive risk for this sleeve in the E8 certified book")
+                       why="no positive risk for this sleeve in the E8 certified book, "
+                           "and not a verified real edge")
             doc["sleeves"].append(row)
             continue
         if book_key in exclusions:

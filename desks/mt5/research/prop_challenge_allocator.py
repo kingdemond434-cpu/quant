@@ -661,6 +661,10 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
     door_blocked: list[str] = []
+    # ONLY REAL EDGES (principal 2026-11-13 19:23Z; research/real_edge.py): a certificate the
+    # reopen judge lists and does not verify is refused here, by name, with its reasons.
+    import real_edge
+    edges, edges_status = real_edge.load()
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
@@ -679,6 +683,8 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
+        elif real_edge.refusal(cert_key, edges):
+            reason = str(real_edge.refusal(cert_key, edges))
         else:
             door = door_block(cert_key)
             if door:
@@ -708,7 +714,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps, "door_blocked": door_blocked,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
-                "listing": listing, "tier_s": tier_s}
+                "listing": listing, "tier_s": tier_s, "real_edge": edges_status}
     r = np.stack(slices, axis=2)
     # Live evidence moves each column's mean exactly as the Fusion book solve does.
     post: dict[str, Any] = {}
@@ -722,7 +728,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
             "caps": caps, "specs": specs, "door_blocked": door_blocked,
             "costs": costs, "posterior": post, "listing_source": listing_src,
-            "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
+            "unpriced": unpriced, "listing": listing, "tier_s": tier_s, "real_edge": edges_status}
 
 
 # ===================================================================== the solve

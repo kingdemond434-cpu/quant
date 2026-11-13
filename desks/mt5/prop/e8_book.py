@@ -206,6 +206,12 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     authorized_book = load_cert_book(CERT_BOOK, "e8") or {}
     fenced, source = terms_fenced_cells()
     gate = IntegrityGate.load()
+    # ONLY REAL EDGES, AND EVERY REAL ONE (principal 2026-11-13 19:19Z / 19:23Z;
+    # research/real_edge.py): the reopen judge's verified certificates are authorized here as
+    # well as the principal's hand-named keys, and one it lists unverified is refused even if
+    # named. Every door below still applies.
+    import real_edge
+    edges, _edges_status = real_edge.load()
     accepted: list[dict[str, Any]] = []
     blocked: list[dict[str, str]] = []
     for row in rows:
@@ -213,8 +219,12 @@ def live_admissible(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
         sym, fam, selector = str(row["symbol"]), str(row["family"]), str(row["selector"])
         book_key = f"{sym}_{fam}_{selector}"
         reason = ""
-        if not (authorized_book.get(book_key, 0) > 0):
-            reason = "not named with positive risk in the E8 principal book"
+        refused = real_edge.refusal(key, edges)
+        if refused:
+            reason = refused
+        elif not (authorized_book.get(book_key, 0) > 0 or real_edge.verified(key, edges)):
+            reason = ("not named with positive risk in the E8 principal book, nor a verified "
+                      "real edge")
         elif book_key in excluded:
             reason = f"principal exclusion: {excluded[book_key]}"
         elif f"{sym}.{fam}" in fenced:
