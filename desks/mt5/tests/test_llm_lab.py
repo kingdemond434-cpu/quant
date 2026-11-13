@@ -592,3 +592,13 @@ def test_the_exotic_cap_is_enforced_per_pass_even_when_every_draw_is_exotic() ->
         taken.append(c)
         assert lab.market_share(taken)["exotic_share"] <= lab.EXOTIC_CAP
     assert lab.market_share(taken)["exotic"] == 20        # capped at exactly 10%, not banned
+
+
+def test_breadth_gap_tags_the_books_missing_markets() -> None:
+    assert lab.breadth_gap("XAUUSD", {}) == ["gold_metals"]
+    assert "indices" in lab.breadth_gap("US500", {})
+    assert lab.breadth_gap("EURJPY", {}) == ["usd_jpy_eur_cross"]
+    assert lab.breadth_gap("USDJPY", {}) == ["usd_jpy_eur_cross"]
+    assert lab.breadth_gap("EURUSD", {}) == []
+    tokyo = {"session": "enter 03:00 UTC on the Tokyo fix"}
+    assert lab.breadth_gap("GBPUSD", tokyo) == ["02_09_utc"]

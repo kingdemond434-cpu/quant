@@ -273,8 +273,9 @@ EXOTIC_KEEP = 0.5
 #: gaps get a standing share of compute; the rest of the tensor keeps its owed-first order.
 GAP_CLASSES = ("commodities", "indices")
 GAP_SHARE = 0.25
-GAP_NOTE = ("live book gaps to fill first: no gold or metals, no indices, and no entries between "
-            "02:00 and 09:00 UTC (Asia session and the London open). Prefer mechanisms that "
+GAP_NOTE = ("live book gaps to fill first: no gold or metals, no indices, few USD/JPY/EUR "
+            "crosses, and no entries between 02:00 and 09:00 UTC (Asia session and the London "
+            "open). Prefer original mechanisms that "
             "trade there. Exotic FX needs twice the live cost to promote, so avoid it unless the "
             "edge is large.")
 
@@ -1339,13 +1340,43 @@ def process(prop: Any, lab_key: str, coord: dict[str, str], reg: dict[str, Famil
         mem.remember(g)
 
 
+#: The live book's breadth gaps (2026-11-13) a donation can fill, so the math lab can pick the
+#: [ORIG] hypotheses that widen the book: gold/metals, indices, USD/JPY/EUR crosses (USDJPY and
+#: the JPY and EUR crosses; EURUSD is the major, not a cross), and 02:00-09:00 UTC entries.
+
+
+def breadth_gap(symbol: str, payload: dict[str, Any]) -> list[str]:
+    try:
+        import universe_policy as up
+        cls = str(up.asset_class_of(symbol) or "")
+    except Exception:                                  # pragma: no cover
+        cls = ""
+    out = []
+    if cls == "commodities":
+        out.append("gold_metals")
+    if cls == "indices":
+        out.append("indices")
+    sym = symbol.upper()
+    if cls == "forex" and any(c in sym[:6] for c in ("JPY", "EUR")) \
+            and not sym.startswith("EURUSD"):
+        out.append("usd_jpy_eur_cross")
+    text = " ".join(str(payload.get(k) or "") for k in ("session", "entry", "mechanism",
+                                                        "horizon")).lower()
+    if re.search(r"\b0[2-8](:\d\d)?\s*(utc|z)\b|asia|tokyo|london open|pre-?london", text):
+        out.append("02_09_utc")
+    return out
+
+
 def donation_row(cell: dict[str, Any], cid: str, g: dict[str, Any],
                  payload: dict[str, Any]) -> dict[str, Any]:
     """The exact shape `miner_candidate_compiler.compile_row` admits as EXACT_RECIPE."""
     return {"kind": "hypothesis", "family": cell["family"], "params": cell["params"],
             "symbols": [cell["symbol"]], "symbol": cell["symbol"],
             "mechanism": g["mechanism"], "falsifier": g["falsifier"],
-            "title": f"llm_lab {g['lab']}: {g['mechanism'][:120]}",
+            "title": (f"{'[ORIG] ' if g['novelty_class'] == 'GENUINELY_NOVEL' else ''}"
+                      f"llm_lab {g['lab']}: {g['mechanism'][:120]}"),
+            "orig": g["novelty_class"] == "GENUINELY_NOVEL",
+            "breadth_gap": breadth_gap(cell["symbol"], payload),
             "lab": g["lab"], "lab_name": LAB_BY_KEY[g["lab"]].name if g["lab"] in LAB_BY_KEY
             else g["lab"], "novelty_class": g["novelty_class"], "cell_id": cid,
             "genealogy": {"node": g["node"], "parents": g["parents"],
@@ -1739,14 +1770,22 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         calls_budget = min(int(share["per_pass"]), _calls_left(daily_cap))
     rotation: dict[str, str] = _read_json(ROTATION, {}) or {}
 
+    #: (lab, model, wall seconds, ideas returned) per call: the funnel's compute and idea counts.
+    usage: list[tuple[str, str, float, int]] = []
+
     def _go(ask: Ask) -> tuple[Ask, list[Any]]:
         left = budget_s - (time.time() - started)
         if left < 30:
             return ask, []
+        t0 = time.time()
         try:
-            return ask, _call(ask, n=4, timeout=min(120.0, left))
+            got = _call(ask, n=4, timeout=min(120.0, left))
         except Exception as exc:          # pragma: no cover - one lab never kills the pass
-            return ask, [("error", str(exc)[:160])]
+            got = [("error", str(exc)[:160])]
+        ideas = sum(1 for p in got if getattr(p, "payload", None) is not None)
+        lab_key = ask.coord.get("lab") if ask.coord.get("lab") in ("SYNTHESIS",) else ask.lab.key
+        usage.append((str(lab_key), ask.model, time.time() - t0, ideas))
+        return ask, got
 
     calls_made = 0
     # ---- phase 0: conversion FIRST. Re-compile everything owed; re-ask the rule-shaped debt.
@@ -1993,7 +2032,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         try:
             credit = roles.verdict_loop(VERDICTS, DONATE_DIR,
                                         pairs[:calls_made] if calls_made else [],
-                                        STATE_DIR / "verdict_credit.json")
+                                        STATE_DIR / "verdict_credit.json", usage=usage)
         except Exception as exc:          # a broken credit file never loses the pass's report
             credit = {"error": f"verdict_loop: {type(exc).__name__}: {str(exc)[:160]}"}
     now_iso = _now()
@@ -2057,6 +2096,12 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                                                   "models_answered")},
         "verdict_loop": {k: credit.get(k) for k in ("keff_basis", "judged_cells",
                                                     "certified_cells", "ranking_rule")},
+        "funnel": {"rule": "ideas -> donated cells -> judged -> survivors (certified), "
+                           "cumulative, each per compute-hour; a lab is its prompt family",
+                   "labs": {k: (r or {}).get("funnel") for k, r in
+                            (credit.get("labs") or {}).items()},
+                   "models": {k: (r or {}).get("funnel") for k, r in
+                              (credit.get("models") or {}).items()}},
         "data_requests_this_pass": len(outputs["data_requests"]),
         "market_share": market_share(a.coord for a in asks),
         "jev": {"provider": UNMEASURED,

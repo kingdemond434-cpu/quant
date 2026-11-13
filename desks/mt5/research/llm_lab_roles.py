@@ -258,7 +258,8 @@ def _keff(cells: list[dict[str, str]]) -> tuple[dict[str, float], str]:
 
 
 def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
-                 asks: Iterable[tuple[str, str]] = (), credit_path: Path | None = None
+                 asks: Iterable[tuple[str, str]] = (), credit_path: Path | None = None,
+                 usage: Iterable[tuple[str, str, float, int]] = ()
                  ) -> dict[str, Any]:
     """Join verdicts to their proposer, add this pass's calls, and re-rank. Returns the credit doc.
 
@@ -272,6 +273,14 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
         for table, key in ((labs, lab), (models, model or "default_route")):
             row = table.setdefault(key, {"calls": 0})
             row["calls"] = int(row.get("calls", 0)) + 1
+    # THE FUNNEL (principal, 2026-11-13: steer each lab by surviving cells per compute): every
+    # call's wall seconds and the ideas it returned accumulate per lab and per model, beside the
+    # calls. Wall seconds are the compute measure because the free chain reports no token counts.
+    for lab, model, secs, ideas in usage:
+        for table, key in ((labs, lab), (models, model or "default_route")):
+            row = table.setdefault(key, {"calls": 0})
+            row["compute_s"] = round(float(row.get("compute_s", 0.0)) + max(0.0, float(secs)), 2)
+            row["ideas"] = int(row.get("ideas", 0)) + max(0, int(ideas))
     owners = _donations(donate_dir or DONATE_DIR)
     latest: dict[str, dict[str, Any]] = {}
     for r in _jsonl(verdicts_path):
@@ -282,7 +291,12 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
     keff, basis = _keff(certified)
     for table in (labs, models):
         for row in table.values():
-            row.update({"judged": 0, "certified": 0, "keff": 0.0, "gates": {}})
+            row.update({"judged": 0, "certified": 0, "keff": 0.0, "gates": {}, "donated": 0})
+    for own in owners.values():
+        for table, key in ((labs, own["lab"]), (models, own["model"])):
+            row = table.setdefault(key, {"calls": 0, "judged": 0, "certified": 0, "keff": 0.0,
+                                         "gates": {}, "donated": 0})
+            row["donated"] = int(row.get("donated", 0)) + 1
     feedback: dict[str, list[str]] = {}
     for cid, r in latest.items():
         own = owners[cid]
@@ -291,7 +305,7 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
         why = str(r.get("reason") or r.get("why") or "")[:90]
         for table, key in ((labs, own["lab"]), (models, own["model"])):
             row = table.setdefault(key, {"calls": 0, "judged": 0, "certified": 0, "keff": 0.0,
-                                         "gates": {}})
+                                         "gates": {}, "donated": 0})
             row["judged"] += 1
             row["gates"][gate] = row["gates"].get(gate, 0) + 1
             if r.get("passed"):
@@ -307,6 +321,7 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
         for row in table.values():
             calls = max(1, int(row.get("calls", 0)))
             row["keff_per_call"] = round(float(row.get("keff", 0.0)) / calls, 6)
+            row["funnel"] = funnel_row(row)
     doc.update({"generated_at": _now(), "keff_basis": basis, "judged_cells": len(latest),
                 "certified_cells": len(certified),
                 "ranking_rule": "certified incremental k_eff per call; novelty counts are NOT "
@@ -314,6 +329,20 @@ def verdict_loop(verdicts_path: Path, donate_dir: Path | None = None,
                 "feedback": {k: v[-8:] for k, v in feedback.items()}})
     _write_json(path, doc)
     return doc
+
+
+def funnel_row(row: dict[str, Any]) -> dict[str, Any]:
+    """ideas -> donated cells -> judged -> survivors, with each per compute-hour. A source with no
+    measured compute reads UNMEASURED per hour, never zero and never infinite."""
+    hours = float(row.get("compute_s", 0.0)) / 3600.0
+    out: dict[str, Any] = {"ideas": int(row.get("ideas", 0)), "donated": int(row.get("donated", 0)),
+                           "judged": int(row.get("judged", 0)),
+                           "survivors": int(row.get("certified", 0)),
+                           "calls": int(row.get("calls", 0)), "compute_h": round(hours, 4),
+                           "tokens": "UNMEASURED: the free chain returns no usage counts"}
+    for k in ("ideas", "donated", "judged", "survivors"):
+        out[f"{k}_per_compute_h"] = round(out[k] / hours, 4) if hours > 0 else "UNMEASURED"
+    return out
 
 
 def thompson(rows: dict[str, dict[str, Any]], keys: Sequence[str], rng: random.Random) -> list[str]:

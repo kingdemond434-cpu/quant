@@ -447,3 +447,20 @@ def test_a_corrupt_evidence_map_survives_a_pass_unchanged(tmp_path: Path, body: 
     assert sorted(x.name for x in tmp_path.iterdir()) in (["evidence_start.json"],
                                                           ["evidence_start.json",
                                                            "evidence_start.json.lock"])
+
+
+def test_the_funnel_counts_ideas_donated_judged_survivors_per_compute_hour(tmp_roles: Path) -> None:
+    _donations(roles.DONATE_DIR, [
+        {"cell_id": "c1", "lab": "K", "model": "m1", "symbol": "XAUUSD", "family": "carry"},
+        {"cell_id": "c2", "lab": "K", "model": "m1", "symbol": "XAUUSD", "family": "carry"}])
+    ledger = tmp_roles / "verdicts.jsonl"
+    ledger.write_text(json.dumps({"cell": "c1", "passed": True}) + "\n")
+    doc = roles.verdict_loop(ledger, roles.DONATE_DIR, [("K", "m1")] * 2,
+                             usage=[("K", "m1", 1800.0, 5), ("K", "m1", 1800.0, 3)])
+    f = doc["labs"]["K"]["funnel"]
+    assert (f["ideas"], f["donated"], f["judged"], f["survivors"]) == (8, 2, 1, 1)
+    assert f["compute_h"] == 1.0 and f["survivors_per_compute_h"] == 1.0
+    assert doc["models"]["m1"]["funnel"]["ideas_per_compute_h"] == 8.0
+    again = roles.verdict_loop(ledger, roles.DONATE_DIR, [])
+    assert again["labs"]["K"]["funnel"]["ideas"] == 8            # compute and ideas accumulate
+    assert roles.funnel_row({"calls": 1})["survivors_per_compute_h"] == "UNMEASURED"
