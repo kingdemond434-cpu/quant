@@ -982,6 +982,7 @@ def oco_cancel_opposite(venue: Any, state: dict, doc: dict, open_ids: set[int], 
     if why is not None and plan:
         doc.setdefault("alerts", []).append(f"gold OCO blind: {why}; every resting leg cancelled")
     gone: set[int] = set()
+    real = False
     for leg in plan:
         w = state["windows"].get(leg["window"]) or {}
         act = {"act": "oco_direction_cancel", "window": leg["window"], "side": leg["side"],
@@ -995,12 +996,25 @@ def oco_cancel_opposite(venue: Any, state: dict, doc: dict, open_ids: set[int], 
             act["why"] += f"; cancel FAILED: {type(exc).__name__}: {exc}"[:160]
         if act["ok"]:
             gone.add(int(leg["id"]))
+            real = real or not act.get("shadow")
             if not act.get("shadow") and ctx.get("key") and entry is not None:
                 _oco.note_cancelled(today, "e8", ctx["key"], leg["id"], leg["side"],
                                     holder="e8_gold")
         log(f"[{leg['window']}] gold OCO cancel {leg['side']} order {leg['id']}: "
             f"{'ok' if act['ok'] else 'NOT acknowledged'}; {act['why']}")
         doc["actions"].append(act)
+    if real and ctx.get("key"):
+        # REPUBLISH AT ONCE (11-04, measured by Desk health): the twin was cancelled at 05:36:25Z
+        # but E8's published gold state still listed it, so FTMO's follower read "e8 rests a
+        # gold short entry" at 05:36:35Z and waited a whole cadence (sent 05:41:34Z, its limit
+        # never filled). The followers read only this published state, so it is refreshed from
+        # the venue in the same pass, before the next one could ever be needed.
+        def e8_rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+            return _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                              venue.instrument_id(SYMBOL))
+        res = _oco.sync_lane("e8", ctx["key"], e8_rows, date=today,
+                             holder="e8_gold:after_cancel")
+        doc.setdefault("gold_oco", {})["republished_after_cancel"] = bool(res.get("published"))
     return gone
 
 

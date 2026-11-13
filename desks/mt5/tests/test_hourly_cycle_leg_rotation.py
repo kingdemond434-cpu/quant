@@ -125,7 +125,29 @@ def test_replication_writer_is_reached_by_core_before_its_live_consumer() -> Non
     assert roster.index("replication_civilization") < roster.index("intake_catchup")
     assert hourly_cycle.in_plan("replication_civilization", "core")
     assert not hourly_cycle.in_plan("replication_civilization", "dept:validate")
-    assert "replication_civilization" in LR.ALWAYS_RUN
+    soft_h, hard_h = LR.DUE_BY_AGE_H["replication_civilization"]
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    assert hard_h < MAX_AGE_H, "rotation must never hand the door a stale replication verdict"
+
+
+def test_full_tier_s_is_due_by_age_inside_the_door_expiry() -> None:
+    """The full Tier S pass feeds the door's FDR and immune inputs (6h expiry), not an hourly one."""
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    assert "tier_s" not in LR.ALWAYS_RUN
+    soft_h, hard_h = LR.DUE_BY_AGE_H["tier_s"]
+    assert 0 < soft_h <= MAX_AGE_H / 2 and soft_h < hard_h < MAX_AGE_H
+    roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))
+    assert set(LR.DUE_BY_AGE_H) <= roster, "DUE_BY_AGE_H names a leg this cycle does not have"
+
+
+def test_a_due_leg_lands_inside_the_door_expiry_after_its_worst_start_and_runtime() -> None:
+    """Auditor MF2: forced at an age in [hard, hard + period), output one cap later."""
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    for leg, (_soft, hard) in LR.DUE_BY_AGE_H.items():
+        assert hourly_cycle.in_plan(leg, "core"), f"{leg}: the bound assumes the hourly core"
+        cap_h = hourly_cycle.LEG_BUDGET_SEC[leg] / 3600.0
+        assert hard + LR.CORE_PERIOD_H + cap_h < MAX_AGE_H, leg
+    assert not (set(LR.DUE_BY_AGE_H) & LR.ALWAYS_RUN)
 
 
 def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
@@ -145,3 +167,17 @@ def test_cheap_money_and_health_fences_are_pinned():
     for leg in ("decay_monitor", "placement_interlock", "box_state_freshness", "desk_health",
                 "judge_alive"):
         assert leg in LR.ALWAYS_RUN, leg
+
+
+def test_the_freshness_and_health_fences_run_before_the_heavy_legs() -> None:
+    """MT5-HourlyCore is stopped at PT55M while tier_s / replication / daily are still running
+    (box 2026-11-10), so a fence at the tail of the roster never runs: box_state_freshness and
+    desk_health wrote no row after 2026-11-08 although both are ALWAYS_RUN. At the head they
+    run every pass, bars_state first because desk_health reads its report."""
+    roster = LR.legs_in_order(DESK / "research" / "hourly_cycle.py")
+    heavy = [roster.index(x) for x in ("replication_civilization", "tier_s", "daily")
+             if x in roster]
+    for leg in ("bars_state", "box_state_freshness", "desk_health"):
+        assert roster.count(leg) == 1
+        assert roster.index(leg) < min(heavy)
+    assert roster.index("bars_state") < roster.index("desk_health")
