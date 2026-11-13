@@ -1413,6 +1413,48 @@ def parse_bcb_mpv(body: bytes, ctx: Ctx) -> list[Obs]:
     return [Obs("retail_payments_value_brl", d, v) for d, v in sorted(tot.items())]
 
 
+def _bnm_kijang_row(r: Any) -> tuple[date, float | None, float | None] | None:
+    if not isinstance(r, dict):
+        return None
+    try:
+        d = date.fromisoformat(str(r.get("effective_date") or "").strip()[:10])
+    except ValueError:
+        return None
+    oz = r.get("one_oz")
+    if not isinstance(oz, dict):
+        return None
+    buy, sell = _num(str(oz.get("buying"))), _num(str(oz.get("selling")))
+    return d, (buy if buy and buy > 0 else None), (sell if sell and sell > 0 else None)
+
+
+def parse_bnm_kijang_emas(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Bank Negara Malaysia Open API `/public/kijang-emas` (Source: Bank Negara Malaysia).
+    `{"data": {...}}` for the current-day and `/date/{d}` routes; `{"data": [{...}, ...]}` for
+    the `/year/{Y}/month/{M}` route, whose list form is UNCONFIRMED against a live reply, so
+    both are read and any other shape parses to nothing. Each row: `effective_date` (the period)
+    and `one_oz.{buying, selling}` in MYR. The spread is (selling - buying) / mid, in %."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    data = doc.get("data") if isinstance(doc, dict) else None
+    rows = [data] if isinstance(data, dict) else data if isinstance(data, list) else []
+    out: dict[tuple[str, date], float] = {}
+    for r in rows:
+        got = _bnm_kijang_row(r)
+        if got is None:
+            continue
+        d, buy, sell = got
+        if sell is not None:
+            out[("kijang_emas_1oz_selling_myr", d)] = sell
+        if buy is not None:
+            out[("kijang_emas_1oz_buying_myr", d)] = buy
+        if buy is not None and sell is not None and sell >= buy:
+            out[("kijang_emas_1oz_spread_pct", d)] = (sell - buy) / ((sell + buy) / 2) * 100.0
+    return [Obs(k, d, v) for (k, d), v in sorted(out.items(), key=lambda kv: (kv[0][1],
+                                                                             kv[0][0]))]
+
+
 def parse_inegi_bie(body: bytes, ctx: Ctx) -> list[Obs]:
     """INEGI Banco de Indicadores API v2.0 JSON for ONE configured EMEC indicator:
     `Series[0].OBSERVATIONS[].{TIME_PERIOD "YYYY/MM", OBS_VALUE}`. An error reply is nothing."""
@@ -1691,6 +1733,14 @@ def rule_kr_mof_port(period: date) -> datetime:
     return _roll_weekday(_utc(t.year, t.month, t.day))
 
 
+def rule_bnm_kijang(period: date) -> datetime:
+    """BNM stamps the day's Kijang Emas price at about 03:00 Kuala Lumpur time on the effective
+    date (meta.last_updated "2026-11-10 03:00:03" for effective_date 2026-11-10, box read
+    2026-11-11). Whether that stamp is MYT (19:00 UTC the day before) or UTC, 04:00 UTC on the
+    effective date (12:00 MYT) is after it: late-biased, never early."""
+    return _utc(period.year, period.month, period.day, 4)
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -1731,6 +1781,9 @@ class Source:
     #: first (history) fetch is that vintage, not what was known at the time. Published with the
     #: series (axis file, roster) so no reader mistakes a backfill for a first release.
     vintage: str = ""
+    #: The Accept header this source's API requires (BNM's versioned media type). Empty: the
+    #: getter is called exactly as before, with the URL alone (`Accept: */*`).
+    accept: str = ""
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -1754,6 +1807,11 @@ PORTWATCH_BASE = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/ser
                   "{svc}/FeatureServer/0/query")
 PORTS = ("Shanghai", "Ningbo-Zhoushan", "Busan", "Port Hedland", "Singapore")
 CHOKEPOINTS = ("Strait of Hormuz", "Suez Canal", "Bab el-Mandeb Strait", "Malacca Strait")
+#: BNM Open API (keyless; robots.txt on api.bnm.gov.my 404s, box read 2026-11-11).
+BNM_KIJANG_URL = "https://api.bnm.gov.my/public/kijang-emas"
+#: The history route, one calendar month per request, walked back to BNM_KIJANG_FLOOR.
+BNM_KIJANG_MONTH_URL = BNM_KIJANG_URL + "/year/{y}/month/{m}"
+BNM_KIJANG_FLOOR = date(2018, 1, 1)
 
 SOURCES: tuple[Source, ...] = (
     Source(
@@ -1949,6 +2007,40 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="my_bnm_kijang_emas", name="Bank Negara Malaysia Kijang Emas gold coin prices (MYR)",
+        url=BNM_KIJANG_URL, region="MY", language="en", cadence="daily",
+        parse=parse_bnm_kijang_emas, rule=rule_bnm_kijang, transform="level_dev",
+        instruments={"XAUUSD": 1},
+        signal_series=("kijang_emas_1oz_selling_myr", "kijang_emas_1oz_buying_myr",
+                       "kijang_emas_1oz_spread_pct"),
+        mechanism=("the central bank's own daily buy and sell price for the 1 oz Kijang Emas "
+                   "bullion coin is the Malaysian retail physical price of gold in MYR: its level "
+                   "against XAUUSD x USDMYR is the local retail premium, and its bid/ask spread "
+                   "widens when retail physical demand (or redemption) strains the dealer book"),
+        payer="London/NY gold holders pricing on real yields and the dollar, blind to Asian "
+              "retail offtake",
+        constraint=("the coin is sold and bought back only through Maybank branches at BNM's "
+                    "price, so retail demand shows in the price and spread, not in a free "
+                    "arbitrage"),
+        licence=("Terms of Use for BNM Datasets (Nov 2023): use free of charge, copy, publish, "
+                 "distribute and transfer, commercial and non-commercial. Attribution "
+                 "'Source: Bank Negara Malaysia', a link to the terms and the statement 'Data "
+                 "and information are subject to Terms of Use for BNM Datasets'; no implied "
+                 "endorsement, no BNM name, emblem or marks"),
+        source_culture="MY/en", participant_structure=("retail_heavy", "physical_flow"),
+        failure_mode_hypothesis=("fails because BNM sets the price mechanically off the "
+                                 "international gold price and USDMYR at a fixed morning "
+                                 "time, so most of its daily change is XAUUSD and the ringgit "
+                                 "already traded; the residual premium and spread are what is "
+                                 "tested, and they move in steps when BNM resets its margins"),
+        crowding_prior="low",
+        note=("XAUUSD only: USDMYR is not in desks/mt5/data/universe/universe.json (checked "
+              "2026-11-11), so the MYR leg maps to no instrument. Keyless; requires the header "
+              "Accept: application/vnd.BNM.API.v1+json. The /year/Y/month/M history route's list "
+              "shape is UNCONFIRMED against a live reply; the parser emits nothing on any other "
+              "shape. Credit: 'Source: Bank Negara Malaysia'"),
+        accept="application/vnd.BNM.API.v1+json"),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2646,6 +2738,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
+    "my_bnm_kijang_emas": ("confirmed", "Terms of Use for BNM Datasets: free, commercial and "
+                           "non-commercial reuse and redistribution, with the attribution "
+                           "'Source: Bank Negara Malaysia'"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -2984,6 +3079,36 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "commercially or non-commercially."),
         "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
         "checked_at": _CHK},
+    "my_bnm_kijang_emas": {
+        "terms_url": "https://www.bnm.gov.my/terms-of-use-bnm-datasets",
+        "terms_quote": ("2. BNM allows the use of data without any charge. 3. Users are free "
+                        "to: a. copy, publish, distribute, and transfer the data; b. adopt the "
+                        "data; c. use the data for commercial and non-commercial purposes; and "
+                        "d. combine data with other data, or include data in the product or "
+                        "application created by the User."),
+        "conditions_quote": ("4. In implementing any of the action specified in section 3, the "
+                             "User must: a. acknowledge the data sources in the products or "
+                             "applications by including the attribution statement of \"Source: "
+                             "Bank Negara Malaysia\"; b. provide the link to the Terms of Use "
+                             "for BNM Datasets; c. use and include the following statement: "
+                             "\"Data and information are subject to Terms of Use for BNM "
+                             "Datasets\" if BNM does not provide a statement relating to the "
+                             "ownership of the intellectual property data; d. not claim or "
+                             "imply that BNM endorses the User's use of the data; ... f. not "
+                             "reproduce BNM's name and emblem on the data, with the exception "
+                             "of the attribution statement in section 4a; and g. not reproduce "
+                             "any trademark or service mark on the data."),
+        "judgement": ("Kijang Emas is BNM's own price (BNM as primary compiler, §1), so the "
+                      "dataset terms apply: commercial use and redistribution expressly allowed "
+                      "free of charge (§2, §3a, §3c) on the §4 conditions. No availability "
+                      "guarantee (§6d). Terms 'Updated November 2023', read from the box"),
+        "robots": ("api.bnm.gov.my/robots.txt 404 with a portal-move notice, no rules "
+                   "(ROBOTS_ABSENT, fetch allowed); /public/kijang-emas 200 JSON with Accept: "
+                   "application/vnd.BNM.API.v1+json and no key. Record: /mnt/project-files/"
+                   "reports/box_reads/bnm_robots_terms_2026-11-11.md"),
+        "credit": ("Source: Bank Negara Malaysia. Data and information are subject to Terms "
+                   "of Use for BNM Datasets (https://www.bnm.gov.my/terms-of-use-bnm-datasets)"),
+        "checked_at": "2026-11-11"},
 }
 
 #: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
@@ -3233,8 +3358,10 @@ def _redact(url: str, src: Source) -> str:
     return url.replace(key, f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str) -> tuple[bytes, str]:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+def http_get(url: str, accept: str = "*/*") -> tuple[bytes, str]:
+    """GET with the desk UA. `accept` is only ever passed for a source that declares one
+    (`Source.accept`); every other source is called with the URL alone and sends `*/*`."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": accept})
     with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
@@ -3314,6 +3441,8 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
     if src.id == "cn_baidu_migration":
         return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
                 for city, cid in BAIDU_CITIES.items()]
+    if src.id == "my_bnm_kijang_emas":
+        return _bnm_kijang_requests(src, now, state)
     if src.id == "us_tsa_throughput":
         # The current page carries this year only; the year-on-year comparison needs last year's
         # page, which TSA publishes at /<year>.
@@ -3348,6 +3477,25 @@ def _dated_requests(src: Source, key: str, now: datetime, state: dict[str, Any],
         state["backfill_to_next"] = (bf[-1] - timedelta(days=1)).isoformat()
     return [Request(src.url.replace("{key}", key).replace("{date}", d.strftime("%Y%m%d")),
                     Ctx(part=d.isoformat(), start=d, end=d, fetched_at=now)) for d in days]
+
+
+def _bnm_kijang_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    """The current-day route, plus ONE month of history per pass from the month route, walking
+    back from `backfill_to` (first of the month still owed; starts at the current month) to
+    BNM_KIJANG_FLOOR. Two small requests a pass. The cursor commits only on an error-free
+    fetched pass (collect), so a failed month is asked for again next pass."""
+    out = [Request(src.url, Ctx(part="current", fetched_at=now))]
+    cur = state.get("backfill_to")
+    try:
+        m0 = date.fromisoformat(cur) if cur else now.date().replace(day=1)
+    except ValueError:
+        m0 = now.date().replace(day=1)
+    if m0 >= BNM_KIJANG_FLOOR:
+        out.append(Request(BNM_KIJANG_MONTH_URL.format(y=m0.year, m=m0.month),
+                           Ctx(part=f"month:{m0:%Y-%m}", start=m0,
+                               end=_month_end(m0.year, m0.month), fetched_at=now)))
+        state["backfill_to_next"] = (m0 - timedelta(days=1)).replace(day=1).isoformat()
+    return out
 
 
 def _gdelt_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
@@ -4035,8 +4183,10 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
 
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
-            getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
-    """Fetch (or read fixtures), parse, and merge into the source's vintage store."""
+            getter: Callable[..., tuple[bytes, str]] = http_get) -> dict[str, Any]:
+    """Fetch (or read fixtures), parse, and merge into the source's vintage store. A source
+    with an `accept` header gets it as the getter's second argument; every other source's
+    getter call is the URL alone, unchanged."""
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
     store_p = paths.obs_dir / f"{src.id}.json"
     store = _read_json(store_p, {})
@@ -4084,7 +4234,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 continue
         elif fetch:
             try:
-                body, ctype = getter(req.url)
+                body, ctype = (getter(req.url, src.accept) if src.accept
+                               else getter(req.url))
                 fetched += 1
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
@@ -4495,6 +4646,9 @@ def _cursor(s: Source) -> str:
         r, lag, b = DATED_SOURCES[s.id]
         return (f"last {r} days (lag {lag}d) re-read each pass + backfill_to walking back "
                 f"{b} days/pass, {DATED_BACKFILL_DEPTH_D}d deep")
+    if s.id == "my_bnm_kijang_emas":
+        return (f"current-day route each pass + backfill_to walking back one month/pass via "
+                f"/year/Y/month/M to {BNM_KIJANG_FLOOR:%Y-%m}")
     return "vintage store keyed series|period (append-only)"
 
 
