@@ -35,10 +35,11 @@ def _cro_installer() -> str:
 
 
 # ------------------------------------------------------------------ the pair exists
-def test_both_lanes_are_registered_by_one_owner() -> None:
+def test_only_the_noon_lane_is_registered_and_one_owner_does_it() -> None:
+    """The Codex midnight lane was retired 2026-11-13 ("Keep only noon cycle")."""
     src = _cro_installer()
-    for name in ("MT5-CycleNoon", "MT5-CycleMidnight"):
-        assert f"Name = '{name}'" in src
+    assert "Name = 'MT5-CycleNoon'" in src
+    assert "Name = 'MT5-CycleMidnight'" not in src
     # Both entry points delegate instead of registering a second task shape.
     assert "install_cro_cycle_tasks.ps1" in _installer()
     absent_registrar = DESK / "scripts" / "register_absent_box_tasks.ps1"
@@ -48,7 +49,7 @@ def test_both_lanes_are_registered_by_one_owner() -> None:
 def test_each_lane_passes_its_own_lane_argument() -> None:
     """The lane selects a slot and a checkpoint file -- not a scope."""
     src = _cro_installer()
-    assert "Lane = 'noon'" in src and "Lane = 'midnight'" in src
+    assert "Lane = 'noon'" in src and "Lane = 'midnight'" not in src
     assert "-Lane {1}" in src
 
 
@@ -343,9 +344,9 @@ def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> N
     src = _cro_installer()
     assert "is SYSTEM: neither claude nor codex is logged in" in src
     assert "registered with no next run time" in src and "exit 4" in src
-    # The noon lane can be armed alone (box-native noon pass) while midnight waits on its clone.
+    # Old command lines still parse; the default is the only lane left.
     assert "[ValidateSet('noon', 'midnight', 'both')]" in src
-    assert "Where-Object { $Lane -eq 'both' -or $_.Lane -eq $Lane }" in src
+    assert "[string] $Lane = 'noon'" in src
     # PowerShell names are case-insensitive: a `$lane` loop variable would BE the -Lane parameter.
     assert not re.search(r"foreach \(\$lane\b", src, re.IGNORECASE)
 
@@ -394,3 +395,19 @@ def test_the_end_row_carries_the_enforced_misses_not_the_agents_claim() -> None:
     for field in ("duties_missed", "pass_questions_missed", "judging_sweep_missed"):
         assert f"{field} = $enforced.{field}" in src, field
     assert 'duties_missed = "UNMEASURED"' in src
+
+
+# ------------------------------------------------------- the midnight lane retired (2026-11-13)
+def test_the_retired_midnight_lane_is_removed_by_the_installer_and_by_its_own_firing() -> None:
+    """Principal 2026-11-13 18:28Z: Codex no longer works here; keep only the noon cycle."""
+    src = _cro_installer()
+    assert "Unregister-ScheduledTask -TaskName 'MT5-CycleMidnight' -Confirm:$false" in src
+    launcher = LAUNCHER.read_text("utf-8")
+    retire = launcher.index('if ($Lane -eq "midnight") {')
+    # it stops before the lease is claimed and before any agent CLI is resolved
+    assert retire < launcher.index("scripts\\controller_checkpoint.py claim")
+    assert retire < launcher.index("$AgentCommand = if")
+    body = launcher[retire : launcher.index("exit 0", retire)]
+    assert 'Unregister-ScheduledTask -TaskName "MT5-CycleMidnight"' in body
+    manifest = (DESK / "ops" / "box_tasks.manifest").read_text("utf-8")
+    assert 'TASK name="MT5-CycleMidnight"' not in manifest

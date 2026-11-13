@@ -303,7 +303,7 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 5) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "MT5 ruin rail, --live: flattens and halts on a confirmed breach, but ONLY while the principal's FUSION_DEADMAN_ARMED.json marker exists." },
-    # ---- THE CRO CYCLE LANES (MT5-CycleNoon / MT5-CycleMidnight) ARE NOT IN THIS TABLE --------
+    # ---- THE CRO CYCLE LANES (MT5-CycleNoon; MT5-CycleMidnight retired 11-13) NOT IN THIS TABLE
     # They run as the account that holds the claude/codex logins (S4U), not SYSTEM, and fire
     # hourly all day with the Europe/Dublin window decided by Run-DeskCycle.ps1. Both facts are
     # outside this table's shape, so scripts\install_cro_cycle_tasks.ps1 owns them and is called
@@ -450,7 +450,7 @@ foreach ($t in $tasks) {
 # THE CRO CYCLE LANES, delegated so there is one registration of them (see the table comment).
 $croInstaller = Join-Path $DeskRoot "scripts\install_cro_cycle_tasks.ps1"
 if ($WhatIfOnly) {
-    Write-Host "  [DRY ] MT5-CycleNoon / MT5-CycleMidnight via install_cro_cycle_tasks.ps1"
+    Write-Host "  [DRY ] MT5-CycleNoon via install_cro_cycle_tasks.ps1 (removes retired MT5-CycleMidnight)"
 } elseif (Test-Path $croInstaller) {
     try { & $croInstaller -NoStart | ForEach-Object { Write-Host "  [OK  ] $_" } }
     catch { Write-Host ("  [FAIL] CRO cycle lanes {0}" -f $_.Exception.Message) }

@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-    Run one lane of the daily desk cycle: NOON (Claude, 12:00) or MIDNIGHT (Codex, 00:00).
+    Run the daily desk cycle: NOON (Claude, 12:00). The MIDNIGHT (Codex) lane was retired on
+    2026-11-13 by the principal; `-Lane midnight` now only removes its old task and exits.
 
 .DESCRIPTION
     Two autonomous passes run twelve hours apart against this repository and the live box. BOTH
@@ -43,7 +44,7 @@
     reads nor forwards a key, and it never prints one.
 
 .PARAMETER Lane
-    `noon` or `midnight`. Same work; different slot and checkpoint.
+    `noon`. `midnight` is kept only so a still-registered retired task binds and removes itself.
 
 .PARAMETER AgentCommand
     Override the CLI. Defaults to `claude` for noon and `codex` for midnight, which is the pairing
@@ -81,6 +82,22 @@ function Write-Cycle([string] $Message) {
     $line = "{0} [{1}] {2}" -f (Get-Date -Format "o"), $Lane, $Message
     Write-Host $line
     Add-Content -LiteralPath $Log -Value $line
+}
+
+# THE MIDNIGHT (CODEX) LANE IS RETIRED (principal 2026-11-13 18:28Z: "codex doesn't work on this
+# anymore" / "Keep only noon cycle"). A box that still has MT5-CycleMidnight registered lands here:
+# the firing removes its own task and stops, so the retired lane neither runs Codex nor shows as a
+# FAILING task. It never claims the controller lease and never touches the noon lane. Rollback:
+# revert this block and re-run install_cro_cycle_tasks.ps1 from the commit before it.
+if ($Lane -eq "midnight") {
+    Write-Cycle "RETIRED: the midnight (Codex) lane was retired 2026-11-13; only MT5-CycleNoon runs"
+    try {
+        Unregister-ScheduledTask -TaskName "MT5-CycleMidnight" -Confirm:$false -ErrorAction Stop
+        Write-Cycle "removed the MT5-CycleMidnight task"
+    } catch {
+        Write-Cycle ("could not remove MT5-CycleMidnight here ({0}); install_cro_cycle_tasks.ps1 removes it" -f $_.Exception.Message)
+    }
+    exit 0
 }
 
 # Verify all three authoritative files are readable before claiming a controller
