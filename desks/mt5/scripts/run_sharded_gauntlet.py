@@ -2363,15 +2363,40 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
         out_kids = []
         for k in root.children(recursive=True):
             with contextlib.suppress(psutil.Error):
-                if k.status() != psutil.STATUS_ZOMBIE:
+                if k not in corpses and k.status() not in (psutil.STATUS_ZOMBIE,
+                                                           psutil.STATUS_DEAD):
                     out_kids.append(k)
         return out_kids
 
+    # DEATH IS ONE-WAY (2026-10-29). A process seen gone once is gone for good, so it is
+    # remembered: while init reaps the root's re-parented corpses, /proc can read a corpse as
+    # 'running' or 'dead' (not 'zombie') for one sample after is_running() said True, and the
+    # final sweep named such a corpse an orphan (CI #500: killed 4, orphans [5488], wall_s 0.17).
+    # Keyed by the psutil.Process itself (pid + create time), so a reused pid is a new process.
+    # ONLY TERMINAL EVIDENCE IS REMEMBERED (audit of 33d70e1c8): the pid is gone or reused
+    # (is_running() False / NoSuchProcess) or the process read 'zombie', which nothing leaves
+    # except by being reaped. A 'dead' sample or any other psutil error (AccessDenied) is gone
+    # for that sample only, so a live survivor that misreads once is re-sampled, re-killed and
+    # still named an orphan.
+    corpses: set[Any] = set()
+
     def gone(p: Any) -> bool:
+        if p in corpses:
+            return True
         try:
-            return (not p.is_running()) or p.status() == psutil.STATUS_ZOMBIE
+            if not p.is_running():
+                corpses.add(p)
+                return True
+            st = p.status()
+        except psutil.NoSuchProcess:
+            corpses.add(p)
+            return True
         except psutil.Error:
             return True
+        if st == psutil.STATUS_ZOMBIE:
+            corpses.add(p)
+            return True
+        return st == psutil.STATUS_DEAD
 
     def settle(procs: list[Any], limit_s: float) -> None:
         # ZOMBIE-AWARE WAIT (2026-10-29). `psutil.wait_procs` counts a zombie as running, and a
