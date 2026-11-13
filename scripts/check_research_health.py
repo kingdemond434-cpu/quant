@@ -137,6 +137,31 @@ def _mtime_age_h(p: Path, now: datetime) -> float | None:
         return None
 
 
+def _halt_age_h(now: datetime) -> tuple[float | None, str]:
+    """(hours the gateway has been halted, basis). NEVER the marker's mtime -- see the halt branch.
+
+    Reads `HALT_RAIL_INTEGRITY.json`, whose whole job is to date the halt from the gateway's own
+    log and hold that origin durably. An absent or stale report is UNMEASURED and says so: a halt
+    of unknown age is a worse reading than a long one, and an order of magnitude better than the
+    confident 0.0 days this fence used to print.
+    """
+    path = DESK / "reports" / "HALT_RAIL_INTEGRITY.json"
+    rep = _read(path)
+    if not isinstance(rep, dict):
+        return None, ("UNMEASURED: HALT_RAIL_INTEGRITY.json absent or unreadable "
+                      "(scripts/check_halt_rail_integrity.py, hourly leg halt_rail)")
+    halt = rep.get("halt") if isinstance(rep.get("halt"), dict) else {}
+    hours = halt.get("halt_hours")
+    at_age = _mtime_age_h(path, now)
+    if not isinstance(hours, (int, float)) or isinstance(hours, bool):
+        return None, f"UNMEASURED: the report carries no halt_hours ({halt.get('basis')})"
+    if at_age is not None and at_age > 6.0:
+        return None, (f"UNMEASURED: HALT_RAIL_INTEGRITY.json is {at_age:.1f}h old; its "
+                      f"{float(hours) / 24:.1f}-day reading is not current")
+    # The report is kept fresh hourly; between passes the halt has simply gone on for longer.
+    return float(hours) + max(0.0, at_age or 0.0), str(halt.get("basis") or "gateway log")
+
+
 def _docket_projection(now: datetime) -> tuple[int | None, float | None, float | None]:
     """Remote docket count, producer age and projection age without opening the row bank."""
     state = _read(ROOT / "web" / "desk_state.json") or {}
@@ -222,6 +247,15 @@ def collect(now: datetime) -> tuple[list[str], dict]:
     # REPORT ONLY, NEVER CURED HERE. Re-arming means placing live orders, and nothing on this box
     # gets to make that decision on its own; the money path takes no autonomous fixer by standing
     # rule. Naming it loudly every five minutes is the entire job.
+    # AND FOR TWELVE DAYS IT NAMED IT AS "0.0 day(s)" (noon CRO, 2026-11-11). The age came from the
+    # marker's mtime -- and the ruin rail REWRITES that marker every five minutes while the halt
+    # stands ("HALT FILE WRITTEN", logs/fusion_deadman.log), so this line measured the age of its
+    # own alarm. The desk had been halted since 2026-10-30T19:51:04Z, 26,043 consecutive paused
+    # passes, and every pass of this fence reported it as a blip. The halt's real age now comes
+    # from HALT_RAIL_INTEGRITY.json (scripts/check_halt_rail_integrity.py), which derives it from
+    # the gateway's own log and keeps a durable origin record; the marker's mtime is still
+    # reported, under its own name, because it IS the useful reading of one thing -- whether the
+    # rail that wrote it is still alive.
     paused = DESK / "data" / "GATEWAY_PAUSED"
     if paused.exists():
         try:
@@ -230,13 +264,18 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             cause = next((ln.strip() for ln in why[1:] if ln.strip()), "")
         except OSError:
             first, cause = "unreadable marker", ""
-        halt_age = _mtime_age_h(paused, now)
+        marker_age = _mtime_age_h(paused, now)
+        halt_age, halt_basis = _halt_age_h(now)
         m["trading_halted"] = True
         m["trading_halted_hours"] = round(halt_age, 1) if halt_age is not None else None
-        days = f"{halt_age / 24:.1f} day(s)" if halt_age is not None else "an unknown period"
+        m["halt_marker_age_hours"] = round(marker_age, 1) if marker_age is not None else None
+        m["halt_age_basis"] = halt_basis
+        days = (f"{halt_age / 24:.1f} day(s)" if halt_age is not None
+                else "an UNMEASURED period (a halt's age is not its marker's mtime)")
         breaches.append(
             f"TRADING HALTED for {days} -- THE DESK IS NOT TRADING. {first}"
             + (f" || {cause}" if cause else "")
+            + f" || halt age basis: {halt_basis}"
             + " || This is never auto-cleared: re-arming places live orders. Delete "
               "desks/mt5/data/GATEWAY_PAUSED on the desk box once the cause is fixed.")
     else:
