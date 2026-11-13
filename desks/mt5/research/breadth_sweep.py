@@ -138,6 +138,47 @@ READY: dict[str, dict] = {
         "grid": [{"lookback": lb, "entry_z": z, "rr": 1.5, "ttl_bars": 48}
                  for lb in (96, 240) for z in (2.0, 2.5)],
     },
+    # THE QUANT-FRAMEWORK FAMILIES (2026-11-10, mt5desk/family_state_space.py). Coarse grids: each
+    # axis is the one the family's docstring names as the claim (fade vs follow, calm vs stressed,
+    # how fast the hedge ratio may move, how long a reversion may take), not every knob it has.
+    "garch_shock": {
+        "why": "a return measured in its own GJR-GARCH sigma: whether a shock continues or "
+               "reverts depends on whether variance sits above or below its long-run level, "
+               "which no realised-vol ratio states",
+        "grid": [{"entry_z": z, "vol_state": v, "side_mode": m, "window": 1000, "refit": 250,
+                  "ttl_bars": 24}
+                 for z in (2.5, 3.0) for v in ("calm", "stressed") for m in ("fade", "follow")],
+    },
+    "kalman_trend": {
+        "why": "the filtered slope's own posterior t-statistic: a trend whose noise is estimated "
+               "bar by bar rather than assumed by a moving-average length",
+        "grid": [{"q_slope": q, "entry_t": t, "side_mode": m, "ttl_bars": 48}
+                 for q in (1e-4, 1e-3) for t in (2.0, 3.0) for m in ("follow", "fade")],
+    },
+    "ou_reversion": {
+        "why": "fade a stretched price only when its fitted half-life is short enough to hold "
+               "for: a reversion slower than the hold is a trend bet wearing its name",
+        "grid": [{"window": w, "entry_z": z, "hl_max": h, "hold_mult": 2.0}
+                 for w in (250, 500) for z in (2.0, 2.5) for h in (48.0, 96.0)],
+    },
+    "kalman_pair": {
+        "why": "a hedge ratio tracked bar by bar instead of lagged by half a rolling window, so "
+               "the dislocation faded is the pair's, not the estimator's",
+        "pairs": (("EURUSD", "GBPUSD"), ("AUDUSD", "NZDUSD"), ("USDCHF", "EURCHF"),
+                  ("XAUUSD", "XAGUSD"), ("USDCAD", "XTIUSD"), ("EURJPY", "GBPJPY")),
+        "pair_param": "pair_symbol",
+        "grid": [{"delta": d, "entry_z": z, "ttl_bars": 48}
+                 for d in (1e-5, 1e-3) for z in (2.0, 2.5)],
+    },
+    "copula_pair": {
+        "why": "dependence measured in the ranks, so a fat-tailed pair is not judged by a "
+               "correlation its tails break; trades the cumulative conditional mispricing",
+        "pairs": (("EURUSD", "GBPUSD"), ("AUDUSD", "NZDUSD"), ("USDCHF", "EURCHF"),
+                  ("XAUUSD", "XAGUSD"), ("USDCAD", "XTIUSD"), ("EURJPY", "GBPJPY")),
+        "pair_param": "pair_symbol",
+        "grid": [{"kind": k, "cum_bars": c, "entry_m": m, "ttl_bars": 24}
+                 for k in ("t", "gauss") for c in (12, 24) for m in (2.0, 3.0)],
+    },
     # Same loader, more legs: the build path pops `factor_symbols` and hands over a list.
     "cross_asset_residual": {
         "why": "metals against FX against index after the common factor -- what is left when the "
@@ -300,7 +341,10 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
     13 would build cells whose input is None and fail them for a reason that says nothing).
     """
     if spec.get("pairs"):
-        return [(a, {"peer_symbol": b}) for a, b in spec["pairs"] if a in syms]
+        # `pair_param` names the key the family reads its second leg from: `peer_symbol` for the
+        # two the gauntlet loads a frame for, `pair_symbol` for the ones that read the store.
+        key = str(spec.get("pair_param") or "peer_symbol")
+        return [(a, {key: b}) for a, b in spec["pairs"] if a in syms]
     if spec.get("factor_sets"):
         return [(a, {"factor_symbols": list(f)}) for a, f in spec["factor_sets"] if a in syms]
     allowed = spec.get("symbols")
