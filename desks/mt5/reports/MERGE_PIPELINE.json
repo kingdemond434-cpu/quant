@@ -1,68 +1,132 @@
 {
-  "at": "2026-11-13T09:50:09+00:00",
+  "at": "2026-11-13T12:00:12+00:00",
   "status": "RED",
   "red": [
-    "CLEAR_WAITING #1041: CLEARed 44.7 h ago, still open",
-    "CLEAR_WAITING #801: CLEARed 58.7 h ago, still open",
-    "CLEAR_WAITING #797: CLEARed 58.3 h ago, still open",
-    "CLEAR_WAITING #737: CLEARed 57.8 h ago, still open",
-    "CLEAR_WAITING #473: CLEARed 65.3 h ago, still open",
-    "LIVE_STALLED: no code on LIVE for 15.9 h while mergeable work waits",
-    "SIGN_TRAIN_FAILING: 389 runs in a row failed"
+    "CLEAR_WAITING #1041: CLEARed 46.8 h ago, still open",
+    "CLEAR_WAITING #801: CLEARed 60.9 h ago, still open",
+    "CLEAR_WAITING #797: CLEARed 60.5 h ago, still open",
+    "CLEAR_WAITING #737: CLEARed 60.0 h ago, still open",
+    "CLEAR_WAITING #473: CLEARed 67.4 h ago, still open",
+    "SIGN_TRAIN_FAILING: 409 runs in a row failed"
   ],
   "queue": {
-    "queued_runs": 0,
-    "in_progress_runs": 4,
-    "oldest_queued_min": null,
-    "superseded_queued_runs": 0,
-    "superseded_run_ids": []
+    "queued_runs": 104,
+    "in_progress_runs": 12,
+    "oldest_queued_min": 3834.3,
+    "superseded_queued_runs": 67,
+    "superseded_run_ids": [
+      43425500010,
+      43425500007,
+      43425493157,
+      43425493200,
+      43425422627,
+      43425422661,
+      43425418547,
+      43425418073,
+      43425375235,
+      43425375211,
+      43425371858,
+      43425371554,
+      43425335561,
+      43425335509,
+      43425331138,
+      43425331130,
+      43425324296,
+      43425324242,
+      43425321294,
+      43425321325,
+      43425170809,
+      43425171225,
+      43425168652,
+      43425168223,
+      43424855337,
+      43424855164,
+      43424852440,
+      43424852387,
+      43424837440,
+      43424837450,
+      43424833079,
+      43424833183,
+      43424675901,
+      43424675785,
+      43424672371,
+      43424672290,
+      43424666842,
+      43424666845,
+      43424661584,
+      43424661627,
+      43424658558,
+      43424658358,
+      43424656153,
+      43424656157,
+      43424495399,
+      43424495480,
+      43424495405,
+      43424495491,
+      43424333720,
+      43424333775
+    ]
   },
   "reviewer": {
-    "fails": 403,
+    "fails": 401,
     "cleared_fails": [
+      1085,
+      1082,
       1041,
       801,
       797,
       737,
       473
     ],
-    "fp_rate": 0.01
+    "fp_rate": 0.02
   },
   "sweep": {
-    "at": "2026-11-13T09:50:09.0384991Z",
+    "at": "2026-11-13T12:00:11.5978637Z",
     "age_min": 0.0,
     "rc": 1,
     "note": "FAILED: sparse-checkout failed (128)",
     "mutex_held_runs": 0
   },
   "sign_train": {
-    "at": "2026-11-13T10:10:08.5181925Z",
-    "age_min": -20.0,
+    "at": "2026-11-13T12:20:03.7191991Z",
+    "age_min": -19.8,
     "rc": 1,
     "note": "FAILED: no desk Python at C:\\opt\\quant\\.venv\\Scripts\\python.exe",
-    "fail_runs": 389,
+    "fail_runs": 409,
     "mutex_held_runs": 0,
     "waiting_on": null,
     "waiting_min": null
   },
   "live": {
-    "last_code_commit": "cdd8c6f3e",
-    "last_code_at": "2026-11-12T17:58:39Z",
-    "hours_since_code": 15.86,
-    "last_merge_at": "2026-11-12T17:58:40Z",
-    "hours_since_merge": 15.86
+    "last_code_commit": "f5328504d",
+    "last_code_at": "2026-11-13T12:08:51Z",
+    "hours_since_code": -0.14,
+    "last_merge_at": "2026-11-13T12:08:51Z",
+    "hours_since_merge": -0.14
   },
   "prs": [
     {
+      "pr": 1085,
+      "head": "d80a0097c",
+      "draft": true,
+      "queued_checks": [],
+      "oldest_queued_min": null,
+      "clear_at": "2026-11-13T11:16:56Z",
+      "clear_age_h": 0.72,
+      "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
       "pr": 1084,
-      "head": "a158b9b0a",
+      "head": "c76b5840b",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": "success",
-      "gating_green": false,
+      "review": "failure",
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -71,22 +135,22 @@
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
+      "clear_at": "2026-11-13T10:44:03Z",
+      "clear_age_h": 1.27,
       "review": "success",
       "gating_green": false,
       "green_since": null
     },
     {
       "pr": 1082,
-      "head": "789724319",
+      "head": "91fb35d6a",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
+      "clear_at": "2026-11-13T11:29:18Z",
+      "clear_age_h": 0.52,
       "review": "failure",
-      "gating_green": true,
+      "gating_green": false,
       "green_since": null
     },
     {
@@ -554,18 +618,6 @@
       "clear_at": null,
       "clear_age_h": null,
       "review": "success",
-      "gating_green": false,
-      "green_since": null
-    },
-    {
-      "pr": 1041,
-      "head": "88ababe6a",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": "2026-11-11T13:10:39Z",
-      "clear_age_h": 44.66,
-      "review": "failure",
       "gating_green": false,
       "green_since": null
     },
@@ -3228,7 +3280,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:07:29Z",
-      "clear_age_h": 58.71,
+      "clear_age_h": 60.88,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3252,7 +3304,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:33:12Z",
-      "clear_age_h": 58.28,
+      "clear_age_h": 60.45,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3588,7 +3640,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:59:15Z",
-      "clear_age_h": 57.85,
+      "clear_age_h": 60.02,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3829,7 +3881,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": "failure",
+      "review": null,
       "gating_green": true,
       "green_since": null
     },
@@ -4184,18 +4236,6 @@
     {
       "pr": 668,
       "head": "ec83d8f6a",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
-      "gating_green": true,
-      "green_since": null
-    },
-    {
-      "pr": 667,
-      "head": "620b9eedf",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
@@ -4662,18 +4702,6 @@
       "green_since": null
     },
     {
-      "pr": 618,
-      "head": "c4bc066b9",
-      "draft": true,
-      "queued_checks": [],
-      "oldest_queued_min": null,
-      "clear_at": null,
-      "clear_age_h": null,
-      "review": "failure",
-      "gating_green": true,
-      "green_since": null
-    },
-    {
       "pr": 616,
       "head": "0f9cffaf1",
       "draft": true,
@@ -4789,7 +4817,7 @@
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
-      "review": "failure",
+      "review": null,
       "gating_green": true,
       "green_since": null
     },
@@ -5544,7 +5572,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T16:34:20Z",
-      "clear_age_h": 65.26,
+      "clear_age_h": 67.43,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6691,14 +6719,14 @@
     },
     {
       "pr": 218,
-      "head": "f9219b244",
+      "head": "eb60d3ae4",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
-      "gating_green": false,
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -6799,14 +6827,14 @@
     },
     {
       "pr": 201,
-      "head": "e63985b11",
+      "head": "f29034bec",
       "draft": false,
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": null,
       "clear_age_h": null,
       "review": "failure",
-      "gating_green": false,
+      "gating_green": true,
       "green_since": null
     },
     {
@@ -7059,6 +7087,48 @@
       "clear_age_h": null,
       "review": null,
       "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 1041,
+      "head": "88ababe6a",
+      "draft": true,
+      "queued_checks": [
+        "mt5-money-path"
+      ],
+      "oldest_queued_min": -8.9,
+      "clear_at": "2026-11-11T13:10:39Z",
+      "clear_age_h": 46.83,
+      "review": "failure",
+      "gating_green": false,
+      "green_since": null
+    },
+    {
+      "pr": 618,
+      "head": "c4bc066b9",
+      "draft": true,
+      "queued_checks": [
+        "independent-review"
+      ],
+      "oldest_queued_min": -18.4,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": true,
+      "green_since": null
+    },
+    {
+      "pr": 667,
+      "head": "620b9eedf",
+      "draft": true,
+      "queued_checks": [
+        "independent-review"
+      ],
+      "oldest_queued_min": -18.5,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": null,
+      "gating_green": true,
       "green_since": null
     }
   ],
