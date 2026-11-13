@@ -1,49 +1,50 @@
 {
- "at": "2026-11-13T15:46:02+00:00",
+ "at": "2026-11-13T16:46:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 10.87,
-   "why": "no new verdict for 10.9h (last 2026-11-13T04:53:44+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.84,
+   "why": "no new verdict for 0.8h (last 2026-11-13T15:55:22+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
-   "low": true,
+   "low": false,
    "floor": 4.0,
    "docket_depth": null,
-   "busy_judge_cores": 0.01,
-   "busy_other_cores": 15.54,
-   "why": "judge tree at 0.01 cores (others 15.54) with a docket pending (resident SWEEPING, queue depth None); floor 4; under the floor on every reading for 0.4h (limit 1h)",
-   "low_since": "2026-11-13T15:21:21+00:00",
-   "hours": 0.41
+   "busy_judge_cores": 4.33,
+   "busy_other_cores": 10.94,
+   "why": "judge tree at 4.33 cores (others 10.94) with a docket pending (resident SWEEPING, queue depth None); floor 4"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.5,
+   "heartbeat_age_min": 0.1,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 1624: heartbeat 0.5 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 1624: heartbeat 0.1 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 5.65,
+   "hours": 0.63,
    "limit_h": 25.59,
-   "why": "5.6h since the last sweep ended (2026-11-13T10:07:15+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.6h since the last sweep ended (2026-11-13T16:08:31+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
-   "why": "last sweep rc 124: not a completed sweep"
+   "cells": 14,
+   "basis": "n_judged",
+   "read": "first 1048576 and last 262144 bytes",
+   "why": "the sweep that ended 2026-11-13T16:08:31+00:00 judged 14 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 2956,
-   "why": "sweep child pid 2956 alive"
+   "pid": 25964,
+   "why": "sweep child pid 25964 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.39,
+   "phase": "prewarm",
+   "hours": 0.4,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.4h since 2026-11-13T15:22:48+00:00 (limit 3h)"
+   "why": "sweep phase prewarm has run 0.4h since 2026-11-13T16:22:15+00:00 (limit 5.86h)"
   },
   "host_unreadable": {
    "open": false,
@@ -82,22 +83,27 @@
   "cores_gap_max_min": 15.0
  },
  "last_verdict": {
-  "at": "2026-11-13T04:53:44+00:00",
+  "at": "2026-11-13T15:55:22+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 1624,
-  "heartbeat_utc": "2026-11-13T15:45:33+00:00",
-  "last_sweep_ended_utc": "2026-11-13T10:07:15+00:00",
-  "last_rc": 124
+  "heartbeat_utc": "2026-11-13T16:45:56+00:00",
+  "last_sweep_ended_utc": "2026-11-13T16:08:31+00:00",
+  "last_rc": 0
  },
  "host": "trading box",
  "page": {
-  "sent": false,
+  "sent": true,
   "open": [],
   "opened": [],
   "reminded": [],
-  "resolved": []
+  "resolved": [
+   "cores_idle"
+  ],
+  "title": "JUDGE STALL RESOLVED: cores_idle",
+  "armed": 1,
+  "delivered": 1
  }
 }

@@ -1,21 +1,21 @@
 {
- "at": "2026-11-13T15:25:35+00:00",
+ "at": "2026-11-13T16:06:22+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 70663,
+  "free_phys_mb": 64031,
   "commit_limit_mb": 262137,
-  "commit_free_mb": 167618,
+  "commit_free_mb": 154090,
   "cpu_source": "psutil",
-  "busy_other_cores": 12.85,
-  "busy_judge_cores": 0.42,
+  "busy_other_cores": 15.48,
+  "busy_judge_cores": 0.01,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
-  "n_python": 81,
+  "n_python": 88,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -45,16 +45,16 @@
   "judge_env_torn_frames": 0,
   "judge_env_source": "GAUNTLET_PASSES.json",
   "source_at": "2026-11-13T03:58:41.186396+00:00",
-  "source_age_seconds": 41102.841349,
+  "source_age_seconds": 43524.898313,
   "file_at": "2026-11-13T10:32:44+00:00",
-  "file_age_seconds": 17460.027769,
+  "file_age_seconds": 19882.084739,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity",
   "alarm": {
    "code": "JUDGE_SWEEP_STALE",
    "severity": "ALARM",
    "owner": "desks/mt5/scripts/run_sharded_gauntlet.py",
-   "file_age_seconds": 17460.027769,
-   "sweep_age_seconds": 41102.841349,
+   "file_age_seconds": 19882.084739,
+   "sweep_age_seconds": 43524.898313,
    "max_age_seconds": 21600,
    "queue_reads": "UNMEASURED",
    "why": "the file is fresh but the last sweep it reports is older than 6h: the judge has not finished a sweep"
@@ -71,7 +71,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "backlog_growing",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 46, commit 109 at 768MB a worker; the binding one is backlog_growing",
+  "why": "cores 15 (reserved 3), memory 41, commit 100 at 768MB a worker; the binding one is backlog_growing",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -129,12 +129,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "11/13/2026 4:26:00 PM",
+   "next_run_before": "11/13/2026 5:11:00 PM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.93469660000119 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.654209100001026 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.93469660000119 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.654209100001026 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -147,8 +147,8 @@
    "code": "JUDGE_SWEEP_STALE",
    "severity": "ALARM",
    "owner": "desks/mt5/scripts/run_sharded_gauntlet.py",
-   "file_age_seconds": 17460.027769,
-   "sweep_age_seconds": 41102.841349,
+   "file_age_seconds": 19882.084739,
+   "sweep_age_seconds": 43524.898313,
    "max_age_seconds": 21600,
    "queue_reads": "UNMEASURED",
    "why": "the file is fresh but the last sweep it reports is older than 6h: the judge has not finished a sweep"
@@ -156,19 +156,19 @@
  ],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-11-13T15:23:44+00:00",
+  "at": "2026-11-13T16:04:06+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
-   "rows_total": 1638380,
+   "rows_total": 1638381,
    "rows_unstamped": 0,
-   "last_verdict_at": "2026-11-13T04:53:44+00:00",
+   "last_verdict_at": "2026-11-13T15:55:22+00:00",
    "counts": {
-    "1h": 0,
-    "24h": 33790,
-    "7d": 170177,
-    "build_step_lo": 16286,
-    "build_step_hi": 0
+    "1h": 1,
+    "24h": 33791,
+    "7d": 170178,
+    "build_step_lo": 16287,
+    "build_step_hi": 1
    },
    "count_basis": "changed verdict events; unchanged retests do not append",
    "first_terminal_counts": {
@@ -185,29 +185,29 @@
     "7d": 476.446
    },
    "per_hour": {
-    "1h": 0.0,
-    "24h": 1407.917,
-    "7d": 1012.958
+    "1h": 1.0,
+    "24h": 1407.958,
+    "7d": 1012.964
    }
   },
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 47972,
-    "7d": 297759
+    "24h": 41834,
+    "7d": 297699
    },
    "per_hour": {
-    "24h": 1998.833,
-    "7d": 1772.375
+    "24h": 1743.083,
+    "7d": 1772.018
    }
   },
-  "verdicts_per_hour": 1407.917,
-  "verdicts_per_day": 33790.0,
+  "verdicts_per_hour": 1407.958,
+  "verdicts_per_day": 33791.0,
   "verdict_rate_basis": "changed verdict events, not total completed tests",
   "first_judged_per_day": 22564.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
   "coverage_backlog_fresh": false,
-  "created_per_day": 47972.0,
+  "created_per_day": 41834.0,
   "backlog": "UNMEASURED",
   "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "eta_to_drain": {
@@ -219,8 +219,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-11-13T15:21:54+00:00",
-   "pid": 27340
+   "started_at": "2026-11-13T16:03:07+00:00",
+   "pid": 23924
   }
  },
  "blas_single_thread": {
@@ -259,11 +259,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 223.4,
+ "measure_seconds": 196.4,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-13T15:21:54+00:00",
-  "pid": 27340
+  "started_at": "2026-11-13T16:03:07+00:00",
+  "pid": 23924
  },
- "seconds": 315.1
+ "seconds": 288.5
 }

@@ -58064,6 +58064,51 @@
       "retired_at": "2026-11-13T15:27:54+00:00",
       "retire_reason": "USDTHB is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "XAGUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+      "symbol": "XAGUSD",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "LIVE",
+        "risk_frac": 0.006535,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.006535,
+        "joined": "joined on 'xagusd|cross_asset_residual|asia' (funded book)",
+        "allocator_heat": 0.006535,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.65% heat; the allocator's current solve gives this sleeve 0.65% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xagusd|cross_asset_residual|asia' (funded book))"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-13T16:09:02+00:00",
+      "shadow_exp": 0.7127457577926355,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "XAGUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+      "sleeve_id": "50c6d0d79b0ac3a117ba",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.5,
+        "factor_symbols": [
+          "USDZAR",
+          "USDJPY"
+        ],
+        "lookback": 240,
+        "session": "asia",
+        "side_mode": "revert",
+        "timeframe": "M5",
+        "ttl_bars": 8
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-13T16:09:03+00:00",
+      "retire_reason": "XAGUSD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
