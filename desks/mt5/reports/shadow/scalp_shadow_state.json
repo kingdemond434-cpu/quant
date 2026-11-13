@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-13T02:43:05+00:00",
+  "updated_at": "2026-11-13T04:25:20+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
@@ -56,7 +56,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 6.0,
+      "source_trading_lag_hours": 8.0,
       "source_stale": true,
       "promotion_authority": false,
       "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
@@ -98,7 +98,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 6.0,
+      "source_trading_lag_hours": 8.0,
       "source_stale": true,
       "promotion_authority": false,
       "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
@@ -140,7 +140,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:45:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 6.0,
+      "source_trading_lag_hours": 8.0,
       "source_stale": true,
       "promotion_authority": false,
       "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
@@ -182,7 +182,7 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:45:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 6.0,
+      "source_trading_lag_hours": 8.0,
       "source_stale": true,
       "promotion_authority": false,
       "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
