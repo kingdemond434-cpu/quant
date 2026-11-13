@@ -47,6 +47,7 @@ REPLAY = REPORTS / "STATE_REPLAY_PARITY.json"
 RELEASE = DATA / "release_identity.json"
 LIMITS = REPORTS / "LIMITS_CENSUS.json"
 RECONCILE = REPORTS / "EXECUTION_RECONCILE.json"
+LOAD = REPORTS / "LOAD_ISOLATION.json"
 ACCOUNT = DATA / "account_state.json"
 STALL = (DATA / "stall_watch.json", ROOT / "data" / "stall_watch.json")
 
@@ -323,6 +324,17 @@ def _resources(now: datetime) -> dict[str, Any]:
                     "for the gateway ahead of research")
 
 
+def _load_part(part: str, label: str, now: datetime) -> dict[str, Any]:
+    """ARCH-07: one half of reports/LOAD_ISOLATION.json (the hourly `load_isolation` leg)."""
+    doc, miss = _artifact(LOAD, 3.0, now)
+    if miss:
+        return miss
+    d = (doc or {}).get(part) or {}
+    v = str(d.get("verdict") or "")
+    return _row(v if v in (PASS, FAIL) else UNMEASURED, f"reports/LOAD_ISOLATION.json {part}",
+                f"{label}: {d.get('why') or 'no reading'}")
+
+
 def _replay(now: datetime) -> dict[str, Any]:
     doc, miss = _artifact(REPLAY, 3.0, now)
     if miss:
@@ -374,6 +386,10 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
      _gap("no sequencing of broker updates anywhere in mt5desk/: a stale positions read after "
           "a newer deal is taken at face value",
           FILL_ORDER_SPEC)),
+    ("load", "research under load: the trading path keeps its latency",
+     lambda n: _load_part("load", "trading-path p99 under one-class-lower research load", n)),
+    ("workload_separation", "experimental workloads separated from trading",
+     lambda n: _load_part("separation", "research vs trading process priorities", n)),
     ("stale_data", "stale data / stale source", _stale),
     ("stale_quote", "one symbol's quote stale while the terminal is connected",
      lambda n: _gateway(("stale_tick",), n)),

@@ -1266,7 +1266,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE EXECUTION RECONCILIATION (ARCH-06) runs just before the scorecard that grades it
     # (`recovery_drills` row `reconciliation`): it joins the account book to the order door's
     # ledger, the intents and the deals, and drills the join in shadow.
-    "ops_redundancy", "execution_reconcile", "recovery_drills", "forward_evidence_tracker",
+    # THE LOAD AND SEPARATION DRILLS (ARCH-07) run just before the scorecard that grades them
+    # (`recovery_drills` rows `load` and `workload_separation`): ~8 s of one-class-lower load.
+    "ops_redundancy", "execution_reconcile", "load_isolation", "recovery_drills",
+    "forward_evidence_tracker",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -2084,6 +2087,9 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # ARCH-07 load drill: three 2 s arms plus worker start-up (~8 s measured); the cap leaves room
+    # for an interpreter cold start on a loaded box and is far below any search leg.
+    "load_isolation": 90,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6353,6 +6359,10 @@ def main() -> None:
     # ARCH-06: the positions / door ledger / intents reconciliation, graded by recovery_drills.
     xrc = _costed("execution_reconcile", lambda: _producer(
         "execution_reconcile", "research/execution_reconcile.py"))
+    # ARCH-07: the trading path's latency under research load, and every research process's
+    # priority below the trading side's -- graded by recovery_drills.
+    lis = _costed("load_isolation", lambda: _producer(
+        "load_isolation", "research/load_isolation_drill.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
@@ -6625,7 +6635,8 @@ def main() -> None:
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "execution_reconcile": xrc, "recovery_drills": rcd,
+                    "execution_reconcile": xrc, "load_isolation": lis,
+                    "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,

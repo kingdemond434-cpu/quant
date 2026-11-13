@@ -911,6 +911,10 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/compute_ledger.jsonl",)),
     Node("hourly_cycle", "desks/mt5/research/hourly_cycle.py",
          writes=("desks/mt5/data/sync_marker.json",)),
+    # ARCH-07: the trading path's latency under research load and the research/trading priority
+    # census, hourly; graded by recovery_drills (rows `load`, `workload_separation`).
+    Node("load_isolation", "desks/mt5/research/load_isolation_drill.py",
+         writes=("desks/mt5/reports/LOAD_ISOLATION.json",)),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
@@ -1054,6 +1058,9 @@ HUMAN_READ = frozenset({
 #: prospector's targets, the box's PowerShell reads the manifest. DECLARED, so a DEAD_PRODUCER
 #: verdict cannot be silenced by an unnamed "something reads it".
 EXTERNAL_READERS = {
+    "desks/mt5/reports/LOAD_ISOLATION.json": ("recovery_drills (rows load and "
+                                              "workload_separation), the failure-mode "
+                                              "scorecard read by the acceptance package"),
     "desks/mt5/reports/STYLE_NOVELTY.json": ("judge_coverage.rank_by_value's novelty factor and "
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),
