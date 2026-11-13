@@ -5,6 +5,7 @@ processes (psutil), so the identity rules are tested on the real thing, not a do
 from __future__ import annotations
 
 import contextlib
+import os
 import subprocess
 import sys
 import time
@@ -33,7 +34,9 @@ def _spawn(*args: str) -> subprocess.Popen[bytes]:
 def _tree(root: subprocess.Popen[bytes], n: int) -> set[int]:
     for _ in range(100):
         kids = ps.Process(root.pid).children(recursive=True)
-        if len(kids) >= n:
+        # past fork, every child must be exec'd: its own command line, not the parent's
+        execd = [k for k in kids if sup._cmd(k)[1:2] == ["-c"]]
+        if len(kids) >= n and len(execd) == len(kids):
             return {root.pid} | {k.pid for k in kids}
         time.sleep(0.1)
     raise AssertionError("tree did not start")
@@ -65,7 +68,8 @@ def test_the_real_allowlist_is_non_trading_and_inside_the_task_limit() -> None:
     assert sup.check_allowlist(sup.ALLOWLIST) == []
     for e in sup.ALLOWLIST:
         assert e.lane in ("ops", "data", "research")
-        assert max(m.max_age_s for m in e.members) < 30 * 60  # stopped before the task is killed
+        # each member is stopped before the task's own 30-min wall would kill the whole run
+        assert max(m.max_age_s for m in e.members) < 30 * 60
 
 
 @pytest.mark.parametrize("bad", [
@@ -139,3 +143,33 @@ def test_the_supervisor_rides_the_existing_reaper_task() -> None:
     assert "supervise(apply=a.apply)" in src and "--drill" in src
     inst = (ROOT / "desks/mt5/scripts/install_reap_git_writers_task.ps1").read_text("utf-8")
     assert "reap_hung_git_writers.py --apply" in inst  # no new task, no new scheduler
+
+
+def test_a_trading_child_of_a_stuck_member_is_never_signalled(tmp_path: Path) -> None:
+    trade = "import time\ntime.sleep(3600)\n"
+    # the trading path reaches the member through its environment, so only the CHILD's own
+    # command line carries the marker (the member's must stay clean to be a stop candidate)
+    member = (f"import os,subprocess,sys,time\nsubprocess.Popen([sys.executable,'-c',{trade!r},"
+              "os.environ['DRILL_TRADE']])\ntime.sleep(3600)\n")  # fmt: skip
+    code = (f"import subprocess,sys,time\nsubprocess.Popen([sys.executable,'-c',{member!r},"
+            f"{str(tmp_path / 'merge_pipeline_watch.py')!r}])\ntime.sleep(3600)\n")  # fmt: skip
+    env = dict(os.environ, DRILL_TRADE=str(tmp_path / "ftmo_executor.py"))
+    root = subprocess.Popen([sys.executable, "-c", code, str(tmp_path / "workflow_gate.ps1")],
+                            env=env)  # fmt: skip
+    trading = None
+    try:
+        ids = _tree(root, 2)
+        kids = ps.Process(root.pid).children(recursive=True)
+        trading = next(k for k in kids if any("ftmo_executor" in a for a in k.cmdline()))
+        time.sleep(1.0)
+        rec = sup.supervise(apply=True, entries=(_entry(),), grace_s=1, hard_s=5,
+                            within=lambda p: p.pid in ids)  # fmt: skip
+        assert trading.is_running() and trading.status() != ps.STATUS_ZOMBIE
+        steps = rec["examined"][0]["steps"]
+        assert any(s.startswith("spared child python") and "trading deny list" in s
+                   for s in steps)  # fmt: skip
+    finally:
+        if trading is not None:
+            with contextlib.suppress(Exception):
+                trading.kill()
+        _kill(root)

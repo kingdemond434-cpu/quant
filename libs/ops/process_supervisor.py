@@ -81,20 +81,24 @@ class Entry:
     restart: str = "next trigger"
 
 
-#: THE ALLOWLIST. Bounds sit past each member's own budget and timeouts, and the sum stays under
-#: the task's 30-min ExecutionTimeLimit, so a member is stopped before the task is killed whole.
+#: THE ALLOWLIST. Each bound sits past that member's OWN budget and call timeouts, so only a member
+#: that has outlived its own limits is stopped. The bounds are per member and do NOT add up to
+#: under 30 min: the wall for a whole run stays the task's 30-min ExecutionTimeLimit. What the
+#: supervisor adds is that one stuck member is stopped early, so the rest of the run (or the next
+#: run, 10 min later) goes ahead instead of the whole task being killed at 30 min.
 ALLOWLIST: tuple[Entry, ...] = (
     Entry(
         task="Quant-WorkflowGate",
         lane="ops",
         root="workflow_gate.ps1",
         members=(
-            # the watcher's budget is 300 s plus 45 s per call
-            Member("merge_pipeline_watch.py", 10 * 60),
-            Member("live_first_ci.py", 8 * 60),  # 60 s per gh call
-            Member("adopt_rows.py", 8 * 60),
-            Member("memecoin_gate.py", 8 * 60),
-            Member("audit_gate.py", 20 * 60),  # the sweep stops on its own budget before this
+            # the watcher's budget is 300 s plus one 45 s call in flight
+            Member("merge_pipeline_watch.py", 8 * 60),
+            Member("live_first_ci.py", 5 * 60),  # 60 s per gh call
+            Member("adopt_rows.py", 5 * 60),
+            Member("memecoin_gate.py", 5 * 60),
+            # the sweep's own SWEEP_BUDGET_S is 15 min, plus one gh call in flight
+            Member("audit_gate.py", 18 * 60),
         ),
     ),
 )
@@ -225,6 +229,10 @@ def stop(ps: Any, v: Verdict, grace_s: float, hard_s: float) -> None:
     for pid, created, name in reversed(kids):  # deepest first
         k = _same(ps, pid, created)
         if k is None:
+            continue
+        hit = denied(" ".join([name, *_cmd(k)]))
+        if hit:  # a money process is never signalled, even as a stuck member's child
+            v.steps.append(f"spared child {name} pid={pid}: trading deny list ({hit})")
             continue
         try:
             k.kill()
