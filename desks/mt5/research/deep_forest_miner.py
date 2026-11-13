@@ -149,6 +149,8 @@ LOCKS = _DESK / "data" / ".job_locks"
 COMPETITION_LEDGER = _DESK / "data" / "trader_genome_competition.jsonl"
 #: Per-vector attempts / successes / rows / last error, beside the frontier file.
 VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
+#: Days of per-day attempt counts each vector keeps in its stats row.
+DAILY_KEEP = 14
 #: AN HONEST USER AGENT (2026-11-13). This used to impersonate desktop Chrome, which the desk's
 #: fetch rules forbid: a site may only be read under a name that says what is reading it, so its
 #: robots.txt can address us. ROBOTS_AGENT is the token robots rules are matched against.
@@ -894,17 +896,57 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # holding cells, then least-recently-attempted as before. It never crosses a frontier bucket
     # and never removes a ground: a reorder, so an absent gap list changes nothing. `run()`
     # passes `culture_gaps()`; a direct call with no `gaps` keeps the historic order exactly.
+    # BREADTH-GAP WEIGHT FIRST AMONG THE NEVER-ATTEMPTED (2026-11-13, overlay 28u). Bucket 0
+    # (NAMED_ONLY) held 3,329 vectors that were worked in file order. They are now worked by
+    # `gap_weight` -- gold, index, USD/JPY/EUR-cross and 02-09 UTC session grounds first --
+    # then culture gap, then least-recently-attempted. A ground naming none of them weighs 0
+    # and keeps its place; nothing is dropped, and the other buckets are untouched.
     gap = gaps or frozenset()
     out: list[dict[str, Any]] = []
-    for bucket in buckets:
+    for i, bucket in enumerate(buckets):
         ordered = _fair_order(bucket)
         if ordered:
             start = cursor % len(ordered)
             rotated = ordered[start:] + ordered[:start]
-            out.extend(sorted(rotated, key=lambda g: (
+            out.extend(sorted(rotated, key=lambda g, first=(i == 0): (
+                -gap_weight(g) if first else 0.0,
                 str(g.get("region") or "").lower() not in gap,
                 _last_attempt(g, frontier_state))))
     return out
+
+
+#: The breadth gaps overlay 28u names, as the words a ground's own text uses for them. Each
+#: family counts once per ground. Bare 金 / 금 are left out: they also spell finance.
+GAP_TERMS: dict[str, tuple[float, tuple[str, ...]]] = {
+    "gold": (3.0, ("gold", "xau", "bullion", "黄金", "金价", "沪金", "ゴールド", "금값", "금시세",
+                   "золот", "alt\u0131n", "lingote")),
+    "index": (2.0, ("index", "indices", "指数", "股指", "nikkei", "日経", "dax", "s&p", "nasdaq",
+                    "kospi", "코스피", "hang seng", "恒生", "asx", "ftse", "índice", "индекс",
+                    "endeks", "indeks")),
+    "major_fx": (2.0, ("usd", "jpy", "eur", "dollar", "yen", "euro", "forex", "外汇", "美元",
+                       "日元", "欧元", "ドル", "円", "為替", "fx", "달러", "외환", "доллар",
+                       "dólar", "döviz")),
+    "session_02_09": (1.0, ("asian session", "asia session", "tokyo", "東京", "亚盘", "早盘",
+                            "london open", "伦敦", "아시아", "sydney")),
+}
+#: Regions trading in the 02-09 UTC window; a bonus only for a ground already naming a gap.
+SESSION_REGIONS = frozenset({"cn", "jp", "kr", "au", "nz", "hk", "sg", "tw"})
+
+
+def gap_weight(g: dict[str, Any]) -> float:
+    """How strongly a ground's own text points at a breadth gap (0 = none). Read from its name,
+    why, site, queries, market and dataset class -- never its url, whose `index.html` is not an
+    index -- and never from a lookup the ground lacks."""
+    parts: list[str] = [str(g.get(k) or "") for k in ("name", "why", "site", "market",
+                                                      "dataset_class")]
+    q = g.get("queries")
+    if isinstance(q, list):
+        parts.extend(str(x) for x in q)
+    text = " ".join(parts).lower()
+    score = sum(w for w, terms in GAP_TERMS.values() if any(t in text for t in terms))
+    if score and str(g.get("region") or "").lower() in SESSION_REGIONS:
+        score += GAP_TERMS["session_02_09"][0]
+    return score
 
 
 def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:
@@ -2384,6 +2426,13 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                                                             "REACHED_NO_CLAIMS") else "")
             if rows or dsets:
                 e["last_success"] = now
+            # PER-DAY COUNTS, the 7-day window ALT_DATA_YIELD reads (2026-11-13). Bounded to
+            # DAILY_KEEP days so the file never grows with the life of the ground.
+            day = now[:10]
+            daily = e.get("daily") if isinstance(e.get("daily"), dict) else {}
+            a, ok, r = [*list(daily.get(day) or []), 0, 0, 0][:3]
+            daily[day] = [int(a) + 1, int(ok) + (1 if rows or dsets else 0), int(r) + rows]
+            e["daily"] = {d: daily[d] for d in sorted(daily)[-DAILY_KEEP:]}
             if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
                 e["last_error"] = str(err or s.get("status"))[:200]
             # THE STANDING failure reason: this attempt's, or none when the route answered.
