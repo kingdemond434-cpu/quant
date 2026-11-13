@@ -51,6 +51,36 @@ import pandas as pd
 MIN_TRAIN = 500
 REFIT_EVERY = 21
 TRAIN_WINDOW = 1000
+#: THE REFIT SCHEDULE IS A DECLARED PART OF THE MODEL (GAP_MAP rows 29 and 35). "clock" is the
+#: fixed 21-row schedule above. Two event-driven schedules add refits ON TOP of the clock (the
+#: clock points never move), each declared before any result and charged as one more grid entry:
+#:
+#:   "regime" (row 29; ported from the regime-refit work of PR #406). The state is the panel's
+#:      volatility level against its own trailing year: the cross-sectional median of log
+#:      sigma[t] minus its mean over the previous REGIME_LONG rows. Outside +-log(REGIME_BAND)
+#:      the panel is in a high/low-vol regime; a change of state at row t is a BREAK, the model
+#:      is refitted at t+1, and every later fit trains from the break onward (at least
+#:      POST_BREAK_MIN rows).
+#:   "decay" (row 35; the CN shops' continuous retraining against alpha decay). The model's OWN
+#:      out-of-sample edge is monitored online: the cross-sectional IC of row s (its prediction
+#:      against y[s], known at s+1) feeds a one-sided Page CUSUM for a DOWNWARD shift from the
+#:      model's reference IC mu0 (the mean of every earlier out-of-sample row, at least
+#:      DECAY_REF_MIN of them, and only when its t-statistic is at least DECAY_REF_T -- a model
+#:      that never had a measured edge cannot decay). The drift allowance is kappa = mu0 / 2
+#:      (the CUSUM tuned to detect the edge going to ZERO) and the threshold h is calibrated by
+#:      bootstrap on the model's own reference ICs so that a model whose edge has NOT moved
+#:      alarms once per DECAY_ARL0 rows on average. On an alarm at row t (it read ICs of rows
+#:      < t only) the model is refitted at t on rows from the CUSUM's
+#:      change-point estimate (the last row its statistic was zero) onward, at least
+#:      POST_BREAK_MIN of them. The statistic resets at every decay refit, never on the clock.
+REGIME_LONG = 250
+REGIME_BAND = 1.5
+POST_BREAK_MIN = 250
+DECAY_REF_MIN = 120
+DECAY_REF_T = 2.0
+DECAY_ARL0 = 500
+DECAY_MIN_PAIRS = 5
+REFIT_MODES = ("clock", "regime", "decay")
 #: Ridge penalty as a multiple of the row count on standardised columns: the fitted slope is
 #: shrunk by ~1/(1 + alpha). Daily returns are mostly noise, so the shrinkage is heavy on purpose.
 RIDGE_ALPHA = 0.5
@@ -72,12 +102,16 @@ GNN_GRID: tuple[dict[str, Any], ...] = (
     {"adjacency": "lead_lag", "layers": 2},
     {"adjacency": "corr", "layers": 1},
     {"adjacency": "corr", "layers": 2},
+    {"adjacency": "lead_lag", "layers": 1, "refit": "regime"},
+    {"adjacency": "lead_lag", "layers": 1, "refit": "decay"},
 )
 ATTENTION_GRID: tuple[dict[str, Any], ...] = (
     {"heads": 1, "lookback": 20},
     {"heads": 2, "lookback": 20},
     {"heads": 1, "lookback": 10},
     {"heads": 2, "lookback": 10},
+    {"heads": 1, "lookback": 20, "refit": "regime"},
+    {"heads": 1, "lookback": 20, "refit": "decay"},
 )
 ADJACENCIES = ("lead_lag", "corr")
 #: Random dilated convolution features (ROCKET, Dempster et al. 2020) over each node's recent
@@ -88,6 +122,8 @@ ROCKET_GRID: tuple[dict[str, Any], ...] = (
     {"kernels": 128, "lookback": 32},
     {"kernels": 64, "lookback": 16},
     {"kernels": 128, "lookback": 16},
+    {"kernels": 64, "lookback": 32, "refit": "regime"},
+    {"kernels": 64, "lookback": 32, "refit": "decay"},
 )
 ROCKET_KLEN = 9
 ROCKET_SEED = 13
@@ -100,6 +136,8 @@ SIG_GRID: tuple[dict[str, Any], ...] = (
     {"depth": 3, "lookback": 10},
     {"depth": 2, "lookback": 20},
     {"depth": 3, "lookback": 20},
+    {"depth": 2, "lookback": 10, "refit": "regime"},
+    {"depth": 2, "lookback": 10, "refit": "decay"},
 )
 #: Deep autoencoder over the whole panel's own features on a date: tanh encoder -> linear latent
 #: code -> linear decoder, trained on the walk-forward training window only.
@@ -108,6 +146,8 @@ AE_GRID: tuple[dict[str, Any], ...] = (
     {"latent": 6, "hidden": 16},
     {"latent": 3, "hidden": 32},
     {"latent": 6, "hidden": 32},
+    {"latent": 3, "hidden": 16, "refit": "regime"},
+    {"latent": 3, "hidden": 16, "refit": "decay"},
 )
 AE_LR = 0.005
 AE_EPOCHS_FIRST = 60
@@ -289,26 +329,195 @@ def fit_ridge(x: np.ndarray, y: np.ndarray, alpha: float = RIDGE_ALPHA) -> Ridge
 
 # ========================================================================= walk-forward
 def refit_points(t_n: int, min_train: int = MIN_TRAIN,
-                 refit_every: int = REFIT_EVERY) -> list[int]:
-    """Refit indices, anchored at the START of the grid so the future cannot move them."""
-    return list(range(min_train, t_n, refit_every))
+                 refit_every: int = REFIT_EVERY,
+                 breaks: Sequence[int] | None = None) -> list[int]:
+    """Refit indices, anchored at the START of the grid so the future cannot move them, plus
+    the row after every regime break (a break at t is known at t, so the refit at t+1 sees it).
+    Decay refits are found online inside `walk_forward` and are not listed here."""
+    pts = set(range(min_train, t_n, refit_every))
+    pts.update(int(b) + 1 for b in (breaks or ()) if min_train <= int(b) + 1 < t_n)
+    return sorted(pts)
+
+
+def regime_breaks(d: Design, *, long: int = REGIME_LONG, band: float = REGIME_BAND,
+                  cooldown: int = REFIT_EVERY) -> tuple[int, ...]:
+    """Rows where the panel's vol regime changes state, from rows <= t only (see REGIME_LONG).
+
+    Breaks closer than `cooldown` rows to the previous one are ignored, so a level hovering on
+    the band edge cannot turn the schedule into a refit every day."""
+    with np.errstate(invalid="ignore", divide="ignore"):
+        lv = np.log(np.where(d.sigma > 0, d.sigma, np.nan))
+    t_n = lv.shape[0]
+    v = np.full(t_n, np.nan)
+    ok = np.isfinite(lv).sum(axis=1) > 0
+    if ok.any():
+        v[ok] = np.nanmedian(lv[ok], axis=1)
+    base = pd.Series(v).shift(1).rolling(int(long), min_periods=int(long) // 2).mean()
+    dev = v - base.to_numpy(dtype=float)
+    edge = math.log(float(band))
+    state = np.where(dev > edge, 1, np.where(dev < -edge, -1, 0))
+    state[~np.isfinite(dev)] = 0
+    out: list[int] = []
+    last = -10 ** 9
+    for t in range(1, t_n):
+        if state[t] != state[t - 1] and np.isfinite(dev[t]) and t - last >= int(cooldown):
+            out.append(t)
+            last = t
+    return tuple(out)
+
+
+def row_ic(pred: np.ndarray, y: np.ndarray, min_pairs: int = DECAY_MIN_PAIRS) -> float:
+    """Cross-sectional Pearson IC of one row's predictions against its targets; NaN when fewer
+    than `min_pairs` instruments carry both or either side is constant."""
+    ok = np.isfinite(pred) & np.isfinite(y)
+    if int(ok.sum()) < min_pairs:
+        return float("nan")
+    p, q = pred[ok], y[ok]
+    sp, sq = float(p.std()), float(q.std())
+    if sp <= 0 or sq <= 0:
+        return float("nan")
+    return float(((p - p.mean()) * (q - q.mean())).mean() / (sp * sq))
+
+
+DECAY_BOOT_PATHS = 256
+DECAY_BOOT_SEED = 17
+
+
+def run_lengths(incr: np.ndarray, h: float) -> np.ndarray:
+    """First-alarm row (1-based) of S = max(0, S + incr) > h along each path (row of `incr`);
+    a path that never alarms reads its length (censored)."""
+    p_n, l_n = incr.shape
+    s = np.zeros(p_n)
+    rl = np.full(p_n, float(l_n))
+    alive = np.ones(p_n, dtype=bool)
+    for t in range(l_n):
+        s = np.maximum(0.0, s + incr[:, t])
+        hit = alive & (s > h)
+        if hit.any():
+            rl[hit] = t + 1
+            alive &= ~hit
+            if not alive.any():
+                break
+    return rl
+
+
+def cusum_threshold(ref: np.ndarray, kappa: float, arl0: float = DECAY_ARL0,
+                    paths: int = DECAY_BOOT_PATHS, seed: int = DECAY_BOOT_SEED) -> float:
+    """h such that the CUSUM's in-control average run length is `arl0`, calibrated on the
+    model's OWN reference ICs by iid bootstrap (common random numbers across the bisection, so
+    the search is monotone and deterministic). Row ICs over a dozen instruments are bounded and
+    skewed, and Siegmund's normal approximation alarmed a stable edge every few dozen rows when
+    it was tried here, so the threshold is read off the empirical distribution instead."""
+    v = ref[np.isfinite(ref)]
+    mu0 = float(v.mean())
+    rng = np.random.default_rng(seed)
+    l_n = int(4 * arl0)
+    incr = (mu0 - rng.choice(v, size=(int(paths), l_n), replace=True)) - float(kappa)
+    lo, hi = 0.0, float(v.std()) * 4.0
+    while float(run_lengths(incr, hi).mean()) < arl0 and hi < 1e3:
+        hi *= 2.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if float(run_lengths(incr, mid).mean()) < arl0:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < 1e-4 * max(hi, 1e-9):
+            break
+    return hi
+
+
+@dataclass
+class DecayMonitor:
+    """One-sided Page CUSUM on the model's own out-of-sample IC (see the REFIT_MODES note)."""
+
+    mu0: float
+    sigma: float
+    kappa: float
+    h: float
+    s: float = 0.0
+    onset: int = -1
+
+    @classmethod
+    def from_history(cls, ics: np.ndarray, arl0: float = DECAY_ARL0,
+                     ref_min: int = DECAY_REF_MIN) -> DecayMonitor | None:
+        v = ics[np.isfinite(ics)]
+        if v.size < ref_min:
+            return None
+        mu0, sd = float(v.mean()), float(v.std(ddof=1))
+        if sd <= 0 or mu0 * math.sqrt(v.size) / sd < DECAY_REF_T:
+            return None                        # no measured edge to lose: decay is undefined
+        kappa = mu0 / 2.0
+        return cls(mu0=mu0, sigma=sd, kappa=kappa, h=cusum_threshold(v, kappa, arl0))
+
+    def update(self, row: int, ic: float) -> bool:
+        if not math.isfinite(ic):
+            return False
+        self.s = max(0.0, self.s + (self.mu0 - ic) - self.kappa)
+        if self.s == 0.0:
+            self.onset = row
+        return self.s > self.h
 
 
 def walk_forward(t_n: int, n: int, fit: Callable[[int, int, Any], Any],
                  predict: Callable[[Any, int, int], np.ndarray], *,
                  min_train: int = MIN_TRAIN, refit_every: int = REFIT_EVERY,
-                 window: int = TRAIN_WINDOW) -> np.ndarray:
+                 window: int = TRAIN_WINDOW, breaks: Sequence[int] | None = None,
+                 decay_y: np.ndarray | None = None,
+                 log: list[dict[str, Any]] | None = None) -> np.ndarray:
     """preds[t, i] for every row t >= min_train. `fit(lo, k, prev_model)` sees rows [lo, k-1]
-    only (targets <= row k); `predict(model, a, b)` returns rows [a, b)."""
+    only (targets <= row k); `predict(model, a, b)` returns rows [a, b).
+
+    With `breaks` (regime_breaks) the model is also refitted the row after each break, and every
+    fit after a break trains from the break onward (never on fewer than POST_BREAK_MIN rows).
+    With `decay_y` (the targets, Design.y) the model's own out-of-sample IC is monitored online
+    (DecayMonitor); an alarm at row t refits at t from the change-point estimate onward. Neither
+    moves a clock refit, and every refit sees rows < k only, so the walk stays point in time.
+    `log`, when given, receives one dict per refit: row, trigger, training floor."""
     preds = np.full((t_n, n), np.nan)
     model: Any = None
-    for k in refit_points(t_n, min_train, refit_every):
+    clock = refit_points(t_n, min_train, refit_every, breaks)
+    floors = sorted(int(b) for b in (breaks or ()))
+    break_rows = {int(b) + 1 for b in (breaks or ())}
+    ics = np.full(t_n, np.nan)
+    mon: DecayMonitor | None = None
+    decay_on = decay_y is not None
+    last_decay = -10 ** 9
+    k = clock[0] if clock else t_n
+    trigger = "clock"
+    while k < t_n:
         lo = max(0, k - window)
+        prior = [b for b in floors if b < k]
+        if prior:
+            lo = max(lo, min(prior[-1], k - POST_BREAK_MIN))
         model = fit(lo, k, model)
+        if log is not None:
+            log.append({"row": k, "trigger": trigger, "train_from": lo})
+        nxt = next((p for p in clock if p > k), t_n)
         if model is None:
+            k, trigger = nxt, ("regime" if nxt in break_rows else "clock")
             continue
-        hi = min(k + refit_every, t_n)
-        preds[k:hi] = predict(model, k, hi)
+        preds[k:nxt] = predict(model, k, nxt)
+        if decay_on:
+            assert decay_y is not None
+            if trigger == "decay" or mon is None:
+                mon = DecayMonitor.from_history(ics[:k])
+            alarm = None
+            for t in range(k + 1, nxt + 1 if nxt < t_n else t_n):
+                s = t - 1                        # y[s] is known at s + 1 = t
+                ics[s] = row_ic(preds[s], decay_y[s])
+                if (mon is not None and mon.update(s, ics[s]) and t < nxt
+                        and t - last_decay >= refit_every):
+                    alarm = t
+                    break
+            if alarm is not None:
+                assert mon is not None
+                floors = sorted({*floors, max(0, mon.onset + 1)})
+                last_decay = alarm
+                preds[alarm:nxt] = np.nan
+                k, trigger = alarm, "decay"
+                continue
+        k, trigger = nxt, ("regime" if nxt in break_rows else "clock")
     return preds
 
 
@@ -320,7 +529,7 @@ def _train_rows(xd: np.ndarray, y: np.ndarray, lo: int, k: int) -> tuple[np.ndar
 
 
 def ridge_predictions(d: Design, features: np.ndarray | None = None,
-                      alpha: float = RIDGE_ALPHA, **wf: int) -> np.ndarray:
+                      alpha: float = RIDGE_ALPHA, **wf: Any) -> np.ndarray:
     """The baseline: one pooled ridge on each node's OWN lagged features, same folds."""
     xd = d.x if features is None else features
     t_n, n = d.y.shape
@@ -397,7 +606,7 @@ class GraphModel:
 
 
 def gnn_predictions(d: Design, *, adjacency_kind: str = "lead_lag", layers: int = 1,
-                    alpha: float = RIDGE_ALPHA, top_k: int = TOP_K, **wf: int) -> np.ndarray:
+                    alpha: float = RIDGE_ALPHA, top_k: int = TOP_K, **wf: Any) -> np.ndarray:
     t_n, n = d.y.shape
 
     def fit(lo: int, k: int, _prev: Any) -> GraphModel | None:
@@ -510,7 +719,7 @@ def train_attention(seq: np.ndarray, y: np.ndarray, *, heads: int, epochs: int,
 
 
 def attention_predictions(d: Design, *, heads: int = 1, lookback: int = 20,
-                          **wf: int) -> np.ndarray:
+                          **wf: Any) -> np.ndarray:
     t_n, n = d.y.shape
     seq = _sequences(tokens(d), int(lookback))
     f = seq.shape[-1]
@@ -571,7 +780,7 @@ def rocket_features(d: Design, *, kernels: int = 64, lookback: int = 32,
 
 
 def rocket_predictions(d: Design, *, kernels: int = 64, lookback: int = 32,
-                       **wf: int) -> np.ndarray:
+                       **wf: Any) -> np.ndarray:
     feats = rocket_features(d, kernels=int(kernels), lookback=int(lookback))
     return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
 
@@ -608,7 +817,7 @@ def signature_features(d: Design, *, depth: int = 2, lookback: int = 20) -> np.n
 
 
 def signature_predictions(d: Design, *, depth: int = 2, lookback: int = 20,
-                          **wf: int) -> np.ndarray:
+                          **wf: Any) -> np.ndarray:
     feats = signature_features(d, depth=int(depth), lookback=int(lookback))
     return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
 
@@ -691,7 +900,7 @@ def _ae_readout_features(codes: np.ndarray, x: np.ndarray) -> np.ndarray:
 
 
 def autoencoder_predictions(d: Design, *, latent: int = 3, hidden: int = 16,
-                            **wf: int) -> np.ndarray:
+                            **wf: Any) -> np.ndarray:
     """Latent cross-asset factors from a deep autoencoder over the date's whole panel, read out
     per node by a pooled ridge. The encoder is refitted inside every walk-forward fold on that
     fold's training rows only, so no code is computed with a scaling or weight from the future."""
@@ -721,7 +930,7 @@ def autoencoder_predictions(d: Design, *, latent: int = 3, hidden: int = 16,
     return walk_forward(t_n, n, fit, predict, **wf)
 
 
-def pca_predictions(d: Design, *, latent: int = 3, **wf: int) -> np.ndarray:
+def pca_predictions(d: Design, *, latent: int = 3, **wf: Any) -> np.ndarray:
     """The autoencoder's declared falsifier: a LINEAR code of the same size (PCA of the date's
     standardised panel features, fitted on the fold's training rows only) with the identical
     per-node readout. If this does as well, the non-linearity bought nothing. Never a trial."""
@@ -765,8 +974,17 @@ def pca_predictions(d: Design, *, latent: int = 3, **wf: int) -> np.ndarray:
 
 
 # ========================================================================== dispatcher
-def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> np.ndarray:
-    """One walk-forward prediction panel for (model, config). Every call is one trial."""
+def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: Any) -> np.ndarray:
+    """One walk-forward prediction panel for (model, config). Every call is one trial.
+    `config["refit"]` names the schedule (REFIT_MODES; absent = "clock"): "regime" adds the
+    regime-break refits, "decay" the online decay refits."""
+    refit = str(config.get("refit", "clock"))
+    if refit not in REFIT_MODES:
+        raise ValueError(f"unknown refit mode {refit!r}")
+    if refit == "regime" and "breaks" not in wf:
+        wf = {**wf, "breaks": regime_breaks(d)}
+    if refit == "decay" and "decay_y" not in wf:
+        wf = {**wf, "decay_y": d.y}
     if model == "gnn":
         return gnn_predictions(d, adjacency_kind=str(config.get("adjacency", "lead_lag")),
                                layers=int(config.get("layers", 1)), **wf)
