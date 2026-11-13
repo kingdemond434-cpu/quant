@@ -232,6 +232,16 @@ def _vol_forecast() -> None:
          f"{ {k: (v or {}).get('EARNS') for k, v in (vm.get('verdict') or {}).items()} }")
 
 
+def _conditioner_study() -> None:
+    """HMM, GARCH and empirical-Bayes as CONDITIONERS of many weak members, the way funds use
+    them (principal 2026-11-13), scored out of sample against equal weight with Holm-adjusted
+    block-bootstrap charges. Writes reports/CONDITIONER_STUDY.json. Sizes nothing."""
+    import conditioner_study
+    rep = conditioner_study.run(budget_s=2400.0)
+    dlog(f"conditioner_study: {rep.get('status')}, earns "
+         f"{ {k: v.get('EARNS') for k, v in (rep.get('vs_ew') or {}).items()} }")
+
+
 def _loss_replace() -> None:
     """Apply the loss learner's REPLACE verdicts, after decay has judged the same day's book: a
     parent is retired only when its forward-superior variant already holds capital."""
@@ -918,7 +928,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
-         ("vol_forecast", _vol_forecast),
+         ("vol_forecast", _vol_forecast), ("conditioner_study", _conditioner_study),
          ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
          ("loss_replace", _loss_replace),
          ("state_research_feedback", _state_research_feedback),

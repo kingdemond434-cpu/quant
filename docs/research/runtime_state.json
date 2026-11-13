@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 830,
-  "UNMEASURED": 44
+  "UNMEASURED": 45
  },
  "scope": {
-  "attested": 1055,
+  "attested": 1056,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -38,7 +38,7 @@
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
   "wall_s": 1.39,
-  "summaries_trimmed": 0,
+  "summaries_trimmed": 1,
   "only_missing_appended": [
    {
     "at": "2026-09-30T19:54:02+00:00",
@@ -718,6 +718,16 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "library:desks/mt5/research/vol_managed_sizing.py"
+    ]
+   },
+   {
+    "at": "2026-11-13T22:39:13+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "library:desks/mt5/research/conditioner_study.py"
     ]
    }
   ]
@@ -27815,6 +27825,36 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-13T22:32:36+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/research/conditioner_study.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/conditioner_study.py"
+   ],
+   "clock": "daily_cycle:conditioner_study",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CONDITIONER_STUDY.json",
+   "artifact_declared": "desks/mt5/reports/CONDITIONER_STUDY.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 60,
+   "artifact_bytes": 1749,
+   "artifact_sha256": "488f00827c67fb2231a0fda7989795b9a452737bfbdabd8a0633515d6bf08252",
+   "summary": {
+    "_": "UNMEASURED (trimmed to hold the file under 800 KB)"
+   },
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-13T22:39:13+00:00"
   }
  ],
  "ratchet": {
