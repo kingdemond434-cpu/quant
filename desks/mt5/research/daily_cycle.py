@@ -465,17 +465,91 @@ def _world_miners() -> None:
             dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
 
 
+#: Wall budget for the research bandit, in seconds. MEASURED on the box: 1 h 54 min on 11-09
+#: (22:32 -> 00:25Z), then on 11-10/11 it ran 6 h 20 min with no line and was killed with the
+#: whole chain at MT5-Daily's PT10H limit, so 33 of 38 steps -- recertify, promoter, markout,
+#: state_research_feedback (RESEARCH_PNL, 44 days stale), build_allocator, export_aurum -- never
+#: ran. 3 h is ~1.6x the last good run. A run past it is ended cleanly: the bandit's last
+#: published shares stand (its readers already fall back to them) and the chain carries on.
+RESEARCH_BANDIT_BUDGET_S_DEFAULT = 3 * 3600.0
+
+
+def _research_bandit_budget_s() -> float:
+    try:
+        return max(60.0, float(os.environ.get("RESEARCH_BANDIT_BUDGET_S",
+                                               RESEARCH_BANDIT_BUDGET_S_DEFAULT)))
+    except ValueError:
+        return RESEARCH_BANDIT_BUDGET_S_DEFAULT
+
+
+def _research_bandit_cmd() -> list[str]:
+    return [sys.executable, "-u", str(BASE / "research" / "research_bandit.py")]
+
+
+def _kill_tree(pid: int) -> None:
+    """Kill `pid` and every descendant: a bandit that opened a worker pool must not leave it
+    holding commit after the budget ends it (libs/ops/proctree.py, 2026-09-22)."""
+    try:
+        from libs.ops.proctree import kill_tree
+        kill_tree(pid)
+        return
+    except Exception:
+        pass
+    import subprocess
+    if sys.platform == "win32":
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True,
+                           timeout=30, check=False)
+        return
+    with contextlib.suppress(OSError):
+        os.killpg(os.getpgid(pid), 9)
+    with contextlib.suppress(OSError):
+        os.kill(pid, 9)
+
+
 def _research_bandit() -> None:
     """Which research directions earn the next unit of compute -- written before the proposers
-    and the deepening worker read it."""
+    and the deepening worker read it.
+
+    IN ITS OWN PROCESS, UNDER A WALL BUDGET (2026-11-11). In-process, one slow run held the
+    whole chain: nothing after it can start until it returns, and MT5-Daily's 10 h limit killed
+    the chain inside it with no line logged. A child can be ended at its budget; the step then
+    logs TIMEOUT, the previously published shares stand, and the next step runs. Not raised:
+    a bandit that ran long is a slow organ, and the steps behind it are not its hostages."""
+    import subprocess
+    budget = _research_bandit_budget_s()
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [p for p in sys.path if p] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
+    kw: dict = {}
+    if sys.platform != "win32":
+        kw["start_new_session"] = True
+    t0 = time.monotonic()
     try:
-        import research_bandit
-        d = research_bandit.run()
-        research_bandit.publish(d)
-        top = sorted(d["shares"].items(), key=lambda kv: -kv[1])[:3]
-        dlog("research bandit: " + ", ".join(f"{a}={s:.0%}" for a, s in top))
-    except Exception as exc:
-        dlog(f"research_bandit FAILED (non-fatal): {type(exc).__name__}: {exc}")
+        proc = subprocess.Popen(_research_bandit_cmd(), cwd=str(BASE), env=env,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                encoding="utf-8", errors="replace", **kw)
+    except OSError as exc:
+        dlog(f"research_bandit FAILED (non-fatal): could not start: {type(exc).__name__}: {exc}")
+        return
+    try:
+        out, _ = proc.communicate(timeout=budget)
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc.pid)
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.communicate(timeout=30)
+        dlog(f"research_bandit TIMEOUT after {time.monotonic() - t0:.0f}s (budget {budget:.0f}s,"
+             f" RESEARCH_BANDIT_BUDGET_S); its last published shares stand and the chain "
+             f"continues")
+        return
+    took = time.monotonic() - t0
+    tail = [ln for ln in (out or "").splitlines() if ln.strip()][-6:]
+    if proc.returncode != 0:
+        dlog(f"research_bandit FAILED (non-fatal): rc={proc.returncode} after {took:.0f}s: "
+             + " | ".join(tail)[-600:])
+        return
+    shares = [" ".join(ln.split()[:2]) for ln in (out or "").splitlines() if "share=" in ln][:3]
+    dlog(f"research bandit: {took:.0f}s" + (" -- " + "; ".join(shares) if shares else ""))
 
 
 def _state_research_feedback() -> None:
