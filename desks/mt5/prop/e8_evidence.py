@@ -354,14 +354,18 @@ _PUBLIC_SCRUBS: tuple[tuple[re.Pattern[str], str], ...] = (
 #: marker below 1,000: "against 850 to today's floor"), unless it counts points. Lots (0.39),
 #: multipliers (x1.5), order/ticket/deal ids, dates and times, and the outcome/reason codes
 #: survive; the full text stays on the box.
-_WHY_FIGURE = re.compile(r"(?<![\w.\-:/#])(?<!order )(?<!ticket )(?<!deal )\d{2,}(?:\.\d+)?"
-                         r"(?!\s*points?\b)(?![\w.\-:/])")
+_WHY_FIGURE = re.compile(
+    # dates and clock times are kept whole (group 1) and survive unchanged
+    r"(\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?|(?<![\w.])\d{1,2}:\d{2}(?::\d{2})?(?![\w:]))"
+    # a figure, signed or not ("-850", "=-120.5", both sides of "850-900" and "850/1000")
+    r"|(?<!order )(?<!ticket )(?<!deal )"
+    r"(?:(?<![\w.:/#])[-+]|(?<![\w.:#]))\d{2,}(?:\.\d+)?(?!\s*points?\b)(?![\w:])")
 
 
 def _figures_withheld(text: str) -> str:
     """A decision's why as it may be published: no account figure (audit HOLD on #1096)."""
     try:
-        return _WHY_FIGURE.sub("<n>", text)
+        return _WHY_FIGURE.sub(lambda m: m.group(1) or "<n>", text)
     except Exception:
         return "<text withheld>"
 

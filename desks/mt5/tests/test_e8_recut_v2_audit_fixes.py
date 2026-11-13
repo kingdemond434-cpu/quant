@@ -394,3 +394,21 @@ def test_public_text_withholds_the_rails_usd_figures() -> None:
                          "against 2,500")
     assert out == ("committed <amount> + this window <amount>, x1.25 slippage = <amount>, "
                    "against <amount>")
+
+
+@pytest.mark.parametrize("why, published", [
+    ("daily loss -850 vs floor", "daily loss <n> vs floor"),
+    ("pnl=-120.5", "pnl=<n>"),
+    ("against -50 to today's floor", "against <n> to today's floor"),
+    ("against 850 to today's floor.", "against <n> to today's floor."),
+    ("850-900", "<n>-<n>"),
+    ("850/1000", "<n>/<n>"),
+    ("+75 above", "<n> above"),
+    ("adopted order 42 on 2026-11-13 at 07:00", "adopted order 42 on 2026-11-13 at 07:00"),
+    ("stop 20 points away, ticket 123456 #77 x1.5 lot 0.39",
+     "stop 20 points away, ticket 123456 #77 x1.5 lot 0.39"),
+    ("2026-11-13T07:00:05 placed", "2026-11-13T07:00:05 placed"),
+])
+def test_a_published_why_withholds_signed_and_joined_figures(why: str, published: str) -> None:
+    """Audit HOLD on #1096 (MF1, SF1): a signed room or day P&L never publishes its figure."""
+    assert ev._figures_withheld(why) == published
