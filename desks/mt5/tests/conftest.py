@@ -302,6 +302,17 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_t
     # a floor-lifted order would otherwise append its bill to the repo's data/ file.
     from mt5desk import fusion_rails
     monkeypatch.setattr(fusion_rails, "LEDGER", d / "fusion_book_rails.jsonl")
+    # The account breakers' day anchors and latches (mt5desk.account_breakers) are box state
+    # too: every lane under test anchors its account's day in a fresh tmp file.
+    from mt5desk import account_breakers
+    monkeypatch.setattr(account_breakers, "STATE", d / "account_breakers_state.json")
+    # THE QUOTE-AGE LIMIT IS LIFTED FOR THE LANE HARNESSES, NOT FOR ITS OWN TESTS: E8 gold ages
+    # its terminal tick against the wall clock, and every E8 gold harness stamps its fake tick at
+    # a fixed historical instant (the window under test), so the real 120 s limit would refuse
+    # every placement those tests are about. tests/test_account_breakers.py puts the real limit
+    # back: it drives ftmo_executor into the refusal and checks the other lanes' wiring by source
+    # (driving the gateway, E8 gold and the FTMO follower harnesses into it is still owed).
+    monkeypatch.setattr(account_breakers, "QUOTE_MAX_AGE_S", float("inf"))
     yield d
 
 
