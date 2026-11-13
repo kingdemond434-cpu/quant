@@ -13,6 +13,7 @@ for value in (BASE, BASE / "research"):
     if str(value) not in sys.path:
         sys.path.insert(0, str(value))
 
+from atomic_ledger import write_text_atomic  # noqa: E402
 from gate_policy import all_ten_pass, is_exact_policy  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from run_hunt12 import day_states  # noqa: E402
@@ -154,12 +155,12 @@ def main() -> int:
         ledger = SHADOW / f"ledger_{key.replace(' ', '_').replace('/', '_')}.json"
         ledger.parent.mkdir(parents=True, exist_ok=True)
         stamp = bars.stamp()
-        ledger.write_text(json.dumps([
+        write_text_atomic(ledger, json.dumps([
             {"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
              "side": t.side, "entry": t.entry, "exit": t.exit,
              "r_multiple": t.r_multiple, "reason": t.reason, **stamp}
             for t in trades
-        ], indent=2), encoding="utf-8")
+        ], indent=2))
         days = max(0, (now - frozen_at.to_pydatetime()).days)
         expectancy = sum(values) / len(values) if values else 0.0
         row.update({

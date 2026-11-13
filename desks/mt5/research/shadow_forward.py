@@ -32,6 +32,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk import families
 from mt5desk.family_call import signals as family_signals
 
+from research.atomic_ledger import write_text_atomic
+
 BASE = Path(__file__).resolve().parent.parent
 # This engine is called both as ``research.shadow_forward`` and as a script on the desk box.
 # Keep sibling desk modules ahead of the repository's unrelated ``libs/research`` package, whose
@@ -1280,7 +1282,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # an average over two different games. Stamped per row so the promoter
             # can split them.
             _stamp = bars.stamp()
-            ledger.write_text(json.dumps(
+            write_text_atomic(ledger, json.dumps(
                 [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
                   "side": t.side, "entry": t.entry, "exit": t.exit,
                   "r_multiple": t.r_multiple, "reason": t.reason,
@@ -1288,7 +1290,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                             else "historical"),
                   **_stamp}
                  for t in all_trades],
-                indent=2), encoding="utf-8")
+                indent=2))
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours
