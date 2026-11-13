@@ -3979,9 +3979,14 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "quota": quota,
         "starved": starved[:20],
         "unmined_live_families": unmined[:40],
+        # Every registered status leaves the unmined list and none is a zero; the live-but-barren
+        # one (SCREENED_NONE_SURVIVED) is published apart from the not-live ones.
         "families_not_live": {f: {k: r.get(k) for k in ("status", "why", "missed_growth",
                                                        "reopen_when", "since")}
-                              for f, r in sorted(not_live.items())},
+                              for f, r in sorted(not_live.items())
+                              if r.get("status") != "SCREENED_NONE_SURVIVED"},
+        "families_screened_none_survived": sorted(
+            f for f, r in not_live.items() if r.get("status") == "SCREENED_NONE_SURVIVED"),
         "mined_via_wrapper": via,
         # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that
         # the remainder actually followed it, which is what stops a future session quietly

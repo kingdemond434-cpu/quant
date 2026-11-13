@@ -254,3 +254,18 @@ def test_judge_coverage_counts_wrapper_cells_under_their_base() -> None:
             {"family": "regime_split", "params": {"base_family": "carry"}, "_cell": "c"}]
     assert jc._wrapper_base_counts(rows, {"a"}) == {
         "dav_t3_trend": {"mined": 2, "judged": 1, "via": "hunt16_cell"}}
+
+
+def test_an_honestly_barren_family_is_reported_live_never_zero(tmp_path: Path) -> None:
+    status = tmp_path / "family_status.json"
+    status.write_text(json.dumps({"families": {
+        "mass_screen_lead": {"status": "SCREENED_NONE_SURVIVED", "why": "none past FDR"}}}))
+    st = {"status": "MEASURED", "days": {}, "hours": {}, "families_ever": {}}
+    out = mq.realised_split(st, now=NOW, live_families={"mass_screen_lead", "carry"},
+                            status_path=status)
+    assert out["families_never_ruled"] == ["carry"]
+    assert out["families_screened_none_survived"] == ["mass_screen_lead"]
+    assert out["families_not_live"] == {}
+    w = mq.family_weights(["carry", "mass_screen_lead"], {},
+                          blocked=mq.family_status(status))
+    assert w["mass_screen_lead"] == pytest.approx(w["carry"])          # live: not demoted

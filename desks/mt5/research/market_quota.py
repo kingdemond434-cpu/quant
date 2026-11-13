@@ -168,6 +168,10 @@ FAMILY_STATUS = BASE / "data" / "family_status.json"
 #: Statuses that take a family out of the "never judged" count and out of the exploration share,
 #: each reported by name with its missed-growth line. Absent or ACTIVE means live.
 NOT_LIVE_STATUSES = frozenset({"BLOCKED_ON_TERMS", "RETIRED", "BLOCKED_ON_DATA"})
+#: LIVE BUT HONESTLY BARREN: the family mines and screens every day and nothing survives (e.g.
+#: mass_screen_lead, ~35k cells a day, none past FDR). Reported by status, never as a zero and
+#: never RED, and -- being live -- never demoted in the intake.
+REPORTED_STATUSES = NOT_LIVE_STATUSES | {"SCREENED_NONE_SURVIVED"}
 
 
 def attributed_family(sp: dict[str, Any]) -> str:
@@ -182,7 +186,8 @@ def attributed_family(sp: dict[str, Any]) -> str:
     return fam
 
 
-def family_status(path: Path | None = None) -> dict[str, dict[str, Any]]:
+def family_status(path: Path | None = None, *,
+                  statuses: frozenset[str] = REPORTED_STATUSES) -> dict[str, dict[str, Any]]:
     """{family: row} from `data/family_status.json` for families that are NOT live, with why.
 
     Unreadable or absent reads as NOTHING BLOCKED: a missing file must never silence a family.
@@ -193,7 +198,7 @@ def family_status(path: Path | None = None) -> dict[str, dict[str, Any]]:
         return {}
     rows = doc.get("families") if isinstance(doc, dict) else None
     return {str(f): dict(r) for f, r in (rows or {}).items()
-            if isinstance(r, dict) and str(r.get("status") or "").upper() in NOT_LIVE_STATUSES}
+            if isinstance(r, dict) and str(r.get("status") or "").upper() in statuses}
 
 
 def _cell_id_of(sp: dict[str, Any]) -> str | None:
@@ -467,7 +472,9 @@ def family_weights(families: Iterable[str], fylds: dict[str, dict[str, Any]],
         w = {f: YIELD_STRENGTH * ys[f] / tot + (1.0 - YIELD_STRENGTH) / n for f in fams}
     # A family the registry marks not live (blocked on terms, retired) keeps its cells in the
     # docket but is given no exploration share: it is reached only after every live family.
-    for f in set(fams) & set(blocked if blocked is not None else family_status()):
+    nl = blocked if blocked is not None else family_status(statuses=NOT_LIVE_STATUSES)
+    for f in set(fams) & {k for k, r in nl.items()
+                          if str(r.get("status") or "").upper() in NOT_LIVE_STATUSES}:
         w[f] = 1e-9
     return w
 
@@ -702,7 +709,11 @@ def realised_split(st: dict[str, Any] | None = None, *, now: datetime | None = N
             # NOT ZERO, NOT LIVE: each with the reason and the growth it costs, by name.
             "families_not_live": {f: {k: r.get(k) for k in ("status", "why", "missed_growth",
                                                            "reopen_when", "since")}
-                                  for f, r in sorted(blocked.items())},
+                                  for f, r in sorted(blocked.items())
+                                  if str(r.get("status") or "").upper() in NOT_LIVE_STATUSES},
+            "families_screened_none_survived": sorted(
+                f for f, r in blocked.items()
+                if str(r.get("status") or "").upper() not in NOT_LIVE_STATUSES),
             "rule": ("BREACH when exotics took more than 10% of the last 24h's ruled trials; the "
                      "intake holds exotics over their share, so a BREACH means cells reached the "
                      "judge by another door (already warm, or the sealed sweep's own builds)")}
