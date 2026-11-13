@@ -136,6 +136,7 @@ def family_exogenous_conditioner(
     rr: float = 2.0,
     ttl_bars: int = 96,
     series_root: Path | None = None,
+    trade_from: str = "",
 ) -> list[Signal]:
     """Take a directional stance while the pack's own published statistic is at an extreme.
 
@@ -143,6 +144,14 @@ def family_exogenous_conditioner(
     enough observations to measure. `delta` carries raw units, so its extreme is `threshold`
     interpreted directly; `level_z` and `delta_z` are standard deviations of the column's own
     history. Nothing here reads price except to size the stop and to place the order.
+
+    `trade_from` (an ISO timestamp on the bar clock) silences every bar at or before it. A producer
+    that LEARNED `side_when_high` sets it to the last time any training LABEL reads: with forward
+    labels that is the end of the purged span (an event's label closes `horizon` bars after it,
+    so the producer keeps only events whose label closed by `trade_from` --
+    `institutional_footprint.learn_side`), never merely the last training event. Then no bar
+    the choice read is a bar the judge scores; a side picked on a span and scored on it is a
+    two-way search reported as one trial. Empty means the whole history.
     """
     cond = conditioner(source, signal, transform, lag_hours=lag_hours, z_window=z_window,
                        root=series_root)
@@ -157,11 +166,23 @@ def family_exogenous_conditioner(
         return []              # a series that will not align to the bar clock is UNMEASURED
     atr = _atr(d, atr_n)
     thr = abs(float(threshold))
+    start = atr_n
+    if trade_from:
+        try:
+            cut = pd.Timestamp(trade_from)
+            tz = getattr(d.index, "tz", None)
+            if cut.tzinfo is None and tz is not None:
+                cut = cut.tz_localize(tz)
+            elif cut.tzinfo is not None and tz is None:
+                cut = cut.tz_convert(None)
+            start = max(start, int(d.index.searchsorted(cut, side="right")))
+        except (TypeError, ValueError):
+            return []          # an unreadable cut is not a licence to judge the training span
     signals: list[Signal] = []
     _a_m = m.to_numpy()
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
-    for i in range(atr_n, len(d) - 1):
+    for i in range(start, len(d) - 1):
         mv = _a_m[i]
         if mv is None or not np.isfinite(mv) or abs(float(mv)) < thr:
             continue
