@@ -62,10 +62,30 @@ Get = Callable[[str], tuple[int | None, bytes]]
 Refusal = Callable[[str], str | None]
 
 
+class CrossHostRedirect(urllib.error.URLError):
+    """A redirect off the host whose robots and terms were read: refused, never followed."""
+
+
+class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow a 3xx only when it stays on the requested host. A redirect to another host would
+    reach one whose robots and terms nobody read -- a *.stlouisfed.org target would even step
+    round `terms_refused` -- so it fails the fetch instead (Auditor MF1, 2026-11-13)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        old = urllib.parse.urlsplit(req.full_url).netloc.lower()
+        new = urllib.parse.urlsplit(urllib.parse.urljoin(req.full_url, newurl)).netloc.lower()
+        if new != old:
+            raise CrossHostRedirect(f"redirect {old} -> {new} refused")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_SameHostRedirects())
+
+
 def http_get(url: str) -> tuple[int | None, bytes]:
     req = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with _OPENER.open(req, timeout=30) as r:
             return int(r.status), r.read(30_000_000)
     except urllib.error.HTTPError as e:
         return e.code, b""
@@ -146,6 +166,13 @@ def parse_nyfed(raw: bytes) -> dict[str, float]:
     return out
 
 
+#: Per-process caches for the DEFAULT transport only (Auditor SF1): `free_data` asks for one
+#: series at a time, and without these each call re-read robots.txt and every yearly curve CSV.
+#: An injected `get` (tests, other callers) never touches them.
+_SHARED_GATE: Refusal | None = None
+_YEAR_CACHE: dict[tuple[str, int], dict[str, dict[str, float]]] = {}
+
+
 def treasury_curve(kind: str, years: range, get: Get, refusal: Refusal
                    ) -> tuple[dict[str, dict[str, float]], str]:
     merged: dict[str, dict[str, float]] = {}
@@ -155,11 +182,16 @@ def treasury_curve(kind: str, years: range, get: Get, refusal: Refusal
         refused = refusal(url)
         if refused:
             return {}, f"ROBOTS_REFUSED: {refused}"
-        code, raw = get(url)
-        if code != 200 or not raw:
-            why = f"{kind} {y}: HTTP {code}"
-            continue
-        for col, ser in parse_treasury(raw).items():
+        cached = _YEAR_CACHE.get((kind, y)) if get is http_get else None
+        if cached is None:
+            code, raw = get(url)
+            if code != 200 or not raw:
+                why = f"{kind} {y}: HTTP {code}"
+                continue
+            cached = parse_treasury(raw)
+            if get is http_get:
+                _YEAR_CACHE[(kind, y)] = cached
+        for col, ser in cached.items():
             merged.setdefault(col, {}).update(ser)
     return merged, "" if merged else (why or "no rows")
 
@@ -168,7 +200,13 @@ def series(ids: list[str] | tuple[str, ...], start: date, *, get: Get = http_get
            refusal: Refusal | None = None, today: date | None = None
            ) -> tuple[dict[str, dict[str, float]], dict[str, str]]:
     """({fred id: {iso date: value}}, {fred id: why not}) for every id in SERVED."""
-    gate = refusal or robots_refusal(get)
+    global _SHARED_GATE
+    if refusal is None and get is http_get:
+        if _SHARED_GATE is None:
+            _SHARED_GATE = robots_refusal(get)
+        gate = _SHARED_GATE
+    else:
+        gate = refusal or robots_refusal(get)
     today = today or datetime.now(tz=UTC).date()
     want = [i for i in ids if i in SERVED]
     out: dict[str, dict[str, float]] = {}
@@ -211,6 +249,8 @@ def series(ids: list[str] | tuple[str, ...], start: date, *, get: Get = http_get
                 continue
             code, raw = get(url)
             ser = parse_nyfed(raw) if code == 200 else {}
+            if ser and fid == "DFF":
+                ser = calendar_fill(ser, today)
             if ser:
                 out[fid] = ser
             else:
@@ -218,6 +258,25 @@ def series(ids: list[str] | tuple[str, ...], start: date, *, get: Get = http_get
     for fid in out:
         why.pop(fid, None)
     return out, why
+
+
+def calendar_fill(ser: Mapping[str, float], today: date) -> dict[str, float]:
+    """FRED's DFF is a CALENDAR-day series: a weekend or holiday carries the prior business day's
+    rate. The NY Fed publishes EFFR on business days only, so under the DFF id the gaps are
+    filled forward -- up to `today`'s eve, never past the last published day's next morning."""
+    from datetime import timedelta
+    if not ser:
+        return {}
+    days = sorted(ser)
+    out: dict[str, float] = {}
+    d = date.fromisoformat(days[0])
+    last = date.fromisoformat(days[-1])
+    v = ser[days[0]]
+    while d <= last:
+        v = ser.get(d.isoformat(), v)
+        out[d.isoformat()] = v
+        d += timedelta(days=1)
+    return out
 
 
 def source_of(fid: str) -> str:

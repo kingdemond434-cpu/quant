@@ -91,3 +91,36 @@ def test_collector_refreshes_mapped_series_and_keeps_held_ones(monkeypatch, tmp_
     assert doc["series"]["VIXCLS"] == [["2024-01-02", 13.2]]          # held, never dropped
     assert doc["sources"]["DGS10"].startswith("US Treasury")
     assert "held copy" in doc["sources"]["VIXCLS"]
+
+
+def test_a_redirect_to_another_host_is_refused_and_never_followed(monkeypatch) -> None:
+    """Auditor MF1: a 302 off the vetted host fails the fetch; no second request is made."""
+    import http.client
+    import io
+    import urllib.request
+
+    from libs.data import us_primary_rates as P
+    sent: list[str] = []
+
+    class Handler(urllib.request.HTTPSHandler):
+        def https_open(self, req):  # type: ignore[no-untyped-def]
+            sent.append(req.full_url)
+            msg = http.client.HTTPMessage()
+            msg["Location"] = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+            resp = urllib.request.addinfourl(io.BytesIO(b""), msg, req.full_url, 302)
+            resp.msg = "Found"
+            return resp
+
+    opener = urllib.request.build_opener(P._SameHostRedirects(), Handler())
+    monkeypatch.setattr(P, "_OPENER", opener)
+    code, body = P.http_get("https://home.treasury.gov/x.csv")
+    assert (code, body) == (None, b"")
+    assert sent == ["https://home.treasury.gov/x.csv"]
+
+
+def test_dff_is_filled_to_calendar_days() -> None:
+    from datetime import date
+
+    from libs.data import us_primary_rates as P
+    got = P.calendar_fill({"2026-11-06": 3.9, "2026-11-09": 3.88}, date(2026, 11, 13))
+    assert got == {"2026-11-06": 3.9, "2026-11-07": 3.9, "2026-11-08": 3.9, "2026-11-09": 3.88}

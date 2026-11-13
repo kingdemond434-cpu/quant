@@ -123,7 +123,9 @@ def primary_pass() -> None:
     revised = 0
     for sid in fresh:
         if sid in series:
-            revised += record(_ROOT, sid, dict(series[sid]), vintage=ts)
+            # Keyed `<id>@primary` (Auditor SF3): the FRED-era vintages stay under the bare id,
+            # so a publisher switch is never read as a revision of the same series.
+            revised += record(_ROOT, f"{sid}@primary", dict(series[sid]), vintage=ts)
     _write(series, ts, sources, revised)
 
 
