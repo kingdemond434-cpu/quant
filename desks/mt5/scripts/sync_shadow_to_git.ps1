@@ -875,7 +875,8 @@ $reportPaths = @(
     # the wire: origin's decay_live.json still read NO_ROSTER from 2026-09-04, and the loss
     # learner's report, replacements and per-book rollout requests had never been committed --
     # so the hourly pass scored all five loss-brain lines RED off the box whatever the box held.
-    "desks/mt5/data/decay_live.json",
+    # (decay_live.json follows in its own PR: its writer is a money-closure file whose status
+    # strings must first stop carrying exception text, and that change has its own veto clock.)
     "desks/mt5/reports/LOSS_LEARNER.json",
     "desks/mt5/data/loss_learning/replacements.jsonl",
     "desks/mt5/data/loss_learning/BOOK_ROLLOUTS.json",

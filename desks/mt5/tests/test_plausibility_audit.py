@@ -114,7 +114,7 @@ def test_no_synced_row_carries_an_exception_message(tmp_path, monkeypatch) -> No
 def test_the_synced_organs_never_format_an_exception_message() -> None:
     import re
     root = DESK.parent.parent
-    for rel in ("desks/mt5/research/loss_learner.py", "desks/mt5/research/decay_monitor.py",
+    for rel in ("desks/mt5/research/loss_learner.py",
                 "desks/mt5/research/plausibility_audit.py", "libs/validation/plausibility.py"):
         src = (root / rel).read_text(encoding="utf-8")
         assert not re.search(r"\{exc(!r)?\}|str\(exc\)|repr\(exc\)", src), rel
