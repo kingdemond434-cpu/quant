@@ -1,33 +1,44 @@
-"""AlphaGen adapter -- RL/GP formulaic-alpha pools. Git-only upstream (RL-MLDM/alphagen)
-whose pool trainer needs its qlib data backend; here the adapter measures whether the
-package imports, names its expression grammar, and routes the LLM-free formula search to
-the desk's coevolution cell, which evolves formulaic factors on the bundle's own bars.
+"""alphagen adapter -- ROUTED to the desk's rebuilt cell.
+
+AlphaGen's formulaic-alpha pool search is REBUILT as the desk's own cell
+`research/sandboxes/coevolution_cell.py` (numpy factor grammar x model zoo, alternating co-
+evolution, walk-forward; it names alphagen in UPSTREAM). That cell runs on the sandbox runner's
+hourly clock and donates through the same exit; its cells are this adapter's cells. The
+upstream pool trainer needs a qlib data backend and a pinned git commit, neither of which the
+box carries.
+
+The registry row (CENSUS_CLASS and friends) is read hourly by
+`desks/mt5/research/adapter_census.py` into `reports/ADAPTER_CENSUS.json`.
 """
 from __future__ import annotations
-
-from typing import Any
 
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
-SYSTEM = "alphagen"
-CAPABILITY_FAMILY = "evolutionary_search"
-LICENCE_EXPECTED = "MIT"
-MODULE = "alphagen"
-HINT = "provision github:RL-MLDM/alphagen at a pinned commit"
-PROBE_NAMES = ('data', 'models', 'rl', 'utils')
-WHY = "the pool trainer needs a qlib data backend the sandbox does not carry"
-REBUILT_BY = "desks/mt5/research/sandboxes/coevolution_cell.py"
+SYSTEM = 'alphagen'
+CAPABILITY_FAMILY = 'evolutionary_search'
+LICENCE_EXPECTED = 'MIT'
+MODULE = 'alphagen'
+HINT = 'provision github:RL-MLDM/alphagen at a pinned commit'
+CENSUS_CLASS = "b"
+ROLE = "research engine, rebuilt as cell:coevolution_cell"
+CONTRACTS: tuple[str, ...] = ()
+CLOCK = "hourly_cycle:sandbox_runner"
+ROUTED_TO = 'sandbox:cell:coevolution_cell'
+VERDICT_REASON = ""
+
+
+def why() -> str:
+    """The registry row as one sentence: where this system's work happens, or why it cannot."""
+    return "ROUTED: " + ROLE + " (generator " + ROUTED_TO + ") on " + CLOCK
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    lib = A.library(MODULE)
-    if lib is None:
-        return A.unmeasured(SYSTEM, bundle, f"{MODULE} is not importable here: {HINT}")
-    rows: list[dict[str, Any]] = [A.api_probe(SYSTEM, lib, PROBE_NAMES)]
-    rows.append({"kind": "REBUILT_ROUTE", "system": SYSTEM, "why": WHY, "rebuilt_by": REBUILT_BY})
-    return A.packet(SYSTEM, bundle, trials=0, research_methods=rows,
-                    note="importable; the upstream loop is not driven from this adapter")
+    """Never a silent probe: the packet names the route or the measured verdict."""
+    if A.library(MODULE) is None:
+        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT + ". "
+                            + why())
+    return A.unmeasured(SYSTEM, bundle, why())
 
 
 if __name__ == "__main__":

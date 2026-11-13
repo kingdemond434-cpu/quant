@@ -1,32 +1,45 @@
-"""DSPy adapter -- program-level optimisation of prompts and demonstrations (MIPROv2, GEPA).
-Prompt optimisation needs an LLM and the research path carries none: the adapter measures
-importability and records the route.
+"""dspy adapter -- VERDICT: CANNOT WORK HERE, measured.
+
+LLM-ONLY: DSPy optimises prompt programs and every evaluation of a candidate program is an LLM
+call; the research path carries no LLM provider key, and there is no price computation in it to
+rebuild.
+
+The registry row (CENSUS_CLASS and friends) is read hourly by
+`desks/mt5/research/adapter_census.py` into `reports/ADAPTER_CENSUS.json`.
 """
 from __future__ import annotations
-
-from typing import Any
 
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
-SYSTEM = "dspy"
-CAPABILITY_FAMILY = "prompt_optimization"
-LICENCE_EXPECTED = "MIT"
-MODULE = "dspy"
-HINT = "pip install dspy==3.3.1 in the sandbox venv"
-PROBE_NAMES = ('Module', 'Predict', 'MIPROv2', 'GEPA')
-WHY = "prompt optimisation needs an LLM; the research path carries none"
-REBUILT_BY = "no desk equivalent by design (LLM-free research path)"
+SYSTEM = 'dspy'
+CAPABILITY_FAMILY = 'prompt_optimization'
+LICENCE_EXPECTED = 'MIT'
+MODULE = 'dspy'
+HINT = 'pip install dspy==3.3.1 in the sandbox venv'
+CENSUS_CLASS = "c"
+ROLE = "CANNOT WORK HERE"
+VERDICT_REASON = (
+    'LLM-ONLY: DSPy optimises prompt programs and every evaluation of a candidate program is '
+    'an LLM call; the research path carries no LLM provider key, and there is no price '
+    'computation in it to rebuild '
+)
+CONTRACTS: tuple[str, ...] = ()
+CLOCK = ""
+ROUTED_TO = ""
+
+
+def why() -> str:
+    """The registry row as one sentence: where this system's work happens, or why it cannot."""
+    return "CANNOT_WORK_HERE: " + VERDICT_REASON
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    lib = A.library(MODULE)
-    if lib is None:
-        return A.unmeasured(SYSTEM, bundle, f"{MODULE} is not importable here: {HINT}")
-    rows: list[dict[str, Any]] = [A.api_probe(SYSTEM, lib, PROBE_NAMES)]
-    rows.append({"kind": "REBUILT_ROUTE", "system": SYSTEM, "why": WHY, "rebuilt_by": REBUILT_BY})
-    return A.packet(SYSTEM, bundle, trials=0, research_methods=rows,
-                    note="importable; the upstream loop is not driven from this adapter")
+    """Never a silent probe: the packet names the route or the measured verdict."""
+    if A.library(MODULE) is None:
+        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT + ". "
+                            + why())
+    return A.unmeasured(SYSTEM, bundle, why())
 
 
 if __name__ == "__main__":
