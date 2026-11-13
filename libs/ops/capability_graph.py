@@ -837,6 +837,21 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/ASIA_PLANE.json", "desks/mt5/data/intelligence/"),
          reads=("desks/mt5/data/lake/sge_daily.parquet",
                 "desks/mt5/data/universe/universe.json")),
+    # The federation's adapters, audited 2026-11-13: the census measures every adapter's class
+    # and cells; adapter_data is the OECD leading-indicator door; engine_replicas replays the
+    # certificates through LEAN's gap fills and Nautilus's bar path.
+    Node("adapter_census", "desks/mt5/research/adapter_census.py",
+         reads=("desks/mt5/reports/SANDBOX_RUNNER.json", "desks/mt5/reports/FREE_STACK_YIELD.json",
+                "desks/mt5/reports/ADAPTER_DATA.json", "desks/mt5/reports/ENGINE_REPLICAS.json",
+                "data/alpha_registry.sqlite"),
+         writes=("desks/mt5/reports/ADAPTER_CENSUS.json",)),
+    Node("adapter_data", "desks/mt5/research/adapter_data.py",
+         writes=("desks/mt5/reports/ADAPTER_DATA.json", "desks/mt5/data/adapter_data/state.json",
+                 "desks/mt5/data/lake/series/")),
+    Node("engine_replicas", "desks/mt5/research/engine_replicas.py",
+         reads=("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json", "desks/mt5/data/sleeves.json",
+                "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/ENGINE_REPLICAS.json",)),
     Node("cost_to_edge", "desks/mt5/research/cost_to_edge.py",
          writes=("desks/mt5/reports/COST_TO_EDGE.json",)),
     Node("cell_emitter", "desks/mt5/research/cell_emitter.py",

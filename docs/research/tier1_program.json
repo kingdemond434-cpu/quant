@@ -9219,10 +9219,44 @@
     "libs/research/adapter_kit.py: the shared numpy kit for 16 rebuilt adapters (qlib, finrl, rd_agent, ml_quant_trading, kronos, ai_hedge_fund, tradingagents, quantagent, autohedge, alphaquanter, atlas_gic, autohypothesis, inalpha, nexquant, ai_scientist, alpha_search)",
     "tests/research/test_adapter_census_and_rebuilds.py:1-342 rebuilds donate exact recipes, causality, cannot-work reasons, census counts from a registry, adapter_data vintages and hard stops, both engines, leg wiring"
    ],
-   "scheduled_by": "hourly_cycle:adapter_census, hourly_cycle:adapter_data, hourly_cycle:engine_replicas, hourly_cycle:sandbox_runner, hourly_cycle:free_stack_hunt",
-   "artifact": "desks/mt5/reports/ADAPTER_CENSUS.json, desks/mt5/reports/ADAPTER_DATA.json, desks/mt5/reports/ENGINE_REPLICAS.json",
+   "scheduled_by": "hourly_cycle:adapter_census, hourly_cycle:sandbox_runner, hourly_cycle:free_stack_hunt",
+   "artifact": "desks/mt5/reports/ADAPTER_CENSUS.json",
    "consumer": "desks/mt5/research/sandbox_roster.py reads ADAPTER_CENSUS.json into each roster row (census_class / census_clock / census_reason) -> reports/SANDBOX_ROSTER; ADAPTER_CENSUS reads ENGINE_REPLICAS and ADAPTER_DATA; adapter_data cells and rebuilt-adapter cells reach the judge through the alpha registry",
    "gap": "LANDED 2026-11-13 on claude/audit-adapters-real. Open: desk_hub() itself does not yet call datahub_adapters.extend -- libs/data/datahub.py is in ops/money_closure.txt, so that one-line registration waits on an Auditor CLEAR (adapter_hub serves the same contracts meanwhile); the OECD SDMX URL and CSV shape were unreachable from the build container (proxy 403) and are verified on the box's first pass -- a failure publishes UNMEASURED with the exception type; tushare cells need TUSHARE_TOKEN on the box; cell counts are UNMEASURED wherever data/alpha_registry.sqlite is absent; ENGINE_REPLICAS feeds no gate (making it one is a threshold change and the principal's call)"
+  },
+  {
+   "id": "U_ADAPTERS_DATA",
+   "item": "THE OPENBB ADAPTER'S DATA, ON A CLOCK (audit 2026-11-13): OECD composite leading indicators -- the keyless provider OpenBB wraps -- fetched directly with an honest UA, robots and persisted hard stops, merged first-vintage (revisions counted, never written), stamped point-in-time and minted as exogenous-conditioner cells on the mapped MT5 instruments",
+   "domain": "U",
+   "phase": 3,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/adapter_data.py:274 `build` fetch -> merge -> lake series -> mint; :140 `robots_allow`; :175 `merge` first vintage",
+    "libs/data/datahub_adapters.py:52-66 contract oecd.cli bound to data/lake/series/oecd_cli_<eco>.parquet",
+    "tests/research/test_adapter_census_and_rebuilds.py:1-342 first vintage, mint once, robots, hard stops, type-name-only errors"
+   ],
+   "scheduled_by": "hourly_cycle:adapter_data",
+   "artifact": "desks/mt5/reports/ADAPTER_DATA.json",
+   "consumer": "desks/mt5/research/adapter_census.py reads ADAPTER_DATA.json access into the openbb row; its cells enter the alpha registry under generator adapter_data and reach the judge",
+   "gap": "The SDMX URL and CSV shape were unreachable from the build container (proxy 403); the box's first pass verifies them, and a failure publishes UNMEASURED with the exception type"
+  },
+  {
+   "id": "U_ENGINE_REPLICAS",
+   "item": "THE LEAN AND NAUTILUS ADAPTERS AS INDEPENDENT VERIFIERS (audit 2026-11-13): every promoted certificate, then the canon, replayed on the independent replica's own signals through LEAN's gap-at-open fills and Nautilus's adaptive bar path, reporting how much of each certificate's R the contract's optimistic bar assumptions supply",
+   "domain": "U",
+   "phase": 3,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/validation/engine_replicas.py:41-64 `_exit` gap and path semantics; :131-151 `replay` per-engine delta against the contract",
+    "desks/mt5/research/engine_replicas.py:95 `run` in the independent verifier's certificate order; :119 `summarise`",
+    "tests/research/test_adapter_census_and_rebuilds.py:1-342 gapped stop, two-sided bar, replica import ban, summary"
+   ],
+   "scheduled_by": "hourly_cycle:engine_replicas",
+   "artifact": "desks/mt5/reports/ENGINE_REPLICAS.json",
+   "consumer": "desks/mt5/research/adapter_census.py reads ENGINE_REPLICAS engines into the lean and nautilus rows of ADAPTER_CENSUS.json",
+   "gap": "Measurement only: it feeds no gate, promoter or sizer; making it one is a threshold change and the principal's call"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
