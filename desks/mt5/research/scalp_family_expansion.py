@@ -22,6 +22,8 @@ sys.path.insert(0, str(ROOT))
 
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
 
+from libs.regime import session_clock  # noqa: E402
+
 DATA = Path(__file__).parents[1] / "data" / "universe"
 OUT = Path(__file__).parents[1] / "reports" / "scalp_family_expansion.json"
 VERSION = "gold-scalp-expansion-2026-08-22-a"
@@ -66,7 +68,10 @@ PROPOSED_SESSIONS: tuple[str, ...] = ("asia",)
 def _session_mask(index: pd.DatetimeIndex, session: str) -> np.ndarray:
     if session == "all":
         return np.ones(len(index), dtype=bool)
-    utc = index.tz_convert("UTC")
+    # The bars carry the broker's EET/EEST stamp under a UTC label: read them as that clock
+    # before any market's local time is taken, or London lands 2-3 h early (Tier S 2026-09-30).
+    index = session_clock.server_to_utc(index)
+    utc = index
     if session == "london":
         local = index.tz_convert("Europe/London")
         minutes = local.hour * 60 + local.minute
@@ -142,7 +147,7 @@ def _base_signals(df: pd.DataFrame) -> dict[str, np.ndarray]:
 
     # London opening-range break. The range is known in full before the first permitted signal.
     london = df.copy()
-    london.index = london.index.tz_convert("Europe/London")
+    london.index = session_clock.server_to_utc(london.index).tz_convert("Europe/London")
     mins = london.index.hour * 60 + london.index.minute
     opening = london[(mins >= 8 * 60) & (mins < 8 * 60 + 30)]
     keys = pd.Series(london.index.date, index=df.index)
