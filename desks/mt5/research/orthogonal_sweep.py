@@ -233,6 +233,108 @@ def _ticks(symbol: str):
     return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
 
 
+#: The accumulated tick series' own bar (`flow_toxicity_miner.RULE`), in minutes.
+MICRO_BAR_MINUTES = 60
+#: The additive columns the tape families are rebuilt from. `spread_sum_pts / spread_n * point`
+#: is the bar's mean quoted spread in price; `tr_flow_moves` is the sum of the mid's move signs,
+#: which is exactly the sign-of-mid flow below (a zero tick contributes 0 in both).
+MICRO_COLUMNS = ("spread_sum_pts", "spread_n", "tr_flow_moves")
+
+
+def _micro_chart_ok(timeframe: str) -> bool:
+    """A chart the H1 series can serve EXACTLY: whole hours that tile a UTC day, so the summed bins
+    fall on the same edges whatever day the series starts on. Finer charts read only the ticks."""
+    from mt5desk.universe_registry import timeframe_minutes
+    try:
+        m = int(timeframe_minutes(timeframe))
+    except Exception:
+        return False
+    return m >= MICRO_BAR_MINUTES and m % MICRO_BAR_MINUTES == 0 and 1440 % m == 0
+
+
+@lru_cache(maxsize=1)
+def _micro(symbol: str):
+    """This symbol's accumulated per-bar tick aggregates via DataHub `micro.flow_bars`, or None.
+
+    FAIL CLOSED: any error, a missing column, an index that is not a sorted, unique, tz-aware
+    DatetimeIndex, or an unreadable point returns None, and `_tape_series` falls back to the
+    30-day tick read alone. Never a partial or guessed series.
+    """
+    import pandas as pd
+    try:
+        from libs.data.datahub import desk_hub
+        frame = desk_hub().get("micro.flow_bars", symbol=symbol)["payload"]
+    except Exception:
+        return None
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        return None
+    if not all(c in frame.columns for c in MICRO_COLUMNS):
+        return None
+    idx = frame.index
+    if (not isinstance(idx, pd.DatetimeIndex) or idx.tz is None or not idx.is_unique
+            or not idx.is_monotonic_increasing):
+        return None
+    out = frame[list(MICRO_COLUMNS)].apply(pd.to_numeric, errors="coerce")
+    out.index = idx.tz_convert("UTC")
+    return out
+
+
+def _micro_point(symbol: str) -> float | None:
+    """The point the miner divided by: the registry row's `tick_size`, else `point`, else
+    10**-digits -- `flow_toxicity_miner.point_of`'s rule, restated here so the money path does not
+    import the miner (a test pins the two equal). None, never a guess, when the row has none."""
+    import math
+    try:
+        row = json.loads((UNIVERSE / "universe.json").read_text("utf-8")).get(symbol)
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not isinstance(row, dict):
+        return None
+    for key in ("tick_size", "point"):
+        try:
+            v = float(row.get(key))
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(v) and v > 0:
+            return v
+    try:
+        return float(10.0 ** -int(row.get("digits")))
+    except (TypeError, ValueError):
+        return None
+
+
+def _micro_tape(symbol: str, rule: str):
+    """(spread, flow) from the accumulated series on `rule`'s bins, before any reindex. Each is
+    labelled by bar START and summarises that bar alone -- the `resample` convention of the tick
+    read, so a value is available at its bar's close exactly as before. (None, None) if unusable."""
+    m = _micro(symbol)
+    if m is None:
+        return None, None
+    agg = m.resample(rule).sum()
+    flow = agg["tr_flow_moves"]
+    pt = _micro_point(symbol)
+    spread = None
+    if pt is not None:
+        n = agg["spread_n"]
+        spread = (agg["spread_sum_pts"] / n.where(n > 0)) * pt
+    return spread, flow
+
+
+def _splice(history, live):
+    """`live` (the tick read) wherever it has a bin; `history` only for bins strictly BEFORE the
+    tick window's first one. Inside the window the old values are therefore unchanged byte for
+    byte; the accumulated series only lengthens the past. Either side may be None."""
+    import pandas as pd
+    if history is None:
+        return live
+    if live is None or live.empty:
+        return history
+    older = history.loc[history.index < live.index.min()]
+    if older.empty:                   # the series is no longer than the tape: the tape alone
+        return live
+    return pd.concat([older, live])
+
+
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
     """(spread, flow) on the bar clock, from the venue's own ticks. (None, None) if no tape.
 
@@ -242,18 +344,34 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
     family's own z-score, dressed as a measurement of the M5 book. The whole thesis of
     `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
     which is exactly the claim a fine chart exists to test.
+
+    AND IT READS MORE THAN THIRTY DAYS (2026-11-13). The tick read below sees only the last 30 day
+    files, so neither family could ever clear the judge's 60-day history floor: ~44k
+    liquidity_regime and ~19k orderflow_imbalance cells reached 0 judged verdicts as
+    short-history. The hourly `flow_toxicity` leg accumulates the same per-bar aggregates into
+    `data/lake/series/micro_<SYM>.parquet` (DataHub `micro.flow_bars`), which keeps growing after
+    `archive_tape` ships old days off the box. On a chart that series can serve exactly (whole
+    hours tiling a day) its bars EXTEND the history before the tick window; inside the window the
+    ticks still win, so every value this returned before is unchanged. Absent, unreadable or no
+    longer than the tape: the tick read alone, exactly as before.
     """
-    t = _ticks(symbol)
-    if t is None:
-        return None, None
     rule = _resample_rule(timeframe)
-    spread = (t["ask"] - t["bid"]).resample(rule).mean()
-    mid = ((t["ask"] + t["bid"]) / 2.0)
-    # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
-    # no trade side -- so it is labelled a proxy rather than passed off as order flow.
-    step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample(rule).sum()
-    return spread.reindex(index).ffill(), flow.reindex(index).ffill()
+    spread = flow = None
+    t = _ticks(symbol)
+    if t is not None:
+        spread = (t["ask"] - t["bid"]).resample(rule).mean()
+        mid = ((t["ask"] + t["bid"]) / 2.0)
+        # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape
+        # has no trade side -- so it is labelled a proxy rather than passed off as order flow.
+        step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
+        flow = step.resample(rule).sum()
+    if _micro_chart_ok(timeframe):
+        h_spread, h_flow = _micro_tape(symbol, rule)
+        spread, flow = _splice(h_spread, spread), _splice(h_flow, flow)
+    if spread is None and flow is None:
+        return None, None
+    return (None if spread is None else spread.reindex(index).ffill(),
+            None if flow is None else flow.reindex(index).ffill())
 
 
 #: FRED series usable WITHOUT vintages: market-observed daily prints whose publication lag is a
