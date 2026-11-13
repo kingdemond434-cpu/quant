@@ -42,10 +42,12 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import zlib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -95,44 +97,107 @@ STRONG_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p) for p 
     r"\b[0-9]{8,10}:AA[0-9A-Za-z_-]{33}",                      # Telegram bot token
     r"-----BEGIN[A-Z ]{0,40}PRIVATE KEY", r"PRIVATE KEY-----",   # whole or split PEM header
 ))
-
-#: The credential words, as a SUBSTRING of an identifier (no leading boundary: MT5_PASSWORD,
-#: $mt5Password and aws_secret_access_key all count).
-_CRED_SUBSTRING = (r"(?:pass(?:word|wd)?|pwd|token|secret|api[_-]?key|access[_-]?key"
-                   r"|auth(?:orization)?|bearer)")
-#: `<identifier holding a credential word> ["']? <space> (= | : | %3D | %3A)`. The old regex
-#: `CRED[\w-]*["']?\s*(?:[=:]|%3[ad])` meant exactly this -- `[\w-]*` had to reach the
-#: identifier's end, as nothing after it is in [\w-] -- but re-ran it from every credential word
-#: inside one identifier, which is quadratic. Here an identifier is entered only at its first
-#: character (the lookbehind), the word is looked for once inside it (the lazy lookahead never
-#: leaves it) and the identifier is then consumed possessively: each character is scanned a
-#: bounded number of times.
-_CRED_ASSIGNMENT = (r"(?<![\w-])(?=[\w-]*?" + _CRED_SUBSTRING + r")[\w-]++[\"']?\s*+"
-                    r"(?:[=:]|%3[ad])")
-
-
-WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(
-    re.compile(p, re.IGNORECASE) for p in (
-        _CRED_ASSIGNMENT,
-        # An Authorization header value; the digit lookahead keeps "basic functionality" prose
-        # out. The digit must sit in the first 256 characters of the value.
-        r"\b(?:bearer|basic)\s{1,64}(?=[A-Za-z0-9._~+/=-]{0,256}?[0-9])[A-Za-z0-9._~+/=-]{12}",
-        r"x-api-key",
-        # scheme://user:password@host, every run bounded (a 32-character scheme, 256-character
-        # user and password), so a long `a.a.a.` run is not rescanned from each letter.
-        r"\b[a-z][a-z0-9+.-]{0,31}://[^\s/:@'\"]{1,256}:[^\s/@'\"]{1,256}@",
-        r"-----BEGIN",
-    )),
-    # Upper-case env names ending in KEY (EIA_KEY=, MY_KEY:), case-SENSITIVE so Python's `key=`
-    # keyword and JSON "key": do not withhold half the tree. One possessive run per name.
-    re.compile(r"(?<![A-Za-z0-9_])[A-Z][A-Z0-9_]*+(?<=_KEY)(?![A-Za-z0-9_])[\"']?\s*+"
-               r"(?:[=:]|%3[ADad])"),
+#: The credential words, matched as WHOLE identifier segments only (audit, 2026-10-06 rescore: the
+#: first broad pattern withheld 23.5% of code files on "authority", "passed" and "author:"). Bare
+#: "pass" is not one: it is a test verdict and a loop pass far more often than a password.
+_CRED_WORD = (r"(?:password|passwd|pwd|token|secret|api[_-]?key|access[_-]?key"
+              r"|auth(?:orization)?|bearer|credentials?)")
+_NOT_A_VALUE = r"(?!(?:none|null|true|false|nil|undefined)\b)"
+#: How far past its anchor any candidate may scan (audit HOLD on #259, 2026-11-03). Every
+#: open-ended run a candidate reads is cut at this length, so each candidate costs a bounded
+#: number of steps and the whole search is linear. A value that reaches the bound is itself
+#: taken as a value (the `{_RUN}` alternatives below): a cut never turns a hit into a miss.
+_RUN = 64
+#: Characters that end an unquoted value.
+_VALUE_STOP = r"\s\"'()\[\]{},;$%"
+#: A VALUE worth withholding: any quoted literal, or an unquoted token carrying a digit or a symbol
+#: (hunter2, s3cr3t!, a hex key). An unquoted plain word after a colon is a type annotation, a
+#: variable or prose (`token: str`, `"api_key": key`, `secret: the ...`) and is not a value.
+#: BOUNDED (audit HOLD on #259): the digit must sit in the first _RUN characters, and the value
+#: either ends inside _RUN characters or reaches _RUN, so a long `a=a=a=` run is never rescanned.
+_CRED_VALUE = (r"(?:[\"'][^\"'\s]|" + _NOT_A_VALUE
+               + r"(?=[^" + _VALUE_STOP + r"]{0," + str(_RUN) + r"}?[0-9+/~!@#^*])"
+               + r"[A-Za-z0-9+/_~!@#^*-](?:[^" + _VALUE_STOP + r"]{2," + str(_RUN - 1) + r"}"
+               + r"(?=[\s\"',;}&]|$)|[^" + _VALUE_STOP + r"]{" + str(_RUN) + r"}))")
+#: The assignment separators: `=` and `:` (ini, env, JSON, YAML), the walrus and Pascal/Go `:=`,
+#: the PHP/Ruby/Perl hash arrow `=>`, and their %-encoded forms (`%3D`, `%3A`).
+_SEP = r"[\"']?[ \t]{0,64}(?::=|=>|[=:]|%3[ad])[ \t]{0,64}"
+#: Words that follow a colon as a TYPE, not a value (`token: str`, a dataclass field), so a YAML
+#: plain scalar rule never reads a Python annotation as a credential.
+_TYPE_WORD = (r"(?!(?:str|int|float|bool|bytes|object|any|none|null|true|false|nil|optional|dict"
+              r"|list|tuple|set|path|callable|sequence|mapping|iterable)\b)")
+#: AN IDENTIFIER WITH A CREDENTIAL WORD AS WHOLE SEGMENTS, IN LINEAR TIME (audit HOLD on #259).
+#: The old `(?<![a-z])(?:[a-z0-9]+[_-])*CRED(?:[_-][a-z0-9]+)*(?![a-z0-9])` split one identifier
+#: into segments a quadratic number of ways (13 s on 40 KB). Here the identifier is entered only
+#: at its first character (lookbehind); a lazy lookahead that cannot leave it finds a credential
+#: word that starts where no letter precedes it (as the old lookbehind required, so `mt5password`
+#: still counts) and ends where no letter or digit follows; then the identifier is consumed
+#: possessively. Each character is scanned a bounded number of times.
+_IDENT_CRED = (r"(?<![a-z0-9_-])(?=[a-z0-9_-]*?(?<![a-z])" + _CRED_WORD + r"(?![a-z0-9]))"
+               r"[a-z0-9_-]++")
+#: An identifier ending in `key`, one possessive run per identifier.
+_IDENT_KEY = r"(?<![a-z0-9_-])[a-z0-9_-]*+(?<=key)"
+_CI = re.IGNORECASE | re.M
+WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, _CI) for p in (
+    # 0. A credential word as its own segment (snake_case, kebab, a JSON key, an env name:
+    #    MT5_PASSWORD, db_password, "access_key", password%3D), assigned a value.
+    _IDENT_CRED + _SEP + _CRED_VALUE,
+    # 1. An env / ini / dotenv line: NAME=plainword to the end of the line (MT5_PASSWORD=hunter).
+    #    Anchored at a line start, so one candidate per line.
+    r"^[ \t]*+(?:export[ \t]+|set[ \t]+|\$env:)?" + _IDENT_CRED + r"[ \t]*+=[ \t]*+"
+    + _NOT_A_VALUE + r"[^\s\"'$%(]{3,}(?=[ \t]*(?:#|$))",
+    # 2. A URL-encoded separator is a query string, so any value counts (token%3Aabc).
+    _IDENT_CRED + r"%3[ad][^&\s\"'#]{3}",
+    # An Authorization header value; the digit lookahead keeps "basic functionality" prose out.
+    r"\b(?:bearer|basic)\s{1,64}(?=[A-Za-z0-9._~+/=-]{0," + str(_RUN) + r"}?[0-9])"
+    r"[A-Za-z0-9._~+/=-]{12}",
+    r"x-api-key",
+    # scheme://user:password@host, every run bounded.
+    r"\b[a-z][a-z0-9+.-]{0,31}://[^\s/:@'\"]{1,256}:[^\s/@'\"]{1,256}@",
+    r"-----BEGIN",
+    # 7. ANY name ending in key (eia_key, Eia_Key, "key", api-key) holding a LONG value: 16+ key
+    #    characters with a digit in them. Python's `key=len` and `sort_key=fn` stay out.
+    _IDENT_KEY + _SEP + r"[\"']?(?=[A-Za-z0-9+/_=-]{0," + str(_RUN) + r"}?[0-9])"
+    r"[A-Za-z0-9+/_=-]{16}",
+    # 8. A key in a query string: ?key=, &api_key=, &apikey= with any 8+ character value.
+    r"[?&][a-z0-9_-]*+(?<=key)=[^&\s\"'#]{8}",
+    # 9. A YAML PLAIN SCALAR (audit of #259): `password: hunter`, `- api_key: abcdef  # x`. One
+    #    unquoted word to the end of the line, so YAML prose (`secret: the reason it stays local`)
+    #    and Python annotations (`token: str`, `token: str | None`) stay out. One candidate per
+    #    line (anchored).
+    r"^[ \t]*+(?:-[ \t]+)?" + _IDENT_CRED + r"[ \t]*+:[ \t]++"
+    + _NOT_A_VALUE + _TYPE_WORD + r"[^\s\"'$%(){}\[\],;|&*!<>]{3,}[ \t]*(?:#.*)?$",
+    # 10. A PowerShell / CLI parameter (audit of #259): `-Password 'x'`, `-Token:hunter`,
+    #    `--api-key abc123`. A variable (`-Credential $cred`), a subexpression or another flag is
+    #    not a value; a quoted literal or a bare word is. The name prefix is one bounded class
+    #    and the value is bounded (or reaches the bound). No suffix: `--password-file p` names a
+    #    file, not a password.
+    r"(?<![a-z0-9_-])--?[a-z0-9_-]{0,24}?" + _CRED_WORD + r"(?::|[ \t]{1,64})"
+    + r"(?:[\"'][^\"'\s$]{3," + str(_RUN) + r"}[\"']|" + _NOT_A_VALUE
+    + r"(?![-$@(])(?:[^\s\"'$(){}\[\],;|&<>`]{3," + str(_RUN - 1) + r"}(?=[\s;|)]|$)"
+    + r"|[^\s\"'$(){}\[\],;|&<>`]{" + str(_RUN) + r"}))",
+)),
+    # camelCase (case-SENSITIVE): $mt5Password, dbToken, myApiKey -- the word starts a new
+    # capitalised segment, so "authority" or "passed" never match.
+    re.compile(r"[a-z0-9](?:Password|Passwd|Pwd|Token|Secret|ApiKey|AccessKey|Auth|Authorization"
+               r"|Bearer|Credentials?)(?![a-z])" + _SEP + _CRED_VALUE, re.M),
+    # Upper-case env names ending in KEY (EIA_KEY=abc, MY_KEY: x), case-SENSITIVE so Python's
+    # `key=` keyword and JSON "key": do not withhold half the tree. One possessive run per name.
+    re.compile(r"(?<![A-Za-z0-9_])[A-Z][A-Z0-9_]*+(?<=_KEY)(?![A-Za-z0-9_])" + _SEP + r"(?:"
+               + _CRED_VALUE + r"|" + _NOT_A_VALUE + r"(?:[^\s\"'$%(]{3," + str(_RUN - 1)
+               + r"}(?=[ \t]*(?:#|$))|[^\s\"'$%(]{" + str(_RUN) + r"}))", re.M),
 )
 #: A text longer than this is not regex-screened at all: it is WITHHELD, by name (audit HOLD on
 #: #210). Every pattern above is linear, so this bounds the screen's time per blob outright.
 MAX_SCREEN_CHARS = 2_000_000
+#: Wall-clock budget for screening ONE blob, every decoding of it included (audit HOLD on #259).
+#: The patterns are linear, so this should never bind; if it does, the blob is WITHHELD -- an
+#: over-budget read is never a clean one.
+SCREEN_BUDGET_S = 20.0
 #: An encoded run worth decoding and re-screening (base64 and its url-safe form).
 _B64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}={0,2}")
+#: A %XX escape: a text carrying one is also screened %-decoded (see `_percent_decoded`).
+_PCT = re.compile(r"%[0-9A-Fa-f]{2}")
 #: Bytes that make a blob unscreenable as text: a NUL (utf-16, any binary), gzip, zip.
 _BINARY_MAGIC = (b"\x1f\x8b", b"PK\x03\x04")
 _MAX_INFLATE = 8_000_000
@@ -295,14 +360,20 @@ def _denied_name(rel: str) -> bool:
     return any(fnmatch.fnmatch(base, g) or fnmatch.fnmatch(low, g) for g in DENY_GLOBS)
 
 
-def _plain_strength(text: str) -> str | None:
+def _plain_strength(text: str, deadline: float | None = None) -> str | None:
     if len(text) > MAX_SCREEN_CHARS:
         return "weak"   # too long to screen is not clean: withheld, never passed
-    if any(p.search(text) for p in STRONG_SECRET_PATTERNS):
-        return "strong"
-    if any(p.search(text) for p in WEAK_SECRET_PATTERNS):
-        return "weak"
-    return None
+    for pat in STRONG_SECRET_PATTERNS:
+        if pat.search(text):
+            return "strong"
+    level: str | None = None
+    for pat in WEAK_SECRET_PATTERNS:
+        if deadline is not None and time.monotonic() > deadline:
+            return "weak"   # over budget: withheld, never passed
+        if pat.search(text):
+            level = "weak"
+            break
+    return level
 
 
 def _worse(a: str | None, b: str | None) -> str | None:
@@ -330,13 +401,38 @@ def _b64_decoded(text: str) -> list[str]:
     return found
 
 
-def secret_strength(text: str, _depth: int = 0) -> str | None:
-    """'strong', 'weak' or None for a blob's text (or a commit message), base64 runs included."""
-    level = _plain_strength(text)
+def _percent_decoded(text: str) -> list[str]:
+    """The %-decodings of a text that carries %XX escapes, once and twice (audit of #259): a value
+    written `p%40ssw0rd` or a name written `pass%77ord` is screened as the bytes it stands for,
+    and a double-encoded `%253D` too."""
+    out: list[str] = []
+    cur = text
+    for _ in range(2):
+        if not _PCT.search(cur):
+            break
+        nxt = unquote(cur, errors="replace")
+        if nxt == cur:
+            break
+        out.append(nxt)
+        cur = nxt
+    return out
+
+
+def secret_strength(text: str, _depth: int = 0,
+                    deadline: float | None = None) -> str | None:
+    """'strong', 'weak' or None for a blob's text (or a commit message), base64 runs and
+    %-encodings included. Past `deadline` (time.monotonic) the answer is at least 'weak'."""
+    level = _plain_strength(text, deadline)
     if level == "strong" or _depth >= 2:
         return level
+    for decoded in _percent_decoded(text):
+        level = _worse(level, _plain_strength(decoded, deadline))
+        if level == "strong":
+            return level
     for decoded in _b64_decoded(text):
-        level = _worse(level, secret_strength(decoded, _depth + 1))
+        if deadline is not None and time.monotonic() > deadline:
+            return _worse(level, "weak")
+        level = _worse(level, secret_strength(decoded, _depth + 1, deadline))
         if level == "strong":
             break
     return level
@@ -352,10 +448,16 @@ def _inflate(data: bytes) -> bytes | None:
 
 def screen_bytes(data: bytes) -> str | None:
     """A blob's raw bytes. Anything that is not plain text (a NUL anywhere -- which is also every
-    utf-16 file -- or gzip/zip magic) cannot be screened as text, so it is WITHHELD at least; the
+    utf-16 file -- gzip/zip magic, or ANY byte sequence that is not valid UTF-8: xz, 7z, bz2) cannot
+    be screened as text, so it is WITHHELD at least; the
     decodings we can read cheaply (utf-16, gzip) are also scanned so a credential inside them
     escalates to strong and refuses the push."""
-    binary = b"\x00" in data or data.startswith(_BINARY_MAGIC)
+    try:
+        data.decode("utf-8")
+        not_utf8 = False
+    except UnicodeDecodeError:
+        not_utf8 = True     # xz, 7z, bz2, latin-1 ... anything we cannot read as text is withheld
+    binary = not_utf8 or b"\x00" in data or data.startswith(_BINARY_MAGIC)
     texts = [data.decode("utf-8", errors="replace")]
     if binary:
         for enc in ("utf-16", "utf-16-le", "utf-16-be"):
@@ -365,8 +467,9 @@ def screen_bytes(data: bytes) -> str | None:
         if inflated is not None:
             texts.append(inflated.decode("utf-8", errors="replace"))
     level: str | None = "weak" if binary else None
+    deadline = time.monotonic() + SCREEN_BUDGET_S
     for t in texts:
-        level = _worse(level, secret_strength(t))
+        level = _worse(level, secret_strength(t, deadline=deadline))
         if level == "strong":
             break
     return level

@@ -181,3 +181,15 @@ def test_the_python_reader_carries_safe_directory_too() -> None:
     from libs.ops import state_publication as sp
     src = Path(sp.__file__).read_text("utf-8")
     assert "env=git_env(root)" in src
+
+
+def test_the_backlog_drain_runs_under_a_process_timeout() -> None:
+    """Audit HOLD on #259: the drain runs while this pass holds the git-writer mutex, so it may
+    never run unbounded; on timeout its whole tree is killed and the publish still exits 0."""
+    code = _code(SYNC)
+    tail = code[code.index("shadow state synced to origin"):]
+    assert "Start-Process -FilePath $py -ArgumentList $pyArgs" in tail
+    assert "$proc.WaitForExit($BacklogTimeoutSec * 1000)" in tail
+    assert "taskkill.exe /PID $proc.Id /T /F" in tail
+    assert "& $py @pyArgs" not in tail, "the untimed call is gone"
+    assert re.search(r"\$BacklogTimeoutSec = \d+", tail)
