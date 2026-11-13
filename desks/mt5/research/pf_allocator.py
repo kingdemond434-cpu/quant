@@ -3179,7 +3179,10 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                                       allow_nan=True), encoding="utf-8")
             os.replace(tmp, cache_path)
         except OSError as exc:
-            doc["cache"]["write_error"] = f"{type(exc).__name__}: {exc}"
+            # The type name only: pf_allocation.json is mirrored to the public dashboard and an
+            # OSError's text carries the box's absolute path (#1127 audit MF1). Full text to the log.
+            doc["cache"]["write_error"] = type(exc).__name__
+            _log(f"admission cache not written: {type(exc).__name__}: {exc}")
             with contextlib.suppress(OSError):
                 tmp.unlink(missing_ok=True)
     doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)

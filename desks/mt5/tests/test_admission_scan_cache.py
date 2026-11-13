@@ -141,5 +141,6 @@ def test_a_failed_write_leaves_no_temp_file(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr(pa.os, "replace", refuse)
     out = _scan(ev, worlds, cfg, inc, cache_path=cache)
-    assert "write_error" in out["cache"]
+    # The published artifact carries the type name only, never the OSError text (#1127 MF1).
+    assert out["cache"]["write_error"] == "OSError"
     assert not list(tmp_path.glob(".admission_cache.json.*.tmp")) and not cache.exists()
