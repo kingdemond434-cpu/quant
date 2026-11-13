@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +16,50 @@ for p in (str(ROOT), str(DESK / "research")):
         sys.path.insert(0, p)
 
 import global_research_acceptance as A  # noqa: E402
+
+INSTITUTION = ROOT / "docs" / "research" / "miniature_institution_acceptance_v1.json"
+NOW = datetime(2026, 10, 7, tzinfo=UTC)
+OWNER = "thread:Growth allocator overhaul"
+REGISTRY = ["Growth allocator overhaul", "Institutional flow in country packs"]
+METRIC = {"metric": "gap_count", "before": 3, "after": 0}
+
+
+def _git_commit(root: Path) -> str:
+    """Commit root's files with plumbing (no hooks run) and return the commit sha."""
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+
+    def git(*args: str) -> str:
+        return subprocess.check_output(["git", "-C", str(root), *args], text=True,
+                                       env=env).strip()
+    git("init", "-q")
+    git("add", "-A")
+    return git("commit-tree", git("write-tree"), "-m", "fixture")
+
+
+def _fixture_root(tmp_path: Path) -> Path:
+    root = tmp_path / "root"
+    root.mkdir(parents=True, exist_ok=True)
+    for name in ("impl.py", "test_impl.py", "consumer.py"):
+        (root / name).write_text("", "utf-8")
+    return root
+
+
+def _one_requirement(tmp_path: Path, req: dict, **addendum_extra) -> dict:
+    """Audit a single fully-evidenced requirement (no runtime) through an addendum."""
+    root = _fixture_root(tmp_path)
+    addendum_extra.setdefault("owner_registry", REGISTRY)
+    full = {"title": "x", "priority": "P0", "lane": "production",
+            "implementation": ["impl.py"], "tests": ["test_impl.py"],
+            "consumers": ["consumer.py"], "runtime": [], **req}
+    (root / "add.json").write_text(json.dumps({"specification": "ADD_V1",
+                                               "requirements": [full], **addendum_extra}),
+                                   "utf-8")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "BASE", "completion_rule": "strict",
+                                    "frontier_rule": "open", "addenda": ["add.json"],
+                                    "requirements": []}), "utf-8")
+    return A.audit(root=root, manifest=manifest, report=tmp_path / "out.json", now=NOW)
 
 
 def test_manifest_has_exactly_r01_to_r30_and_no_evidence_free_requirement() -> None:
@@ -111,17 +157,18 @@ def test_runtime_proof_accepts_matching_measured_receipt(tmp_path) -> None:
 
 
 def test_an_open_blocker_keeps_a_fully_evidenced_requirement_partial(tmp_path: Path) -> None:
-    root = tmp_path / "root"
-    root.mkdir()
-    for name in ("impl.py", "test_impl.py", "consumer.py"):
-        (root / name).write_text("", "utf-8")
+    root = _fixture_root(tmp_path)
+    sha = _git_commit(root)
     req = {"id": "MI01", "title": "x", "priority": "P0", "lane": "production",
            "implementation": ["impl.py"], "tests": ["test_impl.py"],
            "consumers": ["consumer.py"], "runtime": [],
-           "blockers": [{"id": "open_one", "owner": "o", "why": "w"},
-                        {"id": "done_one", "owner": "o", "why": "w", "status": "CLOSED"}]}
+           "blockers": [{"id": "open_one", "owner": OWNER, "why": "w"},
+                        {"id": "done_one", "owner": OWNER, "why": "w", "status": "CLOSED",
+                         "proof": {"commit": sha, "artifact": "impl.py",
+                                   "after_metric": METRIC}}]}
     addendum = tmp_path / "root" / "add.json"
-    addendum.write_text(json.dumps({"specification": "ADD_V1", "requirements": [req]}), "utf-8")
+    addendum.write_text(json.dumps({"specification": "ADD_V1", "owner_registry": REGISTRY,
+                                    "requirements": [req]}), "utf-8")
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"specification": "BASE", "completion_rule": "strict",
                                     "frontier_rule": "open", "addenda": ["add.json"],
@@ -133,6 +180,7 @@ def test_an_open_blocker_keeps_a_fully_evidenced_requirement_partial(tmp_path: P
     assert row["lane"] == "production"
     assert "blocker:open_one" in row["missing_evidence"]
     assert "blocker:done_one" not in row["missing_evidence"]
+    assert [b["id"] for b in row["closed_blockers"]] == ["done_one"]
     assert result["by_specification"] == {"ADD_V1": {"CURRENT_VERIFIED": 0, "PARTIAL": 1}}
     assert result["complete_against"] == []
 
@@ -153,3 +201,229 @@ def test_the_institution_addendum_is_loaded_and_names_every_function() -> None:
                 assert (ROOT / p).exists(), (r["id"], p)
         for b in r["blockers"]:
             assert b["id"] and b["owner"] and b["why"], r["id"]
+
+
+# ---------------------------------------------------------------- fix-forward of PR #196
+def test_hop4_gaps_v5_v6_are_blockers_on_mi10_and_mi11_in_the_spec() -> None:
+    add = json.loads(INSTITUTION.read_text("utf-8"))
+    tracked = {g["gap"]: g["requirements"] for g in add["tracked_gaps"]}
+    assert tracked["function_map:V5"] == ["MI10"]
+    assert tracked["function_map:V6"] == ["MI11"]
+    by_id = {r["id"]: r for r in add["requirements"]}
+    gaps = {rid: {b.get("gap"): b for b in by_id[rid]["blockers"]} for rid in ("MI10", "MI11")}
+    assert gaps["MI10"]["function_map:V5"]["status"] == "OPEN"
+    assert gaps["MI11"]["function_map:V6"]["status"] == "OPEN"
+
+
+def test_mi10_and_mi11_cannot_score_green_while_their_hop4_gaps_are_open(
+        tmp_path: Path) -> None:
+    """The live spec, scored: MI10/MI11 stay PARTIAL and name the V5/V6 blockers."""
+    got = A.audit(report=tmp_path / "out.json", now=NOW)
+    rows = {r["id"]: r for r in got["rows"]}
+    assert rows["MI10"]["status"] == "PARTIAL"
+    assert "blocker:cert_drift_blocks_nothing" in rows["MI10"]["missing_evidence"]
+    assert rows["MI11"]["status"] == "PARTIAL"
+    assert "blocker:gold_sleeves_uncertified" in rows["MI11"]["missing_evidence"]
+    assert "MINIATURE_INSTITUTION_ACCEPTANCE_V1_20261006" not in got["complete_against"]
+
+
+def test_deleting_a_tracked_gap_blocker_does_not_turn_the_requirement_green(
+        tmp_path: Path) -> None:
+    tracked = {"tracked_gaps": [{"gap": "function_map:V5", "requirements": ["MI10"]}]}
+    bare = _one_requirement(tmp_path / "a", {"id": "MI10", "blockers": []}, **tracked)
+    assert bare["rows"][0]["status"] == "PARTIAL"
+    assert "untracked_gap:function_map:V5" in bare["rows"][0]["missing_evidence"]
+    sha = _git_commit(_fixture_root(tmp_path / "b"))
+    proven = _one_requirement(tmp_path / "b", {"id": "MI10", "blockers": [{
+        "id": "v5", "gap": "function_map:V5", "owner": OWNER, "why": "w",
+        "status": "CLOSED", "proof": {"commit": sha, "artifact": "impl.py",
+                                      "after_metric": {"metric": "drift_blocked",
+                                                       "before": 0, "after": 1}}}]}, **tracked)
+    # Only the (deliberately undeclared) runtime remains: the gap is closed WITH proof.
+    assert proven["rows"][0]["missing_evidence"] == ["runtime:UNDECLARED"]
+    assert proven["rows"][0]["closed_blockers"][0]["effective_status"] == "CLOSED"
+
+
+@pytest.mark.parametrize("owner", [
+    "", "   ", "this thread", "TBD", "this thread (fence)", None, [],
+    "lane: production",                                   # free text, not a thread
+    "Growth allocator overhaul",                          # registered name, no thread: prefix
+    "thread:Some thread nobody registered",               # prefix, unregistered name
+    "desktop \"Growth allocator overhaul\" session (money path)",  # the old free-text form
+    [OWNER, "thread:Unregistered"],                       # one bad name in a joint owner
+])
+def test_a_blocker_without_a_durable_owner_is_flagged(tmp_path: Path, owner: str) -> None:
+    got = _one_requirement(tmp_path, {"id": "MI01", "blockers": [
+        {"id": "b1", "owner": owner, "why": "w"}]})
+    row = got["rows"][0]
+    assert "blocker_owner:b1" in row["missing_evidence"]
+    assert got["ownerless_blockers"] == ["MI01:b1"]
+    assert row["blockers"][0]["owner"] == owner, "the stored owner is carried, never derived"
+
+
+@pytest.mark.parametrize("owner", [OWNER, [OWNER, "thread:Institutional flow in country packs"]])
+def test_a_registered_thread_owner_is_durable(tmp_path: Path, owner) -> None:
+    got = _one_requirement(tmp_path, {"id": "MI01", "blockers": [
+        {"id": "b1", "owner": owner, "why": "w"}]})
+    assert "blocker_owner:b1" not in got["rows"][0]["missing_evidence"]
+    assert got["ownerless_blockers"] == []
+
+
+def test_every_blocker_in_the_institution_spec_has_a_durable_owner() -> None:
+    add = json.loads(INSTITUTION.read_text("utf-8"))
+    registry = frozenset(add["owner_registry"])
+    blockers = [b for r in add["requirements"] for b in r["blockers"]]
+    for b in [*blockers, *add["cross_cutting_blockers"]]:
+        _, problems = A.blocker_state(b, ROOT, registry)
+        assert "owner_missing" not in problems, (b["id"], b.get("owner"))
+
+
+def test_the_runtime_receipts_requirement_has_an_owned_open_blocker(tmp_path: Path) -> None:
+    add = json.loads(INSTITUTION.read_text("utf-8"))
+    rr = {b["id"]: b for b in add["cross_cutting_blockers"]}["runtime_receipts_unwritten"]
+    assert rr["status"] == "OPEN"
+    assert rr["owner"] == "thread:Institutional truth discipline fixes"
+    got = A.audit(report=tmp_path / "out.json", now=NOW)
+    assert got["ownerless_blockers"] == []
+    for row in got["rows"]:
+        if row["specification"] == add["specification"]:
+            assert "blocker:runtime_receipts_unwritten" in row["missing_evidence"], row["id"]
+
+
+GOOD = "HEAD"  # replaced with the fixture root's real commit inside the test
+
+
+@pytest.mark.parametrize("proof,defect", [
+    (None, "proof_commit"),
+    ({"artifact": "impl.py", "after_metric": METRIC}, "proof_commit"),
+    ({"commit": "zz", "artifact": "impl.py", "after_metric": METRIC}, "proof_commit"),
+    ({"commit": "deadbeef", "artifact": "impl.py", "after_metric": METRIC},
+     "proof_commit_unresolved"),
+    ({"commit": "c" * 40, "artifact": "impl.py", "after_metric": METRIC},
+     "proof_commit_unresolved"),
+    ({"commit": GOOD, "after_metric": METRIC}, "proof_artifact"),
+    ({"commit": GOOD, "artifact": "nope.json", "after_metric": METRIC},
+     "proof_artifact_absent"),
+    ({"commit": GOOD, "artifact": "/etc/passwd", "after_metric": METRIC},
+     "proof_artifact_escape"),
+    ({"commit": GOOD, "artifact": "ABSOLUTE_IMPL", "after_metric": METRIC},
+     "proof_artifact_escape"),
+    ({"commit": GOOD, "artifact": "../outside.txt", "after_metric": METRIC},
+     "proof_artifact_escape"),
+    ({"commit": GOOD, "artifact": "sub/../../outside.txt", "after_metric": METRIC},
+     "proof_artifact_escape"),
+    ({"commit": GOOD, "artifact": "link.txt", "after_metric": METRIC},
+     "proof_artifact_escape"),
+    ({"commit": GOOD, "artifact": "subdir", "after_metric": METRIC},
+     "proof_artifact_not_file"),
+    ({"commit": GOOD, "artifact": ".", "after_metric": METRIC}, "proof_artifact_not_file"),
+    ({"commit": GOOD, "artifact": "impl.py"}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py", "after_metric": ""}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py", "after_metric": "x"}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py", "after_metric": 0}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py", "after_metric": "0"}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py", "after_metric": {"drift_blocked": 1}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": 1, "after": float("nan")}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": float("inf"), "after": 0}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": True, "after": False}},
+     "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "m", "before": "3", "after": "0"}}, "proof_after_metric"),
+    ({"commit": GOOD, "artifact": "impl.py",
+      "after_metric": {"metric": "", "before": 3, "after": 0}}, "proof_after_metric"),
+])
+def test_closed_without_proof_scores_as_still_open(tmp_path: Path, proof, defect) -> None:
+    root = _fixture_root(tmp_path)
+    (root / "subdir").mkdir()
+    (tmp_path / "outside.txt").write_text("secret", "utf-8")
+    try:
+        (root / "link.txt").symlink_to(tmp_path / "outside.txt")
+    except OSError:
+        if proof and proof.get("artifact") == "link.txt":
+            pytest.skip("symlinks unavailable on this host")
+    sha = _git_commit(root)
+    blocker = {"id": "b1", "owner": OWNER, "why": "w", "status": "CLOSED"}
+    if proof is not None:
+        blocker["proof"] = {**proof}
+        if blocker["proof"].get("commit") == GOOD:
+            blocker["proof"]["commit"] = sha
+        if blocker["proof"].get("artifact") == "ABSOLUTE_IMPL":
+            blocker["proof"]["artifact"] = str(root / "impl.py")
+    got = _one_requirement(tmp_path, {"id": "MI01", "blockers": [blocker]})
+    row = got["rows"][0]
+    assert row["status"] == "PARTIAL"
+    assert row["blockers"][0]["effective_status"] == "INVALID_CLOSE"
+    assert defect in row["blockers"][0]["problems"]
+    assert any(m.startswith("blocker:b1:closed_without_proof:") for m in row["missing_evidence"])
+    assert row["closed_blockers"] == [] and got["open_blockers"] == 1
+
+
+def test_a_proof_whose_commit_git_cannot_check_fails_closed(tmp_path: Path, monkeypatch) -> None:
+    def no_git(*_a, **_k):
+        raise FileNotFoundError("git")
+    monkeypatch.setattr(A.subprocess, "run", no_git)
+    state, problems = A.blocker_state(
+        {"id": "b1", "owner": OWNER, "status": "CLOSED",
+         "proof": {"commit": "a" * 40, "artifact": "impl.py", "after_metric": METRIC}},
+        _fixture_root(tmp_path), frozenset(REGISTRY))
+    assert state == "INVALID_CLOSE" and "proof_commit_unverifiable" in problems
+
+
+def test_a_valid_close_with_a_real_head_commit_and_repo_file_is_closed() -> None:
+    head = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                                   text=True).strip()
+    state, problems = A.blocker_state(
+        {"id": "b1", "owner": OWNER, "status": "CLOSED",
+         "proof": {"commit": head, "after_metric": METRIC,
+                   "artifact": "docs/research/miniature_institution_acceptance_v1.json"}},
+        ROOT, frozenset(REGISTRY))
+    assert (state, problems) == ("CLOSED", [])
+
+
+def test_mi05_names_the_deadman_rail_by_reference_only() -> None:
+    add = json.loads(INSTITUTION.read_text("utf-8"))
+    rail = "scripts/run_deadman_switch.py"
+    for r in add["requirements"]:
+        for kind in ("implementation", "tests", "consumers", "runtime"):
+            assert rail not in r.get(kind, []), (r["id"], kind)
+    mi05 = next(r for r in add["requirements"] if r["id"] == "MI05")
+    ref = next(x for x in mi05["reference_only"] if x["path"] == rail)
+    assert "never edited" in ref["note"].lower() and "LAWS section 4" in ref["note"]
+    assert rail in A.TIER3_NEVER_EDIT
+
+
+def test_the_scorer_refuses_a_spec_that_declares_the_tier3_rail_as_work(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    (root / "scripts").mkdir(parents=True)
+    (root / "scripts" / "run_deadman_switch.py").write_text("", "utf-8")
+    got = _one_requirement(tmp_path, {"id": "MI05", "blockers": [],
+                                      "consumers": ["consumer.py",
+                                                    "scripts/run_deadman_switch.py"]})
+    assert ("tier3_declared:consumers:scripts/run_deadman_switch.py"
+            in got["rows"][0]["missing_evidence"])
+
+
+def test_no_acceptance_organ_writes_the_deadman_rail(tmp_path: Path) -> None:
+    import hashlib
+    rail = ROOT / "scripts" / "run_deadman_switch.py"
+    before = hashlib.sha256(rail.read_bytes()).hexdigest()
+    got = A.audit(report=tmp_path / "out.json", now=NOW)
+    assert hashlib.sha256(rail.read_bytes()).hexdigest() == before
+    mi05 = next(r for r in got["rows"] if r["id"] == "MI05")
+    assert mi05["references"][0]["path"] == "scripts/run_deadman_switch.py"
+    # The reader never names it; the scorer names it once, in the never-edit set, and uses that
+    # set only for membership tests -- never as a path it opens, writes or replaces.
+    assert "run_deadman_switch" not in (
+        ROOT / "scripts" / "check_acceptance_properties.py").read_text("utf-8")
+    source = (DESK / "research" / "global_research_acceptance.py").read_text("utf-8")
+    named = [ln for ln in source.splitlines() if "run_deadman_switch" in ln]
+    assert named == ['TIER3_NEVER_EDIT = frozenset({"scripts/run_deadman_switch.py"})']
+    uses = [ln.strip() for ln in source.splitlines()
+            if "TIER3_NEVER_EDIT" in ln and not ln.startswith("TIER3_NEVER_EDIT =")]
+    assert uses and all("in TIER3_NEVER_EDIT" in u for u in uses), uses
