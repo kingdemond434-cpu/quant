@@ -1194,6 +1194,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # ARCH-33: every clocked organ's role, test, consumer and tested consumer; the census after it
     # carries its counts.
     "component_use", "dead_architecture",
+    # ONE CONSOLIDATED DESIGN (ARCH-31): interfaces, timing, ownership, budgets and the named
+    # contradictions between them, derived from the registry every pass (~6 s).
+    "institution_design",
     # Whether each ruin rail can reach its input, and the halt's REAL age -- capital-path class, so
     # it runs every pass and never waits for a rotation (scripts/check_halt_rail_integrity.py).
     "halt_rail",
@@ -2100,6 +2103,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "component_use": 180,
     # ARCH-18 acceptance drills: reads one scorecard and writes nine small files (<1 s measured).
     "acceptance_drills": 60,
+    # ARCH-31 institution design: one registry build (~6-16 s measured) and a few joins.
+    "institution_design": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6399,6 +6404,11 @@ def main() -> None:
     # tested consumer per clocked organ; GAPPED ratchets down in the law gate's state fences.
     cus = _costed("component_use", lambda: _producer(
         "component_use", "scripts/check_component_use.py"))
+    # THE CONSOLIDATED DESIGN, DERIVED (ARCH-31): the component registry's interfaces, timing,
+    # state ownership, uncertainty, failure handling and budgets, and every contradiction between
+    # them with its precedence rule. Report only.
+    ids = _costed("institution_design", lambda: _producer(
+        "institution_design", "scripts/build_institution_design.py"))
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
     # EVERY SILENT ORGAN, BY NAME (CRO noon 2026-09-30: "101 silent scheduled failures" was a sum
@@ -6658,7 +6668,8 @@ def main() -> None:
                     "recovery_drills": rcd, "acceptance_drills": acd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "component_use": cus, "dead_architecture": dac, "silent_organs": sil,
+                    "component_use": cus, "institution_design": ids,
+                    "dead_architecture": dac, "silent_organs": sil,
                     "halt_rail": hri, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,

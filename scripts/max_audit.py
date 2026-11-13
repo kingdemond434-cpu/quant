@@ -3962,6 +3962,14 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # ARCH-31's DERIVED DESIGN (2026-11-10). A rendered view of the component registry, written
+    # by scripts/build_institution_design.py --render; never edited by hand. The live content is
+    # the hourly leg `institution_design` -> desks/mt5/reports/INSTITUTION_DESIGN.json, so the
+    # Markdown cannot rot unseen: the JSON is on a clock. It is not rendered on the box, because a
+    # tracked doc rewritten hourly would leave the trading box's tree dirty and stop its re-seal.
+    "docs/research/INSTITUTION_DESIGN.md":
+        "DERIVED VIEW of the component registry (scripts/build_institution_design.py --render); "
+        "its hourly twin is reports/INSTITUTION_DESIGN.json. Re-rendered with the code it reads.",
     # DESKTOP-PASS SPECS, claimed as a directory class (2026-10-06). The cloud classifier refuses
     # money-path edits (gateway, order door, allocator), so the change a cloud thread finds is
     # handed to the desktop session as a spec in docs/desktop_pass/<topic>/. Each spec is TERMINAL

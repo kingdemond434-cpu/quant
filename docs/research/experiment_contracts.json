@@ -325,6 +325,21 @@
     "threshold": 8,
     "after": "30 days of box readings in which all eight drills stay UNMEASURED: the scorecard it grades is not running and the board proves nothing"
    }
+  },
+  "institution_design": {
+   "hypothesis": "Deriving one consolidated design from the component registry every hour -- interfaces, timing, state ownership, uncertainty, failure handling and resource budgets -- and naming every contradiction between them with its precedence rule replaces addenda with a single current design whose contradiction count the desk can drive down.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "contradictions.n",
+    "better": "down",
+    "organ": "report:INSTITUTION_DESIGN.json"
+   },
+   "falsifier": {
+    "metric": "contradictions.n",
+    "op": ">",
+    "threshold": 160,
+    "after": "30 days of box readings in which the contradiction count rises past 1.5x its 2026-11-10 baseline of 106: the design names conflicts nobody resolves, so it is one more addendum"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

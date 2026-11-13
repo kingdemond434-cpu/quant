@@ -924,6 +924,9 @@ NODES: tuple[Node, ...] = (
     Node("acceptance_drills", "desks/mt5/research/acceptance_drills.py",
          writes=("desks/mt5/reports/ACCEPTANCE_DRILLS.json",
                  "desks/mt5/reports/acceptance_drills/")),
+    # ARCH-31: the consolidated design derived from the component registry, hourly.
+    Node("institution_design", "scripts/build_institution_design.py",
+         writes=("desks/mt5/reports/INSTITUTION_DESIGN.json",)),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
@@ -942,6 +945,9 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # ARCH-31's derived design: read by a person, and rendered into
+    # docs/research/INSTITUTION_DESIGN.md; its contradictions name owners to act. Decides nothing.
+    "desks/mt5/reports/INSTITUTION_DESIGN.json",
     # The SRB basket judgement: no organ reads it yet (no basket is promotable from it -- the
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
