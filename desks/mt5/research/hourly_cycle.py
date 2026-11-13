@@ -1083,6 +1083,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "maintain_miners": (2,),
     # `cro_noon_freshness` exits 2 for RED: no landed noon CRO pass in 26 h is the reading.
     "cro_noon_freshness": (2,),
+    # `pass_question_evidence` exits 2 for RED: an ARCH-30 question with no fresh evidence, or a
+    # part of one no organ measures, is the reading (the artifact names its owner).
+    "pass_question_evidence": (2,),
     # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
     # this bounded caller ran nothing: the holder is running the same steps (v1.2).
     "daily": (DAILY_CYCLE_STOOD_DOWN,),
@@ -1157,6 +1160,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
+    # The evidence the CRO pass's seven ARCH-30 questions cite: a dozen JSON reads, every hour,
+    # so the noon pass never cites an artifact older than the hour it starts in.
+    "pass_question_evidence",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1498,6 +1504,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
+                     "pass_question_evidence",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2360,6 +2367,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
+    # A dozen JSON reads and one breadth sum over the window's certificates; seconds here.
+    "pass_question_evidence": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -6260,6 +6269,13 @@ def main() -> None:
     # The pass now runs here as MT5-CycleNoon; this reads its rows and fails the leg past 26 h.
     cnf = _costed("cro_noon_freshness", lambda: _producer(
         "cro_noon_freshness", "scripts/check_cro_noon_freshness.py"))
+    # THE EVIDENCE THE SEVEN PASS QUESTIONS CITE (ARCH-30, 2026-11-05). The pass must answer
+    # Q1-Q7 with resolvable citations or read MISSED; this names, per question, which artifacts
+    # are fresh on this host, the `<path>@<stamp>` citations to paste, the parts NO organ
+    # measures (routed to their owner), and Q2's per-producer k_eff gain. RED (exit 2) while any
+    # question is UNMEASURED or any part has no organ.
+    pqe = _costed("pass_question_evidence", lambda: _producer(
+        "pass_question_evidence", "scripts/check_pass_question_evidence.py"))
     # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
     #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
     #                         report -> why cells never BUILT, ranked into fix work
@@ -6600,7 +6616,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
-                    "cro_noon_freshness": cnf,
+                    "cro_noon_freshness": cnf, "pass_question_evidence": pqe,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,

@@ -142,6 +142,9 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # still runs when a slow earlier leg ends the hourly pass before it is reached.
     ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
      "scripts/check_silent_organs.py"),
+    # The evidence the CRO pass's seven ARCH-30 questions cite; argless, one pass per run.
+    ("pass_question_evidence", "desks/mt5/reports/PASS_QUESTION_EVIDENCE.json", 3600,
+     "scripts/check_pass_question_evidence.py"),
     ("specialist_cell", "desks/mt5/reports/SPECIALIST_CELLS.json", 3600,
      "research/specialist_cell.py"),
     ("residual_search", "desks/mt5/reports/RESIDUAL_SEARCH.json", 3600,
