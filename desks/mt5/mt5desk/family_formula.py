@@ -49,8 +49,8 @@ def family_formula(
     del population
     from libs.research.alpha_grammar import (
         DRIVER_TERMINALS,
+        coerce_expr,
         evaluate,
-        from_str,
         is_valid,
         terminal_frames,
         terminals_in,
@@ -62,11 +62,9 @@ def family_formula(
     # rendered call is parsed back with the grammar's own inverse; a bare terminal ("close") has
     # no parenthesis and is left as the grammar already reads it; an unparseable string stays
     # invalid and returns nothing, exactly as before.
-    if isinstance(expr, str) and "(" in expr:
-        try:
-            expr = from_str(expr)
-        except ValueError:
-            return []
+    # AND THE LIST'S OWN REPR ("['neg', ['delta', 'spread', 3]]") is a third spelling of the same
+    # tree (2026-11-05); `coerce_expr` reads all three and leaves anything else invalid.
+    expr = coerce_expr(expr)
     if expr is None or side_mode not in SIDE_MODES or not is_valid(expr):
         return []
     d = _h1(df)
