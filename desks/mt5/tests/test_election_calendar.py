@@ -157,7 +157,7 @@ def test_a_pass_writes_series_and_donates_each_cell_once(tmp_ec: Path) -> None:
     def get(url: str) -> tuple[int, bytes]:
         calls.append(url)
         if url.endswith("robots.txt"):
-            return 404, b""
+            return 200, b"User-agent: *\nAllow: /\n"
         page = (PAGE_EN if ".org" in url else
                 PAGE_JA + "\n前回の衆議院議員総選挙 投票日 2021年10月31日".encode())
         return 200, page + (b"<p>the list page</p>" if "list." in url else b"")
@@ -187,14 +187,15 @@ def test_an_unreachable_page_is_named_and_dark(tmp_ec: Path) -> None:
 def test_a_pass_that_measured_nothing_says_unmeasured(tmp_ec: Path) -> None:
     """Audit must-fix 5 on #388: pages with no vote date, or no confirmed vote, are not RAN."""
     def get(url: str) -> tuple[int, bytes]:
-        return (404, b"") if url.endswith("robots.txt") else (200, b"<p>nothing here</p>")
+        return ((200, b"User-agent: *\nAllow: /\n") if url.endswith("robots.txt")
+                else (200, b"<p>nothing here</p>"))
     doc = ec.run(get=get, resolve=lambda h: ["93.184.216.34"], uni={},
                  lane_ok=lambda s, f: True)
     assert doc["state"] == "UNMEASURED" and "no national vote date" in doc["why"]
 
     def one_page(url: str) -> tuple[int, bytes]:
         if url.endswith("robots.txt"):
-            return 404, b""
+            return 200, b"User-agent: *\nAllow: /\n"
         return 200, PAGE_EN if url.startswith("https://elections.") else b"<p>none</p>"
     import json as _json
     (tmp_ec / "ec" / "fetched.json").write_text(_json.dumps({}))
