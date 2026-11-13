@@ -421,6 +421,12 @@ def test_an_absent_series_is_a_named_refusal_not_a_never_firing_cell(box):
     from mt5desk.family_call import signals
     assert signals(family_world_macro_state, _bars(2000), side=1, params={}) == []
     assert signals(family_world_macro_state, _bars(2000), side=-1, params={}) == []
+    # ...and the sealed builder names the incomplete recipe instead of filing zero trades.
+    for unnamed in ({}, {"series_key": ""}, {"series_key": "  ", **PARAMS}):
+        assert gauntlet.build_cell("AUDUSD", "world_macro_state", unnamed, {},
+                                   h1_override=_bars(2000)) is None
+        assert "world_macro_state: no series_key on the candidate" in str(
+            gauntlet.LAST_BUILD_FAILURE)
     from research.gauntlet_buildability import MISSING_PARAMS, cell_verdict
     assert cell_verdict("world_macro_state", {})[0] == MISSING_PARAMS
     assert cell_verdict("world_macro_state", {"timeframe": "H4", "session": "asia"})[0] \
