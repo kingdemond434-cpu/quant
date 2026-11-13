@@ -164,7 +164,7 @@ def test_compare_removes_only_what_the_signal_leg_measured(
     rep = rs.compare(base, head, [FAMILY, other], grid=[{"id": "toy", "hours": [1.0]}])
     unmeasured = [p for p in rep["problems"] if p.startswith("UNMEASURED money-path change")]
     assert unmeasured == [
-        f"UNMEASURED money-path change (the replay never imported it): {other}"
+        f"UNMEASURED money-path change (never imported by the signal or gateway legs): {other}"
     ], rep["problems"]
     assert rep["signal_leg"]["measured"] == [FAMILY]
     assert other in rep["signal_leg"]["unmeasured"]
@@ -293,8 +293,7 @@ def test_research_import_never_covers_a_research_change(
     monkeypatch.setattr(rs, "run_tree", fake)
     rep = rs.compare(base, head, [pca], grid=[{"id": "toy", "hours": [1.0]}])
     assert rep["verdict"] == "FAIL"
-    assert f"UNMEASURED money-path change (the replay never imported it): {pca}" in rep[
-        "problems"
-    ], rep["problems"]
+    headline = f"UNMEASURED money-path change (never imported by the signal or gateway legs): {pca}"
+    assert headline in rep["problems"], rep["problems"]
     assert rep["signal_leg"]["ran"] and pca in rep["signal_leg"]["unmeasured"]
     assert rep["signal_leg"]["calls_base_timeout"] == 0

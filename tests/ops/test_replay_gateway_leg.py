@@ -13,6 +13,7 @@ Toy trees, so each test runs in seconds and says exactly what it proves:
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import sys
 from pathlib import Path
@@ -221,3 +222,117 @@ def test_cert_cells_reads_the_base_books_then_the_fixtures(tmp_path: Path) -> No
     assert len(carry) == rs.CERTS_PER_FAMILY
     assert not any(c["family"] == "x" for c in cells)  # a row with no params is no certificate
     assert {"ensemble", "regime_split", "world_macro_state"} <= {c["family"] for c in cells}
+
+
+#: #1097 audit SF1: a family module the GATEWAY imports a name from. The PR renames only that
+#: import, so every changed statement runs at import on both trees and the signal leg agrees;
+#: the PR's gateway then cannot import. Comparing only the keys both trees made passed it.
+ORTHO_EXPORTING = TOY_ORTHO + "from mt5desk.family_inputs import resolve as _resolve\n"
+ORTHO_RENAMED = TOY_ORTHO + "from mt5desk.family_inputs import resolve as _resolve_inputs\n"
+GATEWAY_IMPORTING = "from mt5desk.families_orthogonal import _resolve  # noqa: F401\n" + TOY_GATEWAY
+
+
+def test_a_family_edit_that_breaks_the_gateway_import_fails(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    base = _tree(tmp_path / "base", gateway=GATEWAY_IMPORTING, ortho=ORTHO_EXPORTING)
+    head = _tree(tmp_path / "head", gateway=GATEWAY_IMPORTING, ortho=ORTHO_RENAMED)
+
+    def fake(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
+        return {"steps": [{"hour": 1.0, "intents": [{"side": 1}], "doc": {}}], "imported": []}
+
+    monkeypatch.setattr(rs, "run_tree", fake)
+    rep = rs.compare(base, head, [ORTHO], grid=[{"id": "toy", "hours": [1.0]}])
+    assert rep["verdict"] == "FAIL", rep["problems"]
+    text = "\n".join(rep["problems"])
+    assert "signal leg: gateway|import: the PR's tree fails to load what the base ran" in text
+    assert "ImportError" in text
+    assert "gateway|flat|pass0: the base made this call and the PR's tree never did" in text
+
+
+def test_signal_problems_compares_the_key_sets() -> None:
+    ok = {"digest": "a", "n": 2, "first": []}
+    broken = {"error": "ImportError", "detail": "cannot import name '_resolve'"}
+    # a call the base made and the PR did not
+    problems, _ = rs.signal_problems({"calls": {"p0": ok, "p1": ok}}, {"calls": {"p0": ok}})
+    assert problems == ["signal leg: p1: the base made this call and the PR's tree never did"]
+    # a load failure only the PR records, even with no base call to miss
+    problems, _ = rs.signal_problems({"calls": {}}, {"calls": {"gateway|import": broken}})
+    assert len(problems) == 1 and problems[0].startswith("signal leg: gateway|import: the PR's")
+    problems, _ = rs.signal_problems(
+        {"calls": {"p0": ok}}, {"calls": {"p0": ok, "fam|gateway|resolve": {"error": "None"}}}
+    )
+    assert len(problems) == 1 and "fam|gateway|resolve" in problems[0]
+    # a load failure only the BASE records: UNMEASURED, never a pass and never the PR's fault
+    problems, _ = rs.signal_problems({"calls": {"gateway|import": broken}}, {"calls": {"p0": ok}})
+    assert problems and all(p.startswith("UNMEASURED signal leg: gateway|import") for p in problems)
+    # a call only the PR makes measures nothing and is not a divergence; a base timeout the PR
+    # never made is not compared, as a base timeout never is
+    problems, agreed = rs.signal_problems(
+        {"calls": {"slow": {"timeout": True}}}, {"calls": {"new": ok}}
+    )
+    assert problems == [] and agreed == set()
+
+
+#: A gateway whose decision carries every clock it can read: the module's `datetime`, a
+#: function-local `import time` (which `_freeze` cannot rebind), and a data file's mtime age.
+CLOCKED_GATEWAY = TOY_GATEWAY.replace(
+    '    tick = mt5.symbol_info_tick(s["symbol"])\n',
+    '    tick = mt5.symbol_info_tick(s["symbol"])\n'
+    "    import os\n"
+    "    import time as _t\n"
+    "    from datetime import datetime\n\n"
+    '    flag = os.path.join(os.environ["MT5_DESK_ROOT"], "data", "GENERIC_EXEC_ENABLED")\n'
+    "    seen = (datetime.now().isoformat(), _t.time(), _t.time() - os.stat(flag).st_mtime)\n",
+).replace('"entry_ref": tick.ask}', '"entry_ref": tick.ask, "seen": repr(seen)}')
+
+
+def test_the_gateway_anchor_never_reads_the_wall_clock(tmp_path: Path, monkeypatch: Any) -> None:
+    """#1097 audit SF2: the anchor is a fixed weekday inside the sessions, the same whenever CI
+    runs, and the child feeds every clock from it, so two runs at different wall-clock times
+    give the same digests."""
+    import datetime as _dt
+    import time as _time
+
+    assert CLOCKED_GATEWAY != TOY_GATEWAY and "seen" in CLOCKED_GATEWAY
+    from datetime import UTC, datetime
+
+    pinned = datetime.fromisoformat(rs.gateway_anchor())
+    assert pinned.weekday() < 5 and pinned.tzinfo is not None
+    assert pinned.utcoffset() == _dt.timedelta(0)
+    assert 7 <= pinned.hour < 20  # London and New York, inside the gateway's windows
+
+    def wall_clock(wall: datetime) -> type[datetime]:
+        class Wall(datetime):
+            @classmethod
+            def now(cls, tz: Any = None) -> Any:  # type: ignore[override]
+                return wall if tz is not None else wall.replace(tzinfo=None)
+
+        return Wall
+
+    anchors: list[str] = []
+    digests: list[dict[str, Any]] = []
+    seen: list[str] = []
+    walls = (datetime(2027, 7, 3, 3, 47, tzinfo=UTC), datetime(2031, 1, 6, 22, 5, tzinfo=UTC))
+    for wall in walls:
+        with monkeypatch.context() as m:
+            m.setattr(_dt, "datetime", wall_clock(wall))
+            m.setattr(_time, "time", wall.timestamp)
+            anchors.append(rs.gateway_anchor())
+        tree = _tree(tmp_path / f"t{len(anchors)}", gateway=CLOCKED_GATEWAY)
+        got = rs.run_gateway(tree, [GATEWAY], CERTS, anchors[-1])
+        assert "crash" not in got, got
+        digests.append({k: c.get("digest") for k, c in got["calls"].items()})
+        seen += [
+            p["seen"] for c in got["calls"].values() for p in c.get("first") or [] if "seen" in p
+        ]
+    assert anchors[0] == anchors[1] == rs.GATEWAY_ANCHOR
+    assert digests[0] == digests[1]
+    assert any(d for d in digests[0].values()), digests[0]
+    # every clock the pass read was the frozen pass instant, and the data file aged zero there
+    assert seen
+    for s in seen:
+        iso, t, age = ast.literal_eval(s)
+        assert datetime.fromisoformat(iso).replace(tzinfo=UTC).timestamp() == t
+        assert age == 0.0
+        assert t <= pinned.timestamp()

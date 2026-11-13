@@ -1021,7 +1021,8 @@ GATEWAY_COPY = (
     "libs", "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research/*.py", "desks/mt5/*.py",
     "desks/mt5/data/*.json", "desks/mt5/reports/*.json", "data/*.json", "pyproject.toml",
 )  # fmt: skip
-#: Passes per account state, an hour apart, ending at the parent's anchor (+10 minutes).
+#: Passes per account state, an hour apart, ending at the parent's frozen anchor
+#: (replay_shadow.GATEWAY_ANCHOR, a fixed weekday at 14:10 UTC).
 GATEWAY_PASSES = 24
 #: The fixed account the fake terminal reports, and the fraction every fixture sleeve asks.
 GATEWAY_EQUITY = 100_000.0
@@ -1346,14 +1347,27 @@ def plan_record(plan: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _age_files(copy: Path, at: float) -> None:
+    """Every data file in the copy (not its code: a .py mtime keys the bytecode cache) stamped
+    at the frozen instant `at`, so a freshness check that ages a file by `time.time() - mtime`
+    reads it on the frozen clock, not on when the copy was made (#1097 audit SF2)."""
+    import os
+
+    for p in copy.rglob("*"):
+        if p.suffix != ".py" and p.is_file():
+            os.utime(p, (at, at))
+
+
 def gateway_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
     import hashlib
     import os
     import signal as _signal
+    import time as _time
     from collections import Counter
 
     import pandas as pd
 
+    real_time = _time.time
     work = Path.cwd()
     copy = copy_tree(tree, work / "tree")
     desk = copy / "desks" / "mt5"
@@ -1432,10 +1446,14 @@ def gateway_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
                     ),
                     "utf-8",
                 )
+            _age_files(copy, float(clock["now"].timestamp()))
             key = f"gateway|{state}|pass{k}"
             bucket["key"] = key
             sent0 = len(term.sent)
             _signal.setitimer(_signal.ITIMER_REAL, GATEWAY_PASS_S)
+            # a function-local `import time` (allocator_proof's certificate age) binds the real
+            # module, which `_freeze` cannot reach: the module's own clock is frozen for the pass
+            _time.time = lambda: float(clock["now"].timestamp())
             sys.settrace(hook)
             try:
                 g.NEW_RISK_OK = True
@@ -1488,6 +1506,7 @@ def gateway_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
             finally:
                 sys.settrace(None)
                 _signal.setitimer(_signal.ITIMER_REAL, 0)
+                _time.time = real_time
     files = (
         f for m in list(sys.modules.values())
         if isinstance(f := getattr(m, "__file__", None), str)

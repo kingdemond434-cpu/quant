@@ -930,14 +930,20 @@ def run_signals(
 GATEWAY_TIMEOUT_S = 1800
 
 
-def gateway_anchor() -> str:
-    """The gateway leg's frozen clock: this hour, ten minutes in. Chosen once per comparison and
-    handed to both trees, so they decide on the same instant; near the wall clock, so the box's
-    own freshness checks read the fixture tick as current."""
-    from datetime import UTC, datetime
+#: The gateway leg's frozen clock (#1097 audit SF2): a fixed historical WEDNESDAY at 14:10 UTC,
+#: the London/New York overlap and the gold_afternoon window. Its GATEWAY_PASSES hourly passes
+#: run back to Tuesday 15:10 UTC, so every pass is a weekday and the window crosses every session
+#: hour the gateway gates on (gold_asia 04:00, gold_london_am 10:00, gold_afternoon 14:00, the
+#: 19:30 close). It was this hour of the CI run, so WHICH paths ran depended on when CI fired.
+GATEWAY_ANCHOR = "2026-11-11T14:10:00+00:00"
 
-    now = datetime.now(tz=UTC).replace(minute=10, second=0, microsecond=0)
-    return now.isoformat()
+
+def gateway_anchor() -> str:
+    """The gateway leg's frozen clock, the same for every comparison and both trees: it never
+    reads the wall clock. The child feeds every clock the gateway reads from it (`datetime`,
+    `time.time`, even a function-local `import time`, and the copy's file mtimes), so a freshness
+    check ages its input on the frozen clock and the digest does not depend on when CI ran."""
+    return GATEWAY_ANCHOR
 
 
 def run_gateway(
@@ -1003,15 +1009,47 @@ def _signal_diff(x: dict[str, Any], y: dict[str, Any]) -> str:
     return "; ".join(parts)[:300] or "a later signal differs (digests differ)"
 
 
+#: Key suffixes a leg records when it could not load what it runs: `gateway|import` (the
+#: gateway module did not import) and `<family>|<tag>|resolve` (a family did not resolve).
+LOAD_FAILURE_SUFFIXES = ("|import", "|resolve")
+
+
+def _load_failure(key: str) -> bool:
+    return key.endswith(LOAD_FAILURE_SUFFIXES)
+
+
 def signal_problems(b: dict[str, Any], h: dict[str, Any]) -> tuple[list[str], set[str]]:
     """(problems, agreed): every call both trees made, compared. A call that returned on both
     must return the same signals; an exception is compared by its type; a call that returned on
     the base and raised or timed out on the PR is the PR's failure. A base timeout is not
     compared. `agreed` holds the calls that TRADED on the base and decided the same on the PR:
-    the only calls whose executed lines can measure a change (`signal_measured`)."""
+    the only calls whose executed lines can measure a change (`signal_measured`).
+
+    The key sets are compared too (#1097 audit SF1): a call the base made and the PR never made
+    is the PR's divergence (a PR that breaks `from mt5desk import gateway` makes none of the
+    base's passes), and a load failure (`LOAD_FAILURE_SUFFIXES`) the PR alone records is one as
+    well. A load failure only the BASE records is UNMEASURED (the base cannot run it), and a
+    call only the PR makes measures nothing; both still never pass."""
     bc, hc = b.get("calls") or {}, h.get("calls") or {}
     diverged: list[str] = []
+    unmeasured: list[str] = []
     agreed: set[str] = set()
+    for key in sorted(set(hc) - set(bc)):
+        if _load_failure(key):
+            y = hc[key]
+            diverged.append(
+                f"{key}: the PR's tree fails to load what the base ran: "
+                f"{y.get('error')} ({str(y.get('detail') or '')[:120]})"
+            )
+    for key in sorted(set(bc) - set(hc)):
+        x = bc[key]
+        if _load_failure(key):
+            unmeasured.append(
+                f"UNMEASURED signal leg: {key}: the base tree fails to load it: "
+                f"{x.get('error')} ({str(x.get('detail') or '')[:120]})"
+            )
+        elif not x.get("timeout"):
+            diverged.append(f"{key}: the base made this call and the PR's tree never did")
     for key in sorted(set(bc) & set(hc)):
         x, y = bc[key], hc[key]
         if x.get("timeout"):
@@ -1028,6 +1066,11 @@ def signal_problems(b: dict[str, Any], h: dict[str, Any]) -> tuple[list[str], se
     problems = [f"signal leg: {d}" for d in diverged[:SIGNAL_SHOWN]]
     if len(diverged) > SIGNAL_SHOWN:
         problems.append(f"signal leg: {len(diverged) - SIGNAL_SHOWN} more family calls differ")
+    problems += unmeasured[:SIGNAL_SHOWN]
+    if len(unmeasured) > SIGNAL_SHOWN:
+        problems.append(
+            f"UNMEASURED signal leg: {len(unmeasured) - SIGNAL_SHOWN} more base load failures"
+        )
     return problems, agreed
 
 
@@ -1220,6 +1263,23 @@ def signal_measured(
     return measured, why
 
 
+def unmeasured_reason(f: str, why: dict[str, str], signal: dict[str, Any]) -> str:
+    """The headline's reason a changed money-path file stayed UNMEASURED, per file (#1097 audit
+    SF3): imported with changed statements that never ran is not the same finding as never
+    imported, and the headline said the latter for both. The full line list stays in
+    `signal_leg.unmeasured`."""
+    w = why.get(f)
+    if w is None:
+        if signal.get("ran") and f in (signal.get("traced") or []):
+            return "the signal and gateway legs did not complete on both trees"
+        return "the replay never imported it"
+    if "never ran" in w:
+        return "imported, " + w.split(": lines", 1)[0]
+    if w == "the signal leg never imported it":
+        return "never imported by the signal or gateway legs"
+    return w
+
+
 def compare(
     base: Path, head: Path, changed: list[str], grid: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:
@@ -1306,6 +1366,7 @@ def compare(
     # uncovered (a PR that touches no such file pays nothing for them)
     signal: dict[str, Any] = {"ran": False}
     gateway: dict[str, Any] = {"ran": False}
+    why: dict[str, str] = {}
     candidates = [f for f in uncovered if f.endswith(".py")]
     if candidates:
         certs = cert_cells(base)
@@ -1358,7 +1419,8 @@ def compare(
                 intended_orders=sum(int((mb["calls"][k] or {}).get("n") or 0) for k in gw_keys),
             )
     problems += [
-        f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
+        f"UNMEASURED money-path change ({unmeasured_reason(f, why, signal)}): {f}"
+        for f in uncovered
     ]
     problems += knob_changes(base, head, changed, closure, exempt)
     return {
