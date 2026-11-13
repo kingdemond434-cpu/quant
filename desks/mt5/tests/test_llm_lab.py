@@ -551,3 +551,33 @@ def test_only_a_definite_probe_verdict_is_cached(tmp_path: Path,
 def test_the_real_gauntlet_path_is_the_one_the_patch_edits() -> None:
     assert lab.GAUNTLET == lab.BASE / "scripts" / "external_gauntlet.py"
     assert lab.GAUNTLET.exists()
+
+
+# --------------------------------------------------------------------------- market mix
+def test_exotic_share_stays_under_the_principals_cap_and_gaps_get_compute(state: Path) -> None:
+    """At most 10% of asks go to exotics; gold/metals and indices get a standing share."""
+    cov = lab.Coverage.load()
+    onto = lab._ontology()
+    rng = random.Random(7)  # noqa: S311
+    drawn = [lab.choose_coordinate(lab.INVENTORS[i % len(lab.INVENTORS)], onto, cov, rng)[0]
+             for i in range(2000)]
+    rep = lab.market_share(drawn)
+    assert rep["verdict"] == "OK" and rep["exotic_share"] <= lab.EXOTIC_CAP
+    assert rep["exotic"] > 0                      # exotics are capped, not banned
+    assert rep["gap_class_asks"] / rep["asks"] >= 0.3
+    assert lab.market_share([])["verdict"] == lab.UNMEASURED
+
+
+def test_a_steered_draw_keeps_its_mechanism_and_says_why(state: Path) -> None:
+    cov = lab.Coverage.load()
+    onto = lab._ontology()
+    rng = random.Random(3)  # noqa: S311
+    lab.EXOTIC_KEEP = 0.0
+    try:
+        for _ in range(400):
+            c, why = lab.choose_coordinate(lab.LAB_BY_KEY["B"], onto, cov, rng)
+            assert c["asset_class"] not in lab.EXOTIC_CLASSES
+            if "+" in why:
+                assert c["asset_class"] in lab.GAP_CLASSES
+    finally:
+        lab.EXOTIC_KEEP = 0.5

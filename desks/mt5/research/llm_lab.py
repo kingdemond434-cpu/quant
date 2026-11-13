@@ -261,6 +261,23 @@ HORIZONS = ("intraday", "swing", "position")
 COLD_SHARE = 0.15
 YIELD_SHARE = 0.20
 
+#: PRINCIPAL'S RULE (2026-11-13): at least 90% of hypothesis-generation compute goes to
+#: non-exotic markets (majors, crosses, gold and metals, indices, other liquid markets), at most
+#: 10% to exotics. Uniform over ASSET_CLASSES the exotic class alone draws 1/9; EXOTIC_KEEP keeps
+#: half of those draws (about 5.5%, under the cap with room) and sends the rest to a gap class.
+EXOTIC_CLASSES = frozenset({"forex exotics"})
+EXOTIC_CAP = 0.10
+EXOTIC_KEEP = 0.5
+#: The live book's measured gaps (2026-11-13: about 8 bets, all FX, no gold, no indices, nothing
+#: entered 02:00-09:00 UTC). GAP_SHARE of every other draw is steered to a gap class, so the
+#: gaps get a standing share of compute; the rest of the tensor keeps its owed-first order.
+GAP_CLASSES = ("commodities", "indices")
+GAP_SHARE = 0.25
+GAP_NOTE = ("live book gaps to fill first: no gold or metals, no indices, and no entries between "
+            "02:00 and 09:00 UTC (Asia session and the London open). Prefer mechanisms that "
+            "trade there. Exotic FX needs twice the live cost to promote, so avoid it unless the "
+            "edge is large.")
+
 BLOCKERS = ("NEEDS_DATA", "NEEDS_EXACT_RULE_EXTRACTION", "NEEDS_PIT_SOURCE",
             "NEEDS_EXECUTABLE_FAMILY", "NEEDS_PARAMETER_INFERENCE", "NEEDS_INSTRUMENT_MAPPING")
 NOVELTY_CLASSES = ("EXACT_DUPLICATE", "PARAMETER_NEIGHBOUR", "MECHANISM_NEIGHBOUR",
@@ -829,8 +846,8 @@ def coordinates(ontology: Sequence[str], lab: Lab) -> list[dict[str, str]]:
             for m in mechs for a in ASSET_CLASSES for hz in HORIZONS]
 
 
-def choose_coordinate(lab: Lab, ontology: Sequence[str], cov: Coverage,
-                      rng: random.Random) -> tuple[dict[str, str], str]:
+def _choose_coordinate(lab: Lab, ontology: Sequence[str], cov: Coverage,
+                       rng: random.Random) -> tuple[dict[str, str], str]:
     """(coordinate, why). Owed-first by cursor; a cold random share; a yield share."""
     coords = coordinates(ontology, lab)
     draw = rng.random()
@@ -851,6 +868,36 @@ def choose_coordinate(lab: Lab, ontology: Sequence[str], cov: Coverage,
             return c, "owed"
     cov.doc["cursor"][lab.key] = start + 1
     return coords[start % len(coords)], "revisit"
+
+
+def choose_coordinate(lab: Lab, ontology: Sequence[str], cov: Coverage,
+                      rng: random.Random) -> tuple[dict[str, str], str]:
+    """`_choose_coordinate`, then the principal's market mix: an exotic draw survives with
+    probability EXOTIC_KEEP, otherwise it moves to a gap class; any other draw moves to a gap
+    class with probability GAP_SHARE. The mechanism and horizon are kept; only the market moves,
+    and the why says so, so the report can count the steering."""
+    coord, why = _choose_coordinate(lab, ontology, cov, rng)
+    asset = coord.get("asset_class", "")
+    if asset in EXOTIC_CLASSES:
+        if rng.random() < EXOTIC_KEEP:
+            return coord, why
+        return {**coord, "asset_class": rng.choice(GAP_CLASSES)}, f"{why}+exotic_cap"
+    if asset not in GAP_CLASSES and rng.random() < GAP_SHARE:
+        return {**coord, "asset_class": rng.choice(GAP_CLASSES)}, f"{why}+book_gap"
+    return coord, why
+
+
+def market_share(coords: Iterable[dict[str, str]]) -> dict[str, Any]:
+    """Non-exotic versus exotic share of this pass's asks, against the principal's 10% cap."""
+    rows = [c for c in coords if c.get("asset_class")]
+    exotic = sum(1 for c in rows if c["asset_class"] in EXOTIC_CLASSES)
+    gap = sum(1 for c in rows if c["asset_class"] in GAP_CLASSES)
+    if not rows:
+        return {"asks": 0, "verdict": UNMEASURED, "cap": EXOTIC_CAP}
+    share = exotic / len(rows)
+    return {"asks": len(rows), "non_exotic": len(rows) - exotic, "exotic": exotic,
+            "exotic_share": round(share, 4), "gap_class_asks": gap, "cap": EXOTIC_CAP,
+            "verdict": "OVER_CAP" if share > EXOTIC_CAP else "OK"}
 
 
 def owed(cov: Coverage, ontology: Sequence[str]) -> dict[str, int]:
@@ -1057,6 +1104,7 @@ def build_ask(lab: Lab, coord: dict[str, str], why: str, model: str, reg: dict[s
            f"coordinate: mechanism_class={coord['mechanism_class']} asset_class="
            f"{coord['asset_class']} horizon={coord['horizon']}",
            "symbols in that class: " + ", ".join(_symbols_for(coord["asset_class"], uni, rng)),
+           GAP_NOTE,
            "all registered families: " + all_family_names(reg)[:900],
            FORMULA_GRAMMAR]
     ctx += [f"menu: {ln}" for ln in menu_lines(reg, lab, rng)]
@@ -1994,6 +2042,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "verdict_loop": {k: credit.get(k) for k in ("keff_basis", "judged_cells",
                                                     "certified_cells", "ranking_rule")},
         "data_requests_this_pass": len(outputs["data_requests"]),
+        "market_share": market_share(a.coord for a in asks),
         "jev": {"provider": UNMEASURED,
                 "why": ("no TypeSafe/Jev key is acquired and its current API is unverified; "
                         "questions queue and their cells wait as NEEDS_DATA until a Jev series "
