@@ -122,6 +122,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -430,6 +431,54 @@ def _parse_iso_aware(text: Any) -> datetime | None:
     return stamp
 
 
+_E8_EVIDENCE_MOD: list[Any] = []
+
+
+def _e8_evidence() -> Any | None:
+    """prop/e8_evidence, loaded once from its file (desks/ is not a package). None when it cannot
+    be loaded -- the caller then keeps the plain comparison, never a looser one."""
+    if not _E8_EVIDENCE_MOD:
+        mod: Any = None
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "_interlock_e8_evidence", DESK / "prop" / "e8_evidence.py")
+            if spec is not None and spec.loader is not None:
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+        except Exception:
+            mod = None
+        _E8_EVIDENCE_MOD.append(mod)
+    return _E8_EVIDENCE_MOD[0]
+
+
+def _same_machine_across_formats(prev_machine: str, machine: str) -> bool:
+    """True only when the previous row carried a RAW `machine_id` (an older build), the current
+    row carries a keyed `machine_ref`, and the raw id keyed under THIS box's host key with the
+    writer's own helper (e8_evidence.machine_ref) is that ref -- so the first new-format row
+    after an old-format one joins the alias instead of reading as an ambiguous key change.
+
+    The host key is only ever READ here, never created: with no key (env unset and no key file,
+    or a key the helper refuses) or no loadable helper this returns False, which is exactly the
+    comparison the fence made before -- it never fails open."""
+    if (not prev_machine or prev_machine == UNMEASURED or prev_machine.startswith("hmac:")
+            or not machine.startswith("hmac:")):
+        return False
+    ev = _e8_evidence()
+    if ev is None:
+        return False
+    try:
+        env_key = os.environ.get(ev.HOST_KEY_ENV)
+        if env_key is None or env_key == "":
+            key_file = Path(os.environ.get(ev.HOST_KEY_FILE_ENV) or ev.HOST_KEY_FILE)
+            if not key_file.is_file():
+                return False
+        ref = ev.machine_ref(prev_machine)
+    except Exception:
+        return False
+    return isinstance(ref, str) and ref.startswith("hmac:") and ref == machine
+
+
 def _e8_account(row: dict[str, Any]) -> str:
     """The row's account pseudonym (`account_ref`), else a v1 row's `account`, else UNMEASURED."""
     return str(row.get("account_ref") or row.get("account") or UNMEASURED)
@@ -623,7 +672,8 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         prev = last_seen.get(sleeve)
         if (not unkeyed and prev and kid and prev[1] and kid != prev[1]
                 and acct != prev[0] and acct not in alias):
-            measured = machine not in ("", UNMEASURED) and machine == prev[2]
+            measured = machine not in ("", UNMEASURED) and (
+                machine == prev[2] or _same_machine_across_formats(prev[2], machine))
             if (measured and len(by_key.get(prev[1], set())) == 1
                     and len(by_key.get(kid, set())) == 1):
                 alias[acct] = alias.get(prev[0], prev[0])

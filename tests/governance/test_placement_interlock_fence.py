@@ -980,6 +980,62 @@ def test_e8_a_key_change_on_an_unmeasured_machine_is_unmeasured(tmp_path: Path,
     assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
 
 
+def _transition_rows(root: Path, new_machine: str) -> None:
+    """An older build's row (raw `machine_id`) then the first new-format row (`machine_ref`)."""
+    old_at, new_at = NOW - timedelta(days=1), NOW
+    common = {"lane": "e8_gold", "sleeve": "e8_gold:afternoon", "outcome": "DEFERRED",
+              "reason": "guard_stood_down", "taken": False}
+    rows = [{**common, "decided_at": old_at.isoformat(), "server_date": old_at.date().isoformat(),
+             "account_ref": "tradelocker:aaaa", "key_id": "k1", "machine_id": BOX_ID},
+            {**common, "decided_at": new_at.isoformat(), "server_date": new_at.date().isoformat(),
+             "account_ref": "tradelocker:bbbb", "key_id": "k2", "machine_ref": new_machine}]
+    _write(root, E8_LEDGER, "\n".join(json.dumps(r) for r in rows) + "\n")
+
+
+def test_e8_the_first_machine_ref_row_after_a_raw_machine_id_row_joins_the_alias(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of PR #1096: an old-format row carries the raw machine id, the first new-format row
+    a keyed `machine_ref`. Under the box's host key the raw id keys to that ref, so it is the same
+    machine and the run continues -- not an ambiguous key change."""
+    ev = fence._e8_evidence()
+    assert ev is not None
+    monkeypatch.setenv(ev.HOST_KEY_ENV, "h" * 40)
+    ref = ev.machine_ref(BOX_ID)
+    assert ref and ref.startswith("hmac:")
+    _e8_beat(tmp_path)
+    _transition_rows(tmp_path, ref)
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert "ambiguous_key_change" not in lane, lane
+    assert lane["verdict"] == "HALTED", lane
+    assert set(lane["runs"]) == {"e8_gold:afternoon@tradelocker:aaaa"}
+    # A ref keyed from ANOTHER machine's id never joins.
+    _transition_rows(tmp_path, ev.machine_ref(OFF_BOX_ID) or "")
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED" and lane["ambiguous_key_change"]
+
+
+def test_e8_with_no_host_key_the_format_transition_stays_unmeasured(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No host key (env unset, no key file): today's behaviour, never fail open -- and the fence
+    never CREATES the key file to answer the question."""
+    ev = fence._e8_evidence()
+    assert ev is not None
+    monkeypatch.setenv(ev.HOST_KEY_ENV, "h" * 40)
+    ref = ev.machine_ref(BOX_ID) or ""
+    monkeypatch.delenv(ev.HOST_KEY_ENV)
+    key_file = tmp_path / "no_such_dir" / "e8_host.key"
+    monkeypatch.setenv(ev.HOST_KEY_FILE_ENV, str(key_file))
+    _e8_beat(tmp_path)
+    _transition_rows(tmp_path, ref)
+    lane = fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]
+    assert lane["verdict"] == "UNMEASURED", lane
+    assert lane["ambiguous_key_change"] == ["e8_gold:afternoon"]
+    assert not key_file.exists()
+    # A short explicit key is no key either.
+    monkeypatch.setenv(ev.HOST_KEY_ENV, "short")
+    assert fence.scan(tmp_path, now=NOW)["lanes"]["e8_gold"]["verdict"] == "UNMEASURED"
+
+
 class _BoxIdent:
     trading_hostname, verdict, why = "vmi3571445", "TRADING", "test"
 
