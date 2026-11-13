@@ -639,6 +639,8 @@ LEG_LAYER: dict[str, str] = {
     # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
     "null_lab": "meta", "research_live_identity": "meta",
     "macro_conditioned_sweep": "prediction",
+    # The HMM-regime-conditioned growth solve is a shadow claim about sizing.
+    "hmm_regime_elog_shadow": "sizing",
     # The UNKNOWN-share census grades the judge's own coverage: the machine measuring the machine.
     "unknown_census": "meta",
     "meta_rnd": "meta",
