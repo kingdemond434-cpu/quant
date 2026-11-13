@@ -609,3 +609,4 @@ desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
 # The loss brain's report (decay + loss learner), published by sync_shadow_to_git $reportPaths.
 !desks/mt5/reports/LOSS_LEARNER.json
+!desks/mt5/reports/PLAUSIBILITY_AUDIT.json

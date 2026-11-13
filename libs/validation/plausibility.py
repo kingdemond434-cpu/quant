@@ -190,7 +190,7 @@ def plausibility_stage(daily: Any, forensic: dict[str, Any] | None = None) -> di
 
 
 # ------------------------------------------------------------------ signal-level arms
-def build_arms(df: Any, sigs: list, series_of: Callable[[list], Any], *,
+def build_arms(df: Any, sigs: list[Any], series_of: Callable[[list[Any]], Any], *,
                seed: int = 0, n_shuffles: int = N_TIME_SHUFFLES) -> dict[str, Any]:
     """The delayed, mirrored and time-shuffled arms of one cell, from its own signals.
 
@@ -207,7 +207,7 @@ def build_arms(df: Any, sigs: list, series_of: Callable[[list], Any], *,
     close = df["close"] if "close" in getattr(df, "columns", []) else None
     out: dict[str, Any] = {}
 
-    def _next(t):
+    def _next(t: Any) -> Any:
         pos = idx.searchsorted(pd.Timestamp(t), side="right")
         return idx[pos] if pos < len(idx) else None
 
@@ -219,7 +219,7 @@ def build_arms(df: Any, sigs: list, series_of: Callable[[list], Any], *,
         out["delayed_error"] = f"{type(exc).__name__}: {exc}"[:200]
 
     if close is not None:
-        def _ref(t):
+        def _ref(t: Any) -> float:
             pos = max(0, min(len(idx) - 1, idx.searchsorted(pd.Timestamp(t), side="right") - 1))
             return float(close.iloc[pos])
         try:
@@ -251,7 +251,8 @@ def build_arms(df: Any, sigs: list, series_of: Callable[[list], Any], *,
     return out
 
 
-def pit_violations(rows: Sequence[dict] | None, first_decision: Any) -> list[str] | None:
+def pit_violations(rows: Sequence[dict[str, Any]] | None,
+                   first_decision: Any) -> list[str] | None:
     """Declared input rows not usable at the first decision time; None when none declared."""
     if not rows:
         return None
@@ -276,16 +277,16 @@ TRUNCATION_OFFSETS = (0, 1, 2, 3, 5, 8)
 TRUNCATION_GRACE_BARS = 1
 
 
-def _sig_key(s: Any) -> tuple:
+def _sig_key(s: Any) -> tuple[Any, ...]:
     import pandas as pd
 
-    def rnd(x):
+    def rnd(x: Any) -> float | None:
         return None if x is None else round(float(x), 8)
     return (pd.Timestamp(s.time), int(s.side), rnd(s.stop), rnd(s.target),
             rnd(getattr(s, "trigger", None)))
 
 
-def truncation_test(df: Any, sigs: list, regen: Callable[[Any], list],
+def truncation_test(df: Any, sigs: list[Any], regen: Callable[[Any], list[Any]],
                     cuts: Sequence[float] = TRUNCATION_CUTS,
                     offsets: Sequence[int] = TRUNCATION_OFFSETS) -> dict[str, Any]:
     """Re-run the family on bars cut short. A past signal that changes value, or appears or

@@ -274,7 +274,7 @@ def test_the_real_ten_gates_judge_scalp_cells(desk, monkeypatch) -> None:
     assert report["status"] == "MEASURED" and report["rc"] == 0 and report["n_judged"] == 2
     for v in report["verdicts"]:
         assert all(gate in v["stages"] for gate in GATES) and v["days"] >= 60
-        assert set(v["stages"]) - set(GATES) == {"swap_cost", "plausibility_forensics"}
+        assert set(v["stages"]) - set(GATES) == {"swap_cost"}
         assert v["stages"]["economic_prior"]["passed"] is True
         # The cell is charged the lifetime UNION, never below the campaign count; with no
         # readable experiment ledger the charge is unknown and the gate fails closed.

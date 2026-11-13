@@ -1435,7 +1435,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learner", "plausibility_audit",
+                     "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -4710,6 +4711,13 @@ def main() -> None:
     # replacement verdicts are acted on by the daily step `loss_replace`. Forward department.
     mll = _costed("loss_learner", lambda: _producer(
         "loss_learner", "research/loss_learner.py", "--once"))
+    # THE PLAUSIBILITY AUDIT (zuck 2026-11-06 / 2026-11-11): every certified cell that looks too
+    # good is FLAGGED, never refused on the number; flagged cells run leak forensics (truncation
+    # look-ahead proof, entry delay, permutation nulls, PIT) and are published either as
+    # FAST_TRACK (forward shadow first) or LEAK_PROVEN (for the Judge's revocation path).
+    # Rotating and bounded: 25 certificates a pass. Forward department.
+    mpa = _costed("plausibility_audit", lambda: _producer(
+        "plausibility_audit", "research/plausibility_audit.py", "--once"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -6494,6 +6502,7 @@ def main() -> None:
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
                     "missed_trade_archaeologist": mta, "loss_learner": mll,
+                    "plausibility_audit": mpa,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,

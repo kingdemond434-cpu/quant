@@ -883,6 +883,8 @@ $reportPaths = @(
     # evidence, and the fast-track list forward shadow reads first
     "desks/mt5/data/plausibility/forensics.jsonl",
     "desks/mt5/data/plausibility/FAST_TRACK.json",
+    "desks/mt5/data/plausibility/LEAK_PROVEN.json",
+    "desks/mt5/reports/PLAUSIBILITY_AUDIT.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
