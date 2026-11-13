@@ -582,6 +582,26 @@ def test_one_approval_covers_every_clear_given_before_it_and_the_newest_counts(h
     assert f"sha={A}" in merge
 
 
+@pytest.mark.parametrize("body", ["Approve merges", "approve merges", " APPROVE  MERGES\n"])
+def test_the_approval_line_is_read_in_any_case_and_spacing(hub: Any, body: str) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T12:00:00Z", body=body)],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+
+
+@pytest.mark.parametrize("body", ["Approve merges please", "APPROVE", "approve-merges"])
+def test_anything_but_the_line_is_still_no_approval(hub: Any, body: str) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T12:00:00Z", body=body)],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
 def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     h = hub(
         comments=[
@@ -2935,7 +2955,10 @@ def _win(at: Any = _OLD) -> Callable[[], tuple[Any, str]]:
     return lambda: (at, "" if at else "no notice yet")
 
 
-def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window() -> None:
+def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)  # the window mechanism, whatever LIVE sets
     got, why = ag.registry_clear([_row()], 9, _H, _win(), _NOW)
     assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
     assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # no carry-over
@@ -2950,7 +2973,10 @@ def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
 
 
-def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
+def test_a_backdated_row_never_starts_the_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)
     # #591 audit MF3: the row says 2020, but the window starts when the gate's notice went out
     sent: list[str] = []
     seen = tmp_path / "r.jsonl.window.json"
