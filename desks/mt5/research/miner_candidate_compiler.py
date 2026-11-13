@@ -1996,7 +1996,8 @@ def main() -> int:
         print(f"book-gap steer: {gap_note['status'][:40]}; by ask "
               f"{gap_note['candidates_by_ask']}")
     except Exception as exc:
-        gap_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+        # the class name only: free exception text can carry box paths into a published file
+        gap_note = {"status": f"FAILED: {type(exc).__name__}"}
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     provenance_note = _provenance_block(ordered, now)
