@@ -81,6 +81,8 @@ from typing import Any
 
 if str(Path(__file__).resolve().parent.parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# fence_exit is the repo's tested exit-code helper that R0237 (test_no_fence_enumerates_failures)
+# requires: it names the passing verdicts, so UNMEASURED or any new verdict fails closed, never 0.
 from libs.ops.fence_exit import fence_exit
 
 ROOT = Path(__file__).resolve().parent.parent
