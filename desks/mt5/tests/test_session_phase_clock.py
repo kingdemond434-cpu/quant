@@ -103,6 +103,29 @@ def test_declared_utc_rows_are_labelled_on_the_clock_in_force_at_their_own_entry
     assert one.tolist() == [1.0]
 
 
+
+def test_a_declared_utc_row_whose_instant_cannot_be_read_is_dropped_not_guessed() -> None:
+    # The stamp hour reads (05), but no key holds a parseable instant, so the clock in force at
+    # entry is unknown: the row leaves the bucket rather than borrowing any one season's offset.
+    rows = [{"entry_time": "2026-07-01 05:00 (venue)", "r_multiple": 1.0,
+             "timestamp_basis": "utc"},
+            {"time": "2026-07-01T05:00:00+00:00", "r_multiple": 2.0, "timestamp_basis": "utc"}]
+    got = sp.returns_in_phase(rows, sp.phase_for_hour(8), broker_utc_offset_h=None)
+    assert got.tolist() == [2.0]
+    assert sp._entry_at(rows[0]) is None
+
+
+def test_a_declared_utc_row_is_dropped_when_the_venue_clock_cannot_be_read(monkeypatch) -> None:
+    def broken(at):
+        raise RuntimeError("no session clock")
+    monkeypatch.setattr(sp, "_ny_plus_7_offset", broken)
+    rows = [{"entry_time": "2026-07-01T05:00:00+00:00", "r_multiple": 1.0,
+             "timestamp_basis": "utc"},
+            {"entry_time": "2026-07-01T08:00:00+00:00", "r_multiple": 2.0}]
+    # The UTC row has no offset to read and is dropped; the broker stamp needs none and stays.
+    got = sp.returns_in_phase(rows, sp.phase_for_hour(8), broker_utc_offset_h=None)
+    assert got.tolist() == [2.0]
+
 @pytest.mark.parametrize(("at", "off"), [
     # The autumn split week: Europe left summer time on 2026-10-25, New York on 2026-11-01. The
     # venue follows New York, so it is still +3 midweek and +2 from the Monday after.
