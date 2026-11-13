@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "allocator_proof_suite": {
+   "hypothesis": "Prospectively scoring the allocator's book against an equal-heat baseline (selection, sizing, cost separately) and against a distributionally robust log-growth challenger shows whether the incumbent's edge over simple books is real out of sample.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_scored",
+    "better": "up",
+    "organ": "report:ALLOCATOR_PROOF_SUITE.json"
+   },
+   "falsifier": {
+    "metric": "n_scored",
+    "op": "<",
+    "threshold": 1,
+    "after": "30 days: no prospective ledger row ever matured and was scored"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

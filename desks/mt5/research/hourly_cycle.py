@@ -1447,6 +1447,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
+                     "allocator_proof_suite",
                      "forward_calibration"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
@@ -5780,6 +5781,12 @@ def main() -> None:
     # artifacts were minutes old.
     alv = _costed("allocator_liveness", lambda: _producer(
         "allocator_liveness", "research/allocator_liveness.py", "--once", "--budget-s", "120"))
+    # THE INCUMBENT AGAINST WHAT IT NEVER ASKS ITSELF (ALLOC-10/16/20/21): a distributionally
+    # robust log-growth book, model-disagreement shrink, hold/flat/wait around imminent releases,
+    # an evidence-calibrated no-trade band, and a PROSPECTIVE equal-heat baseline ledger scored
+    # for selection, sizing and cost. Shadow only.
+    aps = _costed("allocator_proof_suite", lambda: _producer(
+        "allocator_proof_suite", "research/allocator_proof_suite.py"))
     # 24/7 AND NOT SLOW (principal 2026-09-23). The hourly solve above is the BACKSTOP; this
     # watches the artifacts that carry a state change -- a macro surprise, a regime transition, a
     # certificate arriving or dying, a fill, a cost or capacity revision -- and fires the same
@@ -6657,7 +6664,8 @@ def main() -> None:
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
-                    "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "pf_allocator": pa, "allocator_liveness": alv,
+                    "allocator_proof_suite": aps, "allocator_trigger": atg,
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
