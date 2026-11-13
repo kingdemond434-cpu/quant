@@ -346,3 +346,5 @@ desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
 desks/mt5/research/decay_regime.py
+libs/models/classical_baselines.py
+libs/regime/ensemble.py

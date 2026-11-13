@@ -81,6 +81,7 @@ FAMILY = "regime_split"
 #: every row the WHOLE union, not the pass.
 CHARGED = _DESK / "data" / "regime_split_charged.json"
 TRIALS = _DESK / "data" / "REGIME_SPLIT_TRIALS.jsonl"
+NULL_TRIALS = _DESK / "data" / "null_pass_trials.jsonl"
 
 
 def lane() -> list[str]:
@@ -240,9 +241,22 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
               "proposals": proposals, "all": rows}
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
-    if cands:
+    donated = pc.donate(SOURCE, cands, new_cells) if cands else None
+    if donated is not None:
         # tests_run is the NEW charge: the union's cells were charged once, in TRIALS.
-        report["donated"] = str(pc.donate(SOURCE, cands, new_cells))
+        report["donated"] = str(donated)
+    elif new_cells:
+        # A NULL PASS IS STILL A CHARGE. TRIALS above is this miner's own audit trail and no
+        # census reads it; `experiment_ledger` counts a pass that donated nothing from
+        # null_pass_trials.jsonl (one or the other, never both). Without this a pass whose
+        # survivors all died at walk-forward -- or that the door refused -- un-charged every
+        # cell it screened, and the deflation everyone else pays grew more lenient for it.
+        NULL_TRIALS.parent.mkdir(parents=True, exist_ok=True)
+        with NULL_TRIALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"ts": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                 "source": SOURCE, "tests_run": new_cells,
+                                 "by_family": {FAMILY: new_cells}}) + "\n")
+        report["null_pass_charged"] = new_cells
     return report
 
 
