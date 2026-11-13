@@ -233,6 +233,38 @@ def test_an_adoption_converges_a_tree_that_differs_only_by_the_exec_bit(tmp_path
     assert "mode 100755 -> 100644" in r.stdout
 
 
+@needs_powershell
+def test_an_adoption_refuses_over_code_only_the_box_holds(tmp_path: Path) -> None:
+    """The guard that lets a mode-only drift converge (above) still refuses when the box's
+    commit changed a code path's BYTES and the target does not carry them: adopting would
+    overwrite box-authored code, which is how 104 organs were once deleted on the box."""
+    origin = _init(tmp_path / "origin")
+    _write(origin, "ops/gates.sh", "#!/bin/sh\necho gates\n")
+    _write(origin, "desks/mt5/research/engine.py", "v1\n")
+    _git(origin, "add", "-A")
+    _git(origin, "commit", "-q", "-m", "base")
+
+    box = tmp_path / "box"
+    subprocess.run(["git", "clone", "-q", str(origin), str(box)], check=True)
+    for k, v in (("user.email", "t@t"), ("user.name", "t"), ("commit.gpgsign", "false"),
+                 ("core.fileMode", "false")):
+        _git(box, "config", k, v)
+    _write(box, "ops/gates.sh", "#!/bin/sh\necho gates written on the box\n")
+    _git(box, "add", "--", "ops/gates.sh")
+    _git(box, "commit", "-q", "-m", "box-authored code")
+
+    _write(origin, "desks/mt5/research/engine.py", "v2\n")
+    _git(origin, "add", "-A")
+    _git(origin, "commit", "-q", "-m", "ship")
+    _git(box, "fetch", "-q", str(origin), "main")
+
+    r = _run_adopt(box)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert "REFUSING: 1 code path(s) this box committed are not in the target" in r.stdout
+    assert "ops/gates.sh" in r.stdout
+    assert (box / "ops" / "gates.sh").read_text(encoding="utf-8").endswith("on the box\n")
+
+
 # ------------------------------------------------------------------------ 2. the index.lock
 def test_a_lost_lock_race_gets_a_repair_pass_before_the_adoption_refuses() -> None:
     """MEASURED 2026-09-23: thirteen paths failed to stage because a foreign writer held the

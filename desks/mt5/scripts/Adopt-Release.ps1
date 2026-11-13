@@ -994,10 +994,19 @@ function Test-KeptByBox {
 # adoption refuses and says which paths, so the box pushes first and the next adoption carries
 # them. Paths the target already contains (the box's commits reached origin) differ by nothing
 # and never trigger this. The one-shot recovery permit above still overrides, deliberately.
+# BYTES, NOT MODE: `--raw` gives each path's blob on both sides, and a path whose blob is the
+# same on both differs only by its mode bit. Origin's mode wins on adoption by design (the
+# exec-bit convergence, test_an_adoption_converges_a_tree_that_differs_only_by_the_exec_bit), so
+# a mode-only drift is no box-authored code and never refuses. `--no-renames` keeps one path per
+# line: a rename reads as the delete and the add it is.
 if ($mergeBase -and -not $permitAccepted) {
-    $aheadArgs = @("-c", "core.quotePath=false", "diff", "--name-only", $target, "HEAD", "--") +
-                 $ReleaseCodePaths
-    $boxAheadCode = @(Invoke-Git $aheadArgs -AllowFail | ForEach-Object { "$_".Trim() } |
+    $aheadArgs = @("-c", "core.quotePath=false", "diff", "--raw", "--no-abbrev", "--no-renames",
+                   $target, "HEAD", "--") + $ReleaseCodePaths
+    $boxAheadCode = @(Invoke-Git $aheadArgs -AllowFail | ForEach-Object {
+                          $rawLine = "$_"
+                          if ($rawLine -match '^:\d+ \d+ ([0-9a-f]+) ([0-9a-f]+) [A-Z]\d*\t(.+)$' -and
+                              $Matches[1] -ne $Matches[2]) { $Matches[3].Trim() }
+                      } |
                       Where-Object { $_ -match '\S' -and $boxTouched.ContainsKey($_) -and
                                      -not (Test-StatePath $_) })
     if ($boxAheadCode.Count -gt 0) {
