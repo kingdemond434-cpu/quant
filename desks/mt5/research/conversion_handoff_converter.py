@@ -771,14 +771,18 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
         steered_all += round_robin(lanes[n], pool - len(steered_all), fam_order)
     rest_all = round_robin(lanes[UNSTEERED], pool, fam_order)
     ex_cap = math.floor(q * examine_cap)
-    ex_rows = [r for r in steered_all + rest_all if exotic(r)][:ex_cap]
-    major_cap = examine_cap - len(ex_rows)
-    steered = [r for r in steered_all if not exotic(r)]
-    rest = [r for r in rest_all if not exotic(r)]
-    floor_n = min(len(rest), math.ceil(share * major_cap))
-    steered = steered[:major_cap - floor_n]
-    rest = rest[:major_cap - len(steered)]
-    majors = _interleave(steered, rest, share)
+
+    def pick(stz: list[dict[str, Any]], rst: list[dict[str, Any]],
+             cap: int) -> list[dict[str, Any]]:
+        # the unsteered floor inside one pool: ceil(share x cap) unsteered rows when queued
+        floor_n = min(len(rst), math.ceil(share * cap))
+        stz = stz[:max(0, cap - floor_n)]
+        return _interleave(stz, rst[:cap - len(stz)], share)
+
+    ex_rows = pick([r for r in steered_all if exotic(r)], [r for r in rest_all if exotic(r)],
+                   ex_cap)
+    majors = pick([r for r in steered_all if not exotic(r)],
+                  [r for r in rest_all if not exotic(r)], examine_cap - len(ex_rows))
     exotic_selected = len(ex_rows)
     exotic_held = sum(1 for r in steered_all + rest_all if exotic(r)) - exotic_selected
     mixed = _interleave(majors, ex_rows,
