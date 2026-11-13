@@ -142,13 +142,17 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert g.shrunk_budget_risk(0.75, 33.5, 10.0) == pytest.approx(0.75 * 10 * (33.5 + 24.13))
-    # (2,500 - 100) / 1.25 = 1,920 of budget over 10 oz x (33.5 + 400) points -> 0.44 lots.
-    assert g.ceiling_budget_lot(0.0, 2500.0, 33.5, 10.0, 400.0) == pytest.approx(1920 / 4335)
+    # Recut v2 should-fix 1: the leg's 400 points of slip are EXPLICIT, so SLIP_BUFFER is not
+    # applied on top: 2,500 - 100 = 2,400 of budget over 10 oz x (33.5 + 400) -> 0.55 lots (the
+    # old x1.25 on top charged the slip twice: 1,920 / 4,335 = 0.44). With no explicit slip the
+    # buffer still stands in for it.
+    assert g.ceiling_budget_lot(0.0, 2500.0, 33.5, 10.0, 400.0) == pytest.approx(2400 / 4335)
+    assert g.ceiling_budget_lot(0.0, 2500.0, 33.5, 10.0, 0.0) == pytest.approx(1920 / 335)
     _sandbox(monkeypatch, tmp_path)
     monkeypatch.setattr(g, "DEFAULT_SLIP_POINTS", 400.0)
     venue = _Venue(contract=10.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
-    # The ceiling fit sends 0.44; with BOTH legs slipping 400 points (v5) the floor then fits
+    # The ceiling fit sends 0.55; with BOTH legs slipping 400 points (v5) the floor then fits
     # 2,400 / (10 x (67 + 800)) = 0.277 -> 0.27. Never deferred.
     assert sorted(venue.sent) == [("buy", 0.27, 4310.0), ("sell", 0.27, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
@@ -157,7 +161,7 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
     assert ceil[0]["unshrunk_lots"] == {"buy_stop": 1.49, "sell_stop": 1.49}
     assert ceil[-1]["unshrunk_lots"] == {"buy_stop": 0.75, "sell_stop": 0.75}
     (floor,) = [x for x in doc["shrunk"] if x["rail"] == g.DAILY_FLOOR_RAIL]
-    assert floor["unshrunk_lots"] == {"buy_stop": 0.44, "sell_stop": 0.44}
+    assert floor["unshrunk_lots"] == {"buy_stop": 0.55, "sell_stop": 0.55}
     assert not [d for d in doc["decisions"] if d["reason"] == "risk_budget"]
 
 

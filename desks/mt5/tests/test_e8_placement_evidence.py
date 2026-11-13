@@ -776,7 +776,11 @@ def test_a_refusal_never_publishes_the_account_id(monkeypatch, tmp_path) -> None
     g.run(venue, _FlatMT5(), armed=True)          # a later pass re-sends and is refused
     rows = _rows()
     assert any(r["reason"] == ev.R_VENUE_REJECTED for r in rows), rows
-    assert any(ev.REDACTED in r["why"] for r in rows), rows
+    # Recut v2 must-fix 2: the refusal reaches the row as its TYPE NAME only -- the venue's
+    # text (URL, host, the id) never does, scrubbed or not.
+    assert any(r["reason"] == ev.R_VENUE_REJECTED and "RuntimeError" in r["why"]
+               for r in rows), rows
+    assert not any("tradelocker.com" in r["why"] or "HTTP 502" in r["why"] for r in rows), rows
     leaked = [p for p in (ev.heartbeat_path(), ev.decisions_path())
               if "7654321" in p.read_text("utf-8")]
     _sandbox(monkeypatch, tmp_path)
@@ -853,15 +857,19 @@ def test_the_id_touching_a_letter_underscore_or_dot_never_publishes(
     g.run(refusing, _FlatMT5(), armed=True)
     g.run(refusing, _FlatMT5(), armed=True)
     rows = _rows()
-    assert any(r["reason"] == ev.R_VENUE_REJECTED and ev.REDACTED in r["why"] for r in rows)
+    # Recut v2 must-fix 2: the type name only; the venue's sentence never reaches the row.
+    assert any(r["reason"] == ev.R_VENUE_REJECTED and "RuntimeError" in r["why"]
+               for r in rows), rows
+    assert not any(msg[:12] in r["why"] for r in rows), rows
     leaked = [p for p in (ev.heartbeat_path(), ev.decisions_path())
               if "7654321" in p.read_text("utf-8")]
     _sandbox(monkeypatch, tmp_path)
     _declare_id_account()
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
     g.run(positions_leak, _FlatMT5(), armed=True)
-    assert any(r["reason"] == ev.R_POSITIONS_UNREADABLE and ev.REDACTED in r["why"]
+    assert any(r["reason"] == ev.R_POSITIONS_UNREADABLE and "ConnectionError" in r["why"]
                for r in _rows()), _rows()
+    assert not any(msg[:12] in r["why"] for r in _rows()), _rows()
     leaked += [p for p in (ev.heartbeat_path(), ev.decisions_path())
                if "7654321" in p.read_text("utf-8")]
     assert leaked == []
@@ -960,7 +968,11 @@ def test_an_id_at_the_cut_never_publishes_a_prefix(monkeypatch, tmp_path) -> Non
     texts += [ev.decisions_path().read_text("utf-8"), ev.heartbeat_path().read_text("utf-8")]
     whys = [str(r.get("why")) for t in texts[0::2] for r in
             (json.loads(line) for line in t.splitlines() if line.strip())]
-    assert any("q" * 20 in w for w in whys) and any("p" * 20 in w for w in whys), whys
+    # Recut v2 must-fix 2: both failures reach the rows as their type names, and none of the
+    # padded venue text does -- so no cut of it can publish a prefix of the id either.
+    assert any("RuntimeError" in w for w in whys) and any("ConnectionError" in w
+                                                         for w in whys), whys
+    assert not any("q" * 20 in w or "p" * 20 in w for w in whys), whys
     for w in whys:                       # the padding runs right up to the cut: no id digits
         assert "7654" not in w and not w.rstrip(")").rstrip().endswith(("7", "76", "765")), w
 

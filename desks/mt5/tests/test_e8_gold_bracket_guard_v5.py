@@ -377,16 +377,19 @@ def test_an_unshrunk_window_over_the_budget_is_deferred_with_a_row(
 ) -> None:
     """Re-cut on live: the book's 2% is capped by the r7.1 code ceiling to 0.6% = 600 USD (0.17
     lots, under the lot ceiling), which alone fits the budget, so the account carries a locked
-    0.4-lot short (not at risk; 1,349.2 USD it can still give back): (1,349.2 + 600) x 1.25 =
-    2,436.5 > 2,500 - 100 -> DEFERRED, risk_budget, with the evidence row v4 never wrote, and
-    the window is not spent."""
+    0.6-lot short (not at risk; 2,023.8 USD it can still give back, its 24.13 points of slip
+    INCLUDED). Recut v2 should-fix 1: that committed figure already carries its slip, so it is
+    not grossed up again; only the window's own stop risk is: 2,023.8 + 600 x 1.25 = 2,773.8 >
+    2,500 - 100 -> DEFERRED, risk_budget, with the evidence row v4 never wrote, and the window is
+    not spent. (The 0.4-lot short this test used to carry fitted once the slip was charged once:
+    1,349.2 + 750 = 2,099.2 -- pinned in test_e8_recut_v2_audit_fixes.)"""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     bg._cert_book(tmp_path, 0.02)
     venue = bg._Venue()
-    venue._positions = [_locked_short(0.4)]
+    venue._positions = [_locked_short(0.6)]
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
-    assert doc["committed_risk"]["total_usd"] == pytest.approx(1349.2)
+    assert doc["committed_risk"]["total_usd"] == pytest.approx(2023.8)
     (row,) = _decisions(doc)
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_BUDGET)
     assert row["risk_usd"] == pytest.approx(600.0)
@@ -890,12 +893,12 @@ def test_mf2_a_risk_budget_deferral_is_billed_once_per_window_per_day(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """MF2: the unshrunk risk_budget deferral bills its withheld risk, once per window per day.
-    Re-cut on live: the budget binds at the 0.006 code ceiling beside a locked 0.4-lot short (as
+    Re-cut on live: the budget binds at the 0.006 code ceiling beside a locked 0.6-lot short (as
     in test_an_unshrunk_window_over_the_budget_is_deferred_with_a_row): 600 USD withheld."""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     bg._cert_book(tmp_path, 0.02)
     venue = bg._Venue()
-    venue._positions = [_locked_short(0.4)]
+    venue._positions = [_locked_short(0.6)]
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
     (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]

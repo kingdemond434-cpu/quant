@@ -132,6 +132,22 @@ UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
 #: charged the slip twice and shrank (or deferred) windows that fitted. It applies only where no
 #: explicit slip exists: a zero `slip_points`, or a caller that names none.
 SLIP_BUFFER = 1.25
+class RiskUnbounded(ValueError):
+    """The lane's OWN finding that the account's risk cannot be bounded (a position with no
+    readable stop, an unpriceable instrument, an unreadable journal). Its sentence is written by
+    this module, never by a venue or a library, so it may be published (`published_failure`);
+    any other exception is published by its type name only (audit must-fix 2)."""
+
+
+def published_failure(exc: BaseException) -> str:
+    """What a synced ledger row or heartbeat may say about `exc`: the lane's own RiskUnbounded
+    sentence (scrubbed and clipped), else the exception's TYPE NAME only -- a venue or HTTP
+    error can carry a host, a URL, a header or a body. The full text belongs in the local log."""
+    if isinstance(exc, RiskUnbounded):
+        return f"{e8_evidence.exc_name(exc)}: {e8_evidence.clip(str(exc), 160)}"
+    return e8_evidence.exc_name(exc)
+
+
 #: Kept clear of the floor on top of the buffer: spread and commission on the closes, and the
 #: equity read being seconds old. 0.10% of the starting balance.
 ROOM_MARGIN_USD = 100.0
@@ -1329,7 +1345,7 @@ def position_risk_usd(position: dict, stop: float, *, bid: float, ask: float,
     entry = float(position.get("avgPrice") or 0.0)
     qty = float(position.get("qty") or 0.0)
     if side not in ("buy", "sell") or not (entry > 0) or not (qty > 0) or not (stop > 0):
-        raise ValueError(f"position {position.get('id')} has no readable side/entry/qty/stop")
+        raise RiskUnbounded(f"position {position.get('id')} has no readable side/entry/qty/stop")
     sign = 1.0 if side == "buy" else -1.0
     mark = float(bid) if side == "buy" else float(ask)
     per_unit = max(0.0, sign * (entry - stop), sign * (mark - stop))
@@ -1408,7 +1424,7 @@ def entry_order_risk_usd(order: dict[str, Any], *, slip_points: float, contract_
     sl_type = str(order.get("stopLossType") or "absolute").lower()
     qty = float(order.get("qty") or 0.0)
     if not (level > 0) or not (qty > 0) or sl in (None, "", 0) or sl_type != "absolute":
-        raise ValueError(f"resting order {order.get('id')} has no readable level/qty/absolute "
+        raise RiskUnbounded(f"resting order {order.get('id')} has no readable level/qty/absolute "
                          f"stop: its risk to the floor is unbounded")
     dist = abs(level - float(sl))
     return (dist + float(slip_points)) * qty * float(contract_size) * float(usd_per_point)
@@ -1483,7 +1499,7 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
             return float(fallback) + slip * lt * c
         if fallback is not None and slip == 0.0:
             return float(fallback)
-        raise ValueError("a resting leg of this lane carries no level, stop or lot")
+        raise RiskUnbounded("a resting leg of this lane carries no level, stop or lot")
 
     for row in journal:
         if row.get("status") != "SENT" or row.get("order_id") is None:
@@ -1543,7 +1559,7 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
             usd = entry_order_risk_usd(o, slip_points=slip, contract_size=c)
         else:
             if price_foreign is None:
-                raise ValueError(f"resting order {oid} is on another instrument and cannot be "
+                raise RiskUnbounded(f"resting order {oid} is on another instrument and cannot be "
                                  f"priced: the account-wide limit cannot be bounded")
             usd, meta = _priced(price_foreign(o, "order"))
             foreign_rows.append({"order_id": oid, "kind": "order", "risk_usd": round(usd, 2),
@@ -1552,7 +1568,7 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
         foreign_rows.append({"order_id": oid, "kind": "order", "risk_usd": round(usd, 2)})
     for p in foreign_positions:
         if price_foreign is None:
-            raise ValueError(f"position {p.get('id')} is on another instrument and cannot be "
+            raise RiskUnbounded(f"position {p.get('id')} is on another instrument and cannot be "
                              f"priced: the account-wide limit cannot be bounded")
         usd, meta = _priced(price_foreign(p, "position"))
         foreign_rows.append({"position_id": p.get("id"), "kind": "position",
@@ -1564,7 +1580,7 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
     total = (sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
              + sum(r["risk_usd"] for r in foreign_rows) + sum(retrying.values()))
     if not math.isfinite(total):
-        raise ValueError("committed risk is not finite")
+        raise RiskUnbounded("committed risk is not finite")
     out: dict[str, Any] = {"positions": pos_rows,
                            "pending_brackets": {k: round(v, 2) for k, v in brackets.items()},
                            "foreign": foreign_rows, "slip_points": slip}
@@ -1634,17 +1650,17 @@ def foreign_pricer(venue: Any, *, slip_fraction: float,
         iid = int(row.get("tradableInstrumentId") or 0)
         sym = names.get(iid)
         if not sym:
-            raise ValueError(f"{kind} {row.get('id')}: instrument {iid} is not in the catalogue")
+            raise RiskUnbounded(f"{kind} {row.get('id')}: instrument {iid} is not in the catalogue")
         d = venue.details(sym)
         contract = next((float(d[k]) for k in ("contractSize", "contract_size", "lotSize")
                          if isinstance(d.get(k), (int, float)) and d[k] > 0), None)
         if contract is None:
-            raise ValueError(f"{kind} {row.get('id')}: {sym} states no contract size")
+            raise RiskUnbounded(f"{kind} {row.get('id')}: {sym} states no contract size")
         ccy = str(d.get("currency") or d.get("quoteCurrency") or _quote_ccy_from_symbol(sym)
                   ).upper()
         usdf = 1.0 if ccy == "USD" else _usd_per_unit(venue, ccy) if ccy else None
         if usdf is None:
-            raise ValueError(f"{kind} {row.get('id')}: no USD rate for {sym}")
+            raise RiskUnbounded(f"{kind} {row.get('id')}: no USD rate for {sym}")
         b, a = venue.quote(sym)
         frac, src = _slip(sym)
         meta: dict[str, Any] = {"symbol": sym, "slip_fraction": round(frac, 8), "slip_source": src}
@@ -1654,7 +1670,7 @@ def foreign_pricer(venue: Any, *, slip_fraction: float,
                                         contract_size=contract, usd_per_point=usdf), meta
         stop = _stop(row)
         if not stop > 0:
-            raise ValueError(f"position {row.get('id')} on {sym} has no readable stop: its "
+            raise RiskUnbounded(f"position {row.get('id')} on {sym} has no readable stop: its "
                              f"adverse distance to the floor is the whole room")
         usd = position_risk_usd(row, stop, bid=float(b), ask=float(a), contract_size=contract)
         mark = (float(b) + float(a)) / 2.0
@@ -1675,7 +1691,7 @@ def measure_account_risk(venue: Any, state: dict[str, Any], budget_orders: list[
     (should-fix 2), so both are judged against one measurement."""
     journal = [] if not INTENTS.exists() else _journal_read()
     if journal is None:
-        raise ValueError("the intents journal is unreadable, so this lane's resting "
+        raise RiskUnbounded("the intents journal is unreadable, so this lane's resting "
                          "legs cannot be counted")
     try:
         contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
@@ -2415,7 +2431,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 e8_evidence.page_alert(RISK_UNMEASURABLE_ALERT_ID, "", firing=False, log=log)
         except Exception as exc:
             # Type name only (audit must-fix 2): `why` is published; the message is logged here.
-            why = (f"concurrent open risk unmeasurable ({e8_evidence.exc_name(exc)}); "
+            why = (f"concurrent open risk unmeasurable ({published_failure(exc)}); "
                    "no window placed this pass")
             log(f"concurrent open risk unmeasurable: "
                 f"{e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
@@ -2705,7 +2721,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             # winner's open profit -- which today's floor can still take back -- is not room.
             if rail_skip is None and sized:
                 if guard_decision is None:
-                    raise ValueError("no guard decision to budget against")
+                    raise RiskUnbounded("no guard decision to budget against")
                 room_floor = (floor_room(guard_decision) - float(committed or 0.0)
                               - ROOM_MARGIN_USD)
                 lots_now = {k: v[0] for k, v in sized.items()}
@@ -2752,7 +2768,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                             f"counted profit left today; the excess would be stripped"),
                            **cap_extra)
         except Exception as exc:
-            why = f"bracket rails unmeasurable ({e8_evidence.exc_name(exc)}); deferred"
+            why = f"bracket rails unmeasurable ({published_failure(exc)}); deferred"
             log(f"[{name}] bracket rails raised "
                 f"{e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
             doc["skipped"].append({"window": name, "why": why})
@@ -3016,7 +3032,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             retry_orders = venue.orders(None)
             retry_read = False
             if guard_decision is None:
-                raise ValueError("no guard decision to budget against")
+                raise RiskUnbounded("no guard decision to budget against")
             r_committed, r_detail, r_contract = measure_account_risk(
                 venue, state, retry_orders, xau_positions=xau_positions,
                 venue_positions=venue_positions, bid=float(bid), ask=float(ask),
@@ -3026,7 +3042,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                             "room": float(guard_decision.room_to_daily_floor)}
             doc["retry_committed_risk"] = r_detail
         except Exception as exc:
-            retry_budget = {"error": e8_evidence.exc_name(exc),
+            retry_budget = {"error": published_failure(exc),
                             "code": (e8_evidence.R_ORDERS_UNREADABLE if retry_read
                                      else e8_evidence.R_RISK_UNMEASURABLE)}
             log("dropped-leg re-send budget unmeasurable: "

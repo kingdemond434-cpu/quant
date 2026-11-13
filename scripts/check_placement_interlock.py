@@ -528,7 +528,8 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
                 f"every E8 gold pass has failed for {down_h:.1f}h (status {status} since "
                 f"{hb.get('failing_since') or UNMEASURED}; last OK pass "
                 f"{hb.get('last_ok_at') or 'never recorded'}; limit "
-                f"{E8_FAILING_MAX_HOURS:.0f}h) on host {host.get('hostname') or host.get('verdict')}, account "
+                f"{E8_FAILING_MAX_HOURS:.0f}h) on host "
+                f"{host.get('hostname') or host.get('verdict')}, account "
                 f"{account}: no window can be placed")
         else:
             lane["notes"].append(
