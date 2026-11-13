@@ -61,6 +61,12 @@ OUT = DESK / "reports" / "ADAPTER_DATA.json"
 
 UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; adapter_data)"
 HARD_STOP = frozenset({401, 403, 429, 451})
+#: A hard stop is honoured for a cool-off, never forever and never silently (Auditor SF
+#: 2026-11-13). A 429 is a rate limit: one day. 401/403/451 are refusals: thirty days, then
+#: robots.txt is read again and ONE request is made; a second refusal starts a new cool-off.
+#: The stop's start, age and expiry are published in ADAPTER_DATA.json every pass.
+HARD_STOP_COOLOFF_H = {429: 24.0}
+HARD_STOP_COOLOFF_DEFAULT_H = 24.0 * 30
 REFRESH_H = 24.0
 LAG_DAYS = 45
 MIN_ROWS = 30
@@ -198,6 +204,7 @@ def merge(state: dict[str, Any], fresh: Mapping[str, Mapping[str, float]],
 def frames(state: Mapping[str, Any]) -> dict[str, Any]:
     """One stamped feature frame per economy, from the first-vintage store."""
     import pandas as pd
+
     from research.futures_state import dynamics, stamped
     out: dict[str, Any] = {}
     for eco, series in (state.get("obs") or {}).items():
@@ -247,7 +254,7 @@ def mint(frames_: Mapping[str, Any], universe: frozenset[str], state: dict[str, 
                     pit_status="STAMPED", causal_rationale=mech,
                     falsifier=(f"the {tf} of {sid}.{col} has no measurable relation to {sym} "
                                f"at {chart} out of sample"))
-        except Exception as exc:  # noqa: BLE001 -- counted by type, the pass continues
+        except Exception as exc:
             errors[type(exc).__name__] = errors.get(type(exc).__name__, 0) + 1
             continue
         minted.add(h)
@@ -271,6 +278,28 @@ def due(state: Mapping[str, Any], now: datetime) -> bool:
         return True
 
 
+def hard_stop_view(stop: Mapping[str, Any] | None, now: datetime) -> dict[str, Any] | None:
+    """The published face of a hard stop: code, start, age, and when it lapses."""
+    if not stop:
+        return None
+    code = stop.get("code")
+    cool = HARD_STOP_COOLOFF_H.get(int(code or 0), HARD_STOP_COOLOFF_DEFAULT_H)
+    try:
+        at = datetime.fromisoformat(str(stop.get("at")))
+    except ValueError:
+        at = None
+    if at is None:
+        # an unreadable start is treated as starting now: the stop still lapses, never sticks
+        return {"code": code, "at": None, "age_h": None, "cooloff_h": cool,
+                "expires_at": (now + timedelta(hours=cool)).isoformat(timespec="seconds"),
+                "expired": False}
+    age = (now - at).total_seconds() / 3600.0
+    return {"code": code, "at": at.isoformat(timespec="seconds"), "age_h": round(age, 1),
+            "cooloff_h": cool,
+            "expires_at": (at + timedelta(hours=cool)).isoformat(timespec="seconds"),
+            "expired": age >= cool}
+
+
 def build(*, offline: bool = False, dry_run: bool = False,
           get: Callable[[str], str] | None = None,
           enqueue: Callable[..., tuple[str, bool]] | None = None,
@@ -282,9 +311,16 @@ def build(*, offline: bool = False, dry_run: bool = False,
     fetch = get or http_get
     url = CLI_URL.format(areas="+".join(ECONOMIES))
     access: dict[str, Any] = {"url_host": urllib.parse.urlsplit(url).netloc}
-    if state.get("hard_stop"):
+    stop = hard_stop_view(state.get("hard_stop"), now)
+    if stop and stop["expired"]:
+        state.setdefault("hard_stops_lapsed", []).append(dict(state.pop("hard_stop")))
+        state["hard_stops_lapsed"] = state["hard_stops_lapsed"][-20:]
+        access["previous_hard_stop"] = stop
+        stop = None
+    if stop:
         access["status"] = "HARD_STOP"
-        access["code"] = state["hard_stop"].get("code")
+        access["code"] = stop["code"]
+        access["hard_stop"] = stop
     elif offline:
         access["status"] = "OFFLINE"
     elif not due(state, now):
@@ -304,7 +340,8 @@ def build(*, offline: bool = False, dry_run: bool = False,
             state["hard_stop"] = {"code": exc.code, "at": now.isoformat(timespec="seconds")}
             access["status"] = "HARD_STOP"
             access["code"] = exc.code
-        except Exception as exc:  # noqa: BLE001 -- the type name is the published reason
+            access["hard_stop"] = hard_stop_view(state["hard_stop"], now)
+        except Exception as exc:
             _LOG.warning("adapter_data fetch failed: %s", exc)
             access["status"] = "UNMEASURED"
             access["error_type"] = type(exc).__name__
@@ -323,7 +360,7 @@ def build(*, offline: bool = False, dry_run: bool = False,
         try:
             from libs.moat.registry import enqueue_candidate
             enq = enqueue_candidate
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             registry_note = type(exc).__name__
     cells = mint(fr, universe if universe is not None else _universe(), state,
                  enqueue=None if dry_run else enq)

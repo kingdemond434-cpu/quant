@@ -241,7 +241,11 @@ def test_adapter_data_obeys_robots_and_hard_stops_and_publishes_type_names(
     assert d["access"]["status"] == "HARD_STOP"
     d = AD.build(get=refuse, enqueue=None, state_path=tmp_path / "b.json", series_dir=tmp_path,
                  universe=frozenset())
-    assert d["access"]["status"] == "HARD_STOP"   # persisted: never retried by this leg
+    assert d["access"]["status"] == "HARD_STOP"   # persisted within its cool-off
+    stop = d["access"]["hard_stop"]
+    assert stop["code"] == 403 and stop["at"] and stop["age_h"] is not None
+    assert stop["cooloff_h"] == AD.HARD_STOP_COOLOFF_DEFAULT_H and stop["expired"] is False
+    assert stop["expires_at"] > stop["at"]
 
     def boom(url: str) -> str:
         if url.endswith("robots.txt"):
@@ -254,6 +258,40 @@ def test_adapter_data_obeys_robots_and_hard_stops_and_publishes_type_names(
     assert d["access"] == {"url_host": "sdmx.oecd.org", "status": "UNMEASURED",
                            "error_type": "ValueError"}
     assert "token" not in text and "opt" not in text
+
+
+def test_a_hard_stop_lapses_after_its_cooloff_and_is_reported_never_silent(
+        tmp_path: Path) -> None:
+    """A transient 429 or a 403 never silences the leg forever: the stop is published with its
+    age and expiry, and once it lapses robots.txt is read again and one request is made."""
+    from datetime import UTC, datetime, timedelta
+
+    from research import adapter_data as AD
+    for code, hours in ((429, AD.HARD_STOP_COOLOFF_H[429]), (403, AD.HARD_STOP_COOLOFF_DEFAULT_H)):
+        sp = tmp_path / f"s{code}.json"
+        at = datetime.now(UTC) - timedelta(hours=hours + 1)
+        sp.write_text(json.dumps({"hard_stop": {"code": code, "at": at.isoformat()}}))
+        calls: list[str] = []
+
+        def disallow(url: str, calls: list[str] = calls) -> str:
+            calls.append(url)
+            return "User-agent: *\nDisallow: /\n"
+
+        d = AD.build(get=disallow, enqueue=None, state_path=sp, series_dir=tmp_path,
+                     universe=frozenset())
+        assert d["access"]["status"] == "ROBOTS_DISALLOW"     # robots read again, obeyed
+        assert d["access"]["previous_hard_stop"]["expired"] is True
+        assert d["access"]["previous_hard_stop"]["code"] == code
+        assert calls and all(c.endswith("robots.txt") for c in calls)
+        state = json.loads(sp.read_text())
+        assert "hard_stop" not in state and state["hard_stops_lapsed"][-1]["code"] == code
+    # a stop younger than its cool-off still holds, and says when it lapses
+    sp = tmp_path / "young.json"
+    sp.write_text(json.dumps({"hard_stop": {"code": 429,
+                                            "at": datetime.now(UTC).isoformat()}}))
+    d = AD.build(get=lambda u: "", enqueue=None, state_path=sp, series_dir=tmp_path,
+                 universe=frozenset())
+    assert d["access"]["status"] == "HARD_STOP" and d["access"]["hard_stop"]["expired"] is False
 
 
 # ------------------------------------------------------------------ engine replicas
