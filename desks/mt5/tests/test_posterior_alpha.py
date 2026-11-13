@@ -226,7 +226,7 @@ def test_forward_clocks_use_forward_rows_only_and_fall_back_to_declared_moments(
         "GBPUSD.carry.asia": {"status": "RETIRED_ORPHAN", "n": 40, "exp_r": 0.5},
     }
     pa.SHADOW_STATE.write_text(json.dumps(state), "utf-8")
-    (pa.SHADOW_DIR / "ledger_EURUSD_carry_asia.json").write_text(json.dumps([
+    pa._lp.ledger_path("EURUSD.carry.asia", pa.SHADOW_DIR).write_text(json.dumps([
         {"phase": "historical", "r_multiple": 5.0, "exit_time": "2026-07-01 10:00:00+00:00"},
         {"phase": "historical", "r_multiple": 5.0, "exit_time": "2026-07-02 10:00:00+00:00"},
         {"phase": "forward", "r_multiple": 0.2, "exit_time": "2026-08-01 10:00:00+00:00"},

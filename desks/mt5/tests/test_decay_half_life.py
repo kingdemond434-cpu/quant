@@ -82,7 +82,10 @@ def desk(tmp_path, monkeypatch):
         def shadow(self, name: str, rows: list[dict]) -> None:
             d = tmp_path / "shadow"
             d.mkdir(exist_ok=True)
-            (d / f"ledger_{name.replace('.', '_')}.json").write_text(json.dumps(rows), "utf-8")
+            path = D._lp.ledger_path(name, d)      # one ledger per sleeve key (ledger_paths)
+            path.write_text(json.dumps(rows), "utf-8")
+            D._lp.register(path, name, engine="shadow_forward",
+                           stem=name.split("#")[0].replace(".", "_"))
 
         def queue(self, rows: list[dict]) -> None:
             (tmp_path / "queue.json").write_text(json.dumps({"tasks": rows}), "utf-8")

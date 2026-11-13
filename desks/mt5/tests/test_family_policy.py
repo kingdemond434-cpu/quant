@@ -104,7 +104,10 @@ def test_a_banned_family_is_paroled_only_by_its_pooled_forward_record(tmp_path: 
         rows = [{"entry_time": (t0 + timedelta(hours=i)).isoformat(),
                  "exit_time": (t0 + timedelta(hours=i + 1)).isoformat(), "r_multiple": r}
                 for i, r in enumerate(rs)]
-        (shadow / f"ledger_{key.replace('.', '_')}.json").write_text(json.dumps(rows), "utf-8")
+        path = dm._lp.ledger_path(key, shadow)       # one ledger per sleeve key (ledger_paths)
+        path.write_text(json.dumps(rows), "utf-8")
+        dm._lp.register(path, key, engine="shadow_forward",
+                        stem=key.split("#")[0].replace(".", "_"))
 
     # Below the bar: 30 forward trades, however good.
     _ledger("AUDCAD.discovered.asia", [0.6, 0.4, 0.5, 0.7, 0.3] * 3)

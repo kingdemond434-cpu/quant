@@ -83,8 +83,11 @@ def _write_ledger(root: Path, bars: pd.DataFrame) -> None:
                      "r_multiple": 0.5 * side, "reason": "ttl", "phase": "forward"})
     out = root / "reports" / "shadow"
     out.mkdir(parents=True, exist_ok=True)
-    (out / "ledger_XAUUSD_session_range_breakout_asia.json").write_text(json.dumps(rows),
-                                                                        encoding="utf-8")
+    # The engine's own shape (one ledger per sleeve key, `ledger_paths`): the clock XAUUSD.asia,
+    # declared under the breakout stem the sleeve's (symbol, selector) names.
+    path = fcl._lp.ledger_path("XAUUSD.asia", out)
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    fcl._lp.register(path, "XAUUSD.asia", engine="shadow_forward", stem="XAUUSD_asia")
 
 
 def _write_fills(root: Path) -> int:

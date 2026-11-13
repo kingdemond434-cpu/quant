@@ -343,7 +343,7 @@ def test_forward_clocks_contribute_forward_rows_only(desk: Desk) -> None:
             for i, v in trades]
     rows += [{"exit_time": _when(i).isoformat(), "r_multiple": 99.0, "phase": "historical"}
              for i, _ in trades]
-    (rr.SHADOW_DIR / "ledger_EURUSD_asia.json").write_text(json.dumps(rows), "utf-8")
+    rr._lp.ledger_path("EURUSD.asia", rr.SHADOW_DIR).write_text(json.dumps(rows), "utf-8")
     row = _row(rr.run(write=False, now=NOW), "EURUSD.asia")
 
     assert row["lane"] == "forward" and row["basis"] == "shadow_ledger_forward"

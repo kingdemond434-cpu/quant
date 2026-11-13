@@ -58,6 +58,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -362,8 +369,8 @@ def _survivor_forward_pairs() -> list[tuple[float, float]]:
         if not isinstance(row, dict):
             continue
         claim = row.get("expected_edge_r", row.get("edge_r"))
-        led = BASE / "reports" / "shadow" / f"ledger_{key}.json"
-        if claim is None or not led.exists():
+        led = _lp.resolve(str(key), BASE / "reports" / "shadow")   # its own, never a neighbour's
+        if claim is None or led is None:
             continue
         try:
             fwd = json.loads(led.read_text("utf-8"))

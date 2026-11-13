@@ -43,6 +43,13 @@ for _p in (str(REPO), str(BASE / "research")):
 
 OUT = BASE / "reports" / "DRAWDOWN_ALPHA_MINER.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LEDGER_DIRS = (BASE / "reports" / "shadow", REPO / "backups" / "moat" / "shadow_ledgers")
 MIN_DEPTH_R = 1.0
@@ -100,14 +107,14 @@ def load_forward(dirs: tuple[Path, ...] = LEDGER_DIRS) -> list[tuple[str, str, f
     for d in dirs:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _lp.iter_ledgers(d):  # skips legacy names the migration retired
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
                 continue
             if not isinstance(rows, list):
                 continue
-            sleeve = f.stem.removeprefix("ledger_")
+            sleeve = _lp.sleeve_id(f)  # unique per ledger, parses like the stem
             for row in rows:
                 if not isinstance(row, dict):
                     continue

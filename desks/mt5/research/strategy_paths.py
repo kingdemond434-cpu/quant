@@ -46,6 +46,13 @@ from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parents[1]
 SHADOW = BASE / "reports" / "shadow"
@@ -84,7 +91,7 @@ def _day(stamp: object) -> date | None:
 def _ledgers() -> dict[str, list[dict[str, Any]]]:
     """sleeve id -> its FORWARD trades. A ledger with none is dropped, not zero-filled."""
     out: dict[str, list[dict[str, Any]]] = {}
-    for f in sorted(SHADOW.glob("ledger_*.json")):
+    for f in _lp.iter_ledgers(SHADOW):  # skips retired legacy names
         rows = _read(f, [])
         if not isinstance(rows, list):
             continue
@@ -92,7 +99,7 @@ def _ledgers() -> dict[str, list[dict[str, Any]]]:
                if isinstance(r, dict) and str(r.get("phase") or "") == "forward"
                and isinstance(r.get("r_multiple"), (int, float))]
         if len(fwd) >= MIN_TRADES:
-            out[f.stem[len("ledger_"):]] = fwd
+            out[_lp.sleeve_id(f)] = fwd  # unique per ledger
     return out
 
 

@@ -119,6 +119,13 @@ UNIVERSE = BASE / "data" / "universe"
 MOAT_SERIES = BASE / "data" / "moat"
 SHADOW_DIR = BASE / "reports" / "shadow"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 MACRO_REPORT = BASE / "reports" / "MACRO_INTELLIGENCE.json"
 LEDGER = BASE / "data" / "ingestion_ledger.jsonl"
@@ -801,10 +808,12 @@ def units_sleeve_ledgers(cursor: dict[str, Any], gaps: list[dict[str, str]]
     """One unit per SLEEVE: the shadow replay ledgers, plus the live ledger's own sleeve tags."""
     items: list[Unit] = []
     if SHADOW_DIR.exists():
-        for path in sorted(SHADOW_DIR.glob("ledger_*.json")):
-            stem = path.stem[len("ledger_"):]
+        for path in _lp.iter_ledgers(SHADOW_DIR):
+            # One unit per ledger FILE (one per sleeve key since 2026-11-11); matched on the
+            # declared `<sym>_<window>` stem, which params variants may share (`ledger_paths`).
+            stem = _lp.stem_of(path)
             sym, _, window = stem.partition("_")
-            items.append(Unit("sleeve_ledger", stem, str(path),
+            items.append(Unit("sleeve_ledger", _lp.sleeve_id(path), str(path),
                               (stem.lower(), f"{sym}|{window}".lower(), sym.lower()),
                               (sym.upper(),), at=_mtime(path), pit=True))
     else:

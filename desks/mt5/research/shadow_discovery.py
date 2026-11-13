@@ -74,6 +74,13 @@ from research import hazard_engine as hz  # noqa: E402
 from research import posterior_alpha as pa  # noqa: E402
 
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 SLEEVES, LIVE_LEDGER = BASE / "data" / "sleeves.json", _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE, HAZARD = SHADOW_DIR / "shadow_state.json", BASE / "reports" / "ALPHA_HAZARD.json"
@@ -213,7 +220,7 @@ def collect(notes: list[dict[str, str]], stats: dict[str, Any]) -> dict[str, Sle
         if str(row.get("status") or "") not in pa.FORWARD_STATUSES:
             skipped += 1
             continue
-        led = pa._read_json(SHADOW_DIR / f"ledger_{str(key).replace('.', '_')}.json", [])
+        led = pa._read_json(_lp.ledger_path(str(key), SHADOW_DIR), [])
         out[str(key)] = Sleeve(
             str(key), "forward", str(key).split(".")[0], str(row.get("status")),
             [t for r in (led if isinstance(led, list) else [])
@@ -256,7 +263,7 @@ def collect(notes: list[dict[str, str]], stats: dict[str, Any]) -> dict[str, Sle
     for sleeve in out.values():
         if sleeve.trades:
             continue
-        led = pa._read_json(SHADOW_DIR / f"ledger_{sleeve.name}.json", [])
+        led = pa._read_json(_lp.ledger_path(str(sleeve.name), SHADOW_DIR), [])
         rows_f = [t for r in (led if isinstance(led, list) else [])
                   if isinstance(r, dict) and str(r.get("phase") or "") == "forward"
                   and (t := _trade_of(r)) is not None]

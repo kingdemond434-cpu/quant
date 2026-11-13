@@ -93,6 +93,13 @@ from libs.research.effective_breadth import (  # noqa: E402
     lagged_vol_regime,
     realised_breadth,
 )
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 OUT = BASE / "reports" / "EFFECTIVE_BREADTH.json"
 HISTORY = BASE / "data" / "effective_breadth.jsonl"
@@ -147,7 +154,7 @@ def _ledger_rows() -> dict[str, list[dict[str, Any]]]:
     for d in LEDGER_DIRS:
         if not d.is_dir():
             continue
-        for f in sorted(d.glob("ledger_*.json")):
+        for f in _lp.iter_ledgers(d):  # skips legacy names the migration retired
             try:
                 rows = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
@@ -156,7 +163,7 @@ def _ledger_rows() -> dict[str, list[dict[str, Any]]]:
                 continue
             keep = [r for r in rows if isinstance(r, dict)]
             if keep:
-                out.setdefault(f.stem.removeprefix("ledger_"), []).extend(keep)
+                out.setdefault(_lp.sleeve_id(f), []).extend(keep)
     return out
 
 

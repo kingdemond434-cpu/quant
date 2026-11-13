@@ -70,6 +70,13 @@ import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
@@ -538,8 +545,8 @@ def forward_series(key: str, row: dict | None,
                    live: dict[str, list[float]] | None = None) -> tuple[list[float], str]:
     """(forward per-trade R, where it came from) for one enrolled clock.
 
-    The shadow ledger first (`ledger_<key with dots as underscores>.json`), then the same name
-    with the parameter signature stripped, then the live ledger for a clock promoted to a sleeve,
+    The clock's own shadow ledger first (`ledger_paths.ledger_path(key)`), then the one ledger
+    that declares the parameter-stripped stem (if exactly one does), then the live ledger for a clock promoted to a sleeve,
     then the row's own moments -- which are NOT a series and are reported as such rather than
     silently imputed.
 
@@ -551,16 +558,19 @@ def forward_series(key: str, row: dict | None,
     hold a series that is not exclusively their clock's.
     """
     base_key = key.split("#", 1)[0]
-    exact = key.replace(".", "_")
-    for stem in (exact, base_key.replace(".", "_")):
-        path = SHADOW / f"ledger_{stem}.json"
-        if not path.exists():
+    # ONE LEDGER PER SLEEVE KEY since 2026-11-11 (`ledger_paths`): the clock's own file first;
+    # the stripped name only when exactly ONE ledger declares that stem, and it is still flagged
+    # `_shared` because it is not proven to be this parameterisation's.
+    own = _lp.find(key, SHADOW)
+    for path, basis in ((own, "shadow_ledger_forward"),
+                        (None if own is not None else _lp.resolve(base_key, SHADOW),
+                         "shadow_ledger_forward_shared")):
+        if path is None:
             continue
         r = [v for v in (_fnum(t.get("r_multiple")) for t in _rows_of(path)
                          if str(t.get("phase") or "") == "forward") if v is not None]
         if r:
-            return r, ("shadow_ledger_forward" if stem == exact
-                       else "shadow_ledger_forward_shared")
+            return r, basis
     names = live if live is not None else live_series()
     if names:
         stem = base_key.replace(".", "_")

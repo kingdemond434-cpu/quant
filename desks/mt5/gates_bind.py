@@ -1,11 +1,13 @@
-import sys, json, glob, os
+import sys, json, os
 sys.path.insert(0, "research"); sys.path.insert(0, ".")
 from forward_verdict import (VERDICT_MIN_DAYS, VERDICT_MIN_TRADES, SEQ_MIN_TRADES,
                              MIN_EFFECTIVE_N, effective_n, sequential_lower_bound)
 
+import ledger_paths as _lp  # the one namer of a forward ledger (research/ledger_paths.py)
+
 _FWD = {"forward", "FORWARD"}
 rows = []
-for f in glob.glob(os.path.join("reports", "shadow", "ledger_*.json")):
+for f in _lp.iter_ledgers(os.path.join("reports", "shadow")):  # skips retired legacy names
     try:
         d = json.load(open(f, encoding="utf-8"))
     except Exception:
@@ -21,7 +23,7 @@ for f in glob.glob(os.path.join("reports", "shadow", "ledger_*.json")):
         rs.append(float(r)); days.add(et[:10])
     if len(rs) >= 3:
         neff, basis = effective_n(rs, sorted(days) if days else None)
-        rows.append((os.path.basename(f)[7:-5], len(rs), len(days), neff,
+        rows.append((_lp.sleeve_id(f), len(rs), len(days), neff,
                      sum(rs) / len(rs), sequential_lower_bound(rs)))
 rows.sort(key=lambda r: -r[1])
 print(f"  sleeves with >=3 forward trades: {len(rows)}")

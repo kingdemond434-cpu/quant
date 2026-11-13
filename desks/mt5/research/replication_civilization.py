@@ -46,6 +46,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -1059,13 +1066,16 @@ def forward_rows(path: Path = SLEEVE_REGISTRY) -> list[dict[str, Any]]:
 
 def ledger_for(key: str, identity: Mapping[str, Any], shadow_dir: Path = SHADOW_DIR
                ) -> list[dict[str, Any]]:
-    """`ledger_<SYM>_<family>_<selector>.json` (breakout clocks: `ledger_<SYM>_<selector>`)."""
+    """The clock's OWN ledger (`ledger_paths.ledger_path(key)`); else the one ledger that declares
+    its `<SYM>_<family>_<selector>` / `<SYM>_<selector>` stem, only when exactly one does."""
     sym, fam = str(identity.get("symbol") or ""), str(identity.get("family") or "")
     sel = str(identity.get("selector") or "")
-    names = [f"ledger_{sym}_{fam}_{sel}.json", f"ledger_{sym}_{sel}.json",
-             f"ledger_{key.replace('.', '_').replace('#', '_')}.json"]
-    for name in names:
-        rows = _read_json(shadow_dir / name, None)
+    paths = [_lp.find(key, shadow_dir), _lp.resolve(f"{sym}_{fam}_{sel}", shadow_dir),
+             _lp.resolve(f"{sym}_{sel}", shadow_dir)]
+    for path in paths:
+        if path is None:
+            continue
+        rows = _read_json(path, None)
         if isinstance(rows, list):
             return [r for r in rows if isinstance(r, dict)]
         if isinstance(rows, dict) and isinstance(rows.get("trades"), list):

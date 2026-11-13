@@ -32,6 +32,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 BASE = Path(__file__).resolve().parent.parent
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 STATE = BASE / "data" / "regime_state.json"
@@ -106,8 +113,14 @@ def _read_live(path: Path) -> tuple[dict[str, list[float]], dict[str, list[float
 def _read_shadow_ledgers(shadow_dir: Path) -> dict[str, list[float]]:
     """reports/shadow/ledger_<SYM>_<window>.json -> 'SYM|window' -> r_multiples (time order)."""
     out: dict[str, list[float]] = {}
-    for p in sorted(shadow_dir.glob("ledger_*.json")):
-        stem = p.stem[len("ledger_"):]
+    # ONE LEDGER PER `SYM|window`, OR NONE (2026-11-11). Ledgers are named per sleeve key now
+    # (`ledger_paths`); the `SYM_window` stem is read from each one's sidecar, and a stem several
+    # params variants share is SKIPPED -- it used to be one file holding whichever variant wrote
+    # last, and splicing all of them into one series would count each trade once per variant.
+    names, _ambiguous = _lp.join_names(list(_lp.iter_ledgers(shadow_dir)))
+    for p, stem in sorted(names.items()):
+        if stem != _lp.stem_of(p):
+            continue                        # a shared stem: no single sleeve answers to it
         sym, _, window = stem.partition("_")
         if not window:
             continue

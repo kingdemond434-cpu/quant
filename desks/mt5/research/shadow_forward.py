@@ -4,7 +4,8 @@ Deterministic replay on real live H1 bars from SHADOW_START forward. Same
 families/engine code as the backtest -> identical signals given identical bars.
 No capital: fills simulated at actual bar opens with the account cost model.
 
-Ledger: reports/shadow/ledger_<sym>_<window>.json (full trade list, idempotent).
+Ledger: reports/shadow/ledger_<slug>__<sha1(key)[:12]>.json, one per sleeve key
+(`research/ledger_paths.py`; full trade list, idempotent).
 State:  reports/shadow/shadow_state.json (per sleeve n / cumR / exp / maxDD /
 days / status; runs once per UTC day).
 
@@ -31,6 +32,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families
 from mt5desk.family_call import signals as family_signals
+
+try:
+    from research import ledger_paths as _lp
+except ImportError:                                  # run as a script from research/
+    import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 # This engine is called both as ``research.shadow_forward`` and as a script on the desk box.
@@ -826,6 +832,48 @@ def _stalest_symbols_first(enrolled: list, state: dict) -> list:
 
 
 
+def ledger_owners(rows: list) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """({legacy file name: [keys]}, {key: join stem}) for engine rows of `main`'s arity."""
+    pairs: list[tuple[str, str]] = []
+    stems: dict[str, str] = {}
+    for row in rows:
+        sym, win, params = row[0], row[1], row[2]
+        fam = row[3] if len(row) > 3 else "session_range_breakout"
+        side = row[4] if len(row) > 4 else "LONG"
+        key = sleeve_key(sym, win, params, fam, side)
+        stem = _lp.legacy_stem_forward(sym, fam, win)
+        pairs.append((key, stem))
+        stems[key] = stem
+    return _lp.owners_of(pairs), stems
+
+
+def migrate_ledgers(full: list | None, extra: list | None = None) -> dict | None:
+    """Retire the shared legacy ledgers before this pass writes per-key ones (never deletes).
+
+    ALWAYS JUDGED ON THE FULL KEY SET. A `rows=` pass (re-enrolment, liveness repair) sees a
+    handful of keys, and a shared file one of them maps to would look like that key's alone and
+    be renamed to it -- carrying a neighbour's trades under a key-unique name. So a partial pass
+    rebuilds the full set itself. A failure here is logged and the pass goes on: the per-key
+    write below is correct either way; only the evidence move waits for the next pass.
+    """
+    try:
+        rows = list(full) if full is not None else (
+            [(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG")
+             for s, w in SLEEVES] + certified_sleeves())
+        rows += list(extra or [])
+        owners, stems = ledger_owners(rows)
+        acct = _lp.migrate(owners, engine="shadow_forward", shadow_dir=SHADOW_DIR, stems=stems)
+        if acct["collided"] or acct["renamed"] or acct["superseded"]:
+            slog(f"ledger migration: {len(acct['collided'])} shared legacy file(s) kept as "
+                 f"evidence under _collided/, {len(acct['renamed'])} renamed to their one key, "
+                 f"{len(acct['superseded'])} superseded")
+        return acct
+    except Exception as exc:
+        slog(f"ledger migration failed ({type(exc).__name__}: {exc}); per-key ledgers are "
+             f"still written, the legacy files wait for the next pass")
+        return None
+
+
 def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     """Evaluate a set of forward rows and write their ledger.
 
@@ -854,6 +902,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     enrolled = rows if rows is not None else (
         [(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG") for s, w in SLEEVES]
         + certified_sleeves())
+    migrate_ledgers(enrolled if rows is None else None, extra=rows)
     # Keep variants of one symbol adjacent so their bars are loaded once, while never retaining
     # the full multi-symbol history set. The old unbounded h1_cache crossed the service's 400 MB
     # safety ceiling as soon as all certified families became genuinely enrollable.
@@ -1232,8 +1281,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
-            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            # ONE LEDGER PER SLEEVE KEY (2026-11-11). The name used to be symbol+family+window
+            # only, so every params variant of one cell wrote ONE file and the last writer won
+            # (965 of 1,016 keys on 121 files). `ledger_paths` is the only namer now.
+            ledger = _lp.ledger_path(key, SHADOW_DIR)
             from research.session_runtime_window import ensure as _ensure_session_window
             if _ensure_session_window(key, params, st, ledger=ledger):
                 slog(f"{key}: session filter corrected; prior state archived and a "
@@ -1289,6 +1340,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   **_stamp}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
+            # Owner recorded AFTER the write: OWN_REPLAY is never claimed for an unwritten file.
+            _lp.register(ledger, key, engine="shadow_forward",
+                         stem=_lp.legacy_stem_forward(sym, fam, win))
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours

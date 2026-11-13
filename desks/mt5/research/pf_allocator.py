@@ -82,6 +82,13 @@ from research.heat_policy import (  # noqa: E402
     per_sleeve_bounds,
     resolve,
 )
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 OUT = BASE / "reports" / "pf_allocation.json"
 #: The constrained book's hourly PROOF SWITCH (research/constrained_book.py). Read, never written.
@@ -320,6 +327,11 @@ def _log(msg: str) -> None:
 # EVIDENCE
 # ---------------------------------------------------------------------------------------
 
+#: How the last `build_evidence` joined forward ledgers to columns: the stems refused as shared
+#: and each named column's clock status. Published in `pf_allocation.json["forward_join"]`.
+_FORWARD_JOIN: dict[str, Any] = {}
+
+
 def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
     """The daily-R matrix for every priced sleeve, plus forward days per sleeve.
 
@@ -352,8 +364,18 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
 
     forward: dict[str, dict[str, float]] = {}
     try:
-        from research.portfolio_evidence import daily_series
+        from research.portfolio_evidence import ambiguous_stems, column_clock_status, daily_series
         forward = daily_series()
+        _amb = ambiguous_stems()
+        _FORWARD_JOIN.clear()
+        _FORWARD_JOIN.update({"ambiguous_stems": _amb, "column_clocks": column_clock_status(),
+                              "basis": "ledger_paths.join_names: a stem joins only when ONE "
+                                       "sleeve key's ledger declares it; columns join by exact "
+                                       "clock key"})
+        if _amb:
+            _log(f"forward evidence: {len(_amb)} cell stem(s) carry several sleeve keys' "
+                 f"ledgers ({sum(len(v) for v in _amb.values())} ledgers); each is published "
+                 f"under its own key and NOT joined by the shared stem (ledger_paths)")
     except Exception as exc:
         _log(f"forward evidence unavailable ({type(exc).__name__}); backtest basis only")
     return daily, forward
@@ -602,8 +624,10 @@ def scalp_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         acct["refused"]["shadow"] = f"{shadow} absent on this host"
         return {}, acct
     out: dict[str, pd.Series] = {}
-    for path in sorted(shadow.glob(SCALP_LEDGERS)):
-        name = path.stem[len("ledger_"):]
+    for path in _lp.iter_ledgers(shadow, SCALP_LEDGERS):
+        # THE CLOCK'S OWN KEY, from the ledger's sidecar (`ledger_paths`): since 2026-11-11 the
+        # file name is `ledger_<slug>__<hash>.json`, so the stem is no longer the sleeve name.
+        name = _lp.key_of(path) or _lp.stem_of(path)
         acct["ledgers"] += 1
         try:
             rows = json.loads(path.read_text("utf-8"))
@@ -2065,22 +2089,35 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
     except Exception as exc:
         _log(f"state admission unreadable ({type(exc).__name__}: {exc}); conditioning stands")
 
-    # PER-SLEEVE TRADES, KEYED THE WAY THE BOOK IS KEYED. The shadow ledgers are
-    # ledger_<SYM>_<window>.json and the allocator's columns are the sleeve names, so the join is
-    # on the file stem. A ledger that does not match a column is simply unused -- never merged
-    # into a neighbouring sleeve, which would attribute one edge's hours to another.
+    # PER-SLEEVE TRADES, KEYED BY SLEEVE KEY (2026-11-11, Auditor ruling on the ledger
+    # collision). Every ledger is published under its OWN sleeve key, and under the legacy
+    # `<SYM>_<window>` stem the book's columns use ONLY when one ledger owns that stem
+    # (`ledger_paths.join_names`). The join used to be the FILE stem, and every params variant of
+    # a cell wrote one file, so a column was conditioned on whichever variant wrote last; with
+    # the mirror directory read too, two stale copies were then `.extend`ed into one sleeve. A
+    # ledger that matches no column is unused -- never merged into a neighbouring sleeve.
+    try:
+        from research.portfolio_evidence import COLUMN_CLOCKS as _COLUMN_CLOCKS
+    except Exception:
+        _COLUMN_CLOCKS: dict[str, str] = {}  # type: ignore[no-redef]
     trades: dict[str, list[dict]] = {}
-    for d in (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers"):
-        if not d.is_dir():
+    ledgers = list(_lp.iter_ledgers((BASE / "reports" / "shadow",
+                                     ROOT / "backups" / "moat" / "shadow_ledgers")))
+    names, ambiguous = _lp.join_names(ledgers)
+    if ambiguous:
+        _log(f"state: {len(ambiguous)} shared cell stem(s) joined by sleeve key only")
+    for f in ledgers:
+        try:
+            rows = json.loads(f.read_text("utf-8"))
+        except Exception:
             continue
-        for f in sorted(d.glob("ledger_*.json")):
-            try:
-                rows = json.loads(f.read_text("utf-8"))
-            except Exception:
-                continue
-            if isinstance(rows, list) and rows:
-                trades.setdefault(f.stem[len("ledger_"):], []).extend(
-                    r for r in rows if isinstance(r, dict) and "r_multiple" in r)
+        if not (isinstance(rows, list) and rows):
+            continue
+        keep = [r for r in rows if isinstance(r, dict) and "r_multiple" in r]
+        key = _lp.key_of(f)
+        cols = [c for c, clock in _COLUMN_CLOCKS.items() if key == clock]
+        for name in dict.fromkeys(n for n in (names[f], key, *cols) if n):
+            trades.setdefault(name, []).extend(keep)
     return phase, trades, off
 
 
@@ -5155,6 +5192,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # P12: E[log W] as a function of capital per sleeve, and which edges this account's size
         # is still able to harvest. Read from CAPACITY.json; sizes nothing.
         "capacity_growth": _capacity_growth(),
+        # Auditor S4 (2026-11-11): the forward join made visible -- shared stems refused, and
+        # each gold column's clock JOINED / NO_LEDGER / UNMEASURED. Absent = the join never ran.
+        "forward_join": dict(_FORWARD_JOIN) or {"status": "UNMEASURED",
+                                                "why": "forward evidence was not built this pass"},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")

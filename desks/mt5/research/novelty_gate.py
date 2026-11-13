@@ -70,6 +70,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -377,12 +384,18 @@ def _series_for(m: Member) -> tuple[str, dict[str, float] | list[float]] | None:
     cache_key = (str(SHADOW_DIR), sym, fam, sess)
     if cache_key in _SERIES_CACHE:
         return _SERIES_CACHE[cache_key]
-    paths = [SHADOW_DIR / n for n in (f"ledger_{sym}_{fam}_{sess}.json",
-                                      f"ledger_{sym}_{fam}_continuous.json",
-                                      f"ledger_{sym}_{sess}.json")]
-    if fam:
-        with contextlib.suppress(OSError):
-            paths.extend(sorted(SHADOW_DIR.glob(f"ledger_{sym}_{fam}_*.json")))
+    # By DECLARED stem (`ledger_paths`; one ledger per sleeve key since 2026-11-11), in the old
+    # order: the exact cell, its continuous twin, the breakout name, then every ledger of this
+    # symbol and family -- a mechanism-level proxy, which is what this similarity has always been.
+    paths: list[Path] = []
+    with contextlib.suppress(OSError):
+        _all = list(_lp.iter_ledgers(SHADOW_DIR))
+        _stems = {p: _lp.stem_of(p).lower() for p in _all}
+        for want in (f"{sym}_{fam}_{sess}", f"{sym}_{fam}_continuous", f"{sym}_{sess}"):
+            paths.extend(p for p in _all if _stems[p] == want.lower() and p not in paths)
+        if fam:
+            pre = f"{sym}_{fam}_".lower()
+            paths.extend(p for p in _all if _stems[p].startswith(pre) and p not in paths)
     out: tuple[str, dict[str, float]] | None = None
     for path in paths:
         rows = _json(path)

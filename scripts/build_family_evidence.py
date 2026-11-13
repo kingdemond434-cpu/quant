@@ -78,19 +78,15 @@ def _registry_identities() -> dict[str, dict]:
     return out
 
 
-def _ledger_for(sym: str, fam: str, selector: str) -> Path | None:
-    """The engine's own two-branch ledger path for this identity.
+def _ledger_for(key: str) -> Path | None:
+    """The sleeve key's OWN forward ledger (`research/ledger_paths.py`), or None.
 
-    `shadow_forward` writes `ledger_<sym>_<win>.json` for session_range_breakout and
-    `ledger_<sym>_<fam>_<win>.json` for everything else. Reproducing that rule FORWARD from a
-    recorded identity is safe; inferring it backward from a filename is not.
+    Until 2026-11-11 this rebuilt `ledger_<sym>_<fam>_<win>.json` from the identity -- a file
+    every params variant of the cell shared, so each registered variant was panelled on whichever
+    variant wrote last, and one file's trades were counted once per variant.
     """
-    cand = [SHADOW / (f"ledger_{sym}_{selector}.json" if fam == "session_range_breakout"
-                      else f"ledger_{sym}_{fam}_{selector}.json")]
-    # Older rows were written before the family was carried in the name.
-    cand.append(SHADOW / f"ledger_{sym}_{fam}.json")
-    cand.append(SHADOW / f"ledger_{sym}_{selector}.json")
-    return next((c for c in cand if c.exists()), None)
+    import ledger_paths as lp
+    return lp.find(key, SHADOW)
 
 
 def _forward_trades(path: Path) -> list[tuple[str, float]]:
@@ -136,7 +132,7 @@ def main() -> int:
     fams: dict[str, dict[str, list[tuple[str, float]]]] = defaultdict(dict)
     unmatched = 0
     for key, ident in identities.items():
-        path = _ledger_for(ident["symbol"], ident["family"], ident["selector"])
+        path = _ledger_for(key)
         if path is None:
             unmatched += 1
             continue

@@ -68,6 +68,13 @@ import latency_lab as ll  # noqa: E402
 
 from libs.research import feed_observatory as fo  # noqa: E402
 from libs.research import impact_lab as il  # noqa: E402
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 UNMEASURED = "UNMEASURED"
 MEASURED = "MEASURED"
@@ -374,10 +381,20 @@ def ledger_signal(base: Path, sleeve: Mapping[str, Any]
     over the sleeve's median holding as the target."""
     symbol = str(sleeve.get("symbol") or "")
     if sleeve.get("window"):
-        name = f"ledger_{symbol}_{sleeve['window']}.json"
+        stem = _lp.legacy_stem_forward(symbol, "session_range_breakout", str(sleeve["window"]))
     else:
-        name = f"ledger_{symbol}_{sleeve.get('family')}_{sleeve.get('selector') or 'all'}.json"
-    path = base / "reports" / "shadow" / name
+        stem = _lp.legacy_stem_forward(symbol, str(sleeve.get("family")),
+                                       str(sleeve.get("selector") or "all"))
+    # THE SLEEVE'S OWN LEDGER, by its key first and its stem only when one ledger owns it: the
+    # stem-named file was shared by every params variant until 2026-11-11 (ledger_paths).
+    shadow = base / "reports" / "shadow"
+    _fam_stem = f"{symbol}_{sleeve.get('family')}_{sleeve.get('selector') or 'all'}"
+    path = next((p for p in (_lp.resolve(s, shadow) for s in
+                             (str(sleeve.get("name") or ""), stem, _fam_stem) if s)
+                 if p is not None), None)
+    name = path.name if path is not None else stem
+    if path is None:
+        return [], [], f"no single shadow ledger answers to {sleeve.get('name') or stem}"
     try:
         records = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):

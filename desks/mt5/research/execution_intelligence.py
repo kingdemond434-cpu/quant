@@ -48,6 +48,13 @@ from libs.execution import alpha_capture as ac  # noqa: E402
 from libs.execution import execution_choice_model as ecm  # noqa: E402
 from libs.execution import fill_corpus as fc  # noqa: E402
 from libs.execution import meta_label as ml  # noqa: E402
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 #: The corpus the hourly execution twin assembles, and this organ's own two artifacts.
 CORPUS = _DESK / "data" / "fill_corpus.jsonl"
@@ -126,14 +133,20 @@ def bracket_expectancy(ledger_dir: Path | None = None) -> dict[str, dict[str, An
     ledger_dir = SHADOW_LEDGERS if ledger_dir is None else ledger_dir
     out: dict[str, dict[str, Any]] = {}
     try:
-        ledgers = sorted(ledger_dir.glob("ledger_*.json"))
+        ledgers = list(_lp.iter_ledgers(ledger_dir))
     except OSError:
         return out
+    # A cell is `<SYMBOL>.<session>` only when ONE ledger owns that stem; params variants that
+    # share it (one file until 2026-11-11, see `ledger_paths`) are each their own sleeve key.
+    names, _ambiguous = _lp.join_names(ledgers)
     for ledger in ledgers:
         rows = _json_list(ledger)
-        stem = ledger.stem[len("ledger_"):]
-        parts = stem.split("_")
-        key = f"{parts[0]}.{'_'.join(parts[1:]) or 'unknown'}"
+        stem = names[ledger]
+        if stem == _lp.stem_of(ledger):
+            parts = stem.split("_")
+            key = f"{parts[0]}.{'_'.join(parts[1:]) or 'unknown'}"
+        else:
+            key = stem
         rs, risks = [], []
         for row in rows:
             r = _f(row.get("r_multiple"))

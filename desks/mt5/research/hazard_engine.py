@@ -48,6 +48,13 @@ import numpy as np
 BASE = Path(__file__).resolve().parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 DECAY_ACTIONS = BASE / "data" / "decay_actions.jsonl"
 SHADOW_DIR = BASE / "reports" / "shadow"
@@ -253,7 +260,7 @@ def _ledger_index(directory: Path | None = None) -> dict[str, Path]:
     """Lowercased basename -> path for every shadow ledger. Case matters in the ledger names
     (`ledger_EURGBP_discovered_asia.json`) and not in the roster's sleeve names."""
     try:
-        return {p.name.lower(): p for p in (directory or SHADOW_DIR).glob("ledger_*.json")}
+        return {p.name.lower(): p for p in _lp.iter_ledgers(directory or SHADOW_DIR)}
     except OSError:
         return {}
 
@@ -271,11 +278,18 @@ def clock_ident(key: str) -> tuple[str, str, str]:
     return parts[0], parts[1], parts[2]
 
 
-def ledger_basename(symbol: str, family: str, window: str) -> str:
-    """`shadow_forward`'s own file naming, mirrored (shadow_forward.py:729-730)."""
-    if family in ("session_range_breakout", "", "?"):
-        return f"ledger_{symbol}_{window}.json"
-    return f"ledger_{symbol}_{family}_{window}.json"
+def clock_series_id(key: str) -> str:
+    """A forward clock's series id: its OWN ledger's file name, lowercased (`ledger_paths`).
+
+    It was `ledger_<sym>_<fam>_<win>.json` until 2026-11-11 -- a name every params variant of one
+    cell shared, so all of them were scored on whichever variant wrote last."""
+    return _lp.ledger_name(str(key)).lower()
+
+
+def legacy_stem(symbol: str, family: str, window: str) -> str:
+    """The `<sym>_<fam>_<win>` join stem (never a file name any more)."""
+    fam = "session_range_breakout" if family in ("", "?") else family
+    return _lp.legacy_stem_forward(symbol, fam, window)
 
 
 def roster_rows(doc: Any) -> dict[str, dict]:
@@ -311,12 +325,13 @@ def collect_series() -> dict[str, dict]:
     by_file: dict[str, tuple[str, str, str]] = {}
     for key, row in (state if isinstance(state, dict) else {}).items():
         if isinstance(row, dict):
-            sym, fam, win = clock_ident(key)
-            by_file.setdefault(ledger_basename(sym, fam, win).lower(), (sym, fam, win))
+            by_file.setdefault(clock_series_id(key), clock_ident(key))
     for lname, path in sorted(_ledger_index().items()):
         sym, fam, win = by_file.get(lname, ("", "?", ""))
-        if not sym:  # a ledger with no clock of its own: read its identity off the filename
-            parts = lname[len("ledger_"):-len(".json")].split("_")
+        if not sym and _lp.key_of(path):        # its sidecar names the clock that owns it
+            sym, fam, win = clock_ident(str(_lp.key_of(path)))
+        if not sym:  # a ledger with no clock of its own: read its identity off its stem
+            parts = _lp.stem_of(path).lower().split("_")
             sym, win = parts[0].upper(), (parts[-1] if len(parts) > 1 else "")
             fam = "_".join(parts[1:-1]) or ("session_range_breakout" if len(parts) > 1 else "?")
         series, basis = _ledger_series(path)
@@ -346,12 +361,13 @@ def _match_ledger(name: str, symbol: str, ledgers: dict[str, Path]) -> str:
     A join is a guess: the card publishes `series_id` and `series_basis` so a wrong one is
     visible rather than silently attributing another clock's trades to this sleeve."""
     low, best, best_len = str(name).lower(), "", 0
-    for lname in ledgers:
-        sym_part, _, rest = lname[len("ledger_"):-len(".json")].partition("_")
+    for path in ledgers.values():
+        stem = _lp.stem_of(path)
+        sym_part, _, rest = stem.lower().partition("_")
         if sym_part != symbol.lower() or not rest:
             continue
         if rest in low and len(rest) > best_len:
-            best, best_len = lname, len(rest)
+            best, best_len = stem, len(rest)
     return best
 
 
@@ -366,11 +382,15 @@ def collect_alphas(series_by_id: dict[str, dict]) -> list[dict]:
         sym, fam = str(row.get("symbol") or ""), str(row.get("family") or "?")
         win = str(row.get("session") or "")
         clock_id = f"live:{name}" if f"live:{name}" in series_by_id else ""
-        for cand in () if clock_id else (f"ledger_{name}.json", ledger_basename(sym, fam, win),
-                                         ledger_basename(sym, "?", win),
+        # The roster name as a sleeve key first, then the legacy stems -- each only when ONE
+        # ledger answers to it (`ledger_paths.resolve`), never whichever variant wrote last.
+        for stem in () if clock_id else (name, legacy_stem(sym, fam, win),
+                                         legacy_stem(sym, "?", win),
                                          _match_ledger(name, sym, ledgers)):
-            if cand and cand.lower() in ledgers and cand.lower() in series_by_id:
-                clock_id = cand.lower()
+            p = _lp.resolve(stem, SHADOW_DIR) if stem else None
+            cand = p.name.lower() if p is not None else ""
+            if cand and cand in ledgers and cand in series_by_id:
+                clock_id = cand
                 break
         alphas.append({"name": name, "lane": "live", "symbol": sym, "family": fam, "window": win,
                        "clock_id": clock_id, "row": row})
@@ -379,7 +399,7 @@ def collect_alphas(series_by_id: dict[str, dict]) -> list[dict]:
         if not isinstance(row, dict) or str(row.get("status") or "").upper() != "ACTIVE":
             continue
         sym, fam, win = clock_ident(key)
-        lname = ledger_basename(sym, fam, win).lower()
+        lname = clock_series_id(key)
         alphas.append({"name": key, "lane": "forward", "symbol": sym, "family": fam,
                        "window": win, "clock_id": lname if lname in series_by_id else "",
                        "row": row})

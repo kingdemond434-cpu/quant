@@ -50,9 +50,14 @@ _FORWARD_PHASES = ("forward", None)
 
 
 def _forward_series() -> dict[str, list[float]]:
-    """Per-sleeve forward R series, keyed by ledger stem."""
+    """Per-sleeve forward R series, keyed by the legacy stem when ONE ledger owns it, else by the
+    ledger's own sleeve key (`ledger_paths.join_names`; one ledger per key since 2026-11-11)."""
+    from research import ledger_paths as lp
+
     out: dict[str, list[float]] = {}
-    for path in sorted(SHADOW.glob("ledger_*.json")):
+    ledgers = list(lp.iter_ledgers(SHADOW))
+    names, _ambiguous = lp.join_names(ledgers)
+    for path in ledgers:
         try:
             rows = json.loads(path.read_text("utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -63,7 +68,7 @@ def _forward_series() -> dict[str, list[float]]:
               if isinstance(r, dict) and r.get("phase") in _FORWARD_PHASES
               and r.get("r_multiple") is not None]
         if rs:
-            out[path.stem.removeprefix("ledger_")] = rs
+            out[names[path]] = rs
     return out
 
 

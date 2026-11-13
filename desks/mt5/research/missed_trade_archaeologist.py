@@ -51,6 +51,13 @@ DATA = DESK / "data"
 REPORTS = DESK / "reports"
 DECISIONS = DATA / "decision_ledger.jsonl"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE = _audited_ledger_path(DATA / "live_ledger.jsonl")
 SHADOW_DIR = REPORTS / "shadow"
 UNIVERSE = DATA / "universe"
@@ -750,13 +757,16 @@ def load_shadow(shadow_dir: Path = SHADOW_DIR) -> tuple[dict[str, list[dict[str,
     if not shadow_dir.exists():
         return {}, f"absent: {shadow_dir}"
     out: dict[str, list[dict[str, Any]]] = {}
-    for p in sorted(shadow_dir.glob("ledger_*.json")):
+    for p in _lp.iter_ledgers(shadow_dir):
         rows = _read(p)
         if isinstance(rows, list):
-            name = p.stem[len("ledger_"):]
+            # The clock's own key from the ledger's sidecar (one ledger per sleeve key since
+            # 2026-11-11, `ledger_paths`); a legacy file still derives it from its name:
             # ledger_XAUUSD_asia -> XAUUSD.asia ; regime-tagged clocks keep their third part
-            bits = name.split("_", 1)
-            clock = bits[0] + ("." + bits[1].replace("_", ".", 1) if len(bits) > 1 else "")
+            clock = _lp.key_of(p) or ""
+            if not clock:
+                bits = _lp.stem_of(p).split("_", 1)
+                clock = bits[0] + ("." + bits[1].replace("_", ".", 1) if len(bits) > 1 else "")
             out[clock] = [r for r in rows if isinstance(r, dict)]
     return out, None if out else "no ledger_*.json under the shadow directory"
 

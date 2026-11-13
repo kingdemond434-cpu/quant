@@ -83,6 +83,13 @@ CANON = DATA / "UNIVERSAL_SURVIVORS.canon.json"
 SLEEVES = DATA / "sleeves.json"
 SHADOW_STATE = SHADOW / "shadow_state.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 DOCKET = DATA / "hypotheses" / "external_survivors.json"
 ASIA_SOURCES = DATA / "asia_sources.json"
@@ -595,7 +602,11 @@ def load_series(shadow_dir: Path | None = None, live_ledger: Path | None = None
                 ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]]]:
     """(forward {name: {day: R}}, live {name: {day: R}}) -- FORWARD PHASE and REAL FILLS only."""
     fwd: dict[str, dict[str, float]] = {}
-    for path in sorted((shadow_dir or SHADOW).glob("ledger_*.json")):
+    # Each ledger under its legacy stem only when ONE ledger owns it, and under its own sleeve
+    # key always (`ledger_paths`; one ledger per key since 2026-11-11).
+    _ledgers = list(_lp.iter_ledgers(shadow_dir or SHADOW))
+    _names, _ambiguous = _lp.join_names(_ledgers)
+    for path in _ledgers:
         rows = _read(path)
         if not isinstance(rows, list):
             continue
@@ -609,7 +620,8 @@ def load_series(shadow_dir: Path | None = None, live_ledger: Path | None = None
             if d and v is not None:
                 by[d] = by.get(d, 0.0) + v
         if by:
-            fwd[norm(path.stem[len("ledger_"):])] = by
+            for _n in dict.fromkeys(x for x in (_names[path], _lp.key_of(path)) if x):
+                fwd[norm(_n)] = by
     live: dict[str, dict[str, float]] = {}
     for r in _read_jsonl(live_ledger or LIVE_LEDGER):
         name = str(r.get("sleeve") or "")

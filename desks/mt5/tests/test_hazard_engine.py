@@ -81,8 +81,9 @@ def desk(tmp_path, monkeypatch):
 
         def clock(self, key: str, rs: list[float], status: str = "ACTIVE") -> None:
             sym, fam, win = H.clock_ident(key)
-            name = H.ledger_basename(sym, fam, win)
-            (shadow / name).write_text(json.dumps(_ledger(rs)), "utf-8")
+            path = H._lp.ledger_path(key, shadow)
+            path.write_text(json.dumps(_ledger(rs)), "utf-8")
+            H._lp.register(path, key, engine="shadow_forward", stem=H.legacy_stem(sym, fam, win))
             state = json.loads((shadow / "shadow_state.json").read_text("utf-8")) \
                 if (shadow / "shadow_state.json").exists() else {}
             state[key] = {"status": status, "n": len(rs)}

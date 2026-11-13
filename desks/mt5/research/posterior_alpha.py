@@ -91,6 +91,13 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 
 SLEEVES = BASE / "data" / "sleeves.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE = SHADOW_DIR / "shadow_state.json"
@@ -387,7 +394,7 @@ def collect_forward(notes: list[str], stats: dict[str, Any]) -> list[Obs]:
             skipped[status or "UNKNOWN"] += 1
             continue
         obs = Obs(str(key), "forward", _family_of_key(key), str(key).split(".")[0], status=status)
-        ledger = _read_json(SHADOW_DIR / f"ledger_{str(key).replace('.', '_')}.json", [])
+        ledger = _read_json(_lp.ledger_path(str(key), SHADOW_DIR), [])
         for trade in ledger if isinstance(ledger, list) else []:
             if not isinstance(trade, dict) or str(trade.get("phase") or "") != "forward":
                 continue                               # historical rows predate pre-registration

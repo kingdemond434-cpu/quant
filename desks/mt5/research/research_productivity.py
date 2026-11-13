@@ -27,6 +27,13 @@ import json
 import statistics
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -195,8 +202,8 @@ def stages() -> dict:
                             if isinstance(v, dict) and v.get("gated_at"))
     except (OSError, ValueError):
         certified, cert_dates = 0, []
-    ledgers = [Path(p) for p in glob.glob(str(ROOT / "backups" / "moat" / "shadow_ledgers"
-                                             / "ledger_*.json"))]
+    # Retired legacy names (shared by params variants until 2026-11-11) are not sleeves.
+    ledgers = list(_lp.iter_ledgers(ROOT / "backups" / "moat" / "shadow_ledgers"))
     canon_rows = list((canon.get("survivors") or {}).values()) if isinstance(canon, dict) else []
     try:
         rec = json.loads((ROOT / "docs" / "research" / "recommendation_ledger.json")

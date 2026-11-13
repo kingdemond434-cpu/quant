@@ -69,6 +69,13 @@ from mt5desk.economic_drivers import DriverSet, universe_driver_sets  # noqa: E4
 from mt5desk.engine import Costs  # noqa: E402
 
 from research.multiplicity import deflate_t, expected_max_z  # noqa: E402
+try:  # the one namer of a forward ledger (research/ledger_paths.py, 2026-11-11)
+    from desks.mt5.research import ledger_paths as _lp
+except ImportError:
+    try:
+        from research import ledger_paths as _lp  # type: ignore[no-redef]
+    except ImportError:
+        import ledger_paths as _lp  # type: ignore[no-redef]
 
 UNI = _DESK / "data" / "universe"
 INTEL = _DESK / "data" / "intelligence" / "factor_residual"
@@ -185,7 +192,7 @@ def book_daily() -> tuple[pd.Series | None, str]:
     n_ledgers = 0
     n_skipped = 0  # rows with no usable time or no finite r: reported, never silent
     if SHADOW_LEDGERS.is_dir():
-        for f in sorted(SHADOW_LEDGERS.glob("ledger_*.json")):
+        for f in _lp.iter_ledgers(SHADOW_LEDGERS):  # skips retired legacy names
             try:
                 recs = json.loads(f.read_text("utf-8"))
             except (OSError, ValueError):
