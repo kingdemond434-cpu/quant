@@ -233,7 +233,12 @@ def run(*, fraction: float = FRACTION, reps: int = 1000,
                "rule": {"w": f"clip(sigma_bar/sigma_hat, {W_MIN}, {W_MAX})",
                         "sigma_bar": f"root-mean forecast over the trailing {REF_DAYS} days",
                         "earns": "pooled 90% block-bootstrap CI of Delta E[log W] above zero "
-                                 "against BOTH the unscaled book and the leverage-matched book"},
+                                 "against BOTH the unscaled book and the leverage-matched book",
+                        "leverage_matched": "the unscaled book times the variant's FULL-SAMPLE "
+                                            "mean weight: a benchmark that knows the future "
+                                            "average exposure, never a tradable book; a "
+                                            "sizing reader's Rule-1 proof must come from a "
+                                            "forward clock"},
                **evaluate(daily, sym_of, fc, fraction=fraction, reps=reps)}
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
