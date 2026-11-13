@@ -373,6 +373,19 @@ def vague_fail(answer: dict[str, Any]) -> bool:
     return bool(found) and all(_HEDGE.search(f) for f in found)
 
 
+#: The fixed words a FAIL with no located finding carries (reporting only; verdicts unchanged).
+UNSPECIFIED = "UNSPECIFIED (no finding names a file, path, location or line)"
+
+
+def unspecified(answer: dict[str, Any]) -> bool:
+    """A FAIL none of whose findings names a place. REPORTING ONLY (D-20261111-953): the verdict
+    is never changed by this -- #538 audit MF-A stands, a risk_increasing FAIL is final. The tag
+    lets the #816 adjudication path find FAILs whose claims the Auditor must answer at file:line."""
+    if answer.get("verdict") == "PASS":
+        return False
+    return not any(_names_place(x) for x in (answer.get("findings") or []))
+
+
 def decide(answer: dict[str, Any]) -> tuple[bool, str]:
     """PASS needs the reviewer's PASS, neither flag, and no word of its own that risk goes up."""
     if answer.get("risk_increasing") is not False:
@@ -693,6 +706,7 @@ def vote(
                 log.append(f"{mid}: no readable answer twice: FAIL")
                 return "FAIL", log
             ok, why = decide(answer)
+            last = answer
             if answers is not None:
                 answers.append(answer)
             log.append(f"{mid}: {'PASS' if ok else 'FAIL'} ({why}) {json.dumps(answer)[:2000]}")
@@ -721,6 +735,7 @@ def vote(
                     log.append(f"{mid}: no readable answer to the re-ask: FAIL")
                     return "FAIL", log
                 ok, why = decide(again)
+                last = again
                 if answers is not None:
                     answers.append(again)
                 log.append(
@@ -730,6 +745,8 @@ def vote(
                     log.append(f"{mid}: vague FAIL twice: {fam} abstains")
                     abstained.add(fam)
             if not ok and fam not in abstained:
+                if unspecified(last):  # reporting only: the FAIL stands either way
+                    log.append(f"{mid}: {UNSPECIFIED}")
                 return "FAIL", log
             if ok:
                 passed.add(fam)
@@ -1042,6 +1059,8 @@ def main(argv: list[str] | None = None) -> int:
         # to whoever reads the annotation (#547 audit v4 SF1). Only our fixed words go out.
         if " FAIL (" in why:
             why = why.split(" FAIL (", 1)[0] + " voted FAIL (its findings are in the job log)"
+        if any(x.endswith(": " + UNSPECIFIED) for x in log):  # fixed words only, never findings
+            why += f"; {UNSPECIFIED}"
         _annotate(why)
     return 0 if verdict == "PASS" else 1
 
