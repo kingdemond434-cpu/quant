@@ -60,7 +60,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -178,38 +178,110 @@ def point_of(symbol: str, meta: dict) -> float | None:
         return None
 
 
+# ------------------------------------------------------------------------------- tape reader
+# MIRRORS `desks/mt5/mt5desk/tape_days.py` FROM PR #884 (4c5e764ff: `day_key`, `read_quotes`,
+# `union_frames`, `day_quotes`). Replace these private helpers with that module once #884 merges.
+#
+# `data/tape/ticks/<SYM>/` holds two writers' files: `YYYY-MM-DD.parquet` (mt5desk/tape.py: ts,
+# time_msc, bid, ask; keyed by TICK day) and `YYYYMMDD.parquet` (moat/moat_silver.py: time_msc,
+# bid, ask, recv; keyed by RECEIVE day). Reading `columns=["ts", ...]` threw on every compact
+# file and the throw was swallowed, so a day only the moat wrote was marked seen with no ticks;
+# taking one file per day dropped up to 36k of 86k ticks. A UTC day is therefore the UNION of
+# both writers over its own key and both neighbours (a receive-day file can hold the edge of the
+# next tick day), deduplicated on (time_msc, bid, ask) and trimmed back to the day.
+_DEDUPE_KEY = ("time_msc", "bid", "ask")
+
+
+def _day_key(stem: str) -> str | None:
+    """`2026-10-29` and `20261029` are one day written by two writers. Normalise, or None."""
+    s = stem.replace("-", "")
+    if len(s) != 8 or not s.isdigit():
+        return None
+    try:
+        return date(int(s[:4]), int(s[4:6]), int(s[6:])).isoformat()
+    except ValueError:
+        return None
+
+
+def _read_quotes(path: Path) -> pd.DataFrame | None:
+    """`ts` (UTC), `time_msc`, `bid`, `ask` from either writer, or None. Never guesses a clock."""
+    import pyarrow.parquet as pq
+    try:
+        names = set(pq.read_schema(path).names)
+    except Exception:
+        return None
+    if not {"bid", "ask"} <= names or not ({"ts", "time_msc"} & names):
+        return None
+    cols = [c for c in ("ts", "time_msc", "bid", "ask") if c in names]
+    try:
+        df = pd.read_parquet(path, columns=cols)
+    except Exception:
+        return None
+    for c in ("bid", "ask"):
+        df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
+    if "time_msc" in df.columns:
+        ms = pd.to_numeric(df["time_msc"], errors="coerce")
+        df["time_msc"] = ms.astype("Int64")
+        derived = pd.to_datetime(ms, unit="ms", utc=True)
+        df["ts"] = derived if "ts" not in df.columns else (
+            pd.to_datetime(df["ts"], utc=True).fillna(derived))
+        if df["time_msc"].isna().any():          # a mixed file: rows with ts and no time_msc
+            from_ts = df["ts"].dt.as_unit("ms").astype("int64")
+            df["time_msc"] = df["time_msc"].fillna(pd.Series(from_ts, index=df.index,
+                                                             dtype="Int64"))
+    else:
+        df["ts"] = pd.to_datetime(df["ts"], utc=True)
+        df["time_msc"] = df["ts"].dt.as_unit("ms").astype("int64")
+    return df
+
+
+def _union(frames: list[pd.DataFrame]) -> pd.DataFrame | None:
+    """Concat, drop rows without a quote or clock, dedupe on (time_msc, bid, ask), sort by ts."""
+    if not frames:
+        return None
+    t = pd.concat(frames, ignore_index=True).dropna(subset=["ts", *_DEDUPE_KEY])
+    # The quote half of the key compares at float32, so a float32 writer's 1.3500000238 is
+    # still the dashed writer's 1.35.
+    key = pd.DataFrame({"m": t["time_msc"].astype("int64"),
+                        "b": t["bid"].astype("float32"), "a": t["ask"].astype("float32")})
+    return t[~key.duplicated(keep="first").to_numpy()].sort_values("ts", kind="stable")
+
+
 def day_files(symbol: str, root: Path) -> dict[str, list[Path]]:
-    """ISO day -> every file for it. Both naming conventions (`YYYY-MM-DD`, `YYYYMMDD`) are real
-    and can hold the same day (see `mt5desk.tape.day_files`); both are read and de-duplicated."""
+    """ISO day -> every file for it, ordered as DATES. Both naming conventions (`YYYY-MM-DD`,
+    `YYYYMMDD`) are real and can hold the same day; both are read and unioned."""
     d = root / symbol
     out: dict[str, list[Path]] = {}
     if not d.is_dir():
         return out
     for p in d.glob("*.parquet"):
-        s = p.stem
-        if len(s) == 10 and s[4] == "-" and s[7] == "-":
-            day = s
-        elif len(s) == 8 and s.isdigit():
-            day = f"{s[:4]}-{s[4:6]}-{s[6:]}"
-        else:
-            continue
-        out.setdefault(day, []).append(p)
+        day = _day_key(p.stem)
+        if day is not None:
+            out.setdefault(day, []).append(p)
+    for ps in out.values():
+        ps.sort(key=lambda q: q.name)
     return dict(sorted(out.items()))
 
 
-def _read_day(paths: list[Path]) -> pd.DataFrame | None:
-    frames = []
-    for p in paths:
-        try:
-            frames.append(pd.read_parquet(p, columns=["ts", "bid", "ask"]))
-        except Exception:
-            continue                                                # a torn file is not fatal
-    if not frames:
+def _neighbourhood(files: dict[str, list[Path]], day: str) -> list[Path]:
+    """Every file that can hold ticks of UTC `day`: its own key and one key either side."""
+    d = date.fromisoformat(day)
+    return [p for k in (-1, 0, 1) for p in files.get((d + timedelta(days=k)).isoformat(), [])]
+
+
+def _read_day(files: dict[str, list[Path]], day: str) -> pd.DataFrame | None:
+    """UTC `day`'s ticks from both writers, unioned, deduplicated and trimmed to the day."""
+    t = _union([got for p in _neighbourhood(files, day)
+                if (got := _read_quotes(p)) is not None])
+    if t is None:
         return None
-    return pd.concat(frames, ignore_index=True)
+    lo = pd.Timestamp(day, tz="UTC")
+    t = t[(t["ts"] >= lo) & (t["ts"] < lo + pd.Timedelta(days=1))]
+    return None if t.empty else t.reset_index(drop=True)
 
 
 def _signature(paths: list[Path]) -> str:
+    """Name and size of each file, so a file that grows (or appears) refolds its day."""
     parts = []
     for p in sorted(paths):
         try:
@@ -227,7 +299,14 @@ def accumulate(symbol: str, point: float, state: dict, *, tick_root: Path,
     sym_state = state.setdefault(symbol, {"days": {}, "bucket_ticks": None})
     seen: dict[str, str] = sym_state.setdefault("days", {})
     tail = set(list(files)[-REFRESH_TAIL_DAYS:])
-    todo = [d for d, ps in files.items() if d in tail or seen.get(d) != _signature(ps)]
+    # A day's signature covers its own key and the NEXT one (a receive-day file keyed D+1 holds
+    # the tail of tick day D). The previous key is read but not signed: archiving the oldest
+    # day off the box must not refold the day after it on every pass.
+    sig = {d: _signature([*files[d], *files.get(
+        (date.fromisoformat(d) + timedelta(days=1)).isoformat(), [])]) for d in files}
+    # Every day never folded is folded, oldest first, so a first run takes the WHOLE tape's
+    # history (budget permitting; the rest resumes next pass), never a trailing window.
+    todo = [d for d in files if d in tail or seen.get(d) != sig[d]]
     path = series_root / f"{SERIES_PREFIX}{symbol}.parquet"
     old = None
     if path.exists():
@@ -244,9 +323,9 @@ def accumulate(symbol: str, point: float, state: dict, *, tick_root: Path,
     for day in todo:
         if budget_end is not None and time.monotonic() > budget_end:
             break
-        ticks = _read_day(files[day])
+        ticks = _read_day(files, day)
         if ticks is None or ticks.empty:
-            seen[day] = _signature(files[day])
+            seen[day] = sig[day]
             continue
         if not sym_state.get("bucket_ticks"):
             # FIXED PER SYMBOL ON FIRST SIGHT, so a bucket means the same activity on every day
@@ -257,7 +336,7 @@ def accumulate(symbol: str, point: float, state: dict, *, tick_root: Path,
         new = ft.bar_aggregates(ticks, point, rule=RULE,
                                 bucket_ticks=int(sym_state["bucket_ticks"]))
         agg = ft.merge_aggregates(agg, new)
-        seen[day] = _signature(files[day])
+        seen[day] = sig[day]
         done += 1
     reading: dict[str, Any] = {"symbol": symbol, "day_files": len(files), "days_folded": done,
                                "days_pending": max(0, len(todo) - done),

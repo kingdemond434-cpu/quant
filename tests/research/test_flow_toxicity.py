@@ -263,3 +263,55 @@ def test_the_report_summarises_the_worst_gap_and_the_stalls(tmp_path: Path) -> N
     assert set(g["symbols_stale_over_threshold"]) == {"AUDUSD", "EURUSD"}
     assert g["by_symbol"]["EURUSD"]["series"] == "micro_EURUSD.parquet"
     assert str(tmp_path) not in json.dumps(g)
+
+
+# ----------------------------------------------------------------------------- two writers
+def test_both_tape_writers_are_unioned_deduplicated_and_every_day_folded(
+        tmp_path: Path) -> None:
+    """Dashed `YYYY-MM-DD` (ts, time_msc, bid, ask; tick day) and compact `YYYYMMDD` (time_msc,
+    bid, ask, recv; receive day) files share one directory. Mirrors tape_days.py from #884."""
+    ticks, series = tmp_path / "ticks", tmp_path / "series"
+    d = ticks / "EURUSD"
+    d.mkdir(parents=True)
+
+    def frame(day: str, seed: int, start_h: float, hours: float) -> pd.DataFrame:
+        t = _ticks(int(hours * 3600), seed=seed,
+                   start=str(pd.Timestamp(day) + pd.Timedelta(hours=start_h)))
+        t["time_msc"] = t["ts"].astype("datetime64[ns, UTC]").astype("int64") // 1_000_000
+        return t
+
+    def compact(t: pd.DataFrame) -> pd.DataFrame:
+        c = t.drop(columns="ts").copy()
+        c["recv"] = c["time_msc"] + 5
+        return c
+
+    # 2026-10-05: dashed morning + compact evening, overlapping 06:00-08:00 (duplicates)
+    morning = frame("2026-10-05", 1, 0, 8)
+    evening = frame("2026-10-05", 2, 6, 18)
+    evening = pd.concat([morning[morning["ts"] >= pd.Timestamp("2026-10-05 06:00", tz="UTC")],
+                         evening[evening["ts"] >= pd.Timestamp("2026-10-05 08:00", tz="UTC")]])
+    morning.to_parquet(d / "2026-10-05.parquet")
+    compact(evening).to_parquet(d / "20261005.parquet")
+    # 2026-10-06: compact only (the old reader threw on it and marked it seen, empty)
+    compact(frame("2026-10-06", 3, 0, 24)).to_parquet(d / "20261006.parquet")
+    # 2026-10-07: dashed only
+    frame("2026-10-07", 4, 0, 24).to_parquet(d / "2026-10-07.parquet")
+
+    files = ftm.day_files("EURUSD", ticks)
+    assert list(files) == ["2026-10-05", "2026-10-06", "2026-10-07"]
+    day5 = ftm._read_day(files, "2026-10-05")
+    assert day5 is not None
+    expected = pd.concat([morning, evening]).drop_duplicates(subset=["time_msc", "bid", "ask"])
+    assert len(day5) == len(expected) < len(morning) + len(evening)
+    assert not day5.duplicated(subset=["time_msc", "bid", "ask"]).any()
+    assert day5["ts"].min() >= pd.Timestamp("2026-10-05", tz="UTC")
+    assert day5["ts"].max() < pd.Timestamp("2026-10-06", tz="UTC")
+    assert ftm._read_day(files, "2026-10-06") is not None
+
+    state: dict = {}
+    r = ftm.accumulate("EURUSD", POINT, state, tick_root=ticks, series_root=series)
+    assert r["status"] == "MEASURED" and r["days_folded"] == 3 and r["days_pending"] == 0
+    s = pd.read_parquet(series / "micro_EURUSD.parquet")
+    per_day = s["n_ticks"].groupby(s.index.normalize()).sum()
+    assert len(per_day) == 3 and (per_day > 0).all()
+    assert int(per_day.iloc[0]) == len(expected)
