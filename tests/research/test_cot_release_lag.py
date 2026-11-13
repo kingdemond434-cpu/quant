@@ -80,8 +80,10 @@ def test_the_series_is_shifted_past_its_own_report_date(tmp_path, monkeypatch):
     got = osw._cot_frame("AUDUSD")
     assert got is not None and len(got) >= 52
 
-    # Every label is a MONDAY: the W-FRI right edge plus the release lag.
-    assert set(got.index.dayofweek) == {0}, "a label did not clear the Friday release"
+    # Every label is the MONDAY after release, or the WEDNESDAY in a federal-holiday week when
+    # the CFTC publishes on Monday (`market_calendar.cot_usable_at`, 2026-11-13).
+    days = set(got.index.dayofweek)
+    assert days <= {0, 2} and 0 in days, "a label did not clear the release"
     # And each value is the one that was public by then -- never a later week's.
     unlagged = frame["AUDUSD"].astype(float).resample("W-FRI").last().dropna()
     assert list(got["net"])[:20] == list(unlagged)[:20], (
