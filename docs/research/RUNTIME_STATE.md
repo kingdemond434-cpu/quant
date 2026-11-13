@@ -14,8 +14,8 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 829 | no artifact and no run record on this host |
-| **UNMEASURED** | 43 | artifact present, cadence undeclared -- nothing here may call it late |
+| **NEVER** | 828 | no artifact and no run record on this host |
+| **UNMEASURED** | 44 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (829)
+## NEVER (828)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1049,9 +1049,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/video_transcript_vault.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:halt_rail` | `hourly_cycle:halt_rail` | UNMEASURED UNMEASURED | `desks/mt5/reports/HALT_RAIL_INTEGRITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:index_discovery` | `hourly_cycle:index_discovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/INDEX_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-FTMO-Allocator` | `MT5-FTMO-Allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/FTMO_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
-## UNMEASURED (43)
+## UNMEASURED (44)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1098,4 +1097,5 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:libs/ops/login_fence.py` | `invoked:desks/mt5/scripts/sync_shadow_to_git.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/LOGIN_FENCE.json` | 0.1h | 694B | `d755037c4dc247f0` | status=UNMEASURED |
 | `fence:check_seal_clears` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `fa046250ab0e1b85` | ok=True |
 | `executable:scripts/sign_train.py` | `invoked:scripts/check_seal_clears.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `fa046250ab0e1b85` | ok=True |
+| `leg:geoint_tank_fill` | `hourly_cycle:geoint_tank_fill` | UNMEASURED UNMEASURED | `desks/mt5/reports/GEOINT_TANK_FILL.json` | 50.7h | 37K | `1811a192539963d6` | UNMEASURED |
 
