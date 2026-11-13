@@ -204,3 +204,40 @@ def test_d17_metric_and_the_not_armed_line_reach_the_fence(tmp_path: Path) -> No
     assert fence.alerts_line(doc) == "ALERTS NOT ARMED: STALLED pages reach no one"
     assert fence.alerts_line({"alerts": {"armed": 1, "line": None}}) is None
     assert fence.alerts_line({}) is None
+
+
+@needs_git
+def test_one_walk_names_the_same_newest_writer_as_a_per_path_log(tmp_path: Path) -> None:
+    """The batched walk (485 s -> seconds on the box) must not change whose write counts,
+    including a merge that resolved a path differently from both parents."""
+    repo = tmp_path / "w"
+    _git(tmp_path, "init", "-q", "-b", "live", str(repo))
+    for k, v in (("user.email", "b@example.com"), ("user.name", "Contabo"),
+                 ("commit.gpgsign", "false")):
+        _git(repo, "config", k, v)
+    a, b, c = (repo / "a.json", repo / "b.json", repo / "c.json")
+    for f in (a, b, c):
+        f.write_text("{}", "utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "mt5 shadow state sync base")
+    _git(repo, "checkout", "-q", "-b", "side")
+    a.write_text('{"side": 1}', "utf-8")
+    _git(repo, "commit", "-qam", "side edit")
+    _git(repo, "checkout", "-q", "live")
+    a.write_text('{"live": 1}', "utf-8")
+    b.write_text('{"live": 1}', "utf-8")
+    _git(repo, "commit", "-qam", "mt5 shadow state sync live")
+    subprocess.run(["git", "merge", "-q", "side", "-m", "merge side"], cwd=str(repo),
+                   capture_output=True, check=False)
+    a.write_text('{"resolved": 1}', "utf-8")
+    _git(repo, "add", "a.json")
+    _git(repo, "-c", "user.name=Merger", "commit", "-q", "-m", "merge side")
+    rels = ["a.json", "b.json", "c.json", "absent.json"]
+    walk = fence._last_writers(repo, "live", rels)
+    for rel in rels:
+        _rc, line = fence._git(repo, "log", "-1", "--format=%an%x09%s", "live", "--", rel)
+        writer, _, subject = line.strip().partition("\t")
+        assert walk.get(rel, ("", "")) == ((writer, subject) if writer else ("", "")), rel
+    assert walk["a.json"][0] == "Merger"
+    shown = fence._show_many(repo, "live", ["b.json", "absent.json", "a.json"])
+    assert shown == {"b.json": '{"live": 1}', "a.json": '{"resolved": 1}'}
