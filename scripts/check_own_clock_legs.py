@@ -38,6 +38,7 @@ OWN_CLOCK_TASKS: dict[str, tuple[str, str]] = {
     "state_vector": ("MT5-StateVector", "data/state_vector.json"),
     "external_gauntlet": ("MT5-Gauntlet", "reports/UNIVERSAL_SURVIVORS.json"),
     "prop_challenge_allocator": ("MT5-FTMO-Allocator", "reports/FTMO_ALLOCATOR.json"),
+    "clock_liveness": ("MT5-ClockLiveness", "reports/CLOCK_LIVENESS.json"),
 }
 
 
