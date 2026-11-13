@@ -4,23 +4,9 @@
   {
    "id": "net_liquidity",
    "idea": "GAP_MAP 68",
-   "adapter": "fred_net_liquidity",
+   "adapter": "us_net_liquidity",
    "terms": "OPEN",
-   "terms_note": "FRED / H.4.1, US public domain",
-   "key_env": [
-    "FRED_API_KEY",
-    "FRED_KEY"
-   ],
-   "series": [
-    "WALCL",
-    "WTREGEN",
-    "RRPONTSYD"
-   ],
-   "units": {
-    "WALCL": 0.001,
-    "WTREGEN": 1.0,
-    "RRPONTSYD": 1.0
-   },
+   "terms_note": "Treasury FiscalData (public domain), NY Fed Markets API (terms allow automated business use with attribution), Federal Reserve Board DDP (public domain). FRED is not used (terms-refused 2026-11-13).",
    "at": "16:30",
    "tz": "America/New_York",
    "title": "Fed H.4.1 net liquidity",
@@ -30,87 +16,88 @@
     "USDJPY",
     "EURUSD"
    ],
-   "why": "Reserves added by the Fed balance sheet net of the Treasury cash account and reverse repo are the dollars actually free to bid risk; the weekly change is the H.4.1 event, Thursday 16:30 ET."
+   "why": "Reserves added by the Fed balance sheet net of the Treasury cash account and reverse repo are the dollars actually free to bid risk; the weekly change is the H.4.1 event, Thursday 16:30 ET.",
+   "tga_pattern": "Treasury General Account \\(TGA\\) Closing Balance|^Federal Reserve Account$",
+   "tga_first_date": "2014-01-01",
+   "rrp_first_date": "2014-01-01",
+   "walcl": {
+    "url": null,
+    "verified": false,
+    "note": "H.4.1 total assets DDP CSV URL: needs a box read of federalreserve.gov/datadownload Choose.aspx?rel=H41"
+   }
   },
   {
    "id": "usd_funding",
    "idea": "GAP_MAP 64",
-   "adapter": "fred_funding",
+   "adapter": "us_funding",
    "terms": "OPEN",
-   "terms_note": "FRED, US public domain",
-   "key_env": [
-    "FRED_API_KEY",
-    "FRED_KEY"
-   ],
-   "series": [
-    "SOFR",
-    "IORB",
-    "IOER",
-    "RIFSPPFAAD90NB",
-    "DTB3"
-   ],
-   "spreads": [
-    {
-     "id": "sofr_iorb",
-     "a": "SOFR",
-     "b": [
-      "IORB",
-      "IOER"
-     ]
-    },
-    {
-     "id": "cp_bill",
-     "a": "RIFSPPFAAD90NB",
-     "b": "DTB3"
-    }
-   ],
+   "terms_note": "NY Fed Markets API reference rates; FRED not used (terms-refused 2026-11-13).",
    "targets": [
     "US500",
     "XAUUSD",
     "EURUSD",
     "USDJPY"
    ],
-   "why": "Secured overnight funding above the rate on reserves means reserves are scarce; AA financial CP above bills means banks pay up for term dollars. Both precede dollar squeezes and risk-off."
+   "why": "SOFR above EFFR means secured money costs more than unsecured: collateral or reserve scarcity. A fat SOFR p99 tail means some borrowers pay up. Both lead dollar squeezes and risk-off.",
+   "first_date": "2018-04-02"
   },
   {
    "id": "cip",
    "idea": "GAP_MAP 64",
    "adapter": "cip_basis",
    "terms": "OPEN",
-   "terms_note": "own broker swap panel + FRED",
+   "terms_note": "own broker swap panel + NY Fed SOFR + ECB EUR STR (ECB Data Portal, reuse with attribution)",
    "pairs": [
     {
      "symbol": "EURUSD",
-     "cash": "fred_rdiff_on_eurusd"
+     "base": {
+      "provider": "ecb",
+      "key": "B.EU000A2X2A25.WT",
+      "name": "estr",
+      "first_date": "2019-10-01"
+     },
+     "quote": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     }
     },
     {
      "symbol": "GBPUSD",
-     "cash": "fred_rdiff_on_gbpusd"
+     "base": null,
+     "quote": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     },
+     "why": "SONIA from the BoE database: terms read pending"
     },
     {
      "symbol": "USDJPY",
-     "cash": "fred_rdiff3m_usdjpy"
-    },
-    {
-     "symbol": "AUDUSD",
-     "cash": "fred_rdiff3m_audusd"
+     "base": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     },
+     "quote": null,
+     "why": "TONA from the BoJ: route pending"
     },
     {
      "symbol": "USDCHF",
-     "cash": "fred_rdiff3m_usdchf"
-    },
-    {
-     "symbol": "USDCAD",
-     "cash": "fred_rdiff3m_usdcad"
+     "base": {
+      "provider": "nyfed",
+      "path": "secured/sofr",
+      "name": "sofr"
+     },
+     "quote": null,
+     "why": "SARON from SIX: terms read pending"
     }
    ],
    "targets": [
     "EURUSD",
     "GBPUSD",
     "USDJPY",
-    "AUDUSD",
-    "USDCHF",
-    "USDCAD"
+    "USDCHF"
    ],
    "why": "The overnight forward the broker finances at, minus the cash-rate differential, is a covered-interest-parity basis: when dollars are scarce it widens. Distinct from GAP_MAP 52 (swap drift is the swap's own change; this is its gap to cash)."
   },
@@ -174,18 +161,33 @@
      ]
     }
    ],
-   "why": "Weekly net export sales against their own 4-week mean is the foreign-demand surprise for US grains, released Thursday 08:30 ET."
+   "why": "Weekly net export sales against their own 4-week mean is the foreign-demand surprise for US grains, released Thursday 08:30 ET.",
+   "calendar": {
+    "exclude": [
+     {
+      "from": "2013-10-01",
+      "to": "2013-12-15",
+      "why": "2013 shutdown and FAS/TIC catch-up"
+     },
+     {
+      "from": "2018-12-22",
+      "to": "2019-03-31",
+      "why": "2018-19 shutdown and catch-up"
+     },
+     {
+      "from": "2025-10-01",
+      "to": "2026-01-15",
+      "why": "2025 shutdown and catch-up"
+     }
+    ]
+   }
   },
   {
    "id": "tic",
    "idea": "N6",
    "adapter": "tic",
    "terms": "OPEN",
-   "terms_note": "US Treasury, public domain",
-   "index_url": "https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/tic-forms-instructions/securities-b-portfolio-investment-tables",
-   "index_url_verified": false,
-   "link_pattern": "(net\\s+(foreign\\s+)?purchases.*long[- ]term|s1_globl|slt.*table\\s*1)",
-   "column_pattern": "net\\s+(foreign\\s+)?(purchases|acquisition).*long[- ]term|total\\s+net\\s+long",
+   "terms_note": "US Treasury TIC, public domain; robots allows (box read 2026-11-13)",
    "baseline_months": 12,
    "lag_days": 52,
    "state_days": 7,
@@ -197,7 +199,28 @@
     "EURUSD",
     "US500"
    ],
-   "why": "Foreign appetite for US long-term assets against its 12-month median is a slow dollar and duration flow; the state holds release day + 1 week."
+   "why": "Foreign appetite for US long-term assets against its 12-month median is a slow dollar and duration flow; the state holds release day + 1 week.",
+   "file_url": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/s1_globl.txt",
+   "country_pattern": "^\\s*Grand Total",
+   "calendar": {
+    "exclude": [
+     {
+      "from": "2013-10-01",
+      "to": "2013-12-15",
+      "why": "2013 shutdown and FAS/TIC catch-up"
+     },
+     {
+      "from": "2018-12-22",
+      "to": "2019-03-31",
+      "why": "2018-19 shutdown and catch-up"
+     },
+     {
+      "from": "2025-10-01",
+      "to": "2026-01-15",
+      "why": "2025 shutdown and catch-up"
+     }
+    ]
+   }
   },
   {
    "id": "boj_rinban",

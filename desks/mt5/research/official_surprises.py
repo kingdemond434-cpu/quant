@@ -6,23 +6,28 @@ WHAT WAS MISSING (wired ledger 2026-11-13, all state D, zero code hits on LIVE):
                                 pre-announced for that maturity bucket, plus how much the market
                                 tried to sell into it (bids / offer). Same-day state for USDJPY,
                                 EURJPY, JP225.
-  N6  TIC foreign-flow surprise monthly net foreign purchases of US long-term securities against
-                                their own trailing 12-month median. State for USDJPY, EURUSD,
-                                US500 over release day + 1 week.
+  N6  TIC foreign-flow surprise monthly net foreign purchases of US long-term domestic securities
+                                (TIC s1, Treasury) against their trailing 12-month median. Values
+                                are kept AS FIRST SEEN (the file revises history), so the surprise
+                                series accrues from the first read. State for USDJPY, EURUSD,
+                                US500.
   N7  USDA export-sales surprise Thursday 08:30 ET net export sales for corn, wheat and soybeans
                                 against their own trailing 4-week mean. Event state for the desk's
                                 CORN, WHEAT, SOYBEAN CFDs.
   N8  EIA gas-storage surprise  Thursday 10:30 ET working-gas change against the 5-year average
                                 change for the same week of the year. Event state for XNGUSD.
   GAP_MAP 68  Fed net liquidity  WALCL - TGA - RRP, weekly delta, published with the H.4.1 on
-                                Thursday 16:30 ET. Distinct from macro_desk's liquidity z (which
-                                omits the Treasury General Account and is a daily blend, not the
-                                weekly H.4.1 event).
-  GAP_MAP 64  USD funding stress  SOFR - IORB (reserve scarcity), 90-day AA financial CP - 3m bill
-                                (bank term funding), and a CIP-basis proxy: the broker's own
-                                overnight swap-implied rate differential against the FRED 3-month
-                                differential for the same pair. Distinct from row 52 (swap drift
-                                is the change of the swap; this is its gap to the cash market).
+                                Thursday 16:30 ET. From the publishers, never FRED (terms-refused
+                                2026-11-13): TGA from Treasury FiscalData (DTS), ON RRP from the NY
+                                Fed Markets API, total assets from the Board's DDP once its series
+                                URL is box-verified (until then the drain leg -(TGA + RRP) alone,
+                                labelled). Distinct from macro_desk's liquidity z.
+  GAP_MAP 64  USD funding stress  SOFR - EFFR (secured over unsecured: repo pressure) and SOFR
+                                p99 - SOFR (the repo distribution's tail), NY Fed; and a CIP-basis
+                                proxy: the broker's own overnight swap-implied differential minus
+                                the overnight cash differential from the rates' publishers (SOFR,
+                                ECB EUR STR). Distinct from row 52 (swap drift is the swap's own
+                                change; this is its gap to cash).
 
 HOW, end to end -- each stage leaves an artifact:
 
@@ -71,6 +76,7 @@ import re
 import sys
 import time
 import urllib.parse
+import urllib.request
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -180,14 +186,35 @@ def _redact(url: str) -> str:
     return urllib.parse.urlunsplit((p.scheme, p.netloc, p.path, urllib.parse.urlencode(q), ""))
 
 
+class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow a redirect only within the host first asked: a URL may carry a key in its query,
+    and a cross-host redirect would hand that key to a host nobody chose."""
+
+    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
+                         newurl: str) -> Any:
+        old_host = urllib.parse.urlsplit(req.full_url).netloc.lower()
+        new_host = urllib.parse.urlsplit(urllib.parse.urljoin(req.full_url, newurl)).netloc.lower()
+        if new_host != old_host:
+            raise fs.FetchError(code, _redact(req.full_url), "cross-host redirect refused")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _opener(req: Any, timeout: float, context: Any = None) -> Any:
+    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=context),
+                                       _SameHostRedirects()).open(req, timeout=timeout)
+
+
 def polite_text(url: str, headers: Mapping[str, str]) -> str:
     from libs.data import polite_fetch
     r = polite_fetch.get(url, headers={"User-Agent": UA, "Accept": "*/*", **headers},
-                         timeout=40.0, retries=0, leg=LEG)
+                         timeout=40.0, retries=0, leg=LEG, opener=_opener)
     if r.status in fs.HARD_STOP:
         raise fs.HardStop(int(r.status or 0), url)
     if not r.ok:
-        raise fs.FetchError(r.status, url, r.error or f"HTTP {r.status}")
+        raise fs.FetchError(r.status, _redact(url), "fetch failed")
+    final = urllib.parse.urlsplit(r.final_url or url).netloc.lower()
+    if final != urllib.parse.urlsplit(url).netloc.lower():
+        raise fs.FetchError(r.status, _redact(url), "cross-host redirect refused")
     return r.text
 
 
@@ -211,7 +238,9 @@ def release_instant(days: pd.Series, at: str, tz: str,
     same week, moves one business day LATER (EIA, USDA and the H.4.1 all slip that way; when the
     agency actually published earlier the stamp is merely late, which is safe). Exact dates in
     `calendar.releases` (scheduled day ISO -> real day ISO) win; `calendar.windows` raise a
-    not-before date for every scheduled day inside a shutdown window."""
+    not-before date for every scheduled day inside a shutdown window; a scheduled day inside
+    `calendar.exclude` (a shutdown and its catch-up, when the real publication dates are not on
+    record) yields NaT and the row is dropped rather than stamped on a day it was not public."""
     cal = calendar or {}
     hol = _holidays()
     hh, mm = (int(x) for x in str(at).split(":"))
@@ -233,6 +262,10 @@ def release_instant(days: pd.Series, at: str, tz: str,
         for w in cal.get("windows") or []:
             if pd.Timestamp(w["from"]) <= day <= pd.Timestamp(w["to"]):
                 day = max(day, pd.Timestamp(w["not_before"]).normalize())
+        if not exact and any(pd.Timestamp(w["from"]) <= day <= pd.Timestamp(w["to"])
+                             for w in cal.get("exclude") or []):
+            out.append(pd.NaT)          # publication date unknown (shutdown backlog): no row
+            continue
         local = (day + pd.Timedelta(hours=hh, minutes=mm)).tz_localize(
             tz, nonexistent="shift_forward", ambiguous=False)
         out.append(local.tz_convert("UTC") + GRACE)
@@ -287,32 +320,6 @@ def same_week_5y_mean(week_end: pd.Series, change: pd.Series, years: int = 5,
                     vals.append(float(v))
         out.append(float(np.mean(vals)) if len(vals) == years else np.nan)
     return pd.Series(out)
-
-
-def windowed_state(feat: pd.DataFrame, avail: pd.Series, event: pd.Series, col: str,
-                   days: int) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
-    """Add `<col>_wk`: the event's value from its release for `days` days, then 0.
-
-    The conditioner carries a value forward until the next row, so a state that should hold for
-    "release day + 1 week" needs an explicit end: a row at release + days whose `_wk` value is
-    0 (below any threshold) and whose other columns are NaN (dropped by the conditioner, so they
-    keep carrying the release's value). Ends that would land after the next release are skipped.
-    """
-    f = feat.reset_index(drop=True).copy()
-    a = pd.to_datetime(avail, utc=True).reset_index(drop=True)
-    e = pd.to_datetime(event).reset_index(drop=True)
-    f[f"{col}_wk"] = f[col]
-    ends = a + pd.Timedelta(days=days)
-    nxt = a.shift(-1)
-    keep = nxt.isna() | (ends < nxt)
-    tail = pd.DataFrame({c: np.nan for c in f.columns}, index=range(int(keep.sum())))
-    tail[f"{col}_wk"] = 0.0
-    f2 = pd.concat([f, tail], ignore_index=True)
-    a2 = pd.concat([a, ends[keep]], ignore_index=True)
-    e2 = pd.concat([e, e[keep]], ignore_index=True)
-    order = np.argsort(a2.to_numpy(), kind="stable")
-    return (f2.iloc[order].reset_index(drop=True), a2.iloc[order].reset_index(drop=True),
-            e2.iloc[order].reset_index(drop=True))
 
 
 # ------------------------------------------------------------------------------ calendar rows
@@ -380,100 +387,271 @@ def _emit(oid: str, row: Mapping[str, Any], feat: pd.DataFrame, avail: pd.Series
     return oid, frame, meta
 
 
-# ------------------------------------------------------------------------------ FRED (N/L, funding)
+# ------------------------------------------------------------------------- primary US publishers
+#
+# FRED is terms-refused for every automated desk fetch (governance/fred-terms-ruling-2026-11-13):
+# its licence bars use in building a system. The same numbers come from their publishers:
+#   NY Fed Markets API   SOFR (with its percentile distribution), EFFR, ON RRP take-up. Terms of
+#                        use allow automated business use with attribution (NYFED_NOTICE).
+#   Treasury FiscalData  Daily Treasury Statement operating cash balance (the TGA). US
+#                        government work, public domain.
+#   Federal Reserve      H.4.1 total assets via the Data Download Program CSV. The DDP series
+#                        URL is a row field and is fetched only once `verified` is true (a box
+#                        read of the DDP page); until then net liquidity carries only its
+#                        Treasury + NY Fed legs and says so.
 
-def fred_series(acc: Access, row: Mapping[str, Any], sid: str, key: str) -> pd.Series:
-    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json"})
-    doc = acc.json(str(row["id"]), f"https://api.stlouisfed.org/fred/series/observations?{q}")
-    rows = (doc or {}).get("observations") or []
-    if not rows:
-        return pd.Series(dtype=float)
-    d = pd.DataFrame(rows)
-    return pd.Series(pd.to_numeric(d["value"], errors="coerce").to_numpy(),
-                     index=pd.to_datetime(d["date"])).dropna()
-
-
-def _fred_frame(acc: Access, row: Mapping[str, Any]) -> pd.DataFrame:
-    """All of the row's FRED series as columns (held raw if offline / refused)."""
-    raw = RAW / f"{row['id']}.parquet"
-    key = key_for(row)
-    fresh = None
-    if acc.online and key:
-        cols = {s: fred_series(acc, row, s, key) for s in row["series"]}
-        if all(len(v) for v in cols.values()):
-            fresh = pd.DataFrame(cols).sort_index().rename_axis("date").reset_index()
-    elif acc.online and not key:
-        acc.notes.append({"source": row["id"], "status": "NEEDS_KEY",
-                          "key_env": row.get("key_env")})
-    return _hold(raw, fresh)
+NYFED_NOTICE = ("Content from the New York Fed subject to the Terms of Use at newyorkfed.org "
+                "(SOFR, EFFR, reverse repo operations)")
+NYFED_RATE = ("https://markets.newyorkfed.org/api/rates/{path}/search.json?"
+              "startDate={a}&endDate={b}")
+NYFED_RRP = ("https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json?"
+             "startDate={a}&endDate={b}")
+FISCAL_DTS = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/"
+              "dts/operating_cash_balance?filter=record_date:gte:{a}&sort=record_date"
+              "&page[size]=10000&page[number]={n}")
 
 
-def net_liquidity(df: pd.DataFrame, units: Mapping[str, float]) -> pd.DataFrame:
-    """Weekly Wednesday frame: net = WALCL - TGA - RRP in $bn, with its 1w and 4w changes.
+def _num(v: Any) -> float:
+    try:
+        return float(str(v).replace(",", ""))
+    except (TypeError, ValueError):
+        return float("nan")
 
-    WALCL and WTREGEN are Wednesday levels; RRP (daily) is taken AS OF that Wednesday. Units come
-    from the row (WALCL is published in $mn, WTREGEN and RRPONTSYD in $bn) so no constant here
-    decides them."""
-    d = df.set_index(pd.to_datetime(df["date"])).drop(columns=["date"]).sort_index()
-    weds = d.index[d.index.weekday == 2]
-    w = d.loc[weds, ["WALCL", "WTREGEN"]].dropna()
-    rrp = d["RRPONTSYD"].dropna()
-    # RRP before its daily series began is genuinely zero-usage history only if FRED says so;
-    # otherwise the week is dropped rather than imputed.
-    w["RRPONTSYD"] = rrp.reindex(w.index, method="ffill", tolerance=pd.Timedelta(days=6))
-    w = w.dropna()
-    net = (w["WALCL"] * units.get("WALCL", 1.0) - w["WTREGEN"] * units.get("WTREGEN", 1.0)
-           - w["RRPONTSYD"] * units.get("RRPONTSYD", 1.0))
-    out = pd.DataFrame({"week": w.index, "net_liq_bn": net.to_numpy()})
-    out["d1w"] = out["net_liq_bn"].diff()
-    out["d4w"] = out["net_liq_bn"].diff(4)
+
+def _chunks(start: pd.Timestamp, end: pd.Timestamp, days: int = 365
+            ) -> list[tuple[str, str]]:
+    out, a = [], start.normalize()
+    while a <= end:
+        b = min(a + pd.Timedelta(days=days - 1), end)
+        out.append((a.date().isoformat(), b.date().isoformat()))
+        a = b + pd.Timedelta(days=1)
     return out
 
 
-def collect_net_liquidity(acc: Access, row: Mapping[str, Any]) -> list[Out]:
-    df = _fred_frame(acc, row)
-    if df.empty or not set(row["series"]) <= set(df.columns):
+def _incremental(raw: Path, first: str, now: pd.Timestamp, overlap_days: int = 10
+                 ) -> tuple[pd.DataFrame, pd.Timestamp]:
+    held = pd.read_parquet(raw) if raw.exists() else pd.DataFrame()
+    start = pd.Timestamp(first)
+    if not held.empty:
+        start = max(start, pd.to_datetime(held["date"]).max() - pd.Timedelta(days=overlap_days))
+    return held, start
+
+
+def _merge(held: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
+    if new.empty:
+        return held
+    df = pd.concat([held, new], ignore_index=True) if not held.empty else new
+    df["date"] = pd.to_datetime(df["date"])
+    return df.drop_duplicates("date", keep="last").sort_values("date").reset_index(drop=True)
+
+
+def nyfed_rate_rows(doc: Any) -> pd.DataFrame:
+    """refRates -> [date, rate, p1, p25, p75, p99, volume_bn]."""
+    recs = (doc or {}).get("refRates") if isinstance(doc, dict) else None
+    rows = [{"date": str(r.get("effectiveDate") or "")[:10], "rate": _num(r.get("percentRate")),
+             "p1": _num(r.get("percentPercentile1")), "p25": _num(r.get("percentPercentile25")),
+             "p75": _num(r.get("percentPercentile75")),
+             "p99": _num(r.get("percentPercentile99")),
+             "volume_bn": _num(r.get("volumeInBillions"))}
+            for r in recs or [] if isinstance(r, dict)]
+    d = pd.DataFrame(rows)
+    if d.empty:
+        return d
+    d["date"] = pd.to_datetime(d["date"], errors="coerce")
+    return d.dropna(subset=["date", "rate"])
+
+
+def nyfed_rrp_rows(doc: Any) -> pd.DataFrame:
+    """ON RRP operations -> [date, rrp_bn] summed over the day's operations (dollars -> $bn)."""
+    ops = (((doc or {}).get("repo") or {}).get("operations")) if isinstance(doc, dict) else None
+    rows = [{"date": str(o.get("operationDate") or "")[:10],
+             "rrp_bn": _num(o.get("totalAmtAccepted")) / 1e9}
+            for o in ops or [] if isinstance(o, dict)]
+    d = pd.DataFrame(rows)
+    if d.empty:
+        return d
+    d["date"] = pd.to_datetime(d["date"], errors="coerce")
+    return d.dropna().groupby("date", as_index=False)["rrp_bn"].sum()
+
+
+def dts_tga_rows(doc: Any, pattern: str) -> pd.DataFrame:
+    """DTS operating cash balance -> [date, tga_bn]. The account row is matched by its own label
+    (the TGA closing balance since 2021-10, the Federal Reserve Account before); the balance is
+    the closing field where the row has one, else the opening field (the newer format reports
+    the TGA closing balance in the opening column of its own closing-balance row)."""
+    rows = (doc or {}).get("data") if isinstance(doc, dict) else None
+    pat = re.compile(pattern, re.I)
+    out = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not pat.search(str(r.get("account_type") or "")):
+            continue
+        v = _num(r.get("close_today_bal"))
+        if not np.isfinite(v):
+            v = _num(r.get("open_today_bal"))
+        out.append({"date": str(r.get("record_date") or "")[:10], "tga_bn": v / 1000.0})
+    d = pd.DataFrame(out)
+    if d.empty:
+        return d
+    d["date"] = pd.to_datetime(d["date"], errors="coerce")
+    return d.dropna().drop_duplicates("date", keep="last")
+
+
+def fed_ddp_rows(text: str) -> pd.DataFrame:
+    """A Federal Reserve Data Download Program CSV -> [date, value] scaled by its Multiplier
+    row. The data start after the 'Time Period' header row; 'ND' / blank is absent."""
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    mult, start = 1.0, None
+    for i, ln in enumerate(lines[:20]):
+        cells = [c.strip().strip('"') for c in ln.split(",")]
+        if cells and cells[0].lower().startswith("multiplier") and len(cells) > 1:
+            mult = _num(cells[1]) if np.isfinite(_num(cells[1])) else 1.0
+        if cells and cells[0].lower().startswith("time period"):
+            start = i + 1
+    if start is None:
+        return pd.DataFrame(columns=["date", "value"])
+    rows = []
+    for ln in lines[start:]:
+        cells = [c.strip().strip('"') for c in ln.split(",")]
+        if len(cells) >= 2:
+            rows.append({"date": cells[0], "value": _num(cells[1]) * mult})
+    d = pd.DataFrame(rows)
+    d["date"] = pd.to_datetime(d["date"], errors="coerce")
+    return d.dropna()
+
+
+def collect_nyfed_rate(acc: Access, row: Mapping[str, Any], path: str, name: str,
+                       now: pd.Timestamp) -> pd.DataFrame:
+    raw = RAW / f"{row['id']}_{name}.parquet"
+    held, start = _incremental(raw, str(row.get("first_date") or "2018-04-02"), now)
+    parts = []
+    if acc.online:
+        for a, b in _chunks(start, now):
+            doc = acc.json(str(row["id"]), NYFED_RATE.format(path=path, a=a, b=b))
+            if doc is None:
+                break
+            parts.append(nyfed_rate_rows(doc))
+    new = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    df = _merge(held, new)
+    return _hold(raw, df if not new.empty else None)
+
+
+def collect_rrp(acc: Access, row: Mapping[str, Any], now: pd.Timestamp) -> pd.DataFrame:
+    raw = RAW / f"{row['id']}_rrp.parquet"
+    held, start = _incremental(raw, str(row.get("rrp_first_date") or "2014-01-01"), now)
+    parts = []
+    if acc.online:
+        for a, b in _chunks(start, now):
+            doc = acc.json(str(row["id"]), NYFED_RRP.format(a=a, b=b))
+            if doc is None:
+                break
+            parts.append(nyfed_rrp_rows(doc))
+    new = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    return _hold(raw, _merge(held, new) if not new.empty else None)
+
+
+def collect_tga(acc: Access, row: Mapping[str, Any], now: pd.Timestamp) -> pd.DataFrame:
+    raw = RAW / f"{row['id']}_tga.parquet"
+    held, start = _incremental(raw, str(row.get("tga_first_date") or "2014-01-01"), now)
+    parts = []
+    if acc.online:
+        for n in range(1, 20):
+            doc = acc.json(str(row["id"]), FISCAL_DTS.format(a=start.date().isoformat(), n=n))
+            if doc is None:
+                break
+            parts.append(dts_tga_rows(doc, str(row.get("tga_pattern") or "TGA|Federal Reserve")))
+            if not ((doc or {}).get("links") or {}).get("next"):
+                break
+    new = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    return _hold(raw, _merge(held, new) if not new.empty else None)
+
+
+def collect_walcl(acc: Access, row: Mapping[str, Any]) -> pd.DataFrame:
+    """H.4.1 total assets from the Board's DDP, only once the row's URL is verified."""
+    raw = RAW / f"{row['id']}_walcl.parquet"
+    src = row.get("walcl") or {}
+    fresh = None
+    if acc.online and src.get("verified") and src.get("url"):
+        body = acc.get(str(row["id"]), str(src["url"]))
+        if body:
+            fresh = fed_ddp_rows(body)
+    elif acc.online:
+        acc.notes.append({"source": f"{row['id']}_walcl", "status": "UNMEASURED",
+                          "why": "H.4.1 DDP series URL not yet verified by a box read"})
+    return _hold(raw, fresh)
+
+
+def net_liquidity(walcl: pd.DataFrame, tga: pd.DataFrame, rrp: pd.DataFrame) -> pd.DataFrame:
+    """Weekly Wednesday frame in $bn: net = WALCL - TGA - RRP when the H.4.1 leg is held, and
+    always the Treasury + NY Fed drain leg `drain_bn` = -(TGA + RRP). TGA and RRP are taken AS OF
+    each Wednesday (within 6 days), never imputed across a longer gap."""
+    def asof(d: pd.DataFrame, col: str, idx: pd.DatetimeIndex) -> pd.Series:
+        if d.empty:
+            return pd.Series(np.nan, index=idx)
+        s = pd.Series(d[col].to_numpy(), index=pd.to_datetime(d["date"])).sort_index()
+        s = s[~s.index.duplicated(keep="last")]
+        return s.reindex(idx, method="ffill", tolerance=pd.Timedelta(days=6))
+    lo = min(pd.to_datetime(x["date"]).min() for x in (tga, rrp) if not x.empty)
+    hi = max(pd.to_datetime(x["date"]).max() for x in (tga, rrp) if not x.empty)
+    weds = pd.date_range(lo, hi, freq="W-WED")
+    t, r = asof(tga, "tga_bn", weds), asof(rrp, "rrp_bn", weds)
+    if not rrp.empty:                       # RRP history before the first operation is zero use
+        r = r.where(weds >= pd.to_datetime(rrp["date"]).min(), r)
+    out = pd.DataFrame({"week": weds, "drain_bn": (-(t + r)).to_numpy()})
+    if not walcl.empty:
+        w = asof(walcl.rename(columns={"value": "v"}), "v", weds) / 1000.0   # $mn -> $bn
+        out["net_liq_bn"] = (w - t - r).to_numpy()
+    out = out.dropna(subset=["drain_bn"]).reset_index(drop=True)
+    for c in [c for c in ("net_liq_bn", "drain_bn") if c in out.columns]:
+        out[f"{c}_d1w"] = out[c].diff()
+    return out
+
+
+def collect_net_liquidity(acc: Access, row: Mapping[str, Any], now: datetime) -> list[Out]:
+    t = pd.Timestamp(now).tz_localize(None) if pd.Timestamp(now).tzinfo else pd.Timestamp(now)
+    tga, rrp, walcl = collect_tga(acc, row, t), collect_rrp(acc, row, t), collect_walcl(acc, row)
+    if tga.empty or rrp.empty:
         return []
-    w = net_liquidity(df, row.get("units") or {})
-    # weekly gaps (a skipped Wednesday) make d1w a 2-week change: NaN it
-    gap = pd.to_datetime(w["week"]).diff()
-    w.loc[gap > pd.Timedelta(days=8), "d1w"] = np.nan
-    sz = surprise_frame(w["d1w"], pd.Series(0.0, index=w.index), int(row.get("window", 52)))
-    feat = pd.DataFrame({"net_liq_bn": w["net_liq_bn"], "d1w": w["d1w"], "d4w": w["d4w"],
-                         "d1w_z": sz["surprise_z"]})
+    w = net_liquidity(walcl, tga, rrp)
+    head = "net_liq_bn" if "net_liq_bn" in w.columns and w["net_liq_bn"].notna().sum() >= \
+        MIN_EVENTS else "drain_bn"
+    z = surprise_frame(w[f"{head}_d1w"], pd.Series(0.0, index=w.index),
+                       int(row.get("window", 52)))["surprise_z"]
+    feat = pd.DataFrame({head: w[head], "d1w": w[f"{head}_d1w"], "d1w_z": z})
     rel_day = pd.to_datetime(w["week"]) + pd.Timedelta(days=1)          # H.4.1: Thursday
     avail = release_instant(rel_day, str(row.get("at") or "16:30"), str(row["tz"]),
                             row.get("calendar"))
     out = _emit(f"os_{row['id']}", row, feat, avail, pd.Series(pd.to_datetime(w["week"])),
-                "fed_net_liquidity", "h41_thursday_1630_et_holiday_late")
+                "fed_net_liquidity", "h41_thursday_1630_et_holiday_late",
+                {"basis": head, "attribution": NYFED_NOTICE,
+                 "legs": {"tga": "fiscaldata_dts", "rrp": "nyfed_markets_api",
+                          "walcl": "fed_ddp" if head == "net_liq_bn" else "UNMEASURED"}})
     return [out] if out else []
 
 
-def collect_funding(acc: Access, row: Mapping[str, Any]) -> list[Out]:
-    """Daily funding spreads, each stamped the next business day 23:00 UTC (FRED's daily rule)."""
-    df = _fred_frame(acc, row)
-    if df.empty:
+def collect_funding(acc: Access, row: Mapping[str, Any], now: datetime) -> list[Out]:
+    """SOFR - EFFR (secured over unsecured overnight: repo pressure) and SOFR p99 - SOFR (the
+    tail of the repo distribution: who is paying up), both in bp from the NY Fed, stamped the
+    next business day 23:00 UTC (published ~08:00 ET the business day after)."""
+    t = pd.Timestamp(now).tz_localize(None) if pd.Timestamp(now).tzinfo else pd.Timestamp(now)
+    sofr = collect_nyfed_rate(acc, row, "secured/sofr", "sofr", t)
+    effr = collect_nyfed_rate(acc, row, "unsecured/effr", "effr", t)
+    if sofr.empty:
         return []
-    d = df.set_index(pd.to_datetime(df["date"])).drop(columns=["date"]).sort_index()
+    so = sofr.set_index(pd.to_datetime(sofr["date"])).sort_index()
+    legs = {"sofr_effr": so["rate"] - (effr.set_index(pd.to_datetime(effr["date"]))["rate"]
+                                       .reindex(so.index) if not effr.empty else np.nan),
+            "sofr_tail": so["p99"] - so["rate"]}
     outs: list[Out] = []
-    for sp in row.get("spreads") or []:
-        a, b = str(sp["a"]), sp["b"]
-        bs = [b] if isinstance(b, str) else list(b)       # first available of a chain (IORB->IOER)
-        if a not in d.columns or not any(x in d.columns for x in bs):
+    for sid, ser in legs.items():
+        s = (pd.Series(ser) * 100.0).dropna()
+        if len(s) < fs.MIN_ROWS:
             continue
-        base = d[[x for x in bs if x in d.columns]].bfill(axis=1).iloc[:, 0]
-        both = pd.DataFrame({"a": d[a], "b": base}).dropna()
-        if len(both) < fs.MIN_ROWS:
-            continue
-        s = (both["a"] - both["b"]) * 100.0                   # basis points
         feat = fs.dynamics(pd.DataFrame({"bp": s.to_numpy()}), ["bp"],
-                           window=int(row.get("window", 252)))
-        feat = feat[["bp", "bp_chg", "bp_pct"]]
-        avail = fs.daily_available(pd.Series(both.index))
-        out = _emit(f"os_{row['id']}_{sp['id']}", {**row, "event_lane": False,
-                                                  "targets": sp.get("targets") or row["targets"]},
-                    feat, avail, pd.Series(both.index), "usd_funding_spread",
-                    "fred_daily_next_bday_2300utc")
+                           window=int(row.get("window", 252)))[["bp", "bp_chg", "bp_pct"]]
+        avail = fs.daily_available(pd.Series(s.index))
+        out = _emit(f"os_{row['id']}_{sid}", {**row, "event_lane": False}, feat, avail,
+                    pd.Series(s.index), "usd_funding_spread", "nyfed_next_bday_2300utc",
+                    {"attribution": NYFED_NOTICE})
         if out:
             outs.append(out)
     return outs
@@ -493,28 +671,80 @@ def swap_implied_diff(swap_points: float, price: float, digits: int, side: str) 
     return v if side == "long" else -v
 
 
-def collect_cip(acc: Access, row: Mapping[str, Any], frames: Mapping[str, pd.DataFrame],
-                swaps: pd.DataFrame | None) -> list[Out]:
-    """broker swap-implied differential minus the FRED 3m cash differential, per pair.
+ECB_ESTR = ("https://data-api.ecb.europa.eu/service/data/EST/{key}?format=csvdata"
+            "&startPeriod={a}")
 
-    `swaps` is the hourly broker swap panel (columns: time, symbol, swap_long, swap_short,
-    swap_mode, price, digits); only swap_mode == points rows are used, since other modes need
-    contract units the panel does not carry. The cash leg is futures_state's `fred_rdiff3m_<pair>`
-    frame, joined AS OF the swap observation's day."""
+
+def ecb_csv_rows(text: str) -> pd.DataFrame:
+    """ECB Data Portal csvdata -> [date, rate] from its TIME_PERIOD and OBS_VALUE columns."""
+    try:
+        d = pd.read_csv(io.StringIO(text))
+    except Exception:
+        return pd.DataFrame(columns=["date", "rate"])
+    if not {"TIME_PERIOD", "OBS_VALUE"} <= set(d.columns):
+        return pd.DataFrame(columns=["date", "rate"])
+    out = pd.DataFrame({"date": pd.to_datetime(d["TIME_PERIOD"], errors="coerce"),
+                        "rate": pd.to_numeric(d["OBS_VALUE"], errors="coerce")})
+    return out.dropna().sort_values("date").reset_index(drop=True)
+
+
+def cash_leg(acc: Access, row: Mapping[str, Any], leg: Mapping[str, Any],
+             now: pd.Timestamp) -> pd.Series:
+    """One overnight rate from its own publisher, indexed by the day it was PUBLIC
+    (next business day: SOFR and EUR STR are both published the morning after)."""
+    prov = str(leg.get("provider"))
+    if prov == "nyfed":
+        df = collect_nyfed_rate(acc, row, str(leg["path"]), str(leg["name"]), now)
+    elif prov == "ecb":
+        raw = RAW / f"{row['id']}_{leg['name']}.parquet"
+        held, start = _incremental(raw, str(leg.get("first_date") or "2019-10-01"), now)
+        fresh = None
+        if acc.online:
+            body = acc.get(str(row["id"]), ECB_ESTR.format(key=leg["key"],
+                                                           a=start.date().isoformat()))
+            if body:
+                fresh = _merge(held, ecb_csv_rows(body))
+        df = _hold(raw, fresh)
+    else:
+        acc.notes.append({"source": row["id"], "status": "UNMEASURED",
+                          "why": f"no primary route for provider {prov}"})
+        return pd.Series(dtype=float)
+    if df.empty:
+        return pd.Series(dtype=float)
+    s = pd.Series(df["rate"].to_numpy(), index=pd.to_datetime(df["date"])).sort_index()
+    s = s[~s.index.duplicated(keep="last")]
+    s.index = fs.daily_available(pd.Series(s.index)).to_numpy()
+    return s
+
+
+def collect_cip(acc: Access, row: Mapping[str, Any], swaps: pd.DataFrame | None,
+                now: datetime) -> list[Out]:
+    """Broker swap-implied overnight differential minus the overnight cash differential from
+    the rates' own publishers (SOFR: NY Fed; EUR STR: ECB), per pair. A pair whose foreign
+    overnight rate has no primary-publisher row is UNMEASURED by name.
+
+    `swaps` is the broker swap panel (time, symbol, swap_long, swap_short, swap_mode, price,
+    digits; price = the last COMPLETED bar's close at capture, true UTC). Only points-mode swaps
+    are used. Cash is joined AS OF its public instant, never a later one."""
     if swaps is None or swaps.empty:
         acc.notes.append({"source": row["id"], "status": "UNMEASURED",
                           "why": "no broker swap panel held"})
         return []
+    t = pd.Timestamp(now).tz_localize(None) if pd.Timestamp(now).tzinfo else pd.Timestamp(now)
     outs: list[Out] = []
     for pr in row.get("pairs") or []:
         sym = str(pr["symbol"])
-        cash = frames.get(str(pr.get("cash") or f"fred_rdiff3m_{sym.lower()}"))
+        if not pr.get("base") or not pr.get("quote"):
+            acc.notes.append({"source": f"{row['id']}_{sym}", "status": "UNMEASURED",
+                              "why": "no primary-publisher overnight rate for one leg"})
+            continue
+        base, quote = cash_leg(acc, row, pr["base"], t), cash_leg(acc, row, pr["quote"], t)
         sw = swaps[(swaps["symbol"] == sym)]
         if "swap_mode" in sw.columns:
             sw = sw[sw["swap_mode"].astype(str).str.lower().isin(("points", "1", "by_points"))]
-        if cash is None or sw.empty or "diff" not in cash.columns:
+        if base.empty or quote.empty or sw.empty:
             acc.notes.append({"source": f"{row['id']}_{sym}", "status": "UNMEASURED",
-                              "why": "cash differential or points-mode swaps missing"})
+                              "why": "cash leg or points-mode swaps missing"})
             continue
         sw = sw.dropna(subset=["swap_long", "swap_short", "price", "digits"]).copy()
         sw["t"] = pd.to_datetime(sw["time"], utc=True)
@@ -526,24 +756,27 @@ def collect_cip(acc: Access, row: Mapping[str, Any], frames: Mapping[str, pd.Dat
                for r in day.itertuples()]
         implied = pd.Series((np.array(lng) + np.array(sht)) / 2.0, index=day.index)
         take = pd.Series((np.array(sht) - np.array(lng)) / 2.0, index=day.index)
-        c = pd.Series(pd.to_numeric(cash["diff"], errors="coerce").to_numpy(),
-                      index=pd.to_datetime(cash["available_time"], utc=True)).sort_index()
-        c = c[~c.index.duplicated(keep="last")]
-        cash_asof = c.reindex(implied.index.union(c.index)).ffill().reindex(implied.index)
-        basis = (implied - cash_asof).dropna()
+        # the swap day is usable at its end; cash only once published by then
+        ends = implied.index + pd.Timedelta(hours=23, minutes=59)
+
+        def asof(c: pd.Series, ends: pd.DatetimeIndex = ends) -> np.ndarray:
+            c = c.copy()
+            c.index = pd.to_datetime(c.index, utc=True)
+            return np.asarray(c.reindex(c.index.union(ends)).ffill().reindex(ends), dtype=float)
+        cash = asof(base) - asof(quote)
+        basis = pd.Series(implied.to_numpy() - cash, index=implied.index).dropna()
         if len(basis) < fs.MIN_ROWS:
             acc.notes.append({"source": f"{row['id']}_{sym}", "status": "ACCRUING",
-                              "rows": int(len(basis)), "need": fs.MIN_ROWS})
+                              "rows": len(basis), "need": fs.MIN_ROWS})
             continue
         feat = pd.DataFrame({"basis_pct": basis.to_numpy(),
                              "broker_take_pct": take.reindex(basis.index).to_numpy()})
         feat["basis_chg"] = feat["basis_pct"].diff()
-        # the swap is observed at the panel's hour; usable the next hour, stamped end of day
         avail = pd.Series(basis.index + pd.Timedelta(hours=23, minutes=59))
         out = _emit(f"os_{row['id']}_{sym.lower()}",
                     {**row, "event_lane": False, "targets": pr.get("targets") or [sym]},
                     feat, avail, pd.Series(basis.index), "cip_basis_proxy",
-                    "broker_swap_panel_day_end")
+                    "broker_swap_panel_day_end", {"attribution": NYFED_NOTICE})
         if out:
             outs.append(out)
     return outs
@@ -611,14 +844,23 @@ def load_swap_panel(panel_dir: Path | None = None, terms_dir: Path | None = None
 
 
 def _daily_close(p: Path) -> pd.Series:
+    """H1 closes indexed by the instant each bar CLOSED, in true UTC (the bar stamp is the
+    broker-clock OPEN time; `libs.regime.session_clock.server_to_utc` converts it)."""
     try:
         b = pd.read_parquet(p)
     except Exception:
         return pd.Series(dtype=float)
     if "time" in b.columns:
-        b = b.set_index(pd.to_datetime(b["time"], utc=True))
-    idx = pd.to_datetime(b.index, utc=True)
-    return pd.Series(pd.to_numeric(b["close"], errors="coerce").to_numpy(), index=idx).dropna()
+        b = b.set_index(pd.to_datetime(b["time"]))
+    from libs.regime.session_clock import server_to_utc
+    opened = server_to_utc(pd.DatetimeIndex(pd.to_datetime(b.index)).tz_localize(None)
+                           if pd.DatetimeIndex(pd.to_datetime(b.index)).tz is not None
+                           else pd.DatetimeIndex(pd.to_datetime(b.index)))
+    closed = pd.DatetimeIndex(opened) + pd.Timedelta(hours=1)
+    if closed.tz is None:
+        closed = closed.tz_localize("UTC")
+    return pd.Series(pd.to_numeric(b["close"], errors="coerce").to_numpy(),
+                     index=closed).dropna().sort_index()
 
 
 # ------------------------------------------------------------------------------ EIA storage (N8)
@@ -677,7 +919,7 @@ def collect_eia_storage(acc: Access, row: Mapping[str, Any]) -> list[Out]:
     return [out] if out else []
 
 
-# ------------------------------------------------------------------------------ USDA export sales (N7)
+# ------------------------------------------------------------------------- USDA export sales (N7)
 
 def fas_week_totals(rows: Sequence[Mapping[str, Any]], field: str) -> pd.DataFrame:
     """Country rows -> one total per week ending (net sales summed over destinations)."""
@@ -764,84 +1006,125 @@ def collect_usda_esr(acc: Access, row: Mapping[str, Any], now: datetime) -> list
 
 # ------------------------------------------------------------------------------ TIC (N6)
 
-_MONTH = r"(?P<y>(?:19|20)\d\d)[-/ ]?(?P<m>0?[1-9]|1[0-2])\b"
+def tic_s1_parse(text: str, country_pattern: str, domestic_cols: Sequence[int] = (1, 2, 3, 4),
+                 sales_offset: int = 6) -> pd.DataFrame:
+    """TIC s1 (tab-separated, $mn): -> [month, value] net foreign purchases of US long-term
+    DOMESTIC securities in $bn for the row whose country name matches `country_pattern`.
 
-
-def tic_parse(text: str, column_pattern: str) -> pd.DataFrame:
-    """A TIC monthly table -> [month, value]. The column is found by its HEADER text (the row's
-    pattern), never by position, and a file whose header lacks it yields nothing."""
-    lines = [ln for ln in text.splitlines() if ln.strip()]
-    sep = "," if sum(ln.count(",") for ln in lines[:40]) > sum(ln.count("\t") for ln in lines[:40]) \
-        else "\t"
-    pat = re.compile(column_pattern, re.I)
-    col = None
-    hdr_i = None
+    The header row is the one whose cells read [1] .. [12]; purchases are columns [1]..[6]
+    (Treasury, agency, corporate bonds, corporate stocks, foreign bonds, foreign stocks) and
+    sales [7]..[12] in the same order, so net = sum([n]) - sum([n + 6]) over the domestic set.
+    Columns are located by their [n] labels, never by position."""
+    pat = re.compile(country_pattern, re.I)
+    lines = text.splitlines()
+    pos: dict[int, int] = {}
+    hdr = None
     for i, ln in enumerate(lines[:80]):
-        cells = [c.strip().strip('"') for c in ln.split(sep)]
-        hits = [j for j, c in enumerate(cells) if pat.search(c)]
-        if hits:
-            col, hdr_i = hits[0], i
+        cells = [c.strip().strip('"') for c in ln.split("\t")]
+        found = {int(m.group(1)): j for j, c in enumerate(cells)
+                 if (m := re.fullmatch(r"\[(\d+)\]", c))}
+        if len(found) >= 12:
+            pos, hdr = found, i
             break
-    if col is None or hdr_i is None:
+    if hdr is None:
+        return pd.DataFrame(columns=["month", "value"])
+    need = [*domestic_cols, *(c + sales_offset for c in domestic_cols)]
+    if any(c not in pos for c in need):
         return pd.DataFrame(columns=["month", "value"])
     out = []
-    for ln in lines[hdr_i + 1:]:
-        cells = [c.strip().strip('"') for c in ln.split(sep)]
-        m = re.match(_MONTH, cells[0]) if cells else None
-        if not m or len(cells) <= col:
+    for ln in lines[hdr + 1:]:
+        cells = [c.strip().strip('"') for c in ln.split("\t")]
+        if len(cells) < 3 or not pat.search(cells[0]):
             continue
-        v = pd.to_numeric(cells[col].replace(",", ""), errors="coerce")
-        out.append((pd.Timestamp(int(m["y"]), int(m["m"]), 1), v))
+        m = re.fullmatch(r"((?:19|20)\d\d)-(0[1-9]|1[0-2])", cells[2])
+        if not m:
+            continue
+        def val(c: int, cells: list[str] = cells) -> float:
+            j = pos[c]
+            return _num(cells[j]) if j < len(cells) else float("nan")
+        net = sum(val(c) for c in domestic_cols) - sum(val(c + sales_offset)
+                                                       for c in domestic_cols)
+        out.append((pd.Timestamp(int(m.group(1)), int(m.group(2)), 1), net / 1000.0))
     d = pd.DataFrame(out, columns=["month", "value"]).dropna()
     return d.drop_duplicates("month", keep="first").sort_values("month").reset_index(drop=True)
 
 
-def tic_find_file(index_html: str, link_pattern: str, base_url: str) -> str | None:
-    """The data file's URL from the TIC index page, matched by its LINK TEXT or href."""
-    pat = re.compile(link_pattern, re.I)
-    for href, label in re.findall(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', index_html,
-                                  re.I | re.S):
-        lab = re.sub(r"<[^>]+>", " ", label)
-        if pat.search(lab) or pat.search(href):
-            return urllib.parse.urljoin(base_url, href)
-    return None
+def tic_vintage(held: pd.DataFrame, read: pd.DataFrame, read_at: pd.Timestamp
+                ) -> pd.DataFrame:
+    """Keep each month's value AS FIRST SEEN. The s1 file carries revised values for every past
+    month, so a month first read now (other than the newest) is `revised` and never a surprise
+    row; only a month that appears for the first time at the head of the file is `first_seen`
+    (its first print, stamped no earlier than the read). The first pass marks all history
+    revised: the surprise series ACCRUES from then on."""
+    cols = ["month", "value", "vintage", "seen_at"]
+    h = held[cols] if not held.empty and set(cols) <= set(held.columns) else \
+        pd.DataFrame(columns=cols)
+    if read.empty:
+        return h
+    known = set(pd.to_datetime(h["month"])) if not h.empty else set()
+    newest_held = max(known) if known else None
+    add = []
+    for r in read.itertuples():
+        m = pd.Timestamp(r.month)
+        if m in known:
+            continue
+        first = newest_held is not None and m > newest_held
+        add.append({"month": m, "value": float(r.value),
+                    "vintage": "first_seen" if first else "revised",
+                    "seen_at": read_at.isoformat()})
+    if not add:
+        return h
+    out = pd.concat([h, pd.DataFrame(add)], ignore_index=True)
+    out["month"] = pd.to_datetime(out["month"])
+    return out.sort_values("month").reset_index(drop=True)
 
 
-def collect_tic(acc: Access, row: Mapping[str, Any]) -> list[Out]:
+def collect_tic(acc: Access, row: Mapping[str, Any], now: datetime) -> list[Out]:
     raw = RAW / f"{row['id']}.parquet"
-    fresh = None
+    held = pd.read_parquet(raw) if raw.exists() else pd.DataFrame()
+    df = held
     if acc.online:
-        idx = acc.get(row["id"], str(row["index_url"]))
-        url = tic_find_file(idx or "", str(row["link_pattern"]), str(row["index_url"]))
-        if idx is not None:
-            _evidence(str(row["id"]), {"index_url": row["index_url"], "found": url})
-        if idx is not None and url is None:
-            acc.notes.append({"source": row["id"], "status": "UNMEASURED",
-                              "why": "TIC index carries no link matching the row's pattern"})
-        if url:
-            body = acc.get(row["id"], url)
-            if body:
-                fresh = tic_parse(body, str(row["column_pattern"]))
-                if fresh.empty:
-                    acc.notes.append({"source": row["id"], "status": "UNMEASURED",
-                                      "why": "file header lacks the row's column"})
-    df = _hold(raw, fresh)
+        body = acc.get(str(row["id"]), str(row["file_url"]))
+        if body is not None:
+            read = tic_s1_parse(body, str(row["country_pattern"]))
+            if read.empty:
+                acc.notes.append({"source": row["id"], "status": "UNMEASURED",
+                                  "why": "s1 header or the total row not found"})
+            else:
+                _evidence(str(row["id"]), {"newest_month": str(read["month"].max()),
+                                           "rows": len(read)})
+                ts = pd.Timestamp(now)
+                df = tic_vintage(held, read, ts.tz_convert("UTC") if ts.tzinfo else
+                                 ts.tz_localize("UTC"))
+                if not df.empty:
+                    RAW.mkdir(parents=True, exist_ok=True)
+                    fs._atomic_parquet(raw, df, index=False)
     if df.empty:
         return []
+    df = df.sort_values("month").reset_index(drop=True)
     df["month"] = pd.to_datetime(df["month"])
     med = trailing_median(df["value"], int(row.get("baseline_months", 12)))
     sz = surprise_frame(df["value"], med, int(row.get("window", 60)))
-    # The release day is not in the file. Upper bound: month end + lag_days at 16:00 ET (TIC
-    # has published month M between ~M+44 and ~M+50 days); exact dates win via calendar.
+    keep = (df["vintage"] == "first_seen").to_numpy()
     month_end = df["month"] + pd.offsets.MonthEnd(0)
     rel_day = month_end + pd.Timedelta(days=int(row.get("lag_days", 52)))
     avail = release_instant(rel_day, str(row.get("at") or "16:00"), str(row["tz"]),
                             row.get("calendar"), holiday_shift=False)
-    hold_days = int(row.get("state_days", 7))
-    feat, avail, event = windowed_state(sz, avail, month_end, "surprise_z", hold_days)
-    out = _emit(f"os_{row['id']}", row, feat, avail, event, "tic_flow_surprise",
-                "conservative_upper_bound_month_end_plus_lag",
-                {"state_days": hold_days})
+    seen = pd.to_datetime(df["seen_at"], utc=True)
+    avail = pd.Series(np.where(seen > avail, seen, avail), index=avail.index)
+    avail = pd.to_datetime(avail, utc=True)
+    feat = sz[keep].reset_index(drop=True)
+    out = _emit(f"os_{row['id']}", row, feat, avail[keep].reset_index(drop=True),
+                month_end[keep].reset_index(drop=True), "tic_flow_surprise",
+                "max(conservative_upper_bound, first_seen_read)",
+                {"state_days": int(row.get("state_days", 7)), "vintage": "first_seen",
+                 "revised_history_rows": int((~keep).sum()),
+                 "state_window": ("UNMEASURED: the conditioner carries a value to the next "
+                                  "release; a release+N-day expiry needs a max-age parameter "
+                                  "on family_exogenous_conditioner (Judge's family)")})
+    if out is None:
+        acc.notes.append({"source": row["id"], "status": "ACCRUING",
+                          "first_seen_rows": int(keep.sum()), "need": MIN_EVENTS})
     return [out] if out else []
 
 
@@ -892,7 +1175,7 @@ def collect_rinban(acc: Access, row: Mapping[str, Any]) -> list[Out]:
 
 # ------------------------------------------------------------------------------ the pass
 
-ADAPTERS = ("fred_net_liquidity", "fred_funding", "cip_basis", "eia_storage", "usda_esr", "tic",
+ADAPTERS = ("us_net_liquidity", "us_funding", "cip_basis", "eia_storage", "usda_esr", "tic",
             "boj_rinban")
 
 
@@ -919,25 +1202,25 @@ def collect(*, text: Callable[[str, Mapping[str, str]], str] | None, state: dict
         else:
             live = acc
         try:
-            if ad == "fred_net_liquidity":
-                out += collect_net_liquidity(live, row)
-            elif ad == "fred_funding":
-                out += collect_funding(live, row)
+            if ad == "us_net_liquidity":
+                out += collect_net_liquidity(live, row, now)
+            elif ad == "us_funding":
+                out += collect_funding(live, row, now)
             elif ad == "cip_basis":
-                out += collect_cip(live, row, frames or {},
-                                   swaps if swaps is not None else load_swap_panel())
+                out += collect_cip(live, row,
+                                   swaps if swaps is not None else load_swap_panel(), now)
             elif ad == "eia_storage":
                 out += collect_eia_storage(live, row)
             elif ad == "usda_esr":
                 out += collect_usda_esr(live, row, now)
             elif ad == "tic":
-                out += collect_tic(live, row)
+                out += collect_tic(live, row, now)
             elif ad == "boj_rinban":
                 out += collect_rinban(live, row)
         except (fs.HardStop, KeyboardInterrupt):
             raise
         except Exception as exc:
-            notes.append({"source": sid, "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
+            notes.append({"source": sid, "error": type(exc).__name__})
     return out
 
 
