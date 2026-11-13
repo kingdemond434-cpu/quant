@@ -187,9 +187,9 @@ def run_all(apply: bool) -> dict[str, Any]:
 
     donation: dict[str, Any] = {"donated_total": 0, "tests_run_total": 0}
     if cells:
-        from research import proposer_common as pcm
-        donation = pcm.donate_per_family(SEAT, cells,
-                                         ledger=pcm.DONATION_LEDGERS / f"{SEAT}.jsonl")
+        from research import family_donation as fdn
+        donation = fdn.donate_per_family(SEAT, cells,
+                                         ledger=fdn.DONATION_LEDGERS / f"{SEAT}.jsonl")
     ok = [k for k, v in axes.items() if v.get("state") == "OK"]
     refused = [k for k, v in axes.items()
                if v.get("write_state") == "EMPTY_REFUSED_OVERWRITE"]

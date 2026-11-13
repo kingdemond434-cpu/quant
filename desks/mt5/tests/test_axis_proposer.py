@@ -142,10 +142,11 @@ def desk(tmp_path, monkeypatch):
     # cells (`cells_from_results`), so the donation door, its ledger, the canonical registry and
     # the lake frame the conditioner family reads must all be pointed away from the desk's own.
     from research import axis_ingest as ai
+    from research import family_donation as fdn
     from research import proposer_common as pc
     monkeypatch.setattr(ai, "LAKE_DIR", tmp_path / "lake")
     monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
-    monkeypatch.setattr(pc, "DONATION_LEDGERS", tmp_path / "ledgers")
+    monkeypatch.setattr(fdn, "DONATION_LEDGERS", tmp_path / "ledgers")
     monkeypatch.setattr(pc, "_record_in_registry", lambda *a, **k: None)
     monkeypatch.setattr(pc, "_preregister",
                         lambda source, cands: {"preregistered": 0, "failed": 0, "already": 0,

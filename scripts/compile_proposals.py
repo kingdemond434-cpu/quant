@@ -471,7 +471,7 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
 #: own text against the broker registry), and a proposal that names none is tested on the
 #: DECLARED CORE SET below. `symbol_basis` says which, so attribution can separate the two.
 #: The cells are donated to `data/intelligence/compile_proposals/` through
-#: `proposer_common.donate_per_family` (one contract file per
+#: `family_donation.donate_per_family` (one contract file per
 #: trial family, charged after the compiler's own chart x session expansion), and the compiler
 #: admits them as EXACT_RECIPE because `generic` is a registered family with exact params.
 #:
@@ -647,9 +647,9 @@ def main() -> int:
     merged.update({_cell_key(c): _with_symbols(c) for c in ok})
     cells = list(merged.values())
 
-    from research import proposer_common as pcm
-    donation = pcm.donate_per_family(SOURCE, donation_rows(cells),
-                                     ledger=pcm.DONATION_LEDGERS / f"{SOURCE}.jsonl")
+    from research import family_donation as fdn
+    donation = fdn.donate_per_family(SOURCE, donation_rows(cells),
+                                     ledger=fdn.DONATION_LEDGERS / f"{SOURCE}.jsonl")
     print(f"  DONATED {donation['donated_total']} cell(s) ({donation['already_charged']} already "
           f"charged); tests_run by family {donation['tests_run_by_family']}")
 

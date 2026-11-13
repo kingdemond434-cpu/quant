@@ -859,7 +859,7 @@ def axis_tag(axis_id: str, symbol: str, days: Any = None) -> str:
 #: did not explain the factor RESIDUAL, which is not the trading claim, and the gauntlet is the
 #: only arbiter of that. A definition no family executes (own-bar observables, diffusion speed,
 #: calendar proximity) is refused BY NAME in the report, never approximated. Cells go to
-#: data/intelligence/axis_proposer/ through `proposer_common.donate_per_family`, one contract per
+#: data/intelligence/axis_proposer/ through `family_donation.donate_per_family`, one contract per
 #: trial family, each charged its post-expansion count; the ledger charges a cell once.
 SEAT = "axis_proposer"
 CELL_SIDES: tuple[int, ...] = (1, -1)
@@ -1047,10 +1047,10 @@ def main(argv: list[str] | None = None) -> int:
         print("  DRY RUN: nothing written, nothing registered")
         return 0
     cells, refusals = cells_from_results(report.get("results") or [])
-    from research import proposer_common as pcm
+    from research import family_donation as fdn
     report["cells"] = {"offered": len(cells), "refused_no_family": refusals,
-                       "donation": pcm.donate_per_family(
-                           SEAT, cells, ledger=pcm.DONATION_LEDGERS / f"{SEAT}.jsonl")}
+                       "donation": fdn.donate_per_family(
+                           SEAT, cells, ledger=fdn.DONATION_LEDGERS / f"{SEAT}.jsonl")}
     write(report, extensions)
     d = report["cells"]["donation"]
     print(f"  cells: {len(cells)} offered, {d.get('donated_total', 0)} donated, "

@@ -10,7 +10,7 @@
   bis / ecb axes            published to the lake frame `exogenous_conditioner` reads, and minted
                             as cells on the instruments they bear on.
 
-Every donation goes through `proposer_common.donate_per_family`: one contract file per trial
+Every donation goes through `family_donation.donate_per_family`: one contract file per trial
 family, charged after the compiler's own expansion, charged once.
 """
 from __future__ import annotations
@@ -32,6 +32,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT), str(_ROOT / "scripts
 from research import axis_ingest as ai  # noqa: E402
 from research import axis_proposer as ap  # noqa: E402
 from research import compile_anomalies as ca  # noqa: E402
+from research import family_donation as fdn  # noqa: E402
 from research import family_policy as fp  # noqa: E402
 from research import miner_candidate_compiler as mcc  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
@@ -43,12 +44,12 @@ UNIVERSE = {"EURUSD", "EURJPY", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF"
 def door(tmp_path, monkeypatch):
     """The donation door, writing under tmp_path and touching no shared ledger or registry."""
     monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
-    monkeypatch.setattr(pc, "DONATION_LEDGERS", tmp_path / "ledgers")
+    monkeypatch.setattr(fdn, "DONATION_LEDGERS", tmp_path / "ledgers")
     monkeypatch.setattr(pc, "_record_in_registry", lambda *a, **k: None)
     monkeypatch.setattr(pc, "_preregister",
                         lambda source, cands: {"preregistered": 0, "failed": 0, "already": 0,
                                                "reasons": {}, "failures": []})
-    monkeypatch.setattr(pc, "_expanded_count", lambda cells: 4 * len(cells))
+    monkeypatch.setattr(fdn, "_expanded_count", lambda cells: 4 * len(cells))
     return tmp_path
 
 
@@ -146,7 +147,7 @@ def test_one_contract_per_trial_family_charged_after_expansion_and_only_once(doo
              {"symbol": "", "family": "generic", "params": {}}]
     ledger = door / "ledgers" / "s.jsonl"
 
-    first = pc.donate_per_family("seat_x", cells, ledger=ledger)
+    first = fdn.donate_per_family("seat_x", cells, ledger=ledger)
 
     files = sorted((door / "intel" / "seat_x").glob("discoveries_*.json"))
     assert len(files) == 2 and first["incomplete"] == 1
@@ -155,7 +156,7 @@ def test_one_contract_per_trial_family_charged_after_expansion_and_only_once(doo
                json.loads(f.read_text("utf-8"))["tests_run"] for f in files}
     assert charged == {"generic": 8, "exogenous_conditioner": 4}
 
-    again = pc.donate_per_family("seat_x", cells, ledger=ledger)
+    again = fdn.donate_per_family("seat_x", cells, ledger=ledger)
     assert again["already_charged"] == 3 and again["tests_run_total"] == 0
     assert len(list((door / "intel" / "seat_x").glob("discoveries_*.json"))) == 2
 
@@ -250,7 +251,7 @@ def test_a_share_cfd_cell_is_refused_at_the_door(door):
     from research import universe_policy as up
     if up.may_hypothesise("Apple", "exogenous_conditioner"):
         pytest.skip("this tree's registry does not classify Apple as a share CFD")
-    out = pc.donate_per_family("seat_y", [
+    out = fdn.donate_per_family("seat_y", [
         {"symbol": "Apple", "family": "exogenous_conditioner", "params": {"source": "axis_fred"}},
         {"symbol": "EURUSD", "family": "exogenous_conditioner",
          "params": {"source": "axis_fred"}}])
