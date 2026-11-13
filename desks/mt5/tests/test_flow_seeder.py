@@ -310,3 +310,18 @@ def test_the_hourly_cycle_runs_it_with_a_layer_and_a_budget() -> None:
     assert '"research/flow_seeder.py", "--once", "--budget-s", "600"' in src
     assert '"flow_seeder": flws' in src and '"flow_seeder": 700' in src
     assert LEG_LAYER["flow_seeder"] == "prediction" and "flow_seeder" in NON_REGIONAL_NAMES
+
+
+def test_the_sealed_build_cell_builds_every_flow_cell(tape: pd.DataFrame) -> None:
+    """Through the SEALED builder itself (its `h1_override`), no input branch added."""
+    sys.path.insert(0, str(DESK / "scripts"))
+    import external_gauntlet as eg
+    cases = [("XAUUSD", "orderflow_imbalance", tape,
+              {"symbol": "XAUUSD", "flow_source": "tape_signed_ticks", "lookback": 24,
+               "z_in": 1.5}),
+             ("US500", "expiry_gamma", _bars(800, start="2019-01-07"),
+              {"expiry": "all", "day_from": -4, "day_to": 0, "direction": "long"}),
+             ("XAUUSD", "strike_pin", _bars(800, start="2019-01-07") * 20.0, {"mode": "pin"})]
+    for sym, fam, bars, params in cases:
+        cell = eg.build_cell(sym, fam, params, {}, h1_override=bars)
+        assert cell is not None and len(cell.get("sigs") or []) > 0, fam
