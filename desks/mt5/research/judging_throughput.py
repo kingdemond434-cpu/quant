@@ -1517,6 +1517,14 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             _APPLY_DEADLINE[:] = []
     else:
         applied["machine_env"] = applied["cadence"] = "NOT_ATTEMPTED (dry run)"
+    # THE CORE SHARE'S SAFETY NET (principal 2026-11-13): a sweep that died without releasing
+    # its reserved cores leaves the miners confined; give them back here, hourly. Never raises.
+    if apply and box.get("is_judging_box"):
+        try:
+            from research.judge_core_share import release_orphaned
+            applied["core_share"] = release_orphaned()
+        except Exception as exc:
+            applied["core_share"] = {"status": "FAILED", "why": type(exc).__name__}
     payload["seconds"] = round(_time.monotonic() - t0, 1)
     alarms = payload["alarms"]
     if write:
