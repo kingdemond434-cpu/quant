@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (829)
+## NEVER (831)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1047,9 +1047,11 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/extract_video_cells.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_CELLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/mine_channel_transcripts.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_MINING_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/video_transcript_vault.py` | `invoked:scripts/run_video_cells_box.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/VIDEO_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:halt_rail` | `hourly_cycle:halt_rail` | UNMEASURED UNMEASURED | `desks/mt5/reports/HALT_RAIL_INTEGRITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:index_discovery` | `hourly_cycle:index_discovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/INDEX_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `task:MT5-FTMO-Allocator` | `MT5-FTMO-Allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/FTMO_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/mining_supervisor.py` | `invoked:desks/mt5/research/hourly_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/mining/MINING_METRICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `fence:check_mechanics_drift` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-FTMO-Allocator` | `MT5-FTMO-Allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/FTMO_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 
