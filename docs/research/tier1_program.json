@@ -9203,6 +9203,22 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "I_AUDIT_BACKLOG",
+   "item": "Audit queue SLA (directive 2026-11-13 item 4): what the Auditor owes, prioritised P0 adoption / P1 money path or protected / P2 ready / P3 draft, with queue depth, per-priority SLA and an ALARM; the box half measures P0 (code on the LIVE tip not vouched by adopt_guard) from local git only",
+   "domain": "I",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "scripts/audit_backlog.py + tests/ops/test_audit_backlog.py (#1121); first full read 2026-11-13: 45 owed, 15 past SLA, 151 stale drafts (MEASURED)"
+   ],
+   "scheduled_by": "hourly_cycle:audit_backlog",
+   "artifact": "desks/mt5/reports/AUDIT_BACKLOG_P0.json",
+   "consumer": "the Auditor seat's scheduled drain (scripts/audit_backlog.py full mode reads it for P0) and the coordinator's ops-health check",
+   "gap": "The owed-PR half needs GitHub and runs on the Auditor seat's own schedule, not on the box.",
+   "next_step": "After #1121 merges the Auditor seat schedules the full-mode drain every 30 minutes."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

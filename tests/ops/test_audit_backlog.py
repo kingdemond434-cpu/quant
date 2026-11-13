@@ -202,3 +202,17 @@ def test_mf3_incremental_comments_replace_an_edited_copy_by_id() -> None:
     ]
     got = ab.merge_comments(have, new)
     assert len(got["7"]) == 1 and got["7"][0]["updated_at"] == "b"
+
+
+def test_the_box_half_reads_no_github_and_writes_only_p0(tmp_path, monkeypatch) -> None:
+    def no_github(*a, **k):
+        raise AssertionError("the box half must not read GitHub")
+
+    monkeypatch.setattr(ab, "_gh", no_github)
+    monkeypatch.setattr(
+        ab, "adoption", lambda d, now: {"measured": True, "uncovered": [], "tip": "t"}
+    )
+    assert ab.main(["--local-only", "--out", str(tmp_path)]) == 0
+    doc = __import__("json").loads((tmp_path / ab.LOCAL_NAME).read_text())
+    assert doc["verdict"] == "OK" and doc["depth"] == 0 and "box" in doc["half"]
+    assert not (tmp_path / "AUDIT_BACKLOG.json").exists()

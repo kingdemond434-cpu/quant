@@ -468,6 +468,32 @@ def adoption(repo_dir: Path | None, now: datetime) -> dict[str, Any]:
         return {"measured": False, "error": type(exc).__name__}
 
 
+#: The box half's artifact (hourly_cycle leg `audit_backlog`): the adoption-blocking P0 alone.
+LOCAL_OUT = ROOT / "desks" / "mt5" / "reports"
+LOCAL_NAME = "AUDIT_BACKLOG_P0.json"
+
+
+def local_only(repo_dir: Path, out: Path, now: datetime, strict: bool) -> int:
+    """THE BOX HALF (hourly). The box holds the full clone and the adopt guard the adopter itself
+    runs, so it is the one place P0 -- LIVE code no ADOPT CLEAR row vouches for -- is measured
+    the way adoption will judge it. No GitHub read and no registry: the owed-PR half runs on the
+    Auditor's own scheduled session, so the two halves never duplicate a read."""
+    snap = summarise([], now, adoption(repo_dir, now))
+    snap["half"] = "box: P0 adoption only (the owed-PR half runs on the Auditor's session)"
+    if out == ROOT / "reports" / "audit":
+        out = LOCAL_OUT
+    out.mkdir(parents=True, exist_ok=True)
+    tmp = out / (LOCAL_NAME + ".tmp")
+    tmp.write_text(json.dumps(snap, indent=1) + "\n", encoding="utf-8")
+    os.replace(tmp, out / LOCAL_NAME)
+    p0 = snap["adoption"].get("uncovered") or []
+    print(
+        f"AUDIT BACKLOG P0 {snap['verdict']}: {len(p0)} LIVE code path(s) unvouched"
+        + (f" -- {'; '.join(snap['why'])}" if snap["why"] else "")
+    )
+    return 1 if strict and snap["verdict"] != "OK" else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--repo", default=REPO)
@@ -475,11 +501,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "reports" / "audit")
     ap.add_argument("--registry", default=None, help="REGISTRY_ROWS.jsonl (else env)")
     ap.add_argument("--cache", type=Path, default=None)
+    ap.add_argument(
+        "--local-only",
+        action="store_true",
+        help="the box's hourly half: P0 only, from this checkout's git and adopt_guard; no "
+        "GitHub read, no registry; writes AUDIT_BACKLOG_P0.json beside the other reports",
+    )
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
 
     now = datetime.now(UTC)
+    if a.local_only:
+        return local_only(a.repo_dir or ROOT, a.out, now, a.strict)
     g = gate()
     money, money_ok = money_path()
     reg_path = a.registry or os.environ.get("QUANT_AUDIT_REGISTRY")
