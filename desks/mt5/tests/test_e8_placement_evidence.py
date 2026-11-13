@@ -114,7 +114,7 @@ def test_a_flat_pass_with_a_window_due_writes_heartbeat_and_one_decision(
     assert (row["outcome"], row["reason"], row["taken"]) == ("WOULD_PLACE", "shadow_unarmed",
                                                               False)
     assert row["window"] == "afternoon" and row["server_date"] == "2026-10-15"
-    assert row["lot"] > 0 and row["risk_usd"] == pytest.approx(doc["risk_usd"], rel=0.5)
+    assert row["lot"] > 0 and "risk_usd" not in row      # money stays on the box
     assert row["host_verdict"] == beat["host"]["verdict"]
     assert row.get("machine_ref") == beat["host"].get("machine_ref")
     assert not {"host", "hostname", "machine_id", "recorded_machine_id"} & set(row)
