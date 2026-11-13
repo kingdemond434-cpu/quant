@@ -262,6 +262,32 @@ def _collapse_clock_aliases(rows: dict[str, dict[str, Any]],
     return kept, aliases, collapsed
 
 
+def _collapse_seal_in_place(seal: Path, doc_seal: dict[str, Any], *, at: str) -> int:
+    """Collapse clock aliases already IN the seal, on a pass where the judge did not republish.
+
+    THE DEDUPE RAN ONLY ON A REPUBLICATION (measured 2026-10-14). `_collapse_clock_aliases` sat
+    after the NO_REPORT / UNATTESTED early returns, so while the judge was stalled (no verdicts
+    since 2026-10-12) the seal kept two CHFNOK carry pairs that resolve to one forward clock each,
+    and CERTIFICATE_CLOCK_LAW carried CANON_DUPLICATE for both. This applies the SAME collapse to
+    the seal as it stands -- identity normalisation, no row admitted, none revoked, every removed
+    key kept in `certificate_aliases` -- and leaves `swept_at` and `published_at` alone, because
+    no evidence was gathered and nothing was published. Returns how many keys it collapsed.
+    """
+    before = doc_seal.get("survivors")
+    if not isinstance(before, dict) or not before:
+        return 0
+    prior = doc_seal.get("certificate_aliases")
+    kept, aliases, collapsed = _collapse_clock_aliases(
+        dict(before), prior if isinstance(prior, dict) else {}, at=at)
+    if not collapsed:
+        return 0
+    if not set(before).issubset(set(kept) | set(aliases)):   # never-shrink, asserted as above
+        return 0
+    _atomic_json(seal, {**doc_seal, "n": len(kept), "survivors": kept,
+                        "certificate_aliases": aliases, "aliases_collapsed_at": at})
+    return collapsed
+
+
 def _funnel(admission: Path = ADMISSION) -> dict[str, Any]:
     """Raw intake and the admissible population, from the admission screen's own census.
 
@@ -821,6 +847,9 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     recovered = dict(recovered or {})
     record["recovered_offered"] = len(recovered)
     attested_report = bool(doc_report) and bool(is_exact_policy(doc_report.get("gate_policy")))
+    if (not doc_report or not attested_report) and not recovered:
+        record["identity_aliases_collapsed"] = _collapse_seal_in_place(
+            seal, doc_seal, at=now.isoformat())
     if not doc_report and not recovered:
         record.update(status="NO_REPORT", sealed=False, admitted=0,
                       why=(f"{report} is absent or unreadable. The judge has not republished; the "

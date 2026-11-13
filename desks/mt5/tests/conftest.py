@@ -306,6 +306,18 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_t
 
 
 @pytest.fixture
+def replication_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every canon certificate reads REPLICATED, for lane tests whose subject is NOT the LIVE door.
+
+    Since ruling C (2026-10-14) a row newly written LIVE needs a REPLICATED verdict, and the main
+    and generic lanes' string certificates are covered. A promotion test that asserts LIVE would
+    otherwise be testing the door. The door itself is tested in test_replication_live_door.py,
+    which never uses this fixture."""
+    import promoter
+    monkeypatch.setattr(promoter, "replication_check", lambda: (lambda _row: ""))
+
+
+@pytest.fixture
 def portable_gateway(monkeypatch, tmp_path):
     """Import the entire venue adapter on every OS; no SDK operation is permitted.
 
