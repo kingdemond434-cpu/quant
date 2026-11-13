@@ -380,7 +380,9 @@ def measure(sym: str, family: str, params: dict[str, Any], meta: dict[str, Any]
     try:
         cell = eg.build_cell(sym, family, dict(params), meta)
     except Exception as exc:
-        return {"built": False, "why": f"build_cell raised {type(exc).__name__}: {exc}"[:240]}
+        # The exception's CLASS only: this `why` reaches published reports (SPECIALIST_CELLS.json,
+        # HUNT16_SEEDER.json) and free exception text can carry paths or data (Auditor MF1).
+        return {"built": False, "why": f"build_cell raised {type(exc).__name__}"}
     if cell is None:
         return {"built": False, "why": str(getattr(eg, "LAST_BUILD_FAILURE", None)
                                            or "build_cell returned None")[:240]}
@@ -615,7 +617,7 @@ def _culture_census() -> dict[str, Any]:
     try:
         cells = plan()
     except Exception as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        return {"status": UNMEASURED, "why": type(exc).__name__}
     return {"status": "MEASURED",
             "source_culture": dict(Counter(c["source_culture"] for c in cells)),
             "participant_structure": dict(Counter(c["participant_structure"] for c in cells))}
@@ -633,7 +635,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
                                  "information": information_class(fam),
                                  "foreign_series": foreign_series(fam)}
     except Exception as exc:
-        new_families = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        new_families = {"status": UNMEASURED, "why": type(exc).__name__}
     return {
         "at": _now(), "organ": "desks/mt5/research/specialist_cell.py",
         "rule": ("each cell is a specialist's named mechanism on one symbol; it is minted only "

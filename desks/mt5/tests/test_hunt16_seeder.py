@@ -64,3 +64,15 @@ def test_floor_donation_and_weekly_remeasure(tmp_path: Path,
 def test_the_hourly_cycle_runs_it() -> None:
     src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"research/hunt16_seeder.py", "--once"' in src and '"hunt16_seeder": h16s' in src
+
+
+def test_a_raising_build_cell_publishes_no_message_text(monkeypatch: pytest.MonkeyPatch) -> None:
+    import external_gauntlet as eg
+
+    def boom(*_a: Any, **_k: Any) -> None:
+        raise ValueError("C:\\secret\\path leaked 42")
+    monkeypatch.setattr(eg, "build_cell", boom)
+    got = sc.measure("XAUUSD", "hunt16_cell", {"base_family": "dav_t3_trend"}, {})
+    assert got == {"built": False, "why": "build_cell raised ValueError"}
+    src = (DESK / "research" / "specialist_cell.py").read_text("utf-8")
+    assert "{type(exc).__name__}: {exc}" not in src
