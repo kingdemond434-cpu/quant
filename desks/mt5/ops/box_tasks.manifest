@@ -282,10 +282,13 @@ TASK name="MT5-CertHygiene" trigger="daily 03:50" runs="desks/mt5/research/certi
 TASK name="MT5-CycleMidnight" trigger="hourly; window 00:00-10:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
 # CRO cycle, Claude lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 12:00-22:59 Europe/Dublin.
 TASK name="MT5-CycleNoon" trigger="hourly; window 12:00-22:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
-# scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16. Runs ops/dash_mirror.cmd,
-# whose own backoff comment sizes it to "a 3-minute clock"; S4U as the account holding the ssh key, never
-# SYSTEM. A bridge: delete it when the VPS reads the trading box directly (2026-11-13).
-TASK name="MT5-DashMirror" trigger="every 3 minutes" runs="ops/dash_mirror.cmd" installer="desks/mt5/scripts/install_dash_mirror_task.ps1" lane="ops"
+# scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16. Runs ops/dash_mirror.cmd
+# every 3 minutes (its own backoff comment), BUT ONLY ON THE MIRROR BOX: the runner scps
+# administrator@%QUANT_BOX_HOST%:C:/opt/quant/<path> onto the same local path, and QUANT_BOX_HOST is the
+# trading box itself, so on the trading box it would copy live_ledger/sleeves/gateway_state onto
+# themselves while their writers run (scp truncates the sink). NEVER REGISTER IT ON THE TRADING BOX;
+# installer stays NONE until a self-host refusal exists (Auditor HOLD 2026-11-13).
+TASK name="MT5-DashMirror" trigger="every 3 minutes" runs="ops/dash_mirror.cmd" installer="NONE" lane="ops"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
 # MT5-ArtifactSync IS RETIRED FROM THIS MANIFEST (2026-09-23). Install-QuantWindows.ps1 does not
 # register it: it UNREGISTERS it on purpose ("Hetzner decommissioned", 2026-08-23), because its

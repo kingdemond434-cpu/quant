@@ -3,11 +3,13 @@
 THE DEFECT THIS PINS (2026-11-13). Six tasks in `desks/mt5/ops/box_tasks.manifest` --
 MT5-AllocatorPulse, MT5-VolArchive, MT5-PrivateNetAudit, MT5-GoldHourSweep, MT5-CertHygiene and
 MT5-DashMirror -- carried `installer="NONE"`, so a rebuilt box would never run them and nothing
-would say so. Each now has an installer, and this file fences three things:
+would say so. Five now have an installer; MT5-DashMirror stays NONE on purpose (it mirrors the
+trading box FROM another box, and on the trading box it would scp live files onto themselves).
+This file fences four things:
 
   * every row naming an installer points at a file that exists and NAMES the task;
   * the count of installer=NONE rows never rises (`check_box_tasks.MAX_NO_INSTALLER`);
-  * each of the six installers registers what the manifest says it does -- the runner, the
+  * each of the five installers registers what the manifest says it does -- the runner, the
     cadence, the principal -- and is idempotent (replaces, or -IfMissing no-ops).
 
 There is no pwsh on the research host (tests/ops/test_powershell_drive_variable.py parses every
@@ -30,7 +32,7 @@ from scripts import check_box_tasks as cbt  # noqa: E402
 SCRIPTS = ROOT / "desks" / "mt5" / "scripts"
 
 #: task -> (installer, runner token the action must carry, trigger phrase the manifest declares)
-SIX = {
+FIVE = {
     "MT5-AllocatorPulse": ("install_allocator_pulse_task.ps1",
                            "allocator_trigger.py",
                            "at startup + every 5 minutes (keep-alive of a 24/7 resident)"),
@@ -42,7 +44,6 @@ SIX = {
                           "daily 03:30"),
     "MT5-CertHygiene": ("install_cert_hygiene_task.ps1", "certificate_hygiene.py",
                         "daily 03:50"),
-    "MT5-DashMirror": ("install_dash_mirror_task.ps1", "dash_mirror.cmd", "every 3 minutes"),
 }
 
 
@@ -77,9 +78,9 @@ def test_the_ratchet_actually_fires(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert any("installer=NONE" in p for p in out["problems"]), out["problems"]
 
 
-@pytest.mark.parametrize("task", sorted(SIX))
-def test_each_of_the_six_has_its_installer(task: str) -> None:
-    installer, runner, trigger = SIX[task]
+@pytest.mark.parametrize("task", sorted(FIVE))
+def test_each_of_the_five_has_its_installer(task: str) -> None:
+    installer, runner, trigger = FIVE[task]
     row = _rows()[task]
     assert row["installer"] == f"desks/mt5/scripts/{installer}"
     assert row["trigger"] == trigger
@@ -98,29 +99,25 @@ def test_each_of_the_six_has_its_installer(task: str) -> None:
 
 
 def test_the_cadences_are_the_ones_registered() -> None:
-    assert "-AtStartup" in _src(SIX["MT5-AllocatorPulse"][0])
-    assert "-RepetitionInterval (New-TimeSpan -Minutes 5)" in _src(SIX["MT5-AllocatorPulse"][0])
-    assert "--resident --interval-s 20" in _src(SIX["MT5-AllocatorPulse"][0])
-    assert "[TimeSpan]::Zero" in _src(SIX["MT5-AllocatorPulse"][0])
-    assert ".AddHours(6).AddMinutes(40)" in _src(SIX["MT5-PrivateNetAudit"][0])
-    assert ".AddHours(3).AddMinutes(30)" in _src(SIX["MT5-GoldHourSweep"][0])
-    assert ".AddHours(3).AddMinutes(50)" in _src(SIX["MT5-CertHygiene"][0])
-    assert "--apply" in _src(SIX["MT5-CertHygiene"][0])
-    assert "-RepetitionInterval (New-TimeSpan -Minutes 3)" in _src(SIX["MT5-DashMirror"][0])
+    assert "-AtStartup" in _src(FIVE["MT5-AllocatorPulse"][0])
+    assert "-RepetitionInterval (New-TimeSpan -Minutes 5)" in _src(FIVE["MT5-AllocatorPulse"][0])
+    assert "--resident --interval-s 20" in _src(FIVE["MT5-AllocatorPulse"][0])
+    assert "[TimeSpan]::Zero" in _src(FIVE["MT5-AllocatorPulse"][0])
+    assert ".AddHours(6).AddMinutes(40)" in _src(FIVE["MT5-PrivateNetAudit"][0])
+    assert ".AddHours(3).AddMinutes(30)" in _src(FIVE["MT5-GoldHourSweep"][0])
+    assert ".AddHours(3).AddMinutes(50)" in _src(FIVE["MT5-CertHygiene"][0])
+    assert "--apply" in _src(FIVE["MT5-CertHygiene"][0])
 
 
 def test_principals() -> None:
     for task in ("MT5-AllocatorPulse", "MT5-PrivateNetAudit", "MT5-GoldHourSweep",
                  "MT5-CertHygiene"):
-        assert "-UserId 'SYSTEM' -LogonType ServiceAccount" in _src(SIX[task][0]), task
-    # The mirror's ssh key lives in a user profile: S4U as that user, and SYSTEM refused.
-    dm = _src(SIX["MT5-DashMirror"][0])
-    assert "-LogonType S4U" in dm and "is SYSTEM" in dm
-    assert "-LogonType S4U" in _src(SIX["MT5-VolArchive"][0])
+        assert "-UserId 'SYSTEM' -LogonType ServiceAccount" in _src(FIVE[task][0]), task
+    assert "-LogonType S4U" in _src(FIVE["MT5-VolArchive"][0])
 
 
 def test_private_net_audit_never_schedules_enforcement() -> None:
-    src = _src(SIX["MT5-PrivateNetAudit"][0])
+    src = _src(FIVE["MT5-PrivateNetAudit"][0])
     action = src[src.index("$action ="):src.index("$trigger =")]
     for switch in ("-Enforce", "-Confirm", "-Rollback"):
         assert switch not in action
@@ -132,14 +129,14 @@ def test_vol_archive_agrees_with_install_tape_tasks() -> None:
     block = tape[tape.index('-Name "MT5-VolArchive"'):]
     assert '"recorders.vol_archive"' in block[:200]
     assert "AddMinutes(40)" in block[:300]
-    va = _src(SIX["MT5-VolArchive"][0])
+    va = _src(FIVE["MT5-VolArchive"][0])
     assert "'-3 -m recorders.vol_archive'" in va
     assert va.count("AddMinutes(40)") == 2
     assert "(New-TimeSpan -Hours 1)" in va
 
 
 def test_installers_avoid_the_known_powershell_traps() -> None:
-    for installer, _, _ in SIX.values():
+    for installer, _, _ in FIVE.values():
         src = _src(installer)
         # `$x:` inside a double-quoted string is a parse error (test_powershell_drive_variable).
         assert not re.search(r'"[^"\n]*(?<![`{])\$(?!env\b)[A-Za-z_]\w*:(?!:)[^"\n]*"', src)
@@ -148,3 +145,11 @@ def test_installers_avoid_the_known_powershell_traps() -> None:
             assert "New-ScheduledTaskTrigger -Daily" in src and ".Repetition = (" in src
         # The [TimeSpan]::MaxValue duration is rejected by the Task Scheduler service.
         assert "MaxValue" not in src
+
+
+def test_dash_mirror_is_never_installed_on_the_trading_box() -> None:
+    """Auditor HOLD 2026-11-13: dash_mirror.cmd copies QUANT_BOX_HOST:C:/opt/quant/<p> onto the same
+    local path. QUANT_BOX_HOST is the trading box, so registering it there truncates live files."""
+    row = _rows()["MT5-DashMirror"]
+    assert row["installer"] == "NONE"
+    assert not (SCRIPTS / "install_dash_mirror_task.ps1").exists()

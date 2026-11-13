@@ -89,8 +89,9 @@ MAX_UNDECLARED = 1
 #: Manifested rows whose `installer` is NONE. RATCHET: it may fall, never rise. A new task must
 #: arrive with the file that registers it, or the box that replaces this one never runs it.
 #: Measured 2026-11-13 after six installers landed (MT5-AllocatorPulse, MT5-VolArchive,
-#: MT5-PrivateNetAudit, MT5-GoldHourSweep, MT5-CertHygiene, MT5-DashMirror): 79 -> 73.
-MAX_NO_INSTALLER = 73
+#: MT5-PrivateNetAudit, MT5-GoldHourSweep, MT5-CertHygiene; MT5-DashMirror stays NONE because it belongs
+#: to the mirror box and must never be registered on the trading box): 79 -> 74.
+MAX_NO_INSTALLER = 74
 
 #: An installer must NAME the task it registers -- a manifest line pointing at a real file that
 #: registers something else is NONE wearing a path. MT5Hourly.cmd is the one wrapper that
