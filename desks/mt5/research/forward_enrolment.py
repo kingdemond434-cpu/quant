@@ -69,20 +69,6 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 SHADOW_DIR = BASE / "reports" / "shadow"
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 OUT = BASE / "reports" / "FORWARD_ENROLMENT.json"
-#: THE PUBLISHED TWIN (2026-11-13). The full census outgrew the box wire: ShadowSync skips any
-#: report over its 4 MB `$ReportCapBytes`, and FORWARD_ENROLMENT.json was 3.57 MB at 2,324
-#: certificates on 11-06 -- the last copy that ever reached origin -- while the box kept writing a
-#: fresh one every pass. Every off-box reader (the breadth ledger, the audits, the CRO cycle) then
-#: read a census frozen on 11-06. The box keeps the full file; the wire carries this one: every
-#: scalar and dict unchanged, each certificate cut to the fields a breadth or lane count needs, and
-#: every other row list capped at SUMMARY_ROWS with its true length beside it.
-#: Named beside OUT at write time, so a test that redirects OUT redirects the twin with it.
-SUMMARY_NAME = "FORWARD_ENROLMENT_SUMMARY.json"
-#: Rows kept per detail list in the twin: the documented 50-row cap `dropped_at_admission` already
-#: publishes, enough to name the worst offenders, never the whole census.
-SUMMARY_ROWS = 50
-#: The per-certificate fields the twin keeps: what a class/lane/family/status count reads.
-SLIM_FIELDS = ("symbol", "family", "selector", "lane", "status", "enrolled", "accruing", "n")
 ENGINE = BASE / "research" / "shadow_forward.py"
 
 UNMEASURED = "UNMEASURED"
@@ -474,32 +460,6 @@ def repair(missing: list[dict[str, Any]], deadline: float,
             "n_missing": len(missing), "tail": tail}
 
 
-def summary(payload: dict[str, Any]) -> dict[str, Any]:
-    """The wire twin of `payload`: slim certificate rows, other row lists capped, counts kept."""
-    out: dict[str, Any] = {}
-    for key, val in payload.items():
-        if key == "certificates" and isinstance(val, list):
-            out[key] = [{f: row.get(f) for f in SLIM_FIELDS}
-                        for row in val if isinstance(row, dict)]
-        elif isinstance(val, list) and len(val) > SUMMARY_ROWS:
-            out[key] = val[:SUMMARY_ROWS]
-            out[f"{key}_rows_total"] = len(val)
-        else:
-            out[key] = val
-    out["summary_of"] = "reports/FORWARD_ENROLMENT.json"
-    out["summary_rule"] = (f"certificates cut to {list(SLIM_FIELDS)}; every other row list over "
-                           f"{SUMMARY_ROWS} rows keeps its first {SUMMARY_ROWS} and its true "
-                           "length in <key>_rows_total; scalars and dicts unchanged")
-    return out
-
-
-def _write_json(path: Path, doc: dict[str, Any], indent: int | None) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(doc, indent=indent, default=str), encoding="utf-8")
-    os.replace(tmp, path)
-
-
 def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0,
         do_repair: bool = True) -> dict[str, Any]:
     """Census every certificate against every clock, repair the gap, publish the evidence."""
@@ -546,8 +506,10 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
     }
     payload.update(body)
     if write:
-        _write_json(OUT, payload, 1)
-        _write_json(OUT.with_name(SUMMARY_NAME), summary(payload), None)
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = OUT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, OUT)
         try:
             from libs.ops.events import leg_events
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],

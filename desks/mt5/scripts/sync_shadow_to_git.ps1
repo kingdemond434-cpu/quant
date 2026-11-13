@@ -801,6 +801,9 @@ $reportPaths = @(
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
+    # WHICH LEGS THE CORE ROTATION ADMITTED, DEFERRED OR CAN NEVER FIT (2026-11-13): six
+    # clock and breadth legs went dark for days and nothing off the box could see why.
+    "desks/mt5/reports/LEG_ROTATION.json",
     "desks/mt5/data/research_budget.json",
     # how fresh the box's bars and ticks are (2026-10-21, research/bars_state.py, core leg
     # bars_state): last bar time, rows and mtime per file, newest tick per symbol. The parquets
@@ -844,12 +847,6 @@ $reportPaths = @(
     "desks/mt5/reports/PRODUCER_YIELD.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
-    # THE ENROLMENT CENSUS'S WIRE TWIN (2026-11-13): the full file passed the 4 MB cap above
-    # at ~2,300 certificates and stopped crossing on 11-06; the twin keeps every count.
-    "desks/mt5/reports/FORWARD_ENROLMENT_SUMMARY.json",
-    # WHICH LEGS THE CORE ROTATION ADMITTED, DEFERRED OR CAN NEVER FIT (2026-11-13): six
-    # clock and breadth legs went dark for days and nothing off the box could see why.
-    "desks/mt5/reports/LEG_ROTATION.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
