@@ -26560,6 +26560,62 @@
    "measured_at": "2026-10-28T13:55:43+00:00"
   },
   {
+   "organ": "leg:drift_monitor",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/drift_monitor.py"
+   ],
+   "clock": "hourly_cycle:drift_monitor",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "declared at birth 2026-11-11 (DECAY-06/12/13): no run record on the hourly clock yet; the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DRIFT.json",
+   "artifact_declared": "desks/mt5/reports/DRIFT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+   "measured_at": "2026-11-11T12:00:00+00:00"
+  },
+  {
+   "organ": "leg:health_lab",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/health_lab.py"
+   ],
+   "clock": "hourly_cycle:health_lab",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "declared at birth 2026-11-11 (DECAY-06/12/13): no run record on the hourly clock yet; the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/HEALTH_LAB.json",
+   "artifact_declared": "desks/mt5/reports/HEALTH_LAB.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
+   "measured_at": "2026-11-11T12:00:00+00:00"
+  },
+  {
    "organ": "fence:check_seal_clears",
    "kind": "task",
    "code": [

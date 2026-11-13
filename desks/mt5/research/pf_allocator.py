@@ -2119,8 +2119,34 @@ def hazard_by_sleeve(drift: dict[str, Any] | None) -> dict[str, float]:
 HAZARD_MODE = "decay_posterior"
 
 
+def hazard_at_horizon(p: float, to_days: float, from_days: float | None = None) -> float:
+    """Re-express a constant-intensity break probability over `from_days` (default the hazard's
+    own `perishability.HAZARD_HORIZON_DAYS`) at `to_days`: 1 - (1 - p) ** (to / from).
+
+    DECAY-03 (mandate 2026-10-06): the drift monitor's hazard is P(edge breaks within 90 days).
+    A consumer that reads it bare cannot tell a 90-day probability from a per-world one. This is
+    the conversion, so every reader can say which horizon a number is on."""
+    from libs.research.perishability import HAZARD_HORIZON_DAYS
+    f = float(from_days or HAZARD_HORIZON_DAYS)
+    p = min(max(float(p), 0.0), 1.0)
+    if p >= 1.0 or f <= 0 or to_days <= 0:
+        return p
+    return 1.0 - (1.0 - p) ** (float(to_days) / f)
+
+
+#: Trading days to calendar days. DERIVED from the calendar: 365 calendar days per 252 trading.
+CAL_PER_TRADING_DAY = 365.0 / 252.0
+#: Rows per simulated world on a HEAVY pass: derived as 384 trading days (1.5 x 256), the
+#: horizon the heavy solve was measured at. One constant feeds both the world sampler and the
+#: decay hazard's horizon, so the two can never disagree.
+WORLD_ROWS_HEAVY = 384
+#: Rows per simulated world on a LIGHT pass: derived as 256 trading days (about one year of
+#: 252 exchange days, rounded to a power of 2 for the block bootstrap).
+WORLD_ROWS_LIGHT = 256
+
+
 def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
-                          blanket: float) -> dict[str, Any]:
+                          blanket: float, world_rows: int | None = None) -> dict[str, Any]:
     """Hand each sleeve with a measured hazard its own decay probability, capped at the blanket.
 
     THE OTHER HALF OF "DECAY IS A CONSTANT". `robust_elog` decayed every sleeve's edge in 30% of
@@ -2145,7 +2171,17 @@ def apply_decay_posterior(ev: list[SleeveEvidence], haz: dict[str, float],
         ev[i] = _replace(e, decay_prob_i=p)
         by_sleeve[e.name] = {"hazard": round(float(h), 6), "decay_prob_i": round(p, 6),
                              "relief_vs_blanket": round(float(blanket) - p, 6)}
+        if world_rows:
+            # SHADOW (DECAY-03): the same hazard on the world's own horizon. Published beside
+            # the live number, never applied: converting raises most sleeves' charge, and
+            # Growth Governance Rule 1 needs that measured before it may move money.
+            by_sleeve[e.name]["hazard_at_world_horizon"] = round(hazard_at_horizon(
+                float(h), float(world_rows) * CAL_PER_TRADING_DAY), 6)
+    from libs.research.perishability import HAZARD_HORIZON_DAYS
     return {"mode": "decay_posterior", "blanket": float(blanket),
+            "hazard_horizon_days": HAZARD_HORIZON_DAYS,
+            "world_horizon_days": (round(float(world_rows) * CAL_PER_TRADING_DAY, 1)
+                                   if world_rows else None),
             "n_from_hazard": len(by_sleeve), "n_blanket": len(ev) - len(by_sleeve),
             "by_sleeve": by_sleeve,
             "rule": ("decay_prob_i = min(drift_monitor hazard, blanket) per sleeve; a sleeve "
@@ -3819,7 +3855,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                 for k, v in list(hazard_meta["applied"].items())[:5])
             _log(f"hazard shrink: {hazard_meta['n_shrunk']} sleeve(s) tilted ({_tilted})")
     else:
-        decay_meta = apply_decay_posterior(ev, _haz, _blanket)
+        _rows = WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT
+        decay_meta = apply_decay_posterior(ev, _haz, _blanket,
+                                           world_rows=_rows)
         hazard_meta = {"applied": {}, "n_shrunk": 0, "mode": HAZARD_MODE,
                        "superseded_by": "decay_posterior",
                        "rule": ("the hazard enters as each sleeve's own decay probability "
@@ -3872,7 +3910,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                       # The fast clock buys its speed here and nowhere else: a smaller world
                       # population, never a shortcut through the posterior or the crisis worlds.
                       n_worlds=256 if heavy else 128,
-                      n_rows=384 if heavy else 256,
+                      n_rows=WORLD_ROWS_HEAVY if heavy else WORLD_ROWS_LIGHT,
                       crisis_prob=crisis_share,
                       **(cov_cal.as_overrides() if cov_cal else {}))
 
