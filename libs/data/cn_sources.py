@@ -1,13 +1,11 @@
-"""Chinese-language research discovery beyond Bilibili: Juejin and Sogou/WeChat.
+"""Chinese-language research discovery beyond Bilibili: Juejin (Sogou/WeChat is off-limits).
 
 MEASURED 2026-08-01 from this box, because every one of these was previously recorded as simply
 "blocked" and most of them were not:
 
     Juejin (掘金) search API   WORKS -- clean JSON, err_no 0, ~20 results per query. A large
                               Chinese developer community with substantial quant content.
-    Sogou WeChat search       REACHABLE -- 31KB of parseable HTML. WeChat (微信公众号) is where
-                              a large share of Chinese quant writing actually lives, and it is
-                              otherwise closed to the open web; Sogou is the only public index.
+    Sogou WeChat search       OFF-LIMITS (principal): never fetched, see libs/data/off_limits.py.
     Xueqiu (雪球)             HTML reachable but the API sits behind a WAF challenge that a
                               plain cookie handshake does not clear. Recorded, not solved.
     Zhihu (知乎)              HTTP 403 to unauthenticated requests, API included.
@@ -26,9 +24,7 @@ READ. Nothing archives article bodies.
 
 from __future__ import annotations
 
-import html
 import json
-import re
 import urllib.request
 from dataclasses import dataclass
 from typing import Any
@@ -102,117 +98,13 @@ def juejin(keyword: str, *, limit: int = 20) -> tuple[list[Article], str | None]
 
 
 def sogou_weixin(keyword: str) -> tuple[list[Article], str | None]:
-    """WeChat (微信公众号) articles via Sogou, the only public index of them.
-
-    HTML-SCRAPED BECAUSE THERE IS NO API. WeChat is a closed platform and a large share of
-    Chinese quant writing is published there and nowhere else, so an imperfect index of it beats
-    a perfect index of nothing. The parse is deliberately shallow -- link plus title text -- so
-    it degrades to zero results rather than to wrong ones when the markup shifts.
-
-    Sogou rate-limits aggressively and will serve an anti-bot page; that returns an empty list
-    with a reason rather than raising, so a daily sweep continues.
-    """
+    """REFUSED, ALWAYS: WeChat (and Sogou, its public index) is a ground the principal put
+    off-limits. Kept as a function so the callers that still route a `sogou` ground here
+    (deep_forest_miner, blog_social_sources) receive a named refusal, never a request. The
+    HTML parser it used to carry is gone with the fetch; see libs/data/off_limits.py."""
+    from libs.data.off_limits import WHY, off_limits
     url = f"https://weixin.sogou.com/weixin?type=2&query={quote(keyword)}"
-    from libs.data.off_limits import off_limits
-    refused = off_limits(url)
-    if refused:                       # WeChat/Sogou is an off-limits ground: never fetched
-        return [], refused
-    try:
-        # NOT named `html`: that is the stdlib module this file now needs for entity decoding, and
-        # shadowing it here would leave `html.unescape` working in every OTHER function and dead
-        # in this one -- the kind of breakage that surfaces only when someone later moves a line.
-        page = _get(url, referer="https://weixin.sogou.com/")
-    except Exception as exc:
-        return [], f"{type(exc).__name__}: {str(exc)[:140]}"
-    if "antispider" in page or "请输入验证码" in page:
-        return [], "sogou served an anti-bot challenge (rate limited)"
-
-    # PARSED BLOCK-WISE, and the summary is the whole reason. The first version scanned title
-    # anchors globally and never touched `<p class="txt-info">`, so every WeChat article reached
-    # the ranker as a BARE TITLE while Juejin arrived with brief_content and Bilibili with
-    # description plus tags. Measured 2026-08-01: 3 of 40 WeChat articles cleared the threshold
-    # (7.5%) against Juejin's 42% and Bilibili's 28% -- and the page was carrying all 10 summaries
-    # the whole time. This module's own docstring states the requirement it was failing: "a Chinese
-    # title is often generic while the snippet carries the method words, so scoring the title alone
-    # under-ranks the material worth finding." Third instance of one class on this source (after
-    # the CJK word-boundary bug and the attribute-order bug): the fetch was healthy and the PARSE
-    # was starving the ranker.
-    #
-    # Block-wise rather than two global scans because pairing by document order across separate
-    # regex passes would silently mis-pair the moment one result lacked a summary -- and scoring
-    # article A on article B's body is far worse than scoring A on its title alone. Each
-    # `txt-box` holds exactly one title anchor and one summary (verified across live pages), so
-    # a block that does not is skipped rather than guessed at.
-    out: list[Article] = []
-    seen: set[str] = set()
-    blocks = re.split(r'<div class="txt-box">', page)[1:]
-    for block in blocks:
-        art = _parse_wechat_block(block, seen)
-        if art is not None:
-            out.append(art)
-
-    # FALLBACK to the title-only scan when the block structure is gone. Sogou's markup shifts, and
-    # degrading to weaker results beats degrading to none -- but the caller is told, because a
-    # silent downgrade to title-only scoring is exactly the defect above coming back unnoticed.
-    if not out:
-        for m in re.finditer(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', page, flags=re.S):
-            art = _wechat_article(m.group(1), m.group(2), "", seen)
-            if art is not None:
-                out.append(art)
-        if out:
-            return out, (f"txt-box blocks missing; fell back to title-only scoring on {len(out)} "
-                         "results -- snippets are NOT being scored, which under-ranks this source")
-        return [], "page fetched but no article links parsed -- markup changed or empty result"
-    return out, None
-
-
-def _parse_wechat_block(block: str, seen: set[str]) -> Article | None:
-    m = re.search(r'<a\b([^>]*uigs="article_title[^>]*)>(.*?)</a>', block, flags=re.S)
-    if m is None:
-        return None
-    info = re.search(r'<p class="txt-info"[^>]*>(.*?)</p>', block, flags=re.S)
-    return _wechat_article(m.group(1), m.group(2), info.group(1) if info else "", seen)
-
-
-def _wechat_article(attrs: str, raw_title: str, raw_snippet: str,
-                    seen: set[str]) -> Article | None:
-    """Build one article. ORDER-AGNOSTIC on attributes: the anchor carries href BEFORE uigs, so a
-    regex demanding uigs first matched nothing while the page was perfectly healthy."""
-    href_m = re.search(r'href="([^"]+)"', attrs)
-    if not href_m:
-        return None
-    # THE HREF IS AN HTML ATTRIBUTE, SO ITS SEPARATORS ARE ENTITY-ENCODED. Sogou writes
-    # `?url=...&amp;type=2&amp;query=...`, and taking that literally produces a query parameter
-    # actually named `amp;type` -- so every WeChat link the miner surfaced was DEAD, and dead in
-    # the quiet way: the row looks complete, ranks normally, and only fails when a human finally
-    # clicks it. A candidate the desk cannot open is a candidate the desk did not find.
-    href = html.unescape(href_m.group(1))
-    title = _text(raw_title)
-    if not title or href in seen:
-        return None
-    seen.add(href)
-    link = href if href.startswith("http") else f"https://weixin.sogou.com{href}"
-    return Article(source="wechat", ident=href[-24:], title=title, url=link,
-                   snippet=_text(raw_snippet)[:400])
-
-
-def _text(raw: str) -> str:
-    """Strip tags, decode entities, collapse whitespace.
-
-    Sogou wraps matched terms in <em> highlights, and an unstripped '<em>回测</em>' would put
-    markup into the text the ranker scores.
-
-    THE UNESCAPE COMES AFTER TAG REMOVAL (2026-08-05) and the order is load-bearing: decode first
-    and an encoded `&lt;em&gt;` becomes a real tag that the next step then eats, deleting text
-    between two angle brackets that were never markup.
-
-    Entities were reaching the ranker undecoded. `&quot;` is merely untidy; a NUMERIC entity is
-    the real hazard, because `&#x91CF;&#x5316;` is how `量化` arrives from some encoders -- the
-    scorer would find no Chinese in the title at all and rank a relevant article zero. Same
-    failure mode as the CJK `\\b` bug, reached through a different door: a real edge made
-    invisible to the gate rather than rejected by it.
-    """
-    return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", raw))).strip()
+    return [], off_limits(url) or WHY
 
 
 def probe_all() -> list[dict[str, Any]]:
@@ -223,10 +115,8 @@ def probe_all() -> list[dict[str, Any]]:
     declared status is a prior; this is the evidence.
     """
     rows: list[dict[str, Any]] = []
-    probes: tuple[tuple[str, str], ...] = (("juejin", "量化 回测"), ("wechat_sogou", "量化 回测"))
-    for name, kw in probes:
-        items, err = juejin(kw) if name == "juejin" else sogou_weixin(kw)
-        rows.append({"source": name, "ok": err is None, "n": len(items), "error": err})
+    items, err = juejin("量化 回测")
+    rows.append({"source": "juejin", "ok": err is None, "n": len(items), "error": err})
     for name, url, note in (
         ("xueqiu", "https://xueqiu.com/",
          "HTML reachable; API behind a WAF challenge a cookie handshake does not clear"),
