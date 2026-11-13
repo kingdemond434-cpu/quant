@@ -367,6 +367,18 @@ def _csv_series(text, date_col, val_col):
     return sorted(out)
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def ingest_fred():
     """US rates, spreads, dollar, breakevens, credit and vol -- the macro STATE series.
 
@@ -375,6 +387,10 @@ def ingest_fred():
     index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
     negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
     """
+    why = _terms_refused(FRED_URL)
+    if why:
+        # raises before any write: main() reports INGEST FAILED and the held axis file stays
+        raise RuntimeError(f"BLOCKED_TERMS: {why}")
     series, failed = {}, {}
     for sid, what in FRED_SERIES.items():
         try:

@@ -102,6 +102,9 @@ def classify(exc: BaseException) -> str:
 def http_fetch(url: str, headers: Mapping[str, str] | None = None,
                body: bytes | None = None) -> bytes:
     """The live transport. urllib only: `requests` is pinned but adds nothing here."""
+    from libs.data.terms_refused import refused
+    if refused(url):                  # a terms-refused host (FRED): no request, ever
+        raise FetchError("BLOCKED_TERMS", url)
     hdr = {"User-Agent": UA, "Accept": "*/*"}
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,

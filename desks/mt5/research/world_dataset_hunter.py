@@ -821,11 +821,24 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
          "url": ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/"
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
-    for sid in _fred_ids():
+    # FRED rows are terms-refused (governance ruling 2026-11-13): not offered as candidates.
+    for sid in ([] if _terms_refused("https://fred.stlouisfed.org/") else _fred_ids()):
         out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
                     "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
                             + urllib.parse.urlencode({"id": sid})), "currencies": ["USD"]})
     return out
+
+
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
 
 
 def _fred_ids() -> list[str]:

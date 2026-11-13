@@ -95,6 +95,18 @@ def api_key() -> str | None:
     return None
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame | None:
     """Every vintage of one series, as a tidy frame.
 
@@ -111,6 +123,10 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
     # 1947 to today -- the distance from the oldest observation to the only vintage present.
     # A number that absurd is the file saying it has one vintage without knowing how to say so.
+    why = _terms_refused(API)
+    if why:
+        print(f"  {series_id}: BLOCKED_TERMS -- {why}", flush=True)
+        return None
     r = requests.get(API, params={"series_id": series_id, "api_key": key,
                                   "file_type": "json", "output_type": 2,
                                   "realtime_start": "1776-07-04",   # FRED's minimum

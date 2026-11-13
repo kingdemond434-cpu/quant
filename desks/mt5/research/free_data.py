@@ -30,7 +30,18 @@ CACHE.mkdir(parents=True, exist_ok=True)
 UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
 
 
+def _terms():
+    """libs.data.terms_refused, importable however this module was launched."""
+    import sys as _sys
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in _sys.path:
+        _sys.path.insert(0, root)
+    from libs.data import terms_refused
+    return terms_refused
+
+
 def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
+    _terms().guard(url)           # a terms-refused host (FRED): no request, ever
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
@@ -40,9 +51,9 @@ def _cache_file(name: str) -> Path:
     return CACHE / f"{name.replace('/', '_').replace('?', '_')}.json"
 
 
-def _cache_get(name: str):
+def _cache_get(name: str, *, any_age: bool = False):
     p = _cache_file(name)
-    if p.exists() and (time.time() - p.stat().st_mtime) < 21600:
+    if p.exists() and (any_age or (time.time() - p.stat().st_mtime) < 21600):
         try:
             return json.loads(p.read_text("utf-8"))
         except Exception:
@@ -82,6 +93,11 @@ def fred_series(series_id: str, start: str = "2010-01-01",
     hit = _cache_get(key)
     if hit:
         return hit
+    if _terms().refused(url):
+        # FRED's terms refuse this use (governance ruling 2026-11-13): read the LAST HELD copy,
+        # whatever its age, then the primary publisher's series where one is mapped
+        # (data_alternates.DBNOMICS_MIRROR serves BLS / Fed ids only, never a third-party one).
+        return _cache_get(key, any_age=True) or _fred_alternate(series_id, vintage, key)
     try:
         raw = _get(url).decode("utf-8", "replace")
         rows = list(csv.reader(io.StringIO(raw)))

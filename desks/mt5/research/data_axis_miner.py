@@ -161,8 +161,23 @@ AXES: tuple[dict, ...] = (
 )
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def probe(url: str) -> dict:
     """Reach it, or say exactly why not. A source is never marked usable from documentation."""
+    why = _terms_refused(url)
+    if why:                           # a terms-refused host is never probed
+        return {"reachable": None, "status": "BLOCKED_TERMS", "why": why}
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     t0 = datetime.now(tz=UTC)
     try:

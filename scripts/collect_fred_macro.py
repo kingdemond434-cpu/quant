@@ -60,6 +60,18 @@ def _key() -> str | None:
         return None
 
 
+
+
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[1])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    from libs.data.terms_refused import refused
+    return refused(url)
+
+
 def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
     start = (datetime.now(tz=UTC) - timedelta(days=_LOOKBACK_DAYS)).date().isoformat()
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json",
@@ -76,6 +88,12 @@ def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
 
 
 def main() -> None:
+    why = _terms_refused(_BASE)
+    if why:
+        # FRED's terms refuse this use (governance ruling 2026-11-13). The archives on disk are
+        # the last held copy and are left exactly as they are; nothing is fetched or overwritten.
+        print(f"fred-macro: BLOCKED_TERMS -- {why}")
+        return
     key = _key()
     if not key:
         print("fred-macro: no key (data/secrets/fred.json or FRED_API_KEY) -- skipped")

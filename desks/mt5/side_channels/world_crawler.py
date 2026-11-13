@@ -196,6 +196,10 @@ def _ascii_url(url: str) -> str:
 
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
+    from libs.data.terms_refused import refused
+    why_refused = refused(url)
+    if why_refused:                   # a terms-refused host (FRED): never fetched
+        return None, why_refused
     try:
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,

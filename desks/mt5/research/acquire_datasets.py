@@ -133,6 +133,9 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     landing pages. Reading the header costs nothing and turns a confusing parse failure into an
     accurate one -- "this was a web page" rather than "this data was malformed".
     """
+    from libs.data.terms_refused import refused
+    if refused(url):                  # a terms-refused host (FRED): never fetched
+        return None, "BLOCKED_TERMS"
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
