@@ -23,7 +23,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -602,3 +602,84 @@ def test_breadth_gap_tags_the_books_missing_markets() -> None:
     assert lab.breadth_gap("EURUSD", {}) == []
     tokyo = {"session": "enter 03:00 UTC on the Tokyo fix"}
     assert lab.breadth_gap("GBPUSD", tokyo) == ["02_09_utc"]
+
+
+# --------------------------------------------------------------------------- referee loop
+def test_literature_lines_ground_a_coordinate_in_the_desks_own_papers(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    corpus = tmp_path / "arxiv_qfin"
+    corpus.mkdir()
+    (corpus / "discoveries_1.json").write_text(json.dumps([
+        {"title": "Dealer inventory and the Tokyo fixing", "url": "http://arxiv.org/abs/1",
+         "text": "dealer inventory rebalancing at the Tokyo fix moves yen pairs"},
+        {"title": "Tempered stable risk parity", "url": "http://arxiv.org/abs/2",
+         "text": "portfolio construction"}]))
+    monkeypatch.setattr(lab, "INTEL", tmp_path)
+    monkeypatch.setattr(lab, "_LIT_CACHE", [])
+    hits = lab.literature_lines("dealer inventory tokyo fix yen", k=1)
+    assert len(hits) == 1 and "Tokyo fixing" in hits[0] and "arxiv.org/abs/1" in hits[0]
+    monkeypatch.setattr(lab, "INTEL", tmp_path / "absent")
+    monkeypatch.setattr(lab, "_LIT_CACHE", [])
+    assert "UNMEASURED" in lab.literature_lines("anything")[0]
+
+
+class _RefSeat(_Seat):
+    """A referee that attacks, then a revision that answers it."""
+
+    hints: ClassVar[list[tuple[str, str]]] = []
+
+    def _asked(self, organ: str, **kw: Any) -> list[_Prop]:
+        _RefSeat.hints.append((str(kw.get("label")), str(kw.get("model_hint"))))
+        if kw.get("label") == "referee":
+            return [_Prop({"target": "n", "attacks": ["the gap may be weekend news, not dealers"],
+                           "snooping_risk": "one regime", "competing_explanations": ["news"],
+                           "separating_test": "compare gap decay on no-news Mondays",
+                           "verdict": "revise"}, provenance=_Prov(model="p:referee"))]
+        if kw.get("label") == "candidate":
+            return [_Prop(dict(_RefSeat.revised))]
+        return super()._asked(organ, **kw)
+
+    revised: ClassVar[dict[str, Any]] = {}
+
+
+def test_the_referee_attacks_on_another_model_and_the_revision_is_a_new_child(
+        state: Path, reg: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
+    fam = "overnight_gap_decay" if "overnight_gap_decay" in reg else sorted(reg)[0]
+    exact = {"mechanism_class": "dealer_book_rebalancing",
+             "mechanism": ("Asian dealers flatten overnight inventory into the Tokyo open, so the "
+                           "overnight gap is partly forced and decays"),
+             "falsifier": "no decay on days with no Tokyo session", "symbols": ["USDJPY"],
+             "family": fam, "params": {}, "timeframe": "H1", "horizon": "intraday"}
+    _RefSeat.revised = {**exact, "symbols": ["EURJPY"],
+                        "mechanism": ("Dealers flatten inventory at the Tokyo open only on "
+                                      "no-news Mondays, so the gap decays there and not after "
+                                      "weekend news"),
+                        "competing_explanations": ["weekend news"],
+                        "separating_test": "no-news versus news Mondays"}
+    _RefSeat.hints = []
+
+    def fake_call(ask: lab.Ask, n: int, timeout: float) -> list[_Prop]:
+        return [_Prop(exact)] if ask.lab.key == "B" and ask.why != "conversion_debt" else []
+
+    monkeypatch.setattr(lab, "_seat", lambda: _RefSeat())
+    monkeypatch.setattr(lab, "_call", fake_call)
+    monkeypatch.setattr(lab, "universe", lambda: UNI)
+    monkeypatch.setattr(lab, "hunt_models", lambda registry, budget_s=0: [])
+    monkeypatch.setattr(lab.Memory, "load", classmethod(lambda cls, library=True: cls()))
+    monkeypatch.setattr(lab, "coverage_from_outcomes", lambda cov: {})
+    lab._write_json(lab.MODELS, {"local0:qwen-test": {"status": "REGISTERED"},
+                                 "p:referee": {"status": "REGISTERED"}})
+    doc = lab.run(budget_s=600, max_calls=40, seed=3, workers=1)
+
+    loop = doc["referee_loop"]
+    assert loop["refereed"] == 1 and loop["verdicts"] == {"revise": 1}
+    assert loop["revisions_emitted"] == 1
+    ref_hint = next(h for lbl, h in _RefSeat.hints if lbl == "referee")
+    assert ref_hint == "p:referee", "the referee is never the proposer's model"
+    rows = json.loads(sorted(lab.DONATE_DIR.glob("discoveries_*.json"))[0].read_text())
+    by_lab = {r["lab"]: r for r in rows["discoveries"]}
+    assert set(by_lab) == {"B", "REVISION"}, "the original is kept beside its revision"
+    assert by_lab["B"]["referee"]["separating_test"].startswith("compare gap decay")
+    assert by_lab["REVISION"]["genealogy"]["parents"][0] == by_lab["B"]["genealogy"]["node"]
+    assert by_lab["REVISION"]["separating_test"] == "no-news versus news Mondays"
+    assert doc["funnel"]["labs"]["REFEREE"]["calls"] >= 1

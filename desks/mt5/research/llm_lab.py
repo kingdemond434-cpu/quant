@@ -616,6 +616,10 @@ def compile_payload(payload: dict[str, Any], reg: dict[str, FamilySpec],
                                                               "probability")[:20],
                             "entities": [str(x)[:40] for x in (jq.get("entities") or [])][:8],
                             "horizon": str(payload.get("horizon") or "")[:20],
+            "literature": [str(u)[:160] for u in payload.get("literature") or []][:5],
+            "competing_explanations": [str(c)[:240] for c in
+                                       payload.get("competing_explanations") or []][:4],
+            "separating_test": str(payload.get("separating_test") or "")[:200],
                             "series": jev_series_name(q)}
         if not fam:
             fam = "exogenous_conditioner"
@@ -1035,6 +1039,123 @@ def assign_model(registry: dict[str, Any], rng: random.Random, used: set[str],
     return roles.thompson(rows, sorted(fresh), rng)[0]
 
 
+# ============================================================================ literature
+#: The desk's own paper corpora (free arXiv q-fin, academic listings, central-bank and BIS texts),
+#: read locally: grounding costs no fetch and no key. A host without them says UNMEASURED.
+INTEL = BASE / "data" / "intelligence"
+LITERATURE_DIRS = ("arxiv_qfin", "academic", "literature", "central_banks", "bis_speeches")
+LITERATURE_FILES_PER_DIR = 120
+_LIT_CACHE: list[tuple[frozenset[str], str]] = []
+
+
+def literature_index() -> list[tuple[frozenset[str], str]]:
+    """[(tokens, line)] over the newest files of each corpus, built once per process."""
+    if _LIT_CACHE:
+        return _LIT_CACHE
+    seen: set[str] = set()
+    for d in LITERATURE_DIRS:
+        for f in sorted((INTEL / d).glob("discoveries_*.json"))[-LITERATURE_FILES_PER_DIR:]:
+            doc = _read_json(f, [])
+            rows = doc if isinstance(doc, list) else (doc or {}).get("discoveries") or []
+            for r in rows:
+                if not isinstance(r, dict):
+                    continue
+                title = str(r.get("title") or "").strip()
+                url = str(r.get("url") or "").strip()
+                if not title or title.lower() in seen:
+                    continue
+                seen.add(title.lower())
+                body = str(r.get("text") or r.get("summary") or r.get("abstract") or "")
+                _LIT_CACHE.append((tokens(f"{title} {body[:800]}"),
+                                   f"paper: {title[:140]} <{url[:120]}> {body[:220]}"))
+    return _LIT_CACHE
+
+
+def literature_lines(query: str, k: int = 4) -> list[str]:
+    idx = literature_index()
+    if not idx:
+        return ["literature: UNMEASURED on this host (no paper corpus under data/intelligence)"]
+    q = tokens(query)
+    scored = sorted(((len(q & t) / (len(q) or 1), i) for i, (t, _) in enumerate(idx)),
+                    reverse=True)
+    hits = [idx[i][1] for sc, i in scored[:k] if sc > 0]
+    return hits or ["literature: no paper in the desk's corpus matches this coordinate"]
+
+
+# ============================================================================ referee loop
+#: THE REFEREE LOOP (principal, 2026-11-13: senior-PhD-level research). An emitted idea goes to a
+#: skeptical referee on a DIFFERENT model, who attacks the mechanism and the data-snooping risk;
+#: the proposer's model then revises it with competing explanations and a separating test. The
+#: revision is a new descendant cell (lab REVISION, parent = the original); the original is never
+#: dropped, and the referee's report rides on its donation. The gauntlet judges both, so the
+#: funnel measures whether refereeing raises survival. No LLM decides anything here.
+REFEREE_MAX = int(os.environ.get("QUANT_LLM_LAB_REFEREES", "6"))
+REFEREE_GRAMMAR = (
+    '{"target": "<node id>", "attacks": ["<a flaw in the causal story or its evidence>"], '
+    '"snooping_risk": "<how this could be a fitted artefact: multiple testing, look-ahead, '
+    'survivorship, regime luck; <=240 chars>", "competing_explanations": ["<rival story>"], '
+    '"separating_test": "<cheapest test that separates them, <=200 chars>", '
+    '"verdict": "sound|revise|unsound"}'
+)
+REFEREE_TASK = (
+    "You are a skeptical referee at a top finance journal and a senior researcher at a "
+    "systematic fund. Attack this hypothesis: is the causal story economically forced, is the "
+    "evidence a data-snooping artefact, what else explains the same pattern, and what is the "
+    "cheapest test that separates the explanations? Be specific; vague praise is worthless. "
+    "One JSON object."
+)
+REVISION_TASK = (
+    "Revise your hypothesis in light of the referee's report. Keep what survives, fix what was "
+    "attacked, add the competing explanations and a separating test, and put the original node id "
+    "in parents. If the referee showed it unsound, propose the best repaired mechanism instead. "
+)
+
+
+def _validate_referee(payload: Any) -> str | None:
+    if not isinstance(payload, dict):
+        return "not a JSON object"
+    if not payload.get("attacks") or not str(payload.get("separating_test") or "").strip():
+        return "a referee report needs attacks and a separating test"
+    return None
+
+
+def referee_model(models: dict[str, Any], proposer: str, rng: random.Random,
+                  credit: dict[str, Any] | None) -> str:
+    """The referee is never the proposer's model: the strongest REGISTERED other model by judge
+    credit (Thompson on certified k_eff per call), or the default route when none is free."""
+    pool = sorted(k for k, r in models.items() if r.get("status") == "REGISTERED" and k != proposer)
+    if not pool:
+        return ""
+    import llm_lab_roles as roles
+    return roles.thompson((credit or {}).get("models") or {}, pool, rng)[0]
+
+
+def referee_targets(outputs: dict[str, list[dict[str, Any]]], k: int) -> list[dict[str, Any]]:
+    """This pass's emitted nodes, genuinely novel first, one per node, at most k."""
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    rows = [g for g in outputs["genealogy"] if g.get("disposition") == "EMITTED"
+            and g.get("lab") not in ("REVISION",)]
+    rows.sort(key=lambda g: g.get("novelty_class") != "GENUINELY_NOVEL")
+    for g in rows:
+        if g["node"] in seen:
+            continue
+        seen.add(g["node"])
+        out.append(g)
+        if len(out) >= k:
+            break
+    return out
+
+
+def referee_context(g: dict[str, Any]) -> list[str]:
+    cell = g.get("cell") or {}
+    return [f"hypothesis node {g['node']} (lab {g.get('lab')}): {g.get('mechanism', '')[:300]}",
+            f"falsifier: {g.get('falsifier', '')[:200]}",
+            f"cell: {cell.get('family')} on {cell.get('symbol')} params "
+            f"{json.dumps(cell.get('params'), default=str)[:200]}",
+            *literature_lines(f"{g.get('mechanism_class', '')} {g.get('mechanism', '')}", k=3)]
+
+
 # ============================================================================ feeds
 def feed_lines(lab: Lab, extra: dict[str, list[str]]) -> list[str]:
     out: list[str] = []
@@ -1083,6 +1204,9 @@ GRAMMAR = (
     '"horizon": "intraday|swing|position", "family": "<one registered family, or NONE>", '
     '"params": {"<that family\'s keyword>": <value>}, "expr": "<formula expression or empty>", '
     '"needs": ["<missing data or rule, by name>"], "parents": ["<node id it descends from>"], '
+    '"literature": ["<paper URL from the context>"], '
+    '"competing_explanations": ["<rival story for the same pattern>"], '
+    '"separating_test": "<cheapest test that tells the explanations apart, <=200 chars>", '
     '"jev_question": {"question": "...", "answer_type": "probability|score|choice", '
     '"entities": ["..."]}  (Lab L only, optional)}'
 )
@@ -1092,7 +1216,12 @@ TASK_RULES = (
     "crossover/plain breakout recipe as research. Simple is fine when the mechanism, the "
     "information or the regime dependence is new. Use ONLY a family from the menu with ONLY its "
     "keywords, or family NONE with the missing rule named in needs. Never invent data: if the "
-    "mechanism needs a series the desk lacks, name it in needs. One JSON object per line."
+    "mechanism needs a series the desk lacks, name it in needs. One JSON object per line. "
+    + "Work as a senior PhD researcher with years at a top systematic fund: ground the mechanism "
+    "in the papers listed (put their URLs in literature) or say what that literature misses; "
+    "check it against the graveyard so a dead idea is not proposed again; give at least two "
+    "competing explanations for the same price pattern and the cheapest test that separates "
+    "them."
 )
 
 
@@ -1123,6 +1252,8 @@ def build_ask(lab: Lab, coord: dict[str, str], why: str, model: str, reg: dict[s
            "all registered families: " + all_family_names(reg)[:900],
            FORMULA_GRAMMAR]
     ctx += [f"menu: {ln}" for ln in menu_lines(reg, lab, rng)]
+    ctx += literature_lines(f"{coord['mechanism_class'].replace('_', ' ')} "
+                            f"{coord['asset_class']} {coord['horizon']} {lab.mandate[:120]}")
     ctx += feed_lines(lab, extra)
     ctx += [f"gauntlet {ln}" for ln in (extra.get(f"verdicts:{lab.key}") or [])[:6]]
     ctx += [f"already proposed by this lab here (do NOT repeat): {m[:120]}" for m in own_recent[:5]]
@@ -1385,6 +1516,10 @@ def donation_row(cell: dict[str, Any], cid: str, g: dict[str, Any],
             "mechanism_class": g["mechanism_class"], "coordinate": g["coordinate"],
             "model": g["model"], "prompt_hash": g["prompt_hash"],
             "horizon": str(payload.get("horizon") or "")[:20],
+            "literature": [str(u)[:160] for u in payload.get("literature") or []][:5],
+            "competing_explanations": [str(c)[:240] for c in
+                                       payload.get("competing_explanations") or []][:4],
+            "separating_test": str(payload.get("separating_test") or "")[:200],
             "url": f"llm_lab://{g['lab']}/{g['node']}",
             "lookahead_guard": lookahead_guard(g["model"]),
             "copy_trade": False, "credibility_inherited": False, "gauntlet_bypass": False}
@@ -1751,8 +1886,11 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     tallies: dict[str, Tally] = {lab.key: Tally() for lab in LABS}
     tallies["SYNTHESIS"] = Tally()
     tallies["CONVERTER"] = Tally()
+    tallies["REFEREE"] = Tally()
+    tallies["REVISION"] = Tally()
     outputs: dict[str, list[dict[str, Any]]] = {k: [] for k in (
-        "genealogy", "donate", "debt", "data_requests", "jev", "classes", "attacks")}
+        "genealogy", "donate", "debt", "data_requests", "jev", "classes", "attacks",
+        "referee")}
     plan: list[dict[str, Any]] = []
     calls_budget = min(max_calls, _calls_left(daily_cap))
     hunted: list[str] = []
@@ -1933,6 +2071,63 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         for ask in asks:
             cov.touch(coord_id(ask.coord), ask.coord, "QUEUED")
 
+    # ---- phase 1b: the REFEREE LOOP. Referee on another model, then the proposer revises.
+    if seat_on and not dry_run and ps is not None:
+        for g in referee_targets(outputs, REFEREE_MAX):
+            if calls_made + 2 > calls_budget or budget_s - (time.time() - started) < 90:
+                break
+            ref_model = referee_model(models, str(g.get("model") or ""), rng, credit)
+            t0 = time.time()
+            got = ps._asked(ORGAN, role="generation", task=REFEREE_TASK, grammar=REFEREE_GRAMMAR,
+                            context=referee_context(g), n=1, label="referee",
+                            validate=_validate_referee, timeout=120.0, model_hint=ref_model)
+            calls_made += 1
+            tallies["REFEREE"].asked += 1
+            report = next((p.payload for p in got if p.accepted and isinstance(p.payload, dict)),
+                          None)
+            usage.append(("REFEREE", ref_model, time.time() - t0, int(report is not None)))
+            if report is None:
+                tallies["REFEREE"].discarded += 1
+                continue
+            tallies["REFEREE"].accepted += 1
+            rep = {"node": g["node"], "referee_model": next(
+                       (str(p.provenance.model) for p in got if p.accepted), ref_model),
+                   "attacks": [str(a)[:240] for a in report.get("attacks") or []][:5],
+                   "snooping_risk": str(report.get("snooping_risk") or "")[:240],
+                   "competing_explanations": [str(a)[:240] for a in
+                                              report.get("competing_explanations") or []][:4],
+                   "separating_test": str(report.get("separating_test") or "")[:200],
+                   "verdict": str(report.get("verdict") or "")[:12], "at": _now()}
+            outputs["referee"].append(rep)
+            for d in outputs["donate"]:
+                if d.get("genealogy", {}).get("node") == g["node"]:
+                    d["referee"] = rep
+            t0 = time.time()
+            rev = ps._asked(ORGAN, role="generation", task=REVISION_TASK + TASK_RULES,
+                            grammar=GRAMMAR, context=[
+                                *referee_context(g),
+                                "referee attacks: " + " | ".join(rep["attacks"])[:600],
+                                f"snooping risk: {rep['snooping_risk']}",
+                                "rival explanations: "
+                                + " | ".join(rep["competing_explanations"])[:500],
+                                f"referee's separating test: {rep['separating_test']}",
+                                "all registered families: " + all_family_names(reg)[:900],
+                                FORMULA_GRAMMAR][:40],
+                            n=2, label="candidate", validate=_validate, timeout=120.0,
+                            model_hint=str(g.get("model") or ""))
+            calls_made += 1
+            tallies["REVISION"].asked += 1
+            revised = [p for p in rev if not isinstance(p, tuple)]
+            usage.append(("REVISION", str(g.get("model") or ""), time.time() - t0,
+                          sum(1 for p in revised if getattr(p, "payload", None) is not None)))
+            for p in revised:
+                if isinstance(getattr(p, "payload", None), dict):
+                    parents = [str(x) for x in p.payload.get("parents") or []]
+                    p.payload["parents"] = [g["node"], *[x for x in parents if x != g["node"]]]
+                process(p, "REVISION", g.get("coordinate") or {"mechanism_class": "revision",
+                                                              "asset_class": "", "horizon": ""},
+                        reg, uni, mem, tallies["REVISION"], models, outputs)
+
     # ---- phase 2: synthesis across the independent answers, then the red team.
     menu, redisc, disagree = synthesis_lines(outputs)
     if seat_on and not dry_run and menu and calls_made < calls_budget \
@@ -2087,6 +2282,10 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "emitted": len(outputs["donate"]), "donation": _rel(donated) if donated else None,
         "independent_rediscoveries": redisc, "disagreements": disagree,
         "red_team_attacks": outputs["attacks"][:30],
+        "referee_loop": {"refereed": len(outputs["referee"]),
+                         "verdicts": dict(Counter(r["verdict"] for r in outputs["referee"])),
+                         "revisions_emitted": tallies["REVISION"].emitted,
+                         "reports": outputs["referee"][:20]},
         "conversion_debt": debt,
         "cb_tone": cb_tone,
         "collector": collector,
