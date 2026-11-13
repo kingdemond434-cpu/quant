@@ -75,6 +75,9 @@ MATHLAB_REPRESENTATIONS = REPRESENTATIONS / "mathlab"
 ALLOCATION = DATA / "math_allocation.json"
 DONATED = DATA / "mathlab_donated.json"
 OUT = DESK / "reports" / "MATH_LAB.json"
+#: The IDEA_QUEUE's [ORIG] rows with their MT5 symbols, mirrored here because the box cannot read
+#: the project's shared folder. Read every pass by `hypothesis_routing`.
+ORIG_IDEAS = DATA / "hypotheses" / "orig_ideas.json"
 SOURCE = "mathlab"
 
 #: THE PHYSICS WING (2026-09-22): nineteen physical traditions run beside the twenty-eight
@@ -538,7 +541,14 @@ def hypothesis_routing(allowed: list[str], slots: int) -> dict[str, Any]:
         out["status"] = {"status": "SKIPPED", "why": "no panel slot left for hypotheses"}
         return out
     try:
-        hypotheses, load_status = HR.load_hypotheses(allowed)
+        ideas, idea_status = HR.load_file_ideas(
+            allowed, idea_files=[ORIG_IDEAS],
+            donation_dirs=[DATA / "intelligence" / "llm_lab", ROOT / "data" / "intelligence"
+                           / "llm_lab"])
+        registry_rows, load_status = HR.load_hypotheses(allowed)
+        seen = {(h["hypothesis_id"], h["target"]) for h in ideas}
+        hypotheses = ideas + [h for h in registry_rows
+                              if (h["hypothesis_id"], h["target"]) not in seen]
         targets, by_tradition, log, plan_status = HR.plan(hypotheses, S.REGISTRY, slots)
     except Exception as exc:
         out["status"] = {"status": UNMEASURED, "why": f"router raised {type(exc).__name__}"}
@@ -552,7 +562,8 @@ def hypothesis_routing(allowed: list[str], slots: int) -> dict[str, Any]:
         for tool in entry["tools"]:
             demand[tool["tradition"]] = demand.get(tool["tradition"], 0.0) + 1.0
     out.update(targets=targets, by_tradition=by_tradition, demand=demand, top_hypothesis=top,
-               log=log[:HR.MAX_LOG], status={**load_status, **plan_status})
+               log=log[:HR.MAX_LOG], status={"registry": load_status, "files": idea_status,
+                                              **plan_status})
     return out
 
 

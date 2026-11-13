@@ -28,6 +28,7 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 UNMEASURED = "UNMEASURED"
@@ -89,6 +90,8 @@ EXOTIC_SHARE = 0.10
 MAX_HYPOTHESES = 400
 #: Routing-log rows kept in MATH_LAB.json (the full count is in the status).
 MAX_LOG = 200
+#: The LLM lab's newest donation files read per pass.
+NEWEST_DONATION_FILES = 6
 
 
 def is_fx_pair(symbol: str) -> bool:
@@ -212,6 +215,78 @@ def load_hypotheses(allowed: list[str], *, conn: Any = None, limit: int = MAX_HY
     return out, status
 
 
+def _gap_tags(row: dict[str, Any]) -> list[str]:
+    raw = row.get("breadth_gap") or row.get("breadth_gaps") or row.get("gap_tags") or []
+    if isinstance(raw, str):
+        raw = [raw]
+    return [str(t) for t in raw if t] if isinstance(raw, (list, tuple)) else []
+
+
+def _row_symbols(row: dict[str, Any]) -> list[str]:
+    raw = row.get("symbols") or ([row["symbol"]] if row.get("symbol") else [])
+    return [str(s) for s in raw if s] if isinstance(raw, (list, tuple)) else []
+
+
+def _file_rows(path: Path) -> list[dict[str, Any]]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = (doc.get("discoveries") or doc.get("ideas") or []) if isinstance(doc, dict) else doc
+    return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+
+
+def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs: list[Path],
+                    newest_files: int = NEWEST_DONATION_FILES
+                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Ideas that live in FILES rather than the registry, original ones first.
+
+    Two sources. `idea_files`: the tier-1 IDEA_QUEUE's [ORIG] rows, mirrored into the repo with
+    their MT5 symbols (`desks/mt5/data/hypotheses/orig_ideas.json`), because the box cannot read
+    the project's shared folder. `donation_dirs`: the LLM lab's donations
+    (`data/intelligence/llm_lab/discoveries_*.json`), whose rows carry `orig` and `breadth_gap`
+    tags. A row tagged `orig` counts as an original idea; a `breadth_gap` tag adds one to its
+    gap weight on top of the symbol's own.
+    """
+    allowed_set = {s.upper(): s for s in allowed}
+    status: dict[str, Any] = {"idea_files": [], "donation_files": [], "rows": 0,
+                              "set_aside_no_huntable_symbol": 0}
+    sources: list[tuple[str, Path]] = [("idea_queue", p) for p in idea_files if p.exists()]
+    for d in donation_dirs:
+        if d.is_dir():
+            newest = sorted(d.glob("discoveries_*.json"))[-newest_files:]
+            sources += [("llm_lab", p) for p in newest]
+    out: list[dict[str, Any]] = []
+    for generator, path in sources:
+        rows = _file_rows(path)
+        status["idea_files" if generator == "idea_queue" else "donation_files"].append(
+            {"path": path.name, "rows": len(rows)})
+        for i, row in enumerate(rows):
+            status["rows"] += 1
+            targets = [allowed_set[s.upper()] for s in _row_symbols(row)
+                       if s.upper() in allowed_set]
+            if not targets:
+                status["set_aside_no_huntable_symbol"] += 1
+                continue
+            tags = _gap_tags(row)
+            original = bool(row.get("orig")) or generator == "idea_queue"
+            mechanism = " ".join(str(row.get(k) or "") for k in (
+                "mechanism_class", "mechanism", "falsifier", "title")).strip()
+            hid = str(row.get("id") or row.get("cell_id") or f"{path.stem}:{i}")
+            for target in targets[:2]:
+                out.append({"hypothesis_id": hid, "generator": generator,
+                            "origin": "ORIGINAL" if original else "", "target": target,
+                            "mechanism": mechanism[:400], "created_at": str(
+                                row.get("at") or row.get("created_at") or ""),
+                            "original": original, "breadth_gap": tags,
+                            "gap_weight": gap_weight(target) + (1 if tags else 0),
+                            "exotic": is_exotic(target)})
+    out.sort(key=lambda h: (not h["original"], -h["gap_weight"]))
+    status.update(status="MEASURED", kept=len(out),
+                  original=sum(1 for h in out if h["original"]))
+    return out, status
+
+
 def route(hypothesis: dict[str, Any], registry: Any) -> list[dict[str, str]]:
     """The one or two traditions whose mathematics fits this hypothesis, with the reason."""
     text = f" {str(hypothesis.get('mechanism') or '').lower()} "
@@ -251,6 +326,8 @@ def plan(hypotheses: list[dict[str, Any]], registry: Any, max_targets: int
         tools = route(h, registry)
         log.append({"hypothesis_id": h["hypothesis_id"], "target": h["target"],
                     "generator": h["generator"], "origin": h["origin"],
+                    "original": bool(h["original"]),
+                    "breadth_gap": list(h.get("breadth_gap") or []),
                     "mechanism": h["mechanism"][:160], "tools": tools})
         score[h["target"]] = score.get(h["target"], 0.0) + 1.0 + 2.0 * float(h["original"]) \
             + float(h["gap_weight"])

@@ -7,16 +7,24 @@ donated), the zero-yield exploration floor, and MATH_LAB.json in the box publish
 """
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from research import math_lab as ML
-from research.mathlab import hypothesis_router as HR
-from research.mathlab import scientists as S
+DESK = Path(__file__).resolve().parents[1]
+for _p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-ROOT = Path(__file__).resolve().parents[3]
+from research.mathlab import hypothesis_router as HR  # noqa: E402
+from research.mathlab import scientists as S  # noqa: E402
+
+from research import math_lab as ML  # noqa: E402
+
+ROOT = DESK.parents[1]
 
 
 def test_a_regime_hypothesis_goes_to_state_space_and_change_point():
@@ -157,3 +165,36 @@ def test_math_lab_json_is_published_from_the_box():
     assert '"desks/mt5/reports/MATH_LAB.json"' in sync
     ignore = (ROOT / ".gitignore").read_text("utf-8")
     assert "!desks/mt5/reports/MATH_LAB.json" in ignore.splitlines()
+
+
+def test_llm_lab_orig_and_gap_tags_and_the_idea_queue_mirror_are_read_original_first(tmp_path):
+    ideas = tmp_path / "orig_ideas.json"
+    ideas.write_text(json.dumps({"ideas": [
+        {"id": "IQ-1", "symbols": ["XAUUSD"], "mechanism": "fix imbalance leads the index",
+         "breadth_gap": ["gold_metals"]}]}), "utf-8")
+    lab = tmp_path / "llm_lab"
+    lab.mkdir()
+    (lab / "discoveries_20261113T2100.json").write_text(json.dumps({"discoveries": [
+        {"symbol": "EURUSD", "mechanism": "plain idea", "cell_id": "c1"},
+        {"symbols": ["USDJPY"], "mechanism": "regime switch", "orig": True,
+         "breadth_gap": "usd_jpy_eur_cross", "cell_id": "c2"},
+        {"symbols": ["BTCUSD"], "mechanism": "not huntable here", "orig": True}]}), "utf-8")
+    out, status = HR.load_file_ideas(["XAUUSD", "EURUSD", "USDJPY"], idea_files=[ideas],
+                                     donation_dirs=[lab, tmp_path / "missing"])
+    assert [h["hypothesis_id"] for h in out] == ["IQ-1", "c2", "c1"]
+    assert out[0]["generator"] == "idea_queue" and out[0]["original"] is True
+    assert out[1]["generator"] == "llm_lab" and out[1]["breadth_gap"] == ["usd_jpy_eur_cross"]
+    assert out[1]["gap_weight"] == HR.gap_weight("USDJPY") + 1
+    assert out[2]["original"] is False
+    assert status["set_aside_no_huntable_symbol"] == 1 and status["original"] == 2
+
+
+def test_the_orig_ideas_mirror_names_only_registry_symbols_and_routes_every_idea():
+    doc = json.loads(ML.ORIG_IDEAS.read_text("utf-8"))
+    universe = (DESK / "data" / "universe" / "universe.json").read_text("utf-8")
+    assert doc["ideas"]
+    for idea in doc["ideas"]:
+        assert idea["orig"] is True and idea["mechanism"] and idea["falsifier"]
+        assert all(f'"{s}"' in universe for s in idea["symbols"]), idea["id"]
+        tools = HR.route(idea, S.REGISTRY)
+        assert tools and tools[0]["class"] != "unclassified", idea["id"]

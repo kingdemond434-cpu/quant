@@ -1,0 +1,31 @@
+{
+  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
+  "rule": "the math lab's hypothesis intake reads these every pass and routes each to the 1-2 traditions whose mathematics fits its mechanism; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
+  "updated_at": "2026-11-13T21:45:00Z",
+  "ideas": [
+    {"id": "IQ-689", "orig": true, "breadth_gap": ["energy"],
+     "symbols": ["XBRUSD", "XTIUSD"],
+     "mechanism": "floating storage of laden tankers off Norway with a weekly EIA crude-stock surprise: contango carry (storage build means oversupply, Brent weakens against WTI over 5 days) against pre-rerouting hoarding (Brent strengthens); spread drift after joint build events, net of 2x spread cost",
+     "falsifier": "no sign-consistent XBR-XTI spread drift after joint build events net of 2x spread"},
+    {"id": "IQ-690", "orig": true, "breadth_gap": [],
+     "symbols": ["EURNOK", "USDNOK", "EURUSD"],
+     "mechanism": "UK-Norway interconnector net export with an LNG outage flag: NOK revenue flow (NOK bid) against EU scarcity risk-off (EUR offered); decompose the EURNOK move into USDNOK and EURUSD legs on event days",
+     "falsifier": "neither leg moves on event days beyond placebo days"},
+    {"id": "IQ-696", "orig": true, "breadth_gap": ["gold_metals", "02_09_utc"],
+     "symbols": ["XAUUSD"],
+     "mechanism": "COT leveraged-fund gold positioning extreme (3y percentile) into the SGE benchmark hour 02-03 UTC: crowded-unwind reversal against momentum persistence; sign of XAUUSD 02-09 UTC return by pre-registered positioning quintile, point-in-time lag 3 days",
+     "falsifier": "02-09 UTC return sign is flat across positioning quintiles"},
+    {"id": "IQ-697", "orig": true, "breadth_gap": ["indices", "usd_jpy_eur_cross", "02_09_utc"],
+     "symbols": ["JPN225", "USDJPY"],
+     "mechanism": "JP225 last-30-minute drift into the Tokyo close leads USDJPY 06-07 UTC: foreign-investor close hedging flow against a common risk factor; lead-lag controlling for the overnight US index return, placebo at 05:00",
+     "falsifier": "lead-lag vanishes once the overnight US index return is controlled, or equals the 05:00 placebo"},
+    {"id": "IQ-700", "orig": true, "breadth_gap": ["gold_metals", "indices"],
+     "symbols": ["XAUUSD", "GER40", "UK100"],
+     "mechanism": "London gold fix (10:30/15:00 UK) imbalance leads DAX/FTSE index drift over the next 60 minutes: bullion-bank physical-hedge rebalancing spills into equity-index risk against a common USD shock; partial lead-lag controlling the 1-minute dollar return, placebo at 10:00/14:30",
+     "falsifier": "index drift after the fix equals the placebo-time drift once the dollar return is controlled"},
+    {"id": "IQ-701", "orig": true, "breadth_gap": ["02_09_utc"],
+     "symbols": ["AUDUSD", "NZDUSD"],
+     "mechanism": "China onshore CNY fixing surprise (PBoC mid against the model-implied fix) at 01:15 UTC leads AUDUSD/NZDUSD 02-06 UTC: policy-signal channel against the fix merely tracking overnight USD; regress on the surprise residual orthogonal to the overnight dollar, Holm over 2 pairs",
+     "falsifier": "the surprise residual has no 02-06 UTC effect after Holm over the two pairs"}
+  ]
+}
