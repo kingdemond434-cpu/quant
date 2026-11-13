@@ -1253,6 +1253,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "registry_sync",
     # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
     "research_debt",
+    # WHAT EVERY UNCONVERTED MINED ROW NEEDS (N3): a streamed ledger read and two small files.
+    "conversion_debt",
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
@@ -1370,6 +1372,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
+                     # the other end of judge_coverage's conversion handoff: every parked cell
+                     # re-queued, repaired, re-parameterised, deferred or abandoned by name
+                     "conversion_handoff_consumer",
                      "intake_catchup", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
@@ -1457,7 +1462,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
-                     "research_debt", "paradigm_router", "meta_controller", "research_bandit",
+                     "research_debt", "conversion_debt", "paradigm_router", "meta_controller",
+                     "research_bandit",
                      "ingestion_exploitation", "forest_attempts",
                      "coverage_tensor", "regional_parity", "global_coverage_tensor",
                      "research_evolution",
@@ -2290,6 +2296,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # oracle measurements for keys never measured, one sidecar write and a bounded donation
     # through the registry door. The cap sits above it and must never bind.
     "session_variant_remap": 300,
+    # The handoff consumer stops itself at --budget-s 420: one streaming handoff read, one
+    # streaming docket read, fire probes in psutil-sized worker processes, four atomic writes.
+    # The cap sits above it and must never bind.
+    "conversion_handoff_consumer": 540,
     # The attribution census stops itself at --budget-s 240: two registry scans and one
     # bounded backfill that commits per chunk and resumes. The cap sits above it.
     "attribution_census": 300,
@@ -2352,6 +2362,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
     # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
     "conversion_funnel": 330,
+    # Conversion debt stops itself at --budget-s 240 (a streamed read of the deepening worker's
+    # ledger, the queue and the crawler's frontier); the cap sits above its own budget.
+    "conversion_debt": 330,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -3536,16 +3549,27 @@ def bars_wanted_symbols(report: Path | None = None) -> list[str]:
         doc = json.loads((report or (BASE / "reports" / "JUDGE_COVERAGE.json"))
                          .read_text("utf-8"))
     except (OSError, ValueError):
-        return []
+        doc = None
     wanted = doc.get("bars_wanted") if isinstance(doc, dict) else None
     if not isinstance(wanted, dict):
-        return []
+        if report is not None:
+            return []
+        wanted = {}
     by_sym: dict[str, int] = {}
     for key, n in wanted.items():
         sym = str(key).rsplit("_", 1)[0].strip().upper()
         if sym:
             by_sym[sym] = by_sym.get(sym, 0) + int(n or 0)
-    return [s for s, _ in sorted(by_sym.items(), key=lambda kv: -kv[1])][:BARS_WANTED_PER_HOUR]
+    ranked = [s for s, _ in sorted(by_sym.items(), key=lambda kv: -kv[1])]
+    # THE DATA-DEPTH BACKLOG (2026-11-13): short-history cells the handoff consumer parked by
+    # chart, where a deeper pull could hold more. Ranked after the judge's own missing charts.
+    if report is None:
+        try:
+            from research.conversion_handoff_consumer import depth_symbols
+            ranked += [s for s in depth_symbols() if s not in ranked]
+        except Exception:
+            pass
+    return ranked[:BARS_WANTED_PER_HOUR]
 
 
 def deep_forest() -> dict:
@@ -4319,6 +4343,14 @@ def main() -> None:
     svr = _costed("session_variant_remap", lambda: _producer(
         "session_variant_remap", "research/session_variant_remap.py", "--once",
         "--budget-s", "240"))
+    # THE CONVERSION HANDOFF'S CONSUMER (2026-11-13). judge_coverage hands ~734k parked cells to
+    # the converter every pass and nothing read them. This leg books every one per reason:
+    # build failures repaired and re-emitted, never-firing specs diagnosed and re-parameterised
+    # (children charged as trials), short histories routed to the depth backlog and re-queued
+    # (data/hypotheses/conversion_requeue.json, read by judge_coverage) once the bars suffice.
+    chc = _costed("conversion_handoff_consumer", lambda: _producer(
+        "conversion_handoff_consumer", "research/conversion_handoff_consumer.py", "--once",
+        "--budget-s", "420"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
@@ -4770,6 +4802,12 @@ def main() -> None:
         "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
+    # CONVERSION DEBT (ownership row N3, 2026-11-10). The compiler and the deepening worker name
+    # why each mined row did not convert; this types that as NEEDS_DATA / NEEDS_RULE / NEEDS_PIT
+    # per source and hands the fetchable part to the world crawler as recapture seeds (hosts its
+    # frontier already holds). The crawler leg runs later in this pass and reads the file.
+    cdb = _costed("conversion_debt", lambda: _producer(
+        "conversion_debt", "research/conversion_debt.py", "--budget-s", "240"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
     # seat row, claim, axis series, tape day, bar file, sleeve ledger, normalised document --
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
@@ -6443,7 +6481,8 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
-                    "session_variant_remap": svr, "candidate_conservation": ccv,
+                    "session_variant_remap": svr, "conversion_handoff_consumer": chc,
+                    "candidate_conservation": ccv,
                     "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
@@ -6487,7 +6526,7 @@ def main() -> None:
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
-                    "research_debt": rdb,
+                    "research_debt": rdb, "conversion_debt": cdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,

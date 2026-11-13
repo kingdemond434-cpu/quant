@@ -1253,6 +1253,14 @@ def _metric_fence(row: dict) -> list[str]:
     return fence_row(row)
 
 
+def _mnpi_risk(row: dict) -> str | None:
+    """Why this row may carry material non-public information, or None (see compile_row)."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research.mnpi_risk import mnpi_risk
+    return mnpi_risk(row)
+
+
 def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict], str]:
     """Return executable candidates and the exact disposition for one evidence row."""
     symbols = resolve_symbols(row, universe)
@@ -1267,6 +1275,12 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
         from research.family_policy import family_banned
     if family_banned(row.get("family")):
         return [], "BANNED_FAMILY"
+
+    # A CLAIM THAT MAY CARRY MATERIAL NON-PUBLIC INFORMATION NEVER BECOMES A CELL (LAWS 5e,
+    # libs/research/mnpi_risk.py). It is tagged MNPI_RISK, not deepened, and listed in full under
+    # `mnpi_risk` in miner_candidates.json -- a named refusal, never a silent drop.
+    if _mnpi_risk(row):
+        return [], "MNPI_RISK"
 
     # AN IMPOSSIBLE NUMBER NEVER BECOMES A CELL (libs/research/metric_fence.py, 2026-09-30). A
     # 2,296% "win rate" was an MQL5 win COUNT parsed into the percent field, and 2,985 of 3,154
@@ -1634,6 +1648,8 @@ def main() -> int:
         sys.path.insert(0, str(ROOT))
     from libs.research.metric_fence import FenceTally
     fence_tally = FenceTally()
+    from libs.research.mnpi_risk import MnpiTally
+    mnpi_tally = MnpiTally()
     # THE BUILD-FAILURE BANK (Defect 4): a compiled candidate that is not a buildable spec was
     # `continue`d past with only a tally. Each one is now recorded with WHICH field it lacked,
     # and the hourly leg `build_failure_bank` ranks the causes into fix work. Guarded.
@@ -1674,7 +1690,8 @@ def main() -> int:
         task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
         recovered_for_row = recovered_deepening.get(task_identity, [])
-        if not produced and recovered_for_row and disposition != "IMPOSSIBLE_METRIC":
+        if (not produced and recovered_for_row
+                and disposition not in {"IMPOSSIBLE_METRIC", "MNPI_RISK"}):
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
@@ -1693,10 +1710,12 @@ def main() -> int:
         terminal_refusal = (not produced and bool(deepening_disposition)
                             and not deepening_disposition.startswith(("ERROR:", "RECOVERED_")))
         impossible = disposition == "IMPOSSIBLE_METRIC"
+        mnpi_tagged = disposition == "MNPI_RISK"
+        mnpi_tally.add(source, row, _mnpi_risk(row) if mnpi_tagged else None)
         fence_tally.add(source, _metric_fence(row) if impossible else [],
                         str(row.get("url") or row.get("title") or ""))
         refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
-                                   "IMPOSSIBLE_METRIC"}
+                                   "IMPOSSIBLE_METRIC", "MNPI_RISK"}
                    or terminal_refusal)
         if refusal:
             stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
@@ -1757,7 +1776,7 @@ def main() -> int:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
         # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
         # from the very row the fence refused. It is counted in `impossible_metrics`.
-        if not produced and not terminal_refusal and not impossible:
+        if not produced and not terminal_refusal and not impossible and not mnpi_tagged:
             compact = {
                 "source": source,
                 "disposition": disposition,
@@ -1773,6 +1792,9 @@ def main() -> int:
             # which therefore still folds identical rows from different files into one task.
             compact.update({k: row_prov[k] for k in ("source_url", "source_id", "retrieved_at",
                                                      "content_hash") if row_prov.get(k)})
+            # WHERE THE TIME CAME FROM, always (empty included): `conversion_debt` reads it to
+            # tell a producer-stamped row from one whose only time is the artifact's mtime.
+            compact["retrieved_at_basis"] = str(row_prov.get("retrieved_at_basis") or "")
             _body = _body_text(row)
             if _body:
                 compact["description"] = _body[:1500]
@@ -1795,6 +1817,7 @@ def main() -> int:
                 "status": "RECEIVED",
                 "received_at": now.isoformat(timespec="seconds"),
                 "route": ("CANONICAL_DOCKET" if row_reached_docket else
+                          "MNPI_QUARANTINE" if mnpi_tagged else
                           "VALID_REFUSAL" if refusal else "DEEPENING"),
                 "disposition": disposition,
             })
@@ -1983,6 +2006,18 @@ def main() -> int:
     ordered = sorted(candidates.values(),
                      key=lambda c: (c.get("net_edge") is None,
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
+    # BOOK-GAP ORDER (hourly pass 2026-11-13: 170 promoted ~ 8 independent bets, no gold, no
+    # index, no 02:00-09:00 UTC entries). What the LIVE book holds least of converts first;
+    # nothing is dropped, an unreadable book leaves the net-edge order (research/book_gap_steer).
+    gap_note: dict = {"status": "UNAVAILABLE"}
+    try:
+        from research import book_gap_steer as _bg
+        ordered, gap_note = _bg.apply(ordered)
+        print(f"book-gap steer: {gap_note['status'][:40]}; by ask "
+              f"{gap_note['candidates_by_ask']}")
+    except Exception as exc:
+        # the class name only: free exception text can carry box paths into a published file
+        gap_note = {"status": f"FAILED: {type(exc).__name__}"}
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     provenance_note = _provenance_block(ordered, now)
@@ -2051,7 +2086,9 @@ def main() -> int:
         "graph": graph_note,
         "provenance": provenance_note,
         "coverage_steer": steer_note,
+        "book_gap_steer": gap_note,
         "impossible_metrics": fence_tally.to_dict(),
+        "mnpi_risk": mnpi_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

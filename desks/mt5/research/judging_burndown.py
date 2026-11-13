@@ -472,7 +472,23 @@ def awaiting_conversion(path: Path | None = None,
                 "why": (f"{p.name} is {'undated' if age_h is None else f'{age_h:.1f}h old'} "
                         f"(over {READMISSION_LOG_STALE_H:.0f}h): the coverage pass stopped "
                         "handing cells over")}
-    return {"status": "MEASURED", "cells": doc["n"], "at": doc.get("generated_utc")}
+    return {"status": "MEASURED", "cells": doc["n"], "at": doc.get("generated_utc"),
+            "consumer": consumer_outflow(DESK / "reports" / CONSUMER_REPORT)}
+
+
+#: The handoff's reader (`research/conversion_handoff_consumer.py`) books every parked cell per
+#: reason; its totals say how much of the wait is being worked, not only how long it is.
+CONSUMER_REPORT = "CONVERSION_HANDOFF_CONSUMER.json"
+
+
+def consumer_outflow(path: Path) -> dict[str, Any]:
+    """The consumer's last pass: re-emitted / fixed / deferred / abandoned, or UNMEASURED."""
+    doc = _read(path)
+    if not isinstance(doc, dict) or doc.get("status") != "MEASURED":
+        return {"status": UNMEASURED, "why": f"{path.name} is absent or not MEASURED"}
+    return {"status": "MEASURED", "at": doc.get("generated_utc"), **(doc.get("totals") or {}),
+            "children_emitted": doc.get("children_emitted"),
+            "requeue_requests": doc.get("requeue_requests")}
 
 
 def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
