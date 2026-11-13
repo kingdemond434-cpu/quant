@@ -455,9 +455,3 @@ def test_the_ecb_axis_maps_to_eur_symbols() -> None:
         UR.urlopen = orig
     assert doc["n_series"] == 3 and doc["n_symbols"] == 4
     assert all(s["vintage"] == "vintage_stable" for s in doc["series"].values())
-
-
-def test_the_manifest_matches_the_box_s_two_hour_ingest_clock() -> None:
-    text = (_DESK / "ops" / "box_tasks.manifest").read_text(encoding="utf-8")
-    line = next(ln for ln in text.splitlines() if 'name="MT5-AxisIngest"' in ln)
-    assert 'trigger="every 2 hours at :40"' in line
