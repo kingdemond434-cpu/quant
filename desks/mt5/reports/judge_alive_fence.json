@@ -1,14 +1,24 @@
 {
- "generated_utc": "2026-11-10T17:50:19+00:00",
+ "generated_utc": "2026-11-13T11:38:19+00:00",
  "fence": "judge_alive",
- "verdict": "PASS",
- "state": "PASS",
- "why": "heartbeat RUNNING (phase prewarm, last beat 2026-11-10T17:50:03+00:00); stall record CLEAR",
+ "verdict": "FAIL",
+ "state": "FAIL",
+ "why": "the judge STALLED (died_unrecorded) at 2026-11-13T10:07:37+00:00 in phase collect_and_cut, 1 consecutive; no sweep has finished since: sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill",
  "checks": [
   {
    "metric": "judge_alive",
-   "state": "PASS",
-   "why": "heartbeat RUNNING (phase prewarm, last beat 2026-11-10T17:50:03+00:00); stall record CLEAR"
+   "state": "FAIL",
+   "stall": {
+    "reason": "died_unrecorded",
+    "detail": "sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill) before it could record why",
+    "stalled_utc": "2026-11-13T10:07:37+00:00",
+    "phase": "collect_and_cut",
+    "shard": null,
+    "consecutive": 1,
+    "pid": 27040,
+    "lost_s": 15396.0
+   },
+   "why": "the judge STALLED (died_unrecorded) at 2026-11-13T10:07:37+00:00 in phase collect_and_cut, 1 consecutive; no sweep has finished since: sweep pid 27040 is gone (or no longer provably the process that wrote the heartbeat) and left a RUNNING heartbeat 2471s old in phase collect_and_cut: it was killed from outside (OOM, reboot, hand kill"
   },
   {
    "metric": "judge_stop",
