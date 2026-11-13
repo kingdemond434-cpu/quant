@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -140,10 +142,60 @@ def test_agent_comments_and_other_users_are_not_human_touches() -> None:
                 "issue_url": ".../issues/453",
             },
         ],
-        [{"at": iso(3), "what": "RDP login to fix settings.json", "by": "zuck"}],
+        [{"at": iso(3), "kind": "rdp_login", "what": "RDP login to fix settings.json"}],
     )
-    assert [t["source"] for t in got] == ["HUMAN_TOUCHES.jsonl", "github_comment"]
+    assert [(t["category"], t["kind"]) for t in got] == [
+        ("box_record", "RDP_LOGIN"),
+        ("github_comment", "ACTIVATE"),
+    ]
     assert got[1]["issue"] == 453
+
+
+def test_the_published_report_carries_no_free_text(tmp_path: Path) -> None:
+    """Audit 2026-11-13 #1134 MF1/MF2/SF: the report is published on a public repository."""
+    secret = "rdp-zuck@62.171.172.249 SECRETHOST"
+    local: list[dict[str, Any]] = []
+    touches = rpp.human_touches(
+        [
+            {
+                "user": {"login": rpp.OWNER},
+                "body": "APPROVE MERGES " + secret,
+                "created_at": iso(22.0),
+                "issue_url": ".../issues/453",
+            }
+        ],
+        [{"at": iso(5), "kind": "made-up kind " + secret, "what": secret, "issue": "7"}],
+        local=local,
+    )
+    for t in touches:
+        assert tuple(t) == rpp.TOUCH_KEYS
+    assert {t["kind"] for t in touches} == {"APPROVE_MERGES", "RECORDED"}
+    assert all(secret in r["text"] for r in local)  # the text stays local only
+    w = world(ident_ok=False)
+    w["identities"][-1]["reason"] = "running " + secret
+    w["merged_prs"][0]["title"] = "title " + secret
+    rep = rpp.assess(
+        NOW, w["merged_prs"], w["live_commits"], w["ci_runs"], w["identities"], touches, contains
+    )
+    text = json.dumps(rep)
+    assert "SECRETHOST" not in text and "62.171" not in text
+    assert set(rep) == {
+        "at", "status", "red", "lookback_d", "box", "speed", "autonomy_proof",
+        "ancestry_unanswered", "human_touches", "prs", "thresholds",
+    }  # fmt: skip
+    assert set(rep["box"]) == {"running_sha", "ok", "allows_new_risk", "published_at"}
+    assert "title" not in rep["prs"][0]
+    assert rpp.LOCAL_TOUCHES.relative_to(ROOT).parts[0] == "data"
+    got = subprocess.run(
+        ["git", "check-ignore", "-q", str(rpp.LOCAL_TOUCHES)], cwd=ROOT, check=False
+    )
+    assert got.returncode == 0
+
+
+def test_errors_publish_only_type_and_http_code() -> None:
+    e = RuntimeError("gh api repos/x/compare/a...b: gh: Not Found (HTTP 404) secret-stderr")
+    assert rpp.err_code(e) == {"type": "RuntimeError", "http": 404}
+    assert rpp.err_code(ValueError("boom")) == {"type": "ValueError", "http": None}
 
 
 def test_a_blocked_box_is_red_and_never_proven() -> None:
