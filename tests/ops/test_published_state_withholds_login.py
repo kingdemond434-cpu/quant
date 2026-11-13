@@ -62,6 +62,8 @@ def test_publish_account_state_withholds_the_login(tmp_path: Path,
     mod = _load("publish_account_state_under_test", ROOT / "ops" / "publish_account_state.py")
     out = tmp_path / "account_state.json"
     monkeypatch.setattr(mod, "OUT", out)
+    monkeypatch.setattr(mod, "TERMINAL_FILE", tmp_path / "no_terminal_path.txt")
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
     assert mod.main() == 0
     text = out.read_text(encoding="utf-8")
     assert str(FAKE_LOGIN) not in text
@@ -80,6 +82,8 @@ def test_missing_broker_read_does_not_publish_a_fresh_flat_book(tmp_path, monkey
     previous = b'{"updated_at": "old", "open_positions": 2}'
     out.write_bytes(previous)
     monkeypatch.setattr(mod, "OUT", out)
+    monkeypatch.setattr(mod, "TERMINAL_FILE", tmp_path / "no_terminal_path.txt")
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
     assert mod.main() == 1
     assert out.read_bytes() == previous
     assert list(tmp_path.iterdir()) == [out]
@@ -98,6 +102,8 @@ def test_position_count_and_floating_pnl_share_one_broker_snapshot(tmp_path, mon
     mod = _load("account_consistent_snapshot", ROOT / "ops" / "publish_account_state.py")
     out = tmp_path / "account_state.json"
     monkeypatch.setattr(mod, "OUT", out)
+    monkeypatch.setattr(mod, "TERMINAL_FILE", tmp_path / "no_terminal_path.txt")
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
     assert mod.main() == 0
     rec = json.loads(out.read_text())
     assert rec["open_positions"] == 1
@@ -118,6 +124,8 @@ def test_account_publisher_cannot_autostart_terminal_in_session_zero(tmp_path, m
     out = tmp_path / "account_state.json"
     out.write_bytes(b"previous")
     monkeypatch.setattr(mod, "OUT", out)
+    monkeypatch.setattr(mod, "TERMINAL_FILE", tmp_path / "no_terminal_path.txt")
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
     assert mod.main() == 1
     assert calls == []
     assert out.read_bytes() == b"previous"
