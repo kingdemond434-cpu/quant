@@ -301,7 +301,11 @@ Timid is not risk-aware. Never read restraint language (minimise, only, never, b
 licence to do less; never add a veto, cap, shrinkage or gate without its missed-growth ledger
 line (`libs/portfolio/rails.py`, `research/missed_growth.py`); every capital modifier must be
 two-sided (`libs/portfolio/capital_modifiers.py`). The heat law: **20% floor, flat, 24/7;
-growth free above it to the 30% ceiling; the resolved heat is filled, never reported short; the
+NO CAP: growth is free above the floor to the bar the allocator MEASURES each pass (growth curve x
+survival envelope); when nothing can be measured the fallback is 20% (principal 2026-10-29: "no
+cap", fallback 20%; `decision_core.MAX_HEAT_CEILING` / `pf_allocator.HEAT_UNMEASURED_FALLBACK`
+are that fallback, never a ceiling on a measured book); the
+resolved heat is filled, never reported short; the
 gateway deploys the allocator's fractions un-re-shrunk and falls back to the best baseline at
 the floor when the proof is stale.** Research is anti-timid (weak public claims are hypotheses,
 never privileged); capital is evidence-hard (nothing gets authority for sounding institutional).

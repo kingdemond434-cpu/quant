@@ -71,7 +71,7 @@ try:
     from mt5desk.gateway_config_fallback import HEAT_TARGET as TARGET
     from mt5desk.gateway_config_fallback import MAX_SLEEVE_HEAT_SHARE as SLEEVE_SHARE
 except Exception:                                          # pragma: no cover - desk absent
-    HARD, TARGET, SLEEVE_SHARE = 0.30, 0.20, 0.25
+    HARD, TARGET, SLEEVE_SHARE = 0.20, 0.20, 0.25
 
 SLEEVE_CAP = SLEEVE_SHARE * TARGET
 #: A 3-sleeve book cannot spend a 20% budget under a 5% per-sleeve cap, so the bound is relaxed

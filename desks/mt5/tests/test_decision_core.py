@@ -179,7 +179,10 @@ def test_every_decision_that_moved_is_still_reachable_through_the_gateway() -> N
 
 def test_the_budget_is_imported_not_restated() -> None:
     assert dc.Q_OPT == Q_OPT and dc.HEAT_TARGET == HEAT_TARGET
-    assert dc.MAX_HEAT_CEILING == dc.HEAT_HARD_CEILING == 0.30
+    # No cap; the 20% unmeasured fallback (principal, 2026-10-29). HEAT_HARD_CEILING keeps its
+    # recorded 0.30 in the sealed config and no sizing path reads it.
+    assert dc.MAX_HEAT_CEILING == dc.HEAT_TARGET == 0.20
+    assert dc.HEAT_HARD_CEILING == pytest.approx(0.30)
     assert dc.MIN_LOT_RISK_EUR == pytest.approx(0.01 * dc.DIST_USD * dc.CONTRACT_OZ * dc.FX_EUR)
 
 
@@ -385,7 +388,8 @@ def test_allocator_heat_fails_closed_on_every_doubt(tmp_path) -> None:
     # away; a non-positive one is refused.
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.31, "certified": True}})
     total, why = dc.allocator_heat(tmp_path)
-    assert total == pytest.approx(0.30) and "SCALED to the measured 0.3000 bar" in why
+    # No envelope on the artifact = unmeasured, so the bar is the 20% fallback (no cap, 2026-10-29).
+    assert total == pytest.approx(0.20) and "SCALED to the measured 0.2000 bar" in why
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.0, "certified": True}})
     assert "not positive" in dc.allocator_heat(tmp_path)[1]
     _artifact(tmp_path, {**_OK, "growth": {"annual_growth_pct": float("-inf")}})
@@ -496,7 +500,7 @@ def test_cap_by_heat_bills_each_sleeve_its_own_price() -> None:
     assert [s["name"] for s in admitted] == ["charged", "gold_nominal", "jpy_no_stop", "bad"]
     assert note is None
     # An explicit scalar q applies to every sleeve; the count is limit / q.
-    limit = min(dc.heat_budget(None) + dc.HEAT_SLIDE, dc.MAX_HEAT_CEILING)
+    limit = dc.heat_budget(None) + dc.HEAT_SLIDE  # no cap clips the slide (2026-10-29)
     admitted, note = dc.cap_by_heat(_sleeves(40), EQ, 0.01, None)
     assert len(admitted) == int(limit / 0.01 + 1e-9) and note and "deferring" in note
 
@@ -541,14 +545,30 @@ def test_cap_by_heat_orders_by_the_allocators_marginal_value() -> None:
     fill landed (2026-09-11). Two 0.15 legs against a derived 20% budget leave the book at 15%
     with a fundable leg deferred, and a 15% book under a 20% floor is the idle capital the
     principal's standing order forbids: "trading should never be idle ... capital should never be
-    idle ever". So the fill takes the next leg IN RANK ORDER and the book lands at 30%, inside
-    MAX_HEAT_CEILING. The property that survives is the one being tested -- who goes first.
+    idle ever". So the fill took the next leg IN RANK ORDER and the book landed at 30%, inside
+    the old 30% cap. NO CAP, FALLBACK 20% (principal, 2026-10-29): this budget is the UNMEASURED
+    derivation, and there the principal's answer is 20%, so the fill takes a leg only while it
+    moves the book closer to 20%. 15% -> 30% overshoots by 10 points to cure a 5-point shortfall,
+    so the second leg is deferred. The property that survives is the one being tested -- who goes
+    first -- and a closer-to-floor leg is still filled (see the test below).
     """
     sl = [{"name": "old", "q_charge": 0.15}, {"name": "new", "q_charge": 0.15}]
     admitted, _ = dc.cap_by_heat(sl, EQ, rank={"new": 0.02, "old": 0.01})
-    assert [s["name"] for s in admitted] == ["new", "old"]
+    assert [s["name"] for s in admitted] == ["new"]
     admitted, _ = dc.cap_by_heat(sl, EQ)
-    assert [s["name"] for s in admitted] == ["old", "new"]
+    assert [s["name"] for s in admitted] == ["old"]
+
+
+def test_unmeasured_fill_moves_the_book_closer_to_the_floor_with_no_cap() -> None:
+    """No constant bounds the fill (2026-10-29); the floor itself does, read as a target."""
+    # 15% + 7% = 22%: 2 points over cures a 5-point shortfall, so it is taken (a tie is taken too).
+    sl = [{"name": "a", "q_charge": 0.15}, {"name": "b", "q_charge": 0.07}]
+    admitted, _note = dc.cap_by_heat(sl, EQ)
+    assert [s["name"] for s in admitted] == ["a", "b"]
+    # A whale that would land the book far past 20% is never taken by the fill.
+    sl = [{"name": "a", "q_charge": 0.10}, {"name": "whale", "q_charge": 0.40}]
+    admitted, _ = dc.cap_by_heat(sl, EQ)
+    assert [s["name"] for s in admitted] == ["a"]
 
 
 def test_the_slide_is_a_tolerance_and_the_ceiling_is_absolute() -> None:
@@ -559,7 +579,7 @@ def test_the_slide_is_a_tolerance_and_the_ceiling_is_absolute() -> None:
     assert len(admitted) == n and n * q > budget
     for k_eff in (None, 2.26, 9.0, 40.0):
         admitted, _ = dc.cap_by_heat(_sleeves(80), 1684.0, k_eff=k_eff)
-        assert len(admitted) * q <= dc.MAX_HEAT_CEILING + 1e-9
+        assert len(admitted) * q <= dc.heat_budget(k_eff) + dc.HEAT_SLIDE + 1e-9
 
 
 # ============================================================================ roster admission

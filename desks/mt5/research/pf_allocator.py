@@ -71,7 +71,6 @@ from libs.portfolio.robust_elog import (  # noqa: E402
     score_book,
 )
 from research.heat_policy import (  # noqa: E402
-    HEAT_HARD_CEILING,
     HEAT_TARGET,
     MIN_STATE_WORLDS,
     StateCurve,
@@ -132,6 +131,13 @@ FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"
 #: reasoning the CHART_STALE_H precedent uses: a staleness bound set from a known firing rate is
 #: a fact you look up in the manifest, not a number anyone picked.
 EVIDENCE_MAX_AGE_S = 3600
+
+#: NO CAP; 20% WHEN UNMEASURED (principal, 2026-10-29: remove the 30% heat cap, "no cap",
+#: fallback 20%). Wherever this file needed a bar and could not MEASURE one -- an unreadable growth
+#: curve, a thin survival surface, the catastrophe path -- it fell back to HEAT_HARD_CEILING
+#: (0.30). It now falls back to the 20% floor itself. HEAT_HARD_CEILING keeps its recorded value in
+#: the sealed `gateway_config_fallback` / `heat_policy` and is read here by nothing that sizes.
+HEAT_UNMEASURED_FALLBACK = HEAT_TARGET
 
 #: Heat curve grid for certification. Spans the free optimum through the hard ceiling so the
 #: peak is bracketed rather than assumed.
@@ -1815,7 +1821,7 @@ def current_book() -> dict[str, float]:
 
 def bind_verdict(nt: dict[str, Any], prev_book: dict[str, float], held: dict[str, float],
                  book: AllocationResult, funded: dict[str, float],
-                 *, floor: float = HEAT_TARGET, ceiling: float = HEAT_HARD_CEILING,
+                 *, floor: float = HEAT_TARGET, ceiling: float = HEAT_UNMEASURED_FALLBACK,
                  ) -> tuple[AllocationResult, dict[str, float]]:
     """Make the no-trade verdict BIND the book that is published. Returns (book, funded).
 
@@ -1973,14 +1979,14 @@ def fill_floor(book: AllocationResult, ev: list[SleeveEvidence], target: float,
             # and with HEAT_HARD_CEILING as the floor of the bound, nothing below 30% changes.
             # Before this, a policy that measured 38% solved against a 30% cap and quietly
             # delivered 30%, which reads on every report as "the optimum was 30".
-            cand = optimise(ev, hard_cap=max(HEAT_HARD_CEILING, target), target=target, cfg=cfg,
+            cand = optimise(ev, hard_cap=max(HEAT_UNMEASURED_FALLBACK, target), target=target, cfg=cfg,
                             worlds=worlds, max_per_sleeve=bnd, warm_start=book.heat or None)
             if keep_family:
                 capped = enforce_family_cap(cand.heat, family_of, cand.total_heat)
                 if not all(math.isinf(v) for v in capped.values()):
                     tight = {k: min(bnd.get(k, math.inf), capped.get(k, math.inf))
                              for k in bnd}
-                    cand = optimise(ev, hard_cap=max(HEAT_HARD_CEILING, target), target=target,
+                    cand = optimise(ev, hard_cap=max(HEAT_UNMEASURED_FALLBACK, target), target=target,
                                     cfg=cfg, worlds=worlds, max_per_sleeve=tight,
                                     warm_start=cand.heat or None)
         except ValueError:
@@ -2882,7 +2888,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     names = [e.name for e in ev]
     held = {k: float(v) for k, v in (incumbent or {}).items()
             if k in by_name and float(v) > 1e-9}
-    cap = max(float(HEAT_HARD_CEILING), float(total_heat))
+    cap = max(float(HEAT_UNMEASURED_FALLBACK), float(total_heat))
 
     def _ub(allowed: set[str]) -> dict[str, float]:
         """Per-sleeve bounds that admit exactly `allowed` -- everything else is pinned to zero."""
@@ -3981,7 +3987,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # buys growth at, never past the last heat actually sampled, and falls back to the recorded
     # constant when the curve cannot be read -- absence is never permission. So a richer book
     # earns more than 30% and a thin one is held tighter than 30% ever held it.
-    ceiling_now, ceiling_why = measured_ceiling(curve, floor=HEAT_TARGET)
+    ceiling_now, ceiling_why = measured_ceiling(curve, floor=HEAT_TARGET,
+                                              fallback=HEAT_UNMEASURED_FALLBACK)
     _log(f"heat growth ceiling: {ceiling_why}")
 
     # THE SURVIVAL CEILING, MEASURED BEFORE THE RESOLVE AND NOT AFTER IT (principal, 2026-09-07:
@@ -4053,14 +4060,14 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # a clause that CAN reduce heat is the principal's act and not a session's -- but the
             # principal now decides against a number rather than against a worry.
             _env_free = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
-                                  fallback=HEAT_HARD_CEILING,
+                                  fallback=HEAT_UNMEASURED_FALLBACK,
                                   margin_use=None,
                                   capacity_max=_capacity_ceiling())
             _env_margin = _env_free
             if _mu:
                 try:
                     _env_margin = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
-                                            fallback=HEAT_HARD_CEILING,
+                                            fallback=HEAT_UNMEASURED_FALLBACK,
                                             margin_use=_mu,
                                             capacity_max=_capacity_ceiling())
                 except Exception as _exc:
@@ -4374,7 +4381,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         _log(f"RESOLVED BOOK IS RUINOUS at {book.total_heat:.2%}: at least one sampled world "
              f"wipes it out. Publishing zero heat and the reason, not the book.")
         verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
-                          hard_ceiling=HEAT_HARD_CEILING, mandate=True, allocator_ok=False)
+                          hard_ceiling=HEAT_UNMEASURED_FALLBACK, mandate=True, allocator_ok=False)
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0,
                                 prob_annual_loss=0.0,
@@ -4825,7 +4832,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     effective_heat["ceiling"] = {
         "growth_bar": round(float(ceiling_now), 6),
         "survival_bar": (None if surv_ceiling is None else round(float(surv_ceiling), 6)),
-        "unmeasured_fallback": HEAT_HARD_CEILING,
+        "unmeasured_fallback": HEAT_UNMEASURED_FALLBACK,
         "effective_bar": round(verdict.effective_ceiling, 6),
         "derived_from": verdict.effective,
         "bound_by": verdict.binding,
@@ -4936,7 +4943,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                         float(verdict.effective_ceiling) if verdict.effective_ceiling > 0
                         else float("inf")), 6),
                 "sample_max": CURVE_SAMPLE_MAX,
-                "unmeasured_fallback": HEAT_HARD_CEILING,
+                "unmeasured_fallback": HEAT_UNMEASURED_FALLBACK,
                 "rule": ("the operative ceiling is min(growth, survival, effective-independence) "
                          "-- three MEASURED bars, none of them a constant. The recorded 0.30 "
                          "survives only as the fallback when a bar cannot be read, because a "

@@ -260,7 +260,7 @@ def test_an_explicit_scalar_q_still_applies_to_every_sleeve():
     # The admission limit is the budget PLUS the slide -- a validated leg is not dropped over a
     # rounding edge (see HEAT_SLIDE). One q for every sleeve is what this test is about, and it
     # still is: the count is exactly what the limit divided by that one q allows.
-    limit = min(NS["heat_budget"](None) + NS["HEAT_SLIDE"], NS["MAX_HEAT_CEILING"])
+    limit = NS["heat_budget"](None) + NS["HEAT_SLIDE"]  # no cap clips the slide (2026-10-29)
     assert len(admitted) == int(limit / 0.01 + 1e-9)
 
 
