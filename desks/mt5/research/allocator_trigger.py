@@ -20,6 +20,15 @@ never replaces the hourly pass.
   certificate_change      data/sleeve_registry.json      a certificate arriving or dying
   fill                    data/gateway_state.json        realised risk moved at the venue
   cost_capacity_revision  reports/NET_EDGE.json          net-of-cost or capacity was re-priced
+  equity_move             data/gateway_state.json        account equity crossed a 1.25% log band
+  swap_regime             data/carry_state.json          a symbol side flipped CARRY-PAID/ADVERSE
+  cost_regime             reports/COST_TRUTH.json        the set of overcharged symbols moved
+  sleeve_health           reports/DRIFT.json             a sleeve entered/left BREAKING/AT_RISK
+
+PENDING UNTIL SERVED (reviewer finding 2, 2026-10-06). Each source keeps three versions:
+`observed` (what the file says now), `consumed` (what the last SUCCESSFUL solve answered) and
+`pending` (the observed version not yet answered, else None). A change that is debounced, or
+whose solve fails, stays pending and re-fires on the next pass; only an rc=0 solve consumes it.
 
 WHY IT IS SAFE UNDER GROWTH GOVERNANCE. It fires the SAME solver the hourly leg fires, with the
 same heat law, the same floor and the same certificate contest. It sets no fraction and passes no
@@ -46,12 +55,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import subprocess
 import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -78,13 +88,81 @@ DEFAULT_INTERVAL_S = 20.0
 #: this long for the previous one to land. It is a DEBOUNCE, not a rate limit: a trigger that
 #: arrives during the wait is still served, just by the next pass.
 MIN_SOLVE_GAP_S = 60.0
+#: Ceiling on the failure back-off: the gap doubles per consecutive failed solve (60, 120, 240 ...)
+#: and stops at 3600 s = one hour, the cadence of the hourly `pf_allocator` backstop, so a broken
+#: solver never retries less often than the backstop and never more than once a minute.
+MAX_FAILURE_GAP_S = 3600.0
+
+
+def solve_gap(failures: int) -> float:
+    """Seconds a pending change waits after `failures` consecutive failed solves (0 -> debounce)."""
+    n = max(0, int(failures))
+    return float(min(MAX_FAILURE_GAP_S, MIN_SOLVE_GAP_S * (2.0 ** min(n, 16))))
+#: Equity band for the equity_move trigger, derived from the tightest measured daily-loss line
+#: the book trades under (E8: 2.5% of equity incl. floating). Half of it, 1.25%, means a move
+#: that has spent half a day's loss budget re-solves the book before the second half is spent;
+#: a band of 2.5% would fire only when the rail itself is already hit.
+EQUITY_BAND_LOG = 0.0125
+
+
+SigFn = Callable[[dict[str, Any]], Any]
 
 
 class Source:
-    """One watched artifact: what makes it a CHANGE, and when the change happened."""
+    """One watched artifact: what makes it a CHANGE, and when the change happened.
 
-    def __init__(self, kind: str, path: Path, keys: tuple[str, ...], why: str) -> None:
+    `sig_fn`, when given, maps the document to the decision-relevant value (a bucketed equity,
+    a set of states) instead of hashing raw keys: some changes are only changes once binned.
+    """
+
+    def __init__(self, kind: str, path: Path, keys: tuple[str, ...], why: str,
+                 sig_fn: SigFn | None = None) -> None:
         self.kind, self.path, self.keys, self.why = kind, path, keys, why
+        self.sig_fn = sig_fn
+
+
+def _equity_band(doc: dict[str, Any]) -> Any:
+    """Which 1.25% log band equity sits in. Unreadable equity is not a band (no watched key)."""
+    try:
+        eq = float(doc["equity"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not math.isfinite(eq) or eq <= 0:
+        return None
+    return math.floor(math.log(eq) / EQUITY_BAND_LOG)
+
+
+def _swap_states(doc: dict[str, Any]) -> Any:
+    """Per symbol, the carry state of each side. Raw swap points move daily; the STATE is what
+    flips a sleeve's net expectancy sign, so only a state flip is a change."""
+    syms = doc.get("symbols")
+    if not isinstance(syms, dict):
+        return None
+    out: dict[str, list[Any]] = {}
+    for sym, row in syms.items():
+        if not isinstance(row, dict):
+            continue
+        out[str(sym)] = [(row.get(side) or {}).get("state") if isinstance(row.get(side), dict)
+                         else None for side in ("long", "short")]
+    return out or None
+
+
+def _overcharged(doc: dict[str, Any]) -> Any:
+    """The set of symbols the model over-charges. Membership is the regime; the size of each
+    overcharge is re-measured every pass and is not, on its own, a reason to re-solve."""
+    rows = doc.get("overcharged")
+    if not isinstance(rows, list):
+        return None
+    return sorted({str(r.get("symbol")) if isinstance(r, dict) else str(r) for r in rows})
+
+
+def _health(doc: dict[str, Any]) -> Any:
+    """The desk verdict and which sleeves are BREAKING / AT_RISK (DECAY-09: a health change is
+    an allocation event, not something that waits for the hourly pass)."""
+    hz = doc.get("hazard_summary") if isinstance(doc.get("hazard_summary"), dict) else {}
+    part = {"verdict": doc.get("verdict"), "breaking": sorted(hz.get("breaking") or []),
+            "at_risk": sorted(hz.get("at_risk") or [])}
+    return part if any(v for v in part.values()) else None
 
 
 def sources() -> list[Source]:
@@ -107,6 +185,15 @@ def sources() -> list[Source]:
         Source("cost_capacity_revision", REPORTS / "NET_EDGE.json",
                ("capacity_by_sleeve", "n_sign_flips", "ranked_if_net_were_the_only_ranking"),
                "net-of-cost or per-sleeve capacity was re-priced"),
+        Source("equity_move", DATA / "gateway_state.json", ("equity",),
+               "equity crossed a 1.25% log band: the growth-optimal fraction of every sleeve "
+               "is a fraction of equity, so the lots it implies moved", sig_fn=_equity_band),
+        Source("swap_regime", DATA / "carry_state.json", ("symbols",),
+               "a symbol side flipped between carry paid and carry adverse", sig_fn=_swap_states),
+        Source("cost_regime", REPORTS / "COST_TRUTH.json", ("overcharged",),
+               "the set of symbols the cost model over-charges changed", sig_fn=_overcharged),
+        Source("sleeve_health", REPORTS / "DRIFT.json", ("verdict", "hazard_summary"),
+               "a sleeve entered or left BREAKING / AT_RISK", sig_fn=_health),
     ]
 
 
@@ -118,7 +205,8 @@ def _read(p: Path) -> dict[str, Any] | None:
     return doc if isinstance(doc, dict) else None
 
 
-def _signature(doc: dict[str, Any] | None, keys: tuple[str, ...]) -> str:
+def _signature(doc: dict[str, Any] | None, keys: tuple[str, ...],
+               sig_fn: SigFn | None = None) -> str:
     """A hash of the DECISION-RELEVANT part only.
 
     Hashing the whole file would fire on every rewrite -- these artifacts all carry an `at` stamp
@@ -127,8 +215,9 @@ def _signature(doc: dict[str, Any] | None, keys: tuple[str, ...]) -> str:
     """
     if doc is None:
         return "absent"
-    part = {k: doc.get(k) for k in keys if k in doc}
-    if not part:
+    part: Any = (sig_fn(doc) if sig_fn is not None
+                 else {k: doc.get(k) for k in keys if k in doc})
+    if part is None or part == {}:
         return "no-watched-key"
     blob = json.dumps(part, sort_keys=True, default=str)
     return hashlib.sha1(blob.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
@@ -209,24 +298,34 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
     watch: list[dict[str, Any]] = []
     now = time.time()
     last_solve = float(st.get("last_solve_at") or 0.0)
+    failures = int(st.get("failure_streak") or 0)
+    gap = solve_gap(failures)
 
     changes: list[tuple[Source, dict[str, Any] | None, str]] = []
+    keys_changed: list[tuple[str, str]] = []
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
     for src in sources():
         doc = _read(src.path)
-        sig = _signature(doc, src.keys)
+        sig = _signature(doc, src.keys, src.sig_fn)
         key = f"{src.kind}:{src.path.name}"
-        prev = (seen.get(key) or {}).get("sig")
+        row = seen.get(key) or {}
+        # `consumed` is what the last successful solve answered. A pre-split state file carries
+        # only `sig`, which was written on sight: read it as consumed (the old behaviour) once.
+        prev = row.get("consumed", row.get("sig"))
         moved = prev is not None and sig != prev
         event_at, basis = _event_at(doc, src.path)
         watch.append({"kind": src.kind, "path": str(src.path.relative_to(ROOT)).replace("\\", "/"),
                       "signature": sig, "previous": prev, "changed": bool(moved),
                       "event_at": event_at, "event_at_basis": basis, "why": src.why,
                       "first_seen": prev is None})
-        seen[key] = {"sig": sig, "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
+        seen[key] = {"observed": sig, "consumed": sig if prev is None else prev,
+                     "pending": sig if moved else None, "sig": sig, "at": stamp,
+                     "pending_since": ((row.get("pending_since") or stamp) if moved else None)}
         if moved:
             changes.append((src, doc, event_at))
+            keys_changed.append((key, sig))
 
-    debounced = bool(changes) and (now - last_solve) < MIN_SOLVE_GAP_S
+    debounced = bool(changes) and (now - last_solve) < gap
     if changes and solve and not debounced:
         heat_before = _heat_now()
         _, alloc_before = _allocation_stamp()
@@ -262,6 +361,16 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
                 "note": res["tail"][-200:] if not landed else "",
             })
         last_solve = time.time()
+        # Only a solve that RAN consumes the change. rc != 0 (or a timeout) leaves it pending
+        # and the next pass retries it; the debounce still spaces the retries.
+        if res["rc"] == 0:
+            failures = 0
+            for key, sig in keys_changed:
+                seen[key].update({"consumed": sig, "pending": None, "pending_since": None})
+        else:
+            # BACK OFF: each consecutive failure doubles the wait (to the hourly backstop), so a
+            # broken solver is not relaunched every minute; the first rc=0 resets it.
+            failures += 1
     elif changes and debounced:
         for src, _doc, event_at in changes:
             fired.append({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -270,8 +379,8 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
                           "event_at": event_at, "allocation_at": None, "latency_s": None,
                           "stood_down": "DEBOUNCED",
                           "why": f"a solve landed {now - last_solve:.0f}s ago "
-                                 f"(< {MIN_SOLVE_GAP_S:.0f}s); this trigger is served by the "
-                                 f"next pass, not dropped"})
+                                 f"(< {gap:.0f}s, failure streak {failures}); this trigger is "
+                                 f"served by the next pass, not dropped"})
     elif changes and not solve:
         for src, _doc, event_at in changes:
             fired.append({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -280,7 +389,7 @@ def poll(*, budget_s: float = 600.0, state: dict[str, Any] | None = None,
                           "event_at": event_at, "allocation_at": None, "latency_s": None,
                           "stood_down": "SOLVE_DISABLED", "why": "--no-solve: watch only"})
 
-    st = {"seen": seen, "last_solve_at": last_solve,
+    st = {"seen": seen, "last_solve_at": last_solve, "failure_streak": failures,
           "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
     if write:
         STATE.parent.mkdir(parents=True, exist_ok=True)
@@ -359,6 +468,8 @@ def run(*, budget_s: float = 600.0, write: bool = True, solve: bool = True) -> d
         "heat_reduction_rows": heats[-4:],
         "poll_interval_s": DEFAULT_INTERVAL_S,
         "min_solve_gap_s": MIN_SOLVE_GAP_S,
+        "failure_streak": int(res["state"].get("failure_streak") or 0),
+        "current_solve_gap_s": solve_gap(int(res["state"].get("failure_streak") or 0)),
         "backstop": ("the hourly `pf_allocator` leg still runs its full solve on its own "
                      "cadence; these reactions are added to it, never instead of it"),
         "boundary": ("fires the same solver with the same heat law. It sets no fraction, no cap "

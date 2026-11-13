@@ -48,6 +48,8 @@ DATA = "owner: Global data discovery and use"
 # allocator_trigger.poll stores every source's new signature as "seen" (allocator_trigger.py:225)
 # BEFORE deciding whether it will solve (debounce at :229, solve at :230-264). A change that is
 # debounced, or whose solve FAILS, has already been consumed, and the next pass sees no change.
+# FIXED 2026-11-11: per-source observed/pending/consumed; only an rc=0 solve consumes a change.
+# The reproduction pins and strict-xfail markers were removed with the fix, as this file asks.
 
 
 class _Harness:
@@ -89,22 +91,6 @@ def _debounced_then_quiet(h: _Harness) -> tuple[dict[str, Any], dict[str, Any]]:
     return deb, after
 
 
-def test_reproduction_trigger_debounced_change_is_never_served(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED (2a): the debounced pass records stood_down=DEBOUNCED and promises "served by
-    the next pass, not dropped"; the next pass sees changed=False and the solver is never called."""
-    h = _Harness(tmp_path, monkeypatch)
-    deb, after = _debounced_then_quiet(h)
-    assert deb["debounced"] is True
-    assert deb["fired"][0]["stood_down"] == "DEBOUNCED"
-    assert "not dropped" in deb["fired"][0]["why"]
-    assert after["watch"][0]["changed"] is False
-    assert h.calls == 0
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (2a): a change inside the debounce window is stored as seen "
-    "and never solved (desks/mt5/research/allocator_trigger.py:225 vs :229). " + ALLOC))
 def test_acceptance_trigger_debounced_change_stays_pending(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     h = _Harness(tmp_path, monkeypatch)
@@ -119,20 +105,6 @@ def _failed_then_quiet(h: _Harness) -> dict[str, Any]:
     return h.poll(failed["state"], 0.0)                      # next pass, file unchanged
 
 
-def test_reproduction_trigger_failed_solve_is_never_retried(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED (2b): rc=1, allocation_landed=False, and the next pass does not retry."""
-    h = _Harness(tmp_path, monkeypatch, rc=1)
-    after = _failed_then_quiet(h)
-    assert h.calls == 1
-    assert after["watch"][0]["changed"] is False
-    assert after["fired"] == []
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (2b): a change whose solve failed is already marked seen "
-    "(desks/mt5/research/allocator_trigger.py:225, last_solve set at :264 regardless of rc). "
-    + ALLOC))
 def test_acceptance_trigger_failed_solve_is_retried(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     h = _Harness(tmp_path, monkeypatch, rc=1)
@@ -140,10 +112,6 @@ def test_acceptance_trigger_failed_solve_is_retried(
     assert h.calls == 2, "an unacknowledged change must be retried until a solve succeeds"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06 (2): trigger state keeps one 'sig' per source; observed, "
-    "pending and consumed versions are not separate (allocator_trigger.py:207-225, :283). "
-    + ALLOC))
 def test_acceptance_trigger_state_separates_observed_pending_consumed(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Contract: each per-source state row names its observed, pending and consumed versions,
