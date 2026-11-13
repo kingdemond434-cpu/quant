@@ -456,6 +456,58 @@ def _set_aside_summary() -> dict[str, Any]:
                       for k, v in worst[:10]]}
 
 
+
+def _stem(key: str) -> str:
+    """The producer a census alias names. The census lists one producer under several keys:
+    `leg:<name>` (its hourly-cycle leg), `executable:<path>` (its script) and the bare `<name>`
+    the registry attributes cells to. Only the bare key carried compute hours and cells, so every
+    alias row read 0.0h and 0 cells for producers that plainly ran (P116: leg:mass_screen 0.0h
+    next to mass_screen 2.79h, 286 of 288 executable rows 0.0h). Map an alias to its bare name."""
+    k = str(key or "").strip().lower()
+    if k.startswith("leg:"):
+        return k[4:]
+    if k.startswith("executable:"):
+        return Path(k.split(":", 1)[1]).stem
+    return k
+
+
+def _merge_aliases(rows: list[Any]) -> list[dict[str, Any]]:
+    """Collapse census rows that name the same producer into ONE row: the bare key's row when it
+    exists (its label and clock), with each compute field the max over the aliases, and the
+    aliases listed. A producer is then counted once, with the hours it really spent, so neither
+    the donating share nor the OWING list is diluted by alias rows that can never hold cells."""
+    groups: dict[str, list[dict[str, Any]]] = {}
+    order: list[str] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        key = str(r.get("key") or r.get("producer") or "").strip().lower()
+        if not key:
+            continue
+        st = _stem(key)
+        if st not in groups:
+            groups[st] = []
+            order.append(st)
+        groups[st].append(r)
+    out: list[dict[str, Any]] = []
+    for st in order:
+        g = groups[st]
+        base = next((r for r in g if str(r.get("key") or r.get("producer") or "").strip().lower()
+                     == st), g[0])
+        merged = dict(base)
+        merged["key"] = st if len(g) > 1 else (base.get("key") or base.get("producer"))
+        for f in ("compute_hours", "compute_hours_ledger", "compute_hours_registry"):
+            vals = [float(r[f]) for r in g if isinstance(r.get(f), (int, float))]
+            if vals:
+                merged[f] = max(vals)
+        if len(g) > 1:
+            merged["aliases"] = sorted(str(r.get("key") or r.get("producer")) for r in g
+                                       if r is not base)
+            if not merged.get("clock"):
+                merged["clock"] = next((r.get("clock") for r in g if r.get("clock")), None)
+        out.append(merged)
+    return out
+
 def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
     census = _read(CENSUS, default={})
@@ -475,7 +527,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     owing: list[dict[str, Any]] = []
     exempted: list[dict[str, Any]] = []
     unattributed: list[str] = []
-    census_rows = census.get("producers") if isinstance(census.get("producers"), list) else []
+    census_rows = _merge_aliases(census.get("producers")
+                                 if isinstance(census.get("producers"), list) else [])
     seen: set[str] = set()
     for src in list(census_rows) + [{"producer": k, "key": k} for k in per]:
         if not isinstance(src, dict):
@@ -484,7 +537,7 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         if not key or key in seen:
             continue
         seen.add(key)
-        m = per.get(key) or {}
+        m = per.get(key) or per.get(_stem(key)) or {}
         hours = src.get("compute_hours")
         hours = float(hours) if isinstance(hours, (int, float)) else None
         led = src.get("compute_hours_ledger")

@@ -178,3 +178,34 @@ def test_a_declaration_cannot_hide_convertible_rows_that_produced_no_cell(desk: 
     assert any("convertible source rows" in failure for failure in doc["failures"])
     row = next(r for r in doc["producers"] if r["producer"] == "barren")
     assert row["convertible_rows_owed"] == 7
+
+
+def test_census_aliases_of_one_producer_collapse_into_one_row(desk: Path) -> None:
+    """P116: the census lists a producer under `leg:<name>`, `executable:<path>` and `<name>`;
+    only the bare key carried hours and cells, so every alias read 0.0h / 0 cells. They are ONE
+    producer: one row, the max hours over its aliases, credited with the bare key's cells."""
+    _census(desk, [
+        {"producer": "leg:mass_screen", "key": "leg:mass_screen",
+         "clock": "hourly_cycle:mass_screen", "compute_hours": 0.0,
+         "compute_hours_ledger": 0.0, "compute_hours_registry": 0.0},
+        {"producer": "executable:desks/mt5/research/mass_screen.py",
+         "key": "executable:desks/mt5/research/mass_screen.py", "clock": "invoked:x",
+         "compute_hours": 0.0},
+        {"producer": "mass_screen", "key": "mass_screen", "clock": None,
+         "compute_hours": 2.79, "compute_hours_ledger": 2.79, "compute_hours_registry": 0.0},
+    ])
+    _registry(desk / "reg.sqlite", [{"created_at": "2999-01-01T00:00:00+00:00",
+                                     "generator": "mass_screen", "grid_cell": "g1",
+                                     "status": "judged"}])
+    doc = fence.yield_audit(window_hours=24.0)
+    rows = [r for r in doc["producers"] if "mass_screen" in str(r["key"])]
+    assert [r["key"] for r in rows] == ["mass_screen"]
+    assert rows[0]["compute_hours_window7d"] == 2.79
+    assert rows[0]["clock"] == "hourly_cycle:mass_screen"
+    assert doc["n_owing"] == 0
+
+
+def test_stem_maps_leg_and_executable_aliases() -> None:
+    assert fence._stem("leg:alpha_capture") == "alpha_capture"
+    assert fence._stem("executable:desks/mt5/research/learned_miners.py") == "learned_miners"
+    assert fence._stem("Mass_Screen") == "mass_screen"
