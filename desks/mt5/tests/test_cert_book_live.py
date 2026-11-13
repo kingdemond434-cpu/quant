@@ -39,6 +39,15 @@ E8 = {"gold_asia": BOX_E8_GOLD_ASIA, "gold_london_am": 0.0, "gold_afternoon": 0.
       "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
       "AUDCHF_overnight_gap_decay_asia": 0.0}
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def _write(tmp_path: Path, doc: dict) -> Path:
     p = tmp_path / "CERT_BOOK_LIVE.json"
@@ -143,7 +152,8 @@ def test_gateway_key_join_reaches_the_cert_rows() -> None:
 
 def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None:
     pol = live_policy.policy()
-    assert pol.live_symbols == {"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"}
+    # principal zuck 2026-11-13: the live symbol whitelist is lifted; named quarantines stand
+    assert pol.live_symbols == {"*"}
     assert "discovered" in pol.banned_families
     assert "M15" in pol.banned_timeframes["XAUUSD"]
     # The three gap_decay principals are refused at the door (BOOKS_PATCH v5).
@@ -157,9 +167,8 @@ def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None
     for name in ("chfnok_carry_asia_p_98d776f3e210d3e2", "CHFNOK.carry.asia#input_symbol=CHFNOK"):
         assert live_policy.refuse({"symbol": "CHFNOK", "family": "carry", "name": name}, pol)
     doc = json.loads(live_policy.POLICY_FILE.read_text(encoding="utf-8"))
-    assert doc["live_sleeves"] == {
-        "USDJPY": [], "CHFNOK": [],
-        "EURZAR": ["eurzar_carry_asia_p_8339edce23032d21"],
-        "USDNOK": ["usdnok_carry_asia_p_ff35bb7c8427d66f"],
-        "EURILS": ["eurils_formula_asia_p_673857a649d3c271"]}
+    assert doc["live_sleeves"] == {}
+    assert doc["superseded_2026_11_13"]["live_sleeves"]["CHFNOK"] == []
+    assert live_policy.refuse({"symbol": "CHFNOK", "family": "formula",
+                               "name": "CHFNOK.formula.asia"}, pol) is None
     assert "reddit_lineage_quarantine" in doc and "carry_lookahead_quarantine" in doc

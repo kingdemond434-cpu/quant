@@ -1152,6 +1152,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
+    "policy_lift_reopen",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
@@ -2360,6 +2361,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
+    "policy_lift_reopen": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -5804,6 +5806,11 @@ def main() -> None:
     # retire walk applies the same thresholds it applies at 22:00. Running it here changes no
     # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
     # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
+    # THE LIFTED WHITELIST'S RE-OPENER (principal 2026-11-13), immediately before the promoter:
+    # a row the live policy alone retired, whose clock is still a candidate AND verified as a net-
+    # of-cost edge, is renamed so the sealed promoter re-judges that clock through every door.
+    plr = _costed("policy_lift_reopen", lambda: _producer(
+        "policy_lift_reopen", "research/policy_lift_reopen.py"))
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
     # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
     # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
@@ -6658,7 +6665,7 @@ def main() -> None:
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
-                    "promoter": pr,
+                    "promoter": pr, "policy_lift_reopen": plr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8", newline="\n")

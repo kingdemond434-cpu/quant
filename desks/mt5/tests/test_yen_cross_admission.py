@@ -41,6 +41,15 @@ _NEEDS_CATALOGUE = pytest.mark.skipif(
     not (DESK / "data" / "e8_catalogue.json").exists(),
     reason="UNMEASURED: data/e8_catalogue.json is box-only; run this check on the trading box")
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def test_symbol_allowlist_alone_would_admit_every_rr_variant(tmp_path: Path) -> None:
     """THE HOLE `live_sleeves` EXISTS TO CLOSE. Admitting the SYMBOL admits every certified
@@ -114,20 +123,23 @@ def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"})
+    # principal zuck 2026-11-13: whitelist lifted; the quarantines below are by NAME now
+    assert pol.live_symbols == frozenset({"*"})
     assert "discovered" in pol.banned_families
     for name in (CHOSEN_MT5, "USDJPY.asia#rr=2.5"):
         assert lp.refuse({"symbol": "USDJPY", "name": name}, pol) is not None
     assert lp.refuse({"symbol": "CHFNOK", "name": "chfnok_carry_asia_p_98d776f3e210d3e2"},
                      pol) is not None
     for sym in ("EURZAR", "USDZAR", "AUDCHF"):
-        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay"}, pol) is not None
+        name = f"{sym.lower()}_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay", "name": name},
+                         pol) is not None
     for sym, name in (("EURZAR", "eurzar_carry_asia_p_8339edce23032d21"),
                       ("USDNOK", "usdnok_carry_asia_p_ff35bb7c8427d66f"),
                       ("EURILS", "eurils_formula_asia_p_673857a649d3c271")):
         assert lp.refuse({"symbol": sym, "name": name}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
-                     pol) is not None
+                     pol) is None
     assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
 
 

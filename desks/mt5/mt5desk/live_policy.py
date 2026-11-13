@@ -42,6 +42,7 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -74,6 +75,8 @@ DEFAULT_BANNED_FAMILIES: frozenset[str] = frozenset({"discovered"})
 DEFAULT_BANNED_EXECS: frozenset[str] = frozenset({"scalp_market"})
 EXEC_ORDER = ("principal 2026-09-29: the gold scalp lane is stood down (executable replay "
               "<= 0R per trade after costs on every candidate); E8 carries no scalp lane")
+EXOTIC_ORDER = ("principal 2026-11-13 19:46Z: 'do the strict cost bar' -- an exotic trades only "
+                "while it survives 2x its measured costs (research/exotic_cost_bar.py)")
 ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disabled in the "
          "live account (measured cause: -73.24 EUR of forex deals in three days on the live "
          "Fusion account while XAUUSD made +24.94)")
@@ -97,6 +100,20 @@ class Policy:
     banned_execs: frozenset[str] = DEFAULT_BANNED_EXECS
     live_sleeves: Mapping[str, frozenset[str]] = field(
         default_factory=lambda: dict(DEFAULT_LIVE_SLEEVES))
+    #: NAMED rows that may not hold live capital, whatever their symbol (2026-11-13). The lift of
+    #: the symbol whitelist kept three principal quarantines that had been spelled as EMPTY
+    #: `live_sleeves` lists -- which also blocked every other sleeve on the same symbol. A name
+    #: here blocks only that row.
+    quarantined_sleeves: frozenset[str] = frozenset()
+    #: THE STRICT EXOTIC COST BAR (principal 2026-11-13 19:46Z, "do the strict cost bar"). When
+    #: the policy file carries `exotic_cost_bar`, a row on a registry-classed exotic symbol is
+    #: admitted only if research/exotic_cost_bar.py's FRESH verdict names it PASS (forward
+    #: expectancy survives 2x fill-hour spread and 2x swap). Stale or absent is UNMEASURED and
+    #: refuses: an exotic whose cost nobody measured this hour is not a measured edge.
+    exotic_bar: bool = False
+    exotic_symbols: frozenset[str] = frozenset()
+    exotic_pass: frozenset[str] = frozenset()
+    exotic_bar_stale: str = ""
     source: str = "defaults"
     by: str = ORDER
 
@@ -106,6 +123,9 @@ class Policy:
                 "banned_families": sorted(self.banned_families),
                 "banned_execs": sorted(self.banned_execs),
                 "live_sleeves": {k: sorted(v) for k, v in self.live_sleeves.items()},
+                "quarantined_sleeves": sorted(self.quarantined_sleeves),
+                "exotic_bar": self.exotic_bar, "exotic_pass": len(self.exotic_pass),
+                "exotic_bar_stale": self.exotic_bar_stale,
                 "source": self.source, "by": self.by}
 
 
@@ -142,8 +162,42 @@ def policy(path: Path | None = None) -> Policy:
             # could turn a truncated edit into an unrestricted symbol is the one not taken.
             if isinstance(names, list):
                 live_sl[str(sym).upper()] = frozenset(str(n) for n in names)
-    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl, source=str(p),
+    quar = doc.get("quarantined_sleeves")
+    quarantined = frozenset(str(n) for n in quar) if isinstance(quar, list) else frozenset()
+    bar, exo, passed, stale = _exotic_bar(doc.get("exotic_cost_bar"))
+    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl,
+                  quarantined_sleeves=quarantined, exotic_bar=bar, exotic_symbols=exo,
+                  exotic_pass=passed, exotic_bar_stale=stale, source=str(p),
                   by=str(doc.get("by") or ORDER))
+
+
+#: Where the bar's inputs live. Module-level so a test can point them at a fixture.
+UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"
+EXOTIC_BAR_FILE = BASE / "reports" / "EXOTIC_COST_BAR.json"
+EXOTIC_BAR_MAX_AGE_H = 3.0
+
+
+def _exotic_bar(cfg: Any) -> tuple[bool, frozenset[str], frozenset[str], str]:
+    """(enabled, exotic symbols, PASS names, why-stale). Off unless the policy file declares it."""
+    if not isinstance(cfg, dict) or cfg.get("enabled") is False:
+        return False, frozenset(), frozenset(), ""
+    try:
+        uni = json.loads(UNIVERSE_FILE.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        uni = {}
+    exo = frozenset(str(s).upper() for s, m in (uni.items() if isinstance(uni, dict) else [])
+                    if isinstance(m, dict)
+                    and "exotic" in str(m.get("asset_class") or "").lower())
+    max_age = float(cfg.get("max_age_h") or EXOTIC_BAR_MAX_AGE_H)
+    try:
+        doc = json.loads(EXOTIC_BAR_FILE.read_text(encoding="utf-8-sig"))
+        age_h = (datetime.now(tz=UTC) - datetime.fromisoformat(str(doc.get("at")))
+                 ).total_seconds() / 3600.0
+    except (OSError, ValueError, TypeError):
+        return True, exo, frozenset(), f"{EXOTIC_BAR_FILE.name} absent or unreadable"
+    if not age_h <= max_age:
+        return True, exo, frozenset(), f"{EXOTIC_BAR_FILE.name} is {age_h:.1f}h old"
+    return True, exo, frozenset(str(n) for n in (doc.get("pass") or [])), ""
 
 
 def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
@@ -156,6 +210,17 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     sym = str(row.get("symbol") or "").strip().upper()
     if not sym:
         return "row carries no symbol; it cannot be admitted to the live account"
+    name_q = str(row.get("name") or "").strip()
+    if name_q and name_q in p.quarantined_sleeves:
+        return f"{name_q!r} is quarantined from live capital by name -- {p.by}"
+    if p.exotic_bar and sym in p.exotic_symbols:
+        names = {name_q, str(row.get("original_name") or "").strip()} - {""}
+        if p.exotic_bar_stale:
+            return (f"{sym} is an exotic and the 2x cost bar is UNMEASURED "
+                    f"({p.exotic_bar_stale}); unknown cost is unknown edge -- {EXOTIC_ORDER}")
+        if not names & p.exotic_pass:
+            return (f"{sym} is an exotic and {name_q!r} does not survive 2x its measured "
+                    f"fill-hour spread and swap -- {EXOTIC_ORDER}")
     if "*" not in p.live_symbols and sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()
