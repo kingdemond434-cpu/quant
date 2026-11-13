@@ -411,3 +411,15 @@ def test_the_retired_midnight_lane_is_removed_by_the_installer_and_by_its_own_fi
     assert 'Unregister-ScheduledTask -TaskName "MT5-CycleMidnight"' in body
     manifest = (DESK / "ops" / "box_tasks.manifest").read_text("utf-8")
     assert 'TASK name="MT5-CycleMidnight"' not in manifest
+
+
+def test_the_agent_may_never_skip_the_hooks() -> None:
+    """2026-11-11: the first box noon pass planned "GREEN -> push --no-verify" after the pre-push
+    law gate was killed under load. The hooks are the law gate: the prompt forbids it and the
+    CLI's deny list refuses the plain forms."""
+    src = LAUNCHER.read_text("utf-8")
+    assert "NEVER --no-verify" in src
+    denied = src.split('"--disallowedTools"', 1)[1].split("elseif", 1)[0]
+    for pattern in ("Bash(git push --no-verify:*)", "Bash(git push origin --no-verify:*)",
+                    "Bash(git commit --no-verify:*)", "Bash(git commit -n:*)"):
+        assert f'"{pattern}"' in denied
