@@ -119,9 +119,11 @@ def test_no_routing_row_quarantines_anything() -> None:
 def test_the_deleted_brakes_are_named_in_the_module() -> None:
     """A later session must not re-derive the old caution from silence (LAWS 5e)."""
     named = " | ".join(ac.REMOVED_BRAKES).lower()
-    for brake in ("quarantine", "machine-extraction veto", "robots", "machine_use_allowed",
+    for brake in ("quarantine", "machine-extraction veto", "machine_use_allowed",
                   "public/licensed sources only"):
         assert brake in named, brake
+    # LAWS 5e amendment 2026-11-13: obeying robots when fetching is a live rule, not a brake
+    assert "robots" not in named
 
 
 def test_the_principle_says_labels_never_stop_mining() -> None:

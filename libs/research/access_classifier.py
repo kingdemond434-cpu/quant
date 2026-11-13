@@ -86,10 +86,13 @@ HARD_BOUNDARY_COUNT = 5
 
 #: DELETED BRAKES, named so a later session recognises them if it meets one in old code or prose
 #: and does not mistake it for a live rule. Each was a discovery brake, not a legal requirement.
+#: "robots.txt Disallow treated as a refusal" was REMOVED FROM THIS LIST on 2026-11-13 (LAWS 5e
+#: amendment, Governance robots ruling): every automated fetch obeys robots via robots_gate, with
+#: an honest User-Agent and RFC 9309 handling of an unreadable robots.txt. These are labels on
+#: content in hand; how the desk FETCHES is not a label.
 REMOVED_BRAKES: tuple[str, ...] = (
     "ACCESS_UNCLEAR quarantine (metadata kept, content not consumed)",
     "machine-extraction veto on PUBLIC_WITH_TERMS",
-    "robots.txt Disallow treated as a refusal",
     "machine_use_allowed=false treated as 'registered, never scraped'",
     "'public/licensed sources only' as a pre-filter on discovery",
     "source-class and credibility used to drop rather than weight a row",
