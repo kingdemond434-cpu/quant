@@ -443,6 +443,202 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+# THE DERIVED CONTRACT (2026-11-11, Hourly pass idea 589). A task with no artifact contract used to
+# read UNCONTRACTED -- reported, never a fault -- so one that simply STOPPED running (rc 0 the last
+# time it ran, three days ago) was invisible: "this process could stop and nothing would notice"
+# was the board describing its own blind spot. Every such task now carries an automatic contract
+# derived from its own schedule: its last SUCCESSFUL run (Last Result 0) must be within
+# DERIVED_PERIODS x its interval. "Ran recently" is not enough: MT5-TapeFeatures runs every hour
+# and is killed at its time limit (267014) every time (Desk health). No human curates it, so a task
+# added tomorrow is covered tomorrow.
+#
+# A BREACH READS `STALE_DERIVED`, NEVER `STALE` (Auditor HOLD M1 on #943). never_stale starts any
+# STALE task, and a derived contract covers money-path, deadman, release and boot tasks; starting
+# one of those off its schedule is an off-schedule order or flatten triggered by a report. So a
+# derived breach is reported and paged with its cause, and never restarted by anything.
+#
+# THE LAST SUCCESS IS REMEMBERED (DERIVED_STATE): each pass that reads Last Result 0 at a Last Run
+# Time records that run; 267009 (running) changes nothing. A task first seen with no success is
+# judged from that FIRST OBSERVATION, never as an instant breach -- so a task registered an hour
+# ago is not late before its first slot (Auditor M2), and a missing state file restarts the
+# watch rather than firing.
+#
+# THE INTERVAL comes from the scheduler's own "Repeat: Every" column when it has one, else from the
+# task's `trigger=` in desks/mt5/ops/box_tasks.manifest. A task with neither (at startup, resident,
+# UNDECLARED, one-shot) gets no derived contract and stays UNCONTRACTED: guessing an interval would
+# manufacture alarms. A task the manifest marks as running only inside a daily WINDOW is judged
+# against a day, never its in-window cadence, so the overnight gap is not a breach -- and its row
+# says so, because a dead in-window task can then hide for up to two days (Auditor S1).
+#
+# THE LAST-RUN TIME is printed in the box's locale with no zone. Day-first and month-first both
+# parse "05/11/2026", so the age is computed under EVERY reading that parses, and the task is
+# STALE only when ALL of them say so: a date format can withhold an alarm, never invent one.
+DERIVED_PERIODS = 2.0
+#: ... and never tighter than this: a one-minute task between two runs on a loaded box is not late.
+DERIVED_FLOOR_MIN = 20.0
+MANIFEST = Path("desks") / "mt5" / "ops" / "box_tasks.manifest"
+DERIVED_STATE = Path("desks") / "mt5" / "data" / "derived_contract_state.json"
+DERIVED_VERDICT = "STALE_DERIVED"
+_LAST_RUN_FORMATS = (
+    "%d/%m/%Y %H:%M:%S", "%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y %H:%M:%S",
+    "%Y-%m-%d %H:%M:%S", "%d.%m.%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
+)
+#: schtasks prints this for a task that has never run.
+_NEVER_RAN_YEAR = 1999
+
+
+def interval_min(text: str) -> float | None:
+    """Minutes between runs from a schtasks "Repeat: Every" cell ("0 Hour(s), 10 Minute(s)") or a
+    manifest trigger ("every 15 minutes, at :05", "hourly", "daily 04:20", "every 6 hours"). None
+    for anything without a clear cadence -- never a guess."""
+    import re
+
+    t = (text or "").strip().lower()
+    if not t or t in ("disabled", "n/a", "undeclared"):
+        return None
+    if "window" in t:
+        return 24 * 60.0
+    m = re.match(r"^(\d+)\s*hour\(s\),\s*(\d+)\s*minute\(s\)", t)
+    if m:
+        v = int(m.group(1)) * 60 + int(m.group(2))
+        return float(v) if v > 0 else None
+    if not t.startswith(("every", "hourly", "daily", "weekly")):
+        if "every" not in t:  # at startup, resident, legacy: no cadence of its own
+            return None
+        t = "every" + t.split("every", 1)[1]  # "at logon + every 10 minutes": the keep-alive
+    m = re.match(r"^every\s+(\d+)\s*(minute|hour|day)", t)
+    if m:
+        return float(int(m.group(1)) * {"minute": 1, "hour": 60, "day": 1440}[m.group(2)])
+    if t.startswith("hourly"):
+        return 60.0
+    if t.startswith("daily"):
+        return 1440.0
+    if t.startswith("weekly"):
+        return 7 * 1440.0
+    return None
+
+
+def manifest_triggers(root: Path) -> dict[str, str]:
+    """task name -> its `trigger=` text in the box manifest ("" for a retired row; {} when
+    unreadable)."""
+    import re
+
+    try:
+        text = (root / MANIFEST).read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line.startswith("TASK "):
+            continue
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', line))
+        if "name" not in attrs:
+            continue
+        # A RETIRED row (runs="retired...", the manifest's own convention) gets no derived
+        # contract: it is meant not to run, so "it has not succeeded" is the design.
+        retired = attrs.get("runs", "").strip().lower().startswith("retired")
+        out[attrs["name"]] = "" if retired else attrs.get("trigger", "")
+    return out
+
+
+def last_run_ages_min(raw: str, now_local: datetime) -> list[float] | None:
+    """Minutes since the last run under every locale reading of `raw` that parses and is not in
+    the future. [] when it never ran; None when nothing parses."""
+    s = (raw or "").strip()
+    ages: list[float] = []
+    parsed = False
+    for fmt in _LAST_RUN_FORMATS:
+        try:
+            t = datetime.strptime(s, fmt).replace(tzinfo=now_local.tzinfo)
+        except ValueError:
+            continue
+        parsed = True
+        if t.year <= _NEVER_RAN_YEAR:
+            return []
+        age = (now_local - t).total_seconds() / 60.0
+        if age >= -5.0:
+            ages.append(max(age, 0.0))
+    return ages if parsed and ages else ([] if s.upper() == "N/A" else None)
+
+
+def derived_contract(
+    task: dict[str, str], trigger: str, code: int | None, now_local: datetime,
+    prev: dict[str, Any] | None,
+) -> tuple[tuple[str, str] | None, dict[str, Any] | None]:
+    """((verdict, why) or None, the task's new state entry or None).
+
+    The verdict is DERIVED_VERDICT when the last successful run is older than the limit (or no
+    success was seen in a whole limit of watching), "OK" inside it, "UNCONTRACTED" while a newly
+    watched task has not yet had a limit's time to succeed, and None when no contract can be
+    derived at all (no cadence, or a last-run time nothing parses)."""
+    every_s = interval_min(task.get("Repeat: Every", ""))
+    every = every_s or interval_min(trigger)
+    if every is None:
+        return None, None
+    raw = (task.get("Last Run Time") or "").strip()
+    ages = last_run_ages_min(raw, now_local)
+    if ages is None:
+        return None, None
+    entry = dict(prev or {})
+    first = _parse_iso(entry.get("first_seen"))
+    if first is None:
+        first = now_local
+        entry["first_seen"] = now_local.isoformat(timespec="seconds")
+    if code == 0 and ages:
+        entry["last_ok_run"] = raw
+    limit = max(DERIVED_PERIODS * every, DERIVED_FLOOR_MIN)
+    windowed = not every_s and "window" in (trigger or "").lower()
+    basis = (f"{limit:.0f} min ({DERIVED_PERIODS:g} x its {every:.0f} min cadence"
+             + ("; judged per day: it runs only inside a daily window" if windowed else "") + ")")
+    meaning = RESULT_MEANING.get(code, f"code {code}") if code is not None else ""
+    cause = "" if code in (0, None) else f"; last result: {meaning}"
+    ok_ages = last_run_ages_min(str(entry.get("last_ok_run") or ""), now_local)
+    if ok_ages:
+        age = min(ok_ages)
+        if age > limit:
+            return (DERIVED_VERDICT, f"auto-contract: last SUCCESSFUL run {age:.0f} min ago, "
+                    f"against {basis}{cause}"), entry
+        why = f"auto-contract: last success {age:.0f} min ago (limit {limit:.0f} min)"
+        return ("OK", why), entry
+    watched = (now_local - first).total_seconds() / 60.0
+    if watched > limit:
+        return (DERIVED_VERDICT, f"auto-contract: no successful run seen in {watched:.0f} min of "
+                f"watching, against {basis}{cause}"), entry
+    return ("UNCONTRACTED", f"auto-contract: watching since {entry['first_seen']}; no verdict "
+            f"until {limit:.0f} min have passed without a success"), entry
+
+
+def _parse_iso(v: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(v))
+    except ValueError:
+        return None
+    return t if t.tzinfo is not None else None
+
+
+def _read_derived_state(root: Path) -> dict[str, dict[str, Any]]:
+    try:
+        doc = json.loads((root / DERIVED_STATE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    tasks = doc.get("tasks") if isinstance(doc, dict) else None
+    if not isinstance(tasks, dict):
+        return {}
+    return {k: v for k, v in tasks.items() if isinstance(v, dict)}
+
+
+def _write_derived_state(root: Path, tasks: dict[str, dict[str, Any]]) -> str:
+    path = root / DERIVED_STATE
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"tasks": tasks}, indent=1, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, path)
+        return "written"
+    except OSError as exc:
+        return f"NOT written ({type(exc).__name__})"
+
+
 #: Account-key states that are a definite fault: every stamp fails closed until a human restores
 #: the key from backup (libs/ops/provenance.RESTORE_STEP). `absent` is not one: a writer creates it.
 KEY_FAULT_STATES = frozenset({"short", "unreadable"})
@@ -490,6 +686,10 @@ def build() -> dict[str, Any]:
     seen: set[str] = set()
     TIMEOUTS.clear()
     tasks, scheduler_status = _tasks()
+    triggers = manifest_triggers(ROOT)
+    derived_prev = _read_derived_state(ROOT)
+    derived_next: dict[str, dict[str, Any]] = {}
+    now_local = datetime.now(tz=UTC).astimezone()  # schtasks prints the box's local wall clock
 
     for t in tasks:
         name = (t.get("TaskName") or "").strip().lstrip("\\")
@@ -515,6 +715,16 @@ def build() -> dict[str, Any]:
         _states = {str(t.get(k) or "").strip().lower() for k in ("Scheduled Task State", "Status")}
         _states.discard("")
         _running = bool(_states & STATE_RUNNING)
+        derived: tuple[str, str] | None = None
+        if not artifact and not result_unmeasured:
+            # Running tasks (267009) are neutral: the remembered success stands, nothing is new.
+            derived, entry = derived_contract(
+                t, triggers.get(name, ""), None if code == 267009 else code, now_local,
+                derived_prev.get(name))
+            if entry is not None:
+                derived_next[name] = entry
+            if _running or code == 267009:
+                derived = None
         if t.get("TaskInfoError"):
             verdict, why = "SCHEDULER_UNMEASURED", str(t["TaskInfoError"])
         elif _states & STATE_DISABLED:
@@ -535,8 +745,12 @@ def build() -> dict[str, Any]:
         elif code_unreadable:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
+        elif derived is not None and derived[0] == DERIVED_VERDICT:
+            verdict, why = derived  # carries the last result as its cause (e.g. killed at limit)
         elif code is not None and code not in (0, 267009, 267011) and not _running:
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
+        elif derived is not None:
+            verdict, why = derived
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
                                             "nothing would notice")
@@ -602,7 +816,7 @@ def build() -> dict[str, Any]:
         })
 
     order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
-             "NO_ARTIFACT": 2, "STALE": 3,
+             "NO_ARTIFACT": 2, "STALE": 3, DERIVED_VERDICT: 3,
              "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
@@ -611,9 +825,25 @@ def build() -> dict[str, Any]:
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
-                                             "FAILING", "NO_ARTIFACT", "STALE")
+                                             "FAILING", "NO_ARTIFACT", "STALE", DERIVED_VERDICT)
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
     run_history_read = scheduler_status == "OK schtasks"
+    # THE DERIVED WATCH IS REMEMBERED ONLY FROM A FULL READ: a brief-only pass read no results, so
+    # it may neither record a success nor start a task's first-observation clock.
+    newly_stale: list[dict[str, str]] = []
+    derived_write = "not written (run history not read this pass)"
+    if run_history_read:
+        verdict_of = {str(r["name"]): r for r in rows}
+        for name, entry in derived_next.items():
+            row = verdict_of.get(name) or {}
+            if row.get("verdict") == DERIVED_VERDICT:
+                # `breached_at` is written only once the page is DELIVERED (mark_paged): a page
+                # that failed stays new and is retried next pass.
+                if not entry.get("breached_at"):
+                    newly_stale.append({"name": name, "why": str(row.get("why"))})
+            else:
+                entry.pop("breached_at", None)
+        derived_write = _write_derived_state(ROOT, derived_next)
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
                     and not r.get("expected_disabled")]
     key = account_key_file()
@@ -654,6 +884,8 @@ def build() -> dict[str, Any]:
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
         "scheduler_retry": {"state": "NOT_NEEDED"} if not TIMEOUTS else {"state": "PENDING"},
+        "derived_contract": {"state": derived_write, "newly_stale": newly_stale,
+                             "watched": len(derived_next)},
         "processes": rows,
     }
 
@@ -849,6 +1081,48 @@ def _deliver_account_key_alerts() -> str:
         return f"FAILED ({type(exc).__name__})"
 
 
+def page_newly_stale(doc: dict[str, Any], send: Any = None) -> str:
+    """One page naming every task whose derived contract was newly breached, with its cause.
+    Each breach is marked paged (`breached_at`) only when a channel DELIVERED it, or when no
+    channel is armed (an unarmed pager is a recorded state, as judge_stall_pager counts it); a
+    failed send stays new and is retried next pass. Paged again only after it recovers.
+    NEVER RAISES."""
+    new = (doc.get("derived_contract") or {}).get("newly_stale") or []
+    if not new:
+        return "nothing new"
+    body = "\n".join(f"{r['name']}: {r['why']}" for r in new)[:3500]
+    try:
+        if send is None:
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            from libs.ops.alert_channels import send_all as send
+        res = send(f"Tasks stopped succeeding: {', '.join(r['name'] for r in new)[:180]}", body)
+        res = res if isinstance(res, dict) else {}
+        armed, delivered = res.get("armed"), res.get("delivered")
+        out = f"armed {armed}, delivered {delivered}"
+        if delivered or not armed:
+            out += f"; marked {mark_paged([str(r['name']) for r in new])}"
+        else:
+            out += "; not marked: retried next pass"
+        return out
+    except Exception as exc:
+        return f"not sent ({type(exc).__name__}): retried next pass"
+
+
+def mark_paged(names: list[str], root: Path | None = None) -> str:
+    """Record `breached_at` for tasks whose breach page went out. NEVER RAISES."""
+    try:
+        base = root or ROOT
+        tasks = _read_derived_state(base)
+        stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        for n in names:
+            if n in tasks:
+                tasks[n]["breached_at"] = stamp
+        return _write_derived_state(base, tasks)
+    except Exception as exc:
+        return f"NOT written ({type(exc).__name__})"
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if "--retry-scheduler" in args:
@@ -886,6 +1160,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"-> {OUT}")
     print(f"backup state: {_backup_state()}")
     print(f"account key alerts: {_deliver_account_key_alerts()}")
+    print(f"derived-contract page: {page_newly_stale(doc)}")
     return 0
 
 
