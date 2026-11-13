@@ -246,6 +246,219 @@
    "why": "The WM/Refinitiv 4pm London fix is where index funds and asset managers execute benchmark FX orders, heaviest at month end. The hour into the fix (15:00-16:00 London, DST-aware) on the desk's own bars is their footprint: return, share of the day's movement, share of volume."
   },
   {
+   "id": "cn_shanghai_gold_fix_window",
+   "class": "institutional",
+   "region": "CN",
+   "adapter": "session_window",
+   "tz": "Asia/Shanghai",
+   "start_hour": 10,
+   "end_hour": 11,
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 4,
+   "window": 252,
+   "targets": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "why": "The Shanghai Gold Benchmark Price is set by auction at 10:15 Beijing (and again at 14:15), where Chinese banks, refiners and jewellers transact physical-backed gold in yuan. The 10:00-11:00 hour on the desk's own bars is that crowd's footprint: the window's return and its share of the day's movement and tick volume. It closes at 03:00 UTC, in hours where the forward-proven book has no entries (coordinator's breadth note, 2026-11-13). Question for the gauntlet: does a benchmark hour that carried an unusual share of the day continue or fade into London?"
+  },
+  {
+   "id": "jp_tokyo_close_window",
+   "class": "institutional",
+   "region": "JP",
+   "adapter": "session_window",
+   "tz": "Asia/Tokyo",
+   "start_hour": 14,
+   "end_hour": 15,
+   "symbols": [
+    "JPN225",
+    "USDJPY"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 7,
+   "window": 252,
+   "targets": [
+    "JPN225",
+    "USDJPY",
+    "EURJPY"
+   ],
+   "why": "The last full hour of the Tokyo cash session is where Japanese investment trusts, pension managers and index funds execute closing orders, and where dollar-yen hedges on those equity flows are placed. 14:00-15:00 Tokyo (05:00-06:00 UTC, no DST) on the desk's own bars; H1 bars, so the 15:00-15:30 extension the exchange added in November 2024 is outside the window."
+  },
+  {
+   "id": "au_sydney_close_window",
+   "class": "institutional",
+   "region": "AU",
+   "adapter": "session_window",
+   "tz": "Australia/Sydney",
+   "start_hour": 15,
+   "end_hour": 16,
+   "symbols": [
+    "AUS200",
+    "AUDUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 7,
+   "window": 252,
+   "targets": [
+    "AUS200",
+    "AUDUSD",
+    "AUDJPY"
+   ],
+   "why": "The ASX closes into a single-price auction just after 16:00 Sydney, where superannuation funds and index trackers rebalance. The hour into it (15:00-16:00 Sydney, DST-aware: 04:00-05:00 or 05:00-06:00 UTC) on the desk's own bars is their footprint on the index and on the Australian dollar."
+  },
+  {
+   "id": "hk_close_window",
+   "class": "cross_border",
+   "region": "CN/HK",
+   "adapter": "session_window",
+   "tz": "Asia/Hong_Kong",
+   "start_hour": 15,
+   "end_hour": 16,
+   "symbols": [
+    "HK50",
+    "CHINAH"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 9,
+   "window": 252,
+   "targets": [
+    "HK50",
+    "CHINAH"
+   ],
+   "why": "The Hong Kong close (16:00 HKT, then a closing auction) is where mainland southbound money and global index funds meet. The exchange's own Stock Connect figures are fail-closed (its terms forbid automated collection; row hkex_southbound), so this reads the same hour on the desk's own bars: 15:00-16:00 Hong Kong, 07:00-08:00 UTC, no DST."
+  },
+  {
+   "id": "uk_london_open_window",
+   "class": "dealer",
+   "region": "UK",
+   "adapter": "session_window",
+   "tz": "Europe/London",
+   "start_hour": 8,
+   "end_hour": 9,
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "EURJPY",
+    "XAUUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 10,
+   "window": 252,
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "EURGBP",
+    "EURJPY",
+    "GBPJPY",
+    "XAUUSD"
+   ],
+   "why": "The first hour of London dealing (08:00-09:00 London, DST-aware) is when European banks work the overnight order book and Asia's positions are handed over. Its return and its share of the day's movement and volume is the dealer community's opening footprint on the majors, the euro and sterling yen crosses and gold."
+  },
+  {
+   "id": "eu_cash_open_window",
+   "class": "institutional",
+   "region": "EU",
+   "adapter": "session_window",
+   "tz": "Europe/Berlin",
+   "start_hour": 9,
+   "end_hour": 10,
+   "symbols": [
+    "GER40",
+    "EUSTX50",
+    "FRA40"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 10,
+   "window": 252,
+   "targets": [
+    "GER40",
+    "EUSTX50",
+    "FRA40"
+   ],
+   "why": "Xetra and Euronext open their cash sessions at 09:00 central European time with an opening auction, where overnight institutional orders are filled. The first cash hour (09:00-10:00 Berlin, DST-aware) on the desk's own index bars is that footprint."
+  },
+  {
+   "id": "us_data_hour_window",
+   "class": "institutional",
+   "region": "US",
+   "adapter": "session_window",
+   "tz": "America/New_York",
+   "start_hour": 8,
+   "end_hour": 9,
+   "symbols": [
+    "USDX",
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 15,
+   "window": 252,
+   "targets": [
+    "USDX",
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "why": "The 08:00-09:00 New York hour holds the 08:30 releases (payrolls, CPI, claims, retail sales) and the positioning of macro funds around them, before the cash equity open. Its return and its share of the day's movement and volume on the dollar, the two largest pairs and gold is their footprint. It ends at 13:00 or 14:00 UTC, next to the 12:00-13:00 UTC hour where the forward-proven book has no entries."
+  },
+  {
+   "id": "us_cash_close_window",
+   "class": "etf",
+   "region": "US",
+   "adapter": "session_window",
+   "tz": "America/New_York",
+   "start_hour": 15,
+   "end_hour": 16,
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 22,
+   "window": 252,
+   "targets": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "why": "The last hour of the New York cash session (15:00-16:00 New York) is where index funds, leveraged and inverse ETFs and market-on-close orders execute; ETF rebalancing demand is known to bunch there. Its return and its share of the day's movement and volume on the desk's own index bars is that footprint. Available from 22:00 UTC, inside the 21:00-23:00 UTC hours where the forward-proven book has no entries."
+  },
+  {
+   "id": "us_fx_rollover_window",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "session_window",
+   "tz": "America/New_York",
+   "start_hour": 16,
+   "end_hour": 17,
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD"
+   ],
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 252,
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD"
+   ],
+   "why": "17:00 New York is the FX value-date roll: the hour before it (16:00-17:00 New York) is when dealers flatten books and liquidity is thinnest. The window's return and its share of the day's movement and volume is the dealer footprint at the end of the trading day."
+  },
+  {
    "id": "snb_sight",
    "class": "central_bank",
    "region": "CH",

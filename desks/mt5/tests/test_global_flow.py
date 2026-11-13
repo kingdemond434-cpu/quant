@@ -306,9 +306,23 @@ def test_shipped_session_windows_are_stamped_after_their_close():
     from zoneinfo import ZoneInfo
     reg = json.loads(gf.REGISTRY.read_text(encoding="utf-8"))
     rows = [s for s in reg["sources"] if s["adapter"] == "session_window"]
-    assert {s["id"] for s in rows} >= {"cn_night_session"}
+    assert {s["id"] for s in rows} >= {
+        "cn_night_session", "jp_tokyo_fix_window", "uk_london_fix_window",
+        "cn_shanghai_gold_fix_window", "jp_tokyo_close_window", "au_sydney_close_window",
+        "hk_close_window", "uk_london_open_window", "eu_cash_open_window",
+        "us_data_hour_window", "us_cash_close_window", "us_fx_rollover_window"}
+    universe = json.loads((gf.DESK / "data" / "universe" / "universe.json").read_text(
+        encoding="utf-8"))
+    exotic = {k for k, v in universe.items()
+              if isinstance(v, dict) and v.get("asset_class") == "Forex Exotics"}
     for s in rows:
         assert s["avail_lag_days"] == 0
+        # Every symbol read and every target is a symbol the desk holds, and none is an exotic:
+        # these rows aim at majors, crosses, metals and indices (breadth note, 2026-11-13).
+        named = {*s["symbols"], *s["targets"]}
+        assert named <= set(universe), (s["id"], named - set(universe))
+        assert not named & exotic, s["id"]
+        assert s["class"] in reg["player_classes"] and s["region"] in reg["regions"], s["id"]
         for day in ("2024-01-15", "2024-07-15"):                  # both DST states
             end = datetime.fromisoformat(f"{day}T{int(s['end_hour']):02d}:00").replace(
                 tzinfo=ZoneInfo(s["tz"])).astimezone(UTC)
