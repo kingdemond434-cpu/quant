@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -42,12 +43,17 @@ def _full_spec(p: Path) -> dict:
 
 
 class append_fold_off:
+    """The original full read: the accelerator switched off for the duration."""
+
     def __enter__(self) -> None:
-        self.mp = pytest.MonkeyPatch()
-        self.mp.setenv("APPEND_FOLD_CACHE", "0")
+        self.prev = os.environ.get("APPEND_FOLD_CACHE")
+        os.environ["APPEND_FOLD_CACHE"] = "0"
 
     def __exit__(self, *a: object) -> None:
-        self.mp.undo()
+        if self.prev is None:
+            os.environ.pop("APPEND_FOLD_CACHE", None)
+        else:
+            os.environ["APPEND_FOLD_CACHE"] = self.prev
 
 
 def test_graph_fold_matches_the_full_read_across_appends(tmp_path: Path) -> None:
@@ -115,12 +121,13 @@ def test_a_trailing_partial_line_answers_like_the_full_read(tmp_path: Path, tail
     assert hg._fate_index(hg.Graph(p)) == want2
 
 
-def test_a_non_object_row_still_raises_after_a_cached_prefix(tmp_path: Path) -> None:
+@pytest.mark.parametrize("bad", ["null", "[1]", "7"])
+def test_a_non_object_row_still_raises_after_a_cached_prefix(tmp_path: Path, bad: str) -> None:
     p = tmp_path / "g.jsonl"
     p.write_text(_lines(GRAPH), encoding="utf-8")
     hg._fate_index(hg.Graph(p))
     with p.open("a", encoding="utf-8") as fh:
-        fh.write("null\n")
+        fh.write(bad + "\n")
     with pytest.raises(AttributeError):
         hg.Graph(p).current()
     with pytest.raises(AttributeError):

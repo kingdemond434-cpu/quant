@@ -74,7 +74,8 @@ def _save(cp: Path, ledger: Path, kind: str, offset: int, digest: str, state: An
 
 
 def _line(raw: bytes, errors: str, strict_json: bool) -> tuple[bool, Any]:
-    """(ok, obj). obj is None for a blank line. ok False means the fast path must give up."""
+    """(ok, obj). obj is _BLANK for a blank line and _SKIP for an unparsed one (a JSON `null`
+    parses to None and is a row like any other). ok False means the fast path must give up."""
     if raw.endswith(b"\r"):
         raw = raw[:-1]
     if b"\r" in raw:
@@ -84,7 +85,7 @@ def _line(raw: bytes, errors: str, strict_json: bool) -> tuple[bool, Any]:
     except UnicodeDecodeError:
         return False, None
     if not text.strip():
-        return True, None
+        return True, _BLANK
     try:
         return True, json.loads(text)
     except ValueError:
@@ -92,6 +93,7 @@ def _line(raw: bytes, errors: str, strict_json: bool) -> tuple[bool, Any]:
 
 
 _SKIP: Any = object()
+_BLANK: Any = object()
 
 
 def fold_appended(path: Path, *, kind: str, empty: Callable[[], S],
@@ -162,7 +164,7 @@ def fold_appended(path: Path, *, kind: str, empty: Callable[[], S],
                 ok, obj = _line(raw, errors, strict_json)
                 if not ok:
                     return None
-                if obj is None or obj is _SKIP:
+                if obj is _BLANK or obj is _SKIP:
                     continue
                 if not fold(state, obj):
                     return None
@@ -172,6 +174,6 @@ def fold_appended(path: Path, *, kind: str, empty: Callable[[], S],
         ok, obj = _line(carry, errors, strict_json)
         if not ok:
             return None
-        if obj is not None and obj is not _SKIP and not fold(state, obj):
+        if obj is not _BLANK and obj is not _SKIP and not fold(state, obj):
             return None
     return state
