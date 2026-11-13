@@ -1,4 +1,4 @@
-"""decay_live.json crosses the wire, and what crosses carries an exception's type, never its text."""
+"""decay_live.json crosses the wire, carrying an exception's type, never its text."""
 from __future__ import annotations
 
 import re
