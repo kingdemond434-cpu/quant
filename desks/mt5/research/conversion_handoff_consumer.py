@@ -153,8 +153,9 @@ WORKER_MEMORY_SHARE = 0.25
 PER_PARENT_BYTES = 8 * 1024
 PARENT_MEMORY_SHARE = 0.02
 PARENTS_FLOOR = 50
-#: Seconds one probe is assumed to cost before a pass has measured it.
-PROBE_S_PRIOR = 0.25
+#: Seconds one parent (all its probes) is assumed to cost a worker before a pass has measured it
+#: (0.17 s measured on the build box, 2026-11-13); every later pass uses its own measurement.
+PROBE_S_PRIOR = 0.3
 DEPTH_SNAPSHOTS = 48
 
 
@@ -794,7 +795,7 @@ def run(*, budget_s: float = 420.0, dry_run: bool = False, handoff: Path = HANDO
     # same reason means the judge's full build (costs, fills, carve) disagrees with the probe:
     # it is never re-queued again on the probe's word (no loop), and is counted by name.
     asked_before: dict[str, str] = state.get("fires_now_requeued") or {}
-    rate = float(state.get("seconds_per_parent") or PROBE_S_PRIOR * 6)
+    rate = float(state.get("seconds_per_parent") or PROBE_S_PRIOR)
     old_req = (_read_json(requeue_path) or {}).get("requests") if requeue_path.exists() else None
     old_req = old_req if isinstance(old_req, dict) else {}
 
