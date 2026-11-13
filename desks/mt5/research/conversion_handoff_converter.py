@@ -591,6 +591,21 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
     cap_pass = int(budget["per_pass"]) if max_per_pass is None else int(max_per_pass)
     cap_fam = None if max_per_family_day is None else int(max_per_family_day)
     examine_cap = min(MAX_EXAMINED_CEILING, max(MAX_EXAMINED_PER_PASS, EXAMINE_FACTOR * cap_pass))
+    # THE EXOTIC QUOTA (zuck's standing rule, 2026-11-13 19:46Z): at most `exotic_share` (10%)
+    # of every pass's examined rows are exotic-currency cells; the rest of the capacity goes to
+    # majors, minor crosses, metals, indices and the other liquid markets. A HARD quota on the
+    # pass's capacity, not a priority: an exotic row over it is not examined this pass (it keeps
+    # its queue place and is counted DEFERRED_BUDGET), whatever its steer group.
+    q = exotic_quota() if exotic_share is None else min(1.0, max(0.0, exotic_share))
+    exotic_memo: dict[str, bool] = {}
+
+    def exotic(row: Mapping[str, Any]) -> bool:
+        sym = str(row.get("symbol") or "")
+        if sym not in exotic_memo:
+            exotic_memo[sym] = is_exotic(sym, class_of)
+        return exotic_memo[sym]
+
+    gathered: Counter[tuple[str, bool]] = Counter()
 
     counts: dict[str, Counter[str]] = defaultdict(Counter)
     agg = DefectAggregate()
@@ -660,8 +675,13 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
             target = (after if str(row.get("cell") or "") > family_cursors.get(tfam,
                                                                                legacy_cursor)
                       else before)
-            if len(target) < examine_cap:
+            # exotic and non-exotic rows are gathered to their own depth per family, so a
+            # family whose head is all exotic still offers its non-exotic rows (exotic quota)
+            ex_row = exotic(slim)
+            depth = gathered[(tfam, ex_row)]
+            if depth < examine_cap:
                 target.append(slim)
+                gathered[(tfam, ex_row)] = depth + 1
         else:
             counts[reason][UNHANDLED_REASON] += 1
             unhandled[reason] += 1
@@ -741,26 +761,15 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
     # two are interleaved, so the steer reorders the queue without starving the rest of it --
     # in examination and in the per-pass conversion cap alike.
     share = (unsteered_share() if steer_share is None else steer_share) if names else 1.0
-    # THE EXOTIC QUOTA (zuck's standing rule, 2026-11-13 19:46Z): at most `exotic_share` (10%)
-    # of every pass's examined rows are exotic-currency cells; the rest of the capacity goes to
-    # majors, minor crosses, metals, indices and the other liquid markets. A HARD quota on the
-    # pass's capacity, not a priority: an exotic row over it is not examined this pass (it keeps
-    # its queue place and is counted DEFERRED_BUDGET), whatever its steer group.
-    q = exotic_quota() if exotic_share is None else min(1.0, max(0.0, exotic_share))
-    exotic_memo: dict[str, bool] = {}
-
-    def exotic(row: Mapping[str, Any]) -> bool:
-        k = str(row.get("key") or "")
-        if k not in exotic_memo:
-            exotic_memo[k] = is_exotic(str(row.get("symbol") or ""), class_of)
-        return exotic_memo[k]
-
+    # each family queue holds up to examine_cap rows of each kind, so both pools are read to
+    # twice the cap before the quota splits them
+    pool = 2 * examine_cap
     steered_all: list[dict[str, Any]] = []
     for n in names:
-        if len(steered_all) >= examine_cap:
+        if len(steered_all) >= pool:
             break
-        steered_all += round_robin(lanes[n], examine_cap - len(steered_all), fam_order)
-    rest_all = round_robin(lanes[UNSTEERED], examine_cap, fam_order)
+        steered_all += round_robin(lanes[n], pool - len(steered_all), fam_order)
+    rest_all = round_robin(lanes[UNSTEERED], pool, fam_order)
     ex_cap = math.floor(q * examine_cap)
     ex_rows = [r for r in steered_all + rest_all if exotic(r)][:ex_cap]
     major_cap = examine_cap - len(ex_rows)
