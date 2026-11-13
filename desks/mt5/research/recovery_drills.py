@@ -375,19 +375,59 @@ DRILLS: tuple[tuple[str, str, Callable[[datetime], dict[str, Any]]], ...] = (
 )
 
 
-def build(now: datetime | None = None) -> dict[str, Any]:
+#: The rolling window of the per-mode tally: one week of hourly passes.
+TALLY_WINDOW = 168
+
+
+def per_mode(rows: list[dict[str, Any]], prior: Any, now: datetime) -> dict[str, Any]:
+    """PER FAILURE MODE, how many recent passes graded it PASS / FAIL / UNMEASURED / CI_ONLY.
+
+    One row per pass says what is true NOW; the audit (L141, 2026-11-13) could not tell a mode
+    that has failed every hour for a month from one that failed once. The tally is carried in
+    this artifact from the previous pass (no separate ledger), bounded to the last TALLY_WINDOW
+    verdicts per mode, with the current streak and when the mode last passed and last failed."""
+    old = (prior or {}).get("per_mode") if isinstance(prior, dict) else None
+    old = old if isinstance(old, dict) else {}
+    stamp = now.isoformat(timespec="seconds")
+    out: dict[str, Any] = {}
+    for r in rows:
+        did, v = r["drill"], r["verdict"]
+        got = old.get(did)
+        o: dict[str, Any] = got if isinstance(got, dict) else {}
+        hist = [x for x in (o.get("recent") or []) if x in (PASS, FAIL, UNMEASURED, CI_ONLY)]
+        hist = [*hist, v][-TALLY_WINDOW:]
+        streak = 0
+        for x in reversed(hist):
+            if x != v:
+                break
+            streak += 1
+        out[did] = {"verdict": v,
+                    **{k: hist.count(k) for k in (PASS, FAIL, UNMEASURED, CI_ONLY)},
+                    "passes": len(hist), "streak": streak,
+                    "last_pass_utc": stamp if v == PASS else o.get("last_pass_utc"),
+                    "last_fail_utc": stamp if v == FAIL else o.get("last_fail_utc"),
+                    "since_utc": o.get("since_utc") or stamp,
+                    "recent": hist}
+    return out
+
+
+def build(now: datetime | None = None, prior: Any = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     rows = []
     for did, mode, grade in DRILLS:
         try:
             r = grade(now)
         except Exception as exc:          # a grader that breaks is an unmeasured drill
-            r = _row(UNMEASURED, "grader", f"{type(exc).__name__}: {exc}"[:200])
+            # The type only: this artifact is published (reports/public/RECOVERY_DRILLS.json via
+            # research/public_proofs.py) and an exception's text can carry a box path.
+            r = _row(UNMEASURED, "grader", f"grader raised {type(exc).__name__}")
         rows.append({"drill": did, "failure_mode": mode, **r})
     counts = {k: sum(1 for r in rows if r["verdict"] == k)
               for k in (PASS, FAIL, UNMEASURED, CI_ONLY)}
     return {"generated_utc": now.isoformat(timespec="seconds"), "drills": rows,
             "counts": counts, "n": len(rows),
+            "per_mode": per_mode(rows, prior, now),
+            "failing_modes": [r["drill"] for r in rows if r["verdict"] == FAIL],
             "verdict": FAIL if counts[FAIL] else PASS if counts[PASS] == len(rows) else
             UNMEASURED,
             "rule": "PASS only on a fresh box artifact that passed; absent or stale is "
@@ -401,14 +441,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
-    doc = build()
+    doc = build(prior=_read(OUT))
     if not a.dry_run:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     if a.json:
         print(json.dumps(doc, default=str))
     else:
-        print(f"recovery_drills: {doc['verdict']} {doc['counts']}")
+        print(f"recovery_drills: {doc['verdict']} {doc['counts']} "
+              f"failing={doc['failing_modes']}")
         for r in doc["drills"]:
             print(f"  {r['verdict']:<10} {r['drill']:<20} {r['why'][:110]}")
     return 0

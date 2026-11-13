@@ -265,6 +265,7 @@ LEG_LAYER: dict[str, str] = {
     # The box's bar and tick freshness report, hourly before publication: the machine measuring
     # its own inputs, not any strategy.
     "bars_state": "meta",
+    "public_proofs": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",

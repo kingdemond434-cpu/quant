@@ -607,3 +607,31 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# THE PROOFS BEHIND THE DONE ROWS (underbuilt audit 2026-11-13): redacted projections written by
+# research/public_proofs.py and published by sync_shadow_to_git.ps1 ($reportPaths). `**/reports/*`
+# ignores the directory reports/public itself, so it is re-included first, then its files by name.
+!desks/mt5/reports/public/
+desks/mt5/reports/public/*
+!desks/mt5/reports/public/RECOVERY_DRILLS.json
+!desks/mt5/reports/public/OPS_REDUNDANCY.json
+!desks/mt5/reports/public/REBOOT_DRILL.json
+!desks/mt5/reports/public/OFFSITE_BACKUP.json
+!desks/mt5/reports/public/COMMITTEES.json
+!desks/mt5/reports/public/COMMITTEE_HEALTH.json
+!desks/mt5/reports/public/ANALYST_VIEWS.json
+!desks/mt5/reports/public/ANALYST_VIEWS_CONTRACT.json
+!desks/mt5/reports/public/ALPHA_CAPTURE_ALLOCATION_INTEL.json
+!desks/mt5/reports/public/ALT_PROXIES.json
+!desks/mt5/reports/public/ALT_PROXIES_ALLOCATION_INTEL.json
+!desks/mt5/reports/public/PAID_SUBSTITUTE_COVERAGE.json
+!desks/mt5/reports/public/TAPE_RECORDER.json
+!desks/mt5/reports/public/TERMINAL_BOOT.json
+!desks/mt5/reports/public/RELEASE_AUTHORITY_AUDIT.json
+!desks/mt5/reports/public/VIDEO_MINING_COVERAGE.json
+!desks/mt5/reports/public/WEAK_SIGNAL_COMPILER.json
+!desks/mt5/reports/public/CONVERSION_HANDOFF.json
+!desks/mt5/reports/public/NEVER_STALE.json
+!desks/mt5/reports/public/MEMECOIN_PROOF.json
+!desks/mt5/reports/public/CPU_SHARE.json
+!desks/mt5/reports/public/DISK_USAGE.json
+!desks/mt5/reports/public/PUBLIC_PROOFS.json

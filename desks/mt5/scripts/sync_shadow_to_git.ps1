@@ -871,6 +871,41 @@ $reportPaths = @(
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
     "desks/mt5/data/tape/tape_state.json",
+    # THE PROOFS BEHIND THE DONE ROWS (underbuilt audit 2026-11-13). The audit could not verify
+    # L141 (recovery drills), L144 (committees), L230 (alpha capture / alt proxies / paid
+    # substitutes), L115 (the memecoin CPU cap and the judge's share), L310 (a memecoin paper
+    # fill) or L318 (the memecoin backups deleted), nor the box-local artifacts organ_contract.py
+    # names for L110/L111/L113/L126/L218/L77, because every one stayed on this box. The core
+    # hourly leg `public_proofs` (research/public_proofs.py) writes a REDACTED projection of each
+    # into reports/public/ -- libs/ops/public_redact.py drops identity keys, keeps only exception
+    # TYPES, makes paths repo-relative and replaces host names, IPs, tokens and declared account
+    # numbers -- and a source it cannot make safe is published as counts and verdicts only. Never
+    # the raw source, never a ledger; each file is bounded at 96 KB.
+    # tests/ops/test_public_proofs.py plants a hostname, an IP, a token, an absolute path and an
+    # exception message in every source and asserts none of them reaches any of these files.
+    "desks/mt5/reports/public/RECOVERY_DRILLS.json",
+    "desks/mt5/reports/public/OPS_REDUNDANCY.json",
+    "desks/mt5/reports/public/REBOOT_DRILL.json",
+    "desks/mt5/reports/public/OFFSITE_BACKUP.json",
+    "desks/mt5/reports/public/COMMITTEES.json",
+    "desks/mt5/reports/public/COMMITTEE_HEALTH.json",
+    "desks/mt5/reports/public/ANALYST_VIEWS.json",
+    "desks/mt5/reports/public/ANALYST_VIEWS_CONTRACT.json",
+    "desks/mt5/reports/public/ALPHA_CAPTURE_ALLOCATION_INTEL.json",
+    "desks/mt5/reports/public/ALT_PROXIES.json",
+    "desks/mt5/reports/public/ALT_PROXIES_ALLOCATION_INTEL.json",
+    "desks/mt5/reports/public/PAID_SUBSTITUTE_COVERAGE.json",
+    "desks/mt5/reports/public/TAPE_RECORDER.json",
+    "desks/mt5/reports/public/TERMINAL_BOOT.json",
+    "desks/mt5/reports/public/RELEASE_AUTHORITY_AUDIT.json",
+    "desks/mt5/reports/public/VIDEO_MINING_COVERAGE.json",
+    "desks/mt5/reports/public/WEAK_SIGNAL_COMPILER.json",
+    "desks/mt5/reports/public/CONVERSION_HANDOFF.json",
+    "desks/mt5/reports/public/NEVER_STALE.json",
+    "desks/mt5/reports/public/MEMECOIN_PROOF.json",
+    "desks/mt5/reports/public/CPU_SHARE.json",
+    "desks/mt5/reports/public/DISK_USAGE.json",
+    "desks/mt5/reports/public/PUBLIC_PROOFS.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable

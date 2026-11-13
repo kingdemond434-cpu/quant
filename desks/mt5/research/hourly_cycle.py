@@ -1288,6 +1288,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # report (data/BARS_STATE.json) that `publish_state` right after it carries. Bars never cross
     # the wire, so this is the only off-box evidence that the feed is alive. Non-money-path.
     "bars_state",
+    # THE PROOFS BEHIND THE DONE ROWS (underbuilt audit 2026-11-13): redacted projections of the
+    # box-local artifacts (recovery drills, committees, alpha capture, the memecoin cap, paper
+    # fill and disk) into desks/mt5/reports/public/, which the box sync publishes. File reads and
+    # a 1 s CPU sample; the memecoin directory census runs once a day inside its own budget.
+    "public_proofs",
 })
 
 
@@ -2107,6 +2112,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # BARS_STATE.json stops itself at --budget-s 20 (marking what it did not reach UNMEASURED);
     # the cap sits just above, so MT5-Hourly, which already overruns, can lose at most a minute.
     "bars_state": 60,
+    # public_proofs: ~2 s of reads plus, once a day, a directory census bounded by
+    # --disk-budget-s 45; the cap sits above both.
+    "public_proofs": 120,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -4188,6 +4196,12 @@ def main() -> None:
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
+    # THE DONE ROWS' PROOFS, published (underbuilt audit 2026-11-13): every box-local artifact a
+    # DONE claim rests on, redacted by libs/ops/public_redact.py into reports/public/, which
+    # sync_shadow_to_git.ps1 carries. At the head of the pass for the reason `bars_state` is:
+    # MT5-HourlyCore is killed at PT55M before its tail, and a proof nobody publishes is no proof.
+    ppf = _costed("public_proofs", lambda: _producer(
+        "public_proofs", "research/public_proofs.py", "--disk-budget-s", "45"))
     # Replication is a required live-door input with a six-hour expiry. Keeping its
     # writer late in the validation department let E8's entry door go stale even
     # while core passes ran. Refresh it on the existing core clock, before the door
@@ -6629,6 +6643,7 @@ def main() -> None:
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
                     "bars_state": bst,
+                    "public_proofs": ppf,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
