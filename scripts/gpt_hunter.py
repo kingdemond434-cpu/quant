@@ -9,10 +9,8 @@ and public systematic strategies.  It neither replaces Kimi nor creates three ag
 from __future__ import annotations
 
 import json
-import os
-import ssl
 import sys
-import urllib.request
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,15 +18,23 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
-from libs.llm.effort import reasoning_payload  # noqa: E402
+from libs.ops import llm_seat  # noqa: E402
 from libs.research.public_strategy_hunter import load_sources, run  # noqa: E402
 
 SOURCES = ROOT / "docs" / "research" / "GPT_HUNTER_SOURCES.json"
 STATE = ROOT / "data" / "intelligence" / "gpt_hunter_state.json"
 OUT = ROOT / "data" / "intelligence" / "public_strategy_items.json"
 CORPUS = ROOT / "data" / "intelligence" / "gpt_practitioner_corpus.jsonl"
-SECRETS = ROOT / "data" / "secrets" / "llm_panel.json"
-MODEL = "openai/gpt-5.6-terra"
+#: FREE CHAIN ONLY (2026-11-04). The seat named `openai/gpt-5.6-terra`, a paid id, so
+#: `libs.ops.openrouter_guard` refused every request and the seat wrote 0 rows. The desk runs
+#: :free models only; the chain walks down on any failure so one rate-limited id never zeroes a
+#: day. MODEL stays as the first id for callers that read it.
+MODEL_CHAIN: tuple[str, ...] = (
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-235b-a22b:free",
+    "moonshotai/kimi-k2:free",
+)
+MODEL = MODEL_CHAIN[0]
 
 
 def _read(path: Path, default: object) -> object:
@@ -38,54 +44,32 @@ def _read(path: Path, default: object) -> object:
         return default
 
 
-def _credentials() -> tuple[str, str]:
-    secret = _read(SECRETS, {})
-    if not isinstance(secret, dict):
-        secret = {}
-    key = str(
-        secret.get("api_key") or secret.get("key") or os.environ.get("OPENROUTER_API_KEY", "")
-    )
-    base = str(secret.get("base_url") or "https://openrouter.ai/api/v1")
-    if not key:
-        raise RuntimeError("OpenRouter key unavailable; acquisition can retry without losing state")
-    return base, key
+_SYSTEM = (
+    OBJECTIVE_PREAMBLE + "\n"
+    "Extract only retrieved public evidence. You have zero capital, promotion or threshold "
+    "authority. Return the requested JSON and use null rather than inference."
+)
 
 
 def _ask(prompt: str) -> str:
-    base, key = _credentials()
-    body = json.dumps(
-        {
-            "model": MODEL,
-            "max_tokens": 8000,
-            "temperature": 0.2,
-            "reasoning": reasoning_payload(MODEL),
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        OBJECTIVE_PREAMBLE + "\n"
-                        "Extract only retrieved public evidence. You have zero capital, promotion or threshold "
-                        "authority. Return the requested JSON and use null rather than inference."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-        }
-    ).encode()
-    request = urllib.request.Request(
-        base.rstrip("/") + "/chat/completions",
-        data=body,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        method="POST",
-    )
-    from libs.ops import openrouter_guard
-    openrouter_guard.check_request(request)
-    with urllib.request.urlopen(
-        request, timeout=240, context=ssl.create_default_context()
-    ) as response:
-        payload = json.loads(response.read())
-    message = payload["choices"][0]["message"]
-    return str(message.get("content") or message.get("reasoning") or "")
+    """One extraction through `libs.ops.llm_seat`, walking the :free chain.
+
+    THROUGH THE SEAT, NOT A RAW urllib CALL (2026-11-11). A bypass wrote no row to
+    `data/llm_spend.jsonl`, so this seat's tokens were invisible to the per-job token report, and
+    it skipped the seat's free-tier daily budget check, which protects every other organ on the
+    same key. The seat's own guard still refuses any non-free id.
+    """
+    base_seat = llm_seat.primary_seat()
+    if base_seat is None:
+        raise RuntimeError("OpenRouter key unavailable; acquisition can retry without losing state")
+    last = "no model tried"
+    for model in MODEL_CHAIN:
+        text, err = llm_seat.chat(prompt, system=_SYSTEM, seat=replace(base_seat, model=model),
+                                  max_tokens=8000, temperature=0.2)
+        if not err and text.strip():
+            return text
+        last = f"{model}: {err or 'empty reply'}"
+    raise RuntimeError(f"every free model failed; last: {last}")
 
 
 def main() -> int:
