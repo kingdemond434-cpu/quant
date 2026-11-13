@@ -209,6 +209,11 @@
    "why": "`sparse_equation: every coefficient fell below lambda=0.08; no governing equation survives thresholding` on every panel, 0.77 compute-seconds spent. lambda is a HARD-CODED sparsity threshold, so the tradition's whole output is decided by one constant nobody measured against these residual panels; the fix is to derive it from the panel's own coefficient scale (a sweep with the surviving equation count recorded per level), which is a measurement this desk can make.",
    "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
    "declared_utc": "2026-09-23"
+  },
+  "forward_exploitation": {
+   "why": "forward_exploitation mines forward-vs-backtest state shifts and records each recurring finding as a DiscoveryObject (source_type forward_result, state UNPROCESSED); discovery_compiler owns turning those into cells, so cells_emitted is structurally 0 here. Measured 2026-11-13: 493 compute-hours in 7 days and 0 findings, because ledger_path() read the legacy shared file ledger_{sym}_{fam}_{win}.json -- every '#' parameterisation overwrote one file and every '@M30'/'@M15' key pointed at a file that never existed -- so most clocks read as empty and nothing could recur. Output: desks/mt5/reports/FORWARD_EXPLOITATION.json plus forward_result discoveries in the canonical registry.",
+   "owner": "Forward clocks thread (cert -> clock -> promotion); fix in PR #1113 (shadow_forward writes per-clock ledgers with st.ledger_file, forward_exploitation reads them)",
+   "remedy": "after #1113 merges and the box adopts it, re-measure findings and discoveries per compute-hour on FORWARD_EXPLOITATION.json; if still 0, cut its budget until the per-clock ledgers carry enough forward trades (MIN_FORWARD)."
   }
  }
 }
