@@ -154,7 +154,7 @@ def test_a_rendered_page_is_fetched_under_the_agent_robots_admitted(monkeypatch)
         return "<p>ok</p>", ""
     monkeypatch.setattr(rf, "render", fake_render)
     run = dfm._Run.__new__(dfm._Run)
-    run.status, run.counts, run.lang = [], {"pages": 0}, "zh"
+    run.status, run.counts, run.ground = [], {"pages": 0, "rendered": 0}, {"language": "zh"}
     assert run.rendered("https://forum.example/t/1") == "<p>ok</p>"
     assert seen["user_agent"] == dfm._UA["User-Agent"]
     assert "Mozilla" not in seen["user_agent"] and "Chrome" not in seen["user_agent"]
