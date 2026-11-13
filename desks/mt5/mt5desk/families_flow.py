@@ -497,7 +497,8 @@ INPUTS: dict[str, tuple[str, str]] = {
                    "data/universe/*_H1.parquet"),
 }
 TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
-    "strike_pin": (("H1",), "decides once a day at a broker decision HOUR"),
+    "strike_pin": (("H1",), "decides once a day at a broker decision HOUR; on a four-hour or "
+                            "daily chart the decision hour does not exist"),
     "expiry_gamma": (("H1",), "decides once a day at a broker decision HOUR; on a four-hour or "
                               "daily chart the decision hour does not exist"),
 }
