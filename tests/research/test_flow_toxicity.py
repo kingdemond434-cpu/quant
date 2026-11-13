@@ -66,7 +66,7 @@ def test_bvc_scales_each_bucket_by_earlier_buckets_only() -> None:
 
 
 def test_kyle_lambda_recovers_one_point_per_unit_flow() -> None:
-    agg = ft.bar_aggregates(_ticks(80_000), POINT, bucket_ticks=200)
+    agg = ft.bar_aggregates(_ticks(200_000), POINT, bucket_ticks=200)
     der = ft.derive(agg, POINT)
     lam = der["kyle_lambda"].dropna()
     assert len(lam) > 0
