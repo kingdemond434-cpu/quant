@@ -329,6 +329,8 @@ def _bracket_env(tmp_path, mt5):
                             "INTENTS": tmp_path / "intents.jsonl",
                             "_state_vector_id": lambda: "sv1", "_release_id": lambda: "rel1",
                             "entry_is_legal": lambda *a: (True, ""),
+                            # this venue's quote is fresh; the stale-quote gate is drilled
+                            "quote_age_s": lambda tick: 0.0, "STALE_QUOTE_S": 300,
                             "diagnose": lambda *a: "",
                             "_expiry_request": lambda *a, **k: {},
                             "_record_decision": lambda **row: decisions.append(row),

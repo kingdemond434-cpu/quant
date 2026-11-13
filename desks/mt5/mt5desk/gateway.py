@@ -3020,8 +3020,10 @@ def quote_age_s(tick: object) -> float | None:
 
 
 #: MT5 trade retcodes that mean the request was executed (wholly or in part):
-#: 10008 PLACED, 10009 DONE, 10010 DONE_PARTIAL -- `order_door.SUCCESS`.
-FILLED_RETCODES = frozenset(_door.SUCCESS)
+#: 10008 PLACED, 10009 DONE, 10010 DONE_PARTIAL -- `order_door.SUCCESS`, written as a literal so
+#: the test harnesses that exec gateway functions carry it (pinned equal to the door's set).
+FILLED_RETCODES = (10008, 10009, 10010)
+RETCODE_DONE_PARTIAL = 10010
 
 
 def scalp_fill(res: object, asked: float) -> tuple[float, float]:
@@ -3064,7 +3066,7 @@ def note_close_result(st: dict, p: object, res: object, what: str) -> float | No
         return None
     asked = float(getattr(p, "volume", 0.0) or 0.0)
     got = float(getattr(res, "volume", 0.0) or 0.0)
-    if rc != _door.RETCODE_DONE_PARTIAL and not (0.0 < got < asked - 1e-9):
+    if rc != RETCODE_DONE_PARTIAL and not (0.0 < got < asked - 1e-9):
         store.pop(key, None)
         return 0.0
     residual: float | None = None
