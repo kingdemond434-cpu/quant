@@ -1334,7 +1334,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
-                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
+                     "cost_construction", "swap_rejudge", "sge_premium", "ais_norway",
+                     "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
@@ -2273,6 +2274,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # Reads Norway's open AIS socket for --window-s 180, then rebuilds the daily series.
+    "ais_norway": 260,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -2477,6 +2480,8 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # that budget plus a minute of interpreter start and final write, so a priced-down hour can
     # never kill them before they publish -- which is how GAUNTLET_BACKPRESSURE went a week stale.
     "gauntlet_backpressure": 540,
+    # ais_norway's socket window is 180 s; a priced-down hour must not kill it mid-write.
+    "ais_norway": 240,
     "global_coverage_tensor": 600,
 }
 
@@ -5884,6 +5889,11 @@ def main() -> None:
     # chokepoints, India gold imports and the recorded SGE premium, each as a PIT series
     # through the axis door, the lake (exogenous_conditioner / alt conditioners) and
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
+    # NORWAY'S OPEN AIS STREAM (2026-11-13, NLOD 2.0): a bounded window of Kystverket's socket,
+    # tankers at Melkoya / Mongstad-Sture / Karsto / North Cape, rebuilt into a daily series
+    # BEFORE alt_proxies so its `no_ais_tankers` reader sees the day the pass just closed.
+    ais = _costed("ais_norway", lambda: _producer(
+        "ais_norway", "research/ais_norway.py", "--window-s", "180"))
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
@@ -6566,7 +6576,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
-                    "alt_proxies": alp,
+                    "alt_proxies": alp, "ais_norway": ais,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

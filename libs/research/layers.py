@@ -141,6 +141,7 @@ LEG_LAYER: dict[str, str] = {
     "swap_rejudge": "execution",
     "asia_plane": "information",
     "sge_premium": "information",
+    "ais_norway": "information",
     "asia_collector": "information",
     "asia_parser": "information",
     "index_discovery": "information",

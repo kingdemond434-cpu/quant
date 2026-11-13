@@ -179,6 +179,10 @@ class Paths:
         return self.desk / "data" / "lake" / "sge_premium.parquet"
 
     @property
+    def ais_norway(self) -> Path:
+        return self.desk / "data" / "lake" / "series" / "ais_norway.parquet"
+
+    @property
     def nlp_series(self) -> Path:
         """`nlp_event_factors` writes its per-country tagger panel here (nlp_events_<CC>)."""
         return self.series
@@ -594,6 +598,27 @@ def read_sge_premium(paths: Paths) -> list[Obs]:
                 out.append(Obs("premium_pct", pd.Timestamp(str(idx)).date(), x))
     return out
 
+
+
+def read_ais_norway(paths: Paths) -> list[Obs]:
+    """The daily tanker series `ais_norway` builds from Kystverket's open stream -- READ only."""
+    p = paths.ais_norway
+    if not p.exists():
+        return []
+    try:
+        import pandas as pd
+        df = pd.read_parquet(p)
+    except Exception:
+        return []
+    out: list[Obs] = []
+    for col in df.columns:
+        if col == "windows":
+            continue
+        for idx, v in df[col].items():
+            with contextlib.suppress(Exception):
+                if v == v:                                       # NaN is no observation
+                    out.append(Obs(str(col), pd.Timestamp(str(idx)).date(), float(v)))
+    return out
 
 
 # ============================================================================ paid substitutes
@@ -1949,6 +1974,35 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id="no_ais_tankers", name="Norway open AIS: tankers at Melkoya, Mongstad/Sture, Karsto, "
+                                  "North Cape",
+        url="file:data/lake/series/ais_norway.parquet", region="NO", language="en",
+        cadence="daily", parse=None, rule=_lag_rule(1, 0), transform="anomaly_daily",
+        instruments={"XBRUSD": -1, "XTIUSD": -1},
+        series_instruments={
+            "hammerfest_lng": {"XNGUSD": -1},
+            "karsto": {"XNGUSD": -1},
+            "mongstad_sture": {"XBRUSD": -1, "USDNOK": -1, "EURNOK": -1},
+            "north_cape": {"XBRUSD": -1, "XTIUSD": -1},
+            "stationary_offport": {"XBRUSD": 1, "XTIUSD": 1}},
+        signal_series=("hammerfest_lng_tankers", "mongstad_sture_tankers", "karsto_tankers",
+                       "north_cape_tankers", "stationary_offport_tankers"),
+        mechanism=("tankers loading at Norway's export terminals and Russian Arctic cargoes "
+                   "rounding the North Cape are physical crude and LNG supply counted by ship, "
+                   "days before Norwegian export statistics, Russian loading programmes or "
+                   "European storage data; tankers idling off-port are barrels not yet sold"),
+        payer=("crude, gas and NOK holders who price supply from monthly NPD/SSB prints, "
+               "Russian export estimates and weekly storage, not from the ships"),
+        constraint=("paid tanker trackers cost terminal-level subscriptions most macro books "
+                    "do not hold; the open stream needs a decoder nobody ships with a terminal"),
+        licence="Kystverket open AIS, NLOD 2.0 (any purpose incl. commercial, attribution)",
+        source_culture="NO/en", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when terminal maintenance (Melkoya outages, Sture "
+                                 "turnarounds) moves counts that the market already priced off "
+                                 "operator notices, or when AIS coverage drops"),
+        crowding_prior="low", note="no fetch: ais_norway samples the stream and records it",
+        reader=read_ais_norway),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2593,10 +2647,18 @@ TERMS: dict[str, tuple[str, str]] = {
                          "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
-    "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
-    "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
-                                  "ArcGIS API"),
+    # FAIL CLOSED 2026-11-13: two live IMF pages now disagree. external/terms.htm grants sale
+    # "including for commercial purposes"; en/About/copyright-and-terms says "For any potential
+    # commercial reuse of IMF Data, email copyright@imf.org to request permission" and prohibits
+    # "bulk download of information by automated technology without explicit permission".
+    # Neither says which controls and PortWatch carries no licence of its own.
+    "imf_portwatch_ports": ("to_confirm", "IMF terms pages conflict on commercial reuse and "
+                            "automated download (read 2026-11-13); written permission needed"),
+    "imf_portwatch_chokepoints": ("to_confirm", "IMF terms pages conflict on commercial reuse "
+                                  "and automated download (read 2026-11-13); written "
+                                  "permission needed"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
+    "no_ais_tankers": ("confirmed", "Kystverket open AIS, NLOD 2.0: any purpose, attribution"),
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
     "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
@@ -2671,19 +2733,29 @@ _ESTAT_API: dict[str, str] = {
                "functions from e-Stat, however its contents are not guaranteed by government."),
 }
 _IMF_EV: dict[str, str] = {
-    "terms_url": "https://www.imf.org/external/terms.htm",
-    "terms_quote": ("Users may download, extract, copy, create derivative works, publish, "
-                    "distribute, and sell Data obtained from IMF Sites, including for commercial "
-                    "purposes"),
+    "terms_url": "https://www.imf.org/en/About/copyright-and-terms",
+    "terms_quote": ("For any potential commercial reuse of IMF Data, email copyright@imf.org to "
+                    "request permission."),
+    "conflicting_terms_url": "https://www.imf.org/external/terms.htm",
+    "conflicting_terms_quote": ("Users may download, extract, copy, create derivative works, "
+                                "publish, distribute, and sell Data obtained from IMF Sites"),
+    "automated_quote": ("The IMF prohibits bulk download of information by automated "
+                        "technology without explicit permission"),
     "policy_url": "https://portwatch.imf.org/pages/data-and-methodology",
     "policy_quote": ("All data and content in the IMF PortWatch are provided by the IMF unless "
                      "mentioned otherwise."),
-    "judgement": ("PortWatch points to the IMF terms for copyright and usage; the live terms "
-                  "read 2026-09-30 grant commercial reuse (an older copy asked commercial users "
-                  "to email copyright@imf.org). Attribution required"),
+    "judgement": ("TO_CONFIRM. The 2026-09-30 read took external/terms.htm (sale allowed, "
+                  "commercial purposes included). The 2026-11-13 re-read found "
+                  "en/About/copyright-and-terms live as well, asking commercial users to email "
+                  "copyright@imf.org and prohibiting automated bulk download without "
+                  "permission. Neither page says which controls and PortWatch has no licence of "
+                  "its own, so the rows fail closed until the IMF answers in writing"),
     "robots": "services9.arcgis.com FeatureServer is PortWatch's documented ArcGIS API",
     "credit": "Source: International Monetary Fund (IMF PortWatch).",
-    "checked_at": _CHK,
+    "missed_growth": ("the daily Hormuz/Bab el-Mandeb tanker-transit and port-call series stop "
+                      "feeding cells until permission arrives; no_ais_tankers (NLOD) carries "
+                      "the northern tanker flows meanwhile"),
+    "checked_at": "2026-11-13",
 }
 _OI_EV: dict[str, str] = {
     "terms_url": "https://github.com/opportunityinsights/economictracker",
@@ -2918,6 +2990,22 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
     "imf_portwatch_ports": {**_IMF_EV},
     "imf_portwatch_chokepoints": {**_IMF_EV},
+    "no_ais_tankers": {
+        "terms_url": ("https://www.kystverket.no/en/sea-transport-and-ports/ais/"
+                      "access-to-ais-data/"),
+        "terms_quote": ("The data are free and universally accessible, and are regulated under "
+                        "the Norwegian Licence for Open Government Data (NLOD)."),
+        "licence_url": "https://data.norge.no/nlod/en/2.0/",
+        "licence_quote": ("The licensee, subject to the limitations that follow from this "
+                          "licence, may use the information for any purpose and in all "
+                          "contexts"),
+        "judgement": ("the open component needs no registration; the closed (registered, "
+                      "purpose-limited) component is not used. Read 2026-11-13"),
+        "robots": ("a raw TCP feed (153.44.253.27:5631), not HTTP; kystverket.no/robots.txt "
+                   "carries only a Sitemap line"),
+        "credit": ("Contains data under the Norwegian licence for Open Government data (NLOD) "
+                   "distributed by the Norwegian Coastal Administration."),
+        "checked_at": "2026-11-13"},
     "in_gold_imports": {
         "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
         "terms_quote": ("Material featured on this website may be reproduced free of charge and "
