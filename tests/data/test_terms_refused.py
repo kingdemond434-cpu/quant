@@ -80,14 +80,17 @@ def test_free_data_without_a_held_copy_goes_to_the_publisher_route(no_network, m
     assert F.fred_series("UNRATE") == {"route": "UNRATE"}
 
 
-def test_collector_writes_nothing_when_refused(no_network, monkeypatch, tmp_path,
-                                               capsys) -> None:
+def test_collector_never_fetches_fred_and_keeps_what_it_holds(no_network, monkeypatch,
+                                                               tmp_path, capsys) -> None:
     import collect_fred_macro as C
-    archive = tmp_path / "fred_macro.json"
+    archive, long_ = tmp_path / "fred_macro.json", tmp_path / "fred_macro_long.json"
     archive.write_text('{"held": true}', "utf-8")
+    monkeypatch.setattr(C, "_ROOT", tmp_path)
     monkeypatch.setattr(C, "_ARCHIVE", archive)
-    C.main()
-    assert archive.read_text("utf-8") == '{"held": true}'
+    monkeypatch.setattr(C, "_ARCHIVE_LONG", long_)
+    monkeypatch.setattr(C, "_WEB", tmp_path / "web.json")
+    C.main()                         # no network at all: no primary route, nothing held
+    assert archive.read_text("utf-8") == '{"held": true}' and not long_.exists()
     assert "BLOCKED_TERMS" in capsys.readouterr().out
 
 
