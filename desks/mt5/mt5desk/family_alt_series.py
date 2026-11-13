@@ -119,7 +119,8 @@ def family_alt_series_momentum(
 
 #: Families whose signals need an injected runtime input (mirrors family_exit_operated).
 _UNWRAPPABLE: frozenset[str] = frozenset({
-    "carry", "ensemble", "formula", "lead_lag", "style_premia", "relative_value",
+    "carry", "ensemble", "formula", "lead_lag", "release_lead_lag", "style_premia",
+    "relative_value",
     "cross_asset_residual", "pca_residual", "execution_state", "liquidity_regime",
     "orderflow_imbalance", "macro_conditional", "cot_positioning", "cot_net_fade",
     "cot_change_fade", "cot_change_momentum", "cot_comm_follow", "event_reaction",

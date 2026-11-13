@@ -238,7 +238,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             extra["drivers"] = drivers
             return extra, "ok"
 
-        if family == "lead_lag":
+        if family in {"lead_lag", "release_lead_lag"}:
             drv = call.get("driver_symbol")
             if not drv:
                 return None, "no driver_symbol on the candidate"

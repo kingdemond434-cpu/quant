@@ -89,6 +89,7 @@ RAW_COT_FAMILIES = ("cot_net_fade", "cot_change_fade", "cot_change_momentum", "c
 #: The sources `legacy_inputs` accepts for a raw-COT family; any other is its own refusal.
 RAW_COT_SOURCES = (None, "cftc_legacy", "cot_legacy", "raw_cot")
 PROBED: frozenset[str] = frozenset({*PEER_FAMILIES, *FACTOR_FAMILIES, "triangle", "lead_lag",
+                                    "release_lead_lag",
                                     "execution_state", "usd_session_shock", *RAW_COT_FAMILIES})
 #: Bank reasons the probe may restate with the exact input: the judge's own generic build failure
 #: and its own earlier naming. Every other reason in the bank is the judge's word and stands.
@@ -218,7 +219,7 @@ def missing_inputs(ctx: _Pass, sym: str, family: str, params: dict[str, Any],
         if any(not isinstance(leg, str) or not leg.strip() for leg in legs):
             return None
         return [i for i in (ctx.bars_item(str(leg), tf) for leg in legs) if i]
-    if family == "lead_lag":
+    if family in {"lead_lag", "release_lead_lag"}:
         driver = params.get("driver_symbol")
         if not isinstance(driver, str) or not driver.strip():
             return None

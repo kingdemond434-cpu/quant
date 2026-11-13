@@ -436,11 +436,28 @@ def generate_component_hypotheses(components: list[StrategyComponent]) -> list[d
 #      `libs.moat.registry.enqueue_candidate` (origin `component_harvest`, parent = the rejected
 #      cell). Only parameters the family's own signature accepts are set; a family with no
 #      time-exit parameter is reported NO_TIME_EXIT_PARAM, never forced.
-#   5. LEDGER. Every component verdict is appended to
-#      data/intelligence/component_harvest/component_ledger.jsonl; the pass writes
-#      COMPONENT_HARVEST.json. A rejected cell is examined once in its life (state cursor).
+#   5. LEDGER. Every component verdict is appended to data/component_harvest/component_ledger.jsonl
+#      (gitignored, OUTSIDE data/intelligence so the compiler can never read rejected params as a
+#      donation -- Auditor HOLD on #1146, MF4); the pass writes reports/COMPONENT_HARVEST.json. A
+#      rejected cell is examined once in its life: the registry is walked by rowid with a cursor,
+#      so the walk never stalls on a top-N (SF1).
 #
-# Clock: hourly leg `component_harvest` (research/hourly_cycle.py).
+# WHAT THE AUDITOR HELD AND HOW IT IS PAID (HOLD on #1146, MF1, 2026-11-13):
+#   * THE SCREEN NEVER SEES THE LOCKBOX. Every screen reads only the bars dated before the
+#      screen cut: the last SCREEN_HOLDOUT of the symbol's calendar (twice the gauntlet's own
+#      lockbox fraction, so the cut sits before the gauntlet's union-calendar cut on any cell
+#      whose history is not more than twice as long as the shortest) is never read here.
+#   * THE SEARCH IS CHARGED. A re-mate carries `claim_family = harvest:<parent>` and
+#      `claim_selection_trials = screened looks this pass (cells x horizons) + the parent's own
+#      search_count`, in its lineage (lifted onto the docket row by `libs.moat.docket_feed`) and in
+#      the lifetime claim ledger (`libs.research.claim_selection`), so the screen AND the parent's
+#      trials are paid on top of the Judge's own charge.
+#   * NO HARVEST OF A HARVEST: a component_harvest / component_remate row is never re-screened.
+#   * LANE ROUTING FIRST: `universe_policy.may_hypothesise(symbol, family)` runs before every
+#      enqueue; a cell the routing sets aside is reported LANE_SET_ASIDE, never enqueued.
+#   * The parent's entry-timing keys (wait_bars, cooldown_bars) ride onto every re-mate (SF5).
+#
+# Clock: hourly leg `component_harvest` (research/hourly_cycle.py), 240 s.
 # =============================================================================================
 
 import inspect
@@ -449,10 +466,12 @@ import time
 import numpy as np
 
 _DESK = Path(__file__).resolve().parents[3]
-HARVEST_DIR = DATA_DIR / "component_harvest"
+HARVEST_DIR = _DESK / "data" / "component_harvest"
 STATE_P = HARVEST_DIR / "state.json"
 LEDGER_P = HARVEST_DIR / "component_ledger.jsonl"
-REPORT_P = HARVEST_DIR / "COMPONENT_HARVEST.json"
+REPORT_P = _DESK / "reports" / "COMPONENT_HARVEST.json"
+#: Origins a harvest never re-screens.
+HARVEST_ORIGINS = ("component_harvest",)
 
 HORIZONS = (1, 3, 6, 12, 24)
 IS_SHARE = 0.70
@@ -461,6 +480,27 @@ MIN_OOS = 20
 WIDE_STOP_ATR = 4.0
 NO_TARGET_RR = 50.0
 PER_PASS = 200
+#: Entry-timing keys a re-mate inherits unchanged (they gate WHEN the entry fires, not the exit).
+_TIMING_KEYS = ("wait_bars", "cooldown_bars")
+
+
+def _screen_holdout() -> float:
+    try:
+        from research.gate_policy import LOCKBOX_FRAC
+        return min(0.5, 2.0 * float(LOCKBOX_FRAC))
+    except Exception:
+        return 0.4
+
+
+SCREEN_HOLDOUT = _screen_holdout()
+
+
+def screen_cut(bars: pd.DataFrame) -> pd.Timestamp | None:
+    """The first calendar day the screen may NOT read: the last SCREEN_HOLDOUT of the dates."""
+    days = pd.DatetimeIndex(bars.index).normalize().unique().sort_values()
+    if len(days) < 10:
+        return None
+    return days[int(len(days) * (1.0 - SCREEN_HOLDOUT))]
 
 _EXIT_KEYS = {"rr", "ttl_bars", "hold_bars", "bank_frac", "bank_protect_k", "runner_trail_k",
               "target_atr", "tp_atr", "exit_bars", "max_hold", "wait_bars", "cooldown_bars"}
@@ -619,7 +659,8 @@ def remate(family: str, params: dict[str, Any], h: int) -> list[dict[str, Any]]:
     if not time_keys:
         return []
     parts = decompose(params)
-    base = {**parts["entry"], **parts["session"], **parts["regime"]}
+    base = {**parts["entry"], **parts["session"], **parts["regime"],
+            **{k: v for k, v in parts["exit"].items() if k.lower() in _TIMING_KEYS}}
     exit_ = {k: int(h) for k in time_keys}
     if "rr" in sig:
         exit_["rr"] = NO_TARGET_RR
@@ -633,33 +674,64 @@ def remate(family: str, params: dict[str, Any], h: int) -> list[dict[str, Any]]:
     return out
 
 
-def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
+def _rejected_after(cursor: int, limit: int) -> list[dict[str, Any]]:
+    """Rejected registry cells after `cursor` (rowid), oldest first, harvest children excluded."""
+    from libs.moat import registry as reg
+    c = reg.connect()
+    try:
+        q = ("SELECT rowid AS _rowid, * FROM research_candidates WHERE status='rejected' "
+             "AND rowid > ? AND COALESCE(origin, '') NOT IN ({}) "
+             "AND COALESCE(transformation, '') != 'component_remate' "
+             "ORDER BY rowid LIMIT ?").format(",".join("?" * len(HARVEST_ORIGINS)))
+        cur = c.execute(q, [int(cursor), *HARVEST_ORIGINS, int(limit)])
+        cols = [d[0] for d in cur.description]
+        return [dict(zip(cols, r, strict=False)) for r in cur.fetchall()]
+    finally:
+        c.close()
+
+
+def _may_hypothesise(symbol: str, family: str) -> bool:
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        return False                                  # routing unknown: fail closed
+    try:
+        return bool(may_hypothesise(symbol, family))
+    except Exception:
+        return False
+
+
+def harvest_pass(*, budget_s: float = 240.0, per_pass: int = PER_PASS,
                  rejected: list[dict[str, Any]] | None = None,
                  bars_for: Any = None, enqueue: Any = None, write: bool = True,
-                 out_dir: Path | None = None,
-                 claim_ledger: Path | None = None) -> dict[str, Any]:
+                 out_dir: Path | None = None, report_path: Path | None = None,
+                 claim_ledger: Path | None = None, lane_ok: Any = None) -> dict[str, Any]:
     """One hourly pass over rejected cells not yet examined.
 
-    EVERY LOOK IS CHARGED AS A TRIAL (multiple testing). Each examined cell is one claim family
-    `harvest:<parent id>` in the lifetime ledger (`libs.research.claim_selection`) charged
-    `len(HORIZONS)` markouts for the horizon search, plus one per re-mate it minted -- whether
-    or not it was harvested, because the screen that drops a cell spent those trials too. Each
-    re-mate also carries the charge in its `lineage_json`, and its docket row is an ordinary
-    Judge trial under the parent's family on top."""
+    Screens each cell on the bars before its screen cut only; enqueues re-mates AFTER the pass,
+    each charged the whole pass's screen plus its parent's own trials (see the section note)."""
     t_end = time.monotonic() + budget_s
     od = out_dir or HARVEST_DIR
     try:
         st = json.loads((od / STATE_P.name).read_text("utf-8"))
     except (OSError, ValueError):
         st = {}
-    seen = set(st.get("seen") or [])
+    cursor = int(st.get("cursor_rowid") or 0)
+    seen = list(st.get("seen_injected") or [])
+    seen_set = set(seen)
+    tally: dict[str, int] = defaultdict(int)
     if rejected is None:
         try:
-            from libs.moat import registry as reg
-            rejected = reg.candidates(status="rejected", limit=max(per_pass * 20, 4000))
+            todo = _rejected_after(cursor, per_pass)
         except Exception as exc:
-            rejected = []
+            todo = []
             st["registry_error"] = type(exc).__name__
+        held = len(todo)
+    else:
+        todo = [r for r in rejected if str(r.get("id")) not in seen_set
+                and str(r.get("origin") or "") not in HARVEST_ORIGINS
+                and str(r.get("transformation") or "") != "component_remate"][:per_pass]
+        held = len(rejected)
     if bars_for is None:
         from research.orthogonal_sweep import _bars
         bars_for = _bars
@@ -668,39 +740,47 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
             from libs.moat.registry import enqueue_candidate as enqueue
         except Exception:
             enqueue = None
-    tally: dict[str, int] = defaultdict(int)
+    lane_ok = lane_ok or _may_hypothesise
     ledger: list[dict[str, Any]] = []
-    donated = 0
-    charges: dict[str, dict[str, Any]] = {}
-    todo = [r for r in rejected if str(r.get("id")) not in seen][:per_pass]
+    pending: list[tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]] = []
+    looks = 0
     for r in todo:
         if time.monotonic() > t_end:
             tally["deferred_budget"] += 1
-            continue
+            break
         cid, fam, sym = str(r.get("id")), str(r.get("family") or ""), str(r.get("symbol") or "")
         chart = str(r.get("chart") or "H1") or "H1"
+        if rejected is None:
+            cursor = max(cursor, int(r.get("_rowid") or 0))
+        else:
+            seen.append(cid)
+            seen_set.add(cid)
         try:
             params = json.loads(r.get("params_json") or "{}") if isinstance(
                 r.get("params_json"), str) else dict(r.get("params_json") or {})
         except ValueError:
             params = {}
-        seen.add(cid)
         bars = bars_for(sym, chart)
         if bars is None or len(bars) < 300 or not {"open", "high", "low", "close"} <= set(
                 bars.columns):
             tally["no_bars"] += 1
             continue
-        sigs, why = _build(fam, sym, params, bars)
+        cut = screen_cut(bars)
+        if cut is None:
+            tally["no_bars"] += 1
+            continue
+        screen = bars[pd.DatetimeIndex(bars.index).normalize() < cut]
+        if len(screen) < 300:
+            tally["screen_too_short"] += 1
+            continue
+        sigs, why = _build(fam, sym, params, screen)
         if sigs is None or not sigs:
             tally["unbuildable" if sigs is None else "no_signals"] += 1
             continue
         parts = decompose(params)
-        em = entry_markout(bars, sigs, sym)
-        claim = f"harvest:{cid}"
-        charge = charges.setdefault(claim, {"cells": 0, "selection_trials": len(HORIZONS),
-                                            "sources": ["miner:component_harvest"],
-                                            "families": [fam], "genome_ids": []})
-        own = own_exit_returns(bars, sigs, sym)
+        em = entry_markout(screen, sigs, sym)
+        looks += len(HORIZONS)
+        own = own_exit_returns(screen, sigs, sym)
         split = int(len(own) * IS_SHARE)
         own_oos = own[split:]
         exit_verdict = "UNMEASURED"
@@ -715,50 +795,69 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
                "terminal_gate": r.get("terminal_gate"), "failure_class": r.get("failure_class"),
                "components": parts, "entry": em, "exit_verdict": exit_verdict,
                "own_exit_oos_mean": float(np.mean(own_oos)) if len(own_oos) else None,
-               "at": datetime.now(UTC).isoformat()}
+               "screen_cut": str(cut.date()), "at": datetime.now(UTC).isoformat()}
         tally[em.get("status", "UNMEASURED")] += 1
         tally[exit_verdict] += 1
         if em.get("harvest"):
             recipes = remate(fam, params, int(em["h_star"]))
             if not recipes:
                 tally["NO_TIME_EXIT_PARAM"] += 1
-            row["remated"] = []
-            charge["selection_trials"] = len(HORIZONS) + len(recipes)
-            for p in recipes:
-                if enqueue is None:
-                    break
-                b = em["by_h"][em["h_star"]]
-                mech = (f"component harvest: the ENTRY of rejected cell {cid} ({fam} on {sym} "
-                        f"{chart}) carries information alone -- {em['h_star']}-bar markout net of "
-                        f"spread IS t={b['is_t']:.2f}, OOS t={b['oos_t']:.2f} over "
-                        f"{b['oos_n']} declustered signals -- while its own exit was "
-                        f"{exit_verdict}. Re-mated with a time exit at the in-sample horizon.")
-                try:
-                    new_id, created = enqueue(
-                        family=fam, symbol=sym, params=p, origin="component_harvest",
-                        mechanism=mech, chart=chart, horizon=str(em["h_star"]),
-                        generator="component_harvesting", department="research",
-                        transformation="component_remate", parent_ids_json=[cid],
-                        lineage_json={"parent_ids": [cid], "parent_family": fam,
-                                      "claim_family": claim,
-                                      "claim_selection_trials": charge["selection_trials"],
-                                      "h_star": int(em["h_star"]),
-                                      "producer": "component_harvest"},
-                        causal_rationale=mech, pit_status="BARS_ONLY",
-                        falsifier=(f"the re-mated rule loses its edge out of sample, or the "
-                                   f"entry's {em['h_star']}-bar markout falls below 0 net of "
-                                   f"spread"))
-                    row["remated"].append({"id": new_id, "created": bool(created),
-                                           "params": p})
-                    donated += int(bool(created))
+            elif not lane_ok(sym, fam):
+                tally["LANE_SET_ASIDE"] += 1
+                row["lane"] = "SET_ASIDE"
+            else:
+                pending.append((r, row, recipes))
+        ledger.append(row)
+
+    # THE BILL: every look this pass, plus each parent's own trials, charged to each child family.
+    charges: dict[str, dict[str, Any]] = {}
+    donated = 0
+    for r, row, recipes in pending:
+        cid, fam, sym, chart = row["candidate"], row["family"], row["symbol"], row["chart"]
+        em = row["entry"]
+        parent_trials = max(1, int(r.get("search_count") or 1))
+        n_charge = looks + parent_trials + len(recipes)
+        claim = f"harvest:{cid}"
+        charge = charges.setdefault(claim, {"cells": 0, "selection_trials": n_charge,
+                                            "sources": ["miner:component_harvest"],
+                                            "families": [fam], "genome_ids": []})
+        row["trial_charge"] = {"claim_family": claim, "selection_trials": n_charge,
+                               "screen_looks": looks, "parent_trials": parent_trials}
+        row["remated"] = []
+        if enqueue is None:
+            continue
+        b = em["by_h"][em["h_star"]]
+        mech = (f"component harvest: the ENTRY of rejected cell {cid} ({fam} on {sym} {chart}) "
+                f"carries information alone -- {em['h_star']}-bar markout net of spread IS "
+                f"t={b['is_t']:.2f}, OOS t={b['oos_t']:.2f} over {b['oos_n']} declustered "
+                f"signals, screened before {row['screen_cut']} only -- while its own exit was "
+                f"{row['exit_verdict']}. Re-mated with a time exit at the in-sample horizon; "
+                f"charged {n_charge} selection trials ({looks} screen looks this pass + "
+                f"{parent_trials} parent trials + {len(recipes)} re-mates).")
+        for p in recipes:
+            try:
+                new_id, created = enqueue(
+                    family=fam, symbol=sym, params=p, origin="component_harvest",
+                    mechanism=mech, chart=chart, horizon=str(em["h_star"]),
+                    generator="component_harvesting", department="research",
+                    transformation="component_remate", parent_ids_json=[cid],
+                    lineage_json={"parent_ids": [cid], "parent_family": fam,
+                                  "claim_family": claim, "claim_selection_trials": n_charge,
+                                  "screen_looks": looks, "parent_trials": parent_trials,
+                                  "screen_cut": row["screen_cut"], "h_star": int(em["h_star"]),
+                                  "producer": "component_harvest"},
+                    causal_rationale=mech, pit_status="BARS_ONLY",
+                    falsifier=(f"the re-mated rule loses its edge out of sample, or the "
+                               f"entry's {em['h_star']}-bar markout falls below 0 net of "
+                               f"spread"))
+                row["remated"].append({"id": new_id, "created": bool(created), "params": p})
+                if created:
+                    donated += 1
                     charge["cells"] += 1
                     charge["genome_ids"].append(str(new_id))
-                except Exception as exc:
-                    row.setdefault("enqueue_errors", []).append(type(exc).__name__)
-        row["trial_charge"] = {"claim_family": claim,
-                               "selection_trials": charge["selection_trials"]}
-        ledger.append(row)
-    charged: dict[str, Any] = {"families": len(charges),
+            except Exception as exc:
+                row.setdefault("enqueue_errors", []).append(type(exc).__name__)
+    charged: dict[str, Any] = {"families": len(charges), "screen_looks": looks,
                                "selection_trials": sum(int(c["selection_trials"])
                                                        for c in charges.values())}
     if charges and write:
@@ -771,23 +870,27 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
             charged["error"] = type(exc).__name__
             tally["TRIALS_UNCHARGED"] += len(charges)
     doc = {"generated_utc": datetime.now(UTC).isoformat(),
-           "rejected_held": len(rejected), "examined_this_pass": len(ledger),
-           "examined_total": len(seen), "tally": dict(tally), "donated_to_judge": donated,
+           "rejected_held": held, "examined_this_pass": len(ledger),
+           "cursor_rowid": cursor, "tally": dict(tally), "donated_to_judge": donated,
            "trials_charged": charged,
            "rules": {"horizons": list(HORIZONS), "is_share": IS_SHARE, "min_t": MIN_T,
-                     "min_oos": MIN_OOS, "wide_stop_atr": WIDE_STOP_ATR},
+                     "min_oos": MIN_OOS, "wide_stop_atr": WIDE_STOP_ATR,
+                     "screen_holdout": SCREEN_HOLDOUT},
            "external_ea_components": ("UNMEASURED: no parsed external EA corpus is held; the "
                                       "ComponentExtractor runs when one is"),
            "state": ("PRODUCING" if donated else "EXAMINING" if ledger else
-                     "UNMEASURED: no rejected cells reachable" if not rejected else "IDLE")}
+                     "UNMEASURED: no rejected cells reachable" if not held else "IDLE")}
     if write:
         od.mkdir(parents=True, exist_ok=True)
-        (od / STATE_P.name).write_text(json.dumps({"seen": sorted(seen)}), encoding="utf-8")
+        (od / STATE_P.name).write_text(json.dumps({"cursor_rowid": cursor,
+                                                   "seen_injected": seen[-50000:]}),
+                                       encoding="utf-8")
         with open(od / LEDGER_P.name, "a", encoding="utf-8") as fh:
             for row in ledger:
                 fh.write(json.dumps(row, default=str) + "\n")
-        (od / REPORT_P.name).write_text(json.dumps(doc, indent=1, default=str),
-                                        encoding="utf-8")
+        rp = report_path or (od / REPORT_P.name if out_dir is not None else REPORT_P)
+        rp.parent.mkdir(parents=True, exist_ok=True)
+        rp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     return doc
 
 
@@ -797,7 +900,7 @@ def main(argv: list[str] | None = None) -> int:
         if p not in __import__("sys").path:
             __import__("sys").path.insert(0, p)
     ap = argparse.ArgumentParser(description="Harvest informative entries from rejected cells")
-    ap.add_argument("--budget-s", type=float, default=600.0)
+    ap.add_argument("--budget-s", type=float, default=240.0)
     ap.add_argument("--per-pass", type=int, default=PER_PASS)
     a = ap.parse_args(argv)
     doc = harvest_pass(budget_s=a.budget_s, per_pass=a.per_pass)

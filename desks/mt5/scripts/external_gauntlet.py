@@ -642,7 +642,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         # store and same chart as the peer and factor branches above; `driver_symbol` stays on
         # the call because the family takes it (it names the driver in the signal tag), and a
         # named driver with no bars is a failed build, never a silent zero.
-        elif family == "lead_lag":
+        elif family in {"lead_lag", "release_lead_lag"}:
             driver_symbol = call_params.get("driver_symbol")
             if not driver_symbol:
                 return _build_failed("lead_lag: no driver_symbol on the cell")

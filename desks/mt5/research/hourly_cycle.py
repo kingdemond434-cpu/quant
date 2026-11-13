@@ -2084,8 +2084,8 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
 LEG_BUDGET_SEC: dict[str, int] = {
     # The two discovery organs stop themselves at --budget-s 540 and write their reports; the
     # cap sits above so the report is never cut off.
-    "leadership_atlas": 660,
-    "component_harvest": 660,
+    "leadership_atlas": 300,
+    "component_harvest": 300,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -6181,20 +6181,22 @@ def main() -> None:
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
     # THE LEADERSHIP ATLAS (2026-11-13): who moves first on each scheduled release. Reads the
-    # release instants in data/calendar_backfill/ and each watched symbol's own tick tape (broker
+    # release instants (mt5desk.release_calendar) and each watched symbol's own tick tape (broker
     # time -> true UTC), keeps signed lags per (leader, follower, event, regime), and donates the
-    # decisive edges as lead-lag anomaly rows the candidate compiler turns into exact
-    # family_lead_lag recipes. Information layer. After futures_state, which refreshes the
-    # calendar backfill it reads.
+    # edges that survive Benjamini-Hochberg over every key held as release_lead_lag rows the
+    # compiler maps to exact family_release_lead_lag recipes (event, regime and chart on the
+    # recipe). Information layer. After futures_state, which refreshes the calendar it reads.
+    # 240 s each (Auditor SF7: the pair must not cost 22 minutes of the hour).
     lat = _costed("leadership_atlas", lambda: _producer(
-        "leadership_atlas", "side_channels/leadership_atlas_miner.py", "--budget-s", "540"))
+        "leadership_atlas", "side_channels/leadership_atlas_miner.py", "--budget-s", "240"))
     # COMPONENT HARVEST (2026-11-13): every gauntlet-REJECTED recipe split into entry / stop /
-    # exit / session / regime; the entry is scored alone (in-sample horizon, one out-of-sample
-    # test), the recipe's own exit replayed against it, and an informative entry re-mated with a
-    # time exit is enqueued for the Judge with its parent. Prediction layer: it claims returns.
+    # exit / session / regime; the entry is scored alone on the bars BEFORE the lockbox only, the
+    # recipe's own exit replayed against it, and an informative entry re-mated with a time exit is
+    # enqueued for the Judge with its parent, charged the pass's whole screen plus the parent's
+    # trials. Prediction layer: it claims returns.
     chv = _costed("component_harvest", lambda: _producer(
         "component_harvest", "side_channels/sources/strategy/component_harvesting.py",
-        "--budget-s", "540"))
+        "--budget-s", "240"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
