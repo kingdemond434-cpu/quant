@@ -577,6 +577,15 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
             row = {**row, "max_seconds": max(5.0, min(float(row.get("max_seconds") or 150),
                                                       budget_s - spent - 30.0))}
         h, extra = run_source(row, store, fetch, st, now)
+        refused_n = int(h.failures.get(fs.ROBOTS_REFUSED, 0))
+        if refused_n and h.status != "OK":
+            # A SITE THAT REFUSES THE HONEST AGENT IS A VERDICT, NOT A FAILURE TO ROUTE AROUND.
+            # Since the UA stopped impersonating a browser (2026-11-11) some hosts say no; the
+            # source reads REFUSED_BY_ROBOTS with the host's own answer, and nothing retries it
+            # under another identity.
+            h.status = "REFUSED_BY_ROBOTS"
+            h.detail = (f"{refused_n} request(s) refused by robots.txt for our agent: "
+                        + "; ".join(n for n in h.notes if n.startswith(fs.ROBOTS_REFUSED))[:300])
         secs = round(time.monotonic() - s0, 2)
         cad = CADENCE_H.get(str(row.get("cadence")), 24.0)
         st["attempts"] = int(st.get("attempts") or 0) + 1
@@ -671,6 +680,10 @@ def build_report(rows: list[dict[str, Any]], complaints: list[str], cursor: dict
             "ran_this_pass": [{k: v for k, v in r.items() if k != "notes"} | {
                 "notes": r.get("notes", [])[-3:]} for r in ran],
             "allocation_state": {"artifact": str(store.alt_state), **alloc},
+            "user_agent": fs.UA,
+            "refused_by_robots": sorted(k for k, v in per.items()
+                                        if v["status"] == "REFUSED_BY_ROBOTS"),
+            "robots_consulted": dict(fs.GATE.consulted),
             "per_source": per,
             "rule": ("a source that never ran is UNMEASURED, never 0; yields are counted from "
                      "live runs only (tests run on recorded fixtures and never write here)")}
