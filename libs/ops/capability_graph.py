@@ -111,7 +111,8 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/intelligence/", "desks/mt5/reports/universal_gates_external.json")),
     Node("deepening_worker", "desks/mt5/research/deepening_worker.py",
          writes=("desks/mt5/data/hypotheses/deepening_worked.jsonl",
-                 "desks/mt5/data/hypotheses/deepened_candidates.json"),
+                 "desks/mt5/data/hypotheses/deepened_candidates.json",
+                 "desks/mt5/reports/DEEPENING_BACKLOG.json"),   # BACKLOG, deepening_worker.py:127
          reads=("desks/mt5/data/hypotheses/miner_deepening_queue.json",
                 "desks/mt5/data/hypothesis_graph.jsonl")),
     Node("factor_residual_engine", "desks/mt5/research/factor_residual_engine.py",
@@ -810,8 +811,21 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/session_capital.json",)),
     Node("timeframe_coverage", "desks/mt5/scripts/check_timeframe_coverage.py",
          writes=("desks/mt5/reports/TIMEFRAME_COVERAGE.json",)),
+    # The crawler's pages land in data/intelligence/world/ (WORLD, world_crawler.py:57), which the
+    # compiler reads; declaring only the report hid that edge and left the debt seeds advisory.
     Node("world_crawler", "desks/mt5/side_channels/world_crawler.py",
-         writes=("desks/mt5/reports/world_crawl.json",)),
+         writes=("desks/mt5/reports/world_crawl.json", "desks/mt5/data/intelligence/"),
+         reads=("desks/mt5/data/hypotheses/conversion_debt_seeds.json",)),
+    Node("conversion_debt", "desks/mt5/research/conversion_debt.py",
+         writes=("desks/mt5/reports/CONVERSION_DEBT.json",
+                 "desks/mt5/data/hypotheses/conversion_debt_seeds.json"),
+         reads=("desks/mt5/data/hypotheses/miner_deepening_queue.json",
+                "desks/mt5/data/hypotheses/deepening_worked.jsonl",
+                "desks/mt5/reports/DEEPENING_BACKLOG.json"),
+         # Its only decision edge is the recapture seeds the world crawler fetches, whose pages
+         # the compiler turns into candidates; price it through that compiler, as with
+         # alpha_registry and intake_catchup. No downstream evidence stays UNMEASURED.
+         billed_as=("miner_candidate_compiler",)),
     # ---------------------------------------------------------------------------------
     # DECLARED 2026-09-15, because a leg that declares nothing cannot be checked for
     # completion by anything -- which is how a leg returning exit 1 every hour went six days
@@ -933,6 +947,9 @@ HUMAN_READ = frozenset({
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
+    # Conversion debt's census. Its decision edge is conversion_debt_seeds.json, which the world
+    # crawler reads (declared on both nodes); the report is how a person reads what is undriven.
+    "desks/mt5/reports/CONVERSION_DEBT.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable

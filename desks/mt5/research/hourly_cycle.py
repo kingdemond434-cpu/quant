@@ -1253,6 +1253,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "registry_sync",
     # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
     "research_debt",
+    # WHAT EVERY UNCONVERTED MINED ROW NEEDS (N3): a streamed ledger read and two small files.
+    "conversion_debt",
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
@@ -1457,7 +1459,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
-                     "research_debt", "paradigm_router", "meta_controller", "research_bandit",
+                     "research_debt", "conversion_debt", "paradigm_router", "meta_controller",
+                     "research_bandit",
                      "ingestion_exploitation", "forest_attempts",
                      "coverage_tensor", "regional_parity", "global_coverage_tensor",
                      "research_evolution",
@@ -2352,6 +2355,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
     # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
     "conversion_funnel": 330,
+    # Conversion debt stops itself at --budget-s 240 (a streamed read of the deepening worker's
+    # ledger, the queue and the crawler's frontier); the cap sits above its own budget.
+    "conversion_debt": 330,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -4770,6 +4776,12 @@ def main() -> None:
         "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
+    # CONVERSION DEBT (ownership row N3, 2026-11-10). The compiler and the deepening worker name
+    # why each mined row did not convert; this types that as NEEDS_DATA / NEEDS_RULE / NEEDS_PIT
+    # per source and hands the fetchable part to the world crawler as recapture seeds (hosts its
+    # frontier already holds). The crawler leg runs later in this pass and reads the file.
+    cdb = _costed("conversion_debt", lambda: _producer(
+        "conversion_debt", "research/conversion_debt.py", "--budget-s", "240"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
     # seat row, claim, axis series, tape day, bar file, sleeve ledger, normalised document --
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
@@ -6487,7 +6499,7 @@ def main() -> None:
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
-                    "research_debt": rdb,
+                    "research_debt": rdb, "conversion_debt": cdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,

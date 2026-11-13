@@ -373,6 +373,9 @@ LEG_LAYER: dict[str, str] = {
     # in information. The ROI reallocator is the machine spending on itself: meta.
     "evidence_router": "information", "research_roi": "meta",
     "research_debt": "meta", "mining_objective": "meta", "research_gap_map": "meta",
+    # CONVERSION DEBT reads what the compiler and the deepening worker already decided and tells
+    # the crawler which addresses to fetch again: the machine steering its own intake.
+    "conversion_debt": "meta",
     # THE IMPLEMENTER. Meta, not governance: it spends the hour deciding what the desk's own
     # recommendations become, which is the machine acting on the machine. An hour here buys no
     # new hypothesis and is not meant to -- it buys the removal of open rows that name no owner.

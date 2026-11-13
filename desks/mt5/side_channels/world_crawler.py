@@ -939,10 +939,52 @@ def paid_substitute_seeds() -> tuple[str, ...]:
     return tuple(str(u) for u in (urls or []) if str(u).startswith(("http://", "https://")))
 
 
+#: Recapture addresses taken from the conversion debt per run. Small against DEFAULT_FETCHES on
+#: purpose: the debt is one input to the frontier, and `wf.due()` still decides what is fetched.
+DEBT_SEEDS_PER_RUN = 50
+
+
+def conversion_debt_seeds(sources: dict[str, wf.Source]) -> tuple[str, ...]:
+    """Addresses of mined rows that had NOTHING TO READ, offered back for a real fetch.
+
+    `research/conversion_debt.py` writes data/hypotheses/conversion_debt_seeds.json hourly from
+    the rows the compiler labelled EMPTY_CAPTURE and the deepening worker refused as
+    REFUSED_NO_BODY_CAPTURED ("re-fetch the page body -- this is a COLLECTOR defect"). Until
+    this function nothing read that remedy.
+
+    ONLY ON HOSTS THIS FRONTIER ALREADY HOLDS, and never past the frontier cap: the debt may
+    deepen ground the crawler works, it may not add a host. Oldest debt first, at most
+    DEBT_SEEDS_PER_RUN new addresses a run. Absent or unreadable: no seeds, and the crawl runs.
+    """
+    try:
+        doc = json.loads((BASE / "data" / "hypotheses" / "conversion_debt_seeds.json")
+                         .read_text("utf-8"))
+    except (OSError, ValueError):
+        return ()
+    urls = doc.get("urls") if isinstance(doc, dict) else None
+    if not isinstance(urls, list):
+        return ()
+    hosts = {s.host for s in sources.values()}
+    room = min(DEBT_SEEDS_PER_RUN, max(0, MAX_FRONTIER - len(sources)))
+    out: list[str] = []
+    for u in urls:
+        if len(out) >= room:
+            break
+        url = str(u).split("#")[0].strip()
+        if (url.startswith(("http://", "https://")) and url not in sources and url not in out
+                and urlparse(url).netloc.lower() in hosts):
+            out.append(url)
+    return tuple(out)
+
+
 def seed(sources: dict[str, wf.Source]) -> int:
     added = 0
     for url in (*SEEDS, *frontier_seeds(), *paid_substitute_seeds()):
         if wf.add(sources, url, via="seed"):
+            added += 1
+    # AFTER the hubs, so the host test sees them: a debt row on a seeded hub's host is routable.
+    for url in conversion_debt_seeds(sources):
+        if wf.add(sources, url, via="conversion_debt"):
             added += 1
     return added
 
