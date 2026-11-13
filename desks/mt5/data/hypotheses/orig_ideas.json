@@ -195,10 +195,11 @@
     "survival_hazard",
     "change_point"
    ],
-   "mechanism": "CFTC managed-money gold futures+options weekly net change at a top/bottom-decile extreme prints Friday 15:30 ET after the US close, so the first liquid reaction is the Monday Asia open: slow diffusion of COT information (Asia drift continues in the COT-delta direction after costs) against weekend-news gap against thin-Asia gap reversal. Separating test: holiday-shifted and shutdown-delayed release weeks (cot_usable_index) must move the reaction to the actual release time if it is COT information; weekend news would not move. Point-in-time on the release timestamp; pre-Aug history only until the COT refresher lands",
+   "mechanism": "CFTC managed-money gold futures+options weekly net change at a top/bottom-decile extreme prints Friday 15:30 ET, about 90 minutes before the 17:00 ET weekly close, so the reaction can start Friday afternoon and the first full session after it is the Monday Asia open: slow diffusion of COT information (Asia drift continues in the COT-delta direction after costs) against a Friday 15:30-17:00 ET reaction that is already priced by Monday, against weekend-news gap against thin-Asia gap reversal. Separating test: holiday-shifted and shutdown-delayed release weeks (cot_usable_index) must move the reaction to the actual release time if it is COT information; weekend news would not move. Point-in-time on the release timestamp; pre-Aug history only until the COT refresher lands. Check: measure the Friday 15:30-17:00 ET move separately and count only Monday-Asia drift beyond it",
    "falsifier": "Monday Asia XAUUSD drift after costs is the same in extreme-delta weeks and non-extreme weeks, or the reaction does not follow the shifted release time",
    "competing_explanations": [
     "slow diffusion of COT information",
+    "Friday 15:30-17:00 ET reaction before the weekly close",
     "weekend-news gap",
     "thin-Asia gap reversal"
    ],
