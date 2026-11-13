@@ -127,3 +127,10 @@ def test_shipped_policy_refuses_exotics_without_a_fresh_verdict(tmp_path: Path,
     assert "UNMEASURED" in str(lp.refuse({"symbol": "USDNOK",
                                           "name": "usdnok_carry_asia_p_ff35bb7c8427d66f"}, pol))
     assert lp.refuse({"symbol": "XAUUSD", "name": "gold_asia"}, pol) is None
+
+
+def test_a_clock_already_on_its_fill_hour_basis_is_not_double_charged() -> None:
+    st = dict(_st(0.3), spread_pts_charged=698.0)
+    r = ecb.judge("GBPSEK.formula.asia", st, UNI, _surf(698.0), mult=1.0)
+    assert r["net_r_at_1x"] == pytest.approx(0.3, abs=1e-3)
+    assert r["spread_pts_charged_by_clock"] == 698.0

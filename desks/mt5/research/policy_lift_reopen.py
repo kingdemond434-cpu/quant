@@ -117,6 +117,22 @@ def recert_rows(now: datetime | None = None) -> tuple[dict[str, dict], str]:
              if isinstance(r, dict)}, "")
 
 
+_FH_INPUTS: dict[str, dict] = {}
+
+
+def fill_hour_verdict(key: str, st: dict) -> dict:
+    """The clock's forward R re-priced at 1x its measured fill-hour spread (exotic_cost_bar.judge).
+    Inputs are read once per process."""
+    try:
+        import exotic_cost_bar as ecb
+        if not _FH_INPUTS:
+            _FH_INPUTS["uni"] = ecb._read(ecb.UNIVERSE)
+            _FH_INPUTS["surf"] = ecb._read(ecb.SURFACE)
+        return ecb.judge(key, st, _FH_INPUTS["uni"], _FH_INPUTS["surf"], mult=1.0)
+    except Exception as exc:
+        return {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def edge_verdict(key: str, st: dict, cert: str, recert: dict[str, dict],
                  recert_why: str) -> list[str]:
     """Every reason this clock is NOT a verified net-of-cost edge (empty = verified)."""
@@ -142,6 +158,14 @@ def edge_verdict(key: str, st: dict, cert: str, recert: dict[str, dict],
         why.append(f"FORWARD_MAXDD {dd:.1f}R <= {EDGE_MIN_DD}R")
     if st.get("certificate_drift"):
         why.append("CERTIFICATE_DRIFT: the certificate left the authority set")
+    # REAL POST-COST AT THE HOUR IT TRADES (2026-11-13). Forward clocks charged one pooled
+    # median spread; a rollover-hour clock can show +0.6R on a book whose entry cost is a full R.
+    # Every symbol, majors included, must stay positive with the fill-hour spread charged at 1x
+    # (exotics then also face the 2x bar in live_policy). Unmeasured is not a pass.
+    _fh = fill_hour_verdict(key, st)
+    if _fh.get("verdict") != "PASS":
+        _detail = _fh.get("why") or f"net {_fh.get('net_r_at_bar')}R at the fill-hour spread"
+        why.append(f"FILL_HOUR_COST {_fh.get('verdict')}: {_detail}")
     if EDGE_VENUE not in str(st.get("evidence_venue") or ""):
         why.append(f"NON_VENUE_EVIDENCE: {st.get('evidence_venue')!r}")
     return why

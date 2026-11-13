@@ -26,7 +26,8 @@ covers the backtest side; THIS covers the forward clock, which never did.
 THE ARITHMETIC, in R = 2 x ATR20(H1) points (the desk's cost-in-R convention,
 `research/cost_to_edge.symbol_cost_r`), all inputs on disk, no terminal needed:
 
-    gross   = exp_r + pooled_spread / R            (what the clock charged, added back;
+    gross   = exp_r + charged_spread / R           (what the clock charged, added back: the
+                                                     pooled median, or its frozen fill-hour spread;
                                                      swap assumed NOT charged -- conservative)
     net_2x  = gross - 2 x (fill_hour_spread + swap_worse_side) / R
     PASS iff net_2x > 0
@@ -150,12 +151,20 @@ def judge(key: str, st: dict[str, Any], universe: dict[str, Any], surface: dict[
         if sw is None:
             return {**out, "verdict": "UNMEASURED", "why": "overnight family with unpriced swap"}
         swap = sw
-    gross = exp + float(pooled) / r_pts
+    # WHAT THE CLOCK ACTUALLY CHARGED is added back: the pooled median, or -- once the clock
+    # runs on its fill-hour basis (shadow_forward.fill_hour_costs) -- the frozen hour spread.
+    charged = st.get("spread_pts_charged")
+    try:
+        charged_pts = float(charged) if charged is not None else pooled
+    except (TypeError, ValueError):
+        charged_pts = pooled
+    gross = exp + charged_pts / r_pts
     net_1x = gross - (hs + swap) / r_pts
     net_mx = gross - mult * (hs + swap) / r_pts
     return {**out, "verdict": "PASS" if net_mx > 0 else "FAIL",
             "exp_r_clock": round(exp, 4), "fill_hours": hours,
-            "fill_hour_spread_pts": hs, "pooled_spread_pts": float(pooled),
+            "fill_hour_spread_pts": hs, "pooled_spread_pts": pooled,
+            "spread_pts_charged_by_clock": charged_pts,
             "swap_worse_pts": round(swap, 2), "r_pts": round(r_pts, 1),
             "net_r_at_1x": round(net_1x, 4), "net_r_at_bar": round(net_mx, 4)}
 

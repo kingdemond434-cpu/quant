@@ -111,6 +111,25 @@ def test_the_principals_condition_only_verified_net_of_cost_edges_reopen(
                                         "NON_VENUE_EVIDENCE"}
 
 
+@pytest.fixture(autouse=True)
+def _fill_hour_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fixture clocks are synthetic keys; the fill-hour re-pricing is pinned on its own."""
+    import policy_lift_reopen as pr
+    monkeypatch.setattr(pr, "fill_hour_verdict", lambda key, st: {"verdict": "PASS"})
+
+
+def test_a_clock_negative_at_its_fill_hour_spread_is_not_a_real_edge(monkeypatch) -> None:
+    import policy_lift_reopen as pr
+    monkeypatch.setattr(pr, "fill_hour_verdict",
+                        lambda key, st: {"verdict": "FAIL", "net_r_at_bar": -0.2})
+    why = pr.edge_verdict("a", dict(GOOD), "c.a", {"c.a": {"status": "STILL_PASSES"}}, "")
+    assert any(w.startswith("FILL_HOUR_COST FAIL") for w in why)
+    monkeypatch.setattr(pr, "fill_hour_verdict",
+                        lambda key, st: {"verdict": "UNMEASURED", "why": "no fill hour"})
+    why = pr.edge_verdict("a", dict(GOOD), "c.a", {"c.a": {"status": "STILL_PASSES"}}, "")
+    assert any(w.startswith("FILL_HOUR_COST UNMEASURED") for w in why)
+
+
 def test_no_fresh_cost_regrade_means_nothing_reopens(monkeypatch, tmp_path) -> None:
     import policy_lift_reopen as pr
     monkeypatch.setattr(lp, "policy", lambda path=None: lp.Policy(live_symbols=frozenset({"*"})))
