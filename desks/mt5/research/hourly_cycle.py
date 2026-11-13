@@ -1154,7 +1154,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
-    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries", "sensor_ledger",
+    "ws_vol_conditioner", "ws_option_chains", "ws_priced_in", "ws_name_sentiment",
+    "ws_model_disagreement", "ws_regime_probabilities", "ws_news_hawkes", "ws_latent_states",
+    "ws_implied_move", "ws_taiwan_options", "ws_fetch_alfred", "ws_pit_audit",
+    "ws_own_risk_index",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -2684,7 +2688,9 @@ def causal_graph() -> dict:
     most: `beta(rates -> gold)` is state-dependent, so a graph fitted weeks ago describes a world
     the book is no longer being held in.
     """
-    return _producer("world_causal_graph", "research/world_causal_graph.py")
+    # the producer name IS the leg name: the component registry maps a leg to its script by it,
+    # and under "world_causal_graph" the leg read as code-less and the script as unclocked (#15)
+    return _producer("causal_graph", "research/world_causal_graph.py")
 
 
 #: The worker name this cycle claims under. One name, so a lease abandoned by a crashed pass is
@@ -3388,6 +3394,61 @@ def pit_canaries() -> dict:
     return _producer("pit_canaries", "scripts/check_pit_canaries.py")
 
 
+def sensor_ledger() -> dict:
+    """`sensor_ledger`: the universal sensor ledger's clock and declared artifact. Its day shards
+    are box-local and gitignored; this publishes reports/SENSOR_LEDGER.json (intake, PIT
+    completeness, latency incl. the downstream clock joins, revision index) every hour."""
+    return _producer("sensor_ledger", "research/sensor_ledger_digest.py")
+
+
+#: THE WORLD-SENSOR ENGINES (binding header J/K, Quant Guild cards, ROMAN rows; 2026-10-06): each
+#: is its own leg so each has its own clock, cost row and artifact. A leg whose report is younger
+#: than its cadence is skipped and says so; the engines measure STATE and emit gauntlet cells
+#: through the one terms-gated door (sensor_engines.emit_conditioner_cells), never sizes.
+WORLD_SENSOR_LEGS: dict[str, tuple[str, tuple[str, ...], float, str]] = {
+    "ws_vol_conditioner": ("macro/vol_conditioner.py", (), 1.0, "VOL_CONDITIONER.json"),
+    # audit #211 (2026-10-07): CBOE delayed quotes and TAIFEX are HELD on terms, so their legs
+    # measure the archive only (--no-fetch) until terms_clearances.json carries a quoted clearance.
+    "ws_option_chains": ("macro/option_chains.py", ("--no-fetch",), 1.0, "OPTION_CHAINS.json"),
+    "ws_priced_in": ("research/priced_in.py", ("--days", "1200"), 6.0, "PRICED_IN.json"),
+    "ws_name_sentiment": ("research/name_sentiment.py", ("--days", "400"), 20.0,
+                          "NAME_SENTIMENT.json"),
+    "ws_model_disagreement": ("macro/model_disagreement.py",
+                              ("--budget-s", "900", "--heavy-every", "5", "--days", "750"), 20.0,
+                              "MODEL_DISAGREEMENT.json"),
+    "ws_regime_probabilities": ("macro/regime_probabilities.py",
+                                ("--budget-s", "600", "--days", "1500"), 20.0,
+                                "REGIME_PROBABILITIES.json"),
+    "ws_news_hawkes": ("macro/news_hawkes.py", (), 20.0, "NEWS_HAWKES.json"),
+    "ws_latent_states": ("macro/latent_states.py", (), 20.0, "LATENT_STATES.json"),
+    "ws_implied_move": ("macro/implied_move.py", (), 20.0, "IMPLIED_MOVE.json"),
+    "ws_taiwan_options": ("macro/taiwan_options.py", ("--no-fetch",), 20.0,
+                          "TAIWAN_OPTIONS.json"),
+    # coordinator 2026-10-07: the permitted risk state (libs.data.own_risk), the drop-in for the
+    # held VIXCLS/BAML series on the allocator and gateway paths, from our own bars only
+    "ws_own_risk_index": ("macro/own_risk_index.py", (), 2.0, "OWN_RISK_INDEX.json"),
+    # audit #15 (2026-10-06): ALFRED vintages and the PIT audit were executables on no clock.
+    # fetch_alfred re-reads a series file older than a day (ALFRED never deletes a vintage, so
+    # the new file holds every old one); pit_audit commits its verdict with --apply.
+    "ws_fetch_alfred": ("research/fetch_alfred.py", ("--max-age-h=24",), 20.0,
+                        "alfred_vintages.json"),
+    "ws_pit_audit": ("research/pit_audit.py", ("--apply",), 20.0, "PIT_AUDIT.json"),
+}
+
+
+def world_sensor(name: str) -> dict:
+    """One world-sensor engine leg, at its declared cadence."""
+    script, args, every_h, report = WORLD_SENSOR_LEGS[name]
+    path = BASE / "reports" / report
+    try:
+        age_h = (time.time() - path.stat().st_mtime) / 3600.0
+    except OSError:
+        age_h = None
+    if age_h is not None and age_h < every_h:
+        return {"status": "skipped_fresh", "report_age_h": round(age_h, 2), "every_h": every_h}
+    return _producer(name, script, args)
+
+
 def mutation_yield() -> dict:
     """`mutation_yield`: certification fate joined back to the generator and operator that
     proposed each cell, rewriting data/generator_weights.json -- the compute reallocation the
@@ -3919,6 +3980,10 @@ def time_joins() -> dict:
 #: (VIX and the 10-year in the evening, the dollar index with a lag), so six hours keeps the
 #: macro state at most a print behind without asking the API for the same file 24 times.
 FRED_REFRESH_S = 6 * 3600
+#: The owners' own feeds (`scripts/collect_owner_macro.py`, ruling on FRED prohibition (j)) are
+#: refreshed when older than this: Treasury posts the curve once each evening, BLS and EIA on
+#: their release days, so three hours keeps a fitted input at most one pass behind the owner.
+OWNER_REFRESH_S = 3 * 3600
 
 
 def fred_macro() -> dict:
@@ -3942,6 +4007,16 @@ def fred_macro() -> dict:
     else:
         out = _producer("fred_macro", "scripts/collect_fred_macro.py")
         out["age_h_before"] = (round(age / 3600.0, 2) if age != float("inf") else None)
+    # THE FITTED INPUTS FROM THEIR OWNERS (ruling on FRED prohibition (j), 2026-10-07): FRED is
+    # held from every fitted model, so the latent states, the curve state, the inventory
+    # surprises and the macro-region rate miners read `data/owner_macro.json` (Treasury, BLS,
+    # EIA), written here before the engines below run. FRED above stays display/cross-check.
+    own = REPO / "data" / "owner_macro.json"
+    own_age = time.time() - own.stat().st_mtime if own.exists() else float("inf")
+    if own_age < OWNER_REFRESH_S:
+        out["owner_macro"] = {"status": "FRESH", "age_h": round(own_age / 3600.0, 2)}
+    else:
+        out["owner_macro"] = _producer("owner_macro", "scripts/collect_owner_macro.py")
     try:
         if str(BASE) not in sys.path:
             sys.path.insert(0, str(BASE))
@@ -3950,6 +4025,16 @@ def fred_macro() -> dict:
         out["macro_view"] = "rebuilt"
     except Exception as exc:
         out["macro_view"] = f"not rebuilt: {type(exc).__name__}: {exc}"
+    # THE MARKET AND PHYSICAL STATES (world sensor J/L, 2026-10-06) read the archive the collector
+    # just refreshed: vol term structure, implied vs realised, the curve, beta, and the EIA
+    # inventories against their seasonal norm -> reports + the sensor ledger.
+    for name in ("market_state", "physical_state"):
+        try:
+            import importlib
+            mod = importlib.import_module(f"macro.{name}")
+            out[name] = "rc=" + str(mod.main([]))
+        except Exception as exc:
+            out[name] = f"not built: {type(exc).__name__}: {str(exc)[:120]}"
     return out
 
 
@@ -4321,6 +4406,31 @@ def main() -> None:
         "--budget-s", "240"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    sld = _costed("sensor_ledger", sensor_ledger)
+    wsl = {"ws_vol_conditioner": _costed("ws_vol_conditioner",
+                                         lambda: world_sensor("ws_vol_conditioner")),
+           "ws_option_chains": _costed("ws_option_chains",
+                                       lambda: world_sensor("ws_option_chains")),
+           "ws_priced_in": _costed("ws_priced_in", lambda: world_sensor("ws_priced_in")),
+           "ws_name_sentiment": _costed("ws_name_sentiment",
+                                        lambda: world_sensor("ws_name_sentiment")),
+           "ws_model_disagreement": _costed("ws_model_disagreement",
+                                            lambda: world_sensor("ws_model_disagreement")),
+           "ws_regime_probabilities": _costed("ws_regime_probabilities",
+                          lambda: world_sensor("ws_regime_probabilities")),
+           "ws_news_hawkes": _costed("ws_news_hawkes",
+                          lambda: world_sensor("ws_news_hawkes")),
+           "ws_latent_states": _costed("ws_latent_states",
+                          lambda: world_sensor("ws_latent_states")),
+           "ws_implied_move": _costed("ws_implied_move",
+                                      lambda: world_sensor("ws_implied_move")),
+           "ws_own_risk_index": _costed("ws_own_risk_index",
+                                        lambda: world_sensor("ws_own_risk_index")),
+           "ws_taiwan_options": _costed("ws_taiwan_options",
+                                        lambda: world_sensor("ws_taiwan_options")),
+           "ws_fetch_alfred": _costed("ws_fetch_alfred",
+                                      lambda: world_sensor("ws_fetch_alfred")),
+           "ws_pit_audit": _costed("ws_pit_audit", lambda: world_sensor("ws_pit_audit"))}
     pil = _costed("placement_interlock", placement_interlock)
     jal = _costed("judge_alive", judge_alive)
     myd = _costed("mutation_yield", mutation_yield)
@@ -6444,7 +6554,8 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
+                    "pit_canaries": pcn, "sensor_ledger": sld, **wsl, "placement_interlock": pil,
+                    "judge_alive": jal,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,

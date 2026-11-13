@@ -20,6 +20,8 @@ never replaces the hourly pass.
   certificate_change      data/sleeve_registry.json      a certificate arriving or dying
   fill                    data/gateway_state.json        realised risk moved at the venue
   cost_capacity_revision  reports/NET_EDGE.json          net-of-cost or capacity was re-priced
+  news_event              data/allocator_resolve_request.json
+                                                         a sequenced news re-solve request
 
 WHY IT IS SAFE UNDER GROWTH GOVERNANCE. It fires the SAME solver the hourly leg fires, with the
 same heat law, the same floor and the same certificate contest. It sets no fraction and passes no
@@ -107,6 +109,12 @@ def sources() -> list[Source]:
         Source("cost_capacity_revision", REPORTS / "NET_EDGE.json",
                ("capacity_by_sleeve", "n_sign_flips", "ranked_if_net_were_the_only_ranking"),
                "net-of-cost or per-sleeve capacity was re-priced"),
+        # THE NEWS STREAM'S REQUEST (audit #204): news_event_stream writes one envelope per pass
+        # that moved the world state past RESOLVE_DELTA, numbered by `seq`. It is a REQUEST to
+        # re-solve, never a size: the same solver runs under the same law either way.
+        Source("news_event", DATA / "allocator_resolve_request.json",
+               ("seq", "world_state_fingerprint"),
+               "a news event moved the world state past the re-solve threshold"),
     ]
 
 

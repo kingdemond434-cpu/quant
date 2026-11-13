@@ -100,10 +100,13 @@ PROPAGATION_CHAIN: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 #: The rate factors the rates and curve miners want. Every one absent is named, never dropped.
+#: READ FROM THE OWNER (US Treasury's own daily par and real curves, `libs.data.owner_feeds`):
+#: FRED is held from every fitted input under the ruling on prohibition (j), 2026-10-07.
 RATE_FACTORS: tuple[tuple[str, str], ...] = (
-    ("fred:DGS2", "2y nominal"), ("fred:DGS5", "5y nominal"), ("fred:DGS10", "10y nominal"),
-    ("fred:DGS30", "30y nominal"), ("fred:DFII10", "10y real"),
-    ("fred:T10YIE", "10y breakeven"), ("fred:T10Y2Y", "10y-2y slope"),
+    ("treasury:DGS2", "2y nominal"), ("treasury:DGS5", "5y nominal"),
+    ("treasury:DGS10", "10y nominal"), ("treasury:DGS30", "30y nominal"),
+    ("treasury:DFII10", "10y real"), ("treasury:T10YIE", "10y breakeven"),
+    ("treasury:T10Y2Y", "10y-2y slope"),
 )
 
 #: The framework operator -> the `transformation_miners` implementation that answers it. An
@@ -590,6 +593,17 @@ def default_bars(symbol: str, chart: str = "H1") -> pd.DataFrame | None:
 def default_series(name: str) -> list[tuple[str, float]]:
     """A dated macro observation series from the desk's axes. Empty is a MEASUREMENT."""
     axis, _, key = str(name).partition(":")
+    if axis in ("treasury", "bls", "eia"):
+        # the owners' own archive (data/owner_macro.json): (date, value), first-held instant
+        # dropped -- the same dated shape the fred axis served
+        try:
+            from libs.data import owner_feeds
+            rows = owner_feeds.load_archive().get(key) or []
+        except Exception:
+            return []
+        if rows and owner_feeds.PROVIDER.get(key) != axis:
+            return []
+        return [(d, float(v)) for d, v, _seen in rows]
     doc = _read_json(AXES_DIR / f"{axis}.json")
     if not isinstance(doc, dict):
         return []
@@ -1153,8 +1167,9 @@ def mine_rates(ctx: Ctx) -> dict[str, Any]:
         points = ctx.series(key)
         if len(points) < 60:
             ctx.unmeasured(f"rates:{key}",
-                           f"{len(points)} observations for {what}: the FRED axis on this box "
-                           "reported 0 series and 7 failures on 2026-09-12")
+                           f"{len(points)} observations for {what}: the owner archive "
+                           "(data/owner_macro.json, Treasury's own curves) holds too few on "
+                           "this box")
             continue
         have.append((key, what, points))
     if not have:

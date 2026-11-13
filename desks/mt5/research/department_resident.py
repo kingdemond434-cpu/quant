@@ -225,9 +225,34 @@ def _tree_runner():
 _run_tree = _tree_runner()
 
 
+def _department_of(leg: str) -> str | None:
+    """The department `hourly_cycle` assigns `leg`, or None when it cannot be read (then no
+    withheld credential is carried: closed, never open)."""
+    try:
+        research = str(DESK / "research")
+        if research not in sys.path:
+            sys.path.insert(0, research)
+        import hourly_cycle
+        return str(hourly_cycle.department_of(leg))
+    except Exception:                                    # pragma: no cover - fail closed
+        return None
+
+
 def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority."""
     env = dict(os.environ)
+    # A key set with `setx /M` after this resident started is in the registry, not in our
+    # environment; hand it to the child so the pass sees it without a reboot (2026-10-06:
+    # FRED_API_KEY was set "many times" and every pass still read BLOCKED_AUTH).
+    try:
+        from libs.ops.env_secret import CHILD_READERS, child_allow, fresh_secrets
+        # Only the withheld credentials (repository token, logins) a leg of THIS department
+        # reads are carried (audit #204); every other child gets API keys alone.
+        legs = {leg for readers in CHILD_READERS.values() for leg in readers}
+        mine = {leg for leg in legs if _department_of(leg) == dept}
+        env.update(fresh_secrets(env, allow=child_allow(mine)))
+    except Exception:                                    # pragma: no cover - never blocks a pass
+        pass
     env["HOURLY_PLAN"] = f"dept:{dept}"
     # leg_rotation otherwise treats departments as unbounded, which is false: this child is
     # killed at timeout_s. Deferred work leads the immediately following resident pass.

@@ -45,3 +45,21 @@ def test_failed_calendar_fetch_is_emitted_as_error_row(miner, monkeypatch) -> No
     assert len(rows) == 2
     assert all(row["kind"] == "fetch_error" for row in rows)
     assert all(row["error"] == "RuntimeError: network unavailable" for row in rows)
+
+
+def test_an_unpublished_next_week_file_is_a_state_not_an_error(miner, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """The next-week JSON 404s until it is published; that is not a dead feed."""
+    class Response:
+        def __init__(self, url: str) -> None:
+            self.status_code = 404 if "nextweek" in url else 200
+
+        def raise_for_status(self) -> None:
+            if self.status_code != 200:
+                raise RuntimeError("404")
+
+        def json(self) -> list[dict[str, str]]:
+            return [{"impact": "High", "country": "USD", "title": "CPI", "date": "x"}]
+
+    monkeypatch.setattr(miner.requests, "get", lambda url, **kwargs: Response(url))
+    rows = miner.mine_calendar()
+    assert [r.get("kind") for r in rows] == [None, "not_published"]
