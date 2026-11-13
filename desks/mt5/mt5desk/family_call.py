@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import inspect
 import math
+from datetime import UTC
 from typing import Any
 
 
@@ -161,6 +162,13 @@ def _session_clock() -> Any:
     return session_clock
 
 
+def _naive_stamp(t: Any) -> Any:
+    """A signal's time with no tzinfo: an aware one converted to UTC first."""
+    if getattr(t, "tzinfo", None) is not None and t.utcoffset() is not None:
+        return t.astimezone(UTC).replace(tzinfo=None)
+    return t
+
+
 def session_filter(sigs: list[Any], session: Any, family: Any = None,
                    params: dict[str, Any] | None = None) -> list[Any]:
     """Only the signals inside the session; every signal when the session is `all` or unknown.
@@ -179,7 +187,10 @@ def session_filter(sigs: list[Any], session: Any, family: Any = None,
              is not None]
     inside: dict[int, bool] = {}
     if timed:
-        times = [sigs[i].time for i in timed]
+        # Naive stamps only: an aware stamp is read on its UTC wall clock (as `server_to_utc`
+        # reads a UTC-labelled index), so a list mixing naive and aware stamps -- which pandas
+        # refuses to put in one index -- is judged per stamp, as the hour-reading filter was.
+        times = [_naive_stamp(sigs[i].time) for i in timed]
         if family is not None:
             flags = [bool(clock.anchor_clocked(family, params))] * len(timed)
         else:
