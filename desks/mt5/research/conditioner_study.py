@@ -204,9 +204,11 @@ def _scale(train_ret: pd.Series) -> float:
     return TARGET_VOL / sd if np.isfinite(sd) and sd > 0 else 0.0
 
 
-def walk_forward(M: pd.DataFrame, state: pd.DataFrame, gw: pd.DataFrame
-                 ) -> dict[str, pd.Series]:
-    """Out-of-sample daily book returns per variant, every variant on the same days."""
+def walk_forward(M: pd.DataFrame, state: pd.DataFrame, gw: pd.DataFrame,
+                 diag: dict[str, Any] | None = None) -> dict[str, pd.Series]:
+    """Out-of-sample daily book returns per variant, every variant on the same days. `diag`,
+    when given, receives per block how many members sat out (too few training trades to have a
+    measurable mean), so a book that drops members says so."""
     days = M.index
     out: dict[str, list[pd.Series]] = {v: [] for v in VARIANTS}
     for lo in range(MIN_TRAIN_DAYS, len(days), TEST_DAYS):
@@ -214,6 +216,10 @@ def walk_forward(M: pd.DataFrame, state: pd.DataFrame, gw: pd.DataFrame
         tr, te = M.iloc[:lo], M.iloc[lo:hi]
         st_tr = state.iloc[:lo]
         live = tr.columns[(tr != 0).sum() >= MIN_MEMBER_TRADES]
+        if diag is not None:
+            diag.setdefault("members_sat_out_by_block", []).append(
+                {"block_start": str(days[lo].date()), "sat_out": int(len(tr.columns) - len(live)),
+                 "of": int(len(tr.columns))})
         if len(live) < 3:
             continue
         tr, te, st_tr = tr[live], te[live], st_tr[live]
@@ -334,9 +340,10 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0, reps: int = 
         gw_sym = {s: garch_weight(r.reindex(idx).fillna(0.0)) for s, r in sym_ret.items()}
         state = pd.DataFrame({k: st_sym[k.split(".")[0]] for k in M.columns})
         gw = pd.DataFrame({k: gw_sym[k.split(".")[0]] for k in M.columns})
-        book = walk_forward(M, state, gw)
+        diag: dict[str, Any] = {}
+        book = walk_forward(M, state, gw, diag)
         rep = {"generated_at": now, "status": "MEASURED", "symbols": sorted(sym_ret),
-               "members": int(M.shape[1]), "skipped": skipped,
+               "members": int(M.shape[1]), "skipped": skipped, **diag,
                "design": {"min_train_days": MIN_TRAIN_DAYS, "test_days": TEST_DAYS,
                           "target_vol_yr": round(TARGET_VOL * math.sqrt(252), 4),
                           "block_days": BLOCK, "boot_reps": reps,
