@@ -263,6 +263,7 @@ LEG_LAYER: dict[str, str] = {
     # THE TIER-S CLUSTER JUDGE (P8-J1): dependence and concentration of the forward clocks at
     # the bar, an input to whatever counts independent bets in the book -- portfolio.
     "cluster_judge": "portfolio",
+    "pnl_explain": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
