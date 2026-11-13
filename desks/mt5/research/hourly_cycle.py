@@ -1392,7 +1392,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # gauntlet's own build_cell before they are donated
                      "specialist_cell",
                      # the hunt16 corpus over the book's gaps, specialist path
-                     "hunt16_seeder"),
+                     "hunt16_seeder", "learned_miners"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -2273,6 +2273,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "specialist_cell": 1_000,
     # The hunt16 seeder stops itself at --budget-s 600; the cap sits above its own budget.
     "hunt16_seeder": 700,
+    "learned_miners": 1_000,
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
     "residual_search": 400,
     "event_surprise": 400,
@@ -4517,6 +4518,14 @@ def main() -> None:
     # USD/JPY/EUR non-exotic crosses through the specialist path; writes HUNT16_SEEDER.json.
     h16s = _costed("hunt16_seeder", lambda: _producer(
         "hunt16_seeder", "research/hunt16_seeder.py", "--once", "--budget-s", "600"))
+    # THE LEARNED MINERS GOT A CLOCK THAT FIRES (2026-11-13). They were a daily_cycle proposer,
+    # step nine of a chain the box diagnostic showed stalling after step one for hours at a
+    # time: learned_miners_contract.json was 897h old and no daily log line had ever named them,
+    # so gnn_propagation, attention_ts, rocket_ts, ae_latent and sig_path minted nothing for
+    # weeks. Here they still run ONCE A DAY (`--daily` exits at once when today's report already
+    # exists) on their own 900s budget, so no other hourly leg's share shrinks.
+    lrnm = _costed("learned_miners", lambda: _producer(
+        "learned_miners", "research/learned_miners.py", "--once", "--daily", "--budget-s", "900"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -6491,7 +6500,7 @@ def main() -> None:
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
-                    "hunt16_seeder": h16s,
+                    "hunt16_seeder": h16s, "learned_miners": lrnm,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,

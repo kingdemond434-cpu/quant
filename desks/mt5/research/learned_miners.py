@@ -39,9 +39,11 @@ configuration of both models against ridge on the same features, the naive last-
 and the zero forecast, plus a time-shuffled falsification control, and writes
 `reports/learned_miners_contract.json`. Whatever it shows is what it reports.
 
-SCHEDULING: this organ runs DAILY as a `daily_cycle` proposer (`daily_cycle._proposers`, which
-calls `run(budget_s=...)`), on its own budget. It is deliberately not on the hourly roster, so it
-takes no share of any hourly miner's time. `--once` runs one pass by hand.
+SCHEDULING: this organ runs ONCE A DAY from the hourly cycle (leg `learned_miners`, `--once
+--daily`), on its own budget. `--daily` exits at once when REPORT was already written today
+(UTC), so the hourly clock fires it daily and never twice. It was a `daily_cycle` proposer until
+2026-11-13, when the box showed that chain stalling before it for weeks. `--once` alone runs one
+pass by hand.
 """
 from __future__ import annotations
 
@@ -1000,7 +1002,17 @@ def _fmt(v: Any) -> str:
     return "  n/a" if v is None or (isinstance(v, float) and not math.isfinite(v)) else f"{v:+.4f}"
 
 
-def main() -> int:
+def ran_today(path: Path | None = None, today: str | None = None) -> bool:
+    """Whether the pass report was written today (UTC). Unreadable or absent reads as not run."""
+    try:
+        doc = json.loads((path or REPORT).read_text("utf-8"))
+        at = str(doc.get("generated_at") or "")
+    except (OSError, ValueError, AttributeError):
+        return False
+    return bool(at) and at[:10] == (today or datetime.now(tz=UTC).date().isoformat())
+
+
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true", help="one pass and exit")
     ap.add_argument("--contract", action="store_true",
@@ -1010,7 +1022,12 @@ def main() -> int:
     ap.add_argument("--no-donate", action="store_true")
     ap.add_argument("--no-axes", action="store_true",
                     help="do not publish the forecast axes or the allocation-intel artifact")
-    a = ap.parse_args()
+    ap.add_argument("--daily", action="store_true",
+                    help="skip when today's pass report already exists (the hourly clock)")
+    a = ap.parse_args(argv)
+    if a.daily and not a.contract and ran_today():
+        print(f"learned_miners: already ran today ({REPORT.name}); --daily skip")
+        return 0
     if a.contract:
         doc = measure_contract()
         print(f"LEARNED MINERS CONTRACT  {doc['data']['n_symbols']} symbols, "

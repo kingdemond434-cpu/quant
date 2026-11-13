@@ -406,9 +406,10 @@ def _proposers() -> None:
                  # placebo, then the pre-declared exogenous_conditioner cells through the donor
                  # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
                  "nlp_social_cells",
-                 # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
-                 # intel. Daily, on their own budget, so no hourly organ's share shrinks.
-                 "learned_miners",
+                 # `learned_miners` LEFT THIS LIST 2026-11-13: it now runs once a day from the
+                 # hourly cycle (`--daily`), because this chain stalled before reaching it and
+                 # its five families minted nothing for weeks. Listing it here too would charge
+                 # its trials twice on any day the chain did get this far.
                  # THE NEGATIVE HALF OF EXPERIENCE (Tier-1 Q17). `survivor_distiller` was
                  # already here and `negative_knowledge` -- the model of what KILLS a cell --
                  # ran on no clock at all, which is the classic defect: the organ existed and

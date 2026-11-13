@@ -294,6 +294,7 @@ LEG_LAYER: dict[str, str] = {
     "specialist_cell": "prediction",
     # the hunt16 corpus minted over the book's gaps through the specialist path
     "hunt16_seeder": "prediction",
+    "learned_miners": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
