@@ -460,7 +460,8 @@ def claude_settings() -> dict[str, Any]:
             claude_settings_health.OUT.write_text(json.dumps(rep, indent=1), encoding="utf-8")
         except OSError:
             pass
-        return {k: rep.get(k) for k in ("status", "n_files", "faults", "repair")}
+        # only the projection is published: no path, user name, line, column or message
+        return dict(claude_settings_health.publishable(rep))
     except Exception as exc:
         return {"status": "UNMEASURED", "why": type(exc).__name__}
 

@@ -198,3 +198,33 @@ def test_the_repair_puts_back_the_brace_keeps_a_backup_and_refuses_in_a_claude_s
         timeout=120,
     )
     assert wrong.returncode == 2
+
+
+def test_the_published_projection_carries_no_path_user_or_position(tmp_path: Path) -> None:
+    """Audit 2026-11-13 MF1/MF2: process_health.json is published and the repo is public."""
+    users, checkout, hb = _layout(tmp_path, GOOD[1:])
+    (users / "jane.doe" / ".claude").mkdir(parents=True)
+    (users / "jane.doe" / ".claude" / "settings.local.json").write_text("[1]", encoding="utf-8")
+    rep = csh.check(users_root=users, managed=(), checkout=checkout, heartbeat=hb)
+    pub = csh.publishable(rep)
+    assert tuple(pub) == csh.PUBLISHED_KEYS
+    assert pub["status"] == "BROKEN" and len(pub["faults"]) == 2
+    for f in pub["faults"]:
+        assert tuple(f) == csh.PUBLISHED_FAULT_KEYS
+        assert f["scope"] in ("user", "managed", "project")
+        for v in f.values():
+            v = str(v)
+            assert "/" not in v and "\\" not in v and not re.match(r"^[A-Za-z]:", v), v
+            assert "Administrator" not in v and "jane" not in v
+    text = json.dumps(pub)
+    assert str(tmp_path) not in text and "line" not in text and "column" not in text
+    assert "Expecting" not in text  # the parser's message stays local
+    assert {f["file"] for f in pub["faults"]} == {"settings.json", "settings.local.json"}
+
+
+def test_the_full_report_is_written_only_where_git_ignores_it() -> None:
+    assert csh.OUT == ROOT / "data" / "claude_settings_health.json"
+    got = subprocess.run(["git", "check-ignore", "-q", str(csh.OUT)], cwd=ROOT, check=False)
+    assert got.returncode == 0
+    code = (ROOT / "ops" / "process_health.py").read_text(encoding="utf-8")
+    assert "claude_settings_health.publishable(rep)" in code

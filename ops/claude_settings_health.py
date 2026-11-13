@@ -33,6 +33,11 @@ only a person runs. It never prints a VALUE from a settings file other than the 
 name and rule counts: an `env` block or an `apiKeyHelper` may hold something sensitive, so only
 key names leave this process.
 
+WHAT IS PUBLISHED. The full report (paths, positions, parser messages) is written to root
+`data/` (gitignored), on the box only. `ops/process_health.py` (published in box state, and the
+repository is public) carries only `publishable()`: status, count, and per broken file its scope
+category, file name, verdict and diagnosis -- no path, user name, line, column or message.
+
 WIRED INTO `ops/process_health.py` (the box's process board, published in box state): an
 INVALID_JSON / NOT_OBJECT / UNREADABLE user or managed file makes the board ATTENTION, so a broken
 settings file is seen within one process-health pass instead of by a human, and the request
@@ -53,7 +58,12 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "desks" / "mt5" / "reports" / "CLAUDE_SETTINGS_HEALTH.json"
+#: The FULL report (paths, positions, parser messages) stays on this host: root data/ is
+#: gitignored, so it is never published. Only `publishable()` leaves the box.
+OUT = ROOT / "data" / "claude_settings_health.json"
+#: The only keys the published projection carries (pinned by a test; audit 2026-11-13 MF1/MF2).
+PUBLISHED_KEYS = ("status", "n_files", "faults", "repair")
+PUBLISHED_FAULT_KEYS = ("scope", "file", "verdict", "diagnosis")
 
 #: Files Claude Code reads per user profile (user scope).
 USER_FILES = ("settings.json", "settings.local.json")
@@ -241,6 +251,29 @@ def check(
         ),
         "files": rows,
         "absent": absent,
+    }
+
+
+def publishable(rep: dict[str, Any]) -> dict[str, Any]:
+    """What may leave the box (process_health.json is published, and the repository is public):
+    the status, the count, and per broken file only its scope CATEGORY (user / managed / project,
+    never the profile name), its file name, verdict and diagnosis. Never a path, a user name, a
+    line, a column or a parser message (audit 2026-11-13 MF1, MF2): kept in OUT, on the box."""
+    faults = [
+        {
+            "scope": str(r.get("scope") or "").split(":", 1)[0],
+            "file": Path(str(r.get("path") or "")).name,
+            "verdict": r.get("verdict"),
+            "diagnosis": r.get("diagnosis"),
+        }
+        for r in rep.get("files") or []
+        if r.get("verdict") in FAULTS
+    ]
+    return {
+        "status": rep.get("status"),
+        "n_files": rep.get("n_files"),
+        "faults": faults,
+        "repair": rep.get("repair"),
     }
 
 
