@@ -497,6 +497,8 @@ MODULES: tuple[Module, ...] = (
            "desks/mt5/research/weak_signal_compiler.py"),
           ("world_causal_graph", "world_causal_graph",
            "desks/mt5/research/world_causal_graph.py"),
+          # Tick-tape flow / toxicity / impact cells (2026-11-13): SOURCE = "flow_toxicity".
+          ("flow_toxicity", "flow_toxicity", "desks/mt5/research/flow_toxicity_miner.py"),
       )),
     # THE EXECUTION-LEARNING LINES (2026-09-05, the principal's order). One billable quantity --
     # R per filled trade recovered from execution leakage -- and three claimants. The corpus
