@@ -3042,3 +3042,62 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ------------------------------------------- the Auditor's false-FAIL ruling (D-20261113, Gov.)
+def _cr(
+    name: str, rid: int, conclusion: str = "failure", status: str = "completed"
+) -> dict[str, Any]:
+    return {"name": name, "id": rid, "status": status, "conclusion": conclusion,
+            "started_at": f"2026-11-13T10:{rid % 60:02d}:00Z", "app": {"slug": ag.CI_APP}}
+
+
+def test_a_ruling_names_exact_runs_of_the_two_adjudicable_jobs_or_nothing() -> None:
+    assert ag.false_fails(_row(false_fail={"independent-review": [7]})) == {
+        "independent-review": frozenset({7})}
+    assert ag.false_fails(_row()) == {}
+    bad: object
+    for bad in ({"replay-shadow": [7]}, {"quality": [7]}, {"mt5-money-path": [7]},
+                {"risk-invariants": [7]},
+                {"trusted-eval": [7]}, {"independent-review": []}, {"independent-review": ["7"]},
+                {"independent-review": [True]}, {"independent-review": 7}, ["independent-review"],
+                {"independent-review": [7], "quality": [8]}):  # one bad entry voids the ruling
+        assert ag.false_fails(_row(false_fail=bad)) == {}, bad
+
+
+def test_only_the_ruled_failed_run_counts_as_success() -> None:
+    rulings = {"independent-review": frozenset({7}), "replay-shadow": frozenset({8})}
+    runs = [_cr("independent-review", 7), _cr("independent-review", 9), _cr("quality", 7),
+            _cr("independent-review", 7, "cancelled"),
+            _cr("independent-review", 7, status="queued"),
+            _cr("replay-shadow", 8)]
+    out = ag.ruled_false(runs, rulings)
+    assert out[0]["conclusion"] == "success" and out[0]["ruled_false"]
+    assert out[1]["conclusion"] == "failure"  # another run id: a re-run needs its own ruling
+    assert out[2]["conclusion"] == "failure"  # a gating job is never adjudicable
+    assert out[3]["conclusion"] == "cancelled"  # only a completed failure is ruled
+    assert out[4]["status"] == "queued" and "ruled_false" not in out[4]
+    # never weaken replay-shadow: even a ruling handed straight in cannot turn it green
+    assert out[5]["conclusion"] == "failure" and "ruled_false" not in out[5]
+
+
+def test_a_ruled_reviewer_fail_no_longer_fails_the_registry_checks() -> None:
+    need = ("quality", *ag.AUTO_JOBS)
+    runs = [_cr("quality", 1, "success"), _cr("risk-invariants", 2, "success"),
+            _cr("replay-shadow", 3, "success"), _cr("independent-review", 4)]
+    assert ag.checks(runs, need)[0] == "fail"
+    ruled = ag.ruled_false(runs, {"independent-review": frozenset({4})})
+    assert ag.checks(ruled, need)[0] == "pass"
+    newer = [*runs, _cr("independent-review", 5)]  # a newer FAIL of the same job still fails
+    still = ag.ruled_false(newer, {"independent-review": frozenset({4})})
+    assert ag.checks(still, need)[0] == "fail"
+
+
+def test_the_registry_clear_carries_the_ruling_and_nothing_else_does() -> None:
+    got, _ = ag.registry_clear(
+        [_row(false_fail={"independent-review": [4, 3]})], 9, _H, _win(), _NOW)
+    assert got is not None and ag.json.loads(got["false_fail"]) == {"independent-review": [3, 4]}
+    got, _ = ag.registry_clear([_row(false_fail={"quality": [4]})], 9, _H, _win(), _NOW)
+    assert got is not None and ag.json.loads(got["false_fail"]) == {}
+    held = [_row(false_fail={"independent-review": [4]}), _row(verdict="HOLD")]
+    assert ag.registry_clear(held, 9, _H, _win(), _NOW)[0] is None  # a later HOLD still wins
