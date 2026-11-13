@@ -1,0 +1,1894 @@
+{
+ "generated_utc": "2026-10-13T22:20:34+00:00",
+ "source": "/home/claude/quant/desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+ "grace_s": 7200.0,
+ "converters": {
+  "certificate": "the LIVE row names a certificate the canon does not hold: the promoter re-derives it (research/promoter.py) or the canon seal re-publishes it",
+  "mechanism_class": "declare the family's cause in desks/mt5/research/alpha_genome.py MECHANISM_CLASS (the style library owner)",
+  "novelty": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+  "fill_cost": "research/cost_surface.py on the box (it reads the symbol's spread column); a symbol absent from the surface needs its bars collected first",
+  "tradability": "refresh data/universe/universe.json from MT5 symbol_info on the box (the universe refresh leg); a symbol the venue no longer lists is RETIRED upstream, never left blank here",
+  "forward_clock": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+  "pnl_attribution": "research/daily_cycle.py writes markout.json and attribution_chain.json from the account's deals; research/attribution_reconcile.py routes the unattributed ones"
+ },
+ "subjects": {
+  "cert:external.AUDCAD.discovered.p=7c996ac8456c8919": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDCAD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDCAD.discovered.p=8030fb339510dceb": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDCAD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDCAD.discovered.p=a7324e7affe1f80a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDCAD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=10"
+    }
+   }
+  },
+  "cert:external.AUDNZD.discovered.p=c76b860ff91ee920": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "UNMEASURED",
+     "why": "0 of 24 broker hours measured for AUDNZD",
+     "measured_hours": 0,
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/cost_surface.py on the box (it reads the symbol's spread column); a symbol absent from the surface needs its bars collected first",
+     "red": false
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDUSD.discovered.p=8e61ea22743f15b7": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDUSD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDUSD.discovered.p=a5bbf78b5c8595c0": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDUSD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDUSD.discovered.p=cf0368e026d6b477": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDUSD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.AUDUSD.discovered.p=de80ad4f2ef91116": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for AUDUSD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "11 of 24 broker hours measured for CADCHF",
+     "measured_hours": 11
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=6"
+    }
+   }
+  },
+  "cert:external.CADJPY.session_range_breakout.rr=1.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for CADJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.CADJPY.session_range_breakout.rr=2.0_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for CADJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.CADJPY.session_range_breakout.rr=2.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for CADJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for CHFDKK",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=11"
+    }
+   }
+  },
+  "cert:external.CHFNOK.carry.p=98d776f3e210d3e2": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "carry -> carry",
+     "value": "carry"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for CHFNOK",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=19"
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=16bd35526c7f3515": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=4cba1afa572a99cd": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=6c7943b997558157": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=9bc1f7c40f200e78": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=a5bbf78b5c8595c0": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=c14e361e680e6d0b": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=c7d53510458ba32c": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURCHF.discovered.p=e266baf78567bef3": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURGBP.discovered.p=8e61ea22743f15b7": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURGBP",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURGBP.discovered.p=f31f02aa2b9d79b1": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURGBP",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURNOK",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=13"
+    }
+   }
+  },
+  "cert:external.EURUSD.discovered.p=6d034b421914e1a2": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURUSD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURUSD.discovered.p=f8bd412f38e33d20": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURUSD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURZAR",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=9"
+    }
+   }
+  },
+  "cert:external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=3"
+    }
+   }
+  },
+  "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPMXN",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=5"
+    }
+   }
+  },
+  "cert:external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPNOK",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=14"
+    }
+   }
+  },
+  "cert:external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPSEK",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=15"
+    }
+   }
+  },
+  "cert:external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for GBPZAR",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.NZDCAD.discovered.p=0ffb1e19a04f260e": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for NZDCAD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.USDCAD.discovered.p=193aadf2caba3698": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDCAD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.USDCAD.discovered.p=56aadf0a3018c790": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDCAD",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.USDCHF.discovered.p=19dd11ec392fa005": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "discovered -> discovered",
+     "value": "discovered"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDCHF",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "UNMEASURED",
+     "why": "the clock law has no row for this certificate",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/forward_enrolment.py (hourly, after the judge) enrols every certificate; scripts/check_certificate_clock_law.py re-reads it",
+     "red": false
+    }
+   }
+  },
+  "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDJPY",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDMXN",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=3"
+    }
+   }
+  },
+  "cert:external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for USDZAR",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=14"
+    }
+   }
+  },
+  "cert:external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "23 of 23 broker hours measured for XAUUSD",
+     "measured_hours": 23
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "23 of 23 broker hours measured for XAUUSD",
+     "measured_hours": 23
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "23 of 23 broker hours measured for XAUUSD",
+     "measured_hours": 23
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "cert:external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
+   "kind": "certificate",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "session_range_breakout -> breakout",
+     "value": "breakout"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "23 of 23 broker hours measured for XAUUSD",
+     "measured_hours": 23
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=17"
+    }
+   }
+  },
+  "sleeve:eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": {
+   "kind": "live_sleeve",
+   "certificate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "fields": {
+    "mechanism_class": {
+     "status": "MEASURED",
+     "why": "overnight_gap_decay -> reversion",
+     "value": "reversion"
+    },
+    "novelty": {
+     "status": "UNMEASURED",
+     "why": "reports/STYLE_NOVELTY.json absent or unreadable",
+     "unmeasured_since": "2026-10-13T22:20:34+00:00",
+     "age_h": 0.0,
+     "converter": "research/style_novelty.py on the host that holds the symbol's bars -- the box's hourly leg style_novelty; --force when the report predates the cert",
+     "red": false
+    },
+    "fill_cost": {
+     "status": "MEASURED",
+     "why": "24 of 24 broker hours measured for EURZAR",
+     "measured_hours": 24
+    },
+    "tradability": {
+     "status": "MEASURED",
+     "why": "contract terms and bars present"
+    },
+    "forward_clock": {
+     "status": "MEASURED",
+     "why": "verdict ACCUMULATING, status ACTIVE, n=9"
+    },
+    "pnl_attribution": {
+     "status": "MEASURED_ZERO",
+     "deals": 0,
+     "why": "markout measured 257 account deals, none this sleeve's"
+    }
+   }
+  }
+ },
+ "n_certificates": 52,
+ "n_live_sleeves": 1,
+ "red": [],
+ "unmeasured": [
+  "cert:external.AUDCAD.discovered.p=7c996ac8456c8919|forward_clock",
+  "cert:external.AUDCAD.discovered.p=7c996ac8456c8919|novelty",
+  "cert:external.AUDCAD.discovered.p=8030fb339510dceb|forward_clock",
+  "cert:external.AUDCAD.discovered.p=8030fb339510dceb|novelty",
+  "cert:external.AUDCAD.discovered.p=a7324e7affe1f80a|forward_clock",
+  "cert:external.AUDCAD.discovered.p=a7324e7affe1f80a|novelty",
+  "cert:external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.AUDNZD.discovered.p=c76b860ff91ee920|fill_cost",
+  "cert:external.AUDNZD.discovered.p=c76b860ff91ee920|forward_clock",
+  "cert:external.AUDNZD.discovered.p=c76b860ff91ee920|novelty",
+  "cert:external.AUDUSD.discovered.p=8e61ea22743f15b7|forward_clock",
+  "cert:external.AUDUSD.discovered.p=8e61ea22743f15b7|novelty",
+  "cert:external.AUDUSD.discovered.p=a5bbf78b5c8595c0|forward_clock",
+  "cert:external.AUDUSD.discovered.p=a5bbf78b5c8595c0|novelty",
+  "cert:external.AUDUSD.discovered.p=cf0368e026d6b477|forward_clock",
+  "cert:external.AUDUSD.discovered.p=cf0368e026d6b477|novelty",
+  "cert:external.AUDUSD.discovered.p=de80ad4f2ef91116|forward_clock",
+  "cert:external.AUDUSD.discovered.p=de80ad4f2ef91116|novelty",
+  "cert:external.CADCHF.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.CADJPY.session_range_breakout.rr=1.5_wb=12|forward_clock",
+  "cert:external.CADJPY.session_range_breakout.rr=1.5_wb=12|novelty",
+  "cert:external.CADJPY.session_range_breakout.rr=2.0_wb=12|forward_clock",
+  "cert:external.CADJPY.session_range_breakout.rr=2.0_wb=12|novelty",
+  "cert:external.CADJPY.session_range_breakout.rr=2.5_wb=12|forward_clock",
+  "cert:external.CADJPY.session_range_breakout.rr=2.5_wb=12|novelty",
+  "cert:external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.CHFNOK.carry.p=98d776f3e210d3e2|novelty",
+  "cert:external.EURCHF.discovered.p=16bd35526c7f3515|forward_clock",
+  "cert:external.EURCHF.discovered.p=16bd35526c7f3515|novelty",
+  "cert:external.EURCHF.discovered.p=4cba1afa572a99cd|forward_clock",
+  "cert:external.EURCHF.discovered.p=4cba1afa572a99cd|novelty",
+  "cert:external.EURCHF.discovered.p=6c7943b997558157|forward_clock",
+  "cert:external.EURCHF.discovered.p=6c7943b997558157|novelty",
+  "cert:external.EURCHF.discovered.p=9bc1f7c40f200e78|forward_clock",
+  "cert:external.EURCHF.discovered.p=9bc1f7c40f200e78|novelty",
+  "cert:external.EURCHF.discovered.p=a5bbf78b5c8595c0|forward_clock",
+  "cert:external.EURCHF.discovered.p=a5bbf78b5c8595c0|novelty",
+  "cert:external.EURCHF.discovered.p=c14e361e680e6d0b|forward_clock",
+  "cert:external.EURCHF.discovered.p=c14e361e680e6d0b|novelty",
+  "cert:external.EURCHF.discovered.p=c7d53510458ba32c|forward_clock",
+  "cert:external.EURCHF.discovered.p=c7d53510458ba32c|novelty",
+  "cert:external.EURCHF.discovered.p=e266baf78567bef3|forward_clock",
+  "cert:external.EURCHF.discovered.p=e266baf78567bef3|novelty",
+  "cert:external.EURGBP.discovered.p=8e61ea22743f15b7|forward_clock",
+  "cert:external.EURGBP.discovered.p=8e61ea22743f15b7|novelty",
+  "cert:external.EURGBP.discovered.p=f31f02aa2b9d79b1|forward_clock",
+  "cert:external.EURGBP.discovered.p=f31f02aa2b9d79b1|novelty",
+  "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12|forward_clock",
+  "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12|novelty",
+  "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12|forward_clock",
+  "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12|novelty",
+  "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12|forward_clock",
+  "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12|novelty",
+  "cert:external.EURNOK.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.EURUSD.discovered.p=6d034b421914e1a2|forward_clock",
+  "cert:external.EURUSD.discovered.p=6d034b421914e1a2|novelty",
+  "cert:external.EURUSD.discovered.p=f8bd412f38e33d20|forward_clock",
+  "cert:external.EURUSD.discovered.p=f8bd412f38e33d20|novelty",
+  "cert:external.EURZAR.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12|forward_clock",
+  "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12|novelty",
+  "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12|forward_clock",
+  "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12|novelty",
+  "cert:external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.NZDCAD.discovered.p=0ffb1e19a04f260e|forward_clock",
+  "cert:external.NZDCAD.discovered.p=0ffb1e19a04f260e|novelty",
+  "cert:external.USDCAD.discovered.p=193aadf2caba3698|forward_clock",
+  "cert:external.USDCAD.discovered.p=193aadf2caba3698|novelty",
+  "cert:external.USDCAD.discovered.p=56aadf0a3018c790|forward_clock",
+  "cert:external.USDCAD.discovered.p=56aadf0a3018c790|novelty",
+  "cert:external.USDCHF.discovered.p=19dd11ec392fa005|forward_clock",
+  "cert:external.USDCHF.discovered.p=19dd11ec392fa005|novelty",
+  "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12|novelty",
+  "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12|novelty",
+  "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12|novelty",
+  "cert:external.USDMXN.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.USDZAR.overnight_gap_decay.p=44136fa355b3678a|novelty",
+  "cert:external.XAUUSD.session_range_breakout.rr=1.5_wb=12|novelty",
+  "cert:external.XAUUSD.session_range_breakout.rr=1.5_wb=8|novelty",
+  "cert:external.XAUUSD.session_range_breakout.rr=2.0_wb=12|novelty",
+  "cert:external.XAUUSD.session_range_breakout.rr=2.5_wb=12|novelty",
+  "sleeve:eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007|novelty"
+ ],
+ "unmeasured_by_field": {
+  "novelty": 53,
+  "forward_clock": 32,
+  "fill_cost": 1
+ },
+ "verdict": "UNMEASURED"
+}

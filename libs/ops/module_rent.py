@@ -497,6 +497,9 @@ MODULES: tuple[Module, ...] = (
            "desks/mt5/research/weak_signal_compiler.py"),
           ("world_causal_graph", "world_causal_graph",
            "desks/mt5/research/world_causal_graph.py"),
+          # The state-gated wrappers' proposer stamps `source` = SEAT on every donated row.
+          ("state_gate_proposer", "state_gate_proposer",
+           "desks/mt5/research/state_gate_proposer.py"),
       )),
     # THE EXECUTION-LEARNING LINES (2026-09-05, the principal's order). One billable quantity --
     # R per filled trade recovered from execution leakage -- and three claimants. The corpus

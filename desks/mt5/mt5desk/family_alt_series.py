@@ -124,7 +124,7 @@ _UNWRAPPABLE: frozenset[str] = frozenset({
     "orderflow_imbalance", "macro_conditional", "cot_positioning", "cot_net_fade",
     "cot_change_fade", "cot_change_momentum", "cot_comm_follow", "event_reaction",
     "cross_sectional", "discovered", "generic", "joint_genome", "alt_conditioned",
-    "exit_operated",
+    "exit_operated", "sync_gated", "entropy_gated",
 })
 
 
