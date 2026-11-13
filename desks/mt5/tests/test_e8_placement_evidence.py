@@ -164,7 +164,7 @@ def test_a_one_at_risk_deferral_held_for_many_passes_is_one_row(monkeypatch, tmp
         assert doc["placed"] == []
     [row] = _rows()
     assert (row["outcome"], row["reason"]) == ("DEFERRED", "one_at_risk")
-    assert "one gold trade at risk" in row["why"] and row["risk_usd"] > 0
+    assert "one gold trade at risk" in row["why"] and "risk_usd" not in row
     # One earlier trade has closed and the other ratcheted to break-even: the window places,
     # and that is a new row. (Two break-even 0.5-lot shorts still carry 2,413 USD of stop slip,
     # which the concurrent budget refuses -- v5.2.)
