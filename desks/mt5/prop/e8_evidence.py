@@ -341,7 +341,27 @@ _PUBLIC_SCRUBS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?i)\b[a-z0-9\-]+(?:\.[a-z0-9\-]+){2,}\.[a-z][a-z0-9\-]*\b"), "<host>"),
     (re.compile(r"(?i)\blocalhost(?::\d{1,5})?\b"), "<host>"),
     (re.compile(r'\{[^{}]*"[^"{}]*"\s*:[^{}]*\}'), "<body withheld>"),
+    # ACCOUNT MONEY NEVER PUBLISHES (audit HOLD on #1096): a figure carrying a currency marker
+    # or a sign on either side, and any thousands-grouped figure (how the rails print USD:
+    # "committed 1,234 + this window 567 USD"), becomes <amount>.
+    (re.compile(r"(?i)(?:[$\u00a3\u20ac]|\b(?:usd|eur|gbp)\s*)-?\d[\d,]*(?:\.\d+)?"), "<amount>"),
+    (re.compile(r"(?i)-?\d[\d,]*(?:\.\d+)?\s*(?:usd|eur|gbp)\b"), "<amount>"),
+    (re.compile(r"-?\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b"), "<amount>"),
 )
+
+
+#: Any figure of two or more integer digits in a decision's why (the rails print USD without a
+#: marker below 1,000: "against 850 to today's floor"), unless it counts points. Lots (0.39),
+#: multipliers (x1.5) and the outcome/reason codes survive; the full text stays on the box.
+_WHY_FIGURE = re.compile(r"(?<![\w.])\d{2,}(?:\.\d+)?(?!\s*points?\b)(?![\w.])")
+
+
+def _figures_withheld(text: str) -> str:
+    """A decision's why as it may be published: no account figure (audit HOLD on #1096)."""
+    try:
+        return _WHY_FIGURE.sub("<n>", text)
+    except Exception:
+        return "<text withheld>"
 
 
 def public_text(value: Any) -> Any:
@@ -454,7 +474,7 @@ class Decisions:
             self.rows.append({
                 "window": str(window), "outcome": str(outcome), "reason": str(reason),
                 "taken": outcome == PLACED,
-                "why": public_text(scrub(str(why or "")))[:300],
+                "why": _figures_withheld(public_text(scrub(str(why or ""))))[:300],
                 "lot": float(lot) if lot is not None else None,
                 "risk_usd": round(float(risk), 2) if risk is not None else None,
             })
@@ -1159,6 +1179,10 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
             # leaf has been through `public_text`.
             if isinstance(line, dict):
                 for k in ("host", "hostname", "machine_id", "recorded_machine_id"):
+                    line.pop(k, None)
+                # NO ACCOUNT MONEY (audit HOLD on #1096): risk_usd and every other *_usd figure
+                # stay on the box; the published line keeps the lot, the outcome and the reason.
+                for k in [k for k in line if str(k).lower().endswith("_usd")]:
                     line.pop(k, None)
                 line = public_fields(line)
             # The stamp goes on AFTER the scrub: it is an HMAC, never the id, and a hex run that

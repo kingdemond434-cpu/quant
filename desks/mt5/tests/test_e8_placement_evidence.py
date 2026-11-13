@@ -1009,3 +1009,24 @@ def test_nothing_here_hashes_a_login_at_server() -> None:
         src = path.read_text("utf-8")
         assert not re.search(r"sha256\([^)]*(login|server)", src), path
         assert not re.search(r"login\}?@\{?server", src), path
+
+
+def test_no_account_money_reaches_the_published_decision_ledger() -> None:
+    """Audit HOLD on #1096: the ledger ships to the public repo, so no risk_usd (or any *_usd)
+    field, and no USD figure inside a why-text, ever publishes. Lot, outcome and reason do."""
+    d = ev.Decisions()
+    d.note("afternoon", ev.DEFERRED, "daily_floor",
+           "committed 1,234 + this window 567 USD, x1.5 slippage = 2,345, against 850 to "
+           "today's floor less a 50 margin = 800; $45.5 risk", lot=0.39, risk_usd=612.75)
+    assert d.rows[0]["lot"] == 0.39
+    st: dict[str, Any] = {"date": "2026-10-15", "windows": {}, "carried": {}}
+    written = ev.record_decisions(d.rows, st, now=datetime(2026, 10, 15, 14, 0, tzinfo=UTC),
+                                  server_date="2026-10-15", account="tradelocker:1",
+                                  armed=True, host={"verdict": "TRADING"})
+    assert written and all(not k.endswith("_usd") for k in written[0])
+    text = ev.decisions_path().read_text("utf-8")
+    for figure in ("612.75", "1,234", "567", "2,345", "850", "45.5", "risk_usd"):
+        assert figure not in text, figure
+    row = json.loads(text.splitlines()[-1])
+    assert row["lot"] == 0.39 and row["reason"] == "daily_floor"
+    assert "x1.5" in row["why"]
