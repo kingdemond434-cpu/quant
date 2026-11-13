@@ -461,5 +461,8 @@ def test_the_docket_feed_carries_the_registry_sources_url(tmp_path: Path) -> Non
     db.execute("INSERT INTO research_candidates (id, symbol, family, params_json, created_at, "
                "content_hash, source_id, score) VALUES ('c1', 'EURUSD', 'overnight_gap_decay', "
                "'{}', '2026-09-30T00:00:00+00:00', 'h', 'kr_pack', 1.0)")
-    rows = list(docket_feed.candidate_rows(db))
+    try:
+        rows = list(docket_feed.candidate_rows(db))
+    finally:
+        db.close()
     assert rows and rows[0]["source_url"] == "https://kr.example/feed"
