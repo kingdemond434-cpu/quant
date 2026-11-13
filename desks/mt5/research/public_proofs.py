@@ -57,7 +57,10 @@ from libs.ops import public_redact as R  # noqa: E402
 REPORTS = DESK / "reports"
 DATA = DESK / "data"
 OUT_DIR = REPORTS / "public"
-MANIFEST = OUT_DIR / "PUBLIC_PROOFS.json"
+#: The leg's own artifact (the component registry reads it by this name): the manifest of every
+#: proof written this pass, its status and the DONE rows it backs.
+OUT = OUT_DIR / "PUBLIC_PROOFS.json"
+MANIFEST = OUT
 SCHEMA = "public_proofs/1"
 
 #: The largest published projection. A report, never a ledger.
