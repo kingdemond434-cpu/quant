@@ -1,0 +1,6 @@
+{
+  "_doc": "The false-finding adjudicator's model (ops/release/adjudicate.py), SHADOW ONLY. A different family from the reviewer's qwen2.5-coder:7b, run on the Actions runner by the same pinned Ollama archive (local_models.json). `digest` stays null until the first shadow run prints its manifest sha256 and Governance pins it; nothing enforces on this model until zuck's separate enforce PR.",
+  "family": "google",
+  "name": "gemma2:9b",
+  "digest": null
+}
