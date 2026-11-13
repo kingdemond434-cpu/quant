@@ -154,7 +154,7 @@ TASK name="MT5-TickRecorder"       trigger="at logon + every 10 minutes (keep-al
 TASK name="MT5-TickIntegrity"      trigger="every 1 hour, at :20"  runs="desks/mt5/recorders/tick_integrity.py"  installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-TapeFeatures"       trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/tape_features.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-VolArchive"         trigger="UNDECLARED"            runs="desks/mt5/recorders/vol_archive.py"     installer="NONE" lane="data"
-TASK name="MT5-MoatRecorder"       trigger="every 30 minutes, at :10"            runs="desks/mt5/moat/moat_recorder.py"   installer="NONE" lane="data"
+TASK name="MT5-MoatRecorder"       trigger="every 30 minutes, at :10"            runs="desks/mt5/moat/moat_recorder.py"   installer="desks/mt5/scripts/install_moat_recorder_interactive.ps1" lane="data"
 TASK name="MT5-MoatSilver"         trigger="every 1 hour, at :23"            runs="desks/mt5/moat/moat_silver.py"      installer="NONE" lane="data"
 TASK name="MT5-MoatMiner"          trigger="every 1 hour"          runs="desks/mt5/moat/moat_miner.py"       installer="desks/mt5/scripts/install_moat_miner_task.ps1" lane="data"
 # Named by install_moat_miner_task.ps1 as the tape recorder's watchdog. Its own installer is not
@@ -245,7 +245,7 @@ TASK name="MT5-NeverStale" trigger="every 15 minutes" runs="ops/run_never_stale.
 TASK name="MT5-NewsDesk" trigger="at system start-up (resident)" runs="desks/mt5/research/news_desk.py" installer="NONE" lane="research"
 TASK name="MT5-NoLog" trigger="daily 06:40" runs="desks/mt5/research/no_log.py" installer="NONE" lane="ops"
 TASK name="MT5-RegimeMonitor" trigger="every 15 minutes" runs="desks/mt5/research/regime_monitor.py" installer="NONE" lane="research"
-TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5/moat/moat_recorder.py" installer="NONE" lane="data"
+TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5/moat/moat_recorder.py" installer="desks/mt5/scripts/install_moat_recorder_interactive.ps1" lane="data"
 TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_executor.py --enable-certified-entries" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Book" trigger="every 1 hour" runs="desks/mt5/prop/e8_book.py" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_spread_sampler.py" installer="NONE" lane="prop"
