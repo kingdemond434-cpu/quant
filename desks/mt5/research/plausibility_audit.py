@@ -172,7 +172,7 @@ def run(max_cells: int = MAX_CELLS) -> dict[str, Any]:
             row = examine(cell, _rebuild, eg.daily_series)
         except Exception as exc:  # one cell's failure is reported, never the batch's
             skipped.append({"certificate": r.get("certificate"),
-                            "why": f"{type(exc).__name__}: {str(exc)[:200]}"})
+                            "why": f"{type(exc).__name__}"})
             continue
         row = {"at": _now(), "certificate": r.get("certificate"), "sym": sym, "family": fam,
                "params": params} | row

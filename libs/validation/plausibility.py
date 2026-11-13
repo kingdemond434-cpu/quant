@@ -216,7 +216,7 @@ def build_arms(df: Any, sigs: list[Any], series_of: Callable[[list[Any]], Any], 
                    if _next(s.time) is not None]
         out["delayed"] = series_of(delayed)
     except Exception as exc:  # an arm that cannot be built is reported, never assumed
-        out["delayed_error"] = f"{type(exc).__name__}: {exc}"[:200]
+        out["delayed_error"] = f"{type(exc).__name__}"[:200]
 
     if close is not None:
         def _ref(t: Any) -> float:
@@ -230,7 +230,7 @@ def build_arms(df: Any, sigs: list[Any], series_of: Callable[[list[Any]], Any], 
                        for s in sigs]
             out["flipped"] = series_of(flipped)
         except Exception as exc:
-            out["flipped_error"] = f"{type(exc).__name__}: {exc}"[:200]
+            out["flipped_error"] = f"{type(exc).__name__}"[:200]
         try:
             rng = np.random.default_rng(seed)
             shuffled = []
@@ -247,7 +247,7 @@ def build_arms(df: Any, sigs: list[Any], series_of: Callable[[list[Any]], Any], 
                 shuffled.append(series_of(arm))
             out["shuffled"] = shuffled
         except Exception as exc:
-            out["shuffled_error"] = f"{type(exc).__name__}: {exc}"[:200]
+            out["shuffled_error"] = f"{type(exc).__name__}"[:200]
     return out
 
 
@@ -308,7 +308,7 @@ def truncation_test(df: Any, sigs: list[Any], regen: Callable[[Any], list[Any]],
                 got = {g for g in (_sig_key(x) for x in (regen(sub) or [])) if g[0] <= last}
             except Exception as exc:  # a family that cannot run truncated is not a proof
                 per_cut.append({"cut": str(last), "ran": False,
-                                "error": f"{type(exc).__name__}: {exc}"[:200]})
+                                "error": f"{type(exc).__name__}"[:200]})
                 continue
             want = {f for f in full if f[0] <= last}
             diff = want ^ got
