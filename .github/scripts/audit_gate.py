@@ -1572,6 +1572,55 @@ def auto_revert(repo: str, base: str) -> int:
     return rc
 
 
+#: COMMENT CLEARS FIRST (Governance 2026-11-10 20:54Z): pages of the repo's newest issue
+#: comments one sweep reads to find PRs whose latest trusted verdict CLEARs their listed head.
+CLEAR_SCAN_PAGES = 5
+
+
+def comment_clears(
+    repo: str, heads: Mapping[int, str], pages: int = CLEAR_SCAN_PAGES
+) -> tuple[set[int], str]:
+    """(the open PRs whose latest trusted AUDIT verdict, read from the repo's newest comments,
+    is a CLEAR of their listed head; why the read is partial or failed, or ""). ORDER ONLY: it
+    moves a PR to the front of the sweep, and its full run still reads every comment, the
+    approval, every job and the HOLDs. Newest first, so a verdict newer than a CLEAR that was
+    read is read too (an edit bumps `updated_at`, and verdicts() counts it as a HOLD); a CLEAR
+    older than the pages read is simply not moved up.
+
+    MEASURED 2026-11-10 20:45Z: with ~300 PRs open the order read stops at PRE_READ_SHARE, every
+    unread PR goes last oldest-first, and only a registry row jumped the queue. #811 (CLEAR
+    16:22Z, zuck's APPROVE 16:31Z, every gating check green) was never looked at."""
+    by_pr: dict[int, list[Mapping[str, Any]]] = {}
+    if not heads:  # no listed head to match: nothing to read
+        return set(), ""
+    for page in range(1, pages + 1):
+        try:
+            got = _gh(
+                f"repos/{repo}/issues/comments?sort=updated&direction=desc&per_page=100"
+                f"&page={page}",
+                timeout=PRE_READ_TIMEOUT_S,
+            )
+        except (RuntimeError, subprocess.SubprocessError) as exc:
+            return _clears(by_pr, heads), f"the comment read stopped at page {page}: {exc}"
+        listed = [c for c in got if isinstance(c, dict)] if isinstance(got, list) else []
+        for c in listed:
+            m = re.search(r"/issues/(\d+)$", str(c.get("issue_url") or ""))
+            if m and int(m.group(1)) in heads:
+                by_pr.setdefault(int(m.group(1)), []).append(c)
+        if len(listed) < 100:
+            break
+    return _clears(by_pr, heads), ""
+
+
+def _clears(by_pr: Mapping[int, list[Mapping[str, Any]]], heads: Mapping[int, str]) -> set[int]:
+    out = set()
+    for n, cs in by_pr.items():
+        vs = verdicts(cs)
+        if vs and vs[-1]["verdict"] == "CLEAR" and vs[-1]["sha"] == heads.get(n):
+            out.add(n)
+    return out
+
+
 def sweep(
     repo: str,
     base: str,
@@ -1604,13 +1653,25 @@ def sweep(
     latest = {r.get("pr"): r for r in reg_rows}
     ready: list[tuple[int, int, int]] = []
     bring_ups = [BRING_UPS_PER_SWEEP]
+    listed = _flat(pages)
+    heads = {
+        int(p["number"]): str((p.get("head") or {}).get("sha") or "")
+        for p in listed
+        if (p.get("head") or {}).get("sha")
+    }
+    cleared, cwhy = comment_clears(repo, heads)
+    if cwhy:
+        _summary(f"comment CLEARs first: {cwhy}")
     read_until = clock() + budget_s * PRE_READ_SHARE
     unread = 0
-    for i, p in enumerate(_flat(pages)):
+    for i, p in enumerate(listed):
         n = int(p["number"])
         head = str((p.get("head") or {}).get("sha") or "")
         row = latest.get(n) or {}
         if head and row.get("verdict") == "CLEAR" and row.get("sha") == head:
+            ready.append((-1, i, n))
+            continue
+        if n in cleared:  # a trusted comment CLEARs this head: run it early (order only)
             ready.append((-1, i, n))
             continue
         if clock() > min(deadline, read_until):  # the pre-read is inside the budget (#552 SF6)

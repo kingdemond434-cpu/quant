@@ -3042,3 +3042,57 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ------------------- comment CLEARs first (Governance 2026-11-10 20:54Z: #811 never looked at)
+
+
+def _cmt(n: int, body: str, at: str, **k: Any) -> dict[str, Any]:
+    return {"issue_url": f"https://api.github.com/repos/o/r/issues/{n}", "body": body,
+            "author_association": "OWNER", "user": {"login": "o"}, "created_at": at,
+            "updated_at": at, **k}  # fmt: skip
+
+
+def test_a_pr_whose_latest_trusted_comment_clears_its_head_runs_before_the_unread_tail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    h = {n: f"{n:040d}" for n in (1, 2, 3, 4, 5)}
+    prs = [{"number": n, "head": {"sha": h[n]}} for n in h]
+    comments = [
+        _cmt(4, f"AUDIT CLEAR {h[4]}", "2026-11-10T16:22:00Z"),
+        _cmt(3, f"AUDIT CLEAR {h[3]}", "2026-11-10T16:00:00Z"),
+        _cmt(3, f"AUDIT HOLD {h[3]}", "2026-11-10T17:00:00Z"),  # held after its CLEAR
+        _cmt(2, f"AUDIT CLEAR {'f' * 40}", "2026-11-10T16:00:00Z"),  # an older head
+        _cmt(5, f"AUDIT CLEAR {h[5]}", "2026-11-10T16:00:00Z", author_association="NONE"),
+        _cmt(1, f"AUDIT CLEAR {h[1]}", "2026-11-10T16:00:00Z", updated_at="2026-11-10T18:00Z"),
+    ]
+    reads: list[str] = []
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        reads.append(path)
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if path.startswith("repos/o/r/issues/comments?"):
+            return comments if "page=1" in path else []
+        return {"check_runs": []}
+
+    ran: list[int] = []
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
+    monkeypatch.setattr(ag, "registry_rows", lambda p: ([], ""))
+    ag.sweep("o/r", ag.LIVE, budget_s=1e9, clock=lambda: 0.0)
+    assert ran[0] == 4  # only #4: CLEAR of its head, trusted, unedited, not held after
+    assert sum(1 for r in reads if "issues/comments" in r) == 1  # under 100: one page read
+    assert sorted(ran) == [1, 2, 3, 4, 5]  # order only: nobody is dropped
+    assert ag.comment_clears("o/r", h) == ({4}, "")
+
+
+def test_a_failed_comment_read_moves_nobody_and_never_stops_the_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        raise RuntimeError("gh api: timed out after 20s")
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    got, why = ag.comment_clears("o/r", {1: "1" * 40})
+    assert got == set() and "page 1" in why

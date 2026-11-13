@@ -400,6 +400,8 @@ def test_the_box_sweep_skips_pending_prs_streams_and_stops_on_budget(
     def gh(path: str, *a: Any, **k: Any) -> Any:
         if path.startswith("repos/o/r/pulls?"):
             return [prs]
+        if path.startswith("repos/o/r/issues/comments?"):
+            return []  # no comment CLEARs: the order below is the check read's
         if "/check-runs" in path:
             return {
                 "check_runs": pending if path.split("/")[4].startswith("0" * 39 + "2") else green
@@ -451,6 +453,8 @@ def test_a_registry_cleared_head_runs_first_and_a_slow_order_read_never_eats_the
             return [prs]
         if path.startswith("repos/o/r/commits?"):
             return []  # auto_revert: nothing on the base to look at
+        if path.startswith("repos/o/r/issues/comments?"):
+            return []  # no comment CLEARs: the order below is the registry's and the reads'
         if "/check-runs" in path:
             assert k.get("timeout") == ag.PRE_READ_TIMEOUT_S  # a short timeout for the order read
             reads.append(path)
@@ -641,6 +645,8 @@ def test_the_box_sweep_runs_merge_ready_prs_first_and_failed_ones_last(
     def gh(path: str, *a: Any, **k: Any) -> Any:
         if path.startswith("repos/o/r/pulls?"):
             return [prs]
+        if path.startswith("repos/o/r/issues/comments?"):
+            return []  # no comment CLEARs: the order below is the check read's
         if "/check-runs" in path:
             return {"check_runs": by[int(path.split("/")[4])]}
         raise AssertionError(path)
