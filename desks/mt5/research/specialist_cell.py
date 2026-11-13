@@ -449,7 +449,7 @@ def charge(cells: list[dict[str, Any]]) -> dict[str, Any]:
                        for r in cells])
     except Exception as exc:
         return {"n_raw": len(cells), "n_effective": None,
-                "basis": f"{UNMEASURED}: trial_ledger failed ({type(exc).__name__}: {exc})"}
+                "basis": f"{UNMEASURED}: trial_ledger failed ({type(exc).__name__})"}
     return {"n_raw": int(c.n_raw), "n_effective": round(float(c.n_effective), 2),
             "inflation": round(float(c.inflation), 3), "n_families": len(c.families),
             "basis": ("libs.research.trial_ledger.census over every cell measured this pass; "
