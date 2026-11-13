@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
 import pandas as pd
@@ -54,6 +53,7 @@ TARGETS: list[tuple[str, list[str]]] = [
 
 
 def fetch_contract(commodity: str) -> pd.DataFrame | None:
+    from research.futures_state import gated_urlopen
     rows: list[dict] = []
     offset = 0
     while True:
@@ -65,8 +65,9 @@ def fetch_contract(commodity: str) -> pd.DataFrame | None:
             "$offset": str(offset),
         }
         url = f"{BASE}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=90) as resp:
+        # Our own UA, and only after robots.txt allows it (`futures_state.gated_urlopen`):
+        # anything else raises RobotsRefused before a request is made.
+        with gated_urlopen(url, 90) as resp:
             batch = json.load(resp)
         rows.extend(batch)
         if len(batch) < 5000:

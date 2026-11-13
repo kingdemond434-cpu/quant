@@ -289,6 +289,8 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    # weekly CFTC positioning change as a claim about next week's return: prediction
+    "cot_positioning_flow": "prediction",
     # share-CFD cells from the alt hand-off (event lane + conditioned class books): prediction
     "alt_equity_handoff": "prediction",
     "specialist_cell": "prediction",

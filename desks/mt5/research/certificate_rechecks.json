@@ -1,0 +1,14 @@
+{
+ "_doc": "Live certificates whose INPUTS changed after they were judged. Each row is RECHECK_REQUIRED until the sealed gauntlet re-judges the named cell in reproduction mode (no certificate written) and its report exists. Read by research/certificate_recheck.py on the cot_positioning_flow hourly leg. A row is closed by its report, never by deleting it.",
+ "rechecks": [
+  {
+   "id": "cot238_EURUSD_cot_positioning",
+   "sleeve": "EURUSD.cot_positioning.continuous#input_source=cot_point_in_time",
+   "only": "EURUSD.cot_positioning.",
+   "report_to": "reports/reproduction_cot238_EURUSD_cot_positioning.json",
+   "reason": "PR #238: COT release labels moved to the bar clock (futures_state.cot_usable_from + to_bar_clock). Inside the EURUSD H1 span 57 of 455 report weeks now read later (45 by 2-3h, 1 by 23h, 11 in the 2018-19 lapse window by 3-75 days), none earlier. The certificate was judged on the earlier labels.",
+   "opened": "2026-11-11",
+   "decision": "D-20261111-004"
+  }
+ ]
+}
