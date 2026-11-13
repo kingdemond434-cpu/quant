@@ -343,19 +343,105 @@ def _psutil_memory() -> dict[str, Any]:
         return {}
 
 
-def measure_box(now: datetime | None = None, *, sample_cpu: bool = True) -> dict[str, Any]:
-    """Everything the plan is allowed to be sized from, all of it read off this machine."""
+def measure_box(now: datetime | None = None, *, sample_cpu: bool = True,
+                on_stage: Any = None) -> dict[str, Any]:
+    """Everything the plan is allowed to be sized from, all of it read off this machine.
+    `on_stage(name)` is called as each sub-measure is entered, so a hung pass names its stage."""
+    stage = on_stage if callable(on_stage) else (lambda _name: None)
     box: dict[str, Any] = {"cores": int(os.cpu_count() or 1), "market_closed": market_closed(now)}
+    stage("memory")
     box.update(measure_memory())
     if box.get("free_phys_mb") == UNMEASURED:
+        stage("psutil_memory")
         box.update(_psutil_memory())
     if sample_cpu:
+        stage("cpu")
         box.update(measure_cpu())
+    stage("terminal")
     box.update(measure_terminal())
+    stage("done")
     phys = box.get("total_phys_mb")
     box["is_judging_box"] = bool(box["cores"] >= JUDGING_BOX_MIN_CORES
                                  and isinstance(phys, int) and phys >= JUDGING_BOX_MIN_PHYS_MB)
     return box
+
+
+#: Wall clock the box measure may take before the pass goes on without it. A normal measure is
+#: a 1 s CPU sample plus two process walks. Measured on the box 2026-11-05: the 01:44Z and 02:45Z
+#: passes entered `measure_box` and never left it, and JUDGING_RATE.json went 2.1 h stale.
+MEASURE_BOX_TIMEOUT_S = 90.0
+_MEASURE_BOX = measure_box
+_STAGE_PREFIX = "MEASURE_BOX_STAGE "
+
+
+def _box_without_processes(now: datetime | None, why: str) -> dict[str, Any]:
+    """The box with nothing that walks processes: cores, the calendar and memory (one kernel
+    call). Terminal presence is UNMEASURED, so the plan stands down to the sealed baseline --
+    never below it -- for this pass only, exactly as when psutil is absent."""
+    box: dict[str, Any] = {"cores": int(os.cpu_count() or 1), "market_closed": market_closed(now)}
+    box.update(measure_memory())
+    box.update({"terminal_running": UNMEASURED, "gateway_running": UNMEASURED,
+                "n_python": UNMEASURED, "terminal_source": UNMEASURED, "terminal_why": why,
+                "cpu_source": UNMEASURED, "busy_other_cores": UNMEASURED,
+                "busy_judge_cores": UNMEASURED, "cpu_why": why})
+    phys = box.get("total_phys_mb")
+    box["is_judging_box"] = bool(box["cores"] >= JUDGING_BOX_MIN_CORES
+                                 and isinstance(phys, int) and phys >= JUDGING_BOX_MIN_PHYS_MB)
+    return box
+
+
+def measure_box_bounded(now: datetime | None = None,
+                        timeout_s: float | None = None) -> dict[str, Any]:
+    """`measure_box` in a CHILD PROCESS that is killed at `timeout_s`, so a hung process walk can
+    never again cost the hour its JUDGING_RATE. A thread cannot do this: a psutil call stuck in C
+    may hold the interpreter, and a thread cannot be killed. On a timeout or a failed child the
+    box is `_box_without_processes`, carrying `box_timeout` with the stage the child was in.
+
+    A substituted `measure_box` (a test, a caller) is called in-process: there is nothing of the
+    machine in it to hang on."""
+    if measure_box is not _MEASURE_BOX:
+        return measure_box(now)
+    timeout_s = MEASURE_BOX_TIMEOUT_S if timeout_s is None else float(timeout_s)
+    cmd = [sys.executable, str(Path(__file__).resolve()), "--measure-box-json"]
+    if now is not None:
+        cmd.append(_now(now).isoformat())
+    stage = "spawn"
+    try:
+        done = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s,
+                              check=False)
+        for line in (done.stderr or "").splitlines():
+            if line.startswith(_STAGE_PREFIX):
+                stage = line[len(_STAGE_PREFIX):].strip()
+        got = json.loads((done.stdout or "").strip().splitlines()[-1]) if done.stdout else None
+        if done.returncode == 0 and isinstance(got, dict):
+            got["box_source"] = "child"
+            return got
+        why = (f"box measure child exited {done.returncode} in stage {stage!r}: "
+               f"{(done.stderr or '').strip()[-300:]}")
+    except subprocess.TimeoutExpired as exc:
+        err = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (
+            exc.stderr or "")
+        for line in err.splitlines():
+            if line.startswith(_STAGE_PREFIX):
+                stage = line[len(_STAGE_PREFIX):].strip()
+        why = (f"box measure did not finish in {timeout_s:g}s; killed in stage {stage!r}")
+    except Exception as exc:
+        why = f"box measure child failed in stage {stage!r}: {type(exc).__name__}: {exc}"
+    box = _box_without_processes(now, f"UNMEASURED: {why}")
+    box["box_source"] = "fallback"
+    box["box_timeout"] = {"stage": stage, "timeout_s": timeout_s, "why": why}
+    return box
+
+
+def _measure_box_child(argv: list[str]) -> int:
+    """The child's side: print each stage to stderr (unbuffered) and the box as one JSON line."""
+    now = datetime.fromisoformat(argv[0]) if argv else None
+
+    def _stage(name: str) -> None:
+        print(f"{_STAGE_PREFIX}{name}", file=sys.stderr, flush=True)
+
+    print(json.dumps(_MEASURE_BOX(now, on_stage=_stage), default=str), flush=True)
+    return 0
 
 
 def declared_costs() -> dict[str, float]:
@@ -1360,7 +1446,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     attempt = _attempt_module().Attempt(_now(now), _attempt_path(), enabled=write)
     attempt.phase("started")
     attempt.phase("measure_box")
-    box = measure_box(now)
+    box = measure_box_bounded(now)
     costs = declared_costs()
     attempt.phase("queue")
     queue = measure_queue()
@@ -1773,6 +1859,9 @@ def render(payload: dict[str, Any]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if raw[:1] == ["--measure-box-json"]:
+        return _measure_box_child(raw[1:])
     ap = argparse.ArgumentParser(description="Size the sealed gauntlet's parallelism to the box.")
     ap.add_argument("--once", action="store_true", help="one measured pass (the leg's mode)")
     ap.add_argument("--budget-s", type=float, default=300.0,
