@@ -1,6 +1,6 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-12T22:43:59+00:00",
+ "generated_at": "2026-11-13T04:48:22+00:00",
  "producer": "desks/mt5/research/judge_prescreen.py (hourly leg judge_prescreen)",
  "mode": "SHADOW",
  "canon_switch": "the code constant judge_prescreen.CANON (a reviewed commit flips it)",
@@ -473,9 +473,9 @@
   "bytes": 496458545
  },
  "timing_s": {
-  "charts": 13.949,
-  "replay": 22.232,
-  "total": 57.432
+  "charts": 10.552,
+  "replay": 71.276,
+  "total": 115.775
  },
  "priority": {
   "applied": true,
@@ -490,8 +490,8 @@
    "status": "MEASURED",
    "provisional": false,
    "cells": 1490164,
-   "both": 1371822,
-   "gate_ruled_not_graph_counted": 115981,
+   "both": 1371817,
+   "gate_ruled_not_graph_counted": 115986,
    "graph_counted_not_gate_ruled": 0,
    "neither": 2361,
    "pending_graph_read": 0,
@@ -501,8 +501,8 @@
    "coverage": {
     "gate_bytes_read": 496458545,
     "gate_bytes": 496458545,
-    "graph_bytes_read": 4603809266,
-    "graph_bytes": 4603809266,
+    "graph_bytes_read": 4603923513,
+    "graph_bytes": 4603923513,
     "backfill_ids_waiting": 0,
     "backfill_cursor": null,
     "backfill_end": null,
@@ -524,13 +524,13 @@
    ],
    "sample_graph_only": [],
    "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
-   "seconds": 18.968
+   "seconds": 29.985
   }
  },
  "missed_growth": [
   {
-   "day": "2026-11-12",
-   "at": "2026-11-12T22:43:59+00:00",
+   "day": "2026-11-13",
+   "at": "2026-11-13T04:48:22+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -550,8 +550,8 @@
    }
   },
   {
-   "day": "2026-11-12",
-   "at": "2026-11-12T22:43:59+00:00",
+   "day": "2026-11-13",
+   "at": "2026-11-13T04:48:22+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -559,8 +559,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.10982641325238719,
-   "would_free_seconds_if_all_rules_acted": 27489.4
+   "seconds_per_cell": 0.10894235133908307,
+   "would_free_seconds_if_all_rules_acted": 27715.2
   }
  ]
 }
