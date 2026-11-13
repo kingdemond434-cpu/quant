@@ -707,7 +707,7 @@ def _reviews() -> tuple[dict[str, dict], str | None]:
     try:
         return decay_backtest.read_reviews(), None
     except OSError as exc:
-        return {}, f"UNMEASURED: blind-review ledger unreadable ({type(exc).__name__}: {exc})"
+        return {}, f"UNMEASURED: blind-review ledger unreadable ({type(exc).__name__})"
 
 
 def traded_names(days: int = TRAIL_DAYS) -> dict[str, int]:

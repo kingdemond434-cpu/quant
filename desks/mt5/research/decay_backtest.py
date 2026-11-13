@@ -126,8 +126,9 @@ def latest_reviews(ledger_rows: list[dict]) -> dict[str, dict]:
 
 
 def read_reviews(path: Path | None = None) -> dict[str, dict]:
-    """cell -> latest review row from the ledger file. Absent or unreadable: {} (every
-    comparison then reads UNMEASURED and nothing moves); an unparseable line is skipped."""
+    """cell -> latest review row from the ledger file. An absent or unreadable file RAISES
+    OSError; the caller (`decay_monitor._reviews`) turns that into {} so every comparison reads
+    UNMEASURED and nothing moves. An unparseable line is skipped."""
     p = path or REVIEW_LEDGER
     rows: list[dict] = []
     with p.open(encoding="utf-8") as fh:            # OSError propagates to the caller
