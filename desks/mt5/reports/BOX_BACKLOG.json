@@ -1,11 +1,19 @@
 {
   "upstream": "@{u}",
-  "ahead": 1644,
+  "ahead": 1652,
   "merges": 593,
-  "non_merge": 1051,
+  "non_merge": 1059,
   "state_only": 762,
-  "code_touching": 289,
+  "code_touching": 297,
   "code_commits": [
+    "b78e2ec03fda364ebac15b6c61bf5d273806ada8",
+    "a0e32664fd10ef984c14321df3d85091ca9ae01b",
+    "bc933dc8c8554364c5b78930b7d04a955f9ba4cd",
+    "48f2b7225cba06b28de96923da7937721b7be9d0",
+    "55b5a9aa92e284aaf8880aaf073357e66805a57c",
+    "6109ad0d0d8048728511924fb4695f03fcfac3be",
+    "a91d4165ed1d6b555910eb368341a6202588c61f",
+    "8b16ac6ea5cde1b250c6cb9e4b7d9c47a707f417",
     "ec992d08829ebf6e94136c6e94a82e5448d8efb7",
     "da5f48ab378433fa03e0dc50c8b4da5b33423a25",
     "169f385ccc59d194ef9131dbf96c455b9cea2928",
@@ -197,21 +205,22 @@
     "ad05ca7973d13a0e702ef47ba590ba1c6288b734",
     "ecc871f553b1ba4b6a03789cda62416670775920",
     "cf00d7a3692dceac078a6fef977cac1e7f39366d",
-    "99072a6c79886374efaa7c14b990dc540fff93d4",
-    "8338360978a2056b0956e585a4e08ec02322fb93",
-    "65b3bc15d68828641331eb14ef451f356459b2fb",
-    "41852552e7a5aa8af30c7a5899348c146fe3daa9",
-    "ebdd75f2283632031f0187f2d72777cf05a73e95",
-    "69b4a105096b01f23dee829c5fb837c10a89931e",
-    "0e8dfa9ecca4828a4f9322ee20228a32fa6817e8",
-    "058e7b310491d52f0fa3f3a5f4936ec3799b3210",
-    "2de0a172281c58311c74442fdc53b0fa673bdb16"
+    "99072a6c79886374efaa7c14b990dc540fff93d4"
   ],
-  "code_paths_touched": 2548,
+  "code_paths_touched": 2549,
   "verdict": "MEASURED",
-  "measured_at": "2026-11-11T16:36:15+00:00",
-  "code_paths_differing": 0,
-  "code_paths": [],
+  "measured_at": "2026-11-13T17:38:07+00:00",
+  "code_paths_differing": 8,
+  "code_paths": [
+    "desks/mt5/mt5desk/tape.py",
+    "desks/mt5/recorders/tick_source.py",
+    "desks/mt5/research/mt5_session.py",
+    "desks/mt5/scripts/download_all_symbols.py",
+    "desks/mt5/tests/test_desk_cycle.py",
+    "desks/mt5/tests/test_mt5_session.py",
+    "tests/ops/test_hung_writer_reaper.py",
+    "tests/ops/test_published_state_withholds_login.py"
+  ],
   "skipped": [
     {
       "path": ".github/scripts/audit_gate.py",
@@ -274,15 +283,7 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "desks/mt5/research/hourly_cycle.py",
-      "why": "blob is in origin's history (an adoption, not box code)"
-    },
-    {
       "path": "desks/mt5/research/index_discovery.py",
-      "why": "blob is in origin's history (an adoption, not box code)"
-    },
-    {
-      "path": "desks/mt5/research/job_lock.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -370,10 +371,6 @@
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
-      "path": "libs/ops/git_writer_lock.py",
-      "why": "blob is in origin's history (an adoption, not box code)"
-    },
-    {
       "path": "libs/ops/leg_rotation.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
@@ -383,10 +380,6 @@
     },
     {
       "path": "libs/research/hypothesis_graph.py",
-      "why": "blob is in origin's history (an adoption, not box code)"
-    },
-    {
-      "path": "libs/research/layers.py",
       "why": "blob is in origin's history (an adoption, not box code)"
     },
     {
@@ -440,18 +433,27 @@
     {
       "path": "tests/ops/test_bridge_watchdog.py",
       "why": "blob is in origin's history (an adoption, not box code)"
-    },
-    {
-      "path": "tests/ops/test_hung_writer_reaper.py",
-      "why": "blob is in origin's history (an adoption, not box code)"
     }
   ],
   "denied_paths": [],
   "secret_screen_hits": [],
-  "withheld_paths": [],
-  "blob_digest": "e3b0c44298fc1c14",
+  "withheld_paths": [
+    "desks/mt5/research/bar_clock_probe.py",
+    "desks/mt5/research/fetch_gold_scalp.py",
+    "desks/mt5/research/h1_source.py",
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/job_lock.py",
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "desks/mt5/research/shadow_cycle.py",
+    "desks/mt5/scripts/Run-DeskCycle.ps1",
+    "desks/mt5/tests/test_certificate_single_writer.py",
+    "desks/mt5/tests/test_job_lock_liveness.py",
+    "libs/ops/git_writer_lock.py",
+    "libs/research/layers.py"
+  ],
+  "blob_digest": "23afda4977c44645",
   "push": {
     "pushed": false,
-    "why": "nothing to drain: no box-only code differs"
+    "why": "dry run (no --push)"
   }
 }
