@@ -241,3 +241,100 @@ def test_cross_asset_graph_edges_are_consumed_as_candidates(tmp_path, monkeypatc
     g = cg.CausalGraph.load(w.GRAPH)
     assert g.edge("USDJPY", "AUDJPY", 1) is not None
     assert g.edge("USDJPY", "AUDJPY", 1).status == cg.PLAUSIBLE_UNMEASURED
+
+
+def test_every_hypothesis_lane_instrument_gets_its_declared_drivers_as_candidates(
+        tmp_path, monkeypatch) -> None:
+    uni = _isolate(tmp_path, monkeypatch)
+    rng = np.random.default_rng(3)
+    for s in UNIVERSE:
+        _bars(uni, s, rng.normal(0, 1e-3, 600))
+    edges, basis = w.driver_candidates(UNIVERSE, set(UNIVERSE))
+    assert basis == "MEASURED" and edges
+    pairs = [(e.src, e.dst) for e in edges]
+    assert len(pairs) == len(set(pairs)), "one candidate per pair: a pair is charged once"
+    assert all(e.src != e.dst and e.src in UNIVERSE and e.dst in UNIVERSE for e in edges)
+    assert all(e.plausibility == w.PLAUSIBILITY_DRIVER and e.clock == "H1" for e in edges)
+    assert all(e.evidence["prior_source"] == "economic_drivers" for e in edges)
+    # the cross is paired with its two dollar legs
+    assert {("AUDUSD", "AUDJPY"), ("USDJPY", "AUDJPY")} <= set(pairs)
+    # an instrument without bars is neither a driver nor a target
+    fewer, _ = w.driver_candidates(UNIVERSE, set(UNIVERSE) - {"AUDJPY"})
+    assert all("AUDJPY" not in (e.src, e.dst) for e in fewer)
+    rep = w.run(budget_s=5.0)
+    assert rep["economic_driver_edges"] == len(edges)
+    assert rep["economic_driver_basis"] == "MEASURED"
+    assert rep["instruments_with_a_candidate"] <= rep["instruments_in_universe"]
+    assert rep["zero_admission"]["candidate_sources"]["economic_drivers"] == len(edges)
+
+
+def _noise_edge(z: float) -> cg.Edge:
+    return cg.Edge(src="EURUSD", dst="USDJPY", lag=1, n=500,
+                   evidence={"prior_source": "economic_drivers",
+                             "xcorr": {"best": {"corr": z * 0.01, "sd_boot": 0.01}}})
+
+
+def test_fed_and_admitting_nothing_turns_red_after_the_third_pass_and_lowers_nothing() -> None:
+    kw = {"not_admitted": [_noise_edge(1.2), _noise_edge(3.4)], "bar_z": 3.9,
+          "sources": {"seeded": 4}}
+    prev: dict = {}
+    verdicts = []
+    for _ in range(4):
+        block = w.zero_admission(prev, measured=5, admitted_total=0, **kw)
+        verdicts.append((block["verdict"], block["runs"]))
+        prev = {"zero_admission": block}
+    assert verdicts == [("WATCH", 1), ("WATCH", 2), ("RED", 3), ("RED", 4)]
+    assert block["nearest"]["abs_z"] == 3.4 and block["bar_z_deflated"] == 3.9
+    assert "3.4" in block["why"] and "3.9" in block["why"]
+    # a pass that measured nothing neither advances nor clears the streak
+    idle = w.zero_admission(prev, measured=0, admitted_total=0, **kw)
+    assert (idle["verdict"], idle["runs"]) == ("RED", 4)
+    # one admitted edge in the graph clears it; nothing else does
+    ok = w.zero_admission(prev, measured=5, admitted_total=1, **kw)
+    assert (ok["verdict"], ok["runs"], ok["why"]) == ("OK", 0, "")
+    # no history and nothing measured is UNMEASURED, never OK
+    cold = w.zero_admission({}, measured=0, admitted_total=0, not_admitted=[], bar_z=None,
+                            sources={})
+    assert cold["verdict"] == "UNMEASURED" and cold["nearest"] is None
+
+
+def test_a_recorded_diagnosis_holds_a_red_as_watch_only_for_the_set_it_covered(
+        tmp_path, monkeypatch) -> None:
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(w, "DIAGNOSIS", tmp_path / "data" / "world_causal_graph_diagnosis.json")
+    fp = w.candidate_fingerprint([("EURUSD", "USDJPY"), ("XAUUSD", "XAGUSD")])
+    assert fp == w.candidate_fingerprint([("XAUUSD", "XAGUSD"), ("EURUSD", "USDJPY")])
+    assert fp != w.candidate_fingerprint([("EURUSD", "USDJPY")])
+    prev = {"zero_admission": {"runs": 5, "bar_z_deflated": 3.9, "cells_charged": 516}}
+    kw = {"measured": 5, "admitted_total": 0, "not_admitted": [_noise_edge(3.4)],
+          "bar_z": 4.2, "sources": {"seeded": 4}, "cells_charged": 2100}
+    red = w.zero_admission(prev, fingerprint=fp, diagnosis={}, **kw)
+    assert red["verdict"] == "RED" and red["diagnosed"] is None
+    # the cost of widening is on the block: the bar and the cell count, before and after
+    assert (red["bar_z_deflated_previous"], red["bar_z_deflated"]) == (3.9, 4.2)
+    assert (red["cells_charged_previous"], red["cells_charged"]) == (516, 2100)
+    # no report yet: a diagnosis of nothing in particular is refused
+    assert w.record_diagnosis("candidates carry no lead-lag at H1", by="world-sensor") == {}
+    w.REPORT.parent.mkdir(parents=True, exist_ok=True)
+    w.REPORT.write_text(json.dumps({"zero_admission": red}), "utf-8")
+    assert w.record_diagnosis("  ", by="world-sensor") == {}
+    # an unsigned reading is refused: nobody could be asked about it later
+    assert w.record_diagnosis("candidates carry no lead-lag at H1") == {}
+    doc = w.record_diagnosis("candidates carry no lead-lag at H1", by=" world-sensor ")
+    assert doc["by"] == "world-sensor"
+    assert doc["candidate_fingerprint"] == fp and doc["nearest_abs_z"] == 3.4
+    held = w.zero_admission(prev, fingerprint=fp, diagnosis=w._read_json(w.DIAGNOSIS), **kw)
+    assert held["verdict"] == "WATCH" and held["runs"] == 6
+    assert "no lead-lag at H1" in held["why"] and held["diagnosed"]["at"] == doc["at"]
+    assert held["diagnosed"]["by"] == "world-sensor" and "by world-sensor" in held["why"]
+    # the block counts the passes one reading has held the red back
+    assert held["diagnosed"]["passes_held"] == 1
+    again = w.zero_admission({"zero_admission": held}, fingerprint=fp,
+                             diagnosis=w._read_json(w.DIAGNOSIS), **kw)
+    assert again["verdict"] == "WATCH" and again["diagnosed"]["passes_held"] == 2
+    # the candidate set changes: the reading no longer covers it and RED returns
+    other = w.candidate_fingerprint([("EURUSD", "USDJPY")])
+    back = w.zero_admission(prev, fingerprint=other, diagnosis=w._read_json(w.DIAGNOSIS), **kw)
+    assert back["verdict"] == "RED" and back["diagnosed"] is None
+    # a diagnosis never turns anything into OK and never clears the streak
+    assert held["admitted_total"] == 0
