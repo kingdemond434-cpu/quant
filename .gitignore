@@ -618,3 +618,7 @@ desks/mt5/data/donation_ledgers/
 # The loss brain's report (decay + loss learner), published by sync_shadow_to_git $reportPaths.
 !desks/mt5/reports/LOSS_LEARNER.json
 !desks/mt5/reports/PLAUSIBILITY_AUDIT.json
+# K4 P&L EXPLAIN (2026-11-13): the per-account daily explain carries account-currency amounts and
+# an account label, so it stays on the box. desks/mt5/reports/PNL_EXPLAIN.json is already caught by
+# `**/reports/*`; the publishable view is reports/PNL_EXPLAIN_RATIOS.json (ratios and counts only).
+desks/mt5/data/pnl_explain_daily.jsonl

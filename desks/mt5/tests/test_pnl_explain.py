@@ -7,7 +7,10 @@ slippage, commission, swap, fees and FX conversion -- and the identity holds to 
   2. no intent -> slippage UNMEASURED and the edge reported unsplit (never a zero slip);
   3. accounts are never pooled; the account currency is read or inferred from the broker's own
      conversion; a trade that does not reconcile is listed with its residual;
-  4. closed days are appended once, today never; the leg and graph are wired.
+  4. closed days are appended once, today never; the leg and graph are wired;
+  5. a cross-currency trade's FX is labelled IMPLIED and its residual UNTESTED (never a clean
+     check); an undated trade is counted unexplainable, never dated 1970;
+  6. the publishable view and stdout carry ratios and counts only: no amount, server or key.
 All inputs are synthetic.
 """
 from __future__ import annotations
@@ -62,6 +65,8 @@ def test_same_currency_identity_and_slippage_sign():
     assert t["fx_conversion"] == pytest.approx(0.0)
     assert t["residual"] == pytest.approx(0.0, abs=1e-9)
     assert t["coverage_slippage"] == 1.0
+    assert t["n_residual_tested"] == 1 and t["coverage_residual_test"] == 1.0
+    assert rep["latest_trades"][-1]["residual_status"] == P.MEASURED
     assert acc["daily"]["2026-11-12"]["net"] == pytest.approx(96.0)
 
 
@@ -79,6 +84,9 @@ def test_cross_currency_fx_from_the_traded_pair_and_from_bars():
     assert t["entry_slippage"] == pytest.approx(-(0.94 - 0.9402) * -1 * 1e4 * rate_e, abs=0.01)
     assert t["residual"] == pytest.approx(0.0, abs=0.01)
     assert t["coverage_fx"] == 1.0
+    tr = rep["latest_trades"][-1]
+    assert tr["fx_basis"] == P.IMPLIED and tr["residual_status"] == P.UNMEASURED
+    assert t["n_residual_tested"] == 0 and t["coverage_residual_test"] == 0.0
 
     # EUR account trading gold (USD profit): the rate comes from EURUSD bars at entry
     idx = pd.date_range("2026-11-12 00:00", periods=24, freq="h", tz="UTC")
@@ -154,3 +162,51 @@ def test_leg_and_graph_are_wired():
     assert '"desks/mt5/research/pnl_explain.py"' in cg
     from libs.research import layers
     assert layers.LEG_LAYER["pnl_explain"] == "execution"
+
+
+def test_undated_trade_is_unexplainable_never_1970():
+    r = _row(ACC_A, deal=10, symbol="XAUUSD", entry_side=0, entry_price=2000.0,
+             fill_price=2001.0, volume=0.1, sl=1990.0, pl_quote=10.0, intended_entry=2000.0,
+             time=None, exit_time=None)
+    rep = P.explain(now=NOW, ledger=[r], prop=[], intents=[], meta=META, state={}, bars=None)
+    (acc,) = rep["accounts"].values()
+    t = acc["total"]
+    assert t["n_trades"] == 1 and t["n_unexplainable"] == 1 and t["n_undated"] == 1
+    assert acc["daily"] == {} and acc["n_unreconciled"] == 1
+    assert "1970" not in json.dumps(rep)
+    assert "undated" in " ".join(acc["unreconciled"][0]["why"])
+
+
+def test_ratios_view_and_stdout_carry_no_amount_server_or_key(tmp_path, monkeypatch, capsys):
+    rows = [_row(ACC_A, deal=11, symbol="XAUUSD", entry_side=0, entry_price=2000.30,
+                 fill_price=2010.0, volume=0.1, sl=1990.0, commission=-0.7, swap=-0.3,
+                 pl_quote=96.0, intended_entry=2000.0),
+            _row(ACC_B, deal=12, symbol="EURUSD", entry_side=0, entry_price=1.1000,
+                 fill_price=1.1100, volume=0.1, sl=1.09, pl_quote=100.0 / 1.11,
+                 intended_entry=1.1000)]
+    rep = P.explain(now=NOW, ledger=rows, prop=[], intents=[], meta=META, state={}, bars=None)
+    v = P.ratios_view(rep)
+    blob = json.dumps(v)
+    for secret in ("Demo-1", "Demo-2", "aaaa1111", "bbbb2222", "96.0", "90.09"):
+        assert secret not in blob
+    assert set(v["accounts"]) == {"live#1", "live#2"}
+    sh = v["accounts"]["live#1"]["total"]["shares"]
+    assert sum(abs(x) for x in sh.values()) == pytest.approx(1.0, abs=1e-3)
+    assert sh["signal"] > 0 > sh["entry_slippage"]
+
+    monkeypatch.setattr(P, "explain", lambda **k: rep)
+    monkeypatch.setattr(P, "REPORT", tmp_path / "r.json")
+    monkeypatch.setattr(P, "RATIOS", tmp_path / "ratios.json")
+    monkeypatch.setattr(P, "DAILY", tmp_path / "d.jsonl")
+    assert P.main(["--no-write"]) == 0
+    out = capsys.readouterr().out
+    for secret in ("Demo-1", "Demo-2", "aaaa1111", "bbbb2222", "net=", "96.0"):
+        assert secret not in out
+    assert "cov_slip=" in out and "live#1" in out
+
+
+def test_amount_bearing_outputs_are_gitignored():
+    import subprocess
+    for rel in ("desks/mt5/data/pnl_explain_daily.jsonl", "desks/mt5/reports/PNL_EXPLAIN.json"):
+        rc = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT).returncode
+        assert rc == 0, f"{rel} carries account amounts and must stay on the box"
