@@ -160,6 +160,7 @@ def vectors(frontier: Any, stats: Any, now: datetime) -> dict[str, Any]:
         rows[name] = {
             "outcome": outcome, "attempts": attempts, "successes": successes,
             "last_output_at": (s or {}).get("last_success") or "",
+            "extract_funnel": (s or {}).get("last_extract_funnel") or UNMEASURED,
             **w7,
             "rows": rows_n, "findings_total": int(v.get("findings") or 0),
             "datasets": int(s.get("datasets") or 0) if s is not None else (
@@ -169,7 +170,16 @@ def vectors(frontier: Any, stats: Any, now: datetime) -> dict[str, Any]:
             "language": v.get("language") or "", "region": v.get("region") or "",
         }
     named = len(rows)
+    # Where the text of the reached-but-silent vectors was lost, summed (stage -> sentences).
+    empty_funnel: dict[str, int] = {}
+    for r in rows.values():
+        f = r.get("extract_funnel")
+        if r.get("outcome") == "EMPTY" and isinstance(f, dict):
+            for k, v in f.items():
+                if isinstance(v, int):
+                    empty_funnel[k] = empty_funnel.get(k, 0) + v
     return {"named": named, "by_outcome": outcomes, "never_attempted": never,
+            "empty_vectors_extract_funnel": empty_funnel or UNMEASURED,
             "attempted_this_week": week,
             "attempted_this_week_share": round(week / named, 4) if named else UNMEASURED,
             "rows_by_vector": rows}

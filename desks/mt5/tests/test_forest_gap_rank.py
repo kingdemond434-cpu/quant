@@ -67,3 +67,28 @@ def test_the_artifact_names_when_it_was_generated(tmp_path: Path) -> None:
     doc = ady.build(coverage=tmp_path / "c", frontier=tmp_path / "f", vector_stats=tmp_path / "v",
                     runs=tmp_path / "r", compute_ledger=tmp_path / "l", now=now)
     assert doc["generated_at"] == "2026-11-13T20:00:00+00:00"
+
+
+def test_extract_reports_where_the_text_was_lost() -> None:
+    from libs.research import mechanism_claims as mc
+    r = mc.extract("Short. This page is a forum index listing thread titles and nothing else "
+                   "about any market at all whatsoever.")
+    f = r["funnel"]
+    assert f["sentences"] == 2 and f["in_length"] == 1 and f["all_three"] == 0
+    assert f["claims"] == 0 and f["chars"] > 0
+    assert mc.FUNNEL_STAGES[0] == "chars"
+
+
+def test_the_funnel_reaches_the_vector_stats_and_the_ledger(tmp_path: Path,
+                                                             monkeypatch) -> None:
+    p = tmp_path / "deep_forest_vector_stats.json"
+    monkeypatch.setattr(dfm, "_vector_stats_path", lambda: p)
+    funnel = {"chars": 900, "sentences": 12, "in_length": 9, "all_three": 0, "claims": 0}
+    dfm._record_vector_stats([{"ground": "g", "claims": 0, "status": "REACHED_NO_CLAIMS",
+                               "extract_funnel": funnel}])
+    stats = json.loads(p.read_text("utf-8"))
+    assert stats["vectors"]["g"]["last_extract_funnel"] == funnel
+    vec = ady.vectors({"vectors": {"g": {"attempts": 1, "outcome": "EMPTY"}}}, stats,
+                      datetime.now(UTC))
+    assert vec["rows_by_vector"]["g"]["extract_funnel"] == funnel
+    assert vec["empty_vectors_extract_funnel"]["sentences"] == 12

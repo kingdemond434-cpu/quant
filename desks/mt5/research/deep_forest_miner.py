@@ -1093,6 +1093,14 @@ class _Run:
         if page and str(ground.get("kind")) == "competition":
             self._competition(page, ground=ground, url=url)
         r = mc.extract(text, universe=self.universe or None)
+        with self._lock:
+            gf = getattr(self, "ground_funnel", None)
+            if isinstance(gf, dict):
+                for k, v in (r.get("funnel") or {}).items():
+                    gf[k] = gf.get(k, 0) + int(v)
+                gf["pages"] = gf.get("pages", 0) + 1
+                for k in ("dropped_unmappable", "dropped_impossible_metric"):
+                    gf[k] = gf.get(k, 0) + int(r.get(k) or 0)
         self.counts["dropped_venue"] += int(r["dropped_venue"])
         self.counts["dropped_unmappable"] += int(r["dropped_unmappable"])
         self.counts["duplicate_mechanisms"] += int(r["duplicate_mechanisms"])
@@ -1678,6 +1686,7 @@ class _Run:
                                 "why": "three straight transport failures on this box"})
             return
         self.ground, self.ground_claims = g, []
+        self.ground_funnel: dict[str, int] = {}
         seen_before = self.counts["claims_seen_before"]
         urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
@@ -1741,6 +1750,8 @@ class _Run:
                             "elapsed_s": round(time.monotonic() - t0, 1), "classes": classes,
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
+                            # WHERE THE READ TEXT WAS LOST, summed over the ground's pages
+                            "extract_funnel": dict(getattr(self, "ground_funnel", {}) or {}),
                             "datasets": sum(1 for d in self.datasets if d.get("ground") == name),
                             # the per-ground DELTA against the durable seen-sets
                             "delta": {"urls_new": self.counts.get("urls_new", 0) - urls_before,
@@ -2444,6 +2455,8 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
             # THE DURABLE DELTA CURSOR. The seen-sets (deep_forest_seen.json) are the scan's
             # memory; this is its per-ground reading: what the last attempt added, when the
             # ground last showed anything new, and how many attempts running it showed nothing.
+            if isinstance(s.get("extract_funnel"), dict) and s["extract_funnel"]:
+                e["last_extract_funnel"] = s["extract_funnel"]
             delta = s.get("delta") if isinstance(s.get("delta"), dict) else None
             if delta is not None:
                 e["last_delta"] = delta
