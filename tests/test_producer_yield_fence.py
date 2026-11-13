@@ -209,3 +209,20 @@ def test_stem_maps_leg_and_executable_aliases() -> None:
     assert fence._stem("leg:alpha_capture") == "alpha_capture"
     assert fence._stem("executable:desks/mt5/research/learned_miners.py") == "learned_miners"
     assert fence._stem("Mass_Screen") == "mass_screen"
+
+
+def test_child_generators_count_toward_their_parent() -> None:
+    per = {
+        "graveyard_resurrection:repair": {
+            "cells_to_judge": 30, "unique_cells": 25, "cells_emitted": 30},
+        "graveyard_resurrection:transfer": {
+            "cells_to_judge": 0, "unique_cells": 0, "cells_emitted": 0},
+        "graveyard": {"cells_to_judge": 9, "unique_cells": 9, "cells_emitted": 9},
+    }
+    kids = fence._child_cells(per, "graveyard_resurrection")
+    assert kids["n"] == 2
+    assert kids["unique_cells"] == 25 and kids["cells_to_judge"] == 30
+    # a prefix that is not a parent:child boundary is not a child
+    assert fence._child_cells(per, "grave")["n"] == 0
+    # a child key never rolls up further
+    assert fence._child_cells(per, "graveyard_resurrection:repair")["n"] == 0

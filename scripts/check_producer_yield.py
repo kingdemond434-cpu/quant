@@ -508,6 +508,23 @@ def _merge_aliases(rows: list[Any]) -> list[dict[str, Any]]:
         out.append(merged)
     return out
 
+def _child_cells(per: dict[str, Any], key: str) -> dict[str, int]:
+    """Cells attributed to a parent's sub-generators. The census prices compute on the parent
+    (`graveyard_resurrection` 663 compute-h/7d, P119) while the registry attributes its cells to
+    `graveyard_resurrection:repair`, `lineage:untried_mutation` and so on, so the parent read as
+    a zero-cell organ burning compute. Sum the children so the parent is judged on what it made."""
+    out = {"n": 0, "cells_to_judge": 0, "unique_cells": 0, "cells_emitted": 0}
+    pre = f"{key}:"
+    if not key or ":" in key:
+        return out
+    for k, v in per.items():
+        if str(k).lower().startswith(pre) and isinstance(v, dict):
+            out["n"] += 1
+            for f in ("cells_to_judge", "unique_cells", "cells_emitted"):
+                out[f] += int(v.get(f, 0) or 0)
+    return out
+
+
 def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
     census = _read(CENSUS, default={})
@@ -538,6 +555,7 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             continue
         seen.add(key)
         m = per.get(key) or per.get(_stem(key)) or {}
+        kids = _child_cells(per, key)
         hours = src.get("compute_hours")
         hours = float(hours) if isinstance(hours, (int, float)) else None
         led = src.get("compute_hours_ledger")
@@ -563,6 +581,13 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             "orthogonality_added": (round(float(marginal.get(key, 0.0)), 4)
                                     if br.get("available") else UNMEASURED_STR),
         }
+        if kids["n"]:
+            # The parent spends the compute; its sub-generators (`parent:child`) carry the cells.
+            row["child_producers"] = kids["n"]
+            row["family_cells_to_judge_per_hour"] = round(
+                (m.get("cells_to_judge", 0) + kids["cells_to_judge"]) / window_hours, 4)
+            row["family_unique_cells_per_hour"] = round(
+                (m.get("unique_cells", 0) + kids["unique_cells"]) / window_hours, 4)
         decl = declared.get(key)
         if decl:
             row["declared"] = decl
@@ -577,7 +602,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         # has not said why. Not "low" -- zero. Low is a budget question and is never a failure
         # here, because cutting the tail of the search distribution is the one reduction in
         # aggressiveness this desk refuses.
-        if spent and m.get("unique_cells", 0) == 0 and win.get("available"):
+        if (spent and m.get("unique_cells", 0) + kids["unique_cells"] == 0
+                and win.get("available")):
             if decl:
                 exempted.append(row)
             else:
