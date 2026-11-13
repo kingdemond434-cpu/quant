@@ -34,6 +34,14 @@
 #   LIVE_SERVER_AT_RISK   LIVE, but the server was started by hand without --capacity 1 in a
 #               shared-checkout mode (R0423); exit 2 until it is stopped and the watchdog's own runs
 #   ABSENT      no heartbeat at all: the watchdog is not installed or never ran
+#
+# Every line that reads the heartbeat also carries boot_start= (2026-11-13, -AtStartup):
+#   PROVEN      this watchdog runs in session 0 (the S4U boot task, no desktop) and began within
+#               15 min of the last boot: the bridge came back with nobody logged on
+#   SESSION0    session 0 but began later than that (a re-arm or a manual start): the task is the
+#               boot task, but this run is not the proof; a reboot drill gives it
+#   INTERACTIVE the watchdog runs in an RDP session: after a reboot it waits for a logon
+#   UNMEASURED  a heartbeat from a watchdog older than this field
 param([string] $LogDir = "C:\ProgramData\ClaudeBridge\logs", [string] $BinDir = "C:\ProgramData\ClaudeBridge\bin",
       [string] $TaskName = "Claude-Bridge-Watchdog")
 
@@ -121,7 +129,13 @@ $every = 60
 if ($b.beat_every_s) { $every = [Math]::Max(60, [int]$b.beat_every_s) }
 $alive = $false
 if ($b.server_pid) { $alive = [bool](Get-Process -Id ([int]$b.server_pid) -ErrorAction SilentlyContinue) }
-$detail = "state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors_10m=$($b.session_errors_10m) spawn=$($b.spawn_mode) task_result=$taskResult last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
+$bootStart = "UNMEASURED"
+if ($null -ne $b.session_id) {
+    if ([int]$b.session_id -ne 0) { $bootStart = "INTERACTIVE" }
+    elseif ($null -ne $b.started_after_boot_s -and [int]$b.started_after_boot_s -le 900) { $bootStart = "PROVEN" }
+    else { $bootStart = "SESSION0" }
+}
+$detail = "boot_start=$bootStart session=$($b.session_id) boot_at=$($b.boot_at) state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors_10m=$($b.session_errors_10m) spawn=$($b.spawn_mode) task_result=$taskResult last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
 if ($age -gt 3 * $every) { "STALE: $detail"; exit 1 }
 if ($b.state -ne "RUNNING") { "$($b.state): $detail needs=$($b.needs)"; exit 1 }
 if (-not $alive) { "DEAD_SERVER: $detail"; exit 1 }

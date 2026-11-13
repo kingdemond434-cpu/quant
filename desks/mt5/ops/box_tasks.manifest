@@ -314,8 +314,10 @@ TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --
 # Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.
 
 # THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
-# never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\ProgramData\ClaudeBridge\bin.
-TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
+# never wait on an RDP session; runs as the bridge user from the admin-only C:\ProgramData\ClaudeBridge\bin.
+# 2026-11-13: installed with -AtStartup it runs S4U (no stored password) and also starts at boot,
+# after a measured probe that the CLI is signed in without a logon session; else interactive.
+TASK name="Claude-Bridge-Watchdog" trigger="at boot (S4U, -AtStartup) + at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
 # THE UNATTENDED BOX (2026-10-28, zuck: "I wish we could make it so even these become automated
 # not needing me"). With Windows auto-logon on, a reboot logs this user in by itself; the boot
 # session restarts the MT5 terminals that were running before it and locks the console, and the

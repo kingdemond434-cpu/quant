@@ -34,15 +34,46 @@
 # FTMO terminal needs anyway). Coming back with nobody logged on would need Windows auto-logon,
 # which stores this account's password on the box; that is not done here.
 #
+# BOOT START WITH NOBODY LOGGED ON: -AtStartup (2026-11-13, zuck: "box keeps its Claude Remote
+# Control session alive on its own: start at boot, run under a watchdog, restart when it dies,
+# legitimate auto-start only, no credential workarounds"). Windows offers exactly one way to run a
+# task as a named user before anyone logs on WITHOUT storing that user's password: the S4U logon
+# type ("Run whether user is logged on or not" + "Do not store password"). Task Scheduler asks the
+# domain/LSA for a token for the user by name; nothing secret is written to the task, the registry
+# or the disk, and auto-logon stays off. The token has no Windows network logon (no SMB/AD shares);
+# HTTPS to Anthropic does not need one, and the CLI reads this user's own sign-in from this user's
+# profile, which Task Scheduler loads for an S4U task. The task then runs in session 0 (no
+# desktop), so the bridge no longer depends on an RDP session existing at all: it starts at boot,
+# survives logoff, and the at-logon trigger becomes a harmless extra start (the mutex is per
+# session, and every run of this one task is in session 0).
+#   ONE TASK, ONE PRINCIPAL. -AtStartup swaps this same task's principal from Interactive to S4U and
+#   adds a boot trigger; it never registers a second task, so there is still one scheduler entry and
+#   one watchdog. Without the switch the task is registered exactly as before (Interactive, at logon).
+#   NO DOUBLE BRIDGE DURING THE SWITCH. A watchdog already running in this user's RDP session holds
+#   its own session's mutex, and a session-0 copy started now would not see it; both would restart
+#   the server when it next exits. So when the heartbeat says a watchdog is alive (fresh within three
+#   of its own promised intervals), the S4U task is registered but NOT started: it takes over at the
+#   next boot, when no RDP copy exists. With no live heartbeat it is started at once.
+#   PROOF. The watchdog's heartbeat carries session_id, boot_at and started_after_boot_s;
+#   bridge_status.ps1 prints boot_start=PROVEN once a session-0 watchdog began within 15 min of a
+#   boot; until then it prints SESSION0 (the boot task runs, but this run began later),
+#   INTERACTIVE (an RDP-session watchdog) or UNMEASURED (an older heartbeat). Run
+#   ops\reboot_drill.ps1 or wait for the next reboot.
+#   AND IF ONE STARTS ANYWAY (the 5-minute re-arm fires in session 0): the watchdog exits at start
+#   when another session's watchdog is alive and beating (bridge_watchdog.ps1), so there is never
+#   a second copy restarting the server.
+#   ROLLBACK. Re-run this installer without -AtStartup: the same task returns to Interactive.
+#
 # Idempotent; touches no other task. Read the result with ops\bridge\bridge_status.ps1.
 #
-#   powershell -NoProfile -ExecutionPolicy Bypass -File ops\bridge\install_bridge_watchdog.ps1
+#   powershell -NoProfile -ExecutionPolicy Bypass -File ops\bridge\install_bridge_watchdog.ps1 [-AtStartup]
 
 [CmdletBinding()]
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
     [string] $Root = "C:\ProgramData\ClaudeBridge",
     [switch] $SkipCheckoutLock,
+    [switch] $AtStartup,
     [ValidateSet("same-dir", "worktree")] [string] $SpawnMode = "same-dir"
 )
 $BinDir = Join-Path $Root "bin"
@@ -218,18 +249,91 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
     -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -MultipleInstances IgnoreNew `
     -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
 
+$triggers = @($atLogon, $rearm)
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel $RunLevel
+# PROBE BEFORE SWITCHING (2026-11-13). Whether the CLI can read this user's sign-in from an S4U
+# token (no logon password, so nothing protected by the user's logon secret can be unlocked) is a
+# fact of this box, not of this script, so it is MEASURED: a one-shot task with the same principal
+# runs `claude auth status` once and writes its output to the admin-only log folder, and is then
+# unregistered. Only "loggedIn": true switches the watchdog to S4U; anything else (false, no output
+# in 90 s, unparseable) keeps it Interactive and says why, so -AtStartup can never leave the bridge
+# signed out at boot. The probe changes nothing: `auth status` only reads.
+function Test-S4USignIn {
+    $claudeExe = $null
+    foreach ($cand in @("$env:USERPROFILE\.local\bin\claude.exe", "$env:LOCALAPPDATA\Programs\claude\claude.exe")) {
+        if (Test-Path -LiteralPath $cand) { $claudeExe = $cand; break }
+    }
+    if (-not $claudeExe) { return "claude.exe not found in this user's install paths" }
+    $probeOut = Join-Path $LogDir 's4u_probe.txt'
+    $probeTask = 'Claude-Bridge-S4U-Probe'
+    Remove-Item -LiteralPath $probeOut -Force -ErrorAction SilentlyContinue
+    # cmd's redirection captures the CLI's output; the task runs exactly `claude.exe auth status`
+    $pa = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument ('/d /c ""{0}" auth status > "{1}" 2>&1"' -f $claudeExe, $probeOut)
+    $pp = New-ScheduledTaskPrincipal -UserId $user -LogonType S4U -RunLevel $RunLevel
+    $ps = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -MultipleInstances IgnoreNew
+    try {
+        Register-ScheduledTask -TaskName $probeTask -Action $pa -Principal $pp -Settings $ps -Force | Out-Null
+        Start-ScheduledTask -TaskName $probeTask
+        $deadline = (Get-Date).AddSeconds(90)
+        while ((Get-Date) -lt $deadline) {
+            Start-Sleep -Seconds 3
+            if ((Get-ScheduledTask -TaskName $probeTask).State -ne 'Running' -and (Test-Path -LiteralPath $probeOut)) { break }
+        }
+    } finally {
+        Unregister-ScheduledTask -TaskName $probeTask -Confirm:$false -ErrorAction SilentlyContinue
+    }
+    if (-not (Test-Path -LiteralPath $probeOut)) { return "the S4U probe wrote nothing within 90 s" }
+    $txt = Get-Content -LiteralPath $probeOut -Raw
+    # the status names the account; it is read here once and not left in a Users-readable folder
+    Remove-Item -LiteralPath $probeOut -Force -ErrorAction SilentlyContinue
+    try {
+        $j = $txt | ConvertFrom-Json -ErrorAction Stop
+        if ($j.loggedIn -eq $true) { return $null }
+        return "claude auth status under S4U says loggedIn=$($j.loggedIn)"
+    } catch {
+        # its text can name the account (audit SF1): only its length is reported
+        return "claude auth status under S4U was not JSON ($($txt.Length) characters of text)"
+    }
+}
+if ($AtStartup) {
+    $s4uWhy = Test-S4USignIn
+    if ($s4uWhy) {
+        "AT_STARTUP_REFUSED: $s4uWhy -- keeping the task Interactive (at logon); nothing else changes"
+        $AtStartup = $false
+    } else { "S4U probe: signed in without a logon session; switching to boot start" }
+}
+if ($AtStartup) {
+    # S4U: no password is passed, prompted for or stored (see the header). The boot trigger fires
+    # before any logon; the 5-minute re-arm and the at-logon trigger still bring back a killed copy.
+    $triggers = @((New-ScheduledTaskTrigger -AtStartup), $atLogon, $rearm)
+    $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType S4U -RunLevel $RunLevel
+}
+# IS A WATCHDOG ALREADY ALIVE? Read before the task is replaced; decides whether to start it now.
+$beat = Join-Path $LogDir 'bridge_watchdog.json'
+$liveBefore = $false
+try {
+    $b0 = Get-Content -LiteralPath $beat -Raw -ErrorAction Stop | ConvertFrom-Json
+    $every0 = 60
+    if ($b0.beat_every_s -and [int]$b0.beat_every_s -gt 60) { $every0 = [int]$b0.beat_every_s }
+    $age0 = ((Get-Date).ToUniversalTime() - ([datetime]$b0.at).ToUniversalTime()).TotalSeconds
+    $liveBefore = ($age0 -le 3 * $every0) -and ($b0.state -eq 'RUNNING')
+} catch { }
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($atLogon, $rearm) `
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $triggers `
     -Principal $principal -Settings $settings `
     -Description "Keep the box bridge (claude remote-control in $Checkout) running; restart it when it exits." | Out-Null
 
-Start-ScheduledTask -TaskName $TaskName
-Start-Sleep -Seconds 8
+$mode = 'Interactive (at logon)'
+if ($AtStartup) { $mode = 'S4U (at boot, no stored password)' }
+if ($AtStartup -and $liveBefore) {
+    "registered {0} as {1}; a watchdog is alive in an interactive session, so the S4U task is NOT started now (no second bridge); it takes over at the next boot" -f $TaskName, $mode
+} else {
+    Start-ScheduledTask -TaskName $TaskName
+    Start-Sleep -Seconds 8
+}
 $i = Get-ScheduledTaskInfo -TaskName $TaskName
-"installed {0}: state={1} last_run={2} last_result={3}" -f $TaskName, (Get-ScheduledTask -TaskName $TaskName).State, $i.LastRunTime, $i.LastTaskResult
-$beat = Join-Path $LogDir 'bridge_watchdog.json'
+"installed {0} ({5}): state={1} last_run={2} last_result={3} logon_type={4}" -f $TaskName, (Get-ScheduledTask -TaskName $TaskName).State, $i.LastRunTime, $i.LastTaskResult, (Get-ScheduledTask -TaskName $TaskName).Principal.LogonType, $mode
 if (Test-Path $beat) { "heartbeat: " + ((Get-Content $beat -Raw | ConvertFrom-Json) | ConvertTo-Json -Compress) }
