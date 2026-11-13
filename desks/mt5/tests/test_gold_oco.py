@@ -580,7 +580,7 @@ def test_fallback_copies_only_e8_and_oco_is_not_taken_unproven() -> None:
     _world("fallback")
     oco.claim_fill("fusion", fu_key(), "buy", date=DAY)
     v = oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY)
-    assert not v.allowed and "copies only E8" in v.why
+    assert not v.allowed and "copies only a fill of E8" in v.why
     # Full OCO asked for, but a lane runs older code (no protocol): fallback stands.
     _mode(["e8", "fusion"], fusion="oco")
     body = json.loads(oco.lane_path("e8").read_text("utf-8"))
@@ -1086,7 +1086,7 @@ def test_the_default_is_fallback_with_e8_leading_and_ftmo_undeclared() -> None:
     oco.MODE_FILE.unlink(missing_ok=True)
     assert oco.configured_mode("e8") == "leader"
     assert oco.configured_mode("fusion") == "fallback"
-    assert oco.configured_mode("ftmo") == "fallback"
+    assert oco.configured_mode("ftmo") == "mirror"  # GA1: the default
     assert oco.declared_lanes() == ("e8", "fusion")
     # FTMO is not a gold lane until the mode file declares it: it places nothing by default.
     v = oco.gate("ftmo", "buy_stop", key=oco.oco_account_key(FT_LOGIN, FT_SERVER), date=DAY)
@@ -1262,3 +1262,108 @@ def test_an_oco_lane_keeps_the_late_rule(monkeypatch, tmp_path) -> None:
     ns = _late_main(tmp_path, monkeypatch, mt5)
     assert mt5.sent == []
     assert any(r.get("reason") == "late_send" for r in ns["_intents"])
+
+
+# ======================================================================== mirror mode (GA1)
+
+def ft_key() -> str:
+    return oco.oco_account_key(FT_LOGIN, FT_SERVER)
+
+
+def _mirror_world(**modes: str) -> None:
+    _mode(["e8", "fusion", "ftmo"], fusion="fallback", **modes)
+    _flat("e8", e8_key(), orders=[{"id": 1, "side": "buy"}, {"id": 2, "side": "sell"}])
+    _flat("fusion", fu_key())
+    _flat("ftmo", ft_key())
+
+
+def test_a_mirror_lane_rests_e8s_bracket_both_ways_before_the_first_fill() -> None:
+    _mirror_world()
+    assert oco.configured_mode("ftmo") == "mirror"
+    for side in ("buy_stop", "sell_stop"):
+        v = oco.gate("ftmo", side, key=ft_key(), date=DAY)
+        assert v.allowed and v.mode == "mirror", v.why
+    # ...and E8 may re-place a leg while FTMO rests E8's own levels both ways.
+    _flat("ftmo", ft_key(), orders=[{"id": 7, "side": "buy"}, {"id": 8, "side": "sell"}])
+    assert oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
+    assert oco.gate("e8", "sell_stop", key=e8_key(), date=DAY).allowed
+
+
+def test_a_fallback_lane_never_gets_the_mirror_exemption() -> None:
+    _mirror_world(ftmo="fallback")
+    v = oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY)
+    assert not v.allowed and v.mode == "fallback"
+    # E8 does not skip a fallback lane's resting entries.
+    _flat("ftmo", ft_key(), orders=[{"id": 8, "side": "sell"}])
+    assert not oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
+
+
+def test_positions_and_other_lanes_entries_still_block_a_mirror_leg() -> None:
+    _mirror_world()
+    _flat("e8", e8_key(), positions=[{"id": 3, "side": "short", "opened_date": DAY}])
+    assert not oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY).allowed
+    _flat("e8", e8_key(), orders=[{"id": 1, "side": "buy"}, {"id": 2, "side": "sell"}])
+    _flat("fusion", fu_key(), orders=[{"id": 9, "side": "sell"}])
+    v = oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY)
+    assert not v.allowed and "fusion rests" in v.why
+
+
+def test_after_the_first_fill_a_mirror_lane_is_held_to_the_direction() -> None:
+    _mirror_world()
+    assert oco.claim_fill("ftmo", ft_key(), "buy", date=DAY)["won"]     # FTMO's copy filled first
+    # Set: E8's resting twin blocks again until E8 cancels it (rules 2 and 7)...
+    assert not oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY).allowed
+    _flat("e8", e8_key(), orders=[{"id": 1, "side": "buy"}])
+    assert not oco.gate("ftmo", "sell_stop", key=ft_key(), date=DAY).allowed
+    assert oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY).allowed
+    # E8's own twin is now against the direction, and E8 may not re-place it.
+    assert not oco.gate("e8", "sell_stop", key=e8_key(), date=DAY).allowed
+    # ...and once the direction is set, resting opposite entries block again on every lane.
+    _flat("ftmo", ft_key(), orders=[{"id": 8, "side": "sell"}])
+    assert not oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
+
+
+def test_a_fallback_lane_follows_a_mirror_fill_only_once_e8s_same_leg_filled_too() -> None:
+    """Audit #959 M2: FTMO's copy filling on FTMO's quote is not E8's trade until E8's own
+    same-side leg fills; until then no fallback lane inherits the window."""
+    _mirror_world()
+    assert oco.claim_fill("ftmo", ft_key(), "sell", date=DAY)["won"]
+    entry, _ = oco.day_entry(DAY)
+    _flat("e8", e8_key(), orders=[{"id": 2, "side": "sell"}])          # E8's leg still rests
+    assert not oco.leader_set(entry, date=DAY)
+    v = oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY)
+    assert not v.allowed and "copies only a fill of E8" in v.why
+    # A short E8 carried from another day is not today's fill either.
+    _flat("e8", e8_key(), positions=[{"id": 3, "side": "short", "opened_date": "2026-10-20"}])
+    assert not oco.leader_set(entry, date=DAY)
+    # E8's sell leg fills today: now the window is E8's, and Fusion follows it.
+    _flat("e8", e8_key(), positions=[{"id": 4, "side": "short", "opened_date": DAY}])
+    assert oco.leader_set(entry, date=DAY)
+    assert oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY).allowed
+    # An unreadable E8 state is not a confirmation.
+    assert not oco.leader_set(entry, leader=None, date=DAY)
+    # A fill of a lane in full OCO mode is NOT E8's bracket, E8 filled or not.
+    _mirror_world(ftmo="oco")
+    _flat("e8", e8_key(), positions=[{"id": 4, "side": "short", "opened_date": DAY}])
+    assert not oco.leader_set(entry, date=DAY)
+    v = oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY)
+    assert not v.allowed and "copies only a fill of E8" in v.why
+
+
+def test_mirror_is_not_taken_while_a_lane_runs_older_code() -> None:
+    _mirror_world()
+    body = json.loads(oco.lane_path("e8").read_text("utf-8"))
+    body.pop("digest")
+    body["protocol"] = 0
+    oco._write(oco.lane_path("e8"), body)
+    v = oco.gate("ftmo", "buy_stop", key=ft_key(), date=DAY)
+    assert v.mode == "fallback" and not v.allowed
+
+
+def test_an_unreadable_mode_file_is_fallback_for_every_lane() -> None:
+    oco.MODE_FILE.write_text("{not json", encoding="utf-8")
+    assert oco.configured_mode("ftmo") == "fallback"
+    _mode(["e8", "ftmo"], ftmo="mirror")
+    assert oco.configured_mode("ftmo") == "mirror"
+    _mode(["e8", "fusion"], fusion="mirror")
+    assert oco.configured_mode("fusion") == "mirror"

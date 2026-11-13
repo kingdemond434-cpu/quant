@@ -812,7 +812,7 @@ def published_fusion_book_lines() -> dict[str, Any]:
 #: cap clipped (rail ftmo_lot_cap) in its own intents journal; they register no rail (the
 #: register is sealed), so their lines are published here beside the Fusion book's.
 FTMO_INTENTS = BASE / "data" / "ftmo_follower_intents.jsonl"
-FTMO_RAIL_NAMES = ("ftmo_follower", "ftmo_lot_cap")
+FTMO_RAIL_NAMES = ("ftmo_follower", "ftmo_lot_cap", "ftmo_mirror_lag")
 
 
 def published_ftmo_follower_lines() -> dict[str, Any]:
