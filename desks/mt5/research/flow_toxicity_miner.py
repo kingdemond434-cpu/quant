@@ -31,6 +31,13 @@ WHAT THIS ORGAN DOES, EVERY HOUR ON THE BOX THAT HOLDS THE TAPE (hourly_cycle le
      whether any book-based construction is buildable. It is re-probed weekly through
      `mt5desk/tape.py --probe` where a terminal is attached; elsewhere it is UNMEASURED, said so.
 
+  5. MEASURES ITS OWN HOLES. Per symbol, `series_gaps` reports the start and end dates of the
+     series, the gap count and the longest gap IN TRADING DAYS (a weekend on a Mon-Fri venue and
+     a daily session break are not gaps), plus the trailing gap from the last bar to today; the
+     report's `series_gaps` summary names the worst gap and every symbol over two trading days.
+     The tape families forward-fill this input, so a stalled miner would otherwise read as a
+     flat, plausible conditioner rather than a missing one. No series is UNMEASURED, never zero.
+
 THE POINT-IN-TIME JOIN. The bar index is broker time under a UTC tzinfo (+2 winter, +3 summer);
 the series is genuinely UTC. Every proposed cell carries `lag_hours = 3`, so a bar can only be
 conditioned on a value whose bar had CLOSED before that bar opened, in both seasons.
@@ -277,6 +284,117 @@ def accumulate(symbol: str, point: float, state: dict, *, tick_root: Path,
     return reading
 
 
+# ------------------------------------------------------------------------------- gaps
+#: A hole longer than this many trading days is named in the report's summary.
+GAP_ALERT_TRADING_DAYS = 2
+#: Asset classes whose venue quotes every calendar day (the same rule `libs.research.bar_span`
+#: declares). Every other class is closed Saturday and Sunday (UTC), and a day it is closed on is
+#: never a gap.
+_WEEKEND_CLASSES = frozenset({"crypto"})
+_WEEKDAYS = "1111100"
+_ALL_DAYS = "1111111"
+
+
+def _trades_weekends(symbol: str) -> bool:
+    try:
+        from libs.research.bar_span import WEEKEND_TRADING_CLASSES
+    except Exception:
+        classes: frozenset[str] = _WEEKEND_CLASSES
+    else:
+        classes = frozenset(WEEKEND_TRADING_CLASSES)
+    try:
+        from research.universe_policy import asset_class_of
+        return str(asset_class_of(symbol) or "").lower() in classes
+    except Exception:
+        return False                      # unknown class: the stricter weekday calendar
+
+
+def series_gaps(path: Path, *, trades_weekends: bool = False,
+                today: datetime | None = None) -> dict[str, Any]:
+    """Every hole in one `micro_<SYM>` series, counted in TRADING DAYS.
+
+    A bar is present when it holds at least one tick. Counting is by whole UTC dates: the gap
+    between two consecutive dates that hold bars is the number of trading days strictly between
+    them, so a venue's daily break and its overnight hours (inside a date that still holds bars)
+    and a weekend (no trading day) are never gaps, and a public holiday is one day. The trailing
+    gap is the same count from the last date to today: a stalled miner shows there, where a
+    family's forward-fill would otherwise hide it. An absent, unreadable or empty series is
+    UNMEASURED, never zero gaps.
+    """
+    out: dict[str, Any] = {"series": _published_path(path),
+                           "calendar": "every_day" if trades_weekends else "mon_fri_utc"}
+    if not path.exists():
+        return {**out, "status": "UNMEASURED", "why": "series file absent"}
+    try:
+        try:
+            frame = pd.read_parquet(path, columns=["n_ticks"])
+        except Exception:
+            frame = pd.read_parquet(path)
+    except Exception as exc:
+        _LOG.warning("flow_toxicity gaps %s: %r", path.name, exc)
+        return {**out, "status": "UNMEASURED", "why": type(exc).__name__}
+    idx = frame.index
+    if "n_ticks" in frame.columns:
+        idx = idx[pd.to_numeric(frame["n_ticks"], errors="coerce").fillna(0).to_numpy() > 0]
+    try:
+        stamps = pd.DatetimeIndex(idx)
+    except Exception as exc:
+        return {**out, "status": "UNMEASURED", "why": type(exc).__name__}
+    stamps = stamps.tz_localize("UTC") if stamps.tz is None else stamps.tz_convert("UTC")
+    days = np.unique(stamps.dropna().normalize().tz_localize(None).to_numpy()
+                     .astype("datetime64[D]"))
+    if days.size == 0:
+        return {**out, "status": "UNMEASURED", "why": "series holds no measured bar"}
+    mask = _ALL_DAYS if trades_weekends else _WEEKDAYS
+    missing = (np.busday_count(days[:-1] + np.timedelta64(1, "D"), days[1:], weekmask=mask)
+               if days.size > 1 else np.zeros(0, dtype=np.int64))
+    holes = np.flatnonzero(missing > 0)
+    now_day = np.datetime64((today or _now()).astimezone(UTC).date(), "D")
+    trailing = int(np.busday_count(days[-1] + np.timedelta64(1, "D"), now_day, weekmask=mask)
+                   if now_day > days[-1] else 0)
+    longest = None
+    if holes.size:
+        k = int(holes[np.argmax(missing[holes])])
+        longest = {"trading_days": int(missing[k]), "after": str(days[k]),
+                   "before": str(days[k + 1])}
+    return {**out, "status": "MEASURED",
+            "start": str(days[0]), "end": str(days[-1]),
+            "dates_with_bars": int(days.size),
+            "gap_count": int(holes.size),
+            "longest_gap_trading_days": int(missing.max()) if missing.size else 0,
+            "longest_gap": longest,
+            "trailing_gap_trading_days": trailing}
+
+
+def gap_report(symbols: list[str], series_root: Path, *,
+               today: datetime | None = None) -> dict[str, Any]:
+    """Per-symbol gaps over every series this organ owns, and the summary the Auditor reads."""
+    by_symbol = {s: series_gaps(series_root / f"{SERIES_PREFIX}{s}.parquet",
+                                trades_weekends=_trades_weekends(s), today=today)
+                 for s in sorted(set(symbols))}
+    measured = {s: g for s, g in by_symbol.items() if g.get("status") == "MEASURED"}
+    worst = None
+    if measured:
+        s = max(measured, key=lambda k: (measured[k]["longest_gap_trading_days"], k))
+        worst = {"symbol": s, "trading_days": measured[s]["longest_gap_trading_days"],
+                 "gap": measured[s]["longest_gap"]}
+    return {
+        "status": "MEASURED" if measured else "UNMEASURED",
+        "why": "" if measured else "no readable micro_<SYM> series on this host",
+        "threshold_trading_days": GAP_ALERT_TRADING_DAYS,
+        "symbols_measured": len(measured),
+        "symbols_unmeasured": sorted(s for s in by_symbol if s not in measured),
+        "worst_gap": worst,
+        "symbols_gap_over_threshold": sorted(
+            s for s, g in measured.items()
+            if g["longest_gap_trading_days"] > GAP_ALERT_TRADING_DAYS),
+        "symbols_stale_over_threshold": sorted(
+            s for s, g in measured.items()
+            if g["trailing_gap_trading_days"] > GAP_ALERT_TRADING_DAYS),
+        "by_symbol": by_symbol,
+    }
+
+
 # ------------------------------------------------------------------------------- propose
 def _grid(symbol: str) -> list[tuple[str, dict]]:
     src = f"{SERIES_PREFIX}{symbol}"
@@ -516,6 +634,11 @@ def run(symbols: list[str] | None = None, *, budget_s: float = 900.0, propose_ce
         prop["status"] = "RAN"
     depth = refresh_depth_probe() if (probe_depth and not dry_run) else {"status": "SKIPPED"}
     measured = [r for r in readings if r.get("status") == "MEASURED"]
+    on_disk = ([p.stem[len(SERIES_PREFIX):] for p in series_root.glob(f"{SERIES_PREFIX}*.parquet")]
+               if series_root.is_dir() else [])
+    if symbols:
+        on_disk = [s for s in on_disk if s.upper() in {x.upper() for x in symbols}]
+    gaps = gap_report([*have, *on_disk], series_root)
     report = {
         "schema": "flow_toxicity/1", "generated_at": _now().isoformat(timespec="seconds"),
         "clock": "hourly_cycle:flow_toxicity",
@@ -531,7 +654,7 @@ def run(symbols: list[str] | None = None, *, budget_s: float = 900.0, propose_ce
         "next_cursor": next_cursor, "elapsed_s": round(time.monotonic() - started, 1),
         "cells": {k: v for k, v in prop.items() if k != "proposals"},
         "proposals": prop.get("proposals", [])[:50],
-        "depth_probe": depth, "readings": readings,
+        "depth_probe": depth, "series_gaps": gaps, "readings": readings,
     }
     if not dry_run:
         _write_atomic(report_path, json.dumps(report, indent=1, default=str))
@@ -550,6 +673,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"FLOW TOXICITY  {rep['status']}  {rep['symbols_measured']}/{rep['symbols_on_tape']} "
           f"symbols, {rep['bars_measured_total']} measured bars; tests={c.get('tests_run', 0)} "
           f"proposed={c.get('cells_proposed', 0)} depth={rep['depth_probe'].get('status')}")
+    g = rep["series_gaps"]
+    print(f"  gaps {g['status']}: worst={g['worst_gap']} "
+          f"over_{g['threshold_trading_days']}d={g['symbols_gap_over_threshold']} "
+          f"stale={g['symbols_stale_over_threshold']}")
     if rep["status"] != "MEASURED":
         print(f"  {rep['why']}")
     return 0

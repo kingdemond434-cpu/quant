@@ -190,3 +190,76 @@ def test_the_depth_probe_is_refreshed_or_named_unmeasured(tmp_path: Path) -> Non
         import MetaTrader5  # noqa: F401
     except Exception:
         assert ftm.refresh_depth_probe(probe=probe)["status"] == "UNMEASURED"
+
+
+# ----------------------------------------------------------------------------- series gaps
+def _series_on(path: Path, days: list[str]) -> None:
+    """A micro series holding every hour of each named UTC date, and nothing else."""
+    idx = pd.DatetimeIndex([], tz="UTC")
+    for d in days:
+        idx = idx.append(pd.date_range(d, periods=24, freq="1h", tz="UTC"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"n_ticks": np.full(len(idx), 100.0)}, index=idx).to_parquet(path)
+
+
+_TODAY = datetime(2026, 11, 2, 12, tzinfo=UTC)          # a Monday
+
+
+def test_a_five_trading_day_hole_is_reported(tmp_path: Path) -> None:
+    p = tmp_path / "micro_EURUSD.parquet"
+    # Mon 2026-10-05 .. Fri 10-09, then nothing until Mon 10-19: the week of 10-12 is missing.
+    week1 = [f"2026-10-0{d}" for d in range(5, 10)]
+    week3 = [f"2026-10-{d}" for d in range(19, 24)]
+    _series_on(p, week1 + week3)
+    g = ftm.series_gaps(p, today=datetime(2026, 10, 23, 18, tzinfo=UTC))
+    assert g["status"] == "MEASURED"
+    assert g["gap_count"] == 1 and g["longest_gap_trading_days"] == 5
+    assert g["longest_gap"] == {"trading_days": 5, "after": "2026-10-09", "before": "2026-10-19"}
+    assert g["start"] == "2026-10-05" and g["end"] == "2026-10-23"
+    assert g["trailing_gap_trading_days"] == 0
+
+
+def test_a_weekend_is_not_a_gap(tmp_path: Path) -> None:
+    p = tmp_path / "micro_EURUSD.parquet"
+    # Fri 10-09 then Mon 10-12 (plus the Sunday-evening open stub on 10-11).
+    _series_on(p, ["2026-10-08", "2026-10-09", "2026-10-11", "2026-10-12", "2026-10-13"])
+    g = ftm.series_gaps(p, today=datetime(2026, 10, 14, tzinfo=UTC))
+    assert g["status"] == "MEASURED"
+    assert g["gap_count"] == 0 and g["longest_gap_trading_days"] == 0
+    assert g["longest_gap"] is None and g["trailing_gap_trading_days"] == 0
+    # on a venue that quotes every day, the same Saturday IS a missing day
+    every = ftm.series_gaps(p, trades_weekends=True, today=datetime(2026, 10, 14, tzinfo=UTC))
+    assert every["gap_count"] == 1 and every["longest_gap_trading_days"] == 1
+
+
+def test_an_absent_or_empty_series_is_unmeasured_never_zero(tmp_path: Path) -> None:
+    absent = ftm.series_gaps(tmp_path / "micro_GBPUSD.parquet", today=_TODAY)
+    assert absent["status"] == "UNMEASURED" and absent["why"]
+    assert "gap_count" not in absent and "longest_gap_trading_days" not in absent
+    empty = tmp_path / "micro_USDJPY.parquet"
+    pd.DataFrame({"n_ticks": pd.Series([], dtype=float)},
+                 index=pd.DatetimeIndex([], tz="UTC")).to_parquet(empty)
+    e = ftm.series_gaps(empty, today=_TODAY)
+    assert e["status"] == "UNMEASURED" and "gap_count" not in e
+    rep = ftm.gap_report(["GBPUSD", "USDJPY"], tmp_path, today=_TODAY)
+    assert rep["status"] == "UNMEASURED" and rep["worst_gap"] is None
+    assert rep["symbols_unmeasured"] == ["GBPUSD", "USDJPY"]
+    assert str(tmp_path) not in json.dumps(rep)
+
+
+def test_the_report_summarises_the_worst_gap_and_the_stalls(tmp_path: Path) -> None:
+    series, ticks = tmp_path / "series", tmp_path / "ticks"
+    _series_on(series / "micro_EURUSD.parquet",
+               ["2026-10-05", "2026-10-06", "2026-10-14", "2026-10-15"])   # 5-day hole
+    _series_on(series / "micro_AUDUSD.parquet", ["2026-10-14", "2026-10-15"])  # clean
+    rep = ftm.run(tick_root=ticks, series_root=series, report_path=tmp_path / "rep.json",
+                  probe_depth=False, propose_cells=False)
+    g = json.loads((tmp_path / "rep.json").read_text())["series_gaps"]
+    assert g == json.loads(json.dumps(rep["series_gaps"]))
+    assert g["status"] == "MEASURED" and g["symbols_measured"] == 2
+    assert g["worst_gap"]["symbol"] == "EURUSD" and g["worst_gap"]["trading_days"] == 5
+    assert g["symbols_gap_over_threshold"] == ["EURUSD"]
+    # both series end in the past, so both are stale against today
+    assert set(g["symbols_stale_over_threshold"]) == {"AUDUSD", "EURUSD"}
+    assert g["by_symbol"]["EURUSD"]["series"] == "micro_EURUSD.parquet"
+    assert str(tmp_path) not in json.dumps(g)
