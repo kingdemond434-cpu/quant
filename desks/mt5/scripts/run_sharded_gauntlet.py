@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import codecs
 import contextlib
+import faulthandler
 import json
 import math
 import os
@@ -354,6 +355,11 @@ NO_PROGRESS_CAP_S = 4 * 3600.0
 #: A RUNNING heartbeat older than this is a wedged watchdog: the resident and the next run act.
 HEARTBEAT_STALE_S = 600.0
 WATCHDOG_BEAT_S = 30.0
+#: A watchdog silent this long dumps every thread's Python stack (faulthandler, no GIL needed)
+#: to STACK_DUMP_LOG. Well inside the resident's 4,200 s reap, so the dump lands before the kill;
+#: 30 beats, so a slow beat never trips it.
+STACK_DUMP_AFTER_S = 900.0
+STACK_DUMP_LOG = DESK / "logs" / "GAUNTLET_STACKS.log"
 PHASE_TIME_HISTORY = 30
 STALL_HISTORY = 20
 #: The resident already counts this code as a hung sweep (and widens its window on a repeat).
@@ -3446,6 +3452,7 @@ class SweepWatchdog:
         self.breached: dict[str, Any] | None = None
         self.stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self._stack_fh: Any = None
 
     @property
     def last_progress(self) -> float:
@@ -3460,8 +3467,36 @@ class SweepWatchdog:
         self._thread.start()
         return self
 
+    def _arm_stack_dump(self) -> None:
+        """Re-arm the C-level stack dump: if this loop does not come round again within
+        STACK_DUMP_AFTER_S, `faulthandler`'s own thread writes EVERY Python thread's stack to
+        STACK_DUMP_LOG. It needs no GIL, so it fires when nothing written in Python can.
+
+        WHY (measured 2026-11-13). Two sweeps running wedged their WHOLE interpreter. Sweep pid
+        2956's heartbeat stopped at 11:33:40Z in phase prewarm; the parent and all 15 pool
+        workers then sat at 0.00 CPU and 0 bytes read, the workers empty at 97 MB, and this very
+        thread -- whose no-progress breach exists to end exactly that -- never beat again. The
+        sweep before it (pid 27040) died the same way in collect_and_cut. The resident reaps a
+        silent tree after no_progress_s + HEARTBEAT_STALE_S (70 min) and every verdict of the
+        pass is lost; nothing recorded WHERE either one stopped, so the cause stays unnamed.
+        """
+        if self._stack_fh is None:
+            return
+        with contextlib.suppress(Exception):
+            faulthandler.dump_traceback_later(STACK_DUMP_AFTER_S, repeat=False,
+                                              file=self._stack_fh, exit=False)
+
     def _loop(self) -> None:
+        with contextlib.suppress(Exception):
+            STACK_DUMP_LOG.parent.mkdir(parents=True, exist_ok=True)
+            self._stack_fh = open(STACK_DUMP_LOG, "a", encoding="utf-8")  # noqa: SIM115
+            self._stack_fh.write(f"\n=== sweep pid {os.getpid()} armed {_iso(self.clock())}: a "
+                                 f"dump below means its watchdog went {STACK_DUMP_AFTER_S:.0f}s "
+                                 "without a beat ===\n")
+            self._stack_fh.flush()
+        self._arm_stack_dump()
         while not self.stop.wait(self.beat_s):
+            self._arm_stack_dump()
             try:
                 self.tick()
             except Exception as exc:     # a broken beat goes stale, and the resident acts on it
@@ -3564,6 +3599,11 @@ class SweepWatchdog:
         self.stop.set()
         if self._thread is not None and self._thread is not threading.current_thread():
             self._thread.join(timeout=5)
+        if self._stack_fh is not None:
+            with contextlib.suppress(Exception):
+                faulthandler.cancel_dump_traceback_later()
+                self._stack_fh.close()
+            self._stack_fh = None
         if self.wrote and self.breached is None:
             status = {0: "DONE", LANE_HELD_RC: "LANE_HELD", STALL_RC: "STALLED"}.get(rc, "FAILED")
             now = self.clock()

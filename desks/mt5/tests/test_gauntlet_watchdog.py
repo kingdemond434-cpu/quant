@@ -49,6 +49,7 @@ def _isolated(monkeypatch, tmp_path):
         ("PHASE_TIMES", "judge_phase_times.json"),
         ("MERGE_SNAPSHOT", "snap"),
         ("PLAN_RESUME", "plan_resume.json"),
+        ("STACK_DUMP_LOG", "GAUNTLET_STACKS.log"),
     ):
         monkeypatch.setattr(runner, name, tmp_path / fname)
     monkeypatch.setattr(
@@ -1393,3 +1394,42 @@ def test_a_non_list_keys_field_is_read_as_none_and_never_carried(bad):
     assert line is not None
     keys = _stall()["billed_resume_keys"]
     assert isinstance(keys, list) and keys == [line["resume_key"]]
+
+
+def test_a_watchdog_that_stops_beating_leaves_every_threads_stack(tmp_path):
+    """2026-11-13: sweep pid 2956's heartbeat stopped at 11:33:40Z in prewarm; the parent and its
+    15 workers sat at 0 CPU and the watchdog thread itself never beat again, so nothing recorded
+    where it stopped. The C-level dump fires without the GIL. Run in a child: faulthandler's timer
+    is process-global and must not touch pytest's own."""
+    log = tmp_path / "GAUNTLET_STACKS.log"
+    code = textwrap.dedent(f"""
+        import sys, time
+        sys.path.insert(0, {str(DESK)!r}); sys.path.insert(0, {str(ROOT)!r})
+        sys.path.insert(0, {str(ROOT / "scripts")!r})
+        from pathlib import Path
+        from scripts import run_sharded_gauntlet as r
+        r.STACK_DUMP_LOG = Path({str(log)!r})
+        r.STACK_DUMP_AFTER_S = 0.5
+        w = r.SweepWatchdog(beat_s=0.05, lane=lambda: False, exit_fn=lambda rc: None)
+        w.tick = lambda: time.sleep(5)          # the beat wedges, as the box's did
+        w.start()
+        time.sleep(2.0)
+        sys.stdout.write("done")
+    """)
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                         timeout=60, cwd=str(DESK))
+    assert out.returncode == 0, out.stderr
+    text = log.read_text(encoding="utf-8")
+    assert "armed" in text
+    assert "sweep-watchdog" in text or "Thread 0x" in text, text[-2000:]
+
+
+def test_a_finished_sweep_cancels_its_stack_dump(tmp_path, monkeypatch):
+    w = runner.SweepWatchdog(beat_s=0.05, lane=lambda: False, exit_fn=lambda rc: None)
+    monkeypatch.setattr(runner, "STACK_DUMP_AFTER_S", 0.3)
+    w.start()
+    time.sleep(0.3)
+    w.finish(0)
+    assert w._stack_fh is None
+    time.sleep(0.5)                              # past the timeout: nothing may fire now
+    assert "Thread 0x" not in (tmp_path / "GAUNTLET_STACKS.log").read_text(encoding="utf-8")
