@@ -703,9 +703,15 @@ def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | Non
         why.append(f"UNMEASURED: axis_registry is unimportable ({_AR_ERROR}) -- the ten axes, the "
                    "family table and the cell id all live there, so no niche can be named")
     else:
+        from libs.ops.phase_stamp import PhaseStamp
+        stamp = PhaseStamp("qd_frontier", OUT_REPORT.with_name(OUT_REPORT.stem + ".phase.json"))
+        stamp.enter("collect_evidence")
         doc = ar._read_json(AXIS_REPORT, note)
         registry_at = str(doc.get("at")) if isinstance(doc, dict) else UNKNOWN
-        cells = collect_cells(note, collect_evidence(note))
+        evidence = collect_evidence(note)
+        stamp.enter("collect_cells")
+        cells = collect_cells(note, evidence)
+        stamp.enter("build_niches")
         niches = build_niches(cells)
         if previous is None:
             doc = ar._read_json(OUT_MAP, note)
@@ -720,7 +726,9 @@ def build(max_proposals: int = DEFAULT_PROPOSALS, previous: dict[str, Any] | Non
         if not cells:
             why.append("no judged cell was readable: there is no occupied niche to explore from, "
                        "mutate or connect")
+        stamp.enter("select")
         selection = select(cells, niches, space, families, by_class, now, max_proposals)
+        stamp.done()
 
     ranked = sorted(niches.items(),
                     key=lambda kv: (-BASIS_RANK.get(kv[1]["elite_evidence_basis"], 0),

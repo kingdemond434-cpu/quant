@@ -133,6 +133,21 @@ ALL_MINERS = [
 ]
 
 
+def _rotated(miners: list, hour: int | None = None) -> list:
+    """The roster started at an hour-rotated offset (2026-10-29).
+
+    A caller that caps this pass (a task time limit, a leg budget) kills it partway through, and
+    with a fixed order the cap lands on the same tail every hour -- the prefix-starvation defect
+    `hourly_cycle.LEG_BUDGET_FLOOR_SEC` names. Rotating the start gives every miner the front of
+    the queue once per len(miners) hours; an uncapped pass still runs every miner exactly once.
+    """
+    if not miners:
+        return []
+    h = int(datetime.now(timezone.utc).timestamp() // 3600) if hour is None else int(hour)
+    k = h % len(miners)
+    return list(miners[k:]) + list(miners[:k])
+
+
 #: Channels that need a configured credential or contact before they may fetch at all.
 REQUIRES_ENV = {"sec_edgar": "QUANT_EDGAR_UA"}
 
@@ -153,7 +168,7 @@ def run_all_miners() -> dict:
     total = 0
     allow = allowed_channels()
     set_aside = {}
-    for name, fn in ALL_MINERS:
+    for name, fn in _rotated(ALL_MINERS):
         if allow is not None and name not in allow:
             set_aside[name] = "not in QUANT_MINERS_ALLOW (no clear machine-access terms on this host)"
             results[name] = {"status": "SET_ASIDE", "why": set_aside[name]}

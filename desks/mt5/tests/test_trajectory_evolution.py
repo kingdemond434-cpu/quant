@@ -436,3 +436,31 @@ def test_an_absent_graph_is_unmeasured_rather_than_an_empty_verdict(desk: Path,
     assert report["n_genomes"] == 0 and report["n_children"] == 0
     assert any(u["what"] == "research genomes" for u in report["unmeasured"])
     assert "unreadable or absent" in report["inputs"]["hypothesis_graph"]
+
+
+# ------------------------------------------------ the setup never eats the generation (2026-11-03)
+def test_a_slow_assembly_still_leaves_evolution_its_floor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The box case: assembly ran past the one deadline and evolution stopped before child one."""
+    seen: dict[str, float] = {}
+    clock = {"t": 1000.0}
+    monkeypatch.setattr(te.time, "monotonic", lambda: clock["t"])
+    monkeypatch.setattr(te, "load_memory", lambda: {})
+    monkeypatch.setattr(te, "refresh_memory", lambda memory, verdicts: {})
+    monkeypatch.setattr(te, "verdict_index", lambda: {})
+
+    def _assemble(deadline: float | None = None) -> Any:
+        seen["setup_deadline"] = float(deadline or 0.0)
+        clock["t"] += 300.0                       # the read overruns the WHOLE 240 s budget
+        return [], {}, [], Counter()
+
+    def _evolve(genomes: Any, memory: Any, max_children: int, deadline: float,
+                seed: int) -> dict[str, Any]:
+        seen["evolve_deadline"] = deadline
+        return {"children": [], "refusals": {}, "n_seeds": 0, "stopped": "", "ruts": 0,
+                "by_operation": {}}
+
+    monkeypatch.setattr(te, "assemble", _assemble)
+    monkeypatch.setattr(te, "evolve", _evolve)
+    te.build(max_children=5, budget_s=240, seed=1)
+    assert seen["setup_deadline"] == pytest.approx(1000.0 + te.SETUP_SHARE * 240)
+    assert seen["evolve_deadline"] - clock["t"] == pytest.approx(te.EVOLVE_FLOOR_SHARE * 240)

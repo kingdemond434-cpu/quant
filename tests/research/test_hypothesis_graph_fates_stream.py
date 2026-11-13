@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from libs.research import hypothesis_graph as hg
+from libs.research import hypothesis_graph_scan as hg_scan
 
 
 def _ledger(tmp_path: Path, torn: bool = False) -> Path:
@@ -35,3 +36,35 @@ def test_one_torn_line_costs_current_fates_one_row(tmp_path: Path) -> None:
 
 def test_an_absent_ledger_is_empty_not_an_error(tmp_path: Path) -> None:
     assert hg.current_fates(tmp_path / "nope.jsonl") == {}
+
+
+# ------------------------------------------ latest_rows: parse only the fates asked (2026-11-03)
+def test_latest_rows_parses_only_the_asked_fates_like_the_full_reader(tmp_path: Path) -> None:
+    p = _ledger(tmp_path)
+    rows, ids = hg_scan.latest_rows({"FAILED", "CERTIFIED"}, p)
+    full = hg.Graph(p).current()
+    assert ids == set(full)
+    assert {r["id"] for r in rows} == {"a", 'q"uote'}
+    assert next(r for r in rows if r["id"] == "a") == full["a"]          # last row per id wins
+    # A torn line costs that one row, never the read.
+    torn_rows, torn_ids = hg_scan.latest_rows({"FAILED", "CERTIFIED"}, _ledger(tmp_path, torn=True))
+    assert {r["id"] for r in torn_rows} == {"a", 'q"uote'} and torn_ids == ids
+
+
+def test_latest_rows_limit_keeps_the_newest_and_returns_them_in_file_order(tmp_path: Path) -> None:
+    p = tmp_path / "g.jsonl"
+    p.write_bytes(b"".join(json.dumps({"id": f"n{i}", "fate": "FAILED"}).encode() + b"\r\n"
+                           for i in range(6)))
+    rows, ids = hg_scan.latest_rows({"FAILED"}, p, limit=2)
+    assert [r["id"] for r in rows] == ["n4", "n5"] and len(ids) == 6
+
+
+def test_latest_rows_says_when_the_graph_could_not_be_read(tmp_path: Path) -> None:
+    problems: list[str] = []
+    missing = tmp_path / "nope.jsonl"
+    assert hg_scan.latest_rows({"FAILED"}, missing, problems=problems) == ([], set())
+    assert len(problems) == 1 and problems[0].startswith("nope.jsonl unreadable: ")
+    read: list[str] = []
+    (tmp_path / "empty.jsonl").write_bytes(b"")
+    assert hg_scan.latest_rows({"FAILED"}, tmp_path / "empty.jsonl", problems=read) == ([], set())
+    assert read == []                              # an empty graph is a measured zero

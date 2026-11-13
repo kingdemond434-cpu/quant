@@ -57,6 +57,8 @@ def test_every_reasoning_organ_injects_the_objective(organ: str) -> None:
 #: assumed by silence -- the same discipline `_CHECKS_EXEMPT` uses, and for the same reason: an
 #: exemption nobody had to justify is how a list quietly stops covering anything.
 _NOT_ORGANS = {
+    "check_producer_yield":  "names the key FILE to stat it for the KEY_MISSING cause -- existence "
+                             "only, never opened; no prompt, no model call",
     "seats":                 "key/roster resolution helper -- resolves who to ask, asks nobody",
     "refresh_panel_roster":  "fetches the live model catalog; no prompt, no judgement",
     "score_panel":           "scores completed panel output after the fact",

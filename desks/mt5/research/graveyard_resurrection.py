@@ -70,6 +70,9 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as reg  # noqa: E402
+from libs.ops.phase_stamp import PhaseStamp  # noqa: E402
+from libs.research import hypothesis_graph as hg  # noqa: E402
+from libs.research import hypothesis_graph_scan as hg_scan  # noqa: E402
 from libs.research import mechanism_ontology as onto  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 from research import negative_knowledge as nk  # noqa: E402
@@ -287,13 +290,37 @@ def _gate_of_graph_row(row: dict[str, Any]) -> str:
     return m.group(1) if m else ""
 
 
+#: The fates whose rows the graveyard reads in full: the dead, and the survivors their siblings are
+#: measured against. Every other node is needed only as an id (for "already in the graph").
+JUDGED_FATES = frozenset({"FAILED", "BURIED", "CERTIFIED"})
+
+
+def read_graph_with_ids(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], set[str]]:
+    """(the latest row of every JUDGED node, newest first and at most `limit`, every node id).
+
+    THE GRAPH IS READ BY PATTERN, NOT PARSED WHOLE (2026-11-03). The old read was a full
+    `json.loads` of the graph's FIRST `limit` lines: on the box's 4.4 GB file that is the oldest
+    rows, every pass, at ~6 MB/s, and the leg was killed at its cap on 1,934 runs with 0
+    candidates from 271k dead cells. `hg_scan.latest_rows` parses only the judged rows, the newest
+    `limit` of them.
+    """
+    return hg_scan.latest_rows(JUDGED_FATES, GRAPH, limit)
+
+
+def read_graph_measured(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], set[str], str]:
+    """`read_graph_with_ids`, plus why the graph could not be read ('' when it was).
+
+    An unreadable graph and an empty one both give no rows; only this says which. The run reports
+    the first as UNMEASURED: a dead-cell count taken without the graph is not a count of the dead.
+    """
+    problems: list[str] = []
+    rows, ids = hg_scan.latest_rows(JUDGED_FATES, GRAPH, limit, problems)
+    return rows, ids, "; ".join(problems)
+
+
 def read_graph(limit: int = MAX_ROWS) -> list[dict[str, Any]]:
-    """Every graph row, latest write per id -- the graph is append-only with re-statements."""
-    latest: dict[str, dict[str, Any]] = {}
-    for row in _jsonl(GRAPH, limit):
-        if str(row.get("id") or ""):
-            latest[str(row["id"])] = row
-    return list(latest.values())
+    """The latest row of every judged node (FAILED, BURIED, CERTIFIED), in file order."""
+    return read_graph_with_ids(limit)[0]
 
 
 def dead_cells(rows: list[dict[str, Any]], limit: int = MAX_ROWS) -> list[Dead]:
@@ -632,7 +659,8 @@ def combination_for(dead: Dead, qs: dict[str, Any]) -> dict[str, Any] | None:
 
 
 # ------------------------------------------------------------------------------ 5. the run
-def _acceptable(p: dict[str, Any], known: set[str], names: list[str]) -> str:
+def _acceptable(p: dict[str, Any], known: set[str], names: list[str],
+                graph_ids: set[str] | frozenset[str] = frozenset()) -> str:
     """'' when the proposal may leave, else the reason it may not."""
     sym, fam = str(p.get("symbol") or ""), _family_root(p.get("family"))
     if not sym or not fam:
@@ -648,6 +676,9 @@ def _acceptable(p: dict[str, Any], known: set[str], names: list[str]) -> str:
     if blocked:
         return f"the graveyard's do_not_repeat entry '{blocked}' covers this family"
     if reg.content_hash(str(p.get("family") or ""), sym, p.get("params")) in known:
+        return "the graph already carries this exact cell"
+    params = p.get("params") if isinstance(p.get("params"), dict) else {}
+    if graph_ids and hg.node_id(sym, str(p.get("family") or ""), params) in graph_ids:
         return "the graph already carries this exact cell"
     return ""
 
@@ -688,14 +719,19 @@ def _reclassify_wrong_asset(dead: list[Dead], sibs: list[Sibling], by_cls: Count
 def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
           dry_run: bool = False, max_rows: int = MAX_ROWS) -> dict[str, Any]:
     t0 = time.monotonic()
-    rows = read_graph(max_rows)
+    stamp = PhaseStamp("graveyard_resurrection", OUT.with_name(OUT.stem + ".phase.json"))
+    stamp.enter("read_graph")
+    rows, graph_ids, graph_unread = read_graph_measured(max_rows)
+    stamp.enter("dead_cells")
     dead = dead_cells(rows, max_rows)
+    stamp.enter("siblings")
     sibs = _siblings(rows)
     dnr = do_not_repeat()
     names = list(dnr.get("names") or [])
     fam_cap = max(1, int(max_candidates * MAX_FAMILY_SHARE))
     conn = None if dry_run else reg.connect()
     try:
+        stamp.enter("classify_all")
         by_cls, marked, deferred = _classify_all(dead, conn, t0, budget_s)
         reclassified = _reclassify_wrong_asset(dead, sibs, by_cls)
 
@@ -714,6 +750,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                 clusters.setdefault((_family_root(d.family),
                                      d.axes.get("mechanism", ar.UNKNOWN),
                                      d.failure_class), []).append(d)
+        stamp.enter("known_hashes")
         known = {reg.content_hash(str(r.get("family") or ""), str(r.get("symbol") or ""),
                                   r.get("params") if isinstance(r.get("params"), dict) else {})
                  for r in rows}
@@ -733,6 +770,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
         n_unmeasured_q = 0
         budget_stop = False
 
+        stamp.enter("clusters")
         for (fam, mech, cls), deaths in sorted(clusters.items(), key=lambda kv: -len(kv[1])):
             if time.monotonic() - t0 > budget_s:
                 budget_stop = True
@@ -761,7 +799,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                     for p in ([*props, comb] if comb is not None else props):
                         if len(accepted) >= max_candidates or per_family[fam] >= fam_cap:
                             break
-                        why = _acceptable(p, known, names)
+                        why = _acceptable(p, known, names, graph_ids)
                         if why:
                             refusals.append({"cell": str(p.get("parent")), "why": why})
                             continue
@@ -788,6 +826,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                                   f"{mech} but {alt}")})
             cluster_rows.append({"family": fam, "mechanism": mech, "failure_class": cls,
                                  "n": len(deaths), "questions": qs, "resurrections": made})
+        stamp.enter("write")
         donated = 0 if dry_run or not accepted else _write(accepted, conn, refusals)
     finally:
         if conn is not None:
@@ -797,7 +836,9 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
     if not dry_run:
         _lower_priors(prior_rows)
         _remember_counters(counters)
+    phases = stamp.done()
     return {
+        "phases": phases,
         "at": _now(), "n_failed_cells": len(dead), "by_failure_class": dict(by_cls.most_common()),
         "clusters": sorted(cluster_rows, key=lambda r: -r["n"])[:60],
         "candidates_generated": len(accepted), "candidates_donated": donated,
@@ -807,10 +848,15 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
             "questions_unmeasured": n_unmeasured_q, "verdicts_deferred_by_budget": deferred,
             "reclassified_no_edge_to_wrong_asset": reclassified,
             "graveyard_markdown": dnr.get("status"),
+            # The graph itself: None when it was read; otherwise why it was not, and then
+            # n_failed_cells counts only the gate ledger's and the forward clocks' dead.
+            "hypothesis_graph": (f"UNMEASURED: {graph_unread}" if graph_unread else None),
             "why": ("a gate this organ's table does not know leaves its cell UNMEASURED and spawns "
                     f"nothing; a question with fewer than {MIN_SIBLINGS} judged siblings is "
                     "UNMEASURED with its n. Neither is a zero")},
-        "sources": {"hypothesis_graph": len(rows), "gate_ledger": str(GATE_LEDGER),
+        "sources": {"hypothesis_graph": None if graph_unread else len(graph_ids),
+                    "graph_rows_read": None if graph_unread else len(rows),
+                    "gate_ledger": str(GATE_LEDGER),
                     "forward_clocks": sum(1 for d in dead if d.origin == "forward_clock"),
                     "graveyard_markdown": dnr.get("n_entries", 0),
                     "do_not_repeat_tags": dnr.get("tags", {})},
@@ -904,6 +950,9 @@ def main(argv: list[str] | None = None) -> int:
                 max_rows=a.max_rows)
     print(f"graveyard resurrection: {doc['n_failed_cells']} dead cell(s), "
           f"{len(doc['clusters'])} cluster(s) reported, {doc['candidates_generated']} candidate(s)")
+    if doc["unmeasured"].get("hypothesis_graph"):
+        print(f"  hypothesis graph {doc['unmeasured']['hypothesis_graph']} -- the dead-cell count "
+              "above excludes every graph cell")
     print("   " + "".join(f"  {k} {v}"
                          for k, v in list(doc["by_failure_class"].items())[:12]))
     for c in doc["clusters"][:6]:

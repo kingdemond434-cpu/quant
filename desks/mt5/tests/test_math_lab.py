@@ -281,3 +281,50 @@ def test_an_empty_panel_set_reports_unmeasured_and_never_idles_silently(lab, mon
     assert any("no target produced" in u for u in report["unmeasured"])
     assert any("residual store" in u for u in report["unmeasured"])
     assert ML.OUT.exists()
+
+
+# ---------------------------------------------- targets outside the peer prefix (2026-11-03)
+def _bars_env(monkeypatch: Any, tmp_path: Path, *, allowed: list[str], on_disk: list[str],
+              residual_symbols: list[str]) -> list[str]:
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    for s in on_disk:
+        (uni / f"{s}_H1.parquet").write_bytes(b"x")
+    loaded: list[str] = []
+    n = 64
+    frames = ({"close": np.linspace(1.0, 2.0, n)}, np.arange(n, dtype=np.int64), {"bars": n})
+
+    def _frames(symbol: str) -> Any:
+        loaded.append(symbol)
+        return frames if (uni / f"{symbol}_H1.parquet").exists() else None
+
+    monkeypatch.setattr(ML, "UNIVERSE", uni)
+    monkeypatch.setattr(ML, "MAX_PEERS", 1)
+    monkeypatch.setattr(ML, "hypothesis_universe", lambda: (list(allowed), {}))
+    monkeypatch.setattr(ML, "residual_rows", lambda: (
+        [{"symbol": s} for i, s in enumerate(residual_symbols) for _ in range(10 - i)],
+        "4", "test", []))
+    monkeypatch.setattr(ML, "residual_targets", lambda: {})
+    monkeypatch.setattr(ML, "bar_frames", _frames)
+    monkeypatch.setattr(ML, "_epsilon_for", lambda *a, **k: (None, None, "test"))
+    return loaded
+
+
+def test_a_target_beyond_the_peer_prefix_is_still_loaded(monkeypatch: Any, tmp_path: Path) -> None:
+    """The box case: the ranked targets sat after the allowed prefix and read 'no H1 bars'."""
+    allowed = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "XAGUSD"]
+    loaded = _bars_env(monkeypatch, tmp_path, allowed=allowed, on_disk=allowed,
+                       residual_symbols=["XAGUSD"])
+    _panels, status = ML.build_panels(max_targets=1)
+    assert status["targets"] == ["XAGUSD"]
+    assert "XAGUSD" in loaded
+    assert not any("XAGUSD" in u and "no H1 bars" in u for u in status["unmeasured"])
+
+
+def test_a_target_with_no_bars_gives_its_slot_to_the_next(monkeypatch: Any, tmp_path: Path) -> None:
+    allowed = ["EURUSD", "USDDKK", "XAGUSD", "GBPUSD"]
+    _bars_env(monkeypatch, tmp_path, allowed=allowed, on_disk=["EURUSD", "XAGUSD", "GBPUSD"],
+              residual_symbols=["USDDKK", "XAGUSD", "GBPUSD"])
+    _panels, status = ML.build_panels(max_targets=2)
+    assert status["targets"] == ["XAGUSD", "GBPUSD"]
+    assert any(u.startswith("target USDDKK: no H1 bars") for u in status["unmeasured"])

@@ -713,6 +713,64 @@ MINERS = {
 }
 
 
+#: THE CLEAR-ACCESS SOURCES (Auditor HOLD on #602). The only seed miners that may run on a host
+#: started with --clear-access-only, which is how the trading box's hourly `seed_miners` leg starts
+#: this module. Same standard as QUANT_MINERS_ALLOW in ops/run_side_channel_miners.cmd: an
+#: official API, a central-bank feed, or local computation.
+#:   quant_se       api.stackexchange.com -- the Stack Exchange API
+#:   arxiv_qfin     export.arxiv.org/api  -- the arXiv API
+#:   bis_speeches   bis.org/doclist/cbspeeches.rss -- the BIS's published speech feed
+#:   github_topics  api.github.com        -- the GitHub REST API
+#:   broker_swaps   no request at all: reads data/universe/universe.json
+#:   research_feeds  working-paper / central-bank / arXiv feeds, each fetched ONLY under a recorded
+#:                   "open" terms verdict in research_feeds.json; an unrecorded feed is CLOSED by
+#:                   research_depth_miners itself (OPEN_TERMS), so no feed without terms is fetched
+#:   github_depth    api.github.com -- the GitHub REST API, inside its published rate limit, the
+#:                   same terms as github_topics
+#: Every other source here reads a site's HTML pages, a third party's unofficial feed, or an
+#: archive of a site's pages, with a browser User-Agent; none has clear machine-access terms, so
+#: under the flag each is SET_ASIDE by name -- not fetched, and its wall not probed. A source is
+#: added here only with the terms that allow it; absence from this set is not a permission.
+#: STILL SET ASIDE ON THE BOX: the Wayback CDX sources (`darwinex`, `forextsd_cdx`) and
+#: `ff_calendar_vintage`. They stay outside this set until their access terms are recorded here,
+#: beside the name, the way the seven above are.
+CLEAR_ACCESS: frozenset[str] = frozenset({
+    "quant_se", "arxiv_qfin", "bis_speeches", "github_topics", "broker_swaps",
+    "research_feeds", "github_depth",
+})
+SET_ASIDE_WHY = ("not in seed_miners.CLEAR_ACCESS (no clear machine-access terms; this host runs "
+                 "clear-access sources only)")
+
+
+def set_aside_missed_growth(set_aside: list[str], at: str) -> list[dict]:
+    """THE TWO-SIDED LEDGER LINE for the clear-access set-aside (GROWTH_GOVERNANCE Rule 1;
+    judge_prescreen / canon_publication precedent).
+
+    COST: the sources this sweep did not mine, by name -- every claim they would have donated to
+    the compiler this hour is absent, and what that is worth in E[log W] is UNMEASURED, said,
+    never zero. GAIN: the requests not sent to hosts with no recorded machine-access terms; it is
+    not a growth quantity and is not priced as one. No source set aside -> no lines, which
+    `missed_growth.organ_published_lines` reads as NOT_BINDING: the flag cost nothing this sweep.
+    """
+    names = sorted(set_aside)
+    if not names:
+        return []
+    common = {"day": at[:10], "at": at, "rail": "seed_miners_clear_access",
+              "by": "side_channels/seed_miners.py --clear-access-only"}
+    cost = {**common, "side": "cost", "kind": "opportunity_cost",
+            "value": None, "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+            "units": "seed sources not mined this sweep (their donated claims never reach the "
+                     "compiler); no yield per source is measured under the flag",
+            "n_sources": len(names), "sources": names, "why": SET_ASIDE_WHY}
+    gain = {**common, "side": "gain", "kind": "access_terms_respected",
+            "value": None, "verdict": "UNMEASURED", "e_log_w": "UNMEASURED",
+            "units": "sources neither fetched nor wall-probed without recorded machine-access "
+                     "terms; not a growth quantity, so no E[log W] is claimed for it",
+            "n_sources": len(names),
+            "released_by": "recording the source's access terms and adding it to CLEAR_ACCESS"}
+    return [cost, gain]
+
+
 def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: dict,
                 counted: bool = False) -> None:
     """Archive one source's rows and update the sweep tally.
@@ -735,12 +793,24 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
         summary["raw_only"] += 0 if real else 1
 
 
-def run_and_save() -> dict:
+def run_and_save(clear_access_only: bool = False) -> dict:
+    """One sweep. With `clear_access_only`, only CLEAR_ACCESS sources run; the rest are SET_ASIDE
+    by name before anything is fetched or probed, and reported so, never as a zero."""
     ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
-    results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
+    results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0,
+                            "set_aside": 0}
     st = _state()
     probes = st.setdefault("wall_probes", {})
+    set_aside: list[str] = []
     for name, fn in MINERS.items():
+        if clear_access_only and name not in CLEAR_ACCESS:
+            # No seat file is written: a set-aside source produced nothing, and a row saying so
+            # would be counted as output by anything that counts rows.
+            set_aside.append(name)
+            summary["set_aside"] += 1
+            results[name] = {"status": "SET_ASIDE", "why": SET_ASIDE_WHY}
+            print(f"  {name}: SET_ASIDE ({SET_ASIDE_WHY})")
+            continue
         wall = SOURCE_WALLS.get(name)
         if wall:
             # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
@@ -807,7 +877,17 @@ def run_and_save() -> dict:
         _write_rows(name, rows_, ts, results, summary)
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
-    _merge_state({"wall_probes": probes})
+    swept_at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    # Written onto the CURRENT state file (`_merge_state`), never onto the copy read before the
+    # sweep, so the miners' own mid-sweep cursors survive. `last_sweep` and the set-aside's
+    # two-sided line sit at the top level, which is where research/missed_growth.py
+    # (organ_published_lines) reads an organ's own lines from; it is THIS sweep's line, replaced
+    # each sweep, and a sweep that set nothing aside publishes none.
+    _merge_state({"wall_probes": probes,
+                  "last_sweep": {"at": swept_at,
+                                 "clear_access_only": bool(clear_access_only),
+                                 "set_aside": sorted(set_aside)},
+                  "missed_growth": set_aside_missed_growth(set_aside, swept_at)})
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
     try:
@@ -840,7 +920,8 @@ def run_and_save() -> dict:
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
     print(f"seed miners: {summary['total']} rows across {len(MINERS)} sources "
           f"(ok={summary['ok']} raw={summary['raw_only']} "
-          f"walled={summary['walled']} failed={summary['failed']})")
+          f"walled={summary['walled']} failed={summary['failed']} "
+          f"set_aside={summary['set_aside']})")
     # JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
     # sweep's output -- relationships and TIME are the corpus the sites cannot sell us.
     try:
@@ -852,4 +933,4 @@ def run_and_save() -> dict:
 
 
 if __name__ == "__main__":
-    run_and_save()
+    run_and_save(clear_access_only="--clear-access-only" in sys.argv[1:])
