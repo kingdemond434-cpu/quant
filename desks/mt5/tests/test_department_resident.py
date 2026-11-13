@@ -281,3 +281,133 @@ def test_a_worker_recycles_early_once_the_supervisor_is_retiring(monkeypatch):
     assert not dr.worker_should_retire(now_epoch=99.0)
     monkeypatch.setenv(dr.RETIRE_AT_ENV, "")
     assert not dr.worker_should_retire(now_epoch=1e12)
+
+
+def test_hung_live_holder_past_its_own_budget_is_reclaimed_and_logged(monkeypatch, tmp_path):
+    """2026-11-11: Mathlab waited 8 h on 'bounded department slots'. A live holder hung past its
+    own budget (proctree.run's unbounded Popen.__exit__ wait after a failed tree kill) must stop
+    counting against the bound; an in-budget live holder must not."""
+    import json
+    import os
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    held = dr.claim_capacity_slot(1, dept="validate")
+    assert held is not None
+    assert dr.claim_capacity_slot(1, dept="mathlab") is None   # in budget: still busy
+    record = json.loads(dr._holder_path(held.lock_path).read_text(encoding="utf-8"))
+    assert record["pid"] == os.getpid() and record["dept"] == "validate"
+    record["admitted_epoch"] -= dr.holder_budget_s() + 60     # same live pid, now over budget
+    dr._holder_path(held.lock_path).write_text(json.dumps(record), encoding="utf-8")
+    reclaimed = dr.claim_capacity_slot(1, dept="mathlab")
+    assert reclaimed is not None, "a hung holder past its own budget kept the slot"
+    assert reclaimed.record["generation"] == 1
+    assert dr.claim_capacity_slot(1, dept="macro") is None     # still bounded for live passes
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "RECLAIM department slot 0 generation 0" in log and "dept[validate]" in log
+    reclaimed.close()
+    held.close()
+    assert not dr._holder_path(held.lock_path).exists()
+
+
+def test_locked_slot_with_dead_or_unrecorded_holder_is_busy_not_reclaimed(monkeypatch, tmp_path):
+    """The kernel frees a dead holder's lock, so a dead pid on a LOCKED slot is a new holder
+    mid-write: never a reason to over-admit. Same for a missing record (unmeasured)."""
+    import json
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    held = dr.claim_capacity_slot(1, dept="validate")
+    record = dict(held.record, admitted_epoch=0.0)
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: "dead")
+    dr._holder_path(held.lock_path).write_text(json.dumps(record), encoding="utf-8")
+    assert dr.claim_capacity_slot(1, dept="mathlab") is None
+    dr._holder_path(held.lock_path).unlink()
+    assert dr.claim_capacity_slot(1, dept="mathlab") is None
+    held.close()
+
+
+def test_abandoned_ticket_with_unmeasurable_owner_cannot_hold_the_queue_head(monkeypatch,
+                                                                              tmp_path):
+    """A hard-killed waiter skips its finally; if its PID reads alive or unmeasurable
+    (reuse, AccessDenied) the old code kept it as the FIFO head forever. A live waiter
+    refreshes its ticket every poll, so an untouched one is reclaimed and logged."""
+    import os
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)   # unmeasured = alive
+    abandoned = dr._wait_ticket("ghost")
+    live = dr._wait_ticket("mathlab")
+    old = time.time() - dr.TICKET_STALE_S - 120
+    os.utime(abandoned, (old, old))
+    assert dr._oldest_waiter() == live
+    assert not abandoned.exists()
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "RECLAIM wait ticket" in log and "dept[ghost]" in log
+    live.unlink()
+
+
+def test_waiter_heartbeats_its_ticket_and_is_admitted(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    handle = dr.wait_for_capacity("mathlab", slots=1, poll_s=1)
+    assert handle is not None and handle.record["dept"] == "mathlab"
+    handle.close()
+    assert not list((tmp_path / "locks").glob("dept_wait_*.ticket"))
+
+
+def _age_holder_past_budget(held, **extra):
+    import json
+    record = json.loads(dr._holder_path(held.lock_path).read_text(encoding="utf-8"))
+    record["admitted_epoch"] -= dr.holder_budget_s() + 60
+    record.update(extra)
+    dr._holder_path(held.lock_path).write_text(json.dumps(record), encoding="utf-8")
+
+
+def test_reclaim_logs_holder_rss_and_attempts_kill_tree_once(monkeypatch, tmp_path):
+    """Auditor should-fix: a reclaimed holder is a 4th live pass. Its RSS is logged and its
+    tree is killed once, outcome logged, so it is then either visible or gone."""
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_RECLAIMS_LOGGED", set())
+    held = dr.claim_capacity_slot(1, dept="validate")
+    _age_holder_past_budget(held, pid=424242, pid_create_time=1234.0)
+    states = iter(["alive", "alive", "dead"])  # leak check, pre-kill identity, post-kill
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: next(states))
+    monkeypatch.setattr(dr, "_holder_rss", lambda pid: "777MB")
+    kills: list[int] = []
+    monkeypatch.setattr(dr, "_kill_tree",
+                        lambda pid: kills.append(pid) or {"killed": 3, "method": "psutil"})
+    reclaimed = dr.claim_capacity_slot(1, dept="mathlab")
+    assert reclaimed is not None
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: "alive")
+    reclaimed.close()
+    again = dr.claim_capacity_slot(1, dept="macro")   # same leaked holder: no second kill
+    assert again is not None
+    assert kills == [424242]
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "holder rss 777MB" in log
+    assert "kill_tree attempted pid 424242: killed 3 via psutil; holder now dead" in log
+    again.close()
+    held.close()
+
+
+def test_reclaim_never_kills_an_unverified_or_own_pid_and_rss_unmeasured(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_RECLAIMS_LOGGED", set())
+    kills: list[int] = []
+    monkeypatch.setattr(dr, "_kill_tree", lambda pid: kills.append(pid) or {})
+    held = dr.claim_capacity_slot(1, dept="validate")     # holder is THIS process
+    _age_holder_past_budget(held)
+    first = dr.claim_capacity_slot(1, dept="mathlab")
+    assert first is not None and kills == []
+    second_holder = dr.claim_capacity_slot(2, dept="china")  # slot 1, then aged, no create time
+    _age_holder_past_budget(second_holder, pid=515151, pid_create_time=None)
+    monkeypatch.setattr(dr, "_pid_state", lambda _pid, _ct: "unmeasured")
+    assert dr._holder_rss(-1) == "UNMEASURED"
+    reclaimed = dr.claim_capacity_slot(2, dept="macro")
+    assert reclaimed is not None and kills == []
+    log = (tmp_path / "logs" / "department_resident.log").read_text(encoding="utf-8")
+    assert "not attempted: holder is this process" in log
+    assert "holder rss UNMEASURED" in log and "create time UNMEASURED" in log
+    for h in (reclaimed, second_holder, first, held):
+        h.close()

@@ -42,10 +42,13 @@ from __future__ import annotations
 import argparse
 import contextlib
 import ctypes
+import json
 import os
 import subprocess
 import sys
+import threading
 import time
+from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -64,8 +67,32 @@ RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
 # while deepening/descendant/gauntlet workers held tens of GB each.  Bound cross-department
 # passes with OS-held slots.  Three keeps useful parallel discovery on the 98GB box while leaving
 # the terminal, gateway, gauntlet and core loop headroom.  A crashed process releases its byte
-# lock in the kernel, so there is no stale-file recovery path.
+# lock in the kernel -- but a LIVE holder that hangs does not (2026-11-11: MT5-Dept-Mathlab sat
+# 8 h on "waiting: bounded department slots or older pass(es) ahead").  Two leak paths, both
+# now reclaimed on liveness and logged:
+#   * a slot held by a live process past its OWN budget (pass timeout + the post-admission memory
+#     wait + the tree-kill grace).  libs/ops/proctree.run leaves `with Popen(...)` through an
+#     unbounded wait() when kill_tree cannot end the child, so the holder can sit inside run_pass
+#     forever with the slot locked.  Such a slot is no longer counted: the head waiter takes the
+#     slot's next generation file, so live, in-budget passes are still bounded at
+#     CONCURRENT_PASSES and a hung one costs nothing;
+#   * a FIFO ticket whose owner died without its `finally` (a hard kill: Task Scheduler stop,
+#     reaper, reboot) and whose PID then reads as alive or unmeasurable.  `_ticket_alive` treats
+#     unmeasured ownership as alive, and only the head ticket may claim, so that ticket blocked
+#     every department forever even with free slots.  Waiters now refresh their ticket every
+#     poll; a ticket not refreshed for TICKET_STALE_S has no owner polling it and is removed.
+# The resident no longer reads this constant for admission: `derived_slot_count` measures the
+# count at every claim (floor 3, ONE WAY UP) and an explicit DEPT_CONCURRENT_PASSES still wins.
+# It stays the default for direct callers of claim_capacity_slot.
 CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "3")))
+#: A waiter touches its ticket every PAUSE_S; twenty missed polls means no live owner is waiting.
+TICKET_STALE_S = max(600, 20 * PAUSE_S)
+#: How long the resident itself can wait for memory after admission while holding a slot.
+POST_ADMISSION_MEMORY_WAIT_S = 1800
+#: proctree.run's communicate(timeout=10) after kill_tree, plus a margin for the log/heartbeat.
+HOLDER_GRACE_S = 600
+#: How often a still-waiting resident re-logs where it stands in the queue.
+WAIT_REPORT_S = 1800
 # A department child still has a hard timeout.  Plan strictly inside it so every admitted
 # oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
 PASS_BUDGET_FILL = min(
@@ -143,32 +170,220 @@ def _claim_lock(name: str):
     return fh
 
 
-def claim_capacity_slot(slots: int = CONCURRENT_PASSES):
-    """Claim one of the shared department-pass slots, or None when all are busy."""
-    LOCKS.mkdir(parents=True, exist_ok=True)
-    for index in range(max(1, int(slots))):
-        path = LOCKS / f"dept_capacity_{index}.lock"
-        try:
-            fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held across the pass
-        except OSError:
-            continue
-        try:
-            if sys.platform == "win32":
-                import msvcrt
-                fh.seek(0)
-                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            fh.close()
-            continue
+def holder_budget_s(timeout_s: int | None = None) -> int:
+    """The longest a LIVE holder can legitimately keep a slot: its own measured budget."""
+    t = PASS_TIMEOUT_S if timeout_s is None else int(timeout_s)
+    return int(t + POST_ADMISSION_MEMORY_WAIT_S + HOLDER_GRACE_S)
+
+
+def _proc_create_time(pid: int) -> float | None:
+    try:
+        import psutil
+        return float(psutil.Process(pid).create_time())
+    except Exception:
+        return None
+
+
+def _pid_state(pid: int, create_time: float | None) -> str:
+    """'alive', 'dead' or 'unmeasured' -- a reused PID (another create time) is 'dead'."""
+    try:
+        import psutil
+    except ImportError:
+        return "unmeasured"
+    try:
+        proc = psutil.Process(int(pid))
+        if not proc.is_running():
+            return "dead"
+        if create_time is not None and abs(proc.create_time() - float(create_time)) > 1.0:
+            return "dead"
+        return "alive"
+    except Exception as exc:
+        if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
+            return "dead"
+        return "unmeasured"
+
+
+class CapacitySlot:
+    """A held department-pass slot: the OS byte lock plus a readable holder record.
+
+    The lock file's byte 0 is mandatorily locked on Windows, so nobody else can read who holds
+    it; the sidecar `<lock>.holder.json` says (pid, dept, admitted, budget) for the reclaim
+    check and for a box read. Closing removes the record first, then releases the lock.
+    """
+
+    def __init__(self, fh, lock_path: Path, record: dict) -> None:
+        self.fh = fh
+        self.lock_path = lock_path
+        self.record = record
+
+    def close(self) -> None:
         with contextlib.suppress(OSError):
+            _holder_path(self.lock_path).unlink(missing_ok=True)
+        self.fh.close()
+
+
+def _slot_lock_path(index: int, generation: int) -> Path:
+    if generation <= 0:
+        return LOCKS / f"dept_capacity_{index}.lock"
+    return LOCKS / f"dept_capacity_{index}.g{generation}.lock"
+
+
+def _holder_path(lock_path: Path) -> Path:
+    return lock_path.with_name(lock_path.name + ".holder.json")
+
+
+def _read_holder(lock_path: Path) -> dict | None:
+    try:
+        row = json.loads(_holder_path(lock_path).read_text(encoding="utf-8"))
+        return row if isinstance(row, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _try_lock(path: Path):
+    try:
+        fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held across the pass
+    except OSError:
+        return None
+    try:
+        if sys.platform == "win32":
+            import msvcrt
             fh.seek(0)
-            fh.truncate()
-            fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat(timespec='seconds')}\n")
-            fh.flush()
-        return fh
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    return fh
+
+
+def _holder_leaked(lock_path: Path, now: float) -> str | None:
+    """Why a LOCKED slot's holder is leaked, or None while it is a live, in-budget pass.
+
+    A dead holder's byte lock is released by the kernel, so a dead PID on a locked slot means
+    a NEW holder is between taking the lock and writing its record: busy, never reclaimed. A
+    missing or unreadable record is unmeasured, and unmeasured is busy too. Only a holder that
+    is measurably the same live process, past its own budget, is reclaimed.
+    """
+    row = _read_holder(lock_path)
+    if not row:
+        return None
+    try:
+        pid = int(row["pid"])
+        admitted = float(row["admitted_epoch"])
+        budget = float(row.get("budget_s") or holder_budget_s())
+    except (KeyError, TypeError, ValueError):
+        return None
+    age = now - admitted
+    if age <= budget:
+        return None
+    state = _pid_state(pid, row.get("pid_create_time"))
+    if state == "dead":
+        return None
+    return (f"holder pid {pid} dept[{row.get('dept', '?')}] {state}, holding "
+            f"{age:.0f}s against its own budget of {budget:.0f}s")
+
+
+_RECLAIMS_LOGGED: set[tuple[str, str]] = set()
+
+
+def _holder_rss(pid: int) -> str:
+    """The holder's resident set, psutil memory_info().rss, or UNMEASURED when unreadable."""
+    try:
+        import psutil
+        return f"{psutil.Process(int(pid)).memory_info().rss / (1024 * 1024):.0f}MB"
+    except Exception:
+        return "UNMEASURED"
+
+
+def _kill_tree(pid: int) -> dict:
+    """libs/ops/proctree.kill_tree (never raises); a resident keeps running if it cannot load."""
+    try:
+        root = str(DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops import proctree
+        return dict(proctree.kill_tree(int(pid)))
+    except Exception as exc:
+        return {"pid": pid, "killed": 0, "method": None, "note": f"{type(exc).__name__}"}
+
+
+def _reap_leaked_holder(lock_path: Path) -> tuple[str, str]:
+    """Measure, then try ONCE to end, a holder already judged past its own budget.
+
+    Reclaiming the slot stops a hung holder counting against the bound, but the process is
+    still resident: without this the reclaim line hides a 4th live pass and whatever memory it
+    holds. The RSS is logged so a box read sees the cost; kill_tree is attempted once (the
+    caller logs once per holder) and its outcome is logged, so that process is then either
+    visibly still there or gone.
+
+    The kill is attempted ONLY on a holder measured to be the SAME process that took the slot
+    (its recorded create time matches): a reused PID could be anything on the box -- the live
+    terminal included -- and an unmeasured identity is never a licence to kill. Never self.
+    """
+    row = _read_holder(lock_path) or {}
+    try:
+        pid = int(row["pid"])
+    except (KeyError, TypeError, ValueError):
+        return "UNMEASURED", "not attempted: holder pid unreadable"
+    rss = _holder_rss(pid)
+    if pid == os.getpid():
+        return rss, "not attempted: holder is this process"
+    if row.get("pid_create_time") is None:
+        return rss, "not attempted: holder create time UNMEASURED (PID reuse not excluded)"
+    if _pid_state(pid, row.get("pid_create_time")) != "alive":
+        return rss, "not attempted: holder identity UNMEASURED or gone"
+    out = _kill_tree(pid)
+    still = _pid_state(pid, row.get("pid_create_time"))
+    return rss, (f"attempted pid {pid}: killed {out.get('killed', 0)} via "
+                 f"{out.get('method')}{'; ' + str(out['note']) if out.get('note') else ''}; "
+                 f"holder now {still}")
+
+
+def claim_capacity_slot(slots: int = CONCURRENT_PASSES, dept: str = "?",
+                        budget_s: int | None = None):
+    """Claim one of the shared department-pass slots, or None when all are busy.
+
+    A slot whose live holder is past its own budget is RECLAIMED (logged): the claimant takes
+    that slot's next generation lock file, so the hung holder no longer counts against the
+    bound and every in-budget pass is still bounded at `slots`.
+    """
+    LOCKS.mkdir(parents=True, exist_ok=True)
+    budget = holder_budget_s() if budget_s is None else int(budget_s)
+    for index in range(max(1, int(slots))):
+        generation = 0
+        while True:
+            path = _slot_lock_path(index, generation)
+            fh = _try_lock(path)
+            if fh is not None:
+                record = {"pid": os.getpid(), "pid_create_time": _proc_create_time(os.getpid()),
+                          "dept": dept, "slot": index, "generation": generation,
+                          "admitted_epoch": time.time(),
+                          "admitted_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                          "budget_s": budget}
+                with contextlib.suppress(OSError):
+                    fh.seek(0)
+                    fh.truncate()
+                    fh.write(f"{os.getpid()} {record['admitted_utc']}\n")
+                    fh.flush()
+                with contextlib.suppress(OSError):
+                    tmp = _holder_path(path).with_suffix(f".{os.getpid()}.tmp")
+                    tmp.write_text(json.dumps(record), encoding="utf-8")
+                    os.replace(tmp, _holder_path(path))
+                return CapacitySlot(fh, path, record)
+            why = _holder_leaked(path, time.time())
+            if why is None:
+                break  # a live, in-budget pass holds this slot
+            key = (str(path), str((_read_holder(path) or {}).get("pid")))
+            if key not in _RECLAIMS_LOGGED:  # once per leaked holder, not once per 30 s poll
+                _RECLAIMS_LOGGED.add(key)
+                rss, killed = _reap_leaked_holder(path)
+                log(dept, f"RECLAIM department slot {index} generation {generation}: {why}; "
+                          f"holder rss {rss}; kill_tree {killed}; "
+                          f"claiming generation {generation + 1}")
+            generation += 1
     return None
 
 
@@ -196,40 +411,95 @@ def _ticket_alive(path: Path, pid: int) -> bool:
         return True
 
 
-def _oldest_waiter() -> Path | None:
-    """Return the oldest live contender; remove abandoned process tickets only."""
+def _waiters() -> list[tuple[int, str, Path]]:
+    """Every live contender, oldest first; abandoned tickets are removed and logged."""
     contenders: list[tuple[int, str, Path]] = []
+    now = time.time()
     for path in LOCKS.glob("dept_wait_*.ticket"):
         try:
-            _, _, stamp, pid, _dept = path.stem.split("_", 4)
+            _, _, stamp, pid, owner_dept = path.stem.split("_", 4)
             entered = int(stamp)
             owner = int(pid)
             if not _ticket_alive(path, owner):
                 path.unlink(missing_ok=True)
+                log(owner_dept, f"RECLAIM wait ticket {path.name}: owner pid {owner} not alive")
+                continue
+            idle = now - path.stat().st_mtime
+            if idle > TICKET_STALE_S:
+                # Liveness of the WAITER, not only of the PID: a live waiter refreshes its
+                # ticket every poll. One untouched for twenty polls has no owner in the queue,
+                # whatever psutil says about a (possibly reused, possibly unreadable) PID.
+                path.unlink(missing_ok=True)
+                log(owner_dept, f"RECLAIM wait ticket {path.name}: not refreshed for "
+                                f"{idle:.0f}s (> {TICKET_STALE_S}s) by pid {owner}")
                 continue
             contenders.append((entered, path.name, path))
         except (ValueError, OSError):
             # An unreadable ticket is not evidence of an available slot. Leave it visible.
             continue
-    return min(contenders)[2] if contenders else None
+    return sorted(contenders)
 
 
-def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
+def _oldest_waiter() -> Path | None:
+    """Return the oldest live contender; remove abandoned tickets only."""
+    contenders = _waiters()
+    return contenders[0][2] if contenders else None
+
+
+def _slot_census(slots: int) -> str:
+    """Who holds the slots right now, for the waiting log (a box read needs no other file)."""
+    now = time.time()
+    held = []
+    for index in range(max(1, int(slots))):
+        for lock in sorted(LOCKS.glob(f"dept_capacity_{index}*.lock")):
+            row = _read_holder(lock)
+            if row:
+                age = now - float(row.get("admitted_epoch") or now)
+                held.append(f"{lock.stem}={row.get('dept', '?')}/pid{row.get('pid')}/"
+                            f"{age:.0f}s")
+    return ", ".join(held) or "no holder records"
+
+
+def wait_for_capacity(dept: str, *, slots: int | None = None,
                       poll_s: int = PAUSE_S):
-    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail."""
+    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail.
+
+    `slots=None` derives the count at every claim (`derived_slot_count`); an int fixes it.
+    Every poll also feeds this resident's windowed idle-core history, so the head waiter
+    judges extra slots on several minutes of readings, never one.
+    """
     announced = False
     ticket = _wait_ticket(dept)
+    started = time.monotonic()
+    reported = started
     try:
         while True:
-            if _oldest_waiter() == ticket:
-                handle = claim_capacity_slot(slots)
+            with contextlib.suppress(OSError):
+                os.utime(ticket, None)  # the waiter's own heartbeat (see TICKET_STALE_S)
+            if slots is None:
+                sample_idle_cores()
+            queue = _waiters()
+            count = slots
+            if queue and queue[0][2] == ticket:
+                derivation = "fixed by caller"
+                if count is None:
+                    count, derivation = derived_slot_count()
+                handle = claim_capacity_slot(count, dept=dept)
                 if handle is not None:
-                    if announced:
-                        log(dept, f"capacity available: admitted to one of {slots} department slots")
+                    log(dept, f"admitted after {time.monotonic() - started:.0f}s to slot "
+                              f"{handle.record['slot']} of {count} department slots "
+                              f"({derivation})")
                     return handle
             if not announced:
                 log(dept, "waiting: bounded department slots or older pass(es) ahead")
                 announced = True
+                reported = time.monotonic()
+            elif time.monotonic() - reported >= WAIT_REPORT_S:
+                ahead = next((k for k, row in enumerate(queue) if row[2] == ticket), len(queue))
+                log(dept, f"still waiting {time.monotonic() - started:.0f}s: {ahead} older "
+                          f"waiter(s) ahead of {len(queue)}; slots: "
+                          f"{_slot_census(max(count or 0, DEPT_SLOTS_MAX))}")
+                reported = time.monotonic()
             time.sleep(max(1, int(poll_s)))
     finally:
         ticket.unlink(missing_ok=True)
@@ -269,16 +539,148 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     if sys.platform == "win32":
         kwargs["creationflags"] = BELOW_NORMAL_PRIORITY_CLASS
     t0 = time.monotonic()
+    meter = PassMeter()
+    meter.start()
     try:
         r = _run_tree([sys.executable, "-W", "ignore", str(CYCLE)], cwd=str(DESK),
                       env=env, timeout=timeout_s, check=False, **kwargs)
-        return {"rc": r.returncode, "seconds": round(time.monotonic() - t0, 1), "status": "ok"
-                if r.returncode == 0 else "exit"}
+        res = {"rc": r.returncode, "seconds": round(time.monotonic() - t0, 1), "status": "ok"
+               if r.returncode == 0 else "exit"}
     except subprocess.TimeoutExpired:
-        return {"rc": None, "seconds": round(time.monotonic() - t0, 1), "status": "timeout"}
+        res = {"rc": None, "seconds": round(time.monotonic() - t0, 1), "status": "timeout"}
     except OSError as exc:
-        return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
-                "status": f"failed_to_start: {type(exc).__name__}"}
+        res = {"rc": None, "seconds": round(time.monotonic() - t0, 1),
+               "status": f"failed_to_start: {type(exc).__name__}"}
+    finally:
+        meter.stop()
+    record_pass_cost(dept, res, meter.summary(res["seconds"]))
+    return res
+
+
+#: What one department pass costs, measured by the resident that ran it (box-local, under logs/).
+PASS_COST_NAME = "department_pass_cost.jsonl"
+PASS_METER_INTERVAL_S = 5.0
+#: The estimates below are read from the last PASS_COST_WINDOW measured passes once at least
+#: PASS_COST_MIN_ROWS of them exist; the 90th percentile, so a heavy pass is what a slot is sized
+#: for. Fewer rows keep the placeholders, which are deliberately heavy.
+PASS_COST_WINDOW = 200
+PASS_COST_MIN_ROWS = 10
+PASS_COST_MIN_SAMPLES = 3
+
+
+class PassMeter:
+    """Samples this resident's child process tree while a pass runs: peak summed RSS and the
+    CPU seconds each child had used when last seen (a child's CPU stops counting when it exits,
+    so a short-lived child read only once is under-counted, never over-counted)."""
+
+    def __init__(self, interval_s: float = PASS_METER_INTERVAL_S) -> None:
+        self.interval_s = interval_s
+        self.peak_rss_mb = 0.0
+        self.cpu_by_proc: dict[tuple[int, float], float] = {}
+        self.samples = 0
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def sample(self) -> None:
+        try:
+            import psutil
+        except ImportError:
+            return
+        try:
+            kids = psutil.Process().children(recursive=True)
+        except Exception:
+            return
+        rss = 0.0
+        for k in kids:
+            try:
+                with k.oneshot():
+                    ct = k.cpu_times()
+                    key = (k.pid, k.create_time())
+                    rss += k.memory_info().rss / 1048576.0
+                self.cpu_by_proc[key] = max(self.cpu_by_proc.get(key, 0.0), ct.user + ct.system)
+            except Exception:
+                continue
+        if kids:
+            self.samples += 1
+            self.peak_rss_mb = max(self.peak_rss_mb, rss)
+
+    def _loop(self) -> None:
+        while not self._stop.wait(self.interval_s):
+            self.sample()
+
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self._loop, name="pass-meter", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=self.interval_s + 5)
+
+    def summary(self, seconds: float) -> dict:
+        cpu_s = sum(self.cpu_by_proc.values())
+        return {"cpu_s": round(cpu_s, 1), "peak_rss_mb": round(self.peak_rss_mb, 1),
+                "cores": round(cpu_s / seconds, 3) if seconds > 0 else None,
+                "samples": self.samples}
+
+
+def record_pass_cost(dept: str, res: dict, cost: dict) -> None:
+    row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "dept": dept,
+           "status": res.get("status"), "seconds": res.get("seconds"), **cost}
+    with contextlib.suppress(OSError):
+        LOGS.mkdir(parents=True, exist_ok=True)
+        with (LOGS / PASS_COST_NAME).open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+
+
+def _p90(values: list[float]) -> float:
+    v = sorted(values)
+    return v[min(len(v) - 1, int(0.9 * len(v)))]
+
+
+def measured_pass_cost(path: Path | None = None) -> tuple[float | None, float | None, str]:
+    """(p90 cores per pass, p90 peak MB per pass, why) from the measured ledger, or Nones while
+    it is thinner than PASS_COST_MIN_ROWS usable rows."""
+    path = LOGS / PASS_COST_NAME if path is None else path
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()[-PASS_COST_WINDOW:]
+    except OSError:
+        return None, None, "pass cost UNMEASURED (no ledger)"
+    cores: list[float] = []
+    mbs: list[float] = []
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if (r.get("status") in ("ok", "exit", "timeout")
+                and int(r.get("samples") or 0) >= PASS_COST_MIN_SAMPLES
+                and isinstance(r.get("cores"), (int, float)) and r["cores"] > 0
+                and isinstance(r.get("peak_rss_mb"), (int, float)) and r["peak_rss_mb"] > 0):
+            cores.append(float(r["cores"]))
+            mbs.append(float(r["peak_rss_mb"]))
+    if len(cores) < PASS_COST_MIN_ROWS:
+        return None, None, (f"pass cost UNMEASURED ({len(cores)} usable passes; needs "
+                            f"{PASS_COST_MIN_ROWS})")
+    return _p90(cores), _p90(mbs), f"pass cost p90 over {len(cores)} measured passes"
+
+
+def pass_estimates(path: Path | None = None) -> tuple[float, float, str]:
+    """Cores and MB one pass is sized at: an env override wins, then the measured p90, then the
+    heavy placeholders."""
+    c_env = os.environ.get("DEPT_PASS_CORES_ESTIMATE", "").strip()
+    m_env = os.environ.get("DEPT_PASS_MB_ESTIMATE", "").strip()
+    c_meas, m_meas, why = measured_pass_cost(path)
+    try:
+        cores = float(c_env) if c_env else (c_meas if c_meas is not None
+                                            else PASS_CORES_ESTIMATE)
+        mb = float(m_env) if m_env else (m_meas if m_meas is not None else PASS_MB_ESTIMATE)
+    except ValueError:
+        cores, mb = PASS_CORES_ESTIMATE, PASS_MB_ESTIMATE
+    src = "env override" if (c_env or m_env) else ("measured" if c_meas is not None
+                                                   else "placeholder")
+    # a pass can never be sized at zero: that would divide the room by nothing
+    return max(0.1, cores), max(64.0, mb), f"{src}; {why}"
 
 
 #: Cores kept for the live terminal, the gateway and the core hourly pass before a resident is
@@ -301,6 +703,99 @@ def spare_cores() -> float | None:
         return (psutil.cpu_count() or 1) * (100.0 - busy) / 100.0
     except Exception:
         return None
+
+
+#: TODAY'S BOUND IS THE FLOOR. The derived slot count is ONE WAY: it only ever rises above the
+#: three slots this file has always had, and only while the box measurably has room.
+DEPT_SLOTS_FLOOR = 3
+#: A FILE-COUNT bound, not a research cap: every slot index owns a `dept_capacity_<i>` lock plus
+#: its reclaim generations and holder records, and every claim and census walks them. Eight keeps
+#: that directory and the per-poll scan bounded; the measured inputs below decide the count
+#: beneath it, and DEPT_CONCURRENT_PASSES remains the manual override for the box.
+DEPT_SLOTS_MAX = 8
+#: Cores kept free for the MONEY tasks, on top of the terminal's IDLE_RESERVE_CORES. Measured on
+#: the trading box 2026-11-11: around 01:42Z total CPU read 90-95%, the allocator alone held
+#: about 4.8 cores, and in the crunch 00:41-01:17Z E8-Gold and TerminalBoot were killed at their
+#: time limits. BELOW_NORMAL priority for department children did not save them, so an extra
+#: slot is only ever added while the windowed idle cores still leave this reserve AND the
+#: terminal's free. Generous on purpose: six covers the allocator's measured 4.8 with margin.
+MONEY_RESERVE_CORES = float(os.environ.get("DEPT_MONEY_RESERVE_CORES", "6"))
+#: PLACEHOLDERS, used only until the box has measured its own passes: every pass now records
+#: its tree's peak RSS and CPU seconds / wall seconds (PassMeter -> logs/department_pass_cost.jsonl)
+#: and `pass_estimates` sizes a slot at the p90 of those once PASS_COST_MIN_ROWS exist. Until
+#: then these are deliberately heavy, so the derivation under-admits rather than over-admits.
+#: DEPT_PASS_CORES_ESTIMATE / DEPT_PASS_MB_ESTIMATE in the environment still win over both.
+PASS_CORES_ESTIMATE = 2.0
+PASS_MB_ESTIMATE = 8192.0
+#: Idle cores are read over a WINDOW, never one sample: the minimum of the samples a resident
+#: took while waiting, spread over at least IDLE_WINDOW_MIN_SPAN_S. A one-second read at a quiet
+#: instant is exactly how a crunch like 2026-11-11 00:41Z would be missed.
+IDLE_WINDOW_S = 600
+IDLE_WINDOW_MIN_SPAN_S = 180
+IDLE_WINDOW_MIN_SAMPLES = 5
+_IDLE_SAMPLES: deque[tuple[float, float]] = deque(maxlen=256)
+
+
+def sample_idle_cores(now: float | None = None) -> None:
+    """Append one spare_cores() reading to this resident's rolling history (if measurable)."""
+    t = time.time() if now is None else float(now)
+    value = spare_cores()
+    if value is not None:
+        _IDLE_SAMPLES.append((t, float(value)))
+    while _IDLE_SAMPLES and t - _IDLE_SAMPLES[0][0] > IDLE_WINDOW_S:
+        _IDLE_SAMPLES.popleft()
+
+
+def windowed_idle_cores(now: float | None = None) -> tuple[float | None, str]:
+    """The MINIMUM idle cores across the window, or None (UNMEASURED) when the window is thin."""
+    t = time.time() if now is None else float(now)
+    rows = [(ts, v) for ts, v in _IDLE_SAMPLES if t - ts <= IDLE_WINDOW_S]
+    if not rows:
+        return None, "idle cores UNMEASURED (no samples in window)"
+    span = rows[-1][0] - rows[0][0]
+    if len(rows) < IDLE_WINDOW_MIN_SAMPLES or span < IDLE_WINDOW_MIN_SPAN_S:
+        return None, (f"idle cores UNMEASURED ({len(rows)} samples over {span:.0f}s; needs "
+                      f"{IDLE_WINDOW_MIN_SAMPLES} over {IDLE_WINDOW_MIN_SPAN_S}s)")
+    low = min(v for _, v in rows)
+    return low, f"idle cores min {low:.1f} over {len(rows)} samples / {span:.0f}s"
+
+
+def derived_slot_count(now: float | None = None) -> tuple[int, str]:
+    """How many department slots a claim may scan right now, and the inputs that said so.
+
+        slots = clamp(max(FLOOR, min(by_cores, by_memory)), FLOOR, DEPT_SLOTS_MAX)
+        by_cores  = floor((windowed min idle cores - IDLE_RESERVE_CORES - MONEY_RESERVE_CORES)
+                          / PASS_CORES_ESTIMATE)
+        by_memory = floor((free_phys_mb - MIN_FREE_MB) / PASS_MB_ESTIMATE)
+
+    An explicit DEPT_CONCURRENT_PASSES wins (the box's manual override). Anything UNMEASURED
+    gives the floor, which is exactly today's three. Conservative by construction: both readings
+    are taken WHILE the current passes run, so they measure room for MORE passes, yet the count
+    is compared against ALL holders -- a slot is added only when the room clears the whole count.
+    """
+    override = os.environ.get("DEPT_CONCURRENT_PASSES")
+    if override is not None and override.strip():
+        try:
+            return max(1, int(override)), f"DEPT_CONCURRENT_PASSES={override.strip()} override"
+        except ValueError:
+            pass
+    idle, idle_why = windowed_idle_cores(now)
+    free = free_phys_mb()
+    free_why = "free memory UNMEASURED" if free is None else f"free {free:.0f}MB"
+    if idle is None or free is None:
+        return DEPT_SLOTS_FLOOR, f"floor {DEPT_SLOTS_FLOOR}: {idle_why}; {free_why}"
+    per_core, per_mb, est_why = pass_estimates()
+    by_cores = int((idle - IDLE_RESERVE_CORES - MONEY_RESERVE_CORES) // per_core)
+    by_memory = int((free - MIN_FREE_MB) // per_mb)
+    count = min(DEPT_SLOTS_MAX, max(DEPT_SLOTS_FLOOR, min(by_cores, by_memory)))
+    # What the money reserve cost this claim, in slots (the reserve's missed-compute line).
+    unreserved = min(DEPT_SLOTS_MAX, max(DEPT_SLOTS_FLOOR, min(
+        int((idle - IDLE_RESERVE_CORES) // per_core), by_memory)))
+    return count, (f"{count} = max({DEPT_SLOTS_FLOOR}, min(by_cores {by_cores}, by_memory "
+                   f"{by_memory})) cap {DEPT_SLOTS_MAX}; {idle_why} less reserves "
+                   f"{IDLE_RESERVE_CORES}+{MONEY_RESERVE_CORES:g} at {per_core:g} cores/pass; "
+                   f"{free_why} less {MIN_FREE_MB:.0f} at {per_mb:.0f}MB/pass ({est_why}); "
+                   f"money reserve withheld {unreserved - count} slot(s)")
 
 
 def cycle_floor_s() -> tuple[float, str]:
