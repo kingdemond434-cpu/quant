@@ -182,6 +182,9 @@ def merge(old: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
     already held keeps its FIRST-seen time, so a CFTC restatement never moves it later."""
     if old is None or old.empty:
         return new.reset_index(drop=True)
+    old = old.copy()
+    if SEEN not in old.columns:
+        old[SEEN] = pd.Series(pd.NaT, index=old.index, dtype="datetime64[ns, UTC]")
     cols = list(old.columns) + [c for c in new.columns if c not in old.columns]
     both = pd.concat([old.reindex(columns=cols), new.reindex(columns=cols)], ignore_index=True)
     out = (both.sort_values("report_date", kind="stable")
@@ -236,7 +239,7 @@ def refresh_one(t: Target, client: S.Client, release: pd.Timestamp, *, force: bo
                    newest=str(newest.date()) if newest is not None else None,
                    rows=0 if old is None else len(old))
         return row
-    fresh[SEEN] = pd.Timestamp(now)
+    fresh[SEEN] = pd.Series(pd.Timestamp(now), index=fresh.index).astype("datetime64[ns, UTC]")
     out = fresh.reset_index(drop=True) if dirty else merge(old, fresh)
     if old is not None and not dirty:
         out = out[[*old.columns, *([SEEN] if SEEN not in old.columns else [])]]

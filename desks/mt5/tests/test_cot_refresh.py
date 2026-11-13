@@ -90,7 +90,7 @@ def test_incremental_merge_keeps_every_held_date_and_restates(tmp_path, monkeypa
     row = doc["slugs"][0]
     assert row["status"] == "REFRESHED" and row["newest"] == "2026-11-10" and row["added"] == 1
     got = pd.read_parquet(tmp_path / "cot" / "gold.parquet")
-    assert list(got.columns) == list(old.columns)
+    assert list(got.columns) == [*old.columns, R.SEEN]
     assert len(got) == 4                                       # nothing held was dropped
     assert got.set_index("report_date").loc["2026-08-11", "open_interest_all"] == 999
     assert (tmp_path / "cot_gold.parquet").exists()             # the legacy alias
@@ -169,7 +169,7 @@ def test_a_contaminated_tff_file_is_rebuilt_from_exact_markets(tmp_path, monkeyp
     got = pd.read_parquet(tmp_path / "cot_tff" / "eur.parquet")
     assert set(got["market"]) == {"EURO FX - CHICAGO MERCANTILE EXCHANGE"}
     assert list(got.columns) == ["report_date", "market", "oi", "dealer_l", "dealer_s",
-                                 "am_l", "am_s", "lm_l", "lm_s"]
+                                 "am_l", "am_s", "lm_l", "lm_s", R.SEEN]
     assert not any(">=" in u for u in fake.urls if "resource" in u)   # full history
 
 
