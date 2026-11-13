@@ -233,6 +233,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cot_positioning": "positioning_flow",
     "positioning": "positioning_flow",
     "crowding": "positioning_flow",
+    "informed_flow_drift": "positioning_flow",
     # -- options-implied state
     "implied_vol": "options_implied",
     "gamma_exposure": "options_implied",

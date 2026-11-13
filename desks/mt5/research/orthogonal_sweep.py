@@ -561,6 +561,11 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    "informed_flow_drift": "its events, source and relation are named by research/"
+                           "informed_capital, which stores each disclosure at its observable "
+                           "instant, measures every (target, source, relation, lead) cell against "
+                           "a shifted-date placebo and charges its whole grid; called blind it "
+                           "has no source and returns [] on every symbol",
     "alt_release_drift": "its lake series and prior sign are named by the alt_proxies equity "
                          "hand-off (research/alt_equity_handoff.py), which mints and charges "
                          "each (series, share) cell; called blind it has no series and returns "
