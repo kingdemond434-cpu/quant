@@ -159,8 +159,11 @@ GOLD = ("XAUUSD", "XAUEUR", "XAUAUD")
 #: The CBOE implied-vol index each mapped instrument is quoted against -- the ground
 #: `recorders/vol_archive.GROUND` maps, and nothing wider (no exotics; 2026-11-13). The series is
 #: PUBLIC: these cells are crowding-checked conditioners, never a moat.
+#: EURUSD -> ^EVZ is NOT minted (Auditor SF3, 2026-11-13): the source answers ^EVZ with no closes,
+#: so every EURUSD cell would build [] and still be charged to the shared trial count. It comes
+#: back when a live ^EVZ source exists.
 IV_OF: dict[str, str] = {"US500": "^VIX", "NAS100": "^VXN", "USTEC": "^VXN", "US30": "^VXD",
-                         "XAUUSD": "^GVZ", "EURUSD": "^EVZ"}
+                         "XAUUSD": "^GVZ"}
 #: The base cells the implied-vol operators condition, stated before any data: on indices the
 #: overnight gap the catalogue already mints and a trend book; on gold and the euro a trend and a
 #: reversion book (rich premium pays the calm trend, thin premium the reversion of a stress move).

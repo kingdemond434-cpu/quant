@@ -58,8 +58,10 @@ POINT-IN-TIME, BY CONSTRUCTION, AND THE LAG IS A STATED CHOICE:
     so the comparison is conservative by one bar. A frame already stamped in UTC is read as
     broker time and so shifted 2-3 h EARLIER: stricter, never lenient.
   * a value is never read whose availability instant is after the decision instant
-    (`searchsorted(..., side="right") - 1` on availability, not on value date), and a value older
-    than `max_stale_d` days at the decision is ABSENT, not carried forward.
+    (`searchsorted(..., side="right") - 1` on availability, not on value date), and a value whose
+    AVAILABILITY is more than `max_stale_d` days before the decision is ABSENT, not carried
+    forward -- with the D+1 lag that is `max_stale_d + 1` days past its VALUE date (default 4 ->
+    5 days past the value date).
   * the realised leg of the premium for a signal on broker date T uses only broker dates
     strictly before T; the median it is compared with uses only days strictly before T.
   * THE RESTATEMENT CAVEAT: the backtest reads the LATEST value for each date (restated values

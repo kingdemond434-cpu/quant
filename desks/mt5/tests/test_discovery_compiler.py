@@ -526,3 +526,33 @@ def test_the_registry_backlog_cannot_starve_the_seats(desk, ctx, monkeypatch):
     _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(2))
     got, by_source, _u = dc.intake(dc.load_cursor(), limit=10)    # unused seat room returns
     assert len(got) == 10 and by_source.get("registry_unprocessed", 0) >= 8
+
+
+def test_a_growing_seat_jsonl_resumes_at_its_new_rows(desk, ctx):
+    """Auditor MF2: keying the offset on size/mtime reset every appended .jsonl to row 0."""
+    path = desk["paths"]["INTEL"] / "seatx" / "hypotheses.jsonl"
+    rows = _many_rows(6)["discoveries"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows[:4]), "utf-8")
+    cursor = dc.load_cursor()
+    got, _b, _u = dc.intake(cursor, limit=100)
+    assert len([g for g in got if g.get("source_type") == "intelligence"]) == 4
+    with path.open("a", encoding="utf-8") as fh:                  # the seat appends next hour
+        fh.write("".join(json.dumps(r) + "\n" for r in rows[4:]))
+    got, _b, _u = dc.intake(cursor, limit=100)
+    new = [g for g in got if g.get("source_type") == "intelligence"]
+    assert [g.get("params", {}).get("rr") for g in new] == [1.04, 1.05]
+    assert cursor["files"][str(path)]["rows_taken"] == 6
+
+
+def test_owed_files_are_taken_before_newer_ones(desk, ctx):
+    import os
+    old = desk["paths"]["INTEL"] / "seatx" / "a_old.json"
+    _write(old, _many_rows(6))
+    os.utime(old, (1_000_000, 1_000_000))
+    cursor = dc.load_cursor()
+    dc.intake(cursor, limit=4)                                    # takes 4 of 6: owed 2
+    assert cursor["files"][str(old)].get("next_row") is not None
+    _write(desk["paths"]["INTEL"] / "seatx" / "b_new.json", _many_rows(8))
+    got, _b, _u = dc.intake(cursor, limit=4)
+    assert cursor["files"][str(old)].get("next_row") is None      # the owed file finished first

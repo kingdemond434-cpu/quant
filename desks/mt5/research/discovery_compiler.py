@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 import sys
@@ -177,21 +178,33 @@ def _fresh(cursor: dict[str, Any], path: Path) -> bool:
                 and seen.get("mtime") == int(st.st_mtime))
 
 
-def _resume_row(cursor: dict[str, Any], path: Path) -> int:
-    """Where a partly-taken file resumes. Only while it is byte-for-byte the file the offset was
-    taken against; a rewritten file restarts at 0 (re-reading is safe: `_record` dedupes)."""
+def _prefix_sha(rows: list[Any], k: int) -> str:
+    """sha256 of the first `k` rows, canonically serialised -- what the cursor proves it took."""
+    blob = json.dumps(rows[:k], sort_keys=True, default=str, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _owed(cursor: dict[str, Any], path: Path) -> bool:
     seen = cursor["files"].get(str(path))
-    try:
-        st = path.stat()
-    except OSError:
+    return isinstance(seen, dict) and seen.get("next_row") is not None
+
+
+def _resume_row(cursor: dict[str, Any], path: Path, rows: list[Any]) -> int:
+    """Where this file resumes: the count of rows already taken, honoured while those rows are
+    STILL the file's first rows (their prefix hash matches). An APPENDED seat file therefore
+    resumes at its new rows -- keying on size/mtime reset every growing .jsonl to row 0 and
+    re-read the same first chunk forever (Auditor MF2, 2026-11-13). A rewritten file whose prefix
+    changed restarts at 0, which is safe: `_record` dedupes."""
+    seen = cursor["files"].get(str(path))
+    if not isinstance(seen, dict):
         return 0
-    if (isinstance(seen, dict) and seen.get("size") == st.st_size
-            and seen.get("mtime") == int(st.st_mtime)):
-        try:
-            return max(0, int(seen.get("next_row") or 0))
-        except (TypeError, ValueError):
-            return 0
-    return 0
+    try:
+        k = int(seen.get("rows_taken") or 0)
+    except (TypeError, ValueError):
+        return 0
+    if k <= 0 or k > len(rows) or seen.get("prefix_sha") != _prefix_sha(rows, k):
+        return 0
+    return k
 
 
 def _mark(cursor: dict[str, Any], path: Path, **extra: Any) -> None:
@@ -575,7 +588,7 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
     def take_file(path: Path, rows: list[Any], source_id: str, make: Any) -> None:
         """Take rows from the resume offset; `_mark` the file read only when every row was taken,
         otherwise record where the next pass resumes. A refused or cut row is OWED, never lost."""
-        start = _resume_row(cursor, path)
+        start = _resume_row(cursor, path, rows)
         stop = min(len(rows), start + MAX_ROWS_PER_FILE)
         i = start
         while i < stop:
@@ -585,10 +598,11 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             if made is not None and not add(source_id, *made[0], **made[1]):
                 break
             i += 1
+        proof = {"rows_taken": i, "prefix_sha": _prefix_sha(rows, i)}
         if i >= len(rows):
-            _mark(cursor, path)
+            _mark(cursor, path, **proof)
         else:
-            _mark(cursor, path, next_row=i, rows=len(rows))
+            _mark(cursor, path, next_row=i, rows=len(rows), **proof)
 
     backlog = list(R.discoveries(state="UNPROCESSED", limit=limit, conn=conn))
     backlog_cap = limit - int(limit * SEAT_SHARE) if INTEL.exists() else limit
@@ -604,6 +618,9 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
     if INTEL.exists():
         files = sorted([*INTEL.glob("*/*.json"), *INTEL.glob("*/*.jsonl")],
                        key=lambda p: p.stat().st_mtime if p.exists() else 0.0, reverse=True)
+        # OWED FILES FIRST (Auditor SF1): a partly-taken file must not wait behind every newer
+        # one, or an hourly seat that always writes a newer file starves its own older rows.
+        files = [p for p in files if _owed(cursor, p)] + [p for p in files if not _owed(cursor, p)]
         for path in files:
             if len(got) >= limit or out_of_time():
                 break

@@ -151,8 +151,9 @@ def test_catalogue_mints_the_mapped_instruments_only_and_every_cell_is_buildable
                      "indices": ["US500", "NAS100", "US30", "GER40"]})
     iv = [c for c in cells if c["family"] in FAMS]
     by = {(c["symbol"], c["family"]) for c in iv}
-    for sym in ("US500", "NAS100", "US30", "XAUUSD", "EURUSD"):
+    for sym in ("US500", "NAS100", "US30", "XAUUSD"):
         assert (sym, "vrp_conditioned") in by and (sym, "iv_shock") in by
+    assert not {s for s, _f in by} & {"EURUSD"}       # ^EVZ serves no closes: not minted
     for sym in ("US500", "NAS100", "US30"):
         assert (sym, "iv_term_gated") in by
     assert ("XAUUSD", "iv_term_gated") not in by and ("EURUSD", "iv_term_gated") not in by
@@ -160,12 +161,11 @@ def test_catalogue_mints_the_mapped_instruments_only_and_every_cell_is_buildable
     assert {cell_verdict(c["family"], c["params"])[0] for c in iv} == {BUILDABLE}
     mapped = {c["symbol"]: c["params"].get("iv_ticker") for c in iv
               if c["family"] == "iv_shock"}
-    assert mapped == {"US500": "^VIX", "NAS100": "^VXN", "US30": "^VXD", "XAUUSD": "^GVZ",
-                      "EURUSD": "^EVZ"}
-    for sym in ("US500", "NAS100", "US30", "XAUUSD", "EURUSD"):
+    assert mapped == {"US500": "^VIX", "NAS100": "^VXN", "US30": "^VXD", "XAUUSD": "^GVZ"}
+    for sym in ("US500", "NAS100", "US30", "XAUUSD"):
         assert (sym, "iv_level_state") in by and (sym, "iv_level_conditioned") in by
-    # the declared grid, small and fixed up front: 84 (VRP/term/shock) + 60 (level state)
-    assert len(iv) == 144
+    # the declared grid, small and fixed up front: 72 (VRP/term/shock) + 48 (level state)
+    assert len(iv) == 120                               # 144 less the 24 EURUSD cells (SF3)
     assert all("crowding" in c["prior"] for c in iv)
     charged = sc.charge(iv)
     assert charged["n_raw"] == len(iv)
@@ -469,3 +469,18 @@ def test_the_axis_feed_names_what_it_cannot_build(tmp_path):
     feed = json.loads(out.read_text("utf-8"))
     assert got["status"] == "WRITTEN" and feed["series"] == {}
     assert "XAUUSD.iv_level" in feed["unmeasured"]
+
+
+def test_the_cboe_reference_history_is_box_local_and_fred_is_gone():
+    """Auditor MF1 on #845: third-party Cboe history never reaches the public repo."""
+    import subprocess
+
+    root = Path(__file__).resolve().parents[3]
+    for rel in ("desks/mt5/data/vol_archive/reference/VIX.json",
+                "desks/mt5/data/lake/axes/options_implied.json"):
+        rc = subprocess.run(["git", "-C", str(root), "check-ignore", "-q", rel],
+                            check=False).returncode
+        assert rc == 0, f"{rel} is not gitignored"
+    src = (root / "desks/mt5/recorders/vol_archive.py").read_text("utf-8")
+    assert "def _fred" not in src and "fredgraph" not in src and "fred_series" not in src
+    assert '"source": REFERENCE_SOURCE' in src

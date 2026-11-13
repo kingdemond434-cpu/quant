@@ -607,3 +607,7 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# Third-party Cboe implied-vol history (vol_archive reference + the axis derived from it):
+# BOX-LOCAL ONLY, never committed to this public repo (Auditor MF1 on #845, 2026-11-13).
+desks/mt5/data/vol_archive/reference/
+desks/mt5/data/lake/axes/options_implied.json

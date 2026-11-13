@@ -86,6 +86,7 @@ the archive has no promotion authority in any lane.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -107,6 +108,7 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.win_write import replace_resilient  # noqa: E402
 from recorders.tape_store import _append_line  # noqa: E402
 
 SCHEMA = "vol-archive-1"
@@ -117,6 +119,8 @@ REPORT = _DESK / "reports" / "VOL_ARCHIVE.json"
 #: `mt5desk/families_implied_vol.py` point-in-time; see `persist_reference`.
 REFERENCE_DIR = _DESK / "data" / "vol_archive" / "reference"
 REFERENCE_SCHEMA = "vol-reference-1"
+#: Where every persisted reference close came from, written on each file.
+REFERENCE_SOURCE = "yahoo chart API (query1.finance.yahoo.com v8) / research.free_data.yahoo_daily"
 #: Restatement log entries kept per ticker, newest last -- a flapping source cannot grow a file
 #: without bound, and the bound is far above any restatement count CBOE has produced.
 MAX_RESTATEMENTS = 5000
@@ -205,17 +209,16 @@ class YahooVolSource:
     itself will not serve -- which is the accumulation argument in its strongest form.
 
     Order of preference: the merged Yahoo pair, then `research/free_data.yahoo_daily` (the desk's
-    declared keyless collector, with its own cache), then FRED. FRED is last because it was
-    measured UNREACHABLE from this desk's research container on 2026-09-05 while Yahoo answered;
-    on the trading box the order may well be worth reversing, and the fallback chain is the point
-    rather than any one member of it.
+    declared keyless collector, with its own cache). There is NO FRED leg any more (Auditor MF1,
+    2026-11-13): FRED's CBOE republications are owner-fenced and FRED is refused for automated
+    fetches. Whether Yahoo is itself permissible is open with Governance; the reference history
+    it yields is box-local only (gitignored), never published.
     """
 
     def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo") -> None:
         self.timeout = timeout
         self.range = range_
         self.fresh_range = fresh_range
-        self._fred_ok = True
 
     def series(self, ticker: str) -> dict[str, float] | None:
         history = self._chart(ticker, self.range)
@@ -228,7 +231,9 @@ class YahooVolSource:
                 history = None
         fresh = self._chart(ticker, self.fresh_range)
         if history is None and fresh is None:
-            return self._fred(ticker)
+            # NO FRED FALLBACK (Auditor MF1, 2026-11-13): the CBOE series FRED republishes are
+            # owner-fenced and FRED is refused for automated fetches under the desk's ruling.
+            return None
         merged: dict[str, float] = dict(history or {})
         # THE FRESH TAIL WINS ON OVERLAP. It is the endpoint that is current, and where the two
         # disagree on a shared date the disagreement is the source restating itself -- which is
@@ -263,19 +268,6 @@ class YahooVolSource:
                 continue
             out[datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()] = float(c)
         return out or None
-
-    def _fred(self, ticker: str) -> dict[str, float] | None:
-        sid = {"^VIX": "VIXCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS", "^VXN": "VXNCLS",
-               "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
-        if not sid or not self._fred_ok:
-            return None
-        try:
-            from research import free_data as fd
-            got = fd.fred_series(sid, start="2015-01-01")
-        except Exception:
-            self._fred_ok = False
-            return None
-        return {str(k): float(v) for k, v in got.items()} if got else None
 
 
 class FakeVolSource:
@@ -369,7 +361,9 @@ def persist_reference(captured: dict[str, dict[str, float]], directory: Path = R
         new = {"schema": REFERENCE_SCHEMA, "ticker": ticker, "updated_at": at,
                "publication_rule": ("a close for date D is usable from D+1 00:00 UTC "
                                     "(families_implied_vol.PUBLICATION_LAG_H)"),
-               "public_series": True, "n": len(ordered), "first_date": next(iter(ordered)),
+               "public_series": True, "source": REFERENCE_SOURCE,
+               "publish": "BOX-LOCAL ONLY: gitignored, never committed (third-party Cboe data)",
+               "n": len(ordered), "first_date": next(iter(ordered)),
                "last_date": next(reversed(ordered)), "closes": ordered,
                "first_seen": dict(sorted(first_seen.items())),
                "restatements": restated[-MAX_RESTATEMENTS:]}
@@ -377,8 +371,10 @@ def persist_reference(captured: dict[str, dict[str, float]], directory: Path = R
             directory.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(new, separators=(",", ":")), "utf-8")
-            os.replace(tmp, path)
+            replace_resilient(tmp, path)
         except OSError as exc:
+            with contextlib.suppress(OSError):
+                tmp.unlink()
             out[ticker] = {"status": "WRITE_FAILED", "error": type(exc).__name__}
             continue
         out[ticker] = {"status": "WRITTEN", "n": len(ordered), "added": added,
@@ -403,8 +399,10 @@ def write_axis_feed(registry: dict[str, Any], reference_dir: Path = REFERENCE_DI
         out.parent.mkdir(parents=True, exist_ok=True)
         tmp = out.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
-        os.replace(tmp, out)
+        replace_resilient(tmp, out)
     except Exception as exc:
+        with contextlib.suppress(OSError):
+            out.with_suffix(".json.tmp").unlink()
         return {"status": "FAILED", "error": type(exc).__name__}
     return {"status": "WRITTEN", "path": str(out), "series": len(doc["series"]),
             "unmeasured": sorted(doc["unmeasured"])}
