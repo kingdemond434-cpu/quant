@@ -44,6 +44,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from libs.ops.fence_exit import fence_exit
+
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
 ROOT = Path(__file__).resolve().parents[1]
 #: the merge, release and adoption machinery: where duplicate fixes hurt most
@@ -57,6 +60,8 @@ MACHINERY = (
     "desks/mt5/scripts/Seal-",
 )
 MAX_ALARMS = 5
+#: the only status that exits 0 (R0237: name the pass set, everything else fails)
+_PASSING = frozenset({"GREEN"})
 SEVERITY = {
     "DEPLOY_LAG": 0,
     "LIVE_CI_STARVED": 1,
@@ -370,7 +375,18 @@ def finish(doc: dict[str, Any]) -> dict[str, Any]:
     al = alarms(doc)
     doc["alarms_total"] = len(al)
     doc["alarms"] = al[:MAX_ALARMS]
-    doc["status"] = "RED" if al else "GREEN"
+    # GREEN is earned only by inputs that were read (L1.28a): an unreadable RELEASE.json or
+    # process_health is UNMEASURED, never a clean bill.
+    blind = [
+        k
+        for k, ok in (
+            ("box_tasks", (doc.get("box_tasks") or {}).get("at")),
+            ("deploy_lag", (doc.get("deploy_lag") or {}).get("lag_h") is not None),
+        )
+        if k in doc and not ok
+    ]
+    doc["unmeasured"] = blind
+    doc["status"] = "RED" if al else ("UNMEASURED" if blind else "GREEN")
     return doc
 
 
@@ -400,7 +416,7 @@ def main(argv: list[str] | None = None) -> int:
         tmp.replace(a.out)
     if a.print or not a.out:
         print(text)
-    return 2 if doc["status"] == "RED" else 0
+    return fence_exit(doc["status"], _PASSING)
 
 
 if __name__ == "__main__":

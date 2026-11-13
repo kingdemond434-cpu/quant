@@ -163,3 +163,13 @@ def test_the_live_tree_has_no_half_landed_step_except_known_ones() -> None:
     known = {"scripts/paperclip_lab_run.py"}  # #1095 lands it; remove from this set then
     missing = {h["missing"] for h in A.half_landed(A.ROOT)}
     assert missing <= known, missing - known
+
+
+def test_unread_inputs_are_unmeasured_and_exit_nonzero(tmp_path: Path) -> None:
+    doc = A.finish({"box_tasks": {"at": None, "failing": []}, "deploy_lag": {"lag_h": None}})
+    assert doc["status"] == "UNMEASURED"
+    assert doc["unmeasured"] == ["box_tasks", "deploy_lag"]
+    # an empty root: no process_health, no workflows -> UNMEASURED, and the exit code says so
+    assert (
+        A.main(["--static-only", "--root", str(tmp_path), "--out", str(tmp_path / "o.json")]) == 2
+    )
