@@ -30,8 +30,29 @@ ROOT = DESK.parents[1]
 def test_a_regime_hypothesis_goes_to_state_space_and_change_point():
     tools = HR.route({"mechanism": "a volatility regime switch after the London fix"}, S.REGISTRY)
     names = [t["tradition"] for t in tools]
-    assert names[0] == "dynamical_systems"
-    assert len(names) == 2 and all(t["why"] for t in tools)
+    assert names[0] == "dynamical_systems" and "change_point" in names
+    assert len(names) >= 4 and all(t["why"] for t in tools)
+    assert len(names) == len(set(names))
+
+
+def test_routing_takes_every_fitting_tradition_ranked_by_yield_and_drops_the_non_earner():
+    hyp = {"mechanism": "a volatility regime switch after the London fix"}
+    every = [t["tradition"] for t in HR.route(hyp, S.REGISTRY)]
+    yields = {"koopman_dmd": 3.0, "change_point": 1.0, "dynamical_systems": 0.0}
+    ranked = HR.route(hyp, S.REGISTRY, yields, zero_yield={"dynamical_systems"})
+    names = [t["tradition"] for t in ranked]
+    assert names[:2] == ["koopman_dmd", "change_point"]
+    assert "dynamical_systems" not in names
+    assert set(names) == set(every) - {"dynamical_systems"}
+    assert ranked[0]["tier"] == "earning" and ranked[-1]["tier"] == "unpriced"
+    lone = HR.route({"mechanism": "zzz"}, S.REGISTRY, {}, zero_yield={"symbolic_regression",
+                                                                      "information_theory"})
+    assert len(lone) == 1, "a hypothesis is never left with no tradition at all"
+
+
+def test_every_toolkit_tradition_is_a_live_scientist():
+    named = {t for _, _, tools in HR.TOOLKIT for t, _ in tools} | {t for t, _ in HR.DEFAULT_TOOLS}
+    assert named <= set(S.REGISTRY), sorted(named - set(S.REGISTRY))
 
 
 def test_a_lead_lag_hypothesis_goes_to_graph_and_transfer_entropy():

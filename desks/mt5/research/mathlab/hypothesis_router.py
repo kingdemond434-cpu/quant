@@ -11,10 +11,11 @@ WHAT IT DOES INSTEAD.
    an asset the hypothesis lane may hunt, from any generator except the lab itself (mined
    claims, LLM-lab donations, the tier-1 idea proposer, ...). The newest come first, then
    machine-original ideas, then the desk's breadth gaps (gold, indices, the USD/JPY/EUR crosses).
-2. ROUTES each hypothesis to the one or two traditions whose mathematics fits its mechanism.
-   State-space and change-point methods go to regime ideas, hazard and point processes to event
-   timing, graph and transfer-entropy methods to lead-lag. The choice and the reason are logged
-   per hypothesis.
+2. ROUTES each hypothesis to EVERY tradition whose mathematics fits its mechanism, ranked by
+   measured yield per compute-hour, adding traditions while the marginal one still earns
+   (principal, 2026-11-13: "as much as possible -- that's the ROI"). State-space and change-point
+   methods fit regime ideas, hazard and point processes event timing, graph and transfer-entropy
+   methods lead-lag, and so on. The choice, rank and reason are logged per hypothesis.
 3. Keeps the 90/10 split at the INPUT. At most 10% of the routed panels may be exotic FX
    (a pair with a non-G10 leg). The 2x live-cost bar for exotics belongs to the Judge and the
    promoter and is not re-implemented here.
@@ -33,48 +34,86 @@ from typing import Any
 
 UNMEASURED = "UNMEASURED"
 
-#: Mechanism classes in the order they are tested; the first two that match win. Each entry is
-#: (class, keywords, [(tradition, why), ...]). Traditions absent from the live registry are
-#: skipped at route time, so this table can name a tradition before it lands.
+#: Mechanism classes. EVERY class whose keywords match contributes EVERY fitting tradition it
+#: names (principal 2026-11-13: "not just one or two, as much as possible -- that's the ROI"), and
+#: `route` then ranks them by measured yield per compute-hour and keeps adding while the marginal
+#: tradition still earns. Each entry is (class, keywords, [(tradition, why), ...]); traditions
+#: absent from the live registry are skipped at route time, so this table can name one early.
 TOOLKIT: tuple[tuple[str, tuple[str, ...], tuple[tuple[str, str], ...]], ...] = (
     ("regime", ("regime", "state", "switch", "transition", "risk-on", "risk off", "risk-off",
                 "hmm", "structural break"),
      (("dynamical_systems", "state-space dynamics fit a mechanism that changes state"),
-      ("change_point", "change-point detection locates the regime switch itself"))),
+      ("change_point", "change-point detection locates the regime switch itself"),
+      ("recurrence_quantification", "recurrence plots show when the system revisits a state"),
+      ("takens_reconstruction", "delay embedding recovers the hidden state the regime lives in"),
+      ("koopman_dmd", "Koopman modes separate the persistent states from the transients"),
+      ("criticality", "critical slowing down warns before a regime flips"),
+      ("statistical_mechanics", "phase-transition models describe collective state changes"))),
     ("event_timing", ("announcement", "release", "auction", "event", "fomc", "nfp", "cpi",
                       "earnings", "fixing", "fix ", "expiry", "rollover", "data surprise"),
      (("survival_hazard", "hazard models price WHEN a reaction starts and stops"),
-      ("stochastic_processes", "point processes model event arrival and its decay"))),
+      ("stochastic_processes", "point processes model event arrival and its decay"),
+      ("linear_response", "response functions measure how a shock decays after the event"),
+      ("change_point", "change-point detection finds where the event moved the series"),
+      ("sequential_pattern_mining", "sequence mining finds the ordered steps around events"),
+      ("matrix_profile", "matrix profiles find the recurring event-window motif"))),
     ("lead_lag", ("lead", "lag", "spillover", "cross-asset", "cross asset", "contagion",
                   "propagat", "network", "follows", "drives"),
      (("graph_theory", "graph methods map who moves first across instruments"),
-      ("transfer_entropy", "transfer entropy measures directed information flow"))),
+      ("transfer_entropy", "transfer entropy measures directed information flow"),
+      ("causal", "causal discovery separates the leader from a common driver"),
+      ("network_physics", "network dynamics model how a move propagates"),
+      ("information_physics", "directed information bounds what the leader can reveal"),
+      ("tensor_decomposition", "tensor factors find the shared cross-asset components"))),
     ("calendar", ("session", "calendar", "hour", "weekday", "weekend", "holiday", "month-end",
                   "month end", "seasonal", "intraday", "overnight", "open", "close"),
      (("spectral", "spectral methods isolate fixed periodicities"),
-      ("wavelet_scattering", "wavelets localise a pattern in both time and frequency"))),
+      ("wavelet_scattering", "wavelets localise a pattern in both time and frequency"),
+      ("matrix_profile", "matrix profiles find the same intraday shape repeating"),
+      ("symmetry_invariance", "invariance tests check the pattern holds across days"),
+      ("sequential_pattern_mining", "sequence mining finds the ordered session steps"))),
     ("tail", ("tail", "crash", "jump", "extreme", "gap", "squeeze", "liquidation", "stop"),
      (("extreme_value", "extreme-value theory models the tail the mechanism lives in"),
-      ("tail_dependence", "tail dependence measures co-crashes across instruments"))),
+      ("tail_dependence", "tail dependence measures co-crashes across instruments"),
+      ("anomalous_diffusion", "anomalous diffusion models jump-heavy price paths"),
+      ("chaos_tests", "chaos tests tell a deterministic cascade from noise"),
+      ("monte_carlo_abm", "agent simulations reproduce forced-liquidation cascades"))),
     ("flow_positioning", ("flow", "positioning", "crowd", "retail", "footprint", "hedger",
                           "dealer", "carry trade", "cot", "sentiment", "intervention"),
      (("game_theory_ecology", "participant ecology models who is forced to trade"),
-      ("information_theory", "information measures read how much the flow reveals"))),
+      ("information_theory", "information measures read how much the flow reveals"),
+      ("monte_carlo_abm", "agent simulations test whether the forced flow moves price"),
+      ("control_theory", "control models describe a hedger steering a book back to target"),
+      ("optimal_transport", "transport maps compare positioning distributions over time"))),
     ("mean_reversion", ("revert", "reversion", "spread", "basis", "cointegrat", "fair value",
                         "dislocation", "residual", "overreaction"),
      (("stochastic_processes", "mean-reverting processes fit a pull back to value"),
-      ("koopman_dmd", "Koopman/DMD extracts the decaying modes of the spread"))),
+      ("koopman_dmd", "Koopman/DMD extracts the decaying modes of the spread"),
+      ("conservation_laws", "conserved quantities pin the fair-value relation"),
+      ("control_theory", "control models describe the restoring force"),
+      ("sindy", "sparse identification finds the restoring equation itself"),
+      ("geometry", "geometric methods measure distance from the fair-value manifold"))),
     ("momentum", ("momentum", "trend", "breakout", "continuation", "drift", "persistence"),
      (("dynamical_systems", "trend persistence is a dynamical-systems question"),
-      ("symbolic_regression", "symbolic regression searches the trend rule's form"))),
+      ("symbolic_regression", "symbolic regression searches the trend rule's form"),
+      ("anomalous_diffusion", "superdiffusion measures persistence directly"),
+      ("renormalisation", "scaling across horizons tests whether the trend is real"),
+      ("reservoir_computing", "reservoirs learn path-dependent continuation"),
+      ("sindy", "sparse identification finds the drift equation"))),
     ("volatility", ("volatility", " vol ", "variance", "vix", "gvz", "ovx", "realised",
                     "realized", "implied"),
      (("rough_path_signatures", "signatures capture the path roughness volatility lives in"),
-      ("stochastic_processes", "stochastic-volatility processes model the variance itself"))),
+      ("stochastic_processes", "stochastic-volatility processes model the variance itself"),
+      ("turbulence", "turbulence cascades model volatility across scales"),
+      ("stochastic_physics", "Langevin models fit variance with feedback"),
+      ("random_matrix", "random-matrix filters separate real co-volatility from noise"))),
     ("causal_macro", ("macro", "policy", "rate", "yield", "inflation", "liquidity", "central bank",
                       "term premium", "balance sheet"),
      (("causal", "causal discovery separates the driver from the coincidence"),
-      ("transfer_entropy", "directed information confirms the driver leads"))),
+      ("transfer_entropy", "directed information confirms the driver leads"),
+      ("inverse_problems", "inverse methods recover the unobserved policy driver"),
+      ("dimensional_analysis", "dimensional analysis keeps the macro relation unit-consistent"),
+      ("field_continuum", "continuum models describe liquidity spreading across markets"))),
 )
 DEFAULT_TOOLS: tuple[tuple[str, str], ...] = (
     ("symbolic_regression", "no mechanism class matched: search the rule's functional form"),
@@ -287,31 +326,49 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs
     return out, status
 
 
-def route(hypothesis: dict[str, Any], registry: Any) -> list[dict[str, str]]:
-    """The one or two traditions whose mathematics fits this hypothesis, with the reason."""
+def route(hypothesis: dict[str, Any], registry: Any, yields: dict[str, float | None] | None = None,
+          zero_yield: Any = ()) -> list[dict[str, Any]]:
+    """EVERY tradition whose mathematics fits this hypothesis, ranked by measured yield per
+    compute-hour, kept while the marginal one still earns.
+
+    Order: traditions with positive measured yield (best first), then unpriced ones -- not enough
+    compute yet to say, and running them is how their yield gets measured. A tradition with
+    enough compute and zero on every rung is the marginal one that no longer earns and is left
+    out, unless it is the only fitting tradition, so no hypothesis is left untested. Every extra
+    tradition's search is charged to the trial count exactly as before (burden.record_trials).
+    """
     text = f" {str(hypothesis.get('mechanism') or '').lower()} "
-    chosen: list[dict[str, str]] = []
+    fitting: list[dict[str, Any]] = []
     for klass, keywords, tools in TOOLKIT:
         hit = next((k for k in keywords if k in text), None)
         if hit is None:
             continue
         for tradition, why in tools:
-            if tradition in registry and all(c["tradition"] != tradition for c in chosen):
-                chosen.append({"tradition": tradition, "class": klass, "keyword": hit.strip(),
-                               "why": why})
-                break
-        if len(chosen) >= 2:
-            break
-    if not chosen:
-        for tradition, why in DEFAULT_TOOLS:
-            if tradition in registry:
-                chosen.append({"tradition": tradition, "class": "unclassified", "keyword": "",
-                               "why": why})
-                break
-    return chosen[:2]
+            if tradition in registry and all(c["tradition"] != tradition for c in fitting):
+                fitting.append({"tradition": tradition, "class": klass, "keyword": hit.strip(),
+                                "why": why})
+    if not fitting:
+        fitting = [{"tradition": t, "class": "unclassified", "keyword": "", "why": why}
+                   for t, why in DEFAULT_TOOLS if t in registry]
+    zero = set(zero_yield or ())
+    measured = yields or {}
+    for i, entry in enumerate(fitting):
+        value = measured.get(entry["tradition"])
+        entry["expected_yield_per_h"] = value
+        entry["order"] = i
+        entry["tier"] = ("zero_yield" if entry["tradition"] in zero else
+                         "earning" if isinstance(value, (int, float)) and value > 0 else
+                         "unpriced")
+    rank = {"earning": 0, "unpriced": 1, "zero_yield": 2}
+    fitting.sort(key=lambda e: (rank[e["tier"]], -(e["expected_yield_per_h"] or 0.0), e["order"]))
+    kept = [e for e in fitting if e["tier"] != "zero_yield"] or fitting[:1]
+    for entry in kept:
+        entry.pop("order", None)
+    return kept
 
 
-def plan(hypotheses: list[dict[str, Any]], registry: Any, max_targets: int
+def plan(hypotheses: list[dict[str, Any]], registry: Any, max_targets: int, *,
+         yields: dict[str, float | None] | None = None, zero_yield: Any = ()
          ) -> tuple[list[str], dict[str, list[str]], list[dict[str, Any]], dict[str, Any]]:
     """(targets, tradition -> targets, routing log, status).
 
@@ -323,7 +380,7 @@ def plan(hypotheses: list[dict[str, Any]], registry: Any, max_targets: int
     score: dict[str, float] = {}
     exotic: dict[str, bool] = {}
     for h in hypotheses:
-        tools = route(h, registry)
+        tools = route(h, registry, yields, zero_yield)
         log.append({"hypothesis_id": h["hypothesis_id"], "target": h["target"],
                     "generator": h["generator"], "origin": h["origin"],
                     "original": bool(h["original"]),
@@ -346,7 +403,8 @@ def plan(hypotheses: list[dict[str, Any]], registry: Any, max_targets: int
     status = {"hypotheses": len(hypotheses), "logged": len(log), "targets": targets,
               "exotic_held_back": held_back[:20], "exotic_share_cap": EXOTIC_SHARE,
               "traditions_routed": sorted(by_tradition),
-              "rule": ("each hypothesis is routed to the 1-2 traditions whose mathematics fits "
-                       "its mechanism; targets ranked by hypothesis count, original ideas and "
+              "rule": ("each hypothesis is routed to EVERY tradition whose mathematics fits its "
+                       "mechanism, ranked by yield per compute-hour and kept while the marginal "
+                       "one still earns; targets ranked by hypothesis count, original ideas and "
                        "breadth gaps first; exotics held to 10% of target slots")}
     return targets, by_tradition, log, status

@@ -125,8 +125,8 @@ BYTES_PER_WORKER = 300 * 2 ** 20
 FREE_MEMORY_SHARE = 0.25
 UNMEASURED = "UNMEASURED"
 
-RULE = ("concrete hypotheses are routed to the 1-2 traditions whose mathematics fits their "
-        "mechanism, with one residual scout panel kept; every "
+RULE = ("concrete hypotheses are routed to every tradition whose mathematics fits their "
+        "mechanism while the marginal one still earns, with one residual scout panel kept; every "
         "object carries its own search burden (held-out evidence - MDL - sqrt(2 ln effective "
         "trials)); survivors go to the desk's own gauntlet, never a private one; credit returns "
         "to the tradition through generator_yield and judged cells, and the compute share is "
@@ -546,10 +546,14 @@ def hypothesis_routing(allowed: list[str], slots: int) -> dict[str, Any]:
             donation_dirs=[DATA / "intelligence" / "llm_lab", ROOT / "data" / "intelligence"
                            / "llm_lab"])
         registry_rows, load_status = HR.load_hypotheses(allowed)
+        roi, roi_detail = tradition_roi()
+        out["roi"] = (roi, roi_detail)
         seen = {(h["hypothesis_id"], h["target"]) for h in ideas}
         hypotheses = ideas + [h for h in registry_rows
                               if (h["hypothesis_id"], h["target"]) not in seen]
-        targets, by_tradition, log, plan_status = HR.plan(hypotheses, S.REGISTRY, slots)
+        targets, by_tradition, log, plan_status = HR.plan(
+            hypotheses, S.REGISTRY, slots, yields=roi,
+            zero_yield=roi_detail.get("zero_yield") or ())
     except Exception as exc:
         out["status"] = {"status": UNMEASURED, "why": f"router raised {type(exc).__name__}"}
         return out
@@ -1239,9 +1243,10 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     unknown = [t for t in (traditions or []) if t not in S.REGISTRY]
     panels, panel_status = build_panels(max_targets)
     workers, memory = max_workers()
-    roi, roi_detail = tradition_roi()
-    previous = read_allocation()
     routing = panel_status.get("routing") or {}
+    # One registry read per pass: the routing already priced the traditions to rank them.
+    roi, roi_detail = routing.pop("roi", None) or tradition_roi()
+    previous = read_allocation()
     plan = department_plan(roi, previous, budget_s, zero_yield=roi_detail.get("zero_yield") or (),
                            demand=routing.get("demand") or None)
 
