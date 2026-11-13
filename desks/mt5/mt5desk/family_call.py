@@ -196,7 +196,14 @@ def session_filter(sigs: list[Any], session: Any, family: Any = None,
         else:
             flags = [bool(clock.anchor_clocked(getattr(sigs[i], "tag", None))) for i in timed]
         market = clock.filter_mask(times, key, anchored=False)
-        anchored = clock.filter_mask(times, key, anchored=True) if any(flags) else market
+        if market is None:
+            # A window this table names but the market clock does not (None, never all-False):
+            # keep the table's own server-hour window rather than dropping or crashing.
+            lo, hi = SESSIONS[key] or (0, 24)
+            market = [lo <= int(t.hour) < hi for t in times]
+            anchored = market
+        else:
+            anchored = clock.filter_mask(times, key, anchored=True) if any(flags) else market
         inside = {i: bool(a if f else m)
                   for i, m, a, f in zip(timed, market, anchored, flags, strict=True)}
     return [g for i, g in enumerate(sigs) if inside.get(i, True)]
