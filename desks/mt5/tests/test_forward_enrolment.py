@@ -186,3 +186,34 @@ def test_the_repair_sweep_defers_rather_than_overrunning_the_leg_budget() -> Non
 def test_a_missing_engine_is_unmeasured_not_a_crash(tmp_path) -> None:
     out = fe.repair([{"key": "X"}], deadline=1e9, engine=tmp_path / "nope.py")
     assert out["status"] == UNMEASURED
+
+
+def test_the_wire_twin_is_small_and_keeps_every_count(tmp_path, monkeypatch) -> None:
+    """The full census outgrew ShadowSync's 4 MB cap; the twin is what crosses the wire."""
+    _no_heavy_imports(monkeypatch)
+    run = _run()
+    stamp = "2026-09-23T03:12:00+00:00"
+    monkeypatch.setattr(fe, "OUT", tmp_path / "FORWARD_ENROLMENT.json")
+    monkeypatch.setattr(fe, "certificates", lambda: ([run], [], ""))
+    monkeypatch.setattr(fe, "clock_rows",
+                        lambda *a, **k: {_key(run): {"status": "ACTIVE", "enrolled_at": stamp}})
+    monkeypatch.setattr(fe, "certification_stamps",
+                        lambda: {("XAUUSD", "session_range_breakout", "asia", "LONG"): stamp})
+    payload = fe.run(write=True, now=NOW, budget_s=5.0)
+    twin = json.loads((tmp_path / fe.SUMMARY_NAME).read_text(encoding="utf-8"))
+    assert twin["n_certificates"] == payload["n_certificates"] == 1
+    assert twin["quota"] == payload["quota"]
+    assert set(twin["certificates"][0]) == set(fe.SLIM_FIELDS)
+    assert twin["summary_of"] == "reports/FORWARD_ENROLMENT.json"
+
+
+def test_the_twin_caps_long_row_lists_and_says_how_long_they_were() -> None:
+    n = fe.SUMMARY_ROWS + 7
+    rows = [{"key": f"K{i}", "symbol": "EURUSD", "why": "x" * 400} for i in range(n)]
+    twin = fe.summary({"n_certificates": 3, "held": rows, "certificates": rows,
+                       "blocked": rows[:2]})
+    assert len(twin["held"]) == fe.SUMMARY_ROWS
+    assert twin["held_rows_total"] == fe.SUMMARY_ROWS + 7
+    assert twin["blocked"] == rows[:2] and "blocked_rows_total" not in twin
+    assert len(twin["certificates"]) == fe.SUMMARY_ROWS + 7, "every certificate is counted"
+    assert all("why" not in r and "key" not in r for r in twin["certificates"])

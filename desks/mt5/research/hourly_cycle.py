@@ -2157,6 +2157,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
     "duty_cycle": 480,
+    # alpha_breadth: 292 s measured on the box (11-07, the one run in seven days); the cap is
+    # about twice that, below the 720 s default it inherited, because it is now FORCED by age
+    # (libs/ops/leg_rotation.DUE_BY_AGE_H) and hard + one core period + cap must land inside 6 h.
+    "alpha_breadth": 600,
     "forward_enrolment": 400,
     # THE JUDGE'S ENVIRONMENT GUARD (recovered box patch 08, 2026-09-24). Eight bytes per universe
     # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
