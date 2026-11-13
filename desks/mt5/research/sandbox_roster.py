@@ -52,6 +52,9 @@ RUNNER_STATE = DESK / "data" / "sandbox_runner_state.json"
 RUNNER_REPORT = DESK / "reports" / "SANDBOX_RUNNER.json"
 INSTALL_LEDGER = DESK / "data" / "sandbox_install_ledger.json"
 FED_STATE = DESK / "data" / "external_federation.json"
+#: The hourly adapter census (research/adapter_census.py): each adapter's class -- data source,
+#: research engine, or cannot-work-here with its measured reason -- carried onto its roster row.
+ADAPTER_CENSUS = DESK / "reports" / "ADAPTER_CENSUS.json"
 LAW = ("LAWS 5h: every federated system is named with its disposition, its licence as READ, and "
        "what it actually produced. A system nobody can name is a system nobody can check.")
 
@@ -105,9 +108,11 @@ def cell_rows() -> dict[str, dict[str, Any]]:
 
 
 def build(*, state_path: Path = RUNNER_STATE, report_path: Path = RUNNER_REPORT,
-          ledger_path: Path = INSTALL_LEDGER, fed_state_path: Path = FED_STATE
-          ) -> dict[str, Any]:
+          ledger_path: Path = INSTALL_LEDGER, fed_state_path: Path = FED_STATE,
+          census_path: Path = ADAPTER_CENSUS) -> dict[str, Any]:
     state = _read(state_path, {}) or {}
+    census = {str(r.get("name")): r for r in ((_read(census_path, {}) or {}).get("rows") or [])
+              if isinstance(r, dict)}
     rows_state = {str(k): v for k, v in (state.get("systems") or {}).items()
                   if isinstance(v, dict)}
     runner = _read(report_path, {}) or {}
@@ -161,7 +166,11 @@ def build(*, state_path: Path = RUNNER_STATE, report_path: Path = RUNNER_REPORT,
                                                     else "NOT_ATTEMPTED"))
         runs_here = bool(row.get("runs_here")) or install_status == "INSTALLED" \
             or str(plan_row.get("status") or "") == "RUNNABLE"
+        cen = census.get(sid) or {}
         row.update({
+            "census_class": str(cen.get("class") or "UNMEASURED"),
+            "census_clock": str(cen.get("clock") or ""),
+            "census_reason": str(cen.get("reason") or "")[:300],
             "install_status": install_status,
             "install_version": str(inst.get("version") or ""),
             "install_error": str(inst.get("error") or "")[:400],
