@@ -152,6 +152,8 @@ MODULES = [
     "desks/mt5/research/conservation_ledger.py",
     # The prop-firm showcase proposer, statically imported by daily_cycle._proposers (#582).
     "desks/mt5/research/prop_showcase_miner.py",
+    "desks/mt5/research/prop_showcase_lexicon.py",
+    "desks/mt5/research/prop_showcase_fetch.py",
     "desks/mt5/research/research_bandit.py",
     "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",

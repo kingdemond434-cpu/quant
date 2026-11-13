@@ -15,6 +15,7 @@ for p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+import prop_showcase_fetch as psf  # noqa: E402
 import prop_showcase_miner as psm  # noqa: E402
 
 STORY = ("How a gold scalper secured $50,333 in 2 weeks. I trade XAUUSD at the London open, "
@@ -82,9 +83,9 @@ class _FakeFetcher(psm._Fetcher):
 
 
 def _redirect(monkeypatch: pytest.MonkeyPatch, tmp: Path) -> None:
-    monkeypatch.setattr(psm, "INTEL", tmp / "intel")
-    monkeypatch.setattr(psm, "SEEN", tmp / "intel" / "seen.json")
-    monkeypatch.setattr(psm, "CLAIMS", tmp / "claims.jsonl")
+    monkeypatch.setattr(psf, "INTEL", tmp / "intel")
+    monkeypatch.setattr(psf, "SEEN", tmp / "intel" / "seen.json")
+    monkeypatch.setattr(psf, "CLAIMS", tmp / "claims.jsonl")
     monkeypatch.setattr(psm, "SCREENED", tmp / "intel" / "screened.json")
 
 
