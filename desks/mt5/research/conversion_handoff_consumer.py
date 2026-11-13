@@ -894,6 +894,10 @@ def run(*, budget_s: float = 420.0, dry_run: bool = False, handoff: Path = HANDO
     depth_doc: dict[str, Any] = {}
     coarser: dict[str, dict[str, Any]] = {}
     for ck, cells in depth_rows.items():
+        if time.monotonic() > stop - budget_s * 0.35:
+            for c in cells:
+                books.book(c["reason"], "deferred", "depth_measure_budget:next_pass")
+            continue
         sym, _, tf = ck.rpartition("_")
         d = chart_depth(sym, tf)
         series = snaps.setdefault(ck, [])
