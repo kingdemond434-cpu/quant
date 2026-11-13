@@ -597,6 +597,16 @@ def test_the_account_key_backup_is_reported_and_a_bad_one_is_attention(
     doc, _by = _build(monkeypatch, tmp_path, _GW_ONLY)
     b = doc["account_key_backup"]
     assert b["state"] == state and doc["status"] == headline
+    # PUBLIC FILE (#1075 redaction): the backup's path is its file name only, and no absolute
+    # path or hostname is anywhere in the document.
+    import json
+    import socket
+    # (an env-var override is published as the variable's NAME, never its value)
+    for p in (b.get("path"), doc["account_key_file"].get("path")):
+        assert p is None or p == "account_key.hmac" or p.startswith("$")
+    wire = json.dumps(doc)
+    assert str(tmp_path) not in wire and str(tmp_path).replace("\\", "\\\\") not in wire
+    assert not socket.gethostname() or socket.gethostname() not in wire
     assert b["size_bytes"] == (None if backup is None else 64)
     assert hashlib.sha256(b"k" * 64).hexdigest() not in repr(doc)
     assert doc["n_needing_attention"] == (0 if state == "ok" else 1)

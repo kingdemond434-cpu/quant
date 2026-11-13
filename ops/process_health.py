@@ -35,7 +35,6 @@ import io
 import json
 import ntpath
 import os
-import platform
 import re
 import subprocess
 import sys
@@ -140,11 +139,31 @@ def _bound(args: list[str]) -> int:
 
 
 def _host() -> str:
+    """WHICH MACHINE, WITHOUT NAMING IT: the host_identity verdict (TRADING / OFF_BOX /
+    UNMEASURED), never the hostname. process_health.json is published to a public repository,
+    and the Auditor rule (#639, #1075) is no host names and no absolute paths on the wire. The
+    verdict still answers the question the host stamp exists for (2026-10-21: was this the
+    trading box or the build box?), and the machine's total memory sits beside every figure."""
     try:
-        import socket
-        return socket.gethostname() or platform.node() or "UNMEASURED"
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import host_identity
+        return str(host_identity.identify().verdict)
     except Exception:
-        return platform.node() or "UNMEASURED"
+        return "UNMEASURED"
+
+
+def _path_free(value: Any) -> Any:
+    """A published value with every absolute filesystem path cut to its file name: `path` fields
+    keep the basename only, and free text (a restore step) loses its directories."""
+    if isinstance(value, dict):
+        return {k: (ntpath.basename(str(v).replace("/", "\\").rstrip("\\")) or "[path]"
+                    if k == "path" and isinstance(v, str) else _path_free(v))
+                for k, v in value.items()}
+    if isinstance(value, str):
+        return _ABS_PATH.sub(
+            lambda m: re.split(r"[\\/]", m.group(0).rstrip("\\/"))[-1] or "[path]", value)
+    return value
 
 
 def memory_snapshot() -> dict[str, Any]:
@@ -456,6 +475,9 @@ _SECRET_ASSIGN = re.compile(
     r"|bearer|client[_-]?secret)\b(\s*[:=]\s*|\s+)(['\"]?)[^\s'\"&,;]+")
 _LONG_TOKEN = re.compile(r"\b[A-Za-z0-9_\-+/=]{24,}\b")
 _LONG_DIGITS = re.compile(r"\b\d{7,}\b")
+#: An absolute path (drive-letter, UNC or POSIX root) in published text, cut to its last segment.
+_ABS_PATH = re.compile(
+    r"(?:[A-Za-z]:[\\/]|\\\\|(?<![\w.])/(?=[\w.-]+/))(?:[^\s\\/'\"<>|]+[\\/])*[^\s\\/'\"<>|,;)]*")
 _LAST_RUN_FORMATS = ("%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m/%d/%Y %I:%M:%S %p")
 
 
@@ -806,7 +828,7 @@ def build() -> dict[str, Any]:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
-        "host": __import__("socket").gethostname(),
+        "host": _host(),
         "scheduler_status": scheduler_status,
         "n_processes": len(rows),
         "counts": counts,
@@ -824,10 +846,10 @@ def build() -> dict[str, Any]:
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
         "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
-        "account_key_file": key,
+        "account_key_file": _path_free(key),
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
-        "account_key_backup": backup,
+        "account_key_backup": _path_free(backup),
         # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
