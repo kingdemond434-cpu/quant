@@ -6,12 +6,12 @@
   "sample": 29761,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-11-13",
   "started_at": "2026-11-13T18:59:46+00:00",
-  "written_at": "2026-11-13T19:01:26+00:00",
+  "written_at": "2026-11-13T19:42:30+00:00",
   "cells_planned": 29762,
-  "cells_visited": 0,
+  "cells_visited": 656,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 61123,
     "rss_cap_mb": 15281,
-    "peak_rss_mb": 687
+    "peak_rss_mb": 1047
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 97.7,
+  "lockbox_cut": "2024-03-29",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 43,
+  "elapsed_s": 2561.8,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 40,
@@ -39,38 +39,122 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
+    "cells": 656,
+    "gate0_rejected": {
+      "symbol_eligibility": 189
+    },
+    "preflight_refused": 217,
     "build_failed": 0,
     "build_failed_by_reason": {},
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 50,
+    "unknown_share_of_judged": 0.2,
+    "wilson95": [
+      0.1551,
+      0.254
+    ],
+    "unknown_by_reason": {
+      "no_signals": 36,
+      "too_rare": 7,
+      "short_history_after_cut": 4,
+      "lockbox_consumed_history": 3
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 13,
+      "orderflow_imbalance": 10,
+      "liquidity_regime": 4,
+      "joint_genome": 3,
+      "session_range_breakout": 3,
+      "htf_anchor_trend": 2,
+      "comex_settlement": 2,
+      "overnight_drift": 2,
+      "ict_fvg": 1,
+      "regime_split": 1,
+      "regime_transition": 1,
+      "entry_conditioned": 1,
+      "alt_series_momentum": 1,
+      "exogenous_conditioner": 1,
+      "level_breakout": 1
+    },
+    "unknown_by_chart": {
+      "H1": 18,
+      "M30": 13,
+      "M5": 9,
+      "M1": 3,
+      "M15": 3,
+      "D1": 3,
+      "H4": 1
+    },
+    "judged_by_chart": {
+      "H1": 108,
+      "M30": 53,
+      "M5": 38,
+      "M15": 37,
+      "M1": 6,
+      "H4": 5,
+      "D1": 3
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
+    "cells": 656,
+    "gate0_rejected": {
+      "symbol_eligibility": 189
+    },
+    "preflight_refused": 217,
     "build_failed": 0,
     "build_failed_by_reason": {},
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 50,
+    "unknown_share_of_judged": 0.2,
+    "wilson95": [
+      0.1551,
+      0.254
+    ],
+    "unknown_by_reason": {
+      "no_signals": 36,
+      "too_rare": 7,
+      "short_history_after_cut": 4,
+      "lockbox_consumed_history": 3
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 13,
+      "orderflow_imbalance": 10,
+      "liquidity_regime": 4,
+      "joint_genome": 3,
+      "session_range_breakout": 3,
+      "htf_anchor_trend": 2,
+      "comex_settlement": 2,
+      "overnight_drift": 2,
+      "ict_fvg": 1,
+      "regime_split": 1,
+      "regime_transition": 1,
+      "entry_conditioned": 1,
+      "alt_series_momentum": 1,
+      "exogenous_conditioner": 1,
+      "level_breakout": 1
+    },
+    "unknown_by_chart": {
+      "H1": 18,
+      "M30": 13,
+      "M5": 9,
+      "M1": 3,
+      "M15": 3,
+      "D1": 3,
+      "H4": 1
+    },
+    "judged_by_chart": {
+      "H1": 108,
+      "M30": 53,
+      "M5": 38,
+      "M15": 37,
+      "M1": 6,
+      "H4": 5,
+      "D1": 3
+    }
   },
   "siblings_only": {
     "cells": 0,
