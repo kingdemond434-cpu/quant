@@ -29,6 +29,7 @@ REPORTS = {
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json": "desks/mt5/research/culture_orthogonality.py",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json":
         "desks/mt5/research/research_live_identity.py",
+    "desks/mt5/reports/CLOCK_LIVENESS.json": "desks/mt5/research/clock_liveness.py",
 }
 
 
