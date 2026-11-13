@@ -114,6 +114,44 @@ STAGES: tuple[str, ...] = ("harvest", "transfer", "mutation", "invention")
 STAGE_SHARE: dict[str, float] = {"harvest": 0.10, "transfer": 0.45, "mutation": 0.35,
                                  "invention": 0.10}
 MIN_FREE_MB = 400.0
+#: THE WORLDQUANT PANEL SETTINGS (N8 gaps `wq_group_neutralization`, `wq_decay_truncation`).
+#: `xzscore` -- the transpiled IndNeutralize -- is neutralised within each member's PEER GROUP
+#: (`universe_policy.peer_class`: fx_usd / fx_cross / index / commodity ...) inside the pass's
+#: asset-class basket, BRAIN's sector level, instead of across the whole basket (its market
+#: level); a group thinner than the basket floor falls back to the basket. `xrank` stays
+#: market-wide, as the paper's rank is. Truncation is BRAIN's weight cap on a book; a panel cell
+#: here is still one instrument's series, so it is OFF until a book-level executor exists, and
+#: the setting rides the report either way.
+PANEL_NEUTRALIZATION = "group"
+PANEL_TRUNCATION: float | None = None
+
+
+def panel_settings(expr: Expr) -> dict[str, Any]:
+    """The WorldQuant settings this expression's value is computed under; empty when it has no
+    `xzscore` panel node (a single-series cell, or `xrank` alone, which is always market-wide).
+
+    Read at call time, so the row, the key and the donation all say what THIS pass computed. The
+    same AST under market z-scoring and under group neutralisation are two computations: the
+    setting is part of a cell's identity (`Cell.key`), its campaign row, its registry params and
+    its donation provenance, so the duplicate-AST and twin checks never merge them and a future
+    panel executor knows which setting the cell was certified under."""
+    if not any(str(n[0]) == "xzscore" for n in dsl.panel_nodes(expr)):
+        return {}
+    out: dict[str, Any] = {"xzscore_neutralization": PANEL_NEUTRALIZATION}
+    if PANEL_TRUNCATION is not None:
+        out["truncation"] = float(PANEL_TRUNCATION)
+    return out
+
+
+def panel_key_suffix(settings: dict[str, Any]) -> str:
+    """The setting's part of a cell key. The pre-2026-11 computation (market z, no truncation)
+    keeps the bare key, so `seen.json` written before the setting existed still dedupes it; any
+    other setting is versioned into the key, as `@utc1` versions a session state."""
+    neut = settings.get("xzscore_neutralization", "market")
+    trunc = settings.get("truncation")
+    if neut == "market" and trunc is None:
+        return ""
+    return f"|xs:z={neut}" + (f",t={trunc:g}" if trunc is not None else "")
 BARS_PER_YEAR = 24 * 260
 NORM, ENTRY_Z = 240, 1.5
 IS_SHARE = 0.6
@@ -474,6 +512,7 @@ class Lake:
         self.worlds: dict[str, World] = {}
         self.injected: dict[str, pd.DataFrame] = {}
         self.macro_index = 0
+        self._peer_cache: dict[str, str | None] = {}
 
     def _meta(self) -> dict[str, Any]:
         doc = read_json(self.paths.universe_dir / "universe.json", {})
@@ -512,6 +551,21 @@ class Lake:
     def asset_class(self, sym: str) -> str:
         row = self.meta.get(sym.upper()) or {}
         return str(row.get("asset_class") or "unclassified").lower()
+
+    def peer_groups(self, symbols: Iterable[str]) -> dict[str, str | None]:
+        """Each member's peer group (`universe_policy.peer_class`), cached per symbol. A symbol
+        the policy cannot class keeps None and is neutralised against the whole basket."""
+        cache = self._peer_cache
+        out: dict[str, str | None] = {}
+        for s in symbols:
+            if s not in cache:
+                try:
+                    from research import universe_policy as up
+                    cache[s] = up.peer_class(s)
+                except Exception:
+                    cache[s] = None
+            out[s] = cache[s]
+        return out
 
     def baskets(self) -> dict[str, list[str]]:
         out: dict[str, list[str]] = {}
@@ -646,7 +700,8 @@ class Cell:
         # hour, not UTC, so a "session:london" cell in `seen` tested different hours and must not
         # mark the corrected cell as already tested.
         state = f"{self.state}@utc1" if self.state.startswith("session:") else self.state
-        return f"{self.symbol}|{self.hold}|{state}|{dsl.canonical_key(self.expr)}"
+        return (f"{self.symbol}|{self.hold}|{state}|{dsl.canonical_key(self.expr)}"
+                + panel_key_suffix(panel_settings(self.expr)))
 
     def mechanism(self) -> str:
         """The tree's shape as the grammar describes it, with the state kind it is conditioned
@@ -672,7 +727,8 @@ class Cell:
                 "generator": self.generator,
                 "asset_class": self.asset_class, "chain": list(self.chain), "key": self.key,
                 "family": dsl.family_key(self.expr), "mechanism": self.mechanism(),
-                "representation": self.representation(), "descriptor": self.descriptor()}
+                "representation": self.representation(), "descriptor": self.descriptor(),
+                "panel_settings": panel_settings(self.expr)}
 
 
 #: When session states moved to true UTC. A registry row last written before it was judged on the
@@ -1230,7 +1286,8 @@ class Campaign:
                "co_parents": list(cell.co_parents),
                "generator": cell.generator, "chain": list(cell.chain),
                "rendered": ag.to_str(cell.expr), "family": dsl.family_key(cell.expr),
-               "asset_class": cell.asset_class, "candidate_id": "", "history": ["PROPOSED"]}
+               "asset_class": cell.asset_class, "panel_settings": panel_settings(cell.expr),
+               "candidate_id": "", "history": ["PROPOSED"]}
         self.rows[cell.key] = row
         self.pass_counts["PROPOSED"] += 1
         return row
@@ -1414,7 +1471,10 @@ class Factory:
         if dsl.has_panel(expr):
             for s in frames:
                 self.memo_for(s)
-            return dsl.evaluate_cell(expr, frames, sym, self.memos)
+            groups = (self.lake.peer_groups(frames) if PANEL_NEUTRALIZATION == "group"
+                      else None)
+            return dsl.evaluate_cell(expr, frames, sym, self.memos, groups=groups,
+                                     truncation=PANEL_TRUNCATION)
         return ag.evaluate(expr, self.lake.worlds[sym].frames, self.memo_for(sym))
 
     # ---- parents
@@ -2068,7 +2128,13 @@ class Factory:
                             "bindings": {s: {t: f.name for t, f in w.bindings.items()}
                                          for s, w in self.lake.worlds.items()},
                             "cost_status": {s: w.cost_status for s, w in self.lake.worlds.items()},
-                            "horizons": list(HORIZONS)}
+                            "horizons": list(HORIZONS),
+                            "panel_settings": {
+                                "xzscore_neutralization": PANEL_NEUTRALIZATION,
+                                "xrank_neutralization": "market",
+                                "truncation": PANEL_TRUNCATION,
+                                "decay": "the grammar's decay operator (linear), per node",
+                                "peer_groups": self.lake.peer_groups(loaded)}}
         if not loaded:
             report["status"] = "NO_WORLDS"
             report["why"] = "no hypothesis-lane symbol with 720+ H1 bars could be loaded"
@@ -2251,7 +2317,7 @@ class Factory:
             c = row["cell"]
             side = row["t1"]["side_mode"]
             params = {**RECIPE, "hold_bars": int(c["hold"]), "expr": c["expr"],
-                      "side_mode": side}
+                      "side_mode": side, **_panel_params(c)}
             title = f"{c['symbol']}.formula.{side} {c['rendered']} <- {c['parent'] or 'invented'}"
             out.append({"source": SOURCE, "kind": SOURCE, "symbol": c["symbol"],
                         "family": "formula", "params": params,
@@ -2267,6 +2333,7 @@ class Factory:
                         "parent_ids": [p for p in [c["parent"], *(c.get("co_parents") or [])]
                                        if p],
                         "generator": c["generator"], "trial_family": c["family"],
+                        "panel_settings": dict(c.get("panel_settings") or {}),
                         "evidence": {**row["t1"], **{f"t2_{k}": v for k, v in row["t2"].items()},
                                      "orthogonality": row["orthogonality"],
                                      "screen": "expression factory tiers 0-2: vectorised path, "
@@ -2354,7 +2421,7 @@ class Factory:
                         parent_ids[pid] = did
                         out["parents"] += 1
                     params = {**RECIPE, "hold_bars": int(c["hold"]), "expr": c["expr"],
-                              "side_mode": row["t1"]["side_mode"]}
+                              "side_mode": row["t1"]["side_mode"], **_panel_params(c)}
                     did, _ = reg.record_discovery(
                         source_id=f"parent:{pid}" if pid else "invention",
                         source_type="expression_cell",
@@ -2430,7 +2497,16 @@ class Factory:
                 "operator_credits": {op: round(self.credits.op_weight(op, klass), 4)
                                      for op in sorted(dsl.operators_in(c["expr"]))},
                 "trial_family": c["family"], "descriptor": c["descriptor"],
-                "generator": c.get("generator", "")}
+                "generator": c.get("generator", ""),
+                "panel_settings": dict(c.get("panel_settings") or {})}
+
+
+def _panel_params(c: dict[str, Any]) -> dict[str, Any]:
+    """The cell's panel setting as an exact-rule parameter, so the registry's content hash (which
+    covers params) keeps a group-neutralised cell apart from the same AST z-scored market-wide.
+    A cell with no setting adds nothing, so every non-panel candidate's hash is unchanged."""
+    ps = c.get("panel_settings")
+    return {"panel_settings": dict(ps)} if ps else {}
 
 
 # ============================================================================ CLI
