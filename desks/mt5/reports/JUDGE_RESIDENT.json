@@ -16,7 +16,7 @@
  "last_sweep_s": 25542.2,
  "uptime_s": 63827.3,
  "last_sweep_ended_utc": "2026-11-13T05:09:49+00:00",
- "heartbeat_utc": "2026-11-13T06:04:51+00:00",
+ "heartbeat_utc": "2026-11-13T06:50:00+00:00",
  "sweep_phase": {
   "pid": 27040,
   "sweep_started_utc": "2026-11-13T05:09:56+00:00",
@@ -87,42 +87,42 @@
      }
     },
     "prewarm": {
-     "samples": 252,
+     "samples": 514,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 235,
-       "share": 0.933
+       "n": 480,
+       "share": 0.934
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 9,
-       "share": 0.036
+       "n": 18,
+       "share": 0.035
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 6,
-       "share": 0.024
+       "n": 11,
+       "share": 0.021
+      },
+      {
+       "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:87 < process.py:submit:797 < external_gauntlet.py:_submit_next:2079 < external_gauntlet.py:_prewarm_cache:2093",
+       "n": 1,
+       "share": 0.002
       },
       {
        "stack": "threading.py:__init__:290 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
        "n": 1,
-       "share": 0.004
-      },
-      {
-       "stack": "threading.py:__init__:307 < threading.py:__init__:603 < _base.py:__init__:56 < _base.py:_create_and_install_waiters:153 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093",
-       "n": 1,
-       "share": 0.004
+       "share": 0.002
       }
      ],
      "process": {
-      "cpu_s": 1138.1,
-      "page_faults": 70776485.0,
-      "read_bytes": 31419592.0,
-      "write_bytes": 80678391024.0,
-      "sampled_s": 2510.0,
-      "rss_mb_max": 3406.1,
-      "cpu_share_of_wall": 0.453
+      "cpu_s": 2025.3,
+      "page_faults": 125441571.0,
+      "read_bytes": 56048286.0,
+      "write_bytes": 143577429514.0,
+      "sampled_s": 5130.0,
+      "rss_mb_max": 3427.5,
+      "cpu_share_of_wall": 0.395
      }
     }
    }
