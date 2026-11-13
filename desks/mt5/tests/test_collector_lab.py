@@ -123,6 +123,41 @@ def test_robots_and_gates_hold() -> None:
     assert cl.fetch(SRC, SRC, get=lambda u: (403, b""), resolve=_public)[1] == "GATED:HTTP_403"
 
 
+def test_a_crawl_delay_is_honoured_in_full_or_the_fetch_is_skipped(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 99ec92b35, MUST-FIX: the delay was cut to fit the budget and the GET sent."""
+    slept: list[float] = []
+    monkeypatch.setattr(cl.time, "sleep", slept.append)
+    fetched: list[str] = []
+
+    def robots(delay: str):
+        def g(u: str) -> tuple[int, bytes]:
+            fetched.append(u)
+            if u.endswith("robots.txt"):
+                return 200, f"User-agent: *\nCrawl-delay: {delay}\n".encode()
+            return 200, _body()
+        return g
+
+    assert cl.fetch(SRC, SRC, get=robots("30"), resolve=_public)[1] == "UNREACHABLE:CRAWL_DELAY"
+    assert not any(not u.endswith("robots.txt") for u in fetched) and slept == []
+    fetched.clear()
+    body, why = cl.fetch(SRC, SRC, get=robots("2"), resolve=_public)
+    assert why == "" and body and slept == [2.0]
+    assert cl.transient({"detail": "UNREACHABLE:CRAWL_DELAY"})
+
+
+def test_a_box_wide_dns_outage_charges_no_source(tmp_path: Path) -> None:
+    """Audit of 99ec92b35, SF5: a resolver outage is the box's state, not the source's."""
+    feed = tmp_path / "feed.jsonl"
+    feed.write_text(json.dumps({"name": "s", "reachable": True, "url": SRC}) + "\n", "utf-8")
+    n = cl.TRANSIENT_CHARGE * (cl.MAX_ATTEMPTS + 1)
+    dns = [{"source": "s", "at": f"2026-11-01T{i:02d}", "status": "FAILED",
+            "detail": "UNREACHABLE:DNS_TIMEOUT"} for i in range(n)]
+    assert [r["name"] for r in cl.candidates(feed, {}, dns)] == ["s"]
+    down = [dict(a, detail="UNREACHABLE:ConnectionError") for a in dns]
+    assert cl.candidates(feed, {}, down) == []           # a source's own outage still counts
+
+
 def test_parser_reads_the_shapes_sources_use() -> None:
     lists = json.dumps([[1735689600000 + i * 86400000, i] for i in range(5)]).encode()
     assert cl.parse(lists, {"format": "json", "date": "0", "value": "1"})[0]["2025-01-01"] == 0

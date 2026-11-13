@@ -259,3 +259,79 @@ def test_plural_and_adjective_exclusions(what: str) -> None:
     """Audit should-fix on #394 v3."""
     assert ec.extract(f"Before the general election, on 3 March 2025 {what} held.", "en",
                       today=date(2026, 1, 1)) == []
+
+
+def test_a_moved_vote_never_takes_its_old_date() -> None:
+    """Audit should-fix 1 on #388: 'scheduled for' right after 'originally' or 'postponed'."""
+    today = date(2026, 10, 14)
+    for seg in ("The general election, originally scheduled for 14 May 2026, moved.",
+                "The general election was postponed from 14 May 2026 to 21 May 2026.",
+                "The general election was rescheduled; delayed 14 May 2026."):
+        got = [e["date"] for e in ec.extract(seg, "en", today=today)]
+        assert "2026-05-14" not in got, seg
+
+
+def test_a_spanish_sentence_is_not_dropped_for_an_english_substring() -> None:
+    """Audit should-fix 2 on #388: 'mayor' is Spanish for 'greater'."""
+    seg = "La elección federal con mayor participación se celebró el 2 de junio de 2024."
+    got = [e["date"] for e in ec.extract(seg, "es", today=date(2026, 10, 14))]
+    assert got == ["2024-06-02"]
+    assert ec.extract("La elección del governor se celebró el 2 de junio de 2024.", "es",
+                      today=date(2026, 10, 14)) == []
+
+
+def test_pages_that_disagree_keep_the_earliest_date_and_every_reading() -> None:
+    """Audit should-fix 4 on #388."""
+    store: dict[str, Any] = {}
+    ec.merge_events(store, "za", [{"date": "2024-05-30", "quote": "q"}], "list", "t1")
+    ec.merge_events(store, "za", [{"date": "2024-05-29", "quote": "q"}], "authority", "t2")
+    row = store["za"][0]
+    assert row["date"] == "2024-05-29"
+    assert row["dates_read"] == {"list": "2024-05-30", "authority": "2024-05-29"}
+
+
+def test_the_backtest_the_forward_clock_cannot_reproduce_is_recorded() -> None:
+    """Audit should-fix 3 on #388: history stamped on the statutory notice is a gap, named."""
+    ev = [{"date": "2019-05-08", "confirmed_at": "2026-10-13T00:00:00+00:00"},
+          {"date": "2026-10-20", "confirmed_at": "2026-10-18T09:00:00+00:00"}]
+    got = ec.forward_coverage(ev, today=date(2026, 10, 14))
+    assert (got["first_sight"], got["statutory_history"]) == (1, 1)
+    assert "1 of 2" in got["forward_gap"] and "next_vote" not in got
+    later = ec.forward_coverage(ev, today=date(2026, 11, 1))
+    assert later["next_vote"].startswith("UNMEASURED")
+
+
+def test_no_bar_before_d_minus_5_broker_midnight_is_lit(tmp_ec: Path) -> None:
+    """Audit should-fix 6 on #388: through the family's own loader and lag, the pre window
+    of vote D is never lit before D-5 00:00 broker time (UTC+3 at the latest offset)."""
+    import pandas as pd
+    from mt5desk.family_exogenous_conditioner import conditioner
+    votes = [date(y, 5, 29) for y in range(2010, 2025)]
+    ev = [{"date": d.isoformat(), "confirmed_at": "x"} for d in votes]
+    ec.write_series("za", ec.series_rows(ev, "za", today=date(2025, 1, 1)))
+    s = conditioner("election_za", "pre_event", "level", root=tmp_ec / "series")
+    assert s is not None
+    lit = s[s > 0].index
+    assert len(lit) == ec.PRE_DAYS * len(votes)
+    for d in votes:
+        floor = pd.Timestamp(d.isoformat(), tz="UTC") - pd.Timedelta(days=ec.PRE_DAYS,
+                                                                       hours=3)
+        mine = [t for t in lit if abs((t - pd.Timestamp(d.isoformat(), tz="UTC")).days) <= 10]
+        assert mine and min(mine) >= floor, d
+
+
+def test_a_date_moved_earlier_is_stamped_from_the_move() -> None:
+    """Audit nit on d1d1e6e04: a confirmed vote whose date a later page moves earlier lights
+    the moved window no earlier than the move itself."""
+    store: dict[str, Any] = {}
+    ec.merge_events(store, "jp", [{"date": "2026-10-21", "quote": "q"}], "a",
+                    "2026-10-10T00:00:00+00:00")
+    ec.merge_events(store, "jp", [{"date": "2026-10-21", "quote": "q"}], "b",
+                    "2026-10-11T00:00:00+00:00")
+    ec.merge_events(store, "jp", [{"date": "2026-10-20", "quote": "q"}], "c",
+                    "2026-10-17T06:00:00+00:00")
+    row = store["jp"][0]
+    assert row["date"] == "2026-10-20" and row["date_moves"][0]["at"].startswith("2026-10-17")
+    rows = ec.series_rows([row], "jp", today=date(2026, 10, 22))
+    pre = [r for r in rows if r["pre_event"] == 1]
+    assert pre and all(r["available_time"] >= "2026-10-17T06:00:00+00:00" for r in pre)

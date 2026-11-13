@@ -42,7 +42,7 @@ def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
     assert doc["scheduler_status"].startswith("UNMEASURED")
     assert _row(doc, "MT5-Gateway")["verdict"] == "SCHEDULER_UNMEASURED"
     assert doc["counts"].get("NOT_SCHEDULED", 0) == 0
-    assert doc["status"] == "ATTENTION"
+    assert doc["status"] == "UNMEASURED"
 
 
 def test_hourly_replication_staleness_is_detected_before_live_door_expiry(monkeypatch):

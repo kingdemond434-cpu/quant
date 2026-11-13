@@ -29,8 +29,8 @@ BASE = Path(__file__).resolve().parent.parent
 if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
-from mt5desk import account_profile as ap        # noqa: E402
-from mt5desk import decision_core as core        # noqa: E402
+from mt5desk import account_profile as ap  # noqa: E402
+from mt5desk import decision_core as core  # noqa: E402
 
 LIVE_ACC = {"login": 520144, "server": "FusionMarkets-Live", "kind": "LIVE"}
 PROP_ACC = {"login": 900001, "server": "E8-Server-01", "kind": "LIVE"}
@@ -160,10 +160,11 @@ def test_the_key_needs_both_login_and_server() -> None:
     """`provenance.same_account`'s reason, restated where the key is built: a broker reusing
     logins across servers would collide, and one broker's demo and live sides differ by exactly
     this pair."""
-    assert ap.account_key({"login": 1, "server": "S"}) == "1@S"
-    assert ap.account_key({"login": 1, "server": None}) is None
-    assert ap.account_key({"login": None, "server": "S"}) is None
-    assert ap.account_key(None) is None
+    assert ap.declaration_key({"login": 1, "server": "S"}) == "1@S"
+    assert ap.declaration_key({"login": 1, "server": None}) is None
+    assert ap.declaration_key({"login": None, "server": "S"}) is None
+    assert ap.declaration_key(None) is None
+    assert not hasattr(ap, "account_key"), "no back-compat alias (v5c rename)"
 
 
 # ------------------------------------------------------------------- and it must be wired

@@ -159,6 +159,10 @@ TRANSIENT = ("UNREACHABLE", "HTTP_5", "GATED:HTTP_429", "COOLDOWN", "ROBOTS_UNAV
 #: at the head of the feed, starved every source behind it). COOLDOWN is our own rest, not an
 #: attempt on the source, and a dark chain is the model's outage, so neither counts.
 TRANSIENT_CHARGE = 3
+#: Transient outcomes that are THIS BOX'S state, never the source's: our own rest, and a
+#: resolver that is down for every host at once (audit of 99ec92b35, SF5) -- a box-wide DNS
+#: outage used to charge every source in the feed one attempt.
+UNCHARGED = ("COOLDOWN", "UNREACHABLE:DNS_TIMEOUT", "UNREACHABLE:DNS_TRY_AGAIN")
 
 
 def same_site(url: str, source_url: str) -> bool:
@@ -388,7 +392,17 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
                 return b"", "ROBOTS_DISALLOW"
             delay = rp.crawl_delay(AGENT)
             if delay:
-                time.sleep(max(0.0, min(float(delay), 10.0, until - time.monotonic() - 1.0)))
+                # THE CRAWL-DELAY IS HONOURED IN FULL OR THE FETCH IS SKIPPED (audit of 99ec92b35,
+                # MUST-FIX): it used to be cut to the budget, and to 10 s past that, and the GET
+                # sent anyway -- a robots directive obeyed only when convenient. A delay longer
+                # than the cap or the time left is a transient skip; the source keeps its place.
+                try:
+                    wait_s = float(delay)
+                except (TypeError, ValueError):
+                    wait_s = float("inf")
+                if wait_s > CRAWL_DELAY_CAP_S or wait_s > until - time.monotonic() - 1.0:
+                    return b"", "UNREACHABLE:CRAWL_DELAY"
+                time.sleep(max(0.0, wait_s))
         code, body = g(url)
     except Exception as exc:
         return b"", f"UNREACHABLE:{type(exc).__name__}"
@@ -401,6 +415,10 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
     if re.search(rb"(?i)captcha|verify you are human|cf-chl", body[:20000]):
         return b"", "GATED:CHALLENGE"
     return body, ""
+
+
+#: The longest robots Crawl-delay a pass waits out; a host asking for more is skipped.
+CRAWL_DELAY_CAP_S = 10.0
 
 
 # ============================================================================ the fixed parser
@@ -672,7 +690,7 @@ def candidates(feed: Path, specs: dict[str, Any], attempts: list[dict[str, Any]]
             tried[src] = tried.get(src, 0) + 1
             streak[src] = 0
         elif a.get("status") != "CHAIN_DARK" and \
-                not str(a.get("detail") or "").startswith("COOLDOWN"):
+                not str(a.get("detail") or "").startswith(UNCHARGED):
             streak[src] = streak.get(src, 0) + 1
             if streak[src] >= TRANSIENT_CHARGE:
                 tried[src] = tried.get(src, 0) + 1
