@@ -875,6 +875,29 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE PAPERCLIP LAB'S CLOCK IS A GITHUB ACTIONS SCHEDULE (2026-11-03), which no other
+        # tier of this registry reads: `.github/workflows/paperclip-lab.yml` (cron 41 * * * *, on
+        # master, the default branch GitHub fires schedules from) runs it on an isolated runner
+        # and uploads the bundle the hourly leg `paperclip_intake` consumes on the box.
+        ComponentSpec(
+            component_id="executable:scripts/paperclip_lab_run.py",
+            kind="executable", host="any",
+            code_paths=("scripts/paperclip_lab_run.py", "libs/research/paperclip_lab/lab.py",
+                        "libs/research/paperclip_lab/contract.py",
+                        "libs/research/paperclip_lab/roles.py"),
+            inputs=("desks/mt5/data/paperclip/inbox.json",
+                    "desks/mt5/data/paperclip/scorecard.json",
+                    "desks/mt5/reports/PRODUCER_YIELD.json"),
+            outputs=("out/paperclip_bundle.json",),
+            consumers=("desks/mt5/research/paperclip_intake.py",),
+            cadence_s=3600, timeout_s=2700, progress_metric="rows",
+            expected_artifact_schema="paperclip_bundle/1",
+            owner="paperclip_lab", restart_action="workflow_dispatch:paperclip-lab.yml",
+            criticality="optional", resource_budget={"budget_s": 2700},
+            schedule="workflow:.github/workflows/paperclip-lab.yml", artifact_class="hourly",
+            notes=("GitHub-hosted runner, no secrets, contents:read + models:read; the bundle is "
+                   "a workflow artifact, so its age is measured by paperclip_intake's scorecard "
+                   "(desks/mt5/data/paperclip/scorecard.json newest_bundle_age_h)")),
         # THE BREADTH LEDGER'S CLOCK, DECLARED BECAUSE THE REACH WALK NAMED THE WRONG ONE
         # (2026-09-30). The walk credits a script to whichever file that names it pops first, and
         # for this one that was a docstring citation in docket_keff (alpha_breadth cites it too),
