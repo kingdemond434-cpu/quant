@@ -22,7 +22,8 @@ for _p in (str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")
     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10",
     "https://alfred.stlouisfed.org/graph/fredgraph.csv?id=PAYEMS&vintage_date=2020-01-01",
     "https://api.stlouisfed.org/fred/series/observations?series_id=DGS10",
-    "https://FRED.stlouisfed.org.", "stlouisfed.org/anything"])
+    "https://FRED.stlouisfed.org.", "stlouisfed.org/anything",
+    "https://fraser.stlouisfed.org/title/1"])          # no exemption without its own terms
 def test_every_fred_host_is_refused(url: str) -> None:
     assert T.refused(url) and "governance ruling 2026-11-13" in T.refused(url)
     with pytest.raises(T.TermsRefused):
@@ -30,7 +31,7 @@ def test_every_fred_host_is_refused(url: str) -> None:
 
 
 @pytest.mark.parametrize("url", [
-    "https://fraser.stlouisfed.org/title/1", "https://www.federalreserve.gov/releases/h15/",
+    "https://www.federalreserve.gov/releases/h15/",
     "https://fiscaldata.treasury.gov/", "https://notstlouisfed.org/x"])
 def test_other_hosts_pass(url: str) -> None:
     assert T.refused(url) is None

@@ -33,10 +33,11 @@ REFUSED_DOMAINS: dict[str, str] = {
         "developing any software system); governance ruling 2026-11-13 -- never fetched, "
         "the last held copy is read instead"),
 }
-#: Hosts under a refused domain whose content is NOT FRED data (the Fed's own research and
-#: historical-document archive is a different service with its own terms).
-EXEMPT_HOSTS: frozenset[str] = frozenset({"fraser.stlouisfed.org", "www.stlouisfed.org",
-                                          "research.stlouisfed.org", "files.stlouisfed.org"})
+#: Hosts under a refused domain exempted because THEIR OWN terms allow automated use, each with
+#: the terms URL that says so. Empty: FRASER and the Bank's research pages are separate services,
+#: but their terms have not been read as allowing it, so they are refused with the rest (fail
+#: closed; Governance 2026-11-13). Add a host here only with its terms URL beside it.
+EXEMPT_HOSTS: frozenset[str] = frozenset()
 STATUS = "BLOCKED_TERMS"
 OWNER_FENCED: dict[str, str] = {
     "VIXCLS": "Cboe", "VXVCLS": "Cboe", "GVZCLS": "Cboe", "OVXCLS": "Cboe", "VXNCLS": "Cboe",
