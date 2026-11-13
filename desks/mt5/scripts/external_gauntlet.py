@@ -8,6 +8,7 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import inspect
 import json
@@ -2032,6 +2033,42 @@ def _warm_one(spec: dict, meta: dict) -> dict:
         return out
 
 
+#: How long the pre-warm waits, past its build deadline, for cells already running (idea 614).
+#: MEASURED 2026-11-11: the pool's deadline stopped NEW work at 45 min, but "cells already running
+#: finish" had no bound and the `with` block waited on them -- the pre-warm ran 2.6 h and held the
+#: certification lane the whole time. After this grace the stragglers are abandoned (counted
+#: `abandoned`, and the main loop defers them exactly as it defers unreached cells).
+PREWARM_DRAIN_GRACE_S = float(os.environ.get("GAUNTLET_PREWARM_DRAIN_GRACE_S", "300"))
+
+
+def _lease_spent() -> bool:
+    """True once the lease on a lock this sweep holds is spent (`job_lock.checkpoint`)."""
+    try:
+        from research.job_lock import checkpoint
+    except Exception:
+        return False
+    spent = False
+    for name in ("certification_lane", "external_gauntlet"):
+        try:
+            spent = checkpoint(name) or spent
+        except Exception:
+            continue
+    return spent
+
+
+def _abandon_pool(pool: Any) -> None:
+    """Stop a ProcessPoolExecutor WITHOUT waiting on its running cells: cancel the queue, end
+    the worker processes, release the executor. A worker mid-build writes its cache atomically,
+    so an abandoned cell is simply not cached and is rebuilt by a later pass."""
+    with contextlib.suppress(Exception):
+        procs = list((getattr(pool, "_processes", None) or {}).values())
+        for proc in procs:
+            with contextlib.suppress(Exception):
+                proc.terminate()
+    with contextlib.suppress(Exception):
+        pool.shutdown(wait=False, cancel_futures=True)
+
+
 def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
 
@@ -2059,15 +2096,17 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     # every hour and never reach the tail") and guards the pool's ORDER, which was never the
     # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
-               "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
-               "built_symbols": set()}
+               "unreached": 0, "abandoned": 0, "stop": None, "seconds": 0.0,
+               "failures": {}, "failure_reasons": {}, "built_symbols": set()}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
     #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
     #: symbol it just built. `pending` is popped before the result is read.
     pending_spec: dict = {}
-    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
+    pool = ProcessPoolExecutor(max_workers=WORKERS)
+    abandoned = False
+    try:
         def _submit_next() -> bool:
             sp = next(it, None)
             if sp is None:
@@ -2082,7 +2121,19 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
             if not _submit_next():
                 break
         while pending:
+            if summary["stop"] is None and _lease_spent():
+                # THE LEASE IS SPENT (idea 614): stop now as if the build budget had run out.
+                summary["stop"] = "lease"
+                deadline = min(deadline, time.time())
             if time.time() > deadline:
+                summary["stop"] = summary["stop"] or "deadline"
+                if time.time() > deadline + PREWARM_DRAIN_GRACE_S:
+                    # BOUNDED DRAIN: the stragglers have had their grace; abandon them rather
+                    # than hold the lane for hours (2.6 h measured 2026-11-11).
+                    summary["abandoned"] += len(pending)
+                    pending.clear()
+                    abandoned = True
+                    break
                 # Stop handing out work. Cells already running finish (one cell each); cells
                 # not yet started are cancelled and counted as unreached -- the main loop then
                 # records them DEFERRED with the budget as the reason, as it always has.
@@ -2117,11 +2168,21 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                     reasons[reason] = reasons.get(reason, 0) + 1
                 if time.time() <= deadline:
                     _submit_next()
+    finally:
+        if abandoned:
+            _abandon_pool(pool)
+        else:
+            pool.shutdown(wait=True)
     summary["unreached"] += sum(1 for _ in it)
     summary["seconds"] = round(time.time() - t0, 1)
+    _tail = ""
+    if summary["abandoned"]:
+        _tail += f", {summary['abandoned']} abandoned past the drain grace"
+    if summary["stop"] == "lease":
+        _tail += "; stopped at the lock lease"
     print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
           f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
-          f"failed, {summary['unreached']} not reached before the build budget)"
+          f"failed, {summary['unreached']} not reached before the build budget{_tail})"
           + (f"; failures by kind {summary['failures']}" if summary["failures"] else ""))
     if summary["failure_reasons"]:
         print(f"PRE-WARM failure reasons: {summary['failure_reasons']}", flush=True)

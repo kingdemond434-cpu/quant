@@ -487,8 +487,13 @@ def slippage_surface(by_symbol: dict[str, list[ms.QuoteStats]]) -> dict[str, Any
 
 
 def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEFAULT_DAYS,
-        rebuild: bool = False) -> dict[str, Any]:
-    """Build every symbol-day whose bronze is newer than its silver. Incremental by design."""
+        rebuild: bool = False, should_yield: Any = None) -> dict[str, Any]:
+    """Build every symbol-day whose bronze is newer than its silver. Incremental by design.
+
+    `should_yield` (idea 614) is asked before each day that needs a BUILD. Once it answers True
+    the pass builds nothing more: every remaining day is DEFERRED with the lease as the reason,
+    cached days still count, the per-symbol watermark is saved as always, and the lock is handed
+    back before the task's time limit kills the pass."""
     registry = _load(UNIVERSE, {})
     state = {} if rebuild else _load(STATE, {})
     failed_days, integrity_note = _failed_days()
@@ -505,6 +510,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
     deferred_open: list[str] = []
     deferred_age_s: list[float] = []
     pruned = 0
+    yielded = False
     for sym in syms:
         cells: list[ms.QuoteStats] = []
         for day in store.days(sym):
@@ -536,6 +542,10 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
                     deferred_open.append(key)
                     deferred_age_s.append(age)
                     continue
+            if yielded or (should_yield is not None and should_yield()):
+                yielded = True
+                skipped.append(f"{key}: DEFERRED, lease spent (the next pass builds it)")
+                continue
             point = _point_for(sym, store, day, registry)
             res = build_day(store, sym, day, point)
             if res["status"] != "BUILT":
@@ -591,6 +601,9 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int = DEF
         "integrity": integrity_note,
         "days_refused_on_integrity": len(failed_days),
         "skipped": skipped[:50],
+        # idea 614: the pass handed its lock back at its lease; the next pass builds the rest
+        "yielded_at_lease": yielded,
+        "deferred_by_lease": sum(1 for x in skipped if "lease spent" in x),
         "n_skipped": len(skipped),
         "open_days_deferred": len(deferred_open),
         "open_day_rebuild_s": OPEN_DAY_REBUILD_S,
@@ -710,7 +723,7 @@ def main(argv: list[str] | None = None) -> int:
 
     syms = [s.strip() for s in args.symbols.split(",") if s.strip()] or None
     try:
-        from research.job_lock import exclusive_job
+        from research.job_lock import checkpoint, exclusive_job
     except ImportError:
         exclusive_job = None                                   # type: ignore[assignment]
 
@@ -723,7 +736,8 @@ def main(argv: list[str] | None = None) -> int:
                       "pass right now). The tape is unharmed and the next run resumes from the "
                       "watermark.")
                 return 0
-            rep = run(store, syms, args.days, args.rebuild)
+            rep = run(store, syms, args.days, args.rebuild,
+                      should_yield=lambda: checkpoint("tape_features"))
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
