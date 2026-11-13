@@ -29,7 +29,7 @@ gauntlet, the forward clock and the live executor therefore build identical sign
 
 NO LOOKAHEAD, BY CONSTRUCTION.
   * A CFTC report is as-of TUESDAY and released the following FRIDAY 15:30 ET. A report is
-    usable from `report_date + COT_USABLE_AFTER_D` (the Monday after release, 00:00 bar clock),
+    usable from `report_date + COT_RELEASE_LAG_D` (the Monday after release, 00:00 bar clock),
     the same lag `families._cot_entries` and `orthogonal_sweep._cot_frame` apply. Percentiles and
     z-scores are trailing, over reports already usable. A report the CFTC published LATE (the
     2013 and 2025 shutdowns) is not marked in the in-tree files; the lag is the rule, and that
@@ -71,7 +71,7 @@ COT_GROUPS: dict[str, dict[str, tuple[str, str, str]]] = {
 }
 COT_MODES = ("extreme_fade", "extreme_follow", "change_follow", "change_fade")
 #: Tuesday as-of + 3 days to the Friday release + 3 days to the Monday after it.
-COT_USABLE_AFTER_D = 6
+COT_RELEASE_LAG_D = 6
 #: A usable report whose first bar is further away than this is a data hole, not an entry.
 COT_MAX_ENTRY_GAP_D = 4
 
@@ -140,7 +140,7 @@ def cot_net_share(report: str, market: str, group: str) -> pd.Series | None:
                   for c in cols)
     with np.errstate(divide="ignore", invalid="ignore"):
         share = np.where(oi > 0, (lo - sh) / oi, np.nan)
-    usable = table["report_date"] + pd.Timedelta(days=COT_USABLE_AFTER_D)
+    usable = table["report_date"] + pd.Timedelta(days=COT_RELEASE_LAG_D)
     s = pd.Series(share, index=pd.DatetimeIndex(usable)).dropna()
     return s if not s.empty else None
 
