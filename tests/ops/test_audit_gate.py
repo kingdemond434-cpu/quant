@@ -3057,7 +3057,8 @@ def test_a_ruling_names_exact_runs_of_the_two_adjudicable_jobs_or_nothing() -> N
         "independent-review": frozenset({7})}
     assert ag.false_fails(_row()) == {}
     bad: object
-    for bad in ({"quality": [7]}, {"mt5-money-path": [7]}, {"risk-invariants": [7]},
+    for bad in ({"replay-shadow": [7]}, {"quality": [7]}, {"mt5-money-path": [7]},
+                {"risk-invariants": [7]},
                 {"trusted-eval": [7]}, {"independent-review": []}, {"independent-review": ["7"]},
                 {"independent-review": [True]}, {"independent-review": 7}, ["independent-review"],
                 {"independent-review": [7], "quality": [8]}):  # one bad entry voids the ruling
@@ -3066,14 +3067,18 @@ def test_a_ruling_names_exact_runs_of_the_two_adjudicable_jobs_or_nothing() -> N
 
 def test_only_the_ruled_failed_run_counts_as_success() -> None:
     rulings = {"independent-review": frozenset({7}), "replay-shadow": frozenset({8})}
-    runs = [_cr("independent-review", 7), _cr("replay-shadow", 9), _cr("quality", 7),
-            _cr("independent-review", 7, "cancelled"), _cr("replay-shadow", 8, status="queued")]
+    runs = [_cr("independent-review", 7), _cr("independent-review", 9), _cr("quality", 7),
+            _cr("independent-review", 7, "cancelled"),
+            _cr("independent-review", 7, status="queued"),
+            _cr("replay-shadow", 8)]
     out = ag.ruled_false(runs, rulings)
     assert out[0]["conclusion"] == "success" and out[0]["ruled_false"]
     assert out[1]["conclusion"] == "failure"  # another run id: a re-run needs its own ruling
     assert out[2]["conclusion"] == "failure"  # a gating job is never adjudicable
     assert out[3]["conclusion"] == "cancelled"  # only a completed failure is ruled
     assert out[4]["status"] == "queued" and "ruled_false" not in out[4]
+    # never weaken replay-shadow: even a ruling handed straight in cannot turn it green
+    assert out[5]["conclusion"] == "failure" and "ruled_false" not in out[5]
 
 
 def test_a_ruled_reviewer_fail_no_longer_fails_the_registry_checks() -> None:

@@ -729,11 +729,11 @@ def run_notify(title: str, body: str) -> bool:
     return done.returncode == 0
 
 
-#: The jobs whose FAILED run the Auditor may rule false in its CLEAR row (D-20261113, Governance).
-#: Only these two: a free 7B reviewer that votes on generic text, and a replay that cannot import a
-#: non-Python money file. Every gating job (quality, mt5-money-path, trusted-eval) and
-#: risk-invariants stay out of reach: no row can make one of them pass.
-ADJUDICABLE = (REVIEWER, "replay-shadow")
+#: The job whose FAILED run the Auditor may rule false in its CLEAR row (D-20261113, Governance):
+#: the free 7B reviewer alone, which votes on generic text. replay-shadow is NEVER rulable (never
+#: weaken replay-shadow; a replay that cannot reach a file is a coverage gap to close in the
+#: replay), and neither is any gating job or risk-invariants: no row can make one of them pass.
+ADJUDICABLE = (REVIEWER,)
 
 
 def false_fails(row: Mapping[str, Any]) -> dict[str, frozenset[int]]:
