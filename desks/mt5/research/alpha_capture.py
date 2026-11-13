@@ -1164,6 +1164,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(roster_rows(), indent=1, ensure_ascii=False))
         return 0
     only = [s for s in a.sources.split(",") if s] or None
+    started = time.monotonic()
     rep = run(budget_s=a.budget_s, apply=not a.dry_run,
               collect_enabled=not a.no_collect and not a.dry_run, only=only)
     print(f"alpha_capture at={rep['at']} elapsed={rep['elapsed_s']}s")
@@ -1182,7 +1183,35 @@ def main(argv: list[str] | None = None) -> int:
           f"{rep['cells']['trials_charged']}, donated {rep['cells']['donated']}")
     print(f"  axis       {rep['indirect']['n_rows']} row(s) -> {AXIS.name}")
     print(f"  intel      {rep['allocation_intel']['n_instruments']} instrument(s) -> {INTEL.name}")
+    if not (a.dry_run or a.no_collect or only):
+        _event_lane(a.budget_s, started)
     return 0
+
+
+#: Seconds past this leg's own --budget-s the event lane may still use; the hourly cap
+#: (`hourly_cycle.LEG_BUDGET_SEC["alpha_capture"]`, 420 against --budget-s 300) sits above it.
+EVENT_LANE_HEADROOM_S = 80.0
+
+
+def _event_lane(budget_s: float, started: float) -> None:
+    """THE INSIDER / POLITICIAN / BUYBACK EVENT LANE rides this leg's clock (2026-11-03).
+
+    Same regulator, same declared `QUANT_EDGAR_UA`, same hourly cadence and the same event lane
+    as the SEC 8-K guidance reader above, so it is a sub-organ here rather than a new executable:
+    `research/insider_event_lane.py` reads Form 4 insider clusters, the buyback blackout calendar
+    and (only when the principal attests) congressional disclosures, and proposes event cells.
+    Its budget is what is left of this leg's, capped; out of time, it reads NOT_REACHED. One
+    sub-organ never takes the leg down."""
+    try:
+        from research import insider_event_lane as iel
+    except ImportError:                                       # pragma: no cover - layout
+        import insider_event_lane as iel  # type: ignore[no-redef,import-not-found]
+    left = budget_s + EVENT_LANE_HEADROOM_S - (time.monotonic() - started)
+    try:
+        lrep = iel.run(budget_s=max(0.0, min(iel.DEFAULT_BUDGET_S, left)))
+        print(iel.summary_line(lrep))
+    except Exception as exc:                                  # the leg's own pass already wrote
+        print(f"  event_lane FAILED {type(exc).__name__}: {str(exc)[:200]}")
 
 
 if __name__ == "__main__":                                       # pragma: no cover - CLI
