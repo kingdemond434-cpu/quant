@@ -1,29 +1,51 @@
 {
-  "updated_at": "2026-11-11T12:55:09+00:00",
-  "configured_sleeves": 701,
-  "represented_sleeves": 701,
-  "certified_sleeves_total": 7463,
-  "forward_clocks_total": 701,
+  "updated_at": "2026-11-13T17:53:15+00:00",
+  "configured_sleeves": 685,
+  "represented_sleeves": 685,
+  "certified_sleeves_total": 8401,
+  "forward_clocks_total": 685,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
-  "n_distinct_param_hashes": 215,
+  "n_distinct_param_hashes": 212,
   "n_mechanisms": 12,
-  "retired_shadow_sleeves": 316,
+  "retired_shadow_sleeves": 332,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 646,
+  "sleeves_with_forward_trades": 635,
   "zero_trade_clocks": {
-    "count": 55,
+    "count": 50,
     "by_status": {
-      "ACTIVE": 45,
-      "IDENTITY_BROKEN": 9,
-      "PROMOTION CANDIDATE": 1
+      "ACTIVE": 41,
+      "IDENTITY_BROKEN": 9
     },
-    "age_measured": 55,
-    "median_age_days": 35.036,
-    "mature_14d_without_trade": 36,
-    "fresh_attempts": 46,
-    "naturally_inactive": 45,
-    "suppressed_or_unproven": 10,
+    "age_measured": 50,
+    "median_age_days": 37.244,
+    "mature_14d_without_trade": 44,
+    "fresh_attempts": 41,
+    "naturally_inactive": 17,
+    "suppressed_or_unproven": 33,
     "suppressed_examples": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -37,28 +59,28 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 10,
+  "evidence_blocked_sleeves": 33,
   "missing_sleeves": [
-    "6446 certified sleeve(s)"
+    "7384 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 3604.657,
+  "seconds": 3782.207,
   "stage_seconds": {
     "scalp_bar_refresh": 0.0,
-    "external_state_reconcile": 0.6,
-    "legacy_shadow": 3549.1,
-    "scalp_shadow": 37.8,
-    "qquant_shadow": 0.5,
-    "promoter": 15.2
+    "external_state_reconcile": 1.0,
+    "legacy_shadow": 3679.9,
+    "scalp_shadow": 18.9,
+    "qquant_shadow": 2.6,
+    "promoter": 77.9
   },
   "engine_profile": {
-    "seconds": 3541.6,
+    "seconds": 3678.1,
     "rows_timed": 1016,
     "phase_seconds": {
-      "backtest": 334.4,
-      "fetch": 528.9,
-      "resolve": 51.7,
-      "signals": 1332.3
+      "backtest": 332.1,
+      "fetch": 727.3,
+      "resolve": 107.8,
+      "signals": 1304.1
     },
     "phase_calls": {
       "backtest": 944,
@@ -71,84 +93,84 @@
       "signals": 78
     },
     "family_seconds": {
-      "cross_asset_residual": 1372.1,
-      "macro_conditional": 906.0,
-      "carry": 574.2,
-      "overnight_gap_decay": 262.4,
-      "formula": 159.8,
-      "pca_residual": 107.7,
-      "clock_transition": 81.7,
-      "spread_state": 30.6,
-      "session_range_breakout": 25.4,
-      "range_reversion": 13.9,
-      "overnight_drift": 0.3
+      "cross_asset_residual": 1327.4,
+      "macro_conditional": 990.8,
+      "carry": 482.4,
+      "clock_transition": 239.0,
+      "overnight_gap_decay": 229.2,
+      "formula": 181.4,
+      "pca_residual": 146.4,
+      "session_range_breakout": 30.4,
+      "spread_state": 26.1,
+      "range_reversion": 8.9,
+      "overnight_drift": 0.4
     },
     "chart_seconds": {
-      "M5": 1637.3,
-      "M15": 935.0,
-      "H1": 578.2,
-      "M30": 383.4
+      "M5": 1716.8,
+      "M15": 883.2,
+      "M30": 564.4,
+      "H1": 497.9
     },
     "slowest_rows": [
       {
-        "key": "XTIUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-        "seconds": 208.33
+        "key": "GBPCAD.clock_transition.asia@M30#label=tokyo_open_session=asia_stamp_hour=0",
+        "seconds": 105.88
       },
       {
-        "key": "EURILS.carry.asia@M15#input_symbol=EURILS_require_quiet=False_session=ny",
-        "seconds": 149.62
+        "key": "NZDJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+        "seconds": 67.92
       },
       {
-        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96",
-        "seconds": 34.01
+        "key": "XAGEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+        "seconds": 57.78
       },
       {
-        "key": "XAUEUR.macro_conditional.asia@M5#side_in_high=-1",
-        "seconds": 32.25
+        "key": "GBPCHF.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
+        "seconds": 40.4
       },
       {
-        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
-        "seconds": 31.13
+        "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_session=ny_ttl_bars=6",
+        "seconds": 39.1
       },
       {
         "key": "EURCAD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
-        "seconds": 28.71
+        "seconds": 30.31
       },
       {
-        "key": "XTIUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=london_side_mode=revert_ttl_bars=8",
-        "seconds": 24.95
+        "key": "NZDJPY.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+        "seconds": 28.27
       },
       {
-        "key": "USDMXN.macro_conditional.asia@M5",
-        "seconds": 23.53
+        "key": "XAGEUR.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']_session=asia",
+        "seconds": 25.77
       },
       {
-        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=-1_ttl_bars=96",
-        "seconds": 21.86
+        "key": "XAUEUR.macro_conditional.asia@M5#side_in_high=-1",
+        "seconds": 25.68
       },
       {
-        "key": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=192",
-        "seconds": 21.05
+        "key": "CHFDKK.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=192",
+        "seconds": 23.8
       },
       {
-        "key": "GBPSEK.macro_conditional.asia@M5#session=ny",
-        "seconds": 19.66
+        "key": "EURNZD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
+        "seconds": 23.43
       },
       {
-        "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=192",
-        "seconds": 19.49
+        "key": "AUDNZD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 22.69
       },
       {
-        "key": "EURMXN.carry.asia@M5#input_symbol=EURMXN_require_quiet=False",
-        "seconds": 18.76
+        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96",
+        "seconds": 22.47
       },
       {
-        "key": "NZDCAD.macro_conditional.asia@M5#session=ny",
-        "seconds": 18.29
+        "key": "XAUEUR.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 22.37
       },
       {
-        "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=48",
-        "seconds": 17.04
+        "key": "GBPCHF.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+        "seconds": 22.37
       }
     ]
   },
