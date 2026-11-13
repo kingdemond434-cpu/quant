@@ -58022,6 +58022,48 @@
       "retired_at": "2026-11-13T14:28:52+00:00",
       "retire_reason": "USDSEK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "USDTHB.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+      "symbol": "USDTHB",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": 2.9e-09,
+        "heat_earned": 0.0,
+        "joined": "joined on 'usdthb|cross_asset_residual|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -0.10 at correlation -0.02 to the held book"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-13T15:27:53+00:00",
+      "shadow_exp": 0.12963567024253925,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "USDTHB.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+      "sleeve_id": "0bc8aad75523a122d706",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.0,
+        "factor_symbols": [
+          "NZDUSD",
+          "USDHUF"
+        ],
+        "lookback": 240,
+        "side_mode": "revert",
+        "timeframe": "M30",
+        "ttl_bars": 8
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-13T15:27:54+00:00",
+      "retire_reason": "USDTHB is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
