@@ -215,22 +215,14 @@ def _ticks(symbol: str):
     differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
     and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
     symbol's charts before moving on and a tick frame is far larger than a bar frame.
+
+    THE LAST 30 DAYS BY DATE, FROM EITHER WRITER (2026-10-29). This took the last 30 NAMES, and
+    the moat silver's `20261029.parquet` sorts after every `2026-10-29.parquet`, so it read only
+    files with no `ts` column, every read threw, and the tape families saw no tape at all.
+    `mt5desk.tape_days` is the one rule every tape reader shares now.
     """
-    import pandas as pd
-    d = TAPE / symbol
-    if not d.exists():
-        return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-30:]:
-        try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
-        except Exception:
-            continue
-    if not frames:
-        return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    from mt5desk.tape_days import recent_quotes
+    return recent_quotes(TAPE / symbol, 30)
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):

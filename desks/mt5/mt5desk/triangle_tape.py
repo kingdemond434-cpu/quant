@@ -69,8 +69,12 @@ def executable_loops(direct: pd.DataFrame, base_usd: pd.DataFrame,
 
 
 def _latest(symbol: str) -> pd.DataFrame | None:
-    paths = sorted((TICKS / symbol).glob("*.parquet"))
-    return None if not paths else normalise(pd.read_parquet(paths[-1]))
+    """The newest tape DAY, both writers unioned (mt5desk.tape_days). `sorted(glob)[-1]` opened
+    the moat silver's ts-less `YYYYMMDD` file whenever one existed, so every triangle read
+    UNMEASURED (2026-10-29)."""
+    from mt5desk.tape_days import recent_quotes
+    got = recent_quotes(TICKS / symbol, 1)
+    return None if got is None else normalise(got.reset_index())
 
 
 def build() -> dict:
@@ -85,7 +89,7 @@ def build() -> dict:
             continue
         unusable = {symbol: sorted(frame.columns)                       # type: ignore[union-attr]
                     for symbol, frame in legs.items()
-                    if not QUOTE_COLUMNS <= set(frame.columns)}         # type: ignore[union-attr]
+                    if not set(frame.columns) >= QUOTE_COLUMNS}         # type: ignore[union-attr]
         if unusable:
             # A LEG WITH THE WRONG SCHEMA IS UNMEASURED, NOT AN EXCEPTION. Raising here took the
             # whole `record_tape` leg of the hourly cycle down with it and the message named no

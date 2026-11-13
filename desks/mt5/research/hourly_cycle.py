@@ -392,6 +392,32 @@ def record_tape() -> dict:
     return results
 
 
+def tape_liveness() -> dict:
+    """THE THIRD FATE (2026-10-29): is what `record_tape` just wrote READABLE and JUDGED?
+
+    The recorder ran green for weeks while every tape reader opened the wrong files, and nothing
+    compared the two. Its own leg, so a blind reader never reads as a failed recording (nor hides
+    one), and its RED is a ledger VERDICT (exit 2, VERDICT_EXITS) the completion board counts.
+    """
+    try:
+        rc = _tape_liveness_main()
+    except Exception as exc:
+        print(f"tick tape liveness FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    return {"exit_code": rc, "report": "desks/mt5/reports/TAPE_LIVENESS.json"}
+
+
+def _tape_liveness_main() -> int:
+    import importlib.util
+    path = BASE / "moat" / "tape_liveness.py"
+    spec = importlib.util.spec_from_file_location("tape_liveness", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return int(mod.main())
+
+
 def tape_fresh() -> dict:
     """`tape_fresh`: RED when the bronze recorder's or the silver tape's newest tick is over 2 h
     old during FX hours, or absent/unstamped/future (UNMEASURED). MT5-TickRecorder sat dead for
@@ -1081,6 +1107,8 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # TAPE_LIVENESS RED: writer, reader or judge broke. Bad news about the tape, not a crash.
+    "tape_liveness": (2,),
     # `cro_noon_freshness` exits 2 for RED: no landed noon CRO pass in 26 h is the reading.
     "cro_noon_freshness": (2,),
     # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
@@ -1146,6 +1174,7 @@ def _exit_outcome(name: str, code: int) -> str:
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    "tape_liveness",
     # Whether either tick tape has moved within 2 h of open market, read by each tape's own
     # newest-tick stamp right after `record_tape`: two small JSON reads, every hour (2026-10-14).
     "tape_fresh",
@@ -4202,6 +4231,7 @@ def main() -> None:
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
+    _costed("tape_liveness", tape_liveness)
     tfr = _costed("tape_fresh", tape_fresh)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
