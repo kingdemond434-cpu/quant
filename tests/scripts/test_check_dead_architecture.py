@@ -160,3 +160,78 @@ def test_the_statement_walk_finds_every_import_ast_walk_finds() -> None:
     every = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
     found = [n for n in da._statements(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
     assert len(every) == 4 and sorted(map(id, every)) == sorted(map(id, found))
+
+
+def _seat_repo(tmp_path: Path) -> Path:
+    """A tree reader, a seat that writes a per-run filename under its tree, a bookkeeping writer
+    the reader skips, a narrow-glob reader, and a writer under a tree nobody walks."""
+    R = tmp_path / "desks" / "mt5" / "research"
+    R.mkdir(parents=True)
+    (tmp_path / "desks" / "mt5" / "ops").mkdir(parents=True)
+    (tmp_path / "desks" / "mt5" / "ops" / "box_tasks.manifest").write_text("", "utf-8")
+    (R / "compiler.py").write_text(
+        'INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")\n'
+        '_OPERATIONAL_STATE = frozenset({"seat_state.json"})\n'
+        'OUT = BASE / "data" / "compiled.json"\n'
+        'def go():\n'
+        '    for root in INTEL_ROOTS:\n'
+        '        rows = [p for p in root.rglob("*")]\n'
+        '    OUT.write_text("{}")\n', "utf-8")
+    (R / "narrow.py").write_text(
+        'NOTES = BASE / "data" / "notes"\n'
+        'def go():\n    return list(NOTES.rglob("*.md"))\n', "utf-8")
+    (R / "seat.py").write_text(
+        'OUT = BASE / "reports" / "SEAT.json"\n'
+        'FOUND = BASE / "data" / "intelligence" / "seat"\n'
+        'def main(stamp):\n'
+        '    OUT.write_text("{}")\n'
+        '    FOUND.mkdir(parents=True, exist_ok=True)\n'
+        '    (FOUND / f"addresses_{stamp}.json").write_text("[]")\n', "utf-8")
+    (R / "bookkeeper.py").write_text(
+        'OUT = BASE / "reports" / "BOOK.json"\n'
+        'STATE = BASE / "data" / "intelligence" / "seat_state.json"\n'
+        'def main():\n    OUT.write_text("{}")\n    STATE.write_text("{}")\n', "utf-8")
+    (R / "notes_writer.py").write_text(
+        'OUT = BASE / "reports" / "NOTES_W.json"\n'
+        'DIR = BASE / "data" / "elsewhere"\n'
+        'def main():\n    OUT.write_text("{}")\n    (DIR / "n.json").write_text("{}")\n', "utf-8")
+    (R / "mentions_only.py").write_text(
+        'OUT = BASE / "reports" / "MENTION.json"\n'
+        'INTEL = BASE / "data" / "intelligence"\n'
+        'def main():\n    OUT.write_text("{}")\n    return sorted(INTEL.iterdir())\n', "utf-8")
+    return tmp_path
+
+
+def test_the_tree_is_derived_from_the_readers_own_glob(tmp_path: Path) -> None:
+    repo = _seat_repo(tmp_path)
+    files = da._prod_files(repo)
+    trees = da.tree_readers(repo, files)
+    # the full recursive walk over a literal path constant defines the tree; a narrow glob that
+    # names its files (`*.md`) does not, and its tree is not read wholesale
+    assert set(trees) == {("data", "intelligence")}
+    assert trees[("data", "intelligence")]["readers"] == {"desks/mt5/research/compiler.py"}
+    assert "seat_state.json" in trees[("data", "intelligence")]["root_excluded"]
+
+
+def test_an_organ_writing_under_the_intelligence_tree_has_the_compiler_as_consumer(
+        tmp_path: Path) -> None:
+    organs = da.census(_seat_repo(tmp_path))["organs"]
+    compiler = "desks/mt5/research/compiler.py"
+    assert organs["desks/mt5/research/seat.py"]["consumers"] == [compiler], \
+        "a per-run filename under data/intelligence/<seat>/ is read by the tree walk"
+    # the reader's own root-level bookkeeping is skipped by the reader, so it is not a read
+    assert compiler not in organs["desks/mt5/research/bookkeeper.py"]["consumers"]
+    # a tree no full walk covers gains nothing, and naming the tree without writing is no write
+    assert organs["desks/mt5/research/notes_writer.py"]["consumers"] == []
+    assert organs["desks/mt5/research/mentions_only.py"]["consumers"] == []
+
+
+def test_this_repository_reads_index_discovery_through_the_compiler() -> None:
+    """LIVE's `index_discovery` writes only per-run files under data/intelligence/index_discovery/;
+    the census must find the compiler, from the compiler's own INTEL_ROOTS walk, as its reader."""
+    files = da._prod_files(ROOT)
+    trees = da.tree_readers(ROOT, files)
+    compiler = "desks/mt5/research/miner_candidate_compiler.py"
+    assert compiler in trees[("data", "intelligence")]["readers"]
+    hit = da.tree_writes(ROOT / "desks" / "mt5" / "research" / "index_discovery.py", trees)
+    assert hit == {("data", "intelligence")}

@@ -56,8 +56,11 @@ NO_ROLE, UNTESTED, NO_CONSUMER, CONSUMER_UNTESTED = (
     "NO_ROLE", "UNTESTED", "NO_CONSUMER", "CONSUMER_UNTESTED")
 
 #: RATCHET: clocked organs that are neither USED nor ZERO_WEIGHT. It may FALL, never rise.
-#: Measured 2026-11-10 on 105c594a33 when the fence was built.
-MAX_GAPPED = 90
+#: Measured 2026-11-10 on 105c594a33 when the fence was built (90). 87 on 2026-11-13 once the
+#: census learned that an organ writing under `data/intelligence/**` is read by the miner
+#: compiler's own `rglob("*")` (`check_dead_architecture.tree_readers`): four organs whose only
+#: reader is that tree walk stopped reading NO_CONSUMER, LIVE's `index_discovery` among them.
+MAX_GAPPED = 87
 
 _LEG = re.compile(r"_costed\('([\w-]+)'\)")
 _TASK = re.compile(r"^([\w.-]+)\s")

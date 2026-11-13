@@ -318,6 +318,131 @@ def scheduled(root: Path) -> dict[str, list[str]]:
     return {k: sorted(set(v)) for k, v in out.items()}
 
 
+#: A TREE READER CONSUMES EVERY FILE UNDER ITS TREE, NOT A NAMED ONE. The miner compiler reads
+#: `data/intelligence/**` (`miner_candidate_compiler.INTEL_ROOTS`, walked with `rglob("*")`), so
+#: an organ that writes `data/intelligence/<seat>/addresses_<stamp>.json` has the compiler as its
+#: consumer even though no production file names that filename -- the filename is minted per
+#: run. Joining on filenames alone reported such organs (`index_discovery`) as having no reader.
+#: The tree is DERIVED FROM THE READER'S OWN GLOB, never from a list here: a module whose constant
+#: is a path built from string literals and which walks that constant with `rglob("*")` or
+#: `rglob("**")` reads the whole tree, and the literals ARE the tree. A reader that globs a
+#: narrower pattern names its files and is already joined by filename.
+_FULL_RGLOB = re.compile(r"""\.rglob\(\s*["']\*{1,2}["']\s*\)""")
+_SEG = re.compile(r"""["']([\w.-]+)["']""")
+
+
+def _path_literals(node: ast.AST) -> list[str] | None:
+    """The string literals of a `X / "a" / "b"` chain, in order; None if it holds none."""
+    parts: list[str] = []
+    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        if isinstance(node.right, ast.Constant) and isinstance(node.right.value, str):
+            parts.insert(0, node.right.value)
+        node = node.left
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        parts.insert(0, node.value)
+    return [q for p in parts for q in p.strip("/").split("/") if q] or None
+
+
+def tree_readers(root: Path, files: list[Path]) -> dict[tuple[str, ...], dict[str, Any]]:
+    """{tree segments: {"readers": [...], "root_excluded": {...}}} for every module that walks a
+    literal path constant with a full recursive glob.
+
+    `root_excluded` is every `.json`/`.jsonl` literal the reader holds in a module-level set,
+    tuple or list of strings: the compiler names the root-level bookkeeping it skips that way
+    (`_OPERATIONAL_STATE`), so a writer of exactly one of those files at the tree root is NOT
+    counted as read."""
+    out: dict[tuple[str, ...], dict[str, Any]] = {}
+    for f in files:
+        try:
+            src = f.read_text("utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "rglob" not in src or not _FULL_RGLOB.search(src):
+            continue
+        try:
+            tree = ast.parse(src, filename=str(f))
+        except (SyntaxError, ValueError):
+            continue
+        consts: dict[str, list[tuple[str, ...]]] = {}
+        excluded: set[str] = set()
+        for node in tree.body:
+            if not (isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names = [t.id for t in targets if isinstance(t, ast.Name)]
+            val = node.value
+            if isinstance(val, ast.Call) and val.args and not val.keywords:
+                val = val.args[0]  # frozenset({...}) / tuple([...])
+            elems = val.elts if isinstance(val, (ast.Tuple, ast.List, ast.Set)) else [val]
+            paths = [tuple(p) for e in elems if (p := _path_literals(e)) and len(p) > 1]
+            if paths:
+                for n in names:
+                    consts[n] = paths
+            excluded |= {e.value for e in elems if isinstance(e, ast.Constant)
+                         and isinstance(e.value, str) and e.value.endswith((".json", ".jsonl"))}
+        walked: set[str] = set()
+        for node in ast.walk(tree):
+            # C.rglob("*")  or  for r in C: ... r.rglob("*")
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+                    and node.func.attr == "rglob" and node.args \
+                    and isinstance(node.args[0], ast.Constant) \
+                    and node.args[0].value in ("*", "**") \
+                    and isinstance(node.func.value, ast.Name):
+                walked.add(node.func.value.id)
+        loops = {n.target.id: n.iter.id for n in ast.walk(tree)
+                 if isinstance(n, (ast.For, ast.comprehension)) and isinstance(n.target, ast.Name)
+                 and isinstance(n.iter, ast.Name)}
+        for w in walked:
+            for seg in consts.get(loops.get(w, w), []):
+                row = out.setdefault(seg, {"readers": set(), "root_excluded": set()})
+                row["readers"].add(_module_name(root, f))
+                row["root_excluded"] |= excluded
+    return out
+
+
+def tree_writes(path: Path, trees: dict[tuple[str, ...], dict[str, Any]]) -> set[tuple[str, ...]]:
+    """The reader trees this module writes under: a constant bound to a path that runs through
+    the tree's literals, written through (itself, a one-hop alias, or `(CONST / name).write_*`)."""
+    if not trees:
+        return set()
+    try:
+        src = path.read_text("utf-8", errors="ignore")
+    except OSError:
+        return set()
+    found: set[tuple[str, ...]] = set()
+    aliases: list[tuple[str, str]] | None = None
+    sites: set[str] = set()
+    for seg, row in trees.items():
+        if any(s not in src for s in seg):
+            continue
+        if aliases is None:
+            aliases = _alias_lines(src)
+            sites = set(_write_sites(src))
+            for line in src.splitlines():
+                if any(k in line for k in _WRITE_WORDS) and _WRITE_LINE.search(line):
+                    sites.update(_IDENT.findall(line))
+        for target, value in aliases:
+            bind = _CONST_BIND.match(target + " =")
+            if not bind:
+                continue
+            lits = [q for p in _SEG.findall(value) for q in p.strip("/").split("/") if q]
+            # the tree's literals, contiguous, in order, inside the bound value
+            at = next((i for i in range(len(lits) - len(seg) + 1)
+                       if tuple(lits[i:i + len(seg)]) == seg), None)
+            if at is None:
+                continue
+            rest = lits[at + len(seg):]
+            if len(rest) == 1 and rest[0] in row["root_excluded"]:
+                continue  # the reader's own bookkeeping at the tree root: it skips this file
+            const = bind.group(1)
+            names = {const} | {n for t, v in aliases if re.search(rf"\b{re.escape(const)}\b", v)
+                               for n in _IDENT.findall(t)}
+            if not names.isdisjoint(sites):
+                found.add(seg)
+                break
+    return found
+
+
 def census(root: Path = ROOT) -> dict[str, Any]:
     files = _prod_files(root)
     clocks = scheduled(root)
@@ -329,6 +454,14 @@ def census(root: Path = ROOT) -> dict[str, Any]:
         w, r = artifacts_and_reads(f)
         writes[name], reads[name] = w, r
         imports[name] = imports_of(f, root)
+    trees = tree_readers(root, files)
+    tree_consumers: dict[str, set[str]] = {}
+    for f in files:
+        name = _module_name(root, f)
+        if writes[name]:
+            hit = tree_writes(f, trees)
+            if hit:
+                tree_consumers[name] = {r for seg in hit for r in trees[seg]["readers"]}
     imported_by: dict[str, set[str]] = defaultdict(set)
     for name, deps in imports.items():
         for d in deps:
@@ -350,7 +483,8 @@ def census(root: Path = ROOT) -> dict[str, Any]:
             # still be essential (a library, a CLI); silence about it is the honest answer.
             continue
         consumers = sorted({c for a in arts for c in readers_of.get(a, set()) if c != name}
-                           | imported_by.get(name, set()))
+                           | imported_by.get(name, set())
+                           | {r for r in tree_consumers.get(name, set()) if r != name})
         planes = clocks.get(name, [])
         verdict = (LIVE if planes and consumers else
                    BURNING if planes else
