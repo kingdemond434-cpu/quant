@@ -39,7 +39,10 @@ BANNED = {
     "environment write": r"\$env:\w+\s*=|SetEnvironmentVariable|Set-Item\s+-Path\s+env:|setx",
     "registry write": r"Set-ItemProperty|New-ItemProperty|reg(\.exe)?\s+add|HKLM:|HKCU:",
     "auto-logon": r"Winlogon|AutoAdminLogon|Autologon|DefaultPassword",
-    "stored password": r"-Password\b|ConvertTo-SecureString|-LogonType\s+(Password|S4U)",
+    # S4U is allowed (2026-11-13, -AtStartup): it runs a task as a named user with NO password
+    # passed or stored; the Password logon type is the one that stores one. See
+    # test_boot_start_is_s4u_only_behind_the_switch_and_measured_first.
+    "stored password": r"-Password\b|ConvertTo-SecureString|-LogonType\s+Password|Get-Credential",
     "process kill": r"Stop-Process|taskkill|\.Kill\(",
     "sign-in": r"auth\s+login|setup-token|ANTHROPIC_API_KEY|credentials",
     "live tree": r"C:\\opt\\quant(?!\w)",
@@ -216,8 +219,52 @@ def test_installer_rearms_and_registers_one_interactive_task() -> None:
     assert "-AtLogOn" in code and "-RepetitionInterval (New-TimeSpan -Minutes 5)" in code
     assert "-MultipleInstances IgnoreNew" in code
     assert "-ExecutionTimeLimit (New-TimeSpan -Seconds 0)" in code
-    assert code.count("Register-ScheduledTask ") == 1
+    # one watchdog task; the only other registration is the one-shot S4U probe, removed in finally
+    assert code.count("Register-ScheduledTask -TaskName $TaskName ") == 1
+    assert code.count("Register-ScheduledTask ") == 2
     assert "-LogonType Interactive" in code
+
+
+def test_boot_start_is_s4u_only_behind_the_switch_and_measured_first() -> None:
+    """zuck 2026-11-13: start at boot, legitimate auto-start only, no credential workarounds."""
+    code = SCRIPTS["installer"]
+    assert "[switch] $AtStartup" in code
+    # S4U appears only in the probe and inside the -AtStartup branch, never as the default
+    assert code.count("-LogonType S4U") == 2
+    mk = "$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType "
+    default = code.index(mk + "Interactive")
+    branch = code.index(mk + "S4U")
+    assert default < branch
+    assert code.rfind("if ($AtStartup) {", 0, branch) > default
+    assert "New-ScheduledTaskTrigger -AtStartup" in code
+    # the probe runs before the switch, only reads (`auth status`), and is always unregistered
+    probe = code[code.index("function Test-S4USignIn") : code.index("$s4uWhy = Test-S4USignIn")]
+    assert "auth status" in probe and "auth login" not in probe
+    assert "finally {" in probe and "Unregister-ScheduledTask -TaskName $probeTask" in probe
+    assert "$j.loggedIn -eq $true" in probe
+    assert probe.count("Remove-Item -LiteralPath $probeOut") == 2  # never left readable
+    assert code.index("$s4uWhy = Test-S4USignIn") < branch
+    assert "AT_STARTUP_REFUSED" in code and "$AtStartup = $false" in code
+    # no second bridge: a live interactive watchdog means register, do not start
+    assert "$liveBefore" in code
+    gate = code[code.index("if ($AtStartup -and $liveBefore)") :]
+    assert gate.index("NOT started now") < gate.index("Start-ScheduledTask -TaskName $TaskName")
+    # no password anywhere near a principal
+    for m in re.finditer(r"New-ScheduledTaskPrincipal[^\n]*", code):
+        line = m.group(0)
+        assert "-Password" not in line and "Password" not in line.split("-LogonType")[-1]
+
+
+def test_heartbeat_carries_boot_evidence_and_status_judges_it() -> None:
+    wd = SCRIPTS["watchdog"]
+    for k in ('"session_id"', '"boot_at"', '"started_after_boot_s"', '"uptime_source"'):
+        assert k in wd
+    assert "GetCurrentProcess().SessionId" in wd
+    assert "TickCount64" in wd and "0xFFFFFFFFL" in wd  # Windows PowerShell 5.1 fallback
+    st = SCRIPTS["status"]
+    for v in ('"PROVEN"', '"SESSION0"', '"INTERACTIVE"', '"UNMEASURED"'):
+        assert v in st
+    assert "-le 900" in st and "boot_start=$bootStart" in st
 
 
 def test_the_heartbeat_has_a_reader_and_the_task_is_in_the_manifest() -> None:

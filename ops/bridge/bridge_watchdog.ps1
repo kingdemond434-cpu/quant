@@ -148,6 +148,21 @@ try { $mySha = (Get-FileHash -Path $PSCommandPath -Algorithm SHA256).Hash.ToLowe
 $script:State = @{ started_at = (Get-Date).ToUniversalTime().ToString("o"); restarts = 0
                    watchdog_pid = $PID; user = $env:USERNAME; checkout = $Checkout; name = $Name
                    watchdog_sha256 = $mySha }
+# WHERE AND WHEN THIS WATCHDOG STARTED, SO A READER CAN PROVE BOOT START (2026-11-13). Session 0 is
+# the non-interactive session a boot-time (S4U) task runs in; an RDP logon is session 1 or above.
+# boot_at is when Windows last started, from the tick counter (no CIM, nothing that can hang), and
+# started_after_boot_s is how long after that this watchdog began: a session-0 watchdog that began
+# within 15 min of boot is the evidence that the bridge came back with nobody logged on.
+try {
+    $script:State["session_id"] = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
+    # TickCount64 exists only on .NET Core (pwsh 7); Windows PowerShell 5.1 has the 32-bit counter,
+    # read unsigned, which wraps every 49.7 days -- uptime_source says which one was used
+    $upMs = [Environment]::TickCount64
+    $script:State["uptime_source"] = "TickCount64"
+    if ($null -eq $upMs) { $upMs = [int64][Environment]::TickCount -band 0xFFFFFFFFL; $script:State["uptime_source"] = "TickCount32_wraps_49d" }
+    $script:State["boot_at"] = (Get-Date).ToUniversalTime().AddMilliseconds(-$upMs).ToString("o")
+    $script:State["started_after_boot_s"] = [int]($upMs / 1000)
+} catch { }
 
 function Log([string] $m) {
     $line = "$((Get-Date).ToUniversalTime().ToString('u')) bridge-watchdog: $m"
