@@ -581,3 +581,14 @@ def test_a_steered_draw_keeps_its_mechanism_and_says_why(state: Path) -> None:
                 assert c["asset_class"] in lab.GAP_CLASSES
     finally:
         lab.EXOTIC_KEEP = 0.5
+
+
+def test_the_exotic_cap_is_enforced_per_pass_even_when_every_draw_is_exotic() -> None:
+    rng = random.Random(5)  # noqa: S311
+    exo = {"lab": "B", "mechanism_class": "m", "asset_class": "forex exotics", "horizon": "swing"}
+    taken: list[dict[str, str]] = []
+    for _ in range(200):
+        c, _why = lab.enforce_exotic_cap(dict(exo), "owed", taken, rng)
+        taken.append(c)
+        assert lab.market_share(taken)["exotic_share"] <= lab.EXOTIC_CAP
+    assert lab.market_share(taken)["exotic"] == 20        # capped at exactly 10%, not banned

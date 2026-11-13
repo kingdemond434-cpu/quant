@@ -887,6 +887,20 @@ def choose_coordinate(lab: Lab, ontology: Sequence[str], cov: Coverage,
     return coord, why
 
 
+def enforce_exotic_cap(coord: dict[str, str], why: str, taken: Sequence[dict[str, str]],
+                       rng: random.Random) -> tuple[dict[str, str], str]:
+    """HARD per-pass cap: an exotic coordinate that would lift this pass's exotic share above
+    EXOTIC_CAP moves to a gap class. The draw-level steering keeps the expected share near 5%;
+    this guarantees no pass, whatever the owed-first cursor serves, ever reports OVER_CAP."""
+    if coord.get("asset_class") not in EXOTIC_CLASSES:
+        return coord, why
+    rows = [c for c in taken if c.get("asset_class")]
+    exotic = sum(1 for c in rows if c["asset_class"] in EXOTIC_CLASSES)
+    if (exotic + 1) / (len(rows) + 1) <= EXOTIC_CAP:
+        return coord, why
+    return {**coord, "asset_class": rng.choice(GAP_CLASSES)}, f"{why}+exotic_cap_hard"
+
+
 def market_share(coords: Iterable[dict[str, str]]) -> dict[str, Any]:
     """Non-exotic versus exotic share of this pass's asks, against the principal's 10% cap."""
     rows = [c for c in coords if c.get("asset_class")]
@@ -1793,6 +1807,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                    key=lambda k: (str(rotation.get(k) or ""), k)) if share else []
     for lab in order:
         coord, why = choose_coordinate(lab, ontology, cov, rng)
+        coord, why = enforce_exotic_cap(coord, why, [a.coord for a in asks], rng)
         model = (next((k for k in queue if k not in used_models), None) if share
                  else assign_model(models, rng, used_models, credit))
         if model:
@@ -1826,6 +1841,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
                          "reason": "daily call cap: model coverage owed this cycle"})
             continue
         coord, why = choose_coordinate(lab, ontology, cov, rng)
+        coord, why = enforce_exotic_cap(coord, why, [a.coord for a in asks], rng)
         recent = own_recent.get((lab.key, coord["mechanism_class"]), [])[-5:]
         asks.append(build_ask(lab, coord, why, mkey, reg, uni, rng, recent, extra))
         used_models.add(mkey)
