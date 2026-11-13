@@ -31,7 +31,7 @@
     Register only; do not fire a WhatIf check.
 
 .PARAMETER Lane
-    noon, midnight or both (default). The noon lane is the box-native noon CRO pass (2026-10-29:
+    noon (default). midnight and both refuse: the midnight lane is retired (2026-11-11). The noon lane is the box-native noon CRO pass (2026-10-29:
     it no longer rides a laptop Remote Control session); the midnight lane also needs its clone
     (provision_midnight_lane_clone.ps1), so it can be armed separately when that is ready.
 #>
@@ -40,9 +40,17 @@ param(
     [string] $RunAs = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME),
     [switch] $NoStart,
     [ValidateSet('noon', 'midnight', 'both')]
-    [string] $Lane = 'both'
+    [string] $Lane = 'noon'
 )
 $ErrorActionPreference = 'Stop'
+
+# THE MIDNIGHT LANE IS RETIRED (2026-11-11, CRO). It is the Codex lane: the owner said "forget
+# codex" and the lane is parked under STOP MODE; box_tasks.manifest marks MT5-CycleMidnight retired.
+# So the default is the noon lane alone, and asking for midnight (or both) refuses rather than
+# re-registering a retired task. A Claude midnight lane, if one is ever wanted, is a NEW lane.
+if ($Lane -ne 'noon') {
+    throw "Lane '$Lane' includes MT5-CycleMidnight, which is retired (2026-11-11: Codex lane, owner said forget codex; parked under STOP MODE). Run with -Lane noon."
+}
 
 # THE LANES MUST NOT RUN AS SYSTEM (measured 2026-10-28). MT5-CycleMidnight was found registered as
 # SYSTEM with the old one-shot trigger: Last Run 1999, result 267011 (never run), no next run.
