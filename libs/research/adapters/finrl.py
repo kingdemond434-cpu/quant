@@ -111,8 +111,8 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         trials += EPISODES
         pos = act(x, w).astype(float)
         fwd1 = np.append(r[1:], np.nan)
-        ev_tr = K.evidence(pos, fwd1, cost, 250, cut)
-        ev_ho = K.evidence(pos, fwd1, cost, cut, n)
+        ev_tr = K.evidence_turnover(pos, fwd1, cost, 250, cut)
+        ev_ho = K.evidence_turnover(pos, fwd1, cost, cut, n)
         # the policy's long-minus-short preference per feature is what it learned to act on
         pref = w[:-1, 2] - w[:-1, 0]
         j = int(np.argmax(np.abs(pref[:len(LOOKBACKS)])))

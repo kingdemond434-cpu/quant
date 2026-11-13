@@ -184,6 +184,25 @@ def evidence(signal: np.ndarray, fwd: np.ndarray, cost: float = 0.0,
             "t_ratio": float(np.mean(pnl) / sd * math.sqrt(ok.sum())) if sd > 0 else 0.0}
 
 
+def evidence_turnover(signal: np.ndarray, fwd: np.ndarray, cost: float = 0.0,
+                      lo: int = 0, hi: int | None = None) -> dict[str, float]:
+    """`evidence` for a HELD position: the round-trip cost is charged when the position changes
+    (as a policy trained on turnover pays it), not on every bar the position is held. The same
+    four numbers, so a holding policy and a one-bar signal read side by side."""
+    s = np.nan_to_num(np.asarray(signal, dtype=float), nan=0.0)
+    f = np.asarray(fwd, dtype=float)
+    change = np.abs(np.diff(np.concatenate([[0.0], s]))) > 0
+    s, f, change = s[lo:hi], f[lo:hi], change[lo:hi]
+    ok = np.isfinite(f) & (s != 0)
+    if int(ok.sum()) < 5:
+        return {"mean_net": 0.0, "hit_rate": 0.0, "n_active": float(ok.sum()), "t_ratio": 0.0}
+    pnl = s[ok] * f[ok] - cost * change[ok]
+    sd = float(np.std(pnl))
+    return {"mean_net": float(np.mean(pnl)), "hit_rate": float(np.mean(pnl > 0)),
+            "n_active": float(ok.sum()),
+            "t_ratio": float(np.mean(pnl) / sd * math.sqrt(ok.sum())) if sd > 0 else 0.0}
+
+
 def rank_ic(x: np.ndarray, y: np.ndarray) -> float:
     """Spearman rank correlation over the finite pairs (0 when fewer than 20)."""
     ok = np.isfinite(x) & np.isfinite(y)

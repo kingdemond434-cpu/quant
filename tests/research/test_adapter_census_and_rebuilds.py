@@ -337,6 +337,6 @@ def test_the_roster_carries_each_adapters_census_class(tmp_path: Path) -> None:
     doc = SR.build(state_path=tmp_path / "s.json", report_path=tmp_path / "r.json",
                    ledger_path=tmp_path / "l.json", fed_state_path=tmp_path / "f.json",
                    census_path=census)
-    rows = {r["system_id"]: r for r in doc["rows"]}
+    rows = {r["system_id"]: r for r in doc["systems"]}
     assert rows["dexter"]["census_class"] == "c"
     assert rows["qlib"]["census_class"] == "UNMEASURED"
