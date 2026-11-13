@@ -876,8 +876,51 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl"
+    "desks/mt5/data/cross_asset_anchors.pkl",
+    # THE SEVEN THE HOURLY PASS MEASURES AND NEVER SAW (2026-11-10). Each was fresh on the box and
+    # absent from origin, so the pass scored the prop books, the trial budget, the allocator and
+    # the heavy admission scan UNMEASURED every hour. tests/scripts/test_box_sync_publishes_
+    # contracted_artifacts.py now fails when a contracted artifact is neither here nor tracked.
+    # Account identity is withheld by libs/ops/account_withhold.py and libs/ops/login_fence.py
+    # before any of them is hashed, exactly as for gateway_state.json above.
+    "desks/mt5/reports/E8_GOLD.json",
+    "desks/mt5/reports/E8_EXEC.json",
+    "desks/mt5/reports/TRIAL_ALLOCATION.json",
+    "desks/mt5/reports/COMBINER_COVERAGE.json",
+    "desks/mt5/reports/admission_heavy_pass.json",
+    "desks/mt5/reports/pf_allocation.json",
+    # data/daily_cycle_state.json is a PER-BOX stamp and stays gitignored (see .gitignore: a
+    # research box's stamp pulled onto this box would skip the day's only real run). Its mirror
+    # below is written by this script from the box's own stamp and is read, never obeyed.
+    "desks/mt5/reports/DAILY_CYCLE_STATE.json",
+    # the box watchdog's own reading (MT5-StallWatch): tracked, but no wire carried it, so origin
+    # held a 2026-09-16 `checked_at` while the watchdog ran every few minutes on the box. Being
+    # tracked is not being published; only this list publishes.
+    "desks/mt5/data/stall_watch.json",
+    # the box's disk census (#880, hourly leg disk_census): what fills C:, and its trend
+    "desks/mt5/reports/DISK_CENSUS.json",
+    "desks/mt5/reports/DISK_CENSUS_HISTORY.jsonl",
+    # the per-source idea-to-certificate yield the hourly pass scores (2026-11-11)
+    "desks/mt5/reports/RESEARCH_PNL.json",
+    "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
+    "desks/mt5/reports/MATH_LAB.json",
+    "desks/mt5/data/miner_conversion.json",
+    # what the hourly pass's staleness check reads (2026-11-11): the research marginal, the
+    # conversion ledger and the live certificate book. The axes/*.json files ride the loop below.
+    "desks/mt5/data/research_marginal.json",
+    "desks/mt5/data/conversion_ledger.json",
+    "desks/mt5/reports/CERT_BOOK_LIVE.json"
 )
+# Mirror the per-box daily-cycle stamp under reports/, so readers off the box see when the
+# operating chain last ran without the stamp itself ever crossing the wire.
+$dailyStamp = Join-Path $RepoRoot "desks\mt5\data\daily_cycle_state.json"
+if (Test-Path -LiteralPath $dailyStamp -PathType Leaf) {
+    try {
+        Copy-Item -LiteralPath $dailyStamp -Destination (Join-Path $RepoRoot "desks\mt5\reports\DAILY_CYCLE_STATE.json") -Force
+    } catch {
+        Write-SyncLog ("daily-cycle mirror not refreshed: " + $_.Exception.Message)
+    }
+}
 $existing = @()
 foreach ($rel in $relPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
@@ -892,6 +935,19 @@ foreach ($rel in $reportPaths) {
         continue
     }
     $existing += $rel
+}
+# EVERY MACRO AXIS FILE (2026-11-11), by glob so a new axis is carried with no edit here, under
+# the same per-file cap: an axis bigger than the cap (bis.json is ~80 MB) is skipped and logged.
+$axesDir = Join-Path $RepoRoot "desks\mt5\data\axes"
+if (Test-Path -LiteralPath $axesDir -PathType Container) {
+    foreach ($f in @(Get-ChildItem -LiteralPath $axesDir -Filter "*.json" -File)) {
+        $rel = "desks/mt5/data/axes/" + $f.Name
+        if ($f.Length -gt $ReportCapBytes) {
+            Write-SyncLog ("SKIP axis {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $f.Length, $ReportCapBytes)
+            continue
+        }
+        $existing += $rel
+    }
 }
 # PULL FIRST, ALWAYS, BEFORE ANY EARLY EXIT (2026-09-06).
 #
