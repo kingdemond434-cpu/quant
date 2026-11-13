@@ -48,10 +48,28 @@ def contract_month_anchor(symbol: str) -> pd.Timestamp:
     return pd.Timestamp(year=year, month=month, day=1, tz="UTC") + pd.offsets.MonthEnd(0)
 
 
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched. If the gate
+    cannot be loaded the fetch is refused: an unreadable rule is not a permission."""
+    import sys as _sys
+    from pathlib import Path as _P
+    _root = str(_P(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    try:
+        from libs.data.terms_refused import refused
+    except Exception as exc:
+        return f"terms gate unavailable ({type(exc).__name__})"
+    return refused(url)
+
+
 def fetch_contract(symbol: str) -> tuple[pd.DataFrame, dict]:
     encoded = urllib.parse.quote(symbol, safe="")
     url = (f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}"
            "?period1=0&period2=4102444800&interval=1d&events=history")
+    why = _terms_refused(url)
+    if why:          # Yahoo is terms-refused (governance ruling 2026-11-13, Yahoo addendum)
+        return pd.DataFrame(), {"symbol": symbol, "status": "BLOCKED_TERMS", "why": why[:160]}
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=45) as response:

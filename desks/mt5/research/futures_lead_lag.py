@@ -273,6 +273,21 @@ class Reading:
         }
 
 
+def _terms_refused(url: str) -> str | None:
+    """libs.data.terms_refused.refused, importable however this file was launched. If the gate
+    cannot be loaded the fetch is refused: an unreadable rule is not a permission."""
+    import sys as _sys
+    from pathlib import Path as _P
+    _root = str(_P(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.append(_root)
+    try:
+        from libs.data.terms_refused import refused
+    except Exception as exc:
+        return f"terms gate unavailable ({type(exc).__name__})"
+    return refused(url)
+
+
 def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
                timeout: int = 60) -> pd.DataFrame | None:
     """Hourly bars for one reference contract, or None with nothing written.
@@ -282,6 +297,8 @@ def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
     is a different measurement wearing the same name.
     """
     url = _CHART.format(sym=symbol.replace("=", "%3D"), rng=rng, iv=interval)
+    if _terms_refused(url):     # Yahoo is terms-refused (governance ruling 2026-11-13)
+        return None
     req = urllib.request.Request(url, headers={"User-Agent": _UA})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:

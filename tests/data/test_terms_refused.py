@@ -131,3 +131,20 @@ def test_futures_state_registry_never_fetches_fred() -> None:
     fred = [s for s in reg["sources"] if "stlouisfed" in str(s.get("url", ""))
             or s["id"] in ("fred_rates", "fred_vixcls")]
     assert fred and all(s["terms"] == "REFUSED" for s in fred)
+
+
+@pytest.mark.parametrize("url", [
+    "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=1mo&interval=1d",
+    "https://query2.finance.yahoo.com/v10/finance/quoteSummary/AAPL",
+    "https://finance.yahoo.com/quote/GC=F"])
+def test_yahoo_finance_is_refused(url) -> None:
+    """Governance ruling 2026-11-13, Yahoo addendum: every *.finance.yahoo.com host."""
+    assert T.refused(url) and "2(d)(ix)" in T.refused(url)
+
+
+def test_vol_archive_never_contacts_yahoo(monkeypatch) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "desks" / "mt5"))
+    from recorders import vol_archive as V
+    monkeypatch.setattr(urllib.request, "urlopen",
+                        lambda *a, **k: pytest.fail("a refused host was contacted"))
+    assert V.YahooVolSource()._chart("^VIX", "1mo") is None

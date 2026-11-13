@@ -32,6 +32,11 @@ REFUSED_DOMAINS: dict[str, str] = {
         "licence; FAQ: no data mining, scraping or extraction; Section II: no use in "
         "developing any software system); governance ruling 2026-11-13 -- never fetched, "
         "the last held copy is read instead"),
+    "finance.yahoo.com": (
+        "Yahoo terms 2(d)(ix) bar accessing or collecting data by any automated means without "
+        "express prior permission (legal.yahoo.com/us/en/yahoo/terms/otos); governance ruling "
+        "2026-11-13 Yahoo addendum -- query1/query2 and every *.finance.yahoo.com host; held "
+        "rows are read instead"),
 }
 #: Hosts under a refused domain exempted because THEIR OWN terms allow automated use, each with
 #: the terms URL that says so. Empty: FRASER and the Bank's research pages are separate services,
