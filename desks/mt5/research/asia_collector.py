@@ -358,6 +358,13 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                            "access": access,
                            "collected_utc": datetime.now(UTC).isoformat(timespec="seconds")}
 
+    from libs.data.off_limits import STATUS as OFF_STATUS
+    from libs.data.off_limits import off_limits
+    refused = off_limits(url)
+    if refused:                       # an off-limits ground: no request, no key, ever
+        rec.update({"status": OFF_STATUS, "why": refused})
+        return rec
+
     if access in ("key", "paid") and not _key_present(src):
         rec.update({"status": "UNCONFIGURED", "key_env": src.get("key_env"),
                     "why": (f"declares {access} access and {src.get('key_env') or 'no key env'} "

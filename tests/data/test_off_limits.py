@@ -1,0 +1,114 @@
+"""WeChat and Baidu (and the Sogou route into WeChat) are off-limits grounds: no transport may
+send them a request, and every roster row that names one is refused at the fetch."""
+from __future__ import annotations
+
+import json
+import re
+import sys
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+
+ROOT = Path(__file__).resolve().parents[2]
+DESK = ROOT / "desks" / "mt5"
+for _p in (str(ROOT), str(DESK)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from libs.data import cn_sources, free_stack, polite_fetch  # noqa: E402
+from libs.data.off_limits import off_limits  # noqa: E402
+from research import alt_proxies, asia_collector  # noqa: E402
+
+BANNED = ("https://index.baidu.com/", "https://huiyan.baidu.com/migration/historycurve.jsonp",
+          "https://tieba.baidu.com/f?kw=x", "https://weixin.sogou.com/weixin?type=2&query=x",
+          "https://zhihu.sogou.com/zhihu?query=x", "https://mp.weixin.qq.com/s/abc",
+          "https://www.wechat.com/", "HTTPS://WWW.BAIDU.COM./duty/", "baidu.com/x")
+ALLOWED = ("https://juejin.cn/search", "https://notbaidu.com/", "https://baidu.com.example.org/",
+           "https://www.qq.com/", "https://www.federalreserve.gov/")
+
+
+@pytest.mark.parametrize("url", BANNED)
+def test_every_off_limits_host_is_refused(url: str) -> None:
+    assert off_limits(url)
+
+
+@pytest.mark.parametrize("url", ALLOWED)
+def test_lookalikes_and_other_hosts_are_not(url: str) -> None:
+    assert off_limits(url) is None
+
+
+@pytest.fixture
+def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    calls: list[str] = []
+
+    def boom(req: Any, *a: Any, **k: Any) -> Any:
+        calls.append(getattr(req, "full_url", str(req)))
+        raise AssertionError("an off-limits ground reached the network")
+
+    monkeypatch.setattr(urllib.request, "urlopen", boom)
+    return calls
+
+
+@pytest.mark.parametrize("url", BANNED[:6])
+def test_no_transport_sends_a_request(url: str, no_network: list[str]) -> None:
+    r = polite_fetch.get(url, gate=None, opener=lambda *a, **k: no_network.append(url))
+    assert r.status is None and "off-limits" in r.error
+    with pytest.raises(free_stack.FetchError, match="off_limits"):
+        free_stack.http_fetch(url)
+    with pytest.raises(PermissionError):
+        alt_proxies.http_get(url)
+    with pytest.raises(PermissionError):
+        cn_sources._get(url, referer="https://example.org/")
+    rec = asia_collector.collect_one({"id": "x", "url": url, "access": "key",
+                                      "key_env": "BAIDU_INDEX_COOKIE"})
+    assert rec["status"] == "BLOCKED_TERMS"
+    assert no_network == []
+
+
+def test_the_sogou_wechat_search_makes_no_request(no_network: list[str]) -> None:
+    items, err = cn_sources.sogou_weixin("量化 回测")
+    assert items == [] and err and "off-limits" in err
+    assert no_network == []
+
+
+def _urls(obj: Any) -> list[str]:
+    out: list[str] = []
+    if isinstance(obj, dict):
+        for v in obj.values():
+            out += _urls(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            out += _urls(v)
+    elif isinstance(obj, str):
+        out += re.findall(r"https?://[^\s'\"<>]+", obj)
+    return out
+
+
+ROSTERS = ("desks/mt5/data/asia_sources.json", "desks/mt5/data/free_stack_sources.json",
+           "desks/mt5/data/deep_forest_sources.json",
+           "desks/mt5/data/source_rosters/asia_paid_substitutes_consumer.yaml")
+
+
+def test_no_roster_url_naming_an_off_limits_ground_can_be_fetched() -> None:
+    """Any roster URL whose host names weixin, wechat, sogou or baidu is refused at the fetch."""
+    named = 0
+    for rel in ROSTERS:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        doc = yaml.safe_load(text) if rel.endswith(".yaml") else json.loads(text)
+        for url in _urls(doc):
+            host = url.split("/")[2].lower()
+            if re.search(r"weixin|wechat|sogou|baidu", host):
+                named += 1
+                assert off_limits(url), f"{rel}: {url} would be fetched"
+    assert named >= 3          # the rows exist and are refused, not silently missing
+
+
+def test_alt_proxies_never_fetches_an_off_limits_source() -> None:
+    for src in alt_proxies.SOURCES:
+        url = str(getattr(src, "url", "") or "")
+        host = url.split("/")[2].lower() if "//" in url else ""
+        if re.search(r"weixin|wechat|sogou|baidu", host):
+            assert off_limits(url), src.id

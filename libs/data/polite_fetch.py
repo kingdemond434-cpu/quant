@@ -249,6 +249,11 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     host = urlparse(url).netloc.lower()
     open_ = opener or urllib.request.urlopen
     resp = Response(url=url)
+    from libs.data.off_limits import off_limits
+    refused = off_limits(url)
+    if refused:                       # an off-limits ground: no request, ever (fail closed)
+        resp.error = refused
+        return resp
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:

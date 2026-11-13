@@ -59,6 +59,10 @@ class Article:
 
 
 def _get(url: str, *, referer: str, timeout: float = 25.0) -> str:
+    from libs.data.off_limits import off_limits
+    refused = off_limits(url)
+    if refused:
+        raise PermissionError(refused)
     req = urllib.request.Request(url, headers={**_UA, "Referer": referer})
     with urllib.request.urlopen(req, timeout=timeout) as fh:
         body: str = fh.read().decode("utf8", errors="ignore")
@@ -109,6 +113,10 @@ def sogou_weixin(keyword: str) -> tuple[list[Article], str | None]:
     with a reason rather than raising, so a daily sweep continues.
     """
     url = f"https://weixin.sogou.com/weixin?type=2&query={quote(keyword)}"
+    from libs.data.off_limits import off_limits
+    refused = off_limits(url)
+    if refused:                       # WeChat/Sogou is an off-limits ground: never fetched
+        return [], refused
     try:
         # NOT named `html`: that is the stdlib module this file now needs for entity decoding, and
         # shadowing it here would leave `html.unescape` working in every OTHER function and dead
