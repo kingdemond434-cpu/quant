@@ -142,3 +142,20 @@ def test_the_scalp_lane_is_stood_down_and_only_the_file_can_lift_it(tmp_path) ->
     broken = tmp_path / "broken.json"
     broken.write_text("{ nope", encoding="utf-8")
     assert lp.refuse(row, lp.policy(broken)) is not None
+
+
+def test_the_live_file_pins_the_2026_11_04_universe() -> None:
+    """Pins the live symbol list (principal 2026-09-24 list + CHFNOK/EURNOK/GBPJPY 2026-11-04),
+    and that the empty live_sleeves quarantines still refuse their rows: CHFNOK (carry
+    lookahead) and EURNOK (2026-11-06, its carry cert decayed to Sharpe -0.218)."""
+    pol = lp.policy()
+    assert pol.live_symbols == frozenset(
+        {"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS", "CHFNOK", "EURNOK", "GBPJPY"})
+    assert lp.refuse({"symbol": "GBPJPY", "timeframe": "H1", "family": "carry",
+                      "name": "gbpjpy_x"}, pol) is None
+    why = lp.refuse({"symbol": "EURNOK", "timeframe": "H1", "family": "carry",
+                     "name": "eurnok_x"}, pol)
+    assert why is not None and "admits only" in why
+    why = lp.refuse({"symbol": "CHFNOK", "timeframe": "H1", "family": "carry",
+                     "name": "chfnok_carry_asia_p_98d776f3e210d3e2"}, pol)
+    assert why is not None and "admits only" in why

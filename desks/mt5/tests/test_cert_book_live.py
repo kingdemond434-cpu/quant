@@ -143,7 +143,8 @@ def test_gateway_key_join_reaches_the_cert_rows() -> None:
 
 def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None:
     pol = live_policy.policy()
-    assert pol.live_symbols == {"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"}
+    assert pol.live_symbols == {"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS",
+                                "CHFNOK", "EURNOK", "GBPJPY"}
     assert "discovered" in pol.banned_families
     assert "M15" in pol.banned_timeframes["XAUUSD"]
     # The three gap_decay principals are refused at the door (BOOKS_PATCH v5).
@@ -161,5 +162,6 @@ def test_live_policy_admits_the_book_and_quarantines_usdjpy_and_chfnok() -> None
         "USDJPY": [], "CHFNOK": [],
         "EURZAR": ["eurzar_carry_asia_p_8339edce23032d21"],
         "USDNOK": ["usdnok_carry_asia_p_ff35bb7c8427d66f"],
-        "EURILS": ["eurils_formula_asia_p_673857a649d3c271"]}
+        "EURILS": ["eurils_formula_asia_p_673857a649d3c271"],
+        "EURNOK": []}
     assert "reddit_lineage_quarantine" in doc and "carry_lookahead_quarantine" in doc
