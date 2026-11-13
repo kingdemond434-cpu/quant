@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-10-13T16:50:25.269944+00:00",
- "signed_by": "principal",
+ "signed_utc": "2026-11-03T16:45:33.703025+00:00",
+ "signed_by": "auditor-clear",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -8,13 +8,13 @@
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
   "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "bb9c0e744bad615f",
+  "desks/mt5/research/promoter.py": "28df19e06f67c944",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/ops/live_ledger_migration.py": "74ef5609d1ce37a4",
   "scripts/migrate_live_ledger_view.py": "87cf8fced3671929",
   "libs/ops/live_ledger_view.py": "5cc676fb56625f2a",
   "libs/portfolio/allocator_proof.py": "03132b884fdd3c78",
-  "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
+  "libs/portfolio/rails.py": "14ec6f93c9f9f778",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "a002827611ea8079",
@@ -2479,7 +2479,6 @@
   "desks/mt5/policy/gate_spec.yaml": "Codex, principal-authorized repair",
   "desks/mt5/research/heat_policy.py": "Codex, principal-authorized repair",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "Codex, principal-authorized repair",
-  "libs/portfolio/rails.py": "Codex, principal-authorized repair",
   "libs/portfolio/capital_modifiers.py": "Codex, principal-authorized repair",
   "libs/validation/redteam.py": "Codex, principal-authorized repair",
   "libs/validation/calibration.py": "Codex, principal-authorized repair",
@@ -2488,11 +2487,11 @@
   "scripts/check_heat_floor_wiring.py": "Codex, principal-authorized repair",
   "scripts/run_deadman_switch.py": "Codex, principal-authorized repair",
   "libs/validation/replay2.py": "Codex, principal-authorized repair",
-  "desks/mt5/research/promoter.py": "Codex, principal-authorized audited ledger reader repair",
   "libs/ops/live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
-  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved"
+  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
+  "libs/portfolio/allocator_proof.py": "principal"
  }
 }
