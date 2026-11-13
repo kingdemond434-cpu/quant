@@ -18,6 +18,7 @@ it (a starved key tomorrow costs more than a thinner sweep today).
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -204,9 +205,17 @@ def main() -> int:
         report["errors"].append(str(exc))
 
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
+    # The off-box Actions job sets YOUTUBE_CORPUS_NO_TRANSCRIPTS=1: the only caption route
+    # (fetch_video_transcript) reaches robots-Disallowed paths via third-party mirrors, which
+    # the rules ban, so that job keeps titles/descriptions/links from the official API only.
+    no_t = os.environ.get("YOUTUBE_CORPUS_NO_TRANSCRIPTS") == "1"
     got_t, attempted = 0, 0
     unresolved: dict[str, int] = {}
+    if no_t:
+        unresolved["ROBOTS_DISALLOWED_SKIPPED"] = len(rows)
     for row in sorted(rows, key=lambda r: r.get("published", ""), reverse=True):
+        if no_t:
+            break
         if got_t >= TRANSCRIPTS_PER_RUN:
             break
         vid = row.get("video_id")

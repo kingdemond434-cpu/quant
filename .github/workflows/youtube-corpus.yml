@@ -6,8 +6,10 @@ name: youtube-corpus
 # 6 hours and uses the free YouTube Data API (official, keyed, 10k units/day; collector budget
 # 2,000 per run) to enumerate every video of the configured channels (QuantGuild, Algovibes,
 # ... in config/video_mining_channels.json): titles, descriptions, tags and every description
-# link. Its 3 best-effort caption fetches use the normal public route and record ACCESS_LIMIT on
-# refusal (no cookies, proxies or CAPTCHA solving).
+# link. Captions are OFF (YOUTUBE_CORPUS_NO_TRANSCRIPTS=1): YouTube's robots.txt Disallows the
+# caption paths and the only other route is third-party mirrors, which the rules ban.
+# Publishing commits on top of the existing data branch (never an orphan force-push), and the
+# job fails before publishing if the branch exists but its state did not restore.
 # Output goes to the data branch claude/youtube-corpus (pushes there start no CI). The box's
 # Quant-VideoCells task reads that branch over its existing git remote.
 # Needs the repository secret YOUTUBE_API_KEY. Without it the run records NO_KEY and goes red,
@@ -40,15 +42,28 @@ jobs:
             config/video_mining_channels.json
           sparse-checkout-cone-mode: false
       - name: Restore corpus state from the data branch
+        id: restore
         run: |
           set -euo pipefail
-          if git fetch --depth 1 origin claude/youtube-corpus 2>/dev/null; then
-            git checkout FETCH_HEAD -- data/youtube_channels.json data/intelligence 2>/dev/null || true
+          if git ls-remote --exit-code --heads origin claude/youtube-corpus >/dev/null; then
+            git fetch --depth 1 origin claude/youtube-corpus
+            for p in data/youtube_channels.json data/intelligence; do
+              if git cat-file -e "FETCH_HEAD:$p" 2>/dev/null; then
+                git checkout FETCH_HEAD -- "$p"
+              fi
+            done
             git reset -q
+            if ! git cat-file -e FETCH_HEAD:data/intelligence 2>/dev/null; then
+              echo "::warning::data branch has no data/intelligence yet"
+            fi
+            echo "exists=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=0" >> "$GITHUB_OUTPUT"
           fi
       - name: Collect
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CORPUS_NO_TRANSCRIPTS: "1"
         run: |
           set -euo pipefail
           mkdir -p data/secrets data/intelligence/youtube
@@ -63,7 +78,9 @@ jobs:
           rm -f data/secrets/youtube_api_key
           echo "{\"ts\": \"$(date -u +%FT%TZ)\", \"status\": \"OK\"}" > data/intelligence/youtube/LAST_RUN.json
       - name: Publish to the data branch
-        if: always()
+        # Runs after a failed collect too (so NO_KEY is visible), but never after a failed
+        # restore: publishing an unrestored tree would overwrite accumulated evidence.
+        if: always() && steps.restore.outcome == 'success'
         run: |
           set -euo pipefail
           rm -rf data/secrets
@@ -71,10 +88,16 @@ jobs:
           git config user.email "youtube-corpus@users.noreply.github.com"
           tmp=$(mktemp -d)
           cp -r data "$tmp/"
-          git checkout -q --orphan corpus-out
-          git rm -rq --cached . || true
+          rm -rf data
+          git sparse-checkout disable
+          if [ "${{ steps.restore.outputs.exists }}" = "1" ]; then
+            git checkout -q -f -B corpus-out FETCH_HEAD
+          else
+            git checkout -q --orphan corpus-out
+            git rm -rq --cached . || true
+          fi
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -r "$tmp/data" .
-          git add data
-          git commit -qm "youtube corpus $(date -u +%FT%TZ)"
-          git push -q --force origin HEAD:claude/youtube-corpus
+          git add -A data
+          git commit -qm "youtube corpus $(date -u +%FT%TZ)" || { echo "no change"; exit 0; }
+          git push -q origin HEAD:claude/youtube-corpus
