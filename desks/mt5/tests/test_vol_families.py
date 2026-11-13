@@ -411,7 +411,8 @@ def test_level_features_mean_what_their_names_claim():
 
 def test_the_level_state_enters_once_per_episode_after_the_lag(tmp_path, monkeypatch):
     dates = pd.bdate_range(START, periods=DAYS + 40)
-    v = np.r_[np.full(300, 15.0) + np.sin(np.arange(300)) * 0.3, np.full(dates.size - 300, 40.0)]
+    # a slowly falling IV (bottom of its year every day), then a jump to a level it holds
+    v = np.r_[15.0 - 0.001 * np.arange(300), np.full(dates.size - 300, 40.0)]
     closes = {d.date().isoformat(): float(x) for d, x in zip(dates, v, strict=True)}
     ref_dir = tmp_path / "reference"
     _write(ref_dir, "^VIX", closes)
@@ -420,15 +421,16 @@ def test_the_level_state_enters_once_per_episode_after_the_lag(tmp_path, monkeyp
     df = _bars(29)
     sigs = fiv.family_iv_level_state(df, iv_ticker="^VIX", feature="iv_pct_1y", op="ge",
                                      threshold=0.95, direction=-1)
-    first = [s for s in sigs if pd.Timestamp(s.time).tz_localize(None) >= dates[295]]
-    assert first and all(s.side == -1 for s in sigs)
-    at = fiv.decision_utc_ns(pd.DatetimeIndex([pd.Timestamp(first[0].time)]))
+    # the regime then holds: ONE entry for the episode, not one per bar or per day
+    assert len(sigs) == 1 and sigs[0].side == -1
+    at = fiv.decision_utc_ns(pd.DatetimeIndex([pd.Timestamp(sigs[0].time)]))
     assert at is not None
-    assert pd.Timestamp(at[0], tz="UTC") >= pd.Timestamp(dates[300], tz="UTC") + pd.Timedelta(
-        days=1)                                                       # never before D+1 UTC
-    # the regime then holds: one entry for the episode, not one per bar
-    assert len([s for s in first if pd.Timestamp(s.time).tz_localize(None)
-                < dates[300] + pd.Timedelta(days=30)]) == 1
+    jump = pd.Timestamp(dates[300], tz="UTC")
+    assert jump + pd.Timedelta(days=1) <= pd.Timestamp(at[0], tz="UTC") \
+        < jump + pd.Timedelta(days=4)                    # never before D+1 UTC, and promptly
+    low = fiv.family_iv_level_state(df, iv_ticker="^VIX", feature="iv_pct_1y", op="le",
+                                    threshold=0.2, direction=1)
+    assert low and all(pd.Timestamp(s.time) < jump + pd.Timedelta(days=1, hours=3) for s in low)
 
 
 # ------------------------------------------------------------ the world-model feed ---
