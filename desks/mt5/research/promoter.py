@@ -76,6 +76,7 @@ The armed gold book is NOT managed here (hunt5 authority, armed by human).
 import hashlib
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -294,7 +295,102 @@ def _apply_live_policy(rows: list[dict]) -> int:
 POLICY_REOPENED = "SUPERSEDED_POLICY_LIFTED"
 
 
-def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict]) -> set[str]:
+#: THE PRINCIPAL'S CONDITION ON THE LIFT (zuck 2026-11-13 19:23Z): "make sure all r actual edges
+#: post costs n everything proper ... if they aren't all real the 170 we wont put them live only if
+#: they are". A policy-retired row comes back ONLY on POSITIVE evidence, every clause required:
+#:   * a FRESH cost re-grade (scripts/recertify_canon.py, <= RECERT_FRESH_H) whose row for THIS
+#:     certificate reads STILL_PASSES: the ten gates re-run at today's spread, commission and swap.
+#:     Absent, stale, UNMEASURED or unmatched is NOT a pass -- unlike `regrade_failures`, which
+#:     only binds on a fresh FAIL, this needs a fresh PASS;
+#:   * forward t >= EDGE_MIN_T and n >= EDGE_MIN_N on the clock's own net-of-cost R;
+#:   * the clock's certificate is still in the authority set (no `certificate_drift`);
+#:   * the forward evidence came from the venue's own bars (`evidence_venue` FusionMarkets);
+#:   * the forward max drawdown clears the promotion bar (PROMOTE_MIN_DD).
+#: Then the ordinary doors run on top (blind review, Tier S, executor, allocator).
+EDGE_MIN_T = 2.0
+EDGE_MIN_N = 30
+EDGE_MIN_DD = -25.0
+EDGE_VENUE = "FusionMarkets"
+REOPEN_REPORT = BASE / "reports" / "REOPEN_VERIFICATION.json"
+
+
+def clock_certificates() -> dict[str, str]:
+    """clock key -> the canon certificate name that enrolled it, rebuilt exactly as
+    `shadow_forward.certified_sleeves` keys a run. Empty on any failure (fail closed: an
+    unmapped clock has no certificate to verify, so it is not reopened)."""
+    try:
+        import shadow_forward as sf
+        from shadow_admission import authorized_runs
+        out: dict[str, str] = {}
+        for run in authorized_runs(BASE):
+            fam = run["family"]
+            if fam == "session_range_breakout":
+                if run["selector"] not in sf.WINDOWS:
+                    continue
+                params = dict(sf.WINDOWS[run["selector"]])
+                params.update(run["params"])
+            else:
+                params = dict(run["params"] or {})
+            side = sf._runnable_side(run, fam)
+            if side is None:
+                continue
+            key = sf.sleeve_key(run["symbol"], run["selector"], params, fam, side)
+            out[key] = str(run.get("certificate") or "")
+        return out
+    except Exception as exc:
+        plog(f"clock certificates unavailable ({type(exc).__name__}: {exc}); nothing reopens")
+        return {}
+
+
+def recert_rows(now: datetime | None = None) -> tuple[dict[str, dict], str]:
+    """(certificate -> re-grade row, why-not) from a FRESH recertification audit only."""
+    try:
+        doc = json.loads(RECERT_AUDIT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}, f"{RECERT_AUDIT.name} absent: no cost re-grade at today's costs"
+    try:
+        age_h = ((now or datetime.now(tz=UTC)) - datetime.fromisoformat(
+            str(doc.get("audited_at")))).total_seconds() / 3600.0
+    except ValueError:
+        age_h = float("inf")
+    if age_h > RECERT_FRESH_H:
+        return {}, f"{RECERT_AUDIT.name} is {age_h:.0f}h old (> {RECERT_FRESH_H:.0f}h)"
+    return ({str(r.get("certificate")): r for r in (doc.get("rows") or [])
+             if isinstance(r, dict)}, "")
+
+
+def edge_verdict(key: str, st: dict, cert: str, recert: dict[str, dict],
+                 recert_why: str) -> list[str]:
+    """Every reason this clock is NOT a verified net-of-cost edge (empty = verified)."""
+    why: list[str] = []
+    if not cert:
+        why.append("NO_CERTIFICATE: the clock maps to no certificate in the authority set")
+    row = recert.get(cert) if cert else None
+    if row is None:
+        why.append(f"NO_FRESH_COST_REGRADE: {recert_why or 'this certificate is not in the audit'}")
+    elif row.get("status") != "STILL_PASSES":
+        why.append(f"{row.get('status') or 'UNMEASURED'}: re-grade at today's costs "
+                   f"{row.get('gates_failing_now') or row.get('why') or ''}")
+    try:
+        t, n = float(st.get("forward_t") or 0.0), int(float(st.get("n") or 0))
+        dd = float(st.get("max_dd_r") or 0.0)
+    except (TypeError, ValueError):
+        t, n, dd = 0.0, 0, float("-inf")
+    if t < EDGE_MIN_T:
+        why.append(f"FORWARD_T {t:.2f} < {EDGE_MIN_T}")
+    if n < EDGE_MIN_N:
+        why.append(f"FORWARD_N {n} < {EDGE_MIN_N}")
+    if dd <= EDGE_MIN_DD:
+        why.append(f"FORWARD_MAXDD {dd:.1f}R <= {EDGE_MIN_DD}R")
+    if st.get("certificate_drift"):
+        why.append("CERTIFICATE_DRIFT: the certificate left the authority set")
+    if EDGE_VENUE not in str(st.get("evidence_venue") or ""):
+        why.append(f"NON_VENUE_EVIDENCE: {st.get('evidence_venue')!r}")
+    return why
+
+
+def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict],
+                              verify: bool = True) -> set[str]:
     """RE-OPEN every row the LIVE POLICY retired whose policy now admits it (2026-11-13).
 
     The principal lifted the live symbol whitelist (zuck 2026-11-13 19:17:59Z decision card,
@@ -314,13 +410,16 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict]) -> s
         from mt5desk.live_policy import policy, refuse
     except ImportError:                                    # pragma: no cover - box path only
         return set()
-    candidates: set[str] = set()
+    candidates: dict[str, dict] = {}
     for st in lane_states:
         rows = st.get("sleeves") if isinstance(st.get("sleeves"), dict) else st
         for k, v in (rows or {}).items():
             if isinstance(v, dict) and str(v.get("status") or "").replace("_", " ") \
                     == "PROMOTION CANDIDATE":
-                candidates.add(str(k))
+                candidates[str(k)] = v
+    certs = clock_certificates() if verify else {}
+    recert, recert_why = recert_rows() if verify else ({}, "")
+    report: dict[str, dict] = {}
     pol = policy()
     stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
     reopened: set[str] = set()
@@ -331,15 +430,49 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict]) -> s
             continue
         if refuse(row, pol):
             continue
+        if verify:
+            cert = certs.get(name) or (name if name in recert else "")
+            failed = edge_verdict(name, candidates[name], cert, recert, recert_why)
+            report[name] = {"certificate": cert or None, "verified": not failed,
+                            "why_not": failed}
+            if failed:
+                continue
         row["status"] = POLICY_REOPENED
         row["reopened_at"] = stamp
         row["reopened_why"] = ("the live policy that retired this row admits it now; the clock "
                                "is re-judged through every promotion door")
         reopened.add(name)
         plog(f"LIVE POLICY lifted for {name}: retired row superseded, clock re-judged this pass")
+    if verify:
+        _write_reopen_report(report, recert_why)
     # A name with any OTHER live/standby/retired row is not reopened twice.
     held = {str(r.get("name")) for r in sleeves if r.get("status") != POLICY_REOPENED}
     return reopened - held
+
+
+def _write_reopen_report(report: dict[str, dict], recert_why: str) -> None:
+    """reports/REOPEN_VERIFICATION.json: every policy-retired candidate, verified or not, and why."""
+    reasons: dict[str, int] = {}
+    for r in report.values():
+        for w in r["why_not"]:
+            head = w.split(":", 1)[0].split(" ", 1)[0]
+            reasons[head] = reasons.get(head, 0) + 1
+    doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+           "rule": ("principal 2026-11-13 19:23Z: only real edges net of all costs go live; a "
+                    "policy-retired candidate returns only on a fresh STILL_PASSES cost re-grade, "
+                    f"forward t >= {EDGE_MIN_T}, n >= {EDGE_MIN_N}, max DD > {EDGE_MIN_DD}R, no "
+                    "certificate drift and venue-native forward bars"),
+           "recert_status": recert_why or "FRESH",
+           "n_candidates": len(report),
+           "n_verified": sum(1 for r in report.values() if r["verified"]),
+           "fail_reasons": reasons, "rows": report}
+    try:
+        REOPEN_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = REOPEN_REPORT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, REOPEN_REPORT)
+    except OSError as exc:
+        plog(f"REOPEN_VERIFICATION.json not written ({type(exc).__name__}: {exc})")
 
 
 UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"
