@@ -8338,7 +8338,7 @@
     "MEASURED on the trading box vmi3571445 2026-09-23: 489 clocks across four lanes -- 92 ACCRUING, 57 BEHIND, 0 FROZEN, 339 RETIRED, 1 UNMEASURED; before the pass 39 were FROZEN",
     "desks/mt5/tests/test_clock_liveness.py:1 -- 20 tests: a planted frozen clock is detected with its cause, a weekend gap reads DORMANT_BY_SESSION, a terminal row reads RETIRED, and off the trading box every clock reads UNMEASURED (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "scheduled_by": "MT5-ClockLiveness",
    "artifact": "desks/mt5/reports/CLOCK_LIVENESS.json, docs/research/CLOCK_LIVENESS.md",
    "consumer": "scripts/check_clock_liveness.py (registered in scripts/run_law_gate.py _STATE_FENCES), docs/research/CLOCK_LIVENESS.md",
    "gap": "",
@@ -8359,7 +8359,7 @@
     "libs/ops/control_plane/actuators.py:291 -- run_actuator is the proof harness this organ reuses rather than re-implementing",
     "desks/mt5/tests/test_clock_liveness.py:144 -- an actuator that exits 0 and moves nothing is UNPROVEN; one that moves the stamp is REPAIRED (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "scheduled_by": "MT5-ClockLiveness",
    "artifact": "desks/mt5/reports/CLOCK_LIVENESS.json, desks/mt5/reports/CLOCK_REENROL.json",
    "consumer": "scripts/check_clock_liveness.py (a FAILED repair is a fence finding), desks/mt5/reports/shadow/shadow_state.json (the clocks the repair advances)",
    "gap": "",
@@ -8380,7 +8380,7 @@
     "desks/mt5/research/clock_liveness.py:880 -- ratchet_write: the enforced ceiling is the lowest frozen count ever measured on this box and may fall and never rise; MEASURED floor on the box is 0",
     "desks/mt5/tests/test_clock_liveness.py:230 -- a disabled clock task is enabled AND run, a once-a-day lane is put on a repetition, a repeating task is left alone (MEASURED)"
    ],
-   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "scheduled_by": "MT5-ClockLiveness",
    "artifact": "desks/mt5/reports/CLOCK_LIVENESS.json",
    "consumer": "scripts/run_law_gate.py, scripts/check_clock_liveness.py, docs/research/CLOCK_LIVENESS.md",
    "gap": "",
@@ -8460,7 +8460,7 @@
     "THE COST, stated in the module docstring and accepted: a cell that certifies later restarts its forward clock from zero -- inheriting the accrued days would credit a pre-registration that did not exist when those bars printed. Recorded as desk lesson L0387 so no later session re-derives the cure lane",
     "desks/mt5/tests/test_clock_certificate.py:1 -- 18 tests pin the strict rule: no AWAITING state, the cell keeps the front of the queue, a lane declaring its own gate pass is not a certificate, an empty canon declares nothing, and the fence fails on any unbacked clock"
    ],
-   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "scheduled_by": "MT5-ClockLiveness",
    "artifact": "desks/mt5/reports/CLOCK_CERTIFICATE_BREACH.json, the `certificate` block of desks/mt5/reports/CLOCK_LIVENESS.json, desks/mt5/data/clock_breach_ledger.json",
    "consumer": "desks/mt5/research/judging_throughput.py (sizes the judge off the breach backlog), desks/mt5/data/task_queue.jsonl -> hourly_cycle leg recertify_canon, scripts/check_clock_liveness.py",
    "gap": "",

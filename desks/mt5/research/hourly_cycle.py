@@ -1573,7 +1573,23 @@ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
     # deferred every pass and never ran after 2026-10-29 -- seven days of FTMO trading only the gold
     # fallback. Its own hourly task (scripts/install_ftmo_allocator_task.ps1) is the only clock.
     "prop_challenge_allocator",  # MT5-FTMO-Allocator
+    # MT5-ClockLiveness (2026-10-13, hourly at :28). The census of which forward clocks are
+    # kept or retired was written only by this pass, which the scheduler kills before the leg
+    # (MT5-Hourly 0x800710E0 from 2026-10-12 07:00Z): CLOCK_LIVENESS.json sat 44h old reading
+    # retire=[] and unbacked_found=0, a clean answer nobody had measured. Its own hourly task
+    # runs it whatever the pass does; Adopt-And-Seal installs the task when it is missing.
+    "clock_liveness",     # MT5-ClockLiveness
 })
+
+
+def rotation_roster(full: list[str]) -> list[str]:
+    """The legs the rotation measures attendance for: every declared leg but OWN_CLOCK_LEGS.
+
+    An own-clock leg's task writes no compute-ledger row, so measured here it would read
+    `outside_window` forever and the leg-rotation fence would name it on every pass.
+    `scripts/check_own_clock_legs.py` is its fence: the task exists, is armed, and its artifact
+    is aged."""
+    return [leg for leg in full if leg not in OWN_CLOCK_LEGS]
 
 
 def in_plan(name: str, plan: str | None = None) -> bool:
@@ -1625,7 +1641,7 @@ def _rotation() -> Any:
     _ROTATION["decision"] = None
     try:
         from libs.ops import leg_rotation as _lr
-        full = _lr.legs_in_order(Path(__file__).resolve())
+        full = rotation_roster(_lr.legs_in_order(Path(__file__).resolve()))
         roster = [leg for leg in full if in_plan(leg)]
         att = _lr.read_attendance(
             prior=_lr.Attendance.from_json(_lr.load_record().get("attendance")))
