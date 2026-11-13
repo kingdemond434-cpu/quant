@@ -4,7 +4,7 @@
 # Run as Administrator, from C:\opt\quant.
 #   Register once:  powershell -File scripts\run_video_cells_box.ps1 -Install
 param([string]$Repo = "C:\opt\quant", [string]$Branch = "claude/video-transcripts",
-      [int]$MaxVideos = 40, [switch]$Install)
+      [int]$MaxVideos = 40, [int]$FetchPerHour = 12, [switch]$Install)
 $ErrorActionPreference = "Stop"
 if ($Install) {
   $me = $MyInvocation.MyCommand.Path
@@ -33,6 +33,11 @@ foreach ($f in $files) {
   }
 }
 python scripts\video_transcript_vault.py open --src $sealed --dst $open
+# 24/7 restore (11-13): the PC-sealed bundles stopped on 11-05 and nothing may rely on the laptop.
+# The box now also fetches captions itself through the public routes, politely and in small batches.
+# mine_channel_transcripts.py STOPS on a bot wall or IP block and records the rest ACCESS_LIMIT
+# (no cookies, proxies or CAPTCHA solving), so a blocked hour costs one probe and the next hour retries.
+python scripts\mine_channel_transcripts.py --out $open --limit $FetchPerHour --sleep 45
 python scripts\extract_video_cells.py --mined $open --max-videos $MaxVideos
 # box-side coverage proof: every enumerated video id and its status, from the PC's own ledger
 python scripts\mine_channel_transcripts.py --out $open --report-only --report desks\mt5\reports\VIDEO_MINING_COVERAGE.json
