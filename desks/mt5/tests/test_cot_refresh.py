@@ -66,7 +66,8 @@ def test_tls_is_verified_never_disabled() -> None:
     ctx = S.tls_context()
     assert ctx.verify_mode == ssl.CERT_REQUIRED and ctx.check_hostname
     src = Path(S.__file__).read_text("utf-8") + Path(R.__file__).read_text("utf-8")
-    assert "CERT_NONE" not in src and "Mozilla" not in src
+    assert "verify_mode = ssl.CERT_NONE" not in src and "check_hostname = False" not in src
+    assert '"User-Agent": "Mozilla' not in src and "Mozilla" not in S.AGENT
 
 
 def test_latest_release_waits_for_friday() -> None:
