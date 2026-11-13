@@ -144,6 +144,8 @@ LEG_LAYER: dict[str, str] = {
     "asia_collector": "information",
     "asia_parser": "information",
     "index_discovery": "information",
+    # N8: what the Western donors can do that this tree cannot -- what the desk CAN know next.
+    "western_donors": "information",
     "empty_cluster_forcer": "prediction",
     "asia_transmission": "information",
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
