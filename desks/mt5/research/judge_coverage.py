@@ -2850,6 +2850,13 @@ def _keff_summary(keff: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+#: The empty-cluster factor's lift: a family the forcer FORCED into a never-attempted alpha cluster
+#: is valued as though its cells were worth (1 + this) times as much per judge-second. 1.0 matches
+#: the novelty factor's ceiling -- the same claim ("a style the desk has not seen") at the same
+#: strength -- and is a declared constant, never tuned to a count.
+EMPTY_CLUSTER_LIFT = 1.0
+
+
 def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
                   capacity: int) -> list[dict[str, Any]]:
     """EXPECTED VALUE PER JUDGE-SECOND, per family, published so the choice is inspectable.
@@ -2857,6 +2864,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         ev_per_cell = p_optimistic * net_value_if_it_passes * (1 + marginal_breadth)
                                    * orthogonality_factor * certificate_factor
                                    * certified_breadth_factor * novelty_factor
+                                   * empty_cluster_factor
         ev_per_s    = ev_per_cell / (seconds_per_cell * this family's bar cost)
 
     Every term is something the desk already measures -- the learned prior, the net-of-cost slot
@@ -2910,6 +2918,17 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
         def _nov_source(fam: str) -> str:
             return "UNMEASURED"
+    # THE EMPTY-CLUSTER FACTOR (rows 72/75, 2026-11-11). `empty_cluster_forcer` mints cells into
+    # alpha clusters the desk has NEVER attempted; until this factor nothing judged them first,
+    # so a forced cell queued behind re-judged families had not attempted its cluster at all.
+    # 1 + EMPTY_CLUSTER_LIFT for a family the forcer FORCED on its last GREEN pass (per
+    # `check_leg_artifact_liveness`); 1.0 for every other family and for every family when the
+    # forcer is stale or unreadable. One-sided like the factors above: it lifts, never demotes.
+    try:
+        from research import empty_cluster_forcer as _ecf
+        _forced, _forced_why = _ecf.forced_families()
+    except Exception as exc:
+        _forced, _forced_why = frozenset(), f"empty_cluster_forcer unimportable: {exc!r}"[:200]
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
@@ -2935,8 +2954,9 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         # scorer separately recognises a new session/chart/regime inside an incumbent family.
         cert_breadth = 2.0 - cert_share if cert_share is not None else 1.0
         nov_f = novelty_factor(fam)
+        empty_f = 1.0 + EMPTY_CLUSTER_LIFT if fam in _forced else 1.0
         ev_cell = (float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
-                   * kf * cert_breadth * nov_f)
+                   * kf * cert_breadth * nov_f * empty_f)
         rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
@@ -2967,6 +2987,8 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             "keff_factor": round(kf, 4),
             "novelty_factor": round(nov_f, 4),
             "novelty_source": _nov_source(fam),
+            "empty_cluster_factor": round(empty_f, 4),
+            "empty_cluster_basis": _forced_why,
             "marginal_rank": sig.get("marginal_rank"),
             "certs_per_judge_hour": sig.get("certs_per_judge_hour"),
             # BANNED / UNMEASURED / UNDER_JUDGED / MEASURED_ZERO / CERTIFYING -- a zero pass rate
