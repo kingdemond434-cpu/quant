@@ -14,12 +14,14 @@ priced off the scout's catalogue where a route is declared, and gated by a Datas
 traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and nothing else --
 a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
 carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
-reading, and the robots Disallow that returned BLOCKED_BY_ROBOTS, were discovery brakes and are
-deleted.
+reading was a discovery brake and is deleted. ROBOTS IS NOT A TERMS NOTE (ruling of
+2026-11-10, PR #819): a robots.txt Disallow on the exact path means the sample is NOT taken --
+`BLOCKED_BY_ROBOTS`, with its reopen, its missed-growth line and a daily count in
+`research/robots_gate.py`; so does a 401/403 on robots.txt or an unreachable one.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
-`asia_collector._robots_allows` is READ and recorded, never a skip; never a new scraper),
+`asia_collector._robots_verdict` decides whether the sample is taken; never a new scraper),
 content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
@@ -511,12 +513,13 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 
 # --------------------------------------------------------------------------- the sample
-def _robots_allows(url: str) -> tuple[bool, str]:
+def _robots_verdict(url: str) -> tuple[str, str]:
+    """(label, why) from the shared robots gate; `robots_gate.stops(label)` decides."""
     try:
         from research import asia_collector as ACOL
     except ImportError:                                                      # pragma: no cover
         import asia_collector as ACOL  # type: ignore[no-redef]
-    return ACOL._robots_allows(url)
+    return ACOL._robots_verdict(url)
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
@@ -549,10 +552,12 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
            at: str, code: str, marks: set[str]) -> dict[str, Any]:
     """A small sample, or the named reason there is none. NEVER a new scraper.
 
-    LAWS 5e (2026-09-23): a robots Disallow and a `machine_use_allowed=false` used to return
-    BLOCKED_BY_ROBOTS and REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken.
-    Both were discovery brakes; both are deleted. The robots verdict is still READ, because it is
-    worth recording, and it now travels on the sample as `terms_note`.
+    LAWS 5e (2026-09-23): a `machine_use_allowed=false` used to return
+    REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken. That brake is deleted.
+    A robots Disallow on the exact path, a 401/403 on robots.txt or an unreachable robots.txt
+    stops the sample (rulings of 2026-11-10, PR #819): the row is BLOCKED_BY_ROBOTS with its
+    label, its reopen and its missed-growth line, and `robots_gate` counts it. A site serving
+    no robots.txt is sampled and counted as ROBOTS_ABSENT.
     """
     url = str(cand.get("url") or "")
     if verdict.refused:
@@ -565,10 +570,23 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
         return {"dataset": cand["dataset"], "status": "NO_PUBLIC_URL_ROUTE",
                 "why": (f"route is {cand.get('how_to_fetch') or 'undeclared'}: no URL to sample "
                         f"through the existing fetch path; the request is donated unsampled")}
-    allowed, robots_note = _robots_allows(url)
-    terms_note = (verdict.terms_note or "") + ("" if allowed else
-                                               f" | robots: {robots_note} -- recorded as a "
-                                               f"routing label, never a skip (LAWS 5e)")
+    label, robots_note = _robots_verdict(url)
+    terms_note = verdict.terms_note or ""
+    try:
+        from research import robots_gate as RG
+    except ImportError:                                                      # pragma: no cover
+        import robots_gate as RG  # type: ignore[no-redef]
+    if label == RG.ROBOTS_ABSENT:
+        RG.note_absent("data_acquisition_scientist", str(cand["dataset"]), url, robots_note)
+        terms_note = f"{terms_note} | robots: {robots_note}"
+    if RG.stops(label):
+        aside = RG.refuse("data_acquisition_scientist", str(cand["dataset"]), url, label,
+                          robots_note)
+        return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
+                "robots": robots_note, "access_label": label,
+                "terms_note": terms_note.strip(" |"), "why": robots_note,
+                "reopen": aside["reopen"], "missed_growth": aside["missed_growth"],
+                "billed": aside["billed"]}
     raw, ctype = _fetch(url)
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
