@@ -94,8 +94,18 @@ def _fetch_repo(full: str, host: str = "github") -> dict[str, Any] | None:
                 "commit": meta.get("pushed_at"), "license": str(lic),
                 "stars": meta.get("stargazers_count"), "description": meta.get("description"),
                 "readme": text, "fetched_utc": datetime.now(tz=UTC).isoformat()}
-    except Exception:
+    except Exception as exc:
+        if _rail_refused(exc):
+            raise
         return None
+
+
+def _rail_refused(exc: BaseException) -> bool:
+    """A refusal by the box's data rails (`box_rails`: robots.txt, walls), not the host failing.
+    api.github.com's robots.txt disallows every agent, so under the rails this miner is DARK BY
+    POLICY -- which its report must say, rather than reading as an unreachable network."""
+    rails = sys.modules.get("box_rails")
+    return rails is not None and isinstance(exc, getattr(rails, "RailRefusal", ()))
 
 
 def _cached(full: str) -> dict[str, Any] | None:
@@ -128,6 +138,7 @@ def run(fetch: bool = True, write: bool = True) -> dict[str, Any]:
     wl = _watchlist()
     mined: list[dict[str, Any]] = []
     unreachable: list[str] = []
+    refused: list[dict[str, Any]] = []
     tasks: list[dict[str, Any]] = []
     try:
         from libs.data.datahub import copy_allowed, record_mined_source
@@ -137,7 +148,15 @@ def run(fetch: bool = True, write: bool = True) -> dict[str, Any]:
     for entry in wl.get("repos", []):
         full = str(entry.get("repo") if isinstance(entry, dict) else entry)
         host = str(entry.get("host", "github")) if isinstance(entry, dict) else "github"
-        doc = (_fetch_repo(full, host) if fetch else None) or _cached(full)
+        try:
+            doc = (_fetch_repo(full, host) if fetch else None) or _cached(full)
+        except Exception as exc:
+            if not _rail_refused(exc):
+                raise
+            refused.append({"repo": full, "host": host, "why": str(exc)[:200]})
+            doc = _cached(full)
+            if doc is None:
+                continue  # refused, not unreachable: named in refused_sources only
         if doc is None:
             unreachable.append(full)
             continue
@@ -176,6 +195,13 @@ def run(fetch: bool = True, write: bool = True) -> dict[str, Any]:
                "watchlist": len(wl.get("repos", [])),
                "mined": mined, "unreachable": unreachable, "tasks": len(tasks),
                "network": fetch and not (unreachable and not mined),
+               # REFUSED IS NOT UNREACHABLE (2026-11-03): a source the box's rails refused is
+               # dark by policy, and the growth it would have fed is named, never silent.
+               "refused_sources": refused,
+               "missed_growth": ([f"{len(refused)} watched repo(s) not fetched: the box rails "
+                                  f"refused {sorted({r['host'] for r in refused})} (robots.txt "
+                                  f"or a VPS wall); their mechanism claims are not mined here"]
+                                 if refused else []),
                "loop": "Discover -> Extract -> (deepening_worker) Reimplement -> proposers Mutate "
                        "-> falsifiers -> gauntlet Validate -> allocator Measure dElogW -> Allocate "
                        "-> hypothesis graph Learn -> Repeat"}

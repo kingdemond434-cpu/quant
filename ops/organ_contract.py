@@ -397,6 +397,18 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # THE INTEL FEED, PRODUCED ON THE BOX (2026-11-03). hel8 shipped it hourly on intel-ship/send
+    # until 02:50Z that day; now the `intel_feed` leg of MT5-Dept-Intel writes it in place
+    # (side_channels/box_intel_feed.py). 180 min = the hourly cadence, a long intel pass and one
+    # missed run. A STALE row here is the feed the gauntlet's intake reads going quiet.
+    "MT5-Dept-Intel (intel feed: hourly discovery)": (
+        "desks/mt5/reports/HOURLY_DISCOVERY.json", 180,
+        "the discovery organs' hourly pass (miners, proposers, data organs) that feeds the "
+        "intelligence intake; owned by the intel_feed leg"),
+    "MT5-Dept-Intel (intel feed: seed miners)": (
+        "desks/mt5/data/intelligence/seed_miners_state.json", 180,
+        "the seed miner fleet's state, rewritten every sweep; its discoveries land beside it "
+        "for local_converter; owned by the intel_feed leg"),
 }
 
 
