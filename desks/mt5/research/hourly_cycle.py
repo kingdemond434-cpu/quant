@@ -1447,6 +1447,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
+                     "allocator_structure_lab",
                      "forward_calibration"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
@@ -2081,6 +2082,9 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The structure lab stops its walk-forward at 85% of its own --budget-s 600 and writes; the
+    # cap sits above that so the report is always published.
+    "allocator_structure_lab": 720,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -5788,6 +5792,15 @@ def main() -> None:
     # (`--resident`, desks/mt5/ops/box_tasks.manifest) is how it reacts in seconds.
     atg = _costed("allocator_trigger", lambda: _producer(
         "allocator_trigger", "research/allocator_trigger.py", "--once", "--budget-s", "300"))
+    # THE ALLOCATOR'S STRUCTURE LAB (GAP_MAP Max-growth / Growth allocator overhaul / H6,
+    # 2026-11-13): random-matrix cleaning of the sleeve correlation, the factor risk model and
+    # neutralisation, the diversification multiplier and crowding -- each with a walk-forward
+    # out-of-sample log-growth verdict against the plain sample-covariance Kelly book. It reads
+    # the allocator's own cached daily-R matrix, so it runs after the solve. Report only: an
+    # input earns capital authority by its ADOPT verdict in a later, audited change.
+    asl = _costed("allocator_structure_lab", lambda: _producer(
+        "allocator_structure_lab", "research/allocator_structure_lab.py", "--once",
+        "--budget-s", "600"))
     # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
     # the gateway only at status LIVE, and LIVE is written only by the promoter -- on a fresh
     # MEASURED admission that admits the sleeve, and for a STANDBY row on PROMOTE_ADMIT_STREAK
@@ -6658,6 +6671,7 @@ def main() -> None:
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "allocator_structure_lab": asl,
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
