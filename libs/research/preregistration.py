@@ -273,38 +273,130 @@ def _legacy_spec_id(card: Mapping[str, Any]) -> str | None:
     return node_id(str(uni[0]), str(fam), params)
 
 
-def spec_index(path: Path | None = None) -> dict[str, tuple[str, str]]:
-    """spec_id -> (EARLIEST registered_utc, that card's hash). Streamed, so a large ledger costs
-    one pass and a dict of 16-byte keys, never the whole file resident."""
-    p = path if path is not None else LEDGER
-    out: dict[str, tuple[str, str]] = {}
+#: THE INDEX IS INCREMENTAL (2026-11-11). The judge's merge_and_publish spent 44% of its
+#: sampled wall in one full re-parse of this ledger per sweep (JUDGE_SWEEP_PHASE wall_profile,
+#: `spec_index:286` <- `record_gauntlet_verdicts`), and merge_hypotheses' `register_docket`
+#: pays the same pass. The ledger is APPEND-ONLY, so the index of its first N bytes never
+#: changes: it is kept per process and in a box-local sidecar (gitignored) with the byte
+#: offset it covers, and each call parses only the bytes appended since. The sidecar is
+#: trusted only while the file's head and the bytes just before the offset are unchanged and
+#: the file has not shrunk; anything else -- a rewrite, a truncation, an unreadable sidecar --
+#: rebuilds from byte 0, which is exactly the old behaviour. Folding is the same min-by-time
+#: rule, which is order independent, so the incremental index equals the full one.
+_INDEX_MEMO: dict[str, dict[str, Any]] = {}
+_GUARD_BYTES = 4096
+_READ_BLOCK = 64 << 20
+
+
+def _sidecar(p: Path) -> Path:
+    return p.with_name(p.name + ".spec_index.json")
+
+
+def _guard(fh: Any, offset: int) -> tuple[str, str]:
+    fh.seek(0)
+    head = hashlib.sha1(fh.read(min(offset, _GUARD_BYTES))).hexdigest()
+    fh.seek(max(0, offset - _GUARD_BYTES))
+    tail = hashlib.sha1(fh.read(min(offset, _GUARD_BYTES))).hexdigest()
+    return head, tail
+
+
+def _fold_line(out: dict[str, tuple[str, str]], ln: str) -> None:
+    if not ln.strip():
+        return
     try:
-        fh = p.open("r", encoding="utf-8", errors="replace")
+        r = json.loads(ln)
+    except ValueError:
+        return
+    if not isinstance(r, dict):
+        return
+    at, h = str(r.get("registered_utc") or ""), str(r.get("prereg_hash") or "")
+    if not at or not h:
+        return
+    if r.get("kind") == BATCH_KIND:
+        sids = [str(s) for s in (r.get("specs") or [])]
+    else:
+        sid = r.get("spec_id") or _legacy_spec_id(r)
+        sids = [str(sid)] if sid else []
+    for sid in sids:
+        cur = out.get(sid)
+        if cur is None or at < cur[0]:
+            out[sid] = (at, h)
+
+
+def _load_sidecar(p: Path) -> dict[str, Any] | None:
+    """The sidecar, as DATA: plain JSON, every record type-checked; anything else is None."""
+    try:
+        doc = json.loads(_sidecar(p).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or not isinstance(doc.get("index"), dict):
+        return None
+    if not isinstance(doc.get("offset"), int) or not all(
+            isinstance(doc.get(k), str) for k in ("head", "tail")):
+        return None
+    index: dict[str, tuple[str, str]] = {}
+    for sid, rec in doc["index"].items():
+        if (not isinstance(rec, list) or len(rec) != 2
+                or not all(isinstance(x, str) for x in rec)):
+            return None
+        index[str(sid)] = (rec[0], rec[1])
+    return {**doc, "index": index}
+
+
+def _save_sidecar(p: Path, doc: dict[str, Any]) -> None:
+    import os
+    target = _sidecar(p)
+    tmp = target.with_name(f"{target.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(json.dumps({**doc, "index": {k: list(v) for k, v in
+                                                   doc["index"].items()}},
+                                  separators=(",", ":")), "utf-8")
+        os.replace(tmp, target)
     except OSError:
-        return out
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
+def spec_index(path: Path | None = None) -> dict[str, tuple[str, str]]:
+    """spec_id -> (EARLIEST registered_utc, that card's hash). Incremental over the append-only
+    ledger (see `_INDEX_MEMO`); the caller gets its own copy and may extend it."""
+    p = path if path is not None else LEDGER
+    try:
+        fh = p.open("rb")
+    except OSError:
+        return {}
     with fh:
-        for ln in fh:
-            if not ln.strip():
-                continue
-            try:
-                r = json.loads(ln)
-            except ValueError:
-                continue
-            if not isinstance(r, dict):
-                continue
-            at, h = str(r.get("registered_utc") or ""), str(r.get("prereg_hash") or "")
-            if not at or not h:
-                continue
-            if r.get("kind") == BATCH_KIND:
-                sids = [str(s) for s in (r.get("specs") or [])]
-            else:
-                sid = r.get("spec_id") or _legacy_spec_id(r)
-                sids = [str(sid)] if sid else []
-            for sid in sids:
-                cur = out.get(sid)
-                if cur is None or at < cur[0]:
-                    out[sid] = (at, h)
-    return out
+        size = fh.seek(0, 2)
+        key = str(p)
+        doc = _INDEX_MEMO.get(key) or _load_sidecar(p)
+        index: dict[str, tuple[str, str]] = {}
+        offset = 0
+        if doc is not None:
+            off = int(doc.get("offset") or 0)
+            if 0 < off <= size and (doc.get("head"), doc.get("tail")) == _guard(fh, off):
+                index, offset = doc["index"], off
+        # Streamed in blocks: a first build over a large ledger never holds the whole file.
+        fh.seek(offset)
+        new_offset, carry = offset, b""
+        while True:
+            block = fh.read(_READ_BLOCK)
+            if not block:
+                break
+            block = carry + block
+            cut = block.rfind(b"\n") + 1      # a torn last line waits for its newline
+            for raw in block[:cut].split(b"\n"):
+                _fold_line(index, raw.decode("utf-8", errors="replace"))
+            new_offset += cut
+            carry = block[cut:]
+        if new_offset > 0:
+            head, tail = _guard(fh, new_offset)
+            fresh = {"offset": new_offset, "head": head, "tail": tail, "index": index}
+            _INDEX_MEMO[key] = fresh
+            if new_offset != offset or doc is None:
+                _save_sidecar(p, fresh)
+    return dict(index)
 
 
 def register_docket(rows: list[dict[str, Any]], *, judged: Container[str] = frozenset(),
