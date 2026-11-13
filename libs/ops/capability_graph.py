@@ -514,6 +514,13 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/pf_allocation.json"),
          writes=("desks/mt5/reports/alpha_evolution.json",
                  "desks/mt5/data/intelligence/alpha_evolution/")),
+    # DAILY P&L EXPLAIN (K4, 2026-11-13): the live and prop ledgers + order intents -> per account
+    # and day, signal / entry slippage / commission / swap / fees / FX conversion / residual.
+    Node("pnl_explain", "desks/mt5/research/pnl_explain.py",
+         reads=("desks/mt5/data/live_ledger.jsonl", "desks/mt5/data/order_intents.jsonl",
+                "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/PNL_EXPLAIN.json",
+                 "desks/mt5/data/pnl_explain_daily.jsonl")),
     Node("style_premia_sweep", "desks/mt5/research/style_premia_sweep.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
@@ -1106,6 +1113,12 @@ EXTERNAL_READERS = {
                                                  "interrupt that fires constantly is an "
                                                  "expensive clock)"),
     "desks/mt5/data/deep_forest_seen.json": "deep_forest_miner (its own seen-ledger)",
+    "desks/mt5/reports/PNL_EXPLAIN.json": ("the Hourly pass's loss intelligence and the operator: "
+                                           "each component has a different owner (signal -> "
+                                           "research, slippage -> execution, commission/swap -> "
+                                           "venue and hold design, FX -> hedge policy)"),
+    "desks/mt5/data/pnl_explain_daily.jsonl": ("pnl_explain (its own once-per-day idempotence "
+                                               "key) and the Hourly pass trend read"),
     "desks/mt5/data/intelligence/anomaly_cursor.json": "anomaly_miner (its own rotation cursor)",
     "desks/mt5/data/memory/": "deepening_worker.task_text (memory.prompt_context on every prompt)",
     "desks/mt5/data/research_budget.json": ("daily_cycle proposer budgets and deepening_worker "
