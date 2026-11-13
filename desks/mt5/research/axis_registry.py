@@ -212,6 +212,9 @@ _FAMILY_GROUPS: dict[str, str] = {
                                           " london_ny_breakout opening_range"
                                           " session_range_breakout",
     "breakout_liquidity price_only limit": "failed_breakout",
+    # The retail stop-cluster map (2026-11-04): the payer is the stop-loss holder at a predicted
+    # cluster; both cells enter at the next bar's open, so the style is market, not stop.
+    "breakout_liquidity price_only market": "stop_cluster_cascade stop_cluster_revert",
     "volatility_shock price_only market": "jump vol_mean_reversion",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
