@@ -650,7 +650,7 @@ def test_the_referee_attacks_on_another_model_and_the_revision_is_a_new_child(
                            "overnight gap is partly forced and decays"),
              "falsifier": "no decay on days with no Tokyo session", "symbols": ["USDJPY"],
              "family": fam, "params": {}, "timeframe": "H1", "horizon": "intraday"}
-    _RefSeat.revised = {**exact, "symbols": ["EURJPY"],
+    _RefSeat.revised = {**exact, "symbols": ["EURUSD"],
                         "mechanism": ("Dealers flatten inventory at the Tokyo open only on "
                                       "no-news Mondays, so the gap decays there and not after "
                                       "weekend news"),
