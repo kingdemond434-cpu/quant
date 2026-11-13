@@ -32,6 +32,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 DESK = ROOT / "desks" / "mt5"
 STATE = ROOT / "data" / "research_health_state.json"
 WEEKLY_OUT = DESK / "reports" / "weekly_research_health.json"
@@ -134,6 +137,48 @@ def _mtime_age_h(p: Path, now: datetime) -> float | None:
         return None
 
 
+def _halt_age_h(now: datetime) -> tuple[float | None, str]:
+    """(hours the gateway has been halted, basis). NEVER the marker's mtime -- see the halt branch.
+
+    Reads `HALT_RAIL_INTEGRITY.json`, whose whole job is to date the halt from the gateway's own
+    log and hold that origin durably. An absent or stale report is UNMEASURED and says so: a halt
+    of unknown age is a worse reading than a long one, and an order of magnitude better than the
+    confident 0.0 days this fence used to print.
+    """
+    path = DESK / "reports" / "HALT_RAIL_INTEGRITY.json"
+    rep = _read(path)
+    if not isinstance(rep, dict):
+        return None, ("UNMEASURED: HALT_RAIL_INTEGRITY.json absent or unreadable "
+                      "(scripts/check_halt_rail_integrity.py, hourly leg halt_rail)")
+    halt = rep.get("halt") if isinstance(rep.get("halt"), dict) else {}
+    hours = halt.get("halt_hours")
+    at_age = _mtime_age_h(path, now)
+    if not isinstance(hours, (int, float)) or isinstance(hours, bool):
+        return None, f"UNMEASURED: the report carries no halt_hours ({halt.get('basis')})"
+    if at_age is not None and at_age > 6.0:
+        return None, (f"UNMEASURED: HALT_RAIL_INTEGRITY.json is {at_age:.1f}h old; its "
+                      f"{float(hours) / 24:.1f}-day reading is not current")
+    # The report is kept fresh hourly; between passes the halt has simply gone on for longer.
+    return float(hours) + max(0.0, at_age or 0.0), str(halt.get("basis") or "gateway log")
+
+
+def _docket_projection(now: datetime) -> tuple[int | None, float | None, float | None]:
+    """Remote docket count, producer age and projection age without opening the row bank."""
+    state = _read(ROOT / "web" / "desk_state.json") or {}
+    count = (state.get("pipeline") or {}).get("docket_candidates")
+    if not isinstance(count, (int, float)) or isinstance(count, bool):
+        count = None
+    projection_age = _age_h(state.get("generated_at"), now)
+    producer_age = None
+    meta = DESK / "data" / "hypotheses" / "external_survivors.json.remote_meta"
+    try:
+        _size, _ticks, stamp = meta.read_text("utf-8").strip().split(":", 2)
+        producer_age = _age_h(stamp, now)
+    except (OSError, ValueError):
+        pass
+    return int(count) if count is not None else None, producer_age, projection_age
+
+
 def collect(now: datetime) -> tuple[list[str], dict]:
     """One pass over the flow. Returns (breaches, measurements)."""
     breaches: list[str] = []
@@ -172,13 +217,24 @@ def collect(now: datetime) -> tuple[list[str], dict]:
 
     # --- docket: do candidates actually reach the gauntlet?
     docket = DESK / "data" / "hypotheses" / "external_survivors.json"
-    rows = _read(docket)
     age = _mtime_age_h(docket, now)
+    docket_rows, remote_age, projection_age = _docket_projection(now)
+    if remote_age is not None:
+        age = remote_age
     m["docket_age_h"] = round(age, 2) if age is not None else None
-    m["docket_rows"] = len(rows) if isinstance(rows, list) else 0
+    if projection_age is None or projection_age > FRESH_H["desk_state"]:
+        docket_rows = None
+    m["docket_rows"] = docket_rows
+    m["docket_projection_age_h"] = (
+        round(projection_age, 2) if projection_age is not None else None
+    )
+    m["docket_measurement_source"] = "remote producer identity + consumed desk projection"
     if age is None or age > FRESH_H["docket"]:
         breaches.append(f"DOCKET: external_survivors is {age and round(age, 1)}h old -- "
-                        f"merge/scp leg of the hourly pipeline stopped")
+                        f"owner merge/identity-publication leg of the hourly pipeline stopped")
+    elif m["docket_rows"] is None:
+        breaches.append("DOCKET: remote candidate census is missing or stale -- candidate "
+                        "flow is UNMEASURED, not empty")
     elif not m["docket_rows"]:
         breaches.append("DOCKET: zero candidate rows shipped -- the empty-docket seals held "
                         "upstream, but the flow itself is dry")
@@ -191,6 +247,15 @@ def collect(now: datetime) -> tuple[list[str], dict]:
     # REPORT ONLY, NEVER CURED HERE. Re-arming means placing live orders, and nothing on this box
     # gets to make that decision on its own; the money path takes no autonomous fixer by standing
     # rule. Naming it loudly every five minutes is the entire job.
+    # AND FOR TWELVE DAYS IT NAMED IT AS "0.0 day(s)" (noon CRO, 2026-11-11). The age came from the
+    # marker's mtime -- and the ruin rail REWRITES that marker every five minutes while the halt
+    # stands ("HALT FILE WRITTEN", logs/fusion_deadman.log), so this line measured the age of its
+    # own alarm. The desk had been halted since 2026-10-30T19:51:04Z, 26,043 consecutive paused
+    # passes, and every pass of this fence reported it as a blip. The halt's real age now comes
+    # from HALT_RAIL_INTEGRITY.json (scripts/check_halt_rail_integrity.py), which derives it from
+    # the gateway's own log and keeps a durable origin record; the marker's mtime is still
+    # reported, under its own name, because it IS the useful reading of one thing -- whether the
+    # rail that wrote it is still alive.
     paused = DESK / "data" / "GATEWAY_PAUSED"
     if paused.exists():
         try:
@@ -199,13 +264,18 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             cause = next((ln.strip() for ln in why[1:] if ln.strip()), "")
         except OSError:
             first, cause = "unreadable marker", ""
-        halt_age = _mtime_age_h(paused, now)
+        marker_age = _mtime_age_h(paused, now)
+        halt_age, halt_basis = _halt_age_h(now)
         m["trading_halted"] = True
         m["trading_halted_hours"] = round(halt_age, 1) if halt_age is not None else None
-        days = f"{halt_age / 24:.1f} day(s)" if halt_age is not None else "an unknown period"
+        m["halt_marker_age_hours"] = round(marker_age, 1) if marker_age is not None else None
+        m["halt_age_basis"] = halt_basis
+        days = (f"{halt_age / 24:.1f} day(s)" if halt_age is not None
+                else "an UNMEASURED period (a halt's age is not its marker's mtime)")
         breaches.append(
             f"TRADING HALTED for {days} -- THE DESK IS NOT TRADING. {first}"
             + (f" || {cause}" if cause else "")
+            + f" || halt age basis: {halt_basis}"
             + " || This is never auto-cleared: re-arming places live orders. Delete "
               "desks/mt5/data/GATEWAY_PAUSED on the desk box once the cause is fixed.")
     else:
@@ -326,16 +396,20 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         _inst = classify_all(json.loads((DESK / "data" / "universe" / "universe.json")
                                         .read_text("utf-8")))
         _usable = {i.symbol: i.asset_class for i in _inst if i.usable}
-        _hunted = {r.get("symbol") or r.get("sym") for r in (rows or [])}
-        _per: dict[str, int] = {}
-        for _sym in _hunted:
-            _c = _usable.get(str(_sym))
-            if _c:
-                _per[_c] = _per.get(_c, 0) + 1
-        m["classes_hunted"] = _per
-        _missing = sorted(c for c in set(_usable.values()) if c not in _per)
-        if _missing:
-            breaches.append(f"BREADTH: zero docket coverage for {', '.join(_missing)} -- "
+        coverage = _read(DESK / "data" / "hypotheses" / "coverage_search_results.json") or {}
+        coverage_age = _age_h(coverage.get("generated_at"), now)
+        starved = coverage.get("starved_classes")
+        m["classes_hunted"] = {
+            "status": "MEASURED_BY_COVERAGE_SEARCH" if isinstance(starved, list) else "UNMEASURED",
+            "known_classes": sorted(set(_usable.values())),
+            "starved_classes": starved if isinstance(starved, list) else None,
+            "age_h": round(coverage_age, 2) if coverage_age is not None else None,
+        }
+        if coverage_age is None or coverage_age > 3.0:
+            breaches.append("BREADTH: coverage_search_results is stale or unreadable -- class "
+                            "coverage is UNMEASURED, not complete")
+        elif starved:
+            breaches.append(f"BREADTH: zero docket coverage for {', '.join(starved)} -- "
                             f"ground the desk owns and never hunts")
         import run_external_backtest as _sa
         from mt5desk import families as _fam

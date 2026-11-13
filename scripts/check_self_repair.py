@@ -35,40 +35,17 @@ FLOOR = ROOT / "docs" / "research" / "self_repair_floor.json"
 
 
 def _trading_host(base: Path) -> bool:
-    """Is the live gateway writing here? By the file's age AND its own stamps: gateway_state.json
-    is tracked, so a checkout resets its mtime and a fresh clone read as the trading host.
+    """The trading box, by its machine id -- the one helper `check_birth_obligations` asks.
 
-    AND ONLY ON A MACHINE THAT MAY BE THE BOX (2026-10-13). The box now publishes
-    gateway_state.json to origin every 15 minutes, so its stamps are fresh on every checkout, and
-    its `placement_pass` carries broker time labelled UTC (hours in the future), which made any
-    copy read as "written seconds ago". The machine's own identity (libs/ops/host_identity, the
-    helper check_birth_obligations already uses) decides first; the gateway's age still decides on
-    the box, exactly as before."""
-    import time as _t
-    from datetime import datetime
-
+    It used to answer from `gateway_state.json`'s mtime and stamps. That file is TRACKED and the
+    box publishes it to origin, so for three hours after every box commit any cloud checkout read
+    as the trading host: this fence went red on clean trees, the merge-base included, and every
+    thread's push stalled (2026-10-13). An UNMEASURED id with the trading hostname still answers
+    yes (`may_be_trading`), so the box itself stays fail-closed. `base` is kept for the callers'
+    signature; the answer is about this machine, not a checkout."""
+    del base
     from libs.ops import host_identity
-    if not host_identity.identify().may_be_trading:
-        return False
-    path = base / "desks" / "mt5" / "data" / "gateway_state.json"
-    try:
-        age = _t.time() - path.stat().st_mtime
-    except OSError:
-        return False
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError):
-        doc = {}
-    stamps: list[float] = []
-    for key in ("last_reconcile", "placement_pass", "updated_at", "at", "ts"):
-        try:
-            stamps.append(datetime.fromisoformat(
-                str(doc[key]).replace("Z", "+00:00")).timestamp())
-        except (KeyError, TypeError, ValueError):
-            continue
-    if stamps:
-        age = max(age, _t.time() - max(stamps))
-    return age < 3 * 3600
+    return host_identity.identify().may_be_trading
 
 
 def measure(root: Path | None = None, *, require: bool = False) -> dict[str, Any]:
