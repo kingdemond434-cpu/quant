@@ -71,22 +71,57 @@ false-null direction, the only one this desk has no instrument for". It is repor
 NOT applied as a credit: crediting it would raise a sleeve's mean on the strength of a cost model,
 which is sizing up on a modelling assumption. Under-charging is corrected; over-charging is
 reported and left for the replay to fix at source, where it belongs.
+
+REALISED FILLS CORRECT THE MODEL, BOTH WAYS (2026-11-03). The reason the model may never credit
+is that it "has never been validated against a real fill". `research/realised_cost.py` publishes,
+per account x symbol, the realised cost of each fill AND what the replay charged that same fill
+(`external_gauntlet.costs_for`: the pooled median spread from today's registry plus the replay's
+commission, over the trade's own stop), and `apply_realised` shrinks THEIR DIFFERENCE toward the
+modelled bias:
+
+    cost_bias_r = w x mean(realised_r - replay_charged_r) + (1 - w) x modelled cost_bias_r,
+    w = n / (n + REALISED_K)
+
+Neither `BASE_COST_R` nor the surface's `BASE_COST_R x ratio` is an anchor (Auditor HOLDs on
+b3b1ee181 and 59ae9ea7c): both terms of the difference are per fill, in the same R. It may go
+NEGATIVE (a credit) -- a capital modifier on this desk must be two-sided (GROWTH_GOVERNANCE,
+`capital_modifiers.REGISTRY` "realised_execution_cost") -- but ONLY where the cell's difference is
+MEASURED: `REALISED_MIN_N` fills, every one carrying both terms. Otherwise the modelled entry is
+left exactly as it was and named. A REALISED_COST report older than `REALISED_MAX_AGE_H` or
+unreadable leaves every modelled cost as it was, and the summary says which.
 """
 from __future__ import annotations
 
 import math
 import re
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from typing import Any
 
 __all__ = [
     "BASE_COST_R",
     "MAX_RATIO",
+    "NO_BASELINE",
+    "REALISED_K",
+    "REALISED_MAX_AGE_H",
+    "REALISED_MIN_N",
     "SESSION_FILL_HOUR",
+    "apply_realised",
     "cost_ratio",
     "costs_for",
     "fill_hour",
+    "realised_state",
 ]
+
+#: Empirical-Bayes prior strength, in fills, of the modelled cost against the realised one: at
+#: n = REALISED_K the venue's own mean and the model weigh equally. Declared, not fitted.
+REALISED_K = 20.0
+#: Fills a realised-minus-replay cell needs before it may move a cost at all: one favourable
+#: slip must not produce a credit. `realised_cost.MIN_DIFF_N` is this constant, imported.
+REALISED_MIN_N = 5
+#: A realised-cost report older than this describes a book that has since traded; the modelled
+#: cost stands until a fresh one is written.
+REALISED_MAX_AGE_H = 48.0
 
 MEASURED, UNMEASURED, REGISTRY_DEFECT = "MEASURED", "UNMEASURED", "REGISTRY_DEFECT"
 
@@ -331,3 +366,136 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
         summary["verdict"] = ("UNMEASURED: not one sleeve could be priced at its own fill hour. "
                               "Execution is not an allocator input on this host.")
     return {"sleeves": out, "summary": summary}
+
+
+def realised_state(doc: Any, now: datetime | None = None,
+                   max_age_h: float = REALISED_MAX_AGE_H) -> tuple[bool, str, float | None]:
+    """(usable, why, age_h) for a REALISED_COST.json document. Unreadable, unstamped, stale or
+    UNMEASURED is not usable, and the reason is the allocator's published fallback note."""
+    if not isinstance(doc, Mapping):
+        return False, "REALISED_COST.json absent or unreadable: modelled cost used", None
+    try:
+        at = datetime.fromisoformat(str(doc.get("measured_at")).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return False, "REALISED_COST.json carries no readable measured_at: modelled cost used", None
+    at = at if at.tzinfo else at.replace(tzinfo=UTC)
+    age_h = ((now or datetime.now(tz=UTC)) - at).total_seconds() / 3600.0
+    if not age_h <= max_age_h:
+        return (False, f"REALISED_COST.json is {age_h:.1f}h old (> {max_age_h:g}h): STALE, "
+                       "modelled cost used", round(age_h, 2))
+    if str(doc.get("status") or "") != MEASURED:
+        return (False, "REALISED_COST.json is UNMEASURED (no account x symbol cell carries a "
+                       "whole round-trip cost): modelled cost used", round(age_h, 2))
+    return True, f"REALISED_COST.json fresh ({age_h:.1f}h)", round(age_h, 2)
+
+
+#: What a sleeve reads when its cell's realised-minus-replay difference is not MEASURED: there is
+#: nothing measured to be a credit or debit, so the modelled bias stands.
+NO_BASELINE = "UNMEASURED: no measured realised-minus-replay difference"
+
+
+def apply_realised(cost_doc: Mapping[str, Any], realised: Any, *,
+                   symbols: Mapping[str, str], account: str = "fusion",
+                   accounts: Mapping[str, str] | None = None,
+                   k: float = REALISED_K, min_n: int = REALISED_MIN_N,
+                   now: datetime | None = None,
+                   max_age_h: float = REALISED_MAX_AGE_H) -> dict[str, Any]:
+    """`costs_for`'s output with each sleeve's bias corrected by what its fills really cost
+    against what the replay charged them. TWO-SIDED, credit only where MEASURED.
+
+        diff        = cell vs_replay.diff_mean_r   (winsorized mean of realised_r - charged_r)
+        cost_bias_r = w x diff + (1 - w) x modelled cost_bias_r,   w = n / (n + k)
+
+    A sleeve whose cell is absent, or whose `vs_replay` is not MEASURED (fewer than `min_n`
+    fills, or any counted fill without the replay's charge), keeps its modelled entry UNTOUCHED
+    and is named in `no_baseline`. Never mixes accounts: a sleeve reads
+    `realised["accounts"][accounts.get(name, account)]` only. `missed_growth` carries, per
+    corrected sleeve, the share of (diff - modelled bias) the shrinkage holds back, both ways."""
+    sleeves = {n: dict(v) for n, v in (cost_doc.get("sleeves") or {}).items()}
+    summary = dict(cost_doc.get("summary") or {})
+    usable, why, age_h = realised_state(realised, now, max_age_h)
+    acct_of = dict(accounts or {})
+    block: dict[str, Any] = {"account": account,
+                             "accounts": sorted({acct_of.get(n, account) for n in sleeves})
+                             or [account],
+                             "usable": usable, "why": why, "age_h": age_h,
+                             "k": float(k), "min_n": int(min_n), "n_realised": 0,
+                             "n_model": len(sleeves), "n_cheaper": 0, "n_dearer": 0,
+                             "n_no_baseline": 0, "no_baseline": {}, "two_sided": True,
+                             "baseline": ("per fill, the replay's own charge "
+                                          "(external_gauntlet.costs_for, pooled spread + "
+                                          "commission over the trade's stop); the difference "
+                                          "is shrunk toward the modelled cost_bias_r"),
+                             "missed_growth": []}
+    if not usable:
+        block["fallback"] = "MODELLED"
+        summary["realised"] = block
+        return {"sleeves": sleeves, "summary": summary}
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    books = realised.get("accounts") or {}
+    for name, entry in sleeves.items():
+        acct = acct_of.get(name, account)
+        sym = str(symbols.get(name) or "")
+        c = ((books.get(acct) or {}).get("symbols") or {}).get(sym)
+        if not isinstance(c, Mapping):
+            continue
+        raw_vr = c.get("vs_replay")
+        vr: Mapping[str, Any] = raw_vr if isinstance(raw_vr, Mapping) else {}
+        diff, n = vr.get("diff_mean_r"), int(vr.get("n") or 0)
+        if (vr.get("status") != MEASURED or n < int(min_n)
+                or not isinstance(diff, (int, float)) or not math.isfinite(float(diff))):
+            block["n_no_baseline"] += 1
+            block["no_baseline"][name] = {
+                "account": acct, "symbol": sym, "verdict": NO_BASELINE, "n": n,
+                "why": (str(vr.get("why") or "") or
+                        f"{NO_BASELINE}: the realised cell carries no MEASURED difference "
+                        "against the replay's charge") + "; the modelled bias stands"}
+            continue
+        model_bias = float(entry.get("cost_bias_r", 0.0) or 0.0)
+        w = n / (n + float(k))
+        bias = w * float(diff) + (1.0 - w) * model_bias
+        charged = vr.get("charged_mean_r")
+        level = (float(charged) + bias
+                 if isinstance(charged, (int, float)) and math.isfinite(float(charged)) else None)
+        model_cost_r = entry.get("cost_r")
+        entry.update({
+            "cost_bias_r": round(bias, 6),
+            # the uncertainty scale moves with the level the venue measured: the replay's own
+            # charge plus the corrected bias, as on the modelled path
+            # clamped at 0, never abs(): a negative level can only be a rebate, and abs would
+            # turn it into a cost; the raw level stays on the record so a rebate is visible
+            "cost_r": (round(max(0.0, level), 6) if level is not None else model_cost_r),
+            "level_r": (round(level, 8) if level is not None else None),
+            "source": "REALISED",
+            "realised": {"account": acct, "n": n, "weight": round(w, 6),
+                         "diff_mean_r": round(float(diff), 8),
+                         "replay_charged_mean_r": charged,
+                         "realised_mean_r": vr.get("realised_mean_r"),
+                         "modelled_cost_bias_r": round(model_bias, 8),
+                         "modelled_cost_r": model_cost_r},
+            "why": (f"realised {acct} {sym} cost {float(diff):+.4f}R against the replay's own "
+                    f"charge over {n} fill(s), shrunk at w={w:.3f} toward the modelled bias "
+                    f"{model_bias:+.4f}R"),
+        })
+        block["n_realised"] += 1
+        block["n_model"] -= 1
+        if bias < model_bias:
+            block["n_cheaper"] += 1
+        elif bias > model_bias:
+            block["n_dearer"] += 1
+        gap = float(diff) - model_bias
+        block["missed_growth"].append({
+            "at": at, "rail": "realised_cost_shrinkage", "account": acct, "sleeve": name,
+            "symbol": sym, "n": n, "weight": round(w, 6), "withheld_share": round(1.0 - w, 6),
+            "modelled_bias_r": round(model_bias, 8), "diff_mean_r": round(float(diff), 8),
+            "gap_r": round(gap, 8), "withheld_r": round((1.0 - w) * gap, 8),
+            "direction": "cost_up" if gap > 0 else "cost_down" if gap < 0 else "none",
+            "verdict": UNMEASURED,
+            "why": ("the shrinkage holds (1 - w) of (realised-minus-replay difference - "
+                    "modelled bias) back toward the modelled bias, in either direction; its "
+                    "E[log W] price is UNMEASURED until the allocator's re-solve is ledgered")})
+    block["fallback"] = "NONE" if block["n_model"] == 0 else "MODELLED_WHERE_UNMEASURED"
+    if block["n_no_baseline"] and not block["n_realised"]:
+        block["verdict"] = NO_BASELINE
+    summary["realised"] = block
+    return {"sleeves": sleeves, "summary": summary}

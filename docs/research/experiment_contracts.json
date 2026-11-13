@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "realised_cost": {
+   "hypothesis": "Rolling every account's FILLED corpus rows into per account x symbol realised round-trip cost (slip + spread + commission) gives the allocator a measured cost input for more cells each week, replacing the modelled spread x hour surface wherever fills exist, in both directions.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_cells_measured",
+    "better": "up",
+    "organ": "report:REALISED_COST.json"
+   },
+   "falsifier": {
+    "metric": "n_cells_measured",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days: no account x symbol cell carries a fill with slip, spread and commission all measured, so the allocator never leaves the model and the join or the recorder's fields are the defect"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

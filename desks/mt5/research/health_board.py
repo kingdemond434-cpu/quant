@@ -51,6 +51,16 @@ READERS = {
     "trade_pathology": DESK / "reports" / "TRADE_PATHOLOGY.json",
     "experiment_contracts": DESK / "reports" / "EXPERIMENT_CONTRACTS.json",
 }
+#: LIVENESS RULES FOR A LEG WHOSE FAILURE IS SILENT (2026-11-03). `realised_cost` feeds the
+#: allocator's cost input; a stale report quietly returns the allocator to the model, and a report
+#: with zero fills while `fill_recorder` publishes realised fills means the join between them broke.
+#: Both are RED: organ name -> (its report, the upstream report that says fills are flowing).
+LIVENESS: dict[str, tuple[Path, Path]] = {
+    "realised_cost": (DESK / "reports" / "REALISED_COST.json",
+                      DESK / "reports" / "FILL_RECORDER.json"),
+}
+#: The realised-cost report's lease: it is written hourly, so three missed passes is a dead leg.
+REALISED_COST_LEASE_H = 3.0
 OUT = DESK / "reports" / "HEALTH_BOARD.json"
 OUT_MD = DESK / "reports" / "HEALTH_BOARD.md"
 
@@ -171,9 +181,50 @@ def judge(organ: dict[str, Any], event: dict[str, Any] | None) -> tuple[str, str
     return UNMEASURED, str(organ.get("why") or f"{state}: nothing on this host proves it")
 
 
+def realised_cost_liveness(doc: Any, fill_doc: Any, artifact: str = "",
+                           lease_h: float = REALISED_COST_LEASE_H) -> dict[str, Any]:
+    """The realised-cost leg's organ row. RED when its report is absent or zero-row while
+    fill_recorder publishes realised fills, or when it is older than its lease; UNMEASURED when
+    nothing on this host says either way; GREEN otherwise (AMBER while fills flow but no cell has
+    a whole round-trip cost yet -- the allocator is still on the model)."""
+    flowing = (isinstance(fill_doc, dict)
+               and isinstance(fill_doc.get("realised_fills"), (int, float))
+               and fill_doc["realised_fills"] > 0)
+    row: dict[str, Any] = {"organ": "liveness:realised_cost", "kind": "liveness",
+                           "artifact": artifact or None}
+    if not isinstance(doc, dict):
+        verdict, why = ((RED, "REALISED_COST.json absent while fill_recorder reports "
+                              f"{fill_doc['realised_fills']} realised fill(s)") if flowing
+                        else (UNMEASURED, "neither REALISED_COST.json nor flowing fills on this "
+                                          "host"))
+        row.update(state="MISSING" if flowing else "NEVER", verdict=verdict, verdict_why=why)
+        return row
+    age = _age_h(_ts(doc.get("measured_at")))
+    n_used = doc.get("n_fills_used")
+    if age is None or age > lease_h:
+        verdict, why = RED, (f"STALE: measured_at {doc.get('measured_at')!r} is "
+                             f"{'unreadable' if age is None else f'{age:.1f}h old'} against a "
+                             f"{lease_h:g}h lease -- the allocator has fallen back to the model")
+        state = "STALE"
+    elif flowing and not n_used:
+        verdict, why = RED, (f"zero fills used while fill_recorder reports "
+                             f"{fill_doc['realised_fills']} realised fill(s): the join is broken")
+        state = "LIVE"
+    elif flowing and not doc.get("n_cells_measured"):
+        verdict, why = AMBER, (f"{n_used} fill(s) read but no account x symbol cell carries a "
+                               "whole round-trip cost: the allocator is still on the model")
+        state = "LIVE"
+    else:
+        verdict, why, state = GREEN, f"fresh ({age:.2f}h), {n_used} fill(s) used", "LIVE"
+    row.update(state=state, last_reading=str(doc.get("status") or "") or None,
+               verdict=verdict, verdict_why=why)
+    return row
+
+
 def build(runtime: Path | None = None, events: Path | None = None,
           acceptance: Path | None = None, stall: Path | None = None,
-          readers: dict[str, Path] | None = None) -> dict[str, Any]:
+          readers: dict[str, Path] | None = None,
+          liveness: dict[str, tuple[Path, Path]] | None = None) -> dict[str, Any]:
     rt = _json(runtime or RUNTIME)
     ev_last, ev_newest, ev_present = read_events(events or EVENTS)
     acc = _json(acceptance or ACCEPTANCE)
@@ -215,6 +266,13 @@ def build(runtime: Path | None = None, events: Path | None = None,
             "verdict": (UNMEASURED if not isinstance(d, dict) or st == UNMEASURED else GREEN),
             "verdict_why": (f"{p.name} absent on this host" if not isinstance(d, dict)
                             else f"its own status is {st or 'unstated'}")})
+    # A caller that hands its own readers (the tests) gets only the rules it names.
+    rules = (LIVENESS if readers is None else {}) if liveness is None else liveness
+    for name, (rep, upstream) in rules.items():
+        if name == "realised_cost":
+            organs.append(realised_cost_liveness(
+                _json(rep), _json(upstream),
+                str(rep.relative_to(ROOT)) if rep.is_relative_to(ROOT) else str(rep)))
     counts = Counter(o["verdict"] for o in organs)
     reported_failing = [a for a in ((sw or {}).get("actions") or [])
                         if isinstance(a, str) and a.upper().startswith(("FAILING", "TASK MISSING",
