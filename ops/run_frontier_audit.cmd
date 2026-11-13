@@ -39,7 +39,8 @@ call :run "desks\mt5\research\pit_audit.py" --apply
 call :run "desks\mt5\research\forward_calibration.py" --apply
 call :run "desks\mt5\research\orthogonality.py" --apply
 call :run "desks\mt5\research\unknown_unknowns.py" --apply
-call :run "desks\mt5\research\world_model.py" --apply
+rem world_model has no --apply flag (it takes --once); with --apply it exited rc=2 on every run (box log 2026-11-09/10), so this lane never refreshed it.
+call :run "desks\mt5\research\world_model.py" --once
 rem TWO MEASUREMENTS THAT WERE DARK (Tier-5 audit XCI/107 and XCIV, 2026-09-29).
 rem market_posteriors is F3, the nine-axis posteriors split off world_model on 2026-09-17;
 rem chart_allocator publishes the per-chart hunting weights edge_search already draws from.
@@ -76,7 +77,8 @@ call :run "desks\mt5\research\meta_controller.py" --apply
 rem RECURSIVE META-R&D (F25), immediately BEFORE the bench and the verifier so it records
 rem the arena state as it stood this pass. Its three arenas are the bench, the adversary
 rem and the credit record -- which is why it could not be built before them.
-call :run "desks\mt5\research\meta_rnd.py" --apply
+rem meta_rnd has no --apply flag (it takes --once); with --apply it exited rc=2 on every run (box log 2026-11-09/10), so this lane never refreshed it.
+call :run "desks\mt5\research\meta_rnd.py" --once
 rem THE BENCH RUNS LAST (F18), and the order is the point: every probe reads an artifact
 rem this lane has just regenerated, so a stale report cannot be mistaken for a returned
 rem defect. It reports UNMEASURABLE on an artifact older than the code that produces it.
@@ -112,7 +114,8 @@ rem THE INDEPENDENT VERIFIER (item 15, 2026-09-29). A second implementation, imp
 rem code, rebuilds every promoted certificate from its frozen spec and is compared trade by
 rem trade with the original. Daily, not hourly: it reloads every certified chart's bars.
 call :run "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200
-call :run "desks\mt5\research\quantbench.py" --apply
+rem quantbench has no --apply flag (it takes --once); with --apply it exited rc=2 on every run (box log 2026-11-09/10), so this lane never refreshed it.
+call :run "desks\mt5\research\quantbench.py" --once
 rem DORMANT COMPONENTS (DP2, 2026-09-30). The dead-architecture census names UNREACHED organs
 rem every run and nobody acted on the list. This takes the ones that ALSO have no clock in the
 rem component registry and no artifact update in 14 days (disk and git) and files each one to
