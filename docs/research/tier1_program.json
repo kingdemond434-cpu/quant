@@ -9203,6 +9203,34 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "GH1",
+   "item": "GitHub as a 24/7 source civilization (EliteQuant thread, principal 2026-09-30; finish-paused rows 99/100): a scheduled public-GitHub repo miner that DISCOVERS repositories (awesome-lists walked, searches paged on a pushed cursor), reads README claims and strategy files into hypothesis rows mapped to MT5 instruments, donates through data/intelligence/<seat>/, dedupes against every past donation, publishes its yield, and reads RED on zero yield; its firm lane is the writer firm_mining never had",
+   "domain": "W",
+   "phase": "W",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/github_repo_miner.py:472 (run: searches -> seeded batch -> lists -> discovered queue, paced on X-RateLimit headers; raw README outside the API quota)",
+    "desks/mt5/research/github_repo_miner.py:303 (claim_rows: mechanism_claims + the compiler's family vocabulary + universe_policy lanes; verbatim quote only under a copy-permitted licence)",
+    "desks/mt5/research/github_repo_miner.py:368 (code_rows: strategy files through cell_emitter's static indicator reader)",
+    "desks/mt5/research/github_repo_miner.py:431 (liveness: per-seat GREEN / RED / UNMEASURED over 72 h)",
+    "desks/mt5/research/github_repo_miner.py:729 (check: exit 1 on RED or a report older than 6 h, 2 when absent)",
+    "desks/mt5/data/github_repo_seeds.json (the EliteQuant 20-repo batch with dispositions, seven lists, seventeen searches)",
+    "desks/mt5/research/hourly_cycle.py:3521 (leg github_repo_miner, intel department) and :3536 (leg github_miner_alive, CORE_LEGS at :1157)",
+    "desks/mt5/research/issue_board.py:208 (GITHUB_MINER_ALARM.txt is raised as DEGRADED)",
+    "scripts/check_producer_yield.py:164 (firm_mining and github_repos carry named inheritors)",
+    "desks/mt5/tests/test_github_repo_miner.py (no network: walk, donate, dedupe, RED on zero yield, UNMEASURED when the quota stopped the pass, compile through the ordinary door)"
+   ],
+   "scheduled_by": "hourly_cycle:github_repo_miner, hourly_cycle:github_miner_alive",
+   "artifact": "desks/mt5/reports/GITHUB_REPO_MINER.json",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py (reads data/intelligence/github_repos and data/intelligence/firm_mining); scripts/check_producer_yield.py (counts both seats); research/issue_board.py (GITHUB_MINER_ALARM.txt)",
+   "gap": "Live yield on the box is UNMEASURED until the first intel-department pass there. Measured from the build container 2026-11-03 in raw-fallback mode (its proxy gates per-repo API calls): one 240 s pass reached 243 repositories, discovered 1,205, donated 23 rows to github_repos and 10 to firm_mining. With GITHUB_TOKEN unset the box has 60 core calls/h shared with cell_emitter and repo_miner.",
+   "next_step": "After the first box passes, read GITHUB_REPO_MINER.json per_repo drops; if the firm lane reads RED, widen its searches in github_repo_seeds.json rather than re-donating the 2026-09-27 rows.",
+   "landed": [
+    "f73c062ad"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
