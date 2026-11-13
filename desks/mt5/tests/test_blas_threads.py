@@ -341,7 +341,7 @@ def test_the_switch_is_decided_before_numpy_loads() -> None:
 
 def test_cachewarm_takes_the_switch_before_the_judge_loads() -> None:
     src = (DESK / "scripts" / "warm_gauntlet_cache.py").read_text("utf-8")
-    body = src.split("def _cli_main()", 1)[1]
+    body = src.split("def _cli_main(", 1)[1]
     assert body.index("_apply_blas_switch()") < body.index("exclusive_job")
     assert "blas_threads.apply(os.environ)" in src
 
