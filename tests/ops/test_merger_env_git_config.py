@@ -1,13 +1,12 @@
 """The gate's git calls died at rc 128 on every sweep from 2026-11-05 to 11-13 (box repro):
 merger_env.ps1 set GIT_CONFIG_VALUE_n to "", which Windows PowerShell 5.1 turns into a DELETED
 variable, so git read GIT_CONFIG_COUNT naming a value that did not exist. And the gate loaded
-that file from its stale clone before fetching, so no fix could reach it."""
+that file from its stale clone before fetching, so no fix could reach it. #1089 fixed the empty
+value (kernel32 SetEnvironmentVariableW keeps ""); this pins that, and the load order."""
 
 from __future__ import annotations
 
-import os
 import re
-import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,19 +25,12 @@ def test_no_env_variable_is_ever_set_to_an_empty_string() -> None:
         assert not re.search(r"\$env:\w+\s*=\s*(\"\"|'')\s*$", code, flags=re.M)
 
 
-def test_the_credential_helper_reset_rides_in_git_config_parameters() -> None:
+def test_the_empty_credential_helper_reset_is_set_so_it_survives() -> None:
     code = _code(MERGER)
-    assert "credential.helper" in code and "GIT_CONFIG_PARAMETERS" in code
-    assert not re.search(r'GIT_CONFIG_KEY_\$m"\s+-Value\s+"credential\.helper"', code)
-
-
-def test_git_reads_the_quoted_empty_reset() -> None:
-    env = dict(os.environ, GIT_CONFIG_PARAMETERS="'credential.helper'=''")
-    out = subprocess.run(
-        ["git", "config", "--show-origin", "--get-all", "credential.helper"],
-        capture_output=True, text=True, env=env, cwd=ROOT, check=True,
-    )  # fmt: skip
-    assert out.stdout.splitlines()[-1].split("\t") == ["command line:", ""]
+    assert "credential.helper" in code
+    # never through Set-Item env: or $env: (PowerShell deletes a variable set to "")
+    assert 'SetEnvironmentVariable("GIT_CONFIG_VALUE_$m", "")' in code
+    assert "throw" in code.split('SetEnvironmentVariable("GIT_CONFIG_VALUE_$m"', 1)[1][:120]
 
 
 def test_the_merger_identity_loads_only_after_the_clone_is_on_live() -> None:

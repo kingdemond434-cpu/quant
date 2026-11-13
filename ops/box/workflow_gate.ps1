@@ -180,9 +180,12 @@ try {
     if ($env:MEMECOIN_AUDIT_REGISTRY) {
         try {
             $mClone = Join-Path (Split-Path -Parent $Clone) "memecoin-gate"
-            $env:GIT_CONFIG_COUNT = '2'
-            $env:GIT_CONFIG_KEY_1 = 'safe.directory'
-            $env:GIT_CONFIG_VALUE_1 = ($mClone -replace '\\', '/')
+            # APPENDED, never index 1: merger_env.ps1 may already hold entries 1 and 2 (the App's
+            # extraheader and the credential.helper reset), and overwriting 1 dropped the token.
+            $k = [int]$env:GIT_CONFIG_COUNT
+            Set-Item -LiteralPath "env:GIT_CONFIG_KEY_$k" -Value 'safe.directory'
+            Set-Item -LiteralPath "env:GIT_CONFIG_VALUE_$k" -Value ($mClone -replace '\\', '/')
+            $env:GIT_CONFIG_COUNT = "$($k + 1)"
             if (-not (Test-Path -LiteralPath (Join-Path $mClone ".git"))) {
                 & git clone -q "https://github.com/kingdemond434-cpu/memecoin.git" $mClone 2>&1 | ForEach-Object { Say "memecoin clone: $_" }
             }
