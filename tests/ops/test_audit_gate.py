@@ -2628,6 +2628,7 @@ def test_the_manifest_accepts_only_an_installer_measured_as_no_order_path_change
         "import os\nx = os\n",  # handed on bare: no longer readable by name
         "from os import *\n",
         "import asyncio\nasyncio.create_subprocess_exec('x')\n",
+        "import webbrowser\nwebbrowser.open('file:///x')\n",
     ],
 )
 def test_every_way_to_launch_is_a_launch(src: str) -> None:

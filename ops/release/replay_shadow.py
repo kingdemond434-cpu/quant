@@ -992,7 +992,8 @@ def _ps_statements(sig: list[tuple[str, str, int]]) -> list[list[tuple[str, str,
 #: What a module may never do and still be called no order-path change: start a process or import
 #: by name at run time (either can reach any order code with no import a scan sees).
 _LAUNCH_MODULES = frozenset(
-    {"subprocess", "importlib", "runpy", "pty", "multiprocessing", "concurrent", "builtins"}
+    {"subprocess", "importlib", "runpy", "pty", "multiprocessing", "concurrent", "builtins",
+     "webbrowser"}
 )
 _LAUNCH_NAMES = frozenset({"exec", "eval", "__import__", "compile", "__builtins__"})
 _OS_LAUNCH = ("system", "popen", "exec", "spawn", "posix_spawn", "startfile", "fork",
