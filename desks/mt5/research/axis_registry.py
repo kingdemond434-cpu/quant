@@ -200,6 +200,15 @@ _FAMILY_GROUPS: dict[str, str] = {
     # information source is `carry` / `cross_asset` here and `exogenous` / `conditioned` in
     # `gauntlet_buildability.information_class`; a test pins that neither reads `price_only`.
     "forced_liquidation carry market": "carry_risk_off",
+    # The implied-vol families of 2026-11-13 (`mt5desk.families_implied_vol`), reading the PUBLIC
+    # CBOE indices point-in-time: the variance risk premium is the option dealer's inventory
+    # state (implied against this broker's realised), the VIX term inversion a regime the stale
+    # positioner reads late, an implied-vol jump a short-gamma re-hedge. The information source
+    # is `cross_asset` (another market's -- the options market's -- price of the instrument), and
+    # `exogenous` in `gauntlet_buildability.information_class`; never price-only.
+    "gamma_hedging_state cross_asset market": "vrp_conditioned",
+    "regime_transition cross_asset market": "iv_term_gated",
+    "volatility_shock cross_asset market": "iv_shock",
     "calendar_seasonality cross_asset market": "month_end_rebalance",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
                                                " mass_screen_clock seasonal_window",

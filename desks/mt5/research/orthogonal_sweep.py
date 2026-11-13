@@ -592,6 +592,10 @@ NOT_SOURCED_HERE = {
                     "research/specialist_cell enumerates each asset-class desk's catalogue, "
                     "builds every cell through the sealed build_cell and charges its own trials; "
                     "sweeping it here would charge them twice"),
+    **dict.fromkeys(("vrp_conditioned", "iv_term_gated", "iv_shock"),
+                    "research/specialist_cell enumerates the implied-vol grid on the instruments "
+                    "the CBOE indices map to, builds every cell through the sealed build_cell "
+                    "and charges its own trials; sweeping it here would charge them twice"),
     "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
                          "regime or cross-asset filter are named by research/residual_search "
                          "from a BH-corrected residual finding, which charges its own tests. "

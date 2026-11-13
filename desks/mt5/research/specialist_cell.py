@@ -22,6 +22,11 @@ THE CATALOGUE (`SPECIALISTS`):
   indices  overnight_gap, open_drive (the cash open of each index's own venue),
            month_end_rebalance (fixed-weight allocator flow), month_end_forced_flow
   softs    weather_window (per-commodity crop-cycle windows), wasde (USDA WASDE)
+  implied  on the instruments the CBOE vol indices map to (US500, NAS100, US30, XAUUSD, EURUSD,
+           `IV_OF`), minted by their own class desks: variance_risk_premium (a conditioner over
+           a base cell), vix_term_regime (a VIX term-structure gate, indices only) and iv_shock
+           (a day-over-day implied-vol jump, fade or follow). Public series: crowding-checked
+           conditioners, not a moat (`mt5desk/families_implied_vol.py`).
 
 BUILDABLE BY THE SEALED GAUNTLET, OR NOT MINTED. Every cell is asked twice. First
 `gauntlet_buildability.cell_verdict` (the family resolves, its data inputs are ones
@@ -150,6 +155,45 @@ WEATHER_WINDOWS: dict[str, list[tuple[int, int, int, str]]] = {
     "OJ": [(601, 1130, 1, "Florida hurricane-season risk premium is bought by processors")],
 }
 GOLD = ("XAUUSD", "XAUEUR", "XAUAUD")
+#: The CBOE implied-vol index each mapped instrument is quoted against -- the ground
+#: `recorders/vol_archive.GROUND` maps, and nothing wider (no exotics; 2026-11-13). The series is
+#: PUBLIC: these cells are crowding-checked conditioners, never a moat.
+IV_OF: dict[str, str] = {"US500": "^VIX", "NAS100": "^VXN", "USTEC": "^VXN", "US30": "^VXD",
+                         "XAUUSD": "^GVZ", "EURUSD": "^EVZ"}
+#: The base cells the implied-vol operators condition, stated before any data: on indices the
+#: overnight gap the catalogue already mints and a trend book; on gold and the euro a trend and a
+#: reversion book (rich premium pays the calm trend, thin premium the reversion of a stress move).
+IV_BASES: dict[str, list[tuple[str, dict[str, Any]]]] = {
+    "indices": [("overnight_gap_decay", {"gap_atr": 0.5, "ttl_bars": 8}),
+                ("trend_ma_cross", {})],
+    "other": [("trend_ma_cross", {}), ("mean_reversion_bollinger", {})],
+}
+#: The VIX term pairs (short, long) the regime gate reads: the front kink and the 1-to-3-month
+#: slope. Only the S&P curve has published tenors, so the gate is minted on the US indices only.
+VIX_TERM_PAIRS: tuple[tuple[str, str], ...] = (("^VIX9D", "^VIX"), ("^VIX", "^VIX3M"))
+
+
+def _implied_vol(sym: str, klass: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    """The three implied-vol mechanisms on a mapped instrument; [] for any other."""
+    iv = IV_OF.get(sym.upper())
+    if not iv:
+        return []
+    bases = IV_BASES["indices" if klass == "indices" else "other"]
+    out: list[tuple[str, str, list[dict[str, Any]]]] = [
+        ("variance_risk_premium", "vrp_conditioned",
+         [{"base_family": b, "base_params": dict(bp), "symbol": sym, "iv_ticker": iv,
+           "vrp_state": st} for b, bp in bases for st in ("high", "low")]),
+    ]
+    if klass == "indices":
+        out.append(("vix_term_regime", "iv_term_gated",
+                    [{"base_family": b, "base_params": dict(bp), "symbol": sym,
+                      "short_ticker": a, "long_ticker": z, "term_state": st}
+                     for b, bp in bases for a, z in VIX_TERM_PAIRS
+                     for st in ("contango", "backwardation")]))
+    out.append(("iv_shock", "iv_shock",
+                _grid({"iv_ticker": [iv], "mode": ["fade", "follow"], "k_sd": [1.5, 2.0],
+                       "hold_d": [1, 3]})))
+    return out
 
 
 def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
@@ -168,6 +212,7 @@ def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
            "window_before_min": w} for w in (240, 1440)]
          + [{"event_kind": "central_bank", "clock": "utc", "symbol": sym,
              "mode": "post_flow_fade", "window_after_min": w} for w in (90, 240)]),
+        *_implied_vol(sym, "fx"),
     ]
 
 
@@ -185,6 +230,7 @@ def _metals(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     out.append(("metals_fix", "forced_flow",
                 _grid({"event_kind": ["fixing"], "clock": ["utc"], "symbol": [sym],
                        "mode": ["pre_flow", "post_flow_fade"]})))
+    out.extend(_implied_vol(sym, "metals"))
     return out
 
 
@@ -214,6 +260,7 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
         out.append(("open_drive", "opening_range",
                     _grid({"open_hour": hours, "range_bars": [1], "window_bars": [6],
                            "rr": [1.5, 2.0]})))
+    out.extend(_implied_vol(sym, "indices"))
     return out
 
 
@@ -230,6 +277,21 @@ def _softs(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
     return out
 
 
+#: The implied-vol priors, shared by every class desk that mints them.
+_IV_PRIORS = {
+    "variance_risk_premium": "option buyers pay sellers a variance risk premium (implied above "
+                             "realised); a rich premium marks calm dealers long premium, a thin "
+                             "one hedgers short gamma into the move (Bollerslev, Tauchen & Zhou "
+                             "2009). Public series: a crowding-checked conditioner, not a moat",
+    "vix_term_regime": "the VIX curve sits in contango in calm and inverts in stress; risk "
+                       "models that read yesterday's regime reposition late. Public series: a "
+                       "crowding-checked regime gate, not a moat",
+    "iv_shock": "a jump in implied vol forces option dealers and vol-targeting books to re-hedge "
+                "the underlying on the next session; the move is either over-done (fade) or "
+                "the start of a deleveraging (follow). Public series, crowding-checked",
+}
+
+
 #: class -> (per-symbol cell generator, the specialist's priors per mechanism). The priors are
 #: carried onto every donated row as its mechanism text.
 SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str, Any]]]]],
@@ -243,6 +305,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                           "(Brunnermeier, Nagel & Pedersen 2008)",
         "cb_meeting_drift": "rates desks re-hedge the front end into and out of a scheduled "
                             "central-bank decision (Lucca & Moench 2015 pre-announcement drift)",
+        **_IV_PRIORS,
     }),
     "metals": (_metals, {
         "gold_real_yield": "gold is priced off the real rate and the dollar; a gap between gold "
@@ -251,6 +314,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                              "trade its extremes",
         "metals_fix": "bullion is benchmarked to the London 4pm fix; the benchmarked holder must "
                       "transact at it",
+        **_IV_PRIORS,
     }),
     "energy": (_energy, {
         "eia_inventory": "refiners and index hedgers must resize on the statutory Wednesday EIA "
@@ -265,6 +329,7 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                                "month-to-date in the month's last days",
         "month_end_forced_flow": "month-end benchmark and index rebalancing flow on a dated "
                                  "calendar",
+        **_IV_PRIORS,
     }),
     "softs": (_softs, {
         "weather_window": "a crop-cycle weather premium is bought by hedgers at any price and "
@@ -304,6 +369,10 @@ _MECH_CULTURE: dict[str, tuple[str, str]] = {
     "eia_inventory": ("US", "physical_flow"),
     "month_end_forced_flow": ("GLOBAL", "institutional"),
     "wasde": ("US", "policy_driven"),
+    # CBOE-listed options on US-listed underlyings: the payer is a US options-market participant
+    "variance_risk_premium": ("US", "institutional"),
+    "vix_term_regime": ("US", "institutional"),
+    "iv_shock": ("US", "institutional"),
 }
 
 
