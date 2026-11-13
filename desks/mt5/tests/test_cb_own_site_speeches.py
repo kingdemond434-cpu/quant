@@ -7,6 +7,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(ROOT), str(DESK)):
@@ -170,19 +172,22 @@ def test_permitted_needs_permitting_terms_and_a_public_door() -> None:
         assert day[0]["terms"] == "unverified", bad                 # one doubtful speech taints the day
 
 
-def test_unreadable_robots_is_read_but_never_permitted(tmp_path: Path) -> None:
+@pytest.mark.parametrize("robots", [(500, ""), (503, ""), (None, ""),
+                                    (200, "<!DOCTYPE html><html><body>hi</body></html>")])
+def test_unreadable_robots_skips_the_bank_for_the_pass(
+        tmp_path: Path, robots: tuple[int | None, str]) -> None:
+    """A 5xx, a network error or an HTML body: nothing of the bank is fetched (fail closed)."""
     url = "https://www.federalreserve.gov/newsevents/speech/bowman20261014a.htm"
-    fetch = _site({"https://www.federalreserve.gov/robots.txt": (500, ""),
+    fetch = _site({"https://www.federalreserve.gov/robots.txt": robots,
                    FED["feeds"][0]: (200, FED_FEED), url: (200, SPEECH)})
-    cb.refresh(fetch=fetch, registry=_one_bank({**FED, "index": None}), out=tmp_path / "o",
-               report=tmp_path / "r.json", speech_rows=tmp_path / "rows.jsonl",
-               today=date(2026, 11, 10))
-    assert not (tmp_path / "rows.jsonl").exists()        # nothing doubtful in the donation tree
-    row = json.loads((tmp_path / "o" / "research_only_speech_tone.jsonl").read_text()
-                     .splitlines()[0])
-    assert row["access"] == "ACCESS_UNCLEAR" and row["terms"] == "permitted"
-    series = json.loads((tmp_path / "o" / "official_tone_series.jsonl").read_text().splitlines()[0])
-    assert series["terms"] == "unverified"
+    rep = cb.refresh(fetch=fetch, registry=_one_bank({**FED, "index": None}),
+                     out=tmp_path / "o", report=tmp_path / "r.json",
+                     speech_rows=tmp_path / "rows.jsonl", today=date(2026, 11, 10))
+    assert fetch.calls == ["https://www.federalreserve.gov/robots.txt"]
+    fed = rep["banks"]["Fed"]
+    assert fed["robots"] == "unreadable" and "hard_stop" not in fed
+    assert "UNMEASURED" in fed["missed_growth"]
+    assert rep["pages_fetched"] == 0 and not (tmp_path / "rows.jsonl").exists()
 
 
 def test_a_crash_before_the_state_save_does_not_count_a_speech_twice(tmp_path: Path) -> None:

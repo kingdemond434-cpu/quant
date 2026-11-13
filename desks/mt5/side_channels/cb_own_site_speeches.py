@@ -22,7 +22,9 @@ POLITENESS. One request per host at a time through `libs.data.polite_fetch` (sha
 an honest User-Agent, a hard per-pass page budget, and every page fetched once in its life
 (`state.json`). robots.txt is read FIRST and obeyed for this series: a Disallowed feed, index or
 page is not fetched, is counted per bank (`robots_skipped`) and carries a missed_growth line,
-because a row the desk may trade on must have been read through an open door. 401/403/429/451
+because a row the desk may trade on must have been read through an open door. An UNREADABLE
+robots.txt (5xx, network error, an HTML page) fails closed: the bank is skipped for the pass
+with a missed_growth line, since polite_fetch itself checks no robots. 401/403/429/451
 stops that host and is recorded, never retried in the pass and never routed around; after
 HARD_STOP_COOLDOWN the host is tried again, and the first refusal stops it again.
 
@@ -337,7 +339,18 @@ def refresh(*, fetch: Fetch | None = None, registry: Mapping[str, Any] | None = 
             continue
         # no robots.txt at all (404) is the convention for "nothing is disallowed"
         robots_text = txt if st is not None and 200 <= st < 300 else "" if st == 404 else None
+        if robots_text is not None and robots_text.lstrip()[:15].lower().startswith(
+                ("<!doctype", "<html")):
+            robots_text = None      # an HTML page served as robots.txt is no robots file
         b["robots"] = "unreadable" if robots_text is None else "read"
+        if robots_text is None:
+            # FAIL CLOSED: a 5xx, a network error or an HTML body means this pass cannot know
+            # what the bank disallows, so nothing of it is fetched until a later pass reads it
+            b["robots_unreadable_status"] = st
+            b["missed_growth"] = (f"{name} speeches unread this pass because robots.txt was "
+                                  f"unreadable (status {st}); {bank['currency']} tone is "
+                                  "UNMEASURED from this source, not neutral")
+            continue
 
         def allowed(url: str, robots_text: str | None = robots_text,
                     b: dict[str, Any] = b) -> bool:
