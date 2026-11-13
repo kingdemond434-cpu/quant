@@ -616,6 +616,9 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # Who moves first on a release (lead-lag edges from the tick tape) is information; harvesting
+    # a rejected recipe's informative entry and re-mating it is a claim about returns.
+    "leadership_atlas": "information", "component_harvest": "prediction",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and

@@ -20,7 +20,24 @@ from collections import defaultdict
 
 import pandas as pd
 
-from ...base import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
+try:
+    from ...base import (  # noqa: F401
+        DATA_DIR,
+        SideChannelAxis,
+        SideChannelHypothesis,
+        generate_id,
+        save_hypothesis,
+    )
+except ImportError:  # pragma: no cover - the `component_harvest` hourly leg runs this file
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    from side_channels.base import (  # type: ignore[no-redef]  # noqa: F401
+        DATA_DIR,
+        SideChannelAxis,
+        SideChannelHypothesis,
+        generate_id,
+        save_hypothesis,
+    )
 
 
 class ComponentType(Enum):
@@ -394,34 +411,363 @@ def generate_component_hypotheses(components: list[StrategyComponent]) -> list[d
     return harvester.generate_component_hypotheses()
 
 
+# =============================================================================================
+# REJECTED-CELL HARVEST: the clock, the isolation test and the Judge door (2026-11-13)
+#
+# The classes above were never run: no clock, no input, a heuristic score and an isolation test
+# that reports UNMEASURED. "A bad full EA can have fantastic components" is testable on the
+# desk's own failures, which are exact recipes: every candidate the gauntlet REJECTED is a
+# (family, symbol, chart, params) whose rule can be rebuilt bar for bar. So, each hourly pass:
+#
+#   1. DECOMPOSE. A rejected recipe's params split by role -- ENTRY (whatever is not below),
+#      STOP (stop_atr, atr_n, ...), EXIT (rr, ttl_bars, hold_bars, bank/trail keys), SESSION
+#      (hour/session keys), REGIME (regime/vol/adx/filter keys).
+#   2. TEST THE ENTRY IN ISOLATION. Rebuild the signals, then score the ENTRY alone: signed
+#      log return from the next bar's open over h in {1, 3, 6, 12, 24} bars, net of the symbol's
+#      own measured spread, signals declustered to be at least h bars apart. The horizon is chosen
+#      on the first 70% of signals (in-sample) and judged ONCE on the last 30% (out of sample): one
+#      pre-chosen test, so no horizon search is charged against the verdict.
+#   3. TEST THE EXIT AGAINST IT. Replay the recipe's own stop / target / ttl on the same entries
+#      (a bar touching both stop and target counts as the stop). EXIT_DESTROYED_EDGE = the entry's
+#      OOS time-exit is significant and positive while the recipe's own exit is not positive.
+#   4. RE-MATE AND DONATE. A harvested entry (IS t >= 2, OOS t >= 2, OOS mean > 0, >= 20 OOS
+#      signals) is re-mated with a time exit at the chosen horizon -- once with its own stop and
+#      once with a wide 4-ATR stop -- and enqueued for the Judge through
+#      `libs.moat.registry.enqueue_candidate` (origin `component_harvest`, parent = the rejected
+#      cell). Only parameters the family's own signature accepts are set; a family with no
+#      time-exit parameter is reported NO_TIME_EXIT_PARAM, never forced.
+#   5. LEDGER. Every component verdict is appended to
+#      data/intelligence/component_harvest/component_ledger.jsonl; the pass writes
+#      COMPONENT_HARVEST.json. A rejected cell is examined once in its life (state cursor).
+#
+# Clock: hourly leg `component_harvest` (research/hourly_cycle.py).
+# =============================================================================================
+
+import inspect
+import time
+
+import numpy as np
+
+_DESK = Path(__file__).resolve().parents[3]
+HARVEST_DIR = DATA_DIR / "component_harvest"
+STATE_P = HARVEST_DIR / "state.json"
+LEDGER_P = HARVEST_DIR / "component_ledger.jsonl"
+REPORT_P = HARVEST_DIR / "COMPONENT_HARVEST.json"
+
+HORIZONS = (1, 3, 6, 12, 24)
+IS_SHARE = 0.70
+MIN_T = 2.0
+MIN_OOS = 20
+WIDE_STOP_ATR = 4.0
+NO_TARGET_RR = 50.0
+PER_PASS = 200
+
+_EXIT_KEYS = {"rr", "ttl_bars", "hold_bars", "bank_frac", "bank_protect_k", "runner_trail_k",
+              "target_atr", "tp_atr", "exit_bars", "max_hold", "wait_bars", "cooldown_bars"}
+_STOP_KEYS = {"stop_atr", "sl_atr", "atr_n", "stop_pct", "trail_atr", "stop_mult"}
+
+
+def decompose(params: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """params -> {entry, stop, exit, session, regime}; every key lands in exactly one role."""
+    out: dict[str, dict[str, Any]] = {k: {} for k in ("entry", "stop", "exit", "session",
+                                                      "regime")}
+    for k, v in (params or {}).items():
+        kl = k.lower()
+        if kl in _EXIT_KEYS:
+            out["exit"][k] = v
+        elif kl in _STOP_KEYS:
+            out["stop"][k] = v
+        elif "hour" in kl or "session" in kl or kl in {"weekday", "dow", "active_month"}:
+            out["session"][k] = v
+        elif any(t in kl for t in ("regime", "vol_gate", "adx", "filter", "trend_gate")):
+            out["regime"][k] = v
+        else:
+            out["entry"][k] = v
+    return out
+
+
+def _cost_frac(symbol: str, price: float) -> float:
+    """One round trip of the symbol's own measured median spread, as a fraction of price."""
+    try:
+        u = json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
+        r = u.get(symbol) or {}
+        pts = float(r.get("median_spread_pts") or r.get("spread_pts_at_collection") or 0.0)
+        point = 10.0 ** -int(r.get("digits", 5))
+        return pts * point / price if price > 0 else 0.0
+    except Exception:
+        return 0.0
+
+
+def _t(x: np.ndarray) -> float:
+    if len(x) < 3:
+        return float("nan")
+    sd = float(np.std(x, ddof=1))
+    return float(np.mean(x) / (sd / np.sqrt(len(x)))) if sd > 0 else float("nan")
+
+
+def _decluster(idx: np.ndarray, h: int) -> np.ndarray:
+    keep, last = [], -10 ** 9
+    for k, i in enumerate(idx):
+        if i - last >= h:
+            keep.append(k)
+            last = i
+    return np.asarray(keep, dtype=int)
+
+
+def entry_markout(bars: pd.DataFrame, signals: list[Any], symbol: str
+                  ) -> dict[str, Any]:
+    """The entry alone: per horizon, IS/OOS net mean and t, horizon chosen in-sample."""
+    d = bars.sort_index()
+    pos = d.index.get_indexer(pd.DatetimeIndex([s.time for s in signals]))
+    sides = np.array([int(s.side) for s in signals])
+    ok = (pos >= 0) & (sides != 0)
+    pos, sides = pos[ok], sides[ok]
+    order = np.argsort(pos, kind="stable")
+    pos, sides = pos[order], sides[order]
+    opens = d["open"].to_numpy(float)
+    closes = d["close"].to_numpy(float)
+    if not len(pos):
+        return {"status": "NO_SIGNALS"}
+    cost = _cost_frac(symbol, float(np.nanmedian(closes)))
+    split = int(len(pos) * IS_SHARE)
+    res: dict[str, Any] = {"n_signals": int(len(pos)), "cost_frac": cost, "by_h": {}}
+    for h in HORIZONS:
+        e = pos + 1
+        x = pos + 1 + h
+        v = x < len(d)
+        r = np.full(len(pos), np.nan)
+        r[v] = sides[v] * np.log(closes[x[v] - 1] / opens[e[v]]) - cost
+        k_is = _decluster(pos[:split], h)
+        k_oos = split + _decluster(pos[split:], h)
+        ris, roos = r[k_is], r[k_oos]
+        ris, roos = ris[np.isfinite(ris)], roos[np.isfinite(roos)]
+        res["by_h"][h] = {"is_n": int(len(ris)), "is_mean": float(np.mean(ris)) if len(ris)
+                          else float("nan"), "is_t": _t(ris),
+                          "oos_n": int(len(roos)), "oos_mean": float(np.mean(roos)) if len(roos)
+                          else float("nan"), "oos_t": _t(roos)}
+    cand = {h: v for h, v in res["by_h"].items() if np.isfinite(v["is_t"])}
+    if not cand:
+        res["status"] = "UNMEASURED"
+        return res
+    h_star = max(cand, key=lambda h: cand[h]["is_t"])
+    b = res["by_h"][h_star]
+    res["h_star"] = h_star
+    res["harvest"] = bool(b["is_t"] >= MIN_T and np.isfinite(b["oos_t"]) and
+                          b["oos_t"] >= MIN_T and b["oos_mean"] > 0 and b["oos_n"] >= MIN_OOS)
+    res["status"] = "HARVESTED" if res["harvest"] else "NOT_INFORMATIVE"
+    return res
+
+
+def own_exit_returns(bars: pd.DataFrame, signals: list[Any], symbol: str) -> np.ndarray:
+    """The recipe's own stop/target/ttl replayed from the next open; a bar touching both counts
+    as the stop (the conservative read of an unknown intrabar path)."""
+    d = bars.sort_index()
+    idx = d.index
+    o, hi, lo, c = (d[k].to_numpy(float) for k in ("open", "high", "low", "close"))
+    cost = _cost_frac(symbol, float(np.nanmedian(c)))
+    out = []
+    for s in signals:
+        i = idx.get_indexer([s.time])[0]
+        if i < 0 or i + 1 >= len(d) or not s.side:
+            continue
+        e, px = i + 1, o[i + 1]
+        end = min(len(d) - 1, e + max(1, int(s.ttl_bars)) - 1)
+        exit_px = c[end]
+        for j in range(e, end + 1):
+            hit_stop = lo[j] <= s.stop if s.side > 0 else hi[j] >= s.stop
+            hit_tgt = hi[j] >= s.target if s.side > 0 else lo[j] <= s.target
+            if hit_stop:
+                exit_px = s.stop
+                break
+            if hit_tgt:
+                exit_px = s.target
+                break
+        out.append(s.side * np.log(exit_px / px) - cost)
+    return np.asarray(out, dtype=float)
+
+
+def _build(family: str, symbol: str, params: dict[str, Any], bars: pd.DataFrame
+           ) -> tuple[list[Any] | None, str]:
+    try:
+        from mt5desk.families import get_family_func
+    except Exception as exc:                          # pragma: no cover
+        return None, f"families unavailable: {type(exc).__name__}"
+    fn = get_family_func(family)
+    if fn is None:
+        return None, "no constructor"
+    kw = dict(params)
+    sig = inspect.signature(fn).parameters
+    if "symbol" in sig and "symbol" not in kw:
+        kw["symbol"] = symbol
+    kw = {k: v for k, v in kw.items() if k in sig or any(
+        p.kind == p.VAR_KEYWORD for p in sig.values())}
+    try:
+        return list(fn(bars, **kw) or []), ""
+    except Exception as exc:
+        return None, type(exc).__name__
+
+
+def remate(family: str, params: dict[str, Any], h: int) -> list[dict[str, Any]]:
+    """The entry with a time exit at h: own stop, and a wide stop. Only accepted keys are set."""
+    try:
+        from mt5desk.families import get_family_func
+        fn = get_family_func(family)
+        sig = set(inspect.signature(fn).parameters) if fn else set()
+    except Exception:
+        sig = set()
+    time_keys = [k for k in ("ttl_bars", "hold_bars", "max_hold", "exit_bars") if k in sig]
+    if not time_keys:
+        return []
+    parts = decompose(params)
+    base = {**parts["entry"], **parts["session"], **parts["regime"]}
+    exit_ = {k: int(h) for k in time_keys}
+    if "rr" in sig:
+        exit_["rr"] = NO_TARGET_RR
+    out = [{**base, **parts["stop"], **exit_}]
+    stop_key = next((k for k in ("stop_atr", "sl_atr", "stop_mult") if k in sig), None)
+    if stop_key:
+        wide = {**base, **{k: v for k, v in parts["stop"].items() if k != stop_key}, **exit_,
+                stop_key: WIDE_STOP_ATR}
+        if wide != out[0]:
+            out.append(wide)
+    return out
+
+
+def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
+                 rejected: list[dict[str, Any]] | None = None,
+                 bars_for: Any = None, enqueue: Any = None, write: bool = True,
+                 out_dir: Path | None = None) -> dict[str, Any]:
+    """One hourly pass over rejected cells not yet examined."""
+    t_end = time.monotonic() + budget_s
+    od = out_dir or HARVEST_DIR
+    try:
+        st = json.loads((od / STATE_P.name).read_text("utf-8"))
+    except (OSError, ValueError):
+        st = {}
+    seen = set(st.get("seen") or [])
+    if rejected is None:
+        try:
+            from libs.moat import registry as reg
+            rejected = reg.candidates(status="rejected", limit=max(per_pass * 20, 4000))
+        except Exception as exc:
+            rejected = []
+            st["registry_error"] = type(exc).__name__
+    if bars_for is None:
+        from research.orthogonal_sweep import _bars
+        bars_for = _bars
+    if enqueue is None and write:
+        try:
+            from libs.moat.registry import enqueue_candidate as enqueue
+        except Exception:
+            enqueue = None
+    tally: dict[str, int] = defaultdict(int)
+    ledger: list[dict[str, Any]] = []
+    donated = 0
+    todo = [r for r in rejected if str(r.get("id")) not in seen][:per_pass]
+    for r in todo:
+        if time.monotonic() > t_end:
+            tally["deferred_budget"] += 1
+            continue
+        cid, fam, sym = str(r.get("id")), str(r.get("family") or ""), str(r.get("symbol") or "")
+        chart = str(r.get("chart") or "H1") or "H1"
+        try:
+            params = json.loads(r.get("params_json") or "{}") if isinstance(
+                r.get("params_json"), str) else dict(r.get("params_json") or {})
+        except ValueError:
+            params = {}
+        seen.add(cid)
+        bars = bars_for(sym, chart)
+        if bars is None or len(bars) < 300 or not {"open", "high", "low", "close"} <= set(
+                bars.columns):
+            tally["no_bars"] += 1
+            continue
+        sigs, why = _build(fam, sym, params, bars)
+        if sigs is None or not sigs:
+            tally["unbuildable" if sigs is None else "no_signals"] += 1
+            continue
+        parts = decompose(params)
+        em = entry_markout(bars, sigs, sym)
+        own = own_exit_returns(bars, sigs, sym)
+        split = int(len(own) * IS_SHARE)
+        own_oos = own[split:]
+        exit_verdict = "UNMEASURED"
+        if em.get("h_star"):
+            b = em["by_h"][em["h_star"]]
+            if em.get("harvest") and (not len(own_oos) or float(np.mean(own_oos)) <= 0):
+                exit_verdict = "EXIT_DESTROYED_EDGE"
+            elif len(own_oos):
+                exit_verdict = ("EXIT_ADDS" if float(np.mean(own_oos)) > b["oos_mean"]
+                                else "EXIT_COSTS")
+        row = {"candidate": cid, "family": fam, "symbol": sym, "chart": chart,
+               "terminal_gate": r.get("terminal_gate"), "failure_class": r.get("failure_class"),
+               "components": parts, "entry": em, "exit_verdict": exit_verdict,
+               "own_exit_oos_mean": float(np.mean(own_oos)) if len(own_oos) else None,
+               "at": datetime.now(UTC).isoformat()}
+        tally[em.get("status", "UNMEASURED")] += 1
+        tally[exit_verdict] += 1
+        if em.get("harvest"):
+            recipes = remate(fam, params, int(em["h_star"]))
+            if not recipes:
+                tally["NO_TIME_EXIT_PARAM"] += 1
+            row["remated"] = []
+            for p in recipes:
+                if enqueue is None:
+                    break
+                b = em["by_h"][em["h_star"]]
+                mech = (f"component harvest: the ENTRY of rejected cell {cid} ({fam} on {sym} "
+                        f"{chart}) carries information alone -- {em['h_star']}-bar markout net of "
+                        f"spread IS t={b['is_t']:.2f}, OOS t={b['oos_t']:.2f} over "
+                        f"{b['oos_n']} declustered signals -- while its own exit was "
+                        f"{exit_verdict}. Re-mated with a time exit at the in-sample horizon.")
+                try:
+                    new_id, created = enqueue(
+                        family=fam, symbol=sym, params=p, origin="component_harvest",
+                        mechanism=mech, chart=chart, horizon=str(em["h_star"]),
+                        generator="component_harvesting", department="research",
+                        transformation="component_remate", parent_ids_json=[cid],
+                        causal_rationale=mech, pit_status="BARS_ONLY",
+                        falsifier=(f"the re-mated rule loses its edge out of sample, or the "
+                                   f"entry's {em['h_star']}-bar markout falls below 0 net of "
+                                   f"spread"))
+                    row["remated"].append({"id": new_id, "created": bool(created),
+                                           "params": p})
+                    donated += int(bool(created))
+                except Exception as exc:
+                    row.setdefault("enqueue_errors", []).append(type(exc).__name__)
+        ledger.append(row)
+    doc = {"generated_utc": datetime.now(UTC).isoformat(),
+           "rejected_held": len(rejected), "examined_this_pass": len(ledger),
+           "examined_total": len(seen), "tally": dict(tally), "donated_to_judge": donated,
+           "rules": {"horizons": list(HORIZONS), "is_share": IS_SHARE, "min_t": MIN_T,
+                     "min_oos": MIN_OOS, "wide_stop_atr": WIDE_STOP_ATR},
+           "external_ea_components": ("UNMEASURED: no parsed external EA corpus is held; the "
+                                      "ComponentExtractor runs when one is"),
+           "state": ("PRODUCING" if donated else "EXAMINING" if ledger else
+                     "UNMEASURED: no rejected cells reachable" if not rejected else "IDLE")}
+    if write:
+        od.mkdir(parents=True, exist_ok=True)
+        (od / STATE_P.name).write_text(json.dumps({"seen": sorted(seen)}), encoding="utf-8")
+        with open(od / LEDGER_P.name, "a", encoding="utf-8") as fh:
+            for row in ledger:
+                fh.write(json.dumps(row, default=str) + "\n")
+        (od / REPORT_P.name).write_text(json.dumps(doc, indent=1, default=str),
+                                        encoding="utf-8")
+    return doc
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    for p in (str(_DESK), str(_DESK.parents[1])):
+        if p not in __import__("sys").path:
+            __import__("sys").path.insert(0, p)
+    ap = argparse.ArgumentParser(description="Harvest informative entries from rejected cells")
+    ap.add_argument("--budget-s", type=float, default=600.0)
+    ap.add_argument("--per-pass", type=int, default=PER_PASS)
+    a = ap.parse_args(argv)
+    doc = harvest_pass(budget_s=a.budget_s, per_pass=a.per_pass)
+    print(json.dumps({k: doc[k] for k in ("examined_this_pass", "donated_to_judge", "state")}))
+    return 0
+
+
 if __name__ == "__main__":
-    # Test component extraction
-    from mql5_codebase import MQL5CodeParser, ParsedMQL5Strategy
-    
-    test_code = """
-    input double StopLoss = 500;
-    input double TakeProfit = 1000;
-    input double Lot = 0.1;
-    
-    void OnTick() {
-        double ma_fast = iMA(_Symbol, PERIOD_H1, 10, 0, MODE_EMA, PRICE_CLOSE, 0);
-        double ma_slow = iMA(_Symbol, PERIOD_H1, 50, 0, MODE_EMA, PRICE_CLOSE, 0);
-        
-        if (ma_fast > ma_slow && OrdersTotal() == 0) {
-            OrderSend(Symbol(), OP_BUY, 0.1, Ask, 3, Bid - 500*Point, Ask + 1000*Point, "EMA Cross", 123, 0, clrGreen);
-        }
-        if (ma_fast < ma_slow && OrdersTotal() == 0) {
-            OrderSend(Symbol(), OP_SELL, 0.1, Bid, 3, Ask + 500*Point, Bid - 1000*Point, "EMA Cross", 123, 0, clrRed);
-        }
-    }
-    """
-    
-    parser = MQL5CodeParser()
-    strategy = parser.parse(test_code, "test_123")
-    
-    extractor = ComponentExtractor()
-    components = extractor.extract_from_parsed_strategy(strategy)
-    
-    print(f"Extracted {len(components)} components:")
-    for c in components:
-        print(f"  {c.component_type.value}: {c.value} (score: {c.metadata.get('heuristic_score', 0):.2f})")
+    raise SystemExit(main())
