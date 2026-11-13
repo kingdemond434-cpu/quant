@@ -418,7 +418,30 @@ def main(argv: list[str] | None = None) -> int:
         tmp.write_text(text + "\n", encoding="utf-8")
         tmp.replace(a.out)
         print(f"{rep['status']}: {'; '.join(rep['red'][:5]) or 'merge pipeline flowing'}")
+        _release_proof(a.repo, a.base, a.out.parent)
     return 2 if rep["status"] == "RED" else 0
+
+
+def _release_proof(repo: str, base: str, reports: Path) -> None:
+    """After the merge-side clock, the release-side one (scripts/release_pipeline_proof.py):
+    merged -> verified -> sealed -> adopted, and directive item 10's proof. Hourly by its own
+    throttle; read-only; a failure is printed and never changes this watcher's exit code. Its
+    report goes beside this one (the box's published reports, not the gate's clone), and it
+    reads the box's HUMAN_TOUCHES.jsonl from the data folder beside that."""
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import release_pipeline_proof
+
+        release_pipeline_proof.main(
+            [
+                "--repo", repo, "--base", base,
+                "--out", str(reports / "RELEASE_PIPELINE_PROOF.json"),
+                "--history", str(reports / "RELEASE_PIPELINE_PROOF_HISTORY.jsonl"),
+                "--touches", str(reports.parent / "data" / "HUMAN_TOUCHES.jsonl"),
+            ]
+        )  # fmt: skip
+    except Exception as exc:  # the merge watch must never fail on the proof
+        print(f"release proof failed: {type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":
