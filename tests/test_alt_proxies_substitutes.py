@@ -108,8 +108,10 @@ def test_gdelt_cursor_moves_only_over_read_slots(tmp_path: Path) -> None:
             raise urllib.error.HTTPError(url, 500, "err", None, None)  # type: ignore[arg-type]
         return b"", "application/zip"
 
+    allow = {"allowed": True, "rule": "no matching rule", "path": "/", "status": 200}
     rec = A.collect_gdelt(paths, src, sst, {}, NOW, fetch=True, fixtures=None, deadline=1e18,
-                          getter=getter)
+                          getter=getter, robots=lambda url: allow)
+    assert rec["robots"] is allow
     # forward: 00:00, 00:15, 00:30 (404 = read), 00:45, then 01:00 fails -> stops there
     assert sst["fwd"] == "2026-09-29T01:00:00+00:00"
     assert rec["errors"] and "20260929010000" in rec["errors"][0]
@@ -117,6 +119,59 @@ def test_gdelt_cursor_moves_only_over_read_slots(tmp_path: Path) -> None:
     # backward direction kept going after the forward error
     assert sst["back"] < "2026-09-28T21:00:00+00:00"
     assert all(c.startswith("http://data.gdeltproject.org/gdeltv2/") for c in calls)
+
+
+@pytest.mark.parametrize("sid", sorted(A.ROBOTS_GATED))
+def test_a_robots_disallow_refuses_every_gdelt_fetch(tmp_path: Path, sid: str) -> None:
+    """RFC 9309: data.gdeltproject.org/robots.txt is asked first; a Disallow fetches nothing."""
+    paths = A.Paths(tmp_path / "desk")
+    src = A.BY_ID[sid]
+    sst: dict[str, Any] = {}
+    calls: list[str] = []
+    asked: list[str] = []
+
+    def getter(url: str) -> tuple[bytes, str]:
+        calls.append(url)
+        return b"", "application/zip"
+
+    def robots_txt(url: str) -> tuple[int, bytes]:
+        asked.append(url)
+        return 200, b"User-agent: *\nDisallow: /gdeltv2/\n"
+
+    rec = A.collect_gdelt(paths, src, sst, {}, NOW, fetch=True, fixtures=None, deadline=1e18,
+                          getter=getter,
+                          robots=lambda url: A.robots_check(url, fetcher=robots_txt, now=NOW))
+    assert asked == ["http://data.gdeltproject.org/robots.txt"]
+    assert calls == [] and rec["fetched"] == 0
+    assert rec["robots"]["allowed"] is False and rec["robots"]["rule"] == "Disallow: /gdeltv2/"
+    assert "robots.txt refuses" in rec["errors"][0]
+    assert "fwd" not in sst and "back" not in sst          # no cursor moves over an unread slot
+
+
+def test_robots_verdict_follows_rfc9309() -> None:
+    txt = ("User-agent: *\nDisallow: /\n\n"
+           "User-agent: quant-desk-alt-proxies\nDisallow: /private\nAllow: /private/ok$\n"
+           "Disallow: /*.zip$\n")
+    v = A.robots_verdict
+    assert v(txt, "/gdeltv2/x.CSV")[0] is True          # our group, not "*", decides
+    assert v(txt, "/private/x")[0] is False
+    assert v(txt, "/private/ok")[0] is True               # longer Allow beats shorter Disallow
+    assert v(txt, "/private/ok/more")[0] is False         # "$" anchors the end
+    assert v(txt, "/a/b.zip")[0] is False and v(txt, "/a/b.zipx")[0] is True
+    assert v("User-agent: *\nDisallow: /gdeltv2/\n", "/gdeltv2/1.csv")[0] is False
+    assert v("User-agent: other\nDisallow: /\n", "/x")[0] is True
+    tie = "User-agent: *\nDisallow: /a\nAllow: /a\n"
+    assert v(tie, "/a")[0] is True                        # a tie goes to Allow
+    assert v("User-agent: *\nDisallow:\n", "/x")[0] is True
+
+
+@pytest.mark.parametrize(("status", "allowed"), [(404, True), (403, True), (500, False),
+                                                 (503, False), (0, False)])
+def test_robots_unavailable_vs_unreachable(status: int, allowed: bool) -> None:
+    """RFC 9309 2.3.1: a 4xx is no restriction; a 5xx or no answer is complete disallow."""
+    r = A.robots_check("http://data.gdeltproject.org/gdeltv2/1.zip",
+                       fetcher=lambda u: (status, b""), now=NOW)
+    assert r["allowed"] is allowed and r["status"] == status
 
 
 def test_gdelt_fixture_pass_publishes_the_country_panel(tmp_path: Path) -> None:

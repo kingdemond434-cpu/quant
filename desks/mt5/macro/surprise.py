@@ -60,7 +60,9 @@ MIN_SURPRISE_N = 10
 __all__ = [
     "MIN_SURPRISE_N",
     "Interpretation",
+    "composite_z",
     "interpret",
+    "surprise_family",
     "z_score",
 ]
 
@@ -93,6 +95,120 @@ def z_score(actual: float | None, consensus: float | None,
         release_id=release_id, direction_from="not_used_for_direction",
         note=("magnitude only. The sign of any asset response comes from the measured "
               "cross-asset reaction, never from the sign of z"))
+
+
+def _finite(x: Any) -> float | None:
+    if isinstance(x, bool) or not isinstance(x, int | float):
+        return None
+    return float(x) if math.isfinite(float(x)) else None
+
+
+def _unmeasured(why: str) -> dict[str, Any]:
+    return {"value": Status.UNMEASURED, "why": why}
+
+
+def surprise_family(actual: float | None, consensus: float | None, *,
+                    history: Sequence[float] = (),
+                    high: float | None = None, low: float | None = None,
+                    previous_first: float | None = None,
+                    previous_revised: float | None = None,
+                    model_expectation: float | None = None,
+                    model_history: Sequence[float] = (),
+                    peer_z: Sequence[float] = (),
+                    priced_fraction: float | None = None,
+                    conditioning: Mapping[str, Any] | None = None,
+                    release_id: str = "") -> dict[str, Any]:
+    """Every standardised variant of one release's surprise, each MEASURED or named UNMEASURED.
+
+    THE PRINCIPAL'S LIST (2026-10-05, "ECONOMIC SURPRISE LAYER"): actual - consensus, the
+    release-specific z, and the dispersion-, revision-, component-, relative-country-,
+    percentile-, market-implied-, nowcast-, regime- and positioning-conditioned variants. All of
+    them are MAGNITUDES. None of them carries a direction for any asset: the sign of a response is
+    measured (`interpret`), never derived here.
+
+      raw                  actual - consensus
+      z_release            raw / sd(this release's own past raw surprises)   (z_score)
+      dispersion_adjusted  raw / ((high - low) / 4): the survey range as a +/-2 sd band
+      revision_adjusted    raw + (previous_revised - previous_first): the news in the prior
+                           print's revision arrives on the same release and in the same units
+      percentile           where raw sits in this release's own past surprises (0..1)
+      nowcast_relative     actual - model expectation, and its z against the model's own past
+                           errors -- a surprise that needs no survey, so it has decades of history
+      relative_country     z_release - mean(z of the same release type elsewhere, same window)
+      market_implied       raw x (1 - the fraction already priced before publication), when the
+                           priced fraction was measured (`macro.priced`)
+      conditioning         the regime and positioning state AT the release, carried as keys a
+                           measurement can bucket on; they never rescale or re-sign the value
+    """
+    a, c = _finite(actual), _finite(consensus)
+    hist = [h for h in (_finite(x) for x in history) if h is not None]
+    out: dict[str, Any] = {"release_id": release_id, "actual": a, "consensus": c,
+                           "direction_from": "not_used_for_direction"}
+    raw = (a - c) if a is not None and c is not None else None
+    out["raw"] = round(raw, 10) if raw is not None else _unmeasured("actual or consensus absent")
+    est = z_score(a, c, hist, release_id=release_id)
+    out["z_release"] = (est.z if est.z is not None else _unmeasured(est.note))
+    out["z_history_n"] = est.n
+    hi, lo = _finite(high), _finite(low)
+    if raw is None:
+        out["dispersion_adjusted"] = _unmeasured("no raw surprise")
+    elif hi is None or lo is None:
+        out["dispersion_adjusted"] = _unmeasured(
+            "no lawful survey high/low for this release (the free calendar publishes a median "
+            "only); a licensed survey range is the acquisition target")
+    elif hi - lo <= 0:
+        out["dispersion_adjusted"] = _unmeasured("survey range is zero")
+    else:
+        out["dispersion_adjusted"] = round(raw / ((hi - lo) / 4.0), 6)
+    pf, pr = _finite(previous_first), _finite(previous_revised)
+    out["previous_revision"] = (round(pr - pf, 10) if pf is not None and pr is not None
+                                else _unmeasured("prior period's first print or its revision "
+                                                 "absent"))
+    out["revision_adjusted"] = (round(raw + (pr - pf), 10)
+                                if raw is not None and pf is not None and pr is not None
+                                else _unmeasured("needs raw and the prior print's revision"))
+    if raw is not None and len(hist) >= MIN_SURPRISE_N:
+        below = sum(1 for h in hist if h < raw) + 0.5 * sum(1 for h in hist if h == raw)
+        out["percentile"] = round(below / len(hist), 4)
+    else:
+        out["percentile"] = _unmeasured(f"n={len(hist)} past surprises < {MIN_SURPRISE_N}")
+    m = _finite(model_expectation)
+    mhist = [h for h in (_finite(x) for x in model_history) if h is not None]
+    if a is None or m is None:
+        out["nowcast_relative"] = _unmeasured("no actual or no model expectation")
+        out["nowcast_z"] = _unmeasured("no nowcast surprise")
+    else:
+        out["nowcast_relative"] = round(a - m, 10)
+        nz = z_score(a, m, mhist, release_id=f"{release_id}|nowcast")
+        out["nowcast_z"] = nz.z if nz.z is not None else _unmeasured(nz.note)
+    zr = est.z
+    peers = [p for p in (_finite(x) for x in peer_z) if p is not None]
+    out["relative_country"] = (round(zr - fmean(peers), 4) if zr is not None and peers else
+                               _unmeasured("no z for this release or no peer-country z of the "
+                                           "same release type in the window"))
+    pfrac = _finite(priced_fraction)
+    out["market_implied"] = (round(raw * (1.0 - min(1.0, max(0.0, pfrac))), 10)
+                             if raw is not None and pfrac is not None else
+                             _unmeasured("the pre-publication priced fraction was not measured "
+                                         "(macro.priced needs a fast series for the release's "
+                                         "instruments)"))
+    cond = dict(conditioning or {})
+    out["conditioning"] = {"regime": cond.get("regime", Status.UNMEASURED),
+                           "positioning": cond.get("positioning", Status.UNMEASURED),
+                           "rule": "bucket keys for a measurement; never a rescale or a sign"}
+    return out
+
+
+def composite_z(zs: Mapping[str, float | None]) -> dict[str, Any]:
+    """COMPONENT-WEIGHTED surprise of releases printed at one instant (payrolls, unemployment
+    and earnings at 08:30 ET on the first Friday). Equal weights, DECLARED: a weight fitted to
+    the reaction would be a direction smuggled in. Needs at least two measured components."""
+    got = {k: float(v) for k, v in zs.items() if _finite(v) is not None}
+    if len(got) < 2:
+        return {"value": Status.UNMEASURED, "components": sorted(got),
+                "why": f"{len(got)} measured component z(s) at this instant; two are needed"}
+    return {"value": round(fmean(got.values()), 4), "components": sorted(got),
+            "weights": "equal (declared)"}
 
 
 @dataclass(frozen=True)

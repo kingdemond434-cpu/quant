@@ -17,9 +17,21 @@ THE RATIO, and every term is measured or declared, never invented:
            Absent -> 1.0 and the row is stamped UNMEASURED_PRIOR: a flat prior is the honest
            default for a source about an instrument the desk has no posterior for, and it is
            marked so nobody reads the ranking as more measured than it is.
-    N(s)   NOVELTY: the share of s's declared targets that NO successfully-collected source
-           already covers. A second feed of a number the desk already has is worth its
-           redundancy, not its content.
+    N(s)   NOVELTY, in two kinds that are NEVER the same thing (principal 2026-10-06 11:14):
+           instrument  the share of s's declared targets that NO successfully-collected source
+                       already covers. A second feed of a number the desk already has is worth
+                       its redundancy, not its content.
+           information 1 - the closest similarity of s to any collected source on the four
+                       axes of independence: OBSERVABLE (what is measured: the declared
+                       `observable` and the mechanism's content words), ORIGIN (country), MEASUREMENT (the plane: official,
+                       exchange, physical, flow ...) and TIMING (cadence and publication-lag
+                       bucket). A Korean customs print about gold is NEW INFORMATION about an
+                       instrument the desk already covers; a second Chinese aggregator copying
+                       the same SAFE table is NOT, whatever instruments it names. Only axes both
+                       rows declare are compared; with none it is UNMEASURED and N falls back to
+                       the instrument share alone.
+           N = mean(instrument, information), declared, floored at 0.05; published as
+           `novelty`, with both parts beside it.
     P      P(usable): Beta(1+ok, 1+fail) posterior mean from the source's OWN collection history
            in `lake/collector_state.json`. A portal that has answered every time is worth more
            per attempt than one that has never parsed.
@@ -47,6 +59,7 @@ organ adds is the PRICE that act was previously taken without.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import math
 import sys
@@ -65,8 +78,15 @@ REGISTRY = DESK / "data" / "asia_sources.json"
 STATE = DESK / "data" / "lake" / "collector_state.json"
 VAULT = DESK / "data" / "lake" / "vault"
 FOUND = DESK / "data" / "intelligence" / "asia_endpoints"
+#: PROVIDER CARDS FROM DONOR TERMINALS (principal 2026-10-05, "OPENTERMINAL"): the EliteQuant
+#: miner reads a donor's provider list (ErTasselli/OpenTerminal first) and writes one card per
+#: provider here; this organ prices each as a candidate source. Schema per row: id, name, url,
+#: targets, observable, mechanism, cadence, access (public|keyed|paid), licence,
+#: machine_use_allowed. A donor is a LIST OF PLACES TO LOOK, never code or data copied in.
+DONORS = DESK / "data" / "intelligence" / "provider_donors"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 OUT = DESK / "reports" / "SOURCE_EVIG.json"
+UNMEASURED = "UNMEASURED"
 
 #: Declared cadence -> the seconds of desk attention one attempt costs, before measured seconds
 #: replace it. A daily portal is attempted thirty times more often than a monthly one, so the
@@ -114,7 +134,111 @@ def _derived() -> list[dict[str, Any]]:
                         "cadence": r.get("cadence") or "irregular", "plane": r.get("plane"),
                         "access": r.get("access") or "public", "derived": True,
                         "machine_use_allowed": r.get("machine_use_allowed")})
+    try:
+        cards = sorted(DONORS.glob("*/providers_*.json"), reverse=True)
+    except OSError:
+        cards = []
+    for f in cards:
+        doc = _read(f, {})
+        rows = doc.get("providers") if isinstance(doc, dict) else doc
+        for r in rows or []:
+            if not isinstance(r, dict):
+                continue
+            sid = f"donor:{f.parent.name}:{r.get('id') or r.get('name') or r.get('url') or ''}"
+            if sid.endswith(":") or sid in seen:
+                continue
+            seen.add(sid)
+            out.append({"id": sid, "url": r.get("url"), "targets": r.get("targets") or [],
+                        "cadence": r.get("cadence") or "irregular",
+                        "plane": r.get("plane") or "donor_provider",
+                        "country": r.get("country"), "observable": r.get("observable"),
+                        "mechanism": r.get("mechanism") or r.get("name"),
+                        "access": r.get("access") or "unknown", "licence": r.get("licence"),
+                        "derived": True, "donor": f.parent.name,
+                        "machine_use_allowed": r.get("machine_use_allowed")})
     return out
+
+
+def provider_cards() -> dict[str, Any]:
+    """Whether the donor provider cards were read at all (audit #211 item 2). No folder, no card
+    file, or no readable provider is UNMEASURED with its reason, never an empty success."""
+    try:
+        files = sorted(DONORS.glob("*/providers_*.json"))
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"donor folder unreadable: {type(exc).__name__}",
+                "files": 0, "providers": 0}
+    if not files:
+        return {"status": UNMEASURED, "files": 0, "providers": 0,
+                "why": f"no provider card under {DONORS.name}/*/providers_*.json: the donor "
+                       "terminals' provider lists have not been written on this host"}
+    n, bad = 0, []
+    for f in files:
+        doc = _read(f, None)
+        rows = doc.get("providers") if isinstance(doc, dict) else doc
+        if not isinstance(rows, list):
+            bad.append(f.name)
+            continue
+        n += sum(1 for r in rows if isinstance(r, dict))
+    if n == 0:
+        return {"status": UNMEASURED, "files": len(files), "providers": 0, "unreadable": bad,
+                "why": "provider card files hold no readable provider"}
+    return {"status": "MEASURED", "files": len(files), "providers": n, "unreadable": bad}
+
+
+def _terms_evidence(row: dict[str, Any]) -> str | None:
+    """The positive terms evidence a source card carries, or None: a declared
+    `machine_use_allowed: true`, a quoted permitting clause on the card, a `confirmed` verdict in
+    alt_proxies.TERMS, or admission by the one terms gate (libs.data.terms_hold)."""
+    if row.get("machine_use_allowed") is True:
+        return "machine_use_allowed: true on its card"
+    if str(row.get("terms_url") or "").strip() and str(row.get("terms_quote") or "").strip():
+        return "quoted terms on its card"
+    sid = str(row.get("id") or "")
+    try:
+        import alt_proxies  # type: ignore[import-not-found]
+        verdict = alt_proxies.TERMS.get(sid)
+        if verdict and verdict[0] == "confirmed":
+            return f"alt_proxies.TERMS: {verdict[1]}"
+    except Exception:  # an unreadable verdict table is no evidence, never a pass
+        pass
+    try:
+        from libs.data.terms_hold import gauntlet_terms
+        ok, _why = gauntlet_terms(sid)
+        if ok:
+            return "terms gate admits the id"
+    except Exception:  # an unreadable gate is no evidence, never a pass
+        pass
+    return None
+
+
+def acquisition_gate(row: dict[str, Any]) -> str | None:
+    """Why a source may NOT be proposed for acquisition, or None. FAILS CLOSED (audit #211,
+    2026-10-07): paid ground, a declared `machine_use_allowed: false`, a source the terms fence
+    blocks, a fence that cannot be consulted, and a source with NO positive terms evidence are
+    never proposed. They stay priced and visible (rows, `terms_review`), but the collector is
+    never pointed at them until their terms are read and quoted."""
+    if str(row.get("access") or "").lower() == "paid":
+        return "paid access: blocked by the data-access rule (public or licensed only)"
+    if row.get("machine_use_allowed") is False:
+        return "machine_use_allowed: false on its card"
+    tf: Any = None
+    try:
+        tf = importlib.import_module("libs.data.terms_fence")
+    except ModuleNotFoundError as exc:
+        if exc.name != "libs.data.terms_fence":
+            return f"terms fence unavailable ({type(exc).__name__}): held"
+    except Exception as exc:
+        return f"terms fence unavailable ({type(exc).__name__}): held"
+    if tf is not None:
+        try:
+            fenced = tf.fenced_source(str(row.get("id") or ""))
+        except Exception as exc:
+            return f"terms fence failed ({type(exc).__name__}): held"
+        if fenced:
+            return f"terms fence: {fenced}"
+    if _terms_evidence(row) is None:
+        return "terms UNMEASURED: no permitting evidence on its card (held for terms review)"
+    return None
 
 
 def _posterior_sd() -> tuple[dict[str, float], str]:
@@ -173,13 +297,90 @@ def _lag_weight(row: dict[str, Any]) -> float:
     return round(math.exp(-max(lag, 0.0) / 30.0), 6)
 
 
+#: Weights of the four independence axes in information similarity. DECLARED, not fitted.
+INFO_AXES: dict[str, float] = {"observable": 0.5, "origin": 0.2, "measurement": 0.15,
+                               "timing": 0.15}
+_STOP = frozenset(("the", "and", "that", "this", "with", "from", "into", "than", "they", "their",
+                   "there", "which", "when", "what", "where", "only", "every", "before", "after",
+                   "over", "under", "about", "desk", "trades", "trade", "price", "prices", "data",
+                   "public", "read", "number", "carry", "carries", "move", "moves", "signal"))
+
+
+def _tokens(text: Any) -> frozenset[str]:
+    words = "".join(ch.lower() if ch.isalnum() else " " for ch in str(text or "")).split()
+    return frozenset(w for w in words if len(w) >= 4 and w not in _STOP)
+
+
+def _lag_bucket(row: dict[str, Any]) -> str | None:
+    pit = row.get("pit") if isinstance(row.get("pit"), dict) else None
+    if not pit or pit.get("publication_lag_days") is None:
+        return None
+    try:
+        lag = float(pit["publication_lag_days"])
+    except (TypeError, ValueError):
+        return None
+    return "0" if lag <= 0.5 else "le7" if lag <= 7 else "le30" if lag <= 30 else "gt30"
+
+
+def info_axes(row: dict[str, Any]) -> dict[str, Any]:
+    """The four independence axes of one source, each None when the row does not declare it."""
+    obs = _tokens(f"{row.get('observable') or ''} {row.get('mechanism') or ''} "
+                  f"{row.get('name') or ''}")
+    cad = str(row.get("cadence") or "").strip().lower()
+    lag = _lag_bucket(row)
+    return {"observable": obs or None,
+            "origin": str(row.get("country") or "").strip().lower() or None,
+            "measurement": str(row.get("plane") or "").strip().lower() or None,
+            "timing": ((f"{cad}|{lag}" if lag is not None else cad) if cad else None)}
+
+
+def info_similarity(a: dict[str, Any], b: dict[str, Any]) -> tuple[float | None, dict[str, Any]]:
+    """Weighted similarity over the axes BOTH rows declare (weights renormalised), or None."""
+    parts: dict[str, float] = {}
+    for axis in INFO_AXES:
+        x, y = a.get(axis), b.get(axis)
+        if x is None or y is None:
+            continue
+        if axis == "observable":
+            parts[axis] = len(x & y) / len(x | y) if (x | y) else 0.0
+        else:
+            parts[axis] = 1.0 if x == y else 0.0
+    if not parts:
+        return None, {}
+    w = sum(INFO_AXES[k] for k in parts)
+    return sum(INFO_AXES[k] * v for k, v in parts.items()) / w, parts
+
+
+def information_novelty(row: dict[str, Any], collected: list[dict[str, Any]]
+                        ) -> dict[str, Any]:
+    """1 - max similarity to any OTHER successfully-collected source, with the nearest named."""
+    me = info_axes(row)
+    if not any(v is not None for v in me.values()):
+        return {"value": None, "status": "UNMEASURED",
+                "why": "the row declares none of observable, origin, measurement, timing"}
+    best, nearest, parts_best = None, None, {}
+    for c in collected:
+        if str(c.get("id")) == str(row.get("id")):
+            continue
+        sim, parts = info_similarity(me, info_axes(c))
+        if sim is not None and (best is None or sim > best):
+            best, nearest, parts_best = sim, str(c.get("id")), parts
+    if best is None:
+        return {"value": 1.0, "status": "MEASURED", "nearest": None,
+                "why": "no collected source shares a declared axis: nothing it could repeat"}
+    return {"value": round(1.0 - best, 4), "status": "MEASURED", "nearest": nearest,
+            "axes": {k: round(v, 4) for k, v in parts_best.items()}}
+
+
 def price(sources: list[dict[str, Any]], state: dict[str, Any],
           sd: dict[str, float]) -> list[dict[str, Any]]:
     """One priced row per source, highest EVIG first. Pure: no I/O, so the test can drive it."""
     covered: dict[str, int] = {}
+    collected: list[dict[str, Any]] = []
     for s in sources:
         ok, _f, _s = _history(state, str(s.get("id")))
         if ok > 0:
+            collected.append(s)
             for t in s.get("targets") or []:
                 key = str(t).upper()
                 covered[key] = covered.get(key, 0) + 1
@@ -195,6 +396,10 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         # unlabelled CDN URL before a central bank release it has a mechanism for.
         n_share = ((len(novel) / len(targets)) if targets
                    else (0.1 if s.get("derived") else 0.5))
+        info = information_novelty(s, collected)
+        n_instrument = n_share
+        if info["value"] is not None:
+            n_share = 0.5 * n_instrument + 0.5 * float(info["value"])
         prior: list[float] = [float(sd[t]) for t in targets if sd.get(t)]
         u = (sum(prior) / len(prior)) if prior else 1.0
         p_usable = (1.0 + ok) / (2.0 + ok + fail)
@@ -205,12 +410,18 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         evig = u * max(n_share, 0.05) * p_usable * w / cost
         rows.append({
             "id": sid, "plane": s.get("plane"), "cadence": s.get("cadence"),
-            "access": s.get("access"), "role": s.get("role") or "mechanism",
+            "access": s.get("access"), "donor": s.get("donor"), "role": s.get("role") or "mechanism",
+            "machine_use_allowed": s.get("machine_use_allowed"),
+            "acquisition_gate": acquisition_gate(s),
             "derived": bool(s.get("derived")),
             "targets": targets, "novel_targets": novel,
             "u_prior_sd": round(u, 6), "u_status": ("MEASURED" if prior
                                                     else "UNMEASURED_PRIOR"),
-            "novelty": round(n_share, 4), "p_usable": round(p_usable, 4),
+            "novelty": round(n_share, 4), "instrument_novelty": round(n_instrument, 4),
+            "information_novelty": info, "novelty_used": round(n_share, 4),
+            "novelty_basis": ("mean(instrument, information)" if info["value"] is not None
+                              else "instrument only: information novelty UNMEASURED"),
+            "p_usable": round(p_usable, 4),
             "lag_weight": w, "cost_s": round(cost, 3),
             "cost_basis": ("measured seconds" if secs is not None else "declared cadence"),
             "ok": ok, "fail": fail,
@@ -252,19 +463,27 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     sd, sd_why = _posterior_sd()
     sources = [*_sources(), *_derived()]
     rows = price(sources, state, sd)
-    proposals = [r for r in rows if r["never_collected"]][:20]
+    proposals = [r for r in rows if r["never_collected"] and not r["acquisition_gate"]][:20]
+    cards = provider_cards()
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "status": "OK" if rows else "UNMEASURED",
         "n_sources": len(rows), "n_registered": len(_sources()),
         "n_derived": sum(1 for r in rows if r["derived"]),
+        "provider_cards": cards,
+        "n_gated_from_proposals": sum(1 for r in rows if r["never_collected"]
+                                      and r["acquisition_gate"]),
+        "terms_review": [r["id"] for r in rows if r["never_collected"]
+                         and str(r["acquisition_gate"] or "").startswith("terms UNMEASURED")][:20],
         "n_never_collected": sum(1 for r in rows if r["never_collected"]),
         "prior_basis": ("POSTERIOR_ALPHA mean mu_sd per symbol" if sd
                         else f"flat prior 1.0: {sd_why}"),
         "n_priors": len(sd),
         "formula": ("EVIG(s) = U(s) x novelty(s) x P(usable|s) x exp(-lag/30) / cost_s; U is the "
-                    "desk's posterior sd on the instruments s declares, novelty the share of "
-                    "those the collector has never successfully read from another source"),
+                    "desk's posterior sd on the instruments s declares; novelty is the mean of "
+                    "INSTRUMENT novelty (share of targets no collected source covers) and "
+                    "INFORMATION novelty (1 - max similarity to a collected source on observable, "
+                    "origin, measurement and timing)"),
         "unit": "posterior sd x usable share per second of collector attention",
         "rows": rows,
         "proposals": proposals,
@@ -299,7 +518,8 @@ def main(argv: list[str] | None = None) -> int:
           f"prior basis: {doc['prior_basis']}")
     for r in doc["rows"][:8]:
         print(f"  {r['rank']:>3} {r['id'][:34]:<34} evig={r['evig']:.6g} "
-              f"novelty={r['novelty']:.2f} p_usable={r['p_usable']:.2f} cost={r['cost_s']:.0f}s")
+              f"novelty instr={r['instrument_novelty']:.2f} used={r['novelty_used']:.2f} "
+              f"p_usable={r['p_usable']:.2f} cost={r['cost_s']:.0f}s")
     print(f"written: {OUT}")
     return 0
 

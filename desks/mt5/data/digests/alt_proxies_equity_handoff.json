@@ -94,6 +94,38 @@
    "usable": true
   },
   {
+   "source": "gdelt_translingual_country",
+   "series": "TW_tone",
+   "lake_file": "alt_gdelt_translingual_country__TW_tone",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "TSMC": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
+   "source": "gdelt_translingual_country",
+   "series": "TW_conflict_share",
+   "lake_file": "alt_gdelt_translingual_country__TW_conflict_share",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "TSMC": -1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
    "source": "us_oi_card_spend",
    "series": "spend_all",
    "lake_file": "alt_us_oi_card_spend__spend_all",
