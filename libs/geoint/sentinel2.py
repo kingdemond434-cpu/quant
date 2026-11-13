@@ -278,8 +278,9 @@ def read_window(scene: Scene, bbox_utm: tuple[float, float, float, float], band:
                                                                                      strict=True)}
         else:
             scl_counts = {"UNMEASURED": int(dn.size)}
-    except SourceRefused:
-        raise   # a refusal ends the pass; it is never read as a cloudy mask
+    except (SourceRefused, SourceUnavailable):
+        # a refusal ends the pass and an outage skips the scene; neither is a cloudy mask
+        raise
     except Exception as exc:  # an unreadable mask is recorded, never read as clear
         scl_counts = {"UNMEASURED": int(dn.size), f"error:{type(exc).__name__}": 1}
         valid[:] = False

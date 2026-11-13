@@ -427,6 +427,23 @@ def test_a_refused_mask_read_is_never_recorded_as_cloud(monkeypatch):
         s2.read_window(scene, (0, 0, 1, 1), "B08")  # type: ignore[arg-type]
 
 
+
+def test_an_unavailable_mask_read_skips_the_scene_and_is_never_recorded_as_cloud(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    class FakeCog:
+        def __init__(self, url, f):
+            if url.endswith("SCL.tif"):
+                raise cogmod.SourceUnavailable(url, 503)
+            self.bytes_read = 1
+
+        def read_bbox(self, *b):
+            return np.ones((2, 2), np.uint16), GeoTransform(0, 0, 10, 10)
+    monkeypatch.setattr(s2, "COG", FakeCog)
+    scene = NS(url=lambda a: f"https://example.test/{a}", dn_offset=0.0)
+    with pytest.raises(cogmod.SourceUnavailable):
+        s2.read_window(scene, (0, 0, 1, 1), "B08")  # type: ignore[arg-type]
+
 def _pass_world(monkeypatch, tmp_path, outcomes):
     from desks.mt5.research import geoint_tank_fill as g
     scenes = [s2.Scene(scene_id=f"S2A_14SPE_2026110{i}_0_L2A", tile="14SPE", prefix=f"p{i}/")
