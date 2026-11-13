@@ -48,13 +48,13 @@ def test_publisher_zones_convert_to_utc_across_daylight_saving(doc) -> None:
     assert any(e["utc"] == "2026-12-17T13:15:00Z" for e in _ev(doc, "ECB"))   # 14:15 CET
     assert any(e["utc"] == "2026-12-10T08:30:00Z" for e in _ev(doc, "SNB"))   # 09:30 CET
     assert any(e["utc"] == "2026-12-09T14:45:00Z" for e in _ev(doc, "BoC"))   # 09:45 EST
-    nfp = [e for e in _ev(doc, "BLS") if "Employment" in e["name"]]
+    nfp = [e for e in _ev(doc, "BLS") if e["name"].startswith("US NFP")]
     assert any(e["utc"].endswith("T13:30:00Z") for e in nfp)                 # 08:30 EST
 
 
 def test_bea_rows_carry_their_own_titles_and_impact(doc) -> None:
     bea = _ev(doc, "BEA")
-    gdp = [e for e in bea if e["name"].startswith("GDP (Second")]
+    gdp = [e for e in bea if e["name"].startswith("US GDP: GDP (Second")]
     assert gdp and gdp[0]["impact"] == "high" and gdp[0]["utc"] == "2026-11-25T13:30:00Z"
     assert all(e["name"] not in ("Release", "N", "ews") for e in bea)
 
@@ -163,7 +163,7 @@ def test_robots_is_evaluated_for_the_agent_the_calendar_sends(monkeypatch) -> No
         sent.append(u)
         return SimpleNamespace(ok=True, status=200, text="<p>x</p>", error="")
 
-    pages, refused = ec.fetch_pages(get)
+    _, refused = ec.fetch_pages(get)
     assert sent == [] and all(v.startswith("ROBOTS_REFUSED") for v in refused.values())
     F._ROBOTS.clear()
 
@@ -175,3 +175,15 @@ def test_a_transport_error_publishes_its_type_never_its_text() -> None:
 
     _, refused = ec.fetch_pages(get, lambda u: None)
     assert refused["fed_fomc"] == "unreachable (URLError)"
+
+
+def test_rows_carry_canonical_names_and_their_currency(doc) -> None:
+    want = {"Fed": "USD", "BLS": "USD", "BEA": "USD", "ECB": "EUR", "BoE": "GBP",
+            "BoJ": "JPY", "SNB": "CHF", "BoC": "CAD"}
+    for e in doc["events"]:
+        assert e["currencies"] == [want[e["publisher"]]], e
+    names = {e["name"].split(":")[0].split(" (")[0] for e in doc["events"]}
+    for canon in ("FOMC decision", "ECB rate decision", "BoE MPC Bank Rate decision",
+                  "BoJ MPM decision", "SNB monetary policy assessment", "BoC rate announcement",
+                  "US CPI", "US NFP", "US GDP", "US PCE"):
+        assert canon in names, canon

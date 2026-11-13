@@ -55,6 +55,10 @@ PAGES: dict[str, str] = {
     "boc_schedule": "https://www.bankofcanada.ca/press/upcoming-events/",
     "rba_schedule": "https://www.rba.gov.au/schedules-events/calendar/",
 }
+#: The currency each publisher's release reprices, written on every row so the order door
+#: (event_guard.event_currencies) never has to infer it from the name.
+CURRENCY = {"Fed": "USD", "BLS": "USD", "BEA": "USD", "ECB": "EUR", "BoE": "GBP", "BoJ": "JPY",
+            "SNB": "CHF", "BoC": "CAD", "RBA": "AUD"}
 #: The publishers whose horizon bounds `valid_through`.
 CORE = ("fed_fomc", "bls_cpi", "bls_empsit")
 
@@ -89,6 +93,7 @@ class Event:
     def row(self, source: str, fetched_at: str) -> dict[str, Any]:
         return {"utc": self.utc.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "name": self.name, "publisher": self.publisher, "impact": self.impact,
+                "currencies": [CURRENCY[self.publisher]] if self.publisher in CURRENCY else [],
                 "local": self.local, "source": source, "fetched_at": fetched_at}
 
 
@@ -183,7 +188,9 @@ def parse_bea(page: str, fetched: date) -> list[Event]:
         except ValueError:
             continue
         impact = "high" if title.startswith(BEA_HIGH) else "low"
-        out.append(Event(_at(d, *t, "America/New_York"), title[:120], "BEA", impact,
+        tag = ("US GDP" if title.startswith("GDP") else
+               "US PCE" if title.startswith("Personal Income and Outlays") else "US BEA")
+        out.append(Event(_at(d, *t, "America/New_York"), f"{tag}: {title}"[:120], "BEA", impact,
                          f"{d} {t[0]:02d}:{t[1]:02d} America/New_York"))
     return out
 
@@ -201,7 +208,7 @@ def parse_ecb(page: str, fetched: date) -> list[Event]:
             continue
         dd, mm, yy = (int(x) for x in d_s.split("/"))
         d = date(yy, mm, dd)
-        out.append(Event(_at(d, 14, 15, "Europe/Berlin"), "ECB monetary policy decision", "ECB",
+        out.append(Event(_at(d, 14, 15, "Europe/Berlin"), "ECB rate decision", "ECB",
                          "high", f"{d} 14:15 Europe/Berlin"))
     return out
 
@@ -220,7 +227,7 @@ def parse_boe(page: str, fetched: date) -> list[Event]:
                          r"([A-Z][a-z]+)", ln)
         if m and year is not None and (mo := _month(m.group(2))) is not None:
             d = date(year, mo, int(m.group(1)))
-            out.append(Event(_at(d, 12, 0, "Europe/London"), "BoE Bank Rate decision", "BoE",
+            out.append(Event(_at(d, 12, 0, "Europe/London"), "BoE MPC Bank Rate decision", "BoE",
                              "high", f"{d} 12:00 Europe/London"))
     return out
 
@@ -247,7 +254,7 @@ def parse_boj(page: str, fetched: date) -> list[Event]:
         mo_last = mo + 1 if last < first else mo
         d = date(year + (1 if mo_last == 13 else 0), (mo_last - 1) % 12 + 1, last)
         for hh, mm in BOJ_STAMPS:
-            out.append(Event(_at(d, hh, mm, "Asia/Tokyo"), "BoJ policy decision (time not fixed)",
+            out.append(Event(_at(d, hh, mm, "Asia/Tokyo"), "BoJ MPM decision (time not fixed)",
                              "BoJ", "high", f"{d} {hh:02d}:{mm:02d} Asia/Tokyo"))
     return out
 
@@ -295,7 +302,7 @@ def parse_boc(page: str, fetched: date) -> list[Event]:
 PARSERS: dict[str, Callable[[str, date], list[Event]]] = {
     "fed_fomc": parse_fed,
     "bls_cpi": lambda p, f: parse_bls(p, f, name="US CPI"),
-    "bls_empsit": lambda p, f: parse_bls(p, f, name="US Employment Situation (NFP)"),
+    "bls_empsit": lambda p, f: parse_bls(p, f, name="US NFP (Employment Situation)"),
     "bea_schedule": parse_bea,
     "ecb_mp_meetings": parse_ecb,
     "boe_mpc_dates": parse_boe,
