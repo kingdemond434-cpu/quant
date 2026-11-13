@@ -192,7 +192,7 @@ def test_the_lag_is_judged_on_the_bars_true_utc_instant(ref):
 
 
 def test_a_stale_value_is_absent_not_carried_forward(ref):
-    at = np.array([pd.Timestamp("2023-06-01", tz="UTC").value])       # long after the series
+    at = np.array([pd.Timestamp("2030-06-01", tz="UTC").value])       # long after the series
     got = fiv.iv_asof("^VIX", at, max_stale_d=4)
     assert got is not None and np.isnan(got).all()
 
