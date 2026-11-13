@@ -57,6 +57,7 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                         lambda **kw: {"state": "TEST_STUB", "model": {"calls": 0}, **kw})
     monkeypatch.setattr(lab, "_collector_role", lambda **kw: {"state": "RAN", "asked": 0, **kw})
     monkeypatch.setattr(lab, "_election_role", lambda **kw: {"state": "TEST_STUB", **kw})
+    monkeypatch.setattr(lab, "_refunding_role", lambda **kw: {"state": "TEST_STUB", **kw})
     monkeypatch.setattr(lab, "gauntlet_trims", lambda: True)
     import llm_lab_roles as roles
     for name in ("CREDIT", "EVIDENCE_START", "MISSED", "DAILY", "CODE_LEDGER", "SCOUTED",
