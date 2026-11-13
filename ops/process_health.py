@@ -33,8 +33,9 @@ import contextlib
 import csv
 import io
 import json
+import ntpath
 import os
-import platform
+import re
 import subprocess
 import sys
 import time
@@ -138,11 +139,34 @@ def _bound(args: list[str]) -> int:
 
 
 def _host() -> str:
+    """WHICH MACHINE, WITHOUT NAMING IT: the host_identity verdict (TRADING / OFF_BOX /
+    UNMEASURED), never the hostname. process_health.json is published to a public repository,
+    and the Auditor rule (#639, #1075) is no host names and no absolute paths on the wire. The
+    verdict still answers the question the host stamp exists for (2026-10-21: was this the
+    trading box or the build box?), and the machine's total memory sits beside every figure."""
     try:
-        import socket
-        return socket.gethostname() or platform.node() or "UNMEASURED"
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import host_identity
+        return str(host_identity.identify().verdict)
     except Exception:
-        return platform.node() or "UNMEASURED"
+        return "UNMEASURED"
+
+
+def _path_free(value: Any) -> Any:
+    """A published value with every absolute filesystem path cut to its file name: `path` fields
+    keep the basename only, free text (a restore step, a log tail line) loses its directories,
+    and lists (a failing task's logs and tail) are cut item by item."""
+    if isinstance(value, dict):
+        return {k: (ntpath.basename(str(v).replace("/", "\\").rstrip("\\")) or "[path]"
+                    if k == "path" and isinstance(v, str) else _path_free(v))
+                for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_path_free(v) for v in value]
+    if isinstance(value, str):
+        return _ABS_PATH.sub(
+            lambda m: re.split(r"[\\/]", m.group(0).rstrip("\\/"))[-1] or "[path]", value)
+    return value
 
 
 def memory_snapshot() -> dict[str, Any]:
@@ -433,6 +457,184 @@ def _artifact_age(artifact: str) -> float | None:
     return _age_min(ROOT / artifact)
 
 
+#: THE ERROR TEXT OF A FAILING TASK (hourly-pass idea 629, 2026-11-11). A FAILING row used to
+#: carry only the translated exit code: "generic failure (the script itself returned 1)" says a
+#: run failed, never why. MergeDocket returned 1 for hours while its own log was held open by a
+#: hung earlier run, and nothing on the board said so. Each FAILING row now carries the tail of
+#: every log its command redirects into, whether the failing run wrote to that log at all, and
+#: whether the log can be appended to now (a held log is exactly the MergeDocket shape).
+#: process_health.json is published to a public repository, so every tail line is redacted
+#: before it is kept, and a tail is bounded in bytes, lines and line length.
+TAIL_BYTES = 8192
+TAIL_LINES = 20
+TAIL_LINE_CHARS = 300
+_REDIRECT = re.compile(
+    r"""(?<![\w&])(?:[12*])?>>?(?!&)\s*(?:"([^"]+)"|([^\s"<>|&]+))"""
+    r"""|-Redirect(?:StandardError|StandardOutput)\s+(?:"([^"]+)"|'([^']+)'|(\S+))"""
+    r"""|(?:Tee-Object|Out-File)(?:\s+-(?:Append|FilePath|Encoding\s+\S+))*\s+(?:"([^"]+)"|'([^']+)'|([^\s"'|;]+))""",
+    re.IGNORECASE)
+_SECRET_ASSIGN = re.compile(
+    r"(?i)\b(api[_-]?key|apikey|access[_-]?key|token|secret|password|passwd|pwd|authorization"
+    r"|bearer|client[_-]?secret)\b(\s*[:=]\s*|\s+)(['\"]?)[^\s'\"&,;]+")
+_LONG_TOKEN = re.compile(r"\b[A-Za-z0-9_\-+/=]{24,}\b")
+_LONG_DIGITS = re.compile(r"\b\d{7,}\b")
+#: An absolute path (drive-letter, UNC or POSIX root) in published text, cut to its last segment.
+_ABS_PATH = re.compile(
+    r"(?:[A-Za-z]:[\\/]|\\\\|(?<![\w.])/(?=[\w.-]+/))(?:[^\s\\/'\"<>|]+[\\/])*[^\s\\/'\"<>|,;)]*")
+_LAST_RUN_FORMATS = ("%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m/%d/%Y %I:%M:%S %p")
+
+
+_SHA_SHAPE = re.compile(r"[0-9a-f]{7,12}|[0-9a-f]{40}")
+_MONEY_LINE = re.compile(r"(?i)balance|equity|profit|pnl|p/l|margin|usd|eur|gbp|\$|€|£|drawdown")
+_ANY_NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
+_DECIMAL_2 = re.compile(r"\b\d[\d,]*\.\d{2,}\b")
+_ACCOUNT_NUMBER = re.compile(r"(?i)\b(login|account|acct)(\W{0,3})\d{4,}")
+#: Tasks on the money path never publish a tail, only that they failed and with which code.
+MONEY_PATH_TASK = re.compile(r"(?i)gateway|allocator|executor|oco|money_closure|order_door|e8|ftmo")
+
+
+def _real_date(digits: str) -> bool:
+    if len(digits) != 8 or not ("2020" <= digits[:4] <= "2030"):
+        return False
+    try:
+        date(int(digits[:4]), int(digits[4:6]), int(digits[6:]))
+    except ValueError:
+        return False
+    return True
+
+
+def redact_line(line: str) -> str:
+    """One log line made safe to publish: secret assignments, long opaque tokens (every hex
+    length but a git sha's), account numbers, money figures and long digit runs are masked.
+    A git sha (7-12 or 40 hex) and a real 2020-2030 YYYYMMDD date stay readable."""
+    line = _SECRET_ASSIGN.sub(lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}[REDACTED]", line)
+    line = _ACCOUNT_NUMBER.sub(lambda m: f"{m.group(1)}{m.group(2)}[N]", line)
+
+    def _tok(m: re.Match[str]) -> str:
+        t = m.group(0)
+        if _SHA_SHAPE.fullmatch(t):
+            return t
+        if re.fullmatch(r"[0-9a-fA-F]+", t) or (re.search(r"\d", t) and re.search(r"[A-Za-z]", t)):
+            return "[REDACTED]"
+        return t
+
+    line = _LONG_TOKEN.sub(_tok, line)
+    line = re.sub(r"\b[0-9a-fA-F]{13,39}\b|\b[0-9a-fA-F]{41,}\b",
+                  lambda m: m.group(0) if not re.search(r"[a-fA-F]", m.group(0))
+                  else "[REDACTED]", line)
+    if _MONEY_LINE.search(line):
+        line = _ANY_NUMBER.sub(lambda m: m.group(0) if _real_date(m.group(0)) else "[N]", line)
+    line = _DECIMAL_2.sub("[N]", line)
+    line = _LONG_DIGITS.sub(lambda m: m.group(0) if _real_date(m.group(0)) else "[N]", line)
+    return line[:TAIL_LINE_CHARS]
+
+
+def redirect_targets(command: str, start_in: str = "") -> list[str]:
+    """The files a scheduled task's command line writes its output into, in order, deduplicated.
+    `2>&1` and `>nul` are not files. %VARS% are expanded; a relative path is read against the
+    task's Start In folder."""
+    out: list[str] = []
+    for m in _REDIRECT.finditer(command or ""):
+        raw = next((g for g in m.groups() if g), "").strip().strip("'\"")
+        if not raw or raw.lower() in ("nul", "$null", "nul:"):
+            continue
+        path = ntpath.expandvars(raw)
+        base = (start_in or "").strip().strip('"')
+        if not ntpath.isabs(path) and base and base.upper() != "N/A":
+            path = ntpath.join(base, path)
+        if path not in out:
+            out.append(path)
+    return out
+
+
+def _decode(raw: bytes) -> str:
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff") or (raw and raw.count(b"\x00") > len(raw) // 4):
+        return raw.decode("utf-16-le", errors="replace").lstrip("\ufeff")
+    return raw.decode("utf-8", errors="replace").lstrip("\ufeff")
+
+
+def _parse_last_run(text: str) -> datetime | None:
+    for fmt in _LAST_RUN_FORMATS:
+        with contextlib.suppress(ValueError):
+            return datetime.strptime((text or "").strip(), fmt).astimezone()
+    return None
+
+
+def _append_blocked(path: Path) -> bool | None:
+    """True when another process holds the log so a new run cannot append to it. Opens for
+    append WITHOUT create and writes nothing, so neither the content nor the mtime changes.
+    None when not measurable (not Windows, file absent)."""
+    if sys.platform != "win32" or not path.exists():
+        return None
+    try:
+        fd = os.open(str(path), os.O_WRONLY | os.O_APPEND)
+    except PermissionError:
+        return True
+    except OSError:
+        return None
+    os.close(fd)
+    return False
+
+
+def log_tail(path: Path, last_run: str = "") -> dict[str, Any]:
+    """The redacted tail of one log, plus whether the last run wrote to it."""
+    doc: dict[str, Any] = {"path": str(path)}
+    try:
+        st = path.stat()
+    except OSError as exc:
+        doc["state"] = f"UNREADABLE: {type(exc).__name__}"
+        return doc
+    doc["bytes"] = st.st_size
+    mtime = datetime.fromtimestamp(st.st_mtime, tz=UTC)
+    doc["mtime_utc"] = mtime.isoformat(timespec="seconds")
+    ran = _parse_last_run(last_run)
+    # schtasks prints box-local time; it is read as local and compared with the UTC mtime.
+    # A log last written before the run started means the failing run wrote nothing to it.
+    doc["written_by_last_run"] = None if ran is None else mtime >= ran
+    doc["append_blocked"] = _append_blocked(path)
+    try:
+        with path.open("rb") as fh:
+            fh.seek(max(0, st.st_size - TAIL_BYTES))
+            text = _decode(fh.read(TAIL_BYTES))
+    except OSError as exc:
+        doc["state"] = f"UNREADABLE: {type(exc).__name__}"
+        return doc
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if st.st_size > TAIL_BYTES and lines:
+        lines = lines[1:]   # the first line of a mid-file read is a fragment
+    doc["state"] = "OK"
+    doc["tail"] = [redact_line(ln) for ln in lines[-TAIL_LINES:]]
+    return doc
+
+
+def failure_evidence(task: dict[str, str]) -> dict[str, Any]:
+    """Why a FAILING task failed, as far as its own logs say."""
+    command = str(task.get("Task To Run") or "")
+    if MONEY_PATH_TASK.search(str(task.get("TaskName") or "") + " " + command):
+        return {"state": "WITHHELD", "why": "money-path task: only its failure and exit code "
+                "are published, never its log"}
+    targets = redirect_targets(command, str(task.get("Start In") or ""))
+    last_run = str(task.get("Last Run Time") or "")
+    # A -File wrapper that logs for itself names no file on its command line; the desk's own
+    # convention (desks/mt5/logs/<TaskName>.log) is read then, when that file exists.
+    name = str(task.get("TaskName") or "").strip().lstrip("\\").split("\\")[-1]
+    conventional = ROOT / "desks" / "mt5" / "logs" / f"{name}.log"
+    if not targets and name and conventional.exists():
+        targets = [str(conventional)]
+    if not targets:
+        return {"state": "NO_LOG", "why": "the task's command redirects into no file, so its "
+                "error text goes nowhere this board can read"}
+    logs = [log_tail(Path(t), last_run) for t in targets[:3]]
+    held = [lg["path"] for lg in logs if lg.get("append_blocked")]
+    silent = [lg["path"] for lg in logs if lg.get("written_by_last_run") is False]
+    why = []
+    if held:
+        why.append("held open by another process, so a new run cannot write: " + ", ".join(held))
+    if silent:
+        why.append("the failing run wrote nothing to: " + ", ".join(silent))
+    return {"state": "READ", "why": "; ".join(why), "logs": logs}
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -560,6 +762,8 @@ def build() -> dict[str, Any]:
             "purpose": purpose or None,
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
+            "failure_evidence": (_path_free(failure_evidence(t)) if verdict == "FAILING"
+                                 else None),
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
@@ -628,7 +832,7 @@ def build() -> dict[str, Any]:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
-        "host": __import__("socket").gethostname(),
+        "host": _host(),
         "scheduler_status": scheduler_status,
         "n_processes": len(rows),
         "counts": counts,
@@ -646,10 +850,10 @@ def build() -> dict[str, Any]:
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
         "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
-        "account_key_file": key,
+        "account_key_file": _path_free(key),
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
-        "account_key_backup": backup,
+        "account_key_backup": _path_free(backup),
         # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
