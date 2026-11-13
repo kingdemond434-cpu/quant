@@ -2586,13 +2586,7 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
 #: or a publisher's written "anyone may use this". Everything else is `to_confirm` until a human
 #: reads the terms, and a `to_confirm` or `refused` source is NEVER fetched (BLOCKED_ON_TERMS).
 TERMS: dict[str, tuple[str, str]] = {
-    # 2026-11-13: the licence is open (KOGL), but customs.go.kr's robots.txt disallows the press
-    # path /*/na/ntt/ for every crawler it names (Googlebot, Yeti, Daum, Bingbot) and has no `*`
-    # group. Read as the site's intent and respected; the press list is also JS-driven. The
-    # route left is the 10-day statistics OpenAPI on data.go.kr (needs a portal key) or
-    # tradedata.go.kr, each to be read before wiring.
-    "kr_exports_early": ("refused", "customs.go.kr robots intent: /*/na/ntt/ disallowed for "
-                                    "every named crawler"),
+    "kr_exports_early": ("confirmed", "KOGL public-sector open licence"),
     "us_tsa_throughput": ("confirmed", "US federal work, public domain"),
     "us_census_marts_ex_autos": ("confirmed", "US Census documented public API, public domain"),
     "jp_jnto_arrivals": ("refused", "JNTO site policy: unauthorised duplication or transmission of "
@@ -4075,6 +4069,17 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
     return None
 
 
+#: Sources whose LICENCE is fine but whose fetch ROUTE the site has refused. Live fetches stop;
+#: recorded fixtures still parse, so the parser stays tested for when a lawful route is wired.
+ROUTE_REFUSED: dict[str, str] = {
+    "kr_exports_early": (
+        "customs.go.kr/robots.txt disallows the press path /*/na/ntt/ for every crawler it "
+        "names (Googlebot, Yeti, Daum, Bingbot) and has no '*' group -- respected as the site's "
+        "intent (read on the box 2026-11-13). Lawful routes still to read: the 10-day "
+        "statistics OpenAPI on data.go.kr (portal key) and tradedata.go.kr"),
+}
+
+
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
             getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
@@ -4106,6 +4111,13 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if src.id in ROUTE_REFUSED and fetch and fixtures is None:
+        rec.update({"status": "BLOCKED_ON_ROBOTS", "requests": 0,
+                    "why": ROUTE_REFUSED[src.id],
+                    "missed_growth": TERMS_EVIDENCE.get(src.id, {}).get("missed_growth")
+                    or f"{src.id} series are not refreshed while its route is refused",
+                    "store_rows": len(store)})
+        return rec
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))

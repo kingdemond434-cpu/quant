@@ -587,3 +587,17 @@ def test_the_digest_keeps_every_organs_section_and_stays_bounded(tmp_path: Path)
     got = subprocess.run(["git", "check-ignore", "-q",
                           dg.DIGEST.relative_to(ROOT).as_posix()], cwd=ROOT, check=False)
     assert got.returncode == 1, "the digest must be committable"
+
+
+def test_a_refused_route_is_never_fetched_but_its_fixtures_still_parse(tmp_path) -> None:
+    import time as _t
+    src = A.BY_ID["kr_exports_early"]
+    calls: list[str] = []
+
+    def getter(url: str):
+        calls.append(url)
+        return b"", "text/html"
+    rec = A.collect(A.Paths(tmp_path), src, {}, datetime(2026, 11, 13, tzinfo=UTC), fetch=True,
+                    fixtures=None, deadline=_t.monotonic() + 30, getter=getter)
+    assert rec["status"] == "BLOCKED_ON_ROBOTS" and not calls
+    assert "/*/na/ntt/" in rec["why"] and rec["missed_growth"]
