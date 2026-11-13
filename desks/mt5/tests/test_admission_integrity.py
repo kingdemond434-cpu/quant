@@ -106,12 +106,16 @@ def _runs() -> list[dict[str, Any]]:
     ]
 
 
-def test_the_enrolment_engine_holds_only_new_certificates_and_never_a_running_clock(
+def test_every_certificate_gets_a_clock_and_the_door_holds_only_new_clocks_promotion(
         tmp_path, monkeypatch):
+    """Principal 2026-11-13: "All certs passed go on forward clocks immediately". The door no
+    longer withholds a clock; it stamps a NEW clock's promotion, and a clock that predates the
+    door keeps the promotion path it always had."""
     import shadow_forward as sf
     shadow = tmp_path / "shadow"
     shadow.mkdir()
     old_key = sf.sleeve_key("EURUSD", "asia", {}, "overnight_gap_decay", "LONG")
+    new_key = sf.sleeve_key("GBPUSD", "asia", {}, "overnight_gap_decay", "LONG")
     (shadow / "shadow_state.json").write_text(json.dumps({old_key: {"status": "ACTIVE"}}))
     monkeypatch.setattr(sf, "SHADOW_DIR", shadow)
     monkeypatch.setattr(sf, "_frozen_clock_params", lambda: {})
@@ -120,11 +124,20 @@ def test_the_enrolment_engine_holds_only_new_certificates_and_never_a_running_cl
     monkeypatch.setattr(ai, "PLACEBO_REPORT", _placebo(tmp_path, "GATE_BLIND", ["sign_flip"]))
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", tmp_path / "none.json")
     rows = sf.certified_sleeves()
-    assert [r[0] for r in rows] == ["EURUSD"]            # the running clock keeps its row
+    assert sorted(r[0] for r in rows) == ["EURUSD", "GBPUSD"]   # BOTH on a clock, at once
+    holds = {r[0]: sf._row_hold(r) for r in rows}
+    assert holds["EURUSD"] == ""                                 # predates the door: untouched
+    assert holds["GBPUSD"].startswith(ai.HELD_PLACEBO)           # new: promotion held
     assert [h["certificate"] for h in sf.HELD_AT_INTEGRITY] == ["new"]
-    assert sf.HELD_AT_INTEGRITY[0]["reason"].startswith(ai.HELD_PLACEBO)
 
-    # the alarm clears and the certificate is replicated: it enrols on the very next pass
+    # the new clock now exists WITH its stamp: it is re-asked, never grandfathered
+    (shadow / "shadow_state.json").write_text(json.dumps({
+        old_key: {"status": "ACTIVE"},
+        new_key: {"status": "ACTIVE", ai.PROMOTION_HOLD_FIELD: holds["GBPUSD"]}}))
+    rows = sf.certified_sleeves()
+    assert {r[0]: sf._row_hold(r) for r in rows}["GBPUSD"].startswith(ai.HELD_PLACEBO)
+
+    # the alarm clears and the certificate is replicated: the hold lifts on the very next pass
     fp = ai.spec_fingerprint("GBPUSD", "overnight_gap_decay", "asia", None, {})
     monkeypatch.setattr(ai, "PLACEBO_REPORT", _placebo(tmp_path, "OK", []))
     monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _verdicts(
@@ -133,10 +146,33 @@ def test_the_enrolment_engine_holds_only_new_certificates_and_never_a_running_cl
                         lambda path=None, now=None: {"state": ai.CLEAR, "blocks": False})
     rows = sf.certified_sleeves()
     assert sorted(r[0] for r in rows) == ["EURUSD", "GBPUSD"]
+    assert all(sf._row_hold(r) == "" for r in rows)
     assert sf.HELD_AT_INTEGRITY == []
 
 
-def test_the_enrolment_census_names_a_held_certificate_and_never_calls_it_overdue(tmp_path):
+def test_stamp_hold_sets_and_lifts_and_denies_promotion_authority():
+    row: dict[str, Any] = {"promotion_authority": True}
+    ai.stamp_hold(row, "HELD_UNREPLICATED (UNREACHED): x")
+    assert row[ai.PROMOTION_HOLD_FIELD].startswith("HELD_UNREPLICATED")
+    assert row["promotion_authority"] is False
+    ai.stamp_hold(row, None)
+    assert ai.PROMOTION_HOLD_FIELD not in row
+
+
+def test_lane_hold_keys_and_promotion_hold_read_every_lane(tmp_path):
+    (tmp_path / "shadow_state.json").write_text(json.dumps(
+        {"A.asia": {"status": "ACTIVE", ai.PROMOTION_HOLD_FIELD: "HELD_X"},
+         "B.asia": {"status": "ACTIVE"}}))
+    (tmp_path / "qquant_shadow_state.json").write_text(json.dumps(
+        {"qquant.c1": {"status": "ACTIVE", ai.PROMOTION_HOLD_FIELD: "HELD_Y"}}))
+    assert ai.lane_hold_keys(tmp_path) == {"A.asia", "qquant.c1"}
+    assert ai.promotion_hold("qquant.c1", tmp_path) == "HELD_Y"
+    assert ai.promotion_hold("B.asia", tmp_path) is None
+
+
+def test_the_census_calls_a_clockless_certificate_missing_whatever_the_door_says(tmp_path):
+    """The door's verdict no longer files a clockless certificate under `held` (which never went
+    OVERDUE): every clockless certificate is MISSING and overdue after one cycle."""
     import forward_enrolment as fe
     gate = ai.IntegrityGate(alarm={"state": ai.ALARM, "blocks": True, "why": "blind"})
     runs = _runs()
@@ -145,11 +181,23 @@ def test_the_enrolment_census_names_a_held_certificate_and_never_calls_it_overdu
               ("EURUSD", "overnight_gap_decay", "asia", "LONG"):
               (NOW - timedelta(hours=30)).isoformat()}
     body = fe.census(runs, {}, stamps, NOW, gate=gate)
-    assert body["n_held"] == 2 and body["n_missing"] == 0 and body["overdue"] == []
-    assert all(h["held"].startswith(ai.HELD_PLACEBO) for h in body["held"])
-    # without a gate the census is exactly what it always was
+    assert body["n_held"] == 0 and body["n_missing"] == 2 and len(body["overdue"]) == 2
+    assert all(m["promotion_hold"].startswith(ai.HELD_PLACEBO) for m in body["missing"])
     plain = fe.census(runs, {}, stamps, NOW)
     assert plain["n_missing"] == 2 and len(plain["overdue"]) == 2 and plain["n_held"] == 0
+
+
+def test_the_census_counts_clocks_accruing_under_a_promotion_hold():
+    import forward_enrolment as fe
+    import shadow_forward as sf
+    runs = _runs()[1:]
+    key = sf.sleeve_key("GBPUSD", "asia", {}, "overnight_gap_decay", "LONG")
+    clocks = {key: {"status": "ACTIVE", "lane": "shadow_state.json",
+                    fe.PROMOTION_HOLD_FIELD: "HELD_UNREPLICATED (UNREACHED): pending"}}
+    body = fe.census(runs, clocks, {}, NOW)
+    assert body["n_enrolled"] == 1 and body["n_missing"] == 0
+    assert body["n_promotion_held"] == 1
+    assert body["promotion_hold_by_reason"] == {"HELD_UNREPLICATED (UNREACHED)": 1}
 
 
 @pytest.mark.parametrize("status", ["HELD_PLACEBO_ALARM", "ACTIVE"])
