@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timedelta, tzinfo
 from pathlib import Path
 
 import pytest
@@ -26,12 +27,23 @@ from research import decay_monitor as D  # noqa: E402
 
 NAME = "gold_asia"
 T = "2026-09-29T09:00:00+00:00"
+# decay_monitor keeps rows newer than now - TRAIL_DAYS (45). With the real clock, the fixed T above
+# aged out of that window on 2026-11-13 and every decay test here read zero trades. The monitor's
+# clock is frozen one day after T instead, so the window is the same on every run.
+_NOW = datetime.fromisoformat(T) + timedelta(days=1)
+
+
+class _FrozenClock(datetime):
+    @classmethod
+    def now(cls, tz: tzinfo | None = None) -> datetime:  # type: ignore[override]
+        return _NOW if tz is None else _NOW.astimezone(tz)
 
 
 def _ledger(tmp_path, monkeypatch, rows: list[dict]) -> None:
     led = tmp_path / "live_ledger.jsonl"
     led.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
     monkeypatch.setattr(D, "LEDGER", led)
+    monkeypatch.setattr(D, "datetime", _FrozenClock)
 
 
 def _row(r: float, **extra) -> dict:

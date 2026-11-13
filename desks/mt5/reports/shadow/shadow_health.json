@@ -1,29 +1,51 @@
 {
-  "updated_at": "2026-11-11T15:30:26+00:00",
-  "configured_sleeves": 700,
-  "represented_sleeves": 700,
-  "certified_sleeves_total": 7463,
-  "forward_clocks_total": 700,
+  "updated_at": "2026-11-13T18:30:45+00:00",
+  "configured_sleeves": 685,
+  "represented_sleeves": 685,
+  "certified_sleeves_total": 8401,
+  "forward_clocks_total": 685,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
-  "n_distinct_param_hashes": 215,
+  "n_distinct_param_hashes": 212,
   "n_mechanisms": 12,
-  "retired_shadow_sleeves": 317,
+  "retired_shadow_sleeves": 332,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 645,
+  "sleeves_with_forward_trades": 635,
   "zero_trade_clocks": {
-    "count": 55,
+    "count": 50,
     "by_status": {
-      "ACTIVE": 45,
-      "IDENTITY_BROKEN": 9,
-      "PROMOTION CANDIDATE": 1
+      "ACTIVE": 41,
+      "IDENTITY_BROKEN": 9
     },
-    "age_measured": 55,
-    "median_age_days": 35.144,
-    "mature_14d_without_trade": 36,
-    "fresh_attempts": 46,
-    "naturally_inactive": 45,
-    "suppressed_or_unproven": 10,
+    "age_measured": 50,
+    "median_age_days": 37.27,
+    "mature_14d_without_trade": 44,
+    "fresh_attempts": 41,
+    "naturally_inactive": 17,
+    "suppressed_or_unproven": 33,
     "suppressed_examples": [
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
+      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -37,28 +59,28 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 10,
+  "evidence_blocked_sleeves": 33,
   "missing_sleeves": [
-    "6446 certified sleeve(s)"
+    "7384 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 2119.506,
+  "seconds": 2127.125,
   "stage_seconds": {
     "scalp_bar_refresh": 0.0,
-    "external_state_reconcile": 0.8,
-    "legacy_shadow": 2071.4,
-    "scalp_shadow": 6.9,
-    "qquant_shadow": 0.6,
-    "promoter": 36.2
+    "external_state_reconcile": 1.9,
+    "legacy_shadow": 2077.3,
+    "scalp_shadow": 10.3,
+    "qquant_shadow": 1.4,
+    "promoter": 33.9
   },
   "engine_profile": {
-    "seconds": 2070.5,
+    "seconds": 2076.4,
     "rows_timed": 1016,
     "phase_seconds": {
-      "backtest": 271.4,
-      "fetch": 89.8,
-      "resolve": 17.8,
-      "signals": 948.3
+      "backtest": 184.9,
+      "fetch": 772.6,
+      "resolve": 19.0,
+      "signals": 590.1
     },
     "phase_calls": {
       "backtest": 944,
@@ -71,84 +93,84 @@
       "signals": 78
     },
     "family_seconds": {
-      "macro_conditional": 797.5,
-      "cross_asset_residual": 573.6,
-      "carry": 320.0,
-      "overnight_gap_decay": 144.3,
-      "pca_residual": 70.6,
-      "formula": 67.9,
-      "clock_transition": 45.6,
-      "spread_state": 17.6,
-      "range_reversion": 15.1,
-      "session_range_breakout": 9.0,
+      "cross_asset_residual": 760.9,
+      "macro_conditional": 517.2,
+      "carry": 367.8,
+      "overnight_gap_decay": 113.9,
+      "clock_transition": 92.6,
+      "formula": 81.2,
+      "pca_residual": 61.2,
+      "range_reversion": 48.8,
+      "spread_state": 10.9,
+      "session_range_breakout": 8.5,
       "overnight_drift": 0.3
     },
     "chart_seconds": {
-      "M5": 1215.3,
-      "M15": 371.2,
-      "H1": 293.4,
-      "M30": 181.4
+      "M5": 876.8,
+      "M15": 625.4,
+      "M30": 306.6,
+      "H1": 254.6
     },
     "slowest_rows": [
       {
+        "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_session=ny_ttl_bars=6",
+        "seconds": 65.97
+      },
+      {
+        "key": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
+        "seconds": 52.16
+      },
+      {
+        "key": "FRA40.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 49.1
+      },
+      {
+        "key": "GBPMXN.range_reversion.asia@M15",
+        "seconds": 46.55
+      },
+      {
+        "key": "XAUAUD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+        "seconds": 43.52
+      },
+      {
+        "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+        "seconds": 39.47
+      },
+      {
         "key": "XAUAUD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-        "seconds": 30.51
+        "seconds": 26.55
       },
       {
-        "key": "EURMXN.carry.asia@M5#input_symbol=EURMXN_require_quiet=False",
-        "seconds": 20.48
+        "key": "CHFNOK.carry.asia@M30#input_symbol=CHFNOK_session=ny",
+        "seconds": 25.17
       },
       {
-        "key": "USDPLN.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
-        "seconds": 18.21
+        "key": "AUDSGD.carry.asia@M15#input_symbol=AUDSGD_session=asia",
+        "seconds": 24.42
       },
       {
-        "key": "CHFNOK.carry.asia#input_symbol=CHFNOK_require_quiet=True",
-        "seconds": 17.85
+        "key": "GBPSEK.cross_asset_residual.asia@M15#factor_symbols=['GER40']_session=ny_ttl_bars=6",
+        "seconds": 22.14
       },
       {
-        "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
-        "seconds": 13.28
+        "key": "GBPNOK.carry.asia@M15#input_symbol=GBPNOK_session=ny",
+        "seconds": 20.83
       },
       {
-        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96",
-        "seconds": 13.03
+        "key": "GBPSGD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+        "seconds": 19.1
       },
       {
-        "key": "EURNOK.carry.asia@M5#input_symbol=EURNOK_require_quiet=False",
-        "seconds": 12.07
+        "key": "EURILS.carry.asia@M15#input_symbol=EURILS_require_quiet=False_session=ny",
+        "seconds": 18.28
       },
       {
-        "key": "USDPLN.macro_conditional.asia@M5",
-        "seconds": 12.06
+        "key": "NZDSGD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+        "seconds": 17.96
       },
       {
-        "key": "EURNOK.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=1_ttl_bars=96",
-        "seconds": 11.92
-      },
-      {
-        "key": "EURMXN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=192",
-        "seconds": 11.89
-      },
-      {
-        "key": "GBPSEK.macro_conditional.asia@M5",
-        "seconds": 11.64
-      },
-      {
-        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=-1_ttl_bars=96",
-        "seconds": 11.4
-      },
-      {
-        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=-1_ttl_bars=96",
-        "seconds": 11.13
-      },
-      {
-        "key": "EURNOK.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96",
-        "seconds": 11.07
-      },
-      {
-        "key": "XAUEUR.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96",
-        "seconds": 11.0
+        "key": "EURMXN.overnight_gap_decay.asia#regime=low_vol",
+        "seconds": 16.58
       }
     ]
   },
