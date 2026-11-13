@@ -729,6 +729,51 @@ def run_notify(title: str, body: str) -> bool:
     return done.returncode == 0
 
 
+#: The jobs whose FAILED run the Auditor may rule false in its CLEAR row (D-20261113, Governance).
+#: Only these two: a free 7B reviewer that votes on generic text, and a replay that cannot import a
+#: non-Python money file. Every gating job (quality, mt5-money-path, trusted-eval) and
+#: risk-invariants stay out of reach: no row can make one of them pass.
+ADJUDICABLE = (REVIEWER, "replay-shadow")
+
+
+def false_fails(row: Mapping[str, Any]) -> dict[str, frozenset[int]]:
+    """The check runs a CLEAR row rules false, as {job: run ids}: `"false_fail":
+    {"independent-review": [131841308948]}`. Exact run ids only, so a re-run (a new id) needs a new
+    ruling. Anything malformed, or a job outside ADJUDICABLE, reads as NO ruling (fails closed)."""
+    raw = row.get("false_fail")
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, frozenset[int]] = {}
+    for job, ids in raw.items():
+        if job not in ADJUDICABLE or not isinstance(ids, list):
+            return {}
+        if not ids or not all(isinstance(i, int) and not isinstance(i, bool) for i in ids):
+            return {}
+        out[job] = frozenset(ids)
+    return out
+
+
+def ruled_false(
+    runs: Iterable[Mapping[str, Any]], rulings: Mapping[str, frozenset[int]]
+) -> list[Mapping[str, Any]]:
+    """The head's check runs with each FAILED run the Auditor ruled false counted as a success.
+    Only a completed `failure` of an ADJUDICABLE job whose exact id the ruling names changes; a
+    cancelled, timed-out or still-running job, or a newer run of the same job, is left as it is."""
+    out: list[Mapping[str, Any]] = []
+    for r in runs:
+        name = str(r.get("name") or "")
+        if (
+            name in ADJUDICABLE
+            and r.get("status") == "completed"
+            and r.get("conclusion") == "failure"
+            and r.get("id") in rulings.get(name, frozenset())
+        ):
+            out.append({**r, "conclusion": "success", "ruled_false": True})
+        else:
+            out.append(r)
+    return out
+
+
 def registry_clear(
     rows: list[dict[str, Any]],
     pr: int,
@@ -763,7 +808,9 @@ def registry_clear(
             f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {REGISTRY_HOLD_H:.0f} h"
         )
     got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
-    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+    ruled = {job: sorted(ids) for job, ids in false_fails(last).items()}
+    got = {**got, "by": "registry", "false_fail": json.dumps(ruled, sort_keys=True)}
+    return got, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
 
 
 # THE AUTHORITY PATH (zuck 2026-11-03 19:11Z, "Eliminate manual protected-PR registry approvals";
@@ -1409,6 +1456,12 @@ def run(
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         genuine = provenance(repo, pr, head) if low else _from_ci_app
         need = required + (AUTO_JOBS if clear.get("by") == "registry" else ())
+        if clear.get("by") == "registry":  # the Auditor's false-FAIL rulings, exact run ids only
+            try:
+                ruling = json.loads(clear.get("false_fail") or "{}")
+            except ValueError:
+                ruling = {}
+            runs = ruled_false(runs, false_fails({"false_fail": ruling}))
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
