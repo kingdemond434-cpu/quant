@@ -1358,6 +1358,7 @@ def gateway_main(tree: Path, spec: dict[str, Any], out_path: Path) -> int:
     copy = copy_tree(tree, work / "tree")
     desk = copy / "desks" / "mt5"
     (desk / "logs").mkdir(parents=True, exist_ok=True)
+    (desk / "data").mkdir(parents=True, exist_ok=True)
     (desk / "data" / "GENERIC_EXEC_ENABLED").write_text("replay", "utf-8")
     os.environ["MT5_DESK_ROOT"] = str(desk)
     # a throwaway account key, so the gateway can stamp the Fusion book it publishes
