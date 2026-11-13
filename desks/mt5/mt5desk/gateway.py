@@ -2181,8 +2181,12 @@ def same_side_count(symbol: str, side: int, positions: object,
 #: The per-sleeve event-window verdicts (research/event_window_policy.py) and the spread state
 #: (research/spread_state.py). Both are reports; an absent or expired one leaves its gate as the
 #: docstrings below say, never silently permissive about a READ calendar.
+#: The entry deferral's two inputs, each rewritten by its hourly leg on the documented 60-min
+#: cadence (research/hourly_cycle.py) and read here only while inside its 26-hour validity.
 EVENT_POLICY = BASE / "reports" / "EVENT_WINDOW_POLICY.json"
 SPREAD_STATE = BASE / "reports" / "SPREAD_STATE.json"
+#: The repository's published-schedule calendar (libs/execution/event_guard.CALENDAR), 2 levels
+#: up from the desk: the documented official sources only, never an invented date.
 EVENT_CALENDAR = BASE.parents[1] / "data" / "event_calendar.json"
 _REPORT_CACHE: dict[str, tuple[float, dict]] = {}
 
