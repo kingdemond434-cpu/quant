@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from pathlib import Path
 
 import pytest
@@ -27,19 +27,27 @@ from research import decay_monitor as D  # noqa: E402
 
 NAME = "gold_asia"
 T = "2026-09-29T09:00:00+00:00"
-# The decay walk reads only the trailing D.TRAIL_DAYS, measured from now: a fixed date ages out of
-# that window and these tests then fail on the calendar, not on the code (red on 2026-11-13).
-RECENT = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()
+# decay_monitor keeps rows newer than now - TRAIL_DAYS (45). With the real clock, the fixed T above
+# aged out of that window on 2026-11-13 and every decay test here read zero trades. The monitor's
+# clock is frozen one day after T instead, so the window is the same on every run.
+_NOW = datetime.fromisoformat(T) + timedelta(days=1)
+
+
+class _FrozenClock(datetime):
+    @classmethod
+    def now(cls, tz: tzinfo | None = None) -> datetime:  # type: ignore[override]
+        return _NOW if tz is None else _NOW.astimezone(tz)
 
 
 def _ledger(tmp_path, monkeypatch, rows: list[dict]) -> None:
     led = tmp_path / "live_ledger.jsonl"
     led.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
     monkeypatch.setattr(D, "LEDGER", led)
+    monkeypatch.setattr(D, "datetime", _FrozenClock)
 
 
 def _row(r: float, **extra) -> dict:
-    return {"time": RECENT, "sleeve": NAME, "r_multiple": r, "risk_quote": 12.5, **extra}
+    return {"time": T, "sleeve": NAME, "r_multiple": r, "risk_quote": 12.5, **extra}
 
 
 # ------------------------------------------------------------------ decay reads measured R only
@@ -64,7 +72,7 @@ def test_a_real_scratch_trade_with_a_measured_risk_is_kept(tmp_path, monkeypatch
 
 
 def test_a_legacy_row_with_no_risk_field_is_still_read(tmp_path, monkeypatch):
-    row = {"time": RECENT, "sleeve": NAME, "r_multiple": -0.7}
+    row = {"time": T, "sleeve": NAME, "r_multiple": -0.7}
     _ledger(tmp_path, monkeypatch, [row])
     assert len(D.sleeve_trades(NAME)) == 1
 
