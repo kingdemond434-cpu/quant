@@ -1073,7 +1073,8 @@ class _Run:
             return ""
         try:
             from libs.data.render_fetch import render
-            page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0])
+            page, err = render(url, timeout_s=25.0, lang=locale_of(self.lang)[0],
+                               user_agent=_UA["User-Agent"])
         except Exception as exc:
             page, err = "", f"{type(exc).__name__}: {str(exc)[:80]}"
         if err:

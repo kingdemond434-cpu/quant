@@ -142,3 +142,19 @@ def test_search_falls_back_to_the_sites_own_sitemap_through_the_robots_gate(monk
     assert out["claims"] == 2 and out["fetched"] == 2
     assert "https://forum.example/private/x" not in fetched       # Disallow holds
     assert read == ["https://forum.example/t/old-gold-post", "https://forum.example/t/new-post"]
+
+
+def test_a_rendered_page_is_fetched_under_the_agent_robots_admitted(monkeypatch) -> None:
+    from libs.data import render_fetch as rf
+    _serve(monkeypatch, pf.Response(url="r", status=404))
+    seen: dict = {}
+
+    def fake_render(url, **kw):
+        seen.update(kw)
+        return "<p>ok</p>", ""
+    monkeypatch.setattr(rf, "render", fake_render)
+    run = dfm._Run.__new__(dfm._Run)
+    run.status, run.counts, run.lang = [], {"pages": 0}, "zh"
+    assert run.rendered("https://forum.example/t/1") == "<p>ok</p>"
+    assert seen["user_agent"] == dfm._UA["User-Agent"]
+    assert "Mozilla" not in seen["user_agent"] and "Chrome" not in seen["user_agent"]
