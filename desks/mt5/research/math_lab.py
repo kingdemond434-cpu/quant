@@ -1133,7 +1133,8 @@ def representation_manifest(minted: list[tuple[str, Panel, MathObject]], dry_run
         _atomic(MATHLAB_REPRESENTATIONS / "manifest.json",
                 {"at": now_iso(), "rule": RULE, "n": len(rows),
                  "representations": sorted(rows.values(), key=lambda r: str(r["id"]))})
-    return {"minted": len(rows), "ids": sorted(rows), "path": str(MATHLAB_REPRESENTATIONS)}
+    return {"minted": len(rows), "ids": sorted(rows),
+            "path": _published_path(MATHLAB_REPRESENTATIONS)}
 
 
 def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str, Any]],
