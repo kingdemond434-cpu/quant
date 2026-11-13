@@ -26,7 +26,7 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 829,
+  "NEVER": 830,
   "UNMEASURED": 43
  },
  "scope": {
@@ -5110,6 +5110,31 @@
    },
    "progress_metric": "leg_completions",
    "consumer": "promoter (lane clocks), pf_allocator.scalp_evidence / certified_evidence, pf_all"
+  },
+  {
+   "organ": "leg:policy_lift_reopen",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/policy_lift_reopen.py"
+   ],
+   "clock": "hourly_cycle:policy_lift_reopen",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REOPEN_VERIFICATION.json",
+   "artifact_declared": "desks/mt5/reports/REOPEN_VERIFICATION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "promoter (re-judges the reopened clocks)"
   },
   {
    "organ": "leg:prosecutor",
