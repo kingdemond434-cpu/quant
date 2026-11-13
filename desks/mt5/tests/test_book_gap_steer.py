@@ -43,7 +43,7 @@ def test_gaps_rise_and_the_crowded_bucket_keeps_its_rank(tmp_path: Path) -> None
                _cand("US500", 0.6), _cand("XAUUSD", 0.5, "asia"), _cand("EURJPY", 0.4)]
     out, rep = bg.apply(ordered, sleeves=_book(tmp_path, NOK_BOOK), class_of=_class_of)
     syms = [c["symbol"] for c in out]
-    assert syms.index("XAUUSD") < syms.index("EURNOK")      # gold in Asia: the emptiest ground
+    assert syms.index("XAUUSD") < syms.index("USDCHF")      # gold in Asia: rank 5 -> ahead of 3
     assert syms.index("US500") < syms.index("USDCHF")
     assert syms[-1] != "XAUUSD" and sorted(syms) == sorted(c["symbol"] for c in ordered)
     assert rep["status"] == "APPLIED" and rep["live_sleeves"] == 3      # RETIRED is not held
