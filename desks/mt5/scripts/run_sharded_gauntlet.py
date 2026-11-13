@@ -3609,6 +3609,14 @@ def _sweep_once() -> int:
     walls: WallSampler | None = None
     with contextlib.suppress(Exception):   # a report: never a reason not to judge
         walls = WallSampler().start()
+    # THE JUDGE'S CORE SHARE (principal 2026-11-13: a 6-core floor, adaptive): reserved cores are
+    # taken out of the miners' affinity while this sweep works and given back when it ends.
+    # Never raises, never touches the judge's or live's affinity or any priority class.
+    share: Any = None
+    with contextlib.suppress(Exception):
+        from research.judge_core_share import start_for_sweep
+
+        share = start_for_sweep()
     try:
         from research.judging_throughput import apply_env
 
@@ -3628,6 +3636,9 @@ def _sweep_once() -> int:
         if walls is not None:
             with contextlib.suppress(Exception):
                 walls.stop()
+        if share is not None:
+            with contextlib.suppress(Exception):
+                share.stop()                # restores every confined miner's affinity
         try:
             dog.finish(rc)
         finally:
