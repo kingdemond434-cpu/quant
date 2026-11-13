@@ -2074,10 +2074,6 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "the conditioning variable is an official statistic printed daily at best and usually "
         "monthly; a decision on every sub-hourly bar asserts hundreds of independent decisions "
         "from a number that moves once, which multiplies cells without adding information"),
-    "release_lead_lag": (
-        ("M1", "M5", "M15", "H1"),
-        "the atlas measures a seconds-to-minutes lead around one release; the chart is the finest "
-        "both instruments hold and the lag is in its bars, so a slower chart cannot see the lead"),
     "lead_lag": (
         ("H1", "H4", "D1"),
         "trades the laggard against a DRIVER instrument bar for bar at a measured lag; a lag "
