@@ -1,16 +1,16 @@
 {
- "generated_utc": "2026-11-13T22:09:50+00:00",
+ "generated_utc": "2026-11-13T23:14:43+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 9,
   "vectors_named": 6582,
-  "vectors_attempted_this_week": 2418,
-  "vectors_never_attempted": 3329,
+  "vectors_attempted_this_week": 2347,
+  "vectors_never_attempted": 3321,
   "vectors_by_outcome": {
-   "BLOCKED": 1915,
-   "EMPTY": 1312,
+   "BLOCKED": 1922,
+   "EMPTY": 1313,
    "YIELDED": 26,
-   "NAMED_ONLY": 3329
+   "NAMED_ONLY": 3321
   }
  },
  "platforms": {
@@ -239,14 +239,14 @@
  "vectors": {
   "named": 6582,
   "by_outcome": {
-   "BLOCKED": 1915,
-   "EMPTY": 1312,
+   "BLOCKED": 1922,
+   "EMPTY": 1313,
    "YIELDED": 26,
-   "NAMED_ONLY": 3329
+   "NAMED_ONLY": 3321
   },
-  "never_attempted": 3329,
-  "attempted_this_week": 2418,
-  "attempted_this_week_share": 0.3674,
+  "never_attempted": 3321,
+  "attempted_this_week": 2347,
+  "attempted_this_week_share": 0.3566,
   "rows_by_vector": {
    "5ch 株板 / 先物板": {
     "outcome": "BLOCKED",
@@ -59505,14 +59505,14 @@
     "region": "global"
    },
    "paidsub|satellite|global|de|gov_open_data|govdata.de": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "EMPTY",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "",
+    "last_attempt": "2026-11-13T23:13:55.901469+00:00",
     "language": "de",
     "region": "global"
    },
@@ -59877,62 +59877,62 @@
     "region": "global"
    },
    "paidsub|satellite|global|es|academic_replication|datosabiertos.unam.mx": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (97370 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14453 bytes)",
+    "last_attempt": "2026-11-13T23:14:02.763209+00:00",
     "language": "es",
     "region": "global"
    },
    "paidsub|satellite|global|es|central_bank|banxico.org.mx": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (97282 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14451 bytes)",
+    "last_attempt": "2026-11-13T23:13:57.750202+00:00",
     "language": "es",
     "region": "global"
    },
    "paidsub|satellite|global|es|central_bank|bde.es": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (97079 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14411 bytes)",
+    "last_attempt": "2026-11-13T23:13:42.744979+00:00",
     "language": "es",
     "region": "global"
    },
    "paidsub|satellite|global|es|exchange|bolsasymercados.es": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (97162 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14447 bytes)",
+    "last_attempt": "2026-11-13T23:13:55.262669+00:00",
     "language": "es",
     "region": "global"
    },
    "paidsub|satellite|global|es|github|github.com": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (97080 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14437 bytes)",
+    "last_attempt": "2026-11-13T23:14:05.257538+00:00",
     "language": "es",
     "region": "global"
    },
@@ -59961,26 +59961,26 @@
     "region": "global"
    },
    "paidsub|satellite|global|es|public_web|web": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (98851 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14333 bytes)",
+    "last_attempt": "2026-11-13T23:14:07.735520+00:00",
     "language": "es",
     "region": "global"
    },
    "paidsub|satellite|global|es|regulator|cnmv.es": {
-    "outcome": "NAMED_ONLY",
-    "attempts": 0,
+    "outcome": "BLOCKED",
+    "attempts": 1,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "",
-    "last_attempt": "",
+    "last_error": "bing: bing returned no parseable results (96355 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14425 bytes)",
+    "last_attempt": "2026-11-13T23:14:00.261895+00:00",
     "language": "es",
     "region": "global"
    },
@@ -79249,16 +79249,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 148,
-   "fetches": 5996,
-   "ok": 3719,
+   "runs": 149,
+   "fetches": 6024,
+   "ok": 3747,
    "http_errors": 275,
    "transport_errors": 2002,
-   "seconds": 11811.7,
+   "seconds": 11894.3,
    "rows": 96,
-   "last_run": "2026-11-13T14:35:24+00:00",
-   "fetches_per_s": 0.5076,
-   "success_rate": 0.6202,
+   "last_run": "2026-11-13T23:14:42+00:00",
+   "fetches_per_s": 0.5065,
+   "success_rate": 0.622,
    "wall_s_24h": 257.5,
    "cpu_s_24h": 20.1
   },
@@ -79350,8 +79350,8 @@
    "last_run": "2026-11-13T11:34:25+00:00",
    "fetches_per_s": 0.6403,
    "success_rate": 0.9379,
-   "wall_s_24h": 2014.1,
-   "cpu_s_24h": 217.9
+   "wall_s_24h": 1167.2,
+   "cpu_s_24h": 146.3
   },
   "forest_global_physical_data": {
    "runs": 20,
@@ -79364,20 +79364,20 @@
    "last_run": "2026-11-13T11:24:55+00:00",
    "fetches_per_s": 0.5459,
    "success_rate": 0.9205,
-   "wall_s_24h": 5880.6,
-   "cpu_s_24h": 215.3
+   "wall_s_24h": 5015.6,
+   "cpu_s_24h": 154.8
   },
   "forest_global_web": {
-   "runs": 21,
-   "fetches": 8099,
-   "ok": 7417,
-   "http_errors": 283,
+   "runs": 20,
+   "fetches": 7669,
+   "ok": 7000,
+   "http_errors": 270,
    "transport_errors": 399,
-   "seconds": 14692.3,
-   "rows": 596,
+   "seconds": 13898.5,
+   "rows": 568,
    "last_run": "2026-11-13T17:09:44+00:00",
-   "fetches_per_s": 0.5512,
-   "success_rate": 0.9158,
+   "fetches_per_s": 0.5518,
+   "success_rate": 0.9128,
    "wall_s_24h": 3533.2,
    "cpu_s_24h": 183.0
   },
@@ -79459,16 +79459,16 @@
    "cpu_s_24h": 259.6
   },
   "forest_russia_cis": {
-   "runs": 23,
-   "fetches": 2568,
-   "ok": 1394,
-   "http_errors": 154,
-   "transport_errors": 1020,
-   "seconds": 7013.6,
-   "rows": 437,
+   "runs": 22,
+   "fetches": 2463,
+   "ok": 1310,
+   "http_errors": 148,
+   "transport_errors": 1005,
+   "seconds": 6909.4,
+   "rows": 416,
    "last_run": "2026-11-13T11:39:37+00:00",
-   "fetches_per_s": 0.3661,
-   "success_rate": 0.5428,
+   "fetches_per_s": 0.3565,
+   "success_rate": 0.5319,
    "wall_s_24h": 4081.1,
    "cpu_s_24h": 300.4
   },
