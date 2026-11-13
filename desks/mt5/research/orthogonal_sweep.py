@@ -252,9 +252,34 @@ def _micro_chart_ok(timeframe: str) -> bool:
     return m >= MICRO_BAR_MINUTES and m % MICRO_BAR_MINUTES == 0 and 1440 % m == 0
 
 
-@lru_cache(maxsize=1)
+def _micro_stamp(symbol: str) -> int | None:
+    """The `mtime_ns` of the file `micro.flow_bars` serves for `symbol`, or None if it cannot be
+    stat'ed (absent, unreadable, or the hub module will not import)."""
+    try:
+        from libs.data import datahub_desk
+        return (datahub_desk.SERIES_DIR / f"micro_{symbol}.parquet").stat().st_mtime_ns
+    except Exception:
+        return None
+
+
 def _micro(symbol: str):
     """This symbol's accumulated per-bar tick aggregates via DataHub `micro.flow_bars`, or None.
+
+    KEYED ON THE FILE'S MTIME, NOT THE SYMBOL ALONE. A bare `lru_cache(maxsize=1)` on the symbol
+    never re-read: a long-lived process that touches one symbol would serve the series as it was
+    on the first call for ever, while the hourly `flow_toxicity` leg kept appending to it. The
+    cache key is now (symbol, mtime_ns), so an appended file is read on the next call. A stat that
+    fails is treated as no series: None, and the 30-day tick read alone.
+    """
+    stamp = _micro_stamp(symbol)
+    if stamp is None:
+        return None
+    return _micro_read(symbol, stamp)
+
+
+@lru_cache(maxsize=1)
+def _micro_read(symbol: str, mtime_ns: int):
+    """The read behind `_micro`, cached per (symbol, mtime_ns). `mtime_ns` is only the key.
 
     FAIL CLOSED: any error, a missing column, an index that is not a sorted, unique, tz-aware
     DatetimeIndex, or an unreadable point returns None, and `_tape_series` falls back to the
@@ -365,13 +390,53 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
         # has no trade side -- so it is labelled a proxy rather than passed off as order flow.
         step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
         flow = step.resample(rule).sum()
+    live_start = {"spread": _first_bin(spread), "flow": _first_bin(flow)}
+    spliced = False
     if _micro_chart_ok(timeframe):
         h_spread, h_flow = _micro_tape(symbol, rule)
+        spliced = h_spread is not None or h_flow is not None
         spread, flow = _splice(h_spread, spread), _splice(h_flow, flow)
     if spread is None and flow is None:
         return None, None
-    return (None if spread is None else spread.reindex(index).ffill(),
-            None if flow is None else flow.reindex(index).ffill())
+    if not spliced:
+        return (None if spread is None else spread.reindex(index).ffill(),
+                None if flow is None else flow.reindex(index).ffill())
+    return (_bar_fill(spread, index, rule, live_start["spread"]),
+            _bar_fill(flow, index, rule, live_start["flow"]))
+
+
+def _first_bin(series):
+    """The tick window's first bin, or None when there is no tick read on this side."""
+    if series is None or series.empty:
+        return None
+    return series.index.min()
+
+
+def _bar_fill(series, index, rule: str, live_start):
+    """`series.reindex(index).ffill()`, except that a value drawn from the accumulated HISTORY
+    covers its own source bar and nothing past it.
+
+    Unbounded, the forward-fill carried the series' last bar across any gap behind it -- a series
+    that ends days before the tick window starts would paint those days with one stale hour, where
+    the tick read alone left them NaN. So on the history side (every cell bar before `live_start`,
+    the tick window's first bin) a value reaches the cell bars inside `[source bar, source bar +
+    rule)` only: one source bar's worth of the cell's bars. From `live_start` on, the plain
+    forward-fill is untouched, so every value inside the tick window is byte-identical to the
+    tick read alone. With no tick read (`live_start` None) every bar is history-side.
+    """
+    import pandas as pd
+    if series is None:
+        return None
+    out = series.reindex(index).ffill()
+    if out.empty:
+        return out
+    known = pd.Series(series.index, index=series.index).where(series.notna())
+    source = known.reindex(index).ffill()            # the bin each filled value was read from
+    bar_ix = pd.Series(out.index, index=out.index)
+    stale = source.notna() & (bar_ix >= source + pd.Timedelta(rule))
+    if live_start is not None:
+        stale &= bar_ix < live_start
+    return out.mask(stale) if bool(stale.any()) else out
 
 
 #: FRED series usable WITHOUT vintages: market-observed daily prints whose publication lag is a

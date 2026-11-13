@@ -9,7 +9,9 @@ hourly `flow_toxicity` leg accumulates the same per-bar aggregates into
   2. inside the tick window the old values are unchanged; the series only lengthens the past;
   3. the longer series yields more judgeable history for the families' own z-score;
   4. every malformed, absent or unservable case falls back to the tick read exactly;
-  5. the judge's runtime resolver (`family_inputs.resolve`) reads through the same path.
+  5. the judge's runtime resolver (`family_inputs.resolve`) reads through the same path;
+  6. a gap between the series' end and the tick window stays NaN (no stale forward-fill);
+  7. an appended series file (new mtime) is read on the next call in the same process.
 """
 from __future__ import annotations
 
@@ -49,7 +51,7 @@ def _day_ticks(day: str, seed: int, n: int = 16_000, step_s: float = 5.0) -> pd.
 
 def _clear() -> None:
     osw._ticks.cache_clear()
-    osw._micro.cache_clear()
+    osw._micro_read.cache_clear()
 
 
 @pytest.fixture()
@@ -156,6 +158,9 @@ def test_the_longer_series_yields_more_judgeable_history(rig: dict) -> None:
     n_spread, n_flow = osw._tape_series(SYM, rig["idx"], "H1")
 
     def finite_z(s: pd.Series, lookback: int = 96) -> int:
+        # the families' own reading: `x.reindex(d.index).ffill()` and then the rolling z-score.
+        # `_tape_series` leaves an empty history-side hour NaN; the family bridges it itself.
+        s = s.reindex(rig["idx"]).ffill()
         z = (s - s.rolling(lookback).mean()) / s.rolling(lookback).std(ddof=1)
         return int(np.isfinite(z.to_numpy()).sum())
 
@@ -270,3 +275,58 @@ def test_the_sweep_reads_the_same_point_the_miner_divided_by(
     (tmp_path / "universe.json").write_text(json.dumps({SYM: row}))
     monkeypatch.setattr(osw, "UNIVERSE", tmp_path)
     assert osw._micro_point(SYM) == ftm.point_of(SYM, {SYM: row})
+
+
+def test_a_gap_between_the_series_and_the_tick_window_stays_nan(rig: dict) -> None:
+    """The series stops on DAYS[0]; the tape holds DAYS[4:] only. The days between used to be NaN
+    in the tick read and must stay NaN: the series' last bar covers its own hour and no more."""
+    for day in DAYS[:4]:
+        (rig["ticks"] / SYM / f"{day}.parquet").unlink()
+    p = rig["series"] / f"micro_{SYM}.parquet"
+    frame = pd.read_parquet(p)
+    cut = pd.Timestamp(f"{DAYS[1]} 00:00", tz="UTC")
+    frame.loc[frame.index < cut].to_parquet(p)
+    _clear()
+    o_spread, o_flow = _old_read(rig)
+    n_spread, n_flow = osw._tape_series(SYM, rig["idx"], "H1")
+    start = pd.Timestamp(f"{DAYS[4]} 00:00", tz="UTC")
+    gap = (rig["idx"] >= cut) & (rig["idx"] < start)
+    assert gap.sum() >= 24 * 3                       # three whole days with no data
+    assert n_spread[gap].isna().all() and n_flow[gap].isna().all()
+    # each history value covers its own bar only: every non-NaN pre-window bar is a series bar
+    hist = frame.loc[frame.index < cut].index
+    before = rig["idx"] < start
+    assert set(n_flow[before].dropna().index) <= set(hist)
+    assert n_flow[before].notna().sum() > 15
+    # inside the tick window: byte-identical to the tick read alone
+    window = rig["idx"] >= start
+    pd.testing.assert_series_equal(n_spread[window], o_spread[window])
+    pd.testing.assert_series_equal(n_flow[window], o_flow[window])
+
+
+def test_an_appended_series_is_read_on_the_next_call(rig: dict) -> None:
+    """The cache is keyed on the file's mtime: a long-lived process reading one symbol sees an
+    appended series on its next call, without anyone clearing a cache."""
+    import os
+    for day in DAYS[:4]:
+        (rig["ticks"] / SYM / f"{day}.parquet").unlink()
+    p = rig["series"] / f"micro_{SYM}.parquet"
+    full = pd.read_parquet(p)
+    cut = pd.Timestamp(f"{DAYS[1]} 00:00", tz="UTC")
+    full.loc[full.index < cut].to_parquet(p)
+    st = p.stat()
+    os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns - 10_000_000_000))
+    _clear()
+    first = osw._micro(SYM)
+    assert first is not None and first.index.max() < cut
+    assert osw._micro(SYM) is first                  # same mtime: served from the cache
+    full.to_parquet(p)                               # the hourly leg appends: new mtime
+    assert p.stat().st_mtime_ns != st.st_mtime_ns - 10_000_000_000
+    second = osw._micro(SYM)
+    assert second is not None and second.index.max() >= cut
+    assert len(second) == len(full)
+    _, n_flow = osw._tape_series(SYM, rig["idx"], "H1")
+    gap = (rig["idx"] >= cut) & (rig["idx"] < pd.Timestamp(f"{DAYS[4]} 00:00", tz="UTC"))
+    assert n_flow[gap].notna().sum() > 30            # the appended days reach the families
+    p.unlink()                                       # a stat that fails: the tick read alone
+    assert osw._micro(SYM) is None
