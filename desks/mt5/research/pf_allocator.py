@@ -49,8 +49,39 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import pandas as pd
+#: See `_cap_blas_threads` for the derivation (the box CPU shaper's measured 8-core cap).
+BLAS_THREAD_CAP = 8
+
+
+def _cap_blas_threads() -> int | None:
+    """BLAS/OpenMP threads = the cores this process may run on, set BEFORE numpy loads.
+
+    2026-10-29: a heavy pass ran 85 threads on one process (about 31 cores of load) and starved
+    the judge; the box's CPU shaper then pinned it to 8 cores, where ~18 BLAS threads fought over
+    8. Sizing the pools to the affinity mask stops that oversubscription without changing a single
+    result (the same arithmetic, fewer contending threads). An explicit setting is never
+    overridden, and an unreadable mask changes nothing.
+
+    Capped at BLAS_THREAD_CAP as well: the shaper applies its mask AFTER the process starts (every
+    2 min), so the mask read at import can still be all 18 cores. DERIVATION: 8 is the shaper's own
+    measured cap for this job (Desk health, Quant-CpuShaper, 2026-10-29). #529 leftover, rebuilt
+    on LIVE 2026-11-13."""
+    try:
+        import psutil
+        n = min(len(psutil.Process().cpu_affinity() or []), BLAS_THREAD_CAP)
+    except Exception:
+        return None
+    if n <= 0:
+        return None
+    for var in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(var, str(n))
+    return n
+
+
+_cap_blas_threads()
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -2716,6 +2747,13 @@ def state_book(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
 #: candidate re-solve is ~1.2 s on the desk's 110-sleeve population; 8 s is headroom for one
 #: that starts far from the incumbent, not a cap on the scan. Zero or negative means unbounded.
 ADMISSION_CANDIDATE_BUDGET_S = 8.0
+#: THE HEAVY PASS'S OWN WALL CLOCK (2026-10-29; #529 leftover rebuilt on LIVE 2026-11-13). The
+#: admission scan stops starting re-solves this many seconds after the pass began; the rest carry
+#: as UNSCORED and go first next pass. DERIVATION: MT5-AllocatorFast's freshness contract is 90 min
+#: and the fast clock fires every 5 min; the rest of a heavy pass was measured at ~5 min, so a
+#: 20-min scan bounds the lock at ~25 min and leaves the fast lane well inside its contract.
+#: PID 28696 held the allocator lock 6.5h without this.
+HEAVY_ADMISSION_BUDGET_S = 20 * 60
 #: Share of the book's TOTAL heat that may be lent to exploration among candidates whose
 #: dE[log W] sits INSIDE the admission margin -- the ambiguous ones, which the criterion could
 #: neither admit nor refuse on evidence and which were parked at zero for ever. Lent from
@@ -2833,7 +2871,8 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                        margin_frac: float = ADMISSION_MARGIN_FRAC,
                        warm: dict[str, dict[str, float]] | None = None,
                        explore_share: float = EXPLORE_SHARE,
-                       explore_seed: int | None = None) -> dict[str, Any]:
+                       explore_seed: int | None = None,
+                       pass_deadline: float | None = None) -> dict[str, Any]:
     """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
 
         "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
@@ -2967,7 +3006,17 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
 
     warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
     solve_s: list[float] = []
+    deadline_cut = 0
     for name in cand_names:
+        # THE PASS HAS A DEADLINE TOO (2026-10-29). Per-candidate budgets alone let one heavy pass
+        # hold the allocator lock for 6.5h (PID 28696) while every fast pass stood down. Past
+        # `pass_deadline` (epoch seconds) the rest are carried as UNSCORED -- the same carry the
+        # ordering above already puts first next pass -- never refused, never admitted.
+        if pass_deadline is not None and time.time() > pass_deadline:
+            doc["unscored"][name] = ("pass deadline reached before this candidate's re-solve; "
+                                     "NOT admitted, carried first to the next pass")
+            deadline_cut += 1
+            continue
         _beat()                            # a long scan is a working holder, never an orphan
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
@@ -3063,6 +3112,13 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     doc["elapsed_s"] = round(time.time() - t0, 1)
     doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
     doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)
+    # A DEADLINE-CUT SCAN IS NOT A COMPLETE ONE (#529 audit MF3), and says so: `complete` False
+    # with the `deadline_cut` count, so hourly_cycle never reads it as a fresh heavy scan (the next
+    # hourly pass runs heavy again, carried candidates first). The rows it DID score are real
+    # measurements, so the status stays MEASURED: the sealed promoter prices capital only off a
+    # MEASURED scan, and a PARTIAL status would stall every promotion behind a compute bound.
+    doc["deadline_cut"] = deadline_cut
+    doc["complete"] = deadline_cut == 0
     doc["status"] = "MEASURED"
     # EXPLORATION INSIDE THE MARGIN: the ambiguous candidates, funded a little from within the
     # book so they accrue a forward record instead of standing at zero for ever. Computed here
@@ -4501,6 +4557,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if heavy:
         admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
                                        total_heat=book.total_heat, order=free.marginal,
+                                       pass_deadline=t0 + HEAVY_ADMISSION_BUDGET_S,
                                        # Whatever the last scan could not finish goes first, and
                                        # continues from the book its solve had reached.
                                        prefer=set(prev_admission.get("unscored") or {}),
