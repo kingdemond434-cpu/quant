@@ -41,9 +41,11 @@ def cot_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A TFF file for market `mkt`: weekly Tuesday reports with a random-walk lev-money net."""
     rng = np.random.default_rng(7)
     tuesdays = pd.date_range("2014-01-07", "2023-06-27", freq="W-TUE", tz="UTC")
-    lm = np.cumsum(rng.normal(0, 3000, len(tuesdays))) + 50_000
+    lm = np.zeros(len(tuesdays))
+    for i in range(1, len(lm)):                              # a stationary AR(1) positioning
+        lm[i] = 0.9 * lm[i - 1] + rng.normal(0, 8000)
     df = pd.DataFrame({"report_date": tuesdays, "oi": 400_000.0,
-                       "lm_l": np.clip(lm, 1, None) + 100_000, "lm_s": 100_000.0,
+                       "lm_l": lm + 150_000, "lm_s": 100_000.0,
                        "am_l": 1.0, "am_s": 1.0, "dealer_l": 1.0, "dealer_s": 1.0})
     (tmp_path / "cot_tff").mkdir()
     df.to_parquet(tmp_path / "cot_tff" / "mkt.parquet")
