@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-13T22:40:00Z",
+ "updated_at": "2026-11-13T22:46:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -99,8 +99,9 @@
    "traditions": [
     "stochastic_processes"
    ],
-   "mechanism": "option-implied variance risk premium (implied minus realised variance, Black-Scholes/variance-swap view) from the CBOE VIX, GVZ and OVX tape in recorders/vol_archive.py: (a) insurance-selling compensation -- a wide premium is earned by short-vol holders and predicts calm forward drift and positive index returns; against (b) fear about to be realised -- a wide premium predicts the realised variance that follows. Separating test: regress next-5-day realised variance and next-5-day return on the premium quintile, point-in-time daily close, Holm over the three underlyings",
-   "falsifier": "forward return and forward realised variance are flat across premium quintiles on all three underlyings after Holm"
+   "mechanism": "option-implied variance risk premium (implied minus realised variance, Black-Scholes/variance-swap view) from the CBOE VIX, GVZ and OVX tape in recorders/vol_archive.py: (a) insurance-selling compensation -- a wide premium is earned by short-vol holders and predicts calm forward drift and positive index returns; against (b) fear about to be realised -- a wide premium predicts the realised variance that follows. Separating test: regress next-5-day realised variance and next-5-day return on the premium quintile, point-in-time daily close, Holm over the three underlyings STAND-IN when the implied series has no fresh licensed print (Cboe series reached via FRED are held data only): the realised-vol term structure, 5-day over 60-day realised variance from MT5 bars, in the same percentile rule, reported as the stand-in and never as the implied premium",
+   "falsifier": "forward return and forward realised variance are flat across premium quintiles on all three underlyings after Holm",
+   "stand_in": "realised_vol_term_structure_5d_over_60d"
   },
   {
    "id": "IQ-OPT-HESTON",
@@ -176,8 +177,9 @@
     "stochastic_processes",
     "change_point"
    ],
-   "mechanism": "variance risk premium (VIX minus 20-day realised vol, from vol_archive) below its 10th percentile conditions London-open EURUSD/GBPUSD range breakouts to follow through more after costs (complacency precedes realised expansion). Competing explanations: vol-of-vol clustering against mechanical VIX mean reversion against macro calendar coincidence. Separating test: drop event days (EVENT_WINDOW_POLICY calendar); placebo with the premium lagged 20 days. Linked to IQ-OPT-VRP",
-   "falsifier": "breakout follow-through after costs is the same in the low-premium decile and the 20-day-lagged placebo once event days are dropped"
+   "mechanism": "variance risk premium (VIX minus 20-day realised vol, from vol_archive) below its 10th percentile conditions London-open EURUSD/GBPUSD range breakouts to follow through more after costs (complacency precedes realised expansion). Competing explanations: vol-of-vol clustering against mechanical VIX mean reversion against macro calendar coincidence. Separating test: drop event days (EVENT_WINDOW_POLICY calendar); placebo with the premium lagged 20 days. Linked to IQ-OPT-VRP STAND-IN when the implied series has no fresh licensed print (Cboe series reached via FRED are held data only): the realised-vol term structure, 5-day over 60-day realised variance from MT5 bars, in the same percentile rule, reported as the stand-in and never as the implied premium",
+   "falsifier": "breakout follow-through after costs is the same in the low-premium decile and the 20-day-lagged placebo once event days are dropped",
+   "stand_in": "realised_vol_term_structure_5d_over_60d"
   }
  ]
 }
