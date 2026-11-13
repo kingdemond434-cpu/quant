@@ -5,6 +5,7 @@ import json
 import sqlite3
 from pathlib import Path
 
+import pytest
 from scripts.run_moat_backup import _STORES, FUSE_PCT, build_backup
 
 
@@ -162,9 +163,8 @@ def test_a_locked_single_file_store_is_never_reported_ok(tmp_path, monkeypatch):
 
     _seed(tmp_path)
     assert build_backup(tmp_path, free_pct=50.0)["status"] == "OK"
-    live = tmp_path / "data/capital_events.jsonl"
-    with live.open("a", encoding="utf-8") as fh:
-        fh.write('{"event": "deposit", "usd": 1}\n')
+    live = tmp_path / "data/cost_model.json"
+    live.write_text('{"seeded": true, "spread": 1}', "utf-8")
     real = _sh.copyfile
 
     def locked(src, dst, **kw):
@@ -175,11 +175,11 @@ def test_a_locked_single_file_store_is_never_reported_ok(tmp_path, monkeypatch):
     monkeypatch.setattr(_sh, "copyfile", locked)
     rep = build_backup(tmp_path, free_pct=50.0)
     monkeypatch.setattr(_sh, "copyfile", real)
-    st = rep["stores"]["capital_events"]
+    st = rep["stores"]["cost_model"]
     assert st["status"] == "UNREAD" and rep["status"] == "DEGRADED"
-    assert rep["unread_stores"] == ["capital_events"]
+    assert rep["unread_stores"] == ["cost_model"]
     # the previous run's replica is kept, renamed, never taken for current
-    assert not (tmp_path / "backups/moat/capital_events").exists()
+    assert not (tmp_path / "backups/moat/cost_model").exists()
     assert (tmp_path / "backups/moat" / st["stale_replica"]).exists()
     # and the next clean run is whole again
     assert build_backup(tmp_path, free_pct=50.0)["status"] == "OK"
@@ -230,3 +230,68 @@ def test_a_file_appended_during_the_copy_is_retried_not_failed(tmp_path, monkeyp
     copy = tmp_path / "backups/moat/execution_tape/cashcarry_trades.jsonl"
     assert copy.read_bytes() == live.read_bytes()  # the retry caught the appended line
     assert rep["unread_files"] == []
+
+
+# ---- THE REPLICA IS PUBLIC: ACCOUNT MONEY AND IDENTITY NEVER RIDE IT (#687 Auditor HOLD MF1) ----
+
+_BANNED = ("deposit_usd", "equity_after", "start_equity", "balance", "login", "server")
+
+
+def test_capital_events_is_never_a_git_carried_store():
+    from scripts.run_moat_backup import _PRIVATE_NOT_CARRIED
+
+    assert "capital_events" not in _STORES
+    assert "capital_events" in _PRIVATE_NOT_CARRIED
+
+
+def test_a_store_file_with_an_account_field_is_withheld_and_never_copied(tmp_path):
+    _seed(tmp_path)
+    tape = tmp_path / "data/moat/execution_tape"
+    (tape / "acct.jsonl").write_text('{"fill": 1, "equity_after": 101234.5}\n', "utf-8")
+    (tmp_path / "data/capital_events.jsonl").write_text('{"deposit_usd": 5000}\n', "utf-8")
+    # an earlier build's public copies are removed, not left behind
+    (tmp_path / "backups/moat").mkdir(parents=True)
+    (tmp_path / "backups/moat/capital_events").write_text('{"deposit_usd": 5000}\n', "utf-8")
+    rep = build_backup(tmp_path, free_pct=50.0)
+    assert rep["status"] == "OK"            # the store still replicates its other files
+    assert [w["file"] for w in rep["private_withheld"]] == [
+        "data/moat/execution_tape/acct.jsonl"]
+    assert rep["private_not_carried_bytes"]["capital_events"] > 0
+    assert not (tmp_path / "backups/moat/execution_tape/acct.jsonl").exists()
+    assert (tmp_path / "backups/moat/execution_tape/cashcarry_trades.jsonl").exists()
+    assert not (tmp_path / "backups/moat/capital_events").exists()
+
+
+@pytest.mark.parametrize("key", (*_BANNED, "source_server", "mt5_login", "cash_balance"))
+def test_every_account_key_shape_is_caught(tmp_path, key):
+    from scripts.run_moat_backup import _private_keys
+
+    f = tmp_path / "x.json"
+    f.write_text(json.dumps({key: 1, "price_pnl": 2, "sizes_usdt": [1]}), "utf-8")
+    assert _private_keys(f) == [key]
+
+
+def test_a_sqlite_store_with_an_account_column_is_withheld(tmp_path):
+    _seed(tmp_path)
+    rel = next(r for r, k in _STORES.values() if k == "sqlite")
+    con = sqlite3.connect(str(tmp_path / rel))
+    con.execute("CREATE TABLE acct (login TEXT, balance REAL)")
+    con.commit()
+    con.close()
+    rep = build_backup(tmp_path, free_pct=50.0)
+    st = next(s for s in rep["stores"].values() if s["path"] == rel)
+    assert st["status"] == "WITHHELD" and st["private_keys"] == ["balance", "login"]
+    assert rep["status"] == "DEGRADED"
+
+
+def test_no_tracked_replica_holds_an_account_field():
+    """What is already in the repository is held to the same rule as what the next run writes."""
+    import subprocess
+
+    from scripts.run_moat_backup import _private_keys
+
+    root = Path(__file__).resolve().parents[2]
+    tracked = subprocess.run(["git", "ls-files", "backups/moat"], cwd=root, check=True,
+                             capture_output=True, text=True).stdout.split()
+    leaks = {f: _private_keys(root / f) for f in tracked if (root / f).is_file()}
+    assert not {f: k for f, k in leaks.items() if k}
