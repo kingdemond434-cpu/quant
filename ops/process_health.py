@@ -312,18 +312,112 @@ def _missing(rows: list[dict[str, str]], fields: tuple[str, ...]) -> list[str]:
     return [f for f in fields if rows and f not in rows[0]]
 
 
-def _tasks() -> tuple[list[dict[str, str]], str]:
-    """Read the scheduler, distinguishing a failed inventory from an empty one.
+#: THE TASK DEFINITIONS ON DISK (2026-10-29). Every registered task is an XML file under here,
+#: named by its path; SYSTEM (MT5-ProcessHealth's account) can read them. Reading the files is a
+#: directory walk that touches neither schtasks nor the Schedule service -- the reads that went
+#: past 45 s (and the retry's 180 s) on three hourly passes in a row while the box was loaded.
+TASKS_DIR = Path(os.environ.get("SYSTEMROOT", r"C:\Windows")) / "System32" / "Tasks"
+TASK_XML_NS = "{http://schemas.microsoft.com/windows/2004/02/mit/task}"
 
-    Brief first: it is the INVENTORY (which tasks exist, their state, next run) and it is the
-    read that returns under load. Then the verbose query, on its own bound, adds each task's last
-    run and last result. If only the brief read lands, the inventory stands -- so NOT_SCHEDULED,
-    DISABLED, NO_ARTIFACT and STALE are all still judged -- and every row says its result code
-    was not read. If neither lands the status is UNMEASURED, and an unreadable inventory never
-    turns a contracted organ into the false claim NOT_SCHEDULED.
+#: How old a cached scheduler read may be and still be served (with its age) instead of
+#: SCHEDULER_UNMEASURED. The INVENTORY (which tasks exist, enabled or not) changes only when
+#: someone re-registers a task, so six hourly passes. The RUN HISTORY (CACHED_HISTORY_FIELDS)
+#: moves every pass, so two (auditor follow-up F1 on #491): a last result older than that says
+#: little about a task that has run since.
+SCHED_CACHE_MAX_AGE_S = 6 * 3600
+SCHED_HISTORY_CACHE_MAX_AGE_S = 2 * 3600
+#: Max age per read key, for the reads and for the words that cite them.
+SCHED_MAX_AGE_S = {"inventory": SCHED_CACHE_MAX_AGE_S,
+                   "run_history": SCHED_HISTORY_CACHE_MAX_AGE_S}
+#: Run-history columns kept in the cache. State columns are NOT served from cache: the live
+#: inventory always supplies them, and an hours-old "Running" would excuse a fresh failure.
+CACHED_HISTORY_FIELDS = ("Last Run Time", "Last Result")
+_last_good: Any = None
+
+
+def _lg() -> Any:
+    """ops/last_good.py, loaded by path (this file runs as a script with no package)."""
+    global _last_good
+    if _last_good is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "ops_last_good", Path(__file__).resolve().parent / "last_good.py")
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules.setdefault("ops_last_good", mod)
+        spec.loader.exec_module(mod)
+        _last_good = mod
+    return _last_good
+
+
+def sched_cache_path() -> Path:
+    """The last-good scheduler reads and their unmeasured counters. Gitignored (desks/mt5/logs/)."""
+    return ROOT / "desks" / "mt5" / "logs" / "process_health_sched_cache.json"
+
+
+#: Facts about each scheduler read this pass (source, age, counter, red), from `_tasks`.
+READS: dict[str, dict[str, Any]] = {}
+
+
+def parse_task_xml(data: bytes, name: str) -> dict[str, str]:
+    """One task definition file as an inventory row: its name and Enabled/Disabled.
+
+    The file carries the DEFINITION only. Run state (Running/Ready), next run, last run and last
+    result live in the scheduler's runtime store, so they are left blank here for the verbose
+    read (or its cache) to fill. `<Settings><Enabled>` absent means enabled, as the scheduler
+    reads it. A file that does not parse raises (ET.ParseError) for the caller to name on its row.
     """
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(data)   # the files are UTF-16 with a BOM; expat reads the declaration
+    if root.tag.split("}")[-1] != "Task":
+        raise ValueError(f"root element {root.tag!r} is not a Task")
+    enabled = root.find(f"{TASK_XML_NS}Settings/{TASK_XML_NS}Enabled")
+    if enabled is None:
+        enabled = root.find("Settings/Enabled")
+    on = enabled is None or (enabled.text or "").strip().lower() != "false"
+    return {"TaskName": name, "Scheduled Task State": "Enabled" if on else "Disabled",
+            "Status": "", "Next Run Time": "", "InventorySource": "task XML"}
+
+
+def read_task_xml_dir(base: Path) -> list[dict[str, str]]:
+    """Every non-Microsoft task definition under `base`. A file that cannot be read or parsed is
+    still a task that exists: its row carries TaskInfoError (SCHEDULER_UNMEASURED), never
+    dropped. Raises when the directory cannot be walked or holds no task of this desk's."""
+    rows: list[dict[str, str]] = []
+    for path in sorted(base.rglob("*")):
+        rel = path.relative_to(base)
+        if rel.parts and rel.parts[0].lower() == "microsoft":
+            continue
+        if not path.is_file():
+            continue
+        name = "\\" + "\\".join(rel.parts)
+        try:
+            rows.append(parse_task_xml(path.read_bytes(), name))
+        except (OSError, ValueError, SyntaxError) as exc:   # ET.ParseError is a SyntaxError
+            rows.append({"TaskName": name, "Scheduled Task State": "", "Status": "",
+                         "Next Run Time": "", "InventorySource": "task XML",
+                         "TaskInfoError":
+                             f"task XML unreadable: {type(exc).__name__}: {exc}"[:200]})
+    if not rows:
+        raise SchtasksUnreadable(f"{base} holds no non-Microsoft task definition")
+    # EVERY FILE UNREADABLE IS A FAILED READ, not an inventory of broken tasks (auditor F2 on
+    # #491): an ACL change on the folder makes each file raise, and serving those rows as "live"
+    # would reset the UNMEASURED counter and stop the RED clock on a read that saw nothing.
+    if all(r.get("TaskInfoError") for r in rows):
+        raise SchtasksUnreadable(f"{base}: none of {len(rows)} task definition(s) readable "
+                                 f"({rows[0]['TaskInfoError'][:120]})")
+    return rows
+
+
+def _read_inventory() -> list[dict[str, str]]:
+    """The task XML files first, then `schtasks /query /fo csv`. Raises ReadFailed with every
+    reason when neither gives an inventory this file can trust."""
     errors: list[str] = []
-    brief: list[dict[str, str]] | None = None
+    if TASKS_DIR.is_dir():
+        try:
+            return read_task_xml_dir(TASKS_DIR)
+        except (OSError, SchtasksUnreadable) as exc:
+            errors.append(f"task XML {type(exc).__name__}: {exc}"[:200])
     try:
         rc, out, err = _run_schtasks(["/query", "/fo", "csv"])
         if rc == 0 and out.strip():
@@ -335,7 +429,7 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
             elif lost := _missing(parsed, BRIEF_FIELDS):
                 errors.append(f"schtasks /fo csv header lacks {', '.join(lost)}")
             else:
-                brief = parsed
+                return parsed
         else:
             errors.append(f"schtasks /fo csv exit {rc}: {err.strip()[:160]}")
     except SchtasksUnreadable as exc:
@@ -344,10 +438,11 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
         errors.append(_timeout_reason("schtasks /query /fo csv", exc))
     except (OSError, subprocess.SubprocessError) as exc:
         errors.append(f"schtasks /fo csv {type(exc).__name__}: {exc}")
-    if brief is None:
-        return [], "UNMEASURED: " + "; ".join(errors)
+    raise _lg().ReadFailed("; ".join(errors))
 
-    verbose: dict[str, dict[str, str]] = {}
+
+def _read_history() -> dict[str, dict[str, str]]:
+    """`schtasks /query /fo csv /v`: each task's row, by name. Raises ReadFailed with the reason."""
     try:
         rc, out, err = _run_schtasks(["/query", "/fo", "csv", "/v"])
         if rc == 0 and out.strip():
@@ -355,31 +450,91 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
             # Without "Last Result" the code would normalise to 0 and read OK, so a verbose dump
             # missing any column the verdict reads is treated as not having answered at all.
             if not parsed:
-                errors.append("schtasks /v listed no non-Microsoft task")
+                reason = "schtasks /v listed no non-Microsoft task"
             elif lost := _missing(parsed, VERBOSE_FIELDS):
-                errors.append(f"schtasks /v header lacks {', '.join(lost)}")
+                reason = f"schtasks /v header lacks {', '.join(lost)}"
             else:
-                verbose = {r["TaskName"]: r for r in parsed}
+                return {r["TaskName"]: r for r in parsed}
         else:
-            errors.append(f"schtasks /v exit {rc}: {err.strip()[:160]}")
+            reason = f"schtasks /v exit {rc}: {err.strip()[:160]}"
     except SchtasksUnreadable as exc:
-        errors.append(f"schtasks /v unreadable: {exc}")
+        reason = f"schtasks /v unreadable: {exc}"
     except subprocess.TimeoutExpired as exc:
-        errors.append(_timeout_reason("schtasks /query /fo csv /v", exc))
+        reason = _timeout_reason("schtasks /query /fo csv /v", exc)
     except (OSError, subprocess.SubprocessError) as exc:
-        errors.append(f"schtasks /v {type(exc).__name__}: {exc}")
+        reason = f"schtasks /v {type(exc).__name__}: {exc}"
+    raise _lg().ReadFailed(reason)
+
+
+def _age_words(age_s: float | None) -> str:
+    return "age UNMEASURED" if age_s is None else f"{age_s / 60.0:.0f} min old"
+
+
+def _tasks() -> tuple[list[dict[str, str]], str]:
+    """Read the scheduler, distinguishing a failed inventory from an empty one.
+
+    Two reads, each through ops/last_good.read_through (live, else the last good read inside
+    SCHED_MAX_AGE_S -- 6 h inventory, 2 h run history -- served WITH ITS AGE, else UNMEASURED
+    with a consecutive-run counter
+    that turns RED past last_good.RED_AFTER_RUNS):
+
+      inventory    which tasks exist and whether they are enabled -- the task XML files, else
+                   the brief `schtasks /fo csv`
+      run history  each task's last run and last result -- `schtasks /fo csv /v`
+
+    If only the inventory lands (live or cached), NOT_SCHEDULED, DISABLED, NO_ARTIFACT and STALE
+    are all still judged and every row says its result code was not read. If no inventory is
+    available the status is UNMEASURED, and an unreadable inventory never turns a contracted
+    organ into the false claim NOT_SCHEDULED.
+    """
+    lg = _lg()
+    path = sched_cache_path()
+    count = _BOUNDS_OVERRIDE is None   # the detached retry is part of the run that spawned it
+    READS.clear()
+    inv = lg.read_through(path, "inventory", _read_inventory, SCHED_CACHE_MAX_AGE_S, count=count)
+    READS["inventory"] = inv.summary()
+    if inv.source == "unmeasured" or not isinstance(inv.value, list):
+        return [], "UNMEASURED: " + (inv.error or "no inventory")
+    brief: list[dict[str, str]] = [dict(r) for r in inv.value if isinstance(r, dict)]
+    via = "task XML" if brief and brief[0].get("InventorySource") == "task XML" else "schtasks"
+    READS["inventory"]["via"] = via
+    if inv.source == "cache":
+        for r in brief:
+            r["InventoryCachedAt"] = str(inv.at)
+
+    hist = lg.read_through(path, "run_history", _read_history, SCHED_HISTORY_CACHE_MAX_AGE_S,
+                           count=count)
+    READS["run_history"] = hist.summary()
+    verbose: dict[str, dict[str, str]] = hist.value if isinstance(hist.value, dict) else {}
+    cached = hist.source == "cache"
 
     rows: list[dict[str, str]] = []
     for r in brief:
         v = verbose.get(r["TaskName"])
-        if v is not None:
-            rows.append({**v, **{k: r[k] for k in BRIEF_FIELDS if r.get(k)}})
+        if v is not None and not cached:
+            rows.append({**v, **{k: r[k] for k in (*BRIEF_FIELDS, "Scheduled Task State",
+                                                  "TaskInfoError", "InventoryCachedAt")
+                                 if r.get(k)}})
+        elif v is not None:
+            rows.append({**r, **{k: str(v.get(k) or "") for k in CACHED_HISTORY_FIELDS},
+                         "RunHistoryCachedAt": str(hist.at),
+                         "RunHistoryAgeMin": f"{(hist.age_s or 0) / 60.0:.1f}"})
         else:
-            rows.append({**r, "ResultUnmeasured": "the verbose query did not return this task"})
-    if verbose:
-        return rows, "OK schtasks"
-    return rows, ("OK schtasks (brief: last run and last result UNMEASURED -- "
-                  + "; ".join(errors) + ")")
+            why = ("the verbose query did not return this task" if hist.source != "unmeasured"
+                   else "the verbose query did not answer and no cached read is inside "
+                        f"{SCHED_HISTORY_CACHE_MAX_AGE_S // 3600} h")
+            rows.append({**r, "ResultUnmeasured": why})
+
+    lead = "OK schtasks" if via == "schtasks" and inv.source == "live" else (
+        f"OK {via}" + (f" CACHED ({_age_words(inv.age_s)})" if inv.source == "cache" else ""))
+    if hist.source == "live":
+        # "OK schtasks" is the full-read status every reader keys on; the inventory's own
+        # source rides in `scheduler_reads`, so a live XML inventory keeps that exact string.
+        return rows, ("OK schtasks" if inv.source == "live" else
+                      f"{lead}; run history live")
+    if cached:
+        return rows, (f"{lead}; run history CACHED ({_age_words(hist.age_s)}) -- {hist.error}")
+    return rows, (f"{lead} (brief: last run and last result UNMEASURED -- {hist.error})")
 
 
 def _normalise_code(raw: Any) -> int | None:
@@ -489,7 +644,21 @@ def build() -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
     TIMEOUTS.clear()
+    READS.clear()   # a stubbed `_tasks` must never inherit the last pass's read facts
     tasks, scheduler_status = _tasks()
+    reads = {k: dict(v) for k, v in READS.items()}
+    red_reads = sorted(k for k, v in reads.items() if v.get("red"))
+
+    def _red_why(key: str) -> str:
+        r = reads.get(key) or {}
+        return (f"RED: the scheduler {key.replace('_', ' ')} read has been UNMEASURED for "
+                f"{r.get('unmeasured_runs')} consecutive runs (no live read, no cached read "
+                f"inside {SCHED_MAX_AGE_S.get(key, SCHED_CACHE_MAX_AGE_S) // 3600} h) -- "
+                f"{r.get('error') or 'no reason'}"
+                )[:400]
+
+    red_history = _red_why("run_history") if "run_history" in red_reads else ""
+    red_inventory = _red_why("inventory") if "inventory" in red_reads else ""
 
     for t in tasks:
         name = (t.get("TaskName") or "").strip().lstrip("\\")
@@ -543,6 +712,19 @@ def build() -> dict[str, Any]:
         else:
             verdict, why = "OK", ("" if code is not None else
                                   "artifact fresh; last result not read this pass")
+        hist_at = str(t.get("RunHistoryCachedAt") or "")
+        hist_age = t.get("RunHistoryAgeMin")
+        if hist_at and code is not None:
+            # A CACHED RESULT IS LABELLED, never passed off as this pass's: the verdict is judged
+            # on it (FAILING stays FAILING), and the row says how old the reading is.
+            why = (why + "; " if why else "") + (
+                f"last run and result from the cached scheduler read of {hist_at} "
+                f"({float(hist_age or 0):.0f} min old)")
+        if t.get("InventoryCachedAt"):
+            why = (why + "; " if why else "") + (
+                f"inventory from the cached read of {t['InventoryCachedAt']}")
+        if red_history and verdict in ("OK", "UNCONTRACTED") and t.get("ResultUnmeasured"):
+            verdict, why = "RED", red_history
 
         rows.append({
             "name": name,
@@ -553,7 +735,10 @@ def build() -> dict[str, Any]:
             "next_run": (t.get("Next Run Time") or "").strip(),
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
-                            else RESULT_MEANING.get(code, f"code {code}")),
+                            else RESULT_MEANING.get(code, f"code {code}")
+                            + (" (cached read)" if hist_at else "")),
+            "last_result_age_min": (float(hist_age) if hist_at and hist_age else
+                                    (0.0 if code is not None else None)),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,
@@ -577,7 +762,9 @@ def build() -> dict[str, Any]:
         # on this box and buried real gateway/allocator failures beneath them.
         parent = organ.split(" (", 1)[0] if " (" in organ else ""
         is_component = bool(parent and parent in seen)
-        if not inventory_ok:
+        if not inventory_ok and red_inventory:
+            verdict, why = "RED", red_inventory
+        elif not inventory_ok:
             verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
         elif is_component and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
@@ -601,7 +788,7 @@ def build() -> dict[str, Any]:
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
-    order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
+    order = {"RED": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
              "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
@@ -610,10 +797,14 @@ def build() -> dict[str, Any]:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
-    bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
+    bad = [r for r in rows if r["verdict"] in ("RED", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
-    run_history_read = scheduler_status == "OK schtasks"
+    # A run history served from the last good read (inside SCHED_HISTORY_CACHE_MAX_AGE_S, each row
+    # labelled with its age) is judged like a live one: those codes WERE read, just not this pass.
+    history_cached = (reads.get("run_history") or {}).get("source") == "cache"
+    run_history_read = scheduler_status == "OK schtasks" or (
+        history_cached and scheduler_status.startswith("OK "))
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
                     and not r.get("expected_disabled")]
     key = account_key_file()
@@ -626,6 +817,11 @@ def build() -> dict[str, Any]:
               else "OK" if not bad else "ATTENTION")
     if key_fault or backup_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
+    if red_reads:
+        # A READ DARK FOR MORE THAN last_good.RED_AFTER_RUNS PASSES IS RED (rule 23): the worst
+        # headline there is. UNMEASURED once is weather; UNMEASURED three passes running is a
+        # broken instrument, and a broken instrument must never read as a grey "unknown".
+        status = "RED"
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
@@ -644,7 +840,12 @@ def build() -> dict[str, Any]:
         # A SHORT OR UNREADABLE ACCOUNT KEY (v5d) is ATTENTION too: every ledger stamp then
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
-        "run_history": "MEASURED" if run_history_read else "UNMEASURED",
+        "run_history": ("CACHED" if history_cached and run_history_read else
+                        "MEASURED" if run_history_read else "UNMEASURED"),
+        # EACH SCHEDULER READ (2026-10-29): live / cache (with its age) / unmeasured, the
+        # consecutive-unmeasured counter and whether it is RED. See ops/last_good.py.
+        "scheduler_reads": reads,
+        "red_reads": red_reads,
         "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
