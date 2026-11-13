@@ -24,6 +24,19 @@ IT MOVES NOTHING AND PROMOTES NO HYPOTHESIS. The ladder is about provenance, not
 reaching SILVER has a defensible point-in-time stamp, and that is all it has. The ten gates decide
 whether anything is true.
 
+THE ZERO IT PUBLISHED WAS THE ORGAN'S, NOT THE CORPUS'S (N12, measured 2026-11-10). `to_bronze`
+keeps what arrived as serialised text in `raw`, and this module offered silver the bronze WRAPPER
+with no normaliser, so the producer's own fields were never opened: no row could resolve an event
+time whatever it carried, and `silver_share` read 0.0 for every pass of its life -- the binding
+term of the Tier-1 scorecard's `pit_compliance_pct`. On one tree that day 363 of 2,410 rows held a
+recognised event key and all 2,410 were refused. `normalise_arrived` now opens the payload.
+
+IT IS STRICTER THAN THE KEY LIST, NOT LOOSER. 354 of those 363 were a catalogue's `date` reading
+"Yesterday" or "1 hour ago": a non-empty string under a recognised key, and no point in time at
+all. An event time is taken only when it parses as an absolute ISO-8601 instant that is not in the
+future; a relative or unparseable value is REFUSED under its own named reason. The desk's own
+arrival stamps (`retrieved_at`, `first_seen_at`, `observed_at`, ...) are never an event time.
+
 Artifact: desks/mt5/reports/LAKE_PROMOTION.json
 """
 from __future__ import annotations
@@ -32,7 +45,7 @@ import argparse
 import json
 import sys
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +68,82 @@ MAX_FILES = 400
 #: Rows per file. A single crawler dump can carry thousands; the refusal RATE is what is being
 #: measured and it is estimated perfectly well from a bounded sample of each file.
 MAX_ROWS_PER_FILE = 200
+
+
+#: Producer fields that name when the thing was PUBLISHED OR CREATED BY ITS AUTHOR, beside
+#: `libs.data.pit.EVENT_KEYS`. Declared here, counted apart in the artifact (`resolved_by_key`,
+#: `silver_share_canonical_keys`), and never a desk-side arrival stamp.
+PRODUCER_EVENT_ALIASES = ("published", "created")
+
+#: The name published as each silver row's `normalisation`.
+NORMALISATION = "arrived_fields_v2"
+
+#: A producer clock may run a little ahead of this box; beyond this an event time is in the future
+#: and stamps nothing.
+FUTURE_TOLERANCE = timedelta(days=1)
+
+
+class UnresolvableEventTime(ValueError):
+    """The row names an event time that is not an absolute past instant."""
+
+
+def absolute_instant(value: Any, now: datetime) -> str | None:
+    """`value` as an ISO-8601 UTC instant, or None when it is not an absolute time not after now.
+
+    "Yesterday", "1 hour ago", "Sep 3" and an empty string all return None: each needs a guess
+    (relative to when? which year?) and the ladder refuses rather than guesses. A bare date is
+    read as that day's first instant UTC, which is the earliest it can mean.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    try:
+        if len(text) == 10:
+            when = datetime.combine(date.fromisoformat(text), datetime.min.time(), tzinfo=UTC)
+        else:
+            when = datetime.fromisoformat(text.replace("Z", "+00:00"))
+            when = when.replace(tzinfo=UTC) if when.tzinfo is None else when.astimezone(UTC)
+    except ValueError:
+        return None
+    if when > now + FUTURE_TOLERANCE:
+        return None
+    return when.isoformat(timespec="seconds")
+
+
+def normalise_arrived(bronze: dict[str, Any], *, now: datetime | None = None) -> dict[str, Any]:
+    """The silver body of one bronze row: the producer's own fields, opened, and its event time.
+
+    Returns the wrapper's own fields plus `fields` (what arrived, parsed) and, when the producer
+    answered, `event_time` and `event_time_key`. A row that names no event time returns without
+    one and `promote` refuses it. A row that names one this cannot read as an absolute past
+    instant raises `UnresolvableEventTime`, so it is refused under that reason and not under
+    "named none".
+    """
+    from libs.data.pit import EVENT_KEYS
+
+    now = now or datetime.now(UTC)
+    out = {k: v for k, v in bronze.items() if k not in ("raw", "raw_encoding", *EVENT_KEYS)}
+    try:
+        arrived = json.loads(bronze["raw"]) if bronze.get("raw_encoding") == "utf-8" else None
+    except (KeyError, TypeError, ValueError):
+        arrived = None
+    if not isinstance(arrived, dict):
+        return out
+    out["fields"] = arrived
+    named: list[str] = []
+    for key in (*EVENT_KEYS, *PRODUCER_EVENT_ALIASES):
+        value = arrived.get(key)
+        if value in (None, "", [], {}):
+            continue
+        named.append(key)
+        instant = absolute_instant(value, now)
+        if instant:
+            out["event_time"], out["event_time_key"] = instant, key
+            return out
+    if named:
+        raise UnresolvableEventTime(
+            f"`{named[0]}` is relative, unparseable or in the future -- not an absolute instant")
+    return out
 
 
 def _rows_of(doc: Any) -> list[dict[str, Any]]:
@@ -110,7 +199,10 @@ def run(max_files: int = MAX_FILES) -> dict[str, Any]:
 
     # BRONZE -> SILVER IS WHERE THE QUESTION IS ASKED. `event_time` must come from the producer's
     # own fields; a row that cannot answer is refused rather than stamped with its arrival.
-    res = promote(bronze, Layer.BRONZE, Layer.SILVER, normalisation="identity_v1")
+    res = promote(bronze, Layer.BRONZE, Layer.SILVER, now=now, normalisation=NORMALISATION,
+                  normalise=lambda r: normalise_arrived(r, now=now))
+    by_key: Counter[str] = Counter(str(r.get("event_time_key")) for r in res.rows)
+    canonical = sum(k for key, k in by_key.items() if key not in PRODUCER_EVENT_ALIASES)
 
     why_counts: Counter[str] = Counter()
     by_source_refused: Counter[str] = Counter()
@@ -130,12 +222,20 @@ def run(max_files: int = MAX_FILES) -> dict[str, Any]:
         # THE HEADLINE. What share of the desk's own intelligence can survive being asked when it
         # was knowable. A low number is not a failure of this module.
         "silver_share": round(promoted / n, 4) if n else None,
+        # WHICH PRODUCER FIELD ANSWERED, so the aliases can be discounted by a reader who wants
+        # the canonical keys alone.
+        "resolved_by_key": dict(by_key.most_common()),
+        "silver_share_canonical_keys": round(canonical / n, 4) if n else None,
+        "event_keys": {"canonical": "libs.data.pit.EVENT_KEYS",
+                       "producer_aliases": list(PRODUCER_EVENT_ALIASES)},
+        "normalisation": NORMALISATION,
         "refusal_reasons": dict(why_counts.most_common(12)),
         "rows_by_source": dict(per_source.most_common(20)),
         "refused_by_source": dict(by_source_refused.most_common(20)),
         "rule": ("bronze is byte-faithful and hashed before anything touches it; silver requires "
-                 "an event_time resolved from the PRODUCER's own fields, and a row that cannot "
-                 "answer is refused rather than stamped with its arrival time"),
+                 "an event_time resolved from the PRODUCER's own fields as an absolute instant "
+                 "not in the future, and a row that cannot answer (or answers 'Yesterday') is "
+                 "refused rather than stamped with its arrival time"),
         "why_refusals_are_the_output": (
             "a promoter that fills a missing event_time with the ingestion time produces a lake "
             "in which every backtest passes and none of them mean anything"),
