@@ -136,3 +136,148 @@ def test_main_once_exits_with_the_pass_result(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "free_phys_mb", lambda: None)
     assert dr.main(["--dept", "intel", "--once"]) == 0
     assert (tmp_path / "logs" / "department_resident.log").exists()
+
+
+# ---------------------------------------------------- supervised restart-on-exit (BACKLOG 09-29)
+def _isolate(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+
+
+def test_supervisor_restarts_the_worker_on_every_exit_without_waiting_for_the_trigger(
+        monkeypatch, tmp_path):
+    """A recycle used to leave the department dead until the next ten-minute keep-alive."""
+    _isolate(monkeypatch, tmp_path)
+    exits = iter([0, 0, 0])
+    naps: list[float] = []
+    n = dr.supervise("intel", spawn=lambda _d: next(exits), sleep=naps.append,
+                     digest=lambda: "same", max_workers=3)
+    assert n == 0
+    assert naps == [dr.RESPAWN_S] * 3 and dr.RESPAWN_S < 60
+    # the supervisor held the department for its whole life and released it at the end
+    again = dr.claim_singleton("intel")
+    assert again is not None
+    again.close()
+
+
+def test_supervisor_refuses_a_second_copy_of_the_department(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    held = dr.claim_singleton("intel")
+    assert held is not None
+    spawned: list[str] = []
+    assert dr.supervise("intel", spawn=lambda d: spawned.append(d) or 0, sleep=lambda _s: None,
+                        digest=lambda: "same", max_workers=1) == 0
+    assert spawned == []
+    held.close()
+
+
+def test_crash_backoff_is_bounded_and_resets_after_a_healthy_life():
+    delay, deaths = dr.respawn_delay(1, 5.0, 0)
+    assert (delay, deaths) == (dr.CRASH_BACKOFF_S, 1)
+    for _ in range(20):
+        delay, deaths = dr.respawn_delay(1, 5.0, deaths)
+    assert delay == dr.CRASH_BACKOFF_MAX_S
+    # never slower than the ten-minute keep-alive it replaces
+    assert dr.CRASH_BACKOFF_MAX_S < 600
+    assert dr.respawn_delay(1, dr.YOUNG_DEATH_S + 1, deaths) == (dr.CRASH_BACKOFF_S, 1)
+    assert dr.respawn_delay(0, 5.0, deaths) == (dr.RESPAWN_S, 0)
+    assert dr.respawn_delay(dr.WORKER_BUSY_RC, 1.0, 2) == (dr.WORKER_BUSY_WAIT_S, 2)
+
+
+def test_an_orphaned_worker_is_never_doubled(monkeypatch, tmp_path):
+    """A killed supervisor can leave its worker alive; the next one's worker must step aside."""
+    _isolate(monkeypatch, tmp_path)
+    orphan = dr.claim_worker("intel")
+    assert orphan is not None
+    assert dr.main(["--dept", "intel", "--worker"]) == dr.WORKER_BUSY_RC
+    orphan.close()
+    # the worker lock sits outside the dept_*.lock glob the moat registry reads as departments
+    assert not list((tmp_path / "locks").glob("dept_*.lock"))
+
+
+def test_supervisor_exits_when_its_own_code_is_adopted(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    digests = iter(["old", "new"])
+    spawned: list[str] = []
+    assert dr.supervise("intel", spawn=lambda d: spawned.append(d) or 0, sleep=lambda _s: None,
+                        digest=lambda: next(digests), max_workers=5) == 0
+    assert spawned == ["intel"]
+
+
+def test_the_task_entrypoint_is_the_supervisor(monkeypatch):
+    called: list[str] = []
+    monkeypatch.setattr(dr, "supervise", lambda d: called.append(d) or 0)
+    assert dr.main(["--dept", "Intel"]) == 0
+    assert called == ["intel"]
+
+
+# -------------------------------------- retire inside the task's ExecutionTimeLimit (audit #1004)
+def test_the_task_limit_is_read_from_the_scheduler_and_defaults_to_72h():
+    xml = "<Settings><ExecutionTimeLimit>PT4H30M</ExecutionTimeLimit></Settings>"
+    assert dr.task_time_limit_s("MT5-Dept-Intel", run=lambda: xml) == 4 * 3600 + 1800
+    assert dr.task_time_limit_s("x", run=lambda: "<ExecutionTimeLimit>P3D</ExecutionTimeLimit>") \
+        == 72 * 3600
+    assert dr.task_time_limit_s("x", run=lambda: "<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>") == 0
+    # unreadable, absent or garbled: the scheduler's 72 h default, never "no limit"
+    assert dr.task_time_limit_s("x", run=lambda: "") == dr.DEFAULT_TASK_LIMIT_S
+
+    def boom():
+        raise OSError("schtasks hung")
+    assert dr.task_time_limit_s("x", run=boom) == dr.DEFAULT_TASK_LIMIT_S
+    assert dr.task_time_limit_s("x", run=lambda: "<ExecutionTimeLimit>soon</ExecutionTimeLimit>") \
+        == dr.DEFAULT_TASK_LIMIT_S
+
+
+def test_retirement_leaves_a_full_pass_inside_the_limit():
+    limit = 72 * 3600
+    after = dr.retire_after_s(limit, dr.PASS_TIMEOUT_S)
+    assert after is not None and after + dr.PASS_TIMEOUT_S < limit
+    assert dr.retire_after_s(0, dr.PASS_TIMEOUT_S) is None        # no limit, no retirement
+    assert dr.retire_after_s(3600, dr.PASS_TIMEOUT_S) == 1800      # a short limit keeps half
+
+
+def test_supervisor_retires_after_a_worker_exit_once_past_its_point(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    monkeypatch.delenv(dr.RETIRE_AT_ENV, raising=False)
+    now = [1000.0]
+    seen_env: list[str | None] = []
+
+    def spawn(_d):
+        seen_env.append(dr.os.environ.get(dr.RETIRE_AT_ENV))
+        now[0] += 60.0                                   # each worker lives a minute
+        return 0
+
+    monkeypatch.setattr(dr.time, "time", lambda: now[0])
+    n = dr.run_supervised("dept[intel]", claim=lambda: dr.claim_singleton("intel"),
+                          spawn=lambda: spawn("intel"), say=lambda _m: None,
+                          sleep=lambda _s: None, digest=lambda: "same", max_workers=10,
+                          retire_after=150.0, wall=lambda: now[0])
+    assert n == 0
+    # 1000 + 150: the third worker exits at 1180, past the point; no fourth is started
+    assert len(seen_env) == 3 and seen_env[0] == "1150"
+
+
+def test_supervisor_retirement_uses_the_wall_clock(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    now = [0.0]
+    spawned: list[int] = []
+
+    def spawn():
+        spawned.append(1)
+        now[0] += 100.0
+        return 0
+
+    assert dr.run_supervised("t", claim=lambda: dr.claim_singleton("x"), spawn=spawn,
+                             say=lambda _m: None, sleep=lambda _s: None,
+                             digest=lambda: "d", retire_after=250.0,
+                             wall=lambda: now[0]) == 0
+    assert len(spawned) == 3
+    assert dr.RETIRE_AT_ENV not in dr.os.environ        # not leaked past the supervisor
+
+
+def test_a_worker_recycles_early_once_the_supervisor_is_retiring(monkeypatch):
+    monkeypatch.setenv(dr.RETIRE_AT_ENV, "100")
+    assert dr.worker_should_retire(now_epoch=101.0)
+    assert not dr.worker_should_retire(now_epoch=99.0)
+    monkeypatch.setenv(dr.RETIRE_AT_ENV, "")
+    assert not dr.worker_should_retire(now_epoch=1e12)

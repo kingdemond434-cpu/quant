@@ -18,7 +18,23 @@ win the CPU. (4) A memory guard: a pass does not start while free physical memor
 MIN_FREE_MB. (5) A floor between passes (MIN_CYCLE_S) so an empty department does not spin.
 (6) The loop's own memory is tiny; it recycles itself after RECYCLE_PASSES passes anyway.
 
-    python department_resident.py --dept discovery       # loop until stopped
+SUPERVISED, RESTART-ON-EXIT (BACKLOG 2026-09-29, "22 daemons on a 10-minute trigger"). The
+department and forest tasks are 24/7 residents whose Windows trigger is a ten-minute keep-alive.
+Until this change the loop process WAS the task, so every recycle (and every crash) left the
+department dead until the next keep-alive slot: up to ten minutes of no passes, every RECYCLE_PASSES
+passes, on 22 tasks. The task now starts a tiny SUPERVISOR that holds the department lock for its
+whole life and runs the loop as a `--worker` child; when the worker exits -- recycled, crashed or
+killed -- the supervisor starts the next one within RESPAWN_S, with a bounded backoff only for a
+worker that keeps dying young. The keep-alive trigger is then only the supervisor's own watchdog,
+and the 0x800710E0 refusals it records are that watchdog finding the supervisor alive. A worker
+holds its own `deptworker_<name>.lock` (outside the `dept_*.lock` glob the registry reads), so a
+worker orphaned by a killed supervisor is never doubled by the next one: the new supervisor waits
+for it to finish instead. No trigger and no task
+registration changes, so adoption alone rolls it out -- each running loop is replaced by a
+supervisor the first time it recycles.
+
+    python department_resident.py --dept discovery       # supervise the loop until stopped
+    python department_resident.py --dept discovery --worker   # the loop itself (the supervisor's child)
     python department_resident.py --dept intel --once    # one pass (tests, probes)
 """
 from __future__ import annotations
@@ -92,8 +108,18 @@ def free_phys_mb() -> float | None:
 
 def claim_singleton(dept: str):
     """Hold data/locks/dept_<name>.lock for the life of this process; None when another holds it."""
+    return _claim_lock(f"dept_{dept}.lock")
+
+
+def claim_worker(dept: str):
+    """Hold data/locks/deptworker_<name>.lock for the worker's life; None when a worker -- an
+    orphan of a killed supervisor, say -- is still running this department."""
+    return _claim_lock(f"deptworker_{dept}.lock")
+
+
+def _claim_lock(name: str):
     LOCKS.mkdir(parents=True, exist_ok=True)
-    path = LOCKS / f"dept_{dept}.lock"
+    path = LOCKS / name
     try:
         fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held for the process lifetime
     except OSError:
@@ -351,18 +377,216 @@ def heartbeat(dept: str, passes: int, status: str = "running", done_inc: int = 0
         pass
 
 
+#: A worker that recycled cleanly is replaced after this many seconds -- not after the next
+#: keep-alive slot, which was up to ten minutes of a dead department.
+RESPAWN_S = int(os.environ.get("DEPT_RESPAWN_S", "5"))
+#: A worker that dies younger than this counts toward the crash backoff; one that lived longer
+#: resets it. The backoff doubles from CRASH_BACKOFF_S and never exceeds CRASH_BACKOFF_MAX_S, so a
+#: department broken by a bad adoption retries at least every five minutes -- faster than the old
+#: keep-alive -- without spinning a crash loop on the box that trades.
+YOUNG_DEATH_S = 600
+CRASH_BACKOFF_S = 15
+CRASH_BACKOFF_MAX_S = 300
+#: The worker's exit code when another worker of this department is still alive.
+WORKER_BUSY_RC = 3
+#: How long to wait for an orphaned worker before asking again.
+WORKER_BUSY_WAIT_S = 60
+
+
+#: THE SCHEDULER'S OWN CEILING ON A TASK RUN (audit of #1004). A supervisor lives as long as its
+#: task does, so a task ExecutionTimeLimit -- 72 h is the scheduler's default, and the hand-made
+#: resident tasks were never shown to carry anything else -- would kill it mid-run (0x41306) and
+#: orphan its worker. The supervisor therefore retires ITSELF, cleanly, after a worker exit and
+#: well inside the limit; the keep-alive starts a fresh one. An unreadable limit is taken to be
+#: this default: assuming "no limit" would be the guess that gets the supervisor killed.
+DEFAULT_TASK_LIMIT_S = 72 * 3600
+#: The environment variable a supervisor hands its worker: the epoch second after which the
+#: worker recycles at the end of its current pass, so the supervisor is free to retire.
+RETIRE_AT_ENV = "RESIDENT_RETIRE_AT"
+
+
+def _iso_duration_s(text: str) -> int | None:
+    """`PT72H`, `P3D`, `PT4H30M`, `PT0S` -> seconds (0 means "no limit"); None if unparseable."""
+    import re
+    m = re.fullmatch(r"P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?", text.strip())
+    if not m or not any(m.groups()):
+        return None
+    d, h, mi, sec = (int(g or 0) for g in m.groups())
+    return d * 86400 + h * 3600 + mi * 60 + sec
+
+
+def task_time_limit_s(task: str, *, run=None) -> int:
+    """The ExecutionTimeLimit of `task` in seconds, 0 when the task has none. Falls back to
+    DEFAULT_TASK_LIMIT_S whenever the scheduler cannot be read (off-box, timeout, odd XML)."""
+    if sys.platform != "win32" and run is None:
+        return DEFAULT_TASK_LIMIT_S
+    query = run or (lambda: subprocess.run(["schtasks", "/Query", "/TN", task, "/XML"],
+                                           capture_output=True, text=True, timeout=60,
+                                           check=False).stdout)
+    try:
+        xml = str(query() or "")
+    except (OSError, subprocess.SubprocessError):
+        return DEFAULT_TASK_LIMIT_S
+    import re
+    m = re.search(r"<ExecutionTimeLimit>([^<]+)</ExecutionTimeLimit>", xml)
+    if not m:
+        # no element in a readable definition is the scheduler's default, i.e. 72 h
+        return DEFAULT_TASK_LIMIT_S
+    secs = _iso_duration_s(m.group(1))
+    return DEFAULT_TASK_LIMIT_S if secs is None else secs
+
+
+def retire_after_s(limit_s: int, pass_ceiling_s: float) -> float | None:
+    """How long a supervisor may live under a task limit; None when the task has no limit.
+
+    The worker is asked to recycle at this point and may then finish one pass of up to
+    `pass_ceiling_s`, so a full pass plus thirty minutes of slack is kept below the limit -- and
+    never less than half the limit, so a short limit still gets a working supervisor.
+    """
+    if limit_s <= 0:
+        return None
+    return float(max(limit_s / 2.0, limit_s - pass_ceiling_s - 1800.0))
+
+
+def worker_should_retire(now_epoch: float | None = None) -> bool:
+    """True once the supervisor's retirement point has passed (read from RETIRE_AT_ENV)."""
+    raw = os.environ.get(RETIRE_AT_ENV, "")
+    try:
+        at = float(raw)
+    except ValueError:
+        return False
+    return (time.time() if now_epoch is None else now_epoch) >= at
+
+
+def source_digest(*paths: Path) -> str:
+    """One digest over the supervisor's own source files; "" when one cannot be read."""
+    import hashlib
+    h = hashlib.sha256()
+    try:
+        for p in paths or (Path(__file__),):
+            h.update(Path(p).read_bytes())
+    except OSError:
+        return ""
+    return h.hexdigest()
+
+
+def _spawn_worker(dept: str) -> int:
+    r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--dept", dept, "--worker"],
+                       cwd=str(DESK), check=False)
+    return int(r.returncode)
+
+
+def respawn_delay(rc: int | None, lived_s: float, young_deaths: int) -> tuple[float, int]:
+    """(seconds before the next worker, the updated young-death count). Pure, so it is pinned."""
+    if rc == WORKER_BUSY_RC:
+        return float(WORKER_BUSY_WAIT_S), young_deaths
+    if rc == 0:
+        return float(RESPAWN_S), 0
+    deaths = young_deaths + 1 if lived_s < YOUNG_DEATH_S else 1
+    return float(min(CRASH_BACKOFF_MAX_S, CRASH_BACKOFF_S * 2 ** (deaths - 1))), deaths
+
+
+def run_supervised(name: str, *, claim, spawn, say, sleep=time.sleep, clock=time.monotonic,
+                   digest, max_workers: int | None = None, retire_after: float | None = None,
+                   wall=time.time) -> int:
+    """THE ONE SUPERVISOR every 24/7 resident family shares (departments, forests, moat swarms).
+
+    `claim()` takes the resident's singleton lock (None: another supervisor or a pre-supervisor
+    loop holds it, so this one exits 0 and the keep-alive stays a no-op). `spawn()` runs one worker
+    to its exit and returns its code; the next worker starts after `respawn_delay`. Returns only
+    when `digest()` changes (its code was adopted, so the keep-alive starts the new supervisor),
+    when `retire_after` seconds have passed (it retires inside its task's ExecutionTimeLimit
+    rather than be killed with a worker still running), or when `max_workers` (tests) is reached.
+    """
+    started_digest = digest()
+    handle = claim()
+    if handle is None:
+        print(f"{name}: another resident holds the slot; exiting", flush=True)
+        return 0
+    retire_at = None if retire_after is None else wall() + retire_after
+    if retire_at is not None:
+        os.environ[RETIRE_AT_ENV] = f"{retire_at:.0f}"   # the worker inherits it
+        say(f"retires after {retire_after / 3600:.1f}h, inside its task's time limit")
+    say(f"supervisor started pid {os.getpid()}: restarts the worker on exit "
+        f"(respawn {RESPAWN_S}s, crash backoff {CRASH_BACKOFF_S}-{CRASH_BACKOFF_MAX_S}s)")
+    workers = deaths = 0
+    try:
+        while max_workers is None or workers < max_workers:
+            workers += 1
+            t0 = clock()
+            try:
+                rc: int | None = spawn()
+            except OSError as exc:
+                say(f"worker failed to start: {type(exc).__name__}: {exc}")
+                rc = None
+            lived = clock() - t0
+            delay, deaths = respawn_delay(rc, lived, deaths)
+            say(f"worker {workers} exited rc={rc} after {lived:.0f}s; next in {delay:.0f}s")
+            if started_digest and digest() not in ("", started_digest):
+                say("supervisor source changed on disk: exiting so the keep-alive starts the "
+                    "adopted code")
+                return 0
+            if retire_at is not None and wall() >= retire_at:
+                say("retiring inside the task's time limit, with no worker running: the "
+                    "keep-alive starts a fresh supervisor")
+                return 0
+            sleep(delay)
+        return 0
+    finally:
+        if retire_at is not None:
+            os.environ.pop(RETIRE_AT_ENV, None)
+        with contextlib.suppress(OSError):
+            handle.close()
+
+
+def supervise(dept: str, *, spawn=None, sleep=time.sleep, clock=time.monotonic,
+              digest=None, max_workers: int | None = None,
+              retire_after: float | None = None) -> int:
+    """Hold the department and keep exactly one worker running, restarting it on every exit."""
+    run_one = spawn or _spawn_worker
+    if retire_after is None:
+        retire_after = retire_after_s(task_time_limit_s(_task_name(dept)), PASS_TIMEOUT_S)
+    return run_supervised(f"dept[{dept}]", claim=lambda: claim_singleton(dept),
+                          spawn=lambda: run_one(dept), say=lambda m: log(dept, m),
+                          sleep=sleep, clock=clock, digest=digest or source_digest,
+                          max_workers=max_workers, retire_after=retire_after)
+
+
+def _task_name(dept: str) -> str:
+    """This department's Windows task, from the component registry; a guess only when it fails
+    to import -- and a wrong name merely falls back to the 72 h default limit."""
+    try:
+        # Loaded by FILE, never as bare `ops`: the repo root has an `ops/` too, and a bare import
+        # resolves to whichever comes first on sys.path (test_gateway_loop_finds_libs pins this).
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_dr_components",
+                                                      DESK / "ops" / "components.py")
+        if spec is None or spec.loader is None:
+            raise ImportError("desks/mt5/ops/components.py has no loader")
+        components = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(components)
+        return str(components.department_task(dept))
+    except Exception:
+        return "MT5-Dept-" + "".join(p.capitalize() for p in dept.split("_") if p)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dept", required=True)
     ap.add_argument("--once", action="store_true", help="one pass, then exit")
+    ap.add_argument("--worker", action="store_true",
+                    help="run the loop itself (the supervisor's child); recycles by exiting")
     a = ap.parse_args(argv)
     dept = a.dept.strip().lower()
-    handle = claim_singleton(dept)
+    if not a.once and not a.worker:
+        return supervise(dept)
+    handle = claim_worker(dept) if a.worker else claim_singleton(dept)
     if handle is None:
-        print(f"dept[{dept}]: another resident holds the slot; exiting", flush=True)
-        return 0
-    log(dept, f"resident started pid {os.getpid()}; pass timeout {PASS_TIMEOUT_S}s, "
-              f"min cycle {MIN_CYCLE_S}s, recycle after {RECYCLE_PASSES} passes")
+        print(f"dept[{dept}]: another {'worker' if a.worker else 'resident'} holds the slot; "
+              "exiting", flush=True)
+        return WORKER_BUSY_RC if a.worker else 0
+    log(dept, f"{'worker' if a.worker else 'resident'} started pid {os.getpid()}; pass timeout "
+              f"{PASS_TIMEOUT_S}s, min cycle {MIN_CYCLE_S}s, recycle after {RECYCLE_PASSES} passes")
     passes = 0
     heartbeat(dept, 0)
     try:
@@ -385,7 +609,10 @@ def main(argv: list[str] | None = None) -> int:
             if a.once:
                 return 0 if res["status"] == "ok" else 1
             if passes >= RECYCLE_PASSES:
-                log(dept, "recycling: the keep-alive trigger restarts a fresh resident")
+                log(dept, "recycling: the supervisor starts a fresh worker")
+                return 0
+            if a.worker and worker_should_retire():
+                log(dept, "recycling early: the supervisor is retiring inside its task limit")
                 return 0
             elapsed = time.monotonic() - started
             floor, why = cycle_floor_s()
