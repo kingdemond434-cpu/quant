@@ -89,8 +89,7 @@ def main(tree: Path, fixture: dict[str, Any], out_path: Path) -> int:
 
     def calls(frame: Any, event: str, arg: Any) -> Any:
         if frame.f_code.co_filename == target:
-            ran.add(frame.f_lineno)
-            return lines
+            return lines  # a call event's line is the def or 0 (a module): not a run line
         return None
 
     sys.settrace(calls)
