@@ -624,6 +624,17 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
                                    for r in report["proposals"]]}
         (INTEL / f"discoveries_{stamp}.json").write_text(
             json.dumps(payload, indent=1, default=str), "utf-8")
+    if not shuffle:
+        # THE SEAT'S HEARTBEAT (2026-11-11). The leg (`residual_factors`) ran 670 times on the box
+        # while this seat read 875 h stale: a sweep in which no cell survives its own deflation
+        # donates nothing, which a seat-age reader cannot tell from a leg that never ran.
+        from research.proposer_common import pass_census
+        pass_census("factor_residual", tried=n_tests, new=len(best), duplicate=0,
+                    donated=len(best), seat_dir=INTEL, leg="residual_factors",
+                    hypotheses_measured=report["hypotheses_measured"],
+                    hypotheses_stated=report["hypotheses_stated"],
+                    refused_on_cost_basis=len(report["refused_on_cost_basis"]),
+                    skipped=len(skipped))
     return report
 
 

@@ -49,6 +49,7 @@ import argparse
 import json
 import ssl
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -87,6 +88,21 @@ def _ctx():
         return None
 
 
+#: THE PASS'S OWN DEADLINE (2026-11-11). This organ rides the organ battery, which kills any
+#: member at its slice (`batteries.MAX_SLICE_S`, 150 s), and it wrote BOTH its report and its seat
+#: only after the last route returned. Twelve Common Crawl hosts at 25 s plus sixteen sitemap
+#: reads at 15 s is several times that slice, so a slow index meant a killed pass that wrote
+#: nothing -- the seat sat 238 h stale behind `organ_battery` LEG_DONE ok. Now every request is
+#: clamped to the time left, a request past the deadline is not started, and the pass always
+#: reaches its writes with what it has.
+DEFAULT_BUDGET_S = 110.0
+_DEADLINE: float | None = None
+
+
+def _remaining() -> float | None:
+    return None if _DEADLINE is None else _DEADLINE - time.monotonic()
+
+
 #: host -> parsed robots rules, or a refusal string when they could not be read. One read per
 #: host per pass.
 _ROBOTS: dict[str, urllib.robotparser.RobotFileParser | str] = {}
@@ -99,9 +115,13 @@ def _robots_for(scheme: str, host: str) -> urllib.robotparser.RobotFileParser | 
     if key in _ROBOTS:
         return _ROBOTS[key]
     rp = urllib.robotparser.RobotFileParser()
+    left = _remaining()
+    if left is not None and left < 1.0:
+        return "budget: pass deadline reached, robots.txt not read"  # not cached: a refusal
     req = urllib.request.Request(f"{key}/robots.txt", headers={"User-Agent": UA})
+    wait = 15.0 if left is None else min(15.0, left)
     try:
-        with urllib.request.urlopen(req, timeout=15.0, context=_TLS) as r:
+        with urllib.request.urlopen(req, timeout=wait, context=_TLS) as r:
             rp.parse(r.read(500_000).decode("utf-8", errors="replace").splitlines())
         out: urllib.robotparser.RobotFileParser | str = rp
     except urllib.error.HTTPError as e:
@@ -139,6 +159,11 @@ def robots_refusal(url: str) -> str | None:
 
 
 def _get(url: str, timeout: float = 25.0, cap: int = 2_000_000) -> tuple[bytes | None, str]:
+    left = _remaining()
+    if left is not None:
+        if left < 1.0:
+            return None, "budget: pass deadline reached, request not started"
+        timeout = min(timeout, left)
     refused = robots_refusal(url)
     if refused:
         return None, f"REFUSED: {refused}"
@@ -387,16 +412,28 @@ REFUSED = {
 
 
 def main(argv: list[str] | None = None) -> int:
-    global _TLS
+    global _TLS, _DEADLINE
     _TLS = _ctx()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--route", action="append", choices=sorted(ROUTES))
     ap.add_argument("--limit", type=int, default=PER_ROUTE)
+    ap.add_argument("--budget-s", type=float, default=DEFAULT_BUDGET_S,
+                    help="stop starting requests after this many seconds, then write")
     args = ap.parse_args(argv)
+    _DEADLINE = time.monotonic() + max(1.0, float(args.budget_s))
 
     want = args.route or sorted(ROUTES)
+    # The starting route rotates by the hour, so a deadline never starves the same tail routes.
+    k = int(time.time() // 3600) % max(1, len(want))
+    want = want[k:] + want[:k]
     results = []
     for name in want:
+        left = _remaining()
+        if left is not None and left < 1.0:
+            results.append({"route": name, "addresses": [],
+                            "errors": {"route": f"budget: {args.budget_s:g}s spent before this "
+                                                "route started; the start route rotates hourly"}})
+            continue
         try:
             results.append(ROUTES[name](args.limit))
         except Exception as exc:

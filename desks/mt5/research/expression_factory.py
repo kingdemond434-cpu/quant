@@ -1588,6 +1588,16 @@ class Factory:
         if cell.key in self.seen:
             self._reject("tier0", "duplicate AST")
             return {"tier": 0, "why": "duplicate AST"}
+        if self.campaign.state_of(cell.key) is not None:
+            # A CELL THE CAMPAIGN ALREADY HOLDS IS A DUPLICATE TOO (2026-11-11). `seen` is capped
+            # at 50,000 keys and the campaign snapshot keeps every QUEUED/TESTING row, so on a
+            # box with months of state a key can fall out of `seen` while its row stays QUEUED.
+            # Re-running it reached `advance(key, "SCREENED")` from QUEUED, which raised
+            # CampaignError out of `run()`: the leg exited 1 after 475.7 s on 2026-11-10 with
+            # every cell of the pass, and its state, lost. A tested cell is not re-tested.
+            self.seen.add(cell.key)
+            self._reject("tier0", "duplicate AST")
+            return {"tier": 0, "why": "duplicate AST: already in the campaign"}
         self.seen.add(cell.key)
         self.cells_done += 1
         self.campaign.propose(cell)

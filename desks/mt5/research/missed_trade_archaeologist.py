@@ -907,6 +907,17 @@ def main(argv: list[str] | None = None) -> int:
           f"{nf['cells']['donated']} donated this pass -> {nf['path']}")
     for u in doc["unmeasured"][:8]:
         print(f"  UNMEASURED {u['what']}: {u['why']}")
+    if not a.dry_run:
+        # THE SEAT'S HEARTBEAT (2026-11-11): a pass whose cells were all donated before writes
+        # no donation, so the census is what tells "ran, nothing new" from "did not run".
+        from research.proposer_common import pass_census
+        c = nf["cells"]
+        tried, new = int(c.get("cells") or 0), int(c.get("new") or 0)
+        pass_census(SEAT, tried=tried, new=new, duplicate=max(0, tried - new),
+                    donated=int(c.get("donated") or 0), leg="missed_trade_archaeologist",
+                    donated_total=int(c.get("donated_total") or 0),
+                    episodes_dug=int(e.get("dug_this_pass") or 0),
+                    hypotheses=len(doc["hypotheses"]))
     return 0
 
 
