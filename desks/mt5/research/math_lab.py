@@ -136,6 +136,28 @@ RULE = ("concrete hypotheses are routed to every tradition whose mathematics fit
 
 
 # ------------------------------------------------------------------------------- plumbing
+def _exc_name(exc: BaseException, where: str) -> str:
+    """The exception's TYPE for the published report; the full text goes to the log only.
+
+    MATH_LAB.json is published from the box (sync_shadow_to_git.ps1), and an exception's message
+    can carry a box path, a host name or a credential fragment (audit MF2 on #1130).
+    """
+    print(f"math_lab: {where}: {type(exc).__name__}: {exc}", file=sys.stderr)
+    return type(exc).__name__
+
+
+def _published_path(path: Any) -> str | None:
+    """A donation path as the report may publish it: repo-relative, else the bare file name
+    (audit MF1 on #1130 -- `proposer_common.INTEL` resolves to an absolute box path)."""
+    if not path:
+        return None
+    p = Path(str(path))
+    try:
+        return p.resolve().relative_to(ROOT.resolve()).as_posix()
+    except (ValueError, OSError):
+        return p.name
+
+
 def now_iso() -> str:
     return datetime.now(tz=UTC).isoformat()
 
@@ -978,7 +1000,7 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
         scientist = S.build(tradition, **kwargs)
     except Exception as exc:
         result["status"] = "FAILED"
-        result["why"] = f"{type(exc).__name__}: {exc}"
+        result["why"] = _exc_name(exc, f"build {tradition}")
         result["compute_s"] = round(time.monotonic() - started, 3)
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
@@ -989,8 +1011,8 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
                 SEED + abs(hash((tradition, panel.target))) % 10_000))
         except Exception as exc:
             result["status"] = "FAILED"
-            result["why"] = f"{type(exc).__name__}: {exc}"
-            result["unmeasured"].append(f"panel {panel.target}: {type(exc).__name__}: {exc}")
+            result["why"] = _exc_name(exc, f"{tradition} on {panel.target}")
+            result["unmeasured"].append(f"panel {panel.target}: {type(exc).__name__}")
             continue
         for obj in objects:
             obj.provenance.residual_target = panel.target
@@ -1273,7 +1295,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                 results[tradition] = future.result()
             except Exception as exc:
                 results[tradition] = {"tradition": tradition, "status": "FAILED",
-                                      "why": f"{type(exc).__name__}: {exc}", "objects": [],
+                                      "why": _exc_name(exc, f"pool {tradition}"),
+                                      "objects": [],
                                       "panels": [], "evaluated": 0, "distinct": set(),
                                       "unmeasured": [], "minted": [], "compute_s": 0.0}
 
@@ -1408,7 +1431,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             from research import proposer_common as PC
             path = PC.donate(SOURCE, rows, tests_run=sum(
                 int(v.get("evaluated", 0)) for v in per_tradition.values()))
-            donation.update({"path": str(path) if path else None, **PC.donation_counts()})
+            donation.update({"path": _published_path(path), **PC.donation_counts()})
             for row in rows:
                 tradition = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[tradition] = donated_by_tradition.get(tradition, 0) + 1
@@ -1419,7 +1442,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                               "rule": "an object donated once is never donated again; the "
                                       "compiler's intake is idempotent by object id"})
         except Exception as exc:
-            donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
+            donation["status"] = (f"{UNMEASURED}: donate raised "
+                                  f"{_exc_name(exc, 'donate')}")
     elif rows:
         donation["donated"] = 0
         donation["status"] = "SKIPPED_DRY_RUN"

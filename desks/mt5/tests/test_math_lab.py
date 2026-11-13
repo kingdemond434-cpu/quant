@@ -92,7 +92,7 @@ def lab(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 def test_parallel_scientists_run_and_one_failure_never_stops_the_lab(lab):
     report = ML.run(budget_s=40.0, traditions=[*FAST, "broken"], permutations=30)
     per = report["per_tradition"]
-    assert per["broken"]["status"] == "FAILED" and "explodes" in per["broken"]["why"]
+    assert per["broken"]["status"] == "FAILED" and per["broken"]["why"] == "RuntimeError"
     healthy = [t for t in FAST if per[t]["status"] == "OK"]
     assert len(healthy) == len(FAST), {t: per[t].get("why") for t in FAST}
     assert report["memory"]["workers"] >= 1
@@ -306,3 +306,17 @@ def test_routed_hypotheses_decide_which_panel_each_tradition_works(lab, monkeypa
     cost = report["yield_per_compute_hour"]["trials_per_hypothesis"]
     assert cost["hypotheses_routed"] == 1 and cost["mean_traditions_per_hypothesis"] == 1.0
     assert cost["overall"] == pytest.approx(cost["effective_trials"])
+
+
+def test_the_published_report_carries_no_box_path_and_no_exception_text(lab):
+    """MATH_LAB.json is published from the box (audit MF1/MF2 on #1130): the donation path is
+    repo-relative or a bare file name, and every failure is named by its exception TYPE only."""
+    import re
+    report = ML.run(budget_s=40.0, traditions=[*FAST, "broken"], permutations=30)
+    text = ML.OUT.read_text("utf-8")
+    assert "explodes on purpose" not in text
+    assert str(lab["tmp"]) not in text
+    assert not re.search(r"\b[A-Za-z]:[\\/]", text), "a drive-letter path reached the report"
+    path = report["donation"].get("path")
+    assert path is None or not (path.startswith("/") or re.match(r"[A-Za-z]:", path))
+    assert report["per_tradition"]["broken"]["why"] == "RuntimeError"

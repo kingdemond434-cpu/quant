@@ -175,7 +175,7 @@ def law_discovery(panel: Panel, *, budget_s: float = 30.0, rng: np.random.Genera
             res.findings.append({"pysindy": [str(e) for e in model.equations(precision=3)]})
             res.trials += 1
         except Exception as exc:
-            res.note("pysindy", f"{type(exc).__name__}: {exc}"[:200])
+            res.note("pysindy", type(exc).__name__)
     res.summary = {"best": best, "library": list(lib), "trees": {k: G.to_str(v) for k, v in
                                                                 trees.items() if v[1] in
                                                                 panel.columns}}
@@ -937,7 +937,7 @@ def run_engine(name: str, fn: Callable[..., EngineResult], *args: Any, **kwargs:
         out = fn(*args, **kwargs)
     except Exception as exc:
         out = EngineResult(name, status="FAILED")
-        out.note("raised", f"{type(exc).__name__}: {exc}"[:300])
+        out.note("raised", type(exc).__name__)
     out.compute_s = time.monotonic() - started
     return out
 
