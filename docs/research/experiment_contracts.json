@@ -176,6 +176,21 @@
     "after": "7 days with LIVE rows on the roster (roster_rows_seen > 0) and none judged: the verdict loop is not reading the roster the promoter writes"
    }
   },
+  "feature_drift": {
+   "hypothesis": "A live sleeve's session inputs (range in ATR, ATR, spread, tick volume) leave their certified in-sample distribution before its realised R decays, so a PSI/KS reading on the last 20 broker days flags decay earlier than the trade-count verdict can.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "n_sleeves",
+    "better": "up",
+    "organ": "report:FEATURE_DRIFT.json"
+   },
+   "falsifier": {
+    "metric": "n_sleeves",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days with the gold book on the roster and no sleeve judged: the monitor is not reading the roster; and once DECAY_ACCURACY scores lead times, a median lead time <= 0 days over sleeves with 3R+ drawdowns retires the input"
+   }
+  },
   "fill_markout": {
    "hypothesis": "Joining every order intent to its fill and its closing deal measures the slippage the book actually pays in R, so execution drag is a number the desk can drive down instead of an assumption in the backtest.",
    "metric": {
