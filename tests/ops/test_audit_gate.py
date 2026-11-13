@@ -2935,7 +2935,10 @@ def _win(at: Any = _OLD) -> Callable[[], tuple[Any, str]]:
     return lambda: (at, "" if at else "no notice yet")
 
 
-def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window() -> None:
+def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)  # the window mechanism, whatever LIVE sets
     got, why = ag.registry_clear([_row()], 9, _H, _win(), _NOW)
     assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
     assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # no carry-over
@@ -2950,7 +2953,10 @@ def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
 
 
-def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
+def test_a_backdated_row_never_starts_the_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)
     # #591 audit MF3: the row says 2020, but the window starts when the gate's notice went out
     sent: list[str] = []
     seen = tmp_path / "r.jsonl.window.json"
