@@ -94,10 +94,12 @@ def fred_series(series_id: str, start: str = "2010-01-01",
     if hit:
         return hit
     if _terms().refused(url):
-        # FRED's terms refuse this use (governance ruling 2026-11-13): read the LAST HELD copy,
-        # whatever its age, then the primary publisher's series where one is mapped
-        # (data_alternates.DBNOMICS_MIRROR serves BLS / Fed ids only, never a third-party one).
-        return _cache_get(key, any_age=True) or _fred_alternate(series_id, vintage, key)
+        # FRED's terms refuse this use (governance ruling 2026-11-13). In order: the PRIMARY
+        # PUBLISHER's own series (Treasury curves, NY Fed EFFR/SOFR) where one is mapped; then
+        # the LAST HELD copy, whatever its age; then data_alternates' DBnomics map, which carries
+        # BLS / Fed ids only, never a third-party one. A vintage is never faked from any of them.
+        return (None if vintage else _primary(series_id, start, key)) \
+            or _cache_get(key, any_age=True) or _fred_alternate(series_id, vintage, key)
     try:
         raw = _get(url).decode("utf-8", "replace")
         rows = list(csv.reader(io.StringIO(raw)))
@@ -122,6 +124,26 @@ def fred_series(series_id: str, start: str = "2010-01-01",
         # registry (scripts/data_alternates) serves the same series from the DBnomics mirror,
         # with provenance recorded -- a switched source is a fact, never a silent substitution.
         return _fred_alternate(series_id, vintage, key)
+
+
+def _primary(series_id: str, start: str, cache_key: str):
+    """The series from its primary publisher (`libs.data.us_primary_rates`), cached, or None."""
+    try:
+        from datetime import date as _date
+        _terms()                                   # puts the repo root on sys.path
+        from libs.data import us_primary_rates as P
+        if series_id not in P.SERVED:
+            return None
+        got, why = P.series([series_id], _date.fromisoformat(start[:10]))
+        out = got.get(series_id) or {}
+        if len(out) > 30:
+            _cache_put(cache_key, out)
+            print(f"free_data: {series_id} served by {P.source_of(series_id)}")
+            return out
+        print(f"free_data: {series_id} primary publisher unavailable: {why.get(series_id)}")
+    except Exception as exc:
+        print(f"free_data: {series_id} primary publisher failed ({type(exc).__name__})")
+    return None
 
 
 def _fred_alternate(series_id: str, vintage: str | None, cache_key: str):

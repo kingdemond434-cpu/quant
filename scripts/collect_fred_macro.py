@@ -87,12 +87,51 @@ def _fetch(key: str, sid: str) -> list[tuple[str, float]]:
     return out
 
 
+def _held(path: Path) -> dict[str, list[tuple[str, float]]]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    ser = doc.get("series") if isinstance(doc, dict) else None
+    return {str(k): [(str(r[0]), float(r[1])) for r in v]
+            for k, v in (ser or {}).items() if isinstance(v, list)}
+
+
+def primary_pass() -> None:
+    """FRED is terms-refused (governance ruling 2026-11-13): each series comes from its PRIMARY
+    PUBLISHER where `libs.data.us_primary_rates` maps one (DGS10, T10Y2Y, DFII10 from the
+    Treasury's own curves), and every other series keeps its LAST HELD rows from the long
+    archive, labelled as such. Nothing held is dropped; nothing is fetched from FRED."""
+    from libs.data import us_primary_rates as P
+    start = (datetime.now(tz=UTC) - timedelta(days=_LOOKBACK_DAYS)).date()
+    fresh, why = P.series(list(_SERIES), start)
+    held = _held(_ARCHIVE_LONG) or _held(_ARCHIVE)
+    series: dict[str, list[tuple[str, float]]] = {}
+    sources: dict[str, str] = {}
+    for sid in _SERIES:
+        if sid in fresh:
+            series[sid] = P.as_rows(fresh[sid])
+            sources[sid] = P.source_of(sid)
+        elif held.get(sid):
+            series[sid] = held[sid]
+            sources[sid] = (f"held copy (source=fred, terms=personal_noncommercial; "
+                            f"not refreshed: {why.get(sid, 'no route')})")
+    if not series:
+        print("fred-macro: no primary route reached and nothing held -- archives untouched")
+        return
+    ts = datetime.now(tz=UTC).isoformat()
+    revised = 0
+    for sid in fresh:
+        if sid in series:
+            revised += record(_ROOT, sid, dict(series[sid]), vintage=ts)
+    _write(series, ts, sources, revised)
+
+
 def main() -> None:
     why = _terms_refused(_BASE)
     if why:
-        # FRED's terms refuse this use (governance ruling 2026-11-13). The archives on disk are
-        # the last held copy and are left exactly as they are; nothing is fetched or overwritten.
-        print(f"fred-macro: BLOCKED_TERMS -- {why}")
+        print(f"fred-macro: FRED BLOCKED_TERMS -- primary publishers + held copies ({why[:60]})")
+        primary_pass()
         return
     key = _key()
     if not key:
@@ -120,6 +159,11 @@ def main() -> None:
     for sid, rows in series.items():
         revised += record(_ROOT, sid, dict(rows), vintage=ts)
 
+    _write(series, ts, {}, revised)
+
+
+def _write(series: dict[str, list[tuple[str, float]]], ts: str, sources: dict[str, str],
+           revised: int) -> None:
     _ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
     # TWO ARCHIVES FROM ONE FETCH. `data/fred_macro.json` keeps its rolling `_SHORT_DAYS` window
     # because `orthogonal_sweep._macro_series` ranks each print against an EXPANDING history: on
@@ -129,10 +173,11 @@ def main() -> None:
     # fetch for the allocator's regime kernel and factor set (`libs.portfolio.macro_state`,
     # `libs.portfolio.leg_factors`), which rank against a TRAILING year and need every day of the
     # backtest matrix to carry a state.
-    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
+    extra = {"sources": sources} if sources else {}
+    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series, **extra}), "utf-8")
     cut = (datetime.now(tz=UTC) - timedelta(days=_SHORT_DAYS)).date().isoformat()
     short = {sid: [r for r in rows if r[0] >= cut] for sid, rows in series.items()}
-    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short}), "utf-8")
+    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short, **extra}), "utf-8")
     latest = {sid: {"date": rows[-1][0], "value": rows[-1][1],
                     "chg_30obs": (round(rows[-1][1] - rows[-31][1], 4)
                                   if len(rows) > 31 else None)}
