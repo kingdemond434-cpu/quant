@@ -1031,6 +1031,16 @@ def _ends_close(path: Path, size: int) -> bool:
     return tail.endswith(b"\n" + closer)
 
 
+def _tail_sig(path: Path, size: int, n: int = 4096) -> bytes:
+    """The last `n` bytes of `path` (b"" when unreadable): part of `_parses`'s cache key."""
+    try:
+        with path.open("rb") as fh:
+            fh.seek(max(0, size - n))
+            return fh.read(n)
+    except OSError:
+        return b""
+
+
 def _parses(path: Path) -> bool:
     """Is `path` whole JSON? Cached by (size, mtime): the same bytes are never judged twice."""
     try:
@@ -1039,7 +1049,11 @@ def _parses(path: Path) -> bool:
         return False
     # inode and ctime too (audit of be522dd44): a rewrite with a forced `os.utime` keeps size and
     # mtime, but a replace changes the inode and any write moves ctime, which utime cannot set.
-    key = (str(path), int(st.st_size), int(st.st_mtime_ns), int(st.st_ino), int(st.st_ctime_ns))
+    # AND THE TAIL'S BYTES (2026-11-13): on Windows `st_ctime` is the CREATION time, so an
+    # in-place, same-size rewrite with a forced mtime kept every field above and read as the old
+    # verdict -- a torn file passed as whole. A torn write shows at the end, and 4 KB is one read.
+    key = (str(path), int(st.st_size), int(st.st_mtime_ns), int(st.st_ino), int(st.st_ctime_ns),
+           _tail_sig(path, int(st.st_size)))
     hit = _PARSE_CACHE.get(key)
     if hit is not None:
         return hit
