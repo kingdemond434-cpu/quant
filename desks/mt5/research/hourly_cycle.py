@@ -1341,7 +1341,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "global_mining",
+                     "moat_miner",
                      "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -2444,6 +2445,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The cell emitter stops itself at --budget-s 300 (it reads QUANT_LEG_BUDGET_S too); the cap
     # sits above it so the pass writes its report, cursor and donations rather than being cut.
     "cell_emitter": 420,
+    # MT5_GLOBAL_MINING_V1 (libs/mining): acquires every due source in its roster, then
+    # extracts, dedups, compiles, seals and donates, and joins the gauntlet's verdicts. It stops
+    # itself at --budget-s 900 (fetching gets 60% of it) and writes its cursors per record, so a
+    # kill loses nothing; the cap sits above its budget like deep_forest's.
+    "mining_supervisor": 1_020,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -3570,6 +3576,17 @@ def cell_emitter() -> dict:
     and writes reports/CELL_EMITTER.json with per-ground yield and drop reasons.
     """
     return _producer("cell_emitter", "research/cell_emitter.py", "--once", "--budget-s", "300")
+
+
+def global_mining() -> dict:
+    """MT5_GLOBAL_MINING_V1: the roster-driven global mining pipeline, one bounded pass.
+
+    fetch -> PIT store -> extract -> dedup -> compile -> preregister -> gauntlet intake, plus the
+    join of the gauntlet's verdicts back onto every mined cell. Writes
+    reports/mining/MINING_METRICS.json (rejections by reason, sources ACTIVE vs COLD, queue ages,
+    binding constraint) and a dated metrics file per day. This cycle is its only scheduler.
+    """
+    return _producer("mining_supervisor", "research/mining_supervisor.py", "--budget-s", "900")
 
 
 def session_structure() -> dict:
@@ -5946,6 +5963,7 @@ def main() -> None:
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
     cem = _costed("cell_emitter", cell_emitter)
+    gm = _costed("global_mining", global_mining)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -6582,6 +6600,7 @@ def main() -> None:
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "cell_emitter": cem, "index_discovery": idx,
+                    "global_mining": gm,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

@@ -1,0 +1,18 @@
+{
+ "schema": "mechanics_map/1",
+ "rule": "Which published page answers for which declared number. A page names no account and no symbol, so this join is a DECISION, written here and reviewed like code. Percent facts are compared as fractions (pct / 100).",
+ "prop": [
+  {"source_id": "prop_rules", "uri_contains": "e8markets.com/e8-one",
+   "profile": "e8-one-8pct", "severity": "breach",
+   "fields": {"max_drawdown_pct": "max_drawdown_limit", "profit_target_pct": "profit_target"}},
+  {"source_id": "prop_rules", "uri_contains": "e8markets.com/faq",
+   "profile": "e8-pro-v2", "severity": "breach",
+   "fields": {"max_daily_loss_pct": "daily_loss_limit", "max_drawdown_pct": "max_drawdown_limit"}}
+ ],
+ "cost": [
+  {"source_id": "broker_specs", "uri_contains": "fusionmarkets.com/en/trading-conditions",
+   "charged": "engine.Costs.commission_per_lot", "fact": "commission_per_lot",
+   "severity": "report",
+   "note": "Fusion publishes USD per side; the engine charges the realised account-currency (EUR) rate, so a difference can be currency, not drift -- reported, never a breach."}
+ ]
+}
