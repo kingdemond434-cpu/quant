@@ -870,26 +870,19 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
-    # THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13). Built, scheduled and
-    # writing on the box, and absent from every branch, so no audit could read them:
-    #   weak_signal_compiler, TRIAL_ALLOCATION, admission_heavy_pass, pf_allocation (the
-    #   allocator's fractions), RESEARCH_PNL, PRODUCTIVITY_CENSUS, MATH_LAB, DISK_CENSUS, the
-    #   prop lanes' own reports (FTMO_ACCOUNT_STATE, E8_GOLD, E8_EXEC), every account against
-    #   every mechanism (ACCOUNT_PARITY), and the daily chain's stamp as its read-only mirror
-    #   (DAILY_CYCLE_STATE: the stamp itself is per-box and stays unpublished). Balances and
-    #   phases only; the login fence above refuses any file carrying a login.
-    "desks/mt5/reports/weak_signal_compiler.json",
-    "desks/mt5/reports/FTMO_ACCOUNT_STATE.json",
-    "desks/mt5/reports/E8_GOLD.json",
-    "desks/mt5/reports/E8_EXEC.json",
+    # THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13), cut to what the public
+    # repository may carry (Auditor HOLD MF1/MF2 on #639): no absolute money, no account label,
+    # no host, no filesystem path. TRIAL_ALLOCATION, admission_heavy_pass, RESEARCH_PNL,
+    # ACCOUNT_PARITY (every account against every mechanism) and the daily chain as a REDACTED
+    # mirror of its per-box stamp (DAILY_CYCLE_STATE: step verdicts only, no error text).
+    # Deliberately NOT here: E8_GOLD, E8_EXEC, FTMO_ACCOUNT_STATE and pf_allocation (equity and
+    # balances; E8_GOLD also the account label #1096 keeps unpublished), DISK_CENSUS and
+    # MATH_LAB (filesystem paths), PRODUCTIVITY_CENSUS (host names), weak_signal_compiler (free
+    # exception text). They need a redacted twin before they may cross this wire.
     "desks/mt5/reports/TRIAL_ALLOCATION.json",
     "desks/mt5/reports/DAILY_CYCLE_STATE.json",
     "desks/mt5/reports/admission_heavy_pass.json",
-    "desks/mt5/reports/pf_allocation.json",
     "desks/mt5/reports/RESEARCH_PNL.json",
-    "desks/mt5/reports/PRODUCTIVITY_CENSUS.json",
-    "desks/mt5/reports/MATH_LAB.json",
-    "desks/mt5/reports/DISK_CENSUS.json",
     "desks/mt5/reports/ACCOUNT_PARITY.json",
     # the loss loop's two readings (Loss loop thread, 2026-11-13): origin held the 2026-09-04
     # decay_live.json because no list carried it, and LOSS_LEARNER.json had never crossed

@@ -1464,12 +1464,35 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
 STAMP_REPORT = BASE / "reports" / "DAILY_CYCLE_STATE.json"
 
 
+def stamp_view(doc: dict) -> dict:
+    """The stamp as the public repository may carry it: dates, step names and their verdicts.
+    Free text (a step's error, the lock's error) is cut to its exception CLASS, and only scalar
+    verdict fields survive, so no path, host or message from the box crosses the wire."""
+    def _cls(text: object) -> str | None:
+        return str(text).split(":", 1)[0][:60] if text else None
+
+    steps = {}
+    for name, step in (doc.get("steps") or {}).items():
+        step = step if isinstance(step, dict) else {}
+        row = {k: v for k, v in step.items()
+               if k != "error" and isinstance(v, (bool, int, float))}
+        if step.get("error"):
+            row["error_class"] = _cls(step.get("error"))
+        steps[str(name)] = row
+    lock = doc.get("chain_lock") if isinstance(doc.get("chain_lock"), dict) else {}
+    return {"mirror_of": "data/daily_cycle_state.json", "last_run": doc.get("last_run"),
+            "last_progress_at": (doc.get("last_progress") or {}).get("at"),
+            "clock_corrections": len(doc.get("clock_corrections") or []),
+            "chain_lock_state": lock.get("state"),
+            "chain_lock_error_class": _cls(lock.get("error")),
+            "steps": steps}
+
+
 def _mirror_stamp(doc: dict) -> None:
     """Write the published copy. Never raises: the stamp above is the record, this is its view."""
     try:
-        _atomic_write(STAMP_REPORT, json.dumps({**doc, "mirror_of": "data/daily_cycle_state.json"},
-                                               indent=2))
-    except OSError as exc:
+        _atomic_write(STAMP_REPORT, json.dumps(stamp_view(doc), indent=2))
+    except (OSError, TypeError, ValueError) as exc:
         dlog(f"stamp mirror NOT written ({type(exc).__name__}: {exc}); the stamp itself stands")
 
 

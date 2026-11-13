@@ -534,21 +534,13 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
 # every live account against every mechanism (research/account_parity.py, hourly_cycle:account_parity, 2026-11-03)
 !desks/mt5/reports/ACCOUNT_PARITY.json
-# THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13): each built and running on the
-# box, none ever reaching origin, so none could be verified off it. Carried by $reportPaths in
+# THE BOX ORGANS NOTHING PUBLISHED (hourly-pass sweep, 2026-11-13), only those carrying no money,
+# account label, host or path (Auditor HOLD on #639). Carried by $reportPaths in
 # desks/mt5/scripts/sync_shadow_to_git.ps1 under its size cap and login fence.
-!desks/mt5/reports/weak_signal_compiler.json
-!desks/mt5/reports/FTMO_ACCOUNT_STATE.json
-!desks/mt5/reports/E8_GOLD.json
-!desks/mt5/reports/E8_EXEC.json
 !desks/mt5/reports/TRIAL_ALLOCATION.json
 !desks/mt5/reports/DAILY_CYCLE_STATE.json
 !desks/mt5/reports/admission_heavy_pass.json
-!desks/mt5/reports/pf_allocation.json
 !desks/mt5/reports/RESEARCH_PNL.json
-!desks/mt5/reports/PRODUCTIVITY_CENSUS.json
-!desks/mt5/reports/MATH_LAB.json
-!desks/mt5/reports/DISK_CENSUS.json
 !desks/mt5/reports/LOSS_LEARNER.json
 # ...and its fail-closed marker: one box's MISMATCH verdict, read by families_vector.enabled()
 # on that box only. Box state (data/ is a STATE_PREFIX); never published, never carried across.
