@@ -214,3 +214,83 @@ def test_cot_is_cut_to_what_was_published(tmp_path: Path) -> None:
     assert got.index.max() < dates[-1]          # Tuesday's print is not out until Friday
     later = lab.load_cot(tmp_path / "cot", as_of=datetime(2028, 1, 1, tzinfo=UTC))["jpy"]
     assert later.index.max() == dates[-1]
+
+
+def test_rmt_uses_the_true_aspect_ratio_above_one() -> None:
+    rng = np.random.default_rng(1)
+    n, t = 300, 100
+    b = np.zeros((n, 5))
+    b[:, 0] = 0.3
+    for k in range(4):
+        b[k * 75:(k + 1) * 75, k + 1] = 0.5
+    c = b @ b.T
+    np.fill_diagonal(c, 1.0)
+    x = (np.linalg.cholesky(c) @ rng.standard_normal((n, t))).T
+    cl = rmt.clean(x, [str(i) for i in range(n)])
+    assert cl.q == pytest.approx(3.0)
+    assert cl.n_signal <= 8                      # the bulk is the real MP bulk at q = 3
+
+    def gmv_var(m: np.ndarray) -> float:
+        w = np.linalg.solve(m + 1e-9 * np.eye(n), np.ones(n))
+        w /= w.sum()
+        return float(w @ c @ w)
+
+    assert gmv_var(cl.rie) < gmv_var(cl.lw) < gmv_var(cl.sample)
+
+
+def test_ledoit_wolf_closed_form_matches_the_tensor() -> None:
+    rng = np.random.default_rng(3)
+    x = rng.normal(size=(80, 12))
+    corr = np.corrcoef(x, rowvar=False)
+    _out, delta = rmt.ledoit_wolf_identity(x, corr)
+    z = (x - x.mean(0)) / x.std(0)
+    pi = float(((np.einsum("ti,tj->tij", z, z) - corr) ** 2).mean(axis=0).sum())
+    gamma = float(((corr - np.eye(12)) ** 2).sum())
+    assert delta == pytest.approx(max(0.0, min(1.0, pi / gamma / 80)))
+
+
+def test_inlife_zero_fills_inside_life_only() -> None:
+    x = np.array([[np.nan, 1.0], [2.0, np.nan], [np.nan, 3.0], [4.0, np.nan]])
+    y = st.inlife_zero(x)
+    assert np.isnan(y[0, 0]) and y[2, 0] == 0.0 and np.isnan(y[3, 1]) and y[1, 1] == 0.0
+
+
+def test_carry_is_point_in_time() -> None:
+    idx = pd.date_range("2025-01-01", periods=300, freq="B", tz="UTC")
+    rng = np.random.default_rng(0)
+    closes = pd.DataFrame(np.exp(np.cumsum(rng.normal(0, 0.005, (300, 3)), axis=0)),
+                          index=idx, columns=["EURUSD", "USDJPY", "AUDUSD"])
+    since = idx[200]
+    f = st.style_factors(closes, {"AUDUSD": 1}, {"AUDUSD": since})
+    assert f["carry"].loc[: idx[199]].isna().all()
+    assert f["carry"].loc[since:].notna().any()
+    g = st.style_factors(closes, {"AUDUSD": 1}, {})       # no observation date: no carry
+    assert "carry" not in g.columns
+
+
+def test_crowding_unmeasured_is_null_and_not_tilted() -> None:
+    cz = st.crowding_z({"a": {"style_r2": 0.9}, "b": {"style_r2": 0.1},
+                        "c": {"style_r2": 0.5}, "d": {}})
+    assert cz["d"] is None and cz["a"] > 0
+    w = np.array([0.05, 0.05, 0.05, 0.05])
+    t = st.crowd_tilt(w, np.array([cz[k] if cz[k] is not None else np.nan for k in "abcd"]))
+    assert t.sum() == pytest.approx(w.sum()) and t[0] < t[3]
+
+
+def test_walk_forward_reports_clips_and_family_size() -> None:
+    rng = np.random.default_rng(2)
+    idx = pd.date_range("2022-01-03", periods=600, freq="B", tz="UTC")
+    panel = pd.DataFrame(rng.normal(0.001, 0.01, (600, 8)), index=idx)
+
+    def flat(tr: np.ndarray, ctx: dict) -> np.ndarray:
+        return np.full(tr.shape[1], 0.2 / tr.shape[1])
+
+    def lever(tr: np.ndarray, ctx: dict) -> np.ndarray:
+        return np.full(tr.shape[1], 200.0 / tr.shape[1])
+
+    vs = [st.Variant("base", "flat", flat), st.Variant("a", "flat", flat),
+          st.Variant("huge", "200x", lever)]
+    res = st.walk_forward(panel, vs, "base")
+    assert res.by_variant["huge"]["loss_clip_days"] > 0
+    assert res.by_variant["a"]["family_size"] == 2
+    assert res.by_variant["a"]["verdict_familywise"] in ("INCONCLUSIVE", "UNMEASURED")

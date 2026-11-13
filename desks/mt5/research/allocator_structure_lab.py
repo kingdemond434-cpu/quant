@@ -140,7 +140,9 @@ def load_panel(path: Path = PANEL) -> tuple[pd.DataFrame | None, str]:
     try:
         df = pd.read_parquet(path)
     except Exception as exc:
-        return None, f"{path.name} unreadable: {type(exc).__name__}: {exc}"
+        # TYPE ONLY (#1137 audit MF2): pyarrow messages carry the box's absolute paths, and this
+        # text is published into a committed artifact.
+        return None, f"{path.name} unreadable: {type(exc).__name__}"
     df.index = pd.to_datetime([str(x) for x in df.index], utc=True, errors="coerce")
     df = df[~df.index.isna()].sort_index()
     df = df.apply(pd.to_numeric, errors="coerce")
@@ -179,20 +181,27 @@ def load_closes(symbols: tuple[str, ...] = FACTOR_SYMBOLS, universe: Path = UNIV
     return pd.DataFrame(cols).sort_index()
 
 
-def carry_signs(path: Path = CARRY) -> dict[str, int]:
+def carry_signs(path: Path = CARRY) -> tuple[dict[str, int], dict[str, pd.Timestamp]]:
+    """({pair: +1 long paid / -1 short paid}, {pair: first day the swap panel observed it}).
+    A pair with no observation date is left out: its sign could only be painted backwards."""
     doc = _read_json(path) or {}
     out: dict[str, int] = {}
+    since: dict[str, pd.Timestamp] = {}
     for sym, row in (doc.get("symbols") or {}).items():
         if not isinstance(row, dict) or str(row.get("asset_class", "")).lower() != "forex":
             continue
         try:
             lg = float((row.get("long") or {}).get("swap_money_per_lot_night"))
             sh = float((row.get("short") or {}).get("swap_money_per_lot_night"))
+            first = pd.Timestamp(str(row.get("first_obs")))
         except (TypeError, ValueError):
             continue
+        if first.tzinfo is None:
+            first = first.tz_localize("UTC")
         if math.isfinite(lg) and math.isfinite(sh) and lg != sh:
             out[str(sym).upper()] = 1 if lg > sh else -1
-    return out
+            since[str(sym).upper()] = first.normalize()
+    return out, since
 
 
 def load_cot(cot_dir: Path = COT_DIR, as_of: datetime | None = None) -> dict[str, pd.Series]:
@@ -353,7 +362,8 @@ def build_variants(factors: pd.DataFrame | None, total_heat: float) -> list[st.V
         rows = {str(j): {"style_r2": float(r2_style[j]), "unwind_loss": float(unwind[j])}
                 for j in range(tr.shape[1])}
         cz = st.crowding_z(rows)
-        return st.crowd_tilt(w, np.array([cz[str(j)] for j in range(tr.shape[1])]))
+        return st.crowd_tilt(w, np.array([np.nan if cz[str(j)] is None else cz[str(j)]
+                                          for j in range(tr.shape[1])], dtype=float))
 
     return [
         st.Variant("kelly_sample", "long-only Kelly on the PSD-repaired sample covariance "
@@ -381,7 +391,8 @@ ADOPTION_MAP = {"rmt_cleaning": "kelly_rie", "rmt_clipping": "kelly_clipped",
 def measure(panel: pd.DataFrame | None, panel_why: str, book: dict[str, float],
             total: float | None, closes: pd.DataFrame, carry: dict[str, int],
             cot: dict[str, pd.Series], *, budget_s: float = 600.0,
-            clock=time.monotonic) -> dict[str, Any]:
+            clock=time.monotonic,
+            carry_since: dict[str, pd.Timestamp] | None = None) -> dict[str, Any]:
     t0 = clock()
     doc: dict[str, Any] = {"at": _now(), "status": "UNMEASURED", "why": panel_why,
                            "inputs": {"panel": panel_why, "book_sleeves": len(book),
@@ -400,7 +411,7 @@ def measure(panel: pd.DataFrame | None, panel_why: str, book: dict[str, float],
     notes: list[str] = []
 
     # ---- RMT on the full panel
-    x = panel.to_numpy(float)
+    x = st.inlife_zero(panel.to_numpy(float))
     cleaned = rmt.clean(x, names)
     doc["rmt"] = cleaned.summary()
     CORR_OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -411,7 +422,8 @@ def measure(panel: pd.DataFrame | None, panel_why: str, book: dict[str, float],
     os.replace(tmp, CORR_OUT)
 
     # ---- factor model
-    factors = st.style_factors(closes, carry) if not closes.empty else pd.DataFrame()
+    factors = (st.style_factors(closes, carry, carry_since or {}) if not closes.empty
+               else pd.DataFrame())
     factors = factors.reindex(panel.index) if not factors.empty else factors
     if factors is not None and not factors.empty:
         factors = factors.loc[:, factors.notna().sum() >= 120]
@@ -523,11 +535,15 @@ def measure(panel: pd.DataFrame | None, panel_why: str, book: dict[str, float],
         rows[n]["cot"] = p
         cot_seen += p["pressure"] is not None
     cz = st.crowding_z(rows)
-    ranked = sorted(cz.items(), key=lambda kv: -kv[1])
+    measured = {n: z for n, z in cz.items() if z is not None}
+    ranked = sorted(measured.items(), key=lambda kv: -kv[1])
+    held_m = [n for n in held if n in measured]
     doc["crowding"] = {
         "signals_coverage": {k: sum(1 for r in rows.values() if r.get(k) is not None)
                              for k in ("style_r2", "comomentum_z", "cot_pressure",
                                        "unwind_loss")},
+        "sleeves_measured": len(measured), "sleeves_unmeasured": len(cz) - len(measured),
+        "held_measured": len(held_m), "held_unmeasured": len(held) - len(held_m),
         "by_family": dict(sorted(como.items(), key=lambda kv: -(kv[1].get("z") or -9))),
         "most_crowded": [{"sleeve": n, "crowd_z": z, "held_heat": book.get(n, 0.0),
                           **{k: rows[n].get(k) for k in ("style_r2", "comomentum_z",
@@ -535,8 +551,10 @@ def measure(panel: pd.DataFrame | None, panel_why: str, book: dict[str, float],
                          for n, z in ranked[:20]],
         "least_crowded": [{"sleeve": n, "crowd_z": z, "held_heat": book.get(n, 0.0)}
                           for n, z in ranked[-10:]],
-        "book_crowd_z": (sum(book.get(n, 0.0) * cz.get(n, 0.0) for n in held)
-                         / max(sum(book.get(n, 0.0) for n in held), 1e-12)) if held else None,
+        "book_crowd_z": (sum(book[n] * measured[n] for n in held_m)
+                         / sum(book[n] for n in held_m)) if held_m else None,
+        "book_crowd_z_basis": "heat-weighted over the held sleeves with a measured crowd z; "
+                              "unmeasured sleeves are counted above, never read as 0",
         "tilt_rule": f"heat x exp(-{st.CROWD_KAPPA} x crowd_z), total unchanged (two-sided)",
     }
 
@@ -587,8 +605,9 @@ def main(argv: list[str] | None = None) -> int:
     panel, why = load_panel()
     book, total = load_book()
     closes = load_closes()
-    doc = measure(panel, why, book, total, closes, carry_signs(), load_cot(),
-                  budget_s=a.budget_s)
+    signs, since = carry_signs()
+    doc = measure(panel, why, book, total, closes, signs, load_cot(),
+                  budget_s=a.budget_s, carry_since=since)
     _write(OUT, doc)
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
     with HISTORY.open("a", encoding="utf-8", newline="\n") as fh:

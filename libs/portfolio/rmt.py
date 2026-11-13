@@ -49,6 +49,8 @@ MIN_OVERLAP = 60
 #: Higham alternating-projection iterations for the nearest correlation matrix.
 HIGHAM_ITERS = 100
 EPS = 1e-10
+#: An eigenvalue at or below this is a null mode of a rank-deficient (q >= 1) sample.
+NULL_EIG = 1e-6
 
 
 # --------------------------------------------------------------------------- sample estimation
@@ -131,16 +133,17 @@ def fit_sigma2(eig: np.ndarray, q: float, grid: int = 60) -> tuple[float, float]
     candidate edge. sigma2 < 1 is the norm: a market mode removes variance from the bulk.
     Lopez de Prado (2020) fits the same quantity by KDE least squares; KS is bandwidth-free."""
     e = np.sort(np.asarray(eig, dtype=float))
+    e = e[e > NULL_EIG]          # q > 1: the N - T null modes are the MP point mass at 0
     if e.size < 4 or not (q > 0):
         return 1.0, float("nan")
     best = (float("inf"), 1.0)
     for s2 in np.linspace(0.20, 1.0, grid):
-        lo, hi = mp_edges(min(q, 1.0), s2)
+        lo, hi = mp_edges(q, s2)
         bulk = e[e <= hi * 1.05]
         if bulk.size < 4:
             continue
-        xs = np.linspace(lo, hi, 400)
-        pdf = mp_pdf(xs, min(q, 1.0), s2)
+        xs = np.linspace(max(lo, 1e-9), hi, 400)
+        pdf = mp_pdf(xs, q, s2)   # the continuous part; normalised below, so q > 1 is exact
         cdf = np.cumsum(pdf)
         if cdf[-1] <= 0:
             continue
@@ -158,7 +161,7 @@ def clip_eigen(corr: np.ndarray, q: float, sigma2: float | None = None
     """Eigenvalue clipping (Laloux et al. 1999): noise eigenvalues -> their mean, trace kept."""
     w, v = np.linalg.eigh(corr)
     s2 = fit_sigma2(w, q)[0] if sigma2 is None else sigma2
-    edge = mp_edges(min(q, 1.0), s2)[1]
+    edge = mp_edges(q, s2)[1]
     noise = w <= edge
     w2 = w.copy()
     if noise.any() and (~noise).any():
@@ -187,13 +190,17 @@ def rie(corr: np.ndarray, t_eff: float) -> np.ndarray:
     finite-N RIE over-shrinks, which are exactly the ones Sigma^-1 leans on. Trace restored to N."""
     w, v = np.linalg.eigh(corr)
     n = w.size
-    q = min(n / max(t_eff, 1.0), 0.95)
+    # THE TRUE ASPECT RATIO (#1137 audit SF2). q > 1 is the normal case for a few hundred sleeves
+    # on a year of days; capping it at 0.95 kept modes inside the real MP bulk as "signal".
+    q = n / max(t_eff, 1.0)
+    null = w <= NULL_EIG
     eta = n ** -0.5
     z = w - 1j * eta
     diff = z[:, None] - w[None, :]
     g = (1.0 / diff).sum(axis=1) / n
     xi = w / np.abs(1.0 - q + q * z * g) ** 2
     s2, _ = fit_sigma2(w, q)
+    hi_edge = mp_edges(q, s2)[1]
     # Stieltjes transform of MP with variance s2, branch with Im g_mp > 0 for Im z < 0 handled by
     # choosing the root that decays as 1/z.
     a = z
@@ -206,6 +213,14 @@ def rie(corr: np.ndarray, t_eff: float) -> np.ndarray:
     # BBP 2017 eq. (35): xi_hat = xi * max(1, Gamma). Gamma > 1 only where the RIE pushed a
     # small mode below what pure MP noise would leave it, which is the over-shrinkage at fixed N.
     xi = xi * np.maximum(1.0, np.where(np.isfinite(gamma), gamma, 1.0))
+    if null.any():
+        # q >= 1: the sample has N - T exact null modes, where the RIE formula returns 0 (the
+        # sample carries no information there). The oracle-consistent choice is the average
+        # cleaned value of the noise bulk, so the null space is neither erased nor invented.
+        bulk = (~null) & (w <= hi_edge)
+        fill = float(np.mean(xi[bulk])) if bulk.any() else float(np.mean(xi[~null])) \
+            if (~null).any() else 1.0
+        xi = np.where(null, fill, xi)
     xi = np.clip(xi, EPS, None)
     xi *= n / xi.sum()
     c = (v * xi) @ v.T
@@ -230,11 +245,12 @@ def ledoit_wolf_identity(x: np.ndarray, corr: np.ndarray) -> tuple[np.ndarray, f
         return corr, 1.0
     n = corr.shape[0]
     target = np.eye(n)
-    zz = np.einsum("ti,tj->tij", z, z) if n <= 400 else None
-    if zz is not None:
-        pi = float(((zz - corr) ** 2).mean(axis=0).sum())
-    else:
-        pi = float(sum(((np.outer(r, r) - corr) ** 2).sum() for r in z) / t)
+    # pi = sum_ij mean_t (z_ti z_tj - c_ij)^2, in closed form without the T x N x N tensor
+    # (#1137 audit SF1: ~2.2 GB at T=3000, N=300):
+    #   = mean_t (z_t . z_t)^2 - 2 mean_t z_t' C z_t + ||C||_F^2
+    sq = (z * z).sum(axis=1)
+    quad = ((z @ corr) * z).sum(axis=1)
+    pi = float(np.mean(sq ** 2) - 2.0 * np.mean(quad) + (corr ** 2).sum())
     gamma = float(((corr - target) ** 2).sum())
     delta = 0.0 if gamma <= 0 else max(0.0, min(1.0, (pi / gamma) / t))
     out = delta * target + (1.0 - delta) * corr
@@ -315,12 +331,12 @@ def clean(x: np.ndarray, names: list[str], min_overlap: int = MIN_OVERLAP) -> Cl
     sample = nearest_correlation(raw)
     q = n / max(t_eff, 1.0)
     if q >= 1.0:
-        notes.append(f"q = N/T = {q:.2f} >= 1: the sample matrix is singular; only the cleaned "
-                     "estimators are usable")
+        notes.append(f"q = N/T = {q:.2f} >= 1: the sample matrix is singular ({n - int(t_eff)} "
+                     "null modes); only the cleaned estimators are usable")
     w = np.sort(np.linalg.eigvalsh(sample))[::-1]
-    s2, ks = fit_sigma2(w, min(q, 0.95))
-    lo, hi = mp_edges(min(q, 0.95), s2)
-    clipped, info = clip_eigen(sample, min(q, 0.95), s2)
+    s2, ks = fit_sigma2(w, q)
+    lo, hi = mp_edges(q, s2)
+    clipped, info = clip_eigen(sample, q, s2)
     r = rie(sample, t_eff)
     lw, delta = ledoit_wolf_identity(x, sample)
     return Cleaned(names=list(names), t_eff=t_eff, q=q, sigma2=s2, ks=ks, mp_lower=lo,

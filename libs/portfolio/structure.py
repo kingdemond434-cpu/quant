@@ -76,6 +76,10 @@ CROWD_KAPPA = 0.25
 #: The proof's acceptance band.
 PROOF_Z = 1.645
 MIN_OOS_DAYS = 120
+#: A book day below this return is clipped before the log (a -100% day has no log). Every clip is
+#: COUNTED per variant and published (#1137 audit SF6): a clip hides how bad a day was, so a
+#: variant that clips more than the baseline is flattered by exactly that much.
+CLIP_R = -0.95
 
 # ---------------------------------------------------------------------------- style factors
 USD_BASE_LONG = ("USDJPY", "USDCHF", "USDCAD", "USDSEK", "USDNOK", "USDSGD", "USDMXN", "USDZAR")
@@ -100,10 +104,14 @@ def _pick(closes: pd.DataFrame, names: Sequence[str]) -> list[str]:
     return out
 
 
-def style_factors(closes: pd.DataFrame, carry_sign: Mapping[str, int] | None = None
-                  ) -> pd.DataFrame:
+def style_factors(closes: pd.DataFrame, carry_sign: Mapping[str, int] | None = None,
+                  carry_since: Mapping[str, pd.Timestamp] | None = None) -> pd.DataFrame:
     """Daily factor returns from daily closes (index = dates, columns = symbols). A factor whose
-    inputs are absent is simply not built; nothing is imputed."""
+    inputs are absent is simply not built; nothing is imputed.
+
+    CARRY IS POINT-IN-TIME (#1137 audit SF4). The desk knows which side of a pair is paid only
+    from the day its swap panel first observed it (`carry_since`); before that a pair contributes
+    nothing to the carry factor, rather than today's sign being painted over all of history."""
     lr = np.log(closes.astype(float)).diff()
     out: dict[str, pd.Series] = {}
     longs, quotes = _pick(closes, USD_BASE_LONG), _pick(closes, USD_QUOTE)
@@ -126,11 +134,19 @@ def style_factors(closes: pd.DataFrame, carry_sign: Mapping[str, int] | None = N
         rev = lr.rolling(REVERSAL_LOOKBACK, min_periods=REVERSAL_LOOKBACK).sum().shift(1)
         out["reversal"] = (-np.sign(rev) * z).mean(axis=1, skipna=True) * 0.01
     if carry_sign:
-        cs = {c: int(carry_sign[k]) for k in carry_sign for c in _pick(closes, (k,))
+        cs = {(c, k): int(carry_sign[k]) for k in carry_sign for c in _pick(closes, (k,))
               if int(carry_sign[k]) != 0}
-        if cs:
-            out["carry"] = pd.concat([z[c] * s for c, s in cs.items()], axis=1).mean(
-                axis=1, skipna=True) * 0.01
+        legs = []
+        for (c, k), sgn in cs.items():
+            leg = z[c] * sgn
+            if carry_since is not None:
+                since = carry_since.get(k)
+                if since is None:
+                    continue      # no observation date: the sign could only be painted backwards
+                leg = leg.where(leg.index >= since)
+            legs.append(leg)
+        if legs:
+            out["carry"] = pd.concat(legs, axis=1).mean(axis=1, skipna=True) * 0.01
     f = pd.DataFrame(out)
     return f.dropna(how="all")
 
@@ -398,9 +414,10 @@ def unwind_beta(sleeve: pd.Series, style: pd.Series, q: float = 0.05) -> float |
     return None if tail.empty or sd <= 0 else round(float(tail.mean()) / sd, 4)
 
 
-def crowding_z(rows: Mapping[str, Mapping[str, float | None]]) -> dict[str, float]:
+def crowding_z(rows: Mapping[str, Mapping[str, float | None]]) -> dict[str, float | None]:
     """Standardise each signal across sleeves and average what each sleeve has. A sleeve with no
-    signal reads 0 (no evidence of crowding is not evidence of its absence, and 0 = no tilt)."""
+    signal reads None -- UNMEASURED, never 0 (#1137 audit SF5): 0 would publish "average
+    crowding" for a sleeve nobody measured. The tilt treats None as no tilt, and says so."""
     keys = ("style_r2", "comomentum_z", "cot_pressure", "unwind_loss")
     cols: dict[str, dict[str, float]] = {k: {} for k in keys}
     for s, r in rows.items():
@@ -418,18 +435,39 @@ def crowding_z(rows: Mapping[str, Mapping[str, float | None]]) -> dict[str, floa
             continue
         for s, x in d.items():
             zs[s].append((x - mu) / sd)
-    return {s: (float(np.mean(v)) if v else 0.0) for s, v in zs.items()}
+    return {s: (float(np.mean(v)) if v else None) for s, v in zs.items()}
 
 
 def crowd_tilt(w: np.ndarray, cz: np.ndarray, kappa: float = CROWD_KAPPA) -> np.ndarray:
-    """Two-sided: crowded sleeves lose weight, uncrowded ones gain, total unchanged."""
+    """Two-sided: crowded sleeves lose weight, uncrowded ones gain, total unchanged. An
+    unmeasured sleeve (NaN) is not tilted: its weight moves only through the renormalisation."""
     w = np.asarray(w, dtype=float)
-    t = w * np.exp(-kappa * np.clip(np.asarray(cz, dtype=float), -3.0, 3.0))
+    z = np.nan_to_num(np.asarray(cz, dtype=float), nan=0.0)
+    t = w * np.exp(-kappa * np.clip(z, -3.0, 3.0))
     out: np.ndarray = t * (w.sum() / t.sum()) if t.sum() > 0 else w.copy()
     return out
 
 
 # ---------------------------------------------------------------------------- the proof
+def inlife_zero(x: np.ndarray) -> np.ndarray:
+    """NaN -> 0 inside each column's own life (first to last observation), NaN outside it.
+
+    A sleeve that is live but did not trade earned 0 that day; a sleeve that did not exist yet
+    has no observation. The out-of-sample hold counts a non-trading day as 0, so the training
+    estimate must too (#1137 audit SF3): a mean and SD over trade days only overstated both the
+    edge and the risk of every intermittent sleeve relative to how its book was then scored."""
+    x = np.asarray(x, dtype=float).copy()
+    ok = np.isfinite(x)
+    if not ok.any():
+        return x
+    first = np.where(ok.any(axis=0), ok.argmax(axis=0), x.shape[0])
+    last = np.where(ok.any(axis=0), x.shape[0] - 1 - ok[::-1].argmax(axis=0), -1)
+    rows = np.arange(x.shape[0])[:, None]
+    inlife = (rows >= first[None, :]) & (rows <= last[None, :])
+    x[inlife & ~ok] = 0.0
+    return x
+
+
 def kelly_direction(mu: np.ndarray, cov: np.ndarray) -> np.ndarray:
     """Long-only Sigma^-1 mu by projected iteration (clip negatives, re-solve on the support)."""
     n = mu.size
@@ -512,6 +550,7 @@ def walk_forward(panel: pd.DataFrame, variants: Sequence[Variant], baseline: str
     x = panel.to_numpy(float)
     n_days = x.shape[0]
     logs: dict[str, list[float]] = {v.name: [] for v in variants}
+    clips: dict[str, int] = {}
     gmv: dict[str, list[float]] = {}
     rebal = 0
     for start in range(train, n_days - 1, step):
@@ -521,7 +560,7 @@ def walk_forward(panel: pd.DataFrame, variants: Sequence[Variant], baseline: str
         live = np.isfinite(tr).sum(axis=0) >= max(60, train // 3)
         if live.sum() < min_sleeves:
             continue
-        tr = tr[:, live]
+        tr = inlife_zero(tr[:, live])
         te = np.nan_to_num(x[start:start + step][:, live], nan=0.0)
         ctx = dict(context or {})
         ctx["columns"] = [str(c) for c, ok in zip(panel.columns, live, strict=True) if ok]
@@ -537,7 +576,8 @@ def walk_forward(panel: pd.DataFrame, variants: Sequence[Variant], baseline: str
         rebal += 1
         for name, b in books.items():
             r = te @ b
-            logs[name].extend(np.log1p(np.clip(r, -0.95, None)).tolist())
+            clips[name] = clips.get(name, 0) + int((r < CLIP_R).sum())
+            logs[name].extend(np.log1p(np.clip(r, CLIP_R, None)).tolist())
         for kind, fn in (cov_builders or {}).items():
             try:
                 cov = fn(tr)
@@ -550,13 +590,24 @@ def walk_forward(panel: pd.DataFrame, variants: Sequence[Variant], baseline: str
                 continue
     res = ProofResult(rebalances=rebal, oos_days=len(logs.get(baseline, [])))
     base = np.array(logs.get(baseline, []))
+    family = max(1, len([v for v in variants if v.name != baseline]))
+    # Bonferroni over the family of variants tested against the same baseline: the one-sided 5%
+    # tail split `family` ways. Reported BESIDE the per-variant 90% band (#1137 audit SF6), so a
+    # reader sees whether an ADOPT survives the number of things tried.
+    from statistics import NormalDist
+    z_fw = NormalDist().inv_cdf(1.0 - 0.05 / family)
     for v in variants:
         arr = np.array(logs[v.name])
         row: dict[str, Any] = {"basis": v.basis,
                                "elog_annual": float(arr.mean() * 252) if arr.size else None,
-                               "oos_days": int(arr.size)}
+                               "oos_days": int(arr.size),
+                               "loss_clip_days": int(clips.get(v.name, 0))}
         if v.name != baseline and arr.size == base.size:
             row.update(paired_verdict(arr - base))
+            fw = paired_verdict(arr - base, z=z_fw)
+            row["family_size"] = family
+            row["verdict_familywise"] = fw["verdict"]
+            row["ci_familywise_daily"] = fw.get("ci90_daily")
         elif v.name == baseline:
             row["verdict"] = "BASELINE"
         res.by_variant[v.name] = row

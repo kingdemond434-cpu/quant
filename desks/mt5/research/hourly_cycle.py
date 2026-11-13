@@ -5792,15 +5792,6 @@ def main() -> None:
     # (`--resident`, desks/mt5/ops/box_tasks.manifest) is how it reacts in seconds.
     atg = _costed("allocator_trigger", lambda: _producer(
         "allocator_trigger", "research/allocator_trigger.py", "--once", "--budget-s", "300"))
-    # THE ALLOCATOR'S STRUCTURE LAB (GAP_MAP Max-growth / Growth allocator overhaul / H6,
-    # 2026-11-13): random-matrix cleaning of the sleeve correlation, the factor risk model and
-    # neutralisation, the diversification multiplier and crowding -- each with a walk-forward
-    # out-of-sample log-growth verdict against the plain sample-covariance Kelly book. It reads
-    # the allocator's own cached daily-R matrix, so it runs after the solve. Report only: an
-    # input earns capital authority by its ADOPT verdict in a later, audited change.
-    asl = _costed("allocator_structure_lab", lambda: _producer(
-        "allocator_structure_lab", "research/allocator_structure_lab.py", "--once",
-        "--budget-s", "600"))
     # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
     # the gateway only at status LIVE, and LIVE is written only by the promoter -- on a fresh
     # MEASURED admission that admits the sleeve, and for a STANDBY row on PROMOTE_ADMIT_STREAK
@@ -6442,6 +6433,18 @@ def main() -> None:
                                                           "--once", "--budget-s", "300"))
     # (bars_state, box_state_freshness and desk_health moved to the head of the pass, 2026-11-10:
     # see the comment beside `health`.)
+    # THE ALLOCATOR'S STRUCTURE LAB (GAP_MAP Max-growth / Growth allocator overhaul / H6,
+    # 2026-11-13): random-matrix cleaning of the sleeve correlation, the factor risk model and
+    # neutralisation, the diversification multiplier and crowding -- each with a walk-forward
+    # out-of-sample log-growth verdict against the plain sample-covariance Kelly book. Report
+    # only: an input earns capital authority by its ADOPT verdict in a later, audited change.
+    # LAST PRODUCER OF THE PASS, ON PURPOSE (#1137 audit MF1): it can spend its whole 600 s
+    # budget, and sitting between the allocator trigger and the promoter it delayed promotion and
+    # the decay_monitor writes by up to 12 minutes every hour. Here it delays nothing a later leg
+    # reads; publish_state below still carries its artifact out the same pass.
+    asl = _costed("allocator_structure_lab", lambda: _producer(
+        "allocator_structure_lab", "research/allocator_structure_lab.py", "--once",
+        "--budget-s", "600"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
