@@ -259,7 +259,7 @@ def live_snapshot(symbols: list[str]) -> dict[str, Any]:  # pragma: no cover - n
         import MetaTrader5 as mt5
     except ImportError as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
-    if not mt5.initialize():
+    if not _attach(mt5):
         return {"status": UNMEASURED, "why": f"terminal did not initialise: {mt5.last_error()}"}
     now = datetime.now(tz=UTC).timestamp()
     out: dict[str, Any] = {"status": MEASURED, "at": datetime.now(tz=UTC).isoformat(
@@ -295,13 +295,24 @@ def live_snapshot(symbols: list[str]) -> dict[str, Any]:  # pragma: no cover - n
     return out
 
 
+def _attach(mt5: Any) -> bool:  # pragma: no cover - needs a terminal
+    """Attach through the shared guard: a bare initialize() from a SYSTEM task launches the
+    Fusion terminal headless in Session 0, with no login (2026-11-12 reboot)."""
+    desk = str(Path(__file__).resolve().parents[1])
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from research.mt5_session import attach_or_initialize
+
+    return attach_or_initialize(mt5)
+
+
 def deals_from_terminal() -> list[dict[str, Any]]:  # pragma: no cover - needs a terminal
     """Every deal the account has ever done: ticket, symbol, minute, volume, commission."""
     try:
         import MetaTrader5 as mt5
     except ImportError:
         return []
-    if not mt5.initialize():
+    if not _attach(mt5):
         return []
     try:
         from datetime import timedelta

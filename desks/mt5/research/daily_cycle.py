@@ -1234,6 +1234,7 @@ class ChainLock:
         self.error = ""
         self.waited_s = 0.0
         self.unlocked_steps: list[str] = []
+        self.reclaimed_from: dict[str, object] | None = None
         self._started: float | None = None
         self._at = ""
 
@@ -1257,10 +1258,40 @@ class ChainLock:
                 self.state = "contended"
             return False
         self.handle, self.state, self.error = fh, "held", ""
+        self._note_reclaim()
         self._started = _process_start(os.getpid())
         self._at = datetime.now(UTC).isoformat(timespec="seconds")
         self._write_owner()
         return True
+
+    def _note_reclaim(self) -> None:
+        """Name the holder this chain took the lock over from, when that holder died holding it.
+
+        A chain that exits cleanly removes its owner sidecar (`close`). One killed -- MT5-Daily
+        at its PT10H ExecutionTimeLimit, 2026-11-11 07:50Z, pid 21524 -- leaves the sidecar
+        and its stamp's `chain_lock: held` behind, and two readers in one day took that for a
+        live lock. The OS lock itself died with the process (we just acquired it), so nothing
+        is reclaimed by force here: this only says, in the log and in the stamp, WHO held it,
+        since when and when it last made progress, so a dead holder is never read as alive."""
+        try:
+            doc = json.loads(_owner_path().read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if not isinstance(doc, dict):
+            return
+        try:
+            pid = int(doc.get("pid") or 0)
+        except (TypeError, ValueError):
+            pid = 0
+        if pid <= 0 or pid == os.getpid():
+            return
+        self.reclaimed_from = {"pid": pid, "at": doc.get("at"),
+                               "last_progress": doc.get("last_progress"),
+                               "create_time": doc.get("create_time"),
+                               "reclaimed_at": datetime.now(UTC).isoformat(timespec="seconds")}
+        dlog(f"chain lock RECLAIMED from dead holder pid {pid} (held since {doc.get('at')}, "
+             f"last progress {doc.get('last_progress') or 'never recorded'}); the OS released "
+             f"it when that process ended without closing it")
 
     def _write_owner(self, last_progress: str | None = None) -> None:
         doc: dict[str, object] = {"pid": os.getpid(), "create_time": self._started,
@@ -1306,6 +1337,12 @@ class ChainLock:
             rec["error"] = self.error[:300]
         if self.unlocked_steps:
             rec["unlocked_steps"] = list(self.unlocked_steps)
+        if self.state == "held" and self._at:
+            # WHEN, so a reader can age a `held` record against the owner's heartbeat instead
+            # of taking a killed chain's last write for a live lock (2026-11-11).
+            rec["since"] = self._at
+        if self.reclaimed_from:
+            rec["reclaimed_from"] = dict(self.reclaimed_from)
         return rec
 
     def close(self) -> None:
