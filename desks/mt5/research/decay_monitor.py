@@ -72,6 +72,10 @@ try:
     from research import decay_regime
 except ImportError:  # run as a script from desks/mt5/research
     import decay_regime  # type: ignore[no-redef]
+try:
+    from research import decay_backtest
+except ImportError:  # run as a script from research/
+    import decay_backtest  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -697,6 +701,66 @@ def decay_models(doc, now: datetime | None = None) -> dict[str, dict]:
     return models
 
 
+def _reviews() -> tuple[dict[str, dict], str | None]:
+    """cell -> the blind reviewer's latest row, or ({}, why) when its ledger cannot be read. An
+    unreadable ledger moves nothing: every comparison then reads UNMEASURED."""
+    try:
+        try:
+            from research import blind_reviewer
+        except ImportError:
+            import blind_reviewer  # type: ignore[no-redef]
+        return decay_backtest.latest_reviews(list(blind_reviewer.ledger_rows())), None
+    except Exception as exc:  # noqa: BLE001 -- evidence, never a reason to fail the pass
+        return {}, f"UNMEASURED: blind-review ledger unreadable ({type(exc).__name__}: {exc})"
+
+
+def traded_names(days: int = TRAIL_DAYS) -> dict[str, int]:
+    """Every sleeve name with a closed deal in the trailing window, and its row count -- the
+    names that actually traded, whether or not the roster holds them."""
+    out: dict[str, int] = {}
+    if not LEDGER.exists():
+        return out
+    cutoff = datetime.now(tz=UTC) - timedelta(days=days)
+    for line in LEDGER.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict) or not r.get("sleeve"):
+            continue
+        ts = _row_time(r)
+        if ts is not None and ts < cutoff:
+            continue
+        out[str(r["sleeve"])] = out.get(str(r["sleeve"]), 0) + 1
+    return out
+
+
+def r_coverage(days: int = TRAIL_DAYS) -> dict:
+    """How much of the trailing tape the ladder can judge: rows, rows with a measured R, and rows
+    whose R was never reconstructed (skipped, never read as zero)."""
+    out = {"rows": 0, "with_r": 0, "unreconstructible": 0, "days": days}
+    if not LEDGER.exists():
+        return {**out, "status": "UNMEASURED", "why": f"{LEDGER.name} absent"}
+    cutoff = datetime.now(tz=UTC) - timedelta(days=days)
+    for line in LEDGER.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        ts = _row_time(r)
+        if ts is not None and ts < cutoff:
+            continue
+        out["rows"] += 1
+        rq = r.get("risk_quote")
+        bad = (r.get("r_unreconstructible") is True or not isinstance(r.get("r_multiple"),
+                                                                       (int, float))
+               or (isinstance(rq, (int, float)) and rq <= 0))
+        out["unreconstructible" if bad else "with_r"] += 1
+    return {**out, "status": "MEASURED"}
+
+
 def main(write_queue: bool = True) -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     source, source_why = source_state()
@@ -716,6 +780,7 @@ def main(write_queue: bool = True) -> int:
 
     live = {k: v for k, v in sleeves.items()
             if isinstance(v, dict) and str(v.get("status") or "LIVE").upper() == "LIVE"}
+    reviews, reviews_why = _reviews()
     for name, row in live.items():
         rs = [float(t["r_multiple"]) for t in sleeve_trades(name)]
         s = stats(rs)
@@ -730,10 +795,19 @@ def main(write_queue: bool = True) -> int:
             v, why, step = decay_regime.adjust(name, v, why, s, regime, dd_hard_r=DD_HARD_R)
             if step:
                 regime_steps.append(_log_regime_step(name, step, ladder, v, now, s))
+        # LIVE AGAINST ITS OWN BACKTEST (decay_backtest, 2026-11-13): a VETOED certificate or a
+        # live record that contradicts a reproducing backtest moves HEALTHY -> FADE, one step,
+        # lifted by the ordinary UNFADE when the condition clears. Never a RETIRE.
+        ref = decay_backtest.reference(row, reviews)
+        v, why, bstep, gap_cls = decay_backtest.adjust(name, v, why, s, ref)
+        if bstep:
+            step = bstep
+            regime_steps.append(_log_regime_step(name, bstep, ladder, v, now, s))
         report[name] = {**s, "verdict": v, "why": why, "ladder_verdict": ladder,
                         "regime_class": (regime or {}).get("class", "UNMEASURED"),
                         "regime_why": (regime or {}).get("why", step),
-                        "regime_step": step if regime is not None else None,
+                        "regime_step": step if (regime is not None or bstep) else None,
+                        "backtest": {**ref, "gap": gap_cls},
                         "risk_frac": row.get("risk_frac")}
         # THE FLAG IS THE FADE (gap-fixer 2026-08-29). This block used to HALVE `risk_frac`
         # in the row as well. `mt5desk.sizing.clamp_risk_frac` floors at BASE_RISK_FRAC=0.03,
@@ -853,24 +927,52 @@ def main(write_queue: bool = True) -> int:
     elif hunts:
         queue["why"] = "queue write disabled for this pass (--no-queue)"
     rows_seen = roster_rows(doc)
-    shape_note = None
-    if rows_seen and not live:
-        shape_note = (f"the roster holds {len(rows_seen)} row(s) in the LIST shape "
-                      f"promoter.save_sleeves writes; the verdict loop reads a DICT-shaped roster "
-                      f"and judged none of them (a standing defect, reported here and NOT "
-                      f"changed by the model half -- fixing it arms a demotion path)")
+    # THE OLD NOTE BLAMED THE ROSTER'S SHAPE FOR AN EMPTY BOOK. `roster_rows` has read both shapes
+    # since 2026-09-16; "0 live" with rows present means every row is RETIRED or STANDBY, and
+    # the honest note is the status census.
+    status_counts: dict[str, int] = {}
+    for r in rows_seen.values():
+        k = str(r.get("status") or "LIVE").upper()
+        status_counts[k] = status_counts.get(k, 0) + 1
+    shape_note = (f"no LIVE row: the roster's {len(rows_seen)} row(s) are "
+                  + ", ".join(f"{n} {k}" for k, n in sorted(status_counts.items()))
+                  ) if rows_seen and not live else None
+    # EVERYTHING THAT TRADED, NOT ONLY WHAT THE ROSTER HOLDS. Gateway windows (gold_london_am,
+    # gold_afternoon) and unattributed tickets close deals with no sleeves.json row, so the loop
+    # above never saw them. Their verdicts are PUBLISHED here (the kill switch's reading of
+    # every live P&L stream); nothing is acted on, because there is no roster row to act on --
+    # a window retires through its own door (GOLD_RETIRED).
+    unrostered: dict[str, dict] = {}
+    for tname, n_rows in sorted(traded_names().items()):
+        if tname in live or any(tname == k[:LEDGER_NAME_MAX] for k in live):
+            continue
+        rs_u = [float(t["r_multiple"]) for t in sleeve_trades(tname)]
+        s_u = stats(rs_u)
+        v_u, why_u = verdict(s_u)
+        unrostered[tname] = {**s_u, "verdict": v_u, "why": why_u, "rows": n_rows,
+                             "acted": False,
+                             "exempt": tname.lower() in decay_backtest.EXEMPT}
 
     OUT.write_text(json.dumps({
         "checked_at": now,
         "live_sleeves": None if source == "UNMEASURED" else len(live),
         "roster_state": source, "roster_why": source_why,
         "roster_rows_seen": len(rows_seen), "roster_shape_note": shape_note,
+        "roster_status_counts": status_counts,
+        "unrostered_verdicts": unrostered,
+        "r_coverage": r_coverage(),
+        "backtest_reference": {"reviews_read": len(reviews), "why": reviews_why,
+                               "gaps": {c: sum(1 for r in report.values()
+                                               if (r.get("backtest") or {}).get("gap") == c)
+                                        for c in ("VETO", "CONTRADICTS", "AGREES",
+                                                  "UNMEASURED")}},
         "verdicts": report, "actions_taken": actions,
         # REGIME-AWARE STEPS this pass (count per kind, so a threshold drift shows) and their
         # realised value to date from decay_regime_steps.jsonl (Rules 1 and 2).
         "regime_steps": {
             "this_pass": {k: sum(1 for r in report.values() if r.get("regime_step") == k)
-                          for k in ("RETIRE->FADE", "HEALTHY->FADE")},
+                          for k in ("RETIRE->FADE", "HEALTHY->FADE", "HEALTHY->FADE:veto",
+                                    "HEALTHY->FADE:contradicts")},
             "classes": {c: sum(1 for r in report.values() if r.get("regime_class") == c)
                         for c in ("STRUCTURAL_BREAK", "PERSISTENT_BAD_REGIME",
                                   "TRANSIENT_REGIME", "STABLE", "UNMEASURED")},
