@@ -568,3 +568,16 @@ INFORMATION_CLASS.update(_iv.INFORMATION_CLASS)
 FOREIGN_SERIES.update(_iv.FOREIGN_SERIES)
 INPUTS.update(_iv.INPUTS)
 TIMEFRAMES.update(_iv.TIMEFRAMES)
+
+# THE FLOW FAMILIES (2026-11-13, `mt5desk/families_flow.py`): `cot_report` (CFTC legacy, TFF and
+# disaggregated positioning) and `expiry_gamma` (the third-Friday option-expiry calendar) keep
+# this module's contract -- every foreign input loaded by the family from what the cell carries
+# -- so they are registered through these same tables and reach the gauntlet's lookups, the
+# buildability verdict and FAMILY_INPUTS without a second registration path.
+from mt5desk import families_flow as _flow  # noqa: E402
+
+SPECIALIST_FAMILIES.update(_flow.FLOW_FAMILIES)
+INFORMATION_CLASS.update(_flow.INFORMATION_CLASS)
+FOREIGN_SERIES.update(_flow.FOREIGN_SERIES)
+INPUTS.update(_flow.INPUTS)
+TIMEFRAMES.update(_flow.TIMEFRAMES)

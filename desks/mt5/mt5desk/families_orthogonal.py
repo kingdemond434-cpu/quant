@@ -968,6 +968,8 @@ def family_orderflow_imbalance(
     stop_atr: float = 1.5,
     rr: float = 1.5,
     ttl_bars: int = 12,
+    symbol: str = "",
+    flow_source: str = "supplied",
 ) -> list[Signal]:
     """Follow persistent one-sided flow measured from the TAPE, not from candles.
 
@@ -975,11 +977,26 @@ def family_orderflow_imbalance(
     close green on passive buying or on aggressive lifting, and those have opposite continuations.
     REFUSES without a flow series rather than approximating it from price, which would just be
     momentum again.
+
+    `flow_source="tape_signed_ticks"` (2026-11-13): the family loads the flow ITSELF from the
+    tick moat's whole silver tape for the cell's own `symbol` -- the normalised signed-tick
+    imbalance per bar (`families_flow.tape_flow`), NaN where a bar has too few ticks and never
+    forward-filled -- and ignores the `flow` the caller handed in, which the sealed gauntlet
+    builds from the last thirty silver files only (thirty days cannot clear a 66-trade-day
+    floor). The default `"supplied"` is the contract every existing cell was judged on.
     """
-    if flow is None or flow.empty:
+    if flow_source == "tape_signed_ticks":
+        from mt5desk.families_flow import tape_flow_for
+        flow = tape_flow_for(df, str(symbol)) if symbol else None
+        if flow is None or not flow.notna().any():
+            return []
+        d = _h1(df)
+        f = flow.reindex(d.index)
+    elif flow_source != "supplied" or flow is None or flow.empty:
         return []
-    d = _h1(df)
-    f = flow.reindex(d.index).ffill()
+    else:
+        d = _h1(df)
+        f = flow.reindex(d.index).ffill()
     mu = f.rolling(lookback).mean()
     sd = f.rolling(lookback).std(ddof=1)
     z = (f - mu) / sd

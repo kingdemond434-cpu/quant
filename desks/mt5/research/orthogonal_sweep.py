@@ -369,6 +369,18 @@ def _cot_frame(symbol: str | None = None):
                 return series.rename("net").to_frame()
         except Exception:
             pass
+    # THE BOX HAS NO ZCACHE (2026-11-13). `data/cot_zcache.parquet` is gitignored and written
+    # only by the VPS's `quant-cot-zcache` timer (`scripts/refresh_cot_zcache.py`, which refuses
+    # to bootstrap an absent cache), while the gauntlet runs on the trading box -- so every
+    # `cot_positioning` cell built there with `cot=None` and minted nothing. The desk's own
+    # in-tree legacy report (`desks/mt5/data/cot/<slug>.parquet`, the file `mt5desk.data.load_cot`
+    # reads) is the fallback: non-commercial net, usable from the Monday after release (Tuesday
+    # as-of + 6 days, the same instant the zcache path reaches), sign-flipped where the future
+    # is the QUOTE currency, exactly as the zcache refresher's INVERT does.
+    if symbol:
+        fallback = _cot_frame_in_tree(str(symbol))
+        if fallback is not None:
+            return fallback
     for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
         doc = _read(BASE / "data" / name)
         rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
@@ -388,6 +400,38 @@ def _cot_frame(symbol: str | None = None):
         except Exception:
             continue
     return None
+
+
+#: The currency each legacy COT slug's future is denominated in, for the quote-side sign flip.
+_COT_SLUG_CCY = {"jpy": "JPY", "chf": "CHF", "cad": "CAD", "gbp": "GBP", "aud": "AUD",
+                 "nzd": "NZD", "eur": "EUR"}
+
+
+def _cot_frame_in_tree(symbol: str):
+    """Weekly non-commercial net from the in-tree legacy report, indexed at its usable instant."""
+    import pandas as pd
+    try:
+        from mt5desk.data import _COT, _SYMBOL_SLUG
+    except ImportError:
+        return None
+    slug = _SYMBOL_SLUG.get(symbol)
+    path = _COT / f"{slug}.parquet" if slug else None
+    if path is None or not path.exists():
+        return None
+    try:
+        raw = pd.read_parquet(path, columns=["report_date", "noncomm_positions_long_all",
+                                             "noncomm_positions_short_all"])
+        stamps = pd.to_datetime(raw["report_date"], utc=True, errors="coerce")
+        net = (pd.to_numeric(raw["noncomm_positions_long_all"], errors="coerce")
+               - pd.to_numeric(raw["noncomm_positions_short_all"], errors="coerce"))
+    except Exception:
+        return None
+    series = pd.Series(net.to_numpy(dtype=float), index=stamps).dropna().sort_index()
+    series = series[series.index.notna() & ~series.index.duplicated(keep="last")]
+    if len(symbol) == 6 and symbol[3:] == _COT_SLUG_CCY.get(str(slug)):
+        series = -series
+    series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS + 3)
+    return series.rename("net").to_frame() if len(series) >= 52 else None
 
 
 def _legs(symbol: str) -> tuple[str, str] | None:
@@ -596,6 +640,12 @@ NOT_SOURCED_HERE = {
                     "research/specialist_cell enumerates the implied-vol grid on the instruments "
                     "the CBOE indices map to, builds every cell through the sealed build_cell "
                     "and charges its own trials; sweeping it here would charge them twice"),
+
+    **dict.fromkeys(("cot_report", "expiry_gamma", "strike_pin"),
+                    "research/flow_seeder enumerates the CFTC report x group x mode and the "
+                    "expiry set x window x direction grids on gold, indices and FX majors, builds "
+                    "every cell through the sealed build_cell and charges its own trials; "
+                    "sweeping it here would charge them twice"),
     "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
                          "regime or cross-asset filter are named by research/residual_search "
                          "from a BH-corrected residual finding, which charges its own tests. "
