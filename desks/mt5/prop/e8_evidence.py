@@ -10,10 +10,10 @@ two-box history keeps making expensive.
 TWO FILES, BOTH OWNED BY THIS LANE AND NEVER BY THE GATEWAY:
 
   `data/e8_gold_heartbeat.json`   rewritten on EVERY pass, flat or not, failed or not: the
-                                  `libs/ops/host_identity` verdict, hostname, machine id, the pass
-                                  time, its status, `last_ok_at` / `failing_since` and the
-                                  account's pseudonym. One small file, written via a temporary
-                                  file and `os.replace`.
+                                  `libs/ops/host_identity` VERDICT (never the hostname or the raw
+                                  machine id -- see PUBLIC HOST below), the pass time, its status,
+                                  `last_ok_at` / `failing_since` and the account's pseudonym. One
+                                  small file, written via a temporary file and `os.replace`.
   `data/e8_decision_ledger.jsonl` one row per DECISION, never per pass: a due window's outcome
                                   (PLACED / WOULD_PLACE / DEFERRED / SKIPPED), a stable reason
                                   code, the prose why, its window, lot and risk_usd, attributed to
@@ -54,6 +54,23 @@ reversed by enumerating ten million ids, so the label is an HMAC-SHA256 under a 
 (`data/secrets/e8_evidence.key`, created on first use, never leaves the box): stable, so the fence
 can still key runs by account, and meaningless off the box. An unreadable key writes `UNKEYED`,
 never the raw id. The raw label stays on the unpublished pass report (reports/E8_GOLD.json).
+
+PUBLIC HOST (audit HOLD on the recut v2, must-fix 1). The same publication rule applies to the
+machine: a hostname and a raw MachineGuid / `/etc/machine-id` are host identifiers, and both
+files above are public. So a synced row or heartbeat carries `host_verdict` (TRADING / OFF_BOX /
+UNMEASURED, from `libs/ops/host_identity`) and, when a box-local key is available, `machine_ref`:
+an HMAC-SHA256 of the machine id under `data/secrets/e8_host.key` (its own key, so rotating the
+account pseudonym key does not also re-key the machine the fence's key-change alias joins on).
+No key, no `machine_ref` -- never the raw id. The full identity stays on the unpublished pass
+report. `public_host` is the one place that cut is made.
+
+NO FREE EXCEPTION TEXT IN A PUBLISHED FIELD (audit HOLD on the recut v2, must-fix 2). A
+TradeLocker HTTP error can carry the backend host, a URL with a token, an `Authorization` header
+or a response body. Call sites publish the exception's TYPE NAME only (`exc_name`) and keep the
+full text for the local log; and every string the two published files carry is passed through
+`public_text` on the way out, which cuts anything after `<SomethingError>:` and redacts URLs,
+hosts, IP addresses, bearer tokens, credential assignments and markup bodies -- so a call site
+that forgets is still caught at the writer.
 """
 from __future__ import annotations
 
@@ -227,6 +244,135 @@ def host_block() -> dict[str, Any]:
                 "why": f"host_identity unavailable ({type(exc).__name__})"}
 
 
+#: The machine pseudonym key: an explicit value, else a key file (tests redirect it). Its own key,
+#: never the account key (see PUBLIC HOST in the module docstring).
+HOST_KEY_ENV = "E8_HOST_KEY"
+HOST_KEY_FILE_ENV = "E8_HOST_KEY_FILE"
+HOST_KEY_FILE = DESK.parent.parent / "data" / "secrets" / "e8_host.key"
+_HOST_KEY_CACHE: dict[str, bytes] = {}
+
+
+def _host_key() -> bytes | None:
+    """The box-local machine pseudonym key: $E8_HOST_KEY, else the key file in the secrets area,
+    created on first use (it never leaves the box: `secrets/` is ignored). None when neither can
+    be had -- the caller then omits `machine_ref`, never writes the raw id. Never raises."""
+    try:
+        explicit = os.environ.get(HOST_KEY_ENV)
+        if explicit is not None and explicit != "":
+            return explicit.encode("utf-8") if len(explicit) >= KEY_MIN_CHARS else None
+        path = Path(os.environ.get(HOST_KEY_FILE_ENV) or HOST_KEY_FILE)
+        cached = _HOST_KEY_CACHE.get(str(path))
+        if cached:
+            return cached
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with contextlib.suppress(FileExistsError), path.open("x", encoding="ascii") as fh:
+                fh.write(os.urandom(32).hex())
+        key = path.read_text("ascii").strip().encode("ascii")
+        if len(key) < KEY_MIN_CHARS:
+            return None
+        _HOST_KEY_CACHE[str(path)] = key
+        return key
+    except Exception:
+        return None
+
+
+def machine_ref(machine_id: Any) -> str | None:
+    """`hmac:<16 hex>` of the machine id under the box-local host key, or None (no key, or no
+    measured id). Stable on one box, so rows still join; meaningless off it. Never raises."""
+    try:
+        mid = str(machine_id or "").strip().lower()
+        if not mid or mid == UNMEASURED.lower():
+            return None
+        key = _host_key()
+        if key is None:
+            return None
+        return "hmac:" + hmac.new(key, b"e8-host:" + mid.encode("utf-8"),
+                                  hashlib.sha256).hexdigest()[:16]
+    except Exception:
+        return None
+
+
+def public_host(host: dict[str, Any] | None) -> dict[str, Any]:
+    """The part of a `host_block` that may be PUBLISHED: the verdict, and `machine_ref` when a key
+    is available. Never the hostname, the raw or recorded machine id, or the identity's `why`
+    (which names the hostname). Accepts a full block or an already-public one. Never raises."""
+    try:
+        src = host if isinstance(host, dict) else {}
+        verdict = src.get("verdict") or src.get("host_verdict") or UNMEASURED
+        out: dict[str, Any] = {"verdict": str(verdict)}
+        ref = src.get("machine_ref")
+        if not (isinstance(ref, str) and ref.startswith("hmac:")):
+            ref = machine_ref(src.get("machine_id"))
+        if ref:
+            out["machine_ref"] = ref
+        return out
+    except Exception:
+        return {"verdict": UNMEASURED}
+
+
+def exc_name(exc: BaseException | Any) -> str:
+    """The exception's TYPE NAME only -- what a published field may carry about a failure. The
+    message (which can hold a URL, a host, a header or a body) goes to the local log only."""
+    try:
+        name = type(exc).__name__
+        return name if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,79}", name) else "Exception"
+    except Exception:
+        return "Exception"
+
+
+#: `public_text`'s patterns, applied in this order. The exception cut runs FIRST and takes the
+#: rest of the string: a message after `<Type>:` is free text from a library or a server.
+_EXC_TEXT = re.compile(
+    r"\b([A-Z][A-Za-z0-9_]*(?:Error|Exception|Timeout|Fault|Failure|Refused|Warning|Exit))"
+    r"\s*:\s*\S.*", re.S)
+_PUBLIC_SCRUBS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"(?is)<\s*(?:!doctype|html|head|body)\b.*"), "<body withheld>"),
+    (re.compile(r"(?i)\b[a-z][a-z0-9+.\-]*://\S+"), "<url>"),
+    (re.compile(r"(?i)\b(?:proxy-)?authorization\b\s*[:=]\s*(?:\w+\s+)?\S+"), "<credential>"),
+    (re.compile(r"(?i)\b(?:bearer|basic)\s+[A-Za-z0-9._~+/=\-]{6,}"), "<credential>"),
+    (re.compile(r"\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+(?:\.[A-Za-z0-9_\-]+)?"), "<credential>"),
+    (re.compile(r"(?i)\b((?:access|refresh|id|auth)?_?token|api[_\-]?key|password|passwd|"
+                r"secret|cookie|session(?:id)?)\b\s*[=:]\s*\S+"), r"\1=<credential>"),
+    (re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?::\d{1,5})?\b"), "<host>"),
+    (re.compile(r"(?i)\b(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+"
+                r"(?:com|net|org|io|co|xyz|app|dev|cloud|ai|uk|eu|de|local|internal|lan|biz|"
+                r"info|me|tech|trade|markets|finance|live)\b(?::\d{1,5})?"), "<host>"),
+    (re.compile(r"(?i)\b[a-z0-9\-]+(?:\.[a-z0-9\-]+){2,}\.[a-z][a-z0-9\-]*\b"), "<host>"),
+    (re.compile(r"(?i)\blocalhost(?::\d{1,5})?\b"), "<host>"),
+    (re.compile(r'\{[^{}]*"[^"{}]*"\s*:[^{}]*\}'), "<body withheld>"),
+)
+
+
+def public_text(value: Any) -> Any:
+    """A string as it may be PUBLISHED: anything after an exception type's colon cut to
+    `<Type> <detail withheld>`, and URLs, hosts, IP addresses, credentials and markup or JSON
+    bodies redacted. A non-string is returned as it is. Never raises: on an internal error the
+    string is withheld whole."""
+    if not isinstance(value, str):
+        return value
+    try:
+        out = _EXC_TEXT.sub(lambda m: m.group(1) + " <detail withheld>", value)
+        for pattern, repl in _PUBLIC_SCRUBS:
+            out = pattern.sub(repl, out)
+        return out
+    except Exception:
+        return "<text withheld>"
+
+
+def public_fields(value: Any) -> Any:
+    """`public_text` over every string leaf of `value` (dicts, lists, tuples; keys kept). Applied
+    to every row and heartbeat on the way out. Never raises."""
+    try:
+        if isinstance(value, dict):
+            return {k: public_fields(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [public_fields(v) for v in value]
+        return public_text(value)
+    except Exception:
+        return value if not isinstance(value, str) else "<text withheld>"
+
+
 def account_label(venue: Any) -> str:
     """The venue account this lane trades, as `tradelocker:<id>`, or UNMEASURED. Read from the SDK
     handle's own attributes; never a credential, never a call that could raise into the pass."""
@@ -307,7 +453,8 @@ class Decisions:
                 risk = self._risk_of(window)
             self.rows.append({
                 "window": str(window), "outcome": str(outcome), "reason": str(reason),
-                "taken": outcome == PLACED, "why": scrub(str(why or ""))[:300],
+                "taken": outcome == PLACED,
+                "why": public_text(scrub(str(why or "")))[:300],
                 "lot": float(lot) if lot is not None else None,
                 "risk_usd": round(float(risk), 2) if risk is not None else None,
             })
@@ -995,15 +1142,25 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
         ref = account_ref(account)
         kid = key_id() if not ref.endswith(":" + UNKEYED) else None
         akey = bound_account_key()
+        pub_host = public_host(host)
         for row in new:
             sleeve = f"{LANE}:{row['window']}"
             line = publishable({
                 "decided_at": stamp, "lane": LANE, "account_ref": ref, "key_id": kid,
                 "sleeve": sleeve, "strategy_id": sleeve, "symbol": symbol,
                 "server_date": server_date, "armed": bool(armed),
-                "host": host.get("hostname"), "machine_id": host.get("machine_id"),
-                "host_verdict": host.get("verdict"), **row,
+                "host_verdict": pub_host.get("verdict"),
+                **({"machine_ref": pub_host["machine_ref"]} if "machine_ref" in pub_host
+                   else {}),
+                **row,
             }, account)
+            # NO HOST IDENTIFIER, NO FREE TEXT (must-fixes 1 and 2): whatever `row` carried, the
+            # published line holds neither the hostname nor the raw machine id, and every string
+            # leaf has been through `public_text`.
+            if isinstance(line, dict):
+                for k in ("host", "hostname", "machine_id", "recorded_machine_id"):
+                    line.pop(k, None)
+                line = public_fields(line)
             # The stamp goes on AFTER the scrub: it is an HMAC, never the id, and a hex run that
             # happened to contain the id's digits must not be mangled into a key nothing joins.
             if isinstance(line, dict):
@@ -1011,7 +1168,7 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
             lines.append(line)
         # Rows kept by a failed write are scrubbed again on the way out: an OLDER build kept them
         # (v4), and this build's scrub is the one that publishes them.
-        out = [*(publishable(r, account) for r in pending), *lines]
+        out = [*(_public_row(publishable(r, account)) for r in pending), *lines]
     except Exception as exc:
         _say(log, f"E8 decision evidence not built ({type(exc).__name__}: {exc}); "
                   "placement unaffected")
@@ -1040,6 +1197,25 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
         state.pop("evidence_pending", None)
     _bound_ledger(path, log)
     return out
+
+
+def _public_row(row: Any) -> Any:
+    """A row kept by an earlier failed write, cut to what may be published today: an older build
+    kept `host` / `machine_id` and free text on it. Never raises."""
+    try:
+        if not isinstance(row, dict):
+            return public_fields(row)
+        out = dict(row)
+        mid = out.pop("machine_id", None)
+        for k in ("host", "hostname", "recorded_machine_id"):
+            out.pop(k, None)
+        if "machine_ref" not in out:
+            ref = machine_ref(mid)
+            if ref:
+                out["machine_ref"] = ref
+        return public_fields(out)
+    except Exception:
+        return {}
 
 
 def _atomic_write(path: Path, text: str, *, log: Callable[[str], None] | None = None,
@@ -1106,7 +1282,8 @@ def write_heartbeat(status: str, *, at: datetime, armed: bool, account: str = UN
             "account_ref": account_ref(account),
             "last_ok_at": stamp if ok else prev.get("last_ok_at"),
             "failing_since": None if ok else (prev_failing or stamp),
-            "host": host if host is not None else host_block(),
+            # The VERDICT only (must-fix 1): never the hostname or the raw machine id.
+            "host": public_host(host if host is not None else host_block()),
         }
         if isinstance(extra, dict):
             for k, v in extra.items():
@@ -1114,7 +1291,7 @@ def write_heartbeat(status: str, *, at: datetime, armed: bool, account: str = UN
                     doc[str(k)] = v
         if not str(doc["account_ref"]).endswith(":" + UNKEYED):
             doc["key_id"] = key_id()
-        doc = publishable(doc, account)
+        doc = public_fields(publishable(doc, account))
         doc["account_key"] = bound_account_key()
         doc["account_key_status"] = bound_account_key_status()
         text = json.dumps(doc, indent=1, default=str) + "\n"

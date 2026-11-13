@@ -471,8 +471,10 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         "age_h": round(age, 3) if age is not None else UNMEASURED,
         "status": hb.get("status"), "account_ref": account,
         "last_ok_at": hb.get("last_ok_at"), "failing_since": hb.get("failing_since"),
+        # The heartbeat publishes the identity VERDICT and a keyed `machine_ref` (prop/
+        # e8_evidence.public_host); `hostname` / `machine_id` are read only from an older one.
         "hostname": host.get("hostname"), "machine_id": host.get("machine_id"),
-        "host_verdict": host.get("verdict"),
+        "machine_ref": host.get("machine_ref"), "host_verdict": host.get("verdict"),
     }
     lane["live_here"] = age is not None and not future and age <= E8_HEARTBEAT_LIVE_HOURS
     # A heartbeat absent, torn, unstamped, naive or stale while the ledger exists is a lane that
@@ -526,7 +528,7 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
                 f"every E8 gold pass has failed for {down_h:.1f}h (status {status} since "
                 f"{hb.get('failing_since') or UNMEASURED}; last OK pass "
                 f"{hb.get('last_ok_at') or 'never recorded'}; limit "
-                f"{E8_FAILING_MAX_HOURS:.0f}h) on host {host.get('hostname')}, account "
+                f"{E8_FAILING_MAX_HOURS:.0f}h) on host {host.get('hostname') or host.get('verdict')}, account "
                 f"{account}: no window can be placed")
         else:
             lane["notes"].append(
@@ -613,7 +615,10 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         sleeve = str(r.get("sleeve") or r.get("strategy_id") or "?")
         acct = _e8_account(r)
         unkeyed = acct.endswith(":" + E8_UNKEYED)
-        kid, machine = str(r.get("key_id") or ""), str(r.get("machine_id") or "")
+        # The machine a row was written on: its keyed `machine_ref` (prop/e8_evidence), else
+        # the raw `machine_id` an older row carried. Either is MEASURED only when present.
+        kid = str(r.get("key_id") or "")
+        machine = str(r.get("machine_ref") or r.get("machine_id") or "")
         prev = last_seen.get(sleeve)
         if (not unkeyed and prev and kid and prev[1] and kid != prev[1]
                 and acct != prev[0] and acct not in alias):
@@ -654,7 +659,7 @@ def scan_e8(base: Path, now: datetime) -> dict[str, Any]:
         lane["problems"].append(
             f"{sleeve} has been refused on {run['days']} consecutive server days on "
             f"'{run['reason']}' since {run['first_at']} with no placement in between "
-            f"(host {host.get('hostname')})")
+            f"(host {host.get('hostname') or host.get('verdict')})")
     if newest_unkeyed:
         lane["unkeyed_windows"] = sorted(newest_unkeyed)
         lane["notes"].append(
@@ -1046,7 +1051,7 @@ def main(argv: list[str] | None = None) -> int:
     for name, lane in sorted((doc.get("lanes") or {}).items()):
         beat = lane.get("heartbeat") or {}
         print(f"  lane {name}: {lane.get('verdict')}; heartbeat {beat.get('at', UNMEASURED)} "
-              f"on {beat.get('hostname')} ({beat.get('host_verdict')})")
+              f"on {beat.get('hostname') or beat.get('machine_ref')} ({beat.get('host_verdict')})")
         for sleeve, run in sorted((lane.get("runs") or {}).items()):
             print(f"    {sleeve}: '{run['reason']}' on {run['days']} day(s) since "
                   f"{run['first_at']}")

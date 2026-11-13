@@ -5,8 +5,9 @@ Measured on the trading box: `scripts/check_placement_interlock.py` read only th
 report, so an E8 window that stopped placing was invisible to the fence and nothing recorded which
 host had sent the E8 gold orders. Pinned here, through `e8_gold.run` itself:
 
-  1. every pass rewrites a heartbeat naming the host (host_identity verdict, hostname, machine
-     id) and the pass time -- a flat pass and a failed connection included;
+  1. every pass rewrites a heartbeat naming the host (the host_identity verdict and a keyed
+     machine_ref -- never the hostname or the raw machine id, both of which stay on the local
+     report) and the pass time -- a flat pass and a failed connection included;
   2. each due window's decision is ONE ledger row per change of (outcome, reason) per day, so a
      one-gold-at-a-time deferral held for many passes is one row, and a pass with nothing due
      writes none -- the property that keeps the fence's breach (a) from reading it as a halt;
@@ -101,17 +102,22 @@ def test_a_flat_pass_with_a_window_due_writes_heartbeat_and_one_decision(
     doc = g.run(_Venue(), _FlatMT5(), armed=False)
     beat = _beat()
     assert beat["lane"] == "e8_gold" and beat["status"] == "OK" and beat["armed"] is False
+    # The full identity is on the LOCAL report; the synced heartbeat carries only the verdict
+    # and a keyed machine_ref (audit must-fix 1).
     for key in ("verdict", "hostname", "machine_id"):
-        assert beat["host"][key], key
+        assert doc["host"][key], key
+    assert set(beat["host"]) <= {"verdict", "machine_ref"} and beat["host"]["verdict"]
+    assert beat["host"] == ev.public_host(doc["host"])
     assert beat["at"] == doc["at"] and beat["open_xau_positions"] == 0
-    assert doc["host"] == beat["host"]
     [row] = _rows()
     assert row["lane"] == "e8_gold" and row["sleeve"] == "e8_gold:afternoon"
     assert (row["outcome"], row["reason"], row["taken"]) == ("WOULD_PLACE", "shadow_unarmed",
                                                               False)
     assert row["window"] == "afternoon" and row["server_date"] == "2026-10-15"
     assert row["lot"] > 0 and row["risk_usd"] == pytest.approx(doc["risk_usd"], rel=0.5)
-    assert row["host"] == beat["host"]["hostname"] and row["host_verdict"]
+    assert row["host_verdict"] == beat["host"]["verdict"]
+    assert row.get("machine_ref") == beat["host"].get("machine_ref")
+    assert not {"host", "hostname", "machine_id", "recorded_machine_id"} & set(row)
 
 
 def test_a_pass_with_nothing_due_writes_a_heartbeat_and_no_decision(
@@ -294,7 +300,8 @@ def test_rows_this_lane_writes_read_clean_through_the_fence(monkeypatch, tmp_pat
     doc = fence.scan(root)
     lane = doc["lanes"]["e8_gold"]
     assert lane["verdict"] == "OK" and lane["rows_scanned"] == 1
-    assert lane["heartbeat"]["hostname"] == _beat()["host"]["hostname"]
+    assert lane["heartbeat"]["host_verdict"] == _beat()["host"]["verdict"]
+    assert lane["heartbeat"]["machine_ref"] == _beat()["host"].get("machine_ref")
     assert doc["verdict"] == "NOT_APPLICABLE"            # no gateway here; E8 OK masks nothing
 
 
@@ -325,6 +332,13 @@ class _RetryVenue:
         return 901
 
 
+#: An AMPLE measured budget: nothing else at risk and all the room in the world. A re-send is
+#: budgeted like a first send and held without one (should-fix 2, pinned in
+#: test_e8_recut_v2_audit_fixes); these tests are about the evidence a re-send writes.
+AMPLE_BUDGET = {"committed": 0.0, "detail": {"slip_points": 0.0}, "contract": 100.0,
+                "room": 1e9}
+
+
 def _retry_state(orders: dict | None = None) -> dict:
     w = {"placed_hour": 7.0, "orders": orders or {}, "position_id": None,
          "failed": {"buy_stop": dict(_LEG)}}
@@ -346,7 +360,8 @@ def _retry(monkeypatch, tmp_path, venue: _RetryVenue, st: dict, *, hour: float =
     decided = ev.Decisions()
     args = {"open_orders": [], "orders_ok": True, "filled": {}, "xau_positions": [],
             "positions_ok": True, "stood_down": False, "armed": True, "hist_rows": [],
-            "history_ok": True, "instrument_id": 316, **_fusion_kw(), **kw}
+            "history_ok": True, "instrument_id": 316, "budget": AMPLE_BUDGET,
+            **_fusion_kw(), **kw}
     g._retry_failed_legs(venue, st, {"actions": []}, hour=hour, now=datetime.now(UTC),
                          decided=decided, **args)
     return decided
@@ -411,7 +426,8 @@ def test_a_retry_without_a_collector_sends_exactly_the_same(monkeypatch, tmp_pat
     g._retry_failed_legs(v2, st2, {"actions": []}, hour=_RETRY_HOUR, now=datetime.now(UTC),
                          open_orders=[], orders_ok=True, filled={}, xau_positions=[],
                          positions_ok=True, stood_down=False, armed=True, hist_rows=[],
-                         history_ok=True, instrument_id=316, **_fusion_kw())
+                         history_ok=True, instrument_id=316, budget=AMPLE_BUDGET,
+                         **_fusion_kw())
     assert v1.sent == v2.sent and st1 == st2
 
 

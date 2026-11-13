@@ -121,8 +121,16 @@ UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
 # committed (open positions to their current stops, this lane's resting legs) plus the new
 # window's must fit inside the guard's `room_to_daily_floor`, after both of these:
 #: Stops on this venue fill at market, not at the level: 2026-09-24 a buy stop filled 24 points
-#: through. Every committed dollar is grossed up by this before it is compared with the room, so
-#: 2.25% of stop risk reads as ~2.8% and cannot be placed against a 2.5% floor.
+#: through. A dollar of stop risk that carries NO explicit fill-through allowance is grossed up by
+#: this before it is compared with the room, so 2.25% of stop risk reads as ~2.8% and cannot be
+#: placed against a 2.5% floor.
+#:
+#: CHARGED ONCE (audit HOLD on the recut v2, should-fix 1): the buffer is a STAND-IN for slip, so
+#: it is never applied to a dollar whose slip is already counted explicitly -- `committed_risk`
+#: adds `slip_points` of fill-through to every row it measures, and `ceiling_budget_lot` /
+#: `risk_budget_allows` add the leg's own slip in points. Grossing those up by 1.25 as well
+#: charged the slip twice and shrank (or deferred) windows that fitted. It applies only where no
+#: explicit slip exists: a zero `slip_points`, or a caller that names none.
 SLIP_BUFFER = 1.25
 #: Kept clear of the floor on top of the buffer: spread and commission on the closes, and the
 #: equity read being seconds old. 0.10% of the starting balance.
@@ -431,14 +439,19 @@ def ceiling_budget_lot(committed: float, room: float, stop_dist: float, contract
                        slip_points: float) -> float:
     """The largest lot whose `shrunk_budget_risk` still passes `risk_budget_allows`. Pure.
 
-    (committed + L x contract x (stop + slip)) x SLIP_BUFFER <= room - ROOM_MARGIN_USD, solved for
-    L. v3 deferred a ceiling-shrunk window that failed this check, and at a stop under about 13
-    points on a 100 oz contract it fails on every pass: never sent, never journalled. v4 sends L.
+    committed + L x contract x (stop + slip) <= room - ROOM_MARGIN_USD, solved for L. v3 deferred
+    a ceiling-shrunk window that failed this check, and at a stop under about 13 points on a
+    100 oz contract it fails on every pass: never sent, never journalled. v4 sends L.
+
+    The slip is counted ONCE (should-fix 1): `committed` comes from `committed_risk`, which already
+    carries its own fill-through, and the new leg carries `slip_points` explicitly, so SLIP_BUFFER
+    is applied only when `slip_points` is zero -- the one case with no explicit slip.
     """
     unit = float(contract_size) * (float(stop_dist) + float(slip_points))
     if not unit > 0:
         return 0.0
-    return max(0.0, ((float(room) - ROOM_MARGIN_USD) / SLIP_BUFFER - float(committed)) / unit)
+    buffer = 1.0 if float(slip_points) > 0 else SLIP_BUFFER
+    return max(0.0, ((float(room) - ROOM_MARGIN_USD) / buffer - float(committed)) / unit)
 
 
 def bracket_slip(path: Path | None = None, *, window: str | None = None) -> tuple[float, str]:
@@ -1330,7 +1343,8 @@ def stop_is_at_risk(position: dict, stop: float) -> bool:
     return (entry - float(stop)) > 0 if side == "buy" else (float(stop) - entry) > 0
 
 
-def one_at_risk_blocker(detail: dict[str, Any]) -> str | None:
+def one_at_risk_blocker(detail: dict[str, Any], *, exclude_window: str | None = None,
+                        today: str | None = None) -> str | None:
     """ONE GOLD TRADE AT RISK AT A TIME ON E8 -- the reason a window must wait, or None.
 
     Gold is force-closed only at CLOSE_HOUR, so all three windows can be open together, and the
@@ -1340,15 +1354,32 @@ def one_at_risk_blocker(detail: dict[str, Any]) -> str | None:
     still at risk. "At risk" is a position whose stop is not yet at break-even or better, or a
     resting bracket of this lane that has not filled or been cancelled; a position ratcheted to
     break-even risks nothing and does not block.
+
+    A DROPPED LEG AWAITING ITS RE-SEND IS AT RISK TOO (should-fix 2): `_retry_failed_legs` will
+    send it while its window holds, so it blocks another window exactly as a resting leg does
+    (`retrying_legs`). `exclude_window` (with `today`) is the RE-SEND's own window: its own twin
+    and its own dropped legs are the bracket being completed, not a second trade.
     """
+    def _other(key: str, depth: int) -> bool:
+        if exclude_window is None:
+            return True
+        parts = str(key).split("/")
+        own = len(parts) >= depth and parts[1] == exclude_window and (
+            today is None or parts[0] == today)
+        return not own
+
     risky = [str(r["position_id"]) for r in detail.get("positions") or [] if r.get("at_risk")]
-    pending = sorted((detail.get("pending_brackets") or {}).keys())
+    pending = sorted(k for k in (detail.get("pending_brackets") or {}) if _other(k, 2))
+    retrying = sorted(k for k in (detail.get("retrying_legs") or {}) if _other(k, 3))
     if risky:
         return (f"one gold trade at risk at a time: position(s) {', '.join(risky)} still have "
                 f"their stop short of break-even")
     if pending:
         return (f"one gold trade at risk at a time: bracket(s) {', '.join(pending)} still rest "
                 f"at the venue")
+    if retrying:
+        return (f"one gold trade at risk at a time: dropped leg(s) {', '.join(retrying)} are "
+                f"still re-sent while their window holds")
     return None
 
 
@@ -1408,7 +1439,12 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
     * every resting XAU ENTRY order on the account this lane did not send, the same way
       (`entry_order_risk_usd`);
     * every NON-XAU position and resting entry order (`foreign_positions`, the non-XAU rows of
-      `open_orders`), priced by `price_foreign(row, kind)` at its stop distance plus slip.
+      `open_orders`), priced by `price_foreign(row, kind)` at its stop distance plus slip;
+    * every DROPPED LEG still awaiting a re-send (`state["windows"][*]["failed"]`, should-fix 2):
+      `_retry_failed_legs` sends it while its window holds, so it can still fill and is counted
+      as a resting leg (`retrying_legs`). A failed send that in fact LANDED rests at the venue
+      as an XAU order this lane holds no id for; it is matched to its dropped leg by side and
+      level and counted ONCE, as that leg.
 
     Raises ValueError when anything cannot be bounded: a position with no readable stop (its
     adverse distance to the floor is the whole room), a resting entry with no stop, a foreign
@@ -1468,11 +1504,41 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
         if oid in by_id:                                  # still resting at the venue
             risk = _leg_risk(*raw)
             brackets[group] = brackets.get(group, 0.0) + risk
+    # THE DROPPED LEGS STILL TO BE RE-SENT (should-fix 2).
+    dropped: list[tuple[str, str, dict[str, Any]]] = []
+    for name, w in (state.get("windows") or {}).items():
+        for side, leg in ((w or {}).get("failed") or {}).items():
+            if isinstance(leg, dict):
+                dropped.append((f"{today}/{name}/{side}", str(side), leg))
+    landed_as: set[str] = set()
+
+    def _is_dropped_send(o: dict[str, Any]) -> bool:
+        """An unknown resting XAU order at a dropped leg's side and level: that leg, landed."""
+        try:
+            level = float(o.get("stopPrice") or o.get("price") or 0.0)
+            o_side = str(o.get("side") or "").strip().lower()
+        except (TypeError, ValueError):
+            return False
+        for key, side, leg in dropped:
+            if key in landed_as:
+                continue
+            want = "buy" if side == "buy_stop" else "sell"
+            try:
+                same_level = abs(level - float(leg.get("price") or 0.0)) <= 0.005
+            except (TypeError, ValueError):
+                continue
+            if same_level and level > 0 and o_side in ("", want):
+                landed_as.add(key)
+                return True
+        return False
+
     protective = _protective_ids([*positions, *foreign_positions], open_orders)
     foreign_rows: list[dict[str, Any]] = []
     for oid, o in by_id.items():
         if oid in legs or oid in protective:
             continue
+        if _is_xau(o) and dropped and _is_dropped_send(o):
+            continue                                       # counted below, as its dropped leg
         if _is_xau(o):
             usd = entry_order_risk_usd(o, slip_points=slip, contract_size=c)
         else:
@@ -1491,13 +1557,20 @@ def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, 
         usd, meta = _priced(price_foreign(p, "position"))
         foreign_rows.append({"position_id": p.get("id"), "kind": "position",
                              "risk_usd": round(usd, 2), **meta})
+    retrying: dict[str, float] = {}
+    for key, _side, leg in dropped:
+        retrying[key] = _leg_risk(leg.get("price"), leg.get("sl"), leg.get("lot"),
+                                  leg.get("risk_usd"))
     total = (sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
-             + sum(r["risk_usd"] for r in foreign_rows))
+             + sum(r["risk_usd"] for r in foreign_rows) + sum(retrying.values()))
     if not math.isfinite(total):
         raise ValueError("committed risk is not finite")
-    return total, {"positions": pos_rows,
-                   "pending_brackets": {k: round(v, 2) for k, v in brackets.items()},
-                   "foreign": foreign_rows, "slip_points": slip}
+    out: dict[str, Any] = {"positions": pos_rows,
+                           "pending_brackets": {k: round(v, 2) for k, v in brackets.items()},
+                           "foreign": foreign_rows, "slip_points": slip}
+    if retrying:
+        out["retrying_legs"] = {k: round(v, 2) for k, v in retrying.items()}
+    return total, out
 
 
 def foreign_pricer(venue: Any, *, slip_fraction: float,
@@ -1591,11 +1664,103 @@ def foreign_pricer(venue: Any, *, slip_fraction: float,
     return _price
 
 
-def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[bool, str]:
-    """May a window risking `new_risk` be added to `committed`, against `room` to today's floor?"""
-    need = (float(committed) + float(new_risk)) * SLIP_BUFFER
+def measure_account_risk(venue: Any, state: dict[str, Any], budget_orders: list[dict[str, Any]],
+                         *, xau_positions: list[dict[str, Any]],
+                         venue_positions: list[dict[str, Any]], bid: float, ask: float,
+                         instrument_id: int | None) -> tuple[float, dict[str, Any], float]:
+    """(committed USD, its detail, the contract size): the account-wide risk `committed_risk`
+    measures, read the way the placement block reads it -- the journal, the venue's contract
+    size, the held slip, the foreign pricer. RAISES on anything that cannot be bounded; the caller
+    defers with a reasoned row. Shared by the placement block and the re-send of a dropped leg
+    (should-fix 2), so both are judged against one measurement."""
+    journal = [] if not INTENTS.exists() else _journal_read()
+    if journal is None:
+        raise ValueError("the intents journal is unreadable, so this lane's resting "
+                         "legs cannot be counted")
+    try:
+        contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
+    except Exception:
+        contract = XAU_OZ_PER_LOT
+    # v5.3: the larger of the pooled slip and every window's own p95 -- whichever window's
+    # position is the one open, it is never billed under its own tail.
+    held_slip, held_src = committed_slip_points()
+    xau_ids = {id(p) for p in xau_positions}
+    mid = (float(bid) + float(ask)) / 2.0
+    committed, detail = committed_risk(
+        xau_positions, budget_orders, journal, state, bid=float(bid), ask=float(ask),
+        contract_size=contract, slip_points=held_slip, instrument_id=instrument_id or None,
+        foreign_positions=[p for p in venue_positions if id(p) not in xau_ids],
+        price_foreign=foreign_pricer(venue, slip_fraction=held_slip / mid,
+                                     orders=budget_orders, fx_slip=fx_slip_fractions()))
+    detail["total_usd"] = round(committed, 2)
+    detail["slip_source"] = held_src
+    return committed, detail, contract
+
+
+def retry_budget_hold(budget: dict[str, Any] | None, name: str, side: str, leg: dict[str, Any],
+                      *, today: str, venue_min: float = 0.0) -> tuple[str, str, str] | None:
+    """Why a dropped leg's RE-SEND must wait, as (reason code, why, missed-growth rail), or None.
+
+    A re-send is new risk exactly like a first send (audit HOLD on the recut v2, should-fix 2),
+    so it passes the same two checks in the same order: ONE GOLD TRADE AT RISK AT A TIME
+    (`one_at_risk_blocker`, its own window's twin and dropped legs excluded -- they are the
+    bracket being completed) and the CONCURRENT-RISK BUDGET (`risk_budget_allows`, against the
+    account-wide measurement with this leg's own dropped entry taken back out, since
+    `committed_risk` already counts it). `budget` is None or carries an `error` when the risk
+    could not be measured: fail CLOSED (risk_unmeasurable / orders_unreadable). Pure."""
+    from prop import e8_evidence as _ev
+    if not isinstance(budget, dict) or budget.get("error"):
+        code = (budget or {}).get("code") if isinstance(budget, dict) else None
+        why = (budget or {}).get("error") if isinstance(budget, dict) else None
+        return (str(code or _ev.R_RISK_UNMEASURABLE),
+                f"re-send held: concurrent open risk unmeasurable ({why or 'not measured'})",
+                RISK_UNMEASURABLE_RAIL)
+    detail = budget.get("detail") or {}
+    # By window name, not date: a journal group is keyed on the box's UTC date of the send and
+    # `today` is the server date, which differ near midnight; the leg's own twin must never
+    # read as a second trade. Every leg still counts in the budget below.
+    blocker = one_at_risk_blocker(detail, exclude_window=name)
+    if blocker is not None:
+        return _ev.R_ONE_AT_RISK, f"re-send held: {blocker}", "one_gold_at_risk"
+    contract = float(budget.get("contract") or XAU_OZ_PER_LOT)
+    slip = float(detail.get("slip_points") or 0.0)
+    lot = max(float(leg.get("lot") or 0.0), float(venue_min or 0.0))
+    stop = abs(float(leg.get("price") or 0.0) - float(leg.get("sl") or 0.0))
+    own = float((detail.get("retrying_legs") or {}).get(f"{today}/{name}/{side}") or 0.0)
+    held = max(0.0, float(budget.get("committed") or 0.0) - own)
+    new_risk = stop * lot * contract
+    fits, why = risk_budget_allows(
+        held, new_risk, float(budget.get("room") or 0.0), committed_slip_counted=slip > 0,
+        new_slip_usd=slip * lot * contract if slip > 0 else None)
+    if not fits:
+        return (_ev.R_RISK_BUDGET, f"re-send held: concurrent risk would reach today's floor: "
+                                   f"{why}", RISK_BUDGET_RAIL)
+    return None
+
+
+def risk_budget_allows(committed: float, new_risk: float, room: float, *,
+                       committed_slip_counted: bool = False,
+                       new_slip_usd: float | None = None) -> tuple[bool, str]:
+    """May a window risking `new_risk` be added to `committed`, against `room` to today's floor?
+
+    SLIP IS CHARGED ONCE (audit HOLD on the recut v2, should-fix 1). `committed_slip_counted`:
+    `committed` already carries explicit fill-through (`committed_risk` with a positive
+    `slip_points`), so it is not grossed up again. `new_slip_usd`: the new leg's own explicit slip
+    in USD, added instead of the buffer. Each side with no explicit slip keeps SLIP_BUFFER, so a
+    caller that names neither is judged exactly as before."""
+    c_part = float(committed) * (1.0 if committed_slip_counted else SLIP_BUFFER)
+    n_part = (float(new_risk) + float(new_slip_usd) if new_slip_usd is not None
+              else float(new_risk) * SLIP_BUFFER)
+    need = c_part + n_part
     allowed = float(room) - ROOM_MARGIN_USD
-    why = (f"committed {committed:,.0f} + this window {new_risk:,.0f} USD, x{SLIP_BUFFER} slippage "
+    if not committed_slip_counted and new_slip_usd is None:
+        how = f"x{SLIP_BUFFER} slippage"
+    else:
+        how = ("committed slip counted" if committed_slip_counted
+               else f"committed x{SLIP_BUFFER} slippage") + ", " + (
+            f"+{float(new_slip_usd):,.0f} explicit slip" if new_slip_usd is not None
+            else f"window x{SLIP_BUFFER} slippage")
+    why = (f"committed {committed:,.0f} + this window {new_risk:,.0f} USD, {how} "
            f"= {need:,.0f}, against {room:,.0f} to today's floor less a {ROOM_MARGIN_USD:,.0f} "
            f"margin = {allowed:,.0f}")
     return need <= allowed, why
@@ -2126,8 +2291,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                     f"exposure only")
         except Exception as exc:
             stood_down = True
-            doc["guard"] = e8_evidence.clip(
-                f"guard unreadable ({type(exc).__name__}: {exc}", 200) + ")"
+            # The TYPE NAME only (audit must-fix 2): this text reaches the synced ledger's `why`
+            # and the heartbeat; the full message stays in the local log.
+            doc["guard"] = f"guard unreadable ({e8_evidence.exc_name(exc)})"
             log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
 
     bid, ask = venue.quote(SYMBOL)
@@ -2142,7 +2308,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # is unhealthy.
         iid, venue_positions, xau_positions = 0, [], []
         stood_down = True
-        doc["positions_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
+        # Type name only on the report: it reaches the synced `why` (audit must-fix 2).
+        doc["positions_unreadable"] = f"position book unreadable ({e8_evidence.exc_name(exc)})"
+        log(f"position book read raised {e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
         log("position book unreadable; no new E8 gold placement this pass")
     publish_books(venue, mt5, doc,
                   positions=None if "positions_unreadable" in doc else venue_positions)
@@ -2236,36 +2404,20 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             # R_RISK_UNMEASURABLE, so the fence and the grace name the same cause.
             budget_orders = venue.orders(None)
             venue_read = False
-            journal = [] if not INTENTS.exists() else _journal_read()
-            if journal is None:
-                raise ValueError("the intents journal is unreadable, so this lane's resting "
-                                 "legs cannot be counted")
-            try:
-                contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
-            except Exception:
-                contract = XAU_OZ_PER_LOT
-            # v5.3: the larger of the pooled slip and every window's own p95 -- whichever
-            # window's position is the one open, it is never billed under its own tail.
-            held_slip, held_src = committed_slip_points()
-            xau_ids = {id(p) for p in xau_positions}
-            mid = (float(bid) + float(ask)) / 2.0
-            committed, doc["committed_risk"] = committed_risk(
-                xau_positions, budget_orders, journal, state, bid=float(bid), ask=float(ask),
-                contract_size=contract, slip_points=held_slip, instrument_id=iid or None,
-                foreign_positions=[p for p in venue_positions if id(p) not in xau_ids],
-                price_foreign=foreign_pricer(venue, slip_fraction=held_slip / mid,
-                                             orders=budget_orders,
-                                             fx_slip=fx_slip_fractions()))
-            doc["committed_risk"]["total_usd"] = round(committed, 2)
-            doc["committed_risk"]["slip_source"] = held_src
+            committed, doc["committed_risk"], contract = measure_account_risk(
+                venue, state, budget_orders, xau_positions=xau_positions,
+                venue_positions=venue_positions, bid=float(bid), ask=float(ask),
+                instrument_id=iid or None)
             # The risk is measurable again: close the alert if one is open (v5.5). Queued, never
             # awaited, and suppressed (v5.6): an alert can never defer a window or escape run().
             with contextlib.suppress(Exception):
                 e8_evidence.page_alert(RISK_UNMEASURABLE_ALERT_ID, "", firing=False, log=log)
         except Exception as exc:
-            why = (e8_evidence.clip(
-                f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}", 200)
-                   + "); no window placed this pass")
+            # Type name only (audit must-fix 2): `why` is published; the message is logged here.
+            why = (f"concurrent open risk unmeasurable ({e8_evidence.exc_name(exc)}); "
+                   "no window placed this pass")
+            log(f"concurrent open risk unmeasurable: "
+                f"{e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
             _deferred = state.setdefault("deferred", [])
             ru_code = (e8_evidence.R_ORDERS_UNREADABLE if venue_read
                        else e8_evidence.R_RISK_UNMEASURABLE)
@@ -2459,6 +2611,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
 
         book = _CutBook(sized, leg_risk, dists, contract, risk_usd, cuts)
         _apply = book.apply
+        # SLIP CHARGED ONCE (should-fix 1): `committed` carries its own fill-through whenever
+        # `committed_risk` measured it with a positive slip, and each leg carries `slip_pts` of
+        # its own; SLIP_BUFFER stands in only where neither is explicit.
+        _committed_slip_counted = float(
+            (doc.get("committed_risk") or {}).get("slip_points") or 0.0) > 0
+
+        def _leg_slip_usd(side: str, _pts: float = float(slip_pts),
+                          _sized: dict[str, tuple[float, str]] = sized,
+                          _c: float = float(contract)) -> float | None:
+            if not _pts > 0:
+                return None
+            return _pts * float(_sized[side][0]) * _c
 
         def _defer_budget(at_risk: float, budget_why: str, *, window: str = name,
                           held: float = float(committed or 0.0)) -> None:
@@ -2491,11 +2655,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 # A leg the ceiling did NOT shrink is held to the budget exactly as LIVE held the
                 # whole window before the ceiling existed: deferred, never shrunk under a rail
                 # that did not bind it.
-                uncapped = [leg_risk[k] for k in sized if k not in before]
+                uncapped = [k for k in sized if k not in before]
                 if uncapped:
-                    fits, budget_why = risk_budget_allows(committed or 0.0, max(uncapped), room)
+                    worst = max(uncapped, key=lambda k: leg_risk[k] + _leg_slip_usd(k))
+                    fits, budget_why = risk_budget_allows(
+                        committed or 0.0, leg_risk[worst], room,
+                        committed_slip_counted=_committed_slip_counted,
+                        new_slip_usd=_leg_slip_usd(worst))
                     if not fits:
-                        _defer_budget(max(uncapped), budget_why)
+                        _defer_budget(leg_risk[worst], budget_why)
                         continue
                 over = ", ".join(f"{k} {v:g}" for k, v in sorted(before.items()))
                 _apply(capped, before, LOT_CEILING_RAIL, LOT_CEILING_REASON,
@@ -2531,8 +2699,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             else:
                 # Only an UNSHRUNK window reaches the exempt R_RISK_BUDGET deferral: the ceiling
                 # fit above runs first and never defers (audit HOLD on v4, must-fix 2).
-                unshrunk_risk = max(leg_risk.values()) if leg_risk else risk_usd
-                fits, budget_why = risk_budget_allows(committed or 0.0, unshrunk_risk, room)
+                if leg_risk:
+                    worst = max(leg_risk, key=lambda k: leg_risk[k] + _leg_slip_usd(k))
+                    unshrunk_risk, unshrunk_slip = leg_risk[worst], _leg_slip_usd(worst)
+                else:
+                    unshrunk_risk, unshrunk_slip = risk_usd, None
+                fits, budget_why = risk_budget_allows(
+                    committed or 0.0, unshrunk_risk, room,
+                    committed_slip_counted=_committed_slip_counted, new_slip_usd=unshrunk_slip)
                 if not fits:
                     _defer_budget(unshrunk_risk, budget_why)
                     continue
@@ -2589,8 +2763,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                             f"counted profit left today; the excess would be stripped"),
                            **cap_extra)
         except Exception as exc:
-            why = (e8_evidence.clip(f"bracket rails unmeasurable ({type(exc).__name__}: {exc}",
-                                    200) + "); deferred")
+            why = f"bracket rails unmeasurable ({e8_evidence.exc_name(exc)}); deferred"
+            log(f"[{name}] bracket rails raised "
+                f"{e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
             doc["skipped"].append({"window": name, "why": why})
             with contextlib.suppress(Exception):
                 decided.note(name, e8_evidence.DEFERRED, e8_evidence.R_RISK_UNMEASURABLE, why,
@@ -2736,12 +2911,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                     log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} "
                         f"sl {s['sl']:.2f} tp {s['tp']:.2f} -> order {oid}")
                 except Exception as exc:
+                    # The venue's message stays LOCAL (the intents journal and the log); what the
+                    # state and the synced ledger carry is the type name (audit must-fix 2).
                     row.update({"status": "REJECTED",
                                 "why": e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)})
                     log(f"[{name}] REJECTED {side}: {row['why']} "
                         f"(will retry while the window holds)")
+                    pub_why = f"venue refused ({e8_evidence.exc_name(exc)})"
                     failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
-                                    "attempts": 1, "why": row["why"],
+                                    "attempts": 1, "why": pub_why,
                                     "first_at": row["at"]}
                 if not _record(row):
                     doc.setdefault("journal_write_failed", []).append(
@@ -2821,7 +2999,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         positions_ok = False
         xau_positions = []
         position_ids = set()
-        doc["positions_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
+        # Type name only on the report: it reaches the synced `why` (audit must-fix 2).
+        doc["positions_unreadable"] = f"position book unreadable ({e8_evidence.exc_name(exc)})"
+        log(f"position book read raised {e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
 
     # -------------------------------------------------------------- stand-down cancels
     # THE GUARD'S REFUSAL REACHES WHAT ALREADY RESTS (see STAND_DOWN_CANCEL): a twin placed
@@ -2838,13 +3018,37 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
 
     # -------------------------------------------------------------- dropped legs
     if any(w.get("failed") for w in (state.get("windows") or {}).values()):
+        # THE RE-SEND IS BUDGETED LIKE A FIRST SEND (should-fix 2): measured FRESH, after every
+        # placement of this pass has landed in the book and the journal, so a window placed
+        # above is counted. Unmeasurable -> every re-send held (fail closed), with its code.
+        retry_budget: dict[str, Any]
+        retry_read = True
+        try:
+            retry_orders = venue.orders(None)
+            retry_read = False
+            if guard_decision is None:
+                raise ValueError("no guard decision to budget against")
+            r_committed, r_detail, r_contract = measure_account_risk(
+                venue, state, retry_orders, xau_positions=xau_positions,
+                venue_positions=venue_positions, bid=float(bid), ask=float(ask),
+                instrument_id=iid or None)
+            retry_budget = {"committed": r_committed, "detail": r_detail,
+                            "contract": r_contract,
+                            "room": float(guard_decision.room_to_daily_floor)}
+            doc["retry_committed_risk"] = r_detail
+        except Exception as exc:
+            retry_budget = {"error": e8_evidence.exc_name(exc),
+                            "code": (e8_evidence.R_ORDERS_UNREADABLE if retry_read
+                                     else e8_evidence.R_RISK_UNMEASURABLE)}
+            log("dropped-leg re-send budget unmeasurable: "
+                f"{e8_evidence.clip(f'{type(exc).__name__}: {exc}', 300)}")
         _retry_failed_legs(venue, state, doc, hour=hour, now=now, open_orders=open_orders,
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
                            history_ok="history_unreadable" not in doc, instrument_id=iid,
                            mt5=mt5, account_ok=(e8_declared, e8_account_why),
-                           decided=decided)
+                           decided=decided, budget=retry_budget)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # The decisions are written AFTER every placement and every re-send of a dropped leg this
@@ -3113,7 +3317,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             "guard": (doc.get("guard_decision") or {}).get("verdict") or doc.get("guard"),
             "open_xau_positions": len(xau_positions), "decisions": len(decided.rows)}
     except Exception as exc:
-        beat_extra = {"extra_unreadable": f"{type(exc).__name__}: {exc}"[:160]}
+        beat_extra = {"extra_unreadable": e8_evidence.exc_name(exc)}
     doc["heartbeat"] = e8_evidence.write_heartbeat(
         str(doc["status"]), at=now, armed=armed, account=account, host=host, log=log,
         extra=beat_extra)
@@ -3149,7 +3353,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                        armed: bool, hist_rows: list[dict], history_ok: bool,
                        instrument_id: int, mt5: Any = None,
                        account_ok: tuple[bool, str] = (True, ""),
-                       decided: e8_evidence.Decisions | None = None) -> None:
+                       decided: e8_evidence.Decisions | None = None,
+                       budget: dict[str, Any] | None = None) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -3164,6 +3369,15 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     filled and closed back to the level -- so before any re-send the leg is looked for as a
     resting order, then as a filled order in the history, then as a position on its side opened
     since the failed send.
+
+    A RE-SEND IS NEW RISK (audit HOLD on the recut v2, should-fix 2): before a leg is sent again
+    it passes `retry_budget_hold` -- one gold trade at risk at a time and the concurrent-risk
+    budget, against `budget` (the account-wide measurement `run` takes fresh before this call).
+    No budget, or one that could not be measured, holds every re-send (fail closed). A held leg
+    stays dropped, is not counted as an attempt, is DEFERRED in the decision ledger under the
+    rail's own reason code and billed as missed growth once per leg per server day, and is tried
+    again on a later pass while its window holds. A leg sent here is added to `budget`, so its
+    twin is judged with it counted.
     """
     blind = [why for why, bad in (("the pass is disarmed", not armed),
                                   ("the guard stands down", stood_down),
@@ -3380,6 +3594,30 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                         "at": leg.get("first_at") or row["at"], "adopted_at": row["at"]})
             log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
+            r_today = str(state.get("date") or now.date())
+            hold = retry_budget_hold(budget, name, side, leg, today=r_today,
+                                     venue_min=venue_min)
+            if hold is not None:
+                code, why_h, rail = hold
+                act.update({"ok": False, "why": why_h, "rail": rail, "held": True})
+                doc["actions"].append(act)
+                log(f"[{name}] {side} re-send DEFERRED: {why_h}")
+                _billed = state.setdefault("rail_logged", {})
+                bill_key = f"{rail}/{name}/{side}"
+                if _billed.get(bill_key) != r_today:
+                    # MISSED GROWTH (Rule 1), once per held leg per server day, like every other
+                    # deferral of this lane: the leg's own certified risk is what waits.
+                    _billed[bill_key] = r_today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                             "side": side, **levels, "status": "RAIL_BLOCKED", "rail": rail,
+                             "reason": code, "why": why_h,
+                             "missed_growth_risk_usd": leg_missed_usd(leg), "armed": armed,
+                             "retry_of": leg.get("first_at")})
+                with contextlib.suppress(Exception):
+                    if decided is not None:
+                        decided.note(name, e8_evidence.DEFERRED, code, f"{side} {why_h}",
+                                     lot=leg.get("lot"), risk_usd=leg.get("risk_usd"))
+                continue
             try:
                 # THE RETRY IS FENCED TOO (audit round 2, must-fix 1): the same cross-account
                 # check and placement lock as a first send. A fenced leg stays dropped, is not
@@ -3405,10 +3643,13 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                     f"-> order {oid} (attempt {int(leg.get('attempts') or 0) + 1})")
             except Exception as exc:
                 leg["attempts"] = int(leg.get("attempts") or 0) + 1
-                leg["why"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)
-                row.update({"status": "REJECTED", "why": leg["why"]})
+                # The venue's message stays LOCAL (journal row and log); the state and the synced
+                # ledger carry the type name only (audit must-fix 2).
+                full_why = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)
+                leg["why"] = f"venue refused ({e8_evidence.exc_name(exc)})"
+                row.update({"status": "REJECTED", "why": full_why})
                 act.update({"ok": False, "why": leg["why"]})
-                log(f"[{name}] {side} retry REJECTED: {leg['why']}")
+                log(f"[{name}] {side} retry REJECTED: {full_why}")
                 _record(row)
                 doc["actions"].append(act)
                 with contextlib.suppress(Exception):
