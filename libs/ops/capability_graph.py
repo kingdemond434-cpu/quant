@@ -514,6 +514,16 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/pf_allocation.json"),
          writes=("desks/mt5/reports/alpha_evolution.json",
                  "desks/mt5/data/intelligence/alpha_evolution/")),
+    # RELEASE SURPRISE (2026-11-13, N4 N6 N7 N8): EIA storage, USDA export sales, TIC flows and
+    # BoJ rinban -> the release axis (first prints) -> screened `release_surprise` cells donated
+    # into the intake the compiler merges. Its two reports are the per-source ingest state and the
+    # per-basis reach and park state for a person.
+    Node("release_surprise_proposer", "desks/mt5/research/release_surprise_proposer.py",
+         reads=("desks/mt5/data/axes/", "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/RELEASE_SURPRISE_PROPOSER.json",
+                 "desks/mt5/reports/RELEASE_SURPRISE_INGEST.json",
+                 "desks/mt5/data/axes/release_surprise.json",
+                 "desks/mt5/data/intelligence/release_surprise/")),
     Node("style_premia_sweep", "desks/mt5/research/style_premia_sweep.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
@@ -992,6 +1002,10 @@ HUMAN_READ = frozenset({
     # and the staleness order the next pass reads. The organs' donations reach decisions through
     # the compiler; this pass only schedules them.
     "desks/mt5/reports/HOURLY_DISCOVERY.json", "desks/mt5/data/hourly_discovery_state.json",
+    # The release-surprise ingest and proposer reports: per-source fetch state and per-basis
+    # reach; the decision output is the donation under data/intelligence/release_surprise/.
+    "desks/mt5/reports/RELEASE_SURPRISE_PROPOSER.json",
+    "desks/mt5/reports/RELEASE_SURPRISE_INGEST.json",
     "desks/mt5/reports/alpha_evolution.json", "desks/mt5/reports/style_premia_sweep.json",
     "desks/mt5/reports/CROSS_ASSET_GRAPH.json", "desks/mt5/reports/tail_alpha_search.json",
     "desks/mt5/reports/ANOMALY_FACTORY.json", "desks/mt5/reports/SURVIVOR_DISTILLER.json",
@@ -1106,6 +1120,11 @@ EXTERNAL_READERS = {
                                                  "interrupt that fires constantly is an "
                                                  "expensive clock)"),
     "desks/mt5/data/deep_forest_seen.json": "deep_forest_miner (its own seen-ledger)",
+    "desks/mt5/data/axes/release_surprise.json": ("release_surprise_proposer (its own first-print "
+                                                  "log, merged never overwritten) and the sealed "
+                                                  "gauntlet through ORTHOGONAL_FAMILIES"
+                                                  "['release_surprise'], which reloads it on "
+                                                  "every build_cell"),
     "desks/mt5/data/intelligence/anomaly_cursor.json": "anomaly_miner (its own rotation cursor)",
     "desks/mt5/data/memory/": "deepening_worker.task_text (memory.prompt_context on every prompt)",
     "desks/mt5/data/research_budget.json": ("daily_cycle proposer budgets and deepening_worker "
@@ -1118,6 +1137,7 @@ EXTERNAL_READERS = {
     "desks/mt5/data/repo_cache/": "repo_miner (its own cache)",
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/style_premia/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/release_surprise/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/cross_asset_graph/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",

@@ -1721,6 +1721,19 @@ FAMILY_INPUTS["lead_lag"] = ("the driver instrument's bars (driver_symbol on the
 from mt5desk.family_world_macro import family_world_macro_state  # noqa: E402
 
 ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
+# RELEASE SURPRISE (2026-11-13, ideas N4 N6 N7 N8): four scheduled public releases scored
+# against their own pre-stated baseline (EIA storage vs five-year same week, USDA net sales vs
+# four-week run, TIC net foreign purchases vs twelve-month median of first prints, BoJ rinban
+# bought vs announced and offer cover). The family reads data/axes/release_surprise.json itself,
+# admitted vintages only, so every caller rebuilds the same cell from `basis` (and `crop`).
+from mt5desk.family_release_surprise import family_release_surprise  # noqa: E402
+
+ORTHOGONAL_FAMILIES["release_surprise"] = family_release_surprise
+FAMILY_INPUTS["release_surprise"] = ("one scheduled release's surprise (basis on the recipe; "
+                                     "crop for USDA), first prints or non-revising history only",
+                                     "data/axes/release_surprise.json "
+                                     "(release_surprise_ingest)")
+
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 

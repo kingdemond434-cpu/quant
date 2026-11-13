@@ -510,6 +510,10 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "release_surprise": "the basis (and crop) is named on the recipe by "
+                        "release_surprise_proposer, which charges its own basis x side x "
+                        "threshold x hold grid per instrument; a sweep enumerating it here would "
+                        "be a second uncharged search",
     "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
                          "reads the world dataset hunter's per-symbol exposure and charges its own "
                          "band x direction x hold grid; a sweep that paired every symbol with "

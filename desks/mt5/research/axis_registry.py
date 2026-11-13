@@ -162,7 +162,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
     "macro_release macro market": "macro_conditional macro_gold_yield",
-    "macro_release event market": "event_reaction",
+    # `release_surprise` (2026-11-13): a scheduled public release's size against its own
+    # pre-stated baseline (EIA storage, USDA export sales, TIC flows, BoJ rinban).
+    "macro_release event market": "event_reaction release_surprise",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
