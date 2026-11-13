@@ -138,7 +138,7 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/cross_sectional_breadth.py"),
     ("alt_equity_handoff", "desks/mt5/reports/ALT_EQUITY_HANDOFF.json", 3600,
      "research/alt_equity_handoff.py"),
-    # Informed capital (2026-11-03): insider, stake, congressional and odds disclosures. Its
+    # Informed capital (2026-11-03): insider, stake and odds disclosures. Its
     # producer is argless-safe (`--once` is a no-op flag) and its fence is read below.
     ("informed_capital", "desks/mt5/reports/INFORMED_CAPITAL.json", 3600,
      "research/informed_capital.py"),
@@ -464,7 +464,7 @@ def informed_capital_issues(root: Path | None = None) -> list[Issue]:
     """THE INFORMED-CAPITAL FENCE, ON THE BOARD (2026-11-03). `research/informed_capital.py`
     writes `fence` GREEN / RED / UNMEASURED every pass. RED -- an event observable before its own
     transaction date, a configured source failing three passes running, or a store that stopped
-    growing -- is STALLED; UNMEASURED (no EDGAR User-Agent, the Senate switch unset, an empty
+    growing -- is STALLED; UNMEASURED (no EDGAR User-Agent, an empty
     store) is BLIND. Neither is auto-repaired: the fix is the named source's. An absent or stale
     report is already a `missing:`/`stale:informed_capital` issue from CADENCE."""
     r = root or ROOT

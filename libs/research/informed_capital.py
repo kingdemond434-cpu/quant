@@ -11,16 +11,12 @@ the events the tracker measured, never a re-derivation of them.
                            (SUBMISSION / REPORTINGOWNER / NONDERIV_TRANS .tsv in a ZIP)
     SC 13D / SC 13G        rows of the EDGAR daily form index, dated by the filing header
     13F-HR                 the information table XML, diffed against the filer's previous one
-    House PTRs             the Clerk's e-filed PDF text (the yearly index is
-                           `libs.data.free_stack.parse_house_fd_index`, reused, not copied)
-    Senate PTRs            the eFD report table HTML
     Kalshi / Polymarket    public market lists and daily price histories
 
 THE TWO CLOCKS, AND WHY ONLY ONE OF THEM MAY EVER REACH A CELL.
   OBSERVABLE  the SEC acceptance datetime (America/New_York in the header, converted to UTC
               here). A record carrying only a DATE is placed at the next UTC day 04:00 -- after
-              EDGAR's 22:00 ET close in both seasons -- plus a posting lag for the congressional
-              sites, whose index date can precede the document being reachable.
+              EDGAR's 22:00 ET close in both seasons.
   ORACLE      the transaction date's close. It is what a study dated on the trade would read, and
               it is a document that did not exist yet. It is computed so the DECAY (oracle minus
               observable) can be published per source; it feeds no cell, no family and no axis.
@@ -32,7 +28,7 @@ Rule 10b5-1 plan was scheduled months earlier, so it is counted and set aside, n
 TRANSMISSION TO THE MT5 UNIVERSE (the universe law in CLAUDE.md):
   direct     a filing ABOUT an issuer the desk quotes as a share CFD -> that CFD. Share CFDs may
              mint only in the news lane, and `informed_flow_drift` is registered there.
-  aggregate  the day's insider (or congressional) buy share across EVERY issuer, against its own
+  aggregate  the day's insider buy share across EVERY issuer, against its own
              trailing baseline -> the US index CFDs. This is the main target: it needs no single
              name to be quoted at all.
   odds       a macro prediction-market contract's daily probability move -> the FX, index, gold,
@@ -62,14 +58,10 @@ from libs.research import form4
 UNMEASURED = "UNMEASURED"
 
 #: Families of record, and the clock precision each one carries.
-FAMILIES: tuple[str, ...] = ("form4", "form345_ds", "sc13d", "sc13g", "13f", "house_ptr",
-                             "senate_ptr", "kalshi", "polymarket")
+FAMILIES: tuple[str, ...] = ("form4", "form345_ds", "sc13d", "sc13g", "13f", "kalshi",
+                             "polymarket")
 
-#: Extra days a congressional index date may precede the document being reachable. Not measured
-#: on this box (the sites were unreachable where this was built); conservative by one day.
-POSTING_LAG_D: dict[str, int] = {"house_ptr": 1, "senate_ptr": 1}
-
-#: The index CFDs an aggregate of US insider or congressional breadth transmits into.
+#: The index CFDs an aggregate of US insider breadth transmits into.
 AGG_TARGETS: tuple[str, ...] = ("US500", "NAS100", "US30", "US2000")
 
 #: A day's buy share must stand this many trailing standard deviations from its own baseline.
@@ -187,8 +179,7 @@ def knowable_at(row: Mapping[str, Any]) -> tuple[datetime | None, str]:
     filed = parse_day(row.get("filed_date"))
     if filed is None:
         return None, UNMEASURED
-    lag = POSTING_LAG_D.get(str(row.get("family") or ""), 0)
-    d = date.fromisoformat(filed) + timedelta(days=1 + lag)
+    d = date.fromisoformat(filed) + timedelta(days=1)
     return datetime(d.year, d.month, d.day, 4, 0, tzinfo=UTC), "date"
 
 
@@ -580,78 +571,6 @@ def diff_13f(current: Mapping[str, Mapping[str, Any]], prior: Mapping[str, Mappi
     return out
 
 
-# ------------------------------------------------------------------------------ congress
-_HOUSE_TX = re.compile(
-    r"\(([A-Z][A-Z0-9.\-]{0,6})\)\s*\[(ST|OP)\]\s*(P|S\s*\(partial\)|S)\s+"
-    r"(\d{2}/\d{2}/\d{4})\s+(\d{2}/\d{2}/\d{4})\s+\$([\d,]+)", re.S)
-
-
-def parse_house_ptr_text(text: str, *, doc_id: str, filed_date: str) -> list[dict[str, Any]]:
-    """Text of one e-filed House PTR PDF -> one event per (ticker) net of the report's lines.
-    A scanned (paper) PTR yields no text and therefore no rows; the organ counts it."""
-    net: dict[str, dict[str, Any]] = {}
-    for m in _HOUSE_TX.finditer(re.sub(r"[ \t]+", " ", text or "")):
-        ticker, _kind, typ, txd, _note, amt = m.groups()
-        side = 1 if typ.startswith("P") else -1
-        n = net.setdefault(ticker, {"net": 0, "first": None, "value": 0.0})
-        n["net"] += side
-        n["value"] += _num(amt) or 0.0
-        d = parse_day(txd)
-        if d and (n["first"] is None or d < n["first"]):
-            n["first"] = d
-    return [_filing_row(family="house_ptr", accession=f"house:{doc_id}:{t}", owner=doc_id,
-                        role="member", ticker=t, issuer_cik="", doc_type="PTR",
-                        direction=(1 if n["net"] > 0 else -1), accepted_at=None,
-                        filed_date=filed_date, txn_date=n["first"], value_usd=n["value"])
-            for t, n in sorted(net.items()) if n["net"] != 0]
-
-
-def _cells(tr: str) -> list[str]:
-    return [re.sub(r"<[^>]+>", " ", c).strip() for c in
-            re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S | re.I)]
-
-
-def parse_senate_ptr_html(html: str, *, report_id: str, filed_date: str
-                          ) -> list[dict[str, Any]]:
-    """One eFD PTR page (`/search/view/ptr/<id>/`) -> one event per ticker, net of its lines."""
-    net: dict[str, dict[str, Any]] = {}
-    for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", html or "", re.S | re.I):
-        c = [re.sub(r"\s+", " ", x) for x in _cells(tr)]
-        if len(c) < 8:
-            continue
-        ticker = c[3].strip().upper()
-        typ = c[6].lower()
-        if not re.fullmatch(r"[A-Z][A-Z0-9.\-]{0,6}", ticker) or "stock" not in c[5].lower():
-            continue
-        side = 1 if "purchase" in typ else -1 if "sale" in typ else 0
-        if not side:
-            continue
-        n = net.setdefault(ticker, {"net": 0, "first": None})
-        n["net"] += side
-        d = parse_day(c[1])
-        if d and (n["first"] is None or d < n["first"]):
-            n["first"] = d
-    return [_filing_row(family="senate_ptr", accession=f"senate:{report_id}:{t}",
-                        owner=report_id, role="member", ticker=t, issuer_cik="",
-                        doc_type="PTR", direction=(1 if n["net"] > 0 else -1),
-                        accepted_at=None, filed_date=filed_date, txn_date=n["first"],
-                        value_usd=None)
-            for t, n in sorted(net.items()) if n["net"] != 0]
-
-
-def parse_senate_search(doc: Any) -> list[dict[str, str]]:
-    """eFD `/search/report/data/` JSON -> [{report_id, filed_date}] for e-filed PTRs only."""
-    out: list[dict[str, str]] = []
-    for row in (doc.get("data") if isinstance(doc, dict) else None) or []:
-        if not isinstance(row, list) or len(row) < 5:
-            continue
-        m = re.search(r"/search/view/ptr/([0-9a-fA-F\-]{8,})/", str(row[3]))
-        d = parse_day(row[4])
-        if m and d:
-            out.append({"report_id": m.group(1), "filed_date": d})
-    return out
-
-
 # ------------------------------------------------------------------------------ odds
 def odds_category(question: str) -> str | None:
     q = f" {(question or '').lower()} "
@@ -799,8 +718,6 @@ def source_of(row: Mapping[str, Any]) -> str:
         return f"{fam}:{row.get('category')}"
     if fam in ("form4", "form345_ds"):
         return f"form4:{row.get('role') or 'other'}"
-    if fam in ("house_ptr", "senate_ptr"):
-        return f"{fam.split('_')[0]}:member"
     return f"{fam}:{row.get('role') or 'filer'}"
 
 
@@ -864,7 +781,6 @@ AGG_SOURCES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ("form4_agg", "exec", ("form4", "form345_ds")),
     ("form4_agg", "director", ("form4", "form345_ds")),
     ("form4_agg", "all", ("form4", "form345_ds")),
-    ("congress_agg", "all", ("house_ptr", "senate_ptr")),
 )
 
 

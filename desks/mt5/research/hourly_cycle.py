@@ -1432,7 +1432,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
                      "alpha_capture",
-                     # informed capital: insider/13D/13F/congress/odds disclosures -> PIT events
+                     # informed capital: insider/13D/13F/odds disclosures -> PIT events
                      "informed_capital"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
@@ -4518,7 +4518,7 @@ def main() -> None:
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
     # INFORMED CAPITAL (2026-11-03): SEC Form 4/5 role cells (and the quarterly data sets as the
-    # backfill), SC 13D/13G stakes, 13F diffs, House PTRs (Senate awaiting the principal) and
+    # backfill), SC 13D/13G stakes, 13F diffs (congressional PTRs excluded, 5 U.S.C. 13107(c)) and
     # Kalshi/Polymarket macro odds, each stored at the instant it became PUBLIC -- acceptance,
     # never the trade date -- tracked against a shifted-date placebo and emitted as
     # informed_flow_drift cells; its fence (RED on a PIT violation or a failing source) is on

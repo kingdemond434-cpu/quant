@@ -11,7 +11,7 @@ instrument drifts after the instant the disclosure became public.
 THREE RELATIONS, ONE FAMILY:
   direct     a filing about the issuer a share CFD tracks (news lane, `universe_policy.
              NEWS_LANE_FAMILIES`)
-  aggregate  the day's abnormal insider or congressional buy share across every issuer, on the
+  aggregate  the day's abnormal insider buy share across every issuer, on the
              US index CFDs
   odds       a macro prediction-market contract's daily probability move, on the FX, index,
              gold, oil and rates legs its category names

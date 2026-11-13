@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""INFORMED CAPITAL -- insider roles, activist and institutional stakes, congressional trades and
-prediction-market odds, read from free public records, stamped at the instant they became public,
-tracked against the MT5 universe and turned into gauntlet cells.
+"""INFORMED CAPITAL -- insider roles, activist and institutional stakes and prediction-market odds,
+read from free public records, stamped at the instant they became public, tracked against the MT5
+universe and turned into gauntlet cells.
 
     SOURCE              ENDPOINT (free, public, no login)                      CLOCK
     sec_form4           EDGAR daily form index + each Form 4/5 complete .txt   acceptance datetime
     sec_form345_ds      SEC Insider Transactions Data Sets (quarterly ZIP)     filing date (+1d 04Z)
     sec_13d             EDGAR daily form index, SC 13D / SC 13G, .hdr.sgml     acceptance datetime
     sec_13f             EDGAR 13F-HR info tables, diffed against the prior one acceptance (as ET)
-    house_ptr           Clerk yearly FD index + e-filed PTR PDFs (OFF, below)  filing date (+2d 04Z)
-    senate_ptr          eFD search API + PTR pages (OFF by default, see below) filing date (+2d 04Z)
     kalshi              trade-api/v2 series, markets, daily candlesticks       candle end
     polymarket          gamma-api markets + clob prices-history                price timestamp
 
@@ -31,15 +29,15 @@ ONE PASS, FIVE STEPS, EVERY ONE WRITING SOMETHING.
      issue board reads: RED on a point-in-time violation, a configured source failing three passes
      running, or a store that has stopped growing.
 
-BOTH CONGRESSIONAL COLLECTORS ARE OFF UNTIL THE PRINCIPAL SAYS OTHERWISE (audit MF1). 5 U.S.C.
-13107(c) makes it unlawful to obtain or use a congressional financial disclosure report for a
-commercial purpose, and it binds the House report exactly as it binds the Senate one: eFD merely
-makes the visitor click the statute before its search answers, the Clerk's site does not. Whether
-a trading desk's use is commercial is not this session's call. The parsers are built and tested;
-`QUANT_CONGRESS_ATTEST=1` (one switch, both chambers) turns the two collectors on. While it is
-unset they report AWAITING_PRINCIPAL, fetch nothing, and the cells they would have fed
-(house:member, senate:member, congress_agg:all) are billed once a day to
-`data/missed_growth.jsonl` under rail `congress_attestation_gate`, so the gate is never free.
+CONGRESSIONAL DISCLOSURES ARE NOT COLLECTED (Auditor HOLD, 2026-11-13). 5 U.S.C. 13107(c) makes
+it unlawful to obtain or use a House or Senate financial disclosure report for a commercial
+purpose, and a trading desk's use is one. There is no collector, parser or switch for them here;
+the forgone congressional cells are UNMEASURED (`report["excluded_sources"]` says so every pass).
+
+ROBOTS FIRST, FAIL CLOSED. `libs.data.polite_fetch` checks no robots.txt, so `Http` reads each
+host's robots.txt before its first request and obeys it: a Disallow, a 5xx, a network error, a
+401/403/429/451 or an HTML body served as robots.txt means nothing on that host is fetched this
+pass (a 404 is the convention for "nothing disallowed"). A refusal reads as a failed source.
 
 LIVE YIELD IS UNMEASURED UNTIL THE TRADING BOX RUNS IT: the container this was built in reaches
 none of these hosts. The parsers are proven on recorded payload shapes (tests).
@@ -50,7 +48,6 @@ none of these hosts. The parsers are proven on recorded payload shapes (tests).
 from __future__ import annotations
 
 import argparse
-import contextlib
 import hashlib
 import json
 import os
@@ -59,10 +56,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import urllib.robotparser
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, date, datetime, timedelta
-from http.cookiejar import CookieJar
 from pathlib import Path
 from statistics import NormalDist
 from typing import Any
@@ -96,8 +93,6 @@ BACKFILL_QUARTERS = 8
 INDEX_DAYS_PER_PASS = 5
 QUEUE_CAP = 20_000
 MAX_13F_PER_PASS = 4
-MAX_HOUSE_PDFS = 40
-MAX_SENATE_REPORTS = 40
 MAX_ODDS_MARKETS = 60
 #: Consecutive failed passes after which a configured source turns the fence RED.
 RED_AFTER_FAILURES = 3
@@ -105,20 +100,15 @@ RED_AFTER_FAILURES = 3
 STALL_DAYS = 7
 
 SEC_HOSTS = {"www.sec.gov": 0.25, "data.sec.gov": 0.25, "efts.sec.gov": 0.25}
-HOUSE_PDF = "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/{year}/{doc}.pdf"
-SENATE = "https://efdsearch.senate.gov"
 KALSHI = "https://api.elections.kalshi.com/trade-api/v2"
 KALSHI_CATEGORIES = ("Economics", "Financials")
 
-MECHANISM = ("informed flow diffuses slowly: a disclosed insider, activist, institutional or "
-             "legislator trade, or a macro contract's probability move, is followed by drift in "
+MECHANISM = ("informed flow diffuses slowly: a disclosed insider, activist or institutional "
+             "trade, or a macro contract's probability move, is followed by drift in "
              "the instrument after the instant it became public")
 PAYER = "holders who do not read filings or prediction markets, and benchmark-bound books"
 CONSTRAINT = ("reading disclosures is costly, short-sale cost limits acting on a sale, and an "
               "aggregate breadth move is never news about any one name")
-STATUTE = ("5 U.S.C. 13107(c): congressional financial disclosure reports may not be used for a "
-           "commercial purpose; the principal decides whether this desk's use is one")
-
 #: The roster: how each source is reached, stamped and labelled (the terms gate's fields).
 SOURCES: dict[str, dict[str, Any]] = {
     "sec_form4": {"host": "www.sec.gov", "access_label": "PUBLIC", "cadence_s": 3600,
@@ -135,15 +125,6 @@ SOURCES: dict[str, dict[str, Any]] = {
                 "auth": "declared User-Agent",
                 "pit": "submissions acceptanceDateTime read as ET (conservative: never earlier)",
                 "licence": "US federal public record; SEC fair access <= 10 req/s"},
-    "house_ptr": {"host": "disclosures-clerk.house.gov", "access_label": "PUBLIC_WITH_TERMS",
-                  "cadence_s": 6 * 3600, "auth": "none",
-                  "pit": "index FilingDate -> +2 UTC days 04:00 (posting lag)",
-                  "licence": STATUTE + "; the collector runs only with QUANT_CONGRESS_ATTEST=1"},
-    "senate_ptr": {"host": "efdsearch.senate.gov", "access_label": "PUBLIC_WITH_TERMS",
-                   "cadence_s": 6 * 3600, "auth": "click-through attestation",
-                   "pit": "date received -> +2 UTC days 04:00 (posting lag)",
-                   "licence": STATUTE + "; the site requires clicking that agreement, so the "
-                              "collector runs only with QUANT_CONGRESS_ATTEST=1"},
     "kalshi": {"host": "api.elections.kalshi.com", "venue": "kalshi", "cadence_s": 3600,
                "auth": "none (public market data)", "pit": "candle end_period_ts",
                "licence": "terms gate: research.prediction_markets.BY_NAME['kalshi']"},
@@ -152,64 +133,11 @@ SOURCES: dict[str, dict[str, Any]] = {
                    "licence": "terms gate: research.prediction_markets.BY_NAME['polymarket']"},
 }
 SEC_SOURCES = ("sec_form4", "sec_form345_ds", "sec_13d", "sec_13f")
-CONGRESS_SWITCH = "QUANT_CONGRESS_ATTEST"
-#: The cells the congressional gate forgoes while it is shut -- billed to the missed-growth ledger.
-CONGRESS_CELLS: tuple[tuple[str, str], ...] = (
-    ("house_ptr", "house:member"), ("senate_ptr", "senate:member"),
-    ("house_ptr+senate_ptr", "congress_agg:all"))
-MISSED_GROWTH = DESK / "data" / "missed_growth.jsonl"
-
-
-def congress_attested() -> bool:
-    """The principal's one switch for both chambers (5 U.S.C. 13107(c))."""
-    return os.environ.get(CONGRESS_SWITCH, "").strip() == "1"
-
-
-def _awaiting_congress(chamber: str) -> dict[str, Any]:
-    return {"status": "AWAITING_PRINCIPAL",
-            "why": (f"the {chamber} report is a congressional financial disclosure: 5 U.S.C. "
-                    f"13107(c) bars obtaining or using it for a commercial purpose, so nothing is "
-                    f"fetched until the principal sets {CONGRESS_SWITCH}=1 (both chambers). The "
-                    "parser is built and tested; the forgone cells are on the missed-growth "
-                    "ledger (rail congress_attestation_gate)")}
-
-
-def congress_missed_growth(now: datetime, *, path: Path | None = None,
-                           apply: bool = True) -> list[dict[str, Any]]:
-    """GROWTH GOVERNANCE (Rule 1): the gate's daily bill, one line per forgone cell. The value is
-    UNMEASURED -- nothing was collected, so no drift exists to price -- and says so, rather than
-    reading as a zero cost."""
-    if congress_attested():
-        return []
-    path = path or MISSED_GROWTH
-    day = now.date().isoformat()
-    have: set[tuple[str, str]] = set()
-    try:
-        for ln in path.read_text("utf-8").splitlines():
-            try:
-                r = json.loads(ln)
-            except ValueError:
-                continue
-            if isinstance(r, dict) and r.get("rail") == "congress_attestation_gate":
-                have.add((str(r.get("day")), str(r.get("cell"))))
-    except OSError:
-        pass
-    fresh = [{"day": day, "rail": "congress_attestation_gate", "value": None,
-              "status": UNMEASURED, "at": now.isoformat(), "cell": cell, "source": src,
-              "family": FAMILY, "two_sided": True,
-              "targets": (list(ic.AGG_TARGETS) if cell.startswith("congress_agg")
-                          else "share CFDs named in the reports (news lane)"),
-              "why": (f"{cell} cells forgone while {CONGRESS_SWITCH} is unset (5 U.S.C. "
-                      "13107(c)); the growth given up is UNMEASURED because the reports were "
-                      "never read -- set the switch, or retire the gate, to price it")}
-             for src, cell in CONGRESS_CELLS if (day, cell) not in have]
-    if apply and fresh:
-        with contextlib.suppress(OSError):
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("a", encoding="utf-8") as fh:
-                for row in fresh:
-                    fh.write(json.dumps(row) + "\n")
-    return fresh
+#: Sources the desk may not use, and why: reported every pass so the gap is never silent.
+EXCLUDED_SOURCES: dict[str, str] = {
+    "house_ptr": "5 U.S.C. 13107(c) bars commercial use of congressional disclosure reports",
+    "senate_ptr": "5 U.S.C. 13107(c) bars commercial use of congressional disclosure reports",
+}
 
 
 # ------------------------------------------------------------------------------ helpers
@@ -268,22 +196,58 @@ def terms_gate(source: str) -> dict[str, Any]:
 # ------------------------------------------------------------------------------ http
 class Http:
     """The fetch seam. Text through `polite_fetch.get` (per-host spacing, bounded retries, never
-    raises); bytes and the Senate form POST through one cookie-keeping opener that honours the
-    same per-host gate. Tests pass a fake with the same three methods."""
+    raises); bytes through one opener that honours the same per-host gate. Every request first
+    passes `robots_allows` (fail closed: see the module docstring). Tests pass a fake with the
+    same two methods."""
 
     def __init__(self) -> None:
         from libs.data import polite_fetch as pf
         self.pf = pf
         self.gate = pf.HostGate(per_host={**pf.HOST_INTERVAL_S, **SEC_HOSTS})
         self.opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(CookieJar()),
             urllib.request.HTTPSHandler(context=pf.ssl_context()))
+        self._robots: dict[str, urllib.robotparser.RobotFileParser | str] = {}
+
+    def robots_allows(self, url: str, agent: str) -> tuple[bool, str]:
+        """(allowed, why). robots.txt is read once per host per pass; anything but a parsed text
+        file or a 404 refuses the whole host for the pass."""
+        u = urllib.parse.urlparse(url)
+        host = u.netloc.lower()
+        if host not in self._robots:
+            robots_url = f"{u.scheme or 'https'}://{host}/robots.txt"
+            st, raw, err = self._open(urllib.request.Request(
+                robots_url, headers={**self.pf.BROWSER_HEADERS, "User-Agent": agent}),
+                None, 500_000)
+            text = raw.decode("utf-8", "replace")
+            if st == 404:
+                text = ""
+            elif st is None or not 200 <= st < 300:
+                self._robots[host] = f"robots.txt unreadable ({err or st}): host not fetched"
+            elif text.lstrip()[:15].lower().startswith(("<!doctype", "<html")):
+                self._robots[host] = "robots.txt is an HTML page: host not fetched"
+            if host not in self._robots:
+                parser = urllib.robotparser.RobotFileParser()
+                parser.parse(text.splitlines())
+                self._robots[host] = parser
+        rp = self._robots[host]
+        if isinstance(rp, str):
+            return False, rp
+        if not rp.can_fetch(agent, url):
+            return False, "robots.txt Disallow covers this path"
+        return True, ""
 
     def text(self, url: str, *, headers: Mapping[str, str] | None = None,
              deadline: float | None = None, leg: str = SOURCE) -> tuple[int | None, str, str]:
+        ok, why = self.robots_allows(url, self._agent(headers))
+        if not ok:
+            return None, "", f"ROBOTS: {why}"
         r = self.pf.get(url, headers=dict(headers or {}), deadline=deadline, leg=leg,
                         gate=self.gate, max_bytes=8_000_000)
         return r.status, r.text if r.ok else "", r.error
+
+    def _agent(self, headers: Mapping[str, str] | None) -> str:
+        h = {k.lower(): v for k, v in dict(headers or {}).items()}
+        return str(h.get("user-agent") or self.pf.BROWSER_HEADERS.get("User-Agent") or "*")
 
     def _open(self, req: urllib.request.Request, deadline: float | None,
               max_bytes: int) -> tuple[int | None, bytes, str]:
@@ -302,26 +266,13 @@ class Http:
     def bytes(self, url: str, *, headers: Mapping[str, str] | None = None,
               deadline: float | None = None, max_bytes: int = 120_000_000
               ) -> tuple[int | None, bytes, str]:
+        ok, why = self.robots_allows(url, self._agent(headers))
+        if not ok:
+            return None, b"", f"ROBOTS: {why}"
         hdr = {**self.pf.BROWSER_HEADERS, **dict(headers or {})}
         hdr.pop("Accept-Encoding", None)            # raw bytes: no transfer compression to undo
         return self._open(urllib.request.Request(url, headers=hdr), deadline, max_bytes)
 
-    def post(self, url: str, data: Mapping[str, str], *, headers: Mapping[str, str] | None = None,
-             deadline: float | None = None) -> tuple[int | None, str, str]:
-        hdr = {**self.pf.BROWSER_HEADERS, **dict(headers or {})}
-        hdr.pop("Accept-Encoding", None)
-        body = urllib.parse.urlencode(data).encode()
-        st, raw, err = self._open(urllib.request.Request(url, data=body, headers=hdr,
-                                                         method="POST"), deadline, 8_000_000)
-        return st, raw.decode("utf-8", "replace"), err
-
-    def cookie(self, name: str) -> str:
-        for h in self.opener.handlers:
-            jar = getattr(h, "cookiejar", None)
-            for c in jar or []:
-                if c.name == name:
-                    return str(c.value or "")
-        return ""
 
 
 def _ok(status: int | None) -> bool:
@@ -563,96 +514,6 @@ def collect_form345_ds(http: Any, state: dict[str, Any], deadline: float, ua: st
     return rows, {"status": "FETCHED", "quarter": q, "events": len(rows), "census": census}
 
 
-def collect_house(http: Any, state: dict[str, Any], deadline: float, now: datetime
-                  ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """The Clerk's yearly index (parsed by `free_stack.parse_house_fd_index`, reused), then the
-    e-filed PTR PDFs not yet read. A PDF with no extractable text is a paper filing: counted."""
-    if not congress_attested():
-        return [], _awaiting_congress("House")
-    from libs.data.free_stack import HOUSE_FD_ZIP, parse_house_fd_index
-    try:
-        from pypdf import PdfReader
-    except ImportError:
-        return [], {"status": UNMEASURED, "why": "pypdf is not installed on this host"}
-    done = set(state.get("house_done") or [])
-    rep: dict[str, Any] = {"pdfs": 0, "no_text": 0, "errors": Counter()}
-    todo: list[tuple[str, str, int]] = []
-    for year in sorted({now.year, (now - timedelta(days=45)).year}):
-        st, raw, err = http.bytes(HOUSE_FD_ZIP.format(year=year), deadline=deadline)
-        if not _ok(st):
-            rep["errors"][err or f"HTTP {st}"] += 1
-            continue
-        for r in parse_house_fd_index(raw):
-            if r.get("type") == "P" and r.get("doc") and r["doc"] not in done:
-                todo.append((r["doc"], ic.parse_day(r.get("date")) or "", year))
-    rows: list[dict[str, Any]] = []
-    for doc, filed, year in sorted(todo, key=lambda x: x[1], reverse=True)[:MAX_HOUSE_PDFS]:
-        if time.monotonic() >= deadline or not filed:
-            break
-        st, raw, err = http.bytes(HOUSE_PDF.format(year=year, doc=doc), deadline=deadline,
-                                  max_bytes=20_000_000)
-        if not _ok(st):
-            rep["errors"][err or f"HTTP {st}"] += 1
-            continue
-        try:
-            import io
-            text = "\n".join((p.extract_text() or "") for p in PdfReader(io.BytesIO(raw)).pages)
-        except Exception:
-            text = ""
-        rep["pdfs"] += 1
-        done.add(doc)
-        if not text.strip():
-            rep["no_text"] += 1
-            continue
-        rows.extend(ic.parse_house_ptr_text(text, doc_id=doc, filed_date=filed))
-    state["house_done"] = sorted(done)[-50_000:]
-    rep["events"] = len(rows)
-    rep["status"] = "FETCHED" if rep["pdfs"] or not rep["errors"] else "FAILED"
-    rep["errors"] = dict(rep["errors"])
-    return rows, rep
-
-
-def collect_senate(http: Any, state: dict[str, Any], deadline: float, now: datetime
-                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    if not congress_attested():
-        return [], _awaiting_congress("Senate")
-    done = set(state.get("senate_done") or [])
-    st, _t, err = http.text(f"{SENATE}/search/home/", deadline=deadline)
-    token = http.cookie("csrftoken")
-    if not _ok(st) or not token:
-        return [], {"status": "FAILED", "error": err or "no csrf token"}
-    hdr = {"Referer": f"{SENATE}/search/home/", "X-CSRFToken": token}
-    http.post(f"{SENATE}/search/home/", {"prohibition_agreement": "1",
-                                         "csrfmiddlewaretoken": token}, headers=hdr,
-              deadline=deadline)
-    since = (now - timedelta(days=30)).strftime("%m/%d/%Y 00:00:00")
-    st, text, err = http.post(f"{SENATE}/search/report/data/", {
-        "start": "0", "length": "100", "report_types": "[11]", "filer_types": "[]",
-        "submitted_start_date": since, "submitted_end_date": "", "candidate_state": "",
-        "senator_state": "", "office_id": "", "first_name": "", "last_name": "",
-        "csrfmiddlewaretoken": http.cookie("csrftoken") or token},
-        headers={**hdr, "Referer": f"{SENATE}/search/"}, deadline=deadline)
-    try:
-        reports = ic.parse_senate_search(json.loads(text)) if _ok(st) else []
-    except ValueError:
-        reports = []
-    rows: list[dict[str, Any]] = []
-    n = 0
-    for r in reports:
-        if r["report_id"] in done or n >= MAX_SENATE_REPORTS or time.monotonic() >= deadline:
-            continue
-        st, html, _err = http.text(f"{SENATE}/search/view/ptr/{r['report_id']}/",
-                                   deadline=deadline)
-        if not _ok(st):
-            continue
-        n += 1
-        done.add(r["report_id"])
-        rows.extend(ic.parse_senate_ptr_html(html, report_id=r["report_id"],
-                                             filed_date=r["filed_date"]))
-    state["senate_done"] = sorted(done)[-50_000:]
-    return rows, {"status": "FETCHED" if n else "FAILED", "reports": n, "events": len(rows)}
-
-
 def collect_kalshi(http: Any, state: dict[str, Any], deadline: float, now: datetime
                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Public Kalshi series in the macro categories, their OPEN AND SETTLED markets, and daily
@@ -806,8 +667,7 @@ def collect(*, now: datetime, budget_s: float, http: Any = None,
             rows.extend(got)
             report["sec_form345_ds"] = rep
     others: list[tuple[str, Callable[..., tuple[list[dict[str, Any]], dict[str, Any]]]]] = [
-        ("kalshi", collect_kalshi), ("polymarket", collect_polymarket),
-        ("house_ptr", collect_house), ("senate_ptr", collect_senate)]
+        ("kalshi", collect_kalshi), ("polymarket", collect_polymarket)]
     for sid, fn in others:
         if sid not in wanted or not gates[sid]["allowed"]:
             continue
@@ -1081,7 +941,6 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
     path = _donate(cands, max(trials, len(cands))) if (apply and cands) else None
     fam_counts = Counter(str(r.get("family")) for r in rows)
     fnc = fence(rows=rows, sources=sources, state=state, now=now)
-    missed = congress_missed_growth(now, apply=apply)
     report = {
         "at": now.isoformat(), "source": SOURCE, "family": FAMILY,
         "elapsed_s": round(time.monotonic() - started, 2),
@@ -1102,9 +961,10 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
                   "status": ("donated" if path else
                              "nothing cleared the screen yet: history accrues one pass and one "
                              "backfilled quarter at a time" if not cands else "dry run")},
-        "congress_gate": {"switch": CONGRESS_SWITCH, "attested": congress_attested(),
-                          "missed_growth_appended": len(missed),
-                          "rail": "congress_attestation_gate"},
+        "excluded_sources": {sid: {"why": why, "status": UNMEASURED,
+                                   "missed_growth": (f"{sid} cells are never minted ({why}); the "
+                                                     "growth forgone is UNMEASURED, not zero")}
+                             for sid, why in EXCLUDED_SOURCES.items()},
         "odds_listing_census": {v: (sources.get(v) or {}).get("listing_census", UNMEASURED)
                                 for v in ("kalshi", "polymarket")},
         "transmission": {"direct": "share CFDs (news lane: informed_flow_drift is in "
@@ -1134,7 +994,7 @@ def check(path: Path = REPORT, *, max_age_s: float = 3 * 3600, now: datetime | N
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="informed capital: insiders, stakes, congress, odds")
+    ap = argparse.ArgumentParser(description="informed capital: insiders, stakes, odds")
     ap.add_argument("--once", action="store_true", help="one pass (the only mode)")
     ap.add_argument("--budget-s", type=float, default=300.0)
     ap.add_argument("--dry-run", action="store_true", help="measure and print; write nothing")

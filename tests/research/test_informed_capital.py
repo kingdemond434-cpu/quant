@@ -2,7 +2,7 @@
 transmissions, the family's entry rule, the cell screen, the fence and the issue-board wiring.
 
 * every event is placed at its OBSERVABLE instant -- the SEC acceptance datetime (Eastern ->
-  UTC), a date-only filing at the next UTC day 04:00 (+ a posting lag for Congress), or the
+  UTC), a date-only filing at the next UTC day 04:00, or the
   venue's price stamp -- and never at the transaction date;
 * only open-market P and S are signed; 10b5-1 plan trades, grants and amendments are not;
 * a share CFD reaches the docket only through the news lane, and the main targets (indices,
@@ -224,39 +224,10 @@ def test_13f_diff() -> None:
     assert ic.normalise_name("Apple Inc.") == ic.normalise_name("APPLE INC COM") == "apple"
 
 
-HOUSE_TEXT = """ID Owner Asset Transaction Type Date Notification Date Amount
-SP Apple Inc. - Common Stock (AAPL) [ST] P 06/02/2026 06/20/2026 $1,001 - $15,000
-F S : New
-JT NVIDIA Corporation (NVDA)
-[ST] S (partial) 06/03/2026 06/20/2026 $15,001 - $50,000
-Microsoft (MSFT) [ST] S 06/04/2026 06/20/2026 $1,001 - $15,000
-Microsoft (MSFT) [ST] P 06/05/2026 06/20/2026 $1,001 - $15,000
-"""
 
 
-def test_house_ptr_text_nets_per_ticker() -> None:
-    rows = ic.parse_house_ptr_text(HOUSE_TEXT, doc_id="20012345", filed_date="2026-06-25")
-    got = {r["ticker"]: r["direction"] for r in rows}
-    assert got == {"AAPL": 1, "NVDA": -1}               # MSFT nets to zero
-    r = next(x for x in rows if x["ticker"] == "AAPL")
-    # filed 06-25 -> next day + one posting-lag day, at 04:00 UTC
-    assert ic.knowable_at(r)[0] == datetime(2026, 6, 27, 4, 0, tzinfo=UTC)
-    assert r["txn_date"] == "2026-06-02"
 
 
-def test_senate_parsers() -> None:
-    html = ("<table><tr><th>#</th></tr><tr><td>1</td><td>10/15/2026</td><td>Self</td>"
-            "<td><a href='x'>AAPL</a></td><td>Apple Inc</td><td>Stock</td><td>Purchase</td>"
-            "<td>$1,001 - $15,000</td><td>--</td></tr>"
-            "<tr><td>2</td><td>10/16/2026</td><td>Spouse</td><td>--</td><td>Muni bond</td>"
-            "<td>Municipal Security</td><td>Sale (Full)</td><td>$1,001</td><td>--</td></tr>"
-            "</table>")
-    rows = ic.parse_senate_ptr_html(html, report_id="abc", filed_date="2026-10-20")
-    assert [(r["ticker"], r["direction"]) for r in rows] == [("AAPL", 1)]
-    rid = "1a2b3c4d-0000-1111-2222-333344445555"
-    doc = {"data": [["A", "B", "Sen", f'<a href="/search/view/ptr/{rid}/">PTR</a>', "10/20/2026"],
-                    ["A", "B", "Sen", '<a href="/search/view/paper/X/">paper</a>', "10/20/2026"]]}
-    assert ic.parse_senate_search(doc) == [{"report_id": rid, "filed_date": "2026-10-20"}]
 
 
 def test_odds_parsers_category_polarity_and_events() -> None:
@@ -424,12 +395,6 @@ class FakeHttp:
         v = self._find(url)
         return (200, v, "") if isinstance(v, bytes) else (404, b"", "HTTP 404")
 
-    def post(self, url: str, data: Any, **_kw: Any) -> tuple[int | None, str, str]:
-        return self.text(url)
-
-    def cookie(self, _name: str) -> str:
-        return ""
-
 
 @pytest.fixture
 def paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -438,8 +403,6 @@ def paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(organ, "TICKERS_CACHE", tmp_path / "tickers.json")
     monkeypatch.setattr(organ, "_donate", lambda c, n: None)
     monkeypatch.setattr(av, "bar_clock", lambda: av.identity_clock)
-    monkeypatch.setattr(organ, "MISSED_GROWTH", tmp_path / "missed_growth.jsonl")
-    monkeypatch.delenv("QUANT_CONGRESS_ATTEST", raising=False)
     return tmp_path
 
 
@@ -473,10 +436,12 @@ def test_one_pass_collects_stores_and_reports(paths: Path,
     rep = organ.run(now=now, http=http, store=store, loader=lambda _s: None,
                     universe_doc={"Apple": {"asset_class": "Equities"}, "US500": {},
                                   "EURUSD": {}, "XAUUSD": {}},
-                    only=["sec_form4", "sec_13d", "kalshi", "senate_ptr"], n_placebo=5)
+                    only=["sec_form4", "sec_13d", "kalshi", "senate_ptr", "house_ptr"],
+                    n_placebo=5)
     fams = rep["store"]["by_family"]
     assert fams.get("form4") == 1 and fams.get("sc13d") == 1 and fams.get("kalshi") == 1
-    assert rep["sources"]["senate_ptr"]["status"] == "AWAITING_PRINCIPAL"
+    assert "senate_ptr" not in rep["sources"] and "house_ptr" not in rep["sources"]
+    assert "UNMEASURED" in written_excluded(paths)["senate_ptr"]["missed_growth"]
     assert rep["sources"]["sec_form4"]["status"] == "FETCHED"
     assert rep["sources"]["kalshi"]["terms"]["allowed"] is True
     written = json.loads((paths / "INFORMED_CAPITAL.json").read_text())
@@ -490,39 +455,12 @@ def test_one_pass_collects_stores_and_reports(paths: Path,
     # A second identical pass adds nothing: the store is append-only and content-deduplicated.
     again = organ.append(stored, now=now, path=store)
     assert again["added"] == 0
-    assert not any("efdsearch" in u for u in http.calls)        # the Senate was never touched
+    assert not any("efdsearch" in u or "house.gov" in u for u in http.calls)
     census = written["odds_listing_census"]["kalshi"]["KXFED"]
     assert census["open"] == 1 and census["settled"] == 1 and census["page_capped"] is False
     assert any("status=settled" in u for u in http.calls)       # resolved contracts are read
 
 
-def test_no_congressional_fetch_without_the_switch_and_the_gate_is_billed(
-        paths: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
-    http = FakeHttp({"FD.zip": b"PK", "ptr-pdfs": b"%PDF", "efdsearch": "x"})
-    rep = organ.run(now=now, http=http, store=paths / "events.jsonl", loader=lambda _s: None,
-                    universe_doc={}, only=["house_ptr", "senate_ptr"], n_placebo=5)
-    assert rep["sources"]["house_ptr"]["status"] == "AWAITING_PRINCIPAL"
-    assert rep["sources"]["senate_ptr"]["status"] == "AWAITING_PRINCIPAL"
-    assert http.calls == []                                     # not one congressional request
-    lines = [json.loads(x) for x in (paths / "missed_growth.jsonl").read_text().splitlines()]
-    assert {x["cell"] for x in lines} == {"house:member", "senate:member", "congress_agg:all"}
-    assert all(x["rail"] == "congress_attestation_gate" and x["status"] == "UNMEASURED"
-               for x in lines)
-    organ.run(now=now, http=http, store=paths / "events.jsonl", loader=lambda _s: None,
-              universe_doc={}, only=["house_ptr"], n_placebo=5)
-    again = (paths / "missed_growth.jsonl").read_text().splitlines()
-    assert len(again) == 3                                      # one bill per cell per day
-    monkeypatch.setenv("QUANT_CONGRESS_ATTEST", "1")
-    assert organ.congress_missed_growth(now, path=paths / "other.jsonl") == []
-    _rows, house = organ.collect_house(http, {}, 1e18, now)
-    assert house["status"] != "AWAITING_PRINCIPAL"              # the switch opened the gate
-    try:
-        import pypdf  # noqa: F401
-    except ImportError:                                         # a host without the PDF reader
-        assert house["status"] == "UNMEASURED" and "pypdf" in house["why"]
-    else:
-        assert any("FD.zip" in u for u in http.calls)
 
 
 def test_polymarket_reads_resolved_markets_and_publishes_a_census() -> None:
@@ -597,3 +535,52 @@ def test_hourly_leg_and_layer_are_wired() -> None:
     assert "informed_capital" in layers.__dict__.get("LEG_LAYER", {}) or \
         '"informed_capital": "information"' in (ROOT / "libs" / "research" / "layers.py"
                                                ).read_text(encoding="utf-8")
+
+
+def written_excluded(paths: Path) -> dict[str, Any]:
+    return json.loads((paths / "INFORMED_CAPITAL.json").read_text())["excluded_sources"]
+
+
+def test_congressional_disclosures_are_not_sources() -> None:
+    """5 U.S.C. 13107(c) bars commercial use: no collector, no parser, no switch (Auditor)."""
+    assert not {"house_ptr", "senate_ptr"} & set(organ.SOURCES)
+    assert set(organ.EXCLUDED_SOURCES) == {"house_ptr", "senate_ptr"}
+    assert not [n for n in dir(organ) if "congress" in n.lower() or "senate" in n.lower()
+                or n.startswith("collect_house")]
+    assert not [n for n in dir(ic) if "senate" in n.lower() or "house_ptr" in n.lower()]
+
+
+class _RobotsHttp(organ.Http):
+    """The real gate over a canned robots.txt answer per host (nothing leaves the process)."""
+
+    def __init__(self, answers: dict[str, tuple[int | None, bytes]]) -> None:
+        super().__init__()
+        self.answers = answers
+        self.opened: list[str] = []
+
+    def _open(self, req: Any, deadline: float | None, max_bytes: int
+              ) -> tuple[int | None, bytes, str]:
+        self.opened.append(req.full_url)
+        host = req.full_url.split("/")[2]
+        if req.full_url.endswith("/robots.txt"):
+            st, body = self.answers[host]
+            return st, body, "" if st == 200 else f"HTTP {st}"
+        return 200, b"data", ""
+
+
+@pytest.mark.parametrize("answer", [(500, b""), (503, b""), (None, b""), (403, b""),
+                                    (429, b""), (200, b"<!DOCTYPE html><html>x</html>")])
+def test_an_unreadable_robots_refuses_the_host(answer: tuple[int | None, bytes]) -> None:
+    http = _RobotsHttp({"www.sec.gov": answer})
+    st, body, err = http.bytes("https://www.sec.gov/Archives/edgar/x.txt")
+    assert st is None and body == b"" and err.startswith("ROBOTS:")
+    http.bytes("https://www.sec.gov/Archives/edgar/y.txt")
+    assert http.opened == ["https://www.sec.gov/robots.txt"]       # read once, nothing else
+
+
+def test_a_robots_disallow_is_obeyed_and_a_404_allows() -> None:
+    http = _RobotsHttp({"www.sec.gov": (200, b"User-agent: *\nDisallow: /cgi-bin/\n"),
+                        "api.elections.kalshi.com": (404, b"")})
+    assert http.bytes("https://www.sec.gov/cgi-bin/browse")[2].startswith("ROBOTS:")
+    assert http.bytes("https://www.sec.gov/Archives/a.txt") == (200, b"data", "")
+    assert http.bytes("https://api.elections.kalshi.com/trade-api/v2/series") == (200, b"data", "")
