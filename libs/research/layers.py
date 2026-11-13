@@ -569,6 +569,9 @@ LEG_LAYER: dict[str, str] = {
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
     "allocator_trigger": "portfolio",
+    # `executable_book` scores the lot-rounded, netted book the venue will hold against the
+    # continuous one the solver asked for: a statement about execution, not about the market.
+    "executable_book": "execution",
     # `input_ablation` re-solves the allocator with each input switched off and judges it against
     # the plain solve out of sample: evidence about how the book is composed, so it bills to the
     # same layer as the allocator it judges.

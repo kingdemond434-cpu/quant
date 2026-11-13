@@ -1436,7 +1436,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
                      "entry_timing", "cost_to_edge", "exit_study",
-                     "execution_resolver", "netting_report", "execution_alpha",
+                     "execution_resolver", "netting_report", "executable_book", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
@@ -5788,6 +5788,12 @@ def main() -> None:
     # (`--resident`, desks/mt5/ops/box_tasks.manifest) is how it reacts in seconds.
     atg = _costed("allocator_trigger", lambda: _producer(
         "allocator_trigger", "research/allocator_trigger.py", "--once", "--budget-s", "300"))
+    # THE BOOK THE VENUE WILL HOLD (ALLOC-05/06/15/17/18/23). The solver's continuous heat is
+    # rounded to each symbol's lot grid and scored against the continuous book on the same days;
+    # heat, notional, margin and order-reserved heat are published as distinct labelled numbers.
+    # Report only: it sizes nothing.
+    xbk = _costed("executable_book", lambda: _producer(
+        "executable_book", "research/executable_book.py"))
     # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
     # the gateway only at status LIVE, and LIVE is written only by the promoter -- on a fresh
     # MEASURED admission that admits the sleeve, and for a STANDBY row on PROMOTE_ADMIT_STREAK
@@ -6658,6 +6664,7 @@ def main() -> None:
                     "recertify_canon": rc, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "executable_book": xbk,
                     "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
