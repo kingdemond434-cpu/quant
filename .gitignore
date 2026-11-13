@@ -530,6 +530,8 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
 !desks/mt5/reports/LOGIN_FENCE.json
+# the live VITALS file (2026-11-13, research/vitals.py), published by MT5-ShadowSync
+!desks/mt5/reports/VITALS.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
 # ...and its fail-closed marker: one box's MISMATCH verdict, read by families_vector.enabled()
