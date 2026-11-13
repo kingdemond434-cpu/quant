@@ -616,6 +616,10 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # The federation's adapters (audit 2026-11-13): the OECD CLI series is information; LEAN /
+    # Nautilus fill semantics replayed on certificates price how an order reaches the venue;
+    # the census is the machine measuring which of its engines does any work.
+    "adapter_data": "information", "engine_replicas": "execution", "adapter_census": "meta",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and

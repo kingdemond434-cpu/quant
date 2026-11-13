@@ -1216,6 +1216,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
+    # ADAPTER CENSUS + ADAPTER DATA (audit 2026-11-13): the census reads module attributes and
+    # four artifacts; the data leg fetches once a day and mints from what it holds otherwise.
+    "adapter_census", "adapter_data",
     "timeframe_fanout",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
@@ -1332,6 +1335,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
                      "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     # the federation's data-source adapters as stamped series + cells
+                     "adapter_data",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -1413,7 +1418,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # session_range_breakout judged as a PORTFOLIO (recovered patch 13)
                      "srb_basket_judge",
                      # ...and the uncorrelated leg sweep it reads, on its own daily refresh
-                     "srb_uncorrelated_sweep"),
+                     "srb_uncorrelated_sweep",
+                     # LEAN / Nautilus fill semantics replayed on the promoted certificates
+                     "engine_replicas"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
@@ -1451,6 +1458,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
+                     # every federated adapter's class, contract, clock, cells and verdict
+                     "adapter_census",
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
                      "research_auction", "bottleneck_law", "bottleneck_attack",
@@ -2391,6 +2400,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
+    # The engine replicas stop themselves at --budget-s 600; the census and the OECD leg are
+    # seconds (one SDMX request a day at most).
+    "engine_replicas": 700,
+    "adapter_census": 180,
+    "adapter_data": 300,
     # The supply line stops itself at --budget-s 600 (one pinned wheel at a time, ROI order) and
     # the roster generator at 120; both caps sit above their own budgets for the same reason.
     "sandbox_provision": 1_600,
@@ -6175,6 +6189,23 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # ADAPTER DATA (audit 2026-11-13): the openbb adapter's keyless OECD provider -- composite
+    # leading indicators -- fetched directly (honest UA, robots, hard stops), kept first-vintage
+    # PIT in data/lake/series/oecd_cli_<eco>.parquet and minted into exogenous_conditioner cells
+    # through the same registry door; DataHub contract oecd.cli serves the same files.
+    adt = _costed("adapter_data", lambda: _producer(
+        "adapter_data", "research/adapter_data.py", "--once"))
+    # ENGINE REPLICAS (audit 2026-11-13): the lean and nautilus adapters' work. Every promoted
+    # certificate's replica signals replayed under LEAN's gap-aware fills and Nautilus's adaptive
+    # bar path; reports/ENGINE_REPLICAS.json says how much R the contract's optimistic bar rules
+    # are worth to each certificate. Measurement only.
+    erp = _costed("engine_replicas", lambda: _producer(
+        "engine_replicas", "research/engine_replicas.py", "--once", "--budget-s", "600"))
+    # ADAPTER CENSUS (audit 2026-11-13): one row per federated adapter -- class, contract,
+    # clock, cells donated, judged, or the measured reason it cannot work here -- and the
+    # probe_only list, which must stay empty. reports/ADAPTER_CENSUS.json.
+    adc = _costed("adapter_census", lambda: _producer(
+        "adapter_census", "research/adapter_census.py", "--once"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6607,6 +6638,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "futures_state": fst,
+                    "adapter_data": adt, "engine_replicas": erp, "adapter_census": adc,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
