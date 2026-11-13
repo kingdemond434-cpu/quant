@@ -15,6 +15,7 @@ What is pinned here, each as a property a later edit cannot quietly lose:
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 import re
 import sqlite3
 import sys
@@ -30,6 +31,27 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 import paid_substitute_engine as pse  # noqa: E402
+
+
+_OPEN: list[sqlite3.Connection] = []
+
+
+def _mem() -> sqlite3.Connection:
+    """An in-memory registry the test closes on teardown.
+
+    A handle left to the garbage collector raises ResourceWarning inside whichever test happens
+    to be running when it is collected, and filterwarnings=error turns that into a failure there.
+    """
+    c = sqlite3.connect(":memory:")
+    _OPEN.append(c)
+    return c
+
+
+@pytest.fixture(autouse=True)
+def _close_memory_connections() -> Iterator[None]:
+    yield
+    while _OPEN:
+        _OPEN.pop().close()
 
 NOW = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
 REQUIRED_CLASSES = {
@@ -236,7 +258,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
                                 "utf-8")
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=_mem())
     enrolled = json.loads(p["enrolled"].read_text("utf-8"))["enrolled"]
     ids = {e["dataset_id"] for e in enrolled}
     assert ids == {"psub_fred_bamlh0a0hym2", "psub_cboe_vix"} and doc["headline"]["enrolled"] == 2
@@ -268,7 +290,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
     # idempotent: a second pass enqueues nothing new
     n = len(door.calls)
     pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-            registry_conn=sqlite3.connect(":memory:"))
+            registry_conn=_mem())
     assert len(door.calls) == n
 
 
@@ -278,7 +300,7 @@ def test_nothing_is_minted_before_the_series_exists(tmp_path: Path) -> None:
     p = _paths(tmp_path)
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=_mem())
     assert door.calls == [] and doc["headline"]["enrolled"] == 0
     assert doc["headline"]["ready_awaiting_acquisition"] > 0
     lib = {s["id"]: s for s in pse.load_library()}
