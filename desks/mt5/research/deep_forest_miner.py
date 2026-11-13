@@ -601,11 +601,30 @@ def data_endpoints(page: str, base: str) -> list[str]:
 
 
 # ------------------------------------------------------------------------------- ledgers
+#: Grounds `world_strategy_hunter` mints for the world map's GAP cells and for emergent places,
+#: kept beside the curated file (and resolved beside SOURCES, so a test that redirects SOURCES
+#: redirects this too). A minted ground never shadows a curated one of the same name.
+MINTED_NAME = "world_hunter_grounds.json"
+
+
 def _load_sources() -> dict[str, Any]:
     try:
         cfg = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
         cfg = {"grounds": []}
+    if not isinstance(cfg, dict):
+        cfg = {"grounds": []}
+    # The world strategy hunter's minted grounds: a curated name always wins, and a row on a
+    # route this miner does not run is dropped rather than guessed at.
+    try:
+        minted = json.loads(SOURCES.with_name(MINTED_NAME).read_text("utf-8")).get("grounds")
+    except (OSError, ValueError, AttributeError):
+        minted = None
+    if isinstance(minted, list):
+        names = {str(g.get("name")) for g in cfg.get("grounds") or [] if isinstance(g, dict)}
+        cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *(
+            g for g in minted if isinstance(g, dict) and str(g.get("name")) not in names
+            and str(g.get("route") or "") in ROUTES)]}
     queued = queued_grounds({str(g.get("name")) for g in cfg.get("grounds") or []
                              if isinstance(g, dict)})
     if queued:

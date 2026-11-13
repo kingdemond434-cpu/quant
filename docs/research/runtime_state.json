@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 829,
+  "NEVER": 830,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1053,
+  "attested": 1054,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -698,6 +698,16 @@
      "leg:halt_rail",
      "leg:index_discovery",
      "task:MT5-FTMO-Allocator"
+    ]
+   },
+   {
+    "at": "2026-11-13T12:38:24+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/world_strategy_hunter.py"
     ]
    }
   ]
@@ -27739,6 +27749,34 @@
    "measured_on": "vmi3571445",
    "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
    "measured_at": "2026-11-11T14:50:08+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/world_strategy_hunter.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/world_strategy_hunter.py"
+   ],
+   "clock": "invoked:desks/mt5/research/hourly_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/WORLD_STRATEGY_HUNT.json",
+   "artifact_declared": "desks/mt5/reports/WORLD_STRATEGY_HUNT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-11-13T12:38:24+00:00"
   }
  ],
  "ratchet": {
