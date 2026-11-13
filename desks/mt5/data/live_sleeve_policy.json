@@ -58,5 +58,14 @@
     "eurils_formula_asia_p_673857a649d3c271"
    ]
   }
+ },
+ "exotic_cost_bar": {
+  "enabled": true,
+  "multiplier": 2.0,
+  "max_age_h": 3.0,
+  "artifact": "desks/mt5/reports/EXOTIC_COST_BAR.json",
+  "at": "2026-11-13T19:46:55Z",
+  "by": "zuck 2026-11-13 19:46:55Z: 'Yes do the strict cost bar' (after 19:45:54Z: 'Every time we tried any exotic btw it turned out to be a false edge')",
+  "rule": "a row on a registry-classed exotic FX symbol holds live capital only while research/exotic_cost_bar.py's fresh verdict (<= max_age_h) names it PASS: forward expectancy survives 2x the measured fill-hour spread and 2x the worse-side swap. Stale or absent refuses."
  }
 }

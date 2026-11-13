@@ -192,7 +192,11 @@ def reopen_policy_retirements(sleeves: list[dict], lane_states: list[dict],
         # promoter would not re-promote it anyway, so nothing is renamed.
         if sum(1 for r in sleeves if r.get("name") == name) > 1:
             continue
-        if refuse(row, pol):
+        why_refused = refuse(row, pol)
+        if why_refused:
+            if verify:
+                report[name] = {"certificate": None, "verified": False,
+                                "why_not": [f"LIVE_POLICY: {why_refused}"]}
             continue
         if verify:
             cert = certs.get(name) or (name if name in recert else "")
@@ -255,6 +259,16 @@ def main() -> int:
         return 0
     lanes = [_read(SHADOW_DIR / n) for n in ("shadow_state.json", "qquant_shadow_state.json",
                                              "scalp_shadow_state.json")]
+    # THE STRICT EXOTIC COST BAR FIRST (principal 2026-11-13 19:46Z): its verdict is what
+    # `live_policy.refuse` reads for every exotic row, here, in the promoter that runs next and in
+    # the gateway. Written every pass so it is never stale while this leg runs.
+    try:
+        import exotic_cost_bar as ecb
+        bar = ecb.build(lanes, _read(ecb.UNIVERSE), _read(ecb.SURFACE))
+        ecb.write(bar)
+        plog(f"exotic cost bar: {bar['counts']} of {bar['n_exotic_clocks']} exotic clocks")
+    except Exception as exc:                       # the policy then refuses exotics: fail closed
+        plog(f"exotic cost bar not written ({type(exc).__name__}: {exc}); exotics refused")
     reopened = reopen_policy_retirements(sleeves, lanes)
     if reopened:
         doc["sleeves"] = sleeves
