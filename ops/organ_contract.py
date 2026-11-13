@@ -118,6 +118,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
     "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
                            "hourly venue-listed, positive-risk certified sleeve selection"),
+    # N8, THE WESTERN DONOR DIFF (2026-11-11): a leg of the intel department's resident, so it is
+    # an artifact of MT5-Dept-Intel and not a task of its own. Hourly, one missed pass of slack.
+    "MT5-Dept-Intel (western donors)": (
+        "desks/mt5/reports/WESTERN_DONOR_DIFF.json", 180,
+        "the donor-capability diff (WorldQuant BRAIN, LEAN, Numerai, Man AHL) against this "
+        "tree, and the challengers it donated"),
     "MT5-HourlyCore (replication)": (
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "

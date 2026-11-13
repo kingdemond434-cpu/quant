@@ -1,7 +1,7 @@
 {
  "source": "Swiss National Bank data portal, cube snbgwdchfsgw",
  "url": "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
- "licence_note": "snb.ch and data.snb.ch robots: single 'User-agent: *' group, zero Disallow (read 2026-08-28). Terms of use NOT yet read in full -- see residual.",
+ "licence_note": "snb.ch and data.snb.ch robots: single 'User-agent: *' group, zero Disallow (read 2026-08-28). Terms read 2026-11-13: https://www.snb.ch/en/srv/disclaimer_copyright permits saving, transmitting or other use 'for non-commercial purposes, compatible with the purpose of such information or data' (translations with reference to the source); https://www.snb.ch/en/srv/disclaimer_liability says SNB-calculated data are not 'intended for direct or indirect use in connection with financial transactions (e.g. as underlying benchmark)'. Trading is commercial use and the desk takes terms-clean data only, so the source is OFF (TERMS_BLOCKED): this snapshot feeds no lake series and no cell until the terms allow.",
  "fetched_utc": "2026-08-28T12:39:25.081011+00:00",
  "publishing_date_field": "2026-08-24 10:00",
  "units": "CHF millions",

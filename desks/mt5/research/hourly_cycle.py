@@ -1355,6 +1355,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # declared sitemaps). Its only clock was the VPS timer chain that died
                      # 2026-11-01/03, so the seat went dark; this is its box clock.
                      "index_discovery",
+                     # N8, the Western half: donor capabilities (WorldQuant BRAIN, LEAN,
+                     # Numerai, Man AHL) diffed against this tree; gaps donated as challengers.
+                     "western_donors",
                      # Tier-1 B6/B8/B9: the tree, the residual map that aims the exogenous
                      # search, and the docket the sealed gauntlet orders its sweep by.
                      "research_tree", "residual_map", "frontier_ceo",
@@ -2166,6 +2169,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # about 800 s if every request times out, seconds when they answer. It writes only at the
     # end, so the cap must sit above that worst case or a slow hour kills it before it donates.
     "index_discovery": 900,
+    # N8 western donors: a ~15 s tree scan plus at most 16 gated requests at 3 s per host, and it
+    # stops starting fetches at its own --budget-s 240. The cap sits above that budget.
+    "western_donors": 420,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -5943,6 +5949,11 @@ def main() -> None:
     idx = _costed("index_discovery", lambda: _producer(
         "index_discovery", "research/index_discovery.py",
         *INDEX_DISCOVERY_ROUTES_ARGS))
+    # N8 WESTERN DONORS (seat data/intelligence/western_donors/): the donor-capability diff
+    # measured on this tree, alpha gaps donated as challengers, donor documents read only past
+    # the terms, licence and robots gates. Report: reports/WESTERN_DONOR_DIFF.json.
+    wdd = _costed("western_donors", lambda: _producer(
+        "western_donors", "research/western_donor_diff.py", "--budget-s", "240"))
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
     cem = _costed("cell_emitter", cell_emitter)
@@ -6582,6 +6593,7 @@ def main() -> None:
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "cell_emitter": cem, "index_discovery": idx,
+                    "western_donors": wdd,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
