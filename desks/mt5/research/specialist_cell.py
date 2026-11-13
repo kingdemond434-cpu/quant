@@ -199,8 +199,12 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
         ("overnight_gap", "overnight_gap_decay",
          _grid({"gap_atr": [0.5, 0.75, 1.0], "ttl_bars": [4, 8]})),
         ("month_end_rebalance", "month_end_rebalance",
-         _grid({"bond_symbol": [BOND_OF.get(sym, "UST10Y")], "days_before": [2, 3],
-                "min_gap_sd": [0.5, 1.0]})),
+         # WIDENED 2026-11-13: on the box all 64 cells of the old 2x2 grid sat under the 66-day
+         # seed floor with no input gap (too few firing days, not missing bars). A five-day
+         # window and a no-threshold arm (min_gap_sd 0: the fund trades whatever gap there is)
+         # are the same mechanism firing on more days; the floor is untouched.
+         _grid({"bond_symbol": [BOND_OF.get(sym, "UST10Y")], "days_before": [2, 3, 5],
+                "min_gap_sd": [0.0, 0.5, 1.0]})),
         ("month_end_forced_flow", "forced_flow",
          _grid({"event_kind": ["month_end"], "clock": ["utc"], "symbol": [sym],
                 "mode": ["pre_flow", "post_flow_fade"]})),
