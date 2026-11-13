@@ -90,6 +90,22 @@ def test_the_ranking_is_ordered_best_first_and_has_no_duplicates():
     assert len(set(ranked)) == len(ranked)
 
 
+def test_the_tick_tape_outranks_every_bar_statistic_and_yields_to_fills():
+    """A bar file's spread column is the bar's MINIMUM quoted spread (measured 2026-11-10: it
+    equals the rounded tape minimum on 98.9% of matched bars). Every bar-derived producer is
+    therefore a statistic of the cheapest instant, and the tick tape is the first one that is
+    not -- so neither the M1 nor the H1 collector may overwrite it, in either direction."""
+    ticks = "tick_tape_median"
+    ranked = ur.MEDIAN_SPREAD_PRODUCERS
+    assert ranked.index(FILLS) < ranked.index(ticks) < ranked.index(TAPE)
+    for weaker in (TAPE, H1, SNAP):
+        assert ur.may_write_median_spread(_row(250.0, ticks), weaker)[0] is False
+        assert ur.may_write_median_spread(_row(2.0, weaker), ticks)[0] is True
+    assert ur.may_write_median_spread(_row(14.5, FILLS), ticks)[0] is False
+    tst = pytest.importorskip("tick_spread_truth")
+    assert tst.SOURCE == ticks
+
+
 def test_the_collectors_declare_a_source_the_ranking_knows():
     """A collector whose stamp is not in the ranking silently becomes unrankable."""
     eu = pytest.importorskip("expand_universe")

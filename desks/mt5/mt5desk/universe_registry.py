@@ -343,6 +343,13 @@ def _degenerate(field: str, value: Any) -> bool:
 #:
 #: The ranking is by what the number MEANS, not by who ran last:
 #:   realized_fills        the desk's own executions. An execution beats an inference.
+#:   tick_tape_median      the desk's own recorded ticks: the median, over full-session tape
+#:                         days, of the per-minute median two-sided spread, zeros kept
+#:                         (`research/tick_spread_truth.py`). Ranked above every bar statistic
+#:                         because of what was MEASURED 2026-11-10 against 57-61 days of tape: a
+#:                         bar file's `spread` column is the bar's MINIMUM quoted spread (it
+#:                         equals the rounded tape minimum on 98.9% of matched bars), so the two
+#:                         producers below it both describe the cheapest instant of each bar.
 #:   fusion_zero_m1_tape   the broker's own per-minute quote over ~100k ticked bars, session
 #:                         filtered, with its dispersion published.
 #:   h1_spread_median      the non-zero H1 median -- on this broker it reads a PRE-2021
@@ -353,7 +360,8 @@ def _degenerate(field: str, value: Any) -> bool:
 #: A writer not listed here ranks below every writer that is: an unnamed producer cannot claim
 #: to beat a named one.
 MEDIAN_SPREAD_PRODUCERS: tuple[str, ...] = (
-    "realized_fills", "fusion_zero_m1_tape", "h1_spread_median", "download_all_symbols")
+    "realized_fills", "tick_tape_median", "fusion_zero_m1_tape", "h1_spread_median",
+    "download_all_symbols")
 
 
 def may_write_median_spread(prev: dict[str, Any], writer: str) -> tuple[bool, str]:

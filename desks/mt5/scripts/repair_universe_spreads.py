@@ -4,6 +4,19 @@
     python scripts/repair_universe_spreads.py            # report only, changes nothing
     python scripts/repair_universe_spreads.py --apply     # write the registry
     python scripts/repair_universe_spreads.py --source h1 # the superseded H1 statistic
+    python scripts/repair_universe_spreads.py --source ticks --apply   # the tick tape, both ways
+
+THE BAR COLUMN IS A MINIMUM, AND THE TICK TAPE IS NOW A THIRD SOURCE (2026-11-10). Measured on
+the trading box against 57-61 days of recorded ticks: a bar file's `spread` column equals the
+rounded tape MINIMUM of its bar on 98.9% of matched bars. So both statistics described below --
+the H1 median and the M1 median that superseded it -- are medians of the cheapest instant of
+each bar, and the registry is wrong in both directions against the tape (USDNOK charged 136
+against ~250; AUDCHF charged 110.5 against 2). `--source ticks` takes the value from
+`research/tick_spread_truth.py` instead: the per-minute median two-sided spread over
+full-session tape days, zeros kept, a zero central value never written, stamped
+`tick_tape_median`. Every default pass also publishes that measurement and its two-sided impact
+to `reports/TICK_SPREAD_TRUTH.json`, so the gap between what is charged and what the tape quotes
+is measured hourly whether or not anyone applies it.
 
 THE SOURCE CHANGED ON 2026-09-24 AND THE OLD ONE IS KEPT ONLY SO IT CAN BE NAMED. Everything
 below this paragraph is the H1 story and it remains true about the REGISTRY; it is no longer true
@@ -104,11 +117,23 @@ DEFAULT_SOURCE = "tape"
 #: behind any stamped value rather than only the scalar.
 TAPE_REPORT = BASE / "reports" / "SPREAD_TAPE.json"
 
+#: The tick-tape artifact: the measurement behind every `tick_tape_median` stamp, and the
+#: two-sided impact (under-charged / over-charged, with the sleeves standing on each symbol).
+TICK_REPORT = BASE / "reports" / "TICK_SPREAD_TRUTH.json"
+
 #: The ONE exception to "realised fills beat bars". A fills-derived spread more than this multiple
 #: of the symbol's own bar median is not a better measurement -- past it a cell can never clear
 #: `stress_costs`, so the number is suppressing the instrument rather than pricing it. The
 #: multiple is the gauntlet's own, mirrored from `libs.portfolio.fusion_cost`.
 FILLS_IMPLAUSIBLE_ABOVE_BARS = 3.0
+
+#: THE OTHER SIDE, AGAINST THE TICK TAPE ONLY (2026-11-10, Auditor must-fix). A fills value
+#: further than this BELOW the tape median is not used either. Bars could not support this side
+#: -- a bar column is the bar's minimum, so a fills value below it proves nothing -- but the tick
+#: tape is the book an order meets, and a charge a fifth of it certifies cost nobody pays. The
+#: multiple is the Auditor's, wider than the 3x above on purpose: it overrules an execution
+#: estimate only where no plausible fill pattern explains the gap.
+FILLS_IMPLAUSIBLE_BELOW_TICKS = 5.0
 
 #: A correction this large is reported as SUSPECT rather than applied silently. Not a cap -- the
 #: value is still written under --apply -- but a 50x move in the number every certificate is
@@ -199,6 +224,68 @@ def tape_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
     return value, why, detail
 
 
+#: The tick measurement for this pass, keyed by symbol; populated once per `run()`.
+_TICKS: dict[str, Any] = {}
+
+
+#: How long the tick measurement may spend opening NEW symbols when it rides a pass as a
+#: by-product. The first pass on a box reads every recorded day once; after that the per-day
+#: cache makes it cheap. Symbols not reached are named in the report and reached next pass, so
+#: this bounds the hourly leg without ever dropping a symbol. `--source ticks` is unbounded.
+BYPRODUCT_BUDGET_S = 240.0
+
+
+def load_ticks(write: bool = True, budget_s: float | None = None) -> dict[str, Any]:
+    """Run the tick-tape measurement once, cache its rows and publish the artifact.
+
+    A machine with no silver tape returns UNMEASURED with that named as the reason; the caller
+    decides whether that refuses the pass (`--source ticks`) or is merely recorded (the default
+    pass, which publishes the tick report as a by-product and must not fail without a tape).
+    """
+    from research.tick_spread_truth import measure, write_report
+
+    doc = measure(ROOT, budget_s=budget_s)
+    _TICKS.clear()
+    _TICKS.update(doc.get("by_symbol") or {})
+    if write and doc.get("status") != "UNMEASURED":
+        write_report(doc, TICK_REPORT)
+    return doc
+
+
+def tick_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
+    """What the tick tape says `sym` costs, from `research/tick_spread_truth.py`.
+
+    The SAME triple as `measured_spread` and `tape_spread`, so the apply path, the provenance
+    stamp and the report are shared. A symbol the tape does not hold, holds too few full days
+    of, or measures at a zero central value comes back None WITH ITS REASON and keeps its value.
+    """
+    row = _TICKS.get(sym)
+    if not isinstance(row, dict):
+        return None, "the tick tape holds no recorded days for this symbol", {}
+    from research.tick_spread_truth import applicable
+
+    value, why = applicable(row)
+    detail: dict[str, Any] = {"dispersion": row.get("dispersion"), "window": row.get("window"),
+                              "direction": row.get("direction")}
+    detail["n_priced"] = (row.get("window") or {}).get("n")
+    return value, why, detail
+
+
+def _tick_summary(doc: dict[str, Any]) -> dict[str, Any]:
+    """The headline of the tick report, small enough to ride inside SPREAD_PROVENANCE.json."""
+    if doc.get("status") == "UNMEASURED":
+        return {"status": "UNMEASURED", "why": doc.get("why")}
+    imp = doc.get("impact") or {}
+    return {"status": "MEASURED", "at": doc.get("at"), "n_measured": doc.get("n_measured"),
+            "n_unmeasured": doc.get("n_unmeasured"),
+            "n_under_charged": imp.get("n_under_charged"),
+            "n_over_charged": imp.get("n_over_charged"),
+            "n_beyond_stress": imp.get("n_beyond_stress"),
+            "n_fills_below_tape": imp.get("n_fills_below_tape"),
+            "fills_below_tape": [e.get("symbol") for e in imp.get("fills_below_tape") or []],
+            "detail": "desks/mt5/reports/TICK_SPREAD_TRUTH.json"}
+
+
 def _verified(path: Path | None) -> set[str] | None:
     """The symbols whose correction was SHOWN to move the charge toward the broker's own
     quote, from `desks/mt5/research/cost_truth.py`. None means "no gate asked for".
@@ -234,12 +321,19 @@ def run(apply: bool = False, write: bool = True,
     # THE SOURCE IS CHOSEN ONCE AND NAMED IN EVERY STAMP IT WRITES. `h1` is kept reachable so the
     # superseded statistic can be reproduced and compared, never because it is still correct.
     tape_doc: dict[str, Any] = {}
+    tick_doc: dict[str, Any] = {}
     if source == "tape":
         tape_doc = load_tape(write=write)
         if tape_doc.get("status") == "UNMEASURED":
             return {"status": "UNMEASURED",
                     "why": f"the tape measurement refused: {tape_doc.get('why')}"}
         probe_fn, stamp = tape_spread, str(tape_doc.get("source") or "fusion_zero_m1_tape")
+    elif source == "ticks":
+        tick_doc = load_ticks(write=write)
+        if tick_doc.get("status") == "UNMEASURED":
+            return {"status": "UNMEASURED",
+                    "why": f"the tick measurement refused: {tick_doc.get('why')}"}
+        probe_fn, stamp = tick_spread, str(tick_doc.get("source") or "tick_tape_median")
     elif source == "h1":
         probe_fn, stamp = measured_spread, SOURCE
     else:
@@ -255,6 +349,9 @@ def run(apply: bool = False, write: bool = True,
     #: bars. Named and counted separately: this is the one place the repair overrules a
     #: measurement with an inference, and a reviewer must be able to find every instance.
     fills_overridden: list[dict[str, Any]] = []
+    #: `realized_fills` rows the tick tape prices at a 0-point median: not replaceable (a zero
+    #: is never written) and not confirmed. Named so the gap cannot read as agreement.
+    fills_against_zero_tape: list[dict[str, Any]] = []
     unmeasured: dict[str, str] = {}
     #: Corrections refused because no live quote verified them. Named, never silent.
     skipped_unverified: list[str] = []
@@ -287,8 +384,46 @@ def run(apply: bool = False, write: bool = True,
             old_val = float(old_raw) if isinstance(old_raw, (int, float)) else None
             implausible = (probe is not None and old_val is not None and probe > 0
                            and old_val > probe * FILLS_IMPLAUSIBLE_ABOVE_BARS)
-            if not implausible:
+            # MEASURED 2026-11-10 on the box: GBPCHF realized_fills 154 against a 1-point tick
+            # tape, CADCHF 119 against 0. `cost_truth` already records the 165.0 as taken "on a
+            # symbol this account has NEVER traded", and no organ in this tree writes the stamp,
+            # so the source cannot be repaired -- only refused where the tape contradicts it.
+            below = (source == "ticks" and probe is not None and old_val is not None
+                     and old_val > 0 and probe > old_val * FILLS_IMPLAUSIBLE_BELOW_TICKS)
+            if source == "ticks" and probe is None and (old_val or 0) > 0 \
+                    and (_TICKS.get(sym) or {}).get("tape_p50") == 0:
+                # The tape's centre is 0, which is never written, so the fills value cannot be
+                # replaced -- and it is not confirmed either. Named, never silently kept.
+                fills_against_zero_tape.append({
+                    "symbol": sym, "fills_value": old_val, "tape_p50": 0.0,
+                    "why": ("the tick tape's median is 0 points, so there is nothing honest to "
+                            "write in its place; the fills value stands UNCONFIRMED")})
+            if not (implausible or below):
                 kept_better.append(sym)
+                continue
+            if below:
+                fills_overridden.append({"symbol": sym, "old": old_val, "new": probe,
+                                "source_was": "realized_fills", "side": "below_tape",
+                                "under_tape": round(probe / old_val, 2), **pdetail,
+                                "why": (f"a fills-derived {old_val} pts against a tick-tape "
+                                        f"median of {probe} is {probe / old_val:.1f}x BELOW it "
+                                        f"-- past the {FILLS_IMPLAUSIBLE_BELOW_TICKS}x this "
+                                        "source refuses. Repaired from the tape")})
+                got, why, detail = probe, _why, pdetail
+                entry = {"symbol": sym, "old": old_val, "new": got, **detail}
+                corrected.append(entry)
+                if verified is not None and sym not in verified:
+                    skipped_unverified.append(sym)
+                    continue
+                if apply and (not widening_only or got > old_val):
+                    row["median_spread_pts"] = got
+                    prov = row.setdefault("_provenance", {})
+                    prov["median_spread_pts"] = {
+                        "at": now, "source": stamp, "was": old_val,
+                        "mode": "widening_only" if widening_only else "full",
+                        "dispersion": detail.get("dispersion"), "window": detail.get("window"),
+                        "detail": "desks/mt5/reports/TICK_SPREAD_TRUTH.json"}
+                    applied_syms.append(sym)
                 continue
             # ITS OWN LIST, NOT `suspect`. That one means "a >50x move" and is read as such;
             # folding a different finding into it would make both counts mean neither.
@@ -357,10 +492,25 @@ def run(apply: bool = False, write: bool = True,
                     "window": detail.get("window"),
                     "corroboration": detail.get("corroboration"),
                     "detail": "desks/mt5/reports/SPREAD_TAPE.json"})
+            elif source == "ticks":
+                prov["median_spread_pts"].update({
+                    "dispersion": detail.get("dispersion"),
+                    "window": detail.get("window"),
+                    "detail": "desks/mt5/reports/TICK_SPREAD_TRUTH.json"})
             applied_syms.append(sym)
 
     if apply and write:
         REGISTRY.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
+
+    # THE TICK MEASUREMENT RIDES EVERY PASS, whichever source is being applied. The default
+    # pass is the hourly `spread_provenance` leg, so this is what puts the two-sided gap between
+    # the charged scalar and the tape on a clock. It can never fail the pass it rides: a machine
+    # with no tape, or a measurement that raises, is recorded as UNMEASURED with its reason.
+    if not tick_doc:
+        try:
+            tick_doc = load_ticks(write=write, budget_s=BYPRODUCT_BUDGET_S)
+        except Exception as exc:  # a by-product must not take the leg down
+            tick_doc = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     out = {
         "status": "MEASURED", "generated_utc": now, "applied": bool(apply),
@@ -370,6 +520,7 @@ def run(apply: bool = False, write: bool = True,
             "n_dearer", "n_cheaper", "n_unchanged", "n_priced_from_zero",
             "n_cheaper_contradicted", "n_cheaper_tape_only", "cheaper_contradicted",
             "n_with_disagreement")} if tape_doc else None,
+        "tick_tape": _tick_summary(tick_doc),
         "apply_mode": ("widening_only" if (apply and widening_only) else
                        "full" if apply else "report_only"),
         "n_applied": len(applied_syms),
@@ -427,11 +578,16 @@ def run(apply: bool = False, write: bool = True,
         "kept_realized_fills": sorted(kept_better),
         "n_fills_overridden": len(fills_overridden),
         "fills_overridden": fills_overridden,
+        "n_fills_against_zero_tape": len(fills_against_zero_tape),
+        "fills_against_zero_tape": fills_against_zero_tape,
         "rule": (f"median_spread_pts is recomputed from source={source!r} and stamped "
                  f"{stamp!r}. The tape source is the symbol's own M1 spread column over TICKED "
                  "bars on full-session days, by cost_surface's exclusions, with zero-spread bars "
                  "KEPT and a zero central value never written; the h1 source is the superseded "
-                 "non-zero H1 median, which on this broker reads a pre-2021 fixed-spread era. "
+                 "non-zero H1 median, which on this broker reads a pre-2021 fixed-spread era; "
+                 "the ticks source is the per-minute median two-sided spread on the recorded "
+                 "tick tape, which is what an order meets (a bar's spread column is the bar's "
+                 "MINIMUM). "
                  "`realized_fills` rows are never overwritten -- an "
                  "execution beats an inference. Identity: this changes cost_hash, and "
                  "sleeve_registry.rebase_cost handles a cost-only change without losing "
@@ -459,9 +615,12 @@ def main(argv: list[str] | None = None) -> int:
                          "research/cost_truth.py after comparing each correction to the "
                          "live terminal's own quote). Every other correction is skipped "
                          "and named. An unreadable file applies NOTHING.")
-    ap.add_argument("--source", choices=("tape", "h1"), default=DEFAULT_SOURCE,
+    ap.add_argument("--source", choices=("tape", "ticks", "h1"), default=DEFAULT_SOURCE,
                     help="where the number comes from. 'tape' is the broker's own M1 quote "
-                         "(research/fusion_spread_tape.py) and is the source of record. 'h1' is "
+                         "(research/fusion_spread_tape.py), a median of each minute bar's "
+                         "MINIMUM spread. 'ticks' is the recorded tick tape "
+                         "(research/tick_spread_truth.py): the per-minute median spread an "
+                         "order actually meets, for the symbols the tape holds. 'h1' is "
                          "the superseded non-zero H1 median, which on this broker reads a "
                          "pre-2021 FIXED-SPREAD era -- reachable so it can be reproduced and "
                          "compared, never because it is still correct.")
@@ -486,7 +645,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  FILLS OVERRULED (implausible against their own bars): "
               f"{r['n_fills_overridden']}")
         for e in r["fills_overridden"]:
-            print(f"    {e['symbol']:12s} {e['old']} -> {e['new']}  ({e['over_bars']}x bars)")
+            side = (f"{e['under_tape']}x under the tape" if e.get("side") == "below_tape"
+                    else f"{e['over_bars']}x bars")
+            print(f"    {e['symbol']:12s} {e['old']} -> {e['new']}  ({side})")
     print(f"  would make CHEAPER: {r['n_made_cheaper']}"
           + (f"  {[c['symbol'] for c in r['made_cheaper'][:12]]}" if r["made_cheaper"] else ""))
     print(f"  suspect (>{SUSPECT_RATIO:.0f}x move): {r['n_suspect']}")
