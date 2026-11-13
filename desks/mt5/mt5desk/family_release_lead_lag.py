@@ -25,8 +25,10 @@ above is `stressed`, at or below `calm`. With too few prior releases the regime 
 regime-conditioned cell does not fire on that release.
 
 REFUSES (returns []) without driver bars, with a driver that is the target, an unknown direction
-or regime, or no event type. A named driver with no bars is a failed build at the input resolver,
-never a silent zero there.
+or regime, or no event type. The forward engine hands the driver over (`family_inputs.resolve`,
+where a named driver with no bars is a failed build); the sealed judge passes only the NAME, so
+the family reads the driver itself through `family_inputs.bars_named`, exactly as `lead_lag`
+does -- the sealed evaluator is never edited for a new family.
 """
 from __future__ import annotations
 
