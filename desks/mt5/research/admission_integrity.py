@@ -1,12 +1,13 @@
-"""THE RESEARCH-INTEGRITY DOOR: a certificate's forward clock may be PROMOTED only when the certifier
-is known to discriminate and the certificate has been independently replicated.
+"""THE RESEARCH-INTEGRITY DOOR: a certificate's forward clock may be PROMOTED only when the
+certifier is known to discriminate and the certificate has been independently replicated.
 
 MOVED FROM ENROLMENT TO PROMOTION (principal 2026-11-13, "All certs passed go on forward clocks
 immediately"). Measured 2026-11-06: 1,308 of 2,324 runnable certificates held with NO clock,
 860 of them because the replication spec book has no rule for their family -- a hold that could
 never clear, on evidence that costs no capital to gather. Every certificate now enrols at once;
 the door's verdict rides on the clock as `integrity_hold`, and the lane engine will not write
-PROMOTION CANDIDATE while it stands (the prop executors' per-order door is untouched). The text below describes the facts the door reads, which
+PROMOTION CANDIDATE while it stands (the prop executors' per-order door is untouched). The text
+below describes the facts the door reads, which
 are unchanged.
 
 Principal's audit, 2026-09-30: the research organs must DECIDE something, not only report.
@@ -221,7 +222,8 @@ class IntegrityGate:
 #: be PROMOTED: a clock enrolled while the door would have held it is stamped with the reason
 #: here, re-asked on every pass, and the lane engine (`shadow_forward`, `qquant_shadow`) will not
 #: write PROMOTION CANDIDATE while the stamp stands: a matured held clock stays ACTIVE, keeps
-#: accruing, and carries `matured_promotion_held`, and is a candidate the pass the stamp lifts. Nothing reaches a live account with less evidence than before: a
+#: accruing, and carries `matured_promotion_held`, and is a candidate the pass the stamp lifts.
+#: Nothing reaches a live account with less evidence than before: a
 #: certificate the door held used to have no clock and so could never promote; now it has a
 #: clock that accrues and still cannot promote until the same two facts clear.
 PROMOTION_HOLD_FIELD = "integrity_hold"

@@ -21,7 +21,7 @@ from run_hunt16 import FAMILIES, WINDOWS  # noqa: E402
 from research.h1_source import fetch_h1  # noqa: E402
 
 try:
-    from admission_integrity import PROMOTION_HOLD_FIELD, stamp_hold  # noqa: E402
+    from admission_integrity import PROMOTION_HOLD_FIELD, stamp_hold
 except Exception:                                   # the clock never dies on a missing library
     PROMOTION_HOLD_FIELD = "integrity_hold"
 
