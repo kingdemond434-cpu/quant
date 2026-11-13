@@ -1,8 +1,8 @@
 {
- "generated_utc": "2026-11-13T01:27:03.603023+00:00",
+ "generated_utc": "2026-11-13T08:46:41.005861+00:00",
  "stages": {
   "intake": {
-   "files": 58466,
+   "files": 58575,
    "files_7d": 2554,
    "rows_recent_files": 3016
   },
@@ -23,40 +23,40 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 181,
+    "files": 182,
     "rows_latest": 2,
-    "last": "2026-11-12T23:31:01.936834+00:00"
+    "last": "2026-11-13T02:02:47.603123+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 855,
-   "decided_total": 66655,
+   "queued": 878,
+   "decided_total": 66757,
    "backlog": 0
   },
   "judged": {
-   "cells": 1086279,
-   "unmeasured": 21631
+   "cells": 1077164,
+   "unmeasured": 16549
   },
   "certified": {
-   "cells": 7870,
+   "cells": 7879,
    "last_certified": "2026-11-12",
-   "certified_last_30d": 7039
+   "certified_last_30d": 7048
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 7870,
+   "certificates": 7879,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 7870,
+   "forward_eligible_certificates": 7879,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 1022,
    "clocks_ticked_24h": 1016,
    "clocks_ticked_7d": 1016,
-   "last_tick": "2026-11-13T01:26:14.069311+00:00",
-   "engine_silent_hours": 0.0,
+   "last_tick": "2026-11-13T08:32:48.063948+00:00",
+   "engine_silent_hours": 0.2,
    "n_certificates": 7870,
    "n_enrolled": 1018,
    "n_accruing": 0,
@@ -78,9 +78,9 @@
  },
  "conversion": {
   "intake_to_compiled": 10.1326,
-  "judged_to_certified": 0.0072,
+  "judged_to_certified": 0.0073,
   "certified_to_forward": 0.0,
-  "certified_to_clock": 0.1294
+  "certified_to_clock": 0.1292
  },
  "bottleneck": "none obvious"
 }
