@@ -295,3 +295,19 @@ def test_the_filler_and_this_organ_are_never_their_own_donors(tmp_path: Path) ->
     con.commit()
     con.close()
     assert "echo" not in {d["producer_key"] for d in rr.donor_pool(db)["trend"]}
+
+
+
+def test_a_donor_missing_its_familys_required_rule_is_not_pooled(tmp_path: Path) -> None:
+    """2026-11-13: 398 `seasonal_window` transplants carried `{"timeframe": "H1"}` and no window."""
+    db = tmp_path / "alpha_registry.sqlite"
+    _registry(db)
+    con = sqlite3.connect(db)
+    con.execute(
+        "insert into research_candidates (id, family, symbol, horizon, params_json, "
+        "mechanism, generator, origin, status, created_at) values (?,?,?,?,?,?,?,?,?,?)",
+        ("h1", "seasonal_window", "COCOA", "sub_1d", json.dumps({"timeframe": "H1"}),
+         "husk", "specialist", "desk", "queued", "2026-09-24T02:00:00"))
+    con.commit()
+    con.close()
+    assert "seasonal_window" not in rr.donor_pool(db)

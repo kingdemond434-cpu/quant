@@ -404,3 +404,44 @@ def test_fill_orthogonality_reads_one_for_a_single_producer_however_many_cells()
     spread = ii.fill_orthogonality([(f"p{i}", f"f{i}", f"s{i}", "h") for i in range(40)])
     assert spread["producer_effective_rank"] > one["producer_effective_rank"]
     assert ii.fill_orthogonality([])["available"] is False
+
+
+# ---------------------------------------------------- a donor that carries no rule is not a donor
+def _husk_registry(path: Path) -> None:
+    import sqlite3
+    con = sqlite3.connect(path)
+    con.execute("create table research_candidates (seq integer primary key autoincrement, "
+                "family text, symbol text, horizon text, params_json text, mechanism text, "
+                "generator text, producer text, discovery_id text, region text, origin text)")
+    rows = [
+        # older, COMPLETE: the specialist's own window and side
+        ("seasonal_window", "COFFEE", {"start_md": 401, "end_md": 630, "side_bias": 1}),
+        # newest, a HUSK: only the chart, which is what was transplanted 398 times
+        ("seasonal_window", "COCOA", {"timeframe": "H1"}),
+        ("carry", "EURUSD", {"timeframe": "H1"}),            # no required args: a valid donor
+    ]
+    for fam, sym, params in rows:
+        con.execute("insert into research_candidates (family, symbol, horizon, params_json, "
+                    "mechanism, generator, origin) values (?,?,?,?,?,?,?)",
+                    (fam, sym, "sub_1d", json.dumps(params), f"{fam} rule", "specialist", "desk"))
+    con.commit()
+    con.close()
+
+
+def test_missing_required_reads_the_familys_own_signature() -> None:
+    assert ii.missing_required("seasonal_window", {"timeframe": "H1"}) == [
+        "start_md", "end_md", "side_bias"]
+    assert ii.missing_required("seasonal_window",
+                               {"start_md": 401, "end_md": 630, "side_bias": -1}) == []
+    assert ii.missing_required("calendar_month", {}) == ["active_month", "side_bias"]
+    assert ii.missing_required("carry", {}) == []
+    assert ii.missing_required("no_such_family_anywhere", {}) == []
+
+
+def test_a_husk_donor_falls_back_to_the_newest_complete_rule(tmp_path: Path) -> None:
+    db = tmp_path / "alpha_registry.sqlite"
+    _husk_registry(db)
+    donors = ii._donors(db)
+    assert donors["seasonal_window"]["symbol"] == "COFFEE"
+    assert donors["seasonal_window"]["params"]["start_md"] == 401
+    assert donors["carry"]["params"] == {"timeframe": "H1"}

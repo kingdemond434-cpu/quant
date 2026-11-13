@@ -444,23 +444,87 @@ def _donors(db: Path | None = None) -> dict[str, dict[str, Any]]:
             "and lower(coalesce(origin,'')) != ? "
             "and lower(coalesce(generator,'')) != ? group by 1", (SOURCE, SOURCE))
         out: dict[str, dict[str, Any]] = {}
+        short: set[str] = set()
         for key, fam, sym, hor, params, mech, gen, prod, disc, reg, _seq in cur:
-            try:
-                parsed = json.loads(params)
-            except (TypeError, ValueError):
+            row = _donor_row(fam, sym, hor, params, mech, gen, prod, disc, reg)
+            if row is None:
                 continue
-            if isinstance(parsed, dict) and parsed:
-                out[str(key)] = {"family": str(fam), "symbol": str(sym), "horizon": str(hor),
-                                 "params": parsed, "mechanism": str(mech or ""),
-                                 "generator": str(gen or "") or None,
-                                 "producer": str(prod or "") or None,
-                                 "discovery_id": str(disc or "") or None,
-                                 "region": str(reg or "") or None}
+            if missing_required(str(fam), row["params"]):
+                short.add(str(key))
+                continue
+            out[str(key)] = row
+        # THE MOST RECENT ROW MAY BE A HUSK; AN OLDER ONE MAY STILL CARRY THE RULE. One extra
+        # pass, newest first, over only the families whose newest row was short.
+        if short:
+            marks = ",".join("?" * len(short))
+            cur = con.execute(
+                "select lower(coalesce(nullif(family,''),'?')), family, symbol, "  # noqa: S608
+                "lower(coalesce(nullif(horizon,''),'?')), params_json, mechanism, "
+                "generator, producer, discovery_id, region "
+                "from research_candidates "
+                f"where lower(coalesce(nullif(family,''),'?')) in ({marks}) "
+                "and params_json is not null and params_json not in ('', '{}') "
+                "and lower(coalesce(origin,'')) != ? "
+                "and lower(coalesce(generator,'')) != ? order by seq desc",
+                (*sorted(short), SOURCE, SOURCE))
+            for key, fam, sym, hor, params, mech, gen, prod, disc, reg in cur:
+                if str(key) in out:
+                    continue
+                row = _donor_row(fam, sym, hor, params, mech, gen, prod, disc, reg)
+                if row is not None and not missing_required(str(fam), row["params"]):
+                    out[str(key)] = row
+                    if short <= set(out):
+                        break
         return out
     except sqlite3.Error:
         return {}
     finally:
         con.close()
+
+
+def _donor_row(fam: Any, sym: Any, hor: Any, params: Any, mech: Any, gen: Any, prod: Any,
+               disc: Any, reg: Any) -> dict[str, Any] | None:
+    try:
+        parsed = json.loads(params)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(parsed, dict) or not parsed:
+        return None
+    return {"family": str(fam), "symbol": str(sym), "horizon": str(hor),
+            "params": parsed, "mechanism": str(mech or ""),
+            "generator": str(gen or "") or None,
+            "producer": str(prod or "") or None,
+            "discovery_id": str(disc or "") or None,
+            "region": str(reg or "") or None}
+
+
+def missing_required(family: str, params: dict[str, Any]) -> list[str]:
+    """The family's REQUIRED rule arguments that `params` does not carry, by the family's own
+    signature: keyword-only parameters with no default. Empty when the family is unknown here.
+
+    A DONOR THAT CARRIES NO RULE IS NOT A DONOR (2026-11-13). `{"timeframe": "H1"}` is non-empty,
+    so it passed as "param-carrying", and the filler transplanted a softs specialist's
+    `seasonal_window` -- whose window and side are the mechanism itself, required with no
+    default -- onto 398 instruments with neither. Every one raised TypeError in the warm build
+    ("missing 3 required keyword-only arguments: 'start_md', 'end_md', and 'side_bias'") and was
+    re-attempted every six hours: worker builds spent on a cell that can never be built, and a
+    mechanism credited with ground it never reached.
+    """
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        import inspect
+
+        from mt5desk.executables import resolve_family
+        fn = resolve_family(family)
+        if fn is None:
+            return []
+        sig = inspect.signature(fn)
+    except Exception:
+        return []
+    return [n for n, p in sig.parameters.items()
+            if p.kind is inspect.Parameter.KEYWORD_ONLY and p.default is inspect.Parameter.empty
+            and n not in params]
 
 
 def _symbol_case() -> dict[str, str]:

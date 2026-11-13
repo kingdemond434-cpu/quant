@@ -227,12 +227,15 @@ def donor_pool(db: Path | None = None) -> dict[str, list[dict[str, Any]]]:
     path = db or REGISTRY
     if not path.exists():
         return {}
+    if str(BASE) not in sys.path:
+        sys.path.insert(0, str(BASE))
+    from research.independence_intake import missing_required
     try:
         con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     except sqlite3.Error:
         return {}
     try:
-        producer = "lower(coalesce(nullif(generator,''), nullif(producer,''), '?'))"
+        producer ="lower(coalesce(nullif(generator,''), nullif(producer,''), '?'))"
         cur = con.execute(
             f"select lower(coalesce(nullif(family,''),'?')), {producer}, family, symbol, "  # noqa: S608
             "lower(coalesce(nullif(horizon,''),'?')), params_json, mechanism, "
@@ -250,6 +253,10 @@ def donor_pool(db: Path | None = None) -> dict[str, list[dict[str, Any]]]:
             except (TypeError, ValueError):
                 continue
             if not isinstance(parsed, dict) or not parsed:
+                continue
+            # A donor that does not carry its family's required rule arguments carries no rule
+            # (`independence_intake.missing_required`): transplanted, it can never be built.
+            if missing_required(str(fam), parsed):
                 continue
             pool.setdefault(str(key), []).append({
                 "producer_key": str(prod), "family": str(fam), "symbol": str(sym),
