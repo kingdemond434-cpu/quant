@@ -1,36 +1,46 @@
-"""dexter adapter -- import probe only. the agent is LLM-driven and the research path carries no
-LLM. While the upstream is absent the capability is carried by
-desks/mt5/research/world_frontier.py + deep_forest_miner.py."""
-from __future__ import annotations
+"""dexter adapter -- VERDICT: CANNOT WORK HERE, measured.
 
-from typing import Any
+an LLM-driven research agent. UNINSTALLABLE + LLM-ONLY: no distribution resolvable on the box
+interpreter (sandbox_install_ledger NO_DISTRIBUTION_PINNED) and the agent's every step is an
+LLM call over a keyed financial-data API; it has no deterministic price mechanism to rebuild
+
+The verdict is this module's registry row (CENSUS_CLASS / VERDICT_REASON), read hourly by
+`desks/mt5/research/adapter_census.py` into `reports/ADAPTER_CENSUS.json`; the sandbox packet
+carries the same reason, so the runner records UNMEASURED with a name rather than a silent probe.
+"""
+from __future__ import annotations
 
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
-SYSTEM = "dexter"
-CAPABILITY_FAMILY = "information_acquisition"
-LICENCE_EXPECTED = "UNVERIFIED"
-MODULE = "dexter"
-HINT = "no wheel resolved on 2026-09-23; pin the repository first"
-PROBE_NAMES: tuple[str, ...] = (
-    "Agent",
-    "research",
-    "tools",
+SYSTEM = 'dexter'
+CAPABILITY_FAMILY = 'information_acquisition'
+LICENCE_EXPECTED = 'UNVERIFIED'
+MODULE = 'dexter'
+HINT = 'no wheel resolved on 2026-09-23; pin the repository first'
+CENSUS_CLASS = "c"
+ROLE = 'CANNOT WORK HERE'
+VERDICT_REASON = (
+    'UNINSTALLABLE + LLM-ONLY: no distribution resolvable on the box interpreter '
+    "(sandbox_install_ledger NO_DISTRIBUTION_PINNED) and the agent's every step is an LLM "
+    'call over a keyed financial-data API; it has no deterministic price mechanism to rebuild'
+    ' '
 )
-WHY = "the agent is LLM-driven and the research path carries no LLM"
-REBUILT_BY = "desks/mt5/research/world_frontier.py + deep_forest_miner.py"
+CONTRACTS: tuple[str, ...] = ()
+CLOCK = ""
+
+
+def why() -> str:
+    """The registry row as one sentence: where this system's work happens, or why it cannot."""
+    return "CANNOT_WORK_HERE: " + VERDICT_REASON
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    """Measure the upstream if it is here; name it, with its install task, if it is not."""
-    lib = A.library(MODULE)
-    if lib is None:
-        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT)
-    rows: list[dict[str, Any]] = [A.api_probe(SYSTEM, lib, PROBE_NAMES)]
-    rows.append({"kind": "REBUILT_ROUTE", "system": SYSTEM, "why": WHY, "rebuilt_by": REBUILT_BY})
-    return A.packet(SYSTEM, bundle, trials=0, research_methods=rows,
-                    note="importable; the upstream loop is not driven from this adapter")
+    """Never a silent probe: the packet names the route or the measured verdict."""
+    if A.library(MODULE) is None:
+        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT + ". "
+                            + why())
+    return A.unmeasured(SYSTEM, bundle, why())
 
 
 if __name__ == "__main__":

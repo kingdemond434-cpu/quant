@@ -1,36 +1,46 @@
-"""fingpt adapter -- import probe only. financial NLP over LLM weights; the research path carries
-no LLM. While the upstream is absent the capability is carried by the desk's own text organs
-(deep_forest_miner.py) on registered grounds."""
-from __future__ import annotations
+"""fingpt adapter -- VERDICT: CANNOT WORK HERE, measured.
 
-from typing import Any
+financial NLP over LLM weights. UNINSTALLABLE: git-only with no distribution resolvable on the
+box (NO_DISTRIBUTION_PINNED) and it needs LLM weights plus a torch stack the research path does
+not carry; the mechanism is the model itself, so nothing remains to rebuild in numpy
+
+The verdict is this module's registry row (CENSUS_CLASS / VERDICT_REASON), read hourly by
+`desks/mt5/research/adapter_census.py` into `reports/ADAPTER_CENSUS.json`; the sandbox packet
+carries the same reason, so the runner records UNMEASURED with a name rather than a silent probe.
+"""
+from __future__ import annotations
 
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
-SYSTEM = "fingpt"
-CAPABILITY_FAMILY = "financial_nlp"
-LICENCE_EXPECTED = "MIT"
-MODULE = "fingpt"
-HINT = "git-only (AI4Finance-Foundation/FinGPT); it needs model weights and a torch stack"
-PROBE_NAMES: tuple[str, ...] = (
-    "benchmark",
-    "models",
-    "utils",
+SYSTEM = 'fingpt'
+CAPABILITY_FAMILY = 'financial_nlp'
+LICENCE_EXPECTED = 'MIT'
+MODULE = 'fingpt'
+HINT = 'git-only (AI4Finance-Foundation/FinGPT); it needs model weights and a torch stack'
+CENSUS_CLASS = "c"
+ROLE = 'CANNOT WORK HERE'
+VERDICT_REASON = (
+    'UNINSTALLABLE: git-only with no distribution resolvable on the box '
+    '(NO_DISTRIBUTION_PINNED) and it needs LLM weights plus a torch stack the research path '
+    'does not carry; the mechanism is the model itself, so nothing remains to rebuild in '
+    'numpy '
 )
-WHY = "financial NLP over LLM weights; the research path carries no LLM"
-REBUILT_BY = "the desk's own text organs (deep_forest_miner.py) on registered grounds"
+CONTRACTS: tuple[str, ...] = ()
+CLOCK = ""
+
+
+def why() -> str:
+    """The registry row as one sentence: where this system's work happens, or why it cannot."""
+    return "CANNOT_WORK_HERE: " + VERDICT_REASON
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    """Measure the upstream if it is here; name it, with its install task, if it is not."""
-    lib = A.library(MODULE)
-    if lib is None:
-        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT)
-    rows: list[dict[str, Any]] = [A.api_probe(SYSTEM, lib, PROBE_NAMES)]
-    rows.append({"kind": "REBUILT_ROUTE", "system": SYSTEM, "why": WHY, "rebuilt_by": REBUILT_BY})
-    return A.packet(SYSTEM, bundle, trials=0, research_methods=rows,
-                    note="importable; the upstream loop is not driven from this adapter")
+    """Never a silent probe: the packet names the route or the measured verdict."""
+    if A.library(MODULE) is None:
+        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT + ". "
+                            + why())
+    return A.unmeasured(SYSTEM, bundle, why())
 
 
 if __name__ == "__main__":

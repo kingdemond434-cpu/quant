@@ -1,36 +1,45 @@
-"""nautilus adapter -- import probe only. deterministic replay semantics as a parity reference,
-never an executor here. While the upstream is absent the capability is carried by
-desks/mt5/research/shadow_forward.py."""
-from __future__ import annotations
+"""nautilus adapter -- ROUTED.
 
-from typing import Any
+INDEPENDENT VERIFIER: Nautilus adaptive bar-path ordering replayed on certified cells
+
+deterministic replay semantics as a parity reference, never an executor here. Nautilus
+replays a bar as four prices -- open, then the NEARER of high and low, then the other, then
+close -- so a bar that touches both stop and target resolves by path, where the desk's contract
+engine always lets the stop win. `libs/validation/engine_replicas.py` rebuilds that ordering and
+the hourly leg `engine_replicas` replays every promoted certificate through it, publishing how
+much R the stop-first tie-break costs or flatters (`reports/ENGINE_REPLICAS.json`). The compiled
+rust engine is not driven in a desk process: the rebuild needs only numpy and the semantics are
+the part a verifier needs.
+"""
+from __future__ import annotations
 
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
-SYSTEM = "nautilus"
-CAPABILITY_FAMILY = "replay_parity"
-LICENCE_EXPECTED = "LGPL-3.0"
-MODULE = "nautilus_trader"
-HINT = "pip install nautilus_trader; a compiled rust core, so wheel availability is measured"
-PROBE_NAMES: tuple[str, ...] = (
-    "model",
-    "backtest",
-    "__version__",
-)
-WHY = "deterministic replay semantics as a parity reference, never an executor here"
-REBUILT_BY = "desks/mt5/research/shadow_forward.py"
+SYSTEM = 'nautilus'
+CAPABILITY_FAMILY = 'replay_parity'
+LICENCE_EXPECTED = 'LGPL-3.0'
+MODULE = 'nautilus_trader'
+HINT = 'pip install nautilus_trader; a compiled rust core, so wheel availability is measured'
+CENSUS_CLASS = "b"
+ROLE = 'INDEPENDENT VERIFIER: Nautilus adaptive bar-path ordering replayed on certified cells'
+CONTRACTS: tuple[str, ...] = ()
+CLOCK = 'hourly_cycle:engine_replicas'
+VERDICT_REASON = ""
+
+
+def why() -> str:
+    """The registry row as one sentence: where this system's work happens, or why it cannot."""
+    via = (" as DataHub contract(s) " + ", ".join(CONTRACTS)) if CONTRACTS else ""
+    return "ROUTED: " + ROLE + " -- runs on " + CLOCK + via + "; nothing to run over a bar bundle"
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    """Measure the upstream if it is here; name it, with its install task, if it is not."""
-    lib = A.library(MODULE)
-    if lib is None:
-        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT)
-    rows: list[dict[str, Any]] = [A.api_probe(SYSTEM, lib, PROBE_NAMES)]
-    rows.append({"kind": "REBUILT_ROUTE", "system": SYSTEM, "why": WHY, "rebuilt_by": REBUILT_BY})
-    return A.packet(SYSTEM, bundle, trials=0, research_methods=rows,
-                    note="importable; the upstream loop is not driven from this adapter")
+    """Never a silent probe: the packet names the route or the measured verdict."""
+    if A.library(MODULE) is None:
+        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT + ". "
+                            + why())
+    return A.unmeasured(SYSTEM, bundle, why())
 
 
 if __name__ == "__main__":

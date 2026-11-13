@@ -1,36 +1,47 @@
-"""finrobot adapter -- import probe only. LLM-driven analyst agents; the desk's acquisition organs
-carry no LLM. While the upstream is absent the capability is carried by
-desks/mt5/research/world_frontier.py."""
-from __future__ import annotations
+"""finrobot adapter -- VERDICT: CANNOT WORK HERE, measured.
 
-from typing import Any
+LLM-driven analyst agents. LLM-KEY + TERMS: the agents cannot import or step without an LLM
+provider key (sandbox_install_ledger REJECTED_WITH_EVIDENCE: OPENAI_API_KEY / config_api_keys
+at import and every step), and its analyst tools read keyed vendors (FMP, Finnhub, SEC); there
+is no deterministic price mechanism to rebuild
+
+The verdict is this module's registry row (CENSUS_CLASS / VERDICT_REASON), read hourly by
+`desks/mt5/research/adapter_census.py` into `reports/ADAPTER_CENSUS.json`; the sandbox packet
+carries the same reason, so the runner records UNMEASURED with a name rather than a silent probe.
+"""
+from __future__ import annotations
 
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
-SYSTEM = "finrobot"
-CAPABILITY_FAMILY = "information_acquisition"
-LICENCE_EXPECTED = "Apache-2.0"
-MODULE = "finrobot"
-HINT = "pip install finrobot; the agents need an LLM key the sandbox does not carry"
-PROBE_NAMES: tuple[str, ...] = (
-    "agents",
-    "data_source",
-    "toolkits",
+SYSTEM = 'finrobot'
+CAPABILITY_FAMILY = 'information_acquisition'
+LICENCE_EXPECTED = 'Apache-2.0'
+MODULE = 'finrobot'
+HINT = 'pip install finrobot; the agents need an LLM key the sandbox does not carry'
+CENSUS_CLASS = "c"
+ROLE = 'CANNOT WORK HERE'
+VERDICT_REASON = (
+    'LLM-KEY + TERMS: the agents cannot import or step without an LLM provider key '
+    '(sandbox_install_ledger REJECTED_WITH_EVIDENCE: OPENAI_API_KEY / config_api_keys at '
+    'import and every step), and its analyst tools read keyed vendors (FMP, Finnhub, SEC); '
+    'there is no deterministic price mechanism to rebuild '
 )
-WHY = "LLM-driven analyst agents; the desk's acquisition organs carry no LLM"
-REBUILT_BY = "desks/mt5/research/world_frontier.py"
+CONTRACTS: tuple[str, ...] = ()
+CLOCK = ""
+
+
+def why() -> str:
+    """The registry row as one sentence: where this system's work happens, or why it cannot."""
+    return "CANNOT_WORK_HERE: " + VERDICT_REASON
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    """Measure the upstream if it is here; name it, with its install task, if it is not."""
-    lib = A.library(MODULE)
-    if lib is None:
-        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT)
-    rows: list[dict[str, Any]] = [A.api_probe(SYSTEM, lib, PROBE_NAMES)]
-    rows.append({"kind": "REBUILT_ROUTE", "system": SYSTEM, "why": WHY, "rebuilt_by": REBUILT_BY})
-    return A.packet(SYSTEM, bundle, trials=0, research_methods=rows,
-                    note="importable; the upstream loop is not driven from this adapter")
+    """Never a silent probe: the packet names the route or the measured verdict."""
+    if A.library(MODULE) is None:
+        return A.unmeasured(SYSTEM, bundle, MODULE + " is not importable here: " + HINT + ". "
+                            + why())
+    return A.unmeasured(SYSTEM, bundle, why())
 
 
 if __name__ == "__main__":
