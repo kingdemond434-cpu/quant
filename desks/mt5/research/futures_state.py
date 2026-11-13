@@ -15,8 +15,8 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      (every intervention day since 1991, signed, stamped at its quarterly disclosure; monthly
      totals stamped at their release), and the Swiss National Bank's weekly sight deposits (the
      footprint of SNB FX intervention, stamped at the first Zurich business day after the
-     Friday, 10:00; held TO_CONFIRM on its non-commercial terms, so the seed feeds it). Every other
-     venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
+     Friday, 10:00; TERMS_BLOCKED while its non-commercial terms stand: no series, no cell).
+     Every other venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
      DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
      gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
      next report is out; every request goes through `libs.data.polite_fetch` with retries off.
@@ -1053,17 +1053,29 @@ def snb_features(held: pd.DataFrame) -> pd.DataFrame:
     return feat.iloc[1:]
 
 
+def snb_terms_status(src: Mapping[str, Any]) -> str:
+    """The report line for a source held off by its terms, naming the clause and when it was
+    read, so the block is a measured fact rather than a silence."""
+    return (f"TERMS_BLOCKED: {src.get('terms_clause') or 'terms not OPEN'} "
+            f"({src.get('terms_url') or 'terms URL unrecorded'}, "
+            f"read {src.get('terms_read') or 'never'})")
+
+
 def snb_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
                 state: dict[str, Any], notes: list[dict[str, Any]],
                 now: datetime | None = None) -> pd.DataFrame:
     """Read the cube at most once a day (robots first, hard stop on refusal), cache the CSV, and
-    return the held weekly frame: the seed snapshot overlaid by every live observation."""
+    return the held weekly frame: the seed snapshot overlaid by every live observation. A source
+    whose terms are not OPEN yields NOTHING, the seed included: it was taken under the same
+    terms."""
+    if src.get("terms") != "OPEN":
+        return pd.DataFrame()
     sid = str(src["id"])
     csv_path = RAW / f"{sid}.csv"
     t = (now or datetime.now(UTC)).timestamp()
     last = float((state.get("snb_fetched_at") or {}).get(sid, 0.0) or 0.0)
-    if get_text is not None and src.get("terms") == "OPEN" and \
-            sid not in state.get("hard_stops", {}) and t - last >= SNB_REFETCH_S:
+    if get_text is not None and sid not in state.get("hard_stops", {}) and \
+            t - last >= SNB_REFETCH_S:
         try:
             if not robots_allow(str(src["url"]), get_text):
                 notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
@@ -1282,7 +1294,11 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
                           "why": "no historical CSV held yet"})
 
     snb = sources.get("snb_sight_deposits") or {}
-    if snb.get("adapter") == "snb_cube":
+    if snb.get("adapter") == "snb_cube" and snb.get("terms") != "OPEN":
+        # Terms-clean data only, and trading is commercial use: the seed snapshot is under the
+        # same terms as a live read, so neither reaches a lake series or a cell.
+        notes.append({"source": "snb_sight_deposits", "status": snb_terms_status(snb)})
+    elif snb.get("adapter") == "snb_cube":
         held = snb_collect(snb, get_text, state, notes, now)
         feat = snb_features(held)
         if len(feat) >= MIN_ROWS:

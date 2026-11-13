@@ -224,12 +224,54 @@ def test_seed_gives_history_before_the_first_live_read(tmp_desk: Path) -> None:
     fridays = pd.date_range("2020-01-03", periods=60, freq="7D")
     seed = {"data": {"TG": {str(d.date()): 500000.0 + 100 * i for i, d in enumerate(fridays)}}}
     (tmp_desk / "seed.json").write_text(json.dumps(seed), encoding="utf-8")
-    held = fs.snb_collect(_reg(terms="TO_CONFIRM", seed_path="seed.json")["sources"][0],  # type: ignore[index]
+    held = fs.snb_collect(_reg(seed_path="seed.json")["sources"][0],  # type: ignore[index]
                           None, {}, [])
     assert len(held) == 60 and "TG" in held.columns
     built, _f, _n = fs.build_market_series(_reg(seed_path="seed.json"), get=None, state={},
                                            bars=lambda s: None, get_text=None)
     assert "snb_chf_sd" in built
+
+
+def test_terms_not_open_yields_no_series_and_no_cells(tmp_desk: Path) -> None:
+    """Terms-clean data only: a non-OPEN source mints nothing, the held seed included, makes no
+    request, and says why in the report."""
+    fridays = pd.date_range("2020-01-03", periods=60, freq="7D")
+    seed = {"data": {"TG": {str(d.date()): 500000.0 + 100 * i for i, d in enumerate(fridays)}}}
+    (tmp_desk / "seed.json").write_text(json.dumps(seed), encoding="utf-8")
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        calls.append(url)
+        return _csv(80)
+
+    reg = _reg(terms="TO_CONFIRM", seed_path="seed.json", terms_clause="non-commercial clause",
+               terms_url="https://www.snb.ch/en/srv/disclaimer_copyright",
+               terms_read="2026-11-13")
+    state: dict[str, object] = {}
+    built, frames, notes = fs.build_market_series(reg, get=None, state=state,
+                                                  bars=lambda s: None, get_text=get_text)
+    assert "snb_chf_sd" not in built and "snb_chf_sd" not in frames
+    assert calls == [], "no robots read, no data read"
+    assert fs.cell_plan(built, frames, frozenset({"EURCHF", "USDCHF", "XAUUSD"})) == []
+    minted = fs.mint(built, frames, frozenset({"EURCHF", "USDCHF", "XAUUSD"}), state,
+                     dry_run=True)
+    assert not minted.get("minted_by_series")
+    assert {"source": "snb_sight_deposits",
+            "status": "TERMS_BLOCKED: non-commercial clause "
+                      "(https://www.snb.ch/en/srv/disclaimer_copyright, read 2026-11-13)"} in notes
+    assert fs.snb_collect(reg["sources"][0], get_text, {}, []).empty  # type: ignore[index]
+    assert not (tmp_desk / "series").exists()
+
+
+def test_the_registry_row_is_terms_blocked() -> None:
+    reg = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
+    built, _f, notes = fs.build_market_series(
+        {"sources": [s for s in reg["sources"] if s["id"] == "snb_sight_deposits"]},
+        get=None, state={}, bars=lambda s: None, get_text=None)
+    assert "snb_chf_sd" not in built
+    assert any(str(n.get("status", "")).startswith("TERMS_BLOCKED: non-commercial clause "
+               "(https://www.snb.ch/en/srv/disclaimer_copyright, read 2026-11-13)")
+               for n in notes)
 
 
 def test_registry_row_and_desk_seed_are_present() -> None:
