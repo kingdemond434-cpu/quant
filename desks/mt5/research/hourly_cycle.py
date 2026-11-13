@@ -1198,6 +1198,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # EVERY GENERATOR'S YIELD TO THE CERTIFICATE (hourly pass item 26, 2026-10-29): per model and
+    # per generator, calls -> proposals -> cells -> judged -> survivors -> certs, the silent-success
+    # and dead-replacement RED checks, and the weights the free panel spends its calls by.
+    # Artifact readers, seconds each.
+    "llm_yield", "llm_budget_census",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1464,6 +1469,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
+                     "llm_yield", "llm_budget_census",
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
@@ -6395,6 +6401,14 @@ def main() -> None:
     # of producers that burned compute for no unique cell, ranked by compute.
     prodc = _costed("productivity_census", lambda: _producer(
         "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
+    # WHAT EVERY MODEL AND GENERATOR TURNED ITS CALLS INTO (item 26, IDEA_QUEUE row 251). Writes
+    # reports/LLM_YIELD.json and data/llm_model_priority.json, which free_panel.available reads
+    # so the next call goes to the models that convert; exits 1 on a silent-success streak or a
+    # DEAD producer whose declared replacement is DEAD. The budget census beside it says who spent
+    # the day's requests and how many were wasted; it had a clock in its docstring and none here.
+    llmy = _costed("llm_yield", lambda: _producer("llm_yield", "research/llm_yield.py"))
+    lbc = _costed("llm_budget_census", lambda: _producer(
+        "llm_budget_census", "research/llm_budget_census.py"))
     # PRODUCER BREADTH (principal 2026-09-30: every producer at worldwide orthogonal breadth,
     # every cell testable). Per producer: its clock, last production, cells in 24h/7d, the
     # symbols/charts/sessions/families covered against what it could reach, the share the SEALED
@@ -6625,6 +6639,7 @@ def main() -> None:
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "llm_yield": llmy, "llm_budget_census": lbc,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,

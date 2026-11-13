@@ -80,8 +80,13 @@ def full_run(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
     mp.setattr(PL, "MEMORY_DIR", tmp / "data" / "mathlab")
     mp.setattr(events, "PATH", tmp / "events.jsonl")
     donated: list[dict[str, Any]] = []
-    mp.setattr(PC, "donate", lambda source, candidates, tests_run: donated.extend(candidates)
-               or tmp / "intel.json")
+    def fake_donate(source: str, candidates: list[dict[str, Any]], tests_run: int) -> Path:
+        donated.extend(candidates)
+        out = tmp / "intel.json"
+        out.write_text(json.dumps({"discoveries": candidates}, default=str), "utf-8")
+        return out
+
+    mp.setattr(PC, "donate", fake_donate)
     mp.setattr(PC, "donation_counts", lambda: {"donated": len(donated)})
     try:
         report = PL.run(budget_s=60.0, permutations=20, maths=["spectral", "control_theory"])
