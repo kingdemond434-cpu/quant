@@ -1160,6 +1160,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # EVERY LIVE SLEEVE TRADABLE ON FUSION AND E8, EVERY ORDER TRACEABLE (principal 2026-10-13):
     # small file reads, every hour, so a newly promoted sleeve that cannot trade fails loudly.
     "live_tradability",
+    "promotion_lag",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1500,7 +1501,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
-                     "research_live_identity", "live_tradability", "cro_noon_freshness",
+                     "research_live_identity", "live_tradability", "promotion_lag",
+                     "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2364,6 +2366,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
     "live_tradability": 120,
+    "promotion_lag": 120,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -5214,6 +5217,8 @@ def main() -> None:
     # (principal 2026-10-13: "all sleeves n all future must too"). Reads only; exit 1 is the alarm.
     ltr = _costed("live_tradability", lambda: _producer(
         "live_tradability", "scripts/check_live_tradability.py"))
+    plg = _costed("promotion_lag", lambda: _producer(
+        "promotion_lag", "scripts/check_promotion_lag.py"))
     t5a = _costed("tier5_acceptance", lambda: _producer(
         "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
         "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
@@ -6535,7 +6540,7 @@ def main() -> None:
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
-                    "live_tradability": ltr,
+                    "live_tradability": ltr, "promotion_lag": plg,
                     "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,

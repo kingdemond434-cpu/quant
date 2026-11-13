@@ -1,0 +1,10 @@
+{
+ "schema": "loss_defects_resolved/1",
+ "rule": "deal -> defect -> the commit that fixed it. A defect is resolved only by naming its fix here; silence never resolves one.",
+ "resolved": {
+  "210461494": {
+   "oversize": "441071a47 Enforce the existing risk envelope on final family volume (Codex, 2026-10-13): AUDCHF risked 13.0% because the macro_view/leg_balance multiplier ran after the 10% envelope",
+   "over_allocation": "441071a47 (same cause: the multiplier lifted the book's 10% to 13.0%)"
+  }
+ }
+}
