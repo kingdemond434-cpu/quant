@@ -301,7 +301,12 @@ def _spec_index_appended(p: Path) -> dict[str, tuple[str, str]] | None:
     def decode(doc: Any) -> dict[str, tuple[str, str]]:
         return {str(k): (str(v[0]), str(v[1])) for k, v in doc.items()}
 
-    return append_fold.fold_appended(p, kind="spec_index", empty=dict, fold=_spec_index_fold,
+    from libs.research import hypothesis_graph  # node_id: the legacy spec_id derivation
+
+    return append_fold.fold_appended(p, kind="spec_index",
+                                     code=append_fold.code_fingerprint(
+                                         __file__, hypothesis_graph.__file__),
+                                     empty=dict, fold=_spec_index_fold,
                                      encode=dict, decode=decode, errors="replace",
                                      strict_json=False)
 

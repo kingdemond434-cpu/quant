@@ -19,12 +19,16 @@ THE CONTRACT: the same answer as the full read, or no answer.
     original full read: a fold that refuses a row (the graph raises on a non-object row), a line
     that does not parse where the original would give up, or a bare carriage return inside a line
     (text-mode reading splits there, a byte reader would not).
+  * The cache is keyed to the CODE that folded it as well as the bytes: `code_fingerprint` hashes
+    the source of this module and of every caller module the fold calls into, so a release that
+    changes the fold (or a helper or constant it uses) never reuses an old answer.
   * Every cache read or write failure is swallowed: the cache is an accelerator, never an input.
     `APPEND_FOLD_CACHE=0` turns it off.
 """
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import json
 import os
@@ -34,9 +38,25 @@ from typing import Any, TypeVar
 
 S = TypeVar("S")
 
-VERSION = 1
+VERSION = 2
 CHUNK = 8 << 20
 CACHE_DIR = ".fold_cache"
+
+
+@functools.cache
+def code_fingerprint(*files: str) -> str:
+    """SHA-256 over the source of every file whose code decides the fold (this module included).
+    A cached fold is reused only by the same code: a release that edits the fold, a helper it
+    calls, or a constant it compares refolds from byte 0. An unreadable source yields an
+    `unreadable:` fingerprint, which `fold_appended` refuses outright (the full read answers)."""
+    h = hashlib.sha256()
+    for f in (__file__, *files):
+        try:
+            h.update(Path(f).read_bytes())
+        except OSError:
+            return f"unreadable:{f}"
+        h.update(b"\0")
+    return h.hexdigest()
 
 
 def enabled() -> bool:
@@ -48,24 +68,27 @@ def cache_path(path: Path, kind: str) -> Path:
     return path.parent / CACHE_DIR / f"{path.name}.{kind}.json"
 
 
-def _load(cp: Path, ledger: Path, kind: str) -> dict[str, Any] | None:
+def _load(cp: Path, ledger: Path, kind: str, code: str) -> dict[str, Any] | None:
     try:
         doc = json.loads(cp.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     if (not isinstance(doc, dict) or doc.get("v") != VERSION or doc.get("kind") != kind
-            or doc.get("ledger") != str(ledger) or not isinstance(doc.get("offset"), int)
+            or doc.get("ledger") != str(ledger) or doc.get("code") != code
+            or not isinstance(doc.get("offset"), int)
             or not isinstance(doc.get("sha256"), str) or "state" not in doc):
         return None
     return doc
 
 
-def _save(cp: Path, ledger: Path, kind: str, offset: int, digest: str, state: Any) -> None:
+def _save(cp: Path, ledger: Path, kind: str, code: str, offset: int, digest: str,
+          state: Any) -> None:
     tmp = cp.with_name(f"{cp.name}.{os.getpid()}.tmp")
     try:
         cp.parent.mkdir(parents=True, exist_ok=True)
         with tmp.open("w", encoding="utf-8") as fh:
-            json.dump({"v": VERSION, "kind": kind, "ledger": str(ledger), "offset": offset,
+            json.dump({"v": VERSION, "kind": kind, "ledger": str(ledger), "code": code,
+                       "offset": offset,
                        "sha256": digest, "state": state}, fh, separators=(",", ":"))
         os.replace(tmp, cp)
     except (OSError, TypeError, ValueError):
@@ -96,7 +119,7 @@ _SKIP: Any = object()
 _BLANK: Any = object()
 
 
-def fold_appended(path: Path, *, kind: str, empty: Callable[[], S],
+def fold_appended(path: Path, *, kind: str, code: str, empty: Callable[[], S],
                   fold: Callable[[S, Any], bool], encode: Callable[[S], Any],
                   decode: Callable[[Any], S], errors: str = "strict",
                   strict_json: bool = True) -> S | None:
@@ -106,15 +129,17 @@ def fold_appended(path: Path, *, kind: str, empty: Callable[[], S],
     full read must then decide). `strict_json`: a line that fails to parse aborts the fast path
     (True) or is skipped (False), whichever the caller's own reader does. Returns None whenever
     the answer is not provably the full read's, and the caller falls back to that read.
+    `code` is the fold's fingerprint (`code_fingerprint` of the caller's source files): a cache
+    written by any other code is never read.
     """
-    if not enabled():
+    if not enabled() or not code or code.startswith("unreadable:"):
         return None
     try:
         ledger = path.resolve()
     except OSError:
         return None
     cp = cache_path(path, kind)
-    doc = _load(cp, ledger, kind)
+    doc = _load(cp, ledger, kind, code)
     try:
         fh = path.open("rb")
     except OSError:
@@ -169,7 +194,7 @@ def fold_appended(path: Path, *, kind: str, empty: Callable[[], S],
                 if not fold(state, obj):
                     return None
     if offset != start or doc is None or doc.get("offset") != offset:
-        _save(cp, ledger, kind, offset, h.hexdigest(), encode(state))
+        _save(cp, ledger, kind, code, offset, h.hexdigest(), encode(state))
     if carry:
         ok, obj = _line(carry, errors, strict_json)
         if not ok:

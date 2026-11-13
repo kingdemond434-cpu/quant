@@ -191,3 +191,50 @@ def test_switch_off_writes_no_cache(tmp_path: Path, monkeypatch) -> None:
 def test_missing_ledger(tmp_path: Path) -> None:
     assert pr.spec_index(tmp_path / "absent.jsonl") == {}
     assert hg._fate_index(hg.Graph(tmp_path / "absent.jsonl")) == ({}, {})
+
+
+@pytest.mark.parametrize("kind", ["fate_index", "spec_index"])
+def test_a_cache_from_other_fold_code_is_never_read(tmp_path: Path, kind: str,
+                                                     monkeypatch) -> None:
+    """The prefix hash proves the BYTES are unchanged, not that the fold is: a release that edits
+    the fold must refold from byte 0 (Auditor MF1 on 78e331fb)."""
+    p = tmp_path / "l.jsonl"
+    rows = GRAPH if kind == "fate_index" else PREREG
+
+    def read() -> object:
+        return hg._fate_index(hg.Graph(p)) if kind == "fate_index" else pr.spec_index(p)
+
+    p.write_text(_lines(rows), encoding="utf-8")
+    read()
+    cp = append_fold.cache_path(p, kind)
+    doc = json.loads(cp.read_text(encoding="utf-8"))
+    # poison the cached state while keeping the bytes' hash valid: only the code key can refuse it
+    doc["state"] = ({"cur": {"a": ["CERTIFIED", "PREREGISTERED", ""]}, "earliest": {}}
+                    if kind == "fate_index" else {"s1": ["1999-01-01", "forged"]})
+    cp.write_text(json.dumps(doc), encoding="utf-8")
+    assert read() != (_full_fate(p) if kind == "fate_index" else _full_spec(p))  # same code: used
+    real = append_fold.code_fingerprint
+    monkeypatch.setattr(append_fold, "code_fingerprint", lambda *f: real(*f) + "-changed")
+    assert read() == (_full_fate(p) if kind == "fate_index" else _full_spec(p))
+    assert json.loads(cp.read_text(encoding="utf-8"))["code"].endswith("-changed")
+
+
+def test_code_fingerprint_covers_every_named_source(tmp_path: Path) -> None:
+    a, b = tmp_path / "a.py", tmp_path / "b.py"
+    a.write_text("x = 1\n", encoding="utf-8")
+    b.write_text("y = 1\n", encoding="utf-8")
+    one = append_fold.code_fingerprint(str(a), str(b))
+    b.write_text("y = 2\n", encoding="utf-8")
+    append_fold.code_fingerprint.cache_clear()
+    assert append_fold.code_fingerprint(str(a), str(b)) != one
+    assert append_fold.code_fingerprint(str(a)) != append_fold.code_fingerprint(str(a), str(b))
+    assert append_fold.code_fingerprint(str(tmp_path / "gone.py")).startswith("unreadable:")
+
+
+def test_an_unreadable_fingerprint_disables_the_fast_path(tmp_path: Path) -> None:
+    p = tmp_path / "l.jsonl"
+    p.write_text(_lines(PREREG), encoding="utf-8")
+    got = append_fold.fold_appended(p, kind="spec_index", code="unreadable:x", empty=dict,
+                                    fold=pr._spec_index_fold, encode=dict, decode=dict)
+    assert got is None
+    assert not append_fold.cache_path(p, "spec_index").exists()

@@ -877,7 +877,9 @@ def _fate_index_appended(path: Path) -> FateIndex | None:
         cur = {sys.intern(k): (_i(v[0]), _i(v[1]), _i(v[2])) for k, v in doc["cur"].items()}
         return cur, {str(k): str(v) for k, v in doc["earliest"].items()}
 
-    return append_fold.fold_appended(path, kind="fate_index", empty=lambda: ({}, {}),
+    return append_fold.fold_appended(path, kind="fate_index",
+                                     code=append_fold.code_fingerprint(__file__),
+                                     empty=lambda: ({}, {}),
                                      fold=fold, encode=encode, decode=decode)
 
 
