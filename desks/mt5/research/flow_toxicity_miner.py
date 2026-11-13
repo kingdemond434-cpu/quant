@@ -316,6 +316,17 @@ def screen_symbol(symbol: str, bars: pd.DataFrame, cost: float, unfillable: dict
     return rows
 
 
+def _may_hypothesise(symbol: str) -> bool:
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        return True              # no policy is not a refusal; the donor door re-checks anyway
+    try:
+        return bool(may_hypothesise(symbol, "exogenous_conditioner"))
+    except Exception:
+        return True
+
+
 def propose(readings: list[dict], *, series_root: Path, budget_end: float | None,
             dry_run: bool) -> dict[str, Any]:
     import research.proposer_common as pc
@@ -330,6 +341,11 @@ def propose(readings: list[dict], *, series_root: Path, budget_end: float | None
             continue
         if r.get("status") != "MEASURED" or int(r.get("bars_measured") or 0) < MIN_SERIES_BARS:
             skipped[sym] = f"under {MIN_SERIES_BARS} measured bars"
+            continue
+        if not _may_hypothesise(sym):
+            # The series is still written (the event lane may read it); screening cells the
+            # donor door would refuse by the two-lane mandate only spends the budget.
+            skipped[sym] = "event lane (two-lane mandate): series kept, no hypothesis cells"
             continue
         d = pc.bars(sym)
         if d is None:
