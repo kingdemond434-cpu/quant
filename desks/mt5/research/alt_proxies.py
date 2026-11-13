@@ -3121,8 +3121,8 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "cn_maoyan_box_office": ("hk_immd_passenger",),
     "cn_sge_premium": ("in_gold_imports",),
     "cn_baidu_migration": ("hk_immd_passenger",),
-    "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
-    "cn_mot_port_weekly": ("imf_portwatch_ports",),
+    "kr_busan_port": ("kr_mof_container_teu",),
+    "imf_portwatch_chokepoints": ("no_ais_tankers",),
 }
 #: The #152 engine's MIN_CORRELATION, applied here to every blocked -> substitute pair.
 SUBSTITUTE_MIN_CORR = 0.50
@@ -3143,6 +3143,14 @@ NO_SUBSTITUTE: dict[str, str] = {
                     "NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, "
                     "RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n "
                     "reported"),
+    "cn_mot_port_weekly": ("its only candidate, imf_portwatch_ports, went to_confirm on "
+                           "2026-11-13 (the IMF terms pages conflict), so no UNVERIFIED free "
+                           "stand-in remains; a candidate is COVERED only at corr >= 0.5 with n "
+                           "reported"),
+    "imf_portwatch_ports": ("no free port-call panel with confirmed terms covers Shanghai, "
+                            "Ningbo, Port Hedland and Singapore; kr_mof_container_teu covers "
+                            "Korea only and is not offered as UNVERIFIED stand-in for them; a "
+                            "candidate is COVERED only at corr >= 0.5 with n reported"),
     "za_beti": ("candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a "
                 "mirror of the Stats SA notice was read, statssa.gov.za is behind Incapsula) and "
                 "no correlation against BETI has been measured (PayInc terms unreadable; SARB "
