@@ -284,3 +284,15 @@ def test_depth_symbols_feed_bars_wanted(tmp_path: Path) -> None:
         "EURUSD_H1": {"cells_waiting": 50, "extendable": False},
         "GBPJPY_M15": {"cells_waiting": 3, "extendable": True}}}), "utf-8")
     assert chc.depth_symbols(p) == ["XAUUSD", "GBPJPY"]
+
+
+def test_burndown_reads_the_consumer_report(tmp_path: Path) -> None:
+    import judging_burndown as jb
+    assert jb.consumer_outflow(tmp_path / "none.json")["status"] == chc.UNMEASURED
+    p = tmp_path / jb.CONSUMER_REPORT
+    p.write_text(json.dumps({"status": "MEASURED", "generated_utc": "t", "children_emitted": 3,
+                             "totals": {"in": 9, "re_emitted": 2, "fixed": 1, "deferred": 5,
+                                        "abandoned": 1}}), "utf-8")
+    got = jb.consumer_outflow(p)
+    assert got["status"] == "MEASURED" and got["in"] == 9 and got["children_emitted"] == 3
+    assert chc.OUT.name == jb.CONSUMER_REPORT

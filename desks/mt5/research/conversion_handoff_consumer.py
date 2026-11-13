@@ -664,11 +664,12 @@ def extendable(chart: str, depth: dict[str, Any]) -> bool:
 
 
 # ------------------------------------------------------------------------------ docket lookup
-def docket_params(wanted: dict[str, dict[str, Any]], *, docket: Path = DOCKET,
+def docket_params(wanted: dict[str, dict[str, Any]], *, docket: Path | None = None,
                   deadline: float | None = None) -> dict[str, dict[str, Any]]:
     """{cell: docket row fields} for every wanted cell found in one streaming docket pass."""
     from libs.research import family_firing as ff
     from research.frontier_identity import docket_cell_id
+    docket = DOCKET if docket is None else docket
     pairs = {(str(w.get("symbol")), str(w.get("family"))) for w in wanted.values()}
     found: dict[str, dict[str, Any]] = {}
     if not docket.exists() or not wanted:
@@ -760,7 +761,7 @@ class Books:
 
 
 def run(*, budget_s: float = 420.0, dry_run: bool = False, handoff: Path = HANDOFF,
-        docket: Path = DOCKET, out: Path = OUT, state_path: Path = STATE,
+        docket: Path | None = None, out: Path = OUT, state_path: Path = STATE,
         requeue_path: Path = REQUEUE, depth_path: Path = DEPTH_BACKLOG,
         workers: int | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
