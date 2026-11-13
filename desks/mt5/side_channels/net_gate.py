@@ -52,8 +52,11 @@ REFUSED_HOSTS: dict[str, str] = {
 }
 
 LEDGER: Counter[str] = Counter()
+#: Robots rules per host, read ONCE per process under the first agent that reaches the host;
+#: `can_fetch` is then asked with the agent each request actually sends.
 _ROBOTS: dict[str, urllib.robotparser.RobotFileParser | str] = {}
-_ORIGINAL_URLOPEN = urllib.request.urlopen
+#: Redirect hops a requests call may follow, each one re-checked at the door.
+MAX_HOPS = 5
 
 
 def _base_exc() -> type[Exception]:
@@ -136,6 +139,29 @@ def refusal(url: str, agent: str = AGENT) -> str | None:
     return None
 
 
+class _GatedRedirects(urllib.request.HTTPRedirectHandler):
+    """urllib follows 3xx inside its opener, past any wrapper round `urlopen`. Every hop is put
+    to the door here: a refused host or a robots refusal stops the fetch (Auditor MF1)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        target = urllib.parse.urljoin(req.full_url, newurl)
+        agent = honest_agent(req.get_header("User-agent"))
+        why = refusal(target, agent)
+        if why:
+            LEDGER["refused_redirect"] += 1
+            raise Refused(f"redirect refused: {why} ({target[:120]})")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_GatedRedirects())
+
+
+def _ORIGINAL_URLOPEN(url: Any, *a: Any, **k: Any) -> Any:
+    """The door's own transport: the stock opener with every redirect hop gated."""
+    k.pop("context", None)          # build_opener's HTTPS handler carries the default context
+    return _OPENER.open(url, *a, **k)
+
+
 def _header(headers: Any, name: str) -> str | None:
     for k, v in dict(headers or {}).items():
         if str(k).lower() == name.lower():
@@ -177,9 +203,27 @@ def install() -> None:
         agent = honest_agent(_header(headers, "User-Agent") or self.headers.get("User-Agent"))
         headers = {h: v for h, v in headers.items() if str(h).lower() != "user-agent"}
         headers["User-Agent"] = agent
+        follow = k.pop("allow_redirects", True)
         why = refusal(url, agent)
         if why:
             raise Refused(f"{why} ({str(url)[:120]})")
-        return original(self, method, url, *a, headers=headers, **k)
+        # requests follows 3xx inside Session.send, past this wrapper, so redirects are turned
+        # off and every hop is taken here, through the door (Auditor MF1).
+        resp = original(self, method, url, *a, headers=headers, allow_redirects=False, **k)
+        hops = 0
+        while follow and resp.is_redirect and hops < MAX_HOPS:
+            target = urllib.parse.urljoin(resp.url or url, resp.headers.get("location", ""))
+            why = refusal(target, agent)
+            if why:
+                LEDGER["refused_redirect"] += 1
+                raise Refused(f"redirect refused: {why} ({target[:120]})")
+            if resp.status_code in (301, 302, 303) and method.upper() != "HEAD":
+                method = "GET"
+                k.pop("data", None)
+                k.pop("json", None)
+            resp = original(self, method, target, *a, headers=headers, allow_redirects=False,
+                            **k)
+            hops += 1
+        return resp
 
     requests.Session.request = request  # type: ignore[method-assign]

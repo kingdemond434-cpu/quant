@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import urllib.error
+import urllib.request
 import urllib.robotparser
 from pathlib import Path
 
@@ -132,3 +133,73 @@ def test_cot_rows_come_from_the_open_data_route_with_z_scores() -> None:
     assert {"positioning", "extreme_positioning", "positioning_shift"} <= kinds
     assert all(r["symbols"] for r in rows)
     assert "Mozilla" not in Path(C.__file__).read_text("utf-8")
+
+
+def test_urllib_redirect_to_a_refused_host_is_not_followed(monkeypatch) -> None:
+    """Auditor MF1 (urllib): a 302 onto a refused host stops at the door; one request only."""
+    import http.client
+    import io
+    import urllib.request
+
+    sent: list[str] = []
+
+    class Handler(urllib.request.HTTPSHandler):
+        def https_open(self, req):  # type: ignore[no-untyped-def]
+            sent.append(req.full_url)
+            msg = http.client.HTTPMessage()
+            msg["Location"] = "https://www.youtube.com/watch?v=x"
+            resp = urllib.request.addinfourl(io.BytesIO(b""), msg, req.full_url, 302)
+            resp.msg = "Found"
+            return resp
+
+    monkeypatch.setattr(G, "_OPENER", urllib.request.build_opener(G._GatedRedirects(), Handler()))
+    monkeypatch.setattr(G, "_ROBOTS", {"https://ok.example.org": _rules([])})
+    with pytest.raises(G.Refused):
+        G._ORIGINAL_URLOPEN("https://ok.example.org/feed")
+    assert sent == ["https://ok.example.org/feed"]
+
+
+def test_requests_redirect_to_a_refused_host_is_not_followed(monkeypatch) -> None:
+    """Auditor MF1 (requests): redirects are taken by the door, never inside Session.send."""
+    import requests
+
+    sent: list[tuple[str, bool]] = []
+
+    def fake(self, method, url, *a, **k):  # type: ignore[no-untyped-def]
+        sent.append((url, k.get("allow_redirects")))
+        r = requests.Response()
+        r.status_code, r.url = 302, url
+        r.headers["location"] = "https://api.stlouisfed.org/fred/series"
+        return r
+
+    monkeypatch.setattr(requests.Session, "request", fake)
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(G, "_ROBOTS", {"https://ok.example.org": _rules([])})
+    G.install()
+    with pytest.raises(requests.RequestException):
+        requests.get("https://ok.example.org/feed", timeout=1)
+    assert sent == [("https://ok.example.org/feed", False)]
+
+
+def test_requests_same_host_redirect_is_followed_through_the_door(monkeypatch) -> None:
+    import requests
+
+    sent: list[str] = []
+
+    def fake(self, method, url, *a, **k):  # type: ignore[no-untyped-def]
+        sent.append(url)
+        r = requests.Response()
+        r.url = url
+        if url.endswith("/old"):
+            r.status_code = 301
+            r.headers["location"] = "/new"
+        else:
+            r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests.Session, "request", fake)
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(G, "_ROBOTS", {"https://ok.example.org": _rules([])})
+    G.install()
+    assert requests.get("https://ok.example.org/old", timeout=1).status_code == 200
+    assert sent == ["https://ok.example.org/old", "https://ok.example.org/new"]
