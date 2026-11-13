@@ -10,17 +10,19 @@ import re
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
+REPO = DESK.parents[1]
 
-#: Files run by SYSTEM scheduled tasks (MT5-MoatRecorder, the spread tape) that once called
-#: initialize() bare.
-GUARDED = ("moat/moat_recorder.py", "research/fusion_spread_tape.py")
+#: Files run by SYSTEM scheduled tasks (MT5-MoatRecorder, MT5-DeskState, the spread tape) that
+#: once called initialize() bare.
+GUARDED = ("desks/mt5/moat/moat_recorder.py", "desks/mt5/research/fusion_spread_tape.py",
+           "scripts/build_zentech_state.py")
 
 _BARE = re.compile(r"\bmt5\.initialize\(")
 
 
 def test_system_readers_never_call_a_bare_initialize() -> None:
     for rel in GUARDED:
-        src = (DESK / rel).read_text(encoding="utf-8")
+        src = (REPO / rel).read_text(encoding="utf-8")
         assert not _BARE.search(src), f"{rel} calls mt5.initialize() directly"
         assert "attach_or_initialize" in src, rel
 
