@@ -4439,6 +4439,10 @@ _TERMINAL_ARTIFACTS = {
         "rows to desks/mt5/data/intelligence/firm_mining/discoveries_*.json, which the "
         "candidate compiler reads (CLAUDE.md: seat output goes through data/intelligence/); "
         "the markdown is the narrative record of that donation, not inventory awaiting one.",
+    "docs/autonomy/":
+        "DIRECTORY CLASS, the release pipeline's human-dependency ledger (zuck 2026-11-03 23:41Z "
+        "Phase 7). Each row records an observed owner step and its remediation; the remediation "
+        "lands as code through the ordinary PR door, so the ledger is a record, not inventory.",
 }
 
 
