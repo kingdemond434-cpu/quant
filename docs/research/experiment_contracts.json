@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "sleeve_cost_in_r": {
+   "hypothesis": "Pricing every live, standby and certified sleeve's round trip in R at its own entry hours, against what its certificate charged, exposes sleeves whose certified edge is eaten or undercharged by entry-hour spread before forward capital finds out.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_fusion_net_edge_measured",
+    "better": "up",
+    "organ": "report:SLEEVE_COST_IN_R.json"
+   },
+   "falsifier": {
+    "metric": "n_fusion_net_edge_measured",
+    "op": "<",
+    "threshold": 1,
+    "after": "14 days on the trading box with no sleeve whose net edge in R could be measured: the audit prices nothing the allocator could use"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
