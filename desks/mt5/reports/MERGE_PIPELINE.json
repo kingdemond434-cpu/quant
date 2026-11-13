@@ -1,14 +1,14 @@
 {
-  "at": "2026-11-13T03:50:15+00:00",
+  "at": "2026-11-13T04:20:05+00:00",
   "status": "RED",
   "red": [
-    "CLEAR_WAITING #1041: CLEARed 38.7 h ago, still open",
-    "CLEAR_WAITING #801: CLEARed 52.7 h ago, still open",
-    "CLEAR_WAITING #797: CLEARed 52.3 h ago, still open",
-    "CLEAR_WAITING #737: CLEARed 51.9 h ago, still open",
-    "CLEAR_WAITING #473: CLEARed 59.3 h ago, still open",
-    "LIVE_STALLED: no code on LIVE for 9.9 h while mergeable work waits",
-    "SIGN_TRAIN_FAILING: 316 runs in a row failed"
+    "CLEAR_WAITING #1041: CLEARed 39.2 h ago, still open",
+    "CLEAR_WAITING #801: CLEARed 53.2 h ago, still open",
+    "CLEAR_WAITING #797: CLEARed 52.8 h ago, still open",
+    "CLEAR_WAITING #737: CLEARed 52.3 h ago, still open",
+    "CLEAR_WAITING #473: CLEARed 59.8 h ago, still open",
+    "LIVE_STALLED: no code on LIVE for 10.4 h while mergeable work waits",
+    "SIGN_TRAIN_FAILING: 322 runs in a row failed"
   ],
   "queue": {
     "queued_runs": 0,
@@ -29,18 +29,18 @@
     "fp_rate": 0.01
   },
   "sweep": {
-    "at": "2026-11-13T03:50:15.0994287Z",
+    "at": "2026-11-13T04:20:04.9478467Z",
     "age_min": 0.0,
     "rc": 1,
     "note": "FAILED: sparse-checkout failed (128)",
     "mutex_held_runs": 0
   },
   "sign_train": {
-    "at": "2026-11-13T04:00:08.9890941Z",
-    "age_min": -9.9,
+    "at": "2026-11-13T04:30:09.0143145Z",
+    "age_min": -10.1,
     "rc": 1,
     "note": "FAILED: no desk Python at C:\\opt\\quant\\.venv\\Scripts\\python.exe",
-    "fail_runs": 316,
+    "fail_runs": 322,
     "mutex_held_runs": 0,
     "waiting_on": null,
     "waiting_min": null
@@ -48,9 +48,9 @@
   "live": {
     "last_code_commit": "cdd8c6f3e",
     "last_code_at": "2026-11-12T17:58:39Z",
-    "hours_since_code": 9.86,
+    "hours_since_code": 10.36,
     "last_merge_at": "2026-11-12T17:58:40Z",
-    "hours_since_merge": 9.86
+    "hours_since_merge": 10.36
   },
   "prs": [
     {
@@ -552,7 +552,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-11T13:10:39Z",
-      "clear_age_h": 38.66,
+      "clear_age_h": 39.16,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3216,7 +3216,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:07:29Z",
-      "clear_age_h": 52.71,
+      "clear_age_h": 53.21,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3240,7 +3240,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:33:12Z",
-      "clear_age_h": 52.28,
+      "clear_age_h": 52.78,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3576,7 +3576,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:59:15Z",
-      "clear_age_h": 51.85,
+      "clear_age_h": 52.35,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5532,7 +5532,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T16:34:20Z",
-      "clear_age_h": 59.27,
+      "clear_age_h": 59.76,
       "review": "failure",
       "gating_green": true,
       "green_since": null
