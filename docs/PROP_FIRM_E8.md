@@ -341,7 +341,7 @@ Artifact: `desks/mt5/reports/PROP_BARRIER.json` (`research/prop_barrier.py`).
 
 # 2026-09-13: CONNECTED, AND THE VENUE RE-PRICED THE BOOK
 
-First connection to account 2478877. **Balance $100,000.00, equity $100,000.00, 0 positions.**
+First connection to the evaluation account. **Balance $100,000.00, equity $100,000.00, 0 positions.**
 Server `E8`, phase 1, 46 instruments in the catalogue.
 
 ## What the venue took away

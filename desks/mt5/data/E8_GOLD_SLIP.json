@@ -1,0 +1,25 @@
+{
+ "measured_at": "2026-10-20",
+ "n": 0,
+ "rows_read": 41,
+ "quantile": 0.95,
+ "unit": "points",
+ "min_n": 20,
+ "measure": "one stop exit's fill beyond its level, in price points",
+ "sources": [
+  "box-only, untracked: desks/mt5/data/e8_gold_intents.jsonl",
+  "data/e8_gold_stop_exits.jsonl (0 rows: not yet written on this host)",
+  "/mnt/project-files/reports/markout_2026-10-20/e8_fills_20261020.csv (41 rows)"
+ ],
+ "windows": {},
+ "notes": [
+  "e8_fills_20261020.csv holds 41 E8 gold ENTRY fills (2026-09-17..10-16) and no exit fill, so no stop exit is measurable from it",
+  "2026-09-24 (asia short): a ratcheted protective stop filled 24.13 points beyond its level -- the worst single-leg slip measured, and the lane's DEFAULT_SLIP_POINTS; known from the lane's log, not a fill record, so not counted",
+  "2026-09-11: no E8 gold fill exists for that date (the lane's first fill is 2026-09-17); not counted"
+ ],
+ "status": "UNMEASURED",
+ "missing": [
+  "exit fills of the E8 gold positions before the lane journalled them: the venue's filled stop-loss orders (fill price and the stopPrice in force) per position id. TradeLocker's order history holds them; no tracked file does, and the lane's history read looks back 2 days, so exits older than that are recorded only if exported (--fills)"
+ ],
+ "why": "0 stop exits measured, under 20: the lane keeps its default slip"
+}
