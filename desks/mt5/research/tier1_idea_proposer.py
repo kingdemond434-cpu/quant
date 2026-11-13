@@ -170,6 +170,21 @@ def _age_h(prior: dict[str, Any], now: datetime) -> float | None:
     return (now - at).total_seconds() / 3600.0
 
 
+def _refresh_calendars(dry_run: bool) -> dict[str, Any]:
+    """THE CALENDARS' CLOCK. `exchange_holidays` is a library, run here on every full sweep,
+    before holiday_drift reads its files: it rewrites a venue file only when the rules give
+    different bytes, so a rule edit reaches the cells on the next sweep, and an unchanged year
+    rewrites nothing."""
+    from research import exchange_holidays as eh
+
+    try:
+        differs = eh.write(check=dry_run)
+    except OSError as exc:
+        return {"status": "WRITE_FAILED", "why": f"{type(exc).__name__}: {exc}"}
+    return {"status": "REWRITTEN" if differs and not dry_run else "CURRENT",
+            "venues_changed": differs}
+
+
 def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: bool = False,
         now: datetime | None = None, only: list[str] | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
@@ -184,6 +199,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
             _write(doc)
         return doc
     started = time.monotonic()
+    calendars = _refresh_calendars(dry_run)
     meta = pc.universe_meta()
     rows: list[dict[str, Any]] = []
     per_idea: dict[str, dict[str, Any]] = {}
@@ -247,6 +263,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, force: bool = False, dry_run: boo
         rec["status"] = ("PARKED" if rec["targets"] and len(rec["parked"]) == rec["targets"]
                          else "RAN")
     doc = {"generated_at": now.isoformat(), "swept_at": now.isoformat(), "status": "SWEPT",
+           "calendars": calendars,
            "leg": LEG, "tests_run": len(rows), "cells_proposed": len(proposals),
            "elapsed_s": round(time.monotonic() - started, 1), "ideas": per_idea,
            "proposals": proposals,

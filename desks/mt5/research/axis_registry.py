@@ -153,11 +153,13 @@ _FAMILY_GROUPS: dict[str, str] = {
                                            " htf_anchor_trend",
     "trend_persistence price_only stop": "adx_channel_hybrid",
     "trend_persistence price_only limit": "pullback_entry",
-    "session_handover price_only market": "asia_momentum clock_transition monday_gap"
+    "session_handover price_only market": "overnight_day_tug"
+                                          " asia_momentum clock_transition monday_gap"
                                           " overnight_drift overnight_gap_decay",
     "session_handover price_only limit": "asia_meanrev",
     "session_information_handoff price_only market": "lvc_asia_london session_handoff",
-    "hedging_demand_close_flow price_only market": "comex_settlement hedging_demand_close"
+    "hedging_demand_close_flow price_only market": "intraday_momentum"
+                                                   " comex_settlement hedging_demand_close"
                                                    " london_close_momentum",
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
@@ -174,7 +176,8 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional_class_value"
                                                      " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
-    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
+    "cross_market_lead cross_asset market": "weekend_crypto_gap equity_gap_breadth"
+                                            " gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead"
                                             " ae_latent",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
@@ -201,7 +204,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # `gauntlet_buildability.information_class`; a test pins that neither reads `price_only`.
     "forced_liquidation carry market": "carry_risk_off",
     "calendar_seasonality cross_asset market": "month_end_rebalance",
-    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
+    "calendar_seasonality seasonality market": "holiday_drift"
+                                               " calendar_month dow_effect turn_of_month"
                                                " mass_screen_clock seasonal_window",
     # hunt16_cell (2026-09-30) rebuilds the hunt16 dav_range_filter_adx cells (side, signal hour,
     # day state) through the registry door, so it sits with its base family.
@@ -240,6 +244,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
     f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",
+    # The Tier-1 idea cells (2026-11-11, `mt5desk.family_tier1_ideas`) sit in the groups above by
+    # mechanism: intraday_momentum (the late hedger finishing the day), overnight_day_tug (the
+    # handover between the night and day clienteles), weekend_crypto_gap and equity_gap_breadth
+    # (another market's price leading the instrument), holiday_drift (the calendar's flow). The
+    # implied-minus-realised gap reprices a volatility premium on a public implied series.
+    "volatility_shock macro market": "implied_realised_gap",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():

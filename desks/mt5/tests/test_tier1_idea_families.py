@@ -173,7 +173,8 @@ def test_holiday_calendars_match_published_2024_dates_and_are_current() -> None:
     assert {"2015-09-22", "2026-09-22"} <= {d.isoformat() for y in (2015, 2026)
                                             for d in eh.jpx(y)}
     assert eh.easter(2025).isoformat() == "2025-04-20"
-    assert eh.write(check=True) == [], "regenerate: python desks/mt5/research/exchange_holidays.py"
+    assert eh.write(check=True) == [], (
+        "regenerate with research.exchange_holidays.write(); the tier1_idea_proposer sweep runs it")
 
 
 def test_proposer_grid_is_declared_and_parks_absent_inputs_by_name(monkeypatch, tmp_path) -> None:
