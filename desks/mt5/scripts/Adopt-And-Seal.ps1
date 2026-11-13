@@ -562,9 +562,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 foreach ($ensure in @(
         @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
-        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
+        # Declared in box_tasks.manifest since #773 and registered by nothing: 19 side-channel
+        # seats read DEAD at once on 2026-11-05 because no box task ran run_all_miners.
+        @{ Task = "Quant-SideChannelMiners"; Path = "scripts\install_side_channel_miners_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
-    $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
+    $installer = if ($ensure.Path) { Join-Path $RepoRoot $ensure.Path } else { Join-Path $desk ("scripts\" + $ensure.Installer) }
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
     try {
         $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
@@ -573,6 +576,75 @@ foreach ($ensure in @(
     } catch {
         Log ("ensure-task: {0} registration failed: {1}" -f $ensure.Task, $_.Exception.Message)
     }
+}
+
+# ------------------------------------- 1c. TASKS REGISTERED SO THAT THEY CAN NEVER DO THEIR JOB
+# Three registrations sat broken for weeks because the only fix was an administrator typing a line
+# (measured on the box 2026-11-10; this pass runs as SYSTEM, so it can do it):
+#   MT5-ContractTerms  registered S4U/SYSTEM = session 0, where the GUI terminal is unreachable:
+#                      "mt5 init failed: (-10004, 'No IPC connection')" every hour since 11-05.
+#   MT5-CycleNoon      still the 09-23 one-shot SYSTEM registration: never run, no next run, and
+#                      under SYSTEM neither CLI is signed in. No noon CRO row since 10-21.
+#   MT5-DeepenUniverse its action (ops\run_deepen_universe.cmd) was deleted on 09-30 and the task
+#                      is in no manifest: rc 1 every hour.
+# The account is READ from MT5-Gateway (the task that already reaches the terminal), never named
+# here. Each repair fires only on the exact broken shape, so a healthy task is never touched, and
+# nothing here is on the order path: none of these tasks sizes, places or closes anything.
+# Best-effort like 1b: a failure is logged and never stops the seal.
+try {
+    $gw = Get-ScheduledTask -TaskName "MT5-Gateway" -ErrorAction SilentlyContinue
+    $gwUser = if ($gw) { [string]$gw.Principal.UserId } else { "" }
+    $gwLogon = if ($gw) { [string]$gw.Principal.LogonType } else { "" }
+    $isSystem = { param($u) ("$u" -match '(^|\\)(SYSTEM|LOCAL SYSTEM)$') -or ("$u" -eq 'S-1-5-18') }
+    # Only a gateway that is itself a named account running Interactive is a known-good shape to
+    # copy (audit SF5); anything else repairs nothing.
+    if (-not $gwUser -or (& $isSystem $gwUser) -or $gwLogon -ne "Interactive") {
+        Log "repair-task: MT5-Gateway is not a named Interactive account ('$gwUser'/'$gwLogon'); nothing repaired"
+    } else {
+        $ct = Get-ScheduledTask -TaskName "MT5-ContractTerms" -ErrorAction SilentlyContinue
+        if ($ct -and ("$($ct.Principal.LogonType)" -ne "Interactive" -or (& $isSystem $ct.Principal.UserId))) {
+            $was = "{0}/{1}" -f $ct.Principal.UserId, $ct.Principal.LogonType
+            try {
+                # the gateway's own run level, never a higher one (audit SF4)
+                Set-ScheduledTask -TaskName "MT5-ContractTerms" -ErrorAction Stop -Principal (
+                    New-ScheduledTaskPrincipal -UserId $gwUser -LogonType Interactive -RunLevel $gw.Principal.RunLevel) | Out-Null
+            } catch {
+                Log ("repair-task: MT5-ContractTerms Set-ScheduledTask failed: {0}" -f $_.Exception.Message)
+            }
+            # what the registration IS now, read back: a repair that did not happen is never
+            # reported as done (audit MF2)
+            $now = Get-ScheduledTask -TaskName "MT5-ContractTerms" -ErrorAction SilentlyContinue
+            $is = if ($now) { "{0}/{1}" -f $now.Principal.UserId, $now.Principal.LogonType } else { "unreadable" }
+            Log "repair-task: MT5-ContractTerms principal was $was, is now $is (wanted $gwUser/Interactive: session 0 cannot reach the terminal)"
+        }
+        $noon = Get-ScheduledTask -TaskName "MT5-CycleNoon" -ErrorAction SilentlyContinue
+        $cro = Join-Path $desk "scripts\install_cro_cycle_tasks.ps1"
+        if ($noon -and (& $isSystem $noon.Principal.UserId) -and (Test-Path $cro)) {
+            $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $cro -Lane noon -RunAs $gwUser -NoStart 2>&1 |
+                     ForEach-Object { "$_" })
+            Log ("repair-task: MT5-CycleNoon was SYSTEM; installer exit {0}: {1}" -f $LASTEXITCODE, ($out -join ' | '))
+        }
+    }
+    $orphan = Get-ScheduledTask -TaskName "MT5-DeepenUniverse" -ErrorAction SilentlyContinue
+    $gone = Join-Path $RepoRoot "ops\run_deepen_universe.cmd"
+    if ($orphan -and -not (Test-Path $gone) -and ((@($orphan.Actions | ForEach-Object { "$($_.Execute) $($_.Arguments)" }) -join ' ') -match 'run_deepen_universe\.cmd')) {
+        # The XML is written and READ BACK before anything is removed: this file runs with
+        # ErrorActionPreference Continue, so a failed export would otherwise fall through to the
+        # unregister and delete the task with nothing kept (audit MF1).
+        $keep = Join-Path $env:ProgramData "QuantBox"
+        $xml = Join-Path $keep "MT5-DeepenUniverse.xml"
+        New-Item -ItemType Directory -Force -Path $keep -ErrorAction Stop | Out-Null
+        Export-ScheduledTask -TaskName "MT5-DeepenUniverse" -ErrorAction Stop |
+            Out-File -FilePath $xml -Encoding unicode -ErrorAction Stop
+        if ((Test-Path -LiteralPath $xml) -and (Get-Item -LiteralPath $xml).Length -gt 0) {
+            Unregister-ScheduledTask -TaskName "MT5-DeepenUniverse" -Confirm:$false -ErrorAction Stop
+            Log "repair-task: MT5-DeepenUniverse unregistered (its action file is gone since 09-30; XML kept at $xml)"
+        } else {
+            Log "repair-task: MT5-DeepenUniverse left registered: its XML could not be kept at $xml"
+        }
+    }
+} catch {
+    Log ("repair-task: failed: {0}" -f $_.Exception.Message)
 }
 
 # ------------------------------------------------------------ 2a. the box's release signing key
