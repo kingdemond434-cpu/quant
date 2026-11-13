@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +51,9 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _census(desk: Path, rows: list[dict[str, Any]]) -> None:
-    (desk / "census.json").write_text(json.dumps({"at": "2026-09-23T00:00:00+00:00",
+    # A CURRENT census: since 2026-11-05 the fence reads one older than 26h as STALE and judges
+    # no producer owing on its compute column (test_productivity_census_budget pins that half).
+    (desk / "census.json").write_text(json.dumps({"at": datetime.now(UTC).isoformat(),
                                                   "producers": rows}), encoding="utf-8")
 
 

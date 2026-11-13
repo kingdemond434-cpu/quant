@@ -851,6 +851,7 @@ $reportPaths = @(
     # landed and when it was shipped, and MT5-AdoptRelease's started/finished heartbeat
     "desks/mt5/reports/INTEL_SHIP.json",
     "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
+    "desks/mt5/reports/PRODUCER_FUNNEL.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",

@@ -152,6 +152,11 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/coverage_tensor.py"),
     ("productivity_census", "desks/mt5/reports/PRODUCTIVITY_CENSUS.json", 3600,
      "research/productivity_census.py"),
+    # EVERY PRODUCER'S FUNNEL, STAGE BY STAGE (BACKLOG row 58): stage-to-stage yield, the named
+    # bottleneck and the RED fence `producer_funnel_issues` below routes onto this board.
+    # Argless is the leg's own pass.
+    ("producer_funnel", "desks/mt5/reports/PRODUCER_FUNNEL.json", 3600,
+     "research/producer_funnel.py"),
     # THE TWO ORGANS THAT ANSWER "WHO EARNED ANYTHING" AND "WHO SPENT THE SEAT" (2026-09-24).
     #
     # `certificate_provenance` was WRITTEN, TESTED AND NEVER RUN. Its own docstring states the
@@ -453,9 +458,53 @@ def silent_organ_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+PRODUCER_FUNNEL = "desks/mt5/reports/PRODUCER_FUNNEL.json"
+
+
+def producer_funnel_issues(root: Path | None = None) -> list[Issue]:
+    """THE PRODUCER-FUNNEL FENCE, ON THE BOARD (BACKLOG row 58, 2026-11-05).
+
+    One STALLED issue per RED producer -- stuck at one stage for more than 24h, or its
+    throughput to the judge halved -- carrying the producer's NAMED bottleneck, so the board says
+    which stage of which producer to fix rather than "yield is low". UNMEASURED is one BLIND issue
+    naming each check that could not run and why: a fence that cannot see is never a pass
+    (L1.28a). None is auto-repairable: the fix is the named producer's or the named stage's, and
+    re-running the fence would only re-read the same inputs. An absent or stale artifact is
+    already a `missing:`/`stale:producer_funnel` issue from CADENCE.
+    """
+    r = root or ROOT
+    try:
+        doc = json.loads((r / PRODUCER_FUNNEL).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(doc, dict):
+        return []
+    out: list[Issue] = []
+    for row in doc.get("red") or []:
+        if not isinstance(row, dict):
+            continue
+        b = row.get("bottleneck") if isinstance(row.get("bottleneck"), dict) else {}
+        reasons = [x for x in row.get("red") or [] if isinstance(x, dict)]
+        checks = sorted({str(x.get("check")) for x in reasons})
+        out.append(Issue(
+            f"producer_funnel:{row.get('key')}", "STALLED",
+            f"{row.get('producer')}: {'+'.join(checks)}; bottleneck {b.get('stage')}"
+            + (f" -> {b.get('to')}" if b.get("to") else ""),
+            ("; ".join(str(x.get("why")) for x in reasons)
+             + f". Bottleneck ({b.get('basis')}): {b.get('why')}. Read {PRODUCER_FUNNEL}.")[:600],
+            repair=None, auto=False))
+    if str(doc.get("status")) == "UNMEASURED":
+        why = "; ".join(f"{k}: {v}" for k, v in (doc.get("unmeasured") or {}).items())
+        out.append(Issue(
+            "producer_funnel:unmeasured", "BLIND",
+            "the producer-funnel fence cannot see every check",
+            (why or "no reason recorded")[:600], repair=None, auto=False))
+    return out
+
+
 def collect(root: Path | None = None) -> list[Issue]:
     return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
-            + silent_organ_issues(root))
+            + silent_organ_issues(root) + producer_funnel_issues(root))
 
 
 def repair_budget_s() -> float | None:
