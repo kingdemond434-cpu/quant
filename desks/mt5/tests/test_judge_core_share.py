@@ -156,7 +156,9 @@ def test_release_restores_the_recorded_affinity(box) -> None:
 def test_judge_idle_gives_every_core_back(box) -> None:
     b, e = box
     e.tick()
-    b.rows = [r for r in b.rows if r["cls"] not in ("judge",)]
+    b.rows = [r for r in b.rows if r["cls"] != "judge"]
+    assert e.tick()["reserved"] == 1                   # the cache warmer is judging work too
+    b.rows = [r for r in b.rows if r["cls"] not in ("judge", "judge_warm")]
     doc = e.tick()
     assert doc["mode"] == "IDLE" and b.aff[200] == list(range(18))
 
