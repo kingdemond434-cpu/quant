@@ -695,6 +695,22 @@ def fill_hour_costs(costs, meta: dict, sym: str, sigs, timeframe: str,
     return dataclasses.replace(costs, spread_per_lot=hour_costs.spread_per_lot), basis, pts
 
 
+#: Per-clock forward ledgers, one file per full clock key (params and chart included).
+CLOCK_LEDGER_DIR = SHADOW_DIR / "clock_ledgers"
+_UNSAFE_NAME = set('<>:"/\\|?*\'[] ,')
+
+
+def clock_ledger_path(key: str, sym: str, fam: str, win: str) -> Path:
+    """The clock's OWN ledger file. Readable name when the key is filesystem-safe and short;
+    otherwise symbol_family_window plus a hash of the full key -- unique either way."""
+    import hashlib
+    stem = str(key).replace(".", "_")
+    if len(stem) > 120 or any(c in _UNSAFE_NAME for c in stem):
+        digest = hashlib.sha1(str(key).encode("utf-8")).hexdigest()[:16]
+        stem = f"{sym}_{fam}_{win}_{digest}"
+    return CLOCK_LEDGER_DIR / f"ledger_{stem}.json"
+
+
 def frozen_costs(key: str):
     """Return the cost basis frozen with ``key``, or ``None`` if it is unavailable.
 
@@ -1409,7 +1425,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # an average over two different games. Stamped per row so the promoter
             # can split them.
             _stamp = bars.stamp()
-            ledger.write_text(json.dumps(
+            _ledger_text = json.dumps(
                 [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
                   "side": t.side, "entry": t.entry, "exit": t.exit,
                   "r_multiple": t.r_multiple, "reason": t.reason,
@@ -1417,7 +1433,22 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                             else "historical"),
                   **_stamp}
                  for t in all_trades],
-                indent=2), encoding="utf-8")
+                indent=2)
+            # THE CLOCK'S OWN LEDGER (2026-11-13). The legacy name above carries no params and no
+            # chart, so every parameterization of one symbol x family x window overwrote the same
+            # file: measured on the box, the 170 promotion candidates shared 55 files and only 41
+            # ledgers matched their own clock, leaving per-trade R -- and so independence (k_eff)
+            # -- UNMEASURED for 129. Each clock now also writes its own file, named by its full
+            # key, and records where (`ledger_file`). The legacy file is still written for the
+            # readers that open it by the old name; it remains a last-writer record.
+            _own = clock_ledger_path(key, sym, fam, win)
+            try:
+                _own.parent.mkdir(parents=True, exist_ok=True)
+                _own.write_text(_ledger_text, encoding="utf-8")
+                st["ledger_file"] = _own.relative_to(BASE).as_posix()
+            except OSError as exc:
+                slog(f"{key}: own ledger not written ({type(exc).__name__})")
+            ledger.write_text(_ledger_text, encoding="utf-8")
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours
