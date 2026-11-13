@@ -105,7 +105,7 @@ def test_the_memo_never_reuses_a_walk_across_a_spread_or_fill_rule() -> None:
     sigs = [_buy_limit(df)]
     one = run_backtest(df, sigs, COSTS)
     assert len(one.trades) == 1
-    stressed = Costs(spread_per_lot=3 * SPREAD * 100.0, commission_per_lot=0.0,
+    stressed = Costs(spread_per_lot=SPREAD * 3 * 100.0, commission_per_lot=0.0,
                      contract_oz=100.0)
     three = run_backtest(df, sigs, stressed)       # 3x spread: the ask never trades through
     assert three.trades == []
