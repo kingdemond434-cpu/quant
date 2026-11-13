@@ -407,7 +407,7 @@ def _safe_step_values() -> dict:
     try:
         return regime_step_values()
     except Exception as exc:  # noqa: BLE001 -- a report field, never a reason to fail the pass
-        return {"status": f"UNMEASURED: {type(exc).__name__}: {exc}"}
+        return {"status": f"UNMEASURED: {type(exc).__name__}"}
 
 
 def _regime(name: str, rs: list[float]) -> tuple[dict | None, str | None]:
@@ -416,7 +416,7 @@ def _regime(name: str, rs: list[float]) -> tuple[dict | None, str | None]:
     try:
         return decay_regime.classify(rs), None
     except Exception as exc:  # noqa: BLE001 -- the ladder stands; the failure is reported
-        return None, f"UNMEASURED: regime detectors failed ({type(exc).__name__}: {exc})"
+        return None, f"UNMEASURED: regime detectors failed ({type(exc).__name__})"
 
 
 def queue_close(names: list[str], path: Path | None = None) -> None:
@@ -456,7 +456,7 @@ def source_state() -> tuple[str, str]:
         json.loads(SLEEVES_FILE.read_text("utf-8"))
     except (OSError, ValueError) as exc:
         return "UNMEASURED", (f"{SLEEVES_FILE.name} exists but could not be read "
-                              f"({type(exc).__name__}: {exc}) -- the live roster is UNKNOWN, not "
+                              f"({type(exc).__name__}) -- the live roster is UNKNOWN, not "
                               f"empty. Every verdict below is absent, not healthy.")
     return "READ", f"{SLEEVES_FILE.name} read cleanly"
 
@@ -683,7 +683,7 @@ def _write_queue(tasks: list[dict]) -> tuple[bool, str]:
         _merge_into_queue(tasks, source="decay_monitor")
         return True, f"{len(tasks)} successor_hunt task(s) written under source decay_monitor"
     except Exception as exc:
-        return False, f"queue write failed: {type(exc).__name__}: {exc}"
+        return False, f"queue write failed: {type(exc).__name__}"
 
 
 def decay_models(doc, now: datetime | None = None) -> dict[str, dict]:
