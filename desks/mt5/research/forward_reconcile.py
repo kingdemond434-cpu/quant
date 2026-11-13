@@ -1086,7 +1086,20 @@ def main() -> int:
             if isinstance(row, dict):
                 path.write_text(json.dumps(data, indent=2), "utf-8")
         if len(survivors) > n_before:
-            doc.update({"n": len(survivors), "gate_policy": ATTESTATION, "survivors": survivors,
+            # THE HEADER IS NEVER FLIPPED OVER ROWS THIS PASS DID NOT JUDGE (2026-11-13). This
+            # line used to write `gate_policy: ATTESTATION` over the whole store whenever it added
+            # a row, so every older row woke up under an attestation that never judged it -- the
+            # lockbox ledger found seven such RESTAMPED certificates (gated 2026-08-26, wearing
+            # the v4 header). Only a store whose header is ALREADY exact may be re-stamped with
+            # the current one; a stale header stays stale and `attestation_remint` re-judges the
+            # store, which is the only honest way for it to change.
+            from gate_policy import is_exact_policy
+            header = (ATTESTATION if is_exact_policy(doc.get("gate_policy"))
+                      or not doc.get("gate_policy") else doc.get("gate_policy"))
+            if header is not ATTESTATION:
+                print(f"  reconcile: store header is not the attestation in force; kept as is "
+                      f"(+{len(survivors) - n_before} row(s)) -- attestation_remint re-judges it")
+            doc.update({"n": len(survivors), "gate_policy": header, "survivors": survivors,
                         "swept_at": now})
             CERTS.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
             CANON.write_text(json.dumps(doc, indent=2, default=str), "utf-8")

@@ -81,6 +81,9 @@ DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 PRIORITY = DESK / "data" / "hypotheses" / "priority_remint.json"
 #: This organ's own artifact (the name the component registry reads).
 OUT = DESK / "reports" / "REMINT_STATUS.json"
+# The lockbox ledger names re-stamped certificates by their recorded baseline gated_at, so it
+# sees them even when `in_force_since` is unknown and `stale_keys` therefore finds nothing.
+LOCKBOX_RECERT = DESK / "reports" / "LOCKBOX_RECERT.json"
 STATUS = OUT
 JUDGING_RATE = DESK / "reports" / "JUDGING_RATE.json"
 GAUNTLET_ORDER = DESK / "reports" / "GAUNTLET_ORDER.json"
@@ -415,6 +418,21 @@ def _store(doc: Any, is_exact: Any, att: dict[str, Any],
             "pending_rejudge": len(pend) if isinstance(pend, dict) else 0}
 
 
+def lockbox_restamped(path: Path | None = None) -> dict[str, str]:
+    """`{certificate key: store}` for every row the lockbox ledger rules RESTAMPED.
+
+    An absent or unreadable ledger names nothing (it cannot clear a breach either: this only
+    ever ADDS re-judge targets)."""
+    doc = _read(path or LOCKBOX_RECERT)
+    certs = doc.get("certificates") if isinstance(doc, dict) else None
+    out: dict[str, str] = {}
+    for k, row in (certs or {}).items():
+        after = row.get("after") if isinstance(row, dict) else None
+        if isinstance(after, dict) and after.get("state") == "RESTAMPED":
+            out[str(after.get("key") or k)] = str(after.get("store") or "")
+    return out
+
+
 def _public(store: dict[str, Any]) -> dict[str, Any]:
     out = {k: v for k, v in store.items() if k != "stale"}
     out["n_stale"] = len(store["stale"])
@@ -451,6 +469,16 @@ def build(now: datetime | None = None, *, previous: dict[str, Any] | None = None
             for key, row in pend.items():
                 if isinstance(row, dict):
                     rows.setdefault(str(key), row)
+    # Re-stamps the lockbox ledger proved, whatever `in_force_since` says (it was None on the box
+    # while seven rows sat RESTAMPED, so `stale_keys` found none and nothing re-judged them).
+    lockbox = lockbox_restamped()
+    for key, store_name in lockbox.items():
+        for name, doc in (("report", report_doc), ("canon", canon_doc)):
+            if (store_name and name != store_name) or not isinstance(doc, dict):
+                continue
+            row = (doc.get("survivors") or {}).get(key)
+            if isinstance(row, dict):
+                rows.setdefault(key, row)
     targets = [rejudge_target(k, rows[k]) for k in sorted(rows)]
     queue = [x for x in targets if x.get("queue")]
     by_cell: dict[str, dict[str, Any]] = {}
@@ -458,7 +486,8 @@ def build(now: datetime | None = None, *, previous: dict[str, Any] | None = None
         by_cell.setdefault(x["cell_id"], x)
 
     frozen = not (report["exact"] or canon["exact"])
-    restamped = sorted(set(report["restamped_not_rejudged"]) | set(canon["restamped_not_rejudged"]))
+    restamped = sorted(set(report["restamped_not_rejudged"]) | set(canon["restamped_not_rejudged"])
+                       | {k for k in lockbox if k in rows})
     pending = len(rows)
     patched = (PATCH_MARKER in GAUNTLET_SRC.read_text("utf-8", errors="replace")
                if patched is None and GAUNTLET_SRC.exists() else bool(patched))
@@ -507,6 +536,7 @@ def build(now: datetime | None = None, *, previous: dict[str, Any] | None = None
         "queueable_cells": len(by_cell),
         "not_queueable": [x for x in targets if not x.get("queue")],
         "restamped_not_rejudged": restamped,
+        "lockbox_restamped": sorted(lockbox),
         "oldest_pending_since": _iso(since) if pending else None,
         "oldest_pending_age_hours": ((round((t - since).total_seconds() / 3600.0, 2)
                                       if since is not None else None) if pending else 0.0),
