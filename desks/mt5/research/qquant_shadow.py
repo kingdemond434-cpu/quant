@@ -163,7 +163,20 @@ def main() -> int:
             ]
         forward_signals = [s for s in signals if pd.Timestamp(s.time) > frozen_at]
         meta = _read(BASE / "data" / "universe" / "universe.json")
-        costs = Costs.from_symbol(meta.get(str(spec["symbol"]), {}), mult=2.0)
+        # THE FILL HOUR'S MEASURED SPREAD (2026-11-13), still at this lane's 2x stress: the
+        # pooled median averages away the hour these clocks trade (shadow_forward.fill_hour_costs).
+        _pts = None
+        try:
+            from research.cost_surface import spread_pts as _spread_pts
+            _surf = _read(BASE / "data" / "cost_surface.json")
+            _hours = sorted({pd.Timestamp(s.time).hour for s in signals})
+            _vals = [_spread_pts(_surf, str(spec["symbol"]), h) for h in _hours]
+            if _vals and None not in _vals:
+                _pts = max(float(v) for v in _vals if v is not None)
+        except Exception:
+            _pts = None
+        costs = Costs.from_symbol(meta.get(str(spec["symbol"]), {}), mult=2.0, spread_pts=_pts)
+        row["spread_basis"] = "fill_hour" if _pts is not None else "pooled_median"
         result = run_backtest(h1, signals, costs)
         trades = [trade for trade in result.trades
                   if pd.Timestamp(trade.entry_time).tz_convert("UTC") > frozen_at]

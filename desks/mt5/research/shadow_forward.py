@@ -614,6 +614,87 @@ def per_symbol_costs(meta: dict, sym: str):
     return Costs.from_symbol(meta[sym], commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
 
 
+#: THE MEASURED SPREAD BY BROKER HOUR (research/cost_surface.py, rebuilt on the box daily).
+COST_SURFACE_FILE = BASE / "data" / "cost_surface.json"
+_SURFACE_CACHE: dict[str, object] = {}
+
+
+def _cost_surface() -> dict | None:
+    """The cost surface, read once per process. None when absent or unreadable."""
+    if "doc" not in _SURFACE_CACHE:
+        try:
+            _SURFACE_CACHE["doc"] = json.loads(COST_SURFACE_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _SURFACE_CACHE["doc"] = None
+    doc = _SURFACE_CACHE["doc"]
+    return doc if isinstance(doc, dict) else None
+
+
+def modal_fill_hour(sigs, timeframe: str = "H1") -> int | None:
+    """The broker hour a clock's signals actually FILL in (signal time + wait_bars of its own
+    chart), the same rule as the judge's `external_gauntlet._modal_fill_hour`."""
+    from mt5desk.universe_registry import timeframe_minutes
+    try:
+        minutes = timeframe_minutes(timeframe)
+    except KeyError:
+        minutes = 60
+    hours: dict[int, int] = {}
+    for sig in sigs or ():
+        ts = getattr(sig, "time", None)
+        h = int(getattr(ts, "hour", -1)) if ts is not None else -1
+        if h < 0:
+            continue
+        off = int(getattr(ts, "minute", 0) or 0) + int(getattr(sig, "wait_bars", 0) or 0) * minutes
+        h = (h + off // 60) % 24
+        hours[h] = hours.get(h, 0) + 1
+    if not hours:
+        return None
+    return max(hours.items(), key=lambda kv: kv[1])[0]
+
+
+def fill_hour_costs(costs, meta: dict, sym: str, sigs, timeframe: str,
+                    frozen: dict | None) -> tuple[object, str, float | None]:
+    """(costs, spread_basis, spread_pts charged): charge the spread of the hour the clock FILLS.
+
+    WHY (2026-11-13, measured). Every forward clock was charged ONE pooled median spread per
+    symbol, while the judge (`external_gauntlet.build_cell`) has charged the fill hour since
+    2026-08-29. The rollover-hour clocks were therefore scored on a book that does not exist:
+    GBPSEK pooled 246 pts against 2,952 at broker hour 00, CHFNOK 267 against 4,511, GBPMXN 327
+    against 4,633 -- and five of the six exotics that reached the live account lost. A liquid-hour
+    clock on a major is charged LESS than the pooled figure by the same rule, so this is one
+    measurement applied both ways, not a haircut; the cheaper direction is named by
+    `sleeve_registry.rebase_cost` (`cost_rebase_cheaper`).
+
+    THE BASIS IS FROZEN WITH THE CLOCK. Once a clock carries `spread_basis` for its fill hour, the
+    frozen spread stands and the daily re-measure does not churn the identity. An hour the surface
+    has not measured keeps the pooled basis and says so (`pooled_median`, L1.28a: named, not
+    silently substituted). The engine replays, so a rebase reprices every observation;
+    `forward_start` never moves.
+    """
+    hour = modal_fill_hour(sigs, timeframe)
+    if hour is None:
+        return costs, "pooled_median", None
+    basis = f"fill_hour_{hour:02d}"
+    if isinstance(frozen, dict) and frozen.get("spread_basis") == basis:
+        return costs, basis, (float(frozen["spread_pts"]) if frozen.get("spread_pts")
+                              is not None else None)
+    surf = _cost_surface()
+    if surf is None:
+        return costs, "pooled_median", None
+    try:
+        from research.cost_surface import spread_pts
+        pts = spread_pts(surf, sym, hour)
+    except Exception:
+        pts = None
+    if pts is None:
+        return costs, "pooled_median", None
+    import dataclasses
+
+    from mt5desk.engine import Costs
+    hour_costs = Costs.from_symbol(meta[sym], spread_pts=pts)
+    return dataclasses.replace(costs, spread_per_lot=hour_costs.spread_per_lot), basis, pts
+
+
 def frozen_costs(key: str):
     """Return the cost basis frozen with ``key``, or ``None`` if it is unavailable.
 
@@ -1268,6 +1349,18 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
+            # THE FILL HOUR'S SPREAD, NOT THE POOLED ONE (2026-11-13; see `fill_hour_costs`).
+            try:
+                import sleeve_registry as _reg_fh
+                costs, _spread_basis, _spread_pts = fill_hour_costs(
+                    costs, meta, sym, sigs, timeframe_of(params),
+                    _reg_fh.frozen_cost_fields(key))
+            except Exception as exc:
+                _spread_basis, _spread_pts = "pooled_median", None
+                slog(f"{key}: fill-hour spread unavailable ({type(exc).__name__}: {exc}); "
+                     f"pooled basis this pass")
+            st["spread_basis"] = _spread_basis
+            st["spread_pts_charged"] = _spread_pts
             ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
                       else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
             from research.session_runtime_window import ensure as _ensure_session_window
@@ -1399,6 +1492,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                         "commission_per_lot": getattr(costs, "commission_per_lot", None),
                         "contract_oz": getattr(costs, "contract_oz", None),
                         "quote_per_account": getattr(costs, "quote_per_account", None),
+                        "spread_basis": _spread_basis, "spread_pts": _spread_pts,
                     })
                     if _why:
                         _drift = []
@@ -1457,7 +1551,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st.pop("identity_drift", None)
                     st.pop("identity_reason", None)
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
-                            cost_fields=vars(costs),
+                            cost_fields={**vars(costs), "spread_basis": _spread_basis,
+                                         "spread_pts": _spread_pts},
                             runtime_version=st.get("runtime_version"))
                 st["sleeve_id"] = _ident["sleeve_id"]
             except Exception as exc:
