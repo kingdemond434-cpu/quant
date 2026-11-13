@@ -9,6 +9,7 @@ rows carry it.
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import time
 from pathlib import Path
@@ -91,6 +92,11 @@ def test_only_failing_rows_carry_evidence(monkeypatch, tmp_path):
     assert rows["MT5-Bad"]["verdict"] == "FAILING"
     assert rows["MT5-Bad"]["failure_evidence"]["logs"][0]["tail"] == ["boom"]
     assert rows["MT5-Good"]["failure_evidence"] is None
+    # PUBLIC FILE (Auditor SF on #1032): the log is named by its file name, and no absolute path
+    # survives anywhere in the evidence, its `why` text or its tail.
+    ev = rows["MT5-Bad"]["failure_evidence"]
+    assert ev["logs"][0]["path"] == "f.log"
+    assert str(tmp_path) not in json.dumps(ev)
 
 
 def test_auditor_leak_paths_are_masked():

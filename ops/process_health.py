@@ -155,11 +155,14 @@ def _host() -> str:
 
 def _path_free(value: Any) -> Any:
     """A published value with every absolute filesystem path cut to its file name: `path` fields
-    keep the basename only, and free text (a restore step) loses its directories."""
+    keep the basename only, free text (a restore step, a log tail line) loses its directories,
+    and lists (a failing task's logs and tail) are cut item by item."""
     if isinstance(value, dict):
         return {k: (ntpath.basename(str(v).replace("/", "\\").rstrip("\\")) or "[path]"
                     if k == "path" and isinstance(v, str) else _path_free(v))
                 for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_path_free(v) for v in value]
     if isinstance(value, str):
         return _ABS_PATH.sub(
             lambda m: re.split(r"[\\/]", m.group(0).rstrip("\\/"))[-1] or "[path]", value)
@@ -759,7 +762,8 @@ def build() -> dict[str, Any]:
             "purpose": purpose or None,
             "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
-            "failure_evidence": failure_evidence(t) if verdict == "FAILING" else None,
+            "failure_evidence": (_path_free(failure_evidence(t)) if verdict == "FAILING"
+                                 else None),
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
