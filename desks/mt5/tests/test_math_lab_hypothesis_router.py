@@ -219,3 +219,33 @@ def test_the_orig_ideas_mirror_names_only_registry_symbols_and_routes_every_idea
         assert all(f'"{s}"' in universe for s in idea["symbols"]), idea["id"]
         tools = HR.route(idea, S.REGISTRY)
         assert tools and tools[0]["class"] != "unclassified", idea["id"]
+
+
+def test_option_pricing_ideas_keep_stochastic_calculus_even_when_it_has_earned_nothing_yet():
+    doc = json.loads(ML.ORIG_IDEAS.read_text("utf-8"))
+    options = [i for i in doc["ideas"] if i["id"].startswith("IQ-OPT-")]
+    assert {i["id"] for i in options} == {"IQ-OPT-VRP", "IQ-OPT-HESTON", "IQ-OPT-JUMP"}
+    for idea in options:
+        tools = HR.route(idea, S.REGISTRY, {"spectral": 5.0},
+                         zero_yield={"stochastic_processes", "extreme_value"})
+        names = [t["tradition"] for t in tools]
+        assert names[0] == "stochastic_processes", idea["id"]
+        assert tools[0]["tier"] == "pinned"
+        assert any(t["class"] == "option_pricing" for t in tools), idea["id"]
+
+
+def test_quant_guild_cards_are_intake_with_orig_where_the_mechanism_is_new():
+    doc = json.loads(ML.QUANT_GUILD_CARDS.read_text("utf-8"))
+    universe = (DESK / "data" / "universe" / "universe.json").read_text("utf-8")
+    assert doc["ideas"] and any(i["orig"] for i in doc["ideas"])
+    assert any(not i["orig"] for i in doc["ideas"])
+    for card in doc["ideas"]:
+        assert card["route_kind"] != "method_only"
+        assert card["symbols"] and all(f'"{s}"' in universe for s in card["symbols"])
+        assert card["orig"] == (card["route_kind"] == "new_family_needed" or card["diff_first"] in
+                                ("MISSING", "EXISTS_UNWIRED", "EXISTS_INCOMPLETE"))
+    allowed = sorted({s for c in doc["ideas"] for s in c["symbols"]})
+    out, _status = HR.load_file_ideas(allowed, idea_files=[("quant_guild", ML.QUANT_GUILD_CARDS)],
+                                     donation_dirs=[])
+    assert out and all(h["generator"] == "quant_guild" for h in out)
+    assert sum(h["original"] for h in out) > 0 and not out[-1]["original"]

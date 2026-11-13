@@ -78,6 +78,8 @@ OUT = DESK / "reports" / "MATH_LAB.json"
 #: The IDEA_QUEUE's [ORIG] rows with their MT5 symbols, mirrored here because the box cannot read
 #: the project's shared folder. Read every pass by `hypothesis_routing`.
 ORIG_IDEAS = DATA / "hypotheses" / "orig_ideas.json"
+#: Quant Guild / Paolucci translator cards (mined 2026-10-06), orig where the mechanism is new.
+QUANT_GUILD_CARDS = DATA / "hypotheses" / "quant_guild_cards.json"
 SOURCE = "mathlab"
 
 #: THE PHYSICS WING (2026-09-22): nineteen physical traditions run beside the twenty-eight
@@ -542,7 +544,7 @@ def hypothesis_routing(allowed: list[str], slots: int) -> dict[str, Any]:
         return out
     try:
         ideas, idea_status = HR.load_file_ideas(
-            allowed, idea_files=[ORIG_IDEAS],
+            allowed, idea_files=[("idea_queue", ORIG_IDEAS), ("quant_guild", QUANT_GUILD_CARDS)],
             donation_dirs=[DATA / "intelligence" / "llm_lab", ROOT / "data" / "intelligence"
                            / "llm_lab"])
         registry_rows, load_status = HR.load_hypotheses(allowed)

@@ -40,6 +40,16 @@ UNMEASURED = "UNMEASURED"
 #: tradition still earns. Each entry is (class, keywords, [(tradition, why), ...]); traditions
 #: absent from the live registry are skipped at route time, so this table can name one early.
 TOOLKIT: tuple[tuple[str, tuple[str, ...], tuple[tuple[str, str], ...]], ...] = (
+    ("option_pricing", ("variance risk premium", "implied", "black-scholes", "heston", "kappa",
+                        "jump-diffusion", "jump intensity", "bipower", "merton", "bates",
+                        "variance swap", "option"),
+     (("stochastic_processes", "stochastic calculus is the native language of option-derived "
+                               "quantities: diffusions, stochastic variance and jump processes"),
+      ("stochastic_physics", "Langevin/Fokker-Planck models fit variance with mean reversion"),
+      ("rough_path_signatures", "signatures capture the path roughness behind implied-vs-realised"),
+      ("extreme_value", "extreme-value theory models the jump component's size distribution"),
+      ("anomalous_diffusion", "anomalous diffusion separates jumps from continuous diffusion"),
+      ("turbulence", "multi-scale cascades model variance across horizons"))),
     ("regime", ("regime", "state", "switch", "transition", "risk-on", "risk off", "risk-off",
                 "hmm", "structural break"),
      (("dynamical_systems", "state-space dynamics fit a mechanism that changes state"),
@@ -262,7 +272,8 @@ def _gap_tags(row: dict[str, Any]) -> list[str]:
 
 
 def _row_symbols(row: dict[str, Any]) -> list[str]:
-    raw = row.get("symbols") or ([row["symbol"]] if row.get("symbol") else [])
+    raw = (row.get("symbols") or row.get("candidate_symbols")
+           or ([row["symbol"]] if row.get("symbol") else []))
     return [str(s) for s in raw if s] if isinstance(raw, (list, tuple)) else []
 
 
@@ -275,7 +286,8 @@ def _file_rows(path: Path) -> list[dict[str, Any]]:
     return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
 
 
-def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs: list[Path],
+def load_file_ideas(allowed: list[str], *, idea_files: list[Path | tuple[str, Path]],
+                    donation_dirs: list[Path],
                     newest_files: int = NEWEST_DONATION_FILES
                     ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Ideas that live in FILES rather than the registry, original ones first.
@@ -290,7 +302,11 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs
     allowed_set = {s.upper(): s for s in allowed}
     status: dict[str, Any] = {"idea_files": [], "donation_files": [], "rows": 0,
                               "set_aside_no_huntable_symbol": 0}
-    sources: list[tuple[str, Path]] = [("idea_queue", p) for p in idea_files if p.exists()]
+    sources: list[tuple[str, Path]] = []
+    for item in idea_files:
+        generator, path = item if isinstance(item, tuple) else ("idea_queue", item)
+        if path.exists():
+            sources.append((generator, path))
     for d in donation_dirs:
         if d.is_dir():
             newest = sorted(d.glob("discoveries_*.json"))[-newest_files:]
@@ -298,8 +314,8 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs
     out: list[dict[str, Any]] = []
     for generator, path in sources:
         rows = _file_rows(path)
-        status["idea_files" if generator == "idea_queue" else "donation_files"].append(
-            {"path": path.name, "rows": len(rows)})
+        status["donation_files" if generator == "llm_lab" else "idea_files"].append(
+            {"path": path.name, "generator": generator, "rows": len(rows)})
         for i, row in enumerate(rows):
             status["rows"] += 1
             targets = [allowed_set[s.upper()] for s in _row_symbols(row)
@@ -308,7 +324,7 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs
                 status["set_aside_no_huntable_symbol"] += 1
                 continue
             tags = _gap_tags(row)
-            original = bool(row.get("orig")) or generator == "idea_queue"
+            original = bool(row.get("orig", generator == "idea_queue"))
             mechanism = " ".join(str(row.get(k) or "") for k in (
                 "mechanism_class", "mechanism", "falsifier", "title")).strip()
             hid = str(row.get("id") or row.get("cell_id") or f"{path.stem}:{i}")
@@ -318,6 +334,7 @@ def load_file_ideas(allowed: list[str], *, idea_files: list[Path], donation_dirs
                             "mechanism": mechanism[:400], "created_at": str(
                                 row.get("at") or row.get("created_at") or ""),
                             "original": original, "breadth_gap": tags,
+                            "traditions": [str(t) for t in row.get("traditions") or []],
                             "gap_weight": gap_weight(target) + (1 if tags else 0),
                             "exotic": is_exotic(target)})
     out.sort(key=lambda h: (not h["original"], -h["gap_weight"]))
@@ -350,16 +367,24 @@ def route(hypothesis: dict[str, Any], registry: Any, yields: dict[str, float | N
     if not fitting:
         fitting = [{"tradition": t, "class": "unclassified", "keyword": "", "why": why}
                    for t, why in DEFAULT_TOOLS if t in registry]
-    zero = set(zero_yield or ())
+    # A hypothesis may NAME the mathematics it needs (`traditions`): those are pinned, ranked
+    # first and never dropped by the zero-yield rule -- the zero was earned on other questions.
+    pinned = [t for t in (hypothesis.get("traditions") or []) if t in registry]
+    for t in reversed(pinned):
+        fitting = [e for e in fitting if e["tradition"] != t]
+        fitting.insert(0, {"tradition": t, "class": "named_by_hypothesis", "keyword": "",
+                           "why": "the hypothesis names this mathematics itself"})
+    zero = set(zero_yield or ()) - set(pinned)
     measured = yields or {}
     for i, entry in enumerate(fitting):
         value = measured.get(entry["tradition"])
         entry["expected_yield_per_h"] = value
         entry["order"] = i
-        entry["tier"] = ("zero_yield" if entry["tradition"] in zero else
+        entry["tier"] = ("pinned" if entry["tradition"] in pinned else
+                         "zero_yield" if entry["tradition"] in zero else
                          "earning" if isinstance(value, (int, float)) and value > 0 else
                          "unpriced")
-    rank = {"earning": 0, "unpriced": 1, "zero_yield": 2}
+    rank = {"pinned": -1, "earning": 0, "unpriced": 1, "zero_yield": 2}
     fitting.sort(key=lambda e: (rank[e["tier"]], -(e["expected_yield_per_h"] or 0.0), e["order"]))
     kept = [e for e in fitting if e["tier"] != "zero_yield"] or fitting[:1]
     for entry in kept:
