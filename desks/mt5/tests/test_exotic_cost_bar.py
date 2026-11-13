@@ -116,3 +116,14 @@ def test_live_policy_file_declares_the_bar() -> None:
     doc = json.loads((DESK / "data" / "live_sleeve_policy.json").read_text("utf-8"))
     assert doc["exotic_cost_bar"]["enabled"] is True
     assert doc["exotic_cost_bar"]["multiplier"] == 2.0
+
+
+def test_shipped_policy_refuses_exotics_without_a_fresh_verdict(tmp_path: Path,
+                                                               monkeypatch: pytest.MonkeyPatch
+                                                               ) -> None:
+    monkeypatch.setattr(lp, "EXOTIC_BAR_FILE", tmp_path / "absent.json")
+    pol = lp.policy()
+    assert pol.exotic_bar and "USDNOK" in pol.exotic_symbols and "EURUSD" not in pol.exotic_symbols
+    assert "UNMEASURED" in str(lp.refuse({"symbol": "USDNOK",
+                                          "name": "usdnok_carry_asia_p_ff35bb7c8427d66f"}, pol))
+    assert lp.refuse({"symbol": "XAUUSD", "name": "gold_asia"}, pol) is None

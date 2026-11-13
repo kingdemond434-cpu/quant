@@ -175,7 +175,8 @@ def build(lanes: list[dict], universe: dict, surface: dict) -> dict[str, Any]:
             "rows": rows}
 
 
-def write(doc: dict[str, Any], path: Path = REPORT) -> None:
+def write(doc: dict[str, Any], path: Path | None = None) -> None:
+    path = path or REPORT
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")

@@ -41,6 +41,15 @@ _NEEDS_CATALOGUE = pytest.mark.skipif(
     not (DESK / "data" / "e8_catalogue.json").exists(),
     reason="UNMEASURED: data/e8_catalogue.json is box-only; run this check on the trading box")
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def test_symbol_allowlist_alone_would_admit_every_rr_variant(tmp_path: Path) -> None:
     """THE HOLE `live_sleeves` EXISTS TO CLOSE. Admitting the SYMBOL admits every certified

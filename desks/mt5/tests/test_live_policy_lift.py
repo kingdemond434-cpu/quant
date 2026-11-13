@@ -8,6 +8,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 for p in (str(DESK), str(DESK / "research"), str(DESK.parents[1])):
     if p not in sys.path:
@@ -16,6 +18,15 @@ for p in (str(DESK), str(DESK / "research"), str(DESK.parents[1])):
 from mt5desk import live_policy as lp  # noqa: E402
 
 TRACKED = DESK / "data" / "live_sleeve_policy.json"
+
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
 
 
 def test_the_tracked_policy_admits_every_symbol_and_keeps_the_named_quarantines() -> None:
@@ -124,6 +135,8 @@ def test_the_organ_renames_in_place_and_leaves_the_rest_of_the_file(monkeypatch,
     monkeypatch.setattr(pr, "SHADOW_DIR", sh)
     monkeypatch.setattr(pr, "LOG", tmp_path / "log")
     monkeypatch.setattr(pr, "REOPEN_REPORT", tmp_path / "r.json")
+    import exotic_cost_bar as ecb
+    monkeypatch.setattr(ecb, "REPORT", tmp_path / "EXOTIC_COST_BAR.json")
     monkeypatch.setattr(lp, "policy", lambda path=None: lp.Policy(live_symbols=frozenset({"*"})))
     monkeypatch.setattr(pr, "clock_certificates", lambda: {"a": "c.a"})
     monkeypatch.setattr(pr, "recert_rows", lambda now=None: ({"c.a": {"status": "STILL_PASSES"}},
@@ -132,3 +145,5 @@ def test_the_organ_renames_in_place_and_leaves_the_rest_of_the_file(monkeypatch,
     rows = json.loads(sl.read_text())["sleeves"]
     assert [r["name"] for r in rows] == ["a" + pr.RENAME_SUFFIX, "g"]
     assert rows[1]["status"] == "LIVE"
+    # the exotic cost bar is written every pass, before anything reopens
+    assert json.loads((tmp_path / "EXOTIC_COST_BAR.json").read_text())["multiplier"] == 2.0

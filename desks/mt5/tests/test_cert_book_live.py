@@ -39,6 +39,15 @@ E8 = {"gold_asia": BOX_E8_GOLD_ASIA, "gold_london_am": 0.0, "gold_afternoon": 0.
       "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
       "AUDCHF_overnight_gap_decay_asia": 0.0}
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def _write(tmp_path: Path, doc: dict) -> Path:
     p = tmp_path / "CERT_BOOK_LIVE.json"

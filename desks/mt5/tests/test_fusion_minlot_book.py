@@ -70,6 +70,15 @@ NZDJPY = "nzdjpy_clock_transition_asia_p_caebb3dcbda3756e"
 EQUITY = 485.0
 SYMBOL_OF = {USDNOK: "USDNOK", EURILS: "EURILS", EURZAR: "EURZAR"}
 
+@pytest.fixture(autouse=True)
+def _exotic_bar_out_of_scope(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests pin the symbol/name policy. The strict exotic cost bar (principal 2026-11-13
+    19:46Z) gates exotics on top of it and is pinned in test_exotic_cost_bar.py."""
+    from mt5desk import live_policy as _lp
+    monkeypatch.setattr(_lp, "_exotic_bar",
+                        lambda cfg: (False, frozenset(), frozenset(), ""))
+
+
 
 def _committed_rows() -> dict[str, dict]:
     doc = json.loads((_DESK / "data" / "sleeves.json").read_text(encoding="utf-8"))
