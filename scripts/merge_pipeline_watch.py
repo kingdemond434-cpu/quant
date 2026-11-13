@@ -370,6 +370,34 @@ def collect(
     )  # fmt: skip
 
 
+def _authority_replay(repo: str, base: str, reports: Path) -> None:
+    """The open-PR backlog through the release authority's own facts()+decide(), dry run
+    (scripts/authority_replay.py): hourly by its own throttle, at most 15 PRs / 180 s a pass,
+    nothing signed or posted. Its report goes beside this one; a failure is printed and never
+    changes this watcher's exit code."""
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import authority_replay
+
+        authority_replay.main(
+            ["--repo", repo, "--base", base, "--out", str(reports / "AUTHORITY_REPLAY.json")]
+        )
+    except Exception as exc:  # the merge watch must never fail on the replay
+        print(f"authority replay failed: {type(exc).__name__}")
+
+
+def _autonomy_conformance(reports: Path) -> None:
+    """The 10-point autonomy spec scored from the published reports beside this one
+    (scripts/autonomy_conformance.py; local reads only). Never changes this watcher's rc."""
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import autonomy_conformance
+
+        autonomy_conformance.main(["--reports", str(reports)])
+    except Exception as exc:  # the merge watch must never fail on the board
+        print(f"autonomy conformance failed: {type(exc).__name__}")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -383,6 +411,9 @@ def main(argv: list[str] | None = None) -> int:
         help="skip when --out is younger (the sweep calls this every 10 min; ~2 calls per open PR)",
     )  # fmt: skip
     a = ap.parse_args(argv)
+    if not a.print:
+        _authority_replay(a.repo, a.base, a.out.parent)
+        _autonomy_conformance(a.out.parent)
     if not a.print and a.min_interval_min > 0:
         try:
             prev = json.loads(a.out.read_text(encoding="utf-8"))
