@@ -1638,6 +1638,7 @@ def fetch_catalogue(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, A
     return h
 
 
+from libs.data.free_stack_cftc import fetch_cftc_options  # noqa: E402
 from libs.data.free_stack_cnx import fetch_cn_exchange  # noqa: E402  (imports Harvest lazily)
 
 FETCHERS: dict[str, Callable[..., Harvest]] = {
@@ -1647,4 +1648,5 @@ FETCHERS: dict[str, Callable[..., Harvest]] = {
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,
     "cn_exchange": fetch_cn_exchange,
+    "cftc_options": fetch_cftc_options,
 }
