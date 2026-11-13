@@ -86,11 +86,15 @@ HARD_BOUNDARY_COUNT = 5
 
 #: DELETED BRAKES, named so a later session recognises them if it meets one in old code or prose
 #: and does not mistake it for a live rule. Each was a discovery brake, not a legal requirement.
+#: "robots.txt Disallow treated as a refusal" was REMOVED FROM THIS LIST on 2026-11-13 (LAWS 5e
+#: amendment, Governance robots ruling): every automated fetch obeys robots via robots_gate, with
+#: an honest User-Agent and RFC 9309 handling of an unreadable robots.txt. These are labels on
+#: content in hand; how the desk FETCHES is not a label.
 REMOVED_BRAKES: tuple[str, ...] = (
     "ACCESS_UNCLEAR quarantine (metadata kept, content not consumed)",
     "machine-extraction veto on PUBLIC_WITH_TERMS",
-    "robots.txt Disallow treated as a refusal",
-    "machine_use_allowed=false treated as 'registered, never scraped'",
+    "machine_use_allowed=false treated as 'registered, never scraped' (on content already "
+    "lawfully obtained; never a licence to fetch -- see fetch_permitted)",
     "'public/licensed sources only' as a pre-filter on discovery",
     "source-class and credibility used to drop rather than weight a row",
 )
@@ -310,6 +314,30 @@ def _flag(meta: dict[str, Any], key: str) -> bool | None:
     if isinstance(v, str) and v.strip().lower() in ("true", "false"):
         return v.strip().lower() == "true"
     return None
+
+
+def fetch_permitted(*, robots: str, machine_use_allowed: bool | str | None,
+                    via_archive_of_origin: bool = False) -> tuple[bool, str]:
+    """May the desk's own crawler FETCH this (LAWS 5e amendment 2026-11-13)? (yes/no, why).
+
+    This is the fetch rule, not a label: labels route USE of content already in hand and never
+    drop a row; this decides whether the request is sent at all. `robots` is robots_gate's verdict
+    for the exact URL under the User-Agent that will be sent: "allowed", "no_file" (a 4xx on
+    robots.txt), "disallowed", or "unreadable" (5xx, timeout, parse failure -- RFC 9309: no fetch
+    now, retry later). `machine_use_allowed` False (or "forbidden") means the host's terms refuse
+    automated access. An archive copy is judged by the ORIGIN's verdicts, passed here unchanged:
+    a third party is never a route around an origin's refusal.
+    """
+    terms = str(machine_use_allowed).strip().lower() if machine_use_allowed is not None else ""
+    if machine_use_allowed is False or terms in ("false", "forbidden", "refused", "no"):
+        return False, "the host's terms refuse automated access (machine_use_allowed=false)"
+    verdict = str(robots or "").strip().lower()
+    if verdict == "disallowed":
+        return False, "robots.txt disallows this URL for our User-Agent"
+    if verdict not in ("allowed", "no_file"):
+        return False, f"robots.txt unreadable ({verdict or 'unknown'}): no fetch now, retry later"
+    how = "an archive copy, the origin's robots and terms allow it" if via_archive_of_origin else ""
+    return True, how or "robots and terms allow the fetch"
 
 
 def credibility_of(source_class: str = "", declared: str = "") -> Credibility:

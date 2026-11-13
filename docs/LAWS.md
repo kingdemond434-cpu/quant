@@ -440,6 +440,18 @@ PROVENANCE LABELS on the row**: they describe what the desk may **REDISTRIBUTE o
 **how much weight the evidence carries**. They **NEVER** stop discovery, ingestion, representation
 or testing. Classification routes USE; it never gates MINING.
 
+**AMENDED 2026-11-13 (Governance robots ruling, with the Auditor; journal D-20261113-003) -- HOW
+the desk fetches is not a label.** Every automated fetch goes through `robots_gate` with an honest
+User-Agent, obeys a robots.txt Disallow, and follows RFC 9309 on an unreadable robots.txt (a 4xx
+is "no file, allowed"; a 5xx, timeout or parse failure is "do not fetch now, retry later"). A host
+whose terms refuse automated access is not crawled. Login walls, paywalls, CAPTCHAs and rate limits
+are never worked around, and no fetch uses a spoofed browser identity. Content from such a host may
+still enter through an official API or feed that permits it. An archive or mirror copy is fetched
+only when the ORIGIN's own robots and terms would have allowed fetching that page; a third party is
+never a route around an origin's refusal. Everything else in this section stands: once content is lawfully
+in hand, licence, terms, robots and source class are labels that route USE and set evidence
+WEIGHT, and they never drop a row.
+
 The pipeline on every source is DISCOVER -> CAPTURE METADATA -> ACCESS/PROVENANCE LABELLING ->
 EVIDENCE CLASSIFICATION -> RESEARCH, and every source walks all five. There is no "looks risky ->
 discard" and no "unclear -> park".
@@ -464,8 +476,10 @@ permission.
 
 **THE BRAKES THAT ARE DELETED, NAMED SO A LATER SESSION CANNOT RE-DERIVE THEM FROM SILENCE**
 (`libs.research.access_classifier.REMOVED_BRAKES` carries the same list as data): the
-ACCESS_UNCLEAR quarantine; the machine-extraction veto on PUBLIC_WITH_TERMS; robots.txt Disallow
-read as a refusal; `machine_use_allowed=false` read as "registered, never scraped"; any
+ACCESS_UNCLEAR quarantine; the machine-extraction veto on PUBLIC_WITH_TERMS (on content already
+lawfully fetched -- the fetch itself obeys the 2026-11-13 amendment above); `machine_use_allowed=false` read as "registered, never scraped" (again only on content already
+lawfully obtained -- never a licence to fetch: a host whose terms refuse automated access is not
+crawled, per the amendment above); any
 "public/licensed sources only" pre-filter on discovery; and source class or credibility used to
 DROP a row rather than WEIGHT it. None of these was ever a legal requirement. Each was a discovery
 brake the desk imposed on itself, and each cost it ground it never measured. **No session may
