@@ -1,8 +1,8 @@
 """The department resident: singleton, one pass under the department plan, the cycle floor."""
 from __future__ import annotations
 
-import sys
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -110,8 +110,9 @@ def test_one_pass_runs_the_cycle_under_the_department_plan(monkeypatch, tmp_path
         assert args[-1] == str(fake)
         if sys.platform == "win32":
             assert kwargs.pop("creationflags") == dr.BELOW_NORMAL_PRIORITY_CLASS
-        return subprocess.run(args, **kwargs)
-    monkeypatch.setattr(dr, "_run_tree", owned_child)
+        return subprocess.Popen(args, **kwargs)
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "_spawn", owned_child)
     res = dr.run_pass("intel", timeout_s=60)
     assert res["status"] == "ok" and res["rc"] == 0
     res2 = dr.run_pass("macro", timeout_s=60)
@@ -123,6 +124,7 @@ def test_timeout_is_reported_not_raised(monkeypatch, tmp_path):
     fake.write_text("import time\ntime.sleep(5)\n", encoding="utf-8")
     monkeypatch.setattr(dr, "CYCLE", fake)
     monkeypatch.setattr(dr, "DESK", tmp_path)
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
     assert dr.run_pass("intel", timeout_s=1)["status"] == "timeout"
 
 
@@ -133,6 +135,8 @@ def test_main_once_exits_with_the_pass_result(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "DESK", tmp_path)
     monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
     monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "REPORTS", tmp_path / "reports")
     monkeypatch.setattr(dr, "free_phys_mb", lambda: None)
+    monkeypatch.setattr(dr, "admission_slots", lambda: (dr.CONCURRENT_PASSES, "test"))
     assert dr.main(["--dept", "intel", "--once"]) == 0
     assert (tmp_path / "logs" / "department_resident.log").exists()
