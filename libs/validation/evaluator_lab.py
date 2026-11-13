@@ -72,6 +72,8 @@ import pandas as pd
 if __package__ in (None, ""):  # pragma: no cover - `python libs/validation/evaluator_lab.py`
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from libs.validation import control_variates
+from libs.validation.errors import ValidationError
 from libs.validation.hostile import (
     BLOCK,
     MIN_BARS,
@@ -933,6 +935,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     _atomic(STATE_PATH, state)
     _atomic(REPORT_PATH, report)
+    # ROMAN-0972 rides this leg: the control-variate planted-truth measurement (~15 s) beside
+    # the lab's own report. Its failure is its own; it never costs the lab's artifacts above.
+    try:
+        cvr = control_variates.write_report(REPORT_PATH.parent / "CONTROL_VARIATES.json")
+        print("control_variates: variance ratio spa "
+              f"{cvr['spa']['summary']['pooled_variance_ratio']}, monkey "
+              f"{cvr['monkey']['summary']['pooled_variance_ratio']}")
+    except (ValidationError, ValueError, OSError, FloatingPointError,
+            np.linalg.LinAlgError) as exc:
+        print(f"control_variates: UNMEASURED ({type(exc).__name__}: {exc})")
     rates = {**report["controls"][POSITIVE], **report["controls"]["negatives"]}
     print(f"{head}; control pass rates: "
           + ", ".join(f"{k} {v['pass_rate']}" for k, v in rates.items()))
