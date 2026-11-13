@@ -98,6 +98,10 @@ LEG_LAYER: dict[str, str] = {
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     "silent_organs": "meta",
+    # Whether each ruin rail can reach its input, and how old the trading halt really is: this
+    # measures the ORDER path's own brakes, not the research machine, so it is execution rather
+    # than meta -- the same side of the line as `markout` and `fill_attribution`.
+    "halt_rail": "execution",
     "producer_census": "meta", "productivity_census": "meta",
     "llm_yield": "meta", "llm_budget_census": "meta",
     # Every producer's reach against what it minted, and the share the sealed judge can build:
