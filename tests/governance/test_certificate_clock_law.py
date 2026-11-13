@@ -415,16 +415,49 @@ def test_a_quiet_cross_is_judged_by_its_own_data_rate_not_the_family_median() ->
     48.7h median convicted those clocks of FROZEN_ROWS while a sibling on the same bars accrued."""
     q = _cert("q", symbol="USDSGD")
     k = "USDSGD.k"
-    rows = {"USDSGD.a": _row(1, forward_start=_iso(400), last_entry=_iso(20)),
-            "USDSGD.b": _row(0, forward_start=_iso(400)),
-            k: _row(0, forward_start=_iso(400))}
+    rows = {"USDSGD.a": _row(1, forward_start=_iso(300), last_entry=_iso(20)),
+            "USDSGD.b": _row(0, forward_start=_iso(300)),
+            k: _row(0, forward_start=_iso(300))}
     groups = {key: law._input_group(q, key) for key in rows}
     gg = law.group_gap_hours(rows, groups, NOW)
-    thr, why = law._group_threshold_h(100.0, "family", gg[groups[k]], NOW)
-    assert thr == pytest.approx(1200.0 * law.FROZEN_MULTIPLE)
-    assert "own data" in why
-    e = law.judge(q, k, rows[k], [{"at": _iso(500), "counts": {k: 0}}], thr, why, NOW)
-    assert e["breach"] is False
+    gap, _ = gg[groups[k]]
+    assert gap == pytest.approx(3 * 280.0)          # exposure stops at the newest observation
+    thr, why = law._group_threshold_h(100.0, "family", gg[groups[k]], NOW, k)
+    assert thr == law.MAX_WIDENED_H and "own data" in why
+    e = law.judge(q, k, rows[k], [], thr, why, NOW)
+    assert e["breach"] is False and e["verdict"] == "WARMING"
+
+
+def test_a_solo_slow_clock_that_goes_silent_is_frozen() -> None:
+    """Auditor MF1: a clock may never be its own proof of life, and its silence is not exposure."""
+    q = _cert("q", symbol="NZDSGD")
+    k = "NZDSGD.k"
+    rows = {k: _row(2, forward_start=_iso(1000), last_entry=_iso(900))}
+    groups = {k: law._input_group(q, k)}
+    gg = law.group_gap_hours(rows, groups, NOW)
+    thr, why = law._group_threshold_h(100.0, "family", gg[groups[k]], NOW, k)
+    assert thr == 100.0 and "no OTHER clock" in why
+    e = law.judge(q, k, rows[k], [{"at": _iso(200), "counts": {k: 2}}], thr, why, NOW)
+    assert e["verdict"] == "FROZEN_ROWS" and e["breach"] is True
+
+
+def test_a_group_that_stops_together_is_frozen() -> None:
+    q = _cert("q", symbol="GBPDKK")
+    rows = {"GBPDKK.a": _row(2, forward_start=_iso(1000), last_entry=_iso(900)),
+            "GBPDKK.b": _row(2, forward_start=_iso(1000), last_entry=_iso(900))}
+    groups = {key: law._input_group(q, key) for key in rows}
+    gg = law.group_gap_hours(rows, groups, NOW)
+    for k in rows:
+        thr, why = law._group_threshold_h(100.0, "family", gg[groups[k]], NOW, k)
+        assert thr == 100.0 and "family threshold stands" in why
+        e = law.judge(q, k, rows[k], [{"at": _iso(200), "counts": {k: 2}}], thr, why, NOW)
+        assert e["verdict"] == "FROZEN_ROWS"
+
+
+def test_the_widening_is_capped() -> None:
+    slow = (10_000.0, {"other": NOW - timedelta(hours=1)})
+    thr, _ = law._group_threshold_h(100.0, "family", slow, NOW, "k")
+    assert thr == law.MAX_WIDENED_H
 
 
 def test_a_dead_factor_never_borrows_proof_of_life_from_a_live_one() -> None:
@@ -440,20 +473,10 @@ def test_a_dead_factor_never_borrows_proof_of_life_from_a_live_one() -> None:
     gg = law.group_gap_hours(rows, groups, NOW)
     assert groups["XAUEUR.cross@M15.d"] not in gg
     assert law._group_threshold_h(100.0, "family", gg.get(groups["XAUEUR.cross@M15.d"]),
-                                  NOW) == (100.0, "family")
-
-
-def test_a_group_silent_past_its_own_widened_window_keeps_the_family_threshold() -> None:
-    q = _cert("q", symbol="NZDSGD")
-    rows = {"NZDSGD.a": _row(10, forward_start=_iso(3000), last_entry=_iso(2900)),
-            "NZDSGD.k": _row(0, forward_start=_iso(300))}
-    groups = {key: law._input_group(q, key) for key in rows}
-    gg = law.group_gap_hours(rows, groups, NOW)
-    thr, why = law._group_threshold_h(100.0, "family", gg[groups["NZDSGD.k"]], NOW)
-    assert thr == 100.0 and "family threshold stands" in why
+                                  NOW, "XAUEUR.cross@M15.d") == (100.0, "family")
 
 
 def test_the_group_rate_never_narrows_or_invents_a_threshold() -> None:
-    busy = (5.0, NOW - timedelta(hours=1))
-    assert law._group_threshold_h(100.0, "family", busy, NOW) == (100.0, "family")
-    assert law._group_threshold_h(None, "unmeasured", busy, NOW) == (None, "unmeasured")
+    busy = (5.0, {"other": NOW - timedelta(hours=1)})
+    assert law._group_threshold_h(100.0, "family", busy, NOW, "k") == (100.0, "family")
+    assert law._group_threshold_h(None, "unmeasured", busy, NOW, "k") == (None, "unmeasured")
