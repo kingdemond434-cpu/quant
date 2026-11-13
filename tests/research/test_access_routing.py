@@ -219,23 +219,18 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 
 # -------------------------------------------------- the shared fetch path carries no brake
 
-def test_no_collector_still_refuses_a_fetch_on_robots() -> None:
-    """A STRUCTURAL test, because the shared fetch helper has no unit test of its own and the
-    brake lived there longest.
-
-    `asia_collector._fetch` is called by `event_surprise` and `data_acquisition_scientist`, and
-    it used to set `status = "BLOCKED_BY_ROBOTS"` and return before fetching. Nothing pinned
-    that, so nothing would have caught it coming back. The reading is still taken and still
-    recorded (`robots`, `robots_disallows`, `terms_note`) -- what must never return is the
-    ASSIGNMENT of that status, so this asserts on the assignment and not on the name, which
-    still appears in prose and in the census tuple that prints old rows.
-    """
+def test_the_shared_fetch_path_obeys_robots_and_fails_closed() -> None:
+    """STRUCTURAL, as before, but inverted by Governance with the Auditor (2026-11-13): our own
+    crawling OBEYS robots.txt. `asia_collector.collect_one` (called by `event_surprise` and
+    `data_acquisition_scientist`) must return ROBOTS_REFUSED before its fetch, and the sampler
+    must not fetch past a refusal either. Labels still route use and weight (LAWS 5e)."""
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[2]
-    for rel in ("desks/mt5/research/asia_collector.py",
-                "desks/mt5/research/data_acquisition_scientist.py"):
-        src = (repo / rel).read_text("utf-8")
-        assert '"status": "BLOCKED_BY_ROBOTS"' not in src, rel
-        assert 'status="BLOCKED_BY_ROBOTS"' not in src, rel
-        assert '= "BLOCKED_BY_ROBOTS"' not in src, rel
+    acol = (repo / "desks/mt5/research/asia_collector.py").read_text("utf-8")
+    assert 'rec.update({"status": ROBOTS_STATUS' in acol
+    fetch_at = acol.index("urllib.request.urlopen(req, timeout=timeout")
+    assert acol.index("allowed, why_robots = _robots_allows(url)") < fetch_at
+    das = (repo / "desks/mt5/research/data_acquisition_scientist.py").read_text("utf-8")
+    assert '"status": "ROBOTS_REFUSED"' in das
+    assert "never a skip (LAWS 5e)" not in das
