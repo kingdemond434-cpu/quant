@@ -2606,6 +2606,67 @@ def test_the_manifest_accepts_only_an_installer_measured_as_no_order_path_change
     assert rs.manifest_is_money(base, head, closure, money, set(), frozenset({_PLANTED}))
 
 
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        # #1107 audit MF1: every one of these read as no launch
+        "import os as o\no.system('x')\n",
+        "import os\ngetattr(os, 'system')('x')\n",
+        "from concurrent.futures import ProcessPoolExecutor\n",
+        "import psutil\npsutil.Popen(['x'])\n",
+        "from psutil import Popen as P\nP(['x'])\n",
+        "import ctypes\n",
+        "import ctypes\nctypes.windll.kernel32.CreateProcessW(None, 'x')\n",
+        "from ctypes import windll\nwindll.kernel32.CreateProcessW(None, 'x')\n",
+        "import ctypes as c\nc.CDLL('x')\n",
+        "__builtins__['exec']('x')\n",
+        "import builtins\nbuiltins.exec('x')\n",
+        "import sys\nsys.modules['subprocess']\n",
+        "from sys import modules\nmodules['subprocess']\n",
+        "import os\nos.__getattribute__('system')\n",
+        "import os\nx = os\n",  # handed on bare: no longer readable by name
+        "from os import *\n",
+        "import asyncio\nasyncio.create_subprocess_exec('x')\n",
+    ],
+)
+def test_every_way_to_launch_is_a_launch(src: str) -> None:
+    assert rs._launches(src), src
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "import os, sys, json\nsys.path.insert(0, os.path.dirname(__file__))\n"
+        "print(json.dumps({}), file=sys.stderr)\n",
+        # the read-only kernel32 allowlist: mt5_session.py reads its Windows session id
+        "import ctypes\nv = ctypes.c_ulong()\n"
+        "ok = ctypes.windll.kernel32.ProcessIdToSessionId(1, ctypes.byref(v))\n"
+        "pid = ctypes.windll.kernel32.GetCurrentProcessId()\n",
+        "import re\nP = re.compile('x')\n",
+    ],
+)
+def test_plain_and_allowlisted_ctypes_code_is_no_launch(src: str) -> None:
+    assert not rs._launches(src), src
+
+
+@pytest.mark.parametrize(
+    ("module", "kind"),
+    [
+        ("import ctypes\nctypes.windll.kernel32.CreateProcessW(None, 'x')\n",
+         "money_target_unreplayed"),
+        ("import ctypes\nv = ctypes.c_ulong()\n"
+         "ctypes.windll.kernel32.ProcessIdToSessionId(1, ctypes.byref(v))\n",
+         "no_order_path_change"),
+    ],
+)  # fmt: skip
+def test_an_installer_target_that_calls_createprocess_stays_money(
+    tmp_path: Path, module: str, kind: str
+) -> None:
+    got = _kind(tmp_path, _planted(), {"desks/mt5/research/tidy.py": module})
+    assert got["kind"] == kind, got
+
+
 _FIXTURES = ROOT / "tests/fixtures/box_task_installers_1107"
 
 

@@ -991,38 +991,107 @@ def _ps_statements(sig: list[tuple[str, str, int]]) -> list[list[tuple[str, str,
 
 #: What a module may never do and still be called no order-path change: start a process or import
 #: by name at run time (either can reach any order code with no import a scan sees).
-_LAUNCH_MODULES = frozenset({"subprocess", "importlib", "runpy", "pty", "multiprocessing"})
-_LAUNCH_NAMES = frozenset({"exec", "eval", "__import__", "compile"})
+_LAUNCH_MODULES = frozenset(
+    {"subprocess", "importlib", "runpy", "pty", "multiprocessing", "concurrent", "builtins"}
+)
+_LAUNCH_NAMES = frozenset({"exec", "eval", "__import__", "compile", "__builtins__"})
 _OS_LAUNCH = ("system", "popen", "exec", "spawn", "posix_spawn", "startfile", "fork",
               "create_subprocess")  # fmt: skip
+#: Modules that are launches only through these attributes (any reference to one is a launch).
+_ATTR_LAUNCH: dict[str, tuple[str, ...]] = {
+    "os": _OS_LAUNCH, "posix": _OS_LAUNCH, "nt": _OS_LAUNCH,
+    "asyncio": (*_OS_LAUNCH, "subprocess"),
+    "psutil": ("Popen",), "sys": ("modules",),
+}  # fmt: skip
+#: Modules whose attributes may never be looked up by name (getattr, __getattribute__,
+#: __dict__), and never passed around bare: what they hand back no scan can see (#1107 MF1).
+_ROOTS_BY_NAME = frozenset({*_LAUNCH_MODULES, *_ATTR_LAUNCH, "ctypes"})
+#: CTYPES (#1107 audit ruling): a launch, unless EVERY use in the file is a C type, byref, or a
+#: kernel32 call from this read-only allowlist (mt5_session.py reads its Windows session id).
+_CTYPES_OK = re.compile(
+    r"ctypes\.(c_\w+|byref|windll\.kernel32\.(ProcessIdToSessionId|GetCurrentProcessId))"
+)
 
 
 def _launches(src: str) -> bool:
-    """Whether Python source starts processes or imports dynamically (unparsable: True)."""
+    """Whether Python source can start a process or import or call by name at run time
+    (unparsable: True). Every import and its alias is mapped, so `import os as o; o.system`
+    resolves to os.system; a by-name lookup on such a module, any reference to __builtins__,
+    builtins or sys.modules, and any ctypes use outside _CTYPES_OK (or a ctypes import with no
+    allowlisted use at all) are launches."""
     try:
         node = ast.parse(src)
     except (SyntaxError, ValueError):
         return True
+    alias: dict[str, str] = {}
     for n in ast.walk(node):
-        if isinstance(n, ast.Import) and any(
-            a.name.split(".")[0] in _LAUNCH_MODULES for a in n.names
-        ):
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                if a.asname:
+                    alias[a.asname] = a.name
+                else:
+                    top = a.name.split(".")[0]
+                    alias[top] = top
+                if a.name.split(".")[0] in _LAUNCH_MODULES:
+                    return True
+        elif isinstance(n, ast.ImportFrom):
+            mod = n.module or ""
+            if n.level:
+                continue  # a relative import is the repository's own; the closure reads it
+            if mod.split(".")[0] in _LAUNCH_MODULES:
+                return True
+            for a in n.names:
+                if a.name == "*" and mod.split(".")[0] in _ROOTS_BY_NAME:
+                    return True
+                alias[a.asname or a.name] = f"{mod}.{a.name}"
+
+    def dotted(e: ast.expr) -> str | None:
+        if isinstance(e, ast.Name):
+            return alias.get(e.id, e.id)
+        if isinstance(e, ast.Attribute):
+            v = dotted(e.value)
+            return None if v is None else f"{v}.{e.attr}"
+        return None
+
+    def is_launch(d: str) -> bool:
+        parts = d.split(".")
+        if parts[0] in _LAUNCH_MODULES or parts[0] in _LAUNCH_NAMES:
             return True
-        if isinstance(n, ast.ImportFrom) and (n.module or "").split(".")[0] in _LAUNCH_MODULES:
-            return True
-        if (
-            isinstance(n, ast.ImportFrom) and n.module in ("os", "posix", "nt", "asyncio")
-            and any(a.name == "*" or a.name.startswith(_OS_LAUNCH) for a in n.names)
-        ):  # fmt: skip
-            return True  # from os import system / popen / exec* / spawn*
-        if isinstance(n, ast.Name) and n.id in _LAUNCH_NAMES:
-            return True
-        if (
-            isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
-            and n.value.id in ("os", "posix", "nt", "asyncio") and n.attr.startswith(_OS_LAUNCH)
-        ):  # fmt: skip
-            return True
-    return False
+        prefixes = _ATTR_LAUNCH.get(parts[0])
+        return prefixes is not None and len(parts) > 1 and parts[1].startswith(prefixes)
+
+    inner = {id(n.value) for n in ast.walk(node) if isinstance(n, ast.Attribute)}
+    ctypes_uses = 0
+    for n in ast.walk(node):
+        if isinstance(n, ast.Name | ast.Attribute):
+            d = dotted(n)
+            if d is None:
+                if isinstance(n, ast.Attribute) and n.attr in ("__getattribute__", "__dict__"):
+                    return True
+                continue
+            if is_launch(d):
+                return True
+            parts = d.split(".")
+            if parts[-1] in ("__getattribute__", "__dict__") and parts[0] in _ROOTS_BY_NAME:
+                return True
+            if id(n) in inner:
+                continue  # judged as part of the longer chain it starts
+            if parts[0] == "ctypes":
+                if not _CTYPES_OK.fullmatch(d):
+                    return True  # CreateProcess, CDLL, cast, or ctypes handed on bare
+                ctypes_uses += 1
+            if len(parts) == 1 and parts[0] in _ROOTS_BY_NAME:
+                return True  # `o = os`: the module handed on, no longer readable by name
+        elif isinstance(n, ast.Call) and n.args:
+            f = dotted(n.func) if isinstance(n.func, ast.Name | ast.Attribute) else None
+            first = dotted(n.args[0]) if isinstance(n.args[0], ast.Name | ast.Attribute) else None
+            if (
+                f in ("getattr", "builtins.getattr", "object.__getattribute__")
+                and first is not None and first.split(".")[0] in _ROOTS_BY_NAME
+            ):  # fmt: skip
+                return True
+    # imported and never used the allowlisted way: nothing shows what it is for
+    return "ctypes" in {v.split(".")[0] for v in alias.values()} and not ctypes_uses
 
 
 def _module_is_money(head: Path, module: str, closure: set[str]) -> bool:
