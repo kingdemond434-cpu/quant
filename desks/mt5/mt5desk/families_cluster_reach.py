@@ -43,6 +43,7 @@ import inspect
 import json
 import math
 from collections.abc import Callable
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -110,6 +111,62 @@ def _base_signals(d: pd.DataFrame, base_family: str, base_params: dict[str, Any]
     return [s for s in (raw or []) if isinstance(s, Signal)]
 
 
+#: The gauntlet's own cost inputs: the per-hour spread surface `external_gauntlet._surface` reads,
+#: and the registry's pooled median and tick size `Costs.from_symbol` reads.
+COST_SURFACE = DESK / "data" / "cost_surface.json"
+UNIVERSE = DESK / "data" / "universe" / "universe.json"
+
+
+@lru_cache(maxsize=4)
+def _json_at(path: str, mtime_ns: int) -> Any:
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _cached(path: Path) -> Any:
+    try:
+        return _json_at(str(path), path.stat().st_mtime_ns)
+    except OSError:
+        return None
+
+
+def spread_price(symbol: str, hours: list[int]) -> float | None:
+    """The symbol's measured spread in PRICE units, the WORST over the broker `hours` a resting
+    limit can fill in: the fill-hour p50 from the cost surface where MEASURED, else the
+    registry's pooled `median_spread_pts`, times `tick_size` -- the inputs the gauntlet prices
+    the same cell with. None (UNMEASURED) when neither yields a positive spread."""
+    meta = (_cached(UNIVERSE) or {}).get(str(symbol or "")) if symbol else None
+    if not isinstance(meta, dict):
+        return None
+    try:
+        tick = float(meta.get("tick_size") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if not tick > 0:
+        return None
+    surface = _cached(COST_SURFACE)
+    try:
+        pooled = float(meta.get("median_spread_pts") or 0.0)
+    except (TypeError, ValueError):
+        pooled = 0.0
+    worst: float | None = None
+    for h in hours:
+        pts: float | None = None
+        if isinstance(surface, dict):
+            try:
+                from research.cost_surface import spread_pts as _sp
+                pts = _sp(surface, str(symbol), int(h))
+            except Exception:
+                pts = None
+        if pts is None or not pts > 0:
+            pts = pooled if pooled > 0 else None
+        if pts is not None:
+            worst = pts if worst is None else max(worst, pts)
+    return worst * tick if worst is not None and worst > 0 else None
+
+
 def family_entry_alpha(
     df: pd.DataFrame,
     *,
@@ -119,17 +176,38 @@ def family_entry_alpha(
     offset_atr: float = 0.5,
     wait_bars: int = 4,
     atr_n: int = 20,
+    spread_mult: float = 1.0,
+    spread_price_override: float | None = None,
 ) -> list[Signal]:
     """`base_family`'s signals re-entered on a resting LIMIT `offset_atr` ATR better than the
     signal bar's reference (its trigger if it rests one, else its close), alive `wait_bars`
-    bars. Stop and target shift by the same distance, so only the ENTRY differs from the base."""
+    bars. Stop and target keep the base's distances, so only the ENTRY differs from the base.
+
+    TRADE-THROUGH, NOT TOUCH (audit of d66203264). `engine.run_backtest` fills a resting trigger
+    when the bar's range TOUCHES it, at the trigger price, and the bars are BID. A real buy limit
+    at L fills only when the ASK reaches L, i.e. when bid low <= L - spread. So for a LONG the
+    engine trigger is L - spread x `spread_mult`: the engine's touch is then a real fill, its
+    recorded (bid) entry L - spread plus the spread the cost model charges is the real price L,
+    and the stop and target stay at their distances from L. For a SHORT the bid touch of L is
+    already a real sell; the trigger is still moved to L + spread (trade-through by one spread,
+    symmetric, and the honest rule if the bars were mid), and because the engine fills AT the
+    trigger, stop and target are measured from that trigger -- the recorded price is the price
+    the sell really gets, never a spread better than it.
+
+    The spread is the symbol's MEASURED spread from the gauntlet's own cost inputs
+    (`spread_price`), the worst over the hours the limit rests. With no measured spread the
+    family returns [] -- an unpriceable trade-through is UNMEASURED, never a touch fill.
+    `spread_price_override` (price units, > 0) exists for stress arms and tests only."""
     try:
         off = float(offset_atr)
         wait = int(wait_bars)
+        mult = float(spread_mult)
     except (TypeError, ValueError):
         return []
     if not (math.isfinite(off) and off > 0) or wait < 1 or df is None or len(df) == 0:
         return []
+    if not (math.isfinite(mult) and mult >= 1.0):
+        return []                      # less than one spread is a touch fill again
     d = _h1(df)
     sigs = _base_signals(d, str(base_family or ""), base_params, symbol)
     if not sigs:
@@ -140,6 +218,15 @@ def family_entry_alpha(
     if times.tz is None and d.index.tz is not None:
         times = times.tz_localize(d.index.tz)
     at = d.index.get_indexer(times)
+    fixed = None
+    if spread_price_override is not None:
+        try:
+            fixed = float(spread_price_override)
+        except (TypeError, ValueError):
+            return []
+        if not (math.isfinite(fixed) and fixed > 0):
+            return []
+    hours_idx = d.index.hour
     out: list[Signal] = []
     for s, p in zip(sigs, at, strict=True):
         if p < 0 or s.side not in (-1, 1):
@@ -148,14 +235,26 @@ def family_entry_alpha(
         ref = float(s.trigger) if s.trigger is not None else float(close[p])
         if not (math.isfinite(a) and a > 0 and math.isfinite(ref) and ref > 0):
             continue
+        if fixed is not None:
+            spr: float | None = fixed
+        else:
+            window = sorted({int(hours_idx[j]) for j in range(p + 1, min(p + 1 + wait, len(d)))})
+            spr = spread_price(symbol, window) if window else None
+        if spr is None:
+            continue                   # UNMEASURED spread: no touch fill is ever emitted
+        thru = spr * mult
         shift = off * a
         limit = ref - s.side * shift
-        if not limit > 0:
+        trigger = limit - s.side * thru
+        if not (limit > 0 and trigger > 0):
             continue
-        out.append(Signal(time=s.time, side=s.side, stop=float(s.stop) - s.side * shift,
-                          target=float(s.target) - s.side * shift, ttl_bars=int(s.ttl_bars),
-                          tag=f"entry_alpha:{base_family}:limit{off:g}atr/{wait}",
-                          trigger=float(limit), wait_bars=wait))
+        anchor = limit if s.side > 0 else trigger
+        stop = anchor - (ref - float(s.stop))
+        target = anchor + (float(s.target) - ref)
+        out.append(Signal(time=s.time, side=s.side, stop=stop, target=target,
+                          ttl_bars=int(s.ttl_bars),
+                          tag=f"entry_alpha:{base_family}:limit{off:g}atr/{wait}:thru{mult:g}spr",
+                          trigger=float(trigger), wait_bars=wait))
     return out
 
 
