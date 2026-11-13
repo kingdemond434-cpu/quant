@@ -153,7 +153,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     monkeypatch.setattr(chc, "UNIVERSE", uni)
     docket_rows = [
         {"symbol": "EURUSD", "family": "range_reversion", "params": {"w": 48}},
-        {"symbol": "EURUSD", "family": "overnight_gap_decay", "params": {}},
+        {"symbol": "EURUSD", "family": "range_reversion", "params": {"range_n": 20}},
         {"symbol": "EURUSD", "family": "range_reversion",
          "params": {"threshold_pct": 5.0, "session": "asia"}},
     ]
@@ -164,7 +164,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
          "reason": "build_failed", "class": "build_fail",
          "why": "range_reversion raised TypeError: family_range_reversion() got an unexpected "
                 "keyword argument 'w'", "first_parked_utc": "2026-11-01T00:00:00+00:00"},
-        {"cell": ids[1], "family": "overnight_gap_decay", "symbol": "EURUSD", "timeframe": "H1",
+        {"cell": ids[1], "family": "range_reversion", "symbol": "EURUSD", "timeframe": "H1",
          "reason": "never_fires", "class": "untestable_as_specified",
          "first_parked_utc": "2026-11-01T00:00:00+00:00", "days": 0},
         {"cell": ids[2], "family": "range_reversion", "symbol": "EURUSD", "timeframe": "H1",
@@ -215,8 +215,7 @@ def test_requeued_fires_now_is_never_looped(desk: dict[str, Any]) -> None:
     doc = chc.run(**desk["kw"])
     req = json.loads((desk["tmp"] / "req.json").read_text("utf-8"))["requests"]
     fired = [c for c, r in req.items() if r.get("cause") == "fires_now"]
-    if not fired:
-        pytest.skip("no fires_now parent on the synthetic bars")
+    assert fired == [desk["ids"][1]]
     st = json.loads((desk["tmp"] / "state.json").read_text("utf-8"))
     assert set(fired) <= set(st["fires_now_requeued"])
     st["cursor"] = -1
