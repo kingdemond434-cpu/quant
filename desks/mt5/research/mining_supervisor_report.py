@@ -313,6 +313,7 @@ class Reporting:
                 "aliases": sum(len(v.get("aliases") or []) for v in srcs.values()),
                 "sharing_a_page": sum(1 for v in srcs.values() if v.get("shares_page")),
                 "attribution": getattr(self, "_attribution", {}),
+                "url_collisions": self.url_collisions(),
                 "roster_files": acq.roster_files(root=self.root),
                 "by_owner": dict(sorted(by_owner.items())),
                 # EVERY COLD source by id, under its reason: committed, so a lane can see which

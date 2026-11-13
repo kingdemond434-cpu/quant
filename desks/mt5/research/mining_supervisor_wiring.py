@@ -11,7 +11,7 @@ import re
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +22,7 @@ for _p in (str(_ROOT), str(_DESK)):
         sys.path.insert(0, _p)
 
 from libs.mining import acquirer as acq  # noqa: E402
+from libs.mining.pit_store import parse_time  # noqa: E402
 
 SOURCE = "global_mining"
 DATA = _DESK / "data" / "mining"
@@ -53,22 +54,94 @@ COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
 #: An archive capture: web.archive.org/web/<timestamp>[flags]/<original url>.
 _WAYBACK = re.compile(r"^(?:https?://)?(?:www\.)?web\.archive\.org/web/\d+[a-z_]*/(.+)$", re.I)
+PRODUCER_ORGANS = _ROOT / "libs" / "mining" / "producer_organs.json"
+
+
 def _scout_seats() -> dict[str, str]:
-    """seat -> producing scout, from research/scout_roster.py `seats=` (the one declared map)."""
-    try:
-        from research.scout_roster import SCOUTS
-    except Exception:
-        return {}
-    return {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
+    """seat -> producing organ: research/scout_roster.py `seats=` (the scouts), then the internal
+    producers declared in libs/mining/producer_organs.json (organ = the file's stem), then its
+    `prefixes` under the key `<prefix>*`.
+
+    LOUD, NEVER EMPTY: either map failing to load raises. The old `except: return {}` turned an
+    import error into every judged row reading `unmapped:` with the digest still green (audit
+    2026-09-30); `attributed_evaluations` now reports the error in its basis instead."""
+    from research.scout_roster import SCOUTS
+    out = {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
+    doc = json.loads(PRODUCER_ORGANS.read_text("utf-8"))
+    for seat, path in {**(doc.get("seats") or {}), **(doc.get("landing") or {})}.items():
+        out.setdefault(str(seat), Path(str(path)).stem)
+    for pre, path in (doc.get("prefixes") or {}).items():
+        out.setdefault(f"{pre}*", Path(str(path)).stem)
+    for seat in doc.get("retired") or {}:
+        out.setdefault(str(seat), f"retired:{seat}")
+    if not out:
+        raise RuntimeError("producer map is empty: scout_roster SCOUTS and producer_organs.json "
+                           "declare no seat")
+    return out
 
 
 def producer_of(source: Any, organ_of: Mapping[str, str]) -> str:
     """The organ that produced a docket row: its seat (`miner:<seat>[:<id>]`, or the row's own
-    producer prefix) through the scout map, else `unmapped:<seat>` -- named, never guessed."""
+    producer prefix) through the declared map, a declared seat prefix (`ext_*`), else
+    `unmapped:<seat>` -- named, never guessed."""
     raw = str(source or "")
     seat = raw.removeprefix("miner:").split(":", 1)[0] if raw.startswith("miner:") else \
         raw.split(":", 1)[0]
-    return organ_of.get(seat, f"unmapped:{seat or '?'}")
+    if seat in organ_of:
+        return organ_of[seat]
+    for k, organ in organ_of.items():
+        if k.endswith("*") and seat.startswith(k[:-1]):
+            return organ
+    return f"unmapped:{seat or '?'}"
+
+
+#: A pipeline fetch that RAN: it reached the source and came back (with items, or none).
+RAN_OUTCOMES = frozenset({"ok", "empty"})
+#: Fetchers that are another organ's: the pipeline registers such a source but never fetches it.
+OTHER_ORGAN_FETCHERS = frozenset({"owned"})
+
+
+def registered_organs(src: acq.Source, organ_of: Mapping[str, str]) -> set[str]:
+    """The organs a registry row names as its fetcher: a `scout:<name>` owner, its consumer
+    file's stem, the producer of every seat it declares, and any organ its row names in
+    `fetched_by` (a ground another organ also reads: the BoJ statistics ground, whose bond PDFs
+    reach the docket from central_bank_miner, audit 2026-10-01)."""
+    out = {Path(src.consumer).stem} if src.consumer else set()
+    fetched = src.config.get("fetched_by") or []
+    out |= {str(o) for o in ([fetched] if isinstance(fetched, str) else fetched)}
+    if src.owner.startswith("scout:"):
+        out.add(src.owner.removeprefix("scout:"))
+    out |= {producer_of(seat, organ_of) for seat in src.seats}
+    return {o for o in out if o and not o.startswith("unmapped:")}
+
+
+def fetch_evidence(run: Mapping[str, Any], producers: Mapping[str, int], now: datetime,
+                   fetcher: str = "owned", recent_records: int = 0,
+                   registered: set[str] | None = None) -> str:
+    """Why this source's fetcher is known to have RUN within ACTIVE_WINDOW, or '' when nothing
+    shows it did. ACTIVE needs this as well as a judged cell (audit 2026-09-30: 37 of 98 credits
+    were to sources no fetcher had run for).
+
+    The proof is the REGISTERED fetcher's own. A source the pipeline fetches needs the
+    pipeline's fetch log (`ok`/`empty` in the window) or records it acquired in the window. A
+    source another organ fetches (`owned`,
+    or a fallback row the pipeline last DEFERRED_TO_OWNER) needs a judged docket row credited to
+    it whose producer is a DECLARED organ (scout roster or producer_organs.json) AND one the row
+    itself registers (`registered`: its scout owner, consumer or seats' organ) -- another organ
+    citing the page proves that organ ran, not this source's fetcher. `unmapped:` is no proof,
+    and a docket credit never stands in for a pipeline fetch."""
+    at = parse_time(run.get("at")) if run.get("at") else None
+    if str(run.get("outcome") or "") in RAN_OUTCOMES and at is not None \
+            and at >= now - ACTIVE_WINDOW:
+        return f"pipeline:{run.get('outcome')}@{run.get('at')}"
+    if recent_records > 0:
+        return f"pipeline:{recent_records} records acquired in 30 days"
+    if fetcher not in OTHER_ORGAN_FETCHERS and run.get("outcome") != "DEFERRED_TO_OWNER":
+        return ""
+    organs = sorted(o for o, k in producers.items()
+                    if k and not o.startswith(("unmapped:", "retired:"))
+                    and (registered is None or o in registered))
+    return f"producer:{','.join(organs)}" if organs else ""
 
 
 _INDEX_PAGE = re.compile(r"/(?:index|default)\.(?:html?|php|aspx?)$", re.I)

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections import Counter
 from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,8 @@ from research.mining_supervisor_wiring import (  # noqa: E402
     _WAYBACK,
     _scout_seats,
     producer_of,
+    registered_organs,
+    fetch_evidence,
     _INDEX_PAGE,
     _site,
     ACTIVE_WINDOW,
@@ -100,11 +103,63 @@ class VerdictJoin:
         return off
 
     def _url_index(self) -> dict[str, list[tuple[str, str]]]:
-        idx: dict[str, list[tuple[str, str]]] = {}
+        """host -> [(url_key, source)], ONE source per url_key wherever that is knowable.
+
+        Several rosters name one page (133 keys, 310 rows on 2026-09-30), and a tie credits
+        nobody, so every such page's judged rows went uncredited. Within ONE jurisdiction (equal
+        regions, or one side the `global` default) the page is one source for attribution, owned
+        by the ONE row that declares a seat. The tie stands (credit nobody) across jurisdictions
+        (two countries' packs naming one vendor page), wherever two or more rows declare seats
+        (distinct producers' sources: stats.gov.cn/sj, unipass ets), and wherever NO row declares
+        one: the acquirer already folded same-named duplicates into aliases, so seatless rows
+        still sharing a page are distinct datasets (two e-Stat series on the bare getStatsData
+        endpoint, two np pack datasets on one forum) and the first definition would be a guess
+        (audit 2026-10-01). Each collision is published per source with its cause
+        (`registry.url_collisions`)."""
+        keyed: dict[str, list[acq.Source]] = {}
         for s in self.roster:
-            for k in s.url_keys or ([s.url_key] if s.url_key else []):
-                idx.setdefault(k.partition("/")[0], []).append((k, s.id))
+            for k in dict.fromkeys(s.url_keys or ([s.url_key] if s.url_key else [])):
+                keyed.setdefault(k, []).append(s)
+        idx: dict[str, list[tuple[str, str]]] = {}
+        col: dict[str, dict[str, Any]] = {}
+        for k, srcs in keyed.items():
+            # the row a producer DECLARES a seat on is the page's operative registration (its
+            # rows arrive under that seat); otherwise the first definition, as everywhere
+            seated = [x for x in srcs if x.seats]
+            owner = seated[0] if seated else srcs[0]
+            regions = {x.region for x in srcs} - {"global"}
+            kind = ("cross_region_tie" if len(regions) > 1 else "seated_tie" if len(seated) > 1
+                    else "seatless_tie" if not seated and len(srcs) > 1 else "seated_owner")
+            keep = [owner] if kind == "seated_owner" else srcs
+            srcs = [owner, *[x for x in srcs if x is not owner]]
+            if len(srcs) > 1:
+                col[k] = {"owner": owner.id if len(keep) == 1 else "", "kind": kind,
+                          "sources": [x.id for x in srcs]}
+            for x in keep:
+                idx.setdefault(k.partition("/")[0], []).append((k, x.id))
+        self._url_collisions = col
         return idx
+
+    def url_collisions(self) -> dict[str, Any]:
+        """The published collision report: counts, and per source the ids it shares a page with
+        and who owns that page for attribution ('' = a tie, credits nobody; `kind` says why)."""
+        col: dict[str, dict[str, Any]] = getattr(self, "_url_collisions", None) or {}
+        if not col and self.roster:
+            self._url_index()
+            col = getattr(self, "_url_collisions", {})
+        by: dict[str, list[dict[str, str]]] = {}
+        for k, c in sorted(col.items()):
+            for sid in c["sources"]:
+                by.setdefault(sid, []).append({"url_key": k, "owner": c["owner"],
+                                               "with": ",".join(x for x in c["sources"]
+                                                                if x != sid)})
+        kinds = Counter(c["kind"] for c in col.values())
+        return {"keys": len(col), "rows": sum(len(c["sources"]) for c in col.values()),
+                "same_region_owned": sum(1 for c in col.values() if c["owner"]),
+                "cross_region_ties": kinds["cross_region_tie"],
+                "ties": sum(1 for c in col.values() if not c["owner"]),
+                "by_kind": dict(sorted(kinds.items())),
+                "by_source": dict(sorted(by.items()))}
 
     def _seat_index(self) -> dict[str, str]:
         """DECLARED seats only: a docket `source` string a registry row says it answers for.
@@ -139,7 +194,13 @@ class VerdictJoin:
             rp = _INDEX_PAGE.sub("", rk.split("?", 1)[0])
             if rk == key:
                 hit = len(rk) + 1                         # exact beats any prefix
-            elif "/" in rp and (page == rp or page.startswith(rp + "/")):
+            elif "/" in rp and (page.startswith(rp + "/") or (
+                    page == rp and "?" not in rk and rp != rk.split("?", 1)[0])):
+                # a proper path prefix scopes its subtree; the page itself is taken only when the
+                # registry named its INDEX file (`/x/index.htm` is `/x`). A bare endpoint
+                # (`youtube.com/watch`, `dataview.html`) is not a scope: every `?v=` is a
+                # different page, so it matches only itself (audit 2026-09-30: the watch
+                # catch-all).
                 hit = len(rp)
             elif "/" not in rk and len(rows) == 1:        # the host's only row, site-level
                 hit = 0
@@ -153,8 +214,11 @@ class VerdictJoin:
 
     def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
                          seats: Mapping[str, str]) -> tuple[str, str]:
-        """(source id, how): the declared seat, then the row's own URL, then -- only with BOTH
-        signals -- a seat named exactly as a registry id whose URL is on the same site."""
+        """(source id, how): the declared seat, then the row's own URL, then the registry id its
+        producer stamped (`origin_source_id`, credited only when that registry row registers the
+        row's producing organ), then its parent's declared seat (`origin_seat`, a derived row's
+        lineage), then -- only with BOTH signals -- a seat named exactly as a registry id whose
+        URL is on the same site."""
         seat = str(row.get("source") or "")
         sid = seats.get(seat, "")
         if sid:
@@ -163,11 +227,35 @@ class VerdictJoin:
         sid = self.attribute_url(url, idx)
         if sid:
             return sid, "url"
-        named = self.by_id.get(seat.removeprefix("miner:"))
+        # A PRODUCER THAT NAMES ITS SOURCE BY ID (alt_proxies stamps `provenance.source_id` on a
+        # one-seat stream with no URL, 2026-10-06): the id is credited only when the registry
+        # row it names registers the organ that produced this row -- a row cannot claim a source
+        # another organ fetches.
+        named = self.by_id.get(str(row.get("origin_source_id") or ""))
+        if named is not None:
+            organ_of = getattr(self, "_organ_of", {}) or {}
+            if producer_of(seat, organ_of) in registered_organs(named, organ_of):
+                return named.id, "provenance"
+        # a DERIVED row (discovery_compiler) names its parent's seat: credited only when that
+        # seat is DECLARED by a registry row, exactly as the row's own seat would be
+        origin = str(row.get("origin_seat") or "")
+        sid = seats.get(f"miner:{origin}", "") if origin else ""
+        if sid:
+            return sid, "lineage"
+        sid = self._seat_on_site(seat.removeprefix("miner:"), url)
+        if sid:
+            return sid, "seat+site"
+        # ...and the parent's seat+site credit is the derived row's too (its url is the parent's)
+        sid = self._seat_on_site(origin, url) if origin else ""
+        return (sid, "lineage") if sid else ("", "")
+
+    def _seat_on_site(self, name: str, url: Any) -> str:
+        """A seat named exactly as a registry id, credited only when the URL is on its site."""
+        named = self.by_id.get(name)
         if named is not None and _site(url) and _site(url) in {
                 _site(k) for k in named.url_keys or [named.url_key]}:
-            return named.id, "seat+site"
-        return "", ""
+            return named.id
+        return ""
 
     def attributed_evaluations(self, now: datetime | None = None) -> dict[str, Any]:
         """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW.
@@ -177,6 +265,9 @@ class VerdictJoin:
         key by construction. A row is credited through a DECLARED seat or its URL, never a guess;
         what stays unattributed is counted by producer so the gap is visible."""
         t = now or utcnow()
+        self._producers: dict[str, dict[str, int]] = {}   # never a previous pass's credits
+        self._organ_of: dict[str, str] = {}
+        self._map_error = ""
         try:
             rows = json.loads(self.docket.read_text("utf-8"))
         except (OSError, ValueError):
@@ -185,7 +276,11 @@ class VerdictJoin:
             rows = rows.get("rows") or rows.get("items") or []
         judged = self.cells.judged_since(t - ACTIVE_WINDOW)
         idx, seats = self._url_index(), self._seat_index()
-        organ_of = _scout_seats()
+        try:
+            organ_of, map_error = _scout_seats(), ""
+        except Exception as exc:                          # loud: named in the basis, not zero
+            organ_of, map_error = {}, f"PRODUCER MAP FAILED {type(exc).__name__}: {exc}"[:200]
+        self._organ_of, self._map_error = organ_of, map_error
         by: dict[str, set[str]] = {}
         producers: dict[str, dict[str, int]] = {}
         funnel: dict[str, dict[str, int]] = {}
@@ -223,7 +318,9 @@ class VerdictJoin:
                 "by_producer": dict(sorted(funnel.items())),
                 "unattributed_judged_rows": sum(unattributed.values()),
                 "unattributed_top_producers": top,
-                "basis": f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"}
+                "producer_map_error": map_error,
+                "basis": (f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"
+                          + (f"; {map_error}" if map_error else ""))}
 
     def register_cursors(self, now: datetime | None = None) -> int:
         """A durable cursor per canonical source, carrying its registration; fetch state kept."""
@@ -329,6 +426,10 @@ class VerdictJoin:
         via = docket["by_source"]
         runs = self.store.last_runs()
         recs = self.store.records_by_source()
+        recent = self.store.records_by_source(since=t - ACTIVE_WINDOW)
+        prods: dict[str, dict[str, int]] = getattr(self, "_producers", {})
+        self._organ_of = getattr(self, "_organ_of", {})
+        self._map_error = getattr(self, "_map_error", "")
         out = {}
         for s in self.roster:
             if not s.enabled:
@@ -339,15 +440,23 @@ class VerdictJoin:
             # Every use mints cells now: allocation_intel's facts become exogenous_conditioner
             # cells (see `conditioners`), so each use can carry a receipt.
             cell_use = bool(set(compiler.USES) & set(s.uses))
-            out[s.id] = {"status": "ACTIVE" if n >= 1 and cell_use else "COLD",
+            fetched = fetch_evidence(r, prods.get(s.id) or {}, t, s.fetcher,
+                                     int(recent.get(s.id, 0)),
+                                     registered_organs(s, self._organ_of))
+            active = n >= 1 and cell_use and bool(fetched)
+            no_fetch = "no fetcher of it ran in 30 days" + (
+                f" ({self._map_error})" if self._map_error else "")
+            out[s.id] = {"status": "ACTIVE" if active else "COLD",
                          "uses": list(s.uses),
-                         "cold_reason": ("" if n >= 1 and cell_use else
+                         "cold_reason": ("" if active else
                                          "serves no use" if not cell_use else
-                                         "no cell EVALUATED in 30 days"),
+                                         "no cell EVALUATED in 30 days" if n < 1 else
+                                         no_fetch),
+                         "fetch_evidence": fetched,
                          "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
                          "evaluated_via": {"mining": n_mine, "docket": n_docket},
-                         "producers": dict(getattr(self, "_producers", {}).get(s.id, {})),
+                         "producers": dict(prods.get(s.id, {})),
                          "origin": s.origin, "url_key": s.url_key, "aliases": list(s.aliases),
                          "shares_page": list(s.shares_page),
                          "last_outcome": r.get("outcome") or "NEVER_RUN",

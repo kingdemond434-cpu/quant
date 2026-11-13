@@ -1,6 +1,6 @@
 {
  "schema": "source_registry/1",
- "what": "THE ONE SOURCE REGISTRY. Every source any lane reads is a row here, under one canonical id with one durable cursor, and is ACTIVE only when a cell of it was EVALUATED by the gauntlet within 30 days. Built by libs/mining/acquirer.load_roster from libs/mining/sources.yaml and every table its external_rosters name; published hourly by the global_mining leg.",
+ "what": "THE ONE SOURCE REGISTRY. Every source any lane reads is a row here, under one canonical id with one durable cursor, and is ACTIVE only when a cell of it was EVALUATED by the gauntlet within 30 days AND its registered fetcher is known to have run in that window. Built by libs/mining/acquirer.load_roster from libs/mining/sources.yaml and every table its external_rosters name; published hourly by the global_mining leg.",
  "how_to_register": [
   "Write your rows to a file under desks/mt5/data/source_rosters/ (*.json, *.jsonl or *.yaml; a document's 'sources', 'rows' or 'grounds' list, or a bare list). It is picked up on the next hourly pass; no code change.",
   "Or, for a table that already exists elsewhere, add one entry to external_rosters in libs/mining/sources.yaml: {path: <glob>, rows: <list key>, id_style: <prefix for unnamed rows>, defaults: {...}}.",
@@ -31,9 +31,9 @@
  "registry_row": {
   "id": "canonical id",
   "status": "ACTIVE | COLD",
-  "cold_reason": "'' | 'serves no use' | 'no cell EVALUATED in 30 days'",
+  "cold_reason": "'' | 'serves no use' | 'no cell EVALUATED in 30 days' | 'no fetcher of it ran in 30 days' (+ ' (PRODUCER MAP FAILED ...)' when the producer map did not load)",
   "evaluated_cells_30d": "int = evaluated_via.mining + evaluated_via.docket",
-  "evaluated_via": "{mining: mining-pipeline cells EVALUATED in 30 days, docket: judged docket cells (external_survivors.json rows keyed by frontier_identity.docket_cell, joined to judged_cells) credited to this source by a DECLARED seat, else by its own URL: exact canonical URL, or the longest proper path prefix among registry URLs that have a path. A host-only registry URL matches only itself; a tie at the winning length credits nobody}",
+  "evaluated_via": "{mining: mining-pipeline cells EVALUATED in 30 days, docket: judged docket cells (external_survivors.json rows keyed by frontier_identity.docket_cell, joined to judged_cells) credited to this source, in order: by a DECLARED seat; by its own URL (exact canonical URL, or the longest proper path prefix among registry URLs that have a path; a bare endpoint such as youtube.com/watch matches only itself; a host-only registry URL matches only itself; one page named by several rows in ONE jurisdiction is the one seat-declaring row's (else the first definer's); across jurisdictions, or with two or more seat-declaring rows, it is a tie and credits nobody); by the parent's declared seat or seat+site on a derived row (origin_seat, lineage)}",
   "origin": "the roster file the row came from",
   "owner": "as registered",
   "consumer": "as registered",
@@ -43,11 +43,13 @@
   "shares_page": "ids of distinct sources declared on the same page",
   "last_outcome": "the pipeline's last fetch outcome for sources it fetches; NEVER_RUN for owned rows",
   "records_total": "records stored in the PIT store",
-  "cursor": "desks/mt5/data/mining/cursors/<id>.json on the box: {registered: {canonical_id, origin, owner, url_key, aliases, shares_page, first_seen}, ...fetch state}"
+  "cursor": "desks/mt5/data/mining/cursors/<id>.json on the box: {registered: {canonical_id, origin, owner, url_key, aliases, shares_page, first_seen}, ...fetch state}",
+  "fetch_evidence": "why the registered fetcher is known to have run in 30 days: 'pipeline:<outcome>@<at>' (the pipeline's own fetch log, ok/empty) or, for fetcher: owned (and fallback rows last DEFERRED_TO_OWNER), 'producer:<organs>' (a credited judged docket row whose producer is a declared organ the row itself registers: its scout:<name> owner, consumer file stem, or a declared seat's organ; retired:/unmapped: never count). '' = COLD"
  },
  "where": {
   "rows_box": "desks/mt5/reports/mining/MINING_METRICS.json -> sources (every row)",
-  "summary_committed": "desks/mt5/data/mining_digest.json -> registry (per owner: sources, active, cold by reason; cold_by_reason: every COLD id under its reason; roster_files: each roster's state; attribution: credited_by seat/url and the top unattributed producers) and sources (ACTIVE rows and the pipeline's own fetchers)"
+  "summary_committed": "desks/mt5/data/mining_digest.json -> registry (per owner: sources, active, cold by reason; cold_by_reason: every COLD id under its reason; roster_files: each roster's state (OK, MISSING, PENDING, OPTIONAL_EMPTY, BROKEN with its errors); url_collisions: every page several rows name, its attribution owner and, per source, who it shares it with; attribution: credited_by seat/url and the top unattributed producers) and sources (ACTIVE rows and the pipeline's own fetchers)"
  },
- "limits": "Attribution reads the judge's CURRENT docket (external_survivors.json), so a judged row that has since left it is not credited (an undercount, never an overcount). Internal producers with no declared seat (discovery_compiler, orthogonal_sweep, ...) are not sources and are counted as unattributed producers. A lane whose cells never reach the docket (a conditioner series, an allocator input) stays COLD until they do: that is the rule, not a defect of it."
+ "limits": "Attribution reads the judge's CURRENT docket (external_survivors.json), so a judged row that has since left it is not credited (an undercount, never an overcount). Internal producers with no declared seat (discovery_compiler, orthogonal_sweep, ...) are not sources and are counted as unattributed producers. A lane whose cells never reach the docket (a conditioner series, an allocator input) stays COLD until they do: that is the rule, not a defect of it.",
+ "producers": "A docket row's producer organ: research/scout_roster.py SCOUTS seats=, then libs/mining/producer_organs.json (internal producers, and seat prefixes such as ext_*); anything else reads unmapped:<seat>. The map failing to load is named in attribution.producer_map_error, never a silent zero."
 }

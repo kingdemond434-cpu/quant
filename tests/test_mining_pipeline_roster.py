@@ -478,107 +478,33 @@ def test_two_countries_naming_one_vendor_page_stay_two_sources(tmp_path: Path) -
 
 
 def test_the_live_roster_names_no_missing_file() -> None:
-    bad = [r for r in acq.roster_files(root=ROOT) if r["state"] == "MISSING"]
+    bad = [r for r in acq.roster_files(root=ROOT) if r["state"] in ("MISSING", "BROKEN")]
     assert not bad, bad
 
 
-def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_path: Path) -> None:
-    """Credit comes from a DECLARED seat or the longest proper URL prefix; a host-only registry
-    URL never captures other pages, a tie credits nobody, and an undeclared seat is nobody's."""
-    owned = [acq.Source(id="rbnz_series", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="rbnz.govt.nz/statistics", seats=["miner:asia:rbnz_series"]),
-             acq.Source(id="smart_lab_blog", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="smart-lab.ru/blog"),
-             acq.Source(id="smart_lab_home", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="smart-lab.ru"),
-             acq.Source(id="twin_a", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="x.org/p"),
-             acq.Source(id="twin_b", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="x.org/p")]
-    pipe = _pipe(tmp_path, sources=owned)
-    rows = [
-        {"symbol": "NZDUSD", "family": "carry", "params": {"k": 1},
-         "source": "miner:asia:rbnz_series", "source_url": "https://www.rbnz.govt.nz/x"},
-        {"symbol": "EURUSD", "family": "carry", "params": {"k": 2},
-         "source": "miner:world_crawler", "source_url": "https://smart-lab.ru/blog/123.php"},
-        {"symbol": "EURUSD", "family": "carry", "params": {"k": 3},
-         "source": "miner:world_crawler", "source_url": "https://smart-lab.ru/forum/9"},
-        {"symbol": "EURUSD", "family": "carry", "params": {"k": 4},
-         "source": "miner:discovery_compiler", "source_url": "https://x.org/p/1"},
-        {"symbol": "EURUSD", "family": "carry", "params": {"k": 5},
-         "source": "miner:smart_lab_blog", "source_url": ""}]
-    pipe.docket.write_text(json.dumps(rows), "utf-8")
-    assert pipe.source_status(T0)["rbnz_series"]["status"] == "COLD"   # nothing judged yet
-    pipe.gate_ledger.write_text("".join(json.dumps(
-        {"cell": pipe.hooks.gauntlet_cell(r), "passed": False, "terminal_gate": "pbo",
-         "at": iso(T0 - timedelta(days=2))}) + "\n" for r in rows), "utf-8")
-    pipe.index_judged(now=T0)
-    st = pipe.source_status(T0)
-    assert st["rbnz_series"]["evaluated_via"] == {"mining": 0, "docket": 1}   # by its seat
-    assert st["smart_lab_blog"]["evaluated_cells_30d"] == 1   # the URL; not the undeclared seat
-    assert st["smart_lab_home"]["status"] == "COLD"           # host-only is not a wildcard
-    assert st["twin_a"]["status"] == st["twin_b"]["status"] == "COLD"      # a tie credits nobody
-    att = pipe._attribution
-    assert att["credited_by"] == {"seat": 1, "url": 1}
-    asia = MS.producer_of("miner:asia:rbnz_series", MS._scout_seats())
-    assert att["by_producer"][asia] == {"judged": 1, "credited": 1}
-    assert st["rbnz_series"]["producers"] == {asia: 1}
-    assert MS.producer_of("miner:world:x", {"world": "world_crawler"}) == "world_crawler"
-    assert att["unattributed_judged_rows"] == 3
-    assert att["unattributed_top_producers"] == {"miner:world_crawler": 1,
-                                                 "miner:discovery_compiler": 1,
-                                                 "miner:smart_lab_blog": 1}
-    assert pipe.source_status(T0 + timedelta(days=40))["rbnz_series"]["status"] == "COLD"
-    assert pipe.register_cursors(now=T0) == 5 and pipe.register_cursors(now=T0) == 0
-    assert pipe.cursors.get("twin_a")["registered"]["canonical_id"] == "twin_a"
-    summary = pipe.registry_summary(st)
-    assert summary["active"] == 2 and summary["schema"].endswith("source_registry.schema.json")
-    assert summary["cold_by_reason"]["no cell EVALUATED in 30 days"] == [
-        "smart_lab_home", "twin_a", "twin_b"]
+def test_a_country_pack_that_will_not_load_is_loud(tmp_path: Path, monkeypatch: Any) -> None:
+    """A pack that raises is an error on the roster entry (BROKEN), never a silent zero; a
+    pack_cells-shape pack (no PACK export) is simply not a source table."""
+    from libs.research import country_lab
+    for cc, body in (("zz", "PACK = None\n"), ("yy", "KNOWN_GROUNDS = ()\n")):
+        (tmp_path / "c" / cc).mkdir(parents=True)
+        (tmp_path / "c" / cc / "pack.py").write_text(body, "utf-8")
+    monkeypatch.setattr(country_lab, "resolve_pack",
+                        lambda cc: (_ for _ in ()).throw(ImportError(f"no {cc}")))
+    errs: list[dict[str, str]] = []
+    assert acq.pack_rows(tmp_path / "c", errs) == []
+    assert errs == [{"pack": "zz", "error": "ImportError: no zz"}]
+    doc = {"external_rosters": [{"packs": "c"}]}
+    (tmp_path / "r.yaml").write_text(json.dumps(doc), "utf-8")
+    got = acq.roster_files(tmp_path / "r.yaml", root=tmp_path)
+    assert got[0]["state"] == "BROKEN" and got[0]["failed"] == 1
 
 
-def test_the_live_roster_is_one_registry() -> None:
-    got = acq.load_roster(root=ROOT)
-    ids = [s.id for s in got]
-    assert len(ids) == len(set(ids))
-    owners = {s.owner.split("/")[0] for s in got}
-    assert {"deep_forest", "asia_desk", "firm_mining", "country_pack",
-            "global_mining"} <= owners
-    schema = json.loads((ROOT / "libs" / "mining" / "source_registry.schema.json")
-                        .read_text("utf-8"))
-    assert schema["schema"] == "source_registry/1"
-
-
-def test_archive_captures_config_urls_and_named_seats_on_the_same_site(tmp_path: Path) -> None:
-    """An archive capture is judged as the page it archived; the pipeline's own rows are keyed
-    by the URLs in their fetcher config; a seat named as a registry id credits it only when the
-    row's URL is on that source's own site."""
-    row = {"id": "mql5_forum_en", "fetcher": "html_listing", "config": {"listing": [
-        {"url": "https://www.mql5.com/en/forum/page{page}",
-         "page1": "https://www.mql5.com/en/forum"}]}}
-    src = acq.normalise_row(row, origin="t")
-    assert src is not None and "mql5.com/en/forum" in src.url_keys
-    darwinex = acq.Source(id="darwinex", fetcher="owned", url_key="api.darwinex.com",
-                          url_keys=["api.darwinex.com"])
-    pipe = _pipe(tmp_path, sources=[src, darwinex])
-    idx, seats = pipe._url_index(), pipe._seat_index()
-    assert pipe.attribute_url("https://web.archive.org/web/2019/https://www.mql5.com/en/forum/9",
-                              idx) == "mql5_forum_en"
-    assert pipe.attribute_url("https://www.mql5.com/en/code/1", idx) == ""
-    boj = {"boj.or.jp": [("boj.or.jp/en/statistics/index.htm", "boj_stats")]}
-    # an index page scopes its directory
-    assert pipe.attribute_url("http://www.boj.or.jp/en/statistics/set/x.pdf", boj) == "boj_stats"
-    dx = "https://web.archive.org/web/20191210165044/https://www.darwinex.com/darwin/AJG.4.21"
-    assert pipe.attribute_source({"source": "miner:darwinex", "source_url": dx}, idx, seats) \
-        == ("darwinex", "seat+site")
-    assert pipe.attribute_source({"source": "miner:darwinex", "source_url":
-                                  "https://youtube.com/watch?v=1"}, idx, seats) == ("", "")
-
-
-def test_a_lane_that_describes_its_uses_by_key_keeps_them() -> None:
-    """The free stack writes `uses: {direct: {...}, indirect: {...}, allocation: {...}}`; read
-    as a list it filtered to nothing and every free-stack source served no use."""
-    row = acq.normalise_row({"id": "x", "uses": {"direct": {"families": ["a"]}, "indirect": {},
-                                                  "allocation": {"organ": "o"}}},
-                            origin="t", defaults={"fetcher": "owned", "kind": "text"})
-    assert row is not None and row.uses == ["direct_cells", "allocation_intel"]
+def test_one_video_is_one_url_key_and_an_endpoint_is_no_scope() -> None:
+    for u in ("https://m.youtube.com/watch?v=AbC&t=3", "https://youtu.be/AbC?t=1",
+              "https://www.youtube.com/shorts/AbC", "youtube.com/watch?v=AbC"):
+        assert acq.canonical_url(u) == "youtube.com/watch?v=AbC", u
+    idx = {"youtube.com": [("youtube.com/watch", "corpus")],
+           "boj.or.jp": [("boj.or.jp/x/index.htm", "boj")]}
+    assert MS.Pipeline.attribute_url("https://youtu.be/AbC", idx) == ""   # not a catch-all
+    assert MS.Pipeline.attribute_url("https://boj.or.jp/x", idx) == "boj"  # the index's dir

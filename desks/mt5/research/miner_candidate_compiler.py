@@ -775,6 +775,18 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # WHERE A DERIVED ROW CAME FROM (2026-09-30): `discovery_compiler` names its parent's seat
+        # and intake, so the docket can credit the source behind a derived cell by its DECLARED
+        # seat instead of leaving it unattributed.
+        **{k: str(row[k]) for k in ("origin_seat", "origin_intake")
+           if isinstance(row.get(k), str) and row.get(k)},
+        # THE REGISTRY ID A PRODUCER NAMED (2026-10-06): a one-seat stream (alt_proxies) stamps
+        # the source each row came from in `provenance.source_id`; carried so the registry can
+        # credit that source when its row registers the producing organ (mining_supervisor).
+        **({"origin_source_id": _sid} if (_sid := str(
+            row.get("origin_source_id") or row.get("source_id")
+            or (row.get("provenance") or {}).get("source_id") or ""))
+           else {}),
         # AND THE DONOR'S STANDING (2026-09-30). A moat-exchange donation carries the registry
         # row's campaign id and source id, and for a paid-substitute cell the validation lane:
         # a series whose correlation to its paid set is UNMEASURED is `research_unverified`, and
