@@ -49,6 +49,7 @@ LEG_LAYER: dict[str, str] = {
     # skeleton, which mechanism name, which territory -- before any claim about returns is made.
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
+    "youtube_corpus": "information", "youtube_miner": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
     # Published strategy CODE read into family cells: what the desk knows (a rule someone
     # wrote), not a prediction -- the gauntlet does the predicting.
