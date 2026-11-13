@@ -59,6 +59,10 @@ SLA_H = {"P0": 2.0, "P1": 6.0, "P2": 24.0, "P3": 72.0}
 #: Owed items above this raise the ALARM whatever their ages: a queue that only grows is the
 #: defect even before any single row is old.
 MAX_DEPTH = 40
+#: A draft whose head has not moved for this long is the WIP cap's (overlay 28m: "close drafts
+#: idle >= 7d, keep the branch"), not the Auditor's: it is listed as STALE_DRAFT for its owner to
+#: close and never counted as owed. A push revives it.
+STALE_DRAFT_H = 168.0
 #: The fallback money path when RELEASE.json cannot be read (fail toward P1, never toward P3).
 MONEY_DIRS = ("desks/mt5/mt5desk/", "libs/portfolio/")
 
@@ -150,6 +154,8 @@ def item(
     since = _ts(pushed_at) or _ts(pr.get("updated_at")) or now
     age_h = round(max(0.0, (now - since).total_seconds() / 3600.0), 2)
     state = "OWED" if v is None else ("HELD" if v.get("verdict") == "HOLD" else "CLEARED")
+    if state == "OWED" and pr.get("draft") and age_h > STALE_DRAFT_H:
+        state = "STALE_DRAFT"
     return {
         "pr": int(pr["number"]),
         "title": str(pr.get("title") or "")[:120],
@@ -193,6 +199,7 @@ def summarise(items: list[dict[str, Any]], now: datetime, adopt: dict[str, Any])
         "oldest_owed_h": max((i["age_h"] for i in owed), default=0.0),
         "breaches": len(breaches) + (1 if p0_breach else 0),
         "held": sum(1 for i in items if i["state"] == "HELD"),
+        "stale_drafts": sorted(i["pr"] for i in items if i["state"] == "STALE_DRAFT"),
         "cleared_unmerged": sum(1 for i in items if i["state"] == "CLEARED"),
         "sla_h": SLA_H,
         "max_depth": MAX_DEPTH,
@@ -207,15 +214,26 @@ def summarise(items: list[dict[str, Any]], now: datetime, adopt: dict[str, Any])
 # ---------------------------------------------------------------------------------- GitHub I/O
 
 
-def _gh(path: str) -> Any:
-    out = subprocess.run(
-        ["gh", "api", "-H", "Accept: application/vnd.github+json", path],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=120,
-    ).stdout
-    return json.loads(out)
+def _gh(path: str, tries: int = 4) -> Any:
+    """One REST read, retried with backoff: a 5xx or a proxy reset on one of ~1,500 reads must
+    not kill the whole snapshot."""
+    import time
+
+    for n in range(tries):
+        try:
+            out = subprocess.run(
+                ["gh", "api", "-H", "Accept: application/vnd.github+json", path],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=120,
+            ).stdout
+            return json.loads(out)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError):
+            if n == tries - 1:
+                raise
+            time.sleep(2 * (n + 1))
+    raise AssertionError("unreachable")
 
 
 def _pages(path: str, cap: int = 30) -> list[Any]:
@@ -229,19 +247,34 @@ def _pages(path: str, cap: int = 30) -> list[Any]:
     return rows
 
 
-def fetch(repo: str) -> list[tuple[dict[str, Any], list[str], list[dict[str, Any]], str | None]]:
-    out = []
-    for pr in _pages(f"repos/{repo}/pulls?state=open&base={LIVE}"):
-        n = pr["number"]
-        files = [str(f.get("filename")) for f in _pages(f"repos/{repo}/pulls/{n}/files")]
-        comments = _pages(f"repos/{repo}/issues/{n}/comments")
-        try:
-            c = _gh(f"repos/{repo}/commits/{pr['head']['sha']}")
-            pushed = c["commit"]["committer"]["date"]
-        except (subprocess.CalledProcessError, KeyError, ValueError):
-            pushed = None
-        out.append((pr, files, comments, pushed))
-    return out
+def _one(repo: str, pr: dict[str, Any]) -> tuple[dict[str, Any], list[str], list[Any], str | None]:
+    n = pr["number"]
+    files = [str(f.get("filename")) for f in _pages(f"repos/{repo}/pulls/{n}/files")]
+    comments = _pages(f"repos/{repo}/issues/{n}/comments")
+    try:  # the list endpoint carries no diff, unlike commits/{sha}
+        c = _gh(f"repos/{repo}/commits?sha={pr['head']['sha']}&per_page=1")
+        pushed = c[0]["commit"]["committer"]["date"]
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        KeyError,
+        IndexError,
+        ValueError,
+    ):
+        pushed = None
+    return pr, files, comments, pushed
+
+
+def fetch(
+    repo: str, workers: int = 8
+) -> list[tuple[dict[str, Any], list[str], list[Any], str | None]]:
+    """Every open PR into LIVE with its files, comments and head push time, read in parallel:
+    serially a 100-PR board took over 15 minutes, longer than the cadence it reports on."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    prs = _pages(f"repos/{repo}/pulls?state=open&base={LIVE}")
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(lambda pr: _one(repo, pr), prs))
 
 
 def adoption(repo_dir: Path | None, now: datetime) -> dict[str, Any]:
@@ -324,6 +357,8 @@ def main(argv: list[str] | None = None) -> int:
             "held",
         )
     }
+    hist["stale_drafts"] = len(snap["stale_drafts"])
+    hist["cleared_unmerged"] = snap["cleared_unmerged"]
     with (a.out / "AUDIT_BACKLOG_HISTORY.jsonl").open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(hist, sort_keys=True) + "\n")
 

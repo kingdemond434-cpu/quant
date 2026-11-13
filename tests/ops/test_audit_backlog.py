@@ -113,3 +113,12 @@ def test_the_script_never_writes_to_github() -> None:
     src = (ROOT / "scripts" / "audit_backlog.py").read_text("utf-8")
     for verb in ("-X", "--method", "POST", "PATCH", "-f ", "--field"):
         assert f'"{verb}"' not in src, verb
+
+
+def test_a_draft_idle_past_a_week_is_the_wip_caps_not_owed() -> None:
+    old = _item(["libs/x.py"], hours=ab.STALE_DRAFT_H + 1, draft=True)
+    assert old["state"] == "STALE_DRAFT"
+    ready = _item(["libs/x.py"], hours=ab.STALE_DRAFT_H + 1)
+    assert ready["state"] == "OWED"  # a non-draft is owed whatever its age
+    snap = ab.summarise([old, ready], NOW, {"measured": True, "uncovered": []})
+    assert snap["depth"] == 1 and snap["stale_drafts"] == [1]
