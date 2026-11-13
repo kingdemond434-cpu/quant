@@ -2606,11 +2606,10 @@ FAMILY_INPUTS["informed_flow_drift"] = (
     "point-in-time insider, activist, institutional, congressional and prediction-market "
     "events, placed at their observable instant (research/informed_capital.py)",
     "desks/mt5/data/informed_capital/events.jsonl")
-FAMILY_TIMEFRAMES["informed_flow_drift"] = (
-    ("H1",),
-    "a disclosure is a daily-cadence event measured at +1/+5/+21 trading days; its hold is "
-    "counted in H1 bars per trading day, and the tracker that set the measured side read H1 "
-    "closes")
+# NO TIMEFRAME RESTRICTION (as alt_release_drift): entry is the first bar OPENING at or after
+# the observable instant on whatever chart the cell carries, and `_signals` holds `hold_days`
+# times the chart's own measured bars per day, so it is the same rule on every rung. No H1
+# tracker sets this family's side (informed_capital stores the disclosed direction itself).
 
 # SPECIALIST FAMILIES (2026-09-30, `research/specialist_cell.py`). Four mechanisms an asset-class
 # specialist names and no registered family expressed: carry harvested in calm and unwound in
