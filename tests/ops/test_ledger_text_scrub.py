@@ -15,9 +15,9 @@ REL = "desks/mt5/data/cro_cycle_ledger.jsonl"
 
 def test_money_hosts_and_servers_are_withheld() -> None:
     s = aw.public_text("E8 equity 103,227.24 and balance=$99,812.10; lost £1,200 on "
-                       "server=FusionMarkets-Live via 95.216.191.70 and dash.quanttt.xyz")
-    for leak in ("103,227.24", "99,812.10", "1,200", "FusionMarkets-Live", "95.216.191.70",
-                 "quanttt.xyz"):
+                       "server=FusionMarkets-Live via 203.0.113.7 and dash.example.org")
+    for leak in ("103,227.24", "99,812.10", "1,200", "FusionMarkets-Live", "203.0.113.7",
+                 "example.org"):
         assert leak not in s
     assert "equity [money]" in s and "[addr]" in s and "[host]" in s
 
