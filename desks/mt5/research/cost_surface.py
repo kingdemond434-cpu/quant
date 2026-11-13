@@ -129,6 +129,21 @@ SCHEMA = "cost-surface-1"
 TICK_DAYS = 10
 TICK_MIN_OBS = 200
 
+#: THE FILL MINUTE, NOT ONLY THE FILL HOUR (2026-11-11). An hour's tick median hides a spread
+#: that is wide for ONE minute: EURCHF at broker 01:00 quotes 62 pts p50 (108 p90) in the first
+#: minute after rollover and ~2 pts for the rest of the hour, so the hour reads 2 and a strategy
+#: that fills on that minute is charged 2 for a crossing that costs 62. The certified formula
+#: p=494964b2 earned its whole edge in exactly that minute, on bid-only bars, and lost money at
+#: the real ask from one minute later (promotion/cert_rank_2026-10-13/EURCHF_FORMULA_494964_
+#: MINUTE_ENTRY_CH2_2026-11-11.md). `spike_minutes` publishes, per symbol, every broker minute
+#: whose tick median is at least SPIKE_RATIO times its own hour's -- sparse on purpose, so the
+#: surface stays small -- and `fill_spread_pts` charges a fill the wider of its hour's spread and
+#: its minute's. A minute needs SPIKE_MIN_TICKS ticks over SPIKE_MIN_DAYS distinct days; below
+#: that it is not published, and the hour's charge stands (never a cheaper number).
+SPIKE_RATIO = 2.0
+SPIKE_MIN_TICKS = 20
+SPIKE_MIN_DAYS = 3
+
 #: ATR(20) on the H1 bars, in points and in price, per symbol: the scale the cost-repricing of a
 #: forward clock divides by, published so a reader off the box needs no bar file.
 ATR_N = 20
@@ -309,7 +324,41 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
             row["p50_nonzero"] = round(float(nz.median()), 2) if nz.size else 0.0
         hours[str(h)] = row
     return {"days": [d for d, _f in files], "n_ticks": len(t), "hours": hours,
-            "n_hours_measured": sum(1 for r in hours.values() if r["status"] == "MEASURED")}
+            "n_hours_measured": sum(1 for r in hours.values() if r["status"] == "MEASURED"),
+            "spike_minutes": spike_minutes(t["time_msc"], pts, hours)}
+
+
+def spike_minutes(time_msc: pd.Series, pts: pd.Series,
+                  hours: dict[str, dict]) -> dict[str, dict]:
+    """{"HH:MM": {...}} for every broker minute whose tick median is SPIKE_RATIO x its hour's.
+
+    The hour's reference is its MEASURED tick p50, floored at one point so a locked hour (p50 0)
+    does not flag every quoted minute; an hour that is not MEASURED is no reference and none of
+    its minutes is published. Pure over its inputs.
+    """
+    ms = pd.to_numeric(time_msc, errors="coerce")
+    ok = ms.notna().to_numpy()                         # a tick with no time has no minute
+    ms = ms[ok].astype("int64")
+    frame = pd.DataFrame({"m": ((ms // 60_000) % 1440).to_numpy(),
+                          "d": (ms // 86_400_000).to_numpy(), "p": pts.to_numpy()[ok]})
+    out: dict[str, dict] = {}
+    for m, cell in frame.groupby("m", sort=True):
+        h = int(m) // 60
+        ref = hours.get(str(h)) or {}
+        if ref.get("status") != "MEASURED":
+            continue
+        base = max(float(ref.get("p50") or 0.0), 1.0)
+        n, n_days = len(cell), int(cell["d"].nunique())
+        if n < SPIKE_MIN_TICKS or n_days < SPIKE_MIN_DAYS:
+            continue
+        p50 = float(cell["p"].median())
+        if p50 < SPIKE_RATIO * base:
+            continue
+        out[f"{h:02d}:{int(m) % 60:02d}"] = {
+            "n_ticks": n, "n_days": n_days, "p50": round(p50, 2),
+            "p90": round(float(cell["p"].quantile(0.90)), 2),
+            "hour_p50": round(float(ref.get("p50") or 0.0), 2)}
+    return out
 
 
 def build(universe_dir: Path | None = None) -> dict:
@@ -391,6 +440,81 @@ def spread_pts(surface: dict, symbol: str, hour: int | None) -> float | None:
         return None
     v = cell.get("p50")
     return float(v) if v is not None else None
+
+
+def spike_pts(surface: dict, symbol: str, hour: int, minute: int) -> float | None:
+    """The published spike-minute tick median for one broker minute, or None (not a spike)."""
+    sym = (surface.get("symbols") or {}).get(symbol) or {}
+    th = sym.get("tick_hours") or {}
+    row = (th.get("spike_minutes") or {}).get(f"{int(hour) % 24:02d}:{int(minute) % 60:02d}")
+    v = row.get("p50") if isinstance(row, dict) else None
+    return float(v) if v is not None else None
+
+
+def fill_minutes(sigs: Any, timeframe: str = "H1",
+                 index: Any = None) -> list[tuple[int, int]]:
+    """(broker hour, minute) of every fill, by the ENGINE's own fill rule.
+
+    `engine.run_backtest` fills a market signal at the OPEN of the bar after its signal bar
+    (`searchsorted(index, signal.time) + 1`), whatever `wait_bars` says -- `wait_bars` is only how
+    long a resting TRIGGER order lives. So with the frame's `index` the fill time is read off the
+    bars themselves (a Friday signal fills at Monday's first bar, not one hour later); without it
+    the fill is one bar of the chart later. A trigger order fills intrabar at a price, not on a
+    bar's open minute, and is returned as (-1, -1): never a spike, charged its base.
+    """
+    try:
+        from mt5desk.universe_registry import timeframe_minutes
+        tf = int(timeframe_minutes(timeframe))
+    except Exception:
+        tf = 60
+    idx = pd.DatetimeIndex(index).as_unit("ns") if index is not None else None
+    ns = idx.asi8 if idx is not None else None
+    out: list[tuple[int, int]] = []
+    for s in sigs or ():
+        ts = getattr(s, "time", None)
+        if ts is None:
+            continue
+        if getattr(s, "trigger", None) is not None:
+            out.append((-1, -1))
+            continue
+        if idx is not None and ns is not None:
+            i = int(np.searchsorted(ns, pd.Timestamp(ts).value)) + 1
+            if i <= 0 or i >= len(idx) - 1:
+                continue
+            ft = idx[i]
+        else:
+            ft = pd.Timestamp(ts) + pd.Timedelta(minutes=tf)
+        out.append((int(ft.hour), int(ft.minute)))
+    return out
+
+
+def fill_spread_pts(surface: dict, symbol: str, fills: list[tuple[int, int]],
+                    base_pts: float | None) -> dict[str, Any]:
+    """What a cell's fills cost to cross, minute by minute, against the charge it was given.
+
+    Every fill is charged max(base, its minute's spike median): the hour's (or pooled) charge
+    stands wherever the minute is not a published spike, so this can only RAISE a charge, never
+    lower one. Returns the fill-weighted mean, the share of fills on a spike minute and the
+    minutes involved; `spread_pts` is None when there are no fills or no base to raise.
+    """
+    if not fills or base_pts is None:
+        return {"spread_pts": None, "spike_share": 0.0, "n_fills": len(fills or ()),
+                "minutes": {}}
+    base = float(base_pts)
+    total, hit = 0.0, 0
+    minutes: dict[str, int] = {}
+    for h, m in fills:
+        sp = spike_pts(surface, symbol, h, m)
+        if sp is not None and sp > base:
+            hit += 1
+            key = f"{h:02d}:{m:02d}"
+            minutes[key] = minutes.get(key, 0) + 1
+            total += sp
+        else:
+            total += base
+    return {"spread_pts": round(total / len(fills), 4), "spike_share": round(hit / len(fills), 4),
+            "n_fills": len(fills), "minutes": dict(sorted(minutes.items(),
+                                                          key=lambda kv: -kv[1])[:8])}
 
 
 # ===================================================================================
