@@ -562,6 +562,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 foreach ($ensure in @(
         @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
         @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" },
+        # The prop fleet (#590): every added prop account's reader, executor and the 10-minute
+        # re-solve. With no account beyond the legacy one registered they run and do nothing; each
+        # account stays STANDBY until its own data\prop\<id>\*_ARMED markers exist.
+        @{ Task = "MT5-Prop-VenueReaders"; Installer = "install_prop_fleet_tasks.ps1" },
+        @{ Task = "MT5-Prop-Executors"; Installer = "install_prop_fleet_tasks.ps1" },
+        @{ Task = "MT5-Prop-Allocator"; Installer = "install_prop_fleet_tasks.ps1" },
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)

@@ -859,10 +859,21 @@ def published_ftmo_executor_lines() -> dict[str, Any]:
     audit S2) carries the risk it held back. The same reading as the follower's: an absent
     journal binds nothing yet, an unreadable one is UNMEASURED, a row without a dollar figure is
     counted unpriced, never zero. Published, not priced."""
-    rows = _jsonl(FTMO_EXEC_INTENTS) if FTMO_EXEC_INTENTS.exists() else []
-    if rows is None:
-        return {"source": f"data/{FTMO_EXEC_INTENTS.name}",
-                "unreadable": [FTMO_EXEC_INTENTS.name], "rails": {}}
+    # EVERY PROP ACCOUNT'S JOURNAL (2026-11-03, audit of 580b6f99 MF2): the legacy FTMO
+    # account's, and each further account's data/prop/<id>/exec_intents.jsonl, so a rail on any
+    # account reaches Rule 1's ledger. Rows carry their account; an unreadable journal is named.
+    rows: list[dict[str, Any]] = []
+    unreadable: list[str] = []
+    for acct, path in prop_exec_journals():
+        got = _jsonl(path) if path.exists() else []
+        if got is None:
+            unreadable.append(path.relative_to(BASE).as_posix()
+                              if path.is_relative_to(BASE) else str(path))
+            continue
+        rows.extend({"account": acct, **r} for r in got if isinstance(r, dict))
+    if unreadable and not rows:
+        return {"source": f"data/{FTMO_EXEC_INTENTS.name} + data/prop/*/exec_intents.jsonl",
+                "unreadable": unreadable, "rails": {}}
     # a refusal, or an order SENT trimmed by a rail (the trimmed part is the bill; audit SF2)
     billed = [r for r in rows if r.get("rail")
               and (r.get("status") not in FTMO_EXEC_SENT or r.get("trimmed"))]
@@ -877,10 +888,52 @@ def published_ftmo_executor_lines() -> dict[str, Any]:
                        "n_unpriced": len(mine) - len(usd), "last_at": mine[-1].get("at"),
                        "sleeves": sorted({str(r.get("sleeve")) for r in mine}),
                        "statuses": sorted({str(r.get("status")) for r in mine}),
+                       "accounts": sorted({str(r.get("account")) for r in mine}),
                        "why": ("the risk the executor held back, not what the trade would have "
                                "earned; published, not priced")}
-    return {"source": f"data/{FTMO_EXEC_INTENTS.name} rows a rail kept from sending",
-            "rails": lines}
+    out: dict[str, Any] = {"source": f"data/{FTMO_EXEC_INTENTS.name} + "
+                                     f"data/prop/*/exec_intents.jsonl rows a rail kept from "
+                                     f"sending", "rails": lines}
+    if unreadable:
+        out["unreadable"] = unreadable
+    return out
+
+
+def published_prop_registry_block_lines() -> dict[str, Any]:
+    """The prop fence's registry-error block (cross_account.registry_block_seen, audit of
+    08525399): while data/prop_accounts.json has errors, every non-gold entry on every lane is
+    refused. Each refusal is a row; the line counts them by symbol. Published, not priced: the
+    row holds what was refused, not what it would have earned."""
+    from mt5desk import cross_account as _xa
+    path = _xa.XACCT_DIR / _xa.REGISTRY_BLOCKS_NAME
+    rows = _jsonl(path)
+    if rows is None:
+        return {"source": path.name, "unreadable": [path.name], "rails": {}}
+    if not rows:
+        return {"source": path.name, "rails": {}}
+    by: dict[str, int] = {}
+    for r in rows:
+        by[str(r.get("symbol"))] = by.get(str(r.get("symbol")), 0) + 1
+    return {"source": path.name, "rails": {"prop_registry_error": {
+        "verdict": UNMEASURED, "n": len(rows), "by_symbol": by,
+        "first_at": rows[0].get("at"), "last_at": rows[-1].get("at"),
+        "last_errors": rows[-1].get("errors"),
+        "why": ("entries refused while the prop registry did not read clean; the refusal is "
+                "billed, not priced")}}}
+
+
+def prop_exec_journals() -> list[tuple[str, Path]]:
+    """(account id, its executor journal) for the legacy FTMO account and every directory under
+    data/prop/ -- read off DISK, not the registry, so an account whose row was refused or
+    removed still has its rails billed."""
+    out = [("ftmo", FTMO_EXEC_INTENTS)]
+    root = FTMO_EXEC_INTENTS.parent / "prop"
+    try:
+        dirs = sorted(d for d in root.iterdir() if d.is_dir() and not d.name.startswith("firm_"))
+    except OSError:
+        dirs = []
+    out.extend((d.name, d / "exec_intents.jsonl") for d in dirs)
+    return out
 
 
 #: THE JUDGE'S WATCHDOG AND THE DEEPENING MEMORY GUARD (audit of 2832cebd1, 2026-10-20). Neither
@@ -1190,6 +1243,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "fusion_book_rails": published_fusion_book_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "ftmo_executor_rails": published_ftmo_executor_lines(),
+                                    "prop_registry_block": (
+                                        published_prop_registry_block_lines()),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
                                         JUDGE_PRIORITY_RAISES,
