@@ -642,7 +642,9 @@ REGISTRY_ENV = "QUANT_AUDIT_REGISTRY"
 #: and counts the notice as sent only on exit 0 (scripts/send_alert.py: a channel delivered it).
 #: Unset, no notice can go out, so no window ever starts and nothing merges by the registry.
 REGISTRY_NOTIFY_ENV = "QUANT_REGISTRY_NOTIFY"
-REGISTRY_HOLD_H = 24.0
+#: zuck 2026-11-13 12:14Z ("Nothing should be protected ... everything done as fast as possible"):
+#: no veto wait. A delivered notice merges on the same sweep; every other condition still binds.
+REGISTRY_HOLD_H = 0.0
 #: A row dated this far past the gate's clock is refused (clock skew allowance).
 REGISTRY_SKEW_S = 300.0
 #: The marker in a registry merge's commit title (auto_revert() looks for it).
@@ -666,6 +668,8 @@ def registry_rows(path: str | None) -> tuple[list[dict[str, Any]], str]:
 
 
 def notice_title(pr: int, head: str) -> str:
+    if REGISTRY_HOLD_H <= 0:
+        return f"PR #{pr} {head[:9]} auto-merges from the box now (Auditor CLEAR, all checks green)"
     return f"PR #{pr} {head[:9]} auto-merges from the box in {REGISTRY_HOLD_H:.0f} h unless vetoed"
 
 
@@ -710,6 +714,8 @@ def registry_window(
         os.replace(tmp, seen_path)
     except OSError as exc:
         return None, f"the veto-window record could not be written ({type(exc).__name__})"
+    if REGISTRY_HOLD_H <= 0:
+        return now, ""  # no wait: the delivered notice is the only step, so this sweep merges
     return None, f"veto notice sent for {head[:9]}: the {REGISTRY_HOLD_H:.0f} h window starts now"
 
 

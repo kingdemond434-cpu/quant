@@ -2935,7 +2935,10 @@ def _win(at: Any = _OLD) -> Callable[[], tuple[Any, str]]:
     return lambda: (at, "" if at else "no notice yet")
 
 
-def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window() -> None:
+def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)  # the window mechanism, if one is ever set
     got, why = ag.registry_clear([_row()], 9, _H, _win(), _NOW)
     assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
     assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # no carry-over
@@ -2950,7 +2953,10 @@ def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
 
 
-def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
+def test_a_backdated_row_never_starts_the_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ag, "REGISTRY_HOLD_H", 24.0)
     # #591 audit MF3: the row says 2020, but the window starts when the gate's notice went out
     sent: list[str] = []
     seen = tmp_path / "r.jsonl.window.json"
@@ -2969,6 +2975,22 @@ def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
     assert got is not None and len(sent) == 2  # 25 h after delivery; no second notice
     seen.write_text("not json", encoding="utf-8")
     assert ag.registry_clear([row], 9, _H, win(_NOW), _NOW)[0] is None  # a broken record: none
+
+
+def test_no_veto_wait_a_delivered_notice_merges_on_the_same_sweep(tmp_path: Path) -> None:
+    # zuck 2026-11-13 12:14Z: no waiting period. Every other condition still binds.
+    assert ag.REGISTRY_HOLD_H == 0.0
+    sent: list[str] = []
+    seen = tmp_path / "r.jsonl.window.json"
+
+    def win(ok: bool = True) -> Callable[[], tuple[Any, str]]:
+        return lambda: ag.registry_window(seen, 9, _H, _NOW, lambda t, b: sent.append(t) or ok)
+
+    assert ag.registry_clear([_row()], 9, _H, win(ok=False), _NOW)[0] is None  # not delivered
+    got, why = ag.registry_clear([_row()], 9, _H, win(), _NOW)
+    assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why and len(sent) == 2
+    assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # exact head only
+    assert ag.registry_clear([_row(), _row(verdict="HOLD")], 9, _H, _win(), _NOW)[0] is None
 
 
 def test_an_unreadable_registry_is_no_registry_and_says_so(tmp_path: Path) -> None:
