@@ -1986,6 +1986,17 @@ def main() -> int:
     ordered = sorted(candidates.values(),
                      key=lambda c: (c.get("net_edge") is None,
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
+    # BOOK-GAP ORDER (hourly pass 2026-11-13: 170 promoted ~ 8 independent bets, no gold, no
+    # index, no 02:00-09:00 UTC entries). What the LIVE book holds least of converts first;
+    # nothing is dropped, an unreadable book leaves the net-edge order (research/book_gap_steer).
+    gap_note: dict = {"status": "UNAVAILABLE"}
+    try:
+        from research import book_gap_steer as _bg
+        ordered, gap_note = _bg.apply(ordered)
+        print(f"book-gap steer: {gap_note['status'][:40]}; by ask "
+              f"{gap_note['candidates_by_ask']}")
+    except Exception as exc:
+        gap_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     provenance_note = _provenance_block(ordered, now)
@@ -2054,6 +2065,7 @@ def main() -> int:
         "graph": graph_note,
         "provenance": provenance_note,
         "coverage_steer": steer_note,
+        "book_gap_steer": gap_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
