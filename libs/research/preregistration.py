@@ -273,10 +273,51 @@ def _legacy_spec_id(card: Mapping[str, Any]) -> str | None:
     return node_id(str(uni[0]), str(fam), params)
 
 
+def _spec_index_fold(out: dict[str, tuple[str, str]], r: Any) -> bool:
+    """One ledger row folded into `spec_index`'s answer, exactly as its loop body does."""
+    if not isinstance(r, dict):
+        return True
+    at, h = str(r.get("registered_utc") or ""), str(r.get("prereg_hash") or "")
+    if not at or not h:
+        return True
+    if r.get("kind") == BATCH_KIND:
+        sids = [str(s) for s in (r.get("specs") or [])]
+    else:
+        sid = r.get("spec_id") or _legacy_spec_id(r)
+        sids = [str(sid)] if sid else []
+    for sid in sids:
+        cur = out.get(sid)
+        if cur is None or at < cur[0]:
+            out[sid] = (at, h)
+    return True
+
+
+def _spec_index_appended(p: Path) -> dict[str, tuple[str, str]] | None:
+    """`spec_index` re-reading only the rows appended since its last call
+    (`libs.research.append_fold`: the cached prefix is verified by its SHA-256 every time).
+    None hands the question back to the full read."""
+    from libs.research import append_fold
+
+    def decode(doc: Any) -> dict[str, tuple[str, str]]:
+        return {str(k): (str(v[0]), str(v[1])) for k, v in doc.items()}
+
+    from libs.research import hypothesis_graph  # node_id: the legacy spec_id derivation
+
+    return append_fold.fold_appended(p, kind="spec_index",
+                                     code=append_fold.code_fingerprint(
+                                         __file__, hypothesis_graph.__file__),
+                                     empty=dict, fold=_spec_index_fold,
+                                     encode=dict, decode=decode, errors="replace",
+                                     strict_json=False)
+
+
 def spec_index(path: Path | None = None) -> dict[str, tuple[str, str]]:
     """spec_id -> (EARLIEST registered_utc, that card's hash). Streamed, so a large ledger costs
     one pass and a dict of 16-byte keys, never the whole file resident."""
     p = path if path is not None else LEDGER
+    fast = _spec_index_appended(p)
+    if fast is not None:
+        return fast
     out: dict[str, tuple[str, str]] = {}
     try:
         fh = p.open("r", encoding="utf-8", errors="replace")
