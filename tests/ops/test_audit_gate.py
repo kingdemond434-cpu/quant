@@ -2367,6 +2367,284 @@ def test_the_box_task_table_is_money_unless_only_gate_rows_change(
     assert rs.manifest_is_money(b, h, set(), scripts, set()) is money
 
 
+# ------------------------------------ a box-task installer is measured by what it schedules (#1107)
+
+_INSTALLER = r"""# REGISTER MT5-TidyLogs -- harmless housekeeping, nothing to see here.
+param([switch]$IfMissing, [string]$Python = 'C:\Program Files\Python314\python.exe')
+
+$ErrorActionPreference = 'Stop'
+
+$TaskName = '__TASK__'
+$DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
+$Organ    = Join-Path $DeskRoot '__ORGAN__'
+$Log      = Join-Path $DeskRoot ('logs\{0}.log' -f $TaskName)
+if (-not (Test-Path $Organ)) { throw "organ missing at $Organ" }
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Log) | Out-Null
+__EXTRA__
+if ($IfMissing -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
+    "{0}: already registered; nothing to do" -f $TaskName
+    exit 0
+}
+$action = New-ScheduledTaskAction -Execute 'cmd.exe' -WorkingDirectory $RepoRoot -Argument (
+    '/d /s /c ""{0}" -u "{1}" --apply >> "{2}" 2>&1"' -f $Python, $Organ, $Log)
+$trigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddHours(3).AddMinutes(10))
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -MultipleInstances IgnoreNew
+$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+}
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
+    -Principal $principal -Settings $settings -Description 'Tidy the logs.' | Out-Null
+$t = Get-ScheduledTask -TaskName $TaskName
+"installed {0}: state={1}" -f $t.TaskName, $t.State
+"""
+_PLANTED = "desks/mt5/scripts/install_tidy_logs_task.ps1"
+_MODULES = {
+    "desks/mt5/research/tidy.py": "import json\n\n\ndef main():\n    return json.dumps({})\n",
+    "desks/mt5/research/tidy2.py": "X = 1\n",
+    "desks/mt5/mt5desk/__init__.py": "",
+    "desks/mt5/mt5desk/gateway.py": "def place():\n    return 1\n",
+    "desks/mt5/research/__init__.py": "",
+    "desks/mt5/research/helper.py": "def lot():\n    return 0.1\n",  # in the closure
+    "desks/mt5/prop/__init__.py": "",
+    "desks/mt5/prop/e8_gold.py": "from research import helper\n",
+    # reaches the gateway through an import, launches a process, names an entry point
+    "desks/mt5/research/wrapper.py": "from mt5desk import gateway\n",
+    "desks/mt5/research/launcher.py": "import subprocess\n",
+    "desks/mt5/research/namer.py": "CMD = ['python', 'research/pf_allocator.py', '--mode']\n",
+}
+_COMPONENTS = (
+    'REQUIRED_TASKS: frozenset[str] = frozenset({"MT5-ClockFixer"})\n'
+    'TASK_CANONICAL: dict[str, str] = {"MT5-Hourly": "x"}\n'
+)
+_MANIFEST_ROWS = (
+    'TASK name="MT5-Pulse" trigger="every 5 minutes" runs="desks/mt5/research/tidy.py" '
+    'installer="NONE" lane="money"\n'
+    'TASK name="MT5-TidyLogs" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"\n'
+)
+
+
+def _installer_trees(
+    root: Path, installer: str, files: dict[str, str] | None = None
+) -> tuple[Path, Path]:
+    """A base without the installer and a head with it, both holding the modules above."""
+    base, head = root / "base", root / "head"
+    for t in (base, head):
+        for f, text in {
+            **_MODULES,
+            rs.COMPONENTS: _COMPONENTS,
+            rs.MANIFEST: _MANIFEST_ROWS,
+            **(files or {}),
+        }.items():
+            (t / f).parent.mkdir(parents=True, exist_ok=True)
+            (t / f).write_text(text, "utf-8")
+    (head / _PLANTED).parent.mkdir(parents=True, exist_ok=True)
+    (head / _PLANTED).write_text(installer, "utf-8")
+    return base, head
+
+
+def _planted(organ: str = r"research\tidy.py", extra: str = "", task: str = "MT5-TidyLogs") -> str:
+    return (
+        _INSTALLER.replace("__ORGAN__", organ).replace("__EXTRA__", extra).replace("__TASK__", task)
+    )
+
+
+def _kind(
+    tmp_path: Path,
+    installer: str,
+    files: dict[str, str] | None = None,
+    imported: frozenset[str] = frozenset(),
+) -> dict[str, Any]:
+    base, head = _installer_trees(tmp_path, installer, files)
+    got = rs.installer_targets(base, head, [_PLANTED], rs.import_closure(base), set(imported))
+    out: dict[str, Any] = got[_PLANTED]
+    return out
+
+
+@pytest.mark.parametrize(
+    ("organ", "extra", "task", "kind"),
+    [
+        # innocent names, money targets: the path, the closure, an import, a launch, a name
+        (r"mt5desk\gateway.py", "", "MT5-TidyLogs", "money_target_unreplayed"),
+        (r"research\helper.py", "", "MT5-TidyLogs", "money_target_unreplayed"),
+        (r"research\wrapper.py", "", "MT5-TidyLogs", "money_target_unreplayed"),
+        (r"research\launcher.py", "", "MT5-TidyLogs", "money_target_unreplayed"),
+        (r"research\namer.py", "", "MT5-TidyLogs", "money_target_unreplayed"),
+        # a money word in the installer's own text keeps it money, whatever it runs
+        (r"research\tidy.py", "# it also clears the kill switch", "MT5-TidyLogs",
+         "money_target_unreplayed"),
+        # a task the manifest puts in the money lane, or the control plane's own
+        (r"research\tidy.py", "", "MT5-Pulse", "money_target_unreplayed"),
+        (r"research\tidy.py", "", "MT5-ClockFixer", "control_plane_task"),
+    ],
+)  # fmt: skip
+def test_an_installer_that_schedules_money_reads_money_and_unmeasured(
+    tmp_path: Path, organ: str, extra: str, task: str, kind: str
+) -> None:
+    got = _kind(tmp_path, _planted(organ, extra, task))
+    assert got["kind"] == kind, got
+    assert got["kind"] not in rs.INSTALLER_MEASURED
+
+
+def test_a_money_target_is_measured_only_when_the_base_replay_imported_it(tmp_path: Path) -> None:
+    installer = _planted(r"mt5desk\gateway.py")
+    got = _kind(tmp_path, installer, imported=frozenset({"desks/mt5/mt5desk/gateway.py"}))
+    assert got == {"target": "desks/mt5/mt5desk/gateway.py", "via": None,
+                   "kind": "money_target_replayed"}  # fmt: skip
+    got = _kind(tmp_path / "x", installer, imported=frozenset({"desks/mt5/research/tidy.py"}))
+    assert got["kind"] == "money_target_unreplayed"
+
+
+@pytest.mark.parametrize(
+    ("organ", "extra", "files", "kind"),
+    [
+        (r"research\missing.py", "", None, "unresolved_target"),  # not in the tree
+        (r"research\tidy.ps1", "", {"desks/mt5/research/tidy.ps1": ""}, "unresolved_target"),
+        # a second value for the target: no single command line
+        (r"research\tidy.py", "$Organ = Join-Path $DeskRoot 'mt5desk\\gateway.py'", None,
+         "unresolved_target"),
+        # built from what the text cannot know
+        (r"research\tidy.py", "$Other = Join-Path $env:QUANT_ROOT 'tidy.py'", None, None),
+        # cmd.exe beside the working directory would run instead of the system's
+        (r"research\tidy.py", "", {"cmd.exe": ""}, "unresolved_target"),
+        # anything outside the vocabulary: another command, a call, a subexpression, a block
+        (r"research\tidy.py", "Remove-Item (Join-Path $DeskRoot 'logs\\old')", None,
+         "outside_vocabulary"),
+        (r"research\tidy.py", "& $Python $Organ", None, "outside_vocabulary"),
+        (r"research\tidy.py", 'Write-Host "$(Get-Date)"', None, "outside_vocabulary"),
+        (r"research\tidy.py", "$x = @(Get-Date)", None, "outside_vocabulary"),
+        (r"research\tidy.py", "$x = $TaskName.Replace('a', 'b')", None, "outside_vocabulary"),
+        (r"research\tidy.py", "$PSDefaultParameterValues = 'x'", None, "outside_vocabulary"),
+        (r"research\tidy.py", "Get-Date | Remove-Item", None, "outside_vocabulary"),
+    ],
+)  # fmt: skip
+def test_an_installer_whose_target_does_not_resolve_stays_unmeasured(
+    tmp_path: Path, organ: str, extra: str, files: dict[str, str] | None, kind: str | None
+) -> None:
+    got = _kind(tmp_path, _planted(organ, extra), files)
+    if kind is None:  # an unused variable that does not evaluate changes nothing
+        assert got["kind"] == "no_order_path_change", got
+        return
+    assert got["kind"] == kind, got
+    assert got["kind"] not in rs.INSTALLER_MEASURED
+
+
+def test_an_installer_that_runs_two_modules_stays_unmeasured(tmp_path: Path) -> None:
+    two = (
+        _planted(extra="$Other = Join-Path $DeskRoot 'research\\tidy2.py'")
+        .replace('-u "{1}" --apply', '-u "{1}" "{3}"')
+        .replace("$Organ, $Log)", "$Organ, $Log, $Other)")
+    )
+    assert "$Other)" in two
+    assert _kind(tmp_path, two)["kind"] == "unresolved_target"
+    for name in ("Register", "New"):  # a second registration, or a second action
+        line = (
+            "Register-ScheduledTask -TaskName $TaskName -Action $action | Out-Null"
+            if name == "Register"
+            else "$second = New-ScheduledTaskAction -Execute 'cmd.exe'"
+        )
+        got = _kind(tmp_path / name, _planted(extra=line))
+        assert got["kind"] == "unresolved_target", (name, got)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        "Write-Host 'Start-Process is never called here'",  # a dynamic line, however innocent
+        "$ps = (Get-Command powershell.exe).Source",
+        "Write-Host 'then iex the rest'",
+    ],
+)
+def test_an_installer_with_an_extra_dynamic_line_stays_unmeasured(
+    tmp_path: Path, extra: str
+) -> None:
+    assert _kind(tmp_path, _planted(extra=extra))["kind"] == "dynamic_line"
+
+
+def test_a_non_money_target_is_measured_and_recorded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    base, head = _installer_trees(tmp_path, _planted())
+    step = {"hour": 7.0, "doc": {}, "intents": [{"a": 1}], "error": None}
+    monkeypatch.setattr(rs, "run_tree", lambda tree, sc: {"steps": [step], "imported": []})
+    rep = rs.compare(base, head, [_PLANTED], [{"id": "s", "hours": [7.0]}])
+    assert rep["problems"] == [], rep["problems"]
+    assert rep["installer_targets"] == {
+        _PLANTED: {"target": "desks/mt5/research/tidy.py", "via": None,
+                   "kind": "no_order_path_change"}
+    }  # fmt: skip
+    # the same installer scheduling the gateway is UNMEASURED by name
+    base, head = _installer_trees(tmp_path / "m", _planted(r"mt5desk\gateway.py"))
+    rep = rs.compare(base, head, [_PLANTED], [{"id": "s", "hours": [7.0]}])
+    assert any(p.endswith(f"(the replay never imported it): {_PLANTED}") for p in rep["problems"])
+    assert rep["installer_targets"][_PLANTED]["kind"] == "money_target_unreplayed"
+
+
+def test_the_manifest_accepts_only_an_installer_measured_as_no_order_path_change(
+    tmp_path: Path,
+) -> None:
+    row = (
+        'TASK name="MT5-TidyLogs" trigger="daily 03:10" runs="desks/mt5/research/tidy.py" '
+        f'installer="{_PLANTED}" lane="ops"\n'
+    )
+    base, head = _installer_trees(
+        tmp_path,
+        _planted(),
+        {rs.MANIFEST: _MANIFEST_ROWS.replace(_MANIFEST_ROWS.splitlines(keepends=True)[1], row)},
+    )
+    (base / rs.MANIFEST).write_text(_MANIFEST_ROWS, "utf-8")
+    closure = rs.import_closure(base)
+    money = {_PLANTED}
+    assert rs.manifest_is_money(base, head, closure, money, set())
+    assert not rs.manifest_is_money(base, head, closure, money, set(), frozenset({_PLANTED}))
+    # never as the file a row runs
+    (head / rs.MANIFEST).write_text(_MANIFEST_ROWS + row.replace(
+        'runs="desks/mt5/research/tidy.py"', f'runs="{_PLANTED}"').replace("TidyLogs", "Tidy2"),
+        "utf-8")  # fmt: skip
+    assert rs.manifest_is_money(base, head, closure, money, set(), frozenset({_PLANTED}))
+
+
+_FIXTURES = ROOT / "tests/fixtures/box_task_installers_1107"
+
+
+def test_the_five_installers_of_1107_read_as_their_targets(tmp_path: Path) -> None:
+    """PR #1107 at 93d7c020f: three schedule no order path and are measured; allocator_pulse
+    fires pf_allocator --mode fast and stays money; private_net_audit runs a money-path script
+    through a dynamic line and stays UNMEASURED."""
+    want = {
+        "allocator_pulse": ("desks/mt5/research/allocator_trigger.py", None,
+                            "money_target_unreplayed"),
+        "cert_hygiene": ("desks/mt5/research/certificate_hygiene.py", None,
+                         "no_order_path_change"),
+        "gold_hour_sweep": ("desks/mt5/research/gold_hour_sweep.py",
+                            "ops/run_gold_hour_sweep.cmd", "no_order_path_change"),
+        "private_net_audit": (None, None, "dynamic_line"),
+        "vol_archive": ("desks/mt5/recorders/vol_archive.py", None, "no_order_path_change"),
+    }  # fmt: skip
+    needed = {rs.COMPONENTS, rs.MANIFEST, "ops/run_gold_hour_sweep.cmd",
+              "desks/mt5/scripts/install_private_net.ps1"}  # fmt: skip
+    for target, _, _ in want.values():
+        if target:
+            needed |= rs.import_closure(ROOT, (target,))
+    base, head = tmp_path / "base", tmp_path / "head"
+    for t in (base, head):
+        for f in needed:
+            text = rs.read(ROOT, f)
+            assert text is not None, f
+            (t / f).parent.mkdir(parents=True, exist_ok=True)
+            (t / f).write_text(text, "utf-8")
+    changed = []
+    for name in want:
+        f = f"desks/mt5/scripts/install_{name}_task.ps1"
+        (head / f).write_text((_FIXTURES / f"install_{name}_task.ps1.txt").read_text("utf-8"))
+        changed.append(f)
+    got = rs.installer_targets(base, head, changed, rs.import_closure(ROOT), set())
+    assert {f.split("install_")[1][: -len("_task.ps1")]: (v["target"], v["via"], v["kind"])
+            for f, v in got.items()} == want  # fmt: skip
+
+
 # ------------------------------------- a FAIL that names no defect is asked again (#525 rework)
 
 # Boilerplate that names nothing and flags nothing: no risk word, no mechanism, no place, and both
