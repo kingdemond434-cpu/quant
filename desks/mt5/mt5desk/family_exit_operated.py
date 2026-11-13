@@ -42,7 +42,8 @@ from mt5desk.families import Signal, _h1, get_family_func, register_family
 _BASE_MEMO = Memo(copier=copy_signals)
 
 _UNWRAPPABLE: frozenset[str] = frozenset({
-    "carry", "ensemble", "formula", "lead_lag", "style_premia", "relative_value",
+    "carry", "ensemble", "formula", "lead_lag", "release_lead_lag", "style_premia",
+    "relative_value",
     "cross_asset_residual", "pca_residual", "execution_state", "liquidity_regime",
     "orderflow_imbalance", "macro_conditional", "cot_positioning", "cot_net_fade",
     "cot_change_fade", "cot_change_momentum", "cot_comm_follow", "event_reaction",

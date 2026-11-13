@@ -1713,6 +1713,16 @@ ORTHOGONAL_FAMILIES["lead_lag"] = family_lead_lag
 FAMILY_INPUTS["lead_lag"] = ("the driver instrument's bars (driver_symbol on the recipe)",
                              "data/universe/*_H1.parquet")
 
+# THE LEADERSHIP ATLAS'S EXECUTOR (2026-11-13, Auditor HOLD on #1146 MF2): the follower after the
+# leader moved on ONE release type, in one causal regime, on the chart the atlas measured.
+from mt5desk.family_release_lead_lag import family_release_lead_lag  # noqa: E402
+
+ORTHOGONAL_FAMILIES["release_lead_lag"] = family_release_lead_lag
+FAMILY_INPUTS["release_lead_lag"] = (
+    "the driver instrument's bars (driver_symbol) and the scheduled release instants of "
+    "event_type (mt5desk.release_calendar)",
+    "data/universe/*_{M1,M5,M15,H1}.parquet + data/calendar_backfill + ff_calendar_vintage")
+
 # THE WORLD'S OFFICIAL STATISTICS (2026-09-30): a condition on one point-in-time world series
 # (policy rates, prices, money, trade, commodity balances -- DBnomics, BIS, CFTC, Treasury, FRED)
 # being in a z-score band against its own history. The series is named on the recipe by

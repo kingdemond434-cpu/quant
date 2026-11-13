@@ -55,7 +55,8 @@ COMPILER_REPORT = DESK / "data" / "hypotheses" / "miner_candidates.json"
 #: Dispositions that END the row's life legitimately. A row here is DONE: either it produced
 #: cells or the desk has stated, in its own vocabulary, why it must not.
 TERMINAL_CELL = ("EXACT_RECIPE", "STRUCTURED_COT", "STRUCTURED_EVENT", "STRUCTURED_CARRY",
-                 "STRUCTURED_LEAD_LAG", "STRUCTURED_CROSS_ASSET_RESIDUAL",
+                 "STRUCTURED_LEAD_LAG", "STRUCTURED_RELEASE_LEAD_LAG",
+                 "STRUCTURED_CROSS_ASSET_RESIDUAL",
                  "STRUCTURED_RELATIVE_VALUE", "STRUCTURED_CALENDAR", "STRUCTURED_HYPOTHESIS",
                  "STRUCTURED_CB_SPEECH", "STRUCTURED_TRACK_RECORD", "TEXT_EXTRACTED")
 TERMINAL_REFUSAL = ("OPERATIONAL_ROW", "EMPTY_CAPTURE")

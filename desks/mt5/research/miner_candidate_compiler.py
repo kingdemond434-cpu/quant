@@ -1388,6 +1388,26 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     if kind == "anomaly" and symbols and row.get("against"):
         hint = str(row.get("family_hint") or "").lower()
         peer = str(row["against"]).upper().replace("/", "").strip()
+        if peer in universe and hint == "release_lead_lag":
+            # THE ATLAS'S EVENT EDGE, MAPPED FAITHFULLY (Auditor HOLD on #1146, MF2): the release
+            # type, the causal regime and the chart the lead was measured on all ride on the
+            # recipe, and `timeframe` pins the chart so `expand_axes` does not re-mint it on
+            # every chart and session as an unconditional lead-lag.
+            lag = _lead_lag_lag(row)
+            et = str(row.get("event_type") or "")
+            chart = str(row.get("chart") or "").upper()
+            reg = str(row.get("regime") or "all")
+            if lag is not None and et and chart in ("M1", "M5", "M15", "H1") and reg in (
+                    "all", "calm", "stressed"):
+                corr = row.get("corr")
+                direction = "opposite" if isinstance(corr, (int, float)) and corr < 0 else "same"
+                return ([_candidate(s, "release_lead_lag",
+                                    {"driver_symbol": peer, "lag": lag, "direction": direction,
+                                     "event_type": et, "regime": reg, "timeframe": chart},
+                                    source, row,
+                                    f"on {et} releases information reaches {peer}'s market "
+                                    "first and the follower's quote catches up")
+                         for s in symbols if s != peer], "STRUCTURED_RELEASE_LEAD_LAG")
         if peer in universe and hint == "lead_lag":
             lag = _lead_lag_lag(row)
             if lag is not None:

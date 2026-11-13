@@ -507,6 +507,10 @@ NOT_SOURCED_HERE = {
     "formula": "the expression is named by alpha_evolution's genetic search, which charges every "
                "expression it tried; a sweep that enumerated expressions here would be a second "
                "uncharged search over the same grammar",
+    "release_lead_lag": "the leader, the release type, the regime, the chart and the lag are "
+                        "measured by the leadership atlas on the tick tape and Benjamini-Hochberg "
+                        "controlled there; a sweep enumerating them over bars would be a second, "
+                        "uncharged search over the same releases",
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
