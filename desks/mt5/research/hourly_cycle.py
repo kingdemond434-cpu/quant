@@ -1447,7 +1447,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration",
+                     # posterior-sized book vs a static size per sleeve, on the desk's own
+                     # trades: a SIZING-layer measurement, so it sits with the allocator
+                     "posterior_sizing_missed_growth"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -2780,6 +2783,16 @@ def macro_conditioned_sweep() -> dict:
     only; `reports/macro_conditioned_sweep.json` carries `pit` counts of what the old join admitted
     before the print was knowable, and the `tier_s` data-OS organ publishes them."""
     return _producer("macro_conditioned_sweep", "research/run_macro_conditioned_sweep.py")
+
+
+def posterior_sizing_missed_growth() -> dict:
+    """`posterior_sizing_missed_growth` (the Auditor's measurement): per (account, sleeve) trade
+    stream, walk-forward, the realised log growth of the posterior-sized book (the recorded
+    fraction, else the live solve replayed on trades 1..t) against one static size per sleeve.
+    REPORT ONLY -- `reports/posterior_sizing_missed_growth.json` carries the signed
+    `missed_growth_line` that `missed_growth` republishes; it never changes live sizing."""
+    return _producer("posterior_sizing_missed_growth",
+                     "research/posterior_sizing_missed_growth.py")
 
 
 #: THE UNKNOWN-SHARE CENSUS'S ARTIFACT, the one its own `OUT` names (CRO D3 reads it). Read here
@@ -5861,6 +5874,7 @@ def main() -> None:
     nlab = _costed("null_lab", null_lab)
     rlid = _costed("research_live_identity", research_live_identity)
     mcsw = _costed("macro_conditioned_sweep", macro_conditioned_sweep)
+    psmg = _costed("posterior_sizing_missed_growth", posterior_sizing_missed_growth)
     # Once per UTC day (the leg gates itself on the document's `utc_day`); meta department.
     ucen = _costed("unknown_census", unknown_census)
     tiers = _costed("tier_s", tier_s)
@@ -6553,7 +6567,8 @@ def main() -> None:
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
-                    "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
+                    "macro_conditioned_sweep": mcsw,
+                    "posterior_sizing_missed_growth": psmg, "unknown_census": ucen,
                     "tier_s_door": tdoor, "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,

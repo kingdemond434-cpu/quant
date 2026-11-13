@@ -25151,6 +25151,34 @@
    "measured_at": "2026-10-01T10:54:15+00:00"
   },
   {
+   "organ": "leg:posterior_sizing_missed_growth",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/posterior_sizing_missed_growth.py"
+   ],
+   "clock": "hourly_cycle:posterior_sizing_missed_growth",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "born 2026-11-10 on branch claude/posterior-sizing-missed-growth (report leg; no host has run it under the cycle yet): no artifact and no run record, UNMEASURED until the box adopts and attests it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/posterior_sizing_missed_growth.json",
+   "artifact_declared": "desks/mt5/reports/posterior_sizing_missed_growth.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "research/missed_growth.py republishes missed_growth_line under published_gate_lines.posterior_sizing; the Auditor reads it. Nothing on the trading path reads it (report)",
+   "measured_on": "UNMEASURED",
+   "measured_on_machine_id": "UNMEASURED",
+   "measured_at": "UNMEASURED"
+  },
+  {
    "organ": "leg:null_lab",
    "kind": "leg",
    "code": [

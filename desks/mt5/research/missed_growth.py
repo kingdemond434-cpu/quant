@@ -706,6 +706,83 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The posterior-sizing measurement's report (hourly leg `posterior_sizing_missed_growth`). The
+#: posterior terms are registered modifiers (`capital_modifiers`: state_posterior, macro_regime)
+#: in a sealed register, so the realised two-sided line -- what sizing by the posterior earned or
+#: cost against one static size per sleeve -- is PUBLISHED on that artifact and carried here.
+POSTERIOR_SIZING = BASE / "reports" / "posterior_sizing_missed_growth.json"
+POSTERIOR_SIZING_MAX_AGE_H = 6.0
+#: The posterior-sizing line is a two-sided MEASUREMENT with a t-stat, so a delta that does not
+#: clear this |t| is NOT_SIGNIFICANT: not a cost, not a gain, and not NOT_BINDING either (that
+#: word means a rail did not fire). Same number as `posterior_sizing_missed_growth.SIGNIFICANT_T`.
+POSTERIOR_SIZING_SIGNIFICANT_T = 2.0
+NOT_SIGNIFICANT = "NOT_SIGNIFICANT"
+
+
+def published_posterior_sizing_line() -> dict[str, Any]:
+    """The posterior-sized book against a static size per sleeve, read from its own report.
+
+    Signed: a positive `value_logw` is realised log wealth the posterior sizing GAINED over the
+    scored trades, a negative one is growth it forwent. The sign becomes a verdict
+    (EARNS_ITS_PLACE / COSTS_GROWTH) only when `significant`: the report's t-stat is measured
+    and |t| >= POSTERIOR_SIZING_SIGNIFICANT_T. Otherwise the line is NOT_SIGNIFICANT, on either
+    basis, and carries the t-stat and the sign-test p beside the value. The line changes no size;
+    it is the bill and the credit side by side. A missing, stale or unmeasured report is
+    UNMEASURED with its why -- never a clean zero."""
+    doc = _json(POSTERIOR_SIZING)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/posterior_sizing_missed_growth.json on this host: the "
+                       "hourly posterior_sizing_missed_growth leg has not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= POSTERIOR_SIZING_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the posterior-sizing report is older than "
+                       f"{POSTERIOR_SIZING_MAX_AGE_H:g}h or unstamped: today's line is unknown"}
+    line = doc.get("missed_growth_line")
+    if not isinstance(line, dict):
+        return {"verdict": UNMEASURED, "lines": [], "age_h": round(age_h, 2),
+                "why": "the report carries no missed_growth_line"}
+    verdict = line.get("verdict")
+    value = line.get("value")
+    if (verdict not in (EARNS, COSTS, NOT_BINDING, NOT_SIGNIFICANT)
+            or isinstance(value, bool) or not isinstance(value, (int, float))):
+        return {"verdict": UNMEASURED, "lines": [line], "age_h": round(age_h, 2),
+                "significant": False,
+                "source": "reports/posterior_sizing_missed_growth.json",
+                "why": str(line.get("why") or "the line is unmeasured")}
+    # Significance is RE-DERIVED from the report's own t-stat, never trusted from its verdict:
+    # a report from a build that published the bare sign still cannot bill a cost here.
+    t = _num(line.get("t_stat"))
+    significant = t is not None and abs(t) >= POSTERIOR_SIZING_SIGNIFICANT_T
+    v = float(value)
+    if significant and v != 0.0:
+        verdict, direction = (EARNS, "gained") if v > 0 else (COSTS, "forgone")
+        why = ("realised log wealth over the scored trades, as sized minus static "
+               f"(+ gained, - forgone), at |t| >= {POSTERIOR_SIZING_SIGNIFICANT_T:g}; a report, "
+               "never a size")
+    else:
+        verdict, direction = NOT_SIGNIFICANT, "not_significant"
+        why = (("no t-stat on the report" if t is None else
+                f"|t| = {abs(t):.2f} < {POSTERIOR_SIZING_SIGNIFICANT_T:g}")
+               + ": the summed delta is indistinguishable from zero, so it is carried as "
+                 "neither a gain nor a cost; a report, never a size")
+    return {"verdict": verdict, "source": "reports/posterior_sizing_missed_growth.json",
+            "age_h": round(age_h, 2), "lines": [line], "value_logw": round(v, 12),
+            "significant": significant, "t_stat": t,
+            "sign_test_p": _num(line.get("sign_test_p")),
+            "significance_rule": (f"|t_stat| >= {POSTERIOR_SIZING_SIGNIFICANT_T:g} and the "
+                                  f"t-stat measured"),
+            "direction": direction, "basis": line.get("basis"),
+            "baseline": line.get("baseline"), "n_streams": line.get("n_streams"),
+            "n_trades": line.get("n_trades"), "why": why}
+
+
 #: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the
 #: one-gold-at-risk veto, the cross-account opposite-side fence, the Fusion daily-loss rail, and
 #: the book's 0.01 floor lift and lot ceiling. Like the stop-geometry gate they register no rail
@@ -1201,7 +1278,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "posterior_sizing": published_posterior_sizing_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
