@@ -2480,8 +2480,6 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # that budget plus a minute of interpreter start and final write, so a priced-down hour can
     # never kill them before they publish -- which is how GAUNTLET_BACKPRESSURE went a week stale.
     "gauntlet_backpressure": 540,
-    # ais_norway's socket window is 180 s; a priced-down hour must not kill it mid-write.
-    "ais_norway": 240,
     "global_coverage_tensor": 600,
 }
 
