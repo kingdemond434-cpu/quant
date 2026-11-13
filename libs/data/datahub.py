@@ -188,16 +188,6 @@ def desk_hub() -> DataHub:
             out.extend(doc if isinstance(doc, list) else (doc.get("discoveries") or []))
         return out
 
-    def _cot(slug: str, family: str = "legacy") -> Any:
-        import pandas as pd
-        folder = {"legacy": "cot", "disagg": "cot_disagg", "tff": "cot_tff"}[family]
-        p = DESK / "data" / folder / f"{slug}.parquet"
-        return pd.read_parquet(p) if p.exists() else None
-
-    hub.register(Contract("positioning.cot", "frame",
-                          description="CFTC COT weekly positioning (legacy / disagg / tff), kept "
-                                      "current by mt5desk.cot_refresh",
-                          providers=[Provider("cftc_public_reporting", _cot, "free")]))
     hub.register(Contract("bars.h1", "frame", description="H1 OHLC + spread + tick_volume",
                           providers=[Provider("universe_parquet", _bars, "primary")]))
     hub.register(Contract("terms.swap_diff", "quantity", unit="points",

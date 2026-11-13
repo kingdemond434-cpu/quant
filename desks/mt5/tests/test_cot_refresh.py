@@ -173,11 +173,50 @@ def test_a_contaminated_tff_file_is_rebuilt_from_exact_markets(tmp_path, monkeyp
     assert not any(">=" in u for u in fake.urls if "resource" in u)   # full history
 
 
-def test_the_box_task_runs_the_refresher_and_the_hub_serves_it() -> None:
+def test_the_box_task_runs_the_refresher() -> None:
     cmd = (_DESK.parent.parent / "ops" / "run_side_channel_miners.cmd").read_text("utf-8")
     assert "-m mt5desk.cot_refresh" in cmd
-    from libs.data.datahub import desk_hub
-    assert "positioning.cot" in desk_hub().contracts()
+
+
+def test_first_seen_time_is_recorded_and_never_moved_by_a_restatement(tmp_path,
+                                                                      monkeypatch) -> None:
+    _only("gold", "legacy", monkeypatch)
+    old = R.frame(R.TARGETS[0], [_legacy("2026-08-04", 1), _legacy("2026-08-11", 2)])
+    R.write_parquet(old, tmp_path / "cot" / "gold.parquet")
+    first = datetime(2026, 11, 14, tzinfo=UTC)
+    fake = Fake({"GOLD": [_legacy("2026-08-11", 5), _legacy("2026-11-10", 6)]})
+    R.refresh(client=_client(fake), now=first, data=tmp_path, report=None)
+    got = pd.read_parquet(tmp_path / "cot" / "gold.parquet").set_index("report_date")
+    assert pd.isna(got.loc["2026-08-04", R.SEEN])            # never seen: not invented
+    assert got.loc["2026-11-10", R.SEEN] == pd.Timestamp(first)
+    later = datetime(2026, 11, 21, 22, tzinfo=UTC)
+    fake = Fake({"GOLD": [_legacy("2026-11-10", 7), _legacy("2026-11-17", 8)]})
+    R.refresh(client=_client(fake), now=later, data=tmp_path, report=None)
+    got = pd.read_parquet(tmp_path / "cot" / "gold.parquet").set_index("report_date")
+    assert got.loc["2026-11-10", "open_interest_all"] == 7          # the restatement lands
+    assert got.loc["2026-11-10", R.SEEN] == pd.Timestamp(first)    # first sight stays
+    assert got.loc["2026-11-17", R.SEEN] == pd.Timestamp(later)
+
+
+def test_a_redirect_to_another_host_is_refused_and_never_followed() -> None:
+    import http.client
+    import io
+    import urllib.request
+    sent: list[str] = []
+
+    class Handler(urllib.request.HTTPSHandler):
+        def https_open(self, req):  # type: ignore[no-untyped-def]
+            sent.append(req.full_url)
+            msg = http.client.HTTPMessage()
+            msg["Location"] = "https://fred.stlouisfed.org/x"
+            resp = urllib.request.addinfourl(io.BytesIO(b""), msg, req.full_url, 302)
+            resp.msg = "Found"
+            return resp
+
+    op = urllib.request.build_opener(S._SameHostRedirects(), Handler())
+    with pytest.raises(S.CrossHostRedirect):
+        op.open(S.HOST + "/resource/x.json")
+    assert sent == [S.HOST + "/resource/x.json"]
 
 
 def test_the_in_tree_held_schemas_match_what_the_refresher_writes() -> None:
@@ -185,7 +224,7 @@ def test_the_in_tree_held_schemas_match_what_the_refresher_writes() -> None:
         df = R.held(t)
         if df is None:
             continue
-        cols = set(df.columns)
+        cols = set(df.columns) - {R.SEEN}
         want = {"tff": set(R.TFF_RENAME.values())}.get(t.family, set(
             ("report_date," + R.SELECT[t.family].split(",", 1)[1]).split(",")))
         assert cols == want, (t.family, t.slug, cols ^ want)

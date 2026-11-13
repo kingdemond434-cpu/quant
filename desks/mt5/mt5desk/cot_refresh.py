@@ -169,14 +169,28 @@ def frame(t: Target, rows: Iterable[dict[str, Any]]) -> pd.DataFrame:
     return df.sort_values("report_date").drop_duplicates("report_date", keep="last")
 
 
+#: When this desk FIRST saw each row (UTC), an upper bound on its public release time. CFTC
+#: releases slip (holiday Mondays push Friday to Monday; a shutdown backlogs weeks), so a reader
+#: that needs point-in-time truth bounds availability by this, never by report_date + 3 days.
+#: Rows held before the column existed carry NaT: their first sight was never recorded, and the
+#: refresher does not invent one (Auditor note, 2026-11-13).
+SEEN = "release_seen_utc"
+
+
 def merge(old: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
-    """Held rows plus fresh rows; fresh wins on a shared date; no held date is lost."""
+    """Held rows plus fresh rows; fresh wins on a shared date; no held date is lost. A date
+    already held keeps its FIRST-seen time, so a CFTC restatement never moves it later."""
     if old is None or old.empty:
         return new.reset_index(drop=True)
     cols = list(old.columns) + [c for c in new.columns if c not in old.columns]
-    both = pd.concat([old, new.reindex(columns=cols)], ignore_index=True)
-    return (both.sort_values("report_date", kind="stable")
-            .drop_duplicates("report_date", keep="last").reset_index(drop=True)[cols])
+    both = pd.concat([old.reindex(columns=cols), new.reindex(columns=cols)], ignore_index=True)
+    out = (both.sort_values("report_date", kind="stable")
+           .drop_duplicates("report_date", keep="last").reset_index(drop=True)[cols])
+    if SEEN in old.columns:
+        first = old.set_index("report_date")[SEEN].dropna()
+        held_at = out["report_date"].map(first)
+        out[SEEN] = held_at.where(held_at.notna(), out[SEEN])
+    return out
 
 
 def write_parquet(df: pd.DataFrame, path: Path) -> None:
@@ -190,7 +204,8 @@ def write_parquet(df: pd.DataFrame, path: Path) -> None:
 
 
 def refresh_one(t: Target, client: S.Client, release: pd.Timestamp, *, force: bool = False,
-                data: Path = DATA) -> dict[str, Any]:
+                data: Path = DATA, now: datetime | None = None) -> dict[str, Any]:
+    now = now or datetime.now(tz=UTC)
     old = held(t, data)
     newest = old["report_date"].max() if old is not None and len(old) else None
     dirty = contaminated(t, old)
@@ -221,9 +236,10 @@ def refresh_one(t: Target, client: S.Client, release: pd.Timestamp, *, force: bo
                    newest=str(newest.date()) if newest is not None else None,
                    rows=0 if old is None else len(old))
         return row
+    fresh[SEEN] = pd.Timestamp(now)
     out = fresh.reset_index(drop=True) if dirty else merge(old, fresh)
     if old is not None and not dirty:
-        out = out[list(old.columns)]
+        out = out[[*old.columns, *([SEEN] if SEEN not in old.columns else [])]]
     write_parquet(out, path_of(t, data))
     last = out["report_date"].max()
     status = "REBUILT" if dirty else "REFRESHED"
@@ -241,7 +257,7 @@ def refresh(*, force: bool = False, client: S.Client | None = None, now: datetim
     now = now or datetime.now(tz=UTC)
     release = latest_release(now)
     client = client or S.Client()
-    rows = [refresh_one(t, client, release, force=force, data=data) for t in TARGETS]
+    rows = [refresh_one(t, client, release, force=force, data=data, now=now) for t in TARGETS]
     doc = {"generated_at": now.isoformat(timespec="seconds"),
            "latest_release": str(release.date()), "requests": client.requests,
            "source": f"{S.HOST} (CFTC Public Reporting; TLS verified; robots obeyed)",

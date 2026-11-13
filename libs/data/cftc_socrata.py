@@ -51,9 +51,30 @@ def tls_context() -> ssl.SSLContext:
         return ssl.create_default_context()
 
 
+class CrossHostRedirect(urllib.error.URLError):
+    """A redirect off publicreporting.cftc.gov: refused, never followed."""
+
+
+class _SameHostRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow a 3xx only on the requested host; another host's robots and terms were never read
+    (Auditor MF1, 2026-11-13). A same-host hop is still put to the robots gate by `Client`."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        old = urllib.parse.urlsplit(req.full_url).netloc.lower()
+        new = urllib.parse.urlsplit(urllib.parse.urljoin(req.full_url, newurl)).netloc.lower()
+        if new != old:
+            raise CrossHostRedirect(f"redirect {old} -> {new} refused")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def opener() -> urllib.request.OpenerDirector:
+    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=tls_context()),
+                                       _SameHostRedirects())
+
+
 def http_get(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=90, context=tls_context()) as r:
+    with opener().open(req, timeout=90) as r:
         return bytes(r.read(50_000_000))
 
 
