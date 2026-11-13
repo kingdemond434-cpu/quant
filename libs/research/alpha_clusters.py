@@ -267,7 +267,8 @@ FAMILY_CLUSTER: dict[str, str] = {
     "vrp_conditioned": "options_implied",
     "iv_term_gated": "options_implied",
     "iv_shock": "options_implied",
-
+    "iv_level_state": "options_implied",
+    "iv_level_conditioned": "options_implied",
     # the flow families (desks/mt5/mt5desk/families_flow.py, 2026-11-13)
     "cot_report": "positioning_flow",
     "expiry_gamma": "fixing_roll_calendar",

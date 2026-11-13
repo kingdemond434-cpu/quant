@@ -23,6 +23,16 @@ US indices, ^GVZ to XAUUSD, ^EVZ to EURUSD):
       `follow` takes it WITH that move. One daily decision at `decision_hour` (broker), held
       `hold_d` days, entry at the next open.
 
+  iv_level_state / iv_level_conditioned   (ported 2026-11-13 from the closed draft #234 onto
+      this module's history and lag) The implied-vol LEVEL state: the close's percentile in its
+      own trailing year (`iv_pct_1y`) or its 5-session change z-scored on its own year
+      (`iv_chg_5d_z`). DIRECT: enter `direction` at the onset of the state, once per episode.
+      INDIRECT: a base cell's signals kept only while the state holds. Payer: dealers short gamma
+      hedging into a high-vol regime, or long gamma pinning a low-vol one.
+
+`axis_feed` builds the options-implied axis file `world_model.load_inputs` reads (written by the
+recorder to `data/lake/axes/options_implied.json`), in the same PIT envelope.
+
 HONEST CAVEAT, KEPT IN CODE BECAUSE IT GOVERNS HOW MUCH THESE MAY BE TRUSTED. The IV history is
 PUBLIC -- any desk can download ten years of ^VIX this afternoon -- so these families are
 CROWDING-CHECKED CONDITIONERS, NOT A MOAT. The only proprietary part is the join to this broker's
@@ -92,12 +102,13 @@ def reference_filename(ticker: str) -> str:
     return f"{safe or 'UNNAMED'}.json"
 
 
-def load_reference(ticker: str) -> tuple[np.ndarray, np.ndarray] | None:
+def load_reference(ticker: str, directory: Path | None = None
+                   ) -> tuple[np.ndarray, np.ndarray] | None:
     """(value dates as UTC-midnight ns, closes) of `ticker`'s persisted daily history, sorted by
     date, positive finite closes only. None when the file is absent, unreadable or empty."""
     if not ticker:
         return None
-    path = REFERENCE_DIR / reference_filename(ticker)
+    path = (directory or REFERENCE_DIR) / reference_filename(ticker)
     try:
         mtime = path.stat().st_mtime_ns
     except OSError:
@@ -382,6 +393,209 @@ def family_iv_shock(
     return out
 
 
+# ------------------------------------------------------------------- (d) IV level state ---
+#: Ported 2026-11-13 from the closed draft #234 (`family_implied_vol.py` /
+#: `research/options_implied.py`), onto THIS module's reference history and lag: where implied
+#: vol sits in its own trailing year, and how fast it has moved over five sessions. Both are
+#: computed on the reference series' OWN date grid, each value from that date and earlier only,
+#: and read through the same availability lookup (D+1 00:00 UTC, true-UTC bar instant, stale ->
+#: absent) as every other family here.
+YEAR = 252
+MIN_YEAR = 126
+LEVEL_FEATURES: tuple[str, ...] = ("iv_pct_1y", "iv_chg_5d_z")
+_OPS: dict[str, Callable[[np.ndarray, float], np.ndarray]] = {
+    "ge": lambda v, t: v >= t, "le": lambda v, t: v <= t}
+
+
+def trailing_percentile(v: np.ndarray, window: int = YEAR, min_obs: int = MIN_YEAR
+                        ) -> np.ndarray:
+    """Share of the trailing `window` values (this one included) at or below this one; NaN until
+    `min_obs` exist. Nothing after the value's own date enters."""
+    out = np.full(v.size, np.nan)
+    for i in range(v.size):
+        if not math.isfinite(v[i]):
+            continue
+        w = v[max(0, i - window + 1):i + 1]
+        w = w[np.isfinite(w)]
+        if w.size >= min_obs:
+            out[i] = float(np.mean(w <= v[i]))
+    return out
+
+
+def level_features(vals: np.ndarray) -> dict[str, np.ndarray]:
+    """`iv_pct_1y`: the close's percentile in its trailing year. `iv_chg_5d_z`: the 5-observation
+    change in vol points, z-scored on its own trailing year (this value included, as #234 did;
+    still nothing later than the value's date)."""
+    s = pd.Series(vals, dtype="float64")
+    chg = s.diff(5)
+    mu = chg.rolling(YEAR, min_periods=MIN_YEAR).mean()
+    sd = chg.rolling(YEAR, min_periods=MIN_YEAR).std(ddof=0)
+    z = ((chg - mu) / sd.replace(0.0, np.nan)).replace([np.inf, -np.inf], np.nan)
+    return {"iv_pct_1y": trailing_percentile(np.asarray(vals, dtype="float64")),
+            "iv_chg_5d_z": z.to_numpy()}
+
+
+def level_state(iv_ticker: str, feature: str, op: str, threshold: float, at_ns: np.ndarray,
+                *, max_stale_d: float = 4.0) -> np.ndarray | None:
+    """Per instant: did `feature op threshold` hold on the newest value KNOWABLE then? False
+    where nothing is knowable or it is stale; None when the state cannot be measured at all."""
+    fn = _OPS.get(str(op))
+    if fn is None or feature not in LEVEL_FEATURES:
+        return None
+    ref = load_reference(iv_ticker)
+    if ref is None:
+        return None
+    dates, vals = ref
+    feat = level_features(vals)[feature]
+    j = asof_index(available_ns(dates), at_ns, max_stale_d=max_stale_d)
+    v = np.where(j >= 0, feat[np.where(j >= 0, j, 0)], np.nan)
+    with np.errstate(invalid="ignore"):
+        return np.isfinite(v) & fn(v, float(threshold))
+
+
+def family_iv_level_state(
+    df: pd.DataFrame,
+    *,
+    iv_ticker: str,
+    feature: str,
+    op: str,
+    threshold: float,
+    direction: int = 1,
+    ttl_bars: int = 24,
+    max_stale_d: float = 4.0,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 2.0,
+) -> list[Signal]:
+    """DIRECT: one `direction` entry per EPISODE, on the first bar at which the implied-vol state
+    becomes true (the newest knowable value enters it after a bar at which it did not hold)."""
+    if int(direction) not in (1, -1) or int(ttl_bars) < 1 or df is None or len(df) == 0:
+        return []
+    d = _h1(df)
+    if len(d) <= int(atr_n) + 1:
+        return []
+    at = decision_utc_ns(d.index)
+    if at is None:
+        return []
+    mask = level_state(iv_ticker, feature, op, threshold, at, max_stale_d=max_stale_d)
+    if mask is None or not mask.any():
+        return []
+    from mt5desk.families_specialist import _signal
+    onset = np.flatnonzero(mask & ~np.r_[False, mask[:-1]])
+    atr = _atr(d, int(atr_n)).to_numpy()
+    out: list[Signal] = []
+    for i in onset:
+        if i < int(atr_n) or i >= len(d) - 1:
+            continue
+        s = _signal(d, int(i), int(direction), atr, stop_atr=stop_atr, rr=rr,
+                    ttl_bars=int(ttl_bars), tag=f"iv_level_state:{feature}:{op}:{iv_ticker}")
+        if s is not None:
+            out.append(s)
+    return out
+
+
+def family_iv_level_conditioned(
+    df: pd.DataFrame,
+    *,
+    base_family: str,
+    iv_ticker: str,
+    feature: str,
+    op: str,
+    threshold: float,
+    base_params: dict[str, Any] | None = None,
+    symbol: str = "",
+    max_stale_d: float = 4.0,
+) -> list[Signal]:
+    """INDIRECT: `base_family`'s own signals kept only while the implied-vol state holds at the
+    signal bar. The un-conditioned base is the control arm."""
+    got = _operator_base(df, base_family, base_params, symbol)
+    if got is None:
+        return []
+    _d, sigs, at = got
+    mask = level_state(iv_ticker, feature, op, threshold, at, max_stale_d=max_stale_d)
+    if mask is None:
+        return []
+    return [s for s, k in zip(sigs, mask, strict=True) if k]
+
+
+# ------------------------------------------------------------------ the world-model feed ---
+#: Points per series handed to the representation factory (as #234: four years is enough for
+#: the forge's 260-observation windows and keeps the file small), and the fewest worth a series.
+FORGE_POINTS = 1040
+FORGE_MIN_POINTS = 24
+#: The VIX curve ratios fed beside the levels; the forge mints its own z / rank / diff, so the
+#: derived percentile and change-z are NOT fed (they would be its own transforms twice).
+FORGE_TERM: tuple[tuple[str, str, str], ...] = (("term_9d_30d", "^VIX9D", "^VIX"),
+                                                ("term_30d_3m", "^VIX", "^VIX3M"))
+
+
+def _iso_day(ns: int) -> str:
+    return pd.Timestamp(int(ns), tz="UTC").date().isoformat()
+
+
+def _points(dates: np.ndarray, vals: np.ndarray) -> list[dict[str, Any]]:
+    """The lake's PIT envelope per point: `available_time` is the PUBLICATION bound (D+1 00:00
+    UTC, `available_ns`); `world_model._points_from_rows` adds its own CLOCK_PAD_H on read, so
+    the forge sees a value no earlier than the families do."""
+    ok = np.isfinite(vals)
+    dates, vals = dates[ok][-FORGE_POINTS:], vals[ok][-FORGE_POINTS:]
+    avail = available_ns(dates)
+    return [{"available_time": pd.Timestamp(int(a), tz="UTC").isoformat(), "d": _iso_day(int(t)),
+             "v": round(float(v), 6), "vintage": "reference"}
+            for t, a, v in zip(dates, avail, vals, strict=True)]
+
+
+def axis_feed(mapped: dict[str, str], *, reference_dir: Path | None = None,
+              universe_dir: Path | None = None) -> dict[str, Any]:
+    """The options-implied axis document `world_model.load_inputs` reads (`series[name].points`).
+
+    `mapped` is {MT5 symbol: IV ticker}. Per symbol: `iv_level`, and `vrp` (IV minus this
+    broker's 21-day realised through the SAME broker date, which closes before D+1 00:00 UTC)
+    when the symbol's H1 bars are on this host; for the VIX curve, the two contemporaneous term
+    ratios. A series that cannot be built is named in `unmeasured`, never zero-filled."""
+    series: dict[str, Any] = {}
+    unmeasured: dict[str, str] = {}
+    for sym, ticker in sorted(mapped.items()):
+        ref = load_reference(ticker, reference_dir)
+        if ref is None:
+            unmeasured[f"{sym}.iv_level"] = f"no persisted reference history for {ticker}"
+            continue
+        dates, vals = ref
+        series[f"{sym}.iv_level"] = {"what": f"{ticker} close (CBOE, public) for {sym}",
+                                     "points": _points(dates, vals)}
+        path = (universe_dir or BASE / "data" / "universe") / f"{sym}_H1.parquet"
+        try:
+            bars = _h1(pd.read_parquet(path)) if path.exists() else None
+        except Exception:
+            bars = None
+        if bars is None or len(bars) == 0:
+            unmeasured[f"{sym}.vrp"] = f"no {sym}_H1.parquet on this host"
+            continue
+        days, _last, rv = daily_realised_vol(bars)
+        rv_on = pd.Series(rv, index=days).reindex(dates).to_numpy()
+        series[f"{sym}.vrp"] = {"what": f"{ticker} minus this broker's 21d realised on {sym}",
+                                "points": _points(dates, vals - rv_on)}
+    for name, short, long_ in FORGE_TERM:
+        a, b = load_reference(short, reference_dir), load_reference(long_, reference_dir)
+        if a is None or b is None:
+            unmeasured[f"VIX.{name}"] = f"{short} or {long_} has no persisted history"
+            continue
+        common, ia, ib = np.intersect1d(a[0], b[0], assume_unique=True, return_indices=True)
+        series[f"VIX.{name}"] = {"what": f"{short}/{long_} on dates both are quoted",
+                                 "points": _points(common, a[1][ia] / b[1][ib])}
+    series = {k: v for k, v in series.items() if len(v["points"]) >= FORGE_MIN_POINTS}
+    return {"id": "options_implied", "axis": "options_implied",
+            "at": pd.Timestamp.now(tz="UTC").isoformat(timespec="seconds"),
+            "source": "recorders/vol_archive.py reference history via "
+                      "mt5desk/families_implied_vol.axis_feed",
+            "shape": "series[name].points of available_time (publication bound), d, v",
+            "clock": ("available_time = value date + 1 day 00:00 UTC; world_model adds "
+                      "CLOCK_PAD_H on read"),
+            "public_series": True,
+            "caveat": "public CBOE history: a crowding-checked input, not a moat",
+            "series": series, "unmeasured": unmeasured}
+
+
 # ---------------------------------------------------------------------------- registration ---
 #: Merged into `families_specialist`'s tables (and from there into ORTHOGONAL_FAMILIES,
 #: FAMILY_INPUTS and FAMILY_TIMEFRAMES by `families_orthogonal`), so the sealed gauntlet resolves
@@ -390,9 +604,11 @@ IMPLIED_VOL_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "vrp_conditioned": family_vrp_conditioned,
     "iv_term_gated": family_iv_term_gated,
     "iv_shock": family_iv_shock,
+    "iv_level_state": family_iv_level_state,
+    "iv_level_conditioned": family_iv_level_conditioned,
 }
 #: The two operators: like `entry_conditioned`, never wrapped by another operator.
-OPERATORS = frozenset({"vrp_conditioned", "iv_term_gated"})
+OPERATORS = frozenset({"vrp_conditioned", "iv_term_gated", "iv_level_conditioned"})
 
 _REF = "data/vol_archive/reference/<{}>.json (CBOE daily close, usable from D+1 00:00 UTC)"
 INFORMATION_CLASS: dict[str, str] = dict.fromkeys(IMPLIED_VOL_FAMILIES, "exogenous")
@@ -401,6 +617,8 @@ FOREIGN_SERIES: dict[str, tuple[tuple[str | None, str], ...]] = {
     "iv_term_gated": (("short_ticker", _REF.format("short_ticker")),
                       ("long_ticker", _REF.format("long_ticker"))),
     "iv_shock": (("iv_ticker", _REF.format("iv_ticker")),),
+    "iv_level_state": (("iv_ticker", _REF.format("iv_ticker")),),
+    "iv_level_conditioned": (("iv_ticker", _REF.format("iv_ticker")),),
 }
 INPUTS: dict[str, tuple[str, str]] = {
     "vrp_conditioned": ("EXOGENOUS: the CBOE implied-vol index named by `iv_ticker` (public, a "
@@ -415,6 +633,14 @@ INPUTS: dict[str, tuple[str, str]] = {
     "iv_shock": ("EXOGENOUS: the day-over-day jump of the CBOE implied-vol index named by "
                  "`iv_ticker`, read as of each decision bar with a D+1 00:00 UTC lag -- not "
                  "price-only", "data/vol_archive/reference/<iv_ticker>.json"),
+    "iv_level_state": ("EXOGENOUS: the trailing-year percentile or 5-day change z of the CBOE "
+                       "implied-vol index named by `iv_ticker`, read as of each bar with a D+1 "
+                       "00:00 UTC lag; enters at the state's onset -- not price-only",
+                       "data/vol_archive/reference/<iv_ticker>.json"),
+    "iv_level_conditioned": ("EXOGENOUS: the same implied-vol level state as `iv_level_state`, "
+                             "as a filter on the base cell's own signals; plus the base cell's "
+                             "own inputs -- not price-only",
+                             "data/vol_archive/reference/<iv_ticker>.json"),
 }
 #: Only the event family is held to H1: it decides once a day at a broker HOUR, which does not
 #: exist on a four-hour or daily chart. The two OPERATORS run on whatever chart their base cell
@@ -426,4 +652,7 @@ TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
                           "implied-vol close; on a four-hour or daily chart the decision hour "
                           "does not exist, and below the hour it would be one daily fact joined "
                           "to a finer clock than it carries"),
+    "iv_level_state": (("H1",), "its hold `ttl_bars` is declared in H1 bars (a day at 24); on any "
+                                "other chart the same number would be a different holding "
+                                "period under the same identity"),
 }

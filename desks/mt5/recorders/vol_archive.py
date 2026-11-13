@@ -120,6 +120,9 @@ REFERENCE_SCHEMA = "vol-reference-1"
 #: Restatement log entries kept per ticker, newest last -- a flapping source cannot grow a file
 #: without bound, and the bound is far above any restatement count CBOE has produced.
 MAX_RESTATEMENTS = 5000
+#: The options-implied axis the world model and `representation_forge` read (gitignored lake;
+#: the recorder and the hourly cycle both run on the trading box).
+AXIS_FEED = _DESK / "data" / "lake" / "axes" / "options_implied.json"
 UNIVERSE = _DESK / "data" / "universe" / "universe.json"
 
 #: The desk's OWN dated observations needed before anything derived from this archive may be
@@ -381,6 +384,30 @@ def persist_reference(captured: dict[str, dict[str, float]], directory: Path = R
         out[ticker] = {"status": "WRITTEN", "n": len(ordered), "added": added,
                        "restated": changed, "last_date": new["last_date"]}
     return out
+
+
+def write_axis_feed(registry: dict[str, Any], reference_dir: Path = REFERENCE_DIR,
+                    universe_dir: Path | None = None, out: Path = AXIS_FEED) -> dict[str, Any]:
+    """Build the options-implied axis from the persisted reference history (one definition:
+    `families_implied_vol.axis_feed`) for every ground whose instrument this account lists, and
+    write it atomically. A failure is reported by exception CLASS only."""
+    mapped = {}
+    for g in GROUND:
+        sym = resolve_symbol(g.mt5_candidates, registry)
+        if sym:
+            mapped[sym] = g.vol_ticker
+    try:
+        from mt5desk.families_implied_vol import axis_feed
+        doc = axis_feed(mapped, reference_dir=reference_dir,
+                        universe_dir=universe_dir or _DESK / "data" / "universe")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, separators=(",", ":")), "utf-8")
+        os.replace(tmp, out)
+    except Exception as exc:
+        return {"status": "FAILED", "error": type(exc).__name__}
+    return {"status": "WRITTEN", "path": str(out), "series": len(doc["series"]),
+            "unmeasured": sorted(doc["unmeasured"])}
 
 
 @dataclass
@@ -655,6 +682,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--archive", type=Path, default=ARCHIVE)
     ap.add_argument("--universe", type=Path, default=_DESK / "data" / "universe")
     ap.add_argument("--reference", type=Path, default=REFERENCE_DIR)
+    ap.add_argument("--axis-feed", type=Path, default=AXIS_FEED)
     args = ap.parse_args(argv)
 
     try:
@@ -674,7 +702,11 @@ def main(argv: list[str] | None = None) -> int:
         append(cycle, args.archive)
         rows = rows + [asdict(o) for o in cycle]
         reference = persist_reference(source.captured, args.reference)
+        axis = write_axis_feed(registry, args.reference, args.universe, args.axis_feed)
+    else:
+        axis = {"status": "SKIPPED_DRY_RUN"}
     rep = report(rows, cycle)
+    rep["axis_feed"] = axis
     rep["reference_history"] = {"dir": str(args.reference), "tickers": reference,
                                 "note": ("public CBOE history, persisted for point-in-time "
                                          "replay by mt5desk/families_implied_vol.py; a "

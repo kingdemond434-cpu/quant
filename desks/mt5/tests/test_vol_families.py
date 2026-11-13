@@ -37,7 +37,8 @@ from mt5desk import families_specialist as fs  # noqa: E402
 from mt5desk.engine import Signal  # noqa: E402
 from recorders import vol_archive as va  # noqa: E402
 
-FAMS = ("vrp_conditioned", "iv_term_gated", "iv_shock")
+FAMS = ("vrp_conditioned", "iv_term_gated", "iv_shock", "iv_level_state",
+        "iv_level_conditioned")
 DAYS = 600
 START = "2021-01-04"
 
@@ -95,6 +96,11 @@ CASES = {
     "iv_term_gated": {"base_family": "trend_ma_cross", "base_params": {},
                       "short_ticker": "^VIX9D", "long_ticker": "^VIX", "term_state": "contango"},
     "iv_shock": {"iv_ticker": "^VIX", "mode": "fade", "k_sd": 1.5},
+    "iv_level_state": {"iv_ticker": "^VIX", "feature": "iv_pct_1y", "op": "ge",
+                       "threshold": 0.6, "direction": 1},
+    "iv_level_conditioned": {"base_family": "trend_ma_cross", "base_params": {},
+                             "iv_ticker": "^VIX", "feature": "iv_pct_1y", "op": "ge",
+                             "threshold": 0.5},
 }
 
 
@@ -113,7 +119,8 @@ def test_registered_buildable_exogenous_and_mapped(name):
     assert gb.information_class(name) == gb.EXOGENOUS
     assert gb.cell_verdict(name, CASES[name])[0] == gb.BUILDABLE
     # the event family decides at a broker hour (H1 only); the operators follow their base
-    want_h4 = gb.TIMEFRAME_REFUSED if name == "iv_shock" else gb.BUILDABLE
+    want_h4 = (gb.TIMEFRAME_REFUSED if name in ("iv_shock", "iv_level_state")
+               else gb.BUILDABLE)
     assert gb.cell_verdict(name, CASES[name], "H4")[0] == want_h4
     assert axis_registry.classify_family(name)[1] == "cross_asset"
     assert classify_family(name) == "options_implied"
@@ -130,7 +137,7 @@ def test_a_cell_naming_no_series_is_refused_by_name():
 
 
 def test_operators_are_never_wrapped_by_another_operator():
-    for op in ("vrp_conditioned", "iv_term_gated"):
+    for op in ("vrp_conditioned", "iv_term_gated", "iv_level_conditioned"):
         assert not fs.wrappable(op)
     assert fs.wrappable("iv_shock")
 
@@ -155,7 +162,10 @@ def test_catalogue_mints_the_mapped_instruments_only_and_every_cell_is_buildable
               if c["family"] == "iv_shock"}
     assert mapped == {"US500": "^VIX", "NAS100": "^VXN", "US30": "^VXD", "XAUUSD": "^GVZ",
                       "EURUSD": "^EVZ"}
-    assert len(iv) == 84                     # the declared grid, small and fixed up front
+    for sym in ("US500", "NAS100", "US30", "XAUUSD", "EURUSD"):
+        assert (sym, "iv_level_state") in by and (sym, "iv_level_conditioned") in by
+    # the declared grid, small and fixed up front: 84 (VRP/term/shock) + 60 (level state)
+    assert len(iv) == 144
     assert all("crowding" in c["prior"] for c in iv)
     charged = sc.charge(iv)
     assert charged["n_raw"] == len(iv)
@@ -358,3 +368,104 @@ def test_a_dry_run_cycle_writes_no_reference(tmp_path, monkeypatch):
     assert rc == 0 and (tmp_path / "reference" / "VIX.json").exists()
     rep = json.loads((tmp_path / "rep.json").read_text("utf-8"))
     assert rep["reference_history"]["tickers"]["^VIX"]["status"] == "WRITTEN"
+
+
+# ---------------------------------------------- the level state, ported from #234 ---
+def test_level_features_on_or_before_a_date_never_change_when_the_future_does():
+    """#234's feature-level corruption test, on THIS module's features: nothing at or before a
+    date moves when every later value is tripled."""
+    rng = np.random.default_rng(2)
+    v = 18.0 * np.exp(np.cumsum(rng.normal(0, 0.03, 400)))
+    cut = 300
+    dirty = v.copy()
+    dirty[cut:] *= 3.0
+    a, b = fiv.level_features(v), fiv.level_features(dirty)
+    for k in fiv.LEVEL_FEATURES:
+        np.testing.assert_array_equal(a[k][:cut], b[k][:cut])
+        assert not np.array_equal(np.nan_to_num(a[k][cut:]), np.nan_to_num(b[k][cut:])), k
+
+
+def test_realised_vol_for_a_date_uses_no_later_bar():
+    df = _bars(23)
+    days, _last, clean = fiv.daily_realised_vol(df)
+    cut = df.index[len(df) // 2].normalize()
+    bad = df.copy()
+    m = bad.index >= cut
+    bad.loc[m, "close"] = bad.loc[m, "close"].to_numpy() * np.exp(np.linspace(0, 2.0, m.sum()))
+    days2, _l2, dirty = fiv.daily_realised_vol(bad)
+    before = days < cut.value
+    assert before.sum() > 30 and np.array_equal(days, days2)
+    np.testing.assert_array_equal(clean[before], dirty[before])
+
+
+def test_level_features_mean_what_their_names_claim():
+    rising = 10.0 + 0.05 * np.arange(300)
+    f = fiv.level_features(rising)
+    assert np.isnan(f["iv_pct_1y"][:fiv.MIN_YEAR - 1]).all()        # too short: unmeasured
+    assert f["iv_pct_1y"][-1] == pytest.approx(1.0)                  # a new high ranks top
+    falling = rising[::-1].copy()
+    assert fiv.level_features(falling)["iv_pct_1y"][-1] == pytest.approx(1 / fiv.YEAR)
+    spike = np.r_[np.full(299, 15.0) + np.sin(np.arange(299)) * 0.2, 30.0]
+    assert fiv.level_features(spike)["iv_chg_5d_z"][-1] > 3.0
+
+
+def test_the_level_state_enters_once_per_episode_after_the_lag(tmp_path, monkeypatch):
+    dates = pd.bdate_range(START, periods=DAYS + 40)
+    # a slowly falling IV (bottom of its year every day), then a jump to a level it holds
+    v = np.r_[15.0 - 0.001 * np.arange(300), np.full(dates.size - 300, 40.0)]
+    closes = {d.date().isoformat(): float(x) for d, x in zip(dates, v, strict=True)}
+    ref_dir = tmp_path / "reference"
+    _write(ref_dir, "^VIX", closes)
+    monkeypatch.setattr(fiv, "REFERENCE_DIR", ref_dir)
+    fiv._CACHE.clear()
+    df = _bars(29)
+    sigs = fiv.family_iv_level_state(df, iv_ticker="^VIX", feature="iv_pct_1y", op="ge",
+                                     threshold=0.95, direction=-1)
+    # the regime then holds: ONE entry for the episode, not one per bar or per day
+    assert len(sigs) == 1 and sigs[0].side == -1
+    at = fiv.decision_utc_ns(pd.DatetimeIndex([pd.Timestamp(sigs[0].time)]))
+    assert at is not None
+    jump = pd.Timestamp(dates[300], tz="UTC")
+    assert jump + pd.Timedelta(days=1) <= pd.Timestamp(at[0], tz="UTC") \
+        < jump + pd.Timedelta(days=4)                    # never before D+1 UTC, and promptly
+    low = fiv.family_iv_level_state(df, iv_ticker="^VIX", feature="iv_pct_1y", op="le",
+                                    threshold=0.2, direction=1)
+    assert low and all(pd.Timestamp(s.time) < jump + pd.Timedelta(days=1, hours=3) for s in low)
+
+
+# ------------------------------------------------------------ the world-model feed ---
+def test_the_axis_feed_is_read_by_the_world_model_no_earlier_than_the_families(
+        ref, tmp_path, monkeypatch):
+    from research import world_model as wm
+    uni = tmp_path / "universe"
+    uni.mkdir()
+    _bars(31).to_parquet(uni / "US500_H1.parquet")
+    out = tmp_path / "lake" / "axes" / "options_implied.json"
+    got = va.write_axis_feed({"US500": {}}, ref["dir"], uni, out)
+    assert got["status"] == "WRITTEN", got
+    feed = json.loads(out.read_text("utf-8"))
+    assert {"US500.iv_level", "US500.vrp", "VIX.term_9d_30d", "VIX.term_30d_3m"} <= set(
+        feed["series"])
+    assert "XAUUSD.iv_level" not in feed["series"]          # not listed on this account
+    for block in feed["series"].values():
+        for p in block["points"]:
+            assert pd.Timestamp(p["available_time"]) == (pd.Timestamp(p["d"], tz="UTC")
+                                                          + pd.Timedelta(days=1))
+    monkeypatch.setattr(wm, "AXES", tmp_path / "no_axes")
+    monkeypatch.setattr(wm, "LAKE_AXES", out.parent)
+    monkeypatch.setattr(wm, "FRED", tmp_path / "no_fred.json")
+    monkeypatch.setattr(wm, "REPRESENTATIONS", tmp_path / "no_repr")
+    monkeypatch.setattr(wm, "MOAT_SERIES", tmp_path / "no_moat.json")
+    inputs = wm.load_inputs()
+    one = next(s for s in inputs.series if s.series_id == "options_implied:US500.iv_level")
+    first = one.sorted().points[0]
+    usable = pd.Timestamp(first.period_time, tz="UTC") + pd.Timedelta(days=1)
+    assert pd.Timestamp(first.available_time) >= usable          # the pad only ever delays
+
+
+def test_the_axis_feed_names_what_it_cannot_build(tmp_path):
+    out = tmp_path / "axis.json"
+    got = va.write_axis_feed({"XAUUSD": {}}, tmp_path / "none", tmp_path / "uni", out)
+    feed = json.loads(out.read_text("utf-8"))
+    assert got["status"] == "WRITTEN" and feed["series"] == {}
+    assert "XAUUSD.iv_level" in feed["unmeasured"]
