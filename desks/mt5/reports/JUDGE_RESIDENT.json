@@ -2,20 +2,20 @@
  "pid": 1624,
  "started_utc": "2026-11-12T11:26:02+00:00",
  "task_limit_s": 0.0,
- "sweeps": 17,
+ "sweeps": 19,
  "failures": 1,
- "lane_held": 11,
+ "lane_held": 13,
  "hung_kills": 2,
- "busy_seconds": 126348.0,
+ "busy_seconds": 126405.4,
  "status": "SWEEPING",
  "longest_sweep_s": 110509.5,
  "consecutive_hangs": 0,
- "sweep_started_utc": "2026-11-13T22:34:51+00:00",
+ "sweep_started_utc": "2026-11-13T22:36:18+00:00",
  "hang_limit_s": 172800.0,
  "last_rc": 75,
- "last_sweep_s": 28.6,
- "uptime_s": 126514.2,
- "last_sweep_ended_utc": "2026-11-13T22:34:36+00:00",
+ "last_sweep_s": 29.0,
+ "uptime_s": 126601.7,
+ "last_sweep_ended_utc": "2026-11-13T22:36:03+00:00",
  "last_hung_utc": "2026-11-13T10:07:15+00:00",
  "killed_in_phase": {
   "pid": 27040,
@@ -237,15 +237,77 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-13T22:34:59+00:00",
+ "heartbeat_utc": "2026-11-13T22:50:02+00:00",
  "sweep_phase": {
-  "pid": 30796,
-  "sweep_started_utc": "2026-11-13T22:34:56+00:00",
-  "phases": {},
-  "phase": "plan",
-  "phase_started_utc": "2026-11-13T22:34:56+00:00",
-  "plan_steps": {},
-  "plan_step": "lane_and_docket",
-  "plan_step_started_utc": "2026-11-13T22:34:56+00:00"
+  "pid": 11840,
+  "sweep_started_utc": "2026-11-13T22:36:24+00:00",
+  "phases": {
+   "plan": 733.1
+  },
+  "phase": "prewarm",
+  "phase_started_utc": "2026-11-13T22:48:37+00:00",
+  "plan_steps": {
+   "lane_and_docket": 49.4,
+   "docket_grouping": 49.8,
+   "gate0": 74.0,
+   "preflight": 86.4,
+   "cache_prune": 167.4,
+   "order": 282.8,
+   "yield_allocation": 23.4
+  },
+  "plan_step": "prewarm",
+  "plan_step_started_utc": "2026-11-13T22:48:37+00:00",
+  "plan_counts": {
+   "docket_rows": 1685373,
+   "unique_cells": 1684948,
+   "gate0_advance": 1673816
+  },
+  "plan_last_marker": "  docket order: 18815 never-judged cell(s) first, then 350312 in symbol-rotation order",
+  "wall_profile": {
+   "every_s": 10.0,
+   "depth": 6,
+   "authority": "report_only",
+   "phases": {
+    "plan": {
+     "samples": 72,
+     "top": [
+      {
+       "stack": "novelty_gate.py:_jsonl:214 < novelty_gate.py:load:517 < novelty_gate.py:screen:707 < external_gauntlet.py:main:3797 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 20,
+       "share": 0.278
+      },
+      {
+       "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
+       "n": 5,
+       "share": 0.069
+      },
+      {
+       "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
+       "n": 4,
+       "share": 0.056
+      },
+      {
+       "stack": "core.py:__init__:1460 < core.py:read_table:1891 < parquet.py:read:265 < parquet.py:read_parquet:669 < external_gauntlet.py:_bars_for:480 < external_gauntlet.py:partition_at_economic_prior:987",
+       "n": 4,
+       "share": 0.056
+      },
+      {
+       "stack": "<string>:__init__:3 < novelty_gate.py:_member:296 < novelty_gate.py:load:522 < novelty_gate.py:screen:707 < external_gauntlet.py:main:3797 < external_gauntlet.py:run_sharded:4844",
+       "n": 3,
+       "share": 0.042
+      }
+     ],
+     "process": {
+      "cpu_s": 476.9,
+      "page_faults": 13631648.0,
+      "read_bytes": 9957449119.0,
+      "write_bytes": 85105.0,
+      "sampled_s": 710.0,
+      "rss_mb_max": 6045.7,
+      "cpu_share_of_wall": 0.672
+     }
+    }
+   }
+  }
  }
 }

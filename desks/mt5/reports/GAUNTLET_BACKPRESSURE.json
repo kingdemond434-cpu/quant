@@ -1,5 +1,5 @@
 {
- "at": "2026-11-13T22:33:52+00:00",
+ "at": "2026-11-13T22:36:03+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -10110,7 +10110,7 @@
   },
   "measured": {
    "swept_at": "2026-11-13T21:31:48.774291+00:00",
-   "age_h": 1.03,
+   "age_h": 1.07,
    "n_cells": 70574,
    "n_judged": 58236,
    "n_unmeasured": 12338,
@@ -10236,7 +10236,7 @@
   "why": "report published before the registry write"
  },
  "core": {
-  "at": "2026-11-13T22:33:52+00:00",
+  "at": "2026-11-13T22:36:03+00:00",
   "inputs": {},
   "testing_24h": {
    "status": "MEASURED",
@@ -10245,7 +10245,7 @@
    "per_hour": 1226.125,
    "passed": 721,
    "ledger": "READ",
-   "measured_at": "2026-11-13T22:33:52+00:00",
+   "measured_at": "2026-11-13T22:36:03+00:00",
    "source": "build_core"
   },
   "re_measured": [
