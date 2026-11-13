@@ -48,3 +48,27 @@ def test_a_stale_quote_send_is_a_breach_and_a_refusal_is_not() -> None:
     assert any("NO_SEND_STALE" in b for b in gd.judge("stale_tick", {"sends": 2, "intents": 2}))
     assert gd.judge("stale_tick", {"sends": 0}) == []
     assert "stale_tick" in gd.FAULTS
+
+
+def test_partial_fills_and_out_of_order_reads_are_judged() -> None:
+    assert gd.judge("partial_fill", {"partial": "NO_HANDLING"})[0].startswith("PARTIAL_IS")
+    assert gd.judge("partial_fill", {"partial": [0.02, 0.0]})[0].startswith("PARTIAL_IS")
+    assert gd.judge("partial_fill", {"partial": [0.01, 0.01], "resends": 0}) == []
+    assert gd.judge("close_partial", {"close_residual": None})[0].startswith("CLOSE_RESIDUAL")
+    assert gd.judge("close_partial", {"close_residual": 0.01, "resends": 1})[0].startswith(
+        "PARTIAL_IS")
+    assert gd.judge("close_partial", {"close_residual": 0.01, "resends": 0}) == []
+    assert gd.judge("stale_positions", {"book": "NO_CHECK", "new_risk": False})[0].startswith(
+        "BOOK_IN_ORDER")
+    assert gd.judge("stale_positions", {"book": "INCONSISTENT", "new_risk": False}) == []
+    assert "stale_positions" in gd.REFUSE_NEW_RISK
+
+
+def test_the_real_gateway_keeps_partials_and_refuses_an_out_of_order_book() -> None:
+    for fault in ("partial_fill", "close_partial", "stale_positions", "healthy"):
+        row = gd.run_fault(fault)
+        if row["status"] == "UNMEASURED":    # gateway import needs the desk's own deps
+            assert "why" in row
+            return
+        assert row["status"] == "MEASURED" and row["breaches"] == [], row
+    assert gd.run_fault("stale_positions")["observed"]["new_risk"] is False

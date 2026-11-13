@@ -106,8 +106,23 @@ def test_every_fix_pointer_names_a_file_in_this_tree() -> None:
     root = Path(__file__).resolve().parents[3]
     for spec in (rd.GATEWAY_SPEC, rd.FILL_ORDER_SPEC, rd.STALE_QUOTE_SPEC):
         assert (root / spec).is_file(), spec
+    # Partial fills and out-of-order reads are drilled on the real gateway now (stale_positions,
+    # partial_fill, close_partial), so no row is a standing code gap any more.
     gaps = [r for r in rd.build(NOW)["drills"] if r.get("evidence") == "code"]
-    assert gaps and all(r["fix"] == rd.FILL_ORDER_SPEC for r in gaps)
+    assert all(r["fix"] in (rd.GATEWAY_SPEC, rd.FILL_ORDER_SPEC, rd.STALE_QUOTE_SPEC)
+               for r in gaps)
+
+
+def test_partial_fill_and_out_of_order_are_graded_from_the_gateway_drill(chaos: Path) -> None:
+    _put(chaos, {"gateway_drill": {"faults": [
+        {"fault": "partial_fill", "status": "MEASURED", "breaches": []},
+        {"fault": "close_partial", "status": "MEASURED",
+         "breaches": ["CLOSE_RESIDUAL_KEPT: a partial close's residual is not recorded"]},
+        {"fault": "stale_positions", "status": "MEASURED", "breaches": []}]}})
+    rows = {d[0]: d[2](NOW) for d in rd.DRILLS if d[0] in ("partial_fill", "out_of_order")}
+    assert rows["partial_fill"]["verdict"] == rd.FAIL
+    assert rows["partial_fill"]["fix"] == rd.FILL_ORDER_SPEC
+    assert rows["out_of_order"]["verdict"] == rd.PASS
 
 
 def test_a_stale_quote_breach_names_its_desktop_fix(chaos: Path) -> None:
