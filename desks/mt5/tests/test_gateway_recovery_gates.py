@@ -129,3 +129,17 @@ def test_an_unreadable_history_is_unchecked_not_a_refusal() -> None:
 def test_a_quote_with_no_stamp_has_no_age() -> None:
     age = _ns()["quote_age_s"]
     assert age(None) is None and age(NS(time=0)) is None
+
+
+def test_an_unreadable_venue_publishes_the_exception_type_only(tmp_path, monkeypatch) -> None:
+    """gateway_state.json is published, so the reconcile verdict carries no free exception text
+    (Auditor rule, #639); the full text goes to the log."""
+    monkeypatch.setattr(order_door, "ledger_path", lambda: tmp_path / "door.jsonl")
+
+    def boom(**kw):
+        raise RuntimeError(r"C:\opt\quant secret path 12345")
+    venue = NS(positions_get=boom, orders_get=lambda **kw: ())
+    logs: list[str] = []
+    rep = order_door.restart_reconcile(venue, magic=1, armed=False, log=logs.append)
+    assert rep["verdict"] == "UNMEASURED" and rep["why"] == "RuntimeError"
+    assert any("secret path" in x for x in logs)

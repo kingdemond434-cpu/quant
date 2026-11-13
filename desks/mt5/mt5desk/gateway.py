@@ -5312,8 +5312,9 @@ def main() -> None:
     except Exception as exc:
         # A RECONCILE THAT RAISED IS RECORDED AS FAILED, so `new_risk_gate` below refuses new
         # risk for the pass (it used to only log, and the pass placed on an unread book).
-        st["restart_reconcile"] = {"verdict": "FAILED",
-                                   "why": f"{type(exc).__name__}: {exc}"[:200]}
+        # The exception TYPE only: gateway_state.json is published, and free exception text is
+        # not (Auditor rule, #639). The full text is in the log line below.
+        st["restart_reconcile"] = {"verdict": "FAILED", "why": type(exc).__name__}
         log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); managing open positions "
             f"only this pass")
 
@@ -5364,7 +5365,9 @@ def main() -> None:
             log(f"BOOK INCONSISTENT ({_book.get('why')}); re-reading once")
             _book = book_consistency()
     except Exception as exc:
-        _book = {"verdict": "UNCHECKED", "why": f"{type(exc).__name__}: {exc}"[:200]}
+        # Type only in state (published); the text goes to the log.
+        log(f"BOOK CHECK FAILED ({type(exc).__name__}: {exc}); unchecked this pass")
+        _book = {"verdict": "UNCHECKED", "why": type(exc).__name__}
     st["book_consistency"] = {k: _book.get(k) for k in (
         "at", "verdict", "why", "position_snapshot_msc", "last_deal_msc", "phantom", "missing")}
     if _book.get("verdict") == "INCONSISTENT":
