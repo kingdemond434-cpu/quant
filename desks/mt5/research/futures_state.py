@@ -1092,6 +1092,21 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             notes.append({"source": "mof_japan_intervention", "status": "UNMEASURED",
                           "why": "no historical CSV held yet"})
 
+    # OFFICIAL-DATA SURPRISES (research/official_surprises.py): H.4.1 net liquidity, USD funding
+    # and CIP basis, EIA storage, USDA export sales, TIC flows, BoJ rinban -- rows in their own
+    # registry, robots-gated, read through the same hard-stop state, minted as cells below.
+    try:
+        from research import official_surprises as osx
+        for oid, frame, meta in osx.collect(
+                text=None if get is None else osx.polite_text, state=state, notes=notes,
+                frames=frames, now=now, deadline=budget):
+            frames[oid] = frame
+            built[oid] = meta
+    except HardStop:
+        raise
+    except Exception as exc:
+        notes.append({"source": "official_surprises", "error": f"{type(exc).__name__}"})
+
     for tr in registry.get("transmissions") or []:
         a, b = frames.get(str(tr["a"])), frames.get(str(tr["b"]))
         ca = str(tr.get("column_a") or tr.get("column"))
@@ -1130,7 +1145,8 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
 _HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
-             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
+             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross",
+             "surprise", "net_liq_bn", "d1w", "bp", "basis_pct", "size_vs_plan", "cover", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
 

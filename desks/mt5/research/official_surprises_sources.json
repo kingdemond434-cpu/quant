@@ -1,0 +1,222 @@
+{
+ "_doc": "Rows for research/official_surprises.py. Rows, never code: a new release is a row. terms != OPEN is never fetched and is a named gap. key_env lists env var NAMES only; no value ever lives here. Ids marked catalogue_checked are verified against the source's own catalogue on every live pass before use.",
+ "rows": [
+  {
+   "id": "net_liquidity",
+   "idea": "GAP_MAP 68",
+   "adapter": "fred_net_liquidity",
+   "terms": "OPEN",
+   "terms_note": "FRED / H.4.1, US public domain",
+   "key_env": [
+    "FRED_API_KEY",
+    "FRED_KEY"
+   ],
+   "series": [
+    "WALCL",
+    "WTREGEN",
+    "RRPONTSYD"
+   ],
+   "units": {
+    "WALCL": 0.001,
+    "WTREGEN": 1.0,
+    "RRPONTSYD": 1.0
+   },
+   "at": "16:30",
+   "tz": "America/New_York",
+   "title": "Fed H.4.1 net liquidity",
+   "targets": [
+    "US500",
+    "XAUUSD",
+    "USDJPY",
+    "EURUSD"
+   ],
+   "why": "Reserves added by the Fed balance sheet net of the Treasury cash account and reverse repo are the dollars actually free to bid risk; the weekly change is the H.4.1 event, Thursday 16:30 ET."
+  },
+  {
+   "id": "usd_funding",
+   "idea": "GAP_MAP 64",
+   "adapter": "fred_funding",
+   "terms": "OPEN",
+   "terms_note": "FRED, US public domain",
+   "key_env": [
+    "FRED_API_KEY",
+    "FRED_KEY"
+   ],
+   "series": [
+    "SOFR",
+    "IORB",
+    "IOER",
+    "RIFSPPFAAD90NB",
+    "DTB3"
+   ],
+   "spreads": [
+    {
+     "id": "sofr_iorb",
+     "a": "SOFR",
+     "b": [
+      "IORB",
+      "IOER"
+     ]
+    },
+    {
+     "id": "cp_bill",
+     "a": "RIFSPPFAAD90NB",
+     "b": "DTB3"
+    }
+   ],
+   "targets": [
+    "US500",
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "why": "Secured overnight funding above the rate on reserves means reserves are scarce; AA financial CP above bills means banks pay up for term dollars. Both precede dollar squeezes and risk-off."
+  },
+  {
+   "id": "cip",
+   "idea": "GAP_MAP 64",
+   "adapter": "cip_basis",
+   "terms": "OPEN",
+   "terms_note": "own broker swap panel + FRED",
+   "pairs": [
+    {
+     "symbol": "EURUSD",
+     "cash": "fred_rdiff_on_eurusd"
+    },
+    {
+     "symbol": "GBPUSD",
+     "cash": "fred_rdiff_on_gbpusd"
+    },
+    {
+     "symbol": "USDJPY",
+     "cash": "fred_rdiff3m_usdjpy"
+    },
+    {
+     "symbol": "AUDUSD",
+     "cash": "fred_rdiff3m_audusd"
+    },
+    {
+     "symbol": "USDCHF",
+     "cash": "fred_rdiff3m_usdchf"
+    },
+    {
+     "symbol": "USDCAD",
+     "cash": "fred_rdiff3m_usdcad"
+    }
+   ],
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCHF",
+    "USDCAD"
+   ],
+   "why": "The overnight forward the broker finances at, minus the cash-rate differential, is a covered-interest-parity basis: when dollars are scarce it widens. Distinct from GAP_MAP 52 (swap drift is the swap's own change; this is its gap to cash)."
+  },
+  {
+   "id": "eia_storage",
+   "idea": "N8",
+   "adapter": "eia_storage",
+   "terms": "OPEN",
+   "terms_note": "EIA, US public domain",
+   "key_env": [
+    "EIA_API_KEY",
+    "EIA_KEY"
+   ],
+   "route": "natural-gas/stor/wkly",
+   "series": "NW2_EPG0_SWO_R48_BCF",
+   "catalogue_checked": true,
+   "at": "10:30",
+   "tz": "America/New_York",
+   "title": "EIA weekly natural gas storage",
+   "targets": [
+    "XNGUSD"
+   ],
+   "why": "Storage is the realised supply-demand balance; a build below the 5-year same-week average is a tighter market than weather alone said (distinct from N2 degree-days)."
+  },
+  {
+   "id": "usda_esr",
+   "idea": "N7",
+   "adapter": "usda_esr",
+   "terms": "OPEN",
+   "terms_note": "USDA FAS, US public domain; API needs a free api.data.gov key",
+   "key_env": [
+    "USDA_FAS_API_KEY",
+    "DATA_GOV_API_KEY"
+   ],
+   "api_base": "https://apps.fas.usda.gov/OpenData/api",
+   "field": "currentMYNetSales",
+   "first_market_year": 2010,
+   "baseline_weeks": 4,
+   "at": "08:30",
+   "tz": "America/New_York",
+   "commodities": [
+    {
+     "id": "corn",
+     "name_pattern": "^\\s*corn\\s*$",
+     "targets": [
+      "CORN"
+     ]
+    },
+    {
+     "id": "wheat",
+     "name_pattern": "^\\s*all wheat\\s*$",
+     "targets": [
+      "WHEAT"
+     ]
+    },
+    {
+     "id": "soybeans",
+     "name_pattern": "^\\s*soybeans\\s*$",
+     "targets": [
+      "SOYBEAN"
+     ]
+    }
+   ],
+   "why": "Weekly net export sales against their own 4-week mean is the foreign-demand surprise for US grains, released Thursday 08:30 ET."
+  },
+  {
+   "id": "tic",
+   "idea": "N6",
+   "adapter": "tic",
+   "terms": "OPEN",
+   "terms_note": "US Treasury, public domain",
+   "index_url": "https://home.treasury.gov/data/treasury-international-capital-tic-system-home-page/tic-forms-instructions/securities-b-portfolio-investment-tables",
+   "index_url_verified": false,
+   "link_pattern": "(net\\s+(foreign\\s+)?purchases.*long[- ]term|s1_globl|slt.*table\\s*1)",
+   "column_pattern": "net\\s+(foreign\\s+)?(purchases|acquisition).*long[- ]term|total\\s+net\\s+long",
+   "baseline_months": 12,
+   "lag_days": 52,
+   "state_days": 7,
+   "at": "16:00",
+   "tz": "America/New_York",
+   "title": "TIC net foreign purchases of US long-term securities",
+   "targets": [
+    "USDJPY",
+    "EURUSD",
+    "US500"
+   ],
+   "why": "Foreign appetite for US long-term assets against its 12-month median is a slow dollar and duration flow; the state holds release day + 1 week."
+  },
+  {
+   "id": "boj_rinban",
+   "idea": "N4",
+   "adapter": "boj_rinban",
+   "terms": "OPEN",
+   "terms_note": "BoJ data free to reuse with attribution (ledger 11-11). Fetcher waits on a box read of one results page and one monthly schedule page: boj.or.jp is refused by the cloud egress, so the field map cannot be read from here; held rows are served.",
+   "at": "12:10",
+   "tz": "Asia/Tokyo",
+   "baseline_ops": 20,
+   "title": "BoJ JGB outright purchase result",
+   "country": "JPY",
+   "currency": "JPY",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "JPN225"
+   ],
+   "why": "An operation offered below its pre-announced bucket plan, or heavily over-covered, says the BoJ is stepping back or the market is dumping duration on it: a same-day yen and Nikkei state."
+  }
+ ]
+}
