@@ -17,6 +17,14 @@
    "why": "screens about 35k cells a day; none survive FDR",
    "missed_growth": "none measured: the screen runs, the cells are tested and fail",
    "reopen_when": "a cell survives FDR"
+  },
+  "alt_release_drift": {
+   "status": "BLOCKED_ON_TERMS",
+   "since": "2026-11-13",
+   "source": "Global data thread (box probe; reports/forest_yield/KR_TSA_ROUTES.md)",
+   "why": "its two absent series have no lawful route: alt_us_tsa_throughput -- tsa.gov answers 403 (held as a hard stop), the data.gov entry points at the same reading room, DHS OHSS is robots-disallowed; alt_kr_exports_early -- customs.go.kr pages robots-disallowed, data.go.kr KCS APIs need a registered key, KDI EIEC terms unconfirmed (ALL RIGHTS RESERVED, no KOGL mark). 0 of 180 SERIES_ABSENT rows unlock; the GDELT TW pair (30 under floor, 5 usable) stays in the docket and is still judged after live families",
+   "missed_growth": "KR early-export and US TSA release-drift cells unjudged",
+   "reopen_when": "KDI's terms of use (이용약관) grant reuse, or a lawful TSA/KCS route appears"
   }
  }
 }
