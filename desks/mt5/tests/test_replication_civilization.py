@@ -174,6 +174,262 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
     assert off["verdict"] == rc.MISMATCH and any("COST" in w for w in off["why"])
     none = rc.replicate_forward(row, meta=META, bars=bars, ledger=[])
     assert none["verdict"] == rc.UNMEASURED
+    # THE ENGINE'S OWN HISTORY IS NOT A FORWARD FILL (box 2026-11-10: 26 ledger trades against
+    # 2 rebuilt). The shadow ledger carries every trade since its replay start, tagged by phase;
+    # only the forward rows are compared, and the historical ones are counted.
+    early = [f for f in fills if f.entry_t < start]
+    tagged = ([{"entry_time": stamp(f.entry_t), "exit_time": stamp(f.exit_t), "side": f.side,
+                "r_multiple": f.r, "reason": f.reason, "phase": "historical"} for f in early]
+              + [dict(r, phase="forward") for r in honest_ledger])
+    whole = rc.replicate_forward(row, meta=META, bars=bars, ledger=tagged)
+    assert whole["verdict"] == rc.REPLICATED, whole
+    assert whole["divergence"]["n_ledger_historical_set_aside"] == len(early) > 0
+    assert whole["divergence"]["n_ledger"] == len(honest_ledger)
+    # the engine draws its line a few hours after forward_start (broker clock): a trade it
+    # filed as historical is not a rebuilt forward fill either
+    assert window[0].entry_t - start < 86_400_000_000_000
+    shifted = ([dict(r, phase="historical") for r in honest_ledger[:1]]
+               + [dict(r, phase="forward") for r in honest_ledger[1:]])
+    late = rc.replicate_forward(row, meta=META, bars=bars, ledger=shifted)
+    assert late["verdict"] == rc.REPLICATED, late
+    assert late["divergence"]["n_rebuilt_dropped_at_boundary"] == 1
+    # ...a "historical" row days into the forward window is a mis-tag, not a clock offset, so
+    # every rebuilt fill it sets aside is looked for among the historical rows: all have a twin
+    # here, so nothing is hidden and the verdict stands (box run 2: five fully matched keys)
+    k = len(honest_ledger) // 2
+    mistag = ([dict(r, phase="historical") for r in honest_ledger[:k]]
+              + [dict(r, phase="forward") for r in honest_ledger[k:]])
+    twin = rc.replicate_forward(row, meta=META, bars=bars, ledger=mistag)
+    assert twin["divergence"]["n_rebuilt_dropped_at_boundary"] == k
+    assert twin["divergence"]["n_rebuilt_set_aside_without_historical_twin"] == 0
+    assert twin["verdict"] == rc.REPLICATED
+    assert any("has a historical ledger twin" in w for w in twin["why"])
+    # ...and when one set-aside fill has NO historical twin the clock is not called replicated
+    hidden = mistag[1:]
+    hid = rc.replicate_forward(row, meta=META, bars=bars, ledger=hidden)
+    assert hid["verdict"] == rc.UNMEASURED and hid["divergence"][
+        "n_rebuilt_set_aside_without_historical_twin"] == 1
+    assert any("more than a day AFTER" in w for w in hid["why"])
+    only_history = rc.replicate_forward(
+        row, meta=META, bars=bars, ledger=[dict(r, phase="historical") for r in honest_ledger])
+    assert only_history["verdict"] == rc.UNMEASURED
+    # a forward row the rebuild cannot produce is still a mismatch
+    drift2 = [dict(r, r_multiple=float(r["r_multiple"]) + 1.0) for r in tagged]
+    assert rc.replicate_forward(row, meta=META, bars=bars,
+                                ledger=drift2)["verdict"] == rc.MISMATCH
+
+
+def test_a_forward_verdict_needs_enough_trades_one_sign_and_both_sides_matched() -> None:
+    """Auditor HOLD on #830: REPLICATED lifts a quarantine, so it is never given on a handful of
+    trades, on P&L of opposite sign, or with a fifth of either side unmatched."""
+    hour = 3_600_000_000_000
+    day = 24 * hour
+    t0 = int(np.datetime64("2026-09-01T07:00:00", "ns").astype("int64"))
+    cost = rc.cost_spec(META)
+
+    def stamp(ns: int) -> str:
+        return str(np.datetime64(ns, "ns")).replace("T", " ")[:19] + "+00:00"
+
+    def fill(i: int, r: float = 0.3, side: int = 1, shift: int = 0) -> Any:
+        t = t0 + i * day + shift
+        return rc.Fill(entry_t=t, exit_t=t + 5 * hour, side=side, entry=1.0, exit=1.0, r=r,
+                       reason="time", bars_held=5)
+
+    def led(f: Any, **kw: Any) -> dict[str, Any]:
+        return {"entry_time": stamp(f.entry_t), "exit_time": stamp(f.exit_t), "side": f.side,
+                "r_multiple": f.r, **kw}
+
+    def judge(ledger: list[dict[str, Any]], fills: list[Any]) -> tuple[str, list[str], dict]:
+        return rc.judge_forward(ledger, fills, 60, cost, None)
+
+    full = [fill(i) for i in range(rc.MIN_FORWARD_TRADES)]
+    assert judge([led(f) for f in full], full)[0] == rc.REPLICATED
+    # one trade short of the minimum is not a test, however well it agrees
+    thin = full[:-1]
+    v, why, div = judge([led(f) for f in thin], thin)
+    assert v == rc.UNMEASURED and "too few forward trades" in why[0] and div["thin"] is True
+    # ...and a thin ledger the rebuild simply has nothing for is not a mismatch either
+    assert judge([led(f) for f in thin], [fill(40)])[0] == rc.UNMEASURED
+    # an empty rebuild whose builder NAMED why it could not build is REBUILD_EMPTY...
+    v, why, div = rc.judge_forward([led(f) for f in full], [], 60, cost, None,
+                                   "no recorded contract terms for CHFNOK")
+    assert v == rc.UNMEASURED and why[0].startswith("REBUILD_EMPTY") and "CHFNOK" in why[0]
+    assert div["rebuild_empty"] == "STOOD_ASIDE"
+    # ...but a rule the lane built that fired NONE of the ledger's trades is a mismatch
+    v, why, div = judge([led(f) for f in full], [])
+    assert v == rc.MISMATCH and div["rebuild_empty"] == "BUILT_FIRED_NONE"
+    # and the carry builder names its stand-aside when the venue's terms are absent
+    rc._STOOD_ASIDE.clear()
+    assert rc._build_carry(None, {"symbol": "ZZZNOK"}) == []  # type: ignore[arg-type]
+    assert rc._STOOD_ASIDE and "ZZZNOK" in rc._STOOD_ASIDE[0]
+    # but a contradiction is a mismatch at any n: the same bar on the OTHER side...
+    v, why, div = judge([led(f, side=-1) for f in thin[:2]], thin[:2])
+    assert v == rc.MISMATCH and div["wrong_side"] == 2 and "OTHER side" in why[0]
+    # ...or an unclaimed rebuilt fill a few bars off the ledger's bar
+    v, why, div = judge([led(thin[0])], [fill(0, shift=3 * hour)])
+    assert v == rc.MISMATCH and div["wrong_bar"] == 1
+    # a neighbour that matched its own ledger trade is not a shifted entry for the next one
+    v, _why, div = judge([led(fill(0)), led(fill(1))], [fill(0)])
+    assert v == rc.UNMEASURED and div["wrong_bar"] == 0
+    # OPPOSITE-SIGN P&L beyond the band is never REPLICATED, even with every per-trade R inside
+    # its own tolerance
+    n = 12
+    ours = [fill(i, r=0.1) for i in range(n)]
+    theirs = [led(f, r_multiple=-0.1) for f in ours]
+    v, why, div = judge(theirs, ours)
+    assert div["median_abs_dR"] <= rc.R_TOLERANCE and v == rc.MISMATCH
+    assert any("SIGN" in w for w in why)
+    # ...while two sums a hair either side of zero are the same result
+    flat_ours = [fill(i, r=0.01) for i in range(n)]
+    assert judge([led(f, r_multiple=-0.01) for f in flat_ours], flat_ours)[0] == rc.REPLICATED
+    # 15 of 23 ledger trades matched (the box's CHFDKK clock) is a mismatch, both directions
+    many = [fill(i) for i in range(23)]
+    v, why, div = judge([led(f) for f in many], many[:15])
+    assert v == rc.MISMATCH and div["match_share"] < rc.MATCH_SHARE
+    v, why, div = judge([led(f) for f in many[:15]], many)
+    assert v == rc.MISMATCH and div["rebuilt_matched_share"] < rc.MATCH_SHARE
+    assert any("rebuilt fills have a ledger trade" in w for w in why)
+
+
+def test_a_thin_forward_clock_is_published_by_name_and_the_standing_quarantine_has_a_reader(
+        tmp_path: Path) -> None:
+    """Auditor condition on r3: UNMEASURED-thin is not held by the promotion door, so every pass
+    says how many LIVE/STANDBY clocks sit there and which; and quarantine.json is read by the
+    report (it had no reader)."""
+    bars = _gap_bars()
+    p, _ = rc.resolve_spec("overnight_gap_decay", {}, "asia", "LONG")
+    _orders, fills = rc.rebuild("overnight_gap_decay", bars, p, rc.cost_spec(META).price_units)
+    assert len(fills) > 60
+    start_fill = fills[-(rc.MIN_FORWARD_TRADES - 2)]
+
+    def stamp(ns: int) -> str:
+        return str(np.datetime64(ns, "ns")).replace("T", " ")[:19] + "+00:00"
+
+    start = stamp(start_fill.entry_t - 3_600_000_000_000)
+    ledger = [{"entry_time": stamp(f.entry_t), "exit_time": stamp(f.exit_t), "side": f.side,
+               "r_multiple": f.r, "phase": "forward"} for f in fills
+              if f.entry_t >= start_fill.entry_t]
+    assert 0 < len(ledger) < rc.MIN_FORWARD_TRADES
+
+    def clock(name: str, status: str) -> dict[str, Any]:
+        return {"key": name, "status": status, "forward_start": start,
+                "identity": {"family": "overnight_gap_decay", "symbol": "TESTFX",
+                             "direction": "LONG", "timeframe": "H1", "selector": "asia",
+                             "params": {}}}
+
+    qpath = tmp_path / "quarantine.json"
+    # a count-based quarantine row from before the minimum existed, and one on another lane
+    qpath.write_text(json.dumps({"rows": [
+        {"lane": "forward", "key": "A.live", "why": ["FILLS disagree: 2 rebuilt vs 26"]},
+        {"lane": "certificate", "key": "some certificate", "why": ["SIGN"]}]}), "utf-8")
+    kw: dict[str, Any] = {
+        "certificates": [], "universe_meta": {"TESTFX": META},
+        "forward": [clock("A.live", "LIVE"), clock("B.standby", "STANDBY"),
+                    clock("C.retired", "RETIRED")],
+        "bars_loader": lambda s, t: bars, "ledger_loader": lambda key, ident: ledger,
+        "cursor_path": tmp_path / "cursor.json", "quarantine_path": qpath,
+        "report": tmp_path / "REPLICATION.json", "max_per_pass": 16}
+    doc = rc.build(budget_s=60, dry_run=False, conn=_NoRegistry(), **kw)
+    assert doc["counts"][rc.UNMEASURED] == 3, doc["verdicts"]
+    thin = doc["forward_thin_unmeasured"]
+    assert thin["rows"] == ["A.live", "B.standby"] and thin["n"] == 2      # RETIRED is not named
+    assert thin["by_status"] == {"LIVE": 1, "STANDBY": 1}
+    assert thin["forward_rows_never_reached"] == 0 and "NOT hold" in thin["scope"]
+    # the count-based row is released and counted; the other lane's row stands and is PUBLISHED
+    assert doc["recorded"]["released_thin"] == 1
+    assert doc["standing_quarantine"]["keys"] == ["some certificate"]
+    assert doc["standing_quarantine"]["by_lane"] == {"certificate": 1}
+    # the forward book outlives the pass, so the next report still names a clock it did not read
+    book = json.loads((tmp_path / "verdicts.json").read_text("utf-8"))
+    assert book["forward"]["A.live"]["thin"] is True
+    nxt = rc.build(budget_s=60, dry_run=True, conn=None,
+                   **{**kw, "forward": [*kw["forward"], clock("D.new", "LIVE")],
+                      "max_per_pass": 2})
+    assert nxt["forward_thin_unmeasured"]["n"] >= 2
+    assert nxt["forward_thin_unmeasured"]["forward_rows_never_reached"] <= 1
+    assert any("thin forward clocks" in line for line in rc.render(doc))
+
+
+def test_promotable_forward_rows_are_judged_first_stalest_first(tmp_path: Path) -> None:
+    """Auditor ruling (L1.49): the door acts only on LIVE and STANDBY rows and reads only this
+    pass's verdicts, so they go ahead of every other row and the report says how many."""
+    def clock(name: str, status: str) -> dict[str, Any]:
+        return {"key": name, "status": status,
+                "identity": {"family": "overnight_gap_decay", "symbol": "TESTFX",
+                             "direction": "LONG", "timeframe": "H1", "selector": "asia",
+                             "params": {}}}
+
+    loads: list[str] = []
+
+    def loader(sym: str, tf: str) -> Any:
+        loads.append(sym)
+        return None
+
+    fwd = [clock("r1", "RETIRED"), clock("r2", "RETIRED"), clock("live_old", "LIVE"),
+           clock("standby_new", "STANDBY"), clock("live_never", "LIVE")]
+    (tmp_path / "verdicts.json").write_text(json.dumps({"forward": {
+        "live_old": {"verdict": rc.UNMEASURED, "at": "2026-11-01T00:00:00+00:00"},
+        "standby_new": {"verdict": rc.UNMEASURED, "at": "2026-11-09T00:00:00+00:00"}}}), "utf-8")
+    kw: dict[str, Any] = {"certificates": [], "universe_meta": {}, "forward": fwd,
+                          "bars_loader": loader, "ledger_loader": lambda key, ident: [],
+                          "cursor_path": tmp_path / "cursor.json",
+                          "quarantine_path": tmp_path / "quarantine.json",
+                          "report": tmp_path / "REPLICATION.json"}
+    # a budget already spent past the fill share: the count floor (1) is all that runs
+    doc = rc.build(budget_s=1.0, dry_run=True, conn=None, max_per_pass=2,
+                   **{**kw, "ledger_loader": lambda key, ident: (_spend(), [])[1]})
+    assert [r["key"] for r in doc["verdicts"]] == ["live_never"]
+    assert any("forward rows left" in n for n in doc["notes"])
+    assert doc["forward_coverage"]["promotable_rows"] == 3
+    # with budget in hand the floor is not a ceiling: every row is reached, promotable first
+    doc = rc.build(budget_s=60, dry_run=True, conn=None, max_per_pass=2, **kw)
+    assert [r["key"] for r in doc["verdicts"]] == ["live_never", "live_old", "standby_new",
+                                                   "r1", "r2"]
+    assert doc["forward_coverage"]["promotable_judged_this_pass"] == 3
+    assert doc["forward_coverage"]["share"] == 1.0
+    assert loads == ["TESTFX", "TESTFX"]        # one read per pass, not one per clock
+    assert doc["forward_coverage"]["other_rows_judged_this_pass"] == 2
+    assert any("promotable forward rows judged this pass: 3/3" in x for x in rc.render(doc))
+
+
+def test_the_forward_cursor_resumes_at_the_next_unjudged_row_between_promotable_ones(
+        tmp_path: Path) -> None:
+    """Auditor should-fix: with LIVE rows interleaved, the cursor is the index IN fwd of the last
+    non-promotable row judged plus one, so no other row is skipped or judged twice."""
+    def clock(name: str, status: str) -> dict[str, Any]:
+        return {"key": name, "status": status,
+                "identity": {"family": "overnight_gap_decay", "symbol": "TESTFX",
+                             "direction": "LONG", "timeframe": "H1", "selector": "asia",
+                             "params": {}}}
+
+    fwd = [clock("L0", "LIVE"), clock("a", "RETIRED"), clock("L1", "LIVE"),
+           clock("b", "RETIRED"), clock("L2", "LIVE"), clock("c", "RETIRED"),
+           clock("d", "RETIRED")]
+    seen: list[str] = []
+
+    def ledger(key: str, ident: Any) -> list[Any]:
+        seen.append(key)
+        if len(seen) >= 5:
+            _spend()
+        return []
+
+    kw: dict[str, Any] = {"certificates": [], "universe_meta": {}, "forward": fwd,
+                          "bars_loader": lambda s, t: None, "ledger_loader": ledger,
+                          "cursor_path": tmp_path / "cursor.json",
+                          "quarantine_path": tmp_path / "quarantine.json",
+                          "report": tmp_path / "REPLICATION.json"}
+    doc = rc.build(budget_s=1.0, dry_run=False, conn=_NoRegistry(), max_per_pass=2, **kw)
+    assert seen == ["L0", "L1", "L2", "a", "b"]
+    assert doc["cursor"]["forward"] == 4                  # fwd index of "b" is 3
+    assert doc["forward_coverage"]["promotable_judged_this_pass"] == 3
+    seen.clear()
+    rc.build(budget_s=1.0, dry_run=True, conn=None, max_per_pass=2, **kw)
+    assert seen[3:] == ["c", "d"]                         # resumes after "b", skips nothing
+
+
+def _spend() -> None:
+    import time as _t
+    _t.sleep(1.1)
 
 
 def test_the_lane_never_imports_the_original_implementation() -> None:

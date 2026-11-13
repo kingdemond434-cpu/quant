@@ -16,8 +16,10 @@ own code from that text. Then it compares outcomes with what the desk recorded:
                       the registry froze
 
 and QUARANTINES on a material disagreement -- `replication_mismatch` in research memory, the
-cell in `data/replication_civilization/quarantine.json`, and `replication_verdict` on every
-queued registry candidate of the same (symbol, family) -- with the divergence named. Agreement
+cell in `data/replication_civilization/quarantine.json` (published every pass as
+`standing_quarantine` in the report; the door itself reads the pass's `verdicts`), and
+`replication_verdict` on every queued registry candidate of the same (symbol, family) -- with
+the divergence named. Agreement
 is REPLICATED; a family the book has no written rule for, a cell with no bars, or a forward row
 with no ledger is UNMEASURED by name (a value, never a pass).
 
@@ -72,6 +74,11 @@ BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
+#: The forward lane's count is a FLOOR: after it, rows are judged until this share of the pass
+#: budget is spent (the rest is the margin under the hourly leg's own cap).
+FORWARD_FILL = 0.8
+#: Bars held in one pass, so clocks on one symbol do not each re-read its file.
+BARS_MEMO = 6
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -85,8 +92,26 @@ SHARPE_NOISE = 0.05
 SHARPE_RATIO = (0.5, 2.0)
 SHARPE_METRIC_VERSION = "daily-r-per-period-v2"
 FILL_SHARE = 0.5
-MATCH_SHARE = 0.5
+#: Share of ledger trades that must have a rebuilt fill on the same bar and side, AND share of
+#: rebuilt fills that must have a ledger trade. 0.5 until 2026-11-10. Box read (201
+#: overnight_gap_decay clocks, replication_before_after_overnight_gap_decay_2026-11-10T1820Z.jsonl):
+#: among clocks with >= 10 forward ledger trades the shares fall in two groups, <= 0.77 (trades
+#: on one side with no counterpart on the other: 8 of 23, 7 of 27, 8 of 31) and >= 0.82; a rule
+#: that passes "a third of the trades are not there" passes almost anything. 0.8 sits between.
+MATCH_SHARE = 0.8
 R_TOLERANCE = 0.25
+#: A forward verdict needs this many forward ledger trades. Below it the tolerances are not a
+#: test (same box read: 33 of the 52 clocks the forward-phase fix moved to REPLICATED rested on
+#: 3 or fewer trades), so the verdict is UNMEASURED -- unless a ledger trade is CONTRADICTED
+#: (see `judge_forward`), which is a mismatch at any n. No clock on the box sits between 7 and 8
+#: trades; the first cluster with enough trades to test starts at 9, and 10 is the Auditor's floor.
+MIN_FORWARD_TRADES = 10
+#: Summed forward P&L of OPPOSITE sign, further apart than this many R, is never REPLICATED
+#: (two R tolerances: one per side). It was only checked when the ledger's own sum reached 1R.
+SIGN_BAND_R = 0.5
+#: Bars either side of a ledger trade in which a rebuilt fill counts as "the rebuild traded
+#: here, on another bar" -- a contradiction, as opposed to the rebuild not trading at all.
+NEAR_BARS = 24
 COST_RATIO = (0.5, 2.0)
 MATCH_BARS = 1
 
@@ -638,7 +663,7 @@ def _build_hunt16_cell(b: Bars, p: dict[str, Any]) -> list[Order]:
     base = str(p.get("base_family") or "")
     builder = HUNT16_RULES.get(base)
     if builder is None:
-        return []
+        return _cannot_build(f"no written rule for hunt16 base family {base!r}")
     return _keep_hour_state(b, builder(b, _direction(p)), p.get("signal_at"), p.get("day_state"))
 
 
@@ -675,19 +700,33 @@ def swap_terms(symbol: str, terms_dir: Path | None = None) -> dict[str, Any] | N
     return latest
 
 
+#: Why the LAST `rebuild` could not build its rule at all (a missing input, never a rule
+#: outcome); empty when it could. Read by `replicate_forward` straight after `rebuild`, so an
+#: empty rebuild is told apart from a rule that fired zero times (Auditor on r6, 2026-11-10).
+_STOOD_ASIDE: list[str] = []
+
+
+def _cannot_build(why: str) -> list[Order]:
+    _STOOD_ASIDE.append(why)
+    return []
+
+
 def _build_carry(b: Bars, p: dict[str, Any]) -> list[Order]:
-    terms = swap_terms(str(p.get("symbol") or p.get("_symbol") or ""))
+    sym = str(p.get("symbol") or p.get("_symbol") or "")
+    terms = swap_terms(sym)
     if not terms:
-        return []
+        return _cannot_build(f"no recorded contract terms for {sym or 'an unnamed symbol'}")
     try:
         mode = int(terms["swap_mode"])
         point = float(terms.get("point") or 0.0)
         contract = float(terms.get("contract_size") or 0.0)
         lo_sw, sh_sw = float(terms["swap_long"]), float(terms["swap_short"])
     except (KeyError, TypeError, ValueError):
-        return []
-    if mode != SWAP_MODE_POINTS or point <= 0 or contract <= 0:
-        return []
+        return _cannot_build(f"{sym} contract terms unreadable (swap_mode / swap / point)")
+    if mode != SWAP_MODE_POINTS:
+        return _cannot_build(f"{sym} swap_mode {mode} is not POINTS")
+    if point <= 0 or contract <= 0:
+        return _cannot_build(f"{sym} contract terms carry no point or contract size")
     lo_m, sh_m = lo_sw * point * contract, sh_sw * point * contract
     side = 1 if lo_m > sh_m else -1
     if abs(lo_m - sh_m) < float(p["min_edge_bp_per_day"]):
@@ -915,6 +954,7 @@ HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
             ) -> tuple[list[Order], list[Fill]]:
+    _STOOD_ASIDE.clear()
     orders = SPEC_BOOK[family].build(bars, dict(p))
     side = int(p.get("_side") or 0)
     if side:
@@ -950,40 +990,96 @@ def judge_certificate(recorded_sharpe: float | None, ours: float | None, n_fills
 
 
 def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], bar_minutes: int,
-                  cost_ours: CostSpec, cost_theirs: Mapping[str, Any] | None
-                  ) -> tuple[str, list[str], dict[str, Any]]:
-    """Fills, per-trade R, summed P&L, position state and cost terms, compared."""
+                  cost_ours: CostSpec, cost_theirs: Mapping[str, Any] | None,
+                  stood_aside: str | None = None) -> tuple[str, list[str], dict[str, Any]]:
+    """Fills, per-trade R, summed P&L, position state and cost terms, compared.
+
+    THREE THINGS A VERDICT HERE MUST NOT DO (Auditor HOLD on #830, 2026-11-10; a REPLICATED
+    verdict lifts a quarantine): pass on too few trades to test, pass with the two P&Ls pointing
+    opposite ways, or pass with a third of the trades missing on one side. So:
+      * fewer than MIN_FORWARD_TRADES ledger trades -> UNMEASURED, unless a ledger trade is
+        CONTRADICTED: a rebuilt fill on its bar on the other side, or a rebuilt fill within
+        NEAR_BARS of it but not on its bar. Those are mismatches at any n;
+      * opposite-sign summed P&L further apart than SIGN_BAND_R -> never REPLICATED;
+      * MATCH_SHARE applies both ways: ledger trades with a rebuilt fill, and rebuilt fills with
+        a ledger trade."""
     theirs = [r for r in ledger if _num(r.get("r_multiple")) is not None]
-    div: dict[str, Any] = {"n_ledger": len(theirs), "n_rebuilt": len(fills)}
+    div: dict[str, Any] = {"n_ledger": len(theirs), "n_rebuilt": len(fills),
+                           "min_forward_trades": MIN_FORWARD_TRADES}
     if not theirs:
         return UNMEASURED, ["the forward ledger holds no trade with an R to compare"], div
+    thin = len(theirs) < MIN_FORWARD_TRADES
     if not fills:
+        # TWO DIFFERENT EMPTIES (box run 2, 2026-11-10: 115 keys, mostly carry.asia with 300+
+        # ledger trades, rebuilt nothing). A builder that NAMED why it could not build (no
+        # recorded swap terms, a swap_mode the written rule cannot price, no written rule) is a
+        # lane that cannot build here: REBUILD_EMPTY, UNMEASURED, the reason in the why. A rule
+        # the lane DID build that fired zero times against the ledger is the strongest mismatch
+        # there is and stays MISMATCH (Auditor on r6). Both are listed by name.
+        div["rebuild_empty"] = "STOOD_ASIDE" if stood_aside else "BUILT_FIRED_NONE"
+        if thin:
+            return UNMEASURED, [f"too few forward trades to replicate: {len(theirs)} ledger "
+                                f"trade(s), the rebuild produced none, and "
+                                f"{MIN_FORWARD_TRADES} are needed"], div
+        if stood_aside:
+            return UNMEASURED, [f"REBUILD_EMPTY: this lane could not build the rule here "
+                                f"({stood_aside}), against {len(theirs)} ledger trade(s); "
+                                f"that says nothing about the ledger"], div
         return MISMATCH, [f"the rebuild produced NO fill against {len(theirs)} ledger "
                           f"trade(s)"], div
     why: list[str] = []
+    hard: list[str] = []          # contradictions: a mismatch at any n
     tol = MATCH_BARS * bar_minutes * 60_000_000_000
+    near = NEAR_BARS * bar_minutes * 60_000_000_000
     ours_t = np.asarray([f.entry_t for f in fills], dtype="int64")
     matched: list[tuple[float, float]] = []
+    used: set[int] = set()
+    wrong_side = wrong_bar = 0
+    unmatched: list[int] = []
     for row in theirs:
         try:
             t = int(np.datetime64(str(row.get("entry_time")).replace(" ", "T")
                                   .replace("+00:00", ""), "ns").astype("int64"))
         except (ValueError, TypeError):
             continue
-        k = int(np.argmin(np.abs(ours_t - t))) if len(ours_t) else -1
-        if k >= 0 and abs(int(ours_t[k]) - t) <= tol and \
-                int(fills[k].side) == int(row.get("side") or fills[k].side):
+        k = int(np.argmin(np.abs(ours_t - t)))
+        gap = abs(int(ours_t[k]) - t)
+        if gap <= tol and int(fills[k].side) == int(row.get("side") or fills[k].side):
             matched.append((float(row["r_multiple"]), fills[k].r))
+            used.add(k)
+        elif gap <= tol:
+            wrong_side += 1
+        else:
+            unmatched.append(t)
+    # A rebuilt fill that matched its own ledger trade is not evidence against a neighbour: only
+    # a fill NO ledger trade claimed, sitting near an unmatched ledger trade, is a shifted entry.
+    free = np.asarray([int(ours_t[i]) for i in range(len(fills)) if i not in used],
+                      dtype="int64")
+    for t in unmatched:
+        if len(free) and int(np.min(np.abs(free - t))) <= near:
+            wrong_bar += 1
     div["matched"] = len(matched)
+    div["wrong_side"], div["wrong_bar"] = wrong_side, wrong_bar
+    if wrong_side:
+        hard.append(f"{wrong_side} ledger trade(s) have a rebuilt fill on the same bar on the "
+                    f"OTHER side")
+    if wrong_bar:
+        hard.append(f"{wrong_bar} ledger trade(s) have a rebuilt fill within {NEAR_BARS} bars "
+                    f"but not on their bar")
     share = len(matched) / len(theirs)
     div["match_share"] = round(share, 3)
+    back = len(used) / len(fills)
+    div["rebuilt_matched_share"] = round(back, 3)
     fill_ratio = len(fills) / len(theirs)
     div["fill_ratio"] = round(fill_ratio, 3)
     if not (1 - FILL_SHARE <= fill_ratio <= 1 + FILL_SHARE):
         why.append(f"FILLS disagree: {len(fills)} rebuilt vs {len(theirs)} in the ledger")
     if share < MATCH_SHARE:
         why.append(f"only {len(matched)}/{len(theirs)} ledger trades have a rebuilt fill on the "
-                   f"same bar and side")
+                   f"same bar and side (need {MATCH_SHARE:.0%})")
+    if back < MATCH_SHARE:
+        why.append(f"only {len(used)}/{len(fills)} rebuilt fills have a ledger trade on the "
+                   f"same bar and side (need {MATCH_SHARE:.0%})")
     if matched:
         dr = float(np.median([abs(a - b) for a, b in matched]))
         div["median_abs_dR"] = round(dr, 4)
@@ -991,7 +1087,7 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
             why.append(f"per-trade R disagrees: median |dR| = {dr:.3f} > {R_TOLERANCE}")
     pnl_t, pnl_o = sum(float(r["r_multiple"]) for r in theirs), sum(f.r for f in fills)
     div["pnl_ledger_R"], div["pnl_rebuilt_R"] = round(pnl_t, 3), round(pnl_o, 3)
-    if abs(pnl_t) >= 1.0 and np.sign(pnl_t) != np.sign(pnl_o):
+    if pnl_t * pnl_o < 0 and abs(pnl_t - pnl_o) > SIGN_BAND_R:
         why.append(f"summed P&L disagrees in SIGN: ledger {pnl_t:+.2f}R, rebuilt {pnl_o:+.2f}R")
     open_theirs = any(r.get("exit_time") in (None, "") or str(r.get("phase")) == "open"
                       for r in theirs[-1:])
@@ -1012,6 +1108,13 @@ def judge_forward(ledger: Sequence[Mapping[str, Any]], fills: Sequence[Fill], ba
             if not (COST_RATIO[0] <= ratio <= COST_RATIO[1]):
                 why.append(f"COST term {key} disagrees: rebuilt {ours_v:.4g} vs frozen "
                            f"{tv:.4g}")
+    div["thin"] = thin
+    if hard:
+        return MISMATCH, hard + why, div
+    if thin:
+        return UNMEASURED, [f"too few forward trades to replicate: {len(theirs)} ledger "
+                            f"trade(s), {MIN_FORWARD_TRADES} are needed",
+                            *([f"(would otherwise read: {why[0]})"] if why else [])], div
     if why:
         return MISMATCH, why, div
     return REPLICATED, [f"{len(matched)}/{len(theirs)} trades matched, P&L {pnl_o:+.2f}R vs "
@@ -1105,12 +1208,32 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     return out
 
 
+def _forward_phase(ledger: Sequence[Mapping[str, Any]]
+                   ) -> tuple[list[Mapping[str, Any]], int | None]:
+    """The ledger rows that are forward evidence, and the last HISTORICAL entry time (ns).
+
+    A row is historical only when it says so; an untagged ledger is returned whole."""
+    forward = [r for r in ledger if str(r.get("phase") or "").lower() != "historical"]
+    last: int | None = None
+    for r in ledger:
+        if str(r.get("phase") or "").lower() != "historical":
+            continue
+        try:
+            t = int(np.datetime64(str(r.get("entry_time")).replace(" ", "T")
+                                  .replace("+00:00", ""), "ns").astype("int64"))
+        except (ValueError, TypeError):
+            continue
+        last = t if last is None else max(last, t)
+    return forward, last
+
+
 def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: Bars | None,
                       ledger: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     ident = dict(row.get("identity") or {})
     fam, sym = str(ident.get("family") or ""), str(ident.get("symbol") or "")
     out: dict[str, Any] = {"lane": "forward", "key": str(row.get("key") or ""), "symbol": sym,
-                           "family": fam, "verdict": UNMEASURED, "why": [], "ours": {},
+                           "family": fam, "status": str(row.get("status") or ""),
+                           "verdict": UNMEASURED, "why": [], "ours": {},
                            "theirs": {}, "divergence": {}}
     p, why = resolve_spec(fam, ident.get("params"), ident.get("selector"),
                           ident.get("direction"), symbol=sym,
@@ -1126,14 +1249,70 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
         return out
     cost = cost_spec(meta)
     _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    stood_aside = "; ".join(_STOOD_ASIDE) or None
     start = str(row.get("forward_start") or "")
     try:
         t0 = int(np.datetime64(start.replace(" ", "T").split("+")[0], "ns").astype("int64"))
     except (ValueError, TypeError):
         t0 = int(bars.t[0])
     window = [f for f in fills if f.entry_t >= t0]
-    verdict, reasons, div = judge_forward(ledger, window, bars.minutes, cost,
-                                          row.get("cost_fields"))
+    # ONLY THE LEDGER'S FORWARD ROWS ARE FORWARD EVIDENCE (box 2026-11-10: six
+    # overnight_gap_decay clocks read MISMATCH with 26 ledger trades against 2 rebuilt and 41
+    # against 11). The shadow engine writes every trade since its replay start into the ledger
+    # and tags each `phase: historical | forward`; the rebuild here starts at `forward_start`.
+    # Comparing the whole file against the forward window counted the engine's history as fills
+    # the spec forbids. Historical rows are set aside and counted, and a rebuilt fill at or
+    # before the last historical entry is the engine's history too (the engine draws the line on
+    # the broker clock, a few hours after `forward_start` in UTC). A ledger with no phase tag is
+    # compared whole, as before.
+    forward_ledger, hist_last = _forward_phase(ledger)
+    n_hist = len(ledger) - len(forward_ledger)
+    dropped, late_history, orphans = 0, False, 0
+    if hist_last is not None:
+        kept = [f for f in window if f.entry_t > hist_last]
+        gone = [f for f in window if f.entry_t <= hist_last]
+        dropped, window = len(gone), kept
+        # A row tagged historical more than a day after forward_start is not the broker-clock
+        # offset: it could hide rebuilt fills that have no ledger twin. So each rebuilt fill it
+        # sets aside is looked for among the HISTORICAL rows (same side, within MATCH_BARS); the
+        # verdict is demoted only when one has no twin there (box run 2, 2026-11-10: five gold
+        # and USDJPY keys fully matched were demoted on the boundary alone).
+        late_history = hist_last - t0 > 86_400_000_000_000
+        if late_history and gone:
+            tol = MATCH_BARS * bars.minutes * 60_000_000_000
+            hist = []
+            for r in ledger:
+                if str(r.get("phase") or "").lower() != "historical":
+                    continue
+                try:
+                    hist.append((int(np.datetime64(str(r.get("entry_time")).replace(" ", "T")
+                                                   .replace("+00:00", ""), "ns")
+                                     .astype("int64")), int(r.get("side") or 0)))
+                except (ValueError, TypeError):
+                    continue
+            orphans = sum(1 for f in gone
+                          if not any(abs(t - int(f.entry_t)) <= tol
+                                     and (not sd or sd == int(f.side)) for t, sd in hist))
+    if n_hist and not forward_ledger:
+        out["why"] = [f"the ledger holds {n_hist} historical trade(s) and no forward one yet"]
+        out["divergence"] = {"n_ledger_historical_set_aside": n_hist}
+        return out
+    verdict, reasons, div = judge_forward(forward_ledger, window, bars.minutes, cost,
+                                          row.get("cost_fields"), stood_aside)
+    div["n_ledger_historical_set_aside"] = n_hist
+    div["n_rebuilt_dropped_at_boundary"] = dropped
+    if late_history:
+        div["n_rebuilt_set_aside_without_historical_twin"] = orphans
+        if orphans:
+            reasons = [*reasons, f"a ledger row tagged historical is more than a day AFTER "
+                                 f"forward_start; {orphans} of the {dropped} rebuilt fill(s) "
+                                 f"before it have no historical ledger twin"]
+            if verdict == REPLICATED:
+                verdict = UNMEASURED
+        else:
+            reasons = [*reasons, f"a ledger row tagged historical is more than a day AFTER "
+                                 f"forward_start; each of the {dropped} rebuilt fill(s) before "
+                                 f"it has a historical ledger twin"]
     out.update(verdict=verdict, why=reasons, divergence=div,
                ours={"n_fills": len(window), "pnl_R": round(sum(f.r for f in window), 3),
                      "cost": {"spread_per_lot": cost.spread_per_lot,
@@ -1146,17 +1325,70 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
 
 
 # ------------------------------------------------------------------------------- recording
+#: What an UNMEASURED-thin forward verdict means downstream, published with every pass so the
+#: abstention is a number and never a silence.
+THIN_SCOPE = (f"forward replication is a detector from {MIN_FORWARD_TRADES} forward trades. Below "
+              f"that a clock's forward verdict is UNMEASURED and the promotion door's replication "
+              f"check does NOT hold it: the guarantees before that are the certificate lane "
+              f"(a certificate enrols only when its spec is REPLICATED) and the wrong-side / "
+              f"wrong-bar contradiction, which is a MISMATCH at any n")
+PROMOTABLE_STATUS = frozenset({"LIVE", "STANDBY"})
+
+
+def _thin_unmeasured(r: Mapping[str, Any]) -> bool:
+    return (r.get("lane") == "forward" and r.get("verdict") == UNMEASURED
+            and bool((r.get("divergence") or {}).get("thin")))
+
+
+def forward_thin_unmeasured(fbook: Mapping[str, Any], registry: Sequence[Mapping[str, Any]]
+                            ) -> dict[str, Any]:
+    """LIVE and STANDBY rows whose LATEST forward verdict is UNMEASURED-thin, by name. Status is
+    the registry's of this pass, the verdict is the forward book's (rows the rotation has not
+    reached yet have none, and that count is published beside it)."""
+    status = {str(r.get("key") or ""): str(r.get("status") or "") for r in registry}
+    names = sorted(k for k, v in fbook.items()
+                   if isinstance(v, dict) and v.get("thin") and v.get("verdict") == UNMEASURED
+                   and status.get(k) in PROMOTABLE_STATUS)
+    judged = sum(1 for k in status if k in fbook)
+    return {"scope": THIN_SCOPE, "min_forward_trades": MIN_FORWARD_TRADES, "n": len(names),
+            "by_status": {s: sum(1 for k in names if status[k] == s)
+                          for s in sorted(PROMOTABLE_STATUS)},
+            "rows": names[:400], "forward_rows": len(status),
+            "forward_rows_with_a_verdict": judged,
+            "forward_rows_never_reached": len(status) - judged}
+
+
+def standing_quarantine(quarantine_path: Path) -> dict[str, Any]:
+    """quarantine.json's reader. The promotion door reads only the `verdicts` of the CURRENT
+    pass; the standing set is published here so a quarantine the rotation has moved past is
+    visible by name in the report every consumer already reads."""
+    rows = [r for r in ((_read_json(quarantine_path, {}) or {}).get("rows") or [])
+            if isinstance(r, dict)]
+    return {"n": len(rows),
+            "by_lane": {lane: sum(1 for r in rows if r.get("lane") == lane)
+                        for lane in sorted({str(r.get("lane")) for r in rows})},
+            "keys": sorted(str(r.get("key")) for r in rows)[:500],
+            "held_by_the_door": ("only while the row is also in this pass's `verdicts`; the "
+                                 "standing set itself blocks nothing")}
+
+
 def record(rows: Sequence[Mapping[str, Any]], *, conn: Any, dry_run: bool,
            quarantine_path: Path = QUARANTINE) -> dict[str, int]:
-    out = {"quarantined": 0, "memory": 0, "candidates": 0}
+    out = {"quarantined": 0, "memory": 0, "candidates": 0, "released_thin": 0}
     mismatches = [r for r in rows if r.get("verdict") == MISMATCH]
     if dry_run:
         return out
+    # A thin forward row that reads UNMEASURED was searched for a contradiction and none was
+    # found (a contradiction is a MISMATCH at any n), so a standing quarantine row for it can
+    # only be a count-based one from before the minimum existed: it is released, and counted.
+    thin = [r for r in rows if _thin_unmeasured(r)]
     definitive = [r for r in rows if r.get("verdict") in (MISMATCH, REPLICATED)]
-    if definitive:
+    if definitive or thin:
         doc = _read_json(quarantine_path, {}) or {}
         old = [r for r in (doc.get("rows") or []) if isinstance(r, dict)]
-        keys = {(r.get("lane"), r.get("key")) for r in definitive}
+        thin_keys = {(r.get("lane"), r.get("key")) for r in thin}
+        out["released_thin"] = sum(1 for r in old if (r.get("lane"), r.get("key")) in thin_keys)
+        keys = {(r.get("lane"), r.get("key")) for r in definitive} | thin_keys
         kept = [r for r in old if (r.get("lane"), r.get("key")) not in keys]
         for r in mismatches:
             kept.append({"key": r["key"], "lane": r["lane"], "symbol": r["symbol"],
@@ -1236,6 +1468,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     verdicts_path = cursor_path.parent / VERDICTS_NAME
     book_doc = _read_json(verdicts_path, {}) or {}
     book = dict(book_doc.get("certificates") or {}) if isinstance(book_doc, dict) else {}
+    fbook = dict(book_doc.get("forward") or {}) if isinstance(book_doc, dict) else {}
     # NEVER-JUDGED FIRST. A certificate the book has no verdict for -- or a verdict under a
     # different spec -- cannot start a forward clock (the admission door), so it is judged ahead
     # of the rotation: a new certificate waits about one pass, never a full cycle of the canon.
@@ -1267,18 +1500,50 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                           bars=bars_loader(sym, tf)))
         if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
-    for k in range(min(per_lane, len(fwd))):
-        if time.monotonic() > deadline:
+    # PROMOTABLE ROWS FIRST, STALEST FIRST (Auditor ruling 2026-11-10, L1.49). The promotion door
+    # can act only on LIVE and STANDBY rows and reads only this pass's verdicts; a blind cursor
+    # over every row reached each one once in ~235 passes (box: 16 of 1,879 a pass). So those
+    # rows are judged ahead of any other, the never-judged and the longest-unjudged first, and
+    # the count is a floor: the forward lane goes on until FORWARD_FILL of the budget is spent.
+    def _age(r: Mapping[str, Any]) -> str:
+        return str((fbook.get(str(r.get("key") or "")) or {}).get("at") or "")
+    promotable = sorted((r for r in fwd if str(r.get("status") or "") in PROMOTABLE_STATUS),
+                        key=_age)
+    # the rest keep the old cursor, by their index IN fwd, so a promotable row between two of
+    # them never shifts where the next pass resumes
+    rest_idx = [(fi + k) % len(fwd) for k in range(len(fwd))] if fwd else []
+    rest_idx = [i for i in rest_idx
+                if str(fwd[i].get("status") or "") not in PROMOTABLE_STATUS]
+    rest = [fwd[i] for i in rest_idx]
+    fill_until = t0 + FORWARD_FILL * max(1.0, float(budget_s))
+    bars_memo: dict[tuple[str, str], Bars | None] = {}
+    judged_promotable = 0
+    for k, row in enumerate(promotable + rest):
+        now = time.monotonic()
+        if now > deadline or (k >= per_lane and now > fill_until):
             notes.append("budget: forward rows left for the next pass")
             break
-        row = fwd[(fi + k) % len(fwd)]
         ident = row.get("identity") or {}
         sym, tf = str(ident.get("symbol") or ""), str(ident.get("timeframe") or "H1")
+        if (sym, tf) not in bars_memo:
+            if len(bars_memo) >= BARS_MEMO:
+                bars_memo.pop(next(iter(bars_memo)))
+            bars_memo[(sym, tf)] = bars_loader(sym, tf)
         rows.append(replicate_forward(row, meta=dict(meta_all.get(sym) or {}),
-                                      bars=bars_loader(sym, tf),
+                                      bars=bars_memo[(sym, tf)],
                                       ledger=ledger_loader(str(row.get("key") or ""), ident)))
-        cursor["forward"] = (fi + k + 1) % len(fwd)
+        # counted only once its verdict is in `rows`: the share is of rows actually judged
+        if k < len(promotable):
+            judged_promotable += 1
+        else:
+            cursor["forward"] = (rest_idx[k - len(promotable)] + 1) % len(fwd)
     recorded = record(rows, conn=conn, dry_run=dry_run, quarantine_path=quarantine_path)
+    for r in rows:
+        if r.get("lane") == "forward" and r.get("key"):
+            d = r.get("divergence") or {}
+            fbook[str(r["key"])] = {"verdict": r["verdict"], "thin": bool(d.get("thin")),
+                                    "n_ledger": d.get("n_ledger"), "status": r.get("status"),
+                                    "why": list(r.get("why") or [])[:2], "at": _now()}
     counts = {v: sum(1 for r in rows if r["verdict"] == v)
               for v in (REPLICATED, MISMATCH, UNMEASURED)}
     doc = {
@@ -1290,6 +1555,22 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "quarantined": [r["key"] for r in rows if r["verdict"] == MISMATCH],
         "unmeasured": [{"what": r["key"], "why": "; ".join(r["why"])} for r in rows
                        if r["verdict"] == UNMEASURED],
+        "forward_thin_unmeasured": forward_thin_unmeasured(fbook, fwd),
+        # EMPTY REBUILDS BY NAME, both kinds: rules this lane could not build at all this pass
+        # (UNMEASURED, a lane defect to fix) and rules it built that fired zero times (MISMATCH).
+        "rebuild_empty": {kind: sorted(str(r.get("key")) for r in rows
+                                       if (r.get("divergence") or {}).get("rebuild_empty")
+                                       == kind)
+                          for kind in ("STOOD_ASIDE", "BUILT_FIRED_NONE")},
+        "forward_coverage": {"promotable_rows": len(promotable),
+                             "promotable_judged_this_pass": judged_promotable,
+                             "share": (round(judged_promotable / len(promotable), 4)
+                                       if promotable else None),
+                             "other_rows_judged_this_pass":
+                                 sum(1 for r in rows if r.get("lane") == "forward")
+                                 - judged_promotable,
+                             "order": "LIVE and STANDBY first, longest-unjudged first"},
+        "standing_quarantine": standing_quarantine(quarantine_path),
         "recorded": recorded, "cursor": cursor, "notes": notes,
         "independence": {"forbidden_imports": list(FORBIDDEN_IMPORTS),
                          "bars_read_by_this_module": list(BARS_READ[-50:]),
@@ -1307,7 +1588,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
-        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
+        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book,
+                                      "forward": fbook})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
                            "judged_first_this_pass": min(len(pending), per_lane)}
     return doc
@@ -1321,6 +1603,16 @@ def render(doc: Mapping[str, Any]) -> list[str]:
     for r in (doc.get("verdicts") or [])[:16]:
         lines.append(f"  {r['verdict']:<11} {r['lane']:<11} {str(r['key'])[:52]:<52} "
                      f"{'; '.join(r.get('why') or [])[:90]}")
+    thin = doc.get("forward_thin_unmeasured") or {}
+    lines.append(f"  thin forward clocks (under {thin.get('min_forward_trades')} trades, "
+                 f"UNMEASURED, NOT held by the door): {thin.get('n', 0)} LIVE/STANDBY of "
+                 f"{thin.get('forward_rows_with_a_verdict', 0)} judged; "
+                 f"{thin.get('forward_rows_never_reached', 0)} never reached")
+    cov = doc.get("forward_coverage") or {}
+    lines.append(f"  promotable forward rows judged this pass: "
+                 f"{cov.get('promotable_judged_this_pass', 0)}/{cov.get('promotable_rows', 0)}")
+    sq = doc.get("standing_quarantine") or {}
+    lines.append(f"  standing quarantine: {sq.get('n', 0)} row(s) {sq.get('by_lane') or {}}")
     for note in doc.get("notes") or []:
         lines.append(f"  note: {note}")
     return lines
