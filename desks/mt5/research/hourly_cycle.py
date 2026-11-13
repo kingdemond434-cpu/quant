@@ -1197,6 +1197,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
+    # The Auditor backlog's box half (zuck 2026-11-13 20:14Z, item 4): LIVE code no ADOPT CLEAR
+    # row vouches for, measured with the adopter's own guard. Local git only, no network.
+    "audit_backlog",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -6372,6 +6375,11 @@ def main() -> None:
     # when an organ went silent since the last reading.
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
+    # AUDIT BACKLOG, box half (zuck 2026-11-13 20:14Z, item 4). P0 only: the LIVE code adoption
+    # would refuse for want of an ADOPT CLEAR row, read with adopt_guard on this checkout. A
+    # monitor, never a gate; the owed-PR half runs on the Auditor's own scheduled session.
+    abk = _costed("audit_backlog", lambda: _producer(
+        "audit_backlog", "scripts/audit_backlog.py", "--local-only"))
     # CAN EACH RUIN RAIL ACTUALLY FIRE, AND HOW OLD IS THE HALT REALLY (noon CRO, 2026-11-11).
     # The Fusion gateway had been halted 11.7 days -- 26,043 consecutive paused passes -- while
     # `check_research_health` reported "TRADING HALTED for 0.0 day(s)" every pass, because it aged
@@ -6622,7 +6630,8 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
+                    "dead_architecture": dac, "silent_organs": sil, "audit_backlog": abk,
+                    "halt_rail": hri,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,

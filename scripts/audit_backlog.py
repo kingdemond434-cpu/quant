@@ -1,0 +1,597 @@
+#!/usr/bin/env python3
+"""THE AUDIT BACKLOG -- what the Auditor owes, in the order it owes it, with its age published.
+
+zuck, 2026-11-13 20:14Z (final autonomy directive, item 4): "Automate the Auditor backlog and
+prevent future audit queues from growing without bound." The no-queues law (scripts/
+check_no_queues.py) already says the rest: nothing is parked, and where work waits its AGE IS
+PUBLISHED. Until this file the Auditor's backlog was not measured anywhere -- the only way to
+learn that a PR had waited a day for a verdict was for someone to notice.
+
+WHAT IS OWED. An open PR into LIVE whose CURRENT head carries no verdict from a trusted author
+(the same reading the audit gate makes: .github/scripts/audit_gate.py `verdicts`, so an edited
+comment is a HOLD and a verdict on an older head does not count). A PR held at its current head
+is not owed -- it waits on its author -- and is listed apart; so is one whose head conflicts with
+LIVE (CONFLICTED: a CLEAR would die with the non-clean merge-in), and a draft idle past a week
+(STALE_DRAFT: the WIP cap's to close). A draft is owed too: the gate
+marks a CLEARed draft ready, so a draft is not a reason to wait.
+
+THE ORDER (strictest first; ties go oldest first):
+    P0  ADOPT    LIVE code the box cannot adopt because no ADOPT CLEAR row vouches for it
+                 (--repo-dir; `libs/ops/adopt_guard` reading). Every hour here is an hour the
+                 box runs unsealed code with new risk refused.
+    P1  MONEY    a PR touching a RELEASE.json money-path file, or one the gate tiers PROTECTED
+                 (a check that judges PRs) -- these also carry the 24 h veto, so they go first.
+    P2  READY    any other non-draft PR.
+    P3  DRAFT    a draft.
+
+THE SLA, in hours since the head was pushed: P0 2, P1 6, P2 24, P3 72. An item past its SLA is a
+BREACH. The ALARM is raised when any item breaches, or the owed depth exceeds MAX_DEPTH, or the
+newest backlog snapshot is older than its own cadence (a dead drainer). Published:
+
+    reports/audit/AUDIT_BACKLOG.json         the snapshot (depth, oldest age, breaches, items)
+    reports/audit/AUDIT_BACKLOG_HISTORY.jsonl one line per run, so the trend is a fact
+
+    python scripts/audit_backlog.py [--repo kingdemond434-cpu/quant] [--repo-dir .]
+                                    [--out reports/audit] [--strict] [--json]
+
+It reads GitHub through `gh api` (GH_TOKEN in Actions). It never posts, labels or merges:
+measuring the backlog must not need any permission the drain does not already have. Exit 0
+unless --strict and the ALARM is up.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import threading
+from collections.abc import Callable, Iterable, Mapping
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
+REPO = "kingdemond434-cpu/quant"
+RELEASE_REL = "desks/mt5/data/RELEASE.json"
+
+#: Hours an item may wait, by priority, before it is a BREACH.
+SLA_H = {"P0": 2.0, "P1": 6.0, "P2": 24.0, "P3": 72.0}
+#: Owed items above this raise the ALARM whatever their ages: a queue that only grows is the
+#: defect even before any single row is old.
+MAX_DEPTH = 40
+#: A draft whose head has not moved for this long is the WIP cap's (overlay 28m: "close drafts
+#: idle >= 7d, keep the branch"), not the Auditor's: it is listed as STALE_DRAFT for its owner to
+#: close and never counted as owed. A push revives it.
+STALE_DRAFT_H = 168.0
+#: The fallback money path when RELEASE.json cannot be read (fail toward P1, never toward P3).
+MONEY_DIRS = ("desks/mt5/mt5desk/", "libs/portfolio/")
+
+
+def _load(name: str, path: Path) -> Any:
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(str(path))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def gate() -> Any:
+    """The audit gate's own module: one reading of a verdict, never two."""
+    return _load("_audit_gate", ROOT / ".github" / "scripts" / "audit_gate.py")
+
+
+def _ts(s: str | None) -> datetime | None:
+    if not s:
+        return None
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def money_path(root: Path = ROOT) -> tuple[frozenset[str], bool]:
+    """(the RELEASE.json money-path files, read ok)."""
+    try:
+        rel = json.loads((root / RELEASE_REL).read_text(encoding="utf-8"))
+        files = rel.get("money_path") or []
+        if isinstance(files, list) and files:
+            return frozenset(str(f) for f in files), True
+    except (OSError, ValueError):
+        pass
+    return frozenset(), False
+
+
+def priority(
+    files: Iterable[str],
+    draft: bool,
+    money: frozenset[str],
+    money_ok: bool,
+    protected: Callable[[str], bool],
+) -> tuple[str, str]:
+    """(P1|P2|P3, why) for a PR. Unknown files are never a reason to rank lower."""
+    names = list(files)
+    for f in names:
+        if f in money:
+            return "P1", f"money path: {f}"
+        if not money_ok and f.startswith(MONEY_DIRS):
+            return "P1", f"money path (RELEASE.json unreadable): {f}"
+    for f in names:
+        if protected(f):
+            return "P1", f"protected: {f}"
+    if not names:
+        return "P1", "file list unreadable"
+    return ("P3", "draft") if draft else ("P2", "ready")
+
+
+def standing(verdicts: list[Mapping[str, str]], head: str) -> Mapping[str, str] | None:
+    """The newest verdict on `head`, or None (owed). The gate reads ANY edited trusted comment as
+    a HOLD that a newer CLEAR lifts (#133), so a CLEAR followed by an edit is owed again: the
+    Auditor must post a fresh CLEAR for the gate to merge."""
+    edited = [v for v in verdicts if "(an edited comment)" in str(v.get("by", ""))]
+    mine = [v for v in verdicts if v.get("sha") == head and v not in edited]
+    if not mine:
+        return None
+    last = mine[-1]  # verdicts come oldest first
+    if last.get("verdict") == "CLEAR" and any(e["at"] > last["at"] for e in edited):
+        return None
+    return last
+
+
+def item(
+    pr: Mapping[str, Any],
+    files: list[str],
+    verdicts: list[Mapping[str, str]],
+    pushed_at: str | None,
+    now: datetime,
+    money: frozenset[str],
+    money_ok: bool,
+    protected: Callable[[str], bool],
+) -> dict[str, Any]:
+    head = str(pr["head"]["sha"])
+    v = standing(verdicts, head)
+    p, why = priority(files, bool(pr.get("draft")), money, money_ok, protected)
+    since = _ts(pushed_at) or _ts(pr.get("updated_at")) or now
+    age_h = round(max(0.0, (now - since).total_seconds() / 3600.0), 2)
+    state = "OWED" if v is None else ("HELD" if v.get("verdict") == "HOLD" else "CLEARED")
+    if state == "OWED" and pr.get("draft") and age_h > STALE_DRAFT_H:
+        state = "STALE_DRAFT"
+    elif state == "OWED" and pr.get("mergeable_state") == "dirty":
+        # A head that conflicts with LIVE is its author's to merge LIVE into first: a CLEAR on it
+        # dies with the non-clean merge-in (the gate keeps a CLEAR only across a clean one).
+        state = "CONFLICTED"
+    return {
+        "pr": int(pr["number"]),
+        "title": str(pr.get("title") or "")[:120],
+        "head": head,
+        "draft": bool(pr.get("draft")),
+        "priority": p,
+        "why": why,
+        "state": state,
+        "waiting_since": since.isoformat(),
+        "age_h": age_h,
+        "sla_h": SLA_H[p],
+        "breach": state == "OWED" and age_h > SLA_H[p],
+    }
+
+
+def summarise(items: list[dict[str, Any]], now: datetime, adopt: dict[str, Any]) -> dict[str, Any]:
+    owed = [i for i in items if i["state"] == "OWED"]
+    order = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
+    owed.sort(key=lambda i: (order[i["priority"]], -i["age_h"]))
+    breaches = [i for i in owed if i["breach"]]
+    p0 = adopt.get("uncovered") or []
+    p0_breach = bool(p0) and float(adopt.get("age_h") or 0.0) > SLA_H["P0"]
+    why: list[str] = []
+    if breaches:
+        why.append(f"{len(breaches)} owed PR(s) past SLA")
+    if p0:
+        why.append(f"P0: {len(p0)} LIVE code path(s) not vouched for adoption")
+    if len(owed) > MAX_DEPTH:
+        why.append(f"depth {len(owed)} > {MAX_DEPTH}")
+    if adopt.get("error"):
+        why.append(f"P0 unmeasured: {adopt['error']}")
+    return {
+        "generated_utc": now.isoformat(),
+        "verdict": "ALARM" if why else "OK",
+        "why": why,
+        "depth": len(owed) + (1 if p0 else 0),
+        "by_priority": {
+            k: sum(1 for i in owed if i["priority"] == k) + (1 if k == "P0" and p0 else 0)
+            for k in ("P0", "P1", "P2", "P3")
+        },
+        "oldest_owed_h": max((i["age_h"] for i in owed), default=0.0),
+        "breaches": len(breaches) + (1 if p0_breach else 0),
+        "held": sum(1 for i in items if i["state"] == "HELD"),
+        "stale_drafts": sorted(i["pr"] for i in items if i["state"] == "STALE_DRAFT"),
+        "conflicted": sorted(i["pr"] for i in items if i["state"] == "CONFLICTED"),
+        "cleared_unmerged": sum(1 for i in items if i["state"] == "CLEARED"),
+        "sla_h": SLA_H,
+        "max_depth": MAX_DEPTH,
+        "adoption": adopt,
+        "next": [
+            {"pr": i["pr"], "priority": i["priority"], "age_h": i["age_h"]} for i in owed[:10]
+        ],
+        "owed": owed,
+    }
+
+
+# ---------------------------------------------------------------------------------- GitHub I/O
+
+
+#: Set when GitHub says to slow down (429, a secondary/abuse-limit 403, or any Retry-After): every
+#: reader stops at once and the snapshot is written UNMEASURED (the #1116 pattern). Retrying into
+#: a secondary limit from eight threads is how a measuring tool takes the CI queue's quota down.
+RATE_LIMITED = threading.Event()
+_LIMIT_MARKS = ("secondary rate limit", "abuse", "rate limit exceeded", "retry-after", "http 429")
+#: Below this many core reads left, the run does not start: the drain and CI need them more.
+MIN_REMAINING = 2000
+#: An unchanged head's mergeable state is re-read this often (LIVE moving can make it conflict).
+MERGEABLE_TTL_H = 6.0
+
+
+class RateLimited(RuntimeError):
+    """GitHub asked us to slow down; the snapshot is UNMEASURED, not partial."""
+
+
+def _rate_limited(stderr: str) -> bool:
+    low = stderr.lower()
+    return any(m in low for m in _LIMIT_MARKS)
+
+
+def _gh(path: str, tries: int = 4) -> Any:
+    """One REST read. A 5xx or a proxy reset is retried with backoff; a rate-limit answer is
+    never retried: it sets RATE_LIMITED and every reader stops."""
+    import time
+
+    for n in range(tries):
+        if RATE_LIMITED.is_set():
+            raise RateLimited("an earlier read was rate-limited")
+        try:
+            p = subprocess.run(
+                ["gh", "api", "-H", "Accept: application/vnd.github+json", path],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            if n == tries - 1:
+                raise
+            time.sleep(2 * (n + 1))
+            continue
+        if p.returncode == 0:
+            return json.loads(p.stdout)
+        if _rate_limited(p.stderr):
+            RATE_LIMITED.set()
+            raise RateLimited(p.stderr.strip().splitlines()[-1][:200] if p.stderr.strip() else "")
+        if n == tries - 1:
+            raise subprocess.CalledProcessError(p.returncode, "gh api", p.stdout, p.stderr)
+        time.sleep(2 * (n + 1))
+    raise AssertionError("unreachable")
+
+
+def _pages(path: str, cap: int = 30) -> list[Any]:
+    rows: list[Any] = []
+    sep = "&" if "?" in path else "?"
+    for page in range(1, cap + 1):
+        got = _gh(f"{path}{sep}per_page=100&page={page}")
+        rows.extend(got)
+        if len(got) < 100:
+            break
+    return rows
+
+
+def remaining() -> int | None:
+    """Core reads left this hour (the rate_limit endpoint itself costs none); None if unknown."""
+    try:
+        return int(_gh("rate_limit", tries=2)["resources"]["core"]["remaining"])
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        KeyError,
+        ValueError,
+        TypeError,
+    ):
+        return None
+
+
+def _slim(c: Mapping[str, Any]) -> dict[str, Any]:
+    """The fields the gate's verdict reader looks at, and nothing else."""
+    return {
+        "id": c.get("id"),
+        "body": str(c.get("body") or "")[:2000],
+        "author_association": c.get("author_association"),
+        "user": {"login": (c.get("user") or {}).get("login")},
+        "created_at": c.get("created_at"),
+        "updated_at": c.get("updated_at"),
+    }
+
+
+def merge_comments(
+    have: dict[str, list[dict[str, Any]]], new: Iterable[Mapping[str, Any]]
+) -> dict[str, list[dict[str, Any]]]:
+    """Fold repo-wide comments (each names its PR in `issue_url`) into the per-PR cache, by
+    comment id: an edit replaces the old copy, so the gate still reads it as an edit."""
+    out = {k: {c["id"]: c for c in v} for k, v in have.items()}
+    for c in new:
+        n = str(c.get("issue_url") or "").rsplit("/", 1)[-1]
+        if n.isdigit():
+            out.setdefault(n, {})[c.get("id")] = _slim(c)
+    return {
+        k: sorted(v.values(), key=lambda c: str(c.get("created_at") or "")) for k, v in out.items()
+    }
+
+
+def _one(repo: str, pr: dict[str, Any], seen: Mapping[str, Any], now: datetime) -> dict[str, Any]:
+    """This PR's head facts: from the cache when the head has not moved, else read fresh."""
+    n, head = pr["number"], pr["head"]["sha"]
+    if seen.get("sha") == head:
+        rec = dict(seen)
+        at = _ts(rec.get("mergeable_at"))
+        if at is None or (now - at).total_seconds() > MERGEABLE_TTL_H * 3600:
+            with contextlib.suppress(subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                rec["mergeable_state"] = _gh(f"repos/{repo}/pulls/{n}").get("mergeable_state")
+                rec["mergeable_at"] = now.isoformat()
+        return rec
+    rec: dict[str, Any] = {"sha": head, "mergeable_state": None, "mergeable_at": None}
+    # The list endpoint omits mergeable_state; only the single-PR read computes it.
+    with contextlib.suppress(subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        rec["mergeable_state"] = _gh(f"repos/{repo}/pulls/{n}").get("mergeable_state")
+        rec["mergeable_at"] = now.isoformat()
+    rec["files"] = [str(f.get("filename")) for f in _pages(f"repos/{repo}/pulls/{n}/files")]
+    try:  # the list endpoint carries no diff, unlike commits/{sha}
+        c = _gh(f"repos/{repo}/commits?sha={head}&per_page=1")
+        rec["pushed"] = c[0]["commit"]["committer"]["date"]
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, KeyError, IndexError):
+        rec["pushed"] = None
+    return rec
+
+
+def fetch(
+    repo: str, cache: dict[str, Any], now: datetime, workers: int = 8
+) -> list[tuple[dict[str, Any], list[str], list[Any], str | None]]:
+    """Every open PR into LIVE with its files, comments and head push time. Incremental: a head
+    already read is not read again, and comments come repo-wide since the last run, so a steady
+    board costs a few dozen reads, not thousands (Auditor MF3 on #1121)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    prs = _pages(f"repos/{repo}/pulls?state=open&base={LIVE}")
+    heads: dict[str, Any] = cache.get("heads") or {}
+    comments: dict[str, list[dict[str, Any]]] = cache.get("comments") or {}
+    since = cache.get("comments_since")
+    if since:
+        comments = merge_comments(comments, _pages(f"repos/{repo}/issues/comments?since={since}"))
+    missing = [pr for pr in prs if str(pr["number"]) not in comments]
+
+    def _all_comments(pr: Mapping[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+        rows = _pages(f"repos/{repo}/issues/{pr['number']}/comments")
+        return str(pr["number"]), [_slim(c) for c in rows]
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        comments.update(dict(pool.map(_all_comments, missing)))
+        recs = list(pool.map(lambda pr: _one(repo, pr, heads.get(str(pr["number"]), {}), now), prs))
+    open_ = {str(pr["number"]) for pr in prs}
+    cache["heads"] = {str(pr["number"]): r for pr, r in zip(prs, recs, strict=True)}
+    cache["comments"] = {k: v for k, v in comments.items() if k in open_}
+    # A small overlap: comments are keyed by id, so re-reading the last minutes costs nothing.
+    cache["comments_since"] = (now - timedelta(minutes=10)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return [
+        (
+            {**pr, "mergeable_state": r.get("mergeable_state")},
+            list(r.get("files") or []),
+            cache["comments"].get(str(pr["number"]), []),
+            r.get("pushed"),
+        )
+        for pr, r in zip(prs, recs, strict=True)
+    ]
+
+
+def registry_verdicts(rows: Iterable[Mapping[str, Any]], pr: int) -> list[dict[str, str]]:
+    """The Auditor's registry rows for `pr` as verdicts (Auditor MF1 on #1121): a head CLEARed or
+    HELD there is not owed even before its comment is posted."""
+    out = []
+    for r in rows:
+        if r.get("pr") == pr and r.get("verdict") in ("CLEAR", "HOLD") and r.get("sha"):
+            out.append(
+                {
+                    "verdict": str(r["verdict"]),
+                    "sha": str(r["sha"]),
+                    "at": str(r.get("at") or ""),
+                    "method": "merge",
+                    "by": "registry",
+                }
+            )
+    return out
+
+
+def combined(comment_v: list[Mapping[str, str]], reg_v: list[Mapping[str, str]]) -> list[dict]:
+    """Comment and registry verdicts on one clock, oldest first; the newer of the two wins."""
+    out = []
+    for v in [*comment_v, *reg_v]:
+        t = _ts(v.get("at"))
+        out.append({**v, "at": t.isoformat() if t else ""})
+    return sorted(out, key=lambda v: v["at"])
+
+
+def adoption(repo_dir: Path | None, now: datetime) -> dict[str, Any]:
+    """P0: LIVE code paths whose tip blob no ADOPT CLEAR row vouches for, measured from the
+    newest row's commit (everything before it was already judged). Needs a full clone."""
+    if repo_dir is None:
+        return {"measured": False}
+    try:
+        sys.path.insert(0, str(repo_dir))
+        ag = _load("_adopt_guard", repo_dir / "libs" / "ops" / "adopt_guard.py")
+        tip = ag._rev(repo_dir, ag.LIVE_REF)
+        rows = ag.effective_clears(repo_dir, tip)
+        plain = [r for r in rows if r.verdict == "CLEAR" and r.by != ag.GATE_BY]
+        if not plain:
+            return {"measured": False, "error": "no ADOPT CLEAR row on LIVE"}
+        base = plain[-1].commit
+        paths = [p for p in ag._changed(repo_dir, base, tip) if ag.is_code(p)]
+        unc = ag.uncovered(repo_dir, paths, tip, rows)
+        first = None
+        if unc:
+            log = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_dir),
+                    "log",
+                    "--reverse",
+                    "--format=%cI",
+                    f"{base}..{tip}",
+                    "--",
+                    *unc,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            ).stdout.split()
+            first = log[0] if log else None
+        since = _ts(first) or now
+        return {
+            "measured": True,
+            "tip": tip,
+            "last_row_commit": base,
+            "uncovered": unc,
+            "since": since.isoformat() if unc else None,
+            "age_h": round((now - since).total_seconds() / 3600.0, 2) if unc else 0.0,
+        }
+    except Exception as exc:
+        # The type only (Auditor MF2 on #1121): an exception's text can carry a host path.
+        return {"measured": False, "error": type(exc).__name__}
+
+
+#: The box half's artifact (hourly_cycle leg `audit_backlog`): the adoption-blocking P0 alone.
+LOCAL_OUT = ROOT / "desks" / "mt5" / "reports"
+LOCAL_NAME = "AUDIT_BACKLOG_P0.json"
+
+
+def local_only(repo_dir: Path, out: Path, now: datetime, strict: bool) -> int:
+    """THE BOX HALF (hourly). The box holds the full clone and the adopt guard the adopter itself
+    runs, so it is the one place P0 -- LIVE code no ADOPT CLEAR row vouches for -- is measured
+    the way adoption will judge it. No GitHub read and no registry: the owed-PR half runs on the
+    Auditor's own scheduled session, so the two halves never duplicate a read."""
+    snap = summarise([], now, adoption(repo_dir, now))
+    snap["half"] = "box: P0 adoption only (the owed-PR half runs on the Auditor's session)"
+    if out == ROOT / "reports" / "audit":
+        out = LOCAL_OUT
+    out.mkdir(parents=True, exist_ok=True)
+    tmp = out / (LOCAL_NAME + ".tmp")
+    tmp.write_text(json.dumps(snap, indent=1) + "\n", encoding="utf-8")
+    os.replace(tmp, out / LOCAL_NAME)
+    p0 = snap["adoption"].get("uncovered") or []
+    print(
+        f"AUDIT BACKLOG P0 {snap['verdict']}: {len(p0)} LIVE code path(s) unvouched"
+        + (f" -- {'; '.join(snap['why'])}" if snap["why"] else "")
+    )
+    return 1 if strict and snap["verdict"] != "OK" else 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--repo", default=REPO)
+    ap.add_argument("--repo-dir", type=Path, default=None)
+    ap.add_argument("--out", type=Path, default=ROOT / "reports" / "audit")
+    ap.add_argument("--registry", default=None, help="REGISTRY_ROWS.jsonl (else env)")
+    ap.add_argument("--cache", type=Path, default=None)
+    ap.add_argument(
+        "--local-only",
+        action="store_true",
+        help="the box's hourly half: P0 only, from this checkout's git and adopt_guard; no "
+        "GitHub read, no registry; writes AUDIT_BACKLOG_P0.json beside the other reports",
+    )
+    ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args(argv)
+
+    now = datetime.now(UTC)
+    if a.local_only:
+        return local_only(a.repo_dir or ROOT, a.out, now, a.strict)
+    g = gate()
+    money, money_ok = money_path()
+    reg_path = a.registry or os.environ.get("QUANT_AUDIT_REGISTRY")
+    reg_rows, reg_why = g.registry_rows(reg_path)
+    a.out.mkdir(parents=True, exist_ok=True)
+    cache_path = a.cache or (a.out / ".audit_backlog_cache.json")
+    try:
+        cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+    except (OSError, ValueError):
+        cache = {}
+    left = remaining()
+    try:
+        if left is not None and left < MIN_REMAINING:
+            raise RateLimited(f"only {left} core reads left this hour (< {MIN_REMAINING})")
+        rows = fetch(a.repo, cache, now)
+    except RateLimited as exc:
+        snap = {
+            "generated_utc": now.isoformat(),
+            "verdict": "UNMEASURED",
+            "why": [f"rate-limited: {exc}"[:240]],
+            "depth": None,
+        }
+    else:
+        items = [
+            item(
+                pr,
+                files,
+                combined(g.verdicts(comments), registry_verdicts(reg_rows, int(pr["number"]))),
+                pushed,
+                now,
+                money,
+                money_ok,
+                g.is_protected,
+            )
+            for pr, files, comments, pushed in rows
+        ]
+        snap = summarise(items, now, adoption(a.repo_dir, now))
+        snap["registry"] = {"rows": len(reg_rows), "unread": reg_why or None}
+        if reg_why:
+            snap["why"].append(f"registry unread: {reg_why}")
+            snap["verdict"] = "ALARM"
+        snap["reads_left_before"] = left
+        tmp = cache_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(cache), encoding="utf-8")
+        os.replace(tmp, cache_path)
+
+    a.out.mkdir(parents=True, exist_ok=True)
+    (a.out / "AUDIT_BACKLOG.json").write_text(json.dumps(snap, indent=1) + "\n", encoding="utf-8")
+    hist = {
+        k: snap.get(k)
+        for k in (
+            "generated_utc",
+            "verdict",
+            "depth",
+            "by_priority",
+            "oldest_owed_h",
+            "breaches",
+            "held",
+        )
+    }
+    hist["stale_drafts"] = len(snap.get("stale_drafts") or [])
+    hist["conflicted"] = len(snap.get("conflicted") or [])
+    hist["cleared_unmerged"] = snap.get("cleared_unmerged")
+    with (a.out / "AUDIT_BACKLOG_HISTORY.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(hist, sort_keys=True) + "\n")
+
+    if a.json:
+        print(json.dumps(snap, indent=1))
+    else:
+        print(
+            f"AUDIT BACKLOG {snap['verdict']}: depth {snap['depth']} {snap.get('by_priority')}, "
+            f"oldest {snap.get('oldest_owed_h')} h, {snap.get('breaches')} breach(es)"
+            + (f" -- {'; '.join(snap['why'])}" if snap["why"] else "")
+        )
+        for n in snap.get("next") or []:
+            print(f"  next: #{n['pr']} {n['priority']} {n['age_h']} h")
+    return 1 if a.strict and snap["verdict"] != "OK" else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
