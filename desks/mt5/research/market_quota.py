@@ -410,10 +410,21 @@ def order_tier(specs: Sequence[dict[str, Any]], plan: dict[str, Any],
         merged[g] = _deficit_interleave(fams, family_weights(fams, fylds))
     ex = merged.pop("exotic", [])
     allow = max(0, int(allow))
-    held = ex[allow:]
-    if ex[:allow]:
-        merged["exotic"] = ex[:allow]
-    return _deficit_interleave(merged, plan["shares"]), held
+    held, ex = ex[allow:], ex[:allow]
+    non = _deficit_interleave(merged, plan["shares"])
+    # EXOTICS ARE PLACED BY THEIR SHARE OF THE WHOLE PREFIX, not by weight among the groups still
+    # holding cells: when gold runs out a weight split would hand its turns to exotics in
+    # proportion, and the tail of a round would run far past the 10% the principal set.
+    share = float(plan["shares"].get("exotic") or 0.0)
+    out: list[dict[str, Any]] = []
+    k = 0
+    for sp in non:
+        out.append(sp)
+        while k < len(ex) and (k + 1) <= share * (len(out) + 1):
+            out.append(ex[k])
+            k += 1
+    held = ex[k:] + held
+    return out, held
 
 
 def exotic_allowance(n_non_exotic: int, exotic_share: float) -> int:
