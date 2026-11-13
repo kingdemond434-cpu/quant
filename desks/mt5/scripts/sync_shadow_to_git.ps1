@@ -837,6 +837,12 @@ $reportPaths = @(
     # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
     "desks/mt5/reports/JUDGE_PRESCREEN.json",
     "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
+    # whether the noon CRO pass landed in the last 26 h (2026-11-05, hourly leg
+    # cro_noon_freshness): the noon routine and the coordinator read its RED off the box
+    "desks/mt5/reports/CRO_NOON_FRESHNESS.json",
+    # the duty re-measure the noon launcher writes before and after the pass (2026-11-11): the
+    # first box noon pass ran with its start-of-run counts readable only over the box bridge
+    "desks/mt5/reports/CRO_DUTIES.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

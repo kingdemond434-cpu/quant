@@ -87,3 +87,33 @@ def test_a_bom_first_row_counts_and_bad_bytes_are_red(tmp_path: Path) -> None:
     bad = tmp_path / "bad.jsonl"
     bad.write_bytes(b"\xff\xfe\x00garbage")
     assert chk.measure(bad, now)["status"] == "RED"
+
+
+def test_the_verdict_crosses_the_wire_off_the_box() -> None:
+    # The noon routine and the coordinator read this verdict from origin. For a week it was
+    # written on the box and never published: `**/reports/*` ignored it and the sync never
+    # listed it, so the RED this check exists to raise reached nobody off the box.
+    import subprocess
+
+    from libs.ops.state_publication import published_paths
+    rel = chk.ARTIFACT.relative_to(ROOT).as_posix()
+    assert rel in published_paths(ROOT)
+    ignored = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT)
+    assert ignored.returncode == 1, f"{rel} is gitignored, so the sync would publish nothing"
+
+
+def test_the_leg_runs_where_a_never_run_leg_is_admitted() -> None:
+    # On the box the core plan admitted only its always-run legs for a week, so this leg sat in
+    # NEVER RUN and its report never existed. It belongs to the meta department plan.
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "hourly_cycle_for_plan", ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py")
+    assert spec and spec.loader
+    hc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hc)
+    assert "cro_noon_freshness" not in hc.CORE_LEGS
+    assert hc.department_of("cro_noon_freshness") == "meta"
+    assert hc.in_plan("cro_noon_freshness", "dept:meta")
+    from libs.ops.leg_rotation import ALWAYS_RUN
+    assert "cro_noon_freshness" in ALWAYS_RUN
