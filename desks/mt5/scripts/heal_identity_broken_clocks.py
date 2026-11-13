@@ -32,15 +32,21 @@ desk will treat as evidence.
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
+import inspect
 import json
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DESK / "research"))
 sys.path.insert(0, str(DESK))
 sys.path.insert(0, str(DESK.parents[1]))
+REPO = DESK.parents[1]
 
 import sleeve_registry as reg  # noqa: E402
 
@@ -67,7 +73,17 @@ def current_identity(row: dict) -> dict | None:
     # edge_search mints -- lives in ORTHOGONAL_FAMILIES. Resolving with the narrow lookup returned
     # None for every one of those rows, so they were silently skipped and the backfill reported
     # zero: a healer that appeared to run cleanly while covering none of the clocks that needed it.
-    fam = str(frozen.get("family") or "")
+    fn = family_fn(str(frozen.get("family") or ""))
+    if fn is None:
+        return None
+    ident = dict(frozen)
+    ident["code_hash"] = reg.code_hash(fn)
+    ident["behaviour_hash"] = reg.behaviour_hash(fn)
+    return ident
+
+
+def family_fn(fam: str) -> Any:
+    """The callable the forward engine would run for `fam`, or None when it cannot be loaded."""
     fn = None
     try:
         from mt5desk import families
@@ -80,12 +96,107 @@ def current_identity(row: dict) -> dict | None:
             fn = _fo.ORTHOGONAL_FAMILIES.get(fam)
         except ImportError:
             fn = None
+    return fn
+
+
+#: Where the hold is published, and how far back the frozen source is looked for.
+REPORT = DESK / "reports" / "IDENTITY_HEALER.json"
+#: A hold is a wait for the equivalence re-attach, never a permanent stop (audit HOLD on
+#: 3516c4758). Past this the clock is rebased as before -- its window resets -- and the forward
+#: days that cost are published under `missed_growth` in the report.
+HOLD_EXPIRY_H = 72.0
+SOURCE_LOOKBACK = 400
+_REVISION_HASHES: dict[tuple[str, str], str | None] = {}
+
+
+def _def_hash(text: str, name: str) -> str | None:
+    """`sleeve_registry.code_hash` of module-level `def name` in `text` (def line to body end)."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return None
+    lines = text.splitlines(keepends=True)
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
+            src = "".join(lines[node.lineno - 1:node.end_lineno])
+            return hashlib.sha256(src.encode("utf-8")).hexdigest()[:16]
+    return None
+
+
+def frozen_source_revision(fn: Any, frozen_hash: str, *,
+                           lookback: int = SOURCE_LOOKBACK) -> str | None:
+    """The git revision whose copy of `fn` hashes to the code_hash a clock froze, else None.
+
+    WHY THE HEALER LOOKS BEFORE IT RESETS (2026-10-29). `rebase_code()` is right only when "the
+    frozen code exists nowhere" -- and that was asserted, never measured. On 2026-10-28 three
+    families_vector commits put a speed-only, signal-identical fast path INSIDE 18 family bodies;
+    every clock on those families went IDENTITY_BROKEN on adopt (51 code_hash-only rows in the
+    10-29 shadow_state, 48 formula) and the next healer pass would have reset every one of their
+    windows, although the frozen source sat in git one commit back. A frozen source that IS
+    recoverable means the window can be proven equivalent by replay, so it must not be reset.
+
+    Unreadable git, a shallow clone that lacks the revision, or a callable with no module-level
+    def all answer None -- and None leaves today's behaviour unchanged (L1.28a: no claim of
+    recoverability without the revision in hand).
+    """
+    try:
+        path = Path(inspect.getsourcefile(fn) or "").resolve()
+        rel = path.relative_to(REPO).as_posix()
+    except (TypeError, ValueError, OSError):
+        return None
+    name = getattr(fn, "__name__", "")
+    try:
+        revs = subprocess.run(
+            ["git", "-C", str(REPO), "log", "--format=%H", "-n", str(lookback), "--", rel],
+            capture_output=True, text=True, timeout=60, check=False).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    for rev in revs:
+        cache = (rev, f"{rel}:{name}")
+        if cache not in _REVISION_HASHES:
+            try:
+                text = subprocess.run(["git", "-C", str(REPO), "show", f"{rev}:{rel}"],
+                                      capture_output=True, text=True, timeout=60,
+                                      check=False).stdout
+            except (OSError, subprocess.SubprocessError):
+                text = ""
+            _REVISION_HASHES[cache] = _def_hash(text, name) if text else None
+        if _REVISION_HASHES[cache] == frozen_hash:
+            return rev
+    return None
+
+
+def vector_hooked(fn: Any) -> bool:
+    """Whether `fn` carries a families_vector fast path (speed only, signal-identical by test)."""
+    try:
+        src = inspect.getsource(fn)
+    except (OSError, TypeError):
+        return False
+    return "families_vector" in src or "_vec.enabled(" in src
+
+
+def reattach_hold(row: dict[str, Any]) -> str | None:
+    """Why a code_hash-only break must WAIT for an equivalence re-attach instead of resetting.
+
+    The window is held, never reset, when the frozen source is recoverable from git (an
+    equivalence replay can prove the old and new code emit the same trades) or the family carries
+    a families_vector hook (speed only, pinned signal-identical by test_families_vector_identity*).
+    The engine replays from bars, so a held clock loses no day: once re-attached on its original
+    forward_start the whole window is recomputed. Returns None when neither holds -- the
+    existing rebase path then runs unchanged.
+    """
+    frozen = row.get("identity") or {}
+    fn = family_fn(str(frozen.get("family") or ""))
     if fn is None:
         return None
-    ident = dict(frozen)
-    ident["code_hash"] = reg.code_hash(fn)
-    ident["behaviour_hash"] = reg.behaviour_hash(fn)
-    return ident
+    rev = frozen_source_revision(fn, str(frozen.get("code_hash") or ""))
+    if rev:
+        return (f"HELD_FOR_REATTACH: frozen source {frozen.get('code_hash')} recoverable at "
+                f"{rev[:10]} -- an equivalence replay can keep the window, so it is not reset")
+    if vector_hooked(fn):
+        return ("HELD_FOR_REATTACH: family carries a speed-only families_vector hook -- the "
+                "code_hash moved, the signals did not; window held for the equivalence replay")
+    return None
 
 
 def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
@@ -363,9 +474,15 @@ def main() -> int:
               if str(v.get("status") or "").upper() == "IDENTITY_BROKEN"}
     if not broken:
         print("identity healer: no IDENTITY_BROKEN clocks")
+        if args.apply:
+            write_report(0, resumed=[], rebased=[], held=[], refused=[])
         return 0
 
-    resumed, rebased, refused = [], [], []
+    resumed, rebased, refused, held = [], [], [], []
+    now = datetime.now(tz=UTC)
+    since = prior_hold_since()
+    held_since: dict[str, str] = {}
+    lost: list[dict[str, Any]] = []
     for key, row in sorted(broken.items()):
         ident = current_identity(row)
         if ident is None:
@@ -376,15 +493,32 @@ def main() -> int:
             if why:
                 resumed.append((key, why))
                 continue
+            expired_hold = None
+            if reg.verify(key, ident) == ["code_hash"]:
+                hold = reattach_hold(row)
+                start = hold_start(since.get(key), row)
+                if hold and not hold_expired(start, now):
+                    held.append((key, hold))
+                    held_since[key] = start or now.isoformat(timespec="seconds")
+                    if not row.get("status_at"):
+                        stamp_hold_start(key, held_since[key])
+                    continue
+                expired_hold = hold
+            fwd = row.get("forward_start")
             why = reg.rebase_code(key, ident)
             if why:
                 rebased.append((key, why))
+                if expired_hold:
+                    lost.append(lost_window(key, hold_start(since.get(key), row), fwd, now))
                 continue
             refused.append((key, "drift is not code_hash alone -- a strategy change stays dead"))
         else:
             drift = reg.verify(key, ident)
             if not drift:
                 resumed.append((key, "identity intact again -- window would be KEPT"))
+            elif (drift == ["code_hash"] and (hold := reattach_hold(row))
+                  and not hold_expired(hold_start(since.get(key), row), now)):
+                held.append((key, hold))
             elif drift == ["code_hash"]:
                 rebased.append((key, f"code {row['identity'].get('code_hash')} -> "
                                      f"{ident.get('code_hash')} -- window would RESET"))
@@ -394,11 +528,131 @@ def main() -> int:
     verb = "" if args.apply else " (dry run -- pass --apply)"
     print(f"identity healer{verb}: {len(broken)} broken -> "
           f"{len(resumed)} resumed (window kept), {len(rebased)} rebased (window reset), "
-          f"{len(refused)} left terminal")
-    for group, label in ((resumed, "RESUMED"), (rebased, "REBASED"), (refused, "TERMINAL")):
+          f"{len(held)} held for re-attach (window kept), {len(refused)} left terminal")
+    for group, label in ((resumed, "RESUMED"), (rebased, "REBASED"), (held, "HELD"),
+                         (refused, "TERMINAL")):
         for key, why in group:
             print(f"  {label:9s} {key[:46]:<48} {why[:96]}")
+    if args.apply:
+        write_report(len(broken), resumed=resumed, rebased=rebased, held=held, refused=refused,
+                     held_since=held_since, lost=lost)
     return 0
+
+
+def prior_hold_since(path: Path | None = None) -> dict[str, str]:
+    """When each clock now held was FIRST held, from the last published report."""
+    try:
+        doc = json.loads((path or REPORT).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(r["key"]): str(r["since"]) for r in doc.get("held") or []
+            if isinstance(r, dict) and r.get("key") and r.get("since")}
+
+
+def _ts(value: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def hold_start(reported: str | None, row: dict[str, Any]) -> str | None:
+    """The EARLIER of the published hold start and the registry's own break stamp.
+
+    A hold leaves the row untouched, so its `status_at` is when it went IDENTITY_BROKEN and
+    survives a lost or unreadable IDENTITY_HEALER.json; the report alone would let every pass
+    restart the 72h (Auditor should-fix, 11-03).
+    """
+    stamped = (row.get("status_at")
+               if str(row.get("status") or "").upper() == "IDENTITY_BROKEN" else None)
+    known = [(t, str(v)) for v in (reported, stamped) if v and (t := _ts(v)) is not None]
+    if known:
+        return min(known)[1]
+    return reported or None             # unreadable -> hold_expired() expires it
+
+
+def stamp_hold_start(key: str, start: str) -> None:
+    """Write the hold's start onto a broken row that carries no `status_at`, so the start is
+    durable in the registry and a lost report cannot restart it (Auditor nit, 11-03)."""
+    doc = reg._read(reg.REGISTRY)
+    row = (doc.get("sleeves") or {}).get(key)
+    if isinstance(row, dict) and not row.get("status_at"):
+        row["status_at"] = start
+        reg._write(doc)
+
+
+def hold_expired(since: str | None, now: datetime) -> bool:
+    if not since:
+        return False
+    try:
+        t = datetime.fromisoformat(since)
+    except ValueError:
+        return True                     # an unreadable start cannot extend a hold
+    t = t if t.tzinfo else t.replace(tzinfo=UTC)
+    return (now - t).total_seconds() / 3600.0 > HOLD_EXPIRY_H
+
+
+def lost_window(key: str, since: str | None, forward_start: Any, now: datetime) -> dict[str, Any]:
+    """The forward window a hold that expired gave up, in days."""
+    days: float | str = "UNMEASURED"
+    try:
+        t0 = datetime.fromisoformat(str(forward_start))
+        t0 = t0 if t0.tzinfo else t0.replace(tzinfo=UTC)
+        days = round((now - t0).total_seconds() / 86400.0, 2)
+    except ValueError:
+        pass
+    return {"key": key, "held_since": since, "forward_start_lost": forward_start,
+            "forward_days_lost": days}
+
+
+def write_report(broken: int, *, held_since: dict[str, str] | None = None,
+                 lost: list[dict[str, Any]] | None = None,
+                 **groups: list[tuple[str, str]]) -> dict[str, Any]:
+    """Publish the pass, with the RED line rule 23 asks for (reports/IDENTITY_HEALER.json).
+
+    RED while any clock is held: a held clock replays nothing until the equivalence re-attach
+    lands, so the desk must see it every hour rather than read "healed" off a quiet log. Each
+    hold carries its start and expiry; a hold that expired is rebased and its lost window is the
+    `missed_growth` line. It is published HERE, not appended to data/missed_growth.jsonl,
+    because that ledger is keyed by the sealed rails registry (libs/portfolio/rails.py).
+    """
+    held = groups.get("held") or []
+    starts = held_since or {}
+    gone = lost or []
+
+    def _expiry(k: str) -> str | None:
+        try:
+            t = datetime.fromisoformat(starts[k])
+        except (KeyError, ValueError):
+            return None
+        end = datetime.fromtimestamp(t.timestamp() + HOLD_EXPIRY_H * 3600.0, tz=t.tzinfo or UTC)
+        return end.isoformat(timespec="seconds")
+
+    days = [x["forward_days_lost"] for x in gone if isinstance(x["forward_days_lost"], float)]
+    doc = {
+        "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "broken": broken,
+        **{name: [{"key": k, "why": w,
+                   **({"since": starts.get(k), "expires_at": _expiry(k)} if name == "held"
+                      else {})}
+                  for k, w in rows] for name, rows in groups.items()},
+        "hold_expiry_h": HOLD_EXPIRY_H,
+        "missed_growth": {
+            "rail": "identity_reattach_hold_expiry", "clocks_rebased_on_expiry": len(gone),
+            "forward_days_lost": round(sum(days), 2), "rows": gone,
+            "why": ("a held clock whose re-attach did not land within the expiry is rebased; "
+                    "its window resets and these forward days are the price")},
+        "verdict": "RED" if held else "GREEN",
+        "why": (f"{len(held)} forward clock(s) stopped on a code_hash-only break whose window "
+                f"is held for the equivalence re-attach" if held else
+                "no clock waits on a re-attach"),
+    }
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    tmp = REPORT.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+    tmp.replace(REPORT)
+    return doc
 
 
 if __name__ == "__main__":
