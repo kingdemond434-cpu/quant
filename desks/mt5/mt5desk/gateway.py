@@ -2909,6 +2909,11 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                              if getattr(d, "time", 0) else None),
                "timestamp_basis": "broker_deal_epoch",
                "side": d.type, "pl_quote": round(pl_quote, 2),
+               # HOW IT ENDED, from the broker's own OUT label (trader-brain #7): `[sl ...]` a
+               # stop, `[tp ...]` a target, `[so ...]` a margin stop-out, anything else the desk.
+               "exit_kind": ("sl" if _out_comment.startswith("[sl") else
+                             "tp" if _out_comment.startswith("[tp") else
+                             "stop_out" if _out_comment.startswith("[so") else "desk"),
                "r_multiple": round(r, 4), "volume": d.volume,
                "commission": d.commission, "swap": d.swap, "deal": d.ticket,
                "entry_cost_allocated": entry_cost if entry_cost_measured else None,

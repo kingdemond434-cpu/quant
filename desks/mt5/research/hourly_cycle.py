@@ -1279,6 +1279,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # THE TRADER BRAIN'S THREE BOOKS (2026-11-13, rows #2/#6/#7): the event-window verdict per
+    # sleeve and the spread reference the gateway's entry deferral reads (each expires at 26h),
+    # and the journal row per closed trade loss_learner and the dashboard read. Seconds each.
+    "event_window_policy", "spread_state", "trade_journal",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5915,6 +5919,16 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # THE ENTRY DEFERRAL'S TWO INPUTS AND THE TRADE JOURNAL (trader-brain #2/#6/#7). The policy
+    # and the spread reference expire at 26h, so a missed day leaves the gateway's event gate on
+    # its conservative default and its spread gate off; the journal follows the spread reference
+    # because each row's spread ratio is read off it.
+    ewp = _costed("event_window_policy", lambda: _producer(
+        "event_window_policy", "research/event_window_policy.py"))
+    sps = _costed("spread_state", lambda: _producer(
+        "spread_state", "research/spread_state.py"))
+    tjn = _costed("trade_journal", lambda: _producer(
+        "trade_journal", "research/trade_journal.py"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
@@ -6618,6 +6632,7 @@ def main() -> None:
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "event_window_policy": ewp, "spread_state": sps, "trade_journal": tjn,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

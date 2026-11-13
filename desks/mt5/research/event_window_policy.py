@@ -284,7 +284,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     events, cal = load_calendar()
     rows = {k: judge(v, events) for k, v in trades().items() if v["trades"]} if events else {}
     holm(rows)
-    counts: dict[str, int] = defaultdict(int)
+    counts: dict[str, int] = {"DEFER": 0, "TRADE_THROUGH": 0, "NO_EVIDENCE": 0}
     for r in rows.values():
         counts[r["verdict"]] += 1
     return {"generated_utc": now.isoformat(timespec="seconds"),
