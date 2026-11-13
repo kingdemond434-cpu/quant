@@ -919,6 +919,11 @@ NODES: tuple[Node, ...] = (
     # dead-architecture census carries its counts.
     Node("component_use", "scripts/check_component_use.py",
          writes=("desks/mt5/reports/COMPONENT_USE.json",)),
+    # ARCH-18: the eight acceptance drills graded from recovery_drills' scorecard, published as
+    # the runtime proofs the acceptance addendum (docs/research/acceptance_drills_v1.json) reads.
+    Node("acceptance_drills", "desks/mt5/research/acceptance_drills.py",
+         writes=("desks/mt5/reports/ACCEPTANCE_DRILLS.json",
+                 "desks/mt5/reports/acceptance_drills/")),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
@@ -1068,6 +1073,10 @@ EXTERNAL_READERS = {
     "desks/mt5/reports/COMPONENT_USE.json": ("scripts/check_dead_architecture.py (its "
                                              "component_use block) and the law gate's "
                                              "check_component_use --ratchet state fence"),
+    "desks/mt5/reports/ACCEPTANCE_DRILLS.json": ("a person (the drill board); the per-drill "
+                                                 "proofs beside it are what the audit reads"),
+    "desks/mt5/reports/acceptance_drills/": ("global_research_acceptance.audit via the "
+                                             "ACCEPTANCE_DRILLS_V1 addendum (AD01-AD08)"),
     "desks/mt5/reports/STYLE_NOVELTY.json": ("judge_coverage.rank_by_value's novelty factor and "
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),

@@ -310,6 +310,21 @@
     "threshold": 0.6,
     "after": "any reading in which fewer than 60% of clocked organs are USED (0.672 at the 2026-11-10 baseline): new organs are landing without tested readers faster than gaps close, so the fence is not stopping the museum"
    }
+  },
+  "acceptance_drills": {
+   "hypothesis": "Grading the eight acceptance drills ARCH-18 names from the recovery scorecard every hour and publishing each as a runtime proof the acceptance package audits keeps the package from reading a function CURRENT_VERIFIED while the drill that proves it has never run or has failed.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.FAIL",
+    "better": "down",
+    "organ": "report:ACCEPTANCE_DRILLS.json"
+   },
+   "falsifier": {
+    "metric": "counts.UNMEASURED",
+    "op": ">=",
+    "threshold": 8,
+    "after": "30 days of box readings in which all eight drills stay UNMEASURED: the scorecard it grades is not running and the board proves nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
