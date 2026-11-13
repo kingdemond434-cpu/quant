@@ -62,6 +62,7 @@ def test_a_locked_breach_log_never_kills_the_rail(tmp_path: Path, monkeypatch, c
     target = locked / "fusion_deadman.log"
     target.mkdir()                                       # opening a directory for append fails
     monkeypatch.setattr(dm, "BREACH_LOG", target)
+    dm.pass_log().mkdir()                                # each pass now logs to its own file
     monkeypatch.setattr("time.sleep", lambda _s: None)
     dm.log("BREACH test")
     out = capsys.readouterr().out

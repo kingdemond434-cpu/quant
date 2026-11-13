@@ -24,6 +24,8 @@ distinction is the whole design:
 from __future__ import annotations
 
 import json
+import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -163,25 +165,53 @@ REARM_COOLDOWN_MIN = 30
 REARM_COOLDOWN_CAP_MIN = 12 * 60
 
 
-def log(msg: str) -> None:
-    line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} {msg}"
-    print(line)
-    # THE LOG MAY NOT KILL THE RAIL (2026-11-03): the DryRun and Live tasks share this file, and
-    # Windows refuses the second open while the first holds it; that PermissionError crashed
-    # every DryRun pass. The line is already on stdout (the task's own log); retry briefly, then
-    # carry on without it.
-    import time
+#: ONE LOG FILE PER PASS, AND A LOG LINE NEVER FAILS A PASS (box 2026-10-29). The dry-run and
+#: live passes fire in the same second and both appended to `BREACH_LOG`; on Windows that is a
+#: sharing violation, `open("a")` raised PermissionError [Errno 13] out of `log()`, and the
+#: dry-run pass exited 1 from its stand-aside line. Each pass now appends to its own file
+#: (`fusion_deadman_dry.log` / `fusion_deadman_live.log`, beside `BREACH_LOG`), a refused open is
+#: retried briefly, and a line that still cannot be written goes to stderr (the task's own
+#: redirect) instead of raising. `main` sets the pass from what was REQUESTED, so a `--live` pass
+#: demoted to dry-run still writes the live file. No rail, threshold or action reads this.
+_PASS = ["dry"]
+LOG_ATTEMPTS = 3
+LOG_BACKOFF_S = 0.1
 
-    for wait in (0.0, 0.2, 0.5, 1.0):
-        time.sleep(wait)
+
+def pass_log() -> Path:
+    """This pass's log file: `BREACH_LOG`'s name with `_dry` or `_live` before the suffix."""
+    return BREACH_LOG.with_name(f"{BREACH_LOG.stem}_{_PASS[0]}{BREACH_LOG.suffix}")
+
+
+def log(msg: str) -> None:
+    """Append `msg` to this pass's log and echo it to stdout. NEVER raises."""
+    line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} {msg}"
+    # THE LOG MAY NOT KILL THE RAIL (LIVE 2026-11-03, this branch 2026-10-29): the DryRun and Live
+    # tasks shared one file and Windows refuses the second open while the first holds it; that
+    # PermissionError crashed every DryRun pass. Each pass now has its own file, a refused open is
+    # retried briefly, and a line that still cannot be written goes to stdout/stderr instead.
+    target = pass_log()
+    last: BaseException | None = None
+    for i in range(LOG_ATTEMPTS):
         try:
-            BREACH_LOG.parent.mkdir(parents=True, exist_ok=True)
-            with BREACH_LOG.open("a", encoding="utf-8") as f:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("a", encoding="utf-8") as f:
                 f.write(line + "\n")
-            return
-        except OSError:
-            continue
-    print(f"(not appended to {BREACH_LOG.name}: the file stayed locked)")
+            last = None
+            break
+        except (OSError, ValueError) as exc:
+            last = exc
+            if i + 1 < LOG_ATTEMPTS:
+                time.sleep(LOG_BACKOFF_S * (i + 1))
+    try:
+        print(line)
+        if last is not None:
+            print(f"(not appended to {target.name}: the file stayed locked)")
+            print(f"fusion_deadman: log write to {target.name} failed "
+                  f"({type(last).__name__} errno={getattr(last, 'errno', None)}): {line}",
+                  file=sys.stderr)
+    except (OSError, ValueError):
+        pass
 
 
 def _read(p: Path, default):
@@ -595,6 +625,7 @@ def main(dry_run: bool = True) -> int:
     it judged and the rails it judged them by. In dry-run `would.executed` is false and no file
     but the stamp and the log is touched; arming (`--live`) is the principal's decision.
     """
+    _PASS[0] = "dry" if dry_run else "live"       # which log file; never read by a rail
     armed, armed_why = principal_armed()
     if dry_run and armed:
         # The LIVE task owns the stamp once the principal has armed the rail.
