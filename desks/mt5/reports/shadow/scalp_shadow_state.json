@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-13T08:32:48+00:00",
+  "updated_at": "2026-11-13T10:35:28+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
@@ -56,12 +56,10 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 12.0,
+      "source_trading_lag_hours": 14.0,
       "source_stale": true,
       "promotion_authority": false,
-      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital.",
-      "canonical_identity": "xauusd|anti_donchian_breakout|overlap",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     },
     "xau_m5_anti_momentum_ny": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -100,12 +98,10 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:50:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 12.0,
+      "source_trading_lag_hours": 14.0,
       "source_stale": true,
       "promotion_authority": false,
-      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital.",
-      "canonical_identity": "xauusd|anti_three_bar_momentum|new_york",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     },
     "xau_m15_anti_breakout": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -144,12 +140,10 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:45:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 12.0,
+      "source_trading_lag_hours": 14.0,
       "source_stale": true,
       "promotion_authority": false,
-      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital.",
-      "canonical_identity": "xauusd|anti_donchian_breakout|all",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     },
     "xau_m15_anti_momentum": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -188,16 +182,12 @@
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
       "last_source_bar": "2026-11-12T20:45:00+00:00",
       "matured": true,
-      "source_trading_lag_hours": 12.0,
+      "source_trading_lag_hours": 14.0,
       "source_stale": true,
       "promotion_authority": false,
-      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital.",
-      "canonical_identity": "UNIDENTIFIABLE",
-      "canonical_identity_why": "row declares no symbol or family, its key has no shape this desk writes, and no other store declares one for its name; recorded so it is auditable later and excluded from the join denominator by declaration rather than by silence",
-      "canonical_identity_declared_at": "2026-11-13T10:03:15+00:00"
+      "note": "Proxy bars may accrue diagnostic evidence but cannot authorize capital."
     }
   },
   "quarantined_candidates": {},
-  "represented_sleeves": 4,
-  "identity_stamped_at": "2026-11-13T10:03:15+00:00"
+  "represented_sleeves": 4
 }
