@@ -898,11 +898,37 @@ _NBS_RETAIL = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月份?\s*[，,]?\s*社�
                          r"([\d.]+)\s*亿元\s*[，,]?\s*同比(增长|下降)\s*([\d.]+)\s*%")  # noqa: RUF001
 
 
+#: The release body as NBS actually writes it: the month WITHOUT its year (`10月份`, a
+#: fullwidth comma, `社会消费品零售总额46291亿元`, `同比增长2.9%`); the year is the one the
+#: TITLE gives that month (see `_NBS_RETAIL_TITLE`). A digit or a dash before
+#: the month is a cumulative `1—10月份` figure and never matches.
+_NBS_RETAIL_BODY = re.compile(r"(?<![\d—\-－~至])(\d{1,2})\s*月份\s*[，,]?\s*社会消费品零售总额\s*"  # noqa: RUF001
+                              r"([\d.,]+)\s*亿元\s*[，,]?\s*(?:同比)?(增长|下降)\s*([\d.]+)\s*%")  # noqa: RUF001
+#: The title gives the year either for the month alone or for the year-to-date window ending in
+#: it (`2026年1—9月份社会消费品零售总额增长1.1%`, as the box's 11-09 listing shows): either way
+#: the window's LAST month is the month the release's monthly sentence is about.
+_NBS_RETAIL_TITLE = re.compile(r"(\d{4})\s*年\s*(?:\d{1,2}\s*[—\-－~至]\s*)?(\d{1,2})\s*月份?\s*"  # noqa: RUF001
+                               r"社会消费品零售总额")
+
+
 def parse_nbs_retail(body: bytes, ctx: Ctx) -> list[Obs]:
     """NBS monthly release: total retail sales of consumer goods, level (100m yuan) and YoY.
-    A cumulative `1—8月份` figure is not matched (the month must stand alone)."""
+    A cumulative `1—8月份` figure is not matched (the month must stand alone). Both forms are
+    read: the month with its year in the sentence, and the release's own year-less body sentence
+    dated by the title."""
     text = _text(body)
     out: list[Obs] = []
+    titled = {int(t.group(2)): int(t.group(1)) for t in _NBS_RETAIL_TITLE.finditer(text)}
+    for b in _NBS_RETAIL_BODY.finditer(text):
+        mo = int(b.group(1))
+        y = titled.get(mo)
+        lvl, yoy = _num(b.group(2)), _num(b.group(4))
+        if y is None or not 1 <= mo <= 12 or lvl is None or yoy is None:
+            continue
+        period = _month_end(y, mo)
+        pub = _page_date_after(text, period, _CN_DATE, 2)
+        out.append(Obs("retail_level_100m_cny", period, lvl, pub))
+        out.append(Obs("retail_yoy", period, -yoy if b.group(3) == "下降" else yoy, pub))
     for m in _NBS_RETAIL.finditer(text):
         y, mo = int(m.group(1)), int(m.group(2))
         lvl, yoy = _num(m.group(3)), _num(m.group(5))
@@ -916,6 +942,44 @@ def parse_nbs_retail(body: bytes, ctx: Ctx) -> list[Obs]:
         out.append(Obs("retail_level_100m_cny", period, lvl, pub))
         out.append(Obs("retail_yoy", period, -yoy if m.group(4) == "下降" else yoy, pub))
     return _first_per_key(out)
+
+
+_ANCHOR = re.compile(r"(?is)<a\b([^>]*)>(.*?)</a>")
+_HREF = re.compile(r"""(?i)\bhref\s*=\s*["']([^"']+)["']""")
+_TITLE_ATTR = re.compile(r"""(?i)\btitle\s*=\s*["']([^"']*)["']""")
+#: Releases followed per listing page. A month has one retail release; three cover a page that
+#: carries the latest print beside a revision or a combined Jan-Feb release.
+FOLLOW_MAX = 3
+
+
+def release_links(body: bytes, base_url: str, needle: str) -> list[str]:
+    """Absolute links on a listing page whose title or anchor text names `needle`, in page
+    order, de-duplicated, and only on the listing's own host (a link off-site is never
+    followed)."""
+    raw = body.decode("utf-8", errors="replace")
+    host = urllib.parse.urlsplit(base_url).netloc
+    out: list[str] = []
+    for a in _ANCHOR.finditer(raw):
+        attrs, inner = a.group(1), a.group(2)
+        href = _HREF.search(attrs)
+        if href is None:
+            continue
+        title = _TITLE_ATTR.search(attrs)
+        label = _html.unescape((title.group(1) if title else "") + " " + re.sub(r"<[^>]+>", "",
+                                                                               inner))
+        if needle not in label:
+            continue
+        url = urllib.parse.urljoin(base_url, _html.unescape(href.group(1)).strip())
+        if urllib.parse.urlsplit(url).netloc != host or url in out:
+            continue
+        out.append(url)
+    return out
+
+
+def follow_nbs_retail(body: bytes, base_url: str) -> list[str]:
+    """The NBS release listing (`/sj/zxfb/`) names each monthly retail release by title
+    (`2025年10月份社会消费品零售总额增长2.9%`); the figures are on the release page itself."""
+    return release_links(body, base_url, "社会消费品零售总额")[:FOLLOW_MAX]
 
 
 _CN_HOLIDAY = re.compile(r"(春节|清明节?|劳动节|五一|端午节?|中秋节?|国庆节?)[^。]{0,120}?"
@@ -1731,6 +1795,10 @@ class Source:
     #: first (history) fetch is that vintage, not what was known at the time. Published with the
     #: series (axis file, roster) so no reader mistakes a backfill for a first release.
     vintage: str = ""
+    #: A listing page's links to the releases `parse` reads: (page body, page URL) -> absolute
+    #: URLs. Followed only when the page itself parsed nothing, within the pass budget, each
+    #: vaulted and parsed like the page. None for a source whose URL IS the data.
+    follow: Callable[[bytes, str], list[str]] | None = None
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -2101,6 +2169,7 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         id="cn_nbs_retail", name="NBS retail sales of consumer goods (China)",
         url=os.environ.get("ALT_NBS_RETAIL_URL", "https://www.stats.gov.cn/sj/zxfb/"),
         region="CN", language="zh", cadence="monthly", parse=parse_nbs_retail,
+        follow=follow_nbs_retail,
         rule=_lag_rule(17, 2, weekday=True), transform="given",
         instruments={"AUDUSD": 1, "CHINAH": 1, "HK50": 1, "XCUUSD": 1, "USDCNH": -1},
         signal_series=("retail_yoy",),
@@ -3259,6 +3328,49 @@ def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
 class Request:
     url: str
     ctx: Ctx
+    #: Asked of the host's robots.txt before it is fetched. Every request path added since the
+    #: robots ruling (#204) sets it; the source URLs that predate it wait for the shared gate.
+    robots: bool = False
+
+
+#: robots.txt answers that stop every gated fetch to the host for the rest of the pass: the host
+#: refused to tell us its rules, or refused us.
+ROBOTS_STOP_CODES = frozenset({401, 403, 429, 451})
+#: A 200 whose body is a web page (a bot-wall challenge, a JS shell, a soft 404) is NOT a robots
+#: file: robotparser would read it as "no rules" and allow everything, so it is `unread`.
+_ROBOTS_NOT_A_FILE = re.compile(r"(?i)<\s*(?:!doctype|html|head|body|script)\b|captcha|"
+                                r"challenge-platform|cf-chl|access denied|just a moment")
+#: robots.txt answers that mean "no rules" (RFC 9309 2.3.1.3): everything is allowed.
+ROBOTS_ABSENT_CODES = frozenset({404, 410})
+
+
+def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]],
+                   cache: dict[str, Any]) -> str:
+    """`allow`, `disallow`, `stop` (the host refused robots.txt: nothing more to it this pass) or
+    `unread` (5xx or unreachable: no fetch, never read as a yes). Read once per host per pass,
+    with this organ's own honest UA."""
+    import urllib.robotparser
+    parts = urllib.parse.urlsplit(url)
+    host = f"{parts.scheme}://{parts.netloc}"
+    if host not in cache:
+        rp = urllib.robotparser.RobotFileParser()
+        try:
+            body, _ = getter(f"{host}/robots.txt")
+            text = body.decode("utf-8", errors="replace")
+            if _ROBOTS_NOT_A_FILE.search(text[:4096]):
+                cache[host] = "unread"          # an HTML or challenge page is not a robots file
+            else:
+                rp.parse(text.splitlines())
+                cache[host] = rp
+        except urllib.error.HTTPError as exc:
+            cache[host] = ("allow" if exc.code in ROBOTS_ABSENT_CODES else
+                           "stop" if exc.code in ROBOTS_STOP_CODES else "unread")
+        except Exception:
+            cache[host] = "unread"
+    got = cache[host]
+    if isinstance(got, str):
+        return got
+    return "allow" if got.can_fetch(UA, url) else "disallow"
 
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
@@ -3314,6 +3426,8 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
     if src.id == "cn_baidu_migration":
         return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
                 for city, cid in BAIDU_CITIES.items()]
+    if src.id == "cn_nbs_retail":
+        return _nbs_listing_requests(src, now, state)
     if src.id == "us_tsa_throughput":
         # The current page carries this year only; the year-on-year comparison needs last year's
         # page, which TSA publishes at /<year>.
@@ -3326,6 +3440,26 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
             return []                  # never a request built on a placeholder code
         url = url.replace("{" + env + "}", urllib.parse.quote(code, safe=""))
     return [Request(url, Ctx(fetched_at=now))]
+
+
+#: NBS listing pages walked back for history, a few per pass. The release list is paginated as
+#: `index.html`, `index_1.html`, ...; the walk commits only on an error-free pass, so a page that
+#: fails is asked again rather than skipped.
+NBS_BACKFILL_PAGES = 40
+NBS_PAGES_PER_PASS = 3
+
+
+def _nbs_listing_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    base = src.url if src.url.endswith("/") else src.url.rsplit("/", 1)[0] + "/"
+    reqs = [Request(src.url, Ctx(fetched_at=now))]
+    done = int(state.get("backfill_to") or 0)
+    if done < NBS_BACKFILL_PAGES:
+        upto = min(NBS_BACKFILL_PAGES, done + NBS_PAGES_PER_PASS)
+        reqs += [Request(f"{base}index_{k}.html", Ctx(part=f"page_{k}", fetched_at=now),
+                         robots=True)
+                 for k in range(done + 1, upto + 1)]
+        state["backfill_to_next"] = upto
+    return reqs
 
 
 #: Per-date sources: (recent days re-read each pass, publication lag in days, backfill days per
@@ -4071,8 +4205,23 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     reqs = requests_for(src, now, sst)
-    parsed = fetched = 0
+    parsed = fetched = followed = 0
     errors: list[str] = []
+    robots: dict[str, Any] = {}
+    robots_skipped: list[str] = []
+
+    def _robots_ok(url: str) -> bool:
+        """A disallowed path is skipped and counted; a refused or unread robots.txt is an error,
+        so a history walk holds its place rather than stepping past a page it never asked."""
+        v = robots_verdict(url, getter, robots)
+        if v == "allow":
+            return True
+        if v == "disallow":
+            robots_skipped.append(url)
+        else:
+            errors.append(f"robots {v}: {urllib.parse.urlsplit(url).netloc}")
+        return False
+
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
@@ -4083,6 +4232,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             if body is None:
                 continue
         elif fetch:
+            if req.robots and not _robots_ok(req.url):
+                continue
             try:
                 body, ctype = getter(req.url)
                 fetched += 1
@@ -4093,6 +4244,23 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         if body is None:
             continue
         obs = src.parse(body, req.ctx)
+        if not obs and src.follow is not None and fetch and fixtures is None:
+            for link in src.follow(body, req.url):
+                if time.monotonic() > deadline:
+                    errors.append("budget reached: the remaining releases are owed to the next "
+                                  "pass")
+                    break
+                if not _robots_ok(link):
+                    continue
+                try:
+                    lbody, lctype = getter(link)
+                    fetched += 1
+                    followed += 1
+                    vault(paths, src, lbody, link, lctype, now)
+                except Exception as exc:
+                    errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                    continue
+                obs += src.parse(lbody, req.ctx)
         parsed += len(obs)
         m = merge_vintages(store, src, obs, now)
         rec.setdefault("merge", {"added": 0, "revised": 0})
@@ -4109,6 +4277,11 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 sst[k[: -len("_next")]] = nxt
     rec.update({"requests": len(reqs), "fetched": fetched, "parsed": parsed,
                 "errors": errors[:6], "store_rows": len(store)})
+    if src.follow is not None:
+        rec["followed"] = followed
+    if robots:
+        rec["robots_skipped"] = len(robots_skipped)
+        rec["robots_skipped_urls"] = robots_skipped[:6]
     if not parsed and not errors:
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
     _atomic(store_p, store)
