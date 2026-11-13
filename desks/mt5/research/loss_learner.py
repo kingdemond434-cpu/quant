@@ -1050,7 +1050,8 @@ def _write_roster(sp: Path, doc: Any) -> tuple[bool, str]:
             sp.write_text(body, "utf-8")
             return True, f"in-place write after {REPLACE_TRIES} refused replaces ({last})"
         except OSError as exc:
-            return False, f"replace refused ({last}) and in-place write failed: {type(exc).__name__}"
+            return False, (f"replace refused ({last}) and in-place write failed: "
+                           f"{type(exc).__name__}")
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink()

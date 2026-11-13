@@ -87,12 +87,12 @@ def test_an_ordinary_cell_is_not_examined(sharpe_like: float) -> None:
 
 def test_no_synced_row_carries_an_exception_message(tmp_path, monkeypatch) -> None:
     """Synced files go to a public repo: an exception's TYPE may cross, its free text never."""
-    secret = "C:\\opt\\quant\\data\\secrets\\token-in-a-path"
+    planted = "C:\\opt\\quant\\data\\secrets\\token-in-a-path"
     monkeypatch.setattr(pa, "OUT_DIR", tmp_path)
     df = _bars(600)
 
     def _boom(*_a, **_k):
-        raise RuntimeError(secret)
+        raise RuntimeError(planted)
 
     hot = np.abs(np.random.default_rng(2).normal(0.5, 0.2, 300))
     row = pa.examine({"df": df, "sigs": _leak(df), "costs": None}, _boom,
@@ -102,7 +102,7 @@ def test_no_synced_row_carries_an_exception_message(tmp_path, monkeypatch) -> No
     blob = json.dumps(row, default=str) + "".join(
         p.read_text() for p in tmp_path.iterdir() if p.is_file())
     assert "RuntimeError" in blob
-    assert secret not in blob and "token-in-a-path" not in blob
+    assert planted not in blob and "token-in-a-path" not in blob
 
 
 def test_the_synced_organs_never_format_an_exception_message() -> None:
