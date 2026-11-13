@@ -107,7 +107,14 @@ PROTECTED_SCRIPTS = frozenset({
     # promotion and the forward clocks
     "promoter.py", "shadow_forward.py", "forward_clock.py", "qquant_shadow.py",
     "box_heartbeat.py", "stall_watch.py",
+    # the allocator's solve and its heavy admission scan, which gates STANDBY -> LIVE (audit SF2
+    # of 667dabe3: promotion latency must never depend on judge load, whichever plan runs it)
+    "pf_allocator.py", "state_admission_run.py",
 })
+#: A department resident whose whole plan is promotion and capital work. `dept:forward` runs
+#: enrol_clocks, state_admission, pf_allocator, the forward lanes and allocator_trigger
+#: (hourly_cycle.LEG_DEPARTMENT), so its resident and every child of it is left alone.
+PROTECTED_DEPTS = frozenset({"forward"})
 RAIL = "judge_core_share"
 HISTORY = 200
 APPROVAL = ("principal zuck 2026-11-13, project timeline: "
@@ -177,6 +184,16 @@ def _scripts(cmdline: Any) -> set[str]:
     return out
 
 
+def _dept(cmdline: Any) -> str | None:
+    args = [str(a) for a in (cmdline or [])]
+    for i, a in enumerate(args):
+        if a == "--dept" and i + 1 < len(args):
+            return args[i + 1].strip().lower()
+        if a.startswith("--dept="):
+            return a.split("=", 1)[1].strip().lower()
+    return None
+
+
 def confinable(rows: list[dict[str, Any]]) -> set[int]:
     """Pids this rule may confine: positively identified mining or audit work only (see
     MINER_SCRIPTS). Never a judge, live or protected process, never an unknown script."""
@@ -195,6 +212,8 @@ def confinable(rows: list[dict[str, Any]]) -> set[int]:
             sc = _scripts(cur.get("cmdline"))
             if sc & PROTECTED_SCRIPTS:
                 break                       # a money or clock organ, or a child of one
+            if "department_resident.py" in sc and _dept(cur.get("cmdline")) in PROTECTED_DEPTS:
+                break                       # the promotion / allocator department
             joined = " ".join(str(a) for a in (cur.get("cmdline") or [])).lower()
             if sc & MINER_SCRIPTS or AUDIT_MARK in joined:
                 ok = True

@@ -169,6 +169,27 @@ def test_only_positively_identified_mining_is_confined() -> None:
     assert jcs.confinable(rows) == {1, 2, 3, 18, 19}
 
 
+def test_the_admission_scan_and_forward_department_are_never_confined() -> None:
+    """Audit SF2 of 667dabe3: the heavy admission scan gates STANDBY -> LIVE, so promotion
+    latency must not depend on judge load, under any department's plan."""
+    def resident(pid: int, dept: str, flag: str = "split") -> dict:
+        tail = ["--dept", dept] if flag == "split" else [f"--dept={dept}"]
+        return {"pid": pid, "ppid": 0, "cls": "miner", "create_time": 1.0,
+                "cmdline": ["python", "C:/opt/quant/desks/mt5/research/department_resident.py",
+                            *tail]}
+    rows = [resident(1, "forward"), _row(2, 1, "hourly_cycle.py", 2.0),
+            _row(3, 2, "enrol_clocks.py", 3.0),
+            resident(4, "FORWARD", "eq"), _row(5, 4, "hourly_cycle.py", 2.0),
+            resident(6, "rest"), _row(7, 6, "hourly_cycle.py", 2.0),
+            _row(8, 7, "pf_allocator.py", 3.0), _row(9, 7, "state_admission_run.py", 3.0),
+            {"pid": 10, "ppid": 8, "cls": "miner", "create_time": 4.0,
+             "cmdline": ["python", "-c", "from multiprocessing.spawn import spawn_main"]},
+            _row(11, 7, "regime_scan.py", 3.0)]
+    assert jcs.confinable(rows) == {6, 7, 11}
+    assert {"pf_allocator.py", "state_admission_run.py"} <= jcs.PROTECTED_SCRIPTS
+    assert "forward" in jcs.PROTECTED_DEPTS
+
+
 def test_a_reused_parent_pid_is_not_an_ancestor() -> None:
     rows = [_row(1, 0, "department_resident.py", 9.0),         # born AFTER its "child"
             {"pid": 2, "ppid": 1, "cls": "miner", "create_time": 3.0, "cmdline": ["python", "-c"]}]
