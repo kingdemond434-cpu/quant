@@ -735,17 +735,31 @@ def registry_clear(
     head: str,
     window: Callable[[], tuple[datetime | None, str]],
     now: datetime | None = None,
+    same_change: Callable[[str], bool] | None = None,
 ) -> tuple[dict[str, str] | None, str]:
-    """(the CLEAR that lets the box merge `head`, or None; why). The exact head only. `window`
-    is called only once the row itself qualifies, and gives the gate's own window start."""
+    """(the CLEAR that lets the box merge `head`, or None; why). `window` is called only once the
+    row itself qualifies, and gives the gate's own window start.
+
+    The row must name `head`, OR (2026-11-11) name a sha whose change is byte-identical to the
+    head's (`same_change`, the exact-bytes patch-id rule 2 already applies to comment CLEARs and
+    authority attestations). That is what a clean GitHub update-branch produces: #756 was CLEARed
+    at f27064bdf, update-branch moved it to 9f741cf4c with the same diff, and the row stopped
+    counting until someone re-pinned it. The VETO WINDOW IS NOT CARRIED: it is keyed to the new
+    head, so a carried CLEAR sends a fresh notice and waits the full window again."""
     now = now or datetime.now(UTC)
     mine = [r for r in rows if r.get("pr") == pr]
     if not mine:
         return None, "no registry verdict"
     last = mine[-1]
-    if last.get("verdict") != "CLEAR" or last.get("sha") != head:
-        sha = str(last.get("sha"))[:9]
-        return None, f"the latest registry verdict is {last.get('verdict')} {sha}"
+    sha_l = str(last.get("sha") or "")
+    carried = (
+        sha_l != head
+        and re.fullmatch(r"[0-9a-f]{40}", sha_l) is not None
+        and same_change is not None
+        and same_change(sha_l)
+    )
+    if last.get("verdict") != "CLEAR" or (sha_l != head and not carried):
+        return None, f"the latest registry verdict is {last.get('verdict')} {sha_l[:9]}"
     try:
         at = datetime.fromisoformat(str(last.get("at") or "").replace("Z", "+00:00"))
     except ValueError:
@@ -763,7 +777,8 @@ def registry_clear(
             f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {REGISTRY_HOLD_H:.0f} h"
         )
     got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
-    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+    via = f" (carried from {sha_l[:9]}, same change)" if carried else ""
+    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]}{via} ({age_h:.0f} h, no veto)"
 
 
 # THE AUTHORITY PATH (zuck 2026-11-03 19:11Z, "Eliminate manual protected-PR registry approvals";
@@ -1381,7 +1396,12 @@ def run(
         now = datetime.now(UTC)
         seen = Path(path + ".window.json")
         return registry_clear(
-            rows, pr, head, lambda: registry_window(seen, pr, head, now, run_notify), now
+            rows,
+            pr,
+            head,
+            lambda: registry_window(seen, pr, head, now, run_notify),
+            now,
+            same_change,
         )
 
     clear, why = verdict_now()

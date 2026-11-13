@@ -2694,32 +2694,54 @@ def test_a_diff_that_fits_the_context_but_not_one_calls_time_is_read_in_parts() 
     mid = _diff(*((f"docs/m{i}.py", ["+" + "m" * 14_000]) for i in range(4)))  # ~56k chars
     assert len(mid) < 88_000  # fits 32k tokens whole: before the cap this was ONE call
     asked: list[str] = []
-    v, log = _review(mid, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
-                        ("llama", "l1", _counting(*[_PASS] * 9))])
+    v, log = _review(
+        mid,
+        [
+            ("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+            ("llama", "l1", _counting(*[_PASS] * 9)),
+        ],
+    )
     assert v == "PASS" and "final vote" in log[0]
     parts = [u for u in asked if "This is part" in u]
     assert len(asked) >= 4  # parts and the final, from the first family
     assert len(parts) >= 3 and all(len(u) <= ir.PART_CHARS for u in parts)
     asked.clear()
-    v, _ = _review(mid, [("qwen", "q1", _counting(_PASS, asked=asked)),
-                        ("llama", "l1", _counting(_PASS))], part_chars=None)
+    v, _ = _review(
+        mid,
+        [("qwen", "q1", _counting(_PASS, asked=asked)), ("llama", "l1", _counting(_PASS))],
+        part_chars=None,
+    )
     assert v == "PASS" and len(asked) == 1  # uncapped: read whole, the old behaviour
     one = _diff(("docs/big.py", ["+" + "b" * 40_000]), ("docs/s.py", ["+s"]))
     asked.clear()
-    v, _ = _review(one, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
-                        ("llama", "l1", _counting(*[_PASS] * 9))])
+    v, _ = _review(
+        one,
+        [
+            ("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+            ("llama", "l1", _counting(*[_PASS] * 9)),
+        ],
+    )
     assert v == "PASS" and any("b" * 40_000 in u for u in asked)  # one big hunk: whole, not FAIL
     # Auditor SF on #735: money files whose own part (manifest + frame) is just over num_ctx
     # while the whole diff fits it are read whole, never a new FAIL
-    room = (32_768 - ir.ANSWER_TOKENS) * ir.CHARS_PER_TOKEN - len(ir.VAGUE_NOTE) - 2 - len(
-        (ir.HERE / "review_rubric.md").read_text(encoding="utf-8"))
+    room = (
+        (32_768 - ir.ANSWER_TOKENS) * ir.CHARS_PER_TOKEN
+        - len(ir.VAGUE_NOTE)
+        - 2
+        - len((ir.HERE / "review_rubric.md").read_text(encoding="utf-8"))
+    )
     base = _diff(("desks/mt5/prop/a.py", ["+RISK = 1"]), ("docs/s.py", ["+s"]))
     pad = room - len(ir.prompt(base, ["f.py"], "0" * 16)) - 40
     edge = _diff(("desks/mt5/prop/a.py", ["+RISK = 1" + " " * pad]), ("docs/s.py", ["+s"]))
     assert len(ir.prompt(edge, ["f.py"], "0" * 16)) <= room
     asked.clear()
-    v, log = _review(edge, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
-                            ("llama", "l1", _counting(*[_PASS] * 9))])
+    v, log = _review(
+        edge,
+        [
+            ("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+            ("llama", "l1", _counting(*[_PASS] * 9)),
+        ],
+    )
     assert v == "PASS" and not any("never read apart" in x for x in log)
 
 
@@ -2948,6 +2970,34 @@ def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window(
     assert ag.registry_clear([_row(pr=8)], 9, _H, _win(), _NOW)[0] is None
     future = _row(at="2026-11-06T12:00:00Z")
     assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
+
+
+def test_a_registry_clear_carries_across_a_byte_identical_update_branch_only() -> None:
+    """#756 (2026-11-11): update-branch moved a CLEARed head with the same diff and the row went
+    dead. It now carries when, and only when, the exact-bytes patch-id says it is the same change,
+    and the window it waits is the NEW head's (the caller keys it there), never the old one's."""
+    new = "b" * 40
+    asked: list[str] = []
+
+    def same(sha: str) -> bool:
+        asked.append(sha)
+        return sha == _H
+
+    got, why = ag.registry_clear([_row()], 9, new, _win(), _NOW, same)
+    assert got is not None and got["sha"] == new and "carried from" in why and asked == [_H]
+    # a different change (conflict resolution, a new commit) does not carry
+    assert ag.registry_clear([_row()], 9, new, _win(), _NOW, lambda s: False)[0] is None
+    # without the comparison there is no carry at all
+    assert ag.registry_clear([_row()], 9, new, _win(), _NOW)[0] is None
+    # the carried CLEAR still waits the full window and still yields to a later HOLD
+    young = ag.datetime(2026, 11, 5, 0, 0, tzinfo=ag.UTC)
+    assert ag.registry_clear([_row()], 9, new, _win(young), _NOW, same)[0] is None
+    held = [_row(), _row(verdict="HOLD")]
+    assert ag.registry_clear(held, 9, new, _win(), _NOW, same)[0] is None
+    # a malformed sha is never handed to git
+    asked.clear()
+    assert ag.registry_clear([_row(sha="HEAD~1")], 9, new, _win(), _NOW, same)[0] is None
+    assert asked == []
 
 
 def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
