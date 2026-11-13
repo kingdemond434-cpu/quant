@@ -160,13 +160,16 @@ _FAMILY_GROUPS: dict[str, str] = {
     "hedging_demand_close_flow price_only market": "comex_settlement hedging_demand_close"
                                                    " london_close_momentum",
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
-    "forced_flow event market": "forced_flow",
+    # `expiry_gamma` (2026-11-13, families_flow): the option dealer's hedge around the
+    # third-Friday expiry, a forced participant on a dated calendar like `forced_flow`.
+    "forced_flow event market": "forced_flow expiry_gamma",
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
+                                               " cot_report"
                                                " retail_overlap_reversal",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"

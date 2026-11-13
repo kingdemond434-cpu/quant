@@ -1392,7 +1392,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # gauntlet's own build_cell before they are donated
                      "specialist_cell",
                      # the hunt16 corpus over the book's gaps, specialist path
-                     "hunt16_seeder", "learned_miners"),
+                     "hunt16_seeder", "learned_miners",
+                     # COT, the tape's signed ticks and the opex calendar, specialist path
+                     "flow_seeder"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -2273,6 +2275,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "specialist_cell": 1_000,
     # The hunt16 seeder stops itself at --budget-s 600; the cap sits above its own budget.
     "hunt16_seeder": 700,
+    # The flow seeder stops itself at --budget-s 600; the cap sits above its own budget.
+    "flow_seeder": 700,
     "learned_miners": 1_000,
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
     "residual_search": 400,
@@ -4526,6 +4530,14 @@ def main() -> None:
     # exists) on their own 900s budget, so no other hourly leg's share shrinks.
     lrnm = _costed("learned_miners", lambda: _producer(
         "learned_miners", "research/learned_miners.py", "--once", "--daily", "--budget-s", "900"))
+    # COT, TAPE ORDER FLOW AND THE OPEX CALENDAR GOT A CLOCK THAT FIRES (2026-11-13). The COT
+    # producers were VPS timers or unscheduled side channels whose zcache never reached this
+    # box, the raw cot_* families were mis-read as unbuildable, orderflow_imbalance had no
+    # producer naming a tape-backed cell and the US expiry-gamma miner was unwired: all minted 0
+    # cells in 24h. Hourly, each cell re-measured at most weekly through the specialist path, on
+    # gold, indices and FX majors (no exotics); writes reports/FLOW_SEEDER.json.
+    flws = _costed("flow_seeder", lambda: _producer(
+        "flow_seeder", "research/flow_seeder.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -6501,6 +6513,7 @@ def main() -> None:
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "hunt16_seeder": h16s, "learned_miners": lrnm,
+                    "flow_seeder": flws,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
