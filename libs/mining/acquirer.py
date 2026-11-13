@@ -245,10 +245,16 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         immutable_time=bool(row.get("immutable_time", False)),
         handoff_deepening=bool(row.get("handoff_deepening", True)),
         feeds=[str(x) for x in (row.get("feeds_to") or [])],
-        enabled=bool(row.get("enabled", True)), config=cfg, origin=origin,
+        enabled=bool(row.get("enabled", True)) and not _blocked_on_terms(row),
+        config=cfg, origin=origin,
         url_key=canonical_url(_row_url(row)),
         url_keys=[k for k in dict.fromkeys(canonical_url(u) for u in _row_urls(row)) if k],
         seats=_seats(row.get("seats")))
+
+
+def _blocked_on_terms(row: Mapping[str, Any]) -> bool:
+    """A row whose own status says its terms forbid this desk's use is never fetched (fail-closed)."""
+    return str(row.get("status") or "").upper().startswith("BLOCKED_TERMS")
 
 
 def _seats(raw: Any) -> list[str]:
@@ -806,22 +812,17 @@ def auth_headers(src: Source) -> dict[str, str]:
     """The source's secret as the header its API expects, read from `auth_env` and never logged.
 
     `config.auth_style`:
-      cookie   the value is sent as `Cookie`. A full browser cookie string or `name=value` is
-               used as pasted; a bare token becomes `<cookie_name>=<token>` (Xueqiu:
-               `xq_a_token`). A leading `Cookie:` is stripped.
       kakaoak  `Authorization: KakaoAK <REST API key>` (Kakao/Daum search takes the app's REST
                key, not a user OAuth token). A pasted `KakaoAK ` prefix is stripped.
       bearer   `Authorization: Bearer <token>`.
+
+    There is deliberately no `cookie` style: a replayed user login session is a login/WAF
+    bypass, never a vendor-issued key, so a row asking for one sends nothing (Auditor, #133).
     """
     raw = os.environ.get(src.auth_env, "").strip() if src.auth_env else ""
     style = str(src.config.get("auth_style") or "")
     if not raw or not style:
         return {}
-    if style == "cookie":
-        raw = re.sub(r"(?i)^cookie:\s*", "", raw)
-        if "=" not in raw:
-            raw = f"{src.config.get('cookie_name') or 'token'}={raw}"
-        return {"Cookie": raw}
     if style == "kakaoak":
         return {"Authorization": "KakaoAK " + re.sub(r"(?i)^kakaoak\s+", "", raw)}
     if style == "bearer":
@@ -898,8 +899,7 @@ _DDG = re.compile(r'(?is)<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<
 
 def fetch_search_route(src: Source, cursor: dict[str, Any], ctx: FetchContext
                        ) -> Iterator[Item]:
-    """Search-engine `site:` routes for grounds a link walk never reaches (WeChat via Sogou,
-    Zhihu, Naver cafes, 5ch, X, Discord invites). Results are kept as snippet records; links that
+    """Search-engine `site:` routes for grounds a link walk never reaches (Zhihu, Naver cafes, 5ch, X, Discord invites). Results are kept as snippet records; links that
     match `discover_regex` are handed to `discover_into` (another source's cursor)."""
     cfg = src.config
     seen = _seen(cursor)

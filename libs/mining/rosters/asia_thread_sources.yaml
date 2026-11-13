@@ -20,7 +20,10 @@ sources:
     - indirect_cells
     - allocation_intel
     consumer: desks/mt5/research/alpha_capture.py
-    status: UNMEASURED_LIVE_YIELD
+    status: BLOCKED_TERMS
+    enabled: false
+    blocked_reason: Yahoo's terms permit personal/non-commercial use only and this desk's use is
+      commercial; fail-closed on terms (11-11 crowd-venue precedent), so it is never fetched
     source_culture: US/en
     participant_structure:
     - institutional
@@ -326,31 +329,6 @@ sources:
     failure_mode_hypothesis: A-share retail trades under T+1 and daily limits, so a mood extreme cannot
       be unwound same-day and reverses on a different clock than a T+0 market
     crowding_prior: low
-  - id: sogou_weixin_search
-    name: Sogou WeChat article search (cn_sources.sogou_weixin)
-    url: https://weixin.sogou.com/weixin?type=2&query={kw}
-    region: CN
-    language: zh
-    cadence: hourly
-    auth: none
-    licence: public page; titles and snippets only, no bodies archived
-    cursor: (source, ident) seen-set with first_seen_at
-    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
-      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
-      runs before any count
-    uses:
-    - direct_cells
-    - indirect_cells
-    - allocation_intel
-    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
-    status: UNMEASURED_LIVE_YIELD
-    source_culture: CN/zh
-    participant_structure:
-    - retail_heavy
-    - policy_driven
-    failure_mode_hypothesis: WeChat public accounts amplify policy signals (State Council, national team)
-      that retail then chases, so attention spikes follow policy days, not earnings
-    crowding_prior: low
   - id: weibo_mobile_search
     name: Weibo mobile search JSON
     url: https://m.weibo.cn/api/container/getIndex?containerid=100103type%3D1%26q%3D{kw}
@@ -375,30 +353,6 @@ sources:
     - policy_driven
     failure_mode_hypothesis: Weibo attention is censored and policy-steered, so negative mood is under-expressed
       and reversals follow policy support announcements
-    crowding_prior: low
-  - id: xueqiu_status_search
-    name: Xueqiu status search JSON
-    url: https://xueqiu.com/query/v1/search/status.json?q={kw}
-    region: CN
-    language: zh
-    cadence: hourly
-    auth: cookie behind WAF
-    licence: public site behind a WAF; cn_sources recorded it unsolved 2026-08-01
-    cursor: (source, ident) seen-set with first_seen_at
-    pit: first_seen_at = the fetch pass's clock (published_at kept for audit only); day d uses posts first
-      seen by d, available at d+1 00:00 UTC; bot filter (burst accounts, exact and MinHash near-duplicates)
-      runs before any count
-    uses:
-    - direct_cells
-    - indirect_cells
-    - allocation_intel
-    consumer: desks/mt5/research/blog_social_mining.py -> nlp_social_cells.py
-    status: UNMEASURED_LIVE_YIELD
-    source_culture: CN/zh
-    participant_structure:
-    - retail_heavy
-    failure_mode_hypothesis: Xueqiu is the CN/HK retail stock-picker crowd; its mood extremes on HK names
-      reverse with southbound-flow days
     crowding_prior: low
   - id: nlp_news_event_stream_intake
     name: news_event_stream intake (moat store, news captures, 12 news seats)

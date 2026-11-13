@@ -396,22 +396,6 @@ sources:
       queries: ["site:sec.gov MetaTrader", "site:cftc.gov MetaTrader", "site:fca.org.uk MetaTrader", "site:asic.gov.au MetaTrader 5", "site:cysec.gov.cy MetaTrader"]
 
   # ============================================================ PRIORITY 3: regional
-  - id: wechat_sogou
-    name: "WeChat public articles via Sogou (微信/搜狗)"
-    priority: 3
-    kind: text
-    uses: [direct_cells, indirect_cells]
-    fetcher: html_listing
-    cadence_minutes: 180
-    region: cn
-    language: zh
-    config:
-      listing:
-        - "https://weixin.sogou.com/weixin?type=2&query=MT5+%E7%AD%96%E7%95%A5"
-        - "https://weixin.sogou.com/weixin?type=2&query=EA+%E5%A4%96%E6%B1%87+%E7%AD%96%E7%95%A5"
-      item_regex: "/link\\?url="
-      listing_only: true
-
   - id: zhihu_route
     name: "Zhihu (知乎) via search route (direct search needs login)"
     priority: 3
@@ -423,28 +407,6 @@ sources:
     language: zh
     config:
       queries: ["site:zhuanlan.zhihu.com MT5 策略", "site:zhihu.com EA 外汇 回测"]
-
-  - id: xueqiu
-    name: "Xueqiu (雪球), behind a WAF: login cookie path"
-    priority: 3
-    kind: text
-    uses: [direct_cells, indirect_cells]
-    fetcher: json_api
-    auth: login
-    auth_env: XUEQIU_COOKIE          # "xq_a_token=..." or the whole browser cookie string
-    cadence_minutes: 360
-    region: cn
-    language: zh
-    config:
-      auth_style: cookie
-      cookie_name: xq_a_token
-      url: "https://xueqiu.com/query/v1/search/status.json?sortId=2&q={q}&count=20&page={page}"
-      items_path: list
-      max_page: 20
-      uri_template: "https://xueqiu.com{target}"
-      fields: {target: target, title: title, body: text, time: created_at}
-      queries: ["黄金 策略", "外汇 EA", "黄金 日内 交易", "原油 期货 策略", "恒指 日内",
-                "量化 交易 外汇", "美元 人民币 套利", "白银 交易 策略"]
 
   - id: xueqiu_route
     name: "Xueqiu keyless path (search-engine snippets)"

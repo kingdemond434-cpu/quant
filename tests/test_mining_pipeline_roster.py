@@ -190,6 +190,7 @@ def test_other_lanes_rosters_are_absorbed_as_owned_rows(tmp_path: Path) -> None:
     y = got.get("yahoo_upgrades")
     assert y is not None and y.cadence_minutes == 60 and y.auth == "none"
     assert y.consumer.endswith("alpha_capture.py")
+    assert not y.enabled          # BLOCKED_TERMS: personal/non-commercial terms, never fetched
     # breadth's files, in their own shapes (grounds / sources / rows)
     d = tmp_path / "desks" / "mt5" / "data"
     d.mkdir(parents=True)
@@ -220,11 +221,7 @@ def test_other_lanes_rosters_are_absorbed_as_owned_rows(tmp_path: Path) -> None:
 
 def test_keyed_sources_accept_the_pasted_formats(monkeypatch: pytest.MonkeyPatch) -> None:
     roster = {s.id: s for s in acq.load_roster(root=ROOT)}
-    xq, kk = roster["xueqiu"], roster["kakao_public"]
-    for raw, want in (("abc", "xq_a_token=abc"), ("xq_a_token=abc", "xq_a_token=abc"),
-                      ("Cookie: xq_a_token=abc; u=9", "xq_a_token=abc; u=9")):
-        monkeypatch.setenv(xq.auth_env, raw)
-        assert acq.auth_headers(xq) == {"Cookie": want}
+    kk = roster["kakao_public"]
     for raw in ("k1", "KakaoAK k1"):
         monkeypatch.setenv(kk.auth_env, raw)
         assert acq.auth_headers(kk) == {"Authorization": "KakaoAK k1"}
@@ -232,11 +229,33 @@ def test_keyed_sources_accept_the_pasted_formats(monkeypatch: pytest.MonkeyPatch
     assert acq.auth_headers(kk) == {} and acq.auth_missing(kk)
 
 
+def test_a_replayed_login_cookie_is_never_sent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A pasted browser session is a login/WAF bypass, not a vendor key: no style sends it."""
+    src = acq.Source(id="c", fetcher="json_api", kind="text", auth="login", auth_env="C_TEST",
+                     config={"auth_style": "cookie", "cookie_name": "xq_a_token"})
+    monkeypatch.setenv("C_TEST", "xq_a_token=abc")
+    assert acq.auth_headers(src) == {}
+
+
+def test_off_limits_and_terms_blocked_grounds_are_not_fetched() -> None:
+    """WeChat/Baidu are off-limits; a row blocked on terms is disabled; nothing rides a cookie.
+
+    Judged on every row this lane fetches itself and every row its own rosters register; rows
+    absorbed from another lane's file are `owned` (that lane fetches them) and are its to judge."""
+    for s in acq.load_roster(root=ROOT):
+        text = " ".join([s.id, s.name, str(s.config), s.url_key or ""]).lower()
+        mine = s.fetcher != "owned" or "libs/mining/" in s.origin.replace("\\", "/")
+        if s.enabled and mine:
+            assert not any(h in text for h in ("weixin", "wechat", "sogou", "baidu")), s.id
+            assert s.config.get("auth_style") != "cookie", s.id
+    assert acq._blocked_on_terms({"status": "BLOCKED_TERMS"})
+
+
 def test_json_api_sends_the_secret_and_reads_epoch_ms(tmp_path: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     src = acq.Source(id="xq", fetcher="json_api", kind="text", auth="login",
                      auth_env="XQ_TEST", config={
-                         "auth_style": "cookie", "cookie_name": "xq_a_token",
+                         "auth_style": "bearer",
                          "url": "https://x/s?q={q}&page={page}", "items_path": "list",
                          "uri_template": "https://x{target}",
                          "fields": {"target": "target", "title": "title", "body": "text",
@@ -258,7 +277,7 @@ def test_json_api_sends_the_secret_and_reads_epoch_ms(tmp_path: Path,
     assert [i.uri for i in items] == ["https://x/1/2"]
     assert items[0].publication_time == "2024-09-30T12:40:00+00:00"
     assert "RSI(14)" in items[0].body
-    assert sent[0]["Cookie"] == "xq_a_token=tok"
+    assert sent[0]["Authorization"] == "Bearer tok"
 
 
 def test_gauntlet_kills_carry_the_asia_kill_class() -> None:
