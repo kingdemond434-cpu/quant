@@ -241,3 +241,26 @@ def test_no_collector_still_refuses_a_fetch_on_robots() -> None:
         assert '"status": "BLOCKED_BY_ROBOTS"' not in src, rel
         assert 'status="BLOCKED_BY_ROBOTS"' not in src, rel
         assert '= "BLOCKED_BY_ROBOTS"' not in src, rel
+
+
+# ------------------------------------------------- the fetch rule (LAWS 5e amendment 2026-11-13)
+
+def test_a_host_whose_terms_refuse_machine_use_is_never_fetched() -> None:
+    for refused in (False, "false", "forbidden"):
+        ok, why = ac.fetch_permitted(robots="allowed", machine_use_allowed=refused)
+        assert not ok and "machine_use_allowed=false" in why
+
+
+def test_robots_disallow_and_unreadable_robots_refuse_the_fetch() -> None:
+    assert not ac.fetch_permitted(robots="disallowed", machine_use_allowed=True)[0]
+    assert not ac.fetch_permitted(robots="unreadable", machine_use_allowed=True)[0]
+    assert not ac.fetch_permitted(robots="", machine_use_allowed=None)[0]  # unknown is no
+    assert ac.fetch_permitted(robots="no_file", machine_use_allowed=None)[0]  # RFC 9309 4xx
+    assert ac.fetch_permitted(robots="allowed", machine_use_allowed=True)[0]
+
+
+def test_an_archive_copy_is_judged_by_the_origin() -> None:
+    ok, _ = ac.fetch_permitted(robots="disallowed", machine_use_allowed=True,
+                               via_archive_of_origin=True)
+    assert not ok  # a mirror is never a route around the origin's refusal
+
