@@ -900,8 +900,10 @@ def collect(*, now: datetime, budget_s: float, get: Getter | None = None,
         share = remaining / max(1, len(todo) - i)
         deadline = time.monotonic() + share
         sstate = dict(state.get(sid) or {})
+        # An unconfigured SEC reader makes no request at all, robots.txt included.
+        unconfigured = sid == "sec_8k_guidance" and not edgar_ua()
         try:
-            refused = access_refusal(get, sid)
+            refused = None if unconfigured else access_refusal(get, sid)
         except Exception as exc:                      # an unreadable gate refuses
             refused = f"ROBOTS_REFUSED: robots.txt unreadable ({type(exc).__name__})"
         if refused:

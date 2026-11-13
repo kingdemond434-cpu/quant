@@ -347,7 +347,8 @@ def test_one_offline_pass_writes_every_artifact(desk: dict[str, Any]) -> None:
 
 def test_sec_without_a_user_agent_is_unconfigured_not_fetched(
         desk: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("QUANT_EDGAR_UA")
+    for name in ac.EDGAR_UA_ENV:
+        monkeypatch.delenv(name, raising=False)
     calls: list[str] = []
     rep = ac.run(budget_s=30, now=datetime(2024, 9, 27, tzinfo=UTC), get=_fake_get(calls),
                  loader=_loader, clock=av.identity_clock, universe_doc=UNIVERSE_DOC,
@@ -364,7 +365,8 @@ def test_a_failing_source_never_takes_the_others_down(desk: dict[str, Any]) -> N
     rep = ac.run(budget_s=60, now=datetime(2024, 9, 27, tzinfo=UTC), get=get, loader=_loader,
                  clock=av.identity_clock, universe_doc=UNIVERSE_DOC, n_placebo=10,
                  yahoo_opener=object())
-    assert rep["sources"]["naver_research"]["status"] == "FAILED"
+    # the raise lands on Naver's robots.txt read first, and an unreadable robots refuses
+    assert rep["sources"]["naver_research"]["status"] == "ROBOTS_REFUSED"
     assert rep["sources"]["tdnet_revisions"]["status"] == "FETCHED"
     assert rep["sources"]["naver_research"]["live_yield"]["status"] == ac.UNMEASURED_LIVE_YIELD
 
