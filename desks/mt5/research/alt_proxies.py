@@ -4141,9 +4141,26 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
         return rec
+    # A HARD STOP HOLDS (fetch rules: 401/403/429/451 means stop). A host that refused us is
+    # not asked again every hour; it is retried once after HARD_STOP_RETRY_D days, and the
+    # report names the refusal with its missed growth instead of reading UNMEASURED.
+    hs = sst.get("hard_stop") if isinstance(sst.get("hard_stop"), dict) else None
+    if hs and fetch and fixtures is None:
+        try:
+            since = datetime.fromisoformat(str(hs.get("at")))
+        except ValueError:
+            since = now
+        if now - since < timedelta(days=HARD_STOP_RETRY_D):
+            rec.update({"status": f"BLOCKED_HTTP_{hs.get('code')}", "requests": 0,
+                        "why": (f"the host answered HTTP {hs.get('code')} on "
+                                f"{hs.get('at')}; a hard stop, retried once after "
+                                f"{HARD_STOP_RETRY_D} days, never routed around"),
+                        "missed_growth": _hard_stop_missed(src), "store_rows": len(store)})
+            return rec
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
     errors: list[str] = []
+    stop_codes: list[int] = []
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
@@ -4160,6 +4177,9 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
+                if isinstance(exc, urllib.error.HTTPError) and exc.code in HARD_STOP_CODES:
+                    stop_codes.append(int(exc.code))
+                    break                               # one refusal stops the whole source
                 continue
         if body is None:
             continue
@@ -4182,8 +4202,28 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 "errors": errors[:6], "store_rows": len(store)})
     if not parsed and not errors:
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
+    if stop_codes and not parsed:
+        sst["hard_stop"] = {"code": stop_codes[0], "at": now.isoformat(timespec="seconds")}
+        rec.update({"status": f"BLOCKED_HTTP_{stop_codes[0]}",
+                    "why": f"the host answered HTTP {stop_codes[0]}: a hard stop, not retried "
+                           f"for {HARD_STOP_RETRY_D} days and never routed around",
+                    "missed_growth": _hard_stop_missed(src)})
+    elif fetched:
+        sst.pop("hard_stop", None)
     _atomic(store_p, store)
     return rec
+
+
+#: HTTP answers that mean "stop" (fetch rules), and how long a stopped source waits to retry.
+HARD_STOP_CODES = frozenset({401, 403, 429, 451})
+HARD_STOP_RETRY_D = 7
+
+
+def _hard_stop_missed(src: Source) -> str:
+    return (f"{src.id} series ({', '.join(src.signal_series) or 'all'}) are not refreshed, so "
+            f"its conditioned cells on {', '.join(sorted(src.instruments)[:6])} hold as "
+            "SERIES_ABSENT until the host admits the desk or an official open-data route is "
+            "wired")
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
