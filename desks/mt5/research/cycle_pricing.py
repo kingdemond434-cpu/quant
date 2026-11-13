@@ -74,6 +74,27 @@ BANDIT = R / "RESEARCH_BANDIT.json"
 POLICY = DESK / "data" / "compute_policy.json"
 LEDGER = DESK / "data" / "compute_ledger.jsonl"
 OUT = R / "CYCLE_PRICING.json"
+#: METHOD COMPETITION'S WEIGHTS (Tier S audit AC13 + I12). `tier_s.organ_steer` scores the arena,
+#: the Red Queen's adopted scheduler champion, the researcher market and the meta-benchmark as a
+#: tournament with a seeded random holdout, and publishes per-leg weights here; `build_plan`
+#: multiplies each leg's price score by its weight. Held-out legs carry 1.0 (the prior allocation).
+STEER = R / "tier_s" / "SCHEDULER_STEER.json"
+STEER_MAX_AGE_H = 3.0
+#: what this pricer ACTUALLY applied from each steer hour, so the tournament credits outcomes to
+#: the weights that were spent rather than to the plan it published (read by tier_s._steer_outcomes)
+STEER_APPLIED = DESK / "data" / "scheduler_steer_applied.jsonl"
+#: THE JUDGE-ONLY SET, read from its one home (`libs.tiers.scheduler_tournament.JUDGE_LEGS`): the
+#: only legs a steer may weight below 1.0. Never the validation department as a whole.
+try:
+    from libs.tiers.scheduler_tournament import JUDGE_LEGS
+except Exception:                                              # pragma: no cover - import env
+    JUDGE_LEGS = frozenset()
+#: THE DEPARTMENTS THAT MAY PAY FOR A STEER (audit #235 round 4, 2026-10-07). NEVER reduce info
+#: gathering, raw cell mining or research generation: under steering a leg keeps at least the
+#: seconds it would have been granted unsteered unless it is a judge leg (JUDGE_LEGS) or sits in
+#: one of these departments. Every other department -- data, intel, discovery, macro, the forests,
+#: the validation department's generation legs -- is GENERATION and never pays.
+STEER_PAYER_DEPARTMENTS: frozenset[str] = frozenset({"meta", "rest", "execution"})
 
 #: THE SCOUT FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
 #: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
@@ -319,6 +340,61 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
             and not in_control(str(k), "market")}
 
 
+def _steer_weights(max_age_h: float = STEER_MAX_AGE_H) -> tuple[dict[str, float], str]:
+    """({leg: weight}, why) from the Tier S scheduler tournament, or ({}, why).
+
+    BACKPRESSURE GOES TO THE JUDGE ONLY. A weight is in [0.5, 1.5] and below 1.0 only for a
+    leg in JUDGE_LEGS (the explicit judge-only set, never the whole validation department);
+    every mining, information and generation leg is floored at 1.0 here whatever the artifact
+    says. `build_plan` multiplies the weight into the
+    leg's price score (its spare-seconds ask) and lets it move ORDER only to push a down-weighted
+    judge leg later. A stale or absent artifact, or a withdrawn steer, moves nothing."""
+    doc = _read(STEER)
+    if not doc:
+        return {}, "SCHEDULER_STEER.json absent: the tournament has not run"
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_h = (datetime.now(UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        return {}, "SCHEDULER_STEER.json carries no readable generated_utc"
+    if age_h > max_age_h:
+        return {}, f"SCHEDULER_STEER.json is {age_h:.1f}h old"
+    if doc.get("withdrawn"):
+        return {}, f"steer withdrawn by its holdout comparison: {str(doc.get('why'))[:100]}"
+    raw = doc.get("weights")
+    w: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    # BACKPRESSURE GOES TO THE JUDGE ONLY, enforced again where the weight is spent: a leg
+    # outside JUDGE_LEGS (mining, research generation, the validation department's own
+    # generation legs, everything else) never takes a weight below 1.0, whatever the artifact says.
+    out = {str(k): max(0.5 if str(k) in JUDGE_LEGS else 1.0,
+                       min(1.5, float(v))) for k, v in w.items()
+           if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    moved = sum(1 for v in out.values() if v != 1.0)
+    out_hour = str(doc.get("hour") or "")
+    _STEER_HOUR[0] = out_hour
+    return out, f"{moved} leg(s) weighted for hour {out_hour}"
+
+
+#: the steer hour the last `_steer_weights` read came from (for the applied log)
+_STEER_HOUR: list[str] = [""]
+
+
+def _log_applied(weights: dict[str, float]) -> None:
+    """Append what this plan actually applied from the steer. Never raises: a missing log only
+    means the tournament credits nothing to this hour."""
+    if not weights:
+        return
+    try:
+        STEER_APPLIED.parent.mkdir(parents=True, exist_ok=True)
+        with STEER_APPLIED.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                 "steer_hour": _STEER_HOUR[0], "weights": weights}) + "\n")
+    except OSError:
+        return
+
+
 def _factory_prices() -> tuple[dict[str, float], str]:
     """{leg: yield score} from the factory contracts (Tier-1 #11), or {} and why. The score is
     the mean percentile of a producer's measured per-compute-hour yields -- unique cells,
@@ -425,8 +501,9 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # per-hour yield is a stronger claim than a tier prior and weaker than log-wealth per day.
     fac, fac_why = _factory_prices()
     f01 = _rank01(fac)
-    # THE TIER S RESEARCHER MARKET (layer 8): per-producer value, ancestry-discounted, folded
-    # onto legs; its held-out control legs are never repriced by it
+    # THE TIER S RESEARCHER MARKET (layer 8) REACHES COMPUTE ONLY AS A TOURNAMENT CONTESTANT
+    # (audit #235, 2026-10-06). It was also a 0.15 share of this blend, so its prices counted
+    # twice; its blend share is now zero and `_researcher_prices` is published for reference only.
     r01 = _rank01(_researcher_prices())
     # THE NORTH STAR GETS ITS OWN WEIGHT (2026-09-30). Effective independent alpha rank per
     # compute hour was one quarter of the factory's percentile mean; it is the metric the
@@ -434,7 +511,7 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     ar, ar_why = _alpha_rank_prices()
     a01 = _rank01(ar)
     W = {"meta_controller": 0.40, "alpha_rank": 0.25, "research_bandit": 0.20,
-         "evig_acquisition": 0.15, "factory_contracts": 0.15, "researcher_market": 0.15,
+         "evig_acquisition": 0.15, "factory_contracts": 0.15, "researcher_market": 0.0,
          "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
@@ -449,7 +526,7 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("alpha_rank", W["alpha_rank"], a01[leg]))
         if leg in f01:
             parts.append(("factory_contracts", W["factory_contracts"], f01[leg]))
-        if leg in r01:
+        if leg in r01 and W["researcher_market"] > 0:
             parts.append(("researcher_market", W["researcher_market"], r01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
@@ -469,33 +546,35 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         if not v["priced_by"]:
             v["score"] = round(median, 6)
             v["priced_by"] = ["unpriced:median"]
+    # METHOD COMPETITION MOVES THE HOUR (AC13 / I12). The tournament's per-leg weight multiplies
+    # the score AFTER the median anchor is fixed, so a weighted-up leg asks for more of its
+    # department's MEASURED spare and a weighted-down judge leg for less. ORDER is a different
+    # matter: when a pass runs short the tail does not run, so the order key stays the UNSTEERED
+    # score for every leg except a down-weighted judge leg, which may only move LATER. A steer
+    # can therefore never push a generation leg back past a short pass's cut.
+    steer, steer_why = _steer_weights()
+    spent: dict[str, float] = {}
+    for leg, v in legs.items():
+        w = steer.get(leg)
+        if w is None or w == 1.0:
+            continue
+        v["steer_weight"] = w
+        v["unsteered_score"] = v["score"]
+        v["score"] = round(max(0.0, min(1.0, float(v["score"]) * w)), 6)
+        v["order_score"] = v["score"] if w < 1.0 else v["unsteered_score"]
+        v["priced_by"] = [*v["priced_by"], "scheduler_steer"]
+        spent[leg] = w
+    _log_applied(spent)
 
     # THE FACTOR: a rank score in [0,1] mapped onto [FLOOR, CEIL], anchored at the median
     # (median score -> 1.0x). With FLOOR = 1.0 the below-median branch is the identity: a
-    # low price delays a leg in the order, it never shortens it.
-    for v in legs.values():
-        s = float(v["score"])
-        f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
-            (FLOOR + (s / max(1e-9, median)) * (1.0 - FLOOR))
-        v["price_factor"] = round(max(FLOOR, min(CEIL, f)), 4)
-    # THE NORTH STAR HAS TWO-SIDED AUTHORITY (verifier 2026-09-30: as one weighted source it could
-    # never shorten anything). Inside the principal's 1.0x floor -- no leg is ever cut below its
-    # base, and research generation is never reduced -- alpha rank now binds in BOTH directions:
-    # a leg in its bottom quartile of independent alpha per compute hour gets NO boost however
-    # the other sources price it (its above-base ask is withdrawn and the spare goes to others),
-    # and a leg in its top quartile gets at least the boost its alpha rank alone earns.
+    # low price delays a leg in the order, it never shortens it. The UNSTEERED factor is kept
+    # beside it: it is what a generation leg is guaranteed under any steer (below).
     for leg, v in legs.items():
-        if leg not in a01:
-            continue
-        a = float(a01[leg])
-        if a < ALPHA_VETO and v["price_factor"] > 1.0:
-            v["alpha_rank_bound"] = f"capped at 1.0x from {v['price_factor']}"
-            v["price_factor"] = 1.0
-        elif a > 1.0 - ALPHA_VETO:
-            own = round(1.0 + (a - (1.0 - ALPHA_VETO)) / ALPHA_VETO * (CEIL - 1.0), 4)
-            if own > v["price_factor"]:
-                v["alpha_rank_bound"] = f"raised to {own}x from {v['price_factor']}"
-                v["price_factor"] = min(CEIL, own)
+        v["price_factor"] = _price_factor(float(v["score"]), median, a01.get(leg), v)
+        pf0 = (_price_factor(float(v["unsteered_score"]), median, a01.get(leg), None)
+               if "unsteered_score" in v else v["price_factor"])
+        v["_pf0"] = pf0
 
     # THE EXTRA COMES OUT OF MEASURED SPARE, PER DEPARTMENT CLOCK. Every leg keeps its base; a
     # leg priced above par ASKS for base x (price_factor - 1) more, and the asks inside one
@@ -504,16 +583,24 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     spare = spare_capacity()
     spare_s = spare.get("spare_s") if spare.get("status") == "MEASURED" else {}
     asks: dict[str, float] = {}
-    want: dict[str, float] = {}
+    asks0: dict[str, float] = {}
     for leg, v in legs.items():
         v["department"] = _department_of(leg)
         asks[leg] = float(v["base_s"]) * (float(v["price_factor"]) - 1.0)
-        want[v["department"]] = want.get(v["department"], 0.0) + asks[leg]
-    grant_ratio = {d: (1.0 if w <= 0 else min(1.0, float((spare_s or {}).get(d, 0.0)) / w))
-                   for d, w in want.items()}
+        asks0[leg] = float(v["base_s"]) * (float(v.pop("_pf0")) - 1.0)
+    extras, grant_ratio = _grant(asks, legs, spare_s or {})
+    # NEVER REDUCE INFO GATHERING, RAW CELL MINING OR RESEARCH GENERATION (audit #235 round 4).
+    # Pro rata sharing inside a department meant an up-weighted generation leg took seconds from
+    # its SIBLING generation legs. Now every generation leg keeps at least what it is granted
+    # UNSTEERED; the difference is paid first by the department's payers (JUDGE_LEGS and the
+    # STEER_PAYER_DEPARTMENTS legs) and only then by the up-weighted legs' own gains above their
+    # unsteered grant. Without a steer the two grants are identical and nothing moves.
+    if steer:
+        extras0, _r0 = _grant(asks0, legs, spare_s or {})
+        extras = _protect_generation(extras, extras0, legs)
     for leg, v in legs.items():
-        extra = asks[leg] * grant_ratio.get(v["department"], 0.0)
-        v["extra_s"] = int(round(extra))
+        extra = extras[leg]
+        v["extra_s"] = round(extra)
         v["factor"] = round(1.0 + (v["extra_s"] / v["base_s"] if v["base_s"] else 0.0), 4)
         v["planned_s"] = max(SCOUT_MIN_S, int(v["base_s"]) + v["extra_s"])
 
@@ -538,7 +625,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
                     "compute_policy_applied": policy_applied,
                     "evig_acquisition": bool(evig), "evig_why": evig_why,
                     "factory_contracts": bool(fac), "factory_why": fac_why,
-                    "alpha_rank": bool(ar), "alpha_rank_why": ar_why},
+                    "alpha_rank": bool(ar), "alpha_rank_why": ar_why,
+                    "scheduler_steer": bool(steer), "scheduler_steer_why": steer_why},
         "spare": spare,
         "spare_granted_s": sum(int(v["extra_s"]) for v in legs.values()),
         "department_grant_ratio": {d: round(r, 4) for d, r in sorted(grant_ratio.items())},
@@ -556,6 +644,92 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
                  "order is price-descending with every leg staler than SCOUT_STALE_H pulled to "
                  "the front"),
     }
+
+
+def _price_factor(score: float, median: float, alpha01: float | None,
+                  note: dict[str, Any] | None) -> float:
+    """A rank score's factor in [FLOOR, CEIL], then the north star's two-sided bound.
+
+    THE NORTH STAR HAS TWO-SIDED AUTHORITY (verifier 2026-09-30: as one weighted source it could
+    never shorten anything). Inside the principal's 1.0x floor -- no leg is ever cut below its
+    base, and research generation is never reduced -- alpha rank binds in BOTH directions: a leg
+    in its bottom quartile of independent alpha per compute hour gets NO boost however the other
+    sources price it (its above-base ask is withdrawn and the spare goes to others), and a leg in
+    its top quartile gets at least the boost its alpha rank alone earns. `note`, when given,
+    receives the `alpha_rank_bound` explanation."""
+    s = float(score)
+    f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
+        (FLOOR + (s / max(1e-9, median)) * (1.0 - FLOOR))
+    pf = round(max(FLOOR, min(CEIL, f)), 4)
+    if alpha01 is None:
+        return pf
+    a = float(alpha01)
+    if a < ALPHA_VETO and pf > 1.0:
+        if note is not None:
+            note["alpha_rank_bound"] = f"capped at 1.0x from {pf}"
+        return 1.0
+    if a > 1.0 - ALPHA_VETO:
+        own = round(1.0 + (a - (1.0 - ALPHA_VETO)) / ALPHA_VETO * (CEIL - 1.0), 4)
+        if own > pf:
+            if note is not None:
+                note["alpha_rank_bound"] = f"raised to {own}x from {pf}"
+            return min(CEIL, own)
+    return pf
+
+
+def _grant(asks: dict[str, float], legs: dict[str, dict[str, Any]],
+           spare_s: dict[str, Any]) -> tuple[dict[str, float], dict[str, float]]:
+    """({leg: extra seconds}, {department: grant ratio}): each department's asks granted in full
+    when its measured spare covers them and pro rata when it does not; no spare grants nothing."""
+    want: dict[str, float] = {}
+    for leg, a in asks.items():
+        d = str(legs[leg]["department"])
+        want[d] = want.get(d, 0.0) + a
+    ratio = {d: (1.0 if w <= 0 else min(1.0, float(spare_s.get(d, 0.0)) / w))
+             for d, w in want.items()}
+    return ({leg: a * ratio.get(str(legs[leg]["department"]), 0.0) for leg, a in asks.items()},
+            ratio)
+
+
+def steer_may_pay(leg: str, department: str) -> bool:
+    """True for a leg a steer may take seconds from: a judge leg, or a leg in a payer department
+    (meta, rest, execution). Every other leg is generation and keeps its unsteered grant."""
+    return leg in JUDGE_LEGS or department in STEER_PAYER_DEPARTMENTS
+
+
+def _protect_generation(steered: dict[str, float], unsteered: dict[str, float],
+                        legs: dict[str, dict[str, Any]]) -> dict[str, float]:
+    """Lift every generation leg back to at least its UNSTEERED grant, inside its department's
+    granted total. The shortfall is taken from the department's payers pro rata, then from the
+    up-weighted generation legs' gains above their own unsteered grant pro rata. Always feasible:
+    a generation leg's weight is floored at 1.0, so the steered asks of the generation legs are
+    never below their unsteered grants, and the department's steered total covers them."""
+    out = dict(steered)
+    by_dept: dict[str, list[str]] = {}
+    for leg in legs:
+        by_dept.setdefault(str(legs[leg]["department"]), []).append(leg)
+    for dept, members in by_dept.items():
+        gen = [lg for lg in members if not steer_may_pay(lg, dept)]
+        pay = [lg for lg in members if steer_may_pay(lg, dept)]
+        short = sum(max(0.0, unsteered[lg] - steered[lg]) for lg in gen)
+        if short <= 1e-12:
+            continue
+        for lg in gen:
+            out[lg] = max(steered[lg], unsteered[lg])
+        pool = sum(steered[lg] for lg in pay)
+        take = min(short, pool)
+        if pool > 0:
+            k = 1.0 - take / pool
+            for lg in pay:
+                out[lg] = steered[lg] * k
+        short -= take
+        if short > 1e-12:
+            gains = {lg: out[lg] - unsteered[lg] for lg in gen if out[lg] > unsteered[lg]}
+            tot = sum(gains.values())
+            k = max(0.0, 1.0 - short / tot) if tot > 0 else 0.0
+            for lg, g in gains.items():
+                out[lg] = unsteered[lg] + g * k
+    return out
 
 
 def declare_spec(leg: str, rec: dict[str, Any]) -> None:
@@ -591,7 +765,8 @@ def declare_spec(leg: str, rec: dict[str, Any]) -> None:
     try:
         base_mb = int(rec.get("base_mb") or 0) or 256
         need, _why = measured_need_mb(str(leg), base_mb)
-        score = rec.get("score")
+        score = rec.get("order_score")
+        score = rec.get("score") if score is None else score
         record_spec(str(leg), mb=int(need), cpu=1,
                     deadline_s=float(rec.get("applied_s") or rec.get("base_s") or 0.0) or None,
                     evsi=float(score) if isinstance(score, (int, float)) else None)
@@ -623,7 +798,9 @@ def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> li
         row = table.get(n) or {}
         st = row.get("stale_h")
         scout = 0 if (st is None or float(st) >= SCOUT_STALE_H) else 1
-        return (scout, -float(row.get("score") or 0.0), declared.get(n, len(names)), n)
+        # the ORDER key: unsteered except a down-weighted judge leg (`order_score`, build_plan)
+        sc = row.get("order_score", row.get("score"))
+        return (scout, -float(sc or 0.0), declared.get(n, len(names)), n)
 
     return sorted(names, key=key)
 
@@ -673,7 +850,8 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
                    "applied_s": applied, "factor": round(factor, 4),
                    "price_factor": row.get("price_factor"), "extra_s": row.get("extra_s"),
                    "department": row.get("department"),
-                   "score": row.get("score"), "priced_by": row.get("priced_by"),
+                   "score": row.get("score"), "order_score": row.get("order_score"),
+                   "priced_by": row.get("priced_by"),
                    "rank": row.get("rank"), "applied": True,
                    "why": (f"rank score {row.get('score')} vs median {p.get('median_score')} "
                            f"-> x{factor:.2f} (priced by {', '.join(row.get('priced_by') or [])})")}
