@@ -21,7 +21,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
-for p in (str(DESK), str(ROOT)):
+for p in (str(DESK / "research"), str(DESK), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
