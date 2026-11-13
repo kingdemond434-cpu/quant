@@ -130,7 +130,8 @@ def fill_hour_verdict(key: str, st: dict) -> dict:
             _FH_INPUTS["surf"] = ecb._read(ecb.SURFACE)
         return ecb.judge(key, st, _FH_INPUTS["uni"], _FH_INPUTS["surf"], mult=1.0)
     except Exception as exc:
-        return {"verdict": "UNMEASURED", "why": f"fill-hour inputs unreadable ({type(exc).__name__})"}
+        return {"verdict": "UNMEASURED",
+                "why": f"fill-hour inputs unreadable ({type(exc).__name__})"}
 
 
 #: The desk's missed-growth ledger (research/missed_growth.py reads it). GROWTH GOVERNANCE Rule 1:
