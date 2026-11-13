@@ -13,8 +13,10 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
      book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record
      (every intervention day since 1991, signed, stamped at its quarterly disclosure; monthly
-     totals stamped at their release). Every other
-     venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
+     totals stamped at their release), and the Swiss National Bank's weekly sight deposits (the
+     footprint of SNB FX intervention, stamped at the first Zurich business day after the
+     Friday, 10:00; TERMS_BLOCKED while its non-commercial terms stand: no series, no cell).
+     Every other venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
      DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
      gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
      next report is out; every request goes through `libs.data.polite_fetch` with retries off.
@@ -40,7 +42,7 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      spread or z-gap (copper vs gold managed money, crude curve vs speculative length, ...).
 
   5. CELLS. Each feature series lands in `data/lake/series/<id>.parquet`, the id prefixed by
-     its source (`cot_`, `fred_`, `mof_`, `xfer_`, `eia_`), and every
+     its source (`cot_`, `fred_`, `mof_`, `snb_`, `xfer_`, `eia_`), and every
      (column x transform x target x chart) becomes ONE `exogenous_conditioner` candidate through
      `libs.moat.registry.enqueue_candidate`, the same door `pack_cells` uses. A cell is enqueued
      ONCE in its life (state keeps the hash), so a pass never bumps another search_count: trials
@@ -67,7 +69,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -910,6 +912,205 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     return days, quarters, pages
 
 
+# ----------------------------------------------------------------------------- SNB sight deposits
+
+#: The SNB publishes the week's sight deposits (as of Friday) on the Monday at 10:00 Zurich time.
+#: Measured once (2026-08-28, `data/data_universe_map.json`): Friday data -> Monday 10:00 CET. An
+#: observation is never stamped at its own Friday: that would grant three days of hindsight.
+SNB_RELEASE_TZ = "Europe/Zurich"
+SNB_RELEASE_HOUR = 10
+SNB_REFETCH_S = 20 * 3600     # weekly data: one read a day is ample and polite
+SNB_DIMS = ("TG", "GI", "UEB")   # total, domestic banks, other sight deposits (CHF millions)
+
+
+def snb_csv(text: str) -> pd.DataFrame:
+    """The SNB cube CSV -> one row per observation date, one column per dimension (CHF millions).
+
+    The file opens with `"CubeId";...` and `"PublishingDate";...` lines, then a `"Date";"D0";
+    "Value"` header. Most rows are an EMPTY daily calendar scaffold (87.8% measured): an empty
+    value is no observation and is dropped, never forward-filled into a daily series that does
+    not exist."""
+    rows: list[tuple[str, str, float]] = []
+    header = False
+    for raw in text.splitlines():
+        parts = [x.strip().strip('"').strip() for x in raw.split(";")]
+        if not header:
+            header = len(parts) >= 3 and parts[0].lower() == "date"
+            continue
+        if len(parts) < 3 or not parts[2]:
+            continue
+        try:
+            rows.append((parts[0], parts[1].upper(), float(parts[2].replace(",", ""))))
+        except ValueError:
+            continue
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows, columns=["date", "dim", "value"])
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+    out = df.pivot_table(index="date", columns="dim", values="value", aggfunc="last")
+    return out[[c for c in SNB_DIMS if c in out.columns]].sort_index()
+
+
+def snb_seed(doc: Mapping[str, Any] | None) -> pd.DataFrame:
+    """The verified snapshot the desk already holds (`data/snb_sight_deposits_weekly.json`,
+    784 Fridays to 2026-08-21), so the series has its history before the first live read."""
+    data = (doc or {}).get("data") or {}
+    cols = {d: pd.Series({pd.Timestamp(k): float(v) for k, v in (data.get(d) or {}).items()})
+            for d in SNB_DIMS if data.get(d)}
+    return pd.DataFrame(cols).sort_index() if cols else pd.DataFrame()
+
+
+def _easter(year: int) -> date:
+    """Easter Sunday, Gregorian calendar (the anonymous / Meeus-Jones-Butcher algorithm)."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = divmod(b, 4)
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    ell = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * ell) // 451
+    month, day = divmod(h + ell - 7 * m + 114, 31)
+    return date(year, month, day + 1)
+
+
+def snb_holidays(year: int) -> frozenset[date]:
+    """The Zurich bank holidays that move the Monday release: Easter Monday, Whit Monday, 1-2 Jan,
+    1 Aug, 25-26 Dec. (Good Friday and Ascension never fall on a Monday, so never move it.)"""
+    easter = _easter(year)
+    return frozenset({easter + timedelta(days=1), easter + timedelta(days=50),
+                      date(year, 1, 1), date(year, 1, 2), date(year, 8, 1),
+                      date(year, 12, 25), date(year, 12, 26)})
+
+
+def _snb_business_day(day: date) -> date:
+    """`day` itself when it is a Zurich business day, else the next one."""
+    while day.weekday() >= 5 or day in snb_holidays(day.year):
+        day += timedelta(days=1)
+    return day
+
+
+def _snb_local(published: Any) -> pd.Timestamp | None:
+    """A PublishingDate as a UTC timestamp (a naive stamp is Zurich local time), or None."""
+    try:
+        ts = pd.Timestamp(str(published).strip())
+    except (ValueError, TypeError):
+        return None
+    if pd.isna(ts):
+        return None
+    ts = ts.tz_localize(SNB_RELEASE_TZ) if ts.tzinfo is None else ts
+    return ts.tz_convert("UTC")
+
+
+def snb_available(obs: pd.Series, published: Any = None) -> pd.Series:
+    """When each observation became public, in UTC: the first Monday strictly after it, rolled
+    forward past weekends and Zurich bank holidays (Easter Monday 2025 -> Tuesday), at 10:00
+    Zurich. `published` is the cube's own PublishingDate: it applies to the LATEST observation
+    only (it is a portal-wide release stamp, not a per-row one) and only when it is LATER than the
+    computed stamp -- an earlier one would grant hindsight, so it is never used."""
+    d = pd.to_datetime(obs, errors="coerce").dt.tz_localize(None).dt.normalize()
+    ahead = ((7 - d.dt.weekday) % 7).replace(0, 7)
+    monday = d + pd.to_timedelta(ahead, unit="D")
+    rolled = pd.Series([pd.Timestamp(_snb_business_day(m.date())) if pd.notna(m) else pd.NaT
+                        for m in monday], index=obs.index, dtype="datetime64[ns]")
+    local = rolled + pd.Timedelta(hours=SNB_RELEASE_HOUR)
+    out = local.dt.tz_localize(SNB_RELEASE_TZ).dt.tz_convert("UTC")
+    pub = _snb_local(published) if published is not None else None
+    if pub is None or not d.notna().any():
+        return out
+    last = d.idxmax()
+    if pd.isna(out.loc[last]) or pub <= out.loc[last]:
+        return out
+    return out.where(out.index != last, pub)
+
+
+def snb_publishing_date(text: str) -> str | None:
+    """The `"PublishingDate";"..."` preamble value of a cube CSV, or None."""
+    for raw in text.splitlines()[:10]:
+        parts = [x.strip().strip('"').strip() for x in raw.split(";")]
+        if len(parts) >= 2 and parts[0].lower() == "publishingdate" and parts[1]:
+            return parts[1]
+    return None
+
+
+def snb_features(held: pd.DataFrame) -> pd.DataFrame:
+    """Weekly CHF-billion changes: total (the intervention footprint), its 4-week sum, and the
+    domestic-bank leg. A rise is CHF created (SNB buying FX), a fall is CHF withdrawn. The total
+    also moves on liquidity events (Credit Suisse, 2023-03: +51.9bn, not FX), which is why the
+    domestic-bank leg is kept separately rather than claimed to isolate FX operations."""
+    if held.empty or "TG" not in held.columns:
+        return pd.DataFrame()
+    w = held.sort_index()
+    tg = pd.to_numeric(w["TG"], errors="coerce") / 1000.0
+    base = pd.DataFrame(index=w.index)
+    base["snb_sd_w"] = tg.diff()
+    base["snb_sd_4w"] = tg.diff(4)
+    if "GI" in w.columns:
+        base["snb_sd_gi_w"] = (pd.to_numeric(w["GI"], errors="coerce") / 1000.0).diff()
+    feat = dynamics(base, list(base.columns))
+    feat["snb_sd_level"] = tg
+    return feat.iloc[1:]
+
+
+def snb_terms_status(src: Mapping[str, Any]) -> str:
+    """The report line for a source held off by its terms, naming the clause and when it was
+    read, so the block is a measured fact rather than a silence."""
+    return (f"TERMS_BLOCKED: {src.get('terms_clause') or 'terms not OPEN'} "
+            f"({src.get('terms_url') or 'terms URL unrecorded'}, "
+            f"read {src.get('terms_read') or 'never'})")
+
+
+def snb_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
+                state: dict[str, Any], notes: list[dict[str, Any]],
+                now: datetime | None = None) -> pd.DataFrame:
+    """Read the cube at most once a day (robots first, hard stop on refusal), cache the CSV, and
+    return the held weekly frame: the seed snapshot overlaid by every live observation. A source
+    whose terms are not OPEN yields NOTHING, the seed included: it was taken under the same
+    terms."""
+    if src.get("terms") != "OPEN":
+        return pd.DataFrame()
+    sid = str(src["id"])
+    csv_path = RAW / f"{sid}.csv"
+    t = (now or datetime.now(UTC)).timestamp()
+    last = float((state.get("snb_fetched_at") or {}).get(sid, 0.0) or 0.0)
+    if get_text is not None and sid not in state.get("hard_stops", {}) and \
+            t - last >= SNB_REFETCH_S:
+        try:
+            if not robots_allow(str(src["url"]), get_text):
+                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+            else:
+                text = get_text(str(src["url"]))
+                if not snb_csv(text).empty:
+                    csv_path.parent.mkdir(parents=True, exist_ok=True)
+                    tmp = csv_path.with_suffix(".csv.tmp")
+                    tmp.write_text(text, encoding="utf-8")
+                    _replace(tmp, csv_path)
+                else:
+                    notes.append({"source": sid, "status": "UNPARSED"})
+                state.setdefault("snb_fetched_at", {})[sid] = t
+        except HardStop as hs:
+            state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
+        except Exception as exc:
+            notes.append({"source": sid, "error": f"{type(exc).__name__}"})
+    seed_rel = src.get("seed_path")
+    seed_doc = (_read(ROOT / str(seed_rel), {}) or {}) if seed_rel else {}
+    held = snb_seed(seed_doc)
+    pub = seed_doc.get("publishing_date_field") if not held.empty else None
+    text = csv_path.read_text(encoding="utf-8") if csv_path.exists() else ""
+    live = snb_csv(text) if text else pd.DataFrame()
+    if not live.empty:
+        if held.empty or live.index.max() >= held.index.max():
+            pub = snb_publishing_date(text)
+        held = live if held.empty else live.combine_first(held)
+    if held.empty:
+        return held
+    held = held.sort_index()
+    # The release stamp of the LATEST week, read by snb_available (later-only, never earlier).
+    held.attrs["snb_published"] = pub
+    return held
+
+
 # ----------------------------------------------------------------------------- build
 
 def _now() -> str:
@@ -1092,6 +1293,27 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             notes.append({"source": "mof_japan_intervention", "status": "UNMEASURED",
                           "why": "no historical CSV held yet"})
 
+    snb = sources.get("snb_sight_deposits") or {}
+    if snb.get("adapter") == "snb_cube" and snb.get("terms") != "OPEN":
+        # Terms-clean data only, and trading is commercial use: the seed snapshot is under the
+        # same terms as a live read, so neither reaches a lake series or a cell.
+        notes.append({"source": "snb_sight_deposits", "status": snb_terms_status(snb)})
+    elif snb.get("adapter") == "snb_cube":
+        held = snb_collect(snb, get_text, state, notes, now)
+        feat = snb_features(held)
+        if len(feat) >= MIN_ROWS:
+            idx = pd.Series(feat.index)
+            avail = snb_available(idx, held.attrs.get("snb_published"))
+            frames["snb_chf_sd"] = stamped(feat.reset_index(drop=True), avail,
+                                           "snb_chf_sd", idx)
+            built["snb_chf_sd"] = {"targets": list(snb.get("targets") or []),
+                                   "kind": "snb_sight_deposits_weekly", "rows": len(feat),
+                                   "last_event": str(feat.index.max()),
+                                   "why": str(snb.get("why", ""))}
+        else:
+            notes.append({"source": "snb_sight_deposits", "status": "UNMEASURED",
+                          "why": f"{len(feat)} weekly rows held (< {MIN_ROWS})"})
+
     for tr in registry.get("transmissions") or []:
         a, b = frames.get(str(tr["a"])), frames.get(str(tr["b"]))
         ca = str(tr.get("column_a") or tr.get("column"))
@@ -1130,7 +1352,8 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
 _HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
-             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
+             "roll_yield", "curvature", "shock_z", "mof_q_net", "mof_net_4q", "mof_m_gross",
+             "snb_sd_w", "snb_sd_4w", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
 
