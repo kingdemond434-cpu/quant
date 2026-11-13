@@ -1,14 +1,14 @@
 {
- "generated_utc": "2026-11-11T01:22:57+00:00",
+ "generated_utc": "2026-11-13T21:44:19+00:00",
  "fence": "judge_alive",
  "verdict": "PASS",
  "state": "PASS",
- "why": "heartbeat RUNNING (phase collect_and_cut, last beat 2026-11-11T01:22:49+00:00); stall record CLEAR",
+ "why": "heartbeat RUNNING (phase merge_and_publish, last beat 2026-11-13T21:43:50+00:00); stall record CLEAR",
  "checks": [
   {
    "metric": "judge_alive",
    "state": "PASS",
-   "why": "heartbeat RUNNING (phase collect_and_cut, last beat 2026-11-11T01:22:49+00:00); stall record CLEAR"
+   "why": "heartbeat RUNNING (phase merge_and_publish, last beat 2026-11-13T21:43:50+00:00); stall record CLEAR"
   },
   {
    "metric": "judge_stop",
