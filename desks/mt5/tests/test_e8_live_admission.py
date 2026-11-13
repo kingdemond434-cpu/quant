@@ -55,6 +55,38 @@ def test_e8_admission_requires_replication_and_honours_principal_exclusions(
         "excluded": "principal exclusion: Reddit-only lineage"}
 
 
+def test_a_verified_real_edge_is_authorized_and_an_unverified_one_refused(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Principal 2026-11-13: every real edge tradeable on E8, and only real ones."""
+    import real_edge
+    config = tmp_path / "CERT_BOOK_LIVE.json"
+    config.write_text(json.dumps({"enabled": True, "e8": {
+        "EURCHF_formula_asia": 0.01}, "excluded": {}}), encoding="utf-8")
+    verdict = tmp_path / "REOPEN_VERIFICATION.json"
+    verdict.write_text(json.dumps({"rows": {
+        "c1": {"certificate": "real", "verified": True, "why_not": []},
+        "c2": {"certificate": "named_but_fake", "verified": False,
+               "why_not": ["forward t 0.8 < 2"]}}}), encoding="utf-8")
+    monkeypatch.setattr(e8_book, "CERT_BOOK", config)
+    monkeypatch.setattr(real_edge, "VERDICT", verdict)
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls: _Gate()))
+    monkeypatch.setattr(kelly_survival, "terms_fenced_cells", lambda: (set(), "fixture"))
+    rows = [
+        {"key": "real", "symbol": "GBPUSD", "family": "session_range_breakout",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "named_but_fake", "symbol": "EURCHF", "family": "formula",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+        {"key": "unlisted", "symbol": "NZDUSD", "family": "carry",
+         "selector": "asia", "fingerprint": "frozen-spec"},
+    ]
+    accepted, blocked = e8_book.live_admissible(rows)
+    assert [r["key"] for r in accepted] == ["real"]
+    why = {r["certificate"]: r["why"] for r in blocked}
+    assert "forward t 0.8 < 2" in why["named_but_fake"]
+    assert "nor a verified real edge" in why["unlisted"]
+
+
 def test_missing_exclusion_authority_refuses_to_build(tmp_path: Path,
                                                       monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(e8_book, "CERT_BOOK", tmp_path / "missing.json")
