@@ -697,3 +697,25 @@ def test_the_latest_link_exemption_accepts_one_shape_and_refuses_the_rest() -> N
         "link_target": False,
         "dangling": False,
     }
+
+
+def test_a_second_session_never_runs_a_second_watchdog() -> None:
+    """Audit 2026-11-13 #1132 MF1: Local\\ mutexes are per session; the S4U re-arm runs in
+    session 0 while an RDP copy may run in another. The newcomer exits on a live, fresh,
+    other-pid heartbeat before it writes anything or starts a server."""
+    code = SCRIPTS["watchdog"]
+    guard = code[code.index("$prevPid = [int]$prev.watchdog_pid") : code.index("watchdog.sha256")]
+    i = code.index("$prevPid = [int]$prev.watchdog_pid")
+    assert code.index("WaitOne(0)") < i
+    assert i < code.index('Beat @{ state = "TAMPERED"')
+    assert i < code.index("Start-Process -FilePath $claude")
+    assert "$prevPid -ne $PID" in guard and "Get-Process -Id $prevPid" in guard
+    assert "StartTime" in guard and "started_at" in guard  # a recycled pid is not the watchdog
+    assert "$ageS -le 3 * $every" in guard and "exit 0" in guard
+
+
+def test_the_probe_never_echoes_what_auth_status_printed() -> None:
+    code = SCRIPTS["installer"]
+    probe = code[code.index("function Test-S4USignIn") : code.index("$s4uWhy = Test-S4USignIn")]
+    assert "Substring" not in probe and "$($txt.Length) characters" in probe
+    assert "UNPROVEN" not in RAW["installer"]

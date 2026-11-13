@@ -189,6 +189,29 @@ $owned = $false
 try { $owned = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
 if (-not $owned) { exit 0 }
 
+# ONE WATCHDOG ACROSS SESSIONS TOO (audit 2026-11-13, #1132 MF1). The mutex is per session
+# (Local\), so a copy in session 0 (the S4U boot task and its 5-minute re-arm) and a copy in an RDP
+# session would each own one and each restart the server. Before writing anything, read the
+# heartbeat: when another watchdog wrote it (watchdog_pid is not this process), that process still
+# exists and is no younger than the heartbeat's started_at (a recycled pid is not the watchdog),
+# and the heartbeat is fresh within three of its promised intervals, this copy exits and leaves
+# the heartbeat untouched. A dead or silent watchdog is replaced as before.
+try {
+    $prev = Get-Content -LiteralPath $script:Beat -Raw -ErrorAction Stop | ConvertFrom-Json
+    $prevPid = [int]$prev.watchdog_pid
+    if ($prevPid -and $prevPid -ne $PID) {
+        $every = 60
+        if ($prev.beat_every_s -and [int]$prev.beat_every_s -gt 60) { $every = [int]$prev.beat_every_s }
+        $ageS = ((Get-Date).ToUniversalTime() - ([datetime]$prev.at).ToUniversalTime()).TotalSeconds
+        $other = Get-Process -Id $prevPid -ErrorAction SilentlyContinue
+        $sameOne = $other -and $other.StartTime.ToUniversalTime() -le ([datetime]$prev.started_at).ToUniversalTime().AddSeconds(5)
+        if ($sameOne -and $ageS -le 3 * $every) {
+            Log ("watchdog pid {0} in session {1} is alive and beating ({2:N0} s ago); this copy in session {3} exits" -f $prevPid, $prev.session_id, $ageS, [System.Diagnostics.Process]::GetCurrentProcess().SessionId)
+            exit 0
+        }
+    }
+} catch { }
+
 # THE BYTES THE INSTALLER PINNED. The installer writes this script's sha256 into the same
 # admin-only folder; a copy that no longer matches is not run.
 $pinFile = Join-Path $BinDir "watchdog.sha256"

@@ -56,7 +56,12 @@
 #   next boot, when no RDP copy exists. With no live heartbeat it is started at once.
 #   PROOF. The watchdog's heartbeat carries session_id, boot_at and started_after_boot_s;
 #   bridge_status.ps1 prints boot_start=PROVEN once a session-0 watchdog began within 15 min of a
-#   boot, and boot_start=UNPROVEN until then (run ops\reboot_drill.ps1 or wait for the next reboot).
+#   boot; until then it prints SESSION0 (the boot task runs, but this run began later),
+#   INTERACTIVE (an RDP-session watchdog) or UNMEASURED (an older heartbeat). Run
+#   ops\reboot_drill.ps1 or wait for the next reboot.
+#   AND IF ONE STARTS ANYWAY (the 5-minute re-arm fires in session 0): the watchdog exits at start
+#   when another session's watchdog is alive and beating (bridge_watchdog.ps1), so there is never
+#   a second copy restarting the server.
 #   ROLLBACK. Re-run this installer without -AtStartup: the same task returns to Interactive.
 #
 # Idempotent; touches no other task. Read the result with ops\bridge\bridge_status.ps1.
@@ -286,8 +291,8 @@ function Test-S4USignIn {
         if ($j.loggedIn -eq $true) { return $null }
         return "claude auth status under S4U says loggedIn=$($j.loggedIn)"
     } catch {
-        if ($txt.Length -gt 200) { $txt = $txt.Substring(0, 200) }
-        return "claude auth status under S4U was not JSON: $txt"
+        # its text can name the account (audit SF1): only its length is reported
+        return "claude auth status under S4U was not JSON ($($txt.Length) characters of text)"
     }
 }
 if ($AtStartup) {
