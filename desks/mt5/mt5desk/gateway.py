@@ -2178,6 +2178,132 @@ def same_side_count(symbol: str, side: int, positions: object,
     return n
 
 
+#: The per-sleeve event-window verdicts (research/event_window_policy.py) and the spread state
+#: (research/spread_state.py). Both are reports; an absent or expired one leaves its gate as the
+#: docstrings below say, never silently permissive about a READ calendar.
+EVENT_POLICY = BASE / "reports" / "EVENT_WINDOW_POLICY.json"
+SPREAD_STATE = BASE / "reports" / "SPREAD_STATE.json"
+EVENT_CALENDAR = BASE.parents[1] / "data" / "event_calendar.json"
+_REPORT_CACHE: dict[str, tuple[float, dict]] = {}
+
+
+def _report(path: Path) -> dict:
+    """A JSON report, re-read only when its mtime moves; {} when absent, unreadable or expired
+    (`valid_until` in the past). Never raises."""
+    try:
+        mt = path.stat().st_mtime
+    except OSError:
+        return {}
+    hit = _REPORT_CACHE.get(str(path))
+    if hit is None or hit[0] != mt:
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            doc = {}
+        _REPORT_CACHE[str(path)] = (mt, doc if isinstance(doc, dict) else {})
+    doc = _REPORT_CACHE[str(path)][1]
+    until = str(doc.get("valid_until") or "")
+    try:
+        if until and datetime.fromisoformat(until.replace("Z", "+00:00")) < datetime.now(UTC):
+            return {}
+    except ValueError:
+        return {}
+    return doc
+
+
+def event_deferral(name: str, symbol: str, row: dict | None = None) -> str | None:
+    """Why a NEW entry on this sleeve waits for a scheduled event, or None (trader-brain row #2).
+
+    Inside the window of a high-impact release that reprices this symbol
+    (libs/execution/event_guard.check_symbol), an entry is DEFERRED unless the sleeve's own
+    replayed trades show the event is its edge: research/event_window_policy.py's TRADE_THROUGH
+    verdict, keyed by sleeve name or by its `SYMBOL|family|session` cell. DEFER and NO_EVIDENCE
+    defer (R0276: entries are deferred inside a window unless the evidence says otherwise). The
+    window is the policy's own (the one it tested), else the guard's default.
+
+    A calendar that cannot be read, or has run out, defers NOTHING here: the guard's own module
+    blocks on it, but on the money path that would stand every lane aside for a data gap, a veto
+    with no growth case (Rule 1). It is logged by the caller as UNMEASURED instead. Defer is not
+    kill: the next pass asks again. Management of open positions never asks."""
+    from libs.execution import event_guard as _eg
+    pol = _report(EVENT_POLICY)
+    win = pol.get("window") or {}
+    v = _eg.check_symbol(symbol, calendar=EVENT_CALENDAR,
+                         before_min=int(win.get("before_min") or _eg.BEFORE_MIN),
+                         after_min=int(win.get("after_min") or _eg.AFTER_MIN))
+    if v.state != "BLACKOUT":
+        return None
+    rows = pol.get("policy") or {}
+    r = row or {}
+    cell = f"{symbol}|{r.get('family')}|{r.get('session') or r.get('window')}"
+    verdict = (rows.get(name) or rows.get(cell) or {}).get("verdict") or "NO_EVIDENCE"
+    if verdict == "TRADE_THROUGH":
+        log(f"[{name}] event window, TRADED THROUGH (its replayed trades earn the event): "
+            f"{v.why}")
+        return None
+    return f"event window ({verdict}): {v.why}"
+
+
+def spread_deferral(name: str, symbol: str, tick: object = None) -> str | None:
+    """Why a NEW entry waits for the spread to come back in, or None (trader-brain row #6).
+
+    Deferred while the live spread is above k x this symbol's median spread at this SERVER hour
+    (research/spread_state.py; the hour is the live tick's own stamp, so no offset is applied).
+    k is chosen from the desk's own fills; a null k, an absent or expired report, or no median for
+    this hour leaves the gate OFF -- a deferral the evidence does not support is a veto with no
+    growth case (Rule 1). Defer is not kill: the next pass asks again."""
+    doc = _report(SPREAD_STATE)
+    k = doc.get("k")
+    if not isinstance(k, (int, float)) or isinstance(k, bool) or k <= 0:
+        return None
+    try:
+        t = tick if tick is not None else mt5.symbol_info_tick(symbol)
+        point = float(getattr(mt5.symbol_info(symbol), "point", 0.0) or 0.0)
+        spread_pts = (float(t.ask) - float(t.bid)) / point if point > 0 else None
+        hour = str(pd.Timestamp(int(t.time), unit="s").hour)
+    except Exception:
+        return None
+    p50 = ((doc.get("hour_p50_pts") or {}).get(symbol) or {}).get(hour)
+    if spread_pts is None or not isinstance(p50, (int, float)) or p50 <= 0:
+        return None
+    if spread_pts > float(k) * float(p50):
+        return (f"spread {spread_pts:.1f} pts > {float(k):g} x the {float(p50):.1f}-pt median at "
+                f"server hour {hour}")
+    return None
+
+
+def entry_deferral(st: dict, name: str, symbol: str, row: dict | None = None,
+                   tick: object = None, *, side: int = 0, lot: float | None = None,
+                   price: float | None = None) -> str | None:
+    """The event and spread gates for one NEW entry, journaled and billed when they defer.
+
+    Returns the reason (and the caller sends nothing this pass), or None. Each deferral is a
+    refusal row (`journal_refusal`, priced by missed_growth) and one rails line per sleeve, gate
+    and day (Rule 1). Never raises: a gate that breaks defers nothing and says so."""
+    why = kind = None
+    for gate, fn in (("event_defer", lambda: event_deferral(name, symbol, row)),
+                     ("spread_defer", lambda: spread_deferral(name, symbol, tick))):
+        try:
+            why = fn()
+        except Exception as exc:
+            log(f"[{name}] {gate} gate unreadable ({type(exc).__name__}: {exc}); not deferred")
+            why = None
+        if why:
+            kind = gate
+            break
+    if not why or not kind:
+        return None
+    log(f"[{name}] ENTRY DEFERRED ({kind}): {why}")
+    journal_refusal(name, symbol, side or 1, kind, why, lot=lot, price=price)
+    try:
+        from mt5desk import fusion_rails as _rails
+        _rails.line_once(kind, f"{name}/{datetime.now(UTC).date().isoformat()}",
+                         sleeve=name, symbol=symbol, lot=lot, why=why)
+    except Exception as exc:
+        log(f"[{name}] {kind} not billed ({type(exc).__name__})")
+    return why
+
+
 def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
                     lot: float | None = None, price: float | None = None) -> None:
     """Every order the desk declines to send is written down, so `missed_growth` can price the
@@ -4385,6 +4511,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
             continue
+        # EVENT AND SPREAD STATE (trader-brain #2, #6): deferred, never killed.
+        if entry_deferral(st, name, s["symbol"], s, side=side, lot=lot, price=entry_ref):
+            continue
         # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account): refused when E8 holds or
         # rests the opposite side of this symbol, or its book cannot be read; read, send and
         # publish run under the one placement lock.
@@ -4922,6 +5051,9 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], per, price):
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
                 f"(lot={per})")
+            continue
+        # EVENT AND SPREAD STATE (trader-brain #2, #6): deferred, never killed.
+        if entry_deferral(st, name, s["symbol"], s, tick, side=side, lot=per, price=price):
             continue
         # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE, as on the family lane (mt5desk.cross_account).
         from mt5desk import cross_account as _xa
@@ -6010,6 +6142,10 @@ def main() -> None:
                     + (f" against the {float(_billed):.2%} the heat ledger reserved for it"
                        if isinstance(_billed, (int, float)) and not isinstance(_billed, bool)
                        and float(_billed) > 0 else ""))
+            # EVENT AND SPREAD STATE (trader-brain #2, #6): the bracket waits, it is not
+            # recorded for the day, so the next pass places it once the window has passed.
+            if entry_deferral(st, s["name"], s["symbol"], s, lot=lot, price=max(hi, lo)):
+                continue
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")
@@ -6132,6 +6268,10 @@ def main() -> None:
                         not o.get("blocked") and o.get("retcode") in (10008, 10009)
                         for o in (res.get("orders") or [])):
                     _gold_placed_this_pass.append(s["name"])
+                # A STALE QUOTE DEFERS, IT DOES NOT SPEND THE DAY: nothing was sent, so the
+                # bracket is not recorded and the next pass places it on a fresh quote.
+                if res.get("stage") == "stale_quote":
+                    continue
                 try:
                     _xa.publish_mt5(mt5, source="gateway")
                 except Exception as exc:

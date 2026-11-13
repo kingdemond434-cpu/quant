@@ -115,3 +115,94 @@ def check(now: datetime | None = None, *, calendar: Path | None = None,
     return EventVerdict(True, "CLEAR",
                         f"no high-impact event within -{before_min}/+{after_min} min"
                         + (f"; next is {nxt:%Y-%m-%d %H:%MZ}" if nxt else "; none scheduled ahead"))
+
+
+# ------------------------------------------------------------------ which symbols an event moves
+#: An event's currencies, inferred from its name when the calendar row does not carry them. The
+#: publisher decides the currency: a Fed, BLS or BEA release reprices USD, an ECB decision EUR,
+#: and so on. Matched case-insensitively against the event name; first match wins.
+_EVENT_CCY: tuple[tuple[str, str], ...] = (
+    ("fomc", "USD"), ("federal reserve", "USD"), ("fed ", "USD"), ("cpi", "USD"),
+    ("nonfarm", "USD"), ("non-farm", "USD"), ("nfp", "USD"), ("employment situation", "USD"),
+    ("bls", "USD"), ("bea", "USD"), ("pce", "USD"),
+    ("ecb", "EUR"), ("european central bank", "EUR"), ("eurostat", "EUR"),
+    ("boe", "GBP"), ("bank of england", "GBP"), ("ons", "GBP"),
+    ("boj", "JPY"), ("bank of japan", "JPY"),
+    ("snb", "CHF"), ("swiss national bank", "CHF"),
+    ("rba", "AUD"), ("reserve bank of australia", "AUD"),
+    ("boc", "CAD"), ("bank of canada", "CAD"),
+    ("rbnz", "NZD"), ("reserve bank of new zealand", "NZD"),
+    ("norges", "NOK"), ("riksbank", "SEK"),
+)
+_ISO = frozenset({"USD", "EUR", "GBP", "JPY", "CHF", "AUD", "CAD", "NZD", "NOK", "SEK", "DKK",
+                  "PLN", "HUF", "CZK", "TRY", "ZAR", "MXN", "SGD", "HKD", "CNH", "ILS", "THB"})
+#: Index and commodity CFDs: the currency whose central bank and data reprice them.
+_CFD_CCY: tuple[tuple[str, str], ...] = (
+    ("XAU", "USD"), ("XAG", "USD"), ("XPT", "USD"), ("XPD", "USD"), ("US30", "USD"),
+    ("US500", "USD"), ("SPX", "USD"), ("NAS", "USD"), ("US2000", "USD"), ("USOIL", "USD"),
+    ("UKOIL", "USD"), ("XTI", "USD"), ("XBR", "USD"), ("XNG", "USD"), ("NGAS", "USD"),
+    ("GER", "EUR"), ("DE40", "EUR"), ("EU50", "EUR"), ("STOXX", "EUR"), ("FRA", "EUR"),
+    ("UK100", "GBP"), ("FTSE", "GBP"), ("JPN", "JPY"), ("JP225", "JPY"), ("NIKKEI", "JPY"),
+    ("AUS200", "AUD"), ("SWI20", "CHF"),
+)
+
+
+def event_currencies(ev: dict[str, Any]) -> frozenset[str] | None:
+    """The currencies one calendar row reprices: its own `currencies`/`currency` field, else
+    inferred from its name. None means UNKNOWN, which the symbol check treats as every symbol --
+    an event whose reach the desk cannot name is never read as reaching nothing."""
+    own = ev.get("currencies") or ev.get("currency")
+    if isinstance(own, str) and own.strip():
+        return frozenset({own.strip().upper()})
+    if isinstance(own, (list, tuple)) and own:
+        return frozenset(str(c).strip().upper() for c in own if str(c).strip())
+    name = f" {str(ev.get('name') or '').lower()} "
+    for key, ccy in _EVENT_CCY:
+        if key in name:
+            return frozenset({ccy})
+    return None
+
+
+def symbol_currencies(symbol: str) -> frozenset[str]:
+    """The currencies a symbol's price depends on: both legs of an FX pair, the pricing currency
+    of a metal, index or energy CFD, and USD for anything unrecognised (a US share CFD, a crypto
+    CFD) -- the broadest single currency, so an unknown symbol is never outside every window."""
+    s = "".join(ch for ch in str(symbol).upper() if ch.isalnum())
+    if len(s) >= 6 and s[:3] in _ISO and s[3:6] in _ISO:
+        return frozenset({s[:3], s[3:6]})
+    for key, ccy in _CFD_CCY:
+        if s.startswith(key):
+            return frozenset({ccy})
+    return frozenset({"USD"})
+
+
+def check_symbol(symbol: str, now: datetime | None = None, *, calendar: Path | None = None,
+                 before_min: int = BEFORE_MIN, after_min: int = AFTER_MIN) -> EventVerdict:
+    """`check`, narrowed to the events that reprice THIS symbol. An ECB decision is a blackout
+    for EURUSD and XAUUSD's neighbours that share EUR, not for USDJPY. STALE and EMPTY are
+    returned as `check` returns them; the caller decides what an unread calendar means."""
+    now = (now or datetime.now(tz=UTC)).astimezone(UTC)
+    path = calendar or CALENDAR
+    base = check(now, calendar=path, before_min=before_min, after_min=after_min)
+    if base.state != "BLACKOUT":
+        return base
+    try:
+        events = json.loads(path.read_text("utf-8")).get("events") or []
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return base
+    mine = symbol_currencies(symbol)
+    for ev in events:
+        when = _parse(str(ev.get("utc", "")))
+        if when is None or str(ev.get("impact", "high")).lower() != "high":
+            continue
+        if not (when - timedelta(minutes=before_min) <= now <= when + timedelta(minutes=after_min)):
+            continue
+        reach = event_currencies(ev)
+        if reach is None or reach & mine:
+            return EventVerdict(
+                False, "BLACKOUT",
+                f"{ev.get('name', 'scheduled event')} at {when:%Y-%m-%d %H:%MZ} reprices "
+                f"{', '.join(sorted(reach)) if reach else 'an unknown set of currencies'}; "
+                f"{symbol} is inside its -{before_min}/+{after_min} minute window")
+    return EventVerdict(True, "CLEAR",
+                        f"a high-impact event is in its window, but none reprices {symbol}")

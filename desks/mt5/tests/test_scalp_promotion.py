@@ -353,6 +353,8 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # which the gateway imports as `_pm` at module scope (2026-09-29).
     seed["_pm"] = _pm
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
+    # The entry deferral (trader-brain #2/#6) is pinned in test_entry_deferral.py; here it is off.
+    seed["entry_deferral"] = lambda *a, **k: False
     seed.update(ns)
     # The pure partial-fill helpers and their literal constants ride along (recovery drills):
     # the executor and every close path call them, and a fake in `ns` still wins.

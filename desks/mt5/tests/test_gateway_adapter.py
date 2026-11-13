@@ -87,6 +87,10 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
                  "os": os, "tempfile": tempfile,
                  "datetime": datetime, "UTC": UTC, "timedelta": timedelta, "Path": Path,
                  "pd": pd, "np": np})
+    # THE ENTRY DEFERRAL (trader-brain #2/#6) DEFAULTS TO "NOT DEFERRED": it reads the event
+    # calendar and the spread reference off disk, which these mechanics tests do not stage. The
+    # gate itself is pinned in test_entry_deferral.py; a test that wants it exec's it by name.
+    seed["entry_deferral"] = lambda *a, **k: False
     for node in _GW_TREE.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 \
                 and isinstance(node.targets[0], ast.Name) and _is_literal(node.value):
