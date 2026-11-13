@@ -34,7 +34,11 @@ from prop.tradelocker_venue import TradeLockerVenue  # noqa: E402
 
 OUT = ROOT/"desks"/"mt5"/"reports"/"E8_SPREADS.json"
 SYMS = ["EURUSD","XAUUSD","USDCHF","USDCAD","EURGBP","GBPJPY","EURJPY","USDJPY","CADJPY",
-        "AUDUSD","AUDNZD","AUDCAD","AUDCHF","CADCHF","EURAUD","EURCHF","GBPAUD","GBPCHF","NZDCAD"]
+        "AUDUSD","AUDNZD","AUDCAD","AUDCHF","CADCHF","EURAUD","EURCHF","GBPAUD","GBPCHF","NZDCAD",
+        # Every other FX pair on E8's instrument list (box_exports/e8_catalogue.json, 10-07): a
+        # Tier-S-cleared sleeve on an unsampled pair has no E8 cost and cannot be sized (NZDJPY,
+        # E8 rules 2026-11-11). Read-only quotes; 10 more per pass.
+        "NZDJPY","NZDUSD","NZDCHF","AUDJPY","CHFJPY","EURCAD","EURNZD","GBPCAD","GBPNZD","GBPUSD"]
 INTERVAL_S = 300
 HOURS = 10
 
