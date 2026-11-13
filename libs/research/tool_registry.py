@@ -151,7 +151,8 @@ def resolve(tool: Tool) -> Callable[..., Any]:
         obj = getattr(obj, part)
     if not callable(obj):
         raise TypeError(f"{tool.target} is not callable")
-    return obj
+    fn: Callable[..., Any] = obj
+    return fn
 
 
 def by_name(name: str) -> Tool:

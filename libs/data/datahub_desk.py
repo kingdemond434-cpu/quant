@@ -117,13 +117,13 @@ META: dict[str, ContractMeta] = {
 
 
 # ----------------------------------------------------------------------------- providers
-def _sweep():
+def _sweep() -> Any:
     """The gauntlet's own input readers. Imported lazily: it is a large module."""
+    import importlib
     for p in (str(DESK), str(DESK / "research")):
         if p not in sys.path:
             sys.path.insert(0, p)
-    from research import orthogonal_sweep
-    return orthogonal_sweep
+    return importlib.import_module("research.orthogonal_sweep")
 
 
 def _flow_bars(symbol: str) -> Any:

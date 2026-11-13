@@ -198,4 +198,5 @@ def desk_hub() -> DataHub:
     # The rest of the desk's contracts, with the clock that refreshes each and the families that
     # read it, live beside the coverage audit that checks both (libs/data/datahub_desk.py).
     from libs.data.datahub_desk import extend
-    return extend(hub)
+    extend(hub)
+    return hub
