@@ -210,11 +210,11 @@ def _two_break_even() -> _Venue:
 
 def test_a_capped_window_the_committed_risk_starves_is_deferred_not_spent(
         monkeypatch, tmp_path) -> None:
-    """On an empty book the 0.2-lot capped legs fit the budget; with 2,413 USD committed they
+    """On an empty book the capped legs (0.14 lot cut to 0.1) fit the budget; with 2,413 USD committed they
     do not fit even the venue minimum. That is the committed risk binding, not the ceiling:
     deferred under risk_budget (LIVE's answer), never SKIPPED for the day under lot_ceiling."""
     _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am"))
-    monkeypatch.setattr(g, "gold_max_lot", lambda *a, **k: (0.2, "test ceiling"))
+    monkeypatch.setattr(g, "gold_max_lot", lambda *a, **k: (0.1, "test ceiling"))
     doc = g.run(_two_break_even(), _MT5(), armed=False)
     assert [p["window"] for p in doc["placed"]] == []
     rows = _rows("afternoon")
@@ -224,13 +224,14 @@ def test_a_capped_window_the_committed_risk_starves_is_deferred_not_spent(
 
 
 def test_a_capped_window_on_an_empty_book_is_shrunk_and_placed(monkeypatch, tmp_path) -> None:
-    """The #411 intent stands: a capped leg is cut to the ceiling and sent, never deferred."""
+    """The #411 intent stands: a capped leg is cut to the ceiling and sent, never deferred.
+    (The afternoon legs size at 0.14 lot: 500 USD over a 33.5-point stop.)"""
     _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am"))
-    monkeypatch.setattr(g, "gold_max_lot", lambda *a, **k: (0.2, "test ceiling"))
+    monkeypatch.setattr(g, "gold_max_lot", lambda *a, **k: (0.1, "test ceiling"))
     doc = g.run(_Venue([], {}), _MT5(), armed=False)
     assert [p["window"] for p in doc["placed"]] == ["afternoon"], doc["skipped"]
-    shrunk = [r for r in _intents() if r.get("status") == "RAIL_SHRUNK"]
-    assert shrunk and shrunk[0]["rail"] == g.LOT_CEILING_RAIL
+    shrunk = doc.get("shrunk") or []
+    assert shrunk and shrunk[0]["rail"] == g.LOT_CEILING_RAIL, doc.get("shrunk")
 
 
 def test_a_leg_the_ceiling_did_not_shrink_is_still_held_to_the_budget(
