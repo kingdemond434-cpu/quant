@@ -67,7 +67,8 @@ def test_tier_skips_rows_that_are_not_series_judgements() -> None:
 
 # ------------------------------------------------------------------ M5: canon is code
 def test_canon_is_a_code_constant_and_sibling_dead_is_not_eligible() -> None:
-    assert jp.CANON is False
+    assert jp.CANON is True        # flipped 2026-11-11: acts on needs_data only
+    assert [r for r, v in jp.RULES.items() if v["canon_eligible"]] == ["needs_data"]
     assert jp.RULES["needs_data"]["canon_eligible"] is True
     assert jp.RULES["chart_short"]["canon_eligible"] is False
     assert jp.RULES["sibling_dead"]["canon_eligible"] is False
@@ -280,7 +281,8 @@ def test_shadow_returns_every_row_writes_no_trial_and_carries_missed_growth(path
         report_path=r,
         ruled=set(),
         seconds_per_cell=2.0,
-    )  # default = CANON
+        canon=False,
+    )
     assert out is rows and doc["mode"] == "SHADOW" and doc["removed_from_docket"] == 0
     assert doc["would_kill"] == {"needs_data": 1, "chart_short": 1, "sibling_dead": 1}
     assert doc["sibling_would_kill_by_k"] == {"5": 1, "10": 1, "20": 1, "40": 1, "80": 0}
@@ -928,7 +930,8 @@ def test_report_carries_priority_trials_and_a_two_sided_missed_growth_line(
     monkeypatch.setattr(jp, "_probe_fn", lambda: None)
     out = tmp_path / "out"
     doc = jp.run_once(led, out, tmp_path / "no_universe", priority={"applied": True})
-    assert doc["mode"] == "SHADOW" and doc["priority"] == {"applied": True}
+    assert doc["mode"] == ("CANON" if jp.CANON else "SHADOW")
+    assert doc["priority"] == {"applied": True}
     assert [x["side"] for x in doc["missed_growth"]] == ["cost", "gain"]
     assert doc["missed_growth"][0]["would_act_sibling_dead"]["true_survivors_killed"] == 0
     assert doc["sibling_dead"]["canon_eligible_in_code"] is False

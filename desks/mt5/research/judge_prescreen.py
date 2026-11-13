@@ -109,7 +109,13 @@ SCHEMA = "judge_prescreen/1.3"
 
 #: THE CANON SWITCH IS CODE (audit 3570928159 M5). A reviewed commit flips it; no state file,
 #: no session and no box can. False = SHADOW: every row reaches the judge.
-CANON = False
+#: FLIPPED 2026-11-11 (hourly pass 102, judge at 4.7% of its 150k/day floor). True acts ONLY on
+#: rules that are canon_eligible in code AND proven ready by the current report: today that is
+#: `needs_data` alone (PROVEN, 0 false kills by construction: the family's own input guard
+#: returns [] on bars that exist, so the judge can only rule UNKNOWN). `sibling_dead` stays
+#: canon_eligible False: its replay kills 23 true survivors at k=5 and still 3 at k=80, so it
+#: keeps reporting in shadow. The 1-in-20 holdout still reaches the judge.
+CANON = True
 
 #: The sealed judge's own floor: CPCV, walk-forward and the matrix need 60 daily observations
 #: (`external_gauntlet.run_gauntlet` keeps `len(d) >= 60`; `cell_dev_cut(need=60)`).
