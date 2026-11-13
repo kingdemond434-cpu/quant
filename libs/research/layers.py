@@ -144,6 +144,9 @@ LEG_LAYER: dict[str, str] = {
     "asia_collector": "information",
     "asia_parser": "information",
     "index_discovery": "information",
+    # Point-in-time macro vintages and patent publication counts: both decide what INPUT exists.
+    "alfred_vintages": "information",
+    "patent_filings": "information",
     "empty_cluster_forcer": "prediction",
     "asia_transmission": "information",
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides

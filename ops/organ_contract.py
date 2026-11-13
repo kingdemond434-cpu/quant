@@ -118,6 +118,16 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the mirrored Fusion gold windows actually sent, or refused and why"),
     "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 180,
                            "hourly venue-listed, positive-risk certified sleeve selection"),
+    # Department legs of MT5-Hourly (the 24/7 resident). Both write their report every pass,
+    # key or no key, so a stale report means the leg stopped running, not that a key is missing.
+    "MT5-Hourly (alfred vintages)": (
+        "desks/mt5/reports/ALFRED_VINTAGES.json", 1560,
+        "point-in-time US macro: every revised release's vintages laid into the lake one row "
+        "per vintage date, minted once per identity, UNMEASURED without the FRED key"),
+    "MT5-Hourly (patent filings)": (
+        "desks/mt5/reports/PATENT_FILINGS.json", 1560,
+        "weekly patent publications per CPC sector from EPO OPS / USPTO ODP mapped to index and "
+        "commodity CFDs; NEEDS_CREDENTIAL per route until its free key is on the box"),
     "MT5-HourlyCore (replication)": (
         "desks/mt5/reports/REPLICATION.json", 180,
         "independent certificate and forward replay required by the live door; "
