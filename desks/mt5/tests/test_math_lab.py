@@ -281,3 +281,25 @@ def test_an_empty_panel_set_reports_unmeasured_and_never_idles_silently(lab, mon
     assert any("no target produced" in u for u in report["unmeasured"])
     assert any("residual store" in u for u in report["unmeasured"])
     assert ML.OUT.exists()
+
+
+def test_routed_hypotheses_decide_which_panel_each_tradition_works(lab, monkeypatch):
+    """A tradition a hypothesis was routed to works that hypothesis's panel only; the report
+    carries the routing log and the per-tradition yield per compute-hour (2026-11-13)."""
+    panels = [_panel("EURUSD", 1), _panel("GBPUSD", 2)]
+    first, second = FAST[0], FAST[1]
+    routing = {"targets": ["EURUSD"], "by_tradition": {first: ["EURUSD"]},
+               "demand": {first: 2.0}, "top_hypothesis": {"EURUSD": "hyp_1"},
+               "log": [{"hypothesis_id": "hyp_1", "target": "EURUSD", "tools": [
+                   {"tradition": first, "class": "calendar", "keyword": "session",
+                    "why": "test"}]}],
+               "status": {"status": "MEASURED"}}
+    monkeypatch.setattr(ML, "build_panels", lambda max_targets=4: (
+        panels, {"unmeasured": [], "targets": ["EURUSD", "GBPUSD"], "routing": routing}))
+    report = ML.run(budget_s=25.0, traditions=[first, second], dry_run=True, permutations=20)
+    per = report["per_tradition"]
+    assert per[first]["panels"] == ["EURUSD"] and per[first]["hypotheses_routed"] == 2
+    assert per[second]["panels"] == ["GBPUSD"]
+    assert report["hypothesis_routing"]["log"][0]["hypothesis_id"] == "hyp_1"
+    assert set(report["yield_per_compute_hour"]["by_tradition"]) >= {first, second}
+    assert "released_budget_s" in report["yield_per_compute_hour"]
