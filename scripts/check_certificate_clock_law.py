@@ -293,6 +293,80 @@ def _threshold_h(family: str, gaps: dict[str, float]) -> tuple[float | None, str
                  f"so a weekend cannot manufacture a breach -> {thr:.1f}h")
 
 
+def _input_group(cert: dict[str, Any], key: str) -> tuple[str, str, str, tuple[str, ...]]:
+    """The DATA a clock reads: symbol, family, chart and any factor symbols.
+
+    Two clocks in one group see the same bars, so a sibling that observed is proof the engine
+    evaluates that data. Factor symbols are part of the group ON PURPOSE: a clock regressing on a
+    factor whose bars stopped (UST10Y, last bar 2025-12-31, measured on the box 2026-11-13) must
+    never borrow proof of life from a sibling regressing on a factor that is still printing.
+    """
+    tf = key.split("@", 1)[1].split("#", 1)[0].split(".", 1)[0] if "@" in key else "H1"
+    raw = (cert.get("params") or {}).get("factor_symbols")
+    factors = tuple(sorted(str(x) for x in raw)) if isinstance(raw, (list, tuple)) else ()
+    return str(cert.get("symbol") or ""), str(cert.get("family") or ""), tf, factors
+
+
+def group_gap_hours(rows: dict[str, dict[str, Any]],
+                    key_group: dict[str, tuple[str, str, str, tuple[str, ...]]],
+                    now: datetime) -> dict[tuple[str, str, str, tuple[str, ...]],
+                                            tuple[float, datetime]]:
+    """group -> (MEASURED hours of clock exposure per forward observation, newest observation).
+
+    The family median is the right yardstick for a busy symbol and the wrong one for a quiet
+    cross: overnight_gap_decay on USDSGD or NZDSGD fires 0-1 times a fortnight (box readout
+    2026-11-13), so the family's 48.7h gap convicted every such clock of FROZEN_ROWS while its
+    sibling on the same bars was accruing. This is the same derivation at the grain of the data
+    the clock reads: total clock-hours across the group's clocks over total observations. A
+    group with no observation at all is absent, and its clocks keep the family threshold.
+    """
+    exposure: dict[tuple[str, str, str, tuple[str, ...]], float] = {}
+    events: dict[tuple[str, str, str, tuple[str, ...]], int] = {}
+    newest: dict[tuple[str, str, str, tuple[str, ...]], datetime] = {}
+    for key, row in rows.items():
+        grp = key_group.get(key)
+        if grp is None:
+            continue
+        started = _parse_ts(row.get("forward_start")) or _parse_ts(row.get("enrolled_at"))
+        if started is None or started >= now:
+            continue
+        exposure[grp] = exposure.get(grp, 0.0) + (now - started).total_seconds() / 3600.0
+        n = row.get("n")
+        if isinstance(n, int) and n > 0:
+            events[grp] = events.get(grp, 0) + n
+            last = _parse_ts(row.get("last_entry"))
+            if last is not None and (grp not in newest or last > newest[grp]):
+                newest[grp] = last
+    return {g: (exposure[g] / events[g], newest[g])
+            for g in events if g in newest and exposure.get(g)}
+
+
+def _group_threshold_h(thr: float | None, why: str,
+                       grp_gap: tuple[float, datetime] | None,
+                       now: datetime) -> tuple[float | None, str]:
+    """Widen the family threshold to the clock's own data rate, ONLY on proof of life.
+
+    Proof of life is a sibling on the same bars that observed within the widened window itself:
+    if nothing on that data printed for three of its own expected gaps, the group is as frozen as
+    the clock and the family threshold stands. Never narrows a threshold, never invents one where
+    the family's is UNMEASURED.
+    """
+    if thr is None or grp_gap is None:
+        return thr, why
+    gap, newest = grp_gap
+    widened = gap * FROZEN_MULTIPLE
+    if widened <= thr:
+        return thr, why
+    if (now - newest).total_seconds() / 3600.0 > widened:
+        return thr, (f"{why}; this clock's data shows {gap:.1f}h per observation but nothing on "
+                     f"it has printed for longer than {widened:.1f}h, so the family threshold "
+                     f"stands")
+    return widened, (f"measured {gap:.1f}h of clock exposure per observation on this clock's own "
+                     f"data (symbol, chart, factors) x{FROZEN_MULTIPLE:g} -> {widened:.1f}h, "
+                     f"wider than the family's {thr:.1f}h; a sibling on the same data last "
+                     f"observed {newest.isoformat()}, so the engine is evaluating it")
+
+
 def load_history(path: Path | None = None) -> list[dict[str, Any]]:
     doc = _read_json(path or HISTORY)
     if isinstance(doc, dict) and isinstance(doc.get("samples"), list):
@@ -535,12 +609,17 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
 
     key_family = {keys[c["name"]]: c["family"] for c in certs if c["name"] in keys}
     gaps = family_gap_hours(rows, key_family)
+    key_group = {keys[c["name"]]: _input_group(c, keys[c["name"]])
+                 for c in certs if c["name"] in keys}
+    group_gaps = group_gap_hours(rows, key_group, t)
     samples = load_history(desk / "data" / "certificate_clock_history.json")
 
     judged: list[dict[str, Any]] = []
     for c in certs:
         key = keys.get(c["name"])
         thr, why_thr = _threshold_h(c["family"], gaps)
+        if key:
+            thr, why_thr = _group_threshold_h(thr, why_thr, group_gaps.get(key_group[key]), t)
         judged.append(judge(c, key, rows.get(key) if key else None,
                             samples, thr, why_thr, t))
 

@@ -402,3 +402,58 @@ def test_the_prior_sample_is_the_oldest_inside_the_window() -> None:
     """Most-recent would be minutes old on an hourly cadence and could never show a freeze."""
     n, at = law._prior_sample(_samples((300, 1), (200, 2), (1, 9)), "K", NOW, 100.0)
     assert n == 1 and at is not None and at < NOW - timedelta(hours=200)
+
+
+# ----------------------------------------- the threshold at the grain of the data a clock reads
+
+def _iso(hours_ago: float) -> str:
+    return (NOW - timedelta(hours=hours_ago)).isoformat()
+
+
+def test_a_quiet_cross_is_judged_by_its_own_data_rate_not_the_family_median() -> None:
+    """USDSGD overnight gaps print 0-1 times a fortnight (box readout 2026-11-13); the family's
+    48.7h median convicted those clocks of FROZEN_ROWS while a sibling on the same bars accrued."""
+    q = _cert("q", symbol="USDSGD")
+    k = "USDSGD.k"
+    rows = {"USDSGD.a": _row(1, forward_start=_iso(400), last_entry=_iso(20)),
+            "USDSGD.b": _row(0, forward_start=_iso(400)),
+            k: _row(0, forward_start=_iso(400))}
+    groups = {key: law._input_group(q, key) for key in rows}
+    gg = law.group_gap_hours(rows, groups, NOW)
+    thr, why = law._group_threshold_h(100.0, "family", gg[groups[k]], NOW)
+    assert thr == pytest.approx(1200.0 * law.FROZEN_MULTIPLE)
+    assert "own data" in why
+    e = law.judge(q, k, rows[k], [{"at": _iso(500), "counts": {k: 0}}], thr, why, NOW)
+    assert e["breach"] is False
+
+
+def test_a_dead_factor_never_borrows_proof_of_life_from_a_live_one() -> None:
+    """UST10Y bars stopped 2025-12-31: its clocks must stay FROZEN even though a sibling on the
+    same symbol and chart, regressing on other factors, is printing."""
+    dead = _cert("d", symbol="XAUEUR", params={"factor_symbols": ["USDX", "UST10Y"]})
+    live = _cert("l", symbol="XAUEUR", params={"factor_symbols": ["USDX", "EURUSD"]})
+    rows = {"XAUEUR.cross@M15.d": _row(0, forward_start=_iso(400)),
+            "XAUEUR.cross@M15.l": _row(30, forward_start=_iso(400), last_entry=_iso(1))}
+    groups = {"XAUEUR.cross@M15.d": law._input_group(dead, "XAUEUR.cross@M15.d"),
+              "XAUEUR.cross@M15.l": law._input_group(live, "XAUEUR.cross@M15.l")}
+    assert groups["XAUEUR.cross@M15.d"] != groups["XAUEUR.cross@M15.l"]
+    gg = law.group_gap_hours(rows, groups, NOW)
+    assert groups["XAUEUR.cross@M15.d"] not in gg
+    assert law._group_threshold_h(100.0, "family", gg.get(groups["XAUEUR.cross@M15.d"]),
+                                  NOW) == (100.0, "family")
+
+
+def test_a_group_silent_past_its_own_widened_window_keeps_the_family_threshold() -> None:
+    q = _cert("q", symbol="NZDSGD")
+    rows = {"NZDSGD.a": _row(10, forward_start=_iso(3000), last_entry=_iso(2900)),
+            "NZDSGD.k": _row(0, forward_start=_iso(300))}
+    groups = {key: law._input_group(q, key) for key in rows}
+    gg = law.group_gap_hours(rows, groups, NOW)
+    thr, why = law._group_threshold_h(100.0, "family", gg[groups["NZDSGD.k"]], NOW)
+    assert thr == 100.0 and "family threshold stands" in why
+
+
+def test_the_group_rate_never_narrows_or_invents_a_threshold() -> None:
+    busy = (5.0, NOW - timedelta(hours=1))
+    assert law._group_threshold_h(100.0, "family", busy, NOW) == (100.0, "family")
+    assert law._group_threshold_h(None, "unmeasured", busy, NOW) == (None, "unmeasured")
