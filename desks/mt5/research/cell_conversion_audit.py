@@ -257,7 +257,11 @@ def merge_sources(path: Path | None = None) -> list[str]:
 def hourly_legs() -> dict[str, Path | None]:
     """Every costed hourly leg -> the code that runs it (producer script, else its own module)."""
     try:
-        from ops import components
+        # Repo-root `ops/` would shadow a bare `from ops import` (test_gateway_loop_finds_libs),
+        # so the desk's registry is imported by its full path, with the repo root on sys.path.
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from desks.mt5.ops import components
         names = components.leg_names()
         calls = components._producer_calls()
     except Exception:
