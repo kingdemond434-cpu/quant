@@ -25,10 +25,13 @@ function Use-MergerIdentity([string] $CloneRoot) {
     Set-Item -LiteralPath "env:GIT_CONFIG_KEY_$n" -Value "http.https://github.com/.extraheader"
     Set-Item -LiteralPath "env:GIT_CONFIG_VALUE_$n" -Value "AUTHORIZATION: basic $basic"
     $env:GIT_CONFIG_COUNT = "$($n + 1)"
-    # GCM must not answer with zuck's stored login once the header is set
-    $m = $n + 1
-    Set-Item -LiteralPath "env:GIT_CONFIG_KEY_$m" -Value "credential.helper"
-    Set-Item -LiteralPath "env:GIT_CONFIG_VALUE_$m" -Value ""
-    $env:GIT_CONFIG_COUNT = "$($m + 1)"
+    # GCM must not answer with zuck's stored login once the header is set. NOT as a
+    # GIT_CONFIG_VALUE_n of "": Windows PowerShell 5.1 deletes an environment variable set to "",
+    # so git saw GIT_CONFIG_COUNT name a VALUE that did not exist and refused EVERY command
+    # ("missing config value GIT_CONFIG_VALUE_1", rc 128). That is the gate's "sparse-checkout
+    # failed (128)" on every sweep from 2026-11-05 (config.json landed) to 2026-11-13. git's own
+    # quoted -c form carries the empty value inside a non-empty variable.
+    $reset = "'credential.helper'=''"
+    if ($env:GIT_CONFIG_PARAMETERS) { $env:GIT_CONFIG_PARAMETERS = "$($env:GIT_CONFIG_PARAMETERS) $reset" } else { $env:GIT_CONFIG_PARAMETERS = $reset }
     return $true
 }
