@@ -303,3 +303,6 @@ def test_routed_hypotheses_decide_which_panel_each_tradition_works(lab, monkeypa
     assert report["hypothesis_routing"]["log"][0]["hypothesis_id"] == "hyp_1"
     assert set(report["yield_per_compute_hour"]["by_tradition"]) >= {first, second}
     assert "released_budget_s" in report["yield_per_compute_hour"]
+    cost = report["yield_per_compute_hour"]["trials_per_hypothesis"]
+    assert cost["hypotheses_routed"] == 1 and cost["mean_traditions_per_hypothesis"] == 1.0
+    assert cost["overall"] == pytest.approx(cost["effective_trials"])

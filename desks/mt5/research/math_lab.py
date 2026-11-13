@@ -1454,6 +1454,24 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     return report
 
 
+def _trials_per_hypothesis(per_tradition: dict[str, dict[str, Any]],
+                           panel_status: dict[str, Any]) -> dict[str, Any]:
+    """Effective trials charged this pass per routed hypothesis, overall and per tradition."""
+    log = (panel_status.get("routing") or {}).get("log") or []
+    hypotheses = len({(e.get("hypothesis_id"), e.get("target")) for e in log if e.get("tools")})
+    trials = {t: float(row.get("effective_trials") or 0.0) for t, row in per_tradition.items()}
+    routed = {t: int(row.get("hypotheses_routed") or 0) for t, row in per_tradition.items()}
+    return {
+        "hypotheses_routed": hypotheses,
+        "effective_trials": round(sum(trials.values()), 3),
+        "overall": round(sum(trials.values()) / hypotheses, 3) if hypotheses else None,
+        "by_tradition": {t: round(trials[t] / routed[t], 3) if routed[t] else None
+                         for t in per_tradition},
+        "mean_traditions_per_hypothesis": round(
+            sum(len(e.get("tools") or []) for e in log) / len(log), 3) if log else None,
+    }
+
+
 def _report(started: float, chosen: list[str], unknown: list[str], panel_status: dict[str, Any],
             memory: dict[str, Any], plan: dict[str, Any], roi_detail: dict[str, Any],
             per_tradition: dict[str, dict[str, Any]], objects: list[MathObject],
@@ -1482,6 +1500,9 @@ def _report(started: float, chosen: list[str], unknown: list[str], panel_status:
             "rung": roi_detail.get("rung", UNMEASURED),
             "zero_yield": roi_detail.get("zero_yield") or [],
             "released_budget_s": plan.get("released_budget_s", 0.0),
+            # THE DEFLATION COST OF BREADTH, next to its yield (audit SF on da1037972). Routing an
+            # idea to every fitting tradition raises the trials each hypothesis pays for.
+            "trials_per_hypothesis": _trials_per_hypothesis(per_tradition, panel_status),
             "by_tradition": {
                 t: {k: row.get(k) for k in (
                     "compute_hours", "donated", "cells", "judged", "survivors",
