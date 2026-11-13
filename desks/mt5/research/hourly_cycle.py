@@ -1164,6 +1164,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Capacity planning and the observed verdict rate must run before every judge pass;
     # the heavy-plan rotation left its report stale while the gauntlet kept running.
     "judging_throughput",
+    # THE 150k/DAY FLOOR, ATTESTED: pace, idle gap against one sweep, core floor. Small reads.
+    "judge_floor_attestation",
     # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.
@@ -1399,7 +1401,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "blas_differential",
-                     "judging_throughput",
+                     "judging_throughput", "judge_floor_attestation",
                      "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "attestation_remint",
@@ -2134,6 +2136,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # Four small JSON reads and, until its own history holds five verdict bursts, a 32 MB tail of
+    # the gate ledger: seconds; 120 is the ceiling.
+    "judge_floor_attestation": 120,
     # Both stop themselves inside these caps (--budget-s 480 / 540) and write their artifacts:
     # a cap below an organ's own budget truncates it at the same prefix every hour.
     "gauntlet_backpressure": 600,
@@ -5540,6 +5545,11 @@ def main() -> None:
         "--sample", "300", "--rebuild", "14", "--arm-timeout-s", "330"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
+    # JUDGE FLOOR ATTESTATION, right after the rate it reads: first-terminal cells/day against
+    # the 150k floor, the idle gap against one of the judge's own sweeps, and the core floor
+    # judge_core_share publishes. Read-only on every judge organ; no authority.
+    jfa = _costed("judge_floor_attestation", lambda: _producer(
+        "judge_floor_attestation", "research/judge_floor_attestation.py", "--once"))
     try:
         from research.judging_throughput import apply_env as _apply_judging_env
         _apply_judging_env()
@@ -6634,7 +6644,8 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
-                    "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
+                    "judging_throughput": jth, "judge_floor_attestation": jfa,
+                    "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
