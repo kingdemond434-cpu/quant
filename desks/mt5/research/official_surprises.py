@@ -1074,7 +1074,8 @@ def tic_vintage(held: pd.DataFrame, read: pd.DataFrame, read_at: pd.Timestamp
                     "seen_at": read_at.isoformat()})
     if not add:
         return h
-    out = pd.concat([h, pd.DataFrame(add)], ignore_index=True)
+    out = pd.concat([h, pd.DataFrame(add)], ignore_index=True) if not h.empty else \
+        pd.DataFrame(add)
     out["month"] = pd.to_datetime(out["month"])
     return out.sort_values("month").reset_index(drop=True)
 

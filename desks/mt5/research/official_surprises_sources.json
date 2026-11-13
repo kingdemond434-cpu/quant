@@ -220,14 +220,15 @@
       "why": "2025 shutdown and catch-up"
      }
     ]
-   }
+   },
+   "file_note": "box read 2026-11-13: s1_globl.txt is FROZEN at 2023-01 (41,519 rows, Grand Total code 99996). It seeds the revised-history baseline only; first-seen rows need the live SLT table file, whose URL is pending a box read. Until then the row is ACCRUING by design."
   },
   {
    "id": "boj_rinban",
    "idea": "N4",
    "adapter": "boj_rinban",
    "terms": "OPEN",
-   "terms_note": "BoJ data free to reuse with attribution (ledger 11-11). Fetcher waits on a box read of one results page and one monthly schedule page: boj.or.jp is refused by the cloud egress, so the field map cannot be read from here; held rows are served.",
+   "terms_note": "BoJ data free to reuse with attribution. Route pending: www3.boj.or.jp market pages ended Oct 2025 (box read 2026-11-13, all baYYMMDD 404) and the daily ope xlsx on www.boj.or.jp carries no JGB purchase rows. Held rows only until the current results page is located.",
    "at": "12:10",
    "tz": "Asia/Tokyo",
    "baseline_ops": 20,

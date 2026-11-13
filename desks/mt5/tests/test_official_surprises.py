@@ -416,7 +416,8 @@ def _s1(months: list[str], base: float = 0.0) -> str:
 def test_tic_s1_net_is_domestic_purchases_minus_sales_in_bn() -> None:
     d = osx.tic_s1_parse(_s1(["2024-02", "2024-01"]), "^Grand Total")
     assert list(d["month"]) == [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-02-01")]
-    assert d["value"].iloc[0] == pytest.approx((1000 + 200 - 900 - 100) / 1000.0)
+    # 2024-01 is the second row written (i = 1): purchases 1001 + 200, sales 900 + 100
+    assert d["value"].iloc[0] == pytest.approx((1001 + 200 - 900 - 100) / 1000.0)
 
 
 def test_tic_history_is_revised_and_only_new_months_are_first_seen() -> None:
@@ -447,11 +448,11 @@ def test_cross_host_redirect_is_refused() -> None:
     with pytest.raises(fs.FetchError) as e:
         h.redirect_request(req, None, 302, "Found", {}, "https://evil.example/x")
     assert "SECRET" not in str(e.value.url)
-    assert h.redirect_request(req, None, 302, "Found", {}, "/v2/y") is not None
+    assert h.redirect_request(req, None, 302, "Found", {}, "https://api.eia.gov/v2/y") is not None
 
 
 def test_error_notes_carry_only_the_exception_type() -> None:
     notes: list[dict[str, Any]] = []
-    osx.collect(text=None, state={}, notes=notes,
+    osx.collect(text=FakeNet({}), state={}, notes=notes,
                 registry={"rows": [{"id": "x", "adapter": "tic", "terms": "OPEN"}]})
     assert notes and all(":" not in str(n.get("error", "")) for n in notes)
