@@ -254,8 +254,9 @@ def test_a_store_file_with_an_account_field_is_withheld_and_never_copied(tmp_pat
     (tmp_path / "backups/moat/capital_events").write_text('{"deposit_usd": 5000}\n', "utf-8")
     rep = build_backup(tmp_path, free_pct=50.0)
     assert rep["status"] == "OK"            # the store still replicates its other files
-    assert [w["file"] for w in rep["private_withheld"]] == [
-        "data/moat/execution_tape/acct.jsonl"]
+    held = rep["private_withheld"]
+    assert len(held) == 1 and held[0]["file"].endswith("data/moat/execution_tape/acct.jsonl")
+    assert held[0]["keys"] == ["equity_after"]
     assert rep["private_not_carried_bytes"]["capital_events"] > 0
     assert not (tmp_path / "backups/moat/execution_tape/acct.jsonl").exists()
     assert (tmp_path / "backups/moat/execution_tape/cashcarry_trades.jsonl").exists()
