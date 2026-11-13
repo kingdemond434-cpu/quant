@@ -1,32 +1,32 @@
 {
   "schema": "box_state_flow/1",
-  "measured_at": "2026-11-13T04:43:26+00:00",
+  "measured_at": "2026-11-13T11:42:24+00:00",
   "stall_h": 3.0,
   "flow_rel": "desks/mt5/reports/BOX_STATE_FLOW.json",
   "published_paths": 81,
   "branch": "claude/llm-auto-upgrade-verify-gcjac3",
   "origin_ref": "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3",
   "publisher_identity": "Codex",
-  "last_published_commit": "cf4f04566f",
-  "last_published_at": "2026-11-13T04:43:11+00:00",
-  "newest_local_state_at": "2026-11-13T04:43:14+00:00",
+  "last_published_commit": "d08ac1349b",
+  "last_published_at": "2026-11-13T11:21:11+00:00",
+  "newest_local_state_at": "2026-11-13T11:42:14+00:00",
   "local_commits_not_on_origin": 1652,
   "hooks_path": "ops/githooks",
   "sync_log": {
     "readable": true,
-    "last_success_line": "2026-11-13T05:43:26.1070215+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 74 path(s)",
-    "last_refusal_line": "2026-11-13T05:41:29.7754873+01:00 DEFER: origin/claude/llm-auto-upgrade-verify-gcjac3 requires canonical adoption (275 inbound commit(s)); publisher will not merge code or hold the git-writer lock through adoption",
-    "last_line": "2026-11-13T05:43:26.1070215+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 74 path(s)"
+    "last_success_line": "2026-11-13T12:21:17.4449413+01:00 shadow state synced to origin/claude/llm-auto-upgrade-verify-gcjac3 (state blobs onto origin's tip): 74 path(s)",
+    "last_refusal_line": "2026-11-13T12:42:24.1389170+01:00 SKIP: MT5-AdoptRelease is adopting; this pass yields (next slot in 15 min)",
+    "last_line": "2026-11-13T12:42:24.1389170+01:00 SKIP: MT5-AdoptRelease is adopting; this pass yields (next slot in 15 min)"
   },
-  "published_age_h": 0.0,
+  "published_age_h": 0.35,
   "local_state_age_h": 0.0,
   "verdict": "FLOWING",
-  "why": "origin carries box state 0.0h old",
+  "why": "origin carries box state 0.4h old",
   "page": {
     "sent": true,
     "reason": "recovered from METER_SILENT",
     "title": "BOX STATE FLOWING again",
-    "armed": null,
+    "armed": 1,
     "delivered": 1
   },
   "alerts": {
