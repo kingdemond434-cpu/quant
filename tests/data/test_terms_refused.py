@@ -3,6 +3,7 @@ request, and organs keep serving the last held copy."""
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.request
 from pathlib import Path
@@ -69,7 +70,9 @@ def test_free_data_serves_the_held_copy_whatever_its_age(no_network, monkeypatch
     import os
     os.utime(p, (1, 1))                                    # decades stale
     monkeypatch.setattr(F, "_fred_alternate", lambda *a: pytest.fail("held copy skipped"))
+    monkeypatch.setattr(F, "_primary", lambda *a: None)       # publisher unreachable
     assert F.fred_series("DGS10") == held
+    assert F.served_from("DGS10") == "held"
 
 
 def test_free_data_without_a_held_copy_goes_to_the_publisher_route(no_network, monkeypatch,
@@ -78,6 +81,24 @@ def test_free_data_without_a_held_copy_goes_to_the_publisher_route(no_network, m
     monkeypatch.setattr(F, "CACHE", tmp_path)
     monkeypatch.setattr(F, "_fred_alternate", lambda sid, vintage, key: {"route": sid})
     assert F.fred_series("UNRATE") == {"route": "UNRATE"}
+    assert F.served_from("UNRATE") == "dbnomics_publisher_series"
+
+
+def test_free_data_prefers_the_primary_publisher(monkeypatch, tmp_path) -> None:
+    import free_data as F
+    monkeypatch.setattr(F, "CACHE", tmp_path)
+    held = tmp_path / "fred_DGS2_cur.json"
+    held.write_text('{"2020-01-01": 1.0}', "utf-8")
+    os.utime(held, (1, 1))              # stale, so the refused branch is reached
+    monkeypatch.setattr(F, "_primary", lambda sid, start, key: {"2026-11-12": 3.5})
+    assert F.fred_series("DGS2") == {"2026-11-12": 3.5}
+    assert F.served_from("DGS2") == "primary_publisher"
+
+
+def test_us_pack_lists_no_refused_root() -> None:
+    from research.countries.us import pack
+    roots = [r for sc in pack.SOURCE_CLASSES for r in sc["roots"]]
+    assert roots and not [r for r in roots if T.refused(r)]
 
 
 def test_collector_never_fetches_fred_and_keeps_what_it_holds(no_network, monkeypatch,

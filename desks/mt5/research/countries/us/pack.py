@@ -709,15 +709,16 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "us_bls_bea_census", "BLS, BEA and the Census Bureau (the release surprise class)",
         layer="official",
         roots=("https://www.bls.gov/schedule/news_release/", "https://www.bea.gov/news/schedule",
-               "https://www.census.gov/economic-indicators/",
-               "https://api.stlouisfed.org/fred/"),
+               "https://www.census.gov/economic-indicators/"),
         queries=("Employment Situation", "Consumer Price Index", "Producer Price Index",
                  "Personal Income and Outlays", "advance retail sales", "GDP advance estimate",
                  "JOLTS", "release schedule", "benchmark revision", "seasonal adjustment"),
         languages=("en",), access_label="OPEN_DATA", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", licence="US government work; FRED terms of use",
+        predictive_state="UNTESTED", licence="US government work, public domain",
         notes="REVISED: every series here is revised, the first print must be kept as its own "
-              "vintage (ALFRED holds vintages); the 08:30 ET embargo minute is the event time"),
+              "vintage; the 08:30 ET embargo minute is the event time. FRED/ALFRED are "
+              "BLOCKED_TERMS (governance ruling 2026-11-13; libs.data.terms_refused): the "
+              "publishers' own pages are the roots"),
     source_class(
         "us_cftc_cot", "CFTC Commitments of Traders (the positioning spine)", layer="official",
         roots=("https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm",
@@ -877,7 +878,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         layer="app_ecosystem",
         roots=("https://www.tradingview.com/scripts/", "https://www.quantconnect.com/forum/",
                "https://alpaca.markets/docs/", "https://interactivebrokers.github.io/",
-               "https://polygon.io/docs", "https://fred.stlouisfed.org/docs/api/fred/"),
+               "https://polygon.io/docs"),
         queries=("pine script", "thinkscript study", "QuantConnect algorithm", "Alpaca "
                  "backtest", "IBKR API", "polygon aggregates", "fredapi", "backtrader"),
         languages=("en",), access_label="PUBLIC_WITH_TERMS", credibility="UNRELIABLE",
@@ -923,8 +924,9 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "us_fraser_archive", "FRASER (the Fed's historical archive), the five-year-lagged FOMC "
                              "transcripts, ALFRED vintages and the Wayback Machine",
         layer="archive",
-        roots=("https://fraser.stlouisfed.org/", "https://alfred.stlouisfed.org/",
-               "https://www.federalreserve.gov/monetarypolicy/fomc_historical_year.htm",
+        # fraser/alfred.stlouisfed.org are BLOCKED_TERMS (governance ruling 2026-11-13,
+        # libs.data.terms_refused): not roots, so they spend no crawl budget or count as covered
+        roots=("https://www.federalreserve.gov/monetarypolicy/fomc_historical_year.htm",
                "https://web.archive.org/"),
         queries=("FOMC transcript", "Greenbook", "Bluebook", "Tealbook", "vintage data",
                  "real-time data set", "archived forum", "discontinued series"),

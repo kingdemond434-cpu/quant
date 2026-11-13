@@ -30,12 +30,23 @@ CACHE.mkdir(parents=True, exist_ok=True)
 UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
 
 
+#: Where each refused FRED key was last served from ("primary_publisher", "held",
+#: "dbnomics_publisher_series", "unavailable"), keyed like the cache (fred_<id>_<vintage|cur>).
+#: The series dict stays {date: value} for every existing caller; a money-path reader asks
+#: `served_from(series_id)` before treating the last print as fresh (LAWS 5e labelling).
+SERVED_FROM: dict[str, str] = {}
+
+
+def served_from(series_id: str, vintage: str | None = None) -> str | None:
+    return SERVED_FROM.get(f"fred_{series_id}_{vintage or 'cur'}")
+
+
 def _terms():
     """libs.data.terms_refused, importable however this module was launched."""
     import sys as _sys
     root = str(Path(__file__).resolve().parents[3])
     if root not in _sys.path:
-        _sys.path.insert(0, root)
+        _sys.path.append(root)            # appended: the repo root never shadows a module
     from libs.data import terms_refused
     return terms_refused
 
@@ -98,8 +109,17 @@ def fred_series(series_id: str, start: str = "2010-01-01",
         # PUBLISHER's own series (Treasury curves, NY Fed EFFR/SOFR) where one is mapped; then
         # the LAST HELD copy, whatever its age; then data_alternates' DBnomics map, which carries
         # BLS / Fed ids only, never a third-party one. A vintage is never faked from any of them.
-        return (None if vintage else _primary(series_id, start, key)) \
-            or _cache_get(key, any_age=True) or _fred_alternate(series_id, vintage, key)
+        fresh = None if vintage else _primary(series_id, start, key)
+        if fresh:
+            SERVED_FROM[key] = "primary_publisher"
+            return fresh
+        held = _cache_get(key, any_age=True)
+        if held:
+            SERVED_FROM[key] = "held"     # frozen at its last print: never read it as fresh
+            return held
+        alt = _fred_alternate(series_id, vintage, key)
+        SERVED_FROM[key] = "dbnomics_publisher_series" if alt else "unavailable"
+        return alt
     try:
         raw = _get(url).decode("utf-8", "replace")
         rows = list(csv.reader(io.StringIO(raw)))
