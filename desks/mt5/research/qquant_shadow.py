@@ -20,6 +20,18 @@ from run_hunt16 import FAMILIES, WINDOWS  # noqa: E402
 
 from research.h1_source import fetch_h1  # noqa: E402
 
+try:
+    from admission_integrity import PROMOTION_HOLD_FIELD, stamp_hold  # noqa: E402
+except Exception:                                   # the clock never dies on a missing library
+    PROMOTION_HOLD_FIELD = "integrity_hold"
+
+    def stamp_hold(row: dict, reason: str | None) -> None:
+        if reason:
+            row[PROMOTION_HOLD_FIELD] = reason
+            row["promotion_authority"] = False
+        else:
+            row.pop(PROMOTION_HOLD_FIELD, None)
+
 REPORTS = BASE / "reports"
 SHADOW = REPORTS / "shadow"
 STATE = SHADOW / "qquant_shadow_state.json"
@@ -91,14 +103,18 @@ def main() -> int:
             state[key] = {"status": "WIRING_ERROR", "promotion_authority": False,
                           "why": "certified family/selector has no exact executable"}
             continue
-        if not isinstance(state.get(key), dict):
+        # EVERY CERTIFICATE GETS ITS CLOCK (principal 2026-11-13). The door's verdict no longer
+        # withholds the clock; it rides on the row as a PROMOTION hold, re-asked every pass for a
+        # clock that carries one, so it lifts the pass after replication lands.
+        prior = state.get(key) if isinstance(state.get(key), dict) else None
+        reason = None
+        if prior is None or prior.get(PROMOTION_HOLD_FIELD):
             reason = (gate.hold(str(key), symbol=spec.get("symbol"), family=family,
                                 selector=selector, side=spec.get("side"),
                                 params=spec.get("params"))
                       if gate is not None else f"HELD_INTEGRITY_UNREADABLE: {gate_why}")
             if reason:
-                held.append({"certificate": key, "reason": reason})
-                continue
+                held.append({"certificate": key, "reason": reason, "clocked": True})
         frozen_at = pd.Timestamp(cert.get("gated_at"))
         if frozen_at.tzinfo is None:
             frozen_at = frozen_at.tz_localize("UTC")
@@ -118,6 +134,7 @@ def main() -> int:
             "order_authority": False,
         })
         row.setdefault("n", 0)
+        stamp_hold(row, reason)
         if bars is None:
             row.update(status="NO_DATA", why="no H1 source returned bars")
             state[key] = row
@@ -185,7 +202,13 @@ def main() -> int:
                 f"{days}/{MIN_DAYS} days; {len(decision_bars)} forward decision bars "
                 f"evaluated; {len(forward_signals)} eligible signals"
             )
+        elif expectancy > 0 and row["max_dd_r"] > -25.0 and row.get(PROMOTION_HOLD_FIELD):
+            # matured, but the integrity door still holds PROMOTION: keep accruing (2026-11-13)
+            row["status"] = "ACTIVE"
+            row["matured_promotion_held"] = row[PROMOTION_HOLD_FIELD]
+            row["why"] = f"matured; promotion held -- {row[PROMOTION_HOLD_FIELD]}"
         elif expectancy > 0 and row["max_dd_r"] > -25.0:
+            row.pop("matured_promotion_held", None)
             row["status"] = "PROMOTION_CANDIDATE"
             row["why"] = (
                 "Fusion-native forward evidence met the fixed clock and remained net positive"

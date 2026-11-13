@@ -78,9 +78,14 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
                 continue
         except Exception:
             pass
+        hold = _row_hold(row)
         if key in state:
             if "enrolled_at" not in state[key]:
                 state[key]["enrolled_at"] = stamp
+                changed += 1
+            if isinstance(state[key], dict) and \
+                    state[key].get(PROMOTION_HOLD_FIELD) != (hold or None):
+                stamp_hold(state[key], hold)
                 changed += 1
             continue
         state[key] = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
@@ -88,6 +93,7 @@ def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
                       "enrolled_at": stamp, "promotion_authority": False,
                       "order_authority": False,
                       "evidence_note": "clock enrolled; forward replay pending"}
+        stamp_hold(state[key], hold)
         added += 1
     if added or changed:
         state["configured_sleeves"] = len(seen)
@@ -139,35 +145,67 @@ WINDOWS = {
 #: The list stays empty: enrolment is a CERTIFICATE, never a literal a human typed.
 SLEEVES: list[tuple[str, str]] = []
 
-#: Certificates the research-integrity door held on the LAST `certified_sleeves()` pass, each with
-#: its named reason (`research/admission_integrity.py`). Reset every pass, so it always describes
-#: the run that just happened. Only certificates WITHOUT a clock are ever here.
+#: Certificates the research-integrity door holds FROM PROMOTION on the LAST `certified_sleeves()`
+#: pass, each with its named reason (`research/admission_integrity.py`). Reset every pass. Since
+#: 2026-11-13 every one of them HAS a clock: the door stamps the clock, it never withholds it.
 HELD_AT_INTEGRITY: list[dict] = []
+
+try:
+    from admission_integrity import PROMOTION_HOLD_FIELD, stamp_hold
+except ImportError:                                            # pragma: no cover
+    try:
+        from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
+            PROMOTION_HOLD_FIELD,
+            stamp_hold,
+        )
+    except Exception:
+        # THE CLOCK ENGINE MUST NOT DIE ON A MISSING LIBRARY. Same field, same rule, inline.
+        PROMOTION_HOLD_FIELD = "integrity_hold"
+
+        def stamp_hold(row: dict, reason: str | None) -> None:  # type: ignore[misc]
+            if reason:
+                row[PROMOTION_HOLD_FIELD] = reason
+                row["promotion_authority"] = False
+            else:
+                row.pop(PROMOTION_HOLD_FIELD, None)
+
+
+def _row_hold(row: tuple) -> str:
+    """The promotion hold carried as an enrolment row's ninth field ("" = none)."""
+    return str(row[8] or "") if len(row) > 8 else ""
 
 
 def _integrity_door() -> tuple[object | None, set[str], str]:
-    """(gate, keys that already own a clock, why).
+    """(gate, keys that own a clock enrolled BEFORE the door existed, why).
+
+    A clock stamped with a promotion hold is NOT in the returned set: it is re-asked every pass,
+    so its hold lifts the pass after replication lands.
 
     FAIL CLOSED: an unreadable door holds NEW certificates by name rather than waving them
     through; running clocks are untouched either way."""
     try:
-        from admission_integrity import IntegrityGate, lane_clock_keys
+        from admission_integrity import IntegrityGate, lane_clock_keys, lane_hold_keys
     except ImportError:
         try:
             from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
                 IntegrityGate,
                 lane_clock_keys,
+                lane_hold_keys,
             )
         except Exception as exc:
             return None, set(), f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
     try:
-        return IntegrityGate.load(), lane_clock_keys(SHADOW_DIR), ""
+        return (IntegrityGate.load(),
+                lane_clock_keys(SHADOW_DIR) - lane_hold_keys(SHADOW_DIR), "")
     except Exception as exc:
         return None, set(), f"integrity door unreadable: {type(exc).__name__}: {exc}"
 
 
 def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str) -> str | None:
-    """The integrity door, asked only for a certificate whose clock does not exist yet."""
+    """The promotion hold for this certificate's clock, or None.
+
+    Asked for every certificate except a clock that predates the door (those keep the promotion
+    path they always had). The answer never decides whether the clock exists -- it always does."""
     if key in clocked:
         return None
     if gate is None:
@@ -218,12 +256,11 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 if reason:
                     HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"),
                                               "key": key, "reason": reason})
-                    slog(f"HELD {key}: {reason}")
-                    continue
+                    slog(f"CLOCKED, PROMOTION HELD {key}: {reason}")
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
-                             bool(run.get("promotion_authority", True))))
+                             bool(run.get("promotion_authority", True)), reason or ""))
                 continue
             # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
             # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
@@ -253,12 +290,11 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             if reason:
                 HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"), "key": key,
                                           "reason": reason})
-                slog(f"HELD {key}: {reason}")
-                continue
+                slog(f"CLOCKED, PROMOTION HELD {key}: {reason}")
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
-                         bool(run.get("promotion_authority", True))))
+                         bool(run.get("promotion_authority", True)), reason or ""))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
@@ -1490,6 +1526,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             if _defs:
                 st["power_deficiencies"] = _defs
             st["promotion_authority"] = bool(bars.promotion_authority and _row_auth)
+            # THE PROMOTION HOLD RIDES ON THE CLOCK (admission_integrity, 2026-11-13): the clock
+            # accrues like every other; only its promotion waits for replication.
+            stamp_hold(st, _row_hold(row))
             if trades:
                 rs = [t.r_multiple for t in trades]
                 cum = [sum(rs[:i + 1]) for i in range(len(rs))]
@@ -1565,7 +1604,17 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
             # a certificate.
             if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
-                if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD \
+                        and st.get(PROMOTION_HOLD_FIELD):
+                    # MATURED ON A CLOCK THE INTEGRITY DOOR STILL HOLDS (2026-11-13). The clock
+                    # stays ACTIVE and keeps accruing; the pass after the door's two facts clear
+                    # (stamp lifted above) this same clause writes PROMOTION CANDIDATE. Before
+                    # 2026-11-13 such a certificate had no clock at all, so the bar is unchanged.
+                    st["matured_promotion_held"] = st[PROMOTION_HOLD_FIELD]
+                    slog(f"{key}: VERDICT PROMOTE HELD n={st['n']} exp={st['exp_r']:.3f}R -- "
+                         f"{st[PROMOTION_HOLD_FIELD]}")
+                elif st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                    st.pop("matured_promotion_held", None)
                     st["status"] = "PROMOTION CANDIDATE"
                     slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
                          f"maxDD={st['max_dd_r']:.1f}R")

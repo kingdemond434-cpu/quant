@@ -292,7 +292,8 @@ def test_artifact_age_reads_the_oldest_input_and_absent_is_infinite(tmp_path: Pa
 def test_due_artifacts_are_the_files_and_stamps_the_door_reads() -> None:
     from libs.tiers import promotion_authority as PA
     door = {(PA.REPLICATION, "at"), (PA.FDR_ROWS, "generated_utc"), (PA.FREEZE, "at")}
-    ours = {(LR.DESK / rel, key) for arts in LR.DUE_ARTIFACTS.values() for rel, key in arts}
+    ours = {(LR.DESK / rel, key) for leg, arts in LR.DUE_ARTIFACTS.items()
+            if leg in ("tier_s", "replication_civilization") for rel, key in arts}
     assert ours == door
     assert set(LR.DUE_ARTIFACTS) == set(LR.DUE_BY_AGE_H)
 
@@ -318,3 +319,15 @@ def test_a_leg_that_fits_the_room_is_only_deferred() -> None:
     dec = LR.plan_pass(["a", "b"], att, plan="core", budget_s=1_000.0, now=now)
     assert dec.deferred == {"b"} and not dec.unschedulable
     assert "leads the next pass" in dec.why["b"]
+
+
+def test_the_certificate_clock_chain_is_forced_inside_its_two_hour_sla() -> None:
+    """Principal 2026-11-13: every passed certificate on a forward clock immediately, and the
+    hourly pass must see a stale census. The repair sweep and both clock fences are due-by-age,
+    hard at 2 h, keyed on the artifact each one writes."""
+    for leg, rel in (("forward_enrolment", "reports/FORWARD_ENROLMENT.json"),
+                     ("certificate_clock_law", "reports/CERTIFICATE_CLOCK_LAW.json"),
+                     ("clock_accrual", "reports/CLOCK_ACCRUAL.json")):
+        soft, hard = LR.DUE_BY_AGE_H[leg]
+        assert soft <= 1.0 and hard <= 2.0, leg
+        assert LR.DUE_ARTIFACTS[leg] == ((rel, "at"),), leg
