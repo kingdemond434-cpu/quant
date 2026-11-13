@@ -114,8 +114,9 @@ def test_gateway_overlays_only_the_named_keys(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE",
                         _write(tmp_path, {"enabled": True, "fusion": FUSION}))
     book, why = gateway.allocator_book()
-    from mt5desk.decision_core import PRINCIPAL_ZERO
-    assert book == {**alloc, **FUSION, **{k: 0.0 for k in PRINCIPAL_ZERO["fusion"]}}
+    from mt5desk import decision_core as dc
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", tmp_path / "GOLD_ASIA_ONLY_ENABLED")
+    assert book == {**alloc, **FUSION, **{k: 0.0 for k in dc.principal_zeros("fusion")}}
     # A key the cert book names wins (the allocator's 0.04 afternoon is pinned to 0.0); one it
     # does not name keeps the allocator's fraction.
     assert book["gold_afternoon"] == 0.0 and book["gold_asia"] == 0.03
@@ -126,7 +127,13 @@ def test_gateway_overlays_only_the_named_keys(monkeypatch: pytest.MonkeyPatch,
     # A VOID cert book no longer hands the pinned keys back to the allocator (audit r5 must-fix
     # 1): the principal's zeros are laid in code.
     book, why = gateway.allocator_book()
-    assert book == {**alloc, **{k: 0.0 for k in PRINCIPAL_ZERO["fusion"]}}
+    assert book == {**alloc, **{k: 0.0 for k in dc.principal_zeros("fusion")}}
+    # The 10-20 gold-asia-only pin is retired (zuck 2026-11-05 16:06Z): on a void book the
+    # allocator's own afternoon fraction stands (sovereignty decides the size) ...
+    assert book["gold_afternoon"] == 0.04 and book["gold_asia"] == 0.03
+    # ... and under the revert switch the code pin is laid again.
+    (tmp_path / "GOLD_ASIA_ONLY_ENABLED").write_text("", encoding="utf-8")
+    book, why = gateway.allocator_book()
     assert book["gold_afternoon"] == 0.0 and book["gold_asia"] == 0.03
     assert why.endswith("principal zeros (no cert book)")
 

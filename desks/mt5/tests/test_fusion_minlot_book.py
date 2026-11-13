@@ -546,6 +546,13 @@ def test_a_cert_book_zero_sends_nothing_on_either_path(tmp_path, monkeypatch) ->
     # No readable cert book: the principal's code pin still holds (r6, audit r5 must-fix 1) --
     # a void book fails CLOSED for the windows it was pinning, never back to the revert floor.
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "absent.json")
+    # The gold-asia-only code pin is retired (zuck 2026-11-05 16:06Z): with no revert switch a
+    # void book no longer pins london_am/afternoon in code ...
+    monkeypatch.setattr(dc, "GOLD_ASIA_ONLY_FILE", tmp_path / "GOLD_ASIA_ONLY_ENABLED")
+    for name in ZEROED:
+        assert not dc.principal_zero(name)
+    # ... and under data/GOLD_ASIA_ONLY_ENABLED the old pin holds and fails closed as before.
+    (tmp_path / "GOLD_ASIA_ONLY_ENABLED").write_text("", encoding="utf-8")
     for name in ZEROED:
         assert dc.cert_book_zero(name) and dc.principal_zero(name)
         assert dc.gold_book_lot(EQUITY, 19.1, None, 0.0, name=name)[0] == 0.0

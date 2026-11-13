@@ -98,8 +98,9 @@ def test_an_unloadable_cert_book_zeroes_nothing_but_the_principal_zeros_still_bi
 
     monkeypatch.setattr(kelly_sizing, "load_cert_book", _boom)
     assert dc.cert_book_zero("eurusd_some_sleeve") is False
-    # The code half reads no file, so it holds when the file half cannot.
-    assert dc.cert_book_zero("gold_london_am") is True
+    # The code half reads no file, so it holds when the file half cannot (a scalp pin; the
+    # gold-asia-only pin is retired by default since zuck 2026-11-05 16:06Z).
+    assert dc.cert_book_zero("xau_m5_anti_breakout_overlap") is True
     # And with a readable book the same name IS zeroed by it -- the False above is the load.
     monkeypatch.setattr(kelly_sizing, "load_cert_book",
                         lambda path, venue: {"EURUSD_Some_Sleeve": 0.0})
