@@ -150,8 +150,9 @@ def accumulate(base: Path | None = None) -> dict:
             # absence, one field below the one this module guards. Measured in the live report the
             # day it was found: 32,773 of 140,090 verdicts carried non-empty stages with NO
             # validity gate in them at all. A gate fails when its stage is there and says so; a
-            # gate nobody judged says nothing (L1.28a).
-            elif any(isinstance(st.get(g), dict) and st[g].get("passed") is not True
+            # gate nobody judged says nothing (L1.28a). A stage that is present but carries no
+            # `passed` (or `passed: None`) is unjudged too, so only an explicit False retires.
+            elif any(isinstance(st.get(g), dict) and st[g].get("passed") is False
                      for g in validity):
                 retired[key] = "VALIDITY_FAIL"
     for key in retired:

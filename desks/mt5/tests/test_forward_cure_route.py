@@ -73,6 +73,17 @@ def test_a_validity_gate_absent_from_a_present_verdict_is_unjudged_never_failed(
     assert "external.EURUSD.carry" in _roster(base)["rows"]
 
 
+def test_a_validity_stage_present_but_unjudged_retires_nothing(tmp_path: Path):
+    """A pbo stage that exists but carries no `passed` (or `passed: None`) is unjudged, not failed."""
+    for stage in ({"n": 40}, {"passed": None}):
+        base = _desk(tmp_path / str(len(str(stage))), [{"cell": "EURUSD.carry", "passed": False,
+                                                       "stages": {"pbo": stage}}])
+        FCR.accumulate(base)
+        census = FCR.accumulate(base)
+        assert census["retired_this_pass"] == 0
+        assert "external.EURUSD.carry" in _roster(base)["rows"]
+
+
 def test_a_validity_gate_that_is_present_and_failed_still_retires_the_row(tmp_path: Path):
     """AND THE FIX DOES NOT DISARM THE RULE: an explicit validity failure is positive evidence."""
     base = _desk(tmp_path, [{"cell": "EURUSD.carry", "passed": False,
