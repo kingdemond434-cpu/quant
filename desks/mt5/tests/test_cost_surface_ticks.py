@@ -67,3 +67,60 @@ def test_atr_carries_the_bar_it_was_computed_through() -> None:
     df = pd.DataFrame({"high": 1.001, "low": 0.999, "close": 1.0}, index=idx)
     assert CS.atr_through(df) == idx[-1].isoformat()
     assert CS.atr_through(df.iloc[:0]) is None
+
+
+def test_a_null_time_msc_never_costs_the_symbol_its_hours(tmp_path: Path) -> None:
+    """2026-11-11: one null time_msc raised IntCastingNaNError for the whole symbol and 221 of
+    240 symbols read UNREADABLE. The hour now comes from `time` where it exists, and a row with
+    neither is dropped and counted."""
+    base = int(pd.Timestamp("2026-10-13", tz="UTC").timestamp() * 1000) + 2 * H
+    n = 300
+    ms = (base + np.arange(n) * 100).astype("float64")
+    ms[:40] = np.nan                                          # recoverable from `time`
+    secs = (base // 1000 + np.arange(n) // 10).astype("float64")
+    secs[:10] = np.nan                                        # 10 rows have no clock at all
+    bid = 1.30000 + np.arange(n) * POINT                      # distinct ticks, none deduped
+    df = pd.DataFrame({"time_msc": ms, "time": secs, "bid": bid, "ask": bid + 2 * POINT})
+    d = tmp_path / "EURCHF"
+    d.mkdir(parents=True)
+    df.to_parquet(d / "2026-10-13.parquet")
+    _tape(tmp_path, "EURCHF", 3, [1.0] * 250, day="2026-10-12")   # a file with no `time` column
+    prof = CS.tick_profile("EURCHF", POINT, root=tmp_path)
+    assert prof is not None and prof["n_dropped_no_time"] == 10
+    assert prof["hours"]["2"]["n_ticks"] == 290 and prof["hours"]["2"]["p50"] == 2.0
+    assert prof["hours"]["3"]["n_ticks"] == 250
+
+
+def test_a_datetime_time_column_fills_in_milliseconds_and_a_twin_counts_once(
+        tmp_path: Path) -> None:
+    """Audit should-fix on #1066: a datetime `time` is converted, never multiplied by 1000, and a
+    tick stored once with and once without time_msc is one tick after the fill."""
+    base = int(pd.Timestamp("2026-10-13", tz="UTC").timestamp() * 1000) + 5 * H
+    n = 250
+    ms = (base + np.arange(n) * 1000).astype("float64")
+    bid = 1.30000 + np.arange(n) * POINT
+    when = pd.to_datetime(ms, unit="ms", utc=True)
+    a = pd.DataFrame({"time_msc": ms, "time": when, "bid": bid, "ask": bid + 3 * POINT})
+    twin = a.iloc[:20].copy()
+    twin["time_msc"] = np.nan                                   # same ticks, clock only in `time`
+    d = tmp_path / "EURCHF"
+    d.mkdir(parents=True)
+    pd.concat([a, twin], ignore_index=True).to_parquet(d / "2026-10-13.parquet")
+    prof = CS.tick_profile("EURCHF", POINT, root=tmp_path)
+    assert prof is not None and list(prof["hours"]) == ["5"]
+    assert prof["hours"]["5"]["n_ticks"] == 250 and prof["n_dropped_no_time"] == 0
+
+
+def test_the_window_counts_distinct_dates_and_a_tick_in_both_files_counts_once(
+        tmp_path: Path) -> None:
+    """CS1 2026-11-11: each date has a dashed and a compact file, so `[-days:]` of the file list
+    covered half the days, and one tick stored in both files must count once."""
+    for k in range(4):
+        day = f"2026-10-1{k}"
+        _tape(tmp_path, "EURCHF", 4, [2.0] * 200, day=day)
+        compact = tmp_path / "EURCHF" / f"{day.replace('-', '')}.parquet"
+        (tmp_path / "EURCHF" / f"{day}.parquet").rename(compact)
+        _tape(tmp_path, "EURCHF", 4, [2.0] * 200, day=day)        # the same ticks, dashed name
+    prof = CS.tick_profile("EURCHF", POINT, days=3, root=tmp_path)
+    assert prof is not None and prof["days"] == ["2026-10-11", "2026-10-12", "2026-10-13"]
+    assert prof["hours"]["4"]["n_ticks"] == 600
