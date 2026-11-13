@@ -166,7 +166,8 @@
   {
    "id": "snb_sight_deposits",
    "adapter": "snb_cube",
-   "terms": "OPEN",
+   "terms": "TO_CONFIRM",
+   "missed_growth": true,
    "url": "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
    "dimensions_url": "https://data.snb.ch/api/cube/snbgwdchfsgw/dimensions/en",
    "seed_path": "data/snb_sight_deposits_weekly.json",
@@ -176,7 +177,7 @@
     "XAUUSD"
    ],
    "why": "Idea N5 (noon CRO pass 2026-11-11): the weekly change in SNB sight deposits is the footprint of SNB FX intervention (2011 floor +52.4bn led the announcement by 11 days; 2022-23 FX selling -77.5bn), a state for EURCHF, USDCHF and XAUUSD.",
-   "note": "Public central-bank data, keyless CSV. Robots on snb.ch and data.snb.ch: one 'User-agent: *' group, zero Disallow (read 2026-08-28, data/data_universe_map.json); re-checked with our UA before every read. Read at most once a day; stamped Monday 10:00 Zurich after each Friday observation. The seed snapshot (784 Fridays to 2026-08-21) gives the history before the first live read. Known contamination: 2023-03 Credit Suisse liquidity moved the total, not FX."
+   "note": "Public central-bank data, keyless CSV. TERMS READ 2026-11-13 (WebFetch; this container's proxy refuses data.snb.ch and www.snb.ch to curl): https://www.snb.ch/en/srv/disclaimer_copyright -- information and data on the website may be saved, translated (with reference to the source), transmitted or used in other ways 'for non-commercial purposes, compatible with the purpose of such information or data'; no separate clause for data.snb.ch, no citation format beyond referencing the source. https://www.snb.ch/en/srv/disclaimer_liability -- 'No data calculated by the SNB and made available on its website are intended for direct or indirect use in connection with financial transactions (e.g. as underlying benchmark).' So the terms are NOT plainly OPEN for a trading desk: held TO_CONFIRM (no live read) until the principal rules whether this use is non-commercial; flip terms to OPEN to resume live reads. Cite as 'Swiss National Bank, data.snb.ch, cube snbgwdchfsgw'. Robots on snb.ch and data.snb.ch: one 'User-agent: *' group, zero Disallow (read 2026-08-28, data/data_universe_map.json); re-checked with our UA before every read, refusal is a hard stop. Read at most once a day; stamped at the first Zurich business day after each Friday (Monday, rolled past Easter/Whit Monday, 1-2 Jan, 1 Aug, 25-26 Dec), 10:00 Zurich, or the cube's later PublishingDate for the latest week. The seed snapshot (784 Fridays to 2026-08-21, fetched 2026-08-28) gives the history. Known contamination: 2023-03 Credit Suisse liquidity moved the total, not FX."
   },
   {
    "id": "fx_options_risk_reversals",

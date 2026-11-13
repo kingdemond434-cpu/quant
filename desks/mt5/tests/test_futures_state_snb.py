@@ -84,6 +84,68 @@ def test_an_observation_is_public_from_the_monday_10_zurich() -> None:
     assert (at > pd.to_datetime(obs).dt.tz_localize("UTC")).all()
 
 
+def _zurich(at: object) -> str:
+    return str(pd.Timestamp(at).tz_convert("Europe/Zurich"))
+
+
+def test_easter_monday_rolls_the_release_to_tuesday() -> None:
+    assert fs._easter(2025).isoformat() == "2025-04-20"
+    assert fs._easter(2024).isoformat() == "2024-03-31"
+    at = fs.snb_available(pd.Series(pd.to_datetime(["2025-04-18"])))   # Friday of Easter week
+    assert _zurich(at.iloc[0]) == "2025-04-22 10:00:00+02:00"           # Tuesday, not Monday
+
+
+def test_whit_monday_and_1_august_roll_forward() -> None:
+    at = fs.snb_available(pd.Series(pd.to_datetime(["2025-06-06", "2022-07-29"])))
+    assert _zurich(at.iloc[0]) == "2025-06-10 10:00:00+02:00"   # Whit Monday 2025-06-09
+    assert _zurich(at.iloc[1]) == "2022-08-02 10:00:00+02:00"   # 1 Aug 2022 was a Monday
+
+
+def test_christmas_monday_rolls_past_both_christmas_holidays() -> None:
+    at = fs.snb_available(pd.Series(pd.to_datetime(["2023-12-22"])))   # 25 Dec 2023 = Monday
+    assert _zurich(at.iloc[0]) == "2023-12-27 10:00:00+01:00"
+
+
+def test_new_year_monday_and_2_january_roll_to_3_january() -> None:
+    at = fs.snb_available(pd.Series(pd.to_datetime(["2023-12-29"])))   # 1 Jan 2024 = Monday
+    assert _zurich(at.iloc[0]) == "2024-01-03 10:00:00+01:00"
+
+
+def test_an_ordinary_week_stays_on_monday() -> None:
+    at = fs.snb_available(pd.Series(pd.to_datetime(["2025-03-07", "2025-10-17"])))
+    assert _zurich(at.iloc[0]) == "2025-03-10 10:00:00+01:00"
+    assert _zurich(at.iloc[1]) == "2025-10-20 10:00:00+02:00"
+
+
+def test_publishing_date_is_used_only_when_later_and_only_for_the_latest_week() -> None:
+    obs = pd.Series(pd.to_datetime(["2025-02-28", "2025-03-07"]))
+    late = fs.snb_available(obs, "2025-03-11 14:30")        # a delayed release: later, kept
+    assert _zurich(late.iloc[1]) == "2025-03-11 14:30:00+01:00"
+    assert _zurich(late.iloc[0]) == "2025-03-03 10:00:00+01:00", "older weeks untouched"
+    early = fs.snb_available(obs, "2025-03-10 09:00")       # earlier than computed: never used
+    assert _zurich(early.iloc[1]) == "2025-03-10 10:00:00+01:00"
+    stale = fs.snb_available(obs, "2025-03-03 10:00")       # the previous week's stamp
+    assert _zurich(stale.iloc[1]) == "2025-03-10 10:00:00+01:00"
+    assert fs.snb_available(obs, "not a date").equals(fs.snb_available(obs))
+    assert fs.snb_publishing_date(_csv(3)) == "2025-03-03 10:00"
+    assert fs.snb_publishing_date("<html/>") is None
+
+
+def test_the_cached_csv_publishing_date_reaches_the_latest_stamp(tmp_desk: Path) -> None:
+    text = _csv(80).replace("2025-03-03 10:00", "2025-07-15 16:00")   # last Friday 2025-07-11
+
+    def get_text(url: str) -> str:
+        return _robots_404(url) if url.endswith("robots.txt") else text
+
+    _b, frames, _n = fs.build_market_series(_reg(), get=None, state={}, bars=lambda s: None,
+                                            get_text=get_text)
+    f = frames["snb_chf_sd"]
+    last = pd.to_datetime(f["available_time"]).iloc[-1]
+    assert _zurich(last) == "2025-07-15 16:00:00+02:00"
+    assert (pd.to_datetime(f["available_time"]).iloc[:-1].dt.tz_convert("Europe/Zurich")
+            .dt.hour == 10).all()
+
+
 def test_features_are_weekly_changes_in_chf_billions_and_causal() -> None:
     held = fs.snb_csv(_csv(80))
     feat = fs.snb_features(held)
@@ -173,7 +235,10 @@ def test_seed_gives_history_before_the_first_live_read(tmp_desk: Path) -> None:
 def test_registry_row_and_desk_seed_are_present() -> None:
     reg = json.loads(fs.REGISTRY.read_text(encoding="utf-8"))
     row = next(s for s in reg["sources"] if s["id"] == "snb_sight_deposits")
-    assert row["adapter"] == "snb_cube" and row["terms"] == "OPEN"
+    assert row["adapter"] == "snb_cube"
+    # Terms read 2026-11-13: non-commercial use only. Never OPEN until the principal rules.
+    assert row["terms"] != "OPEN" and row.get("missed_growth") is True
+    assert "disclaimer_copyright" in row["note"] and "non-commercial" in row["note"]
     assert set(row["targets"]) == {"EURCHF", "USDCHF", "XAUUSD"}
     seed = ROOT / row["seed_path"]
     if seed.exists():
