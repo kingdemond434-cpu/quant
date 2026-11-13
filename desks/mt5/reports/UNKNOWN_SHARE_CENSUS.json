@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-11-13",
   "started_at": "2026-11-13T03:27:45+00:00",
-  "written_at": "2026-11-13T03:28:55+00:00",
+  "written_at": "2026-11-13T03:47:16+00:00",
   "cells_planned": 6000,
-  "cells_visited": 0,
+  "cells_visited": 2377,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 38320,
     "rss_cap_mb": 9580,
-    "peak_rss_mb": 524
+    "peak_rss_mb": 997
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 64.4,
+  "lockbox_cut": "2022-08-04",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 374,
+  "elapsed_s": 1165.5,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 15,
@@ -37,38 +37,126 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 2377,
+    "gate0_rejected": {
+      "symbol_eligibility": 43
+    },
+    "preflight_refused": 1083,
+    "build_failed": 1,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 1
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 1250,
+    "unknown": 253,
+    "unknown_share_of_judged": 0.2024,
+    "wilson95": [
+      0.1811,
+      0.2256
+    ],
+    "unknown_by_reason": {
+      "no_signals": 185,
+      "too_rare": 24,
+      "short_history_after_cut": 23,
+      "lockbox_consumed_history": 21
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 49,
+      "orderflow_imbalance": 45,
+      "session_range_breakout": 25,
+      "regime_transition": 10,
+      "overnight_drift": 10,
+      "liquidity_regime": 8,
+      "htf_anchor_trend": 7,
+      "exogenous_conditioner": 7,
+      "vol_transition": 7,
+      "multi_speed_trend": 6,
+      "joint_genome": 5,
+      "forced_flow": 5,
+      "execution_state": 5,
+      "comex_settlement": 4,
+      "asia_momentum": 4
+    },
+    "unknown_by_chart": {
+      "H1": 103,
+      "M30": 39,
+      "M5": 36,
+      "M15": 27,
+      "M1": 22,
+      "H4": 16,
+      "D1": 10
+    },
+    "judged_by_chart": {
+      "H1": 544,
+      "M30": 234,
+      "M15": 210,
+      "M5": 170,
+      "H4": 42,
+      "M1": 34,
+      "D1": 16
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "cells": 2377,
+    "gate0_rejected": {
+      "symbol_eligibility": 43
+    },
+    "preflight_refused": 1083,
+    "build_failed": 1,
+    "build_failed_by_reason": {
+      "family_raised:TypeError": 1
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 1250,
+    "unknown": 253,
+    "unknown_share_of_judged": 0.2024,
+    "wilson95": [
+      0.1811,
+      0.2256
+    ],
+    "unknown_by_reason": {
+      "no_signals": 185,
+      "too_rare": 24,
+      "short_history_after_cut": 23,
+      "lockbox_consumed_history": 21
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 49,
+      "orderflow_imbalance": 45,
+      "session_range_breakout": 25,
+      "regime_transition": 10,
+      "overnight_drift": 10,
+      "liquidity_regime": 8,
+      "htf_anchor_trend": 7,
+      "exogenous_conditioner": 7,
+      "vol_transition": 7,
+      "multi_speed_trend": 6,
+      "joint_genome": 5,
+      "forced_flow": 5,
+      "execution_state": 5,
+      "comex_settlement": 4,
+      "asia_momentum": 4
+    },
+    "unknown_by_chart": {
+      "H1": 103,
+      "M30": 39,
+      "M5": 36,
+      "M15": 27,
+      "M1": 22,
+      "H4": 16,
+      "D1": 10
+    },
+    "judged_by_chart": {
+      "H1": 544,
+      "M30": 234,
+      "M15": 210,
+      "M5": 170,
+      "H4": 42,
+      "M1": 34,
+      "D1": 16
+    }
   },
   "siblings_only": {
     "cells": 0,
