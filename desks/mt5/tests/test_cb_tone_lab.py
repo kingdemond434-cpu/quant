@@ -204,3 +204,22 @@ def test_quote_sense_follows_the_banks_currency() -> None:
     assert {b.lang for b in cb.BANKS.values()} == {"zh", "ja", "en", "tr"}
     assert all(s.terms == "confirmed" for b in cb.BANKS.values() for s in b.sources), \
         "public official pages are read politely; none is held back by default"
+
+
+@pytest.mark.parametrize(("reply", "want"), [
+    (OSError("unreachable"), False),
+    ((404, b"", "text/plain"), False),
+    ((403, b"", "text/plain"), False),
+    ((503, b"", "text/plain"), False),
+    ((200, b"User-agent: *\nDisallow: /\n", "text/plain"), False),
+    ((200, b"User-agent: *\nAllow: /\n", "text/plain"), True),
+])
+def test_robots_fails_closed(monkeypatch, reply, want) -> None:
+    """Governance ruling 2026-11-10 (Auditor HOLD on #388): an unreadable robots.txt, any
+    status but 200, or a Disallow stops the fetch; only an explicit allow lets it through."""
+    def fake_get(url, timeout):
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+    monkeypatch.setattr(cb, "_get", fake_get)
+    assert cb._robots_ok("https://www.example.org/press/statement.htm", 5.0) is want

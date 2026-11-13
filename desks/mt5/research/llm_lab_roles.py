@@ -757,12 +757,14 @@ def probe(row: dict[str, Any], get: Callable[[str], tuple[int, bytes]] | None = 
     parts = urllib.parse.urlsplit(row["url"])
     try:
         code, body = g(f"{parts.scheme}://{parts.netloc}/robots.txt")
-        if code == 200:
-            from urllib.robotparser import RobotFileParser
-            rp = RobotFileParser()
-            rp.parse(body.decode("utf-8", errors="replace").splitlines())
-            if not rp.can_fetch("quant-desk-source-scout/1.0", row["url"]):
-                return "ROBOTS_DISALLOW"
+        if code != 200:
+            # FAILS CLOSED (governance ruling 2026-11-10, Auditor HOLD on #388).
+            return f"ROBOTS_UNAVAILABLE:HTTP_{code}"
+        from urllib.robotparser import RobotFileParser
+        rp = RobotFileParser()
+        rp.parse(body.decode("utf-8", errors="replace").splitlines())
+        if not rp.can_fetch("quant-desk-source-scout/1.0", row["url"]):
+            return "ROBOTS_DISALLOW"
         code, body = g(row["url"])
     except Exception as exc:
         return f"UNREACHABLE:{type(exc).__name__}"

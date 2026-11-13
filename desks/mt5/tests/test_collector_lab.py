@@ -72,7 +72,7 @@ def tmp_lab(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _get(calls: list[str]) -> Any:
     def g(url: str) -> tuple[int, bytes]:
         calls.append(url)
-        return (404, b"") if url.endswith("robots.txt") else (200, _body())
+        return (200, b"User-agent: *\nAllow: /\n") if url.endswith("robots.txt") else (200, _body())
     return g
 
 
@@ -120,7 +120,18 @@ def test_robots_and_gates_hold() -> None:
         return (200, b"User-agent: *\nDisallow: /api\n") if u.endswith("robots.txt") \
             else (200, _body())
     assert cl.fetch(SRC, SRC, get=g, resolve=_public)[1] == "ROBOTS_DISALLOW"
-    assert cl.fetch(SRC, SRC, get=lambda u: (403, b""), resolve=_public)[1] == "GATED:HTTP_403"
+    assert cl.fetch(SRC, SRC, get=lambda u: (200, b"User-agent: *\nAllow: /\n") if u.endswith("robots.txt") else (403, b""),
+                    resolve=_public)[1] == "GATED:HTTP_403"
+    # FAILS CLOSED (governance ruling 2026-11-10): a robots.txt that is not served 200 -- 404,
+    # 403 or 5xx -- stops the fetch, and the page itself is never requested.
+    for code in (404, 403, 503):
+        asked: list[str] = []
+
+        def g2(u: str, code: int = code, asked: list[str] = asked) -> tuple[int, bytes]:
+            asked.append(u)
+            return (code, b"") if u.endswith("robots.txt") else (200, _body())
+        assert cl.fetch(SRC, SRC, get=g2, resolve=_public)[1] == "ROBOTS_UNAVAILABLE"
+        assert all(u.endswith("robots.txt") for u in asked)
 
 
 def test_a_crawl_delay_is_honoured_in_full_or_the_fetch_is_skipped(
@@ -247,7 +258,7 @@ def test_the_state_never_reads_green_when_nothing_happened(tmp_lab: Path) -> Non
            feed=tmp_lab / "feed.jsonl", uni=UNI)
     (tmp_lab / "collector" / "hosts.json").unlink(missing_ok=True)
     out = cl.run(chat=lambda *a, **k: pytest.fail("asked"),
-                 get=lambda u: (404, b"") if u.endswith("robots.txt") else (503, b""),
+                 get=lambda u: (200, b"User-agent: *\nAllow: /\n") if u.endswith("robots.txt") else (503, b""),
                  resolve=_public, feed=tmp_lab / "feed.jsonl", uni=UNI)
     assert out["state"] == "STALE" and out["series_refreshed"] == 0
 
@@ -394,7 +405,7 @@ def test_sources_that_always_time_out_cannot_starve_a_healthy_one(tmp_lab: Path)
         if "//bad" in url:
             raise TimeoutError("blackholed")
         fetched.append(url)
-        return (404, b"") if url.endswith("robots.txt") else (200, _body())
+        return (200, b"User-agent: *\nAllow: /\n") if url.endswith("robots.txt") else (200, _body())
     passes = 0
     while not any("good" in u for u in fetched) and passes < 3:
         cl.run(chat=lambda *a, **k: _Reply("{}"), get=g, resolve=_public, feed=feed, uni=UNI,

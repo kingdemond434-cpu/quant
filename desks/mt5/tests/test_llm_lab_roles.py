@@ -228,6 +228,10 @@ def test_source_scout_rows_are_filtered_and_probed_politely() -> None:
     assert why == {"login or paywall path": 1, "host already in the registry": 1,
                    "no MT5 target": 1}
     pages = {"https://stat.example.go.jp/robots.txt": (404, b"")}
+    pages["https://stat.example.go.jp/data.csv"] = (200, b"1,2,3")
+    assert roles.probe(rows[0], get=lambda u: pages.get(u, (404, b"")),
+                       resolve=_public) == "ROBOTS_UNAVAILABLE:HTTP_404"   # fails closed
+    pages["https://stat.example.go.jp/robots.txt"] = (200, b"User-agent: *\nAllow: /\n")
     for body, code, want in [(b"1,2,3", 200, "REACHABLE"), (b"", 403, "GATED:HTTP_403"),
                              (b"<div>captcha</div>", 200, "GATED:CHALLENGE")]:
         pages["https://stat.example.go.jp/data.csv"] = (code, body)

@@ -381,28 +381,28 @@ def fetch(url: str, source_url: str, *, get: Getter | None = None,
     g = get or _pinned_get(addrs, until)
     try:
         code, robots = g(f"{parts.scheme}://{parts.netloc}/robots.txt")
-        if code >= 500:
-            # RFC 9309: an unreachable robots.txt is a full disallow, not a pass.
+        if code != 200:
+            # FAILS CLOSED (governance ruling 2026-11-10, Auditor HOLD on #388): a robots.txt
+            # that is not served 200 -- missing, forbidden or erroring -- is never permission.
             return b"", "ROBOTS_UNAVAILABLE"
-        if code == 200:
-            from urllib.robotparser import RobotFileParser
-            rp = RobotFileParser()
-            rp.parse(robots.decode("utf-8", errors="replace").splitlines())
-            if not rp.can_fetch(AGENT, url):
-                return b"", "ROBOTS_DISALLOW"
-            delay = rp.crawl_delay(AGENT)
-            if delay:
-                # THE CRAWL-DELAY IS HONOURED IN FULL OR THE FETCH IS SKIPPED (audit of 99ec92b35,
-                # MUST-FIX): it used to be cut to the budget, and to 10 s past that, and the GET
-                # sent anyway -- a robots directive obeyed only when convenient. A delay longer
-                # than the cap or the time left is a transient skip; the source keeps its place.
-                try:
-                    wait_s = float(delay)
-                except (TypeError, ValueError):
-                    wait_s = float("inf")
-                if wait_s > CRAWL_DELAY_CAP_S or wait_s > until - time.monotonic() - 1.0:
-                    return b"", "UNREACHABLE:CRAWL_DELAY"
-                time.sleep(max(0.0, wait_s))
+        from urllib.robotparser import RobotFileParser
+        rp = RobotFileParser()
+        rp.parse(robots.decode("utf-8", errors="replace").splitlines())
+        if not rp.can_fetch(AGENT, url):
+            return b"", "ROBOTS_DISALLOW"
+        delay = rp.crawl_delay(AGENT)
+        if delay:
+            # THE CRAWL-DELAY IS HONOURED IN FULL OR THE FETCH IS SKIPPED (audit of 99ec92b35,
+            # MUST-FIX): it used to be cut to the budget, and to 10 s past that, and the GET
+            # sent anyway -- a robots directive obeyed only when convenient. A delay longer
+            # than the cap or the time left is a transient skip; the source keeps its place.
+            try:
+                wait_s = float(delay)
+            except (TypeError, ValueError):
+                wait_s = float("inf")
+            if wait_s > CRAWL_DELAY_CAP_S or wait_s > until - time.monotonic() - 1.0:
+                return b"", "UNREACHABLE:CRAWL_DELAY"
+            time.sleep(max(0.0, wait_s))
         code, body = g(url)
     except Exception as exc:
         return b"", f"UNREACHABLE:{type(exc).__name__}"

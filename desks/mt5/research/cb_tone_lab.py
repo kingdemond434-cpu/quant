@@ -308,15 +308,17 @@ def _get(url: str, timeout: float) -> tuple[int, bytes, str]:
 
 
 def _robots_ok(url: str, timeout: float) -> bool:
-    """robots.txt disallow is respected. An unreadable robots file allows, as RFC 9309 says."""
+    """robots.txt disallow is respected, and the check FAILS CLOSED (governance ruling
+    2026-11-10, Auditor HOLD on #388): a robots file that cannot be fetched, or answers anything
+    but 200, stops the fetch -- an error is never read as permission."""
     from urllib.robotparser import RobotFileParser
     parts = urllib.parse.urlsplit(url)
     try:
         code, body, _ = _get(f"{parts.scheme}://{parts.netloc}/robots.txt", timeout)
     except Exception:
-        return True
-    if code >= 400:
-        return True
+        return False
+    if code != 200:
+        return False
     rp = RobotFileParser()
     rp.parse(body.decode("utf-8", errors="replace").splitlines())
     return bool(rp.can_fetch(UA, url))
