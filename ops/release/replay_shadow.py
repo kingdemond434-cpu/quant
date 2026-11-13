@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import difflib
 import json
 import os
 import re
@@ -45,6 +46,7 @@ import subprocess
 import sys
 import tempfile
 import unicodedata
+from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -752,6 +754,267 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
         return json.loads(out.read_text("utf-8"))
 
 
+# ------------------------------------------------------------------ the allocator leg
+#: THE ALLOCATOR IS MEASURED BY RUNNING IT (2026-11-13). pf_allocator.py is an entry point, so it
+#: is money path, and the gold book's replay never imports it: every allocator PR read UNMEASURED
+#: even when it decides nothing new. When a PR changes it, ops/release/replay_allocator.py runs
+#: its fast clock (`run("fast", seed=0)`) on the frozen synthetic evidence in ALLOCATOR_FIXTURE
+#: (this checkout's, never the PR's), once per tree, each in a fresh process and an empty
+#: directory. It counts as measured only when ALL of these hold:
+#:   - the base runs and funds at least one sleeve (else UNMEASURED: nothing was measured);
+#:   - the PR's tree runs too (else FAIL);
+#:   - every decision in the artifact agrees (`canon`, ALLOCATOR_STAMPS aside): a different book
+#:     FAILS and names each sleeve's fraction, base -> PR, and every other key that moved;
+#:   - every statement the PR changed was executed by the tree it is in (removed and replaced
+#:     ones by the base, added ones by the PR; a changed `def` line needs its body entered).
+#:     Comments, blank lines and bare string statements do nothing and are not asked for. A
+#:     changed statement the fast clock never reaches stays UNMEASURED;
+#:   - with the book identical, the changed statements hold the same numeric literals and
+#:     comparison/arithmetic operators in both trees (`moved_thresholds`): a moved threshold
+#:     the frozen evidence never crosses stays UNMEASURED (allocator-leg audit MF1).
+#: TRUST: the PR's own code runs in the traced process, as it does in run_tree's child; it is
+#: never armed, holds no key and reaches no venue, and its trace must name only lines the file
+#: has. Crash text (stderr) is printed to the CI log and the runner-local --report only; no box
+#: artifact publishes this report.
+#: Nothing else changes: the knob rule still reads every UPPER_CASE constant the PR moves.
+ALLOCATOR = "desks/mt5/research/pf_allocator.py"
+ALLOCATOR_CHILD = HERE / "replay_allocator.py"
+ALLOCATOR_FIXTURE = HERE / "allocator_fixture.json"
+#: A wall-clock stamp and a duration: when and how fast, never what was decided.
+ALLOCATOR_STAMPS = frozenset({"generated_utc", "elapsed_s"})
+
+
+def run_allocator(tree: Path) -> dict[str, Any]:
+    """The allocator's fast clock on one tree, in a fresh process and an empty directory."""
+    with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
+        work = Path(tmp)
+        out = work / "out.json"
+        try:
+            p = subprocess.run(
+                [sys.executable, "-I", str(ALLOCATOR_CHILD), str(tree.resolve()),
+                 str(ALLOCATOR_FIXTURE), str(out)],
+                cwd=work, capture_output=True, text=True, timeout=TIMEOUT_S, check=False,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired:
+            return {"crash": f"timed out after {TIMEOUT_S}s"}
+        if p.returncode != 0 or not out.exists():
+            return {"crash": f"rc {p.returncode}: {(p.stderr or p.stdout)[-600:]}"}
+        doc: dict[str, Any] = json.loads(out.read_text("utf-8"))
+        if doc.get("error"):
+            return {"crash": str(doc["error"])[:600]}
+        return doc
+
+
+def _allocator_canon(value: Any) -> Any:
+    """`canon` of an allocator artifact, its stamps dropped and NaN made comparable."""
+
+    def clean(v: Any) -> Any:
+        if isinstance(v, dict):
+            return {k: clean(x) for k, x in v.items() if k not in ALLOCATOR_STAMPS}
+        if isinstance(v, list):
+            return [clean(x) for x in v]
+        return "NaN" if isinstance(v, float) and v != v else v
+
+    return canon(clean(value))
+
+
+def changed_lines(was: str, now: str) -> tuple[set[int], set[int]]:
+    """(lines of `was` removed or replaced, lines of `now` added or replacing), 1-based."""
+    a: set[int] = set()
+    b: set[int] = set()
+    sm = difflib.SequenceMatcher(None, was.splitlines(), now.splitlines(), autojunk=False)
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op != "equal":
+            a.update(range(i1 + 1, i2 + 1))
+            b.update(range(j1 + 1, j2 + 1))
+    return a, b
+
+
+def _statements(src: str) -> list[tuple[int, int, ast.AST]]:
+    """(first line, last line, node) of every statement and except clause; decorators count."""
+    nodes: list[tuple[int, int, ast.AST]] = []
+    for n in ast.walk(ast.parse(src)):
+        if isinstance(n, ast.stmt | ast.ExceptHandler):
+            deco = [d.lineno for d in getattr(n, "decorator_list", [])]
+            nodes.append((min([n.lineno, *deco]), n.end_lineno or n.lineno, n))
+    return nodes
+
+
+def _holding(
+    src: str, nodes: list[tuple[int, int, ast.AST]], lines: set[int]
+) -> list[tuple[int, int, int, ast.AST]]:
+    """(line, first, last, innermost statement) for each line of code in `lines`: comments,
+    blank lines and bare string statements (which do nothing) are left out."""
+    text = src.splitlines()
+    out = []
+    for line in sorted(lines):
+        code = text[line - 1].strip() if 0 < line <= len(text) else ""
+        if not code or code.startswith("#"):
+            continue
+        holding = [x for x in nodes if x[0] <= line <= x[1]]
+        if not holding:
+            continue
+        start, end, n = min(holding, key=lambda x: x[1] - x[0])
+        if isinstance(n, ast.Expr) and isinstance(getattr(n.value, "value", None), str):
+            continue
+        out.append((line, start, end, n))
+    return out
+
+
+def unrun(src: str, lines: set[int], ran: set[int]) -> list[int]:
+    """The `lines` of `src` that belong to a statement the run never executed: the innermost
+    statement (or except clause) holding the line must have executed one of its own lines (not
+    its children's); a function's signature or decorator, a line of its body. Comments, blank
+    lines and bare string statements are skipped. Unparseable source: every line."""
+    try:
+        nodes = _statements(src)
+    except SyntaxError:
+        return sorted(lines)
+    out = []
+    for line, start, end, n in _holding(src, nodes, lines):
+        if isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef):
+            own = set(range(n.body[0].lineno, end + 1))  # entered: its body ran
+        else:
+            own = set(range(start, end + 1))
+            for c in ast.iter_child_nodes(n):
+                if isinstance(c, ast.stmt | ast.ExceptHandler):
+                    own -= set(range(c.lineno, (c.end_lineno or c.lineno) + 1))
+        if not own & ran:
+            out.append(line)
+    return out
+
+
+def _thresholds(node: ast.AST) -> list[str]:
+    """The numeric literals and the comparison and arithmetic operators of a statement's OWN
+    code (its header, never the statements nested in it)."""
+    out: list[str] = []
+    stack = [
+        c for c in ast.iter_child_nodes(node) if not isinstance(c, ast.stmt | ast.ExceptHandler)
+    ]
+    while stack:
+        x = stack.pop()
+        if isinstance(x, ast.Constant) and isinstance(x.value, int | float | complex):
+            if not isinstance(x.value, bool):
+                out.append(f"{type(x.value).__name__}:{x.value!r}")
+        elif isinstance(x, ast.Compare):
+            out += [type(op).__name__ for op in x.ops]
+        elif isinstance(x, ast.BinOp | ast.UnaryOp | ast.BoolOp | ast.AugAssign):
+            out.append(type(x.op).__name__)
+        stack.extend(c for c in ast.iter_child_nodes(x) if not isinstance(c, ast.stmt))
+    return out
+
+
+def moved_thresholds(
+    was: str, gone: set[int], now: str, added: set[int]
+) -> tuple[list[int], list[int]]:
+    """(base lines, PR lines) of the changed statements when, across them, the multiset of
+    numeric literals and comparison/arithmetic operators differs between the trees; ([], [])
+    when it is the same (a rename, a reorder, a refactor that moves no number). A moved
+    threshold the frozen evidence never crosses runs its line and leaves the book identical,
+    so an identical book cannot vouch for it (allocator-leg audit MF1). Unparseable: every line."""
+    try:
+        sides = [
+            {id(h[3]): h for h in _holding(src, _statements(src), lines)}
+            for src, lines in ((was, gone), (now, added))
+        ]
+    except SyntaxError:
+        return sorted(gone), sorted(added)
+    counts = [Counter(t for h in side.values() for t in _thresholds(h[3])) for side in sides]
+    if counts[0] == counts[1]:
+        return [], []
+    return tuple(  # type: ignore[return-value]
+        sorted({line for line, _, _, n in _holding(src, _statements(src), lines)
+                if _thresholds(n)})
+        for src, lines in ((was, gone), (now, added))
+    )  # fmt: skip
+
+
+def _span(lines: list[int]) -> str:
+    shown = ", ".join(str(x) for x in lines[:12])
+    return shown + (f" (+{len(lines) - 12} more)" if len(lines) > 12 else "")
+
+
+def allocator_leg(base: Path, head: Path, changed: list[str]) -> dict[str, Any]:
+    """{"measured": {ALLOCATOR} or empty, "problems": [...], "report": {...}}. Runs nothing
+    unless the PR changes the allocator."""
+    leg: dict[str, Any] = {"measured": set(), "problems": [], "report": {"ran": False}}
+    if ALLOCATOR not in changed:
+        return leg
+    rep = leg["report"]
+    rep["ran"] = True
+    b = run_allocator(base)
+    if "crash" in b:
+        leg["problems"].append(
+            f"UNMEASURED {ALLOCATOR}: the allocator leg cannot run on the base ({b['crash']})"
+        )
+        return leg
+    bdoc = b.get("doc") or {}
+    bbook = {str(k): float(v) for k, v in (bdoc.get("book") or {}).items()}
+    rep["base_book"] = bbook
+    if not any(v > 0 for v in bbook.values()):
+        leg["problems"].append(
+            f"UNMEASURED {ALLOCATOR}: the base allocator funded no sleeve on the frozen evidence"
+        )
+        return leg
+    h = run_allocator(head)
+    if "crash" in h:
+        leg["problems"].append(f"{ALLOCATOR}: the PR's allocator crashed ({h['crash']})")
+        return leg
+    hdoc = h.get("doc") or {}
+    hbook = {str(k): float(v) for k, v in (hdoc.get("book") or {}).items()}
+    rep["pr_book"] = hbook
+    deltas = {
+        s: {"base": bbook.get(s, 0.0), "pr": hbook.get(s, 0.0),
+            "delta": round(hbook.get(s, 0.0) - bbook.get(s, 0.0), 9)}
+        for s in sorted(set(bbook) | set(hbook))
+        if canon(bbook.get(s, 0.0)) != canon(hbook.get(s, 0.0))
+    }  # fmt: skip
+    rep["fraction_deltas"] = deltas
+    cb, ch = _allocator_canon(bdoc), _allocator_canon(hdoc)
+    keys = sorted(k for k in set(cb) | set(ch) if k != "book" and cb.get(k) != ch.get(k))
+    rep["other_keys_changed"] = keys
+    if deltas or keys:
+        moved = "; ".join(
+            f"{s} {d['base']:.6f} -> {d['pr']:.6f} ({d['delta']:+.6f})" for s, d in deltas.items()
+        )
+        leg["problems"].append(
+            f"{ALLOCATOR}: the PR's allocator decides differently on the frozen evidence: "
+            f"fractions {moved or 'unchanged'}; other keys {', '.join(keys) or 'unchanged'}"
+        )
+    was, now = read(base, ALLOCATOR) or "", read(head, ALLOCATOR) or ""
+    gone, added = changed_lines(was, now)
+    ran_b = {int(x) for x in b.get("lines") or []}
+    ran_h = {int(x) for x in h.get("lines") or []}
+    # the trace comes from the trees' own code (the trust model of run_tree): a line it names
+    # that the file does not have is a trace nobody can read (allocator-leg audit SF1)
+    for who, ran, src in (("base", ran_b, was), ("PR", ran_h, now)):
+        if not ran or not ran <= set(range(1, len(src.splitlines()) + 1)):
+            leg["problems"].append(
+                f"UNMEASURED {ALLOCATOR}: the {who} trace names no line, or a line the file "
+                "does not have"
+            )
+    missed_b = unrun(was, gone, ran_b)
+    missed_h = unrun(now, added, ran_h)
+    rep["unrun_lines"] = {"base": missed_b, "pr": missed_h}
+    if missed_b or missed_h:
+        leg["problems"].append(
+            f"UNMEASURED {ALLOCATOR}: the allocator leg never ran these changed lines "
+            f"(base: {_span(missed_b) or 'none'}; PR: {_span(missed_h) or 'none'})"
+        )
+    if not (deltas or keys):
+        moved_b, moved_h = moved_thresholds(was, gone, now, added)
+        rep["moved_thresholds"] = {"base": moved_b, "pr": moved_h}
+        if moved_b or moved_h:
+            leg["problems"].append(
+                f"UNMEASURED {ALLOCATOR}: a numeric literal or comparison moved but the frozen "
+                f"evidence never reached it (base: {_span(moved_b) or 'none'}; "
+                f"PR: {_span(moved_h) or 'none'})"
+            )
+    if not leg["problems"]:
+        leg["measured"] = {ALLOCATOR}
+    return leg
+
+
 FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
 
 
@@ -819,6 +1082,9 @@ def compare(
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     if ftmo_owed and not ftmo_rows:
         problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
+    alloc = allocator_leg(base, head, changed)
+    problems += alloc["problems"]
+    imported |= alloc["measured"]  # run on both trees, same book, every changed line executed
     closure = import_closure(base)
     covered = imported | new_and_bounded(base, head, head_imported)
     exempt = exempt_scripts((base, head), closure)
@@ -839,6 +1105,8 @@ def compare(
         "scenarios": len(grid),
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
+        # the allocator leg (allocator_leg): ran only when the PR changes pf_allocator.py
+        "allocator": alloc["report"],
         "problems": problems,
         # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
         "not_money_scripts": not_money,

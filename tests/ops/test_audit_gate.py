@@ -2031,6 +2031,127 @@ def _money(tmp_path: Path, edits: dict[str, str]) -> set[str]:
     return rs.money_scripts((base, head), rs.import_closure(base), _LISTED)
 
 
+_ALLOC = """
+import time
+FRAC = 0.01
+
+
+def unused():
+    return 1
+
+
+def run(mode="normal", *, seed=0):
+    scale = 1.0
+    if scale > 5.0:
+        scale = 5.0
+    return {"book": {"a": FRAC * scale, "b": 0.02}, "mode": mode, "seed": seed,
+            "generated_utc": time.time(), "elapsed_s": time.perf_counter()}
+"""
+
+
+def _alloc_tree(root: Path, alloc: str = _ALLOC) -> Path:
+    tree = _tree(root)
+    (tree / "desks/mt5/research").mkdir(parents=True)
+    (tree / rs.ALLOCATOR).write_text(alloc, "utf-8")
+    return tree
+
+
+def test_an_allocator_that_decides_the_same_book_is_measured(tmp_path: Path) -> None:
+    """A changed allocator whose every changed line ran and whose book is identical is no longer
+    UNMEASURED; its stamps (time, duration) are not decisions."""
+    base = _alloc_tree(tmp_path / "base")
+    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("scale = 1.0", "scale = float(1.0)"))
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    assert rep["allocator"]["ran"] and rep["allocator"]["fraction_deltas"] == {}
+    # a PR that leaves the allocator alone never pays for the leg
+    assert rs.compare(base, base, [], _grid())["allocator"] == {"ran": False}
+
+
+def test_an_allocator_that_moves_a_fraction_fails_with_the_deltas(tmp_path: Path) -> None:
+    base = _alloc_tree(tmp_path / "base")
+    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("FRAC = 0.01", "FRAC = 0.03"))
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "FAIL"
+    hit = [p for p in rep["problems"] if "decides differently" in p]
+    assert hit and "a 0.010000 -> 0.030000 (+0.020000)" in hit[0], rep["problems"]
+    assert rep["allocator"]["fraction_deltas"] == {"a": {"base": 0.01, "pr": 0.03, "delta": 0.02}}
+    assert any(f"UNMEASURED money-path change (the replay never imported it): {rs.ALLOCATOR}" == p
+               for p in rep["problems"])  # fmt: skip
+
+
+def test_an_allocator_the_base_cannot_run_stays_unmeasured(tmp_path: Path) -> None:
+    base = _alloc_tree(tmp_path / "base", "raise ImportError('no')\n")
+    head = _alloc_tree(tmp_path / "head")
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "FAIL"
+    assert any("cannot run on the base" in p for p in rep["problems"]), rep["problems"]
+    assert any(p.endswith(rs.ALLOCATOR) and p.startswith("UNMEASURED money-path")
+               for p in rep["problems"])  # fmt: skip
+    # a base that funds nothing measured nothing either
+    empty = _alloc_tree(tmp_path / "empty", _ALLOC.replace('FRAC * scale, "b": 0.02', "0.0"))
+    rep = rs.compare(empty, empty, [rs.ALLOCATOR], _grid())
+    assert any("funded no sleeve" in p for p in rep["problems"]), rep["problems"]
+
+
+def test_a_changed_allocator_line_the_leg_never_ran_stays_unmeasured(tmp_path: Path) -> None:
+    base = _alloc_tree(tmp_path / "base")
+    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("return 1", "return 2  # never called"))
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "FAIL"
+    assert rep["allocator"]["unrun_lines"] == {"base": [7], "pr": [7]}, rep["allocator"]
+    # comments and bare strings are never asked for
+    prose = _ALLOC.replace("def unused():", "def unused():\n    'x'")
+    head = _alloc_tree(tmp_path / "prose", prose.replace("import time", "import time  # t"))
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+
+
+def test_a_moved_threshold_the_evidence_never_crosses_stays_unmeasured(tmp_path: Path) -> None:
+    """Allocator-leg audit MF1: the line runs and the book is identical, yet the number moved."""
+    base = _alloc_tree(tmp_path / "base")
+    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("if scale > 5.0:", "if scale > 7.0:"))
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "FAIL" and rep["allocator"]["fraction_deltas"] == {}
+    assert any("a numeric literal or comparison moved" in p for p in rep["problems"])
+    assert rep["allocator"]["moved_thresholds"] == {"base": [12], "pr": [12]}
+    flipped = _alloc_tree(tmp_path / "op", _ALLOC.replace("if scale > 5.0:", "if scale >= 5.0:"))
+    rep = rs.compare(base, flipped, [rs.ALLOCATOR], _grid())
+    assert any("a numeric literal or comparison moved" in p for p in rep["problems"])
+
+
+def test_a_refactor_that_moves_no_number_stays_measured(tmp_path: Path) -> None:
+    base = _alloc_tree(tmp_path / "base")
+    # a new local, a binding split in two, a reordered literal: no number or operator moves
+    renamed = _ALLOC.replace("    scale = 1.0", "    unit = 1.0\n    scale = unit").replace(
+        '{"a": FRAC * scale, "b": 0.02}', '{"b": 0.02, "a": FRAC * scale}'
+    )
+    head = _alloc_tree(tmp_path / "head", renamed)
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    assert rep["allocator"]["moved_thresholds"] == {"base": [], "pr": []}
+
+
+def test_a_trace_naming_lines_the_file_lacks_is_unmeasured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Allocator-leg audit SF1: the trace is the trees' own code's; it must fit the file."""
+    base, head = _alloc_tree(tmp_path / "base"), _alloc_tree(tmp_path / "head")
+    real = rs.run_allocator
+    monkeypatch.setattr(rs, "run_allocator", lambda t: {**real(t), "lines": [1, 10_000]})
+    leg = rs.allocator_leg(base, head, [rs.ALLOCATOR])
+    assert leg["measured"] == set()
+    assert any("a line the file does not have" in p for p in leg["problems"]), leg["problems"]
+
+
+def test_the_real_allocator_runs_in_the_leg_and_matches_itself() -> None:
+    """The leg on this checkout's own pf_allocator and frozen fixture: it must run and fund a
+    sleeve, or every allocator PR would read UNMEASURED again."""
+    leg = rs.allocator_leg(ROOT, ROOT, [rs.ALLOCATOR])
+    assert leg["problems"] == [] and leg["measured"] == {rs.ALLOCATOR}
+    assert any(v > 0 for v in leg["report"]["base_book"].values())
+
+
 def test_every_script_is_money_path_unless_reviewed_and_clean(tmp_path: Path) -> None:
     """#508 audit HOLD: a fail-open text scan became fail closed. Only a listed script that
     names nothing is not money path; an unlisted one always is, whatever it says."""
