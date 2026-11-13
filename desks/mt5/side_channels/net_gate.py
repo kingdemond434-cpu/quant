@@ -20,6 +20,7 @@ Every decision is counted in `LEDGER`, and `run_all_miners` writes it next to th
 """
 from __future__ import annotations
 
+import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -157,9 +158,28 @@ _OPENER = urllib.request.build_opener(_GatedRedirects())
 
 
 def _ORIGINAL_URLOPEN(url: Any, *a: Any, **k: Any) -> Any:
-    """The door's own transport: the stock opener with every redirect hop gated."""
-    k.pop("context", None)          # build_opener's HTTPS handler carries the default context
+    """The door's own transport: the stock opener with every redirect hop gated. A caller's own
+    TLS context is honoured when it verifies (a private CA bundle, say); one that switches
+    verification off is dropped, and the default verifying context is used instead."""
+    ctx = k.pop("context", None)
+    if ctx is not None and getattr(ctx, "verify_mode", None) != ssl.CERT_NONE:
+        op = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx),
+                                         _GatedRedirects())
+        return op.open(url, *a, **k)
     return _OPENER.open(url, *a, **k)
+
+
+#: Headers that carry a credential. requests' own redirect handling (`rebuild_auth`) strips
+#: Authorization when the host changes; the door's hop loop must do the same, or a miner's token
+#: would be sent to whatever allowed host a redirect names (Auditor MF2).
+_SECRET_HEADERS = {"authorization", "proxy-authorization", "cookie"}
+
+
+def strip_credentials(headers: dict[str, Any]) -> dict[str, Any]:
+    """`headers` without any credential-bearing header, for a hop onto another host."""
+    return {h: v for h, v in headers.items()
+            if str(h).lower() not in _SECRET_HEADERS
+            and "key" not in str(h).lower() and "token" not in str(h).lower()}
 
 
 def _header(headers: Any, name: str) -> str | None:
@@ -217,6 +237,16 @@ def install() -> None:
             if why:
                 LEDGER["refused_redirect"] += 1
                 raise Refused(f"redirect refused: {why} ({target[:120]})")
+            if urllib.parse.urlsplit(target).netloc.lower() != \
+                    urllib.parse.urlsplit(str(resp.url or url)).netloc.lower():
+                headers = strip_credentials(headers)
+                # A None value is how requests drops a SESSION-level header for one call, so a
+                # session's own token is withheld from this hop without changing the session.
+                for h in list(self.headers):
+                    if strip_credentials({h: 1}) == {}:
+                        headers[h] = None
+                k.pop("auth", None)
+                k.pop("cookies", None)
             if resp.status_code in (301, 302, 303) and method.upper() != "HEAD":
                 method = "GET"
                 k.pop("data", None)

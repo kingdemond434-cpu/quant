@@ -203,3 +203,61 @@ def test_requests_same_host_redirect_is_followed_through_the_door(monkeypatch) -
     G.install()
     assert requests.get("https://ok.example.org/old", timeout=1).status_code == 200
     assert sent == ["https://ok.example.org/old", "https://ok.example.org/new"]
+
+
+def test_credentials_are_not_carried_onto_another_host(monkeypatch) -> None:
+    """Auditor MF2: a cross-host hop drops Authorization, cookies and any key/token header."""
+    import requests
+
+    sent: list[tuple[str, dict]] = []
+
+    def fake(self, method, url, *a, **k):  # type: ignore[no-untyped-def]
+        sent.append((url, dict(k.get("headers") or {})))
+        r = requests.Response()
+        r.url = url
+        if "api.example.org" in url:
+            r.status_code = 302
+            r.headers["location"] = "https://cdn.example.net/file"
+        else:
+            r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests.Session, "request", fake)
+    monkeypatch.setattr(urllib.request, "urlopen", urllib.request.urlopen)
+    monkeypatch.setattr(G, "_ROBOTS", {"https://api.example.org": _rules([]),
+                                       "https://cdn.example.net": _rules([])})
+    G.install()
+    s = requests.Session()
+    s.headers["Authorization"] = "token SESSION"
+    s.get("https://api.example.org/x", timeout=1,
+          headers={"Authorization": "token abc", "X-Api-Key": "k", "Accept": "a/b"})
+    first, second = sent[0][1], sent[1][1]
+    assert first["Authorization"] == "token abc" and first["X-Api-Key"] == "k"
+    assert "X-Api-Key" not in second and second.get("Accept") == "a/b"
+    assert second.get("Authorization") is None          # None drops the session's header too
+    assert s.headers["Authorization"] == "token SESSION"  # the session itself is unchanged
+
+
+def test_a_verifying_caller_context_is_honoured_and_cert_none_is_dropped(monkeypatch) -> None:
+    import ssl
+
+    used: list[object] = []
+
+    class Op:
+        def open(self, url, *a, **k):  # type: ignore[no-untyped-def]
+            used.append("default")
+            return "ok"
+
+    monkeypatch.setattr(G, "_OPENER", Op())
+    off = ssl.create_default_context()
+    off.check_hostname = False
+    off.verify_mode = ssl.CERT_NONE
+    assert G._ORIGINAL_URLOPEN("https://x.example.org/", context=off) == "ok"
+    assert used == ["default"]
+    built: list[object] = []
+    real = urllib.request.build_opener
+    monkeypatch.setattr(urllib.request, "build_opener",
+                        lambda *h: built.append(h) or Op())
+    G._ORIGINAL_URLOPEN("https://x.example.org/", context=ssl.create_default_context())
+    assert built and isinstance(built[0][0], urllib.request.HTTPSHandler)
+    monkeypatch.setattr(urllib.request, "build_opener", real)
