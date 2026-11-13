@@ -573,6 +573,8 @@ LEG_LAYER: dict[str, str] = {
     # the plain solve out of sample: evidence about how the book is composed, so it bills to the
     # same layer as the allocator it judges.
     "input_ablation": "portfolio",
+    # tail index and microstructure noise: survival-sizing and cost inputs to the allocator
+    "survival_inputs_lab": "portfolio",
     # The balance-sheet layer and the Allocator-V2 evidence: what the book costs to carry and
     # what each sleeve is worth to it -- a question about the book's composition, not about
     # how an order reaches the venue.
