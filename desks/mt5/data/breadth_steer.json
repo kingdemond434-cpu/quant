@@ -1,0 +1,12 @@
+{
+ "schema_version": 1,
+ "set_utc": "2026-11-13T19:21:45Z",
+ "source": "hourly pass breadth steer, 2026-11-13 19:21Z: the 170 promoted sleeves are ~8 independent bets, all FX (NOK 67, CHF 55) plus 2 BTC; no gold, no index, no entries 02:00-09:00, 12:00-13:00 or 21:00-23:00 UTC",
+ "rule": "steered parked cells are converted and judged FIRST, in this group order; every other cell keeps its place behind them. A steer reorders the queue and never removes a cell from it.",
+ "groups": [
+  {"name": "gold", "symbol_prefixes": ["XAU"]},
+  {"name": "indices", "asset_classes": ["indices", "index"]},
+  {"name": "usd_jpy_eur_crosses", "currency_set": ["USD", "JPY", "EUR"]},
+  {"name": "asia_window", "text_tokens": ["asia", "tokyo", "sydney"]}
+ ]
+}

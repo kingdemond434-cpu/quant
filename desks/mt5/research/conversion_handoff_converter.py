@@ -97,7 +97,7 @@ import json
 import sys
 import time
 from collections import Counter, defaultdict
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -457,6 +457,39 @@ from research.conversion_handoff_routes import (  # noqa: E402
 from research.conversion_handoff_routes import (  # noqa: E402
     trial_budget as trial_budget,
 )
+from research.conversion_handoff_steer import (  # noqa: E402
+    UNSTEERED,
+    asset_class,
+    load_steer,
+    steer_group,
+)
+
+
+def _breadth_counts(recs: Sequence[Mapping[str, Any]], work: Sequence[Mapping[str, Any]],
+                    steer: list[dict[str, Any]], selected: Counter[str],
+                    group_of: Callable[[Mapping[str, Any]], str],
+                    class_of: Callable[[str], str]) -> dict[str, Any]:
+    """This pass's conversions per asset class and per steer group (parents and child cells),
+    so every cycle reports where the converted breadth went."""
+    parent = {str(r.get("key")): r for r in work}
+    by_class: dict[str, Counter[str]] = defaultdict(Counter)
+    by_group: dict[str, Counter[str]] = defaultdict(Counter)
+    for rec in recs:
+        if rec.get("status") != CONVERTED:
+            continue
+        row = parent.get(str(rec.get("key"))) or rec
+        sym = str(row.get("symbol") or rec.get("child_symbol") or "")
+        cls = class_of(sym) if sym else "UNCLASSIFIED"
+        grp = group_of(row) or "unsteered"
+        for tgt in (by_class[cls], by_group[grp]):
+            tgt["parents"] += 1
+            tgt["child_cells"] += int(rec.get("trials_charged") or 0)
+    return {"steer": [str(g["name"]) for g in steer],
+            "selected_by_group": {(k or "unsteered"): v for k, v in sorted(selected.items())},
+            "converted_by_asset_class": {k: dict(v) for k, v in sorted(by_class.items())},
+            "converted_by_steer_group": {k: dict(v) for k, v in sorted(by_group.items())},
+            "rule": ("steered groups are examined first in the steer's order; a steer reorders "
+                     "the work list and never removes a row (desks/mt5/data/breadth_steer.json)")}
 
 
 def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
@@ -470,8 +503,12 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
              capacity_dir: Path | None = None, param_space: ParamSpace | None = None,
              input_present: Callable[[str], bool | None] | None = None,
              now: datetime | None = None,
+             steer: list[dict[str, Any]] | None = None,
+             class_of: Callable[[str], str] | None = None,
              clock: Callable[[], float] = time.monotonic) -> dict[str, Any]:
     handoff = handoff or HANDOFF
+    steer = load_steer() if steer is None else steer
+    class_of = class_of or asset_class
     ledger = ledger or LEDGER
     cursor_path = cursor_path or CURSOR
     report = report or REPORT
@@ -619,9 +656,31 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
 
     # 3. THE WORK LIST: restored inputs first, then round-robin across trial_family, the family
     # charged least today first.
+    # THE BREADTH STEER (2026-11-13): steered groups first, in the steer's order, each served
+    # round-robin across families; every other row keeps its place behind them. Nothing dropped.
     fam_order = sorted(queues, key=lambda f: (family_day[f], f))
-    work = restored + round_robin({f: a + b for f, (a, b) in queues.items()}, examine_cap,
-                                  fam_order)
+    names = [str(g["name"]) for g in steer]
+    group_memo: dict[str, str] = {}
+
+    def group_of(row: Mapping[str, Any]) -> str:
+        if not names:
+            return UNSTEERED
+        k = str(row.get("key") or "")
+        if k not in group_memo:
+            group_memo[k] = steer_group(row, steer, class_of)
+        return group_memo[k]
+
+    lanes: dict[str, dict[str, list[dict[str, Any]]]] = {n: {} for n in [*names, UNSTEERED]}
+    for f, (a, b) in queues.items():
+        for row_q in a + b:
+            lanes[group_of(row_q)].setdefault(f, []).append(row_q)
+    work = list(restored)
+    for n in [*names, UNSTEERED]:
+        room = examine_cap - (len(work) - len(restored))
+        if room <= 0:
+            break
+        work += round_robin(lanes[n], room, fam_order)
+    steer_selected = Counter(group_of(r) for r in work[len(restored):])
     charged_children: dict[str, str] = dict(led["charged_children"])
     converted_parents: dict[str, list[str]] = dict(led["converted_parents"])
     params_by_cell = lookup(work, time_ok) if work and time_ok() else {}
@@ -657,7 +716,10 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
         cell = str(parent.get("cell") or "")
         base = {"key": parent["key"], "cell": parent.get("cell"), "reason": reason,
                 "family": fam, "trial_family": tfam, "at": at}
-        settled = tfam not in fam_deferred and reason != INPUT_MISSING
+        # a steered row is served out of turn, so it never moves its family's cursor: the cursor
+        # stays the unsteered queue's place, and a steered row once resolved is skipped by key
+        settled = (tfam not in fam_deferred and reason != INPUT_MISSING
+                   and group_of(parent) == UNSTEERED)
         prior = converted_parents.get(parent_key(reason, cell))
         if prior:
             # THE SAME CELL, PARKED AGAIN: its children exist and were charged once.
@@ -891,6 +953,7 @@ def run_pass(*, handoff: Path | None = None, ledger: Path | None = None,
                  "MIN_PEER_HISTORY_DAYS": MIN_PEER_HISTORY_DAYS,
                  "MIN_PEER_LEAD_DAYS": MIN_PEER_LEAD_DAYS, "RETRY_H": RETRY_H},
         "cursor": cursor_doc,
+        "breadth": _breadth_counts(recs, work, steer, steer_selected, group_of, class_of),
         "budget": {"requested_s": budget_s, "work_limit_s": round(limit, 1),
                    "elapsed_s": round(clock() - t0, 2), "examined": examined,
                    "selected": len(work), "not_examined": len(work) - examined,
