@@ -270,11 +270,27 @@ def expand() -> dict[str, Any]:
     new: list[dict[str, Any]] = []
     per_parent: dict[str, int] = {}
     mech = _parent_mechanism()
+    void_parents: list[str] = []
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        from research.shadow_admission import void_moved_cell
+    except Exception:                                    # pragma: no cover - same tree
+        void_moved_cell = None  # type: ignore[assignment]
     for key, val in surv.items():
         spec = val.get("shadow_spec") or {}
         sym = str(spec.get("symbol") or "").upper()
         fam = str(spec.get("family") or "")
         if not sym or not fam:
+            continue
+        # A VOID PARENT BREEDS NOTHING (box 2026-11-10). A certificate on a moved cell tested a
+        # rule nobody wrote; its hour and chart variants would carry the same stale instrument
+        # back into the docket as children with a certified parent's authority.
+        _p = spec.get("params")
+        _why = (void_moved_cell(val, spec, _p) if void_moved_cell is not None
+                and isinstance(_p, dict) else None)
+        if _why and _why != "UNPROVEN":
+            void_parents.append(str(key))
             continue
         base = _flat_params({k: v for k, v in spec.items()
                              if k not in ("symbol", "family", "selector",
@@ -340,6 +356,7 @@ def expand() -> dict[str, Any]:
         "idle_hours_targeted": sorted(idle),
         "max_per_parent": MAX_PER_PARENT,
         "n_new": len(new),
+        "void_parents_skipped": void_parents,
         "by_variant": dict(sorted(by_variant.items(), key=lambda kv: -kv[1])),
         "new": new,
     }

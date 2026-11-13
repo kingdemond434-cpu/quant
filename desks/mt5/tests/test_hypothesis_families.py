@@ -559,3 +559,306 @@ def test_the_unrunnable_bank_is_asked_about_the_child_row_with_its_row_level_tim
     # the spec the bank saw for the chosen target keys exactly as the child row will
     asked = next(s for s in seen if s["symbol"] == kids[0]["symbol"])
     assert fi.docket_cell_id(asked) == fi.docket_cell_id(kids[0])
+
+
+def test_a_moved_cell_names_the_instrument_it_now_trades() -> None:
+    """Measured on the box 2026-11-10: a `carry_risk_off` cell minted for USDSGD and moved to
+    ADAUSD kept `symbol: USDSGD` in its params, so it was judged on ADAUSD's bars with USDSGD's
+    carry side. The traded-instrument keys follow the move; a second leg never does."""
+    params = {"symbol": "USDSGD", "risk_symbol": "JPN225", "mode": "unwind", "hold_d": 5}
+    moved = hf.retarget_params(params, "USDSGD", "ADAUSD")
+    assert moved == {"symbol": "ADAUSD", "risk_symbol": "JPN225", "mode": "unwind", "hold_d": 5}
+    assert params["symbol"] == "USDSGD"                     # the parent is never edited
+    # the grid's list form, and the other two traded-instrument keys
+    assert hf.retarget_params({"symbol": ["usdsgd"], "input_symbol": "USDSGD",
+                               "fx_symbol": "EURUSD"}, "USDSGD", "ADAUSD") == {
+        "symbol": ["ADAUSD"], "input_symbol": "ADAUSD", "fx_symbol": "EURUSD"}
+    # a parameter naming ANOTHER instrument is the cell's own leg; no move, no change
+    for p, old, new in (({"symbol": "XAUUSD"}, "USDSGD", "ADAUSD"),
+                        ({"symbol": "USDSGD"}, "USDSGD", "USDSGD"),
+                        ({"peer_symbol": "USDSGD"}, "USDSGD", "ADAUSD"),
+                        ({"symbol": "USDSGD"}, "", "ADAUSD")):
+        assert hf.retarget_params(p, old, new) == p
+
+
+def test_every_path_that_moves_a_cell_rewrites_its_traded_instrument() -> None:
+    """Four organs carry a cell to another instrument: the duplicate re-aim, the coverage steer,
+    the independence intake's cross_instrument fill (the one the box caught: 143 carry_risk_off
+    rows on another symbol's carry side) and rank recovery's cross_producer carry (a forced_flow
+    row on ADAUSD reading XAUUSD's fix). Each must go through the one helper."""
+    research = Path(hf.__file__).resolve().parent
+    for name, needle in (("hypothesis_families.py", "retarget_params(params, _sym(row), sym)"),
+                         ("coverage_steer.py", "retarget_params(row.get(\"params\") or {}, "),
+                         ("independence_intake.py",
+                          "retarget_params(donor[\"params\"], str(donor[\"symbol\"]), sym)"),
+                         ("rank_recovery.py",
+                          "retarget_params(donor[\"params\"], str(donor[\"symbol\"]), sym)")):
+        assert needle in (research / name).read_text("utf-8"), name
+    # and both carrying doors ask the judge's own buildability before minting
+    for name in ("independence_intake.py", "rank_recovery.py"):
+        text = (research / name).read_text("utf-8")
+        assert "mint_refusal(donor[\"family\"], carried, " in text, name
+        assert "set_aside_by_family_reason" in text, name
+    moat = (research / "moat_candidate_compiler.py").read_text("utf-8")
+    assert "mint_refusal(fam, params, " in moat and "set_aside_by_family_reason" in moat
+    assert "SET_ASIDE_STATUS if verdict in PERMANENT_REFUSALS" in moat
+
+
+def test_the_mint_refusal_switch_counts_and_refuses_nothing(monkeypatch) -> None:
+    from research import gauntlet_buildability as gb
+    assert gb.mint_refusal_enforced() is True
+    monkeypatch.setenv("QUANT_MINT_REFUSAL", "0")
+    assert gb.mint_refusal_enforced() is False
+    stamp = gb.mint_refusal_stamp()
+    assert stamp["enforced"] is False and stamp["answered_on_host"]
+    # the question is still answered under the switch: the doors count it
+    assert gb.mint_refusal("no_such_family_xyz", {}) is not None
+    # the intake's donor symbol comes from the registry in whatever case it was stored
+    assert hf.retarget_params({"symbol": "USDSGD", "risk_symbol": "JPN225"}, "usdsgd",
+                              "ADAUSD") == {"symbol": "ADAUSD", "risk_symbol": "JPN225"}
+
+
+def test_stored_moved_cells_are_repaired_counted_and_named_void(tmp_path) -> None:
+    """Box 2026-11-10: 7,462 stored rows name another instrument as the traded one. carry is
+    left alone (the sealed judge supplies the row's instrument); every other family is rewritten
+    to its own instrument, judged as a NEW cell, and its old spec is named void. Nothing is
+    un-charged and the pass is idempotent."""
+    rows = [
+        {"symbol": "ADAUSD", "family": "carry_risk_off", "origin": "independence_intake",
+         "params": {"symbol": "USDSGD", "risk_symbol": "JPN225", "mode": "harvest"},
+         "spec_id": "aef9", "prereg_hash": "x", "prereg_status": "PREREGISTERED",
+         "first_seen": "2026-11-05T15:44:21+00:00"},
+        {"symbol": "ADAUSD", "family": "forced_flow", "origin": "rank_recovery",
+         "params": {"symbol": ["XAUUSD"], "input_symbol": "XAUUSD", "fx_symbol": "USDJPY"},
+         "spec_id": "9f3d"},
+        {"symbol": "CHFDKK", "family": "carry", "origin": "independence_intake",
+         "params": {"symbol": "EURUSD"}, "spec_id": "c1"},
+        {"symbol": "EURUSD", "family": "carry_risk_off", "params": {"symbol": "EURUSD"}},
+        {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_symbol": "DXY"}},
+        # its corrected twin is already in the docket: the same executable twice
+        {"symbol": "EURUSD", "family": "carry_risk_off", "origin": "x",
+         "params": {"symbol": "GBPUSD"}, "spec_id": "dup"},
+        {"symbol": "GER40", "family": "carry_risk_off", "params": {"mode": "harvest"}},
+        # a family nobody has looked at: counted, never rewritten
+        {"symbol": "EURUSD", "family": "relative_value", "origin": "y",
+         "params": {"symbol": "GBPUSD"}, "spec_id": "rv"},
+    ]
+    import copy
+    before = copy.deepcopy(rows)
+    out, census, void = hf.repair_moved_cells(rows)
+    assert rows == before                                         # the caller's rows are intact
+    assert census["mismatched"] == 5 and census["rewritten"] == 2
+    assert census["unreviewed_family"] == 1 and out[-1] == rows[-1]
+    assert census["unreviewed_by_family_origin"] == {"relative_value|y": 1}
+    assert census["first_seen_unknown"] == 2
+    assert all(len(v["corrected_identity_sha"]) == 16 for v in void)
+    # count-only under the revert switch: same census, nothing rewritten, nothing voided
+    same, counted, none = hf.repair_moved_cells(rows, rewrite=False)
+    assert same == rows and none == [] and counted["rewritten"] == 0
+    assert counted["by_family_origin"] == census["by_family_origin"]
+    assert census["skipped_judge_supplies_symbol"] == 1 and census["merged_into_existing"] == 1
+    assert census["by_family_origin"] == {"carry_risk_off|independence_intake": 1,
+                                          "forced_flow|rank_recovery": 1, "carry_risk_off|x": 1}
+    assert census["by_first_seen_day"]["2026-11-05"] == 1
+    assert len(out) == 7 and [v["spec_id"] for v in void] == ["aef9", "9f3d", "dup"]
+    a, b, c = out[0], out[1], out[2]
+    assert a["params"] == {"symbol": "ADAUSD", "risk_symbol": "JPN225", "mode": "harvest"}
+    assert "spec_id" not in a and "prereg_hash" not in a          # re-derived by the writer
+    assert a["moved_cell_repair"]["named"] == "USDSGD"
+    assert a["moved_cell_repair"]["void_spec_id"] == "aef9"
+    # the second leg that names something else is the cell's own and is left alone
+    assert b["params"] == {"symbol": ["ADAUSD"], "input_symbol": "ADAUSD", "fx_symbol": "USDJPY"}
+    assert c["params"] == {"symbol": "EURUSD"} and c["spec_id"] == "c1"
+    assert out[4]["params"] == {"input_symbol": "DXY"}            # an input, never a mismatch
+    # no key at all on a family that cannot run without one: completed, and nothing is void
+    assert out[5]["params"] == {"mode": "harvest", "symbol": "GER40"}
+    assert census["symbol_supplied"] == 1
+    again, census2, void2 = hf.repair_moved_cells(out)
+    assert census2["rewritten"] == 0 and census2["mismatched"] == 2 and void2 == []
+    assert census2["repaired_earlier"] == 2 and again == out
+    # the void list is standing, keyed by the old executable, and a re-run adds nothing
+    path = tmp_path / "moved_cell_void.json"
+    first = hf.record_moved_void(void, path)
+    assert first == {"added": 3, "n": 3, "written": True,
+                     "by_family": {"carry_risk_off": 2, "forced_flow": 1}}
+    assert hf.record_moved_void(void, path)["added"] == 0
+    assert len(json.loads(path.read_text("utf-8"))["void"]) == 3
+
+
+def test_a_fault_after_the_repair_stores_no_corrected_row_without_its_void_entry(
+        tmp_path, monkeypatch) -> None:
+    """Audit of 72ff7b1e23e0: if the family pass fails after the repair, the writer must get
+    back exactly what it handed in. A corrected row stored with no void entry would never be
+    seen as a mismatch again, and its old spec would never be named."""
+    rows = [{"symbol": "ADAUSD", "family": "carry_risk_off", "origin": "independence_intake",
+             "params": {"symbol": "USDSGD"}, "spec_id": "aef9"}]
+
+    def boom(*_a, **_k):
+        raise RuntimeError("reaim down")
+    monkeypatch.setattr(hf, "reaim", boom)
+    out, block, pending = hf.apply(rows, fresh=set(), reproposed=set(), hyp_dir=tmp_path)
+    assert pending is None and block["status"].startswith("FAILED")
+    assert out is rows and rows[0]["params"] == {"symbol": "USDSGD"}
+    assert rows[0]["spec_id"] == "aef9" and "moved_cell_repair" not in rows[0]
+    assert not (tmp_path / "moved_cell_void.json").exists()
+
+
+def test_a_family_that_needs_its_instrument_is_told_it(tmp_path) -> None:
+    """Box 2026-11-10: 144 carry_risk_off rows from local_converter carried `params: {}`. The
+    family returns no orders without `symbol` and the sealed judge supplies it only for carry
+    and event_reaction, so 133 were judged UNKNOWN and none could ever fire."""
+    assert hf.with_row_symbol("carry_risk_off", "ADAUSD", {}) == {"symbol": "ADAUSD"}
+    assert hf.with_row_symbol("carry_risk_off", "ADAUSD", {"symbol": "ADAUSD", "z_thr": 1.0}) == {
+        "symbol": "ADAUSD", "z_thr": 1.0}
+    assert hf.with_row_symbol("forced_flow", "XAUUSD", {}) == {}     # runs without one
+    assert hf.with_row_symbol("carry", "EURUSD", {}) == {}           # the judge supplies it
+    rows = [{"symbol": "ADAUSD", "family": "carry_risk_off", "params": {}, "spec_id": "4a07",
+             "producer": "desks/mt5/research/local_converter.py"},
+            {"symbol": "AUDCAD", "family": "carry_risk_off", "params": {}, "spec_id": "f008"},
+            {"symbol": "AUDCAD", "family": "carry_risk_off", "params": {"symbol": "AUDCAD"}},
+            {"symbol": "XAUUSD", "family": "forced_flow", "params": {}}]
+    out, census, void = hf.repair_moved_cells(rows)
+    assert void == [] and rows[0]["params"] == {}                 # no test happened: none void
+    assert census["symbol_missing"] == 2 and census["symbol_supplied"] == 1
+    assert census["merged_into_existing"] == 1 and census["mismatched"] == 0
+    assert census["symbol_missing_by_origin"] == {"desks/mt5/research/local_converter.py": 1,
+                                                  "unknown": 1}
+    assert len(out) == 3 and out[0]["params"] == {"symbol": "ADAUSD"}
+    assert out[0]["row_symbol_supplied"]["never_fired_spec_id"] == "4a07"
+    assert "spec_id" not in out[0] and out[2] == rows[3]
+    assert hf.repair_moved_cells(out)[1]["symbol_missing"] == 0   # idempotent
+    counted = hf.repair_moved_cells(rows, rewrite=False)
+    assert counted[0] == rows and counted[1]["symbol_supplied"] == 0
+    # the converter is the producer: it now writes the instrument itself
+    text = (Path(hf.__file__).resolve().parent / "local_converter.py").read_text("utf-8")
+    assert "with_row_symbol(str(fam), str(sym), params)" in text
+
+
+def test_one_executable_is_one_key_and_a_fresh_copy_is_refused(tmp_path) -> None:
+    """Box 2026-11-10: `family_carry` reads no `input_symbol` and the judge supplies its
+    instrument, so CHFNOK carry held 15 certificates that are copies of fewer rules. The
+    canonical key groups them WITHOUT touching any stored identity; a fresh copy is refused at
+    intake, stored copies are counted and left, and no other family is examined."""
+    a = {"symbol": "CHFNOK", "family": "carry", "params": {"session": "ny"}}
+    b = {"symbol": "CHFNOK", "family": "carry", "origin": "moat",
+         "params": {"session": "ny", "input_symbol": "eBay"}}
+    c = {"symbol": "CHFNOK", "family": "carry", "origin": "moat",
+         "params": {"session": "ny", "input_symbol": "GBPJPY", "symbol": "GBPJPY"}}
+    d = {"symbol": "CHFNOK", "family": "carry", "params": {"session": "asia"}}
+    e = {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_symbol": "DXY"}}
+    f = {"symbol": "EURUSD", "family": "macro_conditional", "params": {"input_symbol": "VIX"}}
+    key = hf.executable_key
+    assert key("CHFNOK", "carry", a["params"]) == key("chfnok", "carry", b["params"]) == key(
+        "CHFNOK", "carry", c["params"])
+    assert key("CHFNOK", "carry", a["params"]) != key("CHFNOK", "carry", d["params"])
+    assert key("CHFNOK", "carry", {}, chart="M15") != key("CHFNOK", "carry", {}, chart="M5")
+    assert key("EURUSD", "macro_conditional", e["params"]) != key(
+        "EURUSD", "macro_conditional", f["params"])            # an input that IS read
+    assert hf.identity(a) != hf.identity(b)                       # identities are untouched
+    rows = [a, b, d, e, f, c]
+    out, rep = hf.refuse_executable_copies(rows, fresh={hf.identity(c), hf.identity(f)})
+    assert out == [a, b, d, e, f]                                 # only the fresh copy goes
+    assert rep["fresh_refused"] == 1 and rep["refused_by_origin"] == {"moat": 1}
+    assert rep["stored_copies"] == 1 and rep["stored_copies_by_symbol"] == {"CHFNOK": 1}
+    assert rep["examined"] == 4 and rep["executables"] == 2
+    kept, counted = hf.refuse_executable_copies(rows, fresh={hf.identity(c)}, refuse=False)
+    assert kept == rows and counted["fresh_refused"] == 1 and not counted["refuse_enabled"]
+    # a fresh executable nobody holds is kept; a second fresh copy of it is not
+    g = {"symbol": "USDZAR", "family": "carry", "params": {}}
+    h = {"symbol": "USDZAR", "family": "carry", "params": {"input_symbol": "eBay"}}
+    assert hf.refuse_executable_copies([g, h], fresh={hf.identity(g), hf.identity(h)})[0] == [g]
+    assert rep["refused_first_50"] == [{"symbol": "CHFNOK", "family": "carry", "origin": "moat",
+                                        "params": c["params"], "candidate_id": None}]
+    # ANYTHING IDENTITY DISTINGUISHES STAYS DISTINCT: a chart, a session, any read param. Only
+    # an unread alias collapses. Refusing these would delete real hypotheses.
+    m15 = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15"}}
+    m5 = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M5"}}
+    asia = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15",
+                                                              "session": "asia"}}
+    ny = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15", "session": "ny"}}
+    loud = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15",
+                                                              "require_quiet": False}}
+    alias = {"symbol": "AUDCHF", "family": "carry", "params": {"timeframe": "M15",
+                                                               "input_symbol": "GBPJPY"}}
+    batch = [m15, m5, asia, ny, loud, alias]
+    kept, seen = hf.refuse_executable_copies(batch, fresh={hf.identity(r) for r in batch})
+    assert kept == [m15, m5, asia, ny, loud] and seen["fresh_refused"] == 1
+
+    # a row naming no instrument is never keyed, so never refused as somebody's copy
+    n1 = {"symbol": "", "family": "carry", "params": {"symbol": "EURUSD"}}
+    n2 = {"symbol": "", "family": "carry", "params": {"symbol": "GBPUSD"}}
+    kept, seen = hf.refuse_executable_copies([n1, n2], fresh={hf.identity(n1), hf.identity(n2)})
+    assert kept == [n1, n2] and seen["examined"] == 0
+    # the writer's own identity is the key's base, whatever it distinguishes outside params
+    def wide(row: dict) -> str:
+        return hf.identity(row) + "|" + str(row.get("timeframe"))
+    x = {"symbol": "EURNOK", "family": "carry", "params": {}, "timeframe": "H1"}
+    y = {"symbol": "EURNOK", "family": "carry", "params": {"input_symbol": "eBay"},
+         "timeframe": "M15"}
+    z = {"symbol": "EURNOK", "family": "carry", "params": {"input_symbol": "eBay"},
+         "timeframe": "H1"}
+    kept, _ = hf.refuse_executable_copies([x, y, z], fresh={wide(x), wide(y), wide(z)},
+                                          identity_fn=wide)
+    assert kept == [x, y]
+
+    # the stores, grouped: certificates, clocks and sleeves, each copy by its own name
+    gates = {"cpcv": {"passed": True}}
+
+    def cert(params: dict) -> dict:
+        return {"sym": "CHFNOK", "gates": gates, "status": "UNIVERSAL",
+                "shadow_spec": {"symbol": "CHFNOK", "family": "carry", "selector": "asia",
+                                "params": params}}
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "UNIVERSAL_SURVIVORS.canon.json").write_text(json.dumps({"survivors": {
+        "external.CHFNOK.carry.p=1": cert({"input_symbol": "eBay"}),
+        "external.CHFNOK.carry.p=2": cert({"input_symbol": "GBPJPY"}),
+        "external.CHFNOK.carry.p=3": cert({"require_quiet": False})}}), "utf-8")
+    # a sleeve is keyed by the params of the CERTIFICATE it names, never by its own partial
+    # `params` (three rows reading {"timeframe": "H1"} under three hashes are three rules)
+    def sleeve(name: str, cell: str) -> dict:
+        return {"name": name, "symbol": "CHFNOK", "family": "carry", "selector": "asia",
+                "status": "RETIRED", "risk_frac": 0.03, "params": {"timeframe": "H1"},
+                "certificate": {"cell": cell}}
+    (tmp_path / "data" / "sleeves.json").write_text(json.dumps({"sleeves": [
+        sleeve("s1", "external.CHFNOK.carry.p=1"), sleeve("s2", "external.CHFNOK.carry.p=2"),
+        sleeve("s3", "external.CHFNOK.carry.p=3"), sleeve("s4", "external.CHFNOK.carry.p=9")]}),
+        "utf-8")
+    (tmp_path / "data" / "sleeve_registry.json").write_text(json.dumps({"sleeves": {
+        "a": {"status": "LIVE", "identity": {"sleeve_id": "a", "symbol": "CHFNOK",
+              "family": "carry", "timeframe": "M15", "params": {"input_symbol": "eBay"}}},
+        "b": {"status": "LIVE", "identity": {"sleeve_id": "b", "symbol": "CHFNOK",
+              "family": "carry", "timeframe": "M15", "params": {"input_symbol": "GBPJPY"}}},
+        "c": {"status": "LIVE", "identity": {"sleeve_id": "c", "symbol": "CHFNOK",
+              "family": "carry", "timeframe": "M5", "params": {"input_symbol": "eBay"}}}}}),
+        "utf-8")
+    doc = hf.executable_groups(tmp_path)
+    assert doc["canon"]["records"] == 3 and doc["canon"]["executables"] == 2
+    assert doc["canon"]["surplus_copies"] == 1
+    assert doc["canon"]["groups"][0]["copies"] == 2
+    assert len(doc["canon"]["groups"][0]["key"]) == 16         # a stable id per executable
+    assert doc["sleeves"]["records"] == 3 and doc["sleeves"]["surplus_copies"] == 1
+    assert doc["sleeves"]["unjoined_to_a_certificate"] == 1
+    assert doc["sleeve_registry"]["records"] == 3
+    assert doc["sleeve_registry"]["surplus_copies"] == 1          # M15 twice, M5 once
+    assert doc["sleeves"]["groups"][0]["members"][0] == {"name": "s1",
+                                                         "state": "RETIRED risk_frac=0.03"}
+    assert doc["reports_survivors"]["status"] == "UNMEASURED"
+
+
+def test_a_cell_the_judge_cannot_build_as_claimed_is_refused_before_minting() -> None:
+    """Box 2026-11-10: the carrying doors minted cells the judge returns NOT_RUN on -- variant
+    keys the replay refuses by name -- and cells with a required param missing. `mint_refusal`
+    asks the judge's own two questions; a plain buildable cell is never refused."""
+    from research.gauntlet_buildability import mint_refusal
+
+    assert mint_refusal("event_reaction", {"mode": "fade", "hold_bars": 1}) is None
+    assert mint_refusal("event_reaction", {"mode": "fade", "regime": "high_vol"}) is None
+    why = mint_refusal("event_reaction", {"mode": "fade", "residual": "gold"})
+    assert why and why.startswith("MODIFIER_REFUSED") and "residual" in why
+    why = mint_refusal("event_reaction", {"mode": "drift", "regime": "risk_off"})
+    assert why and "no desk definition" in why
+    why = mint_refusal("event_reaction", {"execution_style": "limit"})
+    assert why and "fill" in why
+    why = mint_refusal("clock_transition", {})
+    assert why and why.startswith("MISSING_PARAMS")
+    assert mint_refusal("no_such_family_anywhere", {}) is not None

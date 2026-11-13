@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections.abc import Iterable
 from pathlib import Path
@@ -397,6 +398,288 @@ def _evicted_keys(base: Path) -> set[str]:
     return {str(k) for k in ev} if isinstance(ev, list) else set()
 
 
+#: Families whose cell, once MOVED to another instrument with its donor's params, tests a rule
+#: nobody wrote. Mirrors `hypothesis_families.MOVED_CELL_FAMILIES` (a test pins the two equal);
+#: restated because this module is imported by the forward engine and must stay import-light.
+#: `carry` and `event_reaction` are absent on purpose: the judge supplies the row's instrument
+#: for both, so a stale name there changed nothing that ran.
+MOVED_CELL_FAMILIES = frozenset({"entry_conditioned", "carry_risk_off", "forced_flow"})
+#: Certificates refused this pass as VOID_MOVED_CELL, by name (also in DROPPED_CERTIFICATES).
+VOID_MOVED_CERTIFICATES: list[str] = []
+#: entry_conditioned certificates naming another instrument whose BASE family could not be shown
+#: to read `symbol`: left enrolled (an honest certificate is not refused on a guess), by name.
+UNPROVEN_ENTRY_CONDITIONED: list[str] = []
+
+
+def _base_reads_symbol(base_family: str) -> bool | None:
+    """Does `base_family`'s constructor take `symbol`? None when it cannot be resolved."""
+    try:
+        import inspect
+
+        from mt5desk.families import get_family_func
+        fn = get_family_func(str(base_family))
+        return None if fn is None else "symbol" in inspect.signature(fn).parameters
+    except Exception:
+        return None
+
+
+def void_moved_cell(row: dict, spec: dict, params: dict) -> str | None:
+    """The reason a certificate is VOID_MOVED_CELL, or None. `"UNPROVEN"` is returned for an
+    entry_conditioned certificate whose base family is not shown to read `symbol`: the caller
+    names it and ENROLS it.
+
+    Box 2026-11-10: two carry_risk_off certificates (GBPSEK and NOKSEK) passed all ten gates
+    with `params.symbol: USDSGD` -- a cell carried to another instrument with its donor's
+    params, so the family traded one instrument's bars on ANOTHER's carry side and swap terms.
+    The mechanism the certificate states (gate one) is not the rule that was run. The certificate
+    is kept and named, and it does not advance; the corrected cell is judged as a new trial by
+    the docket's moved-cell repair and earns its own certificate or does not. Decided from the
+    row alone, so it needs no join and cannot go stale.
+
+    entry_conditioned only forwards `symbol` to its base family, and only a base that takes one
+    reads it (`families_specialist.family_entry_conditioned`). So it is refused only where the
+    base family's own signature has `symbol`; anything else ran the rule its certificate states
+    and stays enrolled."""
+    family = str(spec.get("family") or row.get("family") or "")
+    if family not in MOVED_CELL_FAMILIES:
+        return None
+    sym = str(spec.get("symbol") or row.get("sym") or row.get("symbol") or "").strip().upper()
+    named = params.get("symbol")
+    if isinstance(named, list) and len(named) == 1:
+        named = named[0]
+    named = named.strip().upper() if isinstance(named, str) else ""
+    if not sym or not named or named == sym:
+        return None
+    if family == "entry_conditioned":
+        base = str(params.get("base_family") or "")
+        if _base_reads_symbol(base) is not True:
+            return "UNPROVEN"
+        family = f"entry_conditioned[{base}]"
+    return (f"VOID_MOVED_CELL: a {family} certificate on {sym} whose params name {named} as the "
+            f"traded instrument -- it was judged on {sym}'s bars with {named}'s terms, a rule "
+            f"nobody wrote. Kept and named, not enrolled; the corrected cell is re-judged as a "
+            f"new trial (data/hypotheses/moved_cell_void.json)")
+
+
+def void_moved_certificates(base: Path = BASE) -> dict:
+    """DRY RUN: every ten-gate certificate the VOID_MOVED_CELL door refuses on the canon as it
+    stands, and every entry_conditioned one it leaves enrolled as unproven. Reads only."""
+    universal, source = _canon(base)
+    refused, unproven = [], []
+    for name, row in (universal.get("survivors") or {}).items():
+        if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
+            continue
+        spec = row.get("shadow_spec")
+        params = spec.get("params") if isinstance(spec, dict) else None
+        if not isinstance(params, dict):
+            continue
+        why = void_moved_cell(row, spec, params)
+        if why == "UNPROVEN":
+            unproven.append(str(name))
+        elif why:
+            refused.append({"certificate": str(name), "family": str(spec.get("family") or ""),
+                            "symbol": str(spec.get("symbol") or row.get("sym") or ""),
+                            "named": params.get("symbol"), "why": why})
+    return {"source": source, "refused": refused, "n_refused": len(refused),
+            "unproven_entry_conditioned": unproven}
+
+
+#: Params a family's replay never reads (the judge supplies the row's own instrument), so two
+#: certificates differing only there are ONE executable. Mirrors
+#: `hypothesis_families.EXECUTABLE_UNREAD` (a test pins the two equal); restated to stay
+#: import-light.
+EXECUTABLE_UNREAD: dict[str, frozenset[str]] = {"carry": frozenset({"input_symbol", "symbol"})}
+#: This pass's executables held by more than one certificate: which copy keeps the clock, which
+#: copies were not enrolled, and which surplus copies already had a clock and were left running.
+EXECUTABLE_COPIES: list[dict] = []
+#: Clockless copies refused because no copy of their executable names its own instrument.
+NO_OWN_INSTRUMENT_CERTIFICATES: list[str] = []
+
+
+def one_clock_per_executable_enforced() -> bool:
+    """False under QUANT_ONE_CLOCK_PER_EXECUTABLE=0: copies are counted and all enrolled."""
+    import os
+    return os.environ.get("QUANT_ONE_CLOCK_PER_EXECUTABLE", "1").strip() != "0"
+
+
+#: certificate name -> the (chart, timeframe, session) its `shadow_spec` states outside params,
+#: each kept apart so a chart can never stand in for a session; filled by
+#: `authorized_runs` each pass (the run row itself has never carried it).
+_SPEC_CHART: dict[str, str] = {}
+_NAME_CHART = re.compile(r"@([A-Za-z]{1,3}\d{1,3})\b")
+
+
+def _executable_of(run: dict) -> str | None:
+    """EVERY DIMENSION THE RUN CARRIES IS IN THE KEY (chart on the row, in the spec or in the
+    certificate's own name; session; lane): an @M15 carry certificate beside an H1 one is a
+    different rule. An extra dimension can only keep a copy enrolled."""
+    unread = EXECUTABLE_UNREAD.get(str(run.get("family") or ""))
+    if unread is None or run.get("lane") == "scalp":
+        return None
+    params = {k: v for k, v in (run.get("params") or {}).items() if k not in unread}
+    name = str(run.get("certificate") or "")
+    named = _NAME_CHART.search(name)
+    return json.dumps([str(run.get("symbol") or "").upper(), run.get("family"),
+                       run.get("selector"), run.get("condition"), run.get("side"), params,
+                       run.get("timeframe"), run.get("chart"), run.get("session"),
+                       run.get("lane"), _SPEC_CHART.get(name),
+                       named.group(1).upper() if named else None],
+                      sort_keys=True, default=str)
+
+
+#: Registry status order for the keeper's tie-break: a LIVE row outranks a STANDBY one.
+_STATUS_RANK = {"LIVE": 0, "STANDBY": 1}
+
+
+def _clocked(base: Path) -> tuple[list[tuple[str, str, dict, str, str, str]],
+                                  dict[str, tuple[str, str]]]:
+    """Every forward clock in the registry, twice: (symbol, family, params, chart,
+    forward_start, status) rows for the generous match, and {registry key: (forward_start,
+    status)} for the exact one. An unreadable registry is an empty answer, which keeps every
+    copy."""
+    out: list[tuple[str, str, dict, str, str, str]] = []
+    keys: dict[str, tuple[str, str]] = {}
+    rows = _read(base / "data" / "sleeve_registry.json").get("sleeves")
+    items = list(rows.items()) if isinstance(rows, dict) else [
+        (str(r.get("key") or ""), r) for r in (rows if isinstance(rows, list) else ())
+        if isinstance(r, dict)]
+    for key, r in items:
+        ident = r.get("identity") if isinstance(r, dict) else None
+        if not isinstance(ident, dict):
+            continue
+        params = ident.get("params") if isinstance(ident.get("params"), dict) else {}
+        st = str(r.get("forward_start") or r.get("frozen_at") or "9999")
+        status = str(r.get("status") or "").upper()
+        out.append((str(ident.get("symbol") or "").upper(), str(ident.get("family") or ""),
+                    params, str(ident.get("timeframe") or "").upper(), st, status))
+        if key:
+            keys[str(key)] = (st, status)
+    return out, keys
+
+
+def _engine_key(run: dict) -> str | None:
+    """The registry key the ENROLMENT path would write for this run, from the engine's own
+    builder. None when the engine cannot be imported here; the generous match still answers."""
+    try:
+        return run_key(run)
+    except Exception:
+        return None
+
+
+def one_clock_per_executable(runs: list[dict], base: Path = BASE, *,
+                             enforce: bool | None = None,
+                             registry_readable: bool | None = None) -> list[dict]:
+    """One forward clock per canonical executable (box 2026-11-10: 21 carry clocks in the
+    registry were a handful of carry rules, each certified several times under a foreign
+    `input_symbol` the replay never reads).
+
+    THE KEEPER NAMES ITS OWN INSTRUMENT. Among the copies whose unread params all name the
+    row's own symbol, the keeper is the one on a LIVE registry row, then a STANDBY one, then the
+    earliest clock, then the first by certificate name. A copy carrying a foreign label is never
+    the keeper. If NO copy names its own instrument, no clockless copy is enrolled and every
+    one is named in NO_OWN_INSTRUMENT_CERTIFICATES and billed like VOID_MOVED_CELL.
+
+    NOTHING THAT HAS A CLOCK LOSES IT. A copy that already holds a registry clock is always
+    returned, so no accrued forward evidence is orphaned; such surplus clocks are only named.
+    A clockless copy is withheld only when the keeper is returned in this same pass (the
+    executable is forward-tested either way, on identical signals) or when no copy names its
+    own instrument. A copy whose engine key equals the keeper's key is never withheld. If the
+    registry cannot be read nothing is withheld."""
+    EXECUTABLE_COPIES.clear()
+    NO_OWN_INSTRUMENT_CERTIFICATES.clear()
+    enforce = one_clock_per_executable_enforced() if enforce is None else enforce
+    if registry_readable is None:
+        registry_readable = (base / "data" / "sleeve_registry.json").exists()
+    groups: dict[str, list[dict]] = {}
+    for run in runs:
+        k = _executable_of(run)
+        if k is not None:
+            groups.setdefault(k, []).append(run)
+    if not any(len(g) > 1 for g in groups.values()):
+        return runs
+    clocked, by_key = _clocked(base) if registry_readable else ([], {})
+
+    def clocks(run: dict) -> list[tuple[str, str]]:
+        # A CLOCK IS RECOGNISED TWICE OVER, and either is enough.
+        # (1) EXACTLY: the key the engine would write for this run is a registry row. Box
+        #     2026-11-10: external.CHFNOK.carry.p=b56bcfef9a4a010c states timeframe=H1, the
+        #     engine's key drops it, and its key CHFNOK.carry.asia#input_symbol=CHFNOK was a
+        #     running clock with 46 observations that rule (2) alone did not recognise.
+        # (2) GENEROUSLY: same instrument and family, and every param the certificate states is
+        #     on the clock's identity (which may carry more); `timeframe` is read against the
+        #     identity's own chart, where the registry keeps it.
+        # Erring either way can only keep a copy enrolled, never take a clock's certificate away.
+        key = _engine_key(run)
+        exact = by_key.get(key) if key else None
+        sym, fam = str(run.get("symbol") or "").upper(), str(run.get("family") or "")
+        mine = dict(run.get("params") or {})
+        chart = str(mine.pop("timeframe", "") or "").upper()
+        found = [(st, status) for s_, f_, p_, tf_, st, status in clocked
+                 if s_ == sym and f_ == fam and all(p_.get(k) == v for k, v in mine.items())
+                 and (not chart or chart == (tf_ or "H1")
+                      or str(p_.get("timeframe") or "").upper() == chart)]
+        if exact:
+            found.append(exact)
+        return found
+
+    def start(run: dict) -> str | None:
+        found = clocks(run)
+        return min(st for st, _ in found) if found else None
+
+    def status_rank(run: dict) -> int:
+        return min((_STATUS_RANK.get(status, 2) for _, status in clocks(run)), default=3)
+
+    def own(run: dict) -> bool:
+        sym = str(run.get("symbol") or "").upper()
+        unread = EXECUTABLE_UNREAD[str(run.get("family"))]
+        return all(str(v).upper() == sym for k, v in (run.get("params") or {}).items()
+                   if k in unread)
+
+    withheld: set[int] = set()
+    act = enforce and registry_readable
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        owners = sorted((r for r in group if own(r)),
+                        key=lambda r: (status_rank(r), start(r) or "9999",
+                                       str(r.get("certificate"))))
+        keeper = owners[0] if owners else None
+        rest = [r for r in group if r is not keeper]
+        # A copy whose engine key IS the keeper's key is not a second clock at all: the two
+        # certificates enrol onto one registry row. It is always returned and only named.
+        k_key = _engine_key(keeper) if keeper is not None else None
+        same = [r for r in rest if k_key is not None and _engine_key(r) == k_key]
+        rest = [r for r in rest if all(r is not x for x in same)]
+        left = [str(r.get("certificate")) for r in rest if start(r)]
+        new = [r for r in rest if not start(r)]
+        head = keeper if keeper is not None else group[0]
+        EXECUTABLE_COPIES.append({
+            "symbol": head.get("symbol"), "family": head.get("family"),
+            "copies": len(group),
+            "keeps_clock": str(keeper.get("certificate")) if keeper is not None else None,
+            "keeper_names_its_own_instrument": keeper is not None,
+            "surplus_clocks_left_running": left,
+            "sharing_keepers_key": [str(r.get("certificate")) for r in same],
+            "not_enrolled": [str(r.get("certificate")) for r in new] if act else [],
+            "would_not_enrol": [] if act else [str(r.get("certificate")) for r in new]})
+        if not act:
+            continue
+        for r in new:
+            withheld.add(id(r))
+            if keeper is None:
+                NO_OWN_INSTRUMENT_CERTIFICATES.append(str(r.get("certificate")))
+                _drop(r.get("certificate"),
+                      f"NO_OWN_INSTRUMENT: no certificate of this {head.get('family')} rule on "
+                      f"{head.get('symbol')} names its own instrument in the params its replay "
+                      f"never reads, so none is enrolled until one that does is certified")
+            else:
+                _drop(r.get("certificate"),
+                      f"EXECUTABLE_COPY: the same executable as {keeper.get('certificate')} "
+                      f"(a {keeper.get('family')} rule on {keeper.get('symbol')}; the params "
+                      f"that differ are never read by its replay), which keeps the clock")
+    return [r for r in runs if id(r) not in withheld]
+
+
 def _drop(name: object, why: str) -> None:
     """Record and announce a ten-gate certificate that will not reach the forward engine.
 
@@ -530,6 +813,9 @@ def authorized_runs(base: Path = BASE,
     # pass's findings. This list always describes the run that just happened, never a backlog.
     DROPPED_CERTIFICATES.clear()
     EVICTED_CERTIFICATES.clear()
+    VOID_MOVED_CERTIFICATES.clear()
+    UNPROVEN_ENTRY_CONDITIONED.clear()
+    _SPEC_CHART.clear()
     universal, canon_from = _canon(base)
     evicted = _evicted_keys(base)
     if not is_exact_policy(universal.get("gate_policy")):
@@ -592,6 +878,15 @@ def authorized_runs(base: Path = BASE,
             _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
                         f"unrunnable without guessing the parameterization that passed")
             continue
+        _SPEC_CHART[str(name)] = json.dumps([spec.get("chart"), spec.get("timeframe"),
+                                             spec.get("session")], default=str)
+        void = void_moved_cell(row, spec, params)
+        if void == "UNPROVEN":
+            UNPROVEN_ENTRY_CONDITIONED.append(str(name))      # named, and enrolled
+        elif void:
+            VOID_MOVED_CERTIFICATES.append(str(name))
+            _drop(name, void)
+            continue
         # {} is NOT "lost parameters": it is the complete parameterization "family defaults",
         # byte-exactly what the gauntlet executed (build_cell with params={}) and what the
         # p=<hash-of-empty> cell identity certifies. Excluding it kept both overnight_gap_decay
@@ -628,6 +923,7 @@ def authorized_runs(base: Path = BASE,
     # gates, all 1,240 failed `deflated_sharpe` -- but every organ downstream counted the length
     # of this list and called the answer "certificates". The headstone above `authorized_runs`
     # carries the measurement. One lane, one number: this function returns certificates only.
+    runs = one_clock_per_executable(runs, base)
     if "scalp" in lanes:
         for candidate, row in scalp_certificates(universal).items():
             spec = row["shadow_spec"]
