@@ -295,6 +295,21 @@
     "threshold": 1.0,
     "after": "14 days of box readings in which the equal-priority control never degrades the probe's p99: the drill cannot see starvation on this host and its PASS means nothing"
    }
+  },
+  "component_use": {
+   "hypothesis": "Joining every clocked organ with its declared role, its tests, its consumers and whether any consumer is tested, hourly, and ratcheting the gapped count down in the law gate, turns 'every component is used, not a museum' into a falling number: organs that run without a tested reader are named until they get one or are declared zero-weight redundant.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "counts.GAPPED",
+    "better": "down",
+    "organ": "report:COMPONENT_USE.json"
+   },
+   "falsifier": {
+    "metric": "used_share",
+    "op": "<",
+    "threshold": 0.6,
+    "after": "any reading in which fewer than 60% of clocked organs are USED (0.672 at the 2026-11-10 baseline): new organs are landing without tested readers faster than gaps close, so the fence is not stopping the museum"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

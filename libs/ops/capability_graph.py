@@ -915,6 +915,10 @@ NODES: tuple[Node, ...] = (
     # census, hourly; graded by recovery_drills (rows `load`, `workload_separation`).
     Node("load_isolation", "desks/mt5/research/load_isolation_drill.py",
          writes=("desks/mt5/reports/LOAD_ISOLATION.json",)),
+    # ARCH-33: role, test, consumer and tested consumer per clocked organ, hourly; the
+    # dead-architecture census carries its counts.
+    Node("component_use", "scripts/check_component_use.py",
+         writes=("desks/mt5/reports/COMPONENT_USE.json",)),
     # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
     # legs off the hypothesis lane minus what the live book already holds; the judge sums them
     # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
@@ -1061,6 +1065,9 @@ EXTERNAL_READERS = {
     "desks/mt5/reports/LOAD_ISOLATION.json": ("recovery_drills (rows load and "
                                               "workload_separation), the failure-mode "
                                               "scorecard read by the acceptance package"),
+    "desks/mt5/reports/COMPONENT_USE.json": ("scripts/check_dead_architecture.py (its "
+                                             "component_use block) and the law gate's "
+                                             "check_component_use --ratchet state fence"),
     "desks/mt5/reports/STYLE_NOVELTY.json": ("judge_coverage.rank_by_value's novelty factor and "
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),
