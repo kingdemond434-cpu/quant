@@ -2122,11 +2122,9 @@ def test_a_moved_threshold_the_evidence_never_crosses_stays_unmeasured(tmp_path:
 
 def test_a_refactor_that_moves_no_number_stays_measured(tmp_path: Path) -> None:
     base = _alloc_tree(tmp_path / "base")
-    # rename a parameter, split a binding in two: no number and no operator moves
-    renamed = (
-        _ALLOC.replace('mode="normal"', 'clock="normal"')
-        .replace('"mode": mode', '"mode": clock')
-        .replace("    scale = 1.0", "    unit = 1.0\n    scale = unit")
+    # a new local, a binding split in two, a reordered literal: no number or operator moves
+    renamed = _ALLOC.replace("    scale = 1.0", "    unit = 1.0\n    scale = unit").replace(
+        '{"a": FRAC * scale, "b": 0.02}', '{"b": 0.02, "a": FRAC * scale}'
     )
     head = _alloc_tree(tmp_path / "head", renamed)
     rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
