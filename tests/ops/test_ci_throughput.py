@@ -886,7 +886,11 @@ def test_cancelled_gate_runs_are_requeued_first_and_only_while_the_queue_has_roo
     def gh(path: str, method: str = "GET") -> Any:
         calls.append((method, path))
         if "status=queued" in path:
-            return {"workflow_runs": [{"id": 9, "event": "schedule"}] * queued_n["n"]}
+            return {
+                "workflow_runs": [
+                    {"id": 5000 + i, "event": "schedule"} for i in range(queued_n["n"])
+                ]
+            }
         if "/pulls?" in path:
             return [{"number": 1, "head": {"ref": "b1", "sha": "h1"}}]
         if "status=cancelled&event=pull_request_target" in path:
