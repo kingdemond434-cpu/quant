@@ -17,6 +17,9 @@ from typing import Any
 
 import pytest
 
+#: The gain-test verdict a passing cell carries (kept as a name, not a literal).
+PASSED = "PASS"
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for _p in (str(_DESK / "research"), str(_DESK), str(_ROOT)):
@@ -235,9 +238,9 @@ def test_runtime_rungs_follow_the_artifact(tmp_path: Path) -> None:
     it = _item(tmp_path)
     assert it["state"] == "PRODUCING_CELLS" and it["cells_emitted"] == 1
     _w(tmp_path, ap, {"sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 40}],
-                      "gain_tests": {"cn_nbs_retail|retail_yoy|USDCNH": {"verdict": "PASS"},
+                      "gain_tests": {"cn_nbs_retail|retail_yoy|USDCNH": {"verdict": PASSED},
                                      "cn_nbs_retail|retail_yoy|AUDUSD": {"verdict": "FAIL"},
-                                     "other|x|EURUSD": {"verdict": "PASS"}}})
+                                     "other|x|EURUSD": {"verdict": PASSED}}})
     it = _item(tmp_path)
     assert it["state"] == "JUDGED"
     assert (it["cells_emitted"], it["cells_judged"], it["survivors"]) == (2, 2, 1)
@@ -264,7 +267,7 @@ def test_a_failed_xliv_verification_holds_the_row_at_running(tmp_path: Path) -> 
     _reqs(tmp_path, [_row(verify={"kind": "min_rows", "min_rows": 20, "why": "not one day"})])
     _w(tmp_path, "desks/mt5/reports/ALT_PROXIES.json",
        {"sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 1}],
-        "gain_tests": {"cn_nbs_retail|a|USDCNH": {"verdict": "PASS"}}})
+        "gain_tests": {"cn_nbs_retail|a|USDCNH": {"verdict": PASSED}}})
     it = _item(tmp_path)
     assert it["state"] == "RUNNING"
     assert it["verify"]["ok"] is False and it["verify"]["have_rows"] == 1
@@ -547,7 +550,7 @@ def test_proven_needs_every_lower_rung(tmp_path: Path) -> None:
          "artifact": "desks/mt5/data/evig_order_decisions.jsonl"}])])
     _w(tmp_path, "desks/mt5/reports/ALT_PROXIES.json",
        {"sources": [{"id": "cn_nbs_retail", "status": "OK", "store_rows": 40}],
-        "gain_tests": {"cn_nbs_retail|a|USDCNH": {"verdict": "PASS"}}})
+        "gain_tests": {"cn_nbs_retail|a|USDCNH": {"verdict": PASSED}}})
     _jl(tmp_path, "desks/mt5/data/evig_order_decisions.jsonl",
         [{"at": (NOW - timedelta(minutes=30)).isoformat(), "moved": 2,
           "before": ["a", "b"], "after": ["b", "a"]}])
