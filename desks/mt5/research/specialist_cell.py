@@ -184,10 +184,22 @@ IV_LEVEL_STATES: tuple[tuple[str, str, str, float], ...] = (
     ("iv_rising", "iv_chg_5d_z", "ge", 1.5), ("iv_falling", "iv_chg_5d_z", "le", -1.5))
 
 
+def _iv_held(ticker: str) -> bool:
+    """Whether this host holds a reference history for `ticker`. Governance refused Yahoo's terms
+    on 2026-11-13 and FRED before it, so a host may hold NO lawful CBOE history: then nothing is
+    minted -- a cell that can only build [] would still be charged to the shared trial count."""
+    try:
+        from mt5desk.families_implied_vol import REFERENCE_DIR, reference_filename
+    except ImportError:
+        return False
+    return (REFERENCE_DIR / reference_filename(ticker)).is_file()
+
+
 def _implied_vol(sym: str, klass: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
-    """The three implied-vol mechanisms on a mapped instrument; [] for any other."""
+    """The implied-vol mechanisms on a mapped instrument whose series this host holds; [] for any
+    other. The term gate also needs both of its tenors held."""
     iv = IV_OF.get(sym.upper())
-    if not iv:
+    if not iv or not _iv_held(iv):
         return []
     bases = IV_BASES["indices" if klass == "indices" else "other"]
     out: list[tuple[str, str, list[dict[str, Any]]]] = [
@@ -200,6 +212,7 @@ def _implied_vol(sym: str, klass: str) -> list[tuple[str, str, list[dict[str, An
                     [{"base_family": b, "base_params": dict(bp), "symbol": sym,
                       "short_ticker": a, "long_ticker": z, "term_state": st}
                      for b, bp in bases for a, z in VIX_TERM_PAIRS
+                     if _iv_held(a) and _iv_held(z)
                      for st in ("contango", "backwardation")]))
     out.append(("iv_shock", "iv_shock",
                 _grid({"iv_ticker": [iv], "mode": ["fade", "follow"], "k_sd": [1.5, 2.0],

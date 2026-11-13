@@ -364,7 +364,13 @@ def _cot_frame(symbol: str | None = None):
         try:
             frame = pd.read_parquet(cache, columns=[symbol])
             series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
-            series.index = series.index + pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+            # The W-FRI label is the release Friday; its report is as-of that week's Tuesday.
+            # Route through the release calendar like the in-tree path: Monday after release,
+            # Wednesday in a federal-holiday week, shutdown-delayed reports dropped (2026-11-13).
+            from mt5desk.market_calendar import cot_usable_index
+            report_dates = pd.DatetimeIndex(series.index) - pd.Timedelta(days=COT_RELEASE_LAG_DAYS)
+            series.index = cot_usable_index(report_dates)
+            series = series[series.index.notna()]
             if len(series) >= 52:
                 return series.rename("net").to_frame()
         except Exception:

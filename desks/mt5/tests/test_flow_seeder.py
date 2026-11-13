@@ -354,3 +354,29 @@ def test_no_exception_message_reaches_state_or_report() -> None:
     """MF4: the sealed builder's `BLOCKED_DATA: ...: OSError: <box path>` keeps its type only."""
     why = fsd.safe_why("BLOCKED_DATA: raw COT for XAUUSD: OSError: [Errno 2] C:\\opt\\quant\\x")
     assert why == "BLOCKED_DATA: raw COT for XAUUSD: OSError" and "opt" not in why
+
+
+def test_the_zcache_cot_path_follows_the_release_calendar(tmp_path: Path,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """The VPS zcache path used a flat Friday+3; it now reaches the same instant as the in-tree
+    path: Monday after release, Wednesday in a holiday week, shutdown reports dropped."""
+    from research import orthogonal_sweep as osw
+    days = pd.date_range("2018-06-05", "2019-12-31", freq="D")
+    tuesdays = days[days.dayofweek == 1]
+    daily = pd.Series(np.arange(len(tuesdays), dtype=float), index=tuesdays).reindex(days).ffill()
+    (tmp_path / "data").mkdir()
+    daily.rename("USDJPY").to_frame().to_parquet(tmp_path / "data" / "cot_zcache.parquet")
+    monkeypatch.setattr(osw, "BASE", tmp_path / "a" / "b")
+    osw._cot_frame.cache_clear()
+    try:
+        got = osw._cot_frame("USDJPY")
+    finally:
+        osw._cot_frame.cache_clear()
+    assert got is not None and got.index.notna().all()
+    from mt5desk.market_calendar import cot_usable_at
+    for when, value in got["net"].items():
+        assert cot_usable_at(tuesdays[int(value)]) == when
+    assert set(got.index.dayofweek) <= {0, 2} and 2 in set(got.index.dayofweek)
+    shutdown = (got.index >= pd.Timestamp("2018-12-20", tz="UTC")) & (
+        got.index < pd.Timestamp("2019-03-06", tz="UTC"))
+    assert not shutdown.any()

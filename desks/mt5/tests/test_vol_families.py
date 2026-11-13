@@ -143,10 +143,11 @@ def test_operators_are_never_wrapped_by_another_operator():
 
 
 # ------------------------------------------------------------------------- catalogue ---
-def test_catalogue_mints_the_mapped_instruments_only_and_every_cell_is_buildable():
+def test_catalogue_mints_the_mapped_instruments_only_and_every_cell_is_buildable(monkeypatch):
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
 
     from research import specialist_cell as sc
+    monkeypatch.setattr(sc, "_iv_held", lambda _t: True)
     cells = sc.plan({"fx": ["EURUSD", "GBPUSD"], "metals": ["XAUUSD", "XAGUSD"],
                      "indices": ["US500", "NAS100", "US30", "GER40"]})
     iv = [c for c in cells if c["family"] in FAMS]
@@ -484,3 +485,11 @@ def test_the_cboe_reference_history_is_box_local_and_fred_is_gone():
     src = (root / "desks/mt5/recorders/vol_archive.py").read_text("utf-8")
     assert "def _fred" not in src and "fredgraph" not in src and "fred_series" not in src
     assert '"source": REFERENCE_SOURCE' in src
+
+
+def test_nothing_is_minted_or_charged_without_a_held_series(monkeypatch):
+    """Yahoo and FRED are terms-refused: with no lawful history held, no implied-vol cell."""
+    from research import specialist_cell as sc
+    monkeypatch.setattr(sc, "_iv_held", lambda _t: False)
+    cells = sc.plan({"fx": ["EURUSD"], "metals": ["XAUUSD"], "indices": ["US500", "NAS100"]})
+    assert not [c for c in cells if c["family"] in FAMS]

@@ -39,7 +39,7 @@ import json
 import sys
 import time
 from collections import Counter
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -208,7 +208,7 @@ def plan() -> list[dict[str, Any]]:
 
 def cot_freshness(today: date | None = None) -> dict[str, Any]:
     """Newest report date per in-tree CFTC file, and whether it can still fire forward."""
-    from mt5desk.families_flow import COT_DIRS, COT_RELEASE_LAG_D, cot_table
+    from mt5desk.families_flow import COT_DIRS, cot_table
     today = today or datetime.now(tz=UTC).date()
     out: dict[str, Any] = {}
     for _bucket, _aliases, reports in COT_MAP:
@@ -224,9 +224,11 @@ def cot_freshness(today: date | None = None) -> dict[str, Any]:
             age = (today - last).days
             from mt5desk.market_calendar import cot_usable_at
             when = cot_usable_at(last)
-            usable_at = (when.date() if when is not None
-                         else last + timedelta(days=COT_RELEASE_LAG_D))
-            out[key] = {"last_report": last.isoformat(), "usable_at": usable_at.isoformat(),
+            # A shutdown-delayed report has no usable instant and is said so, never given a
+            # guessed date (hourly pass, 2026-11-13).
+            out[key] = {"last_report": last.isoformat(),
+                        "usable_at": when.date().isoformat() if when is not None else None,
+                        "dropped": None if when is not None else "SHUTDOWN_DELAYED",
                         "age_days": age,
                         "status": "STALE" if age > COT_STALE_DAYS else "FRESH"}
     return out
