@@ -128,6 +128,8 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/ground_depth.py"),
     ("pack_cells", "desks/mt5/reports/PACK_CELLS.json", 3600,
      "research/pack_cells.py"),
+    ("institutional_footprint", "desks/mt5/reports/INSTITUTIONAL_COVERAGE.json", 3600,
+     "research/institutional_footprint.py"),
     ("futures_state", "desks/mt5/reports/FUTURES_STATE.json", 3600,
      "research/futures_state.py"),
     ("independence_intake", "desks/mt5/reports/INDEPENDENCE_INTAKE.json", 3600,

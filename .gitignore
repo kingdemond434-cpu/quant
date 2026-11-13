@@ -529,6 +529,13 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+
+# institutional_footprint leg: fetch cursor, watch state, emitted-cell keys and culture log are
+# the box's own working state (the coverage report is published under reports/).
+desks/mt5/data/institutional/
+# ...and its two small summaries cross the wire like the research measurements above (CRO D37).
+!desks/mt5/reports/INSTITUTIONAL_COVERAGE.json
+!desks/mt5/reports/INSTITUTIONAL_STATE.json
 !desks/mt5/reports/LOGIN_FENCE.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json

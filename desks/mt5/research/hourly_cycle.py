@@ -1215,8 +1215,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
-    "timeframe_fanout",
+    "source_evig", "source_drain", "pack_cells", "institutional_footprint", "futures_state",
+    "ground_depth", "timeframe_fanout",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -6168,6 +6168,14 @@ def main() -> None:
     # run AFTER source_drain, whose chain state it reads and never edits.
     pkc = _costed("pack_cells", lambda: _producer(
         "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
+    # THE INSTITUTIONAL FOOTPRINT (principal 2026-09-30 17:47-18:14Z): the public regulatory,
+    # exchange, central-bank and physical-market exhaust of every jurisdiction -> PIT frames ->
+    # latent actor states with intervals and a dealer-gamma scenario posterior -> conditioner
+    # cells through the one registry door, plus the jurisdiction x class coverage grid CRO D37
+    # reads. Information department; after pack_cells so both mint on the same pass.
+    ifp = _costed("institutional_footprint", lambda: _producer(
+        "institutional_footprint", "research/institutional_footprint.py", "--once",
+        "--budget-s", "300"))
     # FUTURES STATE (principal 2026-10-19): CFTC positioning incl. the options-on-futures book,
     # FRED curves, FX rate differentials and reserves, Japan's MoF intervention record
     # and cross-market transmissions become stamped series and exogenous_conditioner cells
@@ -6606,6 +6614,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
+                    "institutional_footprint": ifp,
                     "culture_gap_cells": cgc, "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,

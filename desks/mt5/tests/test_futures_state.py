@@ -614,3 +614,21 @@ def test_release_calendar_backfill_is_written_outside_the_donation_tree(tmp_desk
     assert {r["impact"] for r in rows} == {"High"} and rows[0]["currency"] == "USD"
     # the compiler reads every row under data/intelligence as a donation; this must not be there
     assert "intelligence" not in fs.CALENDAR_BACKFILL.parts
+
+
+def test_robots_allow_reads_rfc_9309_and_still_raises_a_hard_stop() -> None:
+    def gone(url: str) -> str:
+        raise fs.FetchError(410, url, "HTTP 410")
+
+    def busy(url: str) -> str:
+        raise fs.FetchError(503, url, "HTTP 503")
+
+    def refused(url: str) -> str:
+        raise fs.HardStop(429, url)
+
+    assert fs.robots_allow("https://h/a", gone) is True          # 410: no rules
+    assert fs.robots_allow("https://h/a", busy) is False         # 5xx: UNMEASURED
+    assert fs.robots_verdict("https://h/a", busy)[0] == fs.ROBOTS_UNMEASURED
+    assert fs.robots_verdict("https://h/a", refused)[0] == fs.ROBOTS_REFUSED
+    with pytest.raises(fs.HardStop):
+        fs.robots_allow("https://h/a", refused)                  # the caller records the stop
