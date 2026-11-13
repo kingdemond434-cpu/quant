@@ -270,6 +270,10 @@ def _run_key(run: dict[str, Any]) -> str | None:
         return None
 
 
+#: The stamp a clock carries while its promotion waits on the integrity door.
+PROMOTION_HOLD_FIELD = "integrity_hold"
+
+
 def integrity_gate() -> tuple[Any, str]:
     """The research-integrity door the enrolment engine applies, loaded the same way."""
     try:
@@ -341,10 +345,13 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
             if g is not None:
                 entry["clockless_hours"] = round(max(0.0, (t - g).total_seconds() / 3600.0), 4)
             entry["why"] = "NO CLOCK: certified and accruing no forward evidence"
-            # HELD, NOT MISSING: the research-integrity door decided this certificate may not
-            # START a clock yet (placebo alarm, or no independent replication). That is a named
-            # decision with its reason, not a stall -- it is published apart from `missing` and
-            # never counts as OVERDUE. Scalp recipes run on their own lane's clock.
+            # NOTHING IS "HELD" OFF A CLOCK ANY MORE (principal 2026-11-13: "All certs passed go
+            # on forward clocks immediately"). Until then the research-integrity door kept a
+            # certificate with no replication off the clock entirely, and this census filed it
+            # under `held` -- a named reason that never counted as OVERDUE, so 1,308 of 2,324
+            # certificates sat clockless for up to 1,700h with the fence green. A clockless
+            # certificate is now MISSING, whatever the door says, and goes OVERDUE after one
+            # cycle. The door's verdict is shown alongside, because it now gates PROMOTION.
             is_scalp = str(run.get("certificate") or "").startswith("scalp.")
             if gate is not None and not is_scalp:
                 reason = gate.hold(str(run.get("certificate") or ""),
@@ -352,11 +359,13 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
                                    selector=run.get("selector"), side=run.get("side"),
                                    params=run.get("params"))
                 if reason:
-                    entry["held"] = reason
-                    entry["why"] = reason
+                    entry["promotion_hold"] = reason
         # IS THE CLOCK ACTUALLY RUNNING? Asked LAST so the blocker's reason wins over the latency
         # note above: a row that is both unstamped and blocked is a blocked row, and the reader
         # needs the blocker.
+        if row is not None and row.get(PROMOTION_HOLD_FIELD):
+            # ON A CLOCK, ACCRUING, AND NOT YET PROMOTABLE: the door's two facts are pending.
+            entry["promotion_hold"] = str(row.get(PROMOTION_HOLD_FIELD))
         if row is not None:
             state = str(entry["status"] or "").strip().upper()
             decided = (state in DECIDED_STATUSES
@@ -385,8 +394,13 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
                 entry["blocker"] = str(row.get("last_error") or "")[:400] or state
         seen.append(entry)
     enrolled = [e for e in seen if e["enrolled"]]
-    held = [e for e in seen if not e["enrolled"] and e.get("held")]
-    missing = [e for e in seen if not e["enrolled"] and not e.get("held")]
+    held: list[dict[str, Any]] = []         # always empty: the door never withholds a clock
+    missing = [e for e in seen if not e["enrolled"]]
+    promotion_held = [e for e in enrolled if e.get("promotion_hold")]
+    hold_by_reason: dict[str, int] = {}
+    for e in promotion_held:
+        head = str(e["promotion_hold"]).split(":", 1)[0].strip()
+        hold_by_reason[head] = hold_by_reason.get(head, 0) + 1
     overdue = [e for e in missing
                if isinstance(e["clockless_hours"], float) and e["clockless_hours"] > CYCLE_HOURS]
     # THE POPULATION THE FENCE FAILS ON. Enrolled, not decided, and accruing nothing.
@@ -400,6 +414,9 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
     return {
         "n_certificates": len(seen), "n_enrolled": len(enrolled), "n_missing": len(missing),
         "n_held": len(held), "held": held,
+        # ON A CLOCK, NOT YET PROMOTABLE (admission_integrity, 2026-11-13). Counted, never a
+        # defect of enrolment: these clocks accrue, and the promotion door reads the stamp.
+        "n_promotion_held": len(promotion_held), "promotion_hold_by_reason": hold_by_reason,
         "n_overdue": len(overdue),
         "n_accruing": len(accruing), "n_blocked": len(blocked), "n_silent": len(silent),
         "silent_tick_hours": SILENT_TICK_HOURS,
@@ -423,6 +440,71 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
         "certificates": seen, "enrolled": enrolled, "missing": missing, "overdue": overdue,
         "silent": silent,
     }
+
+
+#: THE ACCOUNTS' BOOKS (principal 2026-11-13: "the prop firm lane one everything"). Every account
+#: trades the SAME certified roster (FTMO/E8/Fusion identical mechanisms), so a certificate has ONE
+#: forward clock whichever account trades it. What was missing was the reading: the census looked
+#: at the four clock lanes and never at what the accounts actually hold. Each account's book is read
+#: from the published deployment (`data/CERT_BOOK_LIVE.json`, written by the allocators) and every
+#: sleeve in it is matched to its forward clock, so an account trading a certificate whose clock
+#: is missing, held or stalled is NAMED per account.
+CERT_BOOK = BASE / "data" / "CERT_BOOK_LIVE.json"
+ACCOUNT_LANES = ("fusion", "e8", "ftmo")
+#: The armed gold windows are not certificate clocks: their forward record is the gold ledger the
+#: promoter reads (`GOLD_SLEEVE_NAMES`). Counted apart, never as missing.
+GOLD_WINDOWS = frozenset({"gold_asia", "gold_london_am", "gold_afternoon"})
+
+
+def _clock_for_book_name(name: str, clocks: dict[str, dict[str, Any]]) -> str | None:
+    """The clock key a book sleeve name refers to. Book names spell `SYM_family_selector`;
+    clock keys spell `SYM.family.selector[#params]`. Exact first, then the unique prefix."""
+    if name in clocks:
+        return name
+    parts = name.split("_")
+    if len(parts) >= 3:
+        dotted = f"{parts[0]}.{'_'.join(parts[1:-1])}.{parts[-1]}"
+        if dotted in clocks:
+            return dotted
+        fam = "_".join(parts[1:-1])
+        stems = {dotted}
+        if fam == "session_range_breakout":          # breakout keys carry no family field
+            stems.add(f"{parts[0]}.{parts[-1]}")
+        # a chart suffix (`@M30`) belongs to the clock, not the book's name for it
+        hits = [k for k in clocks if k.split("#", 1)[0].split("@", 1)[0] in stems]
+        if hits:
+            return sorted(hits)[0]
+    return None
+
+
+def account_coverage(clocks: dict[str, dict[str, Any]],
+                     book_path: Path | None = None) -> dict[str, Any]:
+    """Per account: how many of the sleeves it trades sit on an accruing forward clock."""
+    doc = _read_json(Path(book_path or CERT_BOOK), None)
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED,
+                "why": f"{Path(book_path or CERT_BOOK).name} absent or unreadable"}
+    out: dict[str, Any] = {"status": "MEASURED", "source": CERT_BOOK.name,
+                           "book_at": doc.get("at"), "lanes": {}}
+    for lane in ACCOUNT_LANES:
+        book = doc.get(lane)
+        names = list(book) if isinstance(book, (dict, list)) else []
+        rows = []
+        for name in names:
+            name = str(name)
+            if name in GOLD_WINDOWS:
+                rows.append({"sleeve": name, "clock": "GOLD_LEDGER", "status": "ARMED_WINDOW"})
+                continue
+            key = _clock_for_book_name(name, clocks)
+            row = clocks.get(key or "") or {}
+            rows.append({"sleeve": name, "clock": key or UNMEASURED,
+                         "status": row.get("status", "NO_CLOCK" if key is None else UNMEASURED),
+                         "promotion_hold": row.get(PROMOTION_HOLD_FIELD)})
+        no_clock = [r["sleeve"] for r in rows if r["status"] == "NO_CLOCK"]
+        out["lanes"][lane] = {"n_sleeves": len(rows),
+                              "n_on_clock": sum(1 for r in rows if r["clock"] != UNMEASURED),
+                              "no_clock": no_clock, "sleeves": rows}
+    return out
 
 
 def repair(missing: list[dict[str, Any]], deadline: float,
@@ -500,6 +582,8 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
         "dropped_at_admission": dropped[:50],
         "repair": rep,
         "lanes_read": list(LANE_FILES),
+        # what each account (Fusion growth book, E8, FTMO) trades, matched to its clock
+        "accounts": account_coverage(clock_rows()),
         "integrity": (gate.summary() if gate is not None
                       else {"status": UNMEASURED, "why": gate_why}),
         "cycle_hours": CYCLE_HOURS,

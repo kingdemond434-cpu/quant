@@ -77,6 +77,23 @@ RECONCILE_REQUIRED = ('"decides": "NOTHING__ENROLMENT_IS_UNCAPPED"', '"gates_enr
 #: The ranker stays a report. Its own docstring is the pin.
 RANKER_REQUIRED = ("REPLACEABLE IS A REPORT, NEVER AN ACT",)
 
+#: THE INTEGRITY DOOR STAMPS A CLOCK; IT NEVER WITHHOLDS ONE (principal 2026-11-13: "All certs
+#: passed go on forward clocks immediately"). Measured on the last published census: 1,308 of
+#: 2,324 runnable certificates had NO clock because the door waited on a replication the spec
+#: book could not give, and this fence reported them as a "named decision". The pins below hold
+#: the move: each lane engine enrols the held certificate and only its PROMOTION waits.
+DOOR_PINS: dict[str, tuple[str, ...]] = {
+    "desks/mt5/research/shadow_forward.py": ("CLOCKED, PROMOTION HELD", "stamp_hold(",
+                                             "matured_promotion_held"),
+    "desks/mt5/research/qquant_shadow.py": ("stamp_hold(row, reason)",
+                                            "matured_promotion_held"),
+    "desks/mt5/research/forward_enrolment.py": ('"n_promotion_held"',),
+}
+
+#: THE CENSUS'S OWN SLA: the hourly pass must be able to trust it. Older than this is a breach on
+#: a host that writes it (the leg is core and due-by-age, hard at 2 h).
+STALE_HOURS = 2.0
+
 #: One cycle. The hourly cycle is what enrols, so one hour is exactly how long enrolment may take.
 CYCLE_HOURS = 1.0
 
@@ -136,6 +153,19 @@ def check_sources(root: Path | None = None) -> tuple[list[str], list[str]]:
     base = Path(root or ROOT)
     fails: list[str] = []
     notes: list[str] = []
+    for rel, pins in DOOR_PINS.items():
+        path = base / rel
+        if not path.exists():
+            notes.append(f"{rel}: absent from this tree -- UNMEASURED, not a pass")
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for needle in pins:
+            if needle not in text:
+                fails.append(
+                    f"{rel}: {needle!r} is gone. The research-integrity door must STAMP a "
+                    "certificate's clock with its promotion hold and never withhold the clock "
+                    "itself (principal 2026-11-13: every passed certificate on a forward clock "
+                    "immediately).")
     for rel in PATROLLED:
         path = base / rel
         if not path.exists():
@@ -218,8 +248,20 @@ def check_state(report: Path | None = None, now: datetime | None = None
                      "gather evidence is UNMEASURED here, which is a real answer and not a pass")
     n_held = doc.get("n_held")
     if isinstance(n_held, int) and n_held:
-        notes.append(f"{n_held} certificate(s) HELD by the research-integrity door (placebo "
-                     "alarm or no independent replication) -- a named decision, not a stall")
+        fails.append(f"{n_held} certificate(s) HELD OFF A CLOCK by the research-integrity door. "
+                     "Since 2026-11-13 the door stamps the clock's PROMOTION and never withholds "
+                     "the clock: every passed certificate accrues forward evidence immediately")
+    # EVERY ACCOUNT'S BOOK, NOT ONLY THE CLOCK LANES (principal 2026-11-13: "the prop firm lane
+    # one everything"): a sleeve an account trades with no forward clock behind it is a breach.
+    accounts = (doc.get("accounts") or {}).get("lanes") or {}
+    for lane, row in accounts.items() if isinstance(accounts, dict) else []:
+        for name in (row or {}).get("no_clock") or []:
+            fails.append(f"ACCOUNT-SLEEVE-WITHOUT-CLOCK {lane}:{name}: the {lane} book trades "
+                         "this sleeve and no forward clock carries its evidence")
+    n_ph = doc.get("n_promotion_held")
+    if isinstance(n_ph, int):
+        notes.append(f"{n_ph} clock(s) accruing under a promotion hold "
+                     f"{doc.get('promotion_hold_by_reason')}")
     alarm = ((doc.get("integrity") or {}).get("placebo_alarm") or {})
     if alarm.get("blocks"):
         notes.append(f"PLACEBO ALARM: {alarm.get('why')}")
@@ -232,9 +274,11 @@ def check_state(report: Path | None = None, now: datetime | None = None
         age_h = (t - datetime.fromisoformat(str(stamp))).total_seconds() / 3600.0
     except Exception:
         age_h = float("nan")
-    if age_h == age_h and age_h > 3 * CYCLE_HOURS:
-        notes.append(f"artifact is {age_h:.1f}h old: the forward_enrolment leg has not run in "
-                     f"{age_h:.1f} hours, so this verdict is about a stale census")
+    if age_h == age_h and age_h > STALE_HOURS:
+        fails.append(f"STALE CENSUS: FORWARD_ENROLMENT.json is {age_h:.1f}h old (SLA "
+                     f"{STALE_HOURS:g}h). The forward_enrolment leg is core and due-by-age; a "
+                     "census this old means the repair sweep that hands certificates their "
+                     "clocks is not running, and every clock verdict here is stale")
     lat = doc.get("latency_h") or {}
     notes.append(f"certificates={doc.get('n_certificates')} enrolled={doc.get('n_enrolled')} "
                  f"missing={doc.get('n_missing')} latency_max={lat.get('max')} "
