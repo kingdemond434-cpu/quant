@@ -103,6 +103,7 @@ FENCES: tuple[Entry, ...] = (
        "instruments-by-timeframe goes UP and never down, per host"),
     _e("scripts/check_bar_history_floor.py", "H1 history may never silently collapse"),
     _e("scripts/check_blueprint_coverage.py", "a capability's claim may not outrun its evidence"),
+    _e("scripts/check_box_infra.py", "the heartbeat, backup and exposure audit are registered"),
     _e("scripts/check_breadth_mandate.py", "an alpha cluster that received NO attempt is a defect"),
     _e("scripts/check_cert_yield.py", "when the pipeline certifies nothing, say WHICH nothing"),
     # Sole importer of libs.ops.completion and invoked by nothing until 2026-09-29, so the
