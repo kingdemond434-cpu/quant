@@ -36,7 +36,8 @@ fill_hour_spread is the WORST measured median across the hours the clock has fil
 whose cost cannot be priced is not an edge anyone has measured (principal 2026-09-29, "UNKNOWN
 COST IS UNKNOWN EDGE").
 
-Writes reports/EXOTIC_COST_BAR.json, read by `mt5desk.live_policy.refuse` (promoter, gateway and
+A library, not a process: the hourly leg `policy_lift_reopen` builds and writes
+reports/EXOTIC_COST_BAR.json on every pass, immediately before the promoter. It is read by `mt5desk.live_policy.refuse` (promoter, gateway and
 the reopen leg all go through it) whenever data/live_sleeve_policy.json carries `exotic_cost_bar`.
 """
 from __future__ import annotations
@@ -187,13 +188,3 @@ def write(doc: dict[str, Any], path: Path | None = None) -> None:
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     os.replace(tmp, path)
 
-
-def main() -> int:
-    doc = build([_read(SHADOW_DIR / n) for n in LANE_FILES], _read(UNIVERSE), _read(SURFACE))
-    write(doc)
-    print(f"exotic cost bar: {doc['counts']} of {doc['n_exotic_clocks']} exotic clocks")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
