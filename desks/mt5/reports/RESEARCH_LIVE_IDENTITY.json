@@ -1,12 +1,12 @@
 {
- "generated_utc": "2026-11-09T03:58:24+00:00",
+ "generated_utc": "2026-11-12T19:19:17+00:00",
  "status": "UNMEASURED: no LIVE row in data/sleeves.json",
  "inputs": {
   "sleeves": "desks/mt5/data/sleeves.json",
   "survivors": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
-  "survivor_rows": 6061,
+  "survivor_rows": 7870,
   "registry_rows": 1879,
-  "docket_cells": 1615973
+  "docket_cells": 1626158
  },
  "fields": [
   "family",
