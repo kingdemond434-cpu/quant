@@ -1153,8 +1153,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
-    "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
-    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    "forward_calibration", "desk_self_heal", "tier5_acceptance", "blueprint_score",
+    "mission_control", "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -1198,6 +1198,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # Every producer's stage-to-stage yield, its named bottleneck and the RED fence (BACKLOG
+    # row 58). Reads two JSON artifacts, seconds; core so the fence never misses an hour.
+    "producer_funnel",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1217,6 +1220,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
     "timeframe_fanout",
+    # the dataset-usage census (BACKLOG row 61): a reader of registries, file stats and the
+    # code tree, ~8 s; a fence that never ran is a claim the desk cannot cash (L1.49).
+    "dataset_usage",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1335,7 +1341,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
-                     "unused_information", "ingestion_ledger", "representation_forge",
+                     "unused_information", "ingestion_ledger", "dataset_usage",
+                     "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
@@ -1348,6 +1355,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
                      "source_frontier", "data_scout", "external_federation",
+                     # SEC Form 4 insider filings -> libs/research/form4 clusters (N16)
+                     "form4_feed",
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
@@ -1424,6 +1433,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "world_lab", "macro_department", "news_event_stream",
                      "event_sleeves", "macro_intelligence", "world_model",
                      "market_constitution", "dislocation_lab", "macro_state_engine",
+                     # GARCH(1,1) vs EWMA volatility forecasts per instrument (N16)
+                     "garch_vol",
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
@@ -1454,6 +1465,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
                      "research_auction", "bottleneck_law", "bottleneck_attack",
+                     # the funnel's per-stage conversion ledger and the model-seat census,
+                     # both written and tested and on no clock until N16 (2026-11-11)
+                     "conversion_ledger", "llm_budget_census",
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
@@ -1467,6 +1481,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # Every producer's funnel, yield per stage and named bottleneck (row 58).
+                     "producer_funnel",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -1496,7 +1512,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
+                     "tier5_acceptance", "blueprint_score", "mission_control", "tier_s",
+                     "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
@@ -2345,6 +2362,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # where the M1 pulls are) and resumes from its own cursor next hour, so a cut hour costs
     # coverage and never the artifact. The cap sits above its budget.
     "cost_truth": 700,
+    # N16 (2026-11-11). garch_vol and form4_feed stop themselves at --budget-s 600 and resume
+    # from their own cursors; the cap sits above it. conversion_ledger measured 5 s and
+    # llm_budget_census 0.1 s on the build box (one /key quota read on the trading box).
+    "garch_vol": 700, "form4_feed": 700, "conversion_ledger": 300, "llm_budget_census": 120,
     # The conversion maximiser stops itself at --budget-s 900 and writes CONVERSION_MAXIMISER.json
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
@@ -2359,6 +2380,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    # Two ledgers (410 rows) re-scored from file existence, clock text and artifact stamps: a
+    # second or two; the cap only guards a wedged disk.
+    "blueprint_score": 180,
     "cro_noon_freshness": 60,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
@@ -2372,6 +2396,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    # The producer funnel reads PRODUCTIVITY_CENSUS.json and PRODUCER_YIELD.json and its own
+    # small state file; measured under 2 s here. Generous.
+    "producer_funnel": 180,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -2428,6 +2455,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_proposer": 900,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
+    # THE DATASET-USAGE CENSUS stops itself at --budget-s 240 (8 s measured: registries, parquet
+    # column statistics, one regex pass over the code tree); the cap sits above so it writes.
+    "dataset_usage": 300,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
     "coevolution": 1_020,
@@ -4245,6 +4275,11 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # GARCH(1,1) VOL FORECASTS SCORED AGAINST EWMA (N16, 2026-11-11): the fit
+    # (libs/research/stationarity) and the baseline (libs/research/volatility_signals) existed
+    # and ran nowhere. A measurement, not an input: nothing sizes from it.
+    gvl = _costed("garch_vol", lambda: _producer("garch_vol", "research/garch_vol.py",
+                                                 "--once", "--budget-s", "600"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -4948,6 +4983,18 @@ def main() -> None:
     rau = _costed("research_auction", lambda: _producer("research_auction",
                                                         "research/research_auction.py",
                                                         "--once", "--budget-s", "300"))
+    # THE CONVERSION LEDGER BEFORE THE BOTTLENECK LAW, which reads it (N16, 2026-11-11). It was
+    # written, tested and read by bottleneck_law, build_allocator and trial_allocator, and on no
+    # clock: data/conversion_ledger.json was last written 2026-09-05, so all three were reading
+    # a funnel two months old as if it were this hour's.
+    cvl = _costed("conversion_ledger", lambda: _producer("conversion_ledger",
+                                                         "research/conversion_ledger.py",
+                                                         "--quiet"))
+    # THE MODEL SEAT'S DAILY REQUEST ALLOWANCE, WHO SPENT IT AND WHAT IT BOUGHT. Reachable only
+    # as issue_board's stale-artifact repair until N16, which the dead-architecture census
+    # (correctly) could not see as a clock. Exit 1 is its DARK verdict, not a fault.
+    lbc = _costed("llm_budget_census", lambda: _producer("llm_budget_census",
+                                                         "research/llm_budget_census.py"))
     btl = _costed("bottleneck_law", lambda: _producer("bottleneck_law",
                                                       "research/bottleneck_law.py",
                                                       "--once", "--budget-s", "300"))
@@ -5209,6 +5256,13 @@ def main() -> None:
     t5a = _costed("tier5_acceptance", lambda: _producer(
         "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
         "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
+    # EVERY BLUEPRINT ROW, RE-SCORED FROM EVIDENCE (BACKLOG rows 20 and 82, principal 2026-09-29).
+    # The 138-row strict matrix and the 272 Tier-5 sections (the 20 audit items and the 52
+    # partials among them) get a state per row -- DONE / PARTIAL / OPEN / UNMEASURED -- derived
+    # from files, clocks, tests and THIS host's artifacts, never from the prose that scored them
+    # once. RED (exit 1) when a ledger lies or a DONE count falls since the last pass.
+    bps = _costed("blueprint_score", lambda: _producer(
+        "blueprint_score", "scripts/check_blueprint_score.py", "--write"))
     # THE RUNTIME ATTESTATION (a GitHub reviewer, 2026-09-23): "GitHub code is not current VPS
     # reality ... comments in the code describe measured runs, but that is not the same as seeing
     # runtime state." Correct, and uncloseable by committing `desks/mt5/reports/**` (~50 MB the
@@ -5308,6 +5362,11 @@ def main() -> None:
     xfd = _costed("external_federation", lambda: _producer("external_federation",
                                                             "research/external_federation.py",
                                                             "--once", "--budget-s", "600"))
+    # SEC FORM 4 -> INSIDER CLUSTERS (N16, 2026-11-11). libs/research/form4 computed and ranked
+    # clusters and fetched nothing; this is its fetch half, for the desk's US share CFDs only
+    # (event lane), behind a declared QUANT_EDGAR_UA -- UNMEASURED without one.
+    f4f = _costed("form4_feed", lambda: _producer("form4_feed", "research/form4_feed.py",
+                                                  "--once", "--budget-s", "600"))
     # FEDERATION OPERATIONS (LAWS 5h/5m): the persisted per-system registry with its append-only
     # history, upstream delta scans by hash through the existing fetcher, spawn signals from
     # already-fetched material through `admit`, the technique exchange across the forests, the
@@ -6175,6 +6234,14 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # THE DATASET-USAGE CENSUS (BACKLOG row 61, principal 2026-09-30: "fix partial and unfed
+    # datasets fully, unstarved and collected"). Every dataset a registry says the desk collects
+    # -- data_registry, the free stack, futures_state's series, acquired series, alt platforms --
+    # gets freshness against its own cadence, completeness against its declared parts, and its
+    # SCHEDULED readers; FED / UNFED / STARVED / UNMEASURED, and a RED fence past 24 h. It runs
+    # after every collector so it judges this hour's writes. Measurement only; it fetches nothing.
+    dsu = _costed("dataset_usage", lambda: _producer(
+        "dataset_usage", "research/dataset_usage.py", "--once", "--budget-s", "240"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6402,6 +6469,12 @@ def main() -> None:
     # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
     pbr = _costed("producer_breadth", lambda: _producer(
         "producer_breadth", "research/producer_breadth.py"))
+    # EVERY PRODUCER'S FUNNEL (BACKLOG row 58): stage-to-stage yield per producer, the single
+    # worst actionable stage named, and RED for a producer stuck at one stage past 24h or whose
+    # throughput to the judge halved -- routed onto the issue board with that bottleneck. Runs
+    # after the census it reads; measures only, throttles nothing.
+    pfun = _costed("producer_funnel", lambda: _producer(
+        "producer_funnel", "research/producer_funnel.py", "--once"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -6503,6 +6576,7 @@ def main() -> None:
                     "global_coverage_tensor": gct,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
+                    "conversion_ledger": cvl, "llm_budget_census": lbc,
                     "trade_autopsy": tap, "research_latency": rlt,
                     "alpha_replenishment": arp, "research_dashboard": rdh,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
@@ -6525,8 +6599,10 @@ def main() -> None:
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
+                    "form4_feed": f4f,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "blueprint_score": bps,
                     "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,
@@ -6606,7 +6682,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "culture_gap_cells": cgc, "futures_state": fst,
+                    "culture_gap_cells": cgc, "futures_state": fst, "dataset_usage": dsu,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
@@ -6625,6 +6701,7 @@ def main() -> None:
                     "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
                     "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "producer_funnel": pfun,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
@@ -6652,7 +6729,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
-                    "fred_macro": fm,
+                    "fred_macro": fm, "garch_vol": gvl,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,

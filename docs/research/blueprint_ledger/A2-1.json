@@ -1,0 +1,452 @@
+{
+ "phase": "A2",
+ "items": [
+  {
+   "id": "I1",
+   "item": "One immutable research identity, raw data to live P&L",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `identity_chain.py` and `trade_identity.py` run hourly, and their tests pass. `frontier_identity.cell_id` still has no data, PIT, code, cost or seed hash"
+   ],
+   "gap": "Stamp the id on orders and fills. Add the five hashes. Make promotion and attribution join on the id rather than the sleeve name. Commit the chain artifact",
+   "owner": "Unowned",
+   "code": [
+    "desks/mt5/research/identity_chain.py",
+    "libs/research/trade_identity.py",
+    "desks/mt5/research/frontier_identity.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:581",
+   "tests": []
+  },
+  {
+   "id": "I2",
+   "item": "True lockbox, sole certification path, separate process/store",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**Changed since baseline (was ✗✗✗✓✗✗✗).** The reserved tail is carved before the matrix (`external_gauntlet.py:2418-2420`), and gate 9 is the v4 three-read at sr0 (`:2618`, `gate_policy.py:195`). Tests: `test_lockbox_bar_and_daily_series`, `test_canonical_reserved_lockbox`, `test_lockbox_independence` pass. `test_gauntlet_annotations` fails because it pins the old restatement. It runs **in the same process and store** as the other nine gates. The committed canon (n=58, v2) fails `is_exact_policy`, and there is no committed re-certification. `universal_gate.py:280` stays at v3 but carries the v4 stamp. The 15/130 vs 0/318 figure has no committed evidence"
+   ],
+   "gap": "Separate lockbox process and store (one-shot, access-logged). Commit a re-certified canon under v4. Fix the stale test (the money-path suite is red). Align universal_gate, `ATTESTATION.lockbox_oos_sharpe_min` and the spec description. Commit `LOCKBOX_BAR.md` or the suite result",
+   "owner": "Truth-fixes",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/research/gate_policy.py",
+    "desks/mt5/research/universal_gate.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:582",
+   "tests": [
+    "desks/mt5/tests/test_lockbox_bar_and_daily_series.py",
+    "desks/mt5/tests/test_canonical_reserved_lockbox.py",
+    "desks/mt5/tests/test_lockbox_independence.py",
+    "desks/mt5/tests/test_gauntlet_annotations.py"
+   ]
+  },
+  {
+   "id": "I3",
+   "item": "Lifetime global trial ledger feeding DSR/PBO/SPA",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**A changed from ✗ to ✓.** `charged_lifetime_trials` (`external_gauntlet.py:2345-2363`, used at `:2568`) charges DSR the max of the campaign charge and the family's lifetime trials. PBO and SPA are not charged. The variance is the constant 0.0002, recalibrated by hand rather than measured per sweep (the sweep prints \"measured 0.000000\" beside it). The `test_gauntlet_annotations` failure also asserts the ledger \"never sets the bar\", which contradicts the code"
+   ],
+   "gap": "Charge PBO and SPA from the ledger as well. Make the variance a measured quantity with a published derivation. Fix the stale test. Commit EXPERIMENT_LEDGER",
+   "owner": "Truth-fixes",
+   "code": [
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:583",
+   "tests": [
+    "desks/mt5/tests/test_gauntlet_annotations.py"
+   ]
+  },
+  {
+   "id": "I4",
+   "item": "Sovereign certificate store; check_certificate_truth permanently green",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. The committed `sleeves.json` still has 40 LIVE rows (24 banned, 31 UNMEASURED), and the committed canon is v2, which is not exact policy under v4"
+   ],
+   "gap": "A scheduled `--apply` and `--require-state` in the gate. Migrate the stores to 0 banned and 0 unbacked rows. Commit CERTIFICATE_TRUTH",
+   "owner": "Truth-fixes",
+   "code": [
+    "libs/research/sleeves.py"
+   ],
+   "artifacts": [
+    "sleeves.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:584",
+   "tests": []
+  },
+  {
+   "id": "I5",
+   "item": "Allocator sovereignty: zero stays zero, below-min is zero; principal sleeve separate",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "**Changed since baseline (was ✗ on all 7).** `allocator_sovereign()` (`decision_core.py:577`) and `implementable_lot` (`:589`) snap down and refuse below the venue minimum. Wired at `:614`, `:654`, `:743`, `:755`, `sizing.py:112` and `gateway.py:259`. `test_allocator_sovereignty.py` passes. It is still file-switch reversible (`data/ALLOCATOR_SOVEREIGN.json {\"enabled\": false}`; the file is absent, so the default is sovereign). There is no separate budgeted principal sleeve. CLAUDE.md still orders the 0.02 gold floor kept"
+   ],
+   "gap": "Remove the reversal switch or put it behind a principal-signed gate. Build the separate principal sleeve. Reconcile CLAUDE.md with the 2026-09-29 order. Evidence box adoption",
+   "owner": "Truth-fixes",
+   "code": [
+    "desks/mt5/mt5desk/decision_core.py",
+    "desks/mt5/mt5desk/gateway.py"
+   ],
+   "artifacts": [
+    "data/ALLOCATOR_SOVEREIGN.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:585",
+   "tests": [
+    "desks/mt5/tests/test_allocator_sovereignty.py"
+   ]
+  },
+  {
+   "id": "I6",
+   "item": "Risk as hard constraints inside E[log W]",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `constrained_book` still has `FEEDS_LIVE = False`. P1 and P13 are REFUSED"
+   ],
+   "gap": "The principal's decision. The constrained solve must feed pf_allocator. Commit the artifact",
+   "owner": "Unowned",
+   "code": [
+    "desks/mt5/research/constrained_book.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:586",
+   "tests": []
+  },
+  {
+   "id": "I7",
+   "item": "Cost truth before capital; multi-dimension cost surfaces",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. The gauntlet's `swap_cost` fails closed on an UNMEASURED cost (seen in the test run). The 6-D `cost_surfaces` has no consumer. 40/40 LIVE rows have `artifact.ok = false`"
+   ],
+   "gap": "Admission and sizing read the 6-D surfaces. matched_fills > 0. The live book must fail closed on no cost basis",
+   "owner": "Truth-fixes",
+   "code": [
+    "desks/mt5/research/cost_surfaces.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:587",
+   "tests": []
+  },
+  {
+   "id": "I8",
+   "item": "Judging throughput ≥ creation; cheap gates first",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The `judging_*` tests pass, including the new `test_judging_burndown`. `merge_report.json` still shows `unjudged_total: 55811`. No committed JUDGING_RATE. R is corrected from the baseline's ✓: `merge_report` is backlog evidence, not a rate artifact"
+   ],
+   "gap": "A box JUDGING_RATE reading showing judging ≥ creation. Drain the backlog",
+   "owner": "Truth-fixes",
+   "code": [],
+   "artifacts": [
+    "merge_report.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:588",
+   "tests": [
+    "desks/mt5/tests/test_judging_burndown.py"
+   ]
+  },
+  {
+   "id": "I9",
+   "item": "Effective breadth via independence graph; north star = independent alpha rank",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged in substance. The Tier S `allocator_tilts` reach pf_allocator (`pf_allocator.py:2094-2099`), but they carry the exchange, capture and freeze factors, not the alpha rank"
+   ],
+   "gap": "Rank must steer promotion and allocation. Commit the artifact",
+   "owner": "Tier S",
+   "code": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/tiers/allocator_tilts.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:589",
+   "tests": []
+  },
+  {
+   "id": "I10",
+   "item": "Closed-loop world discovery map + per-source info value",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `research_budget.json` is `authoritative: false`"
+   ],
+   "gap": "A six-axis map. Measured per-source value that moves budget",
+   "owner": "Unowned",
+   "code": [],
+   "artifacts": [
+    "research_budget.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:590",
+   "tests": []
+  },
+  {
+   "id": "I11",
+   "item": "Factories measured on 7 metrics; compute reallocated",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "Unchanged. `cycle_pricing` weights factory contracts at 0.15, and the budget is non-authoritative"
+   ],
+   "gap": "The full contract. An evidenced reallocation. Commit FACTORY_CONTRACTS",
+   "owner": "Truth-fixes / Tier S",
+   "code": [
+    "desks/mt5/research/cycle_pricing.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:591",
+   "tests": []
+  },
+  {
+   "id": "I12",
+   "item": "Research self-improvement as experiment",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "`researcher_market` and `meta_benchmark` are now on live, run inside the hourly `tier_s` organ (`hourly_cycle.py:850,2072`). Tested via `test_tier_s_organs`/`measurement`. They hold no budget authority"
+   ],
+   "gap": "A scored tournament with a randomized budget holdout, linked to realized P&L, with adoption authority",
+   "owner": "Tier S",
+   "code": [
+    "desks/mt5/research/hourly_cycle.py",
+    "libs/tiers/researcher_market.py",
+    "libs/tiers/meta_benchmark.py",
+    "desks/mt5/research/tier_s.py",
+    "libs/research/measurement.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:592",
+   "tests": [
+    "desks/mt5/tests/test_tier_s_organs.py"
+   ]
+  },
+  {
+   "id": "I13",
+   "item": "Small pure components, typed contracts, property tests",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": null,
+    "A": false,
+    "T": false,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The monoliths remain (`external_gauntlet` grew by 151 lines; `tier_s.py` is new at 4,461 lines). T is ✗ because the money-path suite has one stale failure"
+   ],
+   "gap": "Split the monoliths. Typed interfaces. A green suite",
+   "owner": "Unowned",
+   "code": [
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:593",
+   "tests": []
+  },
+  {
+   "id": "I14",
+   "item": "Production-grade CI; signed artifacts; prod accepts only green",
+   "phase": "A2",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": false
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "The CI run on `d30be2ce8` was cancelled, so it has no verdict. The seal is OK at `d30be2ce8`, BREACHED at `515d665e3`, and OK again at `aadf1e491` after `fc6c34e59`: a Codex edit reached the live branch unsigned. The money-path suite carries a stale failure. The box adopts without a green-CI check"
+   ],
+   "gap": "CI green on the head. The box refuses any release without a green CI hash and a clean seal",
+   "owner": "Truth-fixes",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:594",
+   "tests": []
+  }
+ ]
+}

@@ -89,6 +89,23 @@ try {
     $n = (Get-ChildItem -Recurse -File "C:\opt\quant\data\intelligence","C:\opt\quant\desks\mt5\data\intelligence" -ErrorAction SilentlyContinue | Measure-Object).Count
     $head = (& git rev-parse --short $shipRef | Out-String).Trim()
     Log "adopted $head onto disk ($n intelligence files); leaving conversion to the box's own pipeline"
+    # 6. THE FRESHNESS CONTRACT'S ARTIFACT (2026-11-03). The hel8 swarm stopped shipping at
+    # 02:50Z and this task went on exiting 0 every hour for 14 h, because landing an unchanged
+    # ref is a success. ship_head_at is the COMMIT time of what was landed, so
+    # ops/organ_contract.py (INTERNAL_STAMPS) reads a silent upstream as STALE. A failed write
+    # never fails the adoption: a lost diagnostic is not a reason to stop landing intel.
+    try {
+        $headAt = (& git log -1 --format=%cI $shipRef | Out-String).Trim()
+        $doc = [ordered]@{
+            at           = (Get-Date).ToUniversalTime().ToString('o')
+            ship_ref     = $shipRef
+            ship_head    = $head
+            ship_head_at = $headAt
+            n_files      = $n
+        }
+        $out = Join-Path $RepoRoot "desks\mt5\reports\INTEL_SHIP.json"
+        $doc | ConvertTo-Json | Set-Content -LiteralPath $out -Encoding UTF8
+    } catch { Log ("INTEL_SHIP.json not written: " + $_.Exception.Message) }
     exit 0
 }
 finally {

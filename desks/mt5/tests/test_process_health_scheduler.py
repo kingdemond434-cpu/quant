@@ -36,6 +36,9 @@ def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
         "MT5-Gateway": ("gateway.json", 10, "broker check"),
     })
     monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    # The adoption block reads this checkout's real RELEASE.json and LIVE ref; a stale adoption
+    # is its own ATTENTION (tests/ops/test_box_task_contracts.py), not this test's subject.
+    monkeypatch.setattr(ph, "adoption_age", lambda now, root=None: {"verdict": "UNMEASURED"})
 
     doc = ph.build()
 

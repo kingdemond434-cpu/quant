@@ -265,7 +265,8 @@ def run(apply: bool) -> dict:
     for row in (doc.get("processes") or []):
         verdict = str(row.get("verdict") or "")
         name = str(row.get("name") or "")
-        if not name or verdict in ("OK", "RUNNING", "DISABLED"):
+        # FOREIGN: another project's task on the same scheduler; never the desk's to restart.
+        if not name or verdict in ("OK", "RUNNING", "DISABLED", "FOREIGN"):
             continue
         # UNMEASURED IS NOT A BREAKAGE TO ACT ON: the scheduler could not be read, so there is no
         # fact here to restart against. The read failure itself is escalated ONCE below, rather

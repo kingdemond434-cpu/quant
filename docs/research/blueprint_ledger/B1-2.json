@@ -1,0 +1,215 @@
+{
+ "phase": "B1",
+ "items": [
+  {
+   "id": "T9",
+   "item": "Red Queen per researcher",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "prejudge demotion; gauntlet_arena"
+   ],
+   "gap": "Demote-only, never at the sealed gate",
+   "owner": "Tier S build",
+   "code": [
+    "libs/tiers/gauntlet_arena.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:694",
+   "tests": []
+  },
+  {
+   "id": "T10",
+   "item": "Planted traps / FREEZE",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "_freeze in fail-closed door; **FREEZE now tilts the allocator toward OOS-evidenced sleeves**"
+   ],
+   "gap": "review_live unconsumed; box R",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:695",
+   "tests": []
+  },
+  {
+   "id": "T11",
+   "item": "Adaptive multiplicity",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "online_fdr withholds over_budget; #52 merged"
+   ],
+   "gap": "Proxy p-values; box R",
+   "owner": "Tier S",
+   "code": [
+    "libs/tiers/online_fdr.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:696",
+   "tests": []
+  },
+  {
+   "id": "T12",
+   "item": "Epistemic firewall",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": false,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "firewall.may on door reads/ledger write"
+   ],
+   "gap": "S12 PARTIAL: no may() in gauntlet/sealed gates or promoter proper",
+   "owner": "Tier S build",
+   "code": [],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:697",
+   "tests": []
+  },
+  {
+   "id": "T13",
+   "item": "Negative knowledge",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "breadth_sweep reads failure_memory (S13)"
+   ],
+   "gap": "Other generators don't; reorder only",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/breadth_sweep.py",
+    "libs/tiers/failure_memory.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:698",
+   "tests": []
+  },
+  {
+   "id": "T14",
+   "item": "Ancestry graph",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "effective_discoveries → alpha_rank"
+   ],
+   "gap": "No code/data ancestry",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/alpha_rank.py"
+   ],
+   "artifacts": [],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:699",
+   "tests": []
+  },
+  {
+   "id": "T15",
+   "item": "Effective Independent Alpha Rank",
+   "phase": "B1",
+   "status": "PARTIAL",
+   "gate": "none",
+   "claim": "PARTIAL",
+   "verdict_0930": "PARTIAL",
+   "marks": {
+    "I": true,
+    "W": true,
+    "A": true,
+    "T": true,
+    "R": false,
+    "D": true,
+    "C": true
+   },
+   "reviewed_at": "2026-09-30",
+   "evidence": [
+    "alpha_rank two-sided; docket_keff; ALPHA_RANK.json (cloud, EIAR 2.54 / 58 certs)"
+   ],
+   "gap": "Box ALPHA_RANK",
+   "owner": "Tier S build",
+   "code": [
+    "desks/mt5/research/alpha_rank.py",
+    "desks/mt5/research/docket_keff.py"
+   ],
+   "artifacts": [
+    "ALPHA_RANK.json"
+   ],
+   "source": "docs/audit/BLUEPRINT_VERIFICATION.md:700",
+   "tests": []
+  }
+ ]
+}

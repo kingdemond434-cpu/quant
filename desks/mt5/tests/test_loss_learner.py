@@ -417,3 +417,18 @@ def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     rep = LL.run(dry_run=True)
     assert rep["books"]["e8"].startswith("UNMEASURED")
     assert list(tmp_path.iterdir()) == []
+
+
+def test_published_unmeasured_reasons_carry_type_names_not_box_paths(monkeypatch) -> None:
+    """LOSS_LEARNER.json ships to the public repo: an unreadable source is named by its error
+    TYPE only, because an OSError's text carries the box's absolute path."""
+    import types
+    boom = types.ModuleType("shadow_forward")
+
+    def _raise() -> None:
+        raise FileNotFoundError(2, "No such file", r"C:\\opt\\quant\\secret_dir\\x.parquet")
+    boom.certified_sleeves = _raise  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "shadow_forward", boom)
+    out, why = LL.variant_clock_keys({"n1"})
+    assert out == {} and why.startswith("UNMEASURED") and "FileNotFoundError" in why
+    assert "secret_dir" not in why

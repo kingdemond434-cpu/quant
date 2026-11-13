@@ -106,6 +106,9 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
+    # Every producer's funnel, stage yields and named bottleneck: the machine measuring where
+    # its own output is lost, which is meta.
+    "producer_funnel": "meta",
     # The video-derived anchor/exit grid mints claims about returns: prediction, like
     # `empty_cluster_forcer`, which it runs beside.
     "htf_anchor": "prediction",
@@ -430,6 +433,8 @@ LEG_LAYER: dict[str, str] = {
     "portfolio_bounty": "portfolio", "drawdown_alpha_miner": "portfolio",
     "trade_autopsy": "execution",
     "research_auction": "meta", "bottleneck_law": "meta", "research_latency": "meta",
+    # N16 (2026-11-11): the funnel's conversion ledger and the model-seat census.
+    "conversion_ledger": "meta", "llm_budget_census": "meta",
     "alpha_replenishment": "meta", "research_dashboard": "meta",
     "moat_collectors": "information", "source_frontier": "information",
     "scout_swarm": "information", "actor_atlas": "information",
@@ -478,6 +483,10 @@ LEG_LAYER: dict[str, str] = {
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
     "external_federation": "information", "federation_ops": "information",
+    # N16 (2026-11-11): Form 4 insider clusters are what the desk knows before it predicts.
+    "form4_feed": "information",
+    # GARCH vs EWMA volatility forecasts: a measured risk input, not yet a sizing authority.
+    "garch_vol": "information",
     # THE SANDBOX RUNNER executes federated engines and rebuilt cells over the desk's bars and
     # donates hypotheses and representations: what the desk can know, so information.
     "sandbox_runner": "information",
@@ -616,6 +625,9 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # Whether every collected dataset is fresh, complete and read by a clocked organ: the
+    # machine measuring its own inputs, like clock_liveness measures its clocks.
+    "dataset_usage": "meta",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
@@ -679,6 +691,9 @@ LEG_LAYER: dict[str, str] = {
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
     "clock_accrual": "meta",
     "tier5_acceptance": "meta",
+    # The blueprint re-score measures how much of the principal's blueprints the machine has
+    # actually built and runs: the machine measuring itself, so meta.
+    "blueprint_score": "meta",
     "cro_noon_freshness": "meta",
 }
 

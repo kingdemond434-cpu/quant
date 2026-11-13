@@ -153,6 +153,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a REFUSED_CONSERVATIVE row must carry the sentence saying whose aggressiveness it
     # would have cut. Portable: it reads only tracked files.
     ("check_tier5_audit.py", ()),
+    # THE BLUEPRINT RE-SCORE (BACKLOG rows 20 and 82): the 138-row strict blueprint ledger is
+    # verified by the Tier-1 checker's own `check`, and no row of it or of the Tier-5 audit may
+    # CLAIM DONE without the evidence that proves it. Portable: tracked ledgers only; the
+    # hourly score (and a fall in a DONE count) is the box half below.
+    ("check_blueprint_score.py", ()),
     ("check_tier_s_program.py", ()),          # Tier S admission rule: no layer without a contract
     # THE EXPERIMENT CONTRACT (2026-09-30): the admission rule's metric half, extended to the
     # whole experiment -- hypothesis, metric, falsifier, budget, owner -- for every registered
@@ -573,6 +578,9 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the live half of the global coverage tensor: GLOBAL_COVERAGE_TENSOR.json, SOURCE_ROI.json
     # and GAUNTLET_BACKPRESSURE.json (which the D-lines read) present and under three hours old.
     ("check_global_coverage_tensor.py", ("--require-state",)),
+    # the live half of the blueprint re-score: BLUEPRINT_SCORE.json present, under three hours
+    # old, and not RED (no lie, no fall in a ledger's DONE count since the previous pass).
+    ("check_blueprint_score.py", ("--require-state",)),
     # the live half of judge coverage: on the box the `judge_coverage` leg runs hourly at intake,
     # so an absent or stale JUDGE_COVERAGE.json means the allocation stopped and the judge is
     # back to re-testing whichever families the docket happens to put first -- the exact state
