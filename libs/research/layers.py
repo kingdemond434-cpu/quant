@@ -292,6 +292,8 @@ LEG_LAYER: dict[str, str] = {
     # share-CFD cells from the alt hand-off (event lane + conditioned class books): prediction
     "alt_equity_handoff": "prediction",
     "specialist_cell": "prediction",
+    # the hunt16 corpus minted over the book's gaps through the specialist path
+    "hunt16_seeder": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
