@@ -910,7 +910,10 @@ def _family_for(mechanism: str, declared: str = "") -> tuple[str, str]:
     except Exception as exc:                                             # pragma: no cover
         return "", f"{UNMEASURED}: interpret raised {type(exc).__name__}: {exc}"
     table: dict[str, tuple[str, str, str]] = getattr(AR, "FAMILY_TABLE", {})
-    not_a_family: frozenset[str] = getattr(AR, "NOT_A_FAMILY", frozenset())
+    # A family that is only ever a specific screened rule has nothing to run a bare mechanism
+    # with, so binding one would mint a cell that builds to nothing.
+    not_a_family: frozenset[str] = (getattr(AR, "NOT_A_FAMILY", frozenset())
+                                    | AR.rule_only_families())
     exact = sorted(f for f, (m, i, _s) in table.items()
                    if m == mech_id and i == information and f not in not_a_family)
     if exact:
