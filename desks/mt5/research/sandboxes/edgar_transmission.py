@@ -98,7 +98,12 @@ def _hits(doc: Any) -> list[dict[str, Any]]:
             out.append({"form": str(src.get("form") or ""), "filed": str(src.get("file_date")
                                                                           or "")[:10],
                         "items": [str(i) for i in (src.get("items") or [])],
-                        "sic": str(src.get("sics", [""])[0] if src.get("sics") else "")})
+                        "sic": str(src.get("sics", [""])[0] if src.get("sics") else ""),
+                        # the filer's identity, kept so `family_earnings_breadth` can map an
+                        # 8-K 2.02 to its share CFD ("Name (TICKER) (CIK ...)"); metadata only,
+                        # no equity symbol leaves this cell
+                        "ciks": [str(c) for c in (src.get("ciks") or [])],
+                        "display_names": [str(n) for n in (src.get("display_names") or [])]})
         return out
     if isinstance(doc.get("hits"), list):
         return [dict(h) for h in doc["hits"] if isinstance(h, dict)]

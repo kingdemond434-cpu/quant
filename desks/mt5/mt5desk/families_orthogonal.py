@@ -1724,6 +1724,19 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
+# EARNINGS BREADTH (2026-11-11): the share of US reporters whose share CFD rose on its first full
+# session after an SEC 8-K item 2.02 release (or their median reaction), z-scored against prior
+# days, traded ONLY on the US index CFDs. Share-CFD bars are an aggregate input, never a cell (the
+# two lanes). The family loads the EDGAR cache and the share bars itself, so every caller rebuilds
+# the same cell, and an absent input raises the named `EarningsBreadthUnavailable` (a TypeError).
+from mt5desk.family_earnings_breadth import family_earnings_breadth  # noqa: E402
+
+ORTHOGONAL_FAMILIES["earnings_breadth"] = family_earnings_breadth
+FAMILY_INPUTS["earnings_breadth"] = ("SEC 8-K item 2.02 release instants (ticker, acceptance) "
+                                     "and the reporters' share-CFD bars, resolved by the family "
+                                     "itself; traded on index CFDs only",
+                                     "data/edgar_cache/*.json, data/universe/*_H1.parquet")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
