@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,9 @@ from research import decay_monitor as D  # noqa: E402
 
 NAME = "gold_asia"
 T = "2026-09-29T09:00:00+00:00"
+# The decay walk reads only the trailing D.TRAIL_DAYS, measured from now: a fixed date ages out of
+# that window and these tests then fail on the calendar, not on the code (red on 2026-11-13).
+RECENT = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()
 
 
 def _ledger(tmp_path, monkeypatch, rows: list[dict]) -> None:
@@ -35,7 +39,7 @@ def _ledger(tmp_path, monkeypatch, rows: list[dict]) -> None:
 
 
 def _row(r: float, **extra) -> dict:
-    return {"time": T, "sleeve": NAME, "r_multiple": r, "risk_quote": 12.5, **extra}
+    return {"time": RECENT, "sleeve": NAME, "r_multiple": r, "risk_quote": 12.5, **extra}
 
 
 # ------------------------------------------------------------------ decay reads measured R only
@@ -60,7 +64,7 @@ def test_a_real_scratch_trade_with_a_measured_risk_is_kept(tmp_path, monkeypatch
 
 
 def test_a_legacy_row_with_no_risk_field_is_still_read(tmp_path, monkeypatch):
-    row = {"time": T, "sleeve": NAME, "r_multiple": -0.7}
+    row = {"time": RECENT, "sleeve": NAME, "r_multiple": -0.7}
     _ledger(tmp_path, monkeypatch, [row])
     assert len(D.sleeve_trades(NAME)) == 1
 
