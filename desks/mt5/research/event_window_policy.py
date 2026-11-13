@@ -279,6 +279,23 @@ def holm(rows: dict[str, dict[str, Any]], alpha: float = ALPHA) -> None:
             f"t={r['t']:.2f}, p={r['p']:.4f} vs Holm {r.get('holm_threshold', 0):.4f}"))
 
 
+def calendar_health(cal: dict[str, Any], now: datetime) -> dict[str, Any]:
+    """RED when the calendar cannot be read, holds no high-impact event, or has run past its
+    `valid_through`. The gateway's event gate is OFF in every one of those states (a data gap
+    must not stand the book aside), so this is where the gap is made loud instead."""
+    state = cal.get("state")
+    vt = str(cal.get("valid_through") or "")
+    if state != "READ":
+        return {"state": "RED", "why": f"calendar {state}: {cal.get('why') or 'no events'}; "
+                                       "the gateway's event gate is off"}
+    if not vt:
+        return {"state": "RED", "why": "valid_through is empty (a core publisher went unread); "
+                                       "the gateway's event gate is off"}
+    if vt < now.date().isoformat():
+        return {"state": "RED", "why": f"calendar ran out on {vt}; the event gate is off"}
+    return {"state": "GREEN", "why": f"{cal.get('n_events')} events through {vt}"}
+
+
 def build(now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     events, cal = load_calendar()
@@ -292,7 +309,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             "why": None if rows else ("no event calendar read" if not events
                                       else "no trades in either ledger"),
             "window": {"before_min": BEFORE_MIN, "after_min": AFTER_MIN},
-            "calendar": cal, "alpha": ALPHA, "min_days": MIN_DAYS,
+            "calendar": cal, "calendar_health": calendar_health(cal, now),
+            "alpha": ALPHA, "min_days": MIN_DAYS,
             "counts": dict(counts), "policy": rows,
             "rule": "DEFER and NO_EVIDENCE defer new entries inside a window (R0276); "
                     "TRADE_THROUGH trades through; every deferral is billed (Rule 1)",
@@ -314,8 +332,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(doc, default=str))
     else:
         print(f"event_window_policy: {doc['status']} {doc['counts']} "
-              f"(calendar {doc['calendar'].get('n_events')} events)")
-    return 0
+              f"(calendar {doc['calendar'].get('n_events')} events, "
+              f"{doc['calendar_health']['state']}: {doc['calendar_health']['why']})")
+    # A RED calendar is a failed leg, so the hourly cycle's organ health shows it.
+    return 2 if doc["calendar_health"]["state"] == "RED" else 0
 
 
 if __name__ == "__main__":

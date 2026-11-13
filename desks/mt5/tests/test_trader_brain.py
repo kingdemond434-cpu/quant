@@ -112,7 +112,7 @@ def _gateway(ns: dict) -> dict:
     keep = [n for n in _TREE.body if isinstance(n, ast.FunctionDef)
             and n.name in ("_report", "event_deferral", "spread_deferral", "entry_deferral")]
     seed = {"json": json, "datetime": datetime, "UTC": UTC, "Path": Path, "pd": pd,
-            "_REPORT_CACHE": {}, **ns}
+            "_REPORT_CACHE": {}, "_CAL_WARNED": {}, **ns}
     exec(compile(ast.Module(body=keep, type_ignores=[]), str(_DESK / "mt5desk" / "gateway.py"),
                  "exec"), seed)
     return seed
@@ -221,3 +221,28 @@ def test_the_journal_row_carries_no_money(tmp_path):
                          {}, {}, [])
     assert not {"pl_quote", "account_key", "server"} & set(row)
     assert row["r"] == 1.0 and row["exit_kind"] == "desk"
+
+
+# ------------------------------------------------------------------ the calendar's path and gaps
+
+def test_the_calendar_path_does_not_depend_on_the_working_directory(monkeypatch):
+    monkeypatch.chdir(_DESK)
+    assert eg.CALENDAR.is_absolute()
+    assert eg.CALENDAR == _ROOT / "data" / "event_calendar.json"
+
+
+def test_a_missing_calendar_defers_nothing_and_says_so_once(tmp_path):
+    ns, logs, refused = _env(tmp_path, policy=None, spread=None, cal=tmp_path / "absent.json")
+    for _ in range(3):
+        assert ns["entry_deferral"]({}, "s", "EURUSD") is None
+    assert refused == []
+    assert sum("EVENT CALENDAR" in m for m in logs) == 1
+
+
+@pytest.mark.parametrize(("cal", "state"), [
+    ({"state": "UNREADABLE", "why": "FileNotFoundError"}, "RED"),
+    ({"state": "READ", "n_events": 3, "valid_through": ""}, "RED"),
+    ({"state": "READ", "n_events": 3, "valid_through": "2020-01-01"}, "RED"),
+    ({"state": "READ", "n_events": 3, "valid_through": "2099-01-01"}, "GREEN")])
+def test_the_policy_leg_turns_red_when_the_event_gate_is_off(cal, state):
+    assert ewp.calendar_health(cal, datetime.now(UTC))["state"] == state

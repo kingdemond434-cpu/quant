@@ -39,7 +39,9 @@ from typing import Any, NamedTuple
 #:   {"valid_through": "2026-12-31",
 #:    "source": "federalreserve.gov/monetarypolicy/fomccalendars.htm",
 #:    "events": [{"utc": "2026-09-17T18:00:00Z", "name": "FOMC decision", "impact": "high"}, ...]}
-CALENDAR = Path("data/event_calendar.json")
+#: ANCHORED TO THE REPOSITORY ROOT, never the working directory (2026-11-13). The gateway runs from
+#: desks/mt5, where a relative "data/event_calendar.json" names a file that does not exist.
+CALENDAR = Path(__file__).resolve().parents[2] / "data" / "event_calendar.json"
 
 #: Minutes before a scheduled release during which no NEW entry may open. Positioning ahead of a
 #: binary event is a bet on the announcement, not on the desk's edge.

@@ -2189,6 +2189,9 @@ SPREAD_STATE = BASE / "reports" / "SPREAD_STATE.json"
 #: up from the desk: the documented official sources only, never an invented date.
 EVENT_CALENDAR = BASE.parents[1] / "data" / "event_calendar.json"
 _REPORT_CACHE: dict[str, tuple[float, dict]] = {}
+#: The hour the gateway last logged an unreadable event calendar, so the gap is said once an hour
+#: rather than once per sleeve per pass.
+_CAL_WARNED: dict[str, str] = {}
 
 
 def _report(path: Path) -> dict:
@@ -2235,6 +2238,13 @@ def event_deferral(name: str, symbol: str, row: dict | None = None) -> str | Non
     v = _eg.check_symbol(symbol, calendar=EVENT_CALENDAR,
                          before_min=int(win.get("before_min") or _eg.BEFORE_MIN),
                          after_min=int(win.get("after_min") or _eg.AFTER_MIN))
+    if v.state in ("STALE", "EMPTY"):
+        hour = datetime.now(UTC).strftime("%Y-%m-%dT%H")
+        if _CAL_WARNED.get("hour") != hour:
+            _CAL_WARNED["hour"] = hour
+            log(f"EVENT CALENDAR {v.state}: the event gate is OFF this hour, nothing deferred "
+                f"({v.why})")
+        return None
     if v.state != "BLACKOUT":
         return None
     rows = pol.get("policy") or {}
