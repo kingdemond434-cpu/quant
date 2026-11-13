@@ -1,7 +1,7 @@
 {
  "source": "reports/unfinished_work/IDEA_QUEUE.md [ORIG] rows (project shared folder), mirrored with their MT5 symbols",
  "rule": "the math lab's hypothesis intake reads these every pass and routes each to every tradition whose mathematics fits its mechanism, ranked by yield per compute-hour; an idea here is a QUESTION, never evidence -- every object it motivates meets the one compiler, Judge and ten-gate gauntlet",
- "updated_at": "2026-11-13T22:46:00Z",
+ "updated_at": "2026-11-13T23:40:00Z",
  "ideas": [
   {
    "id": "IQ-689",
@@ -180,6 +180,53 @@
    "mechanism": "variance risk premium (VIX minus 20-day realised vol, from vol_archive) below its 10th percentile conditions London-open EURUSD/GBPUSD range breakouts to follow through more after costs (complacency precedes realised expansion). Competing explanations: vol-of-vol clustering against mechanical VIX mean reversion against macro calendar coincidence. Separating test: drop event days (EVENT_WINDOW_POLICY calendar); placebo with the premium lagged 20 days. Linked to IQ-OPT-VRP STAND-IN when the implied series has no fresh licensed print (Cboe series reached via FRED are held data only): the realised-vol term structure, 5-day over 60-day realised variance from MT5 bars, in the same percentile rule, reported as the stand-in and never as the implied premium",
    "falsifier": "breakout follow-through after costs is the same in the low-premium decile and the 20-day-lagged placebo once event days are dropped",
    "stand_in": "realised_vol_term_structure_5d_over_60d"
+  },
+  {
+   "id": "IQ-710",
+   "orig": true,
+   "breadth_gap": [
+    "gold_metals",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "XAUUSD"
+   ],
+   "traditions": [
+    "survival_hazard",
+    "change_point"
+   ],
+   "mechanism": "CFTC managed-money gold futures+options weekly net change at a top/bottom-decile extreme prints Friday 15:30 ET after the US close, so the first liquid reaction is the Monday Asia open: slow diffusion of COT information (Asia drift continues in the COT-delta direction after costs) against weekend-news gap against thin-Asia gap reversal. Separating test: holiday-shifted and shutdown-delayed release weeks (cot_usable_index) must move the reaction to the actual release time if it is COT information; weekend news would not move. Point-in-time on the release timestamp; pre-Aug history only until the COT refresher lands",
+   "falsifier": "Monday Asia XAUUSD drift after costs is the same in extreme-delta weeks and non-extreme weeks, or the reaction does not follow the shifted release time",
+   "competing_explanations": [
+    "slow diffusion of COT information",
+    "weekend-news gap",
+    "thin-Asia gap reversal"
+   ],
+   "separating_test": "holiday- and shutdown-shifted release weeks via cot_usable_index move the reaction only if it is COT information"
+  },
+  {
+   "id": "IQ-711",
+   "orig": true,
+   "breadth_gap": [
+    "usd_jpy_eur_cross",
+    "02_09_utc"
+   ],
+   "symbols": [
+    "AUDJPY",
+    "GBPJPY"
+   ],
+   "traditions": [
+    "game_theory_ecology",
+    "survival_hazard"
+   ],
+   "mechanism": "FFAJ Japanese retail net-long extreme in a JPY cross ahead of the Tokyo 09:55 JST fix (00:55 UTC): a pre-fix sell-off unwinds crowded retail longs, against Gotobi corporate USD demand, against generic carry drift. Separating test: split Gotobi from non-Gotobi days at the same FFAJ extreme; a retail effect holds on both, a Gotobi effect only on Gotobi days. Point-in-time on the FFAJ publication lag",
+   "falsifier": "the pre-fix return at the FFAJ extreme equals the non-extreme return on non-Gotobi days after costs",
+   "competing_explanations": [
+    "retail-crowding unwind",
+    "Gotobi corporate USD demand",
+    "generic carry drift"
+   ],
+   "separating_test": "Gotobi versus non-Gotobi days at the same FFAJ extreme"
   }
  ]
 }
