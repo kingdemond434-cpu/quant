@@ -1,17 +1,17 @@
 {
- "at": "2026-11-13T06:50:33+00:00",
+ "at": "2026-11-13T07:41:31+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 65129,
+  "free_phys_mb": 61646,
   "commit_limit_mb": 262137,
-  "commit_free_mb": 144897,
+  "commit_free_mb": 126531,
   "cpu_source": "psutil",
-  "busy_other_cores": 14.66,
-  "busy_judge_cores": 2.35,
+  "busy_other_cores": 15.46,
+  "busy_judge_cores": 1.93,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": true,
@@ -45,9 +45,9 @@
   "judge_env_torn_frames": 0,
   "judge_env_source": "GAUNTLET_PASSES.json",
   "source_at": "2026-11-13T03:58:41.186396+00:00",
-  "source_age_seconds": 10278.780715,
+  "source_age_seconds": 13336.456667,
   "file_at": "2026-11-13T05:09:46+00:00",
-  "file_age_seconds": 6013.967135,
+  "file_age_seconds": 9071.643091,
   "discovered": 1590110,
   "depth_scope": "sweep",
   "judged_last_sweep": 242933,
@@ -74,7 +74,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 42, commit 94 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 15 (reserved 3), memory 40, commit 82 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -131,12 +131,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "11/13/2026 7:51:00 AM",
+   "next_run_before": "11/13/2026 8:46:00 AM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 56.25202630000422 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.12008510000305 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 56.25202630000422 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.12008510000305 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -147,7 +147,7 @@
  "alarms": [],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-11-13T06:49:59+00:00",
+  "at": "2026-11-13T07:40:57+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
@@ -185,11 +185,11 @@
    "status": "MEASURED",
    "counts": {
     "24h": 47214,
-    "7d": 309253
+    "7d": 309247
    },
    "per_hour": {
     "24h": 1967.25,
-    "7d": 1840.792
+    "7d": 1840.756
    }
   },
   "verdicts_per_hour": 1407.917,
@@ -210,8 +210,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-11-13T06:46:51+00:00",
-   "pid": 24260
+   "started_at": "2026-11-13T07:38:01+00:00",
+   "pid": 23468
   }
  },
  "blas_single_thread": {
@@ -250,11 +250,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 225.7,
+ "measure_seconds": 213.0,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-13T06:46:51+00:00",
-  "pid": 24260
+  "started_at": "2026-11-13T07:38:01+00:00",
+  "pid": 23468
  },
- "seconds": 321.2
+ "seconds": 307.7
 }
