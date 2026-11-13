@@ -637,6 +637,12 @@ SEC_PHRASES: dict[int, tuple[str, ...]] = {
 #: QP_SECRET_ prefix. Reading only the first of these left SEC UNCONFIGURED on every box pass
 #: (ANALYST_VIEWS 2026-11-13 14:50Z). The value is never logged or written to a report.
 EDGAR_UA_ENV = ("QUANT_EDGAR_UA", "EDGAR_UA", "QP_SECRET_EDGAR_UA")
+#: THE COMMITTED FALLBACK (2026-11-13). On the box QUANT_EDGAR_UA exists only at the
+#: Administrator's USER scope, so the SYSTEM-run hourly legs never saw it. A User-Agent is a
+#: public string, not a secret: this one declares what is reading and carries no person's
+#: name or address. An environment value, where set, still wins.
+DEFAULT_EDGAR_UA = "quant-desk-research/1.0 (independent research; EDGAR full-text search, " \
+                   "under 1 request/second)"
 
 
 def edgar_ua() -> str:
@@ -644,7 +650,7 @@ def edgar_ua() -> str:
         v = os.environ.get(name, "").strip()
         if v:
             return v
-    return ""
+    return DEFAULT_EDGAR_UA
 
 
 def fetch_sec(get: Getter, state: dict[str, Any], deadline: float, *, now: datetime

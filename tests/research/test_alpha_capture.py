@@ -349,6 +349,7 @@ def test_sec_without_a_user_agent_is_unconfigured_not_fetched(
         desk: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ac.EDGAR_UA_ENV:
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(ac, "DEFAULT_EDGAR_UA", "")
     calls: list[str] = []
     rep = ac.run(budget_s=30, now=datetime(2024, 9, 27, tzinfo=UTC), get=_fake_get(calls),
                  loader=_loader, clock=av.identity_clock, universe_doc=UNIVERSE_DOC,
@@ -423,6 +424,7 @@ def test_every_request_declares_what_it_is() -> None:
 def test_the_box_key_name_configures_sec(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ac.EDGAR_UA_ENV:
         monkeypatch.delenv(name, raising=False)
-    assert ac.edgar_ua() == ""
+    # a SYSTEM-run leg with no env value still declares itself, with no person in the string
+    assert ac.edgar_ua() == ac.DEFAULT_EDGAR_UA and "@" not in ac.DEFAULT_EDGAR_UA
     monkeypatch.setenv("EDGAR_UA", "desk research contact")
     assert ac.edgar_ua() == "desk research contact"
