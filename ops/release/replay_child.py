@@ -705,9 +705,12 @@ def fixture_world_series(key: str) -> Any:
     return pd.Series(vals, index=idx, dtype=float, name=key)
 
 
-def fixture_swap_terms(symbol: str) -> dict[str, Any]:
+def fixture_swap_terms(symbol: str) -> dict[str, Any] | None:
     """Recorded contract terms in POINTS mode (the mode `swap_money_per_lot` resolves): a
-    positive long carry on every symbol whose name sorts its legs one way, short otherwise."""
+    positive long carry on every symbol whose name sorts its legs one way, short otherwise.
+    No symbol has no terms (the store has no row for it), as on the box."""
+    if not str(symbol or "").strip():
+        return None
     up = sum(map(ord, symbol.upper())) % 2 == 0
     price = symbol_price(symbol)
     return {"symbol": symbol.upper(), "swap_mode": 1, "swap_long": 6.5 if up else -9.0,
