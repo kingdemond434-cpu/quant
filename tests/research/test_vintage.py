@@ -250,6 +250,10 @@ def test_the_collector_records_a_vintage_before_overwriting(
     monkeypatch.setattr(collector, "_WEB", tmp_path / "web" / "fred_macro.json")
     monkeypatch.setattr(collector, "_SERIES", ("M2SL",))
     monkeypatch.setattr(collector, "_key", lambda: "fake-key-never-used")
+    # FRED is terms-refused since 2026-11-13 (tests/data/test_terms_refused.py pins that the
+    # live collector writes nothing); the vintage mechanics are pinned here with the refusal
+    # lifted, because they carry over to the primary-publisher route that replaces it.
+    monkeypatch.setattr(collector, "_terms_refused", lambda url: None)
     monkeypatch.setattr(collector, "_fetch", lambda key, sid: [("2026-06-01", 21500.0)])
     collector.main()
 
