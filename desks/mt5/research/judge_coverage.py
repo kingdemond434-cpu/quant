@@ -815,6 +815,42 @@ def _cell_id_fn() -> Any:
     return _pass_value("cell_id_fn", _load)
 
 
+def _wrapper_base_counts(rows: list[dict[str, Any]],
+                         judged: Any) -> dict[str, dict[str, Any]]:
+    """{base family: {mined, judged, via}} for wrapper-family docket rows (`hunt16_cell`)."""
+    try:
+        from research.market_quota import ATTRIBUTE_TO_BASE
+    except Exception:
+        ATTRIBUTE_TO_BASE = frozenset({"hunt16_cell"})
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        fam = str(row.get("family") or "")
+        if fam not in ATTRIBUTE_TO_BASE:
+            continue
+        p = row.get("params") if isinstance(row.get("params"), dict) else {}
+        base = str((p or {}).get("base_family") or row.get("base_family") or "").strip()
+        if not base:
+            continue
+        c = out.setdefault(base, {"mined": 0, "judged": 0, "via": fam})
+        c["mined"] += 1
+        cid = row.get("_cell")
+        if cid and cid in judged:
+            c["judged"] += 1
+    return out
+
+
+def _not_live_families() -> dict[str, dict[str, Any]]:
+    """`data/family_status.json` rows whose status takes the family out of the live count."""
+    try:
+        from research.market_quota import family_status
+    except Exception:
+        return {}
+    try:
+        return family_status()
+    except Exception:
+        return {}
+
+
 def live_families() -> frozenset[str]:
     """The live family registry, read once per pass (see `_live_families`)."""
     return frozenset(_pass_value("live_families", _live_families))
@@ -3781,7 +3817,23 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # docket and the ledger name, so a family registered tomorrow has a row the same hour -- with
     # `mined: 0` until a miner reaches it, which is a measurement of the miners and not of this
     # organ. It is published, never failed on: intake allocates the judge, it does not mine.
-    unmined = sorted(f for f in live_families() if f and table.get(f, {}).get("mined", 0) == 0)
+    # WRAPPER FAMILIES COUNT UNDER THEIR BASE (2026-11-13). `hunt16_cell` mints cells FOR the
+    # dav_* families (`params.base_family`), so a dav_* family the seeder is reviving read
+    # `mined: 0` here forever. Its row now carries `mined_via` / `judged_via`, and it leaves the
+    # unmined list once a wrapper cell names it. The row's own counts are unchanged.
+    via = _wrapper_base_counts(rows, judged_cells)
+    for via_base, via_c in via.items():
+        via_row = table.setdefault(via_base, {})
+        via_row["mined_via"], via_row["judged_via"] = via_c["mined"], via_c["judged"]
+        via_row["via_family"] = via_c["via"]
+    # NOT LIVE IS NOT ZERO: a family the status registry marks blocked or retired is reported
+    # by status with its missed-growth line, and is not counted as unmined.
+    not_live = _not_live_families()
+    for nl_fam, nl_row in not_live.items():
+        table.setdefault(nl_fam, {})["status"] = nl_row.get("status")
+    unmined = sorted(f for f in live_families()
+                     if f and table.get(f, {}).get("mined", 0) == 0
+                     and not table.get(f, {}).get("mined_via") and f not in not_live)
     # THE PREVIOUS READING'S UNKNOWN SHARE, so the fence can ratchet it: this quantity is a
     # SHARE and not a count, because a count rises with throughput and throughput rising is the
     # desk working. The share falls only when fewer never-firing specs reach the judge.
@@ -3927,6 +3979,10 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "quota": quota,
         "starved": starved[:20],
         "unmined_live_families": unmined[:40],
+        "families_not_live": {f: {k: r.get(k) for k in ("status", "why", "missed_growth",
+                                                       "reopen_when", "since")}
+                              for f, r in sorted(not_live.items())},
+        "mined_via_wrapper": via,
         # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that
         # the remainder actually followed it, which is what stops a future session quietly
         # reverting this to round-robin.

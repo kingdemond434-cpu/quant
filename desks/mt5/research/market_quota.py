@@ -142,14 +142,109 @@ def is_exotic(symbol: str) -> bool:
 
 
 def symbol_family_of_cell(cell: str) -> tuple[str, str]:
-    """`SYMBOL.family.p=<sha>` -> (SYMBOL, family). Families may hold dots? They do not; symbols
-    may (`US30.cash`), so the family is the segment before `p=` and the symbol is the rest."""
+    """The judge's cell id (`frontier_identity.cell_id`) -> (SYMBOL, family).
+
+    The id is `SYMBOL[@TF].family.p=<digest>` or `SYMBOL[@TF].family.rr=<x>_wb=<y>`. Symbols may
+    hold a dot (`US30.cash`), families do not, so the family is the segment before the trailing
+    `key=value` one. The `@TF` chart suffix is stripped from the symbol: `GBPAUD@M15` is GBPAUD,
+    and without the strip every non-H1 cell would be grouped as "other".
+    """
     parts = str(cell or "").split(".")
-    if len(parts) >= 3 and parts[-1].startswith("p="):
-        return ".".join(parts[:-2]), parts[-2]
-    if len(parts) >= 2:
-        return parts[0], parts[1]
-    return str(cell or ""), "?"
+    if len(parts) >= 3 and "=" in parts[-1]:
+        sym, fam = ".".join(parts[:-2]), parts[-2]
+    elif len(parts) >= 2:
+        sym, fam = parts[0], parts[1]
+    else:
+        sym, fam = str(cell or ""), "?"
+    return sym.split("@", 1)[0], fam
+
+
+#: Wrapper families whose cells are minted for a BASE family and must be counted under it. Only
+#: these: `base_family` is also a parameter of regime_split, exit_operated and others, which are
+#: families in their own right and keep their own counts.
+ATTRIBUTE_TO_BASE = frozenset({"hunt16_cell"})
+BASE_MAP = BASE / "data" / "market_quota_base_family.json"
+FAMILY_STATUS = BASE / "data" / "family_status.json"
+#: Statuses that take a family out of the "never judged" count and out of the exploration share,
+#: each reported by name with its missed-growth line. Absent or ACTIVE means live.
+NOT_LIVE_STATUSES = frozenset({"BLOCKED_ON_TERMS", "RETIRED", "BLOCKED_ON_DATA"})
+
+
+def attributed_family(sp: dict[str, Any]) -> str:
+    """The family a spec's trials are COUNTED under: its own, or its base for a wrapper family
+    (`hunt16_cell` with `params.base_family = dav_bb_meanrev` counts as dav_bb_meanrev)."""
+    fam = str(sp.get("family") or "?")
+    if fam in ATTRIBUTE_TO_BASE:
+        p = sp.get("params") if isinstance(sp.get("params"), dict) else {}
+        base = str((p or {}).get("base_family") or sp.get("base_family") or "").strip()
+        if base:
+            return base
+    return fam
+
+
+def family_status(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """{family: row} from `data/family_status.json` for families that are NOT live, with why.
+
+    Unreadable or absent reads as NOTHING BLOCKED: a missing file must never silence a family.
+    """
+    try:
+        doc = json.loads((path or FAMILY_STATUS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("families") if isinstance(doc, dict) else None
+    return {str(f): dict(r) for f, r in (rows or {}).items()
+            if isinstance(r, dict) and str(r.get("status") or "").upper() in NOT_LIVE_STATUSES}
+
+
+def _cell_id_of(sp: dict[str, Any]) -> str | None:
+    try:
+        from research.frontier_identity import cell_id
+    except Exception:
+        try:
+            from frontier_identity import cell_id  # type: ignore[no-redef]
+        except Exception:
+            return None
+    try:
+        return str(cell_id({"sym": _sym(sp), "family": sp.get("family"),
+                            "params": dict(sp.get("params") or {})}))
+    except Exception:
+        return None
+
+
+def remember_bases(specs: Iterable[dict[str, Any]], path: Path | None = None,
+                   cap: int = 500_000) -> int:
+    """Record judge cell id -> base family for every wrapper-family spec in the intake, so the
+    LEDGER side (whose cell id names only `hunt16_cell`) can attribute its trials too."""
+    p = path or BASE_MAP
+    try:
+        cur = json.loads(p.read_text("utf-8"))
+        if not isinstance(cur, dict):
+            cur = {}
+    except (OSError, ValueError):
+        cur = {}
+    n0 = len(cur)
+    for sp in specs:
+        if str(sp.get("family") or "") not in ATTRIBUTE_TO_BASE:
+            continue
+        base = attributed_family(sp)
+        if base == sp.get("family"):
+            continue
+        cid = _cell_id_of(sp)
+        if cid and cid not in cur and len(cur) < cap:
+            cur[cid] = base
+    if len(cur) != n0:
+        with contextlib.suppress(OSError):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps(cur, separators=(",", ":")), encoding="utf-8")
+    return len(cur) - n0
+
+
+def _base_map(path: Path | None = None) -> dict[str, str]:
+    try:
+        cur = json.loads((path or BASE_MAP).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return cur if isinstance(cur, dict) else {}
 
 
 # ------------------------------------------------------------------------- the ledger scan
@@ -176,7 +271,8 @@ def _empty_state() -> dict[str, Any]:
 
 def scan_ledger(path: Path | None = None, state_path: Path | None = None, *,
                 now: datetime | None = None, write: bool = True,
-                deadline_s: float | None = 90.0) -> dict[str, Any]:
+                deadline_s: float | None = 90.0,
+                base_map: Path | None = None) -> dict[str, Any]:
     """Incremental scan of the gate ledger into day buckets of ruled trials and passes.
 
     The ledger is append-only and runs past a million rows, so this keeps a byte offset and adds
@@ -204,6 +300,7 @@ def scan_ledger(path: Path | None = None, state_path: Path | None = None, *,
     hours: dict[str, Any] = st["hours"]
     ever: dict[str, int] = st["families_ever"]
     import time as _time
+    bases: dict[str, str] | None = None
     stop_at = None if deadline_s is None else _time.monotonic() + float(deadline_s)
     caught_up = True
     with p.open("rb") as fh:
@@ -236,7 +333,12 @@ def scan_ledger(path: Path | None = None, state_path: Path | None = None, *,
             day, hour = at[:10], at[:13]
             if len(day) != 10:
                 continue
-            sym, fam = symbol_family_of_cell(str(row.get("cell") or ""))
+            cell_name = str(row.get("cell") or "")
+            sym, fam = symbol_family_of_cell(cell_name)
+            if fam in ATTRIBUTE_TO_BASE:
+                if bases is None:
+                    bases = _base_map(base_map)
+                fam = bases.get(cell_name, fam)
             grp = group_of(sym)
             ever[fam] = int(ever.get(fam, 0)) + 1
             b = days.setdefault(day, {"groups": {}, "families": {}})
@@ -348,7 +450,8 @@ def shares(groups_present: Iterable[str], ylds: dict[str, dict[str, Any]]) -> di
             "non_exotic_share": 1.0 - ex_share}
 
 
-def family_weights(families: Iterable[str], fylds: dict[str, dict[str, Any]]) -> dict[str, float]:
+def family_weights(families: Iterable[str], fylds: dict[str, dict[str, Any]],
+                   blocked: dict[str, Any] | None = None) -> dict[str, float]:
     """Within a group: yield blended with uniform, so every family keeps at least
     (1 - YIELD_STRENGTH) / n of the group's turns -- the exploration floor."""
     fams = sorted(set(families))
@@ -359,8 +462,14 @@ def family_weights(families: Iterable[str], fylds: dict[str, dict[str, Any]]) ->
     n = len(fams)
     tot = sum(ys.values())
     if tot <= 0:
-        return dict.fromkeys(fams, 1.0 / n)
-    return {f: YIELD_STRENGTH * ys[f] / tot + (1.0 - YIELD_STRENGTH) / n for f in fams}
+        w = dict.fromkeys(fams, 1.0 / n)
+    else:
+        w = {f: YIELD_STRENGTH * ys[f] / tot + (1.0 - YIELD_STRENGTH) / n for f in fams}
+    # A family the registry marks not live (blocked on terms, retired) keeps its cells in the
+    # docket but is given no exploration share: it is reached only after every live family.
+    for f in set(fams) & set(blocked if blocked is not None else family_status()):
+        w[f] = 1e-9
+    return w
 
 
 def _deficit_interleave(buckets: dict[str, list[Any]], weights: dict[str, float]) -> list[Any]:
@@ -394,7 +503,7 @@ def _sym(sp: dict[str, Any]) -> str:
 
 
 def _fam(sp: dict[str, Any]) -> str:
-    return str(sp.get("family") or "?")
+    return attributed_family(sp)
 
 
 def order_tier(specs: Sequence[dict[str, Any]], plan: dict[str, Any],
@@ -493,6 +602,8 @@ def apply_quota(specs: Sequence[dict[str, Any]], *, st: dict[str, Any] | None = 
         "family_cells_sent": dict(sorted(fam_intake.items(), key=lambda kv: -kv[1])),
     }
     if write:
+        with contextlib.suppress(Exception):
+            report["base_family_cells_recorded"] = remember_bases(specs)
         p = QUOTA_OUT if out_path is None else out_path
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -555,7 +666,8 @@ def head_report(report: dict[str, Any], sent: Sequence[dict[str, Any]],
 
 
 def realised_split(st: dict[str, Any] | None = None, *, now: datetime | None = None,
-                   live_families: Iterable[str] | None = None) -> dict[str, Any]:
+                   live_families: Iterable[str] | None = None,
+                   status_path: Path | None = None) -> dict[str, Any]:
     """The REALISED split for JUDGING_RATE.json: ruled trials by group in the last 24h, the
     exotic share against its target, and the families with no ruled trial ever."""
     now = now or datetime.now(UTC)
@@ -578,7 +690,8 @@ def realised_split(st: dict[str, Any] | None = None, *, now: datetime | None = N
     status = ("UNMEASURED" if share is None else
               ("OK" if share <= EXOTIC_CAP + 1e-9 else "BREACH"))
     ever = st.get("families_ever") or {}
-    zero = sorted(set(live_families or ()) - {f for f, n in ever.items() if n})
+    blocked = family_status(status_path)
+    zero = sorted(set(live_families or ()) - {f for f, n in ever.items() if n} - set(blocked))
     return {"status": status, "window_h": REALISED_HOURS, "ruled_trials": tot,
             "by_group": dict(sorted(by_g.items(), key=lambda kv: -kv[1])),
             "exotic_share": round(share, 4) if share is not None else None,
@@ -586,6 +699,10 @@ def realised_split(st: dict[str, Any] | None = None, *, now: datetime | None = N
             "non_exotic_share": round(1 - share, 4) if share is not None else None,
             "families_ruled_ever": sum(1 for n in ever.values() if n),
             "families_never_ruled": zero,
+            # NOT ZERO, NOT LIVE: each with the reason and the growth it costs, by name.
+            "families_not_live": {f: {k: r.get(k) for k in ("status", "why", "missed_growth",
+                                                           "reopen_when", "since")}
+                                  for f, r in sorted(blocked.items())},
             "rule": ("BREACH when exotics took more than 10% of the last 24h's ruled trials; the "
                      "intake holds exotics over their share, so a BREACH means cells reached the "
                      "judge by another door (already warm, or the sealed sweep's own builds)")}

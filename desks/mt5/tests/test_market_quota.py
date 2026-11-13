@@ -200,3 +200,57 @@ def test_exotic_certificates_are_reviewed_first(tmp_path: Path) -> None:
     keys = ["h.EURUSD.carry.p=a", "h.USDZAR.carry.p=b", "h.AUDUSD.carry.p=c"]
     order = br.order_cells(keys, tmp_path / "none.jsonl")
     assert order[0] == "h.USDZAR.carry.p=b"
+
+
+# ------------------------------------------------- base-family attribution and family status
+
+def test_a_chart_suffix_is_not_a_symbol() -> None:
+    assert mq.symbol_family_of_cell("GBPAUD@M15.cross_asset_residual.p=6403309d") == (
+        "GBPAUD", "cross_asset_residual")
+    assert mq.symbol_family_of_cell("US30.cash.carry.rr=2_wb=1") == ("US30.cash", "carry")
+    assert mq.group_of(mq.symbol_family_of_cell("USDZAR@M15.carry.p=a")[0]) == "exotic"
+
+
+def test_a_hunt16_cell_counts_under_its_base_family(tmp_path: Path) -> None:
+    sp = {"sym": "EURUSD", "family": "hunt16_cell", "params": {"base_family": "dav_bb_meanrev"}}
+    assert mq.attributed_family(sp) == "dav_bb_meanrev"
+    # Other wrappers keep their own name: base_family is a parameter of real families too.
+    rs = {"sym": "EURUSD", "family": "regime_split", "params": {"base_family": "carry"}}
+    assert mq.attributed_family(rs) == "regime_split"
+    bmap = tmp_path / "bases.json"
+    assert mq.remember_bases([sp, rs], path=bmap) == 1
+    cid = next(iter(json.loads(bmap.read_text())))
+    t = NOW - timedelta(hours=1)
+    led = _ledger(tmp_path, [_row(cid, False, t)])
+    st = mq.scan_ledger(led, tmp_path / "s.json", now=NOW, base_map=bmap)
+    assert st["families_ever"] == {"dav_bb_meanrev": 1}
+
+
+def test_a_blocked_family_is_named_never_zero_and_goes_last(tmp_path: Path) -> None:
+    status = tmp_path / "family_status.json"
+    status.write_text(json.dumps({"families": {
+        "analyst_cross_market_lead": {"status": "BLOCKED_ON_TERMS", "why": "terms",
+                                      "missed_growth": "cn/kr/jp leads"},
+        "carry": {"status": "ACTIVE"}}}))
+    assert set(mq.family_status(status)) == {"analyst_cross_market_lead"}
+    st = {"status": "MEASURED", "days": {}, "hours": {}, "families_ever": {}}
+    out = mq.realised_split(st, now=NOW, live_families={"analyst_cross_market_lead", "carry"},
+                            status_path=status)
+    assert out["families_never_ruled"] == ["carry"]
+    assert out["families_not_live"]["analyst_cross_market_lead"]["status"] == "BLOCKED_ON_TERMS"
+    w = mq.family_weights(["carry", "analyst_cross_market_lead"], {},
+                          blocked=mq.family_status(status))
+    assert w["analyst_cross_market_lead"] < 1e-6 < w["carry"]
+
+
+def test_the_committed_status_registry_reads() -> None:
+    assert "analyst_cross_market_lead" in mq.family_status()
+
+
+def test_judge_coverage_counts_wrapper_cells_under_their_base() -> None:
+    import judge_coverage as jc
+    rows = [{"family": "hunt16_cell", "params": {"base_family": "dav_t3_trend"}, "_cell": "a"},
+            {"family": "hunt16_cell", "params": {"base_family": "dav_t3_trend"}, "_cell": "b"},
+            {"family": "regime_split", "params": {"base_family": "carry"}, "_cell": "c"}]
+    assert jc._wrapper_base_counts(rows, {"a"}) == {
+        "dav_t3_trend": {"mined": 2, "judged": 1, "via": "hunt16_cell"}}

@@ -1,0 +1,14 @@
+{
+ "schema": "family-status/1",
+ "rule": "A family listed here with status BLOCKED_ON_TERMS, BLOCKED_ON_DATA or RETIRED is reported under that status with its missed-growth line, never as a zero; its docket cells are kept but reached only after every live family. Absent, or status ACTIVE, means live. Unreadable reads as nothing blocked. Read by research/market_quota.py and research/judge_coverage.py.",
+ "families": {
+  "analyst_cross_market_lead": {
+   "status": "BLOCKED_ON_TERMS",
+   "since": "2026-11-13",
+   "source": "Global data thread (branch claude/gdd-alpha-capture-terms)",
+   "why": "its only inputs (eastmoney, Naver, the TDnet mirror) have no readable terms allowing automated collection (read 2026-11-13), so alpha_capture fails them closed; Yahoo is refused outright",
+   "missed_growth": "cross-market analyst-lead cells and the analyst_views axis for CN/KR/JP leads are not minted until a source's terms read confirmed; the box measured eastmoney 5d drift at n=24, +121bp, t=1.61 before the gate",
+   "reopen_when": "a source's terms read confirms automated collection is allowed"
+  }
+ }
+}
