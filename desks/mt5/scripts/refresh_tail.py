@@ -385,6 +385,12 @@ def main() -> int:
     server_name = getattr(account, "server", "unknown") if account else "unknown"
     is_fusion = "fusion" in server_name.lower()
     print(f"Broker server: {server_name} (Fusion={is_fusion})")
+    # THE KEYED ACCOUNT STAMP, NEVER THE LOGIN (Governance 2026-11-13). broker_info.json is
+    # tracked and published, and it carried the raw login once at the top and once per symbol.
+    # `provenance.stamp` writes the box-keyed `account_key` (or `account_withheld` with no key);
+    # nothing reads the login out of this file. Fenced by scripts/check_no_raw_account_ids.py.
+    from mt5desk.provenance import current_account, stamp
+    ident = {k: v for k, v in stamp(current_account(account)).items() if k != "server"}
 
     # EVERY PARQUET IN THE LAKE, AT WHATEVER TIMEFRAME ITS NAME DECLARES. The glob was
     # `*_H1.parquet`, so the six non-H1 files in the store -- XAUUSD at M1/M5/M15 and three FX
@@ -417,7 +423,7 @@ def main() -> int:
             broker_info[sym] = {
                 "server": server_name,
                 "is_fusion": is_fusion,
-                "account": getattr(account, "login", 0) if account else 0,
+                **ident,
             }
     ok = sum(1 for r in results if " +" in r)
     holes = [r for r in results if "GAP" in r]
@@ -439,7 +445,7 @@ def main() -> int:
     broker_info_path.write_text(json.dumps({
         "server": server_name,
         "is_fusion": is_fusion,
-        "account": getattr(account, "login", 0) if account else 0,
+        **ident,
         "symbols": broker_info,
     }, indent=2), encoding="utf-8")
     print(f"Broker info saved: {server_name}")
