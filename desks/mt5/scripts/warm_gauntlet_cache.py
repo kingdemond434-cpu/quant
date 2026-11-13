@@ -443,10 +443,53 @@ def _lower_priority() -> str:
     return "idle" if out == "IDLE" or out.startswith("nice 19") else out
 
 
+#: A WORKER LEAVES WHEN ITS PARENT DOES (2026-11-04). The parent hard-stops itself at budget plus
+#: grace and kills its children first, but a parent that is TERMINATED from outside (the task
+#: scheduler's time limit, an operator, a crash) never runs that code, and on Windows a
+#: ProcessPoolExecutor worker whose parent is gone does not see the pipe close: it waits on its
+#: call queue for ever, holding its frame and feature caches. Measured by Desk health 20:12Z
+#: 2026-11-04: a warm_gauntlet_cache process resident at 4.1 GB private for ~57h. So every worker
+#: polls its parent and exits when the parent is gone. A parent whose pid now names a NEWER
+#: process (pid reuse) counts as gone; an unreadable process table counts as present -- the guard
+#: never kills a worker on a reading it cannot make. The poll is a fixed 30 s: it bounds how long
+#: an orphan lingers, decides nothing about orders or capital, and nothing needs to tune it.
+
+
+def _parent_gone(ppid: int, own_created: float | None) -> bool:
+    try:
+        import psutil
+        if not psutil.pid_exists(ppid):
+            return True
+        created = psutil.Process(ppid).create_time()
+    except ImportError:
+        return False
+    except Exception as exc:
+        return type(exc).__name__ == "NoSuchProcess"
+    return own_created is not None and created > own_created + 1.0
+
+
+def _watch_parent() -> None:
+    """Start the daemon thread that exits this worker once its parent is gone."""
+    ppid = os.getppid()
+    try:
+        import psutil
+        own: float | None = psutil.Process().create_time()
+    except Exception:
+        own = None
+    def loop() -> None:
+        while True:
+            time.sleep(30.0)
+            if _parent_gone(ppid, own):
+                _terminate_self(0)
+
+    threading.Thread(target=loop, name="warm-parent-watch", daemon=True).start()
+
+
 def _init(meta: dict) -> None:
     global _META
     _META = meta
     _lower_priority()
+    _watch_parent()
 
 
 def _init_equal(meta: dict) -> None:
@@ -454,6 +497,7 @@ def _init_equal(meta: dict) -> None:
     global _META
     _META = meta
     _set_priority(EQUAL)
+    _watch_parent()
 
 
 def _warm_one(spec: dict) -> tuple[str, str]:
@@ -1609,6 +1653,24 @@ def _hard_stop() -> None:
           f"trigger resumes from the cache", flush=True)
     with contextlib.suppress(Exception):
         sys.stdout.flush()
+    _terminate_self(rc)
+
+
+def _terminate_self(rc: int) -> None:
+    """Leave NOW, from any thread, whatever the main thread holds.
+
+    `os._exit` IS NOT ENOUGH ON WINDOWS (measured by Desk health 2026-11-04). pid 36780 logged
+    "CacheWarm END status=HARD_STOP rc=3 phase=docket_load" at 11-02 ~12:00Z, wrote its report,
+    and was still resident at 4.1 GB private 2.5 days later with no children. The CRT's `_exit`
+    ends in ExitProcess, which first kills every other thread -- here the main thread, mid
+    docket_load, possibly holding the heap or loader lock -- and then runs each DLL's detach
+    routine, which can wait on exactly that lock for ever. TerminateProcess runs no detach code
+    and cannot wait. Elsewhere, and if that call fails, `os._exit` as before."""
+    if sys.platform == "win32":
+        with contextlib.suppress(Exception):
+            import ctypes
+            k32 = ctypes.windll.kernel32  # type: ignore[attr-defined,unused-ignore]
+            k32.TerminateProcess(k32.GetCurrentProcess(), int(rc))
     os._exit(rc)
 
 
@@ -1720,10 +1782,17 @@ def _apply_blas_switch() -> dict:
 
 
 def _cli_main() -> int:
+    # THE FIRST LINE, BEFORE ANYTHING THAT CAN FAIL TO LOAD (2026-11-04): every MT5-CacheWarm run
+    # since 11-02 ended 0x1 with NOTHING in its log, because a run that dies loading numpy (the
+    # box's "paging file is too small") dies before START is printed and the buffered lines above
+    # it are lost with the process. This line is flushed before any heavy import, so the log always
+    # names the attempt.
+    print(f"CacheWarm BOOT pid={os.getpid()} at "
+          f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}", flush=True)
     # BEFORE ANY IMPORT THAT LOADS NUMPY: BLAS reads its thread count once, at load.
     _BLAS.update(_apply_blas_switch())
     print(f"  blas threads: {'single (proof holds)' if _BLAS.get('active') else 'default'} -- "
-          f"{str(_BLAS.get('why'))[:160]}")
+          f"{str(_BLAS.get('why'))[:160]}", flush=True)
     try:
         from research.job_lock import exclusive_job
     except ModuleNotFoundError:
