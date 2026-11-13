@@ -31,8 +31,8 @@ from research import recovery_drills as rd  # noqa: E402
 
 NOW = datetime(2026, 11, 13, 18, tzinfo=UTC)
 
-HOST = "vmi3571445"
-IP = "95.216.191.70"
+HOST = "vmi9990001"
+IP = "203.0.113.47"
 IP6 = "fe80::1ff:fe23:4567:890a"
 TOKENS = ("ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4", "sk-" + "planted0token0value0abcdef123",
           "github_pat_" + "11ABCDEFG0123456789_abcdefghijk")
