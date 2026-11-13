@@ -852,6 +852,11 @@ $reportPaths = @(
     "desks/mt5/reports/INTEL_SHIP.json",
     "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
     "desks/mt5/reports/PRODUCER_FUNNEL.json",
+    # off-box run evidence for two merged organs that showed none (2026-11-13 wired ledger):
+    # the loss learner's per-sleeve loss modes and lineage (R units and MEASURED/UNMEASURED
+    # book states, no account amounts) and the CRO D27 committee health + survivor red-team
+    "desks/mt5/reports/LOSS_LEARNER.json",
+    "desks/mt5/reports/COMMITTEE_HEALTH.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
