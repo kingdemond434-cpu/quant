@@ -90,8 +90,8 @@ def test_too_few_paired_days_is_no_evidence():
 # ------------------------------------------------------------------ #6: k from the desk's fills
 
 def test_k_is_the_smallest_multiple_whose_wide_fills_cost_twice_the_normal():
-    obs = ([{"ratio": 1.0, "cost_r": 0.02}] * 40 + [{"ratio": 1.8, "cost_r": 0.03}] * 12
-           + [{"ratio": 3.5, "cost_r": 0.09}] * 12)
+    obs = ([{"ratio": 1.0, "cost_r": 0.02}] * 40 + [{"ratio": 1.8, "cost_r": 0.02}] * 12
+           + [{"ratio": 3.5, "cost_r": 0.05}] * 12)
     k, ladder = ss.choose_k(obs)
     assert k == 2.0
     assert [r["qualifies"] for r in ladder][:2] == [False, True]
@@ -147,7 +147,7 @@ def test_no_reports_and_no_event_defer_nothing(tmp_path):
 def test_a_live_window_defers_unless_the_sleeve_trades_through(tmp_path):
     cal = _calendar(tmp_path, datetime.now(UTC) + timedelta(minutes=10))
     win = {"window": {"before_min": 30, "after_min": 60}}
-    ns, logs, refused = _env(tmp_path, policy={**win, "policy": {}}, spread=None, cal=cal)
+    ns, _, refused = _env(tmp_path, policy={**win, "policy": {}}, spread=None, cal=cal)
     why = ns["entry_deferral"]({}, "s", "EURUSD")
     assert why and "NO_EVIDENCE" in why
     assert refused and refused[0][3] == "event_defer"
