@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5"))
 #: Reports that carry equity, balances, account labels, hosts or paths: never on the wire.
 NEVER = ("E8_GOLD.json", "E8_EXEC.json", "FTMO_ACCOUNT_STATE.json", "pf_allocation.json",
          "DISK_CENSUS.json", "MATH_LAB.json", "PRODUCTIVITY_CENSUS.json",
-         "weak_signal_compiler.json", "data/daily_cycle_state.json")
+         "weak_signal_compiler.json", "data/daily_cycle_state.json",
+         "data/decay_live.json")
 
 
 def _report_paths() -> list[str]:

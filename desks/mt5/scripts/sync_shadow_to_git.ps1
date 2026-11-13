@@ -884,9 +884,9 @@ $reportPaths = @(
     "desks/mt5/reports/admission_heavy_pass.json",
     "desks/mt5/reports/RESEARCH_PNL.json",
     "desks/mt5/reports/ACCOUNT_PARITY.json",
-    # the loss loop's two readings (Loss loop thread, 2026-11-13): origin held the 2026-09-04
-    # decay_live.json because no list carried it, and LOSS_LEARNER.json had never crossed
-    "desks/mt5/data/decay_live.json",
+    # the loss loop's reading (Loss loop thread, 2026-11-13): LOSS_LEARNER.json had never crossed.
+    # data/decay_live.json is NOT here yet: decay_monitor writes free exception text into it
+    # (Auditor, 2026-11-13); it joins this list with the writer that cuts that to a type name.
     "desks/mt5/reports/LOSS_LEARNER.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
