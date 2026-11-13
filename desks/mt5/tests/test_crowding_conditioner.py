@@ -84,7 +84,7 @@ def test_build_gates_on_robots_and_names_what_it_cannot_read() -> None:
     assert doc["instruments"]["EURUSD"]["tff"]["why"].startswith("ROBOTS_REFUSED")
     assert "tff" not in doc["instruments"]["XAUUSD"]
     assert doc["evidence"]["status"] == "UNPROVEN" and doc["missed_growth"]
-    assert doc["retail_sentiment"]["status"] == "UNMEASURED"
+    assert doc["retail_sentiment"]["status"] == "UNMEASURED"     # no retail feed asked for
     assert len(called) == len(C.CS.COT_MAP)
 
     none = C.build(legacy=legacy, tff=legacy, refusal=lambda u: "unreadable",
@@ -138,3 +138,60 @@ def test_the_gate_agent_is_the_agent_cot_source_sends(monkeypatch) -> None:
     with contextlib.suppress(OSError):
         C.CS._get("https://publicreporting.cftc.gov/resource/x.json")
     assert seen == [C.COT_AGENT]
+
+
+def _ffaj_frame(n_months: int = 120, pair: str = "USDJPY") -> pd.DataFrame:
+    """Synthetic FFAJ rows (no raw FFAJ data is ever committed): quiet, then retail piles long."""
+    from libs.data import ffaj_retail_fx as FF
+    rng = np.random.default_rng(5)
+    rows = []
+    for i in range(n_months):
+        year, month = 2015 + i // 12, i % 12 + 1
+        long_ = 100.0 + rng.normal(0, 2) + (60.0 if i >= n_months - 2 else 0.0)
+        rows.append([float(month), float(year), 1.0, 100.0, long_, 100.0 + long_])
+    return FF.parse_workbook([type("S", (), {"name": pair, "rows": rows})()])
+
+
+def test_retail_crowd_is_measured_from_ffaj_and_judged_on_its_own_evidence() -> None:
+    frame = _ffaj_frame()
+    doc = C.build(legacy=lambda c: pd.Series(dtype="float64"),
+                  tff=lambda c: pd.Series(dtype="float64"), refusal=lambda u: None,
+                  closes=pd.DataFrame(), now=NOW, retail=lambda: (frame, ""))
+    usdjpy = doc["instruments"]["USDJPY"]["retail"]
+    assert usdjpy["state"] == "CROWDED_LONG" and usdjpy["z"] >= C.EXTREME_Z
+    assert doc["retail_sentiment"]["status"] == "MEASURED"
+    assert doc["retail_sentiment"]["pairs"] == ["USDJPY"]
+    # a pair the frame does not carry is named, not guessed
+    assert doc["instruments"]["EURJPY"]["retail"]["state"] == "UNMEASURED"
+    assert doc["retail_evidence"]["status"] == "UNPROVEN" and doc["missed_growth"]
+
+
+def test_retail_z_is_point_in_time() -> None:
+    from libs.data import ffaj_retail_fx as FF
+    s = FF.net_series(_ffaj_frame(), "USDJPY")
+    last_month_end = pd.Timestamp("2024-12-31", tz="UTC")
+    assert s.index[-1] == last_month_end + pd.Timedelta(days=FF.AVAILABLE_LAG_D)
+    assert C.retail_zscore(s.iloc[:10]).empty
+
+
+def test_retail_feed_failure_reads_unmeasured() -> None:
+    def boom() -> tuple[pd.DataFrame, str]:
+        raise OSError("down")
+    for retail in (boom, lambda: (pd.DataFrame(), "ROBOTS_REFUSED: disallowed"), None):
+        doc = C.build(legacy=lambda c: pd.Series(dtype="float64"),
+                      tff=lambda c: pd.Series(dtype="float64"), refusal=lambda u: None,
+                      closes=pd.DataFrame(), now=NOW, retail=retail)
+        assert doc["retail_sentiment"]["status"] == "UNMEASURED"
+        assert doc["retail_evidence"]["k"] == 0.0
+
+
+def test_speculator_and_retail_factors_multiply_two_sided() -> None:
+    doc = {"evidence": {"k": 0.2}, "retail_evidence": {"k": 0.1},
+           "instruments": {"USDJPY": {"state": "CROWDED_LONG",
+                                      "retail": {"state": "CROWDED_LONG"}},
+                           "EURJPY": {"state": "UNMEASURED",
+                                      "retail": {"state": "CROWDED_SHORT"}}}}
+    assert abs(C.modifier("USDJPY", -1, doc) - 1.2 * 1.1) < 1e-12
+    assert abs(C.modifier("USDJPY", +1, doc) - 0.8 * 0.9) < 1e-12
+    assert abs(C.modifier("EURJPY", +1, doc) - 1.1) < 1e-12
+    assert C.modifier("USDJPY", -1, {**doc, "retail_evidence": {"k": 0.0}}) == 1.2
