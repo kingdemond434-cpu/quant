@@ -518,6 +518,13 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
                  "desks/mt5/data/intelligence/style_premia/")),
+    # MACRO FAIR VALUE (2026-11-11): net liquidity (FRED axis), the BIS rate differential and a
+    # commodity currency's terms of trade -> screened `macro_fair_value` cells donated into the
+    # intake the compiler merges. Its report is the per-basis reach and park state for a person.
+    Node("macro_fair_value_proposer", "desks/mt5/research/macro_fair_value_proposer.py",
+         reads=("desks/mt5/data/axes/", "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/MACRO_FAIR_VALUE_PROPOSER.json",
+                 "desks/mt5/data/intelligence/macro_fair_value/")),
     Node("cross_asset_graph", "desks/mt5/research/cross_asset_graph.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/CROSS_ASSET_GRAPH.json",
@@ -935,6 +942,9 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
+    # The macro fair value proposer's per-basis reach and park state; its decision output is
+    # the donation under data/intelligence/macro_fair_value/, declared below.
+    "desks/mt5/reports/MACRO_FAIR_VALUE_PROPOSER.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
     # output is external_survivors.json, whose certificate consumer is declared above.
     "desks/mt5/data/hypotheses/merge_report.json",
@@ -1118,6 +1128,7 @@ EXTERNAL_READERS = {
     "desks/mt5/data/repo_cache/": "repo_miner (its own cache)",
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/style_premia/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/macro_fair_value/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/cross_asset_graph/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
