@@ -1355,6 +1355,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
                      "source_frontier", "data_scout", "external_federation",
+                     # SEC Form 4 insider filings -> libs/research/form4 clusters (N16)
+                     "form4_feed",
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
@@ -1431,6 +1433,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "world_lab", "macro_department", "news_event_stream",
                      "event_sleeves", "macro_intelligence", "world_model",
                      "market_constitution", "dislocation_lab", "macro_state_engine",
+                     # GARCH(1,1) vs EWMA volatility forecasts per instrument (N16)
+                     "garch_vol",
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
@@ -1461,6 +1465,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
                      "research_auction", "bottleneck_law", "bottleneck_attack",
+                     # the funnel's per-stage conversion ledger and the model-seat census,
+                     # both written and tested and on no clock until N16 (2026-11-11)
+                     "conversion_ledger", "llm_budget_census",
                      "research_latency",
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
@@ -2354,6 +2361,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # where the M1 pulls are) and resumes from its own cursor next hour, so a cut hour costs
     # coverage and never the artifact. The cap sits above its budget.
     "cost_truth": 700,
+    # N16 (2026-11-11). garch_vol and form4_feed stop themselves at --budget-s 600 and resume
+    # from their own cursors; the cap sits above it. conversion_ledger measured 5 s and
+    # llm_budget_census 0.1 s on the build box (one /key quota read on the trading box).
+    "garch_vol": 700, "form4_feed": 700, "conversion_ledger": 300, "llm_budget_census": 120,
     # The conversion maximiser stops itself at --budget-s 900 and writes CONVERSION_MAXIMISER.json
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
@@ -4260,6 +4271,11 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # GARCH(1,1) VOL FORECASTS SCORED AGAINST EWMA (N16, 2026-11-11): the fit
+    # (libs/research/stationarity) and the baseline (libs/research/volatility_signals) existed
+    # and ran nowhere. A measurement, not an input: nothing sizes from it.
+    gvl = _costed("garch_vol", lambda: _producer("garch_vol", "research/garch_vol.py",
+                                                 "--once", "--budget-s", "600"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -4963,6 +4979,18 @@ def main() -> None:
     rau = _costed("research_auction", lambda: _producer("research_auction",
                                                         "research/research_auction.py",
                                                         "--once", "--budget-s", "300"))
+    # THE CONVERSION LEDGER BEFORE THE BOTTLENECK LAW, which reads it (N16, 2026-11-11). It was
+    # written, tested and read by bottleneck_law, build_allocator and trial_allocator, and on no
+    # clock: data/conversion_ledger.json was last written 2026-09-05, so all three were reading
+    # a funnel two months old as if it were this hour's.
+    cvl = _costed("conversion_ledger", lambda: _producer("conversion_ledger",
+                                                         "research/conversion_ledger.py",
+                                                         "--quiet"))
+    # THE MODEL SEAT'S DAILY REQUEST ALLOWANCE, WHO SPENT IT AND WHAT IT BOUGHT. Reachable only
+    # as issue_board's stale-artifact repair until N16, which the dead-architecture census
+    # (correctly) could not see as a clock. Exit 1 is its DARK verdict, not a fault.
+    lbc = _costed("llm_budget_census", lambda: _producer("llm_budget_census",
+                                                         "research/llm_budget_census.py"))
     btl = _costed("bottleneck_law", lambda: _producer("bottleneck_law",
                                                       "research/bottleneck_law.py",
                                                       "--once", "--budget-s", "300"))
@@ -5323,6 +5351,11 @@ def main() -> None:
     xfd = _costed("external_federation", lambda: _producer("external_federation",
                                                             "research/external_federation.py",
                                                             "--once", "--budget-s", "600"))
+    # SEC FORM 4 -> INSIDER CLUSTERS (N16, 2026-11-11). libs/research/form4 computed and ranked
+    # clusters and fetched nothing; this is its fetch half, for the desk's US share CFDs only
+    # (event lane), behind a declared QUANT_EDGAR_UA -- UNMEASURED without one.
+    f4f = _costed("form4_feed", lambda: _producer("form4_feed", "research/form4_feed.py",
+                                                  "--once", "--budget-s", "600"))
     # FEDERATION OPERATIONS (LAWS 5h/5m): the persisted per-system registry with its append-only
     # history, upstream delta scans by hash through the existing fetcher, spawn signals from
     # already-fetched material through `admit`, the technique exchange across the forests, the
@@ -6532,6 +6565,7 @@ def main() -> None:
                     "global_coverage_tensor": gct,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
+                    "conversion_ledger": cvl, "llm_budget_census": lbc,
                     "trade_autopsy": tap, "research_latency": rlt,
                     "alpha_replenishment": arp, "research_dashboard": rdh,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
@@ -6554,6 +6588,7 @@ def main() -> None:
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
+                    "form4_feed": f4f,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
                     "mission_control": msc,
@@ -6682,7 +6717,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
-                    "fred_macro": fm,
+                    "fred_macro": fm, "garch_vol": gvl,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,

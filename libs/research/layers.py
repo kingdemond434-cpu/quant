@@ -433,6 +433,8 @@ LEG_LAYER: dict[str, str] = {
     "portfolio_bounty": "portfolio", "drawdown_alpha_miner": "portfolio",
     "trade_autopsy": "execution",
     "research_auction": "meta", "bottleneck_law": "meta", "research_latency": "meta",
+    # N16 (2026-11-11): the funnel's conversion ledger and the model-seat census.
+    "conversion_ledger": "meta", "llm_budget_census": "meta",
     "alpha_replenishment": "meta", "research_dashboard": "meta",
     "moat_collectors": "information", "source_frontier": "information",
     "scout_swarm": "information", "actor_atlas": "information",
@@ -481,6 +483,10 @@ LEG_LAYER: dict[str, str] = {
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
     "external_federation": "information", "federation_ops": "information",
+    # N16 (2026-11-11): Form 4 insider clusters are what the desk knows before it predicts.
+    "form4_feed": "information",
+    # GARCH vs EWMA volatility forecasts: a measured risk input, not yet a sizing authority.
+    "garch_vol": "information",
     # THE SANDBOX RUNNER executes federated engines and rebuilt cells over the desk's bars and
     # donates hypotheses and representations: what the desk can know, so information.
     "sandbox_runner": "information",
