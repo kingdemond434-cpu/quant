@@ -60,6 +60,7 @@ def test_build_writes_one_document_with_a_headline(tmp_path: Path, monkeypatch) 
     monkeypatch.setattr(oc, "COMPILED", tmp_path / "c.json")
     monkeypatch.setattr(oc, "GATES", tmp_path / "g.json")
     monkeypatch.setattr(oc, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(oc, "FRONTIER", tmp_path / "absent_frontier.json")
     (tmp_path / "c.json").write_text(json.dumps({"intake": {"deferred_files": 2}}), "utf-8")
     import queue_store
     monkeypatch.setattr(queue_store, "QUEUE", tmp_path / "none.jsonl")
@@ -68,4 +69,21 @@ def test_build_writes_one_document_with_a_headline(tmp_path: Path, monkeypatch) 
     doc = json.loads((tmp_path / "out.json").read_text("utf-8"))
     assert doc["not_tested"]["compiler"]["files_deferred"] == 2
     assert "2 intake files unopened" in doc["headline"]
-    assert set(doc["not_tested"]) == {"compiler", "gauntlet", "queue"} and "spent" in doc
+    assert set(doc["not_tested"]) == {"compiler", "gauntlet", "queue", "research_process"}
+    assert "spent" in doc
+    # No frontier report on disk is UNMEASURED, never "nothing untested".
+    assert doc["not_tested"]["research_process"]["open"] is None
+    assert "UNMEASURED research-process limits" in doc["headline"]
+
+
+def test_research_process_lists_every_unmeasured_limitation() -> None:
+    fr = {"at": "t", "measured_share": 0.5, "limitations": [
+        {"id": "a", "status": "MEASURED", "owner": "x", "next_experiment": "n1"},
+        {"id": "b", "status": "UNMEASURED", "owner": "y", "next_experiment": "n2"},
+        {"id": "c", "status": "NOT_BUILT", "owner": "z", "next_experiment": "n3"},
+        {"id": "d", "status": "BLOCKED_BY_POLICY", "owner": "w", "next_experiment": "n4"}]}
+    d = oc.research_process(fr)
+    assert d["status"] == "MEASURED" and d["of_limitations"] == 4
+    assert [r["id"] for r in d["open"]] == ["b", "c", "d"]
+    assert d["open"][0]["next_experiment"] == "n2"
+    assert oc.research_process({})["status"] == "UNMEASURED"

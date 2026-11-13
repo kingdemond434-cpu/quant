@@ -357,6 +357,21 @@ def _openrouter_key_info_offline(tmp_path_factory: pytest.TempPathFactory,
     monkeypatch.setattr(openrouter_guard, "NETWORK", False)
 
 
+@pytest.fixture(autouse=True)
+def _control_plane_ledgers_in_tmp(tmp_path_factory: pytest.TempPathFactory,
+                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """NO TEST WRITES THE DESK'S ACK LOG OR LINEAGE STORE (2026-11-13). `lease.ack_artifact` and
+    `edges.record_*` default to desks/mt5/data/artifact_acks.jsonl and lineage.sqlite; an organ
+    under test that acks (gateway, promoter, compiler, gauntlet) created both in the checkout, and
+    under `-n auto` that landed inside another worker's no-desk-write window
+    (test_the_docket_writer_runs_the_census_and_reaims_every_hour failed on #233's CI with exactly
+    those two files). Every test gets throwaway paths; a test of the ledgers sets its own."""
+    from libs.ops.control_plane import edges, lease
+    root = tmp_path_factory.mktemp("control_plane")
+    monkeypatch.setattr(lease, "ACK_LOG", root / "artifact_acks.jsonl")
+    monkeypatch.setattr(edges, "LINEAGE_DB", root / "lineage.sqlite")
+
+
 @pytest.fixture(scope="session")
 def _account_key_file(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A throwaway HMAC key for the suite (fixed bytes, so keys are reproducible run to run)."""

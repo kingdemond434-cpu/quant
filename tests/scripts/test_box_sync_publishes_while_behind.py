@@ -40,6 +40,9 @@ REQUIRED_REPORTS = (
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
+    # the reusable holdout's budget: register (the ledger) and state (its cache)
+    "desks/mt5/data/reusable_holdout.json",
+    "desks/mt5/data/reusable_holdout_studies.jsonl",
 )
 
 
@@ -58,6 +61,12 @@ def test_the_report_list_carries_every_audited_artifact() -> None:
     listed = set(_report_paths())
     missing = [p for p in REQUIRED_REPORTS if p not in listed]
     assert not missing, f"$reportPaths does not publish {missing}"
+
+
+def test_the_holdout_register_is_never_dropped_at_the_size_cap() -> None:
+    src = _src()
+    assert '$ReportCapExempt = @("desks/mt5/data/reusable_holdout_studies.jsonl")' in src
+    assert "$ReportCapExempt -notcontains $rel" in src
 
 
 def test_every_report_is_state_to_the_seal() -> None:

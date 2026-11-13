@@ -1,0 +1,347 @@
+"""THE REUSABLE HOLDOUT: a held-out half that can be asked many adaptive questions and still
+mean something (Dwork, Feldman, Hardt, Pitassi, Reingold, Roth, "The reusable holdout",
+Science 2015 -- Thresholdout).
+
+THE DEFECT. An hourly organ that picks a winner from recorded rows asks the SAME rows the same
+question every hour, and every answer shapes the next question. That is adaptive data analysis:
+after enough rounds the winner is fitted to those rows' noise and the reported number is no
+longer an estimate of anything. A lockbox opened once (`libs/research/lockbox.py`) protects one
+final verdict; it does not protect a selection rule that runs forever.
+
+THE MECHANISM. Each question is answered on the TRAINING half unless the holdout half disagrees
+by more than a noisy threshold -- then the (noised) holdout value is returned and one unit of the
+study's budget is spent. While the budget lasts, the answers are valid estimates whatever the
+sequence of questions was; when it is gone the study is EXHAUSTED and says so, and the caller
+must stop selecting on these rows (rotate in fresh ones), never quietly keep going.
+
+STATE IS PER STUDY and persistent, so the budget is charged across passes, not per pass: a study
+that reset its budget every hour would be a lockbox with the lock removed.
+
+IT FAILS CLOSED (audit, 2026-10-06). A malformed state file reads EXHAUSTED, a missing one is
+rebuilt from the register (never refilled), and a pass whose charge cannot be written answers
+nothing. THE REGISTER IS THE LEDGER: an append-only file beside the state
+(`register_path`, tracked, on the box's state wire) records every study opened, every charge
+and every epoch rotated, and a study's budget is the SMALLER of what the state and the register
+say -- so restoring either file from git, deleting the state, or an older snapshot of it can
+never refill a study. A missing or unreadable register answers nothing. The register has an
+untracked twin under the gitignored `data/` (`mirror_path`), and the register read is the union
+of both: restoring the state AND the tracked register to their stubs together still cannot
+refill a study, because no git operation touches the mirror. A MISSING OR EMPTY MIRROR is
+never read as fresh: it is born only with a register born beside it, and otherwise git's history
+of the tracked register (every row ever committed) stands in; with no history it answers nothing.
+The noise is drawn from OS entropy: seeding it from the committed state made a repeated question
+get an identical answer, which is exactly the leak the noise is there to close.
+
+WHAT IT DOES NOT PROMISE. The paper's bound holds for rows drawn independently, for a statistic
+of bounded sensitivity, and with an error that grows as the budget grows relative to the holdout's
+size. Certificate rows are neither independent nor identically distributed (they arrive in time,
+from shared families), and a few dozen holdout rows is far from the paper's thousands. So a VALID
+status means "the budget is not spent", which is necessary for the guarantee and not sufficient:
+it is a brake on adaptive reuse, never a certificate that the answers are unbiased.
+
+ROTATION, NOT A PERMANENT FREEZE. `rotate` retires the row keys an exhausted study was asked
+about and opens the next epoch of the same study on rows it has never seen, with a fresh budget.
+Epochs and retired keys live in the register too, so no restore can rewind them.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from collections.abc import Mapping
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+STATE = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "reusable_holdout.json"
+#: THE UNTRACKED WITNESS (audit, 2026-10-07). Under the repo's gitignored `data/`, so no git
+#: checkout, adoption or stub restore touches it: with the tracked register AND the state both
+#: restored to their stubs, this copy still holds every charge, and the budget stays spent.
+MIRROR_DIR = Path(__file__).resolve().parents[2] / "data" / "reusable_holdout"
+
+#: FALLBACK parameters only: the paper's illustrative setting (T=0.04, sigma=0.01, budget 64 for a
+#: [0,1] statistic over a large holdout), as fractions of the quantity's own scale. They are NOT
+#: calibrated to any statistic here; a caller that can measure its statistic's sampling noise
+#: passes `threshold`/`sigma` derived from it (meta_rnd.guarded_winner does), and the result
+#: says which basis was used.
+THRESHOLD = 0.04
+SIGMA = 0.01
+BUDGET = 64
+
+
+def split(key: str) -> str:
+    """'train' or 'holdout', fixed forever per row key: a row never changes side."""
+    return "holdout" if int(hashlib.sha1(key.encode()).hexdigest(), 16) % 2 else "train"
+
+
+def _load(path: Path) -> dict[str, Any] | None:
+    """The state, or None when it is missing, unreadable or malformed (callers fail closed)."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    for k, st in doc.items():
+        if k.startswith("_"):
+            continue
+        if not isinstance(st, dict):
+            return None
+        for f in ("budget_left", "questions"):
+            if f in st and (isinstance(st[f], bool) or not isinstance(st[f], int)):
+                return None
+    return doc
+
+
+def register_path(state_path: Path) -> Path:
+    """The append-only register beside the state file: every study opened, every charge, every
+    epoch rotated. Tracked (a stub ships) and under desks/mt5/data/, so it rides the box's state
+    wire; the state file is only a cache of what the register already proves."""
+    return state_path.with_name(state_path.stem + "_studies.jsonl")
+
+
+def mirror_path(state_path: Path) -> Path:
+    """The untracked copy of the register: under the gitignored `data/` for the desk's own state,
+    beside the state for any other (tests, scratch) so each study set keeps its own witness."""
+    name = state_path.stem + "_studies.mirror.jsonl"
+    return MIRROR_DIR / name if state_path.resolve() == STATE.resolve() \
+        else state_path.with_name(name)
+
+
+def _rows(path: Path) -> list[dict[str, Any]]:
+    rows = [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def _git_witness(reg: Path) -> list[dict[str, Any]] | None:
+    """Every register row ever committed, read from git's own history of the file. None when
+    the file is outside a repository, the clone is shallow, or git cannot answer."""
+    import subprocess
+    try:
+        root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=reg.parent,
+                                   capture_output=True, text=True, check=True,
+                                   timeout=60).stdout.strip())
+        shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=root,
+                                 capture_output=True, text=True, check=True, timeout=60)
+        if shallow.stdout.strip() != "false":
+            return None
+        log = subprocess.run(["git", "log", "--all", "--format=", "-p", "--",
+                              reg.resolve().relative_to(root.resolve()).as_posix()],
+                             cwd=root, capture_output=True, text=True, check=True,
+                             encoding="utf-8", timeout=120).stdout
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    rows: list[dict[str, Any]] = []
+    for ln in log.splitlines():
+        if ln.startswith("+{"):
+            try:
+                r = json.loads(ln[1:])
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                rows.append(r)
+    return rows
+
+
+def _register_read(state_path: Path) -> tuple[list[dict[str, Any]] | None, str]:
+    """(the register rows, why it answers nothing). The rows are the UNION of the tracked
+    register and its untracked mirror, each row once.
+
+    A MISSING OR EMPTY MIRROR IS NEVER AN EMPTY WITNESS (audit, 2026-10-13). On a fresh clone the
+    tracked register can be a stub that a restore put there, and reading the absent mirror as
+    "nothing was spent" refilled a spent study. The mirror is born only beside a register born in
+    the same `init_state` call. Without it, the third witness is git's history of the tracked
+    register, every row ever committed; with no history to read (no repository, a shallow
+    clone, git failing) the register answers nothing and callers fail closed."""
+    reg = register_path(state_path)
+    try:
+        tracked = _rows(reg)
+    except (OSError, ValueError) as exc:
+        return None, f"{reg.name} missing or unreadable ({type(exc).__name__})"
+    mirror = mirror_path(state_path)
+    try:
+        extra = _rows(mirror) if mirror.exists() and mirror.stat().st_size else None
+    except (OSError, ValueError) as exc:
+        return None, (f"{mirror.name} unreadable ({type(exc).__name__}): a torn mirror "
+                      "proves nothing")
+    if extra is None:
+        extra = _git_witness(reg)
+        if extra is None:
+            return None, (f"{mirror.name} missing or empty and git holds no readable history of "
+                          f"{reg.name}: UNMEASURED, never read as fresh")
+        # RE-SEED THE MIRROR WITH EVERYTHING GIT PROVED (audit, 2026-10-13). A mirror reborn by
+        # the next `_append` with only the new row would be a non-empty witness that never asks
+        # git again, so a second restore of both tracked files would refill the study.
+        try:
+            _seed_mirror(mirror, tracked + extra)
+        except OSError as exc:
+            return None, (f"{mirror.name} could not be re-seeded from git history "
+                          f"({type(exc).__name__}): UNMEASURED, never read as fresh")
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in tracked + extra:
+        key = str(r.get("id") or json.dumps(r, sort_keys=True, default=str))
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out, ""
+
+
+def _seed_mirror(mirror: Path, rows: list[dict[str, Any]]) -> None:
+    """Write `rows` as the mirror, atomically, so a torn write never reads as a short witness."""
+    mirror.parent.mkdir(parents=True, exist_ok=True)
+    tmp = mirror.with_name(mirror.name + f".{os.getpid()}.tmp")
+    tmp.write_text("".join(json.dumps(r) + "\n" for r in rows) or
+                   json.dumps({"_seeded_from": "git"}) + "\n", encoding="utf-8")
+    os.replace(tmp, mirror)
+
+
+def _register(state_path: Path) -> list[dict[str, Any]] | None:
+    """The register rows, or None when they cannot be proven (callers fail closed)."""
+    return _register_read(state_path)[0]
+
+
+def _append(state_path: Path, row: Mapping[str, Any]) -> None:
+    """Append to BOTH witnesses. Each row carries a unique id so the union counts it once."""
+    line = json.dumps({**row, "id": os.urandom(8).hex(),
+                       "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}) + "\n"
+    for p in (register_path(state_path), mirror_path(state_path)):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(line)
+
+
+def _register_left(rows: list[dict[str, Any]], study: str, budget: int) -> tuple[int, bool]:
+    """(budget left by the register's own charges, whether the study was ever opened)."""
+    opened = [r for r in rows if r.get("study") == study]
+    b = next((int(r["budget"]) for r in opened if isinstance(r.get("budget"), int)), budget)
+    spent = sum(int(r.get("spent") or 0) for r in rows if r.get("charge") == study)
+    return b - spent, bool(opened)
+
+
+def init_state(path: Path | None = None) -> bool:
+    """Create the state file and its register once. Never overwrites an existing file."""
+    p = path or STATE
+    made = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    if not p.exists():
+        _save(p, {"_created": stamp})
+        made = True
+    reg = register_path(p)
+    if not reg.exists():
+        # A register born here has no history to lose, so its mirror is born with it. Nothing
+        # else creates a mirror from scratch: an absent one beside an existing register is read
+        # from git's history, never as fresh.
+        # A register DELETED in a checkout whose git history holds rows is not a birth: the
+        # mirror is seeded with that history (audit, 2026-10-13), never with a blank page.
+        history = _git_witness(reg) or []
+        for f in (reg, mirror_path(p)):
+            f.parent.mkdir(parents=True, exist_ok=True)
+            if not f.exists() or not f.stat().st_size:
+                f.write_text(json.dumps({"_created": stamp}) + "\n", encoding="utf-8")
+        if history:
+            m = mirror_path(p)
+            _seed_mirror(m, _rows(m) + history)
+        made = True
+    return made
+
+
+def _save(path: Path, doc: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def thresholdout(study: str, queries: Mapping[str, tuple[float, float]], *, scale: float,
+                 threshold: float = THRESHOLD, sigma: float = SIGMA, budget: int = BUDGET,
+                 seed: int | None = None, state_path: Path | None = None) -> dict[str, Any]:
+    """Answer each query (train_value, holdout_value) through Thresholdout.
+
+    `scale` puts the threshold and noise in the quantity's own units (e.g. the mean of the train
+    values). Returns {answers, overfit, budget_left, status} and charges the persistent budget."""
+    path = state_path or STATE
+
+    def closed(why: str, asked: int | None = None) -> dict[str, Any]:
+        return {"study": study, "answers": dict.fromkeys(queries), "overfit": [],
+                "budget_left": 0, "budget": budget, "questions_total": asked,
+                "status": "EXHAUSTED", "state_error": why}
+    reg, why = _register_read(path)
+    if reg is None:
+        return closed(f"{why}: the budget fails closed (the register, not the state file, "
+                      "proves what was spent)")
+    loaded = _load(path)
+    if loaded is None and path.exists():
+        return closed(f"{path.name} malformed: the budget fails closed")
+    doc = loaded or {}                      # a missing state file is recreated from the register
+    reg_left, opened = _register_left(reg, study, budget)
+    if not opened:
+        try:
+            _append(path, {"study": study, "budget": budget})
+        except OSError as exc:
+            return closed(f"register unwritable ({type(exc).__name__}): not opened blind")
+    st = dict(doc.get(study) or {})
+    # THE SMALLER OF THE TWO WITNESSES: an older state snapshot cannot refill what the register
+    # recorded as spent, and a register restored to its stub cannot refill what the state holds.
+    left = min(int(st.get("budget_left", budget)), reg_left)
+    asked = int(st.get("questions", 0))
+    rng = np.random.default_rng(seed)               # None -> OS entropy
+    s = abs(float(scale)) or 1.0
+    t_hat = threshold * s + rng.laplace(0.0, 2 * sigma * s)
+    answers: dict[str, float | None] = {}
+    overfit: list[str] = []
+    for name, (tr, ho) in queries.items():
+        asked += 1
+        if left <= 0:
+            answers[name] = None
+            continue
+        if abs(float(tr) - float(ho)) > t_hat + rng.laplace(0.0, 4 * sigma * s):
+            left -= 1
+            overfit.append(name)
+            answers[name] = float(ho) + float(rng.laplace(0.0, sigma * s))
+            t_hat = threshold * s + rng.laplace(0.0, 2 * sigma * s)
+        else:
+            answers[name] = float(tr)
+    st.update(budget_left=left, questions=asked, budget=budget,
+              overfit_total=int(st.get("overfit_total", 0)) + len(overfit),
+              last_at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
+    doc[study] = st
+    try:
+        # The charge lands in the register FIRST: an uncharged answer is a free look at the
+        # holdout, so a pass whose charge cannot be written answers nothing.
+        _append(path, {"charge": study, "spent": len(overfit), "asked": len(queries)})
+        _save(path, doc)
+    except OSError as exc:
+        return closed(f"{type(exc).__name__}: {exc}", asked)
+    return {"study": study, "answers": answers, "overfit": overfit, "budget_left": left,
+            "budget": budget, "questions_total": asked,
+            "threshold_abs": round(threshold * s, 6), "sigma_abs": round(sigma * s, 6),
+            "status": "EXHAUSTED" if left <= 0 else "VALID", "state_error": None}
+
+
+def epoch(base: str, state_path: Path | None = None) -> tuple[str, set[str]]:
+    """(the current study name for `base`, the row keys earlier epochs retired). Read from the
+    append-only register, so restoring the state file cannot rewind an epoch or un-retire a row."""
+    rows = _register(state_path or STATE) or []
+    rot = [r for r in rows if r.get("rotate") == base and isinstance(r.get("epoch"), int)]
+    n = max((int(r["epoch"]) for r in rot), default=0)
+    return f"{base}@{n}", {str(k) for r in rot for k in r.get("retired_keys") or []}
+
+
+def rotate(base: str, used_keys: set[str], state_path: Path | None = None) -> str | None:
+    """Retire `used_keys` and open the next epoch, appended to the register. Returns the new
+    study name, or None when the register cannot be read or written (the study then stays
+    exhausted -- closed, never reopened)."""
+    path = state_path or STATE
+    if _register(path) is None:
+        return None
+    name, _retired = epoch(base, path)
+    n = int(name.rsplit("@", 1)[1]) + 1
+    try:
+        _append(path, {"rotate": base, "epoch": n,
+                       "retired_keys": sorted(str(k) for k in used_keys)})
+    except OSError:
+        return None
+    return f"{base}@{n}"

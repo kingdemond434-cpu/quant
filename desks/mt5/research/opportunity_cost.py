@@ -38,6 +38,7 @@ for _p in (str(REPO), str(BASE / "research")):
 COMPILED = BASE / "data" / "hypotheses" / "miner_candidates.json"
 GATES = BASE / "reports" / "universal_gates_external.json"
 OUT = BASE / "reports" / "opportunity_cost.json"
+FRONTIER = BASE / "reports" / "RESEARCH_FRONTIER.json"
 DEFERRED = "NOT_RUN_BUILD_BUDGET_DEFERRED"
 SAMPLE = 5000
 
@@ -104,6 +105,22 @@ def spent(cost_by_run: dict[str, dict[str, Any]], top: int = 15) -> dict[str, An
             "total_hours": round(sum(h for _, h in rows), 4), "costed_runs": len(rows)}
 
 
+def research_process(frontier: dict[str, Any]) -> dict[str, Any]:
+    """The research PROCESS's own untested set: every limitation meta_rnd's frontier report
+    names that has no measured challenger (UNMEASURED, NOT_BUILT, BLOCKED_BY_POLICY), with the
+    next experiment it would take. An absent report is UNMEASURED, never an empty list."""
+    rows = frontier.get("limitations")
+    if not isinstance(rows, list):
+        return {"status": "UNMEASURED", "why": f"{FRONTIER.name} absent or malformed",
+                "open": None}
+    open_ = [{"id": r.get("id"), "status": r.get("status"), "owner": r.get("owner"),
+              "next_experiment": r.get("next_experiment")}
+             for r in rows if isinstance(r, dict)
+             and r.get("status") in ("UNMEASURED", "NOT_BUILT", "BLOCKED_BY_POLICY")]
+    return {"status": "MEASURED", "of_limitations": len(rows), "open": open_,
+            "measured_share": frontier.get("measured_share"), "at": frontier.get("at")}
+
+
 def build(now: datetime | None = None) -> dict[str, Any]:
     from libs.ops.compute_ledger import cost_by_run
     compiled = _read(COMPILED)
@@ -114,10 +131,11 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             "compiler": compiler_shortfall(compiled),
             "gauntlet": gauntlet_deferred(gates),
             "queue": queue_backlog(now),
+            "research_process": research_process(_read(FRONTIER)),
         },
         "spent": spent(cost_by_run()),
         "sources": {"compiled": COMPILED.name, "gates": GATES.name, "queue": "queue_store",
-                    "ledger": "libs/ops/compute_ledger"},
+                    "frontier": FRONTIER.name, "ledger": "libs/ops/compute_ledger"},
         "why": ("the tested set is what the hour's compute chose; this is the set it therefore "
                 "did not choose, named so the choice can be priced"),
     }
@@ -125,9 +143,15 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     doc["headline"] = (f"{nt['compiler']['files_deferred']} intake files unopened, "
                        f"{nt['gauntlet']['cells_deferred']} gauntlet cells budget-deferred, "
                        f"{nt['queue']['pending_sampled']}+ queue rows pending "
-                       f"(oldest {nt['queue']['oldest_pending_days']}d) against "
+                       f"(oldest {nt['queue']['oldest_pending_days']}d), "
+                       f"{_open_count(nt['research_process'])} research-process limits "
+                       f"untested, against "
                        f"{doc['spent']['total_hours']}h costed in the window")
     return doc
+
+
+def _open_count(rp: dict[str, Any]) -> str:
+    return "UNMEASURED" if rp.get("open") is None else str(len(rp["open"]))
 
 
 def main(argv: list[str] | None = None) -> int:
