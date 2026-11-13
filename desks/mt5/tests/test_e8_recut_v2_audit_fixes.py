@@ -235,7 +235,6 @@ def test_the_writer_strips_free_text_a_call_site_forgot(monkeypatch) -> None:
 
 @pytest.mark.parametrize("text", [
     "sent buy_stop, sell_stop", "shadow: would send buy_stop",
-    "committed 1,349 + this window 600 USD, x1.25 slippage = 2,436, against 2,500",
     "one gold trade at risk at a time: bracket(s) 2026-10-15/asia still rest at the venue",
     "XAUUSD.asia 4320.30 at 2026-11-13T10:00:00+00:00 on e8_gold:afternoon",
 ])
@@ -387,3 +386,11 @@ def test_run_measures_and_passes_the_re_send_budget() -> None:
     body = src[src.index("def _retry_failed_legs("):src.index("def connect_terminal(")]
     assert body.index("retry_budget_hold(") < body.index("fenced_send(")
 
+
+
+def test_public_text_withholds_the_rails_usd_figures() -> None:
+    """Audit HOLD on #1096: the rails' USD sentence publishes without its amounts."""
+    out = ev.public_text("committed 1,349 + this window 600 USD, x1.25 slippage = 2,436, "
+                         "against 2,500")
+    assert out == ("committed <amount> + this window <amount>, x1.25 slippage = <amount>, "
+                   "against <amount>")

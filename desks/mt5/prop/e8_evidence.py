@@ -352,8 +352,10 @@ _PUBLIC_SCRUBS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 #: Any figure of two or more integer digits in a decision's why (the rails print USD without a
 #: marker below 1,000: "against 850 to today's floor"), unless it counts points. Lots (0.39),
-#: multipliers (x1.5) and the outcome/reason codes survive; the full text stays on the box.
-_WHY_FIGURE = re.compile(r"(?<![\w.])\d{2,}(?:\.\d+)?(?!\s*points?\b)(?![\w.])")
+#: multipliers (x1.5), order/ticket/deal ids, dates and times, and the outcome/reason codes
+#: survive; the full text stays on the box.
+_WHY_FIGURE = re.compile(r"(?<![\w.\-:/#])(?<!order )(?<!ticket )(?<!deal )\d{2,}(?:\.\d+)?"
+                         r"(?!\s*points?\b)(?![\w.\-:/])")
 
 
 def _figures_withheld(text: str) -> str:

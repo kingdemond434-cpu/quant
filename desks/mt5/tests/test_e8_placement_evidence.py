@@ -1021,7 +1021,7 @@ def test_no_account_money_reaches_the_published_decision_ledger() -> None:
     assert d.rows[0]["lot"] == 0.39
     st: dict[str, Any] = {"date": "2026-10-15", "windows": {}, "carried": {}}
     written = ev.record_decisions(d.rows, st, now=datetime(2026, 10, 15, 14, 0, tzinfo=UTC),
-                                  server_date="2026-10-15", account="tradelocker:1",
+                                  server_date="2026-10-15", account="tradelocker:7654321",
                                   armed=True, host={"verdict": "TRADING"})
     assert written and all(not k.endswith("_usd") for k in written[0])
     text = ev.decisions_path().read_text("utf-8")
