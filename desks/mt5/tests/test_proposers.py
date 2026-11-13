@@ -308,9 +308,34 @@ def test_ensemble_counts_a_member_for_its_whole_ttl_so_staggered_weak_signals_co
         return [Signal(time=d.index[base + k], side=1, stop=0.0, target=1e9, ttl_bars=12,
                        tag=family, trigger=None, wait_bars=1)]
     sigs = fam(d, members=members, weights=[1.0] * 6, threshold=0.5, hold_bars=48,
-               _runner=runner)
+               vote_window=True, _runner=runner)
     assert len(sigs) == 1 and sigs[0].side == 1
     assert sigs[0].time == d.index[base + 2]          # 3 of 6 exposed = 0.5: fires then, no earlier
+
+
+def test_ensemble_default_is_the_certified_entry_bar_vote():
+    """THE WINDOW IS OPT-IN (#1097). A certified ensemble spec carries no `vote_window` and must
+    rebuild exactly the signals it was certified on: replay-shadow measured the window moving
+    cert22 EURUSD H1 from 229 to 307 signals. Staggered entries therefore never combine by default,
+    and coincident entries fire exactly as before."""
+    from mt5desk.engine import Signal
+    fam = ORTHOGONAL_FAMILIES["ensemble"]
+    d = _bars(days=200)
+    members = [{"symbol": "X", "family": f"m{k}", "params": {}} for k in range(6)]
+    base = 24 * 130
+
+    def staggered(sym, family, params, df):
+        return [Signal(time=d.index[base + int(family[1:])], side=1, stop=0.0, target=1e9,
+                       ttl_bars=12, tag=family, trigger=None, wait_bars=1)]
+
+    def together(sym, family, params, df):
+        return [Signal(time=d.index[base], side=1, stop=0.0, target=1e9, ttl_bars=12,
+                       tag=family, trigger=None, wait_bars=1)]
+    assert fam(d, members=members, weights=[1.0] * 6, threshold=0.5, hold_bars=48,
+               _runner=staggered) == []
+    sigs = fam(d, members=members, weights=[1.0] * 6, threshold=0.5, hold_bars=48,
+               _runner=together)
+    assert [s.time for s in sigs] == [d.index[base]]
 
 
 def test_ensemble_places_off_clock_member_times_on_the_containing_bar():
@@ -323,7 +348,8 @@ def test_ensemble_places_off_clock_member_times_on_the_containing_bar():
     def runner(sym, family, params, df):
         return [Signal(time=t, side=-1, stop=0.0, target=-1e9, ttl_bars=3, tag=family,
                        trigger=None, wait_bars=1)]
-    sigs = fam(d, members=members, weights=[1.0], threshold=0.5, hold_bars=48, _runner=runner)
+    sigs = fam(d, members=members, weights=[1.0], threshold=0.5, hold_bars=48,
+               vote_window=True, _runner=runner)
     assert [s.time for s in sigs] == [d.index[24 * 130]] and sigs[0].side == -1
 
 
@@ -345,5 +371,5 @@ def test_ensemble_converts_a_member_ttl_through_bar_durations(monkeypatch):
     members = [{"symbol": "X", "family": "a", "params": {}},
                {"symbol": "X", "family": "b", "params": {}}]
     sigs = fe.family_ensemble(m5, members=members, weights=[1.0, 1.0], threshold=0.9,
-                              hold_bars=48, _runner=runner)
+                              hold_bars=48, vote_window=True, _runner=runner)
     assert sigs == [], "a one-hour M5 hold must not overlap the next hour's member"

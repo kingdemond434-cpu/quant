@@ -46,6 +46,7 @@ def family_ensemble(
     atr_n: int = 20,
     stop_atr: float = 2.0,
     rr: float = 1.5,
+    vote_window: bool = False,
     _runner: Callable[[str, str, dict, pd.DataFrame], list[Any]] | None = None,
 ) -> list[Signal]:
     """`members` are (symbol, family, params) dicts; `_runner` builds each member's signals.
@@ -100,6 +101,17 @@ def family_ensemble(
             continue
         n_ok += 1
         exposure = np.zeros(len(d), dtype=float)
+        if not vote_window:
+            # THE ORIGINAL ENTRY-BAR VOTE, kept as the default: every ensemble already certified
+            # (cert22 EURUSD H1 among them) was judged on it, and replay-shadow measured the
+            # window moving that sleeve's signals 229 -> 307 (#1097). A certified spec carries no
+            # `vote_window`, so it rebuilds exactly what was certified; the window is opt-in and
+            # a spec that asks for it is a NEW cell the gauntlet judges on its own.
+            for s in sigs:
+                if s.time in d.index:
+                    exposure[d.index.get_loc(s.time)] += int(s.side)
+            vote_a += float(w) * exposure
+            continue
         for s in sigs:
             try:
                 t = pd.Timestamp(s.time)

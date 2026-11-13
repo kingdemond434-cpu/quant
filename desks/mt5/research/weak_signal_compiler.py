@@ -344,7 +344,7 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
             mem = [dict(members[k]) for k in keep]
             sub = d.loc[: te_idx[-1]]
             sigs = family_ensemble(sub, members=mem, weights=list(weights), threshold=thr,
-                                   hold_bars=hold,
+                                   hold_bars=hold, vote_window=True,
                                    _runner=lambda s_, f_, p_, df_, _c={k: sig_by_member[k]
                                                                         for k in keep}, _m=mem:
                                    _c[[i for i, mm in enumerate(_m)
@@ -367,7 +367,7 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
             from mt5desk.family_ensemble import family_ensemble as fe
             full_sigs = fe(d, members=[dict(members[k]) for k in keep],
                            weights=[float(x) for x in weights_used], threshold=thr,
-                           hold_bars=hold,
+                           hold_bars=hold, vote_window=True,
                            _runner=lambda s_, f_, p_, df_, _c=sig_by_member, _keep=keep,
                            _m=members: _c[next(k for k in _keep if _m[k]["symbol"] == s_
                                               and _m[k]["family"] == f_
@@ -419,7 +419,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
     cands = [pc.candidate(
         SOURCE, r["symbol"], "ensemble",
         {"members": r["members"], "weights": r["weights"], "threshold": r["threshold"],
-         "hold_bars": r["hold_bars"]},
+         "hold_bars": r["hold_bars"], "vote_window": True},
         mechanism=(f"{r['n_members']} sub-cost predictors combined by frozen shrunk weights; "
                    f"the combination clears cost out of sample where no member does alone"),
         title=f"{r['cell']} {r['n_members']} members",
