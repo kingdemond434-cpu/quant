@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-13T10:56:43.793627+00:00",
+ "generated_utc": "2026-11-13T11:45:41.937554+00:00",
  "over_budget": [
   {
    "test_id": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
@@ -115629,8 +115629,8 @@
    "test_id": "external.GBPMXN.entry_conditioned.p=f82e090d95e0107d",
    "at": "2026-11-13T05:03:22.114907+00:00",
    "family": "entry_conditioned",
-   "p": 0.011538464999999925,
-   "e": 4.654745983044484,
+   "p": 0.011249999999999927,
+   "e": 4.714045207910332,
    "lord_level": 0.034437004255629476,
    "lord_reject": true,
    "elond_level": 2.2323403575846342e-05,
@@ -115642,8 +115642,8 @@
    "test_id": "external.GBPMXN.entry_conditioned.p=e2506e8f9f29d7fb",
    "at": "2026-11-13T05:03:22.248828+00:00",
    "family": "entry_conditioned",
-   "p": 0.010923080199999992,
-   "e": 4.784069092045689,
+   "p": 0.010649999999999993,
+   "e": 4.845015831115094,
    "lord_level": 0.0344762072433129,
    "lord_reject": true,
    "elond_level": 2.2323341493373126e-05,

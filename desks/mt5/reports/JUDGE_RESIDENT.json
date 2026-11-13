@@ -237,7 +237,7 @@
   }
  },
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-13T11:50:07+00:00",
+ "heartbeat_utc": "2026-11-13T12:05:02+00:00",
  "sweep_phase": {
   "pid": 2956,
   "sweep_started_utc": "2026-11-13T10:07:37+00:00",
