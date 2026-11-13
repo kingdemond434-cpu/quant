@@ -151,6 +151,35 @@ CONSTRUCTIONS: tuple[Construction, ...] = (
         "feeds the `orderflow_imbalance` family. Carries a `basis` field saying it used revision "
         "signs and not aggressor side, because a retail CFD tape has neither",
         ""),
+    # The information side (2026-11-13): flow, toxicity, impact and regime, accumulated per H1
+    # bar in data/lake/series/micro_<SYM>.parquet by the hourly `flow_toxicity` leg and served
+    # as DataHub contract `micro.flow_bars`. Each is a conditioner the judge rebuilds via
+    # `family_exogenous_conditioner` / `family_alt_series_momentum`.
+    Construction(
+        "tick_rule_signed_flow", "Lee-Ready tick-test signed flow per bar (zero-tick carried)",
+        (TICKS,), "mt5desk/flow_toxicity.py:tick_rule_signs",
+        "persistent one-sided pressure the bar close hides; a cell conditions on it directly",
+        "desks/mt5/reports/FLOW_TOXICITY.json"),
+    Construction(
+        "vpin_toxicity", "bulk-volume-classified order imbalance over equal-count buckets",
+        (TICKS,), "mt5desk/flow_toxicity.py:bvc_buckets",
+        "separates informed from uninformed pressing: toxic flow predicts larger next moves",
+        "desks/mt5/reports/FLOW_TOXICITY.json"),
+    Construction(
+        "kyle_lambda_impact", "rolling slope of the bar's mid change on its signed flow",
+        (TICKS,), "mt5desk/flow_toxicity.py:derive",
+        "how much price a unit of pressing buys -- a thin, informed book versus a deep one",
+        "desks/mt5/reports/FLOW_TOXICITY.json"),
+    Construction(
+        "spread_regime", "the bar's mean quoted spread ranked against its own trailing window",
+        (TICKS,), "mt5desk/flow_toxicity.py:derive",
+        "the venue's own regime label, point-in-time, for conditioning any family",
+        "desks/mt5/reports/FLOW_TOXICITY.json"),
+    Construction(
+        "quote_imbalance_sign_only", "per-bar sign-only quote-revision imbalance (basis named)",
+        (TICKS,), "mt5desk/flow_toxicity.py:bar_aggregates",
+        "the per-bar, accumulated form of the proxy above; the size-weighted form needs depth",
+        "desks/mt5/reports/FLOW_TOXICITY.json"),
 
     # ---- the desk's own fills ---------------------------------------------------------------
     Construction(
