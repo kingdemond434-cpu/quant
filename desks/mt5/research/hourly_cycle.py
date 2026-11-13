@@ -1106,6 +1106,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:   attestation_remint 3 -- enrolment still frozen after one full sweep, or a row re-stamped
 #:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    # decay_monitor exits 1 when DECAY_ZERO.json exists and cannot be read: it refuses to rewrite
+    # it and the gateway stays on the last good copy (#540).
+    "decay_monitor": {1: "ZERO_FILE_UNREADABLE"},
     "attestation_remint": {3: "REMINT_BREACH"},
     # `halt_rail` 2 -- a latched halt, or a ruin-rail input too stale to judge while the desk is
     # halted; 3 -- the rail's inputs cannot be read at all. Both stay FAILURES rather than

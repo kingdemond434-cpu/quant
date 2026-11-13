@@ -327,6 +327,9 @@ from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 
     SCALP_LANE_ZERO as SCALP_LANE_ZERO,
     book_name as book_name,
     cert_zero_row as cert_zero_row,
+    DECAY_ZERO_DISABLED as DECAY_ZERO_DISABLED,
+    DECAY_ZERO_FILE as DECAY_ZERO_FILE,
+    decay_zero as decay_zero,
     principal_zero as principal_zero,
 )
 from mt5desk.decision_core import (
@@ -5268,8 +5271,12 @@ def main() -> None:
     # ONE ORDER PER BOOK KEY: the rows `_book_key` folds onto one allocator cell share its one
     # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
     # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
-    # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
-    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
+    # chosen as a key's carrier: another LIVE variant of the cell carries the key instead. The
+    # same holds for a row DECAY_ZERO names by its own name (#540): were it the carrier, the
+    # decay zero below would leave the key sending nothing while a healthy variant was folded.
+    _dz0 = globals().get("decay_zero")              # looked up: exec harnesses slice main
+    _aliases = fold_book_aliases({str(_s["name"]): (None if (cert_book_zero(_s.get("name"))
+                                                             or (_dz0 and _dz0(_s["name"])))
                                                     else _book_key(_s, _book))
                                   for _s in sleeves})
     for _s in sleeves:
@@ -5297,7 +5304,23 @@ def main() -> None:
                 _s["risk_frac"], _s["alias_of"] = 0.0, _aliases[str(_s["name"])]
                 log(f"ALIAS_FOLDED {_s['name']} -> {_s['alias_of']} on book key {_key}: one "
                     f"order per key, sized at the key's {float(_book[_key]):.5f}")
-        if cert_zero_row(_s):
+        _dz_fn = globals().get("decay_zero")          # looked up: exec harnesses slice main
+        _dz_why = (_dz_fn(_s["name"]) or _dz_fn(_key)) if _dz_fn else None
+        if _dz_why is not None:
+            # ITS OWN LIVE RECORD FAILED THE PROMOTER'S RETIREMENT BARS (decay_monitor
+            # DECAY_ZERO): nothing on every lane and path, billed once per sleeve per day.
+            _forgone = (float(_book.get(_key) or 0.0) if from_book
+                        else float(_s.get("risk_frac") or 0.0))  # billed BEFORE the zero
+            _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
+            _s["decay_zero"] = _dz_why
+            from mt5desk import fusion_rails as _rails
+            _rails.line_once("decay_zero",
+                             f"{_s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                             sleeve=_s["name"], symbol=_s.get("symbol"), book_key=_key,
+                             # A non-book row is billed at its own risk fraction (#540 S).
+                             missed_growth_risk_frac=_forgone,
+                             why=f"decay zero ({_dz_why}); no order")
+        elif cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
             # forgone sleeve is a missed-growth line once per sleeve per day.
             _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
