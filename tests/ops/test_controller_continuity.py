@@ -152,3 +152,55 @@ def test_controller_inputs_fail_closed(tmp_path: Path) -> None:
             checkpoint_path=saved,
             history_path=history,
         )
+
+
+def test_a_dead_pass_reclaims_only_its_own_lease_at_its_own_epoch(tmp_path: Path) -> None:
+    """MT5-CycleNoon 2026-11-13: a pass cut off before its release left an eleven-hour lease,
+    and every hourly resume exited 5 against it. The resume may take over that lease -- and only
+    that one: same controller, exact recorded epoch -- and the old token is fenced out after."""
+    state, _, _ = _paths(tmp_path)
+    now = datetime(2026, 11, 13, 12, 2, tzinfo=UTC)
+    dead = claim("claude-noon", state_path=state, now=now, ttl_seconds=39600)
+    later = now + timedelta(hours=3)
+
+    # Without the takeover, the lane's own lease still refuses it (the old behaviour, kept).
+    assert claim("claude-noon", state_path=state, now=later)["status"] == "LEASE_HELD"
+    # Another controller cannot use the takeover; nor can a wrong epoch.
+    assert (
+        claim("codex-midnight", state_path=state, now=later, takeover_epoch=int(dead["epoch"]))[
+            "status"
+        ]
+        == "LEASE_HELD"
+    )
+    assert (
+        claim("claude-noon", state_path=state, now=later, takeover_epoch=int(dead["epoch"]) + 1)[
+            "status"
+        ]
+        == "LEASE_HELD"
+    )
+
+    resumed = claim(
+        "claude-noon",
+        state_path=state,
+        now=later,
+        ttl_seconds=39600,
+        takeover_epoch=int(dead["epoch"]),
+    )
+    assert resumed["status"] == "LEASED"
+    assert int(resumed["epoch"]) == int(dead["epoch"]) + 1
+    assert resumed["taken_over_epoch"] == int(dead["epoch"])
+    with pytest.raises(ControllerLeaseError):
+        heartbeat(
+            "claude-noon",
+            int(dead["epoch"]),
+            str(dead["fencing_token"]),
+            state_path=state,
+            now=later + timedelta(seconds=1),
+        )
+    # A second takeover at the now-stale epoch is refused: the resumed pass owns the lease.
+    assert (
+        claim("claude-noon", state_path=state, now=later, takeover_epoch=int(dead["epoch"]))[
+            "status"
+        ]
+        == "LEASE_HELD"
+    )

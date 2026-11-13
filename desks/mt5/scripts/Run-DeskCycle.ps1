@@ -339,7 +339,16 @@ if (-not $WhatIfOnly) {
     # and short enough that a killed pass frees the institution before the other lane's window.
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
     Push-Location $RepoRoot
-    $claimJson = (& $Python scripts\controller_checkpoint.py claim --controller $Controller --ttl-seconds 39600 2>&1 | Out-String)
+    # A RESUMED pass reclaims ITS OWN lease. The pass being resumed was cut off (time limit,
+    # reboot) before its release ran, so its eleven-hour lease is still live and names this same
+    # controller; without the takeover every hourly resume exited 5 until the lease aged out and
+    # the day's pass was lost (MT5-CycleNoon, 2026-11-13). The takeover is fenced to the exact
+    # epoch the dead pass recorded, so another controller's lease, or a newer one, still refuses.
+    $takeover = @()
+    if ($resuming -and $state.lease_epoch -and $state.controller -eq $Controller) {
+        $takeover = @("--takeover-epoch", "$([int]$state.lease_epoch)")
+    }
+    $claimJson = (& $Python scripts\controller_checkpoint.py claim --controller $Controller --ttl-seconds 39600 @takeover 2>&1 | Out-String)
     Pop-Location
     $ErrorActionPreference = $prevEap
     try { $lease = $claimJson | ConvertFrom-Json } catch { $lease = $null }

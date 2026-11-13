@@ -394,3 +394,13 @@ def test_the_end_row_carries_the_enforced_misses_not_the_agents_claim() -> None:
     for field in ("duties_missed", "pass_questions_missed", "judging_sweep_missed"):
         assert f"{field} = $enforced.{field}" in src, field
     assert 'duties_missed = "UNMEASURED"' in src
+
+
+def test_a_resumed_pass_takes_over_only_its_own_dead_lease() -> None:
+    """The exit-5 defect of 2026-11-13: the resume must pass the dead pass's recorded epoch, and
+    only when resuming under the same controller -- a fresh pass never takes over anything."""
+    src = LAUNCHER.read_text("utf-8")
+    assert '"--takeover-epoch"' in src
+    guard = src[src.index("$takeover = @()") : src.index("$claimJson = ")]
+    assert "if ($resuming -and $state.lease_epoch -and $state.controller -eq $Controller)" in guard
+    assert "--ttl-seconds 39600 @takeover" in src
