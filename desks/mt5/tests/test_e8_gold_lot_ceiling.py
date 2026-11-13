@@ -7,7 +7,7 @@ the ceiling; v4 then FITS it to the concurrent-risk budget on its risk plus the 
 points (`bracket_slip`, 24.13 until 20 stop exits are measured) instead of deferring the window
 silently. Every cut is journalled RAIL_SHRUNK (published two-sided by missed_growth); a lot that
 cannot fit above the venue minimum is a RAIL_BLOCKED row with reason `lot_ceiling`, never a
-silent skip. An override above E8's 20-lot cap or below the venue minimum is refused.
+silent skip. A lot set over E8's 20-lot cap, or under the venue minimum, is refused.
 
 The fixture is test_e8_gold_guard_and_open_risk's: the afternoon window is due with a 33.5-point
 stop, 500 USD of risk -> 0.14 lots at the venue's 100 oz contract. A 10 oz contract makes the

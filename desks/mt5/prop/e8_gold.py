@@ -174,7 +174,7 @@ MAX_STOP_REFUSALS = 3
 # RAIL_SHRUNK, rail LOT_CEILING_RAIL, reason LOT_CEILING_REASON) and published two-sided by
 # `research/missed_growth.published_e8_gold_lines` -- the risk withheld, the saving UNMEASURED.
 GOLD_MAX_LOT = 0.75
-#: E8's own position cap on XAUUSD, in lots. An override above it is no ceiling at all.
+#: E8's own position cap on XAUUSD, in lots. A configured value larger than it is no ceiling at all.
 GOLD_MAX_LOT_CAP = 20.0
 #: The box may move the ceiling without a code change: {"max_lot": <lots>}. Absent means
 #: GOLD_MAX_LOT. Unreadable, non-numeric, non-finite, <= 0, above GOLD_MAX_LOT_CAP or below the
