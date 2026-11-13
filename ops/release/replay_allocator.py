@@ -12,6 +12,11 @@ unimportable, so the margin reader can never reach a terminal.
 
 It records every line of pf_allocator.py the pass executed, so the parent can say whether the
 lines a PR changed were ever run: an identical book from code that never ran is not a measurement.
+
+TRUST: the tree's code (the PR's, on the head) runs in THIS process, beside the tracer, exactly
+as replay_child.py runs the book: unarmed, keyless, venue-less. Code that rewrites its own trace
+can only make the parent read UNMEASURED or a line set the file cannot have (checked there), and
+hunting for the harness is the reviewer's rule 5.
 """
 
 from __future__ import annotations

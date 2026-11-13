@@ -46,6 +46,7 @@ import subprocess
 import sys
 import tempfile
 import unicodedata
+from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -767,7 +768,14 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
 #:   - every statement the PR changed was executed by the tree it is in (removed and replaced
 #:     ones by the base, added ones by the PR; a changed `def` line needs its body entered).
 #:     Comments, blank lines and bare string statements do nothing and are not asked for. A
-#:     changed statement the fast clock never reaches stays UNMEASURED.
+#:     changed statement the fast clock never reaches stays UNMEASURED;
+#:   - with the book identical, the changed statements hold the same numeric literals and
+#:     comparison/arithmetic operators in both trees (`moved_thresholds`): a moved threshold
+#:     the frozen evidence never crosses stays UNMEASURED (allocator-leg audit MF1).
+#: TRUST: the PR's own code runs in the traced process, as it does in run_tree's child; it is
+#: never armed, holds no key and reaches no venue, and its trace must name only lines the file
+#: has. Crash text (stderr) is printed to the CI log and the runner-local --report only; no box
+#: artifact publishes this report.
 #: Nothing else changes: the knob rule still reads every UPPER_CASE constant the PR moves.
 ALLOCATOR = "desks/mt5/research/pf_allocator.py"
 ALLOCATOR_CHILD = HERE / "replay_allocator.py"
@@ -822,21 +830,22 @@ def changed_lines(was: str, now: str) -> tuple[set[int], set[int]]:
     return a, b
 
 
-def unrun(src: str, lines: set[int], ran: set[int]) -> list[int]:
-    """The `lines` of `src` that belong to a statement the run never executed: the innermost
-    statement (or except clause) holding the line must have executed one of its own lines (not
-    its children's); a function's signature or decorator, a line of its body. Comments, blank
-    lines and bare string statements are skipped. Unparseable source: every line."""
-    try:
-        tree = ast.parse(src)
-    except SyntaxError:
-        return sorted(lines)
-    text = src.splitlines()
-    nodes = []
-    for n in ast.walk(tree):
+def _statements(src: str) -> list[tuple[int, int, ast.AST]]:
+    """(first line, last line, node) of every statement and except clause; decorators count."""
+    nodes: list[tuple[int, int, ast.AST]] = []
+    for n in ast.walk(ast.parse(src)):
         if isinstance(n, ast.stmt | ast.ExceptHandler):
             deco = [d.lineno for d in getattr(n, "decorator_list", [])]
             nodes.append((min([n.lineno, *deco]), n.end_lineno or n.lineno, n))
+    return nodes
+
+
+def _holding(
+    src: str, nodes: list[tuple[int, int, ast.AST]], lines: set[int]
+) -> list[tuple[int, int, int, ast.AST]]:
+    """(line, first, last, innermost statement) for each line of code in `lines`: comments,
+    blank lines and bare string statements (which do nothing) are left out."""
+    text = src.splitlines()
     out = []
     for line in sorted(lines):
         code = text[line - 1].strip() if 0 < line <= len(text) else ""
@@ -847,7 +856,22 @@ def unrun(src: str, lines: set[int], ran: set[int]) -> list[int]:
             continue
         start, end, n = min(holding, key=lambda x: x[1] - x[0])
         if isinstance(n, ast.Expr) and isinstance(getattr(n.value, "value", None), str):
-            continue  # a bare string does nothing
+            continue
+        out.append((line, start, end, n))
+    return out
+
+
+def unrun(src: str, lines: set[int], ran: set[int]) -> list[int]:
+    """The `lines` of `src` that belong to a statement the run never executed: the innermost
+    statement (or except clause) holding the line must have executed one of its own lines (not
+    its children's); a function's signature or decorator, a line of its body. Comments, blank
+    lines and bare string statements are skipped. Unparseable source: every line."""
+    try:
+        nodes = _statements(src)
+    except SyntaxError:
+        return sorted(lines)
+    out = []
+    for line, start, end, n in _holding(src, nodes, lines):
         if isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef):
             own = set(range(n.body[0].lineno, end + 1))  # entered: its body ran
         else:
@@ -858,6 +882,51 @@ def unrun(src: str, lines: set[int], ran: set[int]) -> list[int]:
         if not own & ran:
             out.append(line)
     return out
+
+
+def _thresholds(node: ast.AST) -> list[str]:
+    """The numeric literals and the comparison and arithmetic operators of a statement's OWN
+    code (its header, never the statements nested in it)."""
+    out: list[str] = []
+    stack = [
+        c for c in ast.iter_child_nodes(node) if not isinstance(c, ast.stmt | ast.ExceptHandler)
+    ]
+    while stack:
+        x = stack.pop()
+        if isinstance(x, ast.Constant) and isinstance(x.value, int | float | complex):
+            if not isinstance(x.value, bool):
+                out.append(f"{type(x.value).__name__}:{x.value!r}")
+        elif isinstance(x, ast.Compare):
+            out += [type(op).__name__ for op in x.ops]
+        elif isinstance(x, ast.BinOp | ast.UnaryOp | ast.BoolOp | ast.AugAssign):
+            out.append(type(x.op).__name__)
+        stack.extend(c for c in ast.iter_child_nodes(x) if not isinstance(c, ast.stmt))
+    return out
+
+
+def moved_thresholds(
+    was: str, gone: set[int], now: str, added: set[int]
+) -> tuple[list[int], list[int]]:
+    """(base lines, PR lines) of the changed statements when, across them, the multiset of
+    numeric literals and comparison/arithmetic operators differs between the trees; ([], [])
+    when it is the same (a rename, a reorder, a refactor that moves no number). A moved
+    threshold the frozen evidence never crosses runs its line and leaves the book identical,
+    so an identical book cannot vouch for it (allocator-leg audit MF1). Unparseable: every line."""
+    try:
+        sides = [
+            {id(h[3]): h for h in _holding(src, _statements(src), lines)}
+            for src, lines in ((was, gone), (now, added))
+        ]
+    except SyntaxError:
+        return sorted(gone), sorted(added)
+    counts = [Counter(t for h in side.values() for t in _thresholds(h[3])) for side in sides]
+    if counts[0] == counts[1]:
+        return [], []
+    return tuple(  # type: ignore[return-value]
+        sorted({line for line, _, _, n in _holding(src, _statements(src), lines)
+                if _thresholds(n)})
+        for src, lines in ((was, gone), (now, added))
+    )  # fmt: skip
 
 
 def _span(lines: list[int]) -> str:
@@ -914,14 +983,33 @@ def allocator_leg(base: Path, head: Path, changed: list[str]) -> dict[str, Any]:
         )
     was, now = read(base, ALLOCATOR) or "", read(head, ALLOCATOR) or ""
     gone, added = changed_lines(was, now)
-    missed_b = unrun(was, gone, {int(x) for x in b.get("lines") or []})
-    missed_h = unrun(now, added, {int(x) for x in h.get("lines") or []})
+    ran_b = {int(x) for x in b.get("lines") or []}
+    ran_h = {int(x) for x in h.get("lines") or []}
+    # the trace comes from the trees' own code (the trust model of run_tree): a line it names
+    # that the file does not have is a trace nobody can read (allocator-leg audit SF1)
+    for who, ran, src in (("base", ran_b, was), ("PR", ran_h, now)):
+        if not ran or not ran <= set(range(1, len(src.splitlines()) + 1)):
+            leg["problems"].append(
+                f"UNMEASURED {ALLOCATOR}: the {who} trace names no line, or a line the file "
+                "does not have"
+            )
+    missed_b = unrun(was, gone, ran_b)
+    missed_h = unrun(now, added, ran_h)
     rep["unrun_lines"] = {"base": missed_b, "pr": missed_h}
     if missed_b or missed_h:
         leg["problems"].append(
             f"UNMEASURED {ALLOCATOR}: the allocator leg never ran these changed lines "
             f"(base: {_span(missed_b) or 'none'}; PR: {_span(missed_h) or 'none'})"
         )
+    if not (deltas or keys):
+        moved_b, moved_h = moved_thresholds(was, gone, now, added)
+        rep["moved_thresholds"] = {"base": moved_b, "pr": moved_h}
+        if moved_b or moved_h:
+            leg["problems"].append(
+                f"UNMEASURED {ALLOCATOR}: a numeric literal or comparison moved but the frozen "
+                f"evidence never reached it (base: {_span(moved_b) or 'none'}; "
+                f"PR: {_span(moved_h) or 'none'})"
+            )
     if not leg["problems"]:
         leg["measured"] = {ALLOCATOR}
     return leg

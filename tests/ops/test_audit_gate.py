@@ -2042,6 +2042,8 @@ def unused():
 
 def run(mode="normal", *, seed=0):
     scale = 1.0
+    if scale > 5.0:
+        scale = 5.0
     return {"book": {"a": FRAC * scale, "b": 0.02}, "mode": mode, "seed": seed,
             "generated_utc": time.time(), "elapsed_s": time.perf_counter()}
 """
@@ -2103,6 +2105,41 @@ def test_a_changed_allocator_line_the_leg_never_ran_stays_unmeasured(tmp_path: P
     head = _alloc_tree(tmp_path / "prose", prose.replace("import time", "import time  # t"))
     rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
     assert rep["verdict"] == "PASS", rep["problems"]
+
+
+def test_a_moved_threshold_the_evidence_never_crosses_stays_unmeasured(tmp_path: Path) -> None:
+    """Allocator-leg audit MF1: the line runs and the book is identical, yet the number moved."""
+    base = _alloc_tree(tmp_path / "base")
+    head = _alloc_tree(tmp_path / "head", _ALLOC.replace("if scale > 5.0:", "if scale > 7.0:"))
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "FAIL" and rep["allocator"]["fraction_deltas"] == {}
+    assert any("a numeric literal or comparison moved" in p for p in rep["problems"])
+    assert rep["allocator"]["moved_thresholds"] == {"base": [10], "pr": [10]}
+    flipped = _alloc_tree(tmp_path / "op", _ALLOC.replace("if scale > 5.0:", "if scale >= 5.0:"))
+    rep = rs.compare(base, flipped, [rs.ALLOCATOR], _grid())
+    assert any("a numeric literal or comparison moved" in p for p in rep["problems"])
+
+
+def test_a_refactor_that_moves_no_number_stays_measured(tmp_path: Path) -> None:
+    base = _alloc_tree(tmp_path / "base")
+    # rename a local, split its binding in two: no number and no operator moves
+    renamed = _ALLOC.replace("scale", "k").replace("    k = 1.0", "    unit = 1.0\n    k = unit")
+    head = _alloc_tree(tmp_path / "head", renamed)
+    rep = rs.compare(base, head, [rs.ALLOCATOR], _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    assert rep["allocator"]["moved_thresholds"] == {"base": [], "pr": []}
+
+
+def test_a_trace_naming_lines_the_file_lacks_is_unmeasured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Allocator-leg audit SF1: the trace is the trees' own code's; it must fit the file."""
+    base, head = _alloc_tree(tmp_path / "base"), _alloc_tree(tmp_path / "head")
+    real = rs.run_allocator
+    monkeypatch.setattr(rs, "run_allocator", lambda t: {**real(t), "lines": [1, 10_000]})
+    leg = rs.allocator_leg(base, head, [rs.ALLOCATOR])
+    assert leg["measured"] == set()
+    assert any("a line the file does not have" in p for p in leg["problems"]), leg["problems"]
 
 
 def test_the_real_allocator_runs_in_the_leg_and_matches_itself() -> None:
