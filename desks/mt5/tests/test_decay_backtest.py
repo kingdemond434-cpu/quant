@@ -135,3 +135,11 @@ def test_an_unreadable_review_ledger_moves_nothing(desk: Path,
     out = json.loads((desk / "decay_live.json").read_text("utf-8"))
     assert out["verdicts"]["usdnok_carry"]["verdict"] == "HEALTHY"
     assert out["verdicts"]["usdnok_carry"]["backtest"]["gap"] == "UNMEASURED"
+
+
+def test_reviews_are_read_from_the_ledger_file(tmp_path: Path) -> None:
+    f = tmp_path / "blind_review_ledger.jsonl"
+    f.write_text(json.dumps(_rev("PASS")) + "\nnot json\n" + json.dumps(_rev("VETO")) + "\n")
+    assert B.read_reviews(f)[CELL]["verdict"] == "VETO"
+    with pytest.raises(OSError):
+        B.read_reviews(tmp_path / "absent.jsonl")

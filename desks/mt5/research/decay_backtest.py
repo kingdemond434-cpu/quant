@@ -28,7 +28,14 @@ value is priced (GROWTH_GOVERNANCE Rule 1).
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
+
+#: The blind reviewer's own ledger, read here as a FILE rather than through `blind_reviewer`:
+#: importing that module would pull the re-execution engine (hostile roster, replay) into the
+#: money path's import closure for the sake of reading one JSONL.
+REVIEW_LEDGER = Path(__file__).resolve().parents[1] / "data" / "blind_review_ledger.jsonl"
 
 EXEMPT = {"gold_asia", "xauusd.asia"}
 MIN_N = 10
@@ -116,3 +123,22 @@ def latest_reviews(ledger_rows: list[dict]) -> dict[str, dict]:
         if isinstance(r, dict) and r.get("cell"):
             out[str(r["cell"])] = r
     return out
+
+
+def read_reviews(path: Path | None = None) -> dict[str, dict]:
+    """cell -> latest review row from the ledger file. Absent or unreadable: {} (every
+    comparison then reads UNMEASURED and nothing moves); an unparseable line is skipped."""
+    p = path or REVIEW_LEDGER
+    rows: list[dict] = []
+    with p.open(encoding="utf-8") as fh:            # OSError propagates to the caller
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                rows.append(r)
+    return latest_reviews(rows)

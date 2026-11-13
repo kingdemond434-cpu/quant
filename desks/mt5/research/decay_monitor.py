@@ -705,12 +705,8 @@ def _reviews() -> tuple[dict[str, dict], str | None]:
     """cell -> the blind reviewer's latest row, or ({}, why) when its ledger cannot be read. An
     unreadable ledger moves nothing: every comparison then reads UNMEASURED."""
     try:
-        try:
-            from research import blind_reviewer
-        except ImportError:
-            import blind_reviewer  # type: ignore[no-redef]
-        return decay_backtest.latest_reviews(list(blind_reviewer.ledger_rows())), None
-    except Exception as exc:  # noqa: BLE001 -- evidence, never a reason to fail the pass
+        return decay_backtest.read_reviews(), None
+    except OSError as exc:
         return {}, f"UNMEASURED: blind-review ledger unreadable ({type(exc).__name__}: {exc})"
 
 
