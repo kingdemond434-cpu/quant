@@ -127,8 +127,18 @@ def claim(
     ttl_seconds: int = 900,
     state_path: Path = DEFAULT_STATE,
     now: datetime | None = None,
+    takeover_epoch: int | None = None,
 ) -> dict[str, object]:
-    """Claim an expired/unowned control plane and issue a monotonically fenced lease."""
+    """Claim an expired/unowned control plane and issue a monotonically fenced lease.
+
+    ``takeover_epoch`` lets a controller reclaim ITS OWN unexpired lease when the caller has
+    proved the holder is dead (Run-DeskCycle.ps1 passes it only when it is resuming a pass whose
+    recorded pid is gone). It succeeds only when the live lease names this same controller AND
+    carries exactly that epoch; anything else -- another controller, a newer epoch -- is still
+    LEASE_HELD. The epoch is bumped, so a zombie holding the old token stays fenced out.
+    Without it, a pass cut off by the execution time limit or a reboot left its eleven-hour lease
+    behind and every hourly resume exited 5 until the lease aged out, losing the day's pass.
+    """
     if not controller.strip() or ttl_seconds < 30:
         raise ValueError("controller is required and ttl_seconds must be >=30")
     stamp = _now(now)
@@ -141,7 +151,13 @@ def claim(
                 active = datetime.fromisoformat(str(expires).replace("Z", "+00:00")) > stamp
             except ValueError:
                 active = False
-        if active:
+        taken_over = (
+            active
+            and takeover_epoch is not None
+            and prior.get("controller") == controller
+            and integer(prior.get("epoch")) == takeover_epoch
+        )
+        if active and not taken_over:
             return {
                 "status": "LEASE_HELD",
                 "controller": prior.get("controller"),
@@ -163,6 +179,8 @@ def claim(
             "predecessor": prior.get("controller"),
             "persistent_workers_controller_independent": True,
         }
+        if taken_over:
+            state["taken_over_epoch"] = takeover_epoch
         _write_atomic(state_path, state)
         return state
 
