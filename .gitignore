@@ -603,6 +603,9 @@ desks/mt5/data/FTMO_ALLOCATOR_ARMED
 desks/mt5/data/FTMO_COPY_PRINCIPAL.json
 # The FTMO sleeve executor's arming marker (prop/ftmo_executor.py): box-local, the principal's step.
 desks/mt5/data/FTMO_EXECUTOR_ARMED
+# FTMO fill attribution (research/ftmo_fill_attribution.py): box-local, NEVER published or synced.
+# Already caught by `**/reports/*`; named here so a re-include is a visible edit of this line (#639 ruling).
+desks/mt5/reports/FTMO_FILL_ATTRIBUTION.json
 desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp

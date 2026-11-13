@@ -1,0 +1,1 @@
+{"survivors": {"external.EURUSD.session_range_breakout.rr=1.5_wb=12": {"sym": "EURUSD", "gates": {"expected_value": {"passed": true, "ev": 0.187}, "stress_costs": {"passed": true, "exp_x3": 0.1666}}}}}
