@@ -688,8 +688,8 @@ def run(*, budget_s: float = 600.0, calendar_root: Path | None = None,
                        default=float), encoding="utf-8")
         try:
             build_leadership_matrix(atlas).to_csv(od / "leadership_matrix.csv")
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 - the matrix is a view; the report says why
+            doc["matrix_error"] = type(exc).__name__
         report_p.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     return doc
 
