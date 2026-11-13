@@ -217,6 +217,9 @@ LEG_LAYER: dict[str, str] = {
     # The dead-session remap turns asia/london/ny variants that can never fire into stand-in
     # cells that can -- a predictor search on the session axis: prediction.
     "session_variant_remap": "prediction",
+    # The conversion handoff's consumer turns parked cells back into judgeable ones -- repaired,
+    # re-parameterised or re-queued -- a predictor search on the conversion axis: prediction.
+    "conversion_handoff_consumer": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",

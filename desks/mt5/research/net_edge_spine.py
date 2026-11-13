@@ -525,12 +525,16 @@ def cost_dead_donations(dead: list[NE.NetEdge], limit: int = 40) -> list[dict[st
         req = NE.descendant_request(row)
         rows.append(candidate(
             SEAT, row.symbol, row.family,
-            {"timeframe": "H4", "lower_turnover": True},
+            # The change IS the chart. `lower_turnover` used to ride in params as a label, no
+            # family takes it, and every descendant died in the judge's build as `unexpected
+            # keyword argument 'lower_turnover'` (2026-11-13); the label lives in evidence.
+            {"timeframe": "H4"},
             mechanism=("the mechanism is unchanged and its GROSS edge survives; only its "
                        "TURNOVER kills it. This descendant trades the same idea at a longer "
                        f"horizon so the per-trade cost is amortised: {req['why']}"),
             title=f"{row.symbol} {row.family} -- lower-turnover descendant of a COST_DEAD cell",
             evidence={"failure_kind": "cost_dead", "descendant_kind": "lower_turnover_descendant",
+                      "lower_turnover": True,
                       "parent_cell": row.key, "gross": row.gross, "net": row.net,
                       "net_decomposition": req["net_decomposition"],
                       "route": "libs.research.coevolution_lab FAILURE_RULES['cost_dead']"}))

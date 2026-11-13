@@ -27,6 +27,11 @@ from typing import Any
 from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
+try:
+    from research import grammar_param_names as _GPN
+except ImportError:                                            # pragma: no cover - import context
+    import grammar_param_names as _GPN  # type: ignore[no-redef]
+
 from . import CellContext, system_id
 
 CELL = "coevolution_cell"
@@ -302,6 +307,7 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
         return A.unmeasured(SYSTEM, bundle, f"no H1 frame with {MIN_BARS}+ bars")
     trials = 0
     cands: list[dict[str, Any]] = []
+    untranslatable: list[dict[str, Any]] = []
     rows: list[dict[str, Any]] = []
     reps: list[dict[str, Any]] = []
     for i, f in enumerate(frames):
@@ -320,8 +326,17 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
                      "representation": "no positive pairing is itself a state: the grammar "
                                        "finds nothing the base rate does not already say"})
         for s in res["survivors"][:3]:
-            op, params = _dominant(s["factors"])
+            op, grammar = _dominant(s["factors"])
             family = FAMILY_OF_OP.get(op, "momentum_volgate")
+            # THE RECIPE IN THE FAMILY'S OWN NAMES (2026-11-13): the grammar's `w`/`h`/`fast`
+            # were donated verbatim and no family takes them, so every survivor died in the
+            # judge's build as `unexpected keyword argument`. A pairing with no faithful
+            # translation is refused by name, never approximated into another claim.
+            params, _how = _GPN.translate(family, grammar)
+            if params is None:
+                untranslatable.append({"symbol": f.symbol, "op": op, "grammar": grammar,
+                                       "why": _how})
+                continue
             cands.append(A.candidate(
                 family, [f.symbol],
                 f"{f.symbol} H1 {family}: coevolved pairing {s['factors']} with model "
@@ -357,6 +372,10 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
         except Exception as exc:
             rows.append({"kind": "UNMEASURED", "engine": "libs.research.coevolution",
                          "why": f"{type(exc).__name__}: {exc}"[:200]})
+    if untranslatable:
+        rows.append({"kind": "untranslatable_recipes", "n": len(untranslatable),
+                     "examples": untranslatable[:5],
+                     "why": "no faithful mapping from the grammar's names to the family's own"})
     _ = math
     return A.packet(SYSTEM, bundle, trials=trials, candidates=cands, representations=reps,
                     research_methods=rows, note=engine_note)

@@ -2064,7 +2064,34 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
 
 #: WHY A PARKED CELL CAME BACK (audit of 9bf6542be, S2): every readmission is booked under one
 #: of these, by reason, so an input that appeared is never reported as bar growth.
-READMIT_CAUSES = ("input_appeared", "bars_appeared", "retry_days", "bar_growth", "max_age")
+READMIT_CAUSES = ("input_appeared", "bars_appeared", "retry_days", "bar_growth", "max_age",
+                  "consumer_requeue")
+
+#: THE OTHER END OF THE HANDOFF (2026-11-13). `research/conversion_handoff_consumer.py` reads
+#: `conversion_handoff.json` every hour and, for a parked cell whose binding cause it has
+#: MEASURED gone (the spec fires on today's bars, or its chart's history has grown by the factor
+#: the cell needs, counted in trading days), writes a request here. A request re-admits the cell
+#: only when it was written AFTER the cell was parked, so a cell the judge parks again is never
+#: re-admitted on a stale request. A NEEDS_DATA or build-input row keeps its own binding cause.
+CONSUMER_REQUEUE = HYP / "conversion_requeue.json"
+
+
+def consumer_requeue(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """{cell: request} from the consumer's requeue file; {} when absent or unreadable."""
+    doc = _read_memo(path or CONSUMER_REQUEUE)
+    req = doc.get("requests") if isinstance(doc, dict) else None
+    if not isinstance(req, dict):
+        return {}
+    return {str(c): r for c, r in req.items() if isinstance(r, dict)}
+
+
+def requeue_due(row: dict[str, Any], request: dict[str, Any] | None) -> bool:
+    """True when a consumer request postdates the row's parking (and the row is not bound to a
+    named input)."""
+    if not request or row.get("reason") in ("needs_data", BUILD_INPUT_MISSING):
+        return False
+    asked, parked = _ts(request.get("at")), _ts(row.get("parked_at"))
+    return asked is not None and (parked is None or asked > parked)
 
 
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
@@ -2453,10 +2480,13 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         bank = unrunnable_bank(target)
         causes: dict[str, str] = {}
         if locked:
+            _asked = consumer_requeue(target.parent / CONSUMER_REQUEUE.name)
             for cell, row in bank.items():
                 if cell in parkable:
                     continue
                 cause = readmit_cause(row, now=now_ts, bar_sizes=bar_sizes)
+                if cause is None and requeue_due(row, _asked.get(cell)):
+                    cause = "consumer_requeue"
                 if cause is not None:
                     causes[cell] = cause
         readmitted = list(causes)
@@ -3402,7 +3432,9 @@ def judging_failures(path: Path | None = None,
 
 
 #: The handoff's contract with Breadth's converter. Bump on any field change.
-CONVERSION_HANDOFF_SCHEMA = 1
+#: 2 (2026-11-13): `days` and `bar_bytes` ride on every row, so the consumer
+#: (`research/conversion_handoff_consumer.py`) can size a short history's need without the bank.
+CONVERSION_HANDOFF_SCHEMA = 2
 #: The clock the universe bars are stamped on (CLAUDE.md: broker clock is NY+7).
 BAR_CLOCK = "broker NY+7"
 
@@ -3454,6 +3486,7 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                      "missing_input": _missing_input(cls, row),
                      **({} if cls == "input_missing" else {"why": row.get("why")}),
                      "first_parked_utc": row.get("parked_at"),
+                     "days": int(row.get("days") or 0), "bar_bytes": int(row.get("bar_bytes") or 0),
                      **({"readmitted_at": row.get("readmitted_at"),
                          "still_missing_after_readmit": True}
                         if row.get("still_missing_after_readmit") else {})})
