@@ -2993,6 +2993,35 @@ def test_no_veto_wait_a_delivered_notice_merges_on_the_same_sweep(tmp_path: Path
     assert ag.registry_clear([_row(), _row(verdict="HOLD")], 9, _H, _win(), _NOW)[0] is None
 
 
+def test_a_root_file_pr_keeps_the_24h_window_on_the_registry_path(tmp_path: Path) -> None:
+    # Audit HOLD on #1088 MF1/SF1: a ROOT change (this gate, the authority, the merger ...) never
+    # merges on the same sweep by the registry path, and its notice says so.
+    for f in (".github/scripts/audit_gate.py", "ops/release/authority/ROOT_POLICY.json",
+              "ops/release/merger/x.py", "ops/box/workflow_gate.ps1"):  # fmt: skip
+        assert ag.touches_root([{"filename": f}]), f
+    renamed = {"filename": "docs/x.md", "previous_filename": "ops/release/publisher/a"}
+    assert ag.touches_root([renamed])
+    assert ag.touches_root([])  # no file list: fail closed
+    assert not ag.touches_root([{"filename": "docs/x.md"}, {"filename": "desks/mt5/a.py"}])
+    hold = ag.registry_hold_h(True)
+    assert hold == 24.0 and ag.registry_hold_h(False) == ag.REGISTRY_HOLD_H
+    sent: list[str] = []
+    seen = tmp_path / "r.jsonl.window.json"
+
+    def win(now: Any) -> Callable[[], tuple[Any, str]]:
+        def notify(t: str, b: str) -> bool:
+            sent.append(t)
+            return True
+
+        return lambda: ag.registry_window(seen, 9, _H, now, notify, hold)
+
+    assert ag.registry_clear([_row()], 9, _H, win(_OLD), _OLD, hold)[0] is None  # age 0: no merge
+    assert "in 24 h unless vetoed" in sent[0]
+    early = ag.datetime(2026, 11, 5, 10, 0, tzinfo=ag.UTC)  # 23 h in
+    assert ag.registry_clear([_row()], 9, _H, win(early), early, hold)[0] is None
+    assert ag.registry_clear([_row()], 9, _H, win(_NOW), _NOW, hold)[0] is not None  # 25 h
+
+
 def test_an_unreadable_registry_is_no_registry_and_says_so(tmp_path: Path) -> None:
     assert ag.registry_rows(None)[0] == [] and ag.registry_rows(str(tmp_path / "none"))[0] == []
     bad = tmp_path / "r.jsonl"

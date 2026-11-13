@@ -645,6 +645,10 @@ REGISTRY_NOTIFY_ENV = "QUANT_REGISTRY_NOTIFY"
 #: zuck 2026-11-13 12:14Z ("Nothing should be protected ... everything done as fast as possible"):
 #: no veto wait. A delivered notice merges on the same sweep; every other condition still binds.
 REGISTRY_HOLD_H = 0.0
+#: Audit HOLD on #1088 (MF1): a PR touching a ROOT_POLICY root_files / enforced_root_files path
+#: (this gate, the authority, trusted-eval, the publisher, the merger, workflow_gate) keeps the
+#: 24 h veto on the registry path, so the next edit to the release machinery is never same-sweep.
+ROOT_REGISTRY_HOLD_H = 24.0
 #: A row dated this far past the gate's clock is refused (clock skew allowance).
 REGISTRY_SKEW_S = 300.0
 #: The marker in a registry merge's commit title (auto_revert() looks for it).
@@ -667,20 +671,50 @@ def registry_rows(path: str | None) -> tuple[list[dict[str, Any]], str]:
     return rows, ""
 
 
-def notice_title(pr: int, head: str) -> str:
-    if REGISTRY_HOLD_H <= 0:
+def touches_root(files: list[Mapping[str, Any]]) -> bool:
+    """True when any changed path (or a rename's old path) matches the gate's OWN copy of
+    ROOT_POLICY.json root_files or enforced_root_files. Fails closed: an unreadable policy or
+    an empty file list counts as ROOT, so the longer window applies."""
+    try:
+        policy = json.loads((AUTHORITY_DIR / "ROOT_POLICY.json").read_text(encoding="utf-8"))
+        pats = [*policy["root_files"], *(policy.get("enforced_root_files") or ())]
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+    if not files:
+        return True
+    for f in files:
+        for n in (f.get("filename"), f.get("previous_filename")):
+            if n and any(fnmatch.fnmatchcase(str(n).lower(), p.lower()) for p in pats):
+                return True
+    return False
+
+
+def registry_hold_h(root: bool) -> float:
+    """The registry veto window for a PR: ROOT_REGISTRY_HOLD_H when it touches ROOT."""
+    return max(REGISTRY_HOLD_H, ROOT_REGISTRY_HOLD_H) if root else REGISTRY_HOLD_H
+
+
+def notice_title(pr: int, head: str, hold_h: float | None = None) -> str:
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
+    if hold <= 0:
         return f"PR #{pr} {head[:9]} auto-merges from the box now (Auditor CLEAR, all checks green)"
-    return f"PR #{pr} {head[:9]} auto-merges from the box in {REGISTRY_HOLD_H:.0f} h unless vetoed"
+    return f"PR #{pr} {head[:9]} auto-merges from the box in {hold:.0f} h unless vetoed"
 
 
 def registry_window(
-    seen_path: Path, pr: int, head: str, now: datetime, notify: Callable[[str, str], bool]
+    seen_path: Path,
+    pr: int,
+    head: str,
+    now: datetime,
+    notify: Callable[[str, str], bool],
+    hold_h: float | None = None,
 ) -> tuple[datetime | None, str]:
     """(when the veto window for (pr, head) started, or None; why). The start is the gate's own
     record of the moment its notice was DELIVERED, kept in `seen_path` beside the registry. The
     first time a head is seen the notice is sent; the window starts only if it went out, and a
     failed send is tried again by the next sweep. An unreadable record, or one that cannot be
     written, starts nothing."""
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
     key = f"{pr}:{head}"
     try:
         seen = json.loads(seen_path.read_text(encoding="utf-8")) if seen_path.exists() else {}
@@ -697,12 +731,12 @@ def registry_window(
             return None, "the veto-window record has a bad time"
         return at, ""
     body = (
-        f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {REGISTRY_HOLD_H:.0f} h "
+        f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {hold:.0f} h "
         "with every check green. To stop it: an AUDIT HOLD on the PR, a HOLD row, DEACTIVATE "
         "merges, or a new push."
     )
     try:
-        sent = bool(notify(notice_title(pr, head), body))
+        sent = bool(notify(notice_title(pr, head, hold), body))
     except Exception as exc:
         return None, f"the veto notice failed ({type(exc).__name__}); the next sweep retries"
     if not sent:
@@ -714,9 +748,9 @@ def registry_window(
         os.replace(tmp, seen_path)
     except OSError as exc:
         return None, f"the veto-window record could not be written ({type(exc).__name__})"
-    if REGISTRY_HOLD_H <= 0:
+    if hold <= 0:
         return now, ""  # no wait: the delivered notice is the only step, so this sweep merges
-    return None, f"veto notice sent for {head[:9]}: the {REGISTRY_HOLD_H:.0f} h window starts now"
+    return None, f"veto notice sent for {head[:9]}: the {hold:.0f} h window starts now"
 
 
 def run_notify(title: str, body: str) -> bool:
@@ -741,10 +775,12 @@ def registry_clear(
     head: str,
     window: Callable[[], tuple[datetime | None, str]],
     now: datetime | None = None,
+    hold_h: float | None = None,
 ) -> tuple[dict[str, str] | None, str]:
     """(the CLEAR that lets the box merge `head`, or None; why). The exact head only. `window`
     is called only once the row itself qualifies, and gives the gate's own window start."""
     now = now or datetime.now(UTC)
+    hold = REGISTRY_HOLD_H if hold_h is None else hold_h
     mine = [r for r in rows if r.get("pr") == pr]
     if not mine:
         return None, "no registry verdict"
@@ -764,10 +800,8 @@ def registry_clear(
     if start is None:
         return None, wwhy
     age_h = (now - start).total_seconds() / 3600.0
-    if age_h < REGISTRY_HOLD_H:
-        return None, (
-            f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {REGISTRY_HOLD_H:.0f} h"
-        )
+    if age_h < hold:
+        return None, f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {hold:.0f} h"
     got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
     return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
 
@@ -1386,8 +1420,14 @@ def run(
             return None, f"{mwhy}; registry: {fwhy}"
         now = datetime.now(UTC)
         seen = Path(path + ".window.json")
+        hold = registry_hold_h(touches_root(files))
         return registry_clear(
-            rows, pr, head, lambda: registry_window(seen, pr, head, now, run_notify), now
+            rows,
+            pr,
+            head,
+            lambda: registry_window(seen, pr, head, now, run_notify, hold),
+            now,
+            hold,
         )
 
     clear, why = verdict_now()
