@@ -422,7 +422,7 @@ NODES: tuple[Node, ...] = (
          reads=("desks/mt5/data/tape/", "desks/mt5/data/universe/"),
          writes=("desks/mt5/data/intelligence/", "desks/mt5/reports/FLOW_TOXICITY.json")),
     Node("datahub_coverage", "scripts/datahub_coverage.py",
-         reads=("desks/mt5/reports/JUDGE_COVERAGE.json", "desks/mt5/reports/FLOW_TOXICITY.json"),
+         reads=("desks/mt5/reports/FLOW_TOXICITY.json",),
          writes=("desks/mt5/reports/DATAHUB_COVERAGE.json",)),
     Node("tool_registry", "scripts/build_tool_registry.py",
          writes=("desks/mt5/reports/TOOL_REGISTRY.json",)),
@@ -1038,6 +1038,9 @@ HUMAN_READ = frozenset({
     # NOT_BINDING -- the retire signal, stated rather than hidden. Listed here so the graph says
     # so; the day one of these gains a consumer, the consumer is declared and the row leaves.
     "desks/mt5/reports/MICROSTRUCTURE.json", "desks/mt5/reports/ENTRY_TIMING.json",
+    # The DataHub contract coverage audit and the analytics tool catalogue (2026-11-13): read by
+    # a person and by research/LLM seats through `tool_registry.prompt_block`, never by a decision.
+    "desks/mt5/reports/DATAHUB_COVERAGE.json", "desks/mt5/reports/TOOL_REGISTRY.json",
     "desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/TIME_JOINS.json",
     "desks/mt5/reports/COST_CONSTRUCTION.json", "desks/mt5/reports/edges_macro_fusion_sweep.json",
     "desks/mt5/reports/COMPLETION.json", "desks/mt5/reports/TAPE_ARCHIVE.json",
