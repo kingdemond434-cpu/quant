@@ -123,7 +123,7 @@ TASK name="MT5-Dept-Mathlab" trigger="at startup + every 10 minutes (keep-alive 
 # NOT YET REGISTERED ON THE BOX -- declared here first, as the manifest's own rule requires, so
 # `scripts/check_box_tasks.py` reports it as drift until the task exists rather than the task
 # existing with nothing declaring it. lane=money: it is the sizing path.
-TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="NONE" lane="money"
+TASK name="MT5-AllocatorPulse" trigger="at startup + every 5 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/allocator_trigger.py" installer="desks/mt5/scripts/install_allocator_pulse_task.ps1" lane="money"
 # THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
 # each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in
 # parallel through desks/mt5/research/forest_runner.py. Japan and global macro already
@@ -153,7 +153,10 @@ TASK name="MT5-DeepSeek"           trigger="every 1 hour, at :24"  runs="ops/run
 TASK name="MT5-TickRecorder"       trigger="at logon + every 10 minutes (keep-alive of a 24/7 resident)" runs="ops/run_tick_recorder.cmd"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-TickIntegrity"      trigger="every 1 hour, at :20"  runs="desks/mt5/recorders/tick_integrity.py"  installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-TapeFeatures"       trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/tape_features.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
-TASK name="MT5-VolArchive"         trigger="UNDECLARED"            runs="desks/mt5/recorders/vol_archive.py"     installer="NONE" lane="data"
+# MT5-VolArchive: the cadence is install_tape_tasks.ps1's own ("HOURLY, at :40"), which registered it all
+# along while this line said UNDECLARED/NONE. install_vol_archive_task.ps1 registers it ALONE, because
+# re-running install_tape_tasks.ps1 restarts the 24/7 tick recorder (2026-11-13).
+TASK name="MT5-VolArchive"         trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/vol_archive.py"     installer="desks/mt5/scripts/install_vol_archive_task.ps1" lane="data"
 TASK name="MT5-MoatRecorder"       trigger="every 30 minutes, at :10"            runs="desks/mt5/moat/moat_recorder.py"   installer="NONE" lane="data"
 TASK name="MT5-MoatSilver"         trigger="every 1 hour, at :23"            runs="desks/mt5/moat/moat_silver.py"      installer="NONE" lane="data"
 TASK name="MT5-MoatMiner"          trigger="every 1 hour"          runs="desks/mt5/moat/moat_miner.py"       installer="desks/mt5/scripts/install_moat_miner_task.ps1" lane="data"
@@ -182,7 +185,7 @@ TASK name="MT5-OffsiteBackup"      trigger="every 6 hours"    runs="desks/mt5/sc
 # MT5-PrivateNetAudit (2026-09-30): AUDIT mode only -- writes desks/mt5/data/private_net.json
 # (EXPOSED / PRIVATE) and changes nothing. -Enforce is an operator act with a 15-minute dead-man
 # rollback and is never scheduled. Register: the same script with no switch, daily.
-TASK name="MT5-PrivateNetAudit"    trigger="daily at 06:40"   runs="desks/mt5/scripts/install_private_net.ps1" installer="NONE" lane="ops"
+TASK name="MT5-PrivateNetAudit"    trigger="daily at 06:40"   runs="desks/mt5/scripts/install_private_net.ps1" installer="desks/mt5/scripts/install_private_net_audit_task.ps1" lane="ops"
 TASK name="MT5-ReapGitWriters"     trigger="every 15 minutes" runs="scripts/reap_hung_git_writers.py" installer="desks/mt5/scripts/install_reap_git_writers_task.ps1" lane="ops"
 # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
 # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
@@ -267,16 +270,25 @@ TASK name="MT5-FTMO-Allocator" trigger="every 1 hour, at :50" runs="desks/mt5/re
 TASK name="MT5-FTMO-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_executor.py" installer="desks/mt5/scripts/install_ftmo_executor_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
-# Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
-TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep.cmd" installer="NONE" lane="research"
-# ops/organ_contract.py names it; not installed on the box 2026-09-16.
-TASK name="MT5-CertHygiene" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="research"
+# Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16. DAILY is the runner's own
+# word ("running it daily adds nothing once the 48 cells are in the docket"); 03:30 is the installer's
+# stated placement, clear of the writer slots and every other daily (2026-11-13).
+TASK name="MT5-GoldHourSweep" trigger="daily 03:30" runs="ops/run_gold_hour_sweep.cmd" installer="desks/mt5/scripts/install_gold_hour_sweep_task.ps1" lane="research"
+# ops/organ_contract.py names it (CERTIFICATE_HYGIENE.json, max age 1560 min = daily); not installed on the
+# box 2026-09-16. Runs certificate_hygiene.py --apply, the only producer of that artifact; 03:50 is placed
+# ten minutes before MT5-ForwardReconcile so the reconcile reads the cleaned registry (2026-11-13).
+TASK name="MT5-CertHygiene" trigger="daily 03:50" runs="desks/mt5/research/certificate_hygiene.py" installer="desks/mt5/scripts/install_cert_hygiene_task.ps1" lane="research"
 # CRO cycle, Codex lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 00:00-10:59 Europe/Dublin.
 TASK name="MT5-CycleMidnight" trigger="hourly; window 00:00-10:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
 # CRO cycle, Claude lane (docs/cro/CRO_CYCLE.md). Fires hourly; the launcher opens the lane 12:00-22:59 Europe/Dublin.
 TASK name="MT5-CycleNoon" trigger="hourly; window 12:00-22:59 Europe/Dublin" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/install_cro_cycle_tasks.ps1" lane="research"
-# scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16.
-TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"
+# scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16. Runs ops/dash_mirror.cmd
+# every 3 minutes (its own backoff comment), BUT ONLY ON THE MIRROR BOX: the runner scps
+# administrator@%QUANT_BOX_HOST%:C:/opt/quant/<path> onto the same local path, and QUANT_BOX_HOST is the
+# trading box itself, so on the trading box it would copy live_ledger/sleeves/gateway_state onto
+# themselves while their writers run (scp truncates the sink). NEVER REGISTER IT ON THE TRADING BOX;
+# installer stays NONE until a self-host refusal exists (Auditor HOLD 2026-11-13).
+TASK name="MT5-DashMirror" trigger="every 3 minutes" runs="ops/dash_mirror.cmd" installer="NONE" lane="ops"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
 # MT5-ArtifactSync IS RETIRED FROM THIS MANIFEST (2026-09-23). Install-QuantWindows.ps1 does not
 # register it: it UNREGISTERS it on purpose ("Hetzner decommissioned", 2026-08-23), because its
