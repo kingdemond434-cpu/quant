@@ -1778,7 +1778,9 @@ def market_split(now: datetime | None = None, *, ledger: Path | None = None,
         out["families_never_mined"] = unmined
         return out
     except Exception as exc:
-        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+        # THE TYPE NAME ONLY: this file is published (sync_shadow_to_git), and an exception's
+        # message can carry a local path or a value nobody chose to publish.
+        return {"status": UNMEASURED, "why": f"market split unavailable ({type(exc).__name__})"}
 
 
 def render(payload: dict[str, Any]) -> str:

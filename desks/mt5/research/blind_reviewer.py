@@ -634,7 +634,7 @@ def exotic_cost_bar(fn: Any, spec: dict[str, Any], params: dict[str, Any], bars:
     try:
         import market_quota
     except Exception as exc:                           # pragma: no cover - import environment
-        return {"status": UNMEASURED, "why": f"market_quota unimportable: {exc}"[:200]}
+        return {"status": UNMEASURED, "why": f"market_quota unimportable ({type(exc).__name__})"}
     if not market_quota.is_exotic(symbol):
         return None
     row = _symbol_row(symbol, universe)
@@ -654,7 +654,7 @@ def exotic_cost_bar(fn: Any, spec: dict[str, Any], params: dict[str, Any], bars:
                            costs=costs, replay=replay or _engine_replay)(bars)
     except Exception as exc:
         return {"status": UNMEASURED, "mult": mult,
-                "why": f"{type(exc).__name__}: {exc}"[:200]}
+                "why": f"the doubled-cost replay raised ({type(exc).__name__})"}
     return {"status": "MEASURED", "mult": mult, "spread_pts": pts,
             "spread_basis": "fill_minute" if live is not None and live > base else "median",
             "n": int(st.n), "expectancy": _num(st.expectancy), "t": _num(st.t_stat)}

@@ -1281,7 +1281,8 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     except Exception as exc:
         # FAIL OPEN ON THE ORDER, NEVER SILENT: the round builds the sealed order as before and
         # the census says the quota did not run.
-        quota_report = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+        quota_report = {"status": "UNMEASURED",
+                        "why": f"market quota unavailable ({type(exc).__name__})"}
         print(f"  market quota unavailable ({type(exc).__name__}: {exc}); sealed order kept")
 
     room = gate_room()
