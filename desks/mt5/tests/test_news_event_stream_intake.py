@@ -480,3 +480,17 @@ def test_the_gdelt_backlog_is_worked_oldest_slot_first(
     for _ in range(3):
         nes.collect_items(cursor=cur)
     assert seen == slots
+
+
+def test_rows_published_before_midnight_read_unmeasured_not_zero(desk: Path) -> None:
+    """Audit #204: a pass at 00:10 UTC appends items published at 23:50 to YESTERDAY's shard, so
+    today's meter holds none of them; that must read UNMEASURED with its reason, never 0."""
+    midnight = (NOW - timedelta(minutes=15)).replace(hour=0, minute=0, second=0)  # in the past
+    _write_captures([_capture(i, published=midnight - timedelta(minutes=10)) for i in range(3)],
+                    nes.NEWS_CAPTURES)
+    nes.run(budget_s=0, now=midnight + timedelta(minutes=10))
+    m = json.loads(nes.INTAKE_REPORT.read_text())["metrics"]
+    assert m["raw_observations"] == nes.UNMEASURED
+    assert m["unique_documents"] == nes.UNMEASURED
+    assert "appended this pass" in m["why_unmeasured"]
+    assert m["rows_in_other_shards"]["shards"]
