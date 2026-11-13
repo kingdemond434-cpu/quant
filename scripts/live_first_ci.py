@@ -33,8 +33,17 @@ EACH CALL (the box sweep, workflow_gate.ps1, with zuck's gh login; zuck 19:50Z "
      on a CURRENT open-PR head, created in the last UNSTARTED_H hours, newest per (head, workflow),
      and only when that head has no newer run of the same workflow. A run with any started job,
      or one this call or the ledger already owns, is never touched here.
+  4b. CANCELLED GATE RUNS ARE RE-QUEUED TOO (2026-11-13, Autonomy). On 11-13 at 16:27Z 505 queued
+     PR runs were cancelled by hand to free LIVE's seal. Rule 4 never brought the gate's own runs
+     back: it listed only `pull_request` runs, only the newest 100, only 24 h back. So #1041 (CLEAR,
+     approved, every other check green) sat with a cancelled audit-gate run and nothing re-fired it.
+     Rule 4 now also re-runs never-started `pull_request_target` runs (audit-gate, trusted-eval)
+     on a current open-PR head, those first, reads up to UNSTARTED_PAGES pages per event, looks
+     back UNSTARTED_H hours, and re-runs only while the queue has room: at most REQUEUE_QMAX
+     minus the runs already queued (zuck 11-13: no re-runs while the queue is over 60).
+     Re-running a run that never reached a runner changes nothing but its place in the queue.
 
-`pull_request_target` runs (the audit gate: its head_sha is the base's) are never touched, nor
+Rules 1-3 never touch `pull_request_target` runs (the audit gate, trusted-eval), nor
 push, dispatch or schedule runs, nor a run that has started: each is re-read just before its
 cancel. Every open PR is listed (any base), and the runs are read before the PRs, so a head that
 moves in between reads as current (never cancelled) rather than stale.
@@ -62,6 +71,11 @@ MAX_CALLS = 6
 #: The ledger: re-runs owed and what the last call did (box-local: reports/ is gitignored).
 REPORT = ROOT / "desks" / "mt5" / "reports" / "LIVE_FIRST_CI.json"
 LIVE_EVENTS = ("push", "workflow_dispatch")
+#: Rule 4b: the events whose never-started cancelled runs are re-run, gate runs first.
+RERUN_EVENTS = ("pull_request_target", "pull_request")
+#: Rule 4b: pages of cancelled runs read per event (100 a page), and the queue ceiling.
+UNSTARTED_PAGES = 5
+REQUEUE_QMAX = 60
 #: THE WHOLE CALL'S WALL-CLOCK BUDGET (2026-11-03 23:31Z, box at 100% CPU). This runs inside
 #: Quant-WorkflowGate BEFORE the audit gate, under the task's 30-minute limit. Unbounded, it made
 #: one `gh api` call per cleared-check comment page and two per cancel; at 13-120 s per call
@@ -73,7 +87,7 @@ LIVE_EVENTS = ("push", "workflow_dispatch")
 BUDGET_S = 300.0
 #: Rule 4: re-runs of never-started cancelled PR runs per call, and how far back it looks.
 MAX_UNSTARTED = 20
-UNSTARTED_H = 24.0
+UNSTARTED_H = 72.0
 
 
 def _gh(path: str, method: str = "GET") -> Any:
@@ -143,8 +157,9 @@ def unstarted_candidates(
     owned: set[int] = frozenset(),  # type: ignore[assignment]
 ) -> list[dict[str, Any]]:
     """Rule 4's candidates from already-fetched cancelled runs (pure): first-attempt
-    `pull_request` runs on a current PR head, recent, not owned by the ledger, newest per
-    (head sha, workflow). Whether any job started is read per candidate afterwards."""
+    `pull_request` or `pull_request_target` runs on a current PR head, recent, not owned by the
+    ledger, newest per (head sha, workflow), the gate's `pull_request_target` runs first. Whether
+    any job started is read per candidate afterwards."""
     seen: set[tuple[str, str]] = set()
     out: list[dict[str, Any]] = []
     for r in sorted(cancelled, key=lambda r: str(r.get("created_at")), reverse=True):
@@ -154,7 +169,7 @@ def unstarted_candidates(
         seen.add(key)
         age = _age_min(now, r.get("created_at"))
         if (
-            r.get("event") != "pull_request"
+            r.get("event") not in RERUN_EVENTS
             or r.get("status") != "completed"
             or r.get("conclusion") != "cancelled"
             or int(r.get("run_attempt") or 1) != 1
@@ -165,6 +180,7 @@ def unstarted_candidates(
         ):
             continue
         out.append(r)
+    out.sort(key=lambda r: RERUN_EVENTS.index(str(r.get("event"))))  # stable: newest first in each
     return out
 
 
@@ -176,15 +192,33 @@ def never_started(jobs: list[dict[str, Any]]) -> bool:
 
 
 def _rerun_unstarted(
-    repo: str, now: datetime, heads: dict[str, str], owned: set[int], over: Callable[[], bool]
+    repo: str,
+    now: datetime,
+    heads: dict[str, str],
+    owned: set[int],
+    over: Callable[[], bool],
+    n_queued: int = 0,
 ) -> int:
+    room = min(MAX_UNSTARTED, REQUEUE_QMAX - n_queued)
+    if room <= 0:
+        print(f"  never-started: {n_queued} runs queued (ceiling {REQUEUE_QMAX}), none re-run")
+        return 0
     since = now.timestamp() - UNSTARTED_H * 3600
     day = datetime.fromtimestamp(since, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    got = _gh(f"repos/{repo}/actions/runs?status=cancelled&event=pull_request"
-              f"&created=%3E%3D{day}&per_page=100") or {}  # fmt: skip
+    runs: dict[int, dict[str, Any]] = {}
+    for event in RERUN_EVENTS:
+        for page in range(1, UNSTARTED_PAGES + 1):
+            if over():
+                break
+            got = _gh(f"repos/{repo}/actions/runs?status=cancelled&event={event}"
+                      f"&created=%3E%3D{day}&per_page=100&page={page}") or {}  # fmt: skip
+            batch = got.get("workflow_runs") or []
+            runs.update({int(r["id"]): r for r in batch})
+            if len(batch) < 100:
+                break
     done = 0
-    for r in unstarted_candidates(now, got.get("workflow_runs") or [], heads, owned):
-        if done >= MAX_UNSTARTED or over():
+    for r in unstarted_candidates(now, list(runs.values()), heads, owned):
+        if done >= room or over():
             break
         rid = int(r["id"])
         try:
@@ -386,7 +420,7 @@ def run(
     if not over():
         owned = {r["id"] for r in cancelled + owed + keep}
         try:
-            unstarted = _rerun_unstarted(repo, now, heads, owned, over)
+            unstarted = _rerun_unstarted(repo, now, heads, owned, over, len(queued))
         except Exception as exc:  # rule 4 never costs rules 1-3, whatever it hits
             print(f"  never-started skipped: {type(exc).__name__}: {exc}")
     _save(state, {"at": at, "owed": keep, "cancelled_superseded": len(waste),
