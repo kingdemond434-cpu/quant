@@ -636,8 +636,16 @@ def remate(family: str, params: dict[str, Any], h: int) -> list[dict[str, Any]]:
 def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
                  rejected: list[dict[str, Any]] | None = None,
                  bars_for: Any = None, enqueue: Any = None, write: bool = True,
-                 out_dir: Path | None = None) -> dict[str, Any]:
-    """One hourly pass over rejected cells not yet examined."""
+                 out_dir: Path | None = None,
+                 claim_ledger: Path | None = None) -> dict[str, Any]:
+    """One hourly pass over rejected cells not yet examined.
+
+    EVERY LOOK IS CHARGED AS A TRIAL (multiple testing). Each examined cell is one claim family
+    `harvest:<parent id>` in the lifetime ledger (`libs.research.claim_selection`) charged
+    `len(HORIZONS)` markouts for the horizon search, plus one per re-mate it minted -- whether
+    or not it was harvested, because the screen that drops a cell spent those trials too. Each
+    re-mate also carries the charge in its `lineage_json`, and its docket row is an ordinary
+    Judge trial under the parent's family on top."""
     t_end = time.monotonic() + budget_s
     od = out_dir or HARVEST_DIR
     try:
@@ -663,6 +671,7 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
     tally: dict[str, int] = defaultdict(int)
     ledger: list[dict[str, Any]] = []
     donated = 0
+    charges: dict[str, dict[str, Any]] = {}
     todo = [r for r in rejected if str(r.get("id")) not in seen][:per_pass]
     for r in todo:
         if time.monotonic() > t_end:
@@ -687,6 +696,10 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
             continue
         parts = decompose(params)
         em = entry_markout(bars, sigs, sym)
+        claim = f"harvest:{cid}"
+        charge = charges.setdefault(claim, {"cells": 0, "selection_trials": len(HORIZONS),
+                                            "sources": ["miner:component_harvest"],
+                                            "families": [fam], "genome_ids": []})
         own = own_exit_returns(bars, sigs, sym)
         split = int(len(own) * IS_SHARE)
         own_oos = own[split:]
@@ -710,6 +723,7 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
             if not recipes:
                 tally["NO_TIME_EXIT_PARAM"] += 1
             row["remated"] = []
+            charge["selection_trials"] = len(HORIZONS) + len(recipes)
             for p in recipes:
                 if enqueue is None:
                     break
@@ -725,6 +739,11 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
                         mechanism=mech, chart=chart, horizon=str(em["h_star"]),
                         generator="component_harvesting", department="research",
                         transformation="component_remate", parent_ids_json=[cid],
+                        lineage_json={"parent_ids": [cid], "parent_family": fam,
+                                      "claim_family": claim,
+                                      "claim_selection_trials": charge["selection_trials"],
+                                      "h_star": int(em["h_star"]),
+                                      "producer": "component_harvest"},
                         causal_rationale=mech, pit_status="BARS_ONLY",
                         falsifier=(f"the re-mated rule loses its edge out of sample, or the "
                                    f"entry's {em['h_star']}-bar markout falls below 0 net of "
@@ -732,12 +751,29 @@ def harvest_pass(*, budget_s: float = 600.0, per_pass: int = PER_PASS,
                     row["remated"].append({"id": new_id, "created": bool(created),
                                            "params": p})
                     donated += int(bool(created))
+                    charge["cells"] += 1
+                    charge["genome_ids"].append(str(new_id))
                 except Exception as exc:
                     row.setdefault("enqueue_errors", []).append(type(exc).__name__)
+        row["trial_charge"] = {"claim_family": claim,
+                               "selection_trials": charge["selection_trials"]}
         ledger.append(row)
+    charged: dict[str, Any] = {"families": len(charges),
+                               "selection_trials": sum(int(c["selection_trials"])
+                                                       for c in charges.values())}
+    if charges and write:
+        try:
+            from libs.research import claim_selection as cs
+            lifetime = cs.update_ledger({"claim_families": charges}, path=claim_ledger,
+                                        count_as="grid_cells")
+            charged["lifetime_selection_trials"] = lifetime.get("lifetime_selection_trials")
+        except Exception as exc:  # noqa: BLE001 - an uncharged pass is named, never silent
+            charged["error"] = type(exc).__name__
+            tally["TRIALS_UNCHARGED"] += len(charges)
     doc = {"generated_utc": datetime.now(UTC).isoformat(),
            "rejected_held": len(rejected), "examined_this_pass": len(ledger),
            "examined_total": len(seen), "tally": dict(tally), "donated_to_judge": donated,
+           "trials_charged": charged,
            "rules": {"horizons": list(HORIZONS), "is_share": IS_SHARE, "min_t": MIN_T,
                      "min_oos": MIN_OOS, "wide_stop_atr": WIDE_STOP_ATR},
            "external_ea_components": ("UNMEASURED: no parsed external EA corpus is held; the "

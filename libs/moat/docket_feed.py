@@ -140,7 +140,20 @@ def _lineage_of(c: Mapping[str, Any]) -> dict[str, Any]:
             v = json.dumps(v, sort_keys=True, default=str)
         except (TypeError, ValueError):
             return {}
-    return {"lineage_json": v}
+    out: dict[str, Any] = {"lineage_json": v}
+    # A PRODUCER'S OWN SEARCH RIDES AS A CLAIM CHARGE (libs.research.claim_selection): a lineage
+    # that declares `claim_family` + `claim_selection_trials` (the component harvester's horizon
+    # screen) is lifted onto the docket row, so `trial_ledger` charges that N once per family.
+    try:
+        lin = json.loads(v)
+    except ValueError:
+        return out
+    if isinstance(lin, dict) and lin.get("claim_family"):
+        out["claim_family"] = str(lin["claim_family"])
+        out["breadth_unit"] = str(lin["claim_family"])
+        with contextlib.suppress(TypeError, ValueError):
+            out["claim_selection_trials"] = max(0, int(lin.get("claim_selection_trials") or 0))
+    return out
 
 
 def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | None = None,

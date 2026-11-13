@@ -188,16 +188,34 @@ def test_informative_entry_is_harvested_and_bad_exit_named(monkeypatch: pytest.M
     rej = [{"id": "cand_1", "family": "planted", "symbol": "NOSUCH", "chart": "H1",
             "params_json": json.dumps({"lookback": 20, "stop_atr": 0.5, "rr": 1.5,
                                        "ttl_bars": 24})}]
+    led = tmp_path / "claim_families.json"
     doc = ch.harvest_pass(rejected=rej, bars_for=lambda s, c: bars, enqueue=enqueue,
-                          out_dir=tmp_path)
+                          out_dir=tmp_path, claim_ledger=led)
+    # every look is a charged trial: 5 horizon markouts + 2 re-mates, once, in the lifetime ledger
+    fam_charge = json.loads(led.read_text("utf-8"))["families"]["harvest:cand_1"]
+    assert fam_charge["selection_trials"] == len(ch.HORIZONS) + 2
+    assert doc["trials_charged"]["selection_trials"] == len(ch.HORIZONS) + 2
+    assert seen[0]["lineage_json"]["claim_family"] == "harvest:cand_1"
+    assert seen[0]["lineage_json"]["claim_selection_trials"] == len(ch.HORIZONS) + 2
     assert doc["donated_to_judge"] == 2 and doc["tally"]["EXIT_DESTROYED_EDGE"] == 1
     assert seen[0]["origin"] == "component_harvest" and seen[0]["parent_ids_json"] == ["cand_1"]
     assert seen[0]["params"]["ttl_bars"] == em["h_star"]
     assert seen[0]["params"]["rr"] == ch.NO_TARGET_RR and seen[0]["params"]["lookback"] == 20
     assert seen[1]["params"]["stop_atr"] == ch.WIDE_STOP_ATR
     again = ch.harvest_pass(rejected=rej, bars_for=lambda s, c: bars, enqueue=enqueue,
-                            out_dir=tmp_path)
+                            out_dir=tmp_path, claim_ledger=led)
     assert again["examined_this_pass"] == 0 and len(seen) == 2
+
+
+def test_remate_charge_reaches_the_docket_row() -> None:
+    from libs.moat.docket_feed import _row
+    from libs.research.trial_ledger import trial_from_record
+    lin = json.dumps({"claim_family": "harvest:cand_1", "claim_selection_trials": 7})
+    row = _row({"id": "c9", "symbol": "EURUSD", "family": "planted", "params_json": "{}",
+                "lineage_json": lin})
+    assert row is not None and row["claim_selection_trials"] == 7
+    t = trial_from_record(row)
+    assert t.lineage == "harvest:cand_1" and t.selection_trials == 7
 
 
 def test_noise_entry_is_not_harvested() -> None:
