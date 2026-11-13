@@ -1,0 +1,695 @@
+"""The three player-footprint producers: PIT stamps, the CTA model, the GLD parser, the
+rebalance estimate, the once-only trial charge and the wiring to the compiler and the cycle."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Any, ClassVar
+
+import numpy as np
+import pandas as pd
+import pytest
+
+_DESK = Path(__file__).resolve().parents[1]
+_ROOT = _DESK.parent.parent
+for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from research import player_footprint as P  # noqa: E402
+
+CAL = P._calendar()
+
+
+def _utc(s: str) -> pd.Timestamp:
+    return pd.Timestamp(s, tz="UTC")
+
+
+# ------------------------------------------------------------------------------ point in time
+class TestCotUsableFrom:
+    def test_a_normal_summer_week_is_friday_1530_new_york(self) -> None:
+        assert P.cot_usable_from("2026-10-13", CAL) == _utc("2026-10-16 19:30")
+        assert P.to_broker(P.cot_usable_from("2026-10-13", CAL)) == _utc("2026-10-16 22:30")
+
+    def test_a_normal_winter_week_is_an_hour_later_in_utc_and_the_same_on_the_bar_clock(
+            self) -> None:
+        assert P.cot_usable_from("2026-01-13", CAL) == _utc("2026-01-16 20:30")
+        assert P.to_broker(P.cot_usable_from("2026-01-13", CAL)) == _utc("2026-01-16 22:30")
+
+    @pytest.mark.parametrize("asof, released_utc", [
+        ("2024-11-26", "2024-12-02 20:30"),   # Thanksgiving Thursday -> Monday
+        ("2024-12-24", "2024-12-30 20:30"),   # Christmas Wednesday -> Monday
+        ("2026-06-16", "2026-06-22 19:30"),   # Juneteenth on the Friday -> Monday
+        ("2025-01-07", "2025-01-13 20:30"),   # CFTC closed Thu 2025-01-09 (day of mourning)
+        ("2025-10-07", "2025-11-21 20:30"),   # 2025 shutdown: CFTC's own catch-up date
+    ])
+    def test_a_holiday_or_shutdown_week_is_stamped_at_its_real_release(
+            self, asof: str, released_utc: str) -> None:
+        assert P.cot_usable_from(asof, CAL) == _utc(released_utc)
+
+    def test_no_tuesday_in_nine_years_is_usable_before_its_friday_or_on_an_early_bar(
+            self) -> None:
+        for tue in pd.date_range("2018-01-02", "2026-12-29", freq="W-TUE"):
+            usable = P.cot_usable_from(tue, CAL)
+            friday = pd.Timestamp(
+                (tue + pd.Timedelta(days=3)).strftime("%Y-%m-%d") + " 15:30",
+                tz="America/New_York").tz_convert("UTC")
+            assert usable >= friday, tue
+            # the conditioner's placement (UTC + lag) is never before the bar clock's own stamp
+            assert P.bar_label_after_lag(usable) >= P.to_broker(usable), tue
+
+    def test_a_later_day_from_futures_state_wins_and_a_same_day_one_is_made_exact(
+            self, tmp_path: Path) -> None:
+        df = pd.DataFrame({
+            "event_time": [_utc("2026-10-06"), _utc("2026-10-13")],
+            "available_time": [_utc("2026-10-09 21:00"), _utc("2026-10-19 21:00")],
+            "tff_lev_money_net_oi": [0.1, 0.2]})
+        df.to_csv(tmp_path / "unused.csv")
+        pytest.importorskip("pyarrow")
+        df.to_parquet(tmp_path / "cot_eur.parquet", index=False)
+        out, why = P.cot_series("eur", CAL, series_dir=tmp_path)
+        assert out is not None and why == "futures_state:cot_eur"
+        assert list(out["available_time"]) == [_utc("2026-10-09 19:30"),
+                                               _utc("2026-10-19 21:00")]
+
+    def test_the_fetch_tff_fallback_keeps_only_the_exact_market_names(self) -> None:
+        raw = pd.DataFrame({
+            "report_date": [_utc("2026-10-06"), _utc("2026-10-13")],
+            "market": ["EURO FX - CHICAGO MERCANTILE EXCHANGE",
+                       "EURO FX/JAPANESE YEN XRATE - CHICAGO MERCANTILE EXCHANGE"],
+            "oi": [1000, 50], "lm_l": [300, 40], "lm_s": [100, 1],
+            "am_l": [500, 2], "am_s": [200, 3]})
+        out = P.tff_fallback(raw, "eur", CAL)
+        assert out is not None and len(out) == 1
+        assert out["tff_lev_money_net_oi"].iloc[0] == pytest.approx(0.2)
+        assert out["tff_asset_mgr_net_oi"].iloc[0] == pytest.approx(0.3)
+        assert out["available_time"].iloc[0] == _utc("2026-10-09 19:30")
+
+    def test_a_reciprocal_market_is_signed_into_its_mt5_symbol(self) -> None:
+        raw = pd.DataFrame({"report_date": [_utc("2026-10-06")],
+                            "market": ["JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE"],
+                            "oi": [1000], "lm_l": [300], "lm_s": [100]})
+        out = P.tff_fallback(raw, "jpy", CAL)
+        assert out is not None
+        assert out["tff_lev_money_net_oi"].iloc[0] == pytest.approx(-0.2), (
+            "long yen futures is SHORT USDJPY")
+
+    def test_gld_holdings_are_usable_the_next_new_york_business_morning(self) -> None:
+        assert P.gld_available("2026-10-16") == _utc("2026-10-19 13:00")       # Fri -> Mon
+        assert P.gld_available("2026-11-25") == _utc("2026-11-27 14:00")       # Thanksgiving
+
+    def test_a_daily_close_is_known_at_the_broker_day_end_in_true_utc(self) -> None:
+        idx = pd.date_range("2026-07-06 00:00", "2026-07-07 23:00", freq="1h", tz="UTC")
+        h1 = pd.DataFrame({"close": np.linspace(1.0, 2.0, len(idx))}, index=idx)
+        dc = P.daily_closes(h1)
+        # broker 2026-07-07 00:00 is New York 17:00 on the 6th (EDT) = 21:00 UTC
+        assert dc["available_time"].iloc[0] == _utc("2026-07-06 21:00")
+
+    def test_a_trailing_partial_day_is_not_a_close(self) -> None:
+        idx = pd.date_range("2026-07-06 00:00", "2026-07-08 12:00", freq="1h", tz="UTC")
+        h1 = pd.DataFrame({"close": np.ones(len(idx))}, index=idx)
+        assert len(P.daily_closes(h1)) == 2
+
+
+# ------------------------------------------------------------------------------ CTA model
+class TestCtaReplication:
+    def _close(self, drift: float, n: int = 400, seed: int = 0) -> pd.Series:
+        rng = np.random.default_rng(seed)
+        r = drift + 0.005 * rng.standard_normal(n)
+        return pd.Series(100 * np.exp(np.cumsum(r)),
+                         index=pd.date_range("2020-01-01", periods=n, freq="B", tz="UTC"))
+
+    def test_a_steady_uptrend_is_fully_long_and_a_downtrend_fully_short(self) -> None:
+        up = P.cta_replication(self._close(+0.004)).dropna(subset=["cta_pos"])
+        dn = P.cta_replication(self._close(-0.004)).dropna(subset=["cta_pos"])
+        assert (up["cta_pos"].iloc[-50:] == 1.0).all()
+        assert (dn["cta_pos"].iloc[-50:] == -1.0).all()
+
+    def test_the_position_is_undefined_until_the_longest_horizon_exists(self) -> None:
+        out = P.cta_replication(self._close(0.001))
+        assert out["cta_pos"].iloc[:250].isna().all()
+        assert out["cta_pos"].iloc[250:].notna().all()
+
+    def test_the_notional_is_vol_scaled_to_the_target(self) -> None:
+        c = self._close(+0.004)
+        out = P.cta_replication(c)
+        sigma = np.log(c).diff().ewm(span=P.VOL_SPAN, min_periods=20).std()
+        want = (P.TARGET_VOL_ANNUAL / np.sqrt(252)) / sigma.iloc[-1]
+        assert out["cta_notional"].iloc[-1] == pytest.approx(want)
+        assert out["cta_flow_1d"].iloc[-1] == pytest.approx(
+            out["cta_notional"].iloc[-1] - out["cta_notional"].iloc[-2])
+
+    def test_it_is_causal(self) -> None:
+        c = self._close(0.0005, seed=3)
+        a = P.cta_replication(c)
+        c2 = c.copy()
+        c2.iloc[-20:] = c2.iloc[-20:] * 1.5
+        b = P.cta_replication(c2)
+        pd.testing.assert_frame_equal(a.iloc[:-20], b.iloc[:-20])
+
+    def test_a_close_just_above_a_flip_level_makes_a_decline_force_selling(self) -> None:
+        # Flat at 100, then one tick up: every horizon's reference sits a hair below price,
+        # so one sigma down flips all four signs and one sigma up flips none.
+        n = 300
+        rng = np.random.default_rng(1)
+        p = 100 * np.exp(0.002 * rng.standard_normal(n))
+        p[-1] = p[-(20 - 1) - 1] * 1.0001
+        for h in P.HORIZONS:
+            p[-h] = p[-1] / 1.0001
+        out = P.cta_replication(pd.Series(p, index=pd.date_range(
+            "2021-01-01", periods=n, freq="B", tz="UTC")))
+        last = out.iloc[-1]
+        assert last["flip_dn"] < 0 and last["flip_up"] == 0.0
+        assert last["flip_asym"] < 0 and last["flip_dist"] < 0.5
+
+
+class TestCtaSpeeds:
+    def test_each_speed_publishes_its_trigger_distance_and_estimated_flow(self) -> None:
+        n = 320
+        idx = pd.date_range("2020-01-01", periods=n, freq="B", tz="UTC")
+        c = pd.Series(100 * np.exp(np.arange(n) * 0.002), index=idx)
+        out = P.cta_replication(c, high=c * 1.01, low=c * 0.99)
+        last = out.iloc[-1]
+        for h in P.HORIZONS:
+            assert last[f"trend_{h}"] == 1.0
+            assert last[f"flip_level_{h}"] == pytest.approx(c.iloc[-h])
+            assert last[f"flip_dist_atr_{h}"] > 0
+            # crossing below a long speed's trigger forces SELLING, sized by the estimate
+            assert last[f"est_flow_usd_{h}"] < 0
+        unit = 2 * (1 / len(P.HORIZONS)) * P.CTA_AUM_USD_ESTIMATE * \
+            P.CTA_INSTRUMENT_SHARE_ESTIMATE
+        lev = last["cta_notional"] / last["cta_pos"]
+        assert last["est_flow_usd_20"] == pytest.approx(-unit * lev)
+        assert last["pending_flow"] < 0
+        # the 20-day trigger is closer than the 250-day one in a steady trend
+        assert last["flip_dist_atr_20"] < last["flip_dist_atr_250"]
+
+    def test_the_pending_flow_cell_is_defined_per_symbol(self) -> None:
+        idx = pd.date_range("2024-01-01", periods=24 * 420, freq="1h", tz="UTC")
+        h1 = pd.DataFrame({"close": 1.1 + np.arange(len(idx)) * 1e-6}, index=idx)
+        h1["high"], h1["low"] = h1["close"] + 1e-4, h1["close"] - 1e-4
+        frames, hyps, rep = P.cta_producer(
+            lambda s: h1 if s == "EURUSD" else None, CAL,
+            series_dir=Path("/nonexistent"), tff_dir=Path("/nonexistent"), registry={})
+        sigs = {h["params"]["signal"] for h in hyps if h["symbol"] == "EURUSD"}
+        assert sigs == {"cta_flow_1d", "cta_notional", "flip_asym", "pending_flow"}
+        assert "flip_dist_atr_60" in frames["pf_cta_EURUSD"].columns
+        assert rep["XAUUSD"]["status"] == "UNMEASURED"
+
+
+# ------------------------------------------------------------------------------ GLD parser
+GLD_HEADER = ("Date,GLD Close,LBMA Gold Price,"
+              "Total Net Asset Value Ounces in the Trust as at 4.15 p.m. NYT,Tonnes of Gold")
+GLD_FIXTURE = "\n".join([
+    "SPDR GOLD SHARES,,,,",
+    "Historical Data,,,,",
+    GLD_HEADER,
+    '18-Nov-2004,44.38,$441.80,"260,100.00",8.09',
+    '19-Nov-2004,44.78,$443.95,"2,700,500.00",84.00',
+    "22-Nov-2004, HOLIDAY,,,",
+    '11/23/2004,44.95,$445.80,"3,005,200.00",93.47',
+    "24-Nov-2004,45.05,$447.00,bad,",
+]) + "\n"
+
+
+class TestGoldEtf:
+    def test_the_archive_parses_across_preamble_holidays_and_date_formats(self) -> None:
+        h = P.parse_gld_archive(GLD_FIXTURE)
+        assert list(h["date"].dt.strftime("%Y-%m-%d")) == ["2004-11-18", "2004-11-19",
+                                                          "2004-11-23"]
+        assert list(h["tonnes"]) == [8.09, 84.0, 93.47]
+        assert h["ounces"].iloc[1] == pytest.approx(2_700_500.0)
+
+    def test_an_ounces_only_archive_is_converted_to_tonnes(self) -> None:
+        h = P.parse_gld_archive("Date,Total NAV Ounces\n01-Jun-2020,32150.7466\n")
+        assert h["tonnes"].iloc[0] == pytest.approx(1.0)
+
+    def test_a_body_with_no_holdings_header_is_empty_not_guessed(self) -> None:
+        assert P.parse_gld_archive("<html>blocked</html>").empty
+
+    def test_the_flows_and_their_stamps(self) -> None:
+        days = pd.bdate_range("2024-01-02", periods=60)
+        h = pd.DataFrame({"date": days, "tonnes": np.arange(60, dtype=float) + 800.0,
+                          "ounces": 0.0})
+        f = P.gold_etf_features(h)
+        assert f["flow_1d_t"].iloc[-1] == pytest.approx(1.0)
+        assert f["flow_5d_t"].iloc[-1] == pytest.approx(5.0)
+        assert f["flow_20d_t"].iloc[-1] == pytest.approx(20.0)
+        assert (pd.to_datetime(f["available_time"], utc=True)
+                > pd.to_datetime(f["event_time"], utc=True)).all()
+
+    def test_the_producer_extends_the_existing_gold_etf_ids(self) -> None:
+        days = pd.bdate_range("2023-01-02", periods=80)
+        body = "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7)}" for i, d in enumerate(days))
+        frames, hyps, rep = P.gold_etf_producer(body)
+        assert rep["status"] == "OK" and set(frames) == {"pf_gold_etf"}
+        assert {h["symbol"] for h in hyps} == {"XAUUSD"} and len(hyps) == 5
+        assert all("GOLD_ETF_creation_redemption_flow" in h["extends"] for h in hyps)
+        assert all("GLD_IAU_Gold_ETF_Rebalance" in h["extends"] for h in hyps)
+        # no XAUUSD bars: the divergence column is absent and its cell will be held
+        assert "flow_px_resid" not in frames["pf_gold_etf"].columns
+        assert rep["divergence"].startswith("UNMEASURED")
+
+    @pytest.mark.usefixtures("cited_gld_terms")
+    def test_a_hard_stop_is_recorded_and_never_retried(self) -> None:
+        get, calls = _fake_get({"/robots.txt": (404, "")}, default=(403, ""))
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how == "HARD_STOP 403" and st["hard_stops"]["gld"]["code"] == 403
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how.startswith("HARD_STOP") and calls == [P.RobotsGate.robots_url(P.GLD_URL),
+                                                         P.GLD_URL]
+
+    def test_the_gld_cells_and_report_carry_the_to_confirm_terms_label(self) -> None:
+        days = pd.bdate_range("2023-01-02", periods=80)
+        body = "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7)}" for i, d in enumerate(days))
+        frames, hyps, rep = P.gold_etf_producer(body)
+        assert rep["terms"] == "to_confirm" and rep["access_label"] == "PUBLIC_WITH_TERMS"
+        assert hyps and all(h["access"]["terms"] == "to_confirm" for h in hyps)
+        assert all("spdrgoldshares" in h["access"]["access_sources"] for h in hyps)
+        # the label rides beside params, so it never changes a cell's identity
+        assert all("access" not in h["params"] for h in hyps)
+        # and it reaches the donated row
+        rows: list[dict[str, Any]] = []
+        new, _ = P.plan_donation(hyps, frames, {})
+        P.donate(new, {}, _NOW, donate_fn=lambda seat, r, tests_run: rows.extend(r) or Path("x"))
+        assert rows and all(r["terms"] == "to_confirm" for r in rows)
+        assert all(r["access_label"] == "PUBLIC_WITH_TERMS" for r in rows)
+
+    def test_a_cftc_only_cell_is_confirmed_and_an_unknown_source_is_not(self) -> None:
+        assert P.source_access(["cftc"])["terms"] == "confirmed"
+        mixed = P.source_access(["cftc", "spdrgoldshares"])
+        assert mixed["terms"] == "to_confirm" and mixed["access_label"] == "PUBLIC_WITH_TERMS"
+        assert P.source_access(["nowhere"]) == {"access_label": "ACCESS_UNCLEAR",
+                                               "terms": "to_confirm",
+                                               "access_sources": ["nowhere"]}
+
+
+# ------------------------------------------------------------------------------ robots.txt
+_NOW = pd.Timestamp("2026-11-03", tz="UTC").to_pydatetime()
+
+
+def _fake_get(by_path: dict[str, tuple[int | None, str]], default: tuple[int | None, str]
+              = (200, "")) -> tuple[Any, list[str]]:
+    """A `get(url, accept=, timeout=)` answering by URL path; records every URL requested."""
+    from urllib.parse import urlsplit
+    calls: list[str] = []
+
+    class R:
+        def __init__(self, status: int | None, text: str) -> None:
+            self.status, self.text = status, text
+            self.ok = status is not None and 200 <= status < 300
+            self.error = "URLError: no route" if status is None else (
+                "" if self.ok else f"HTTP {status}")
+
+    def get(url: str, **_: Any) -> R:
+        calls.append(url)
+        return R(*by_path.get(urlsplit(url).path, default))
+    return get, calls
+
+
+@pytest.fixture
+def cited_gld_terms(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A SYNTHETIC citation for the spdrgoldshares terms row (test-only; the real row is unread)."""
+    row = {**P.SOURCES["spdrgoldshares"], "terms_clause": "synthetic clause 1",
+           "terms_url": "https://example.invalid/terms", "terms_read_at": "2026-01-01"}
+    monkeypatch.setitem(P.SOURCES, "spdrgoldshares", row)
+
+
+class TestTermsGate:
+    def test_the_real_spdr_row_is_uncited_and_held(self) -> None:
+        posture, why = P.terms_gate("spdrgoldshares")
+        assert posture == "HELD" and "terms_clause" in why
+        assert P.SOURCES["spdrgoldshares"]["terms"] == "to_confirm"
+
+    def test_an_uncited_record_makes_zero_requests_and_the_held_archive_is_read(
+            self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        raw = tmp_path / "gld_archive.csv"
+        raw.write_text(GLD_FIXTURE, encoding="utf-8")
+        monkeypatch.setattr(P, "GLD_RAW", raw)
+        get, calls = _fake_get({"/robots.txt": (404, "")}, default=(200, GLD_FIXTURE))
+        st: dict[str, Any] = {}
+        text, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert calls == [] and how.startswith("HELD:") and "cites no reading" in how
+        assert text == GLD_FIXTURE and st == {}
+
+    def test_an_unknown_source_is_held(self) -> None:
+        assert P.terms_gate("nowhere")[0] == "HELD"
+
+    @pytest.mark.usefixtures("cited_gld_terms")
+    def test_a_cited_record_passes_to_the_robots_gate(self) -> None:
+        assert P.terms_gate("spdrgoldshares")[0] == "LIVE"
+        get, calls = _fake_get({"/robots.txt": (200, "User-agent: *\nDisallow: /\n")})
+        _, how = P.fetch_gld({}, _NOW, offline=False, get=get)
+        assert how.startswith("ROBOTS_REFUSED")
+        assert calls == [P.RobotsGate.robots_url(P.GLD_URL)]
+
+
+@pytest.mark.usefixtures("cited_gld_terms")
+class TestRobots:
+    def test_a_disallowed_path_never_fetches_the_page(self) -> None:
+        rules = "User-agent: *\nDisallow: /assets/dynamic/\n"
+        get, calls = _fake_get({"/robots.txt": (200, rules)})
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how.startswith("ROBOTS_REFUSED") and P.GLD_URL not in calls
+        assert "hard_stops" not in st
+
+    def test_a_403_on_robots_txt_is_refused_and_never_fetches_the_page(self) -> None:
+        get, calls = _fake_get({"/robots.txt": (403, "")})
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how == "HARD_STOP 403 (robots.txt)" and P.GLD_URL not in calls
+        assert st["hard_stops"]["gld"]["code"] == 403
+        assert P.RobotsGate(P._robots_fetch_via(get)).check(P.GLD_URL)["verdict"] == "REFUSED"
+
+    @pytest.mark.parametrize("answer", [(503, ""), (500, ""), (None, ""),
+                                        (200, "<html>Just a moment...</html>")])
+    def test_a_5xx_network_error_or_challenge_is_unmeasured_and_never_fetches(
+            self, answer: tuple[int | None, str]) -> None:
+        get, calls = _fake_get({"/robots.txt": answer})
+        st: dict[str, Any] = {}
+        _, how = P.fetch_gld(st, _NOW, offline=False, get=get)
+        assert how.startswith("UNMEASURED") and calls == [P.RobotsGate.robots_url(P.GLD_URL)]
+        assert "hard_stops" not in st
+
+    @pytest.mark.parametrize("code", [404, 410])
+    def test_no_rules_published_allows_the_page(self, code: int) -> None:
+        get, calls = _fake_get({"/robots.txt": (code, "")}, default=(200, "<html>no</html>"))
+        _, how = P.fetch_gld({}, _NOW, offline=False, get=get)
+        assert P.GLD_URL in calls and how.startswith("fetched a body with no parsable")
+
+    def test_robots_is_read_once_per_host_per_pass(self) -> None:
+        get, calls = _fake_get({"/robots.txt": (200, "User-agent: *\nAllow: /\n")})
+        gate = P.RobotsGate(P._robots_fetch_via(get))
+        assert gate.check(P.GLD_URL)["verdict"] == "ALLOWED"
+        assert gate.check(P.GLD_URL + "?x=1")["verdict"] == "ALLOWED"
+        assert len(calls) == 1
+
+
+class TestHonestHeaders:
+    def test_only_user_agent_and_accept_go_on_the_wire(self) -> None:
+        sent: list[dict[str, str]] = []
+
+        class FH:
+            status, url = 200, "https://pf-headers.invalid/x.csv"
+            headers: ClassVar[dict[str, str]] = {"Content-Type": "text/plain"}
+
+            def read(self, n: int = -1) -> bytes:
+                return b"ok"
+
+            def __enter__(self) -> FH:
+                return self
+
+            def __exit__(self, *a: Any) -> None:
+                return None
+
+        def urlopen(req: Any, **_: Any) -> FH:
+            sent.append({k.lower(): v for k, v in req.header_items()})
+            return FH()
+        r = P.honest_get("https://pf-headers.invalid/x.csv", "text/csv,*/*", urlopen=urlopen)
+        assert r.ok and r.text == "ok"
+        assert sent == [{"user-agent": P.UA, "accept": "text/csv,*/*"}]
+        assert not {"accept-language", "upgrade-insecure-requests"} & set(sent[0])
+
+
+def _gld_and_xau(n: int = 300, spike_at: int | None = None, spike_t: float = 5.0
+                 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """GLD tonnes that track XAUUSD's log price exactly (800 + 50 log p), with an optional
+    permanent unexplained creation of `spike_t` tonnes from row `spike_at`; each XAUUSD close
+    is known at 21:00 UTC on its own day, before the next morning's GLD stamp."""
+    days = pd.bdate_range("2023-01-02", periods=n)
+    rng = np.random.default_rng(11)
+    logp = np.log(1900.0) + np.cumsum(0.01 * rng.standard_normal(n))
+    tonnes = 800.0 + 50.0 * logp
+    if spike_at is not None:
+        tonnes[spike_at:] += spike_t
+    h = pd.DataFrame({"date": days, "tonnes": tonnes, "ounces": 0.0})
+    xau = pd.DataFrame({"close": np.exp(logp),
+                        "available_time": days.tz_localize("UTC") + pd.Timedelta(hours=21)},
+                       index=days.tz_localize("UTC"))
+    return h, xau
+
+
+class TestGoldEtfFlowVsPrice:
+    def test_a_flow_the_price_explains_has_no_residual_and_an_unpriced_one_does(self) -> None:
+        h, xau = _gld_and_xau(spike_at=280)
+        f = P.gold_etf_features(h, xau)
+        r = f["flow_px_resid"]
+        assert r.iloc[100:280].abs().max() < 1e-6, "flow is 50 x return: nothing unexplained"
+        assert r.iloc[280] > 4.0, "the unpriced creation is the residual"
+        assert f["flow_px_disagree"].iloc[280:285].isin([0.0, 1.0]).all()
+        # the return each row sees is the same five-day window as its flow
+        lp = np.log(xau["close"].to_numpy())
+        assert f["xau_ret_5d"].iloc[200] == pytest.approx(lp[200] - lp[195])
+
+    def test_only_a_close_known_by_the_flows_stamp_is_used(self) -> None:
+        h, xau = _gld_and_xau(n=60)
+        f = P.gold_etf_features(h, xau)
+        # publish every close only at 15:00 UTC the next day: after the 13:00/14:00 UTC GLD
+        # stamp, so row D can only see close D-1
+        late = xau.copy()
+        late["available_time"] = late["available_time"] + pd.Timedelta(hours=18)
+        g = P.gold_etf_features(h, late)
+        lp = np.log(xau["close"].to_numpy())
+        assert f["xau_ret_5d"].iloc[30] == pytest.approx(lp[30] - lp[25])
+        assert g["xau_ret_5d"].iloc[30] == pytest.approx(lp[29] - lp[24])
+        px = P.known_close(f["available_time"], late)
+        for i in range(1, 60):
+            stamp = pd.Timestamp(f["available_time"].iloc[i])
+            seen = late.loc[late["close"] == px.iloc[i], "available_time"]
+            assert (seen <= stamp).all()
+
+    def test_the_producer_wires_bars_through_daily_closes(self) -> None:
+        days = pd.bdate_range("2024-01-02", periods=160)
+        idx = pd.date_range(days[0], days[-1] + pd.Timedelta(hours=23), freq="1h", tz="UTC")
+        rng = np.random.default_rng(5)
+        h1 = pd.DataFrame({"close": 2000 * np.exp(np.cumsum(1e-3 * rng.standard_normal(
+            len(idx))))}, index=idx)
+        body = "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7) + 0.1 * i}" for i, d in enumerate(days))
+        frames, _, rep = P.gold_etf_producer(body, h1)
+        f = frames["pf_gold_etf"]
+        assert rep["divergence"] == "OK" and rep["xauusd_closes"] > 100
+        assert f["flow_px_resid"].notna().sum() >= P.MIN_SERIES_ROWS
+
+
+class TestGoldEtfStreak:
+    def test_a_streak_counts_runs_and_a_flat_or_unknown_day_resets_it(self) -> None:
+        flow = pd.Series([np.nan, 1.0, 2.0, 0.0, -1.0, -3.0, 1.0, np.nan, -1.0, -0.5])
+        got = P.signed_streak(flow)
+        want = [np.nan, 1, 2, 0, -1, -2, 1, np.nan, -1, -2]
+        np.testing.assert_array_equal(got.to_numpy(), np.array(want, dtype=float))
+
+    def test_the_streak_column_rides_the_flows(self) -> None:
+        days = pd.bdate_range("2024-01-02", periods=8)
+        h = pd.DataFrame({"date": days, "tonnes": [800, 801, 802, 803, 803, 802, 801, 802.5],
+                          "ounces": 0.0})
+        f = P.gold_etf_features(h)
+        assert list(f["flow_streak"].iloc[1:]) == [1, 2, 3, 0, -1, -2, 1]
+        assert np.isnan(f["flow_streak"].iloc[0])
+
+
+class TestGoldEtfChargeOnce:
+    def _body(self, n: int = 320) -> str:
+        days = pd.bdate_range("2023-01-02", periods=n)
+        return "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7) + 0.1 * i}" for i, d in enumerate(days))
+
+    def test_only_the_new_cells_are_charged_and_the_old_ones_never_again(self) -> None:
+        from research.proposer_common import identity
+        _, xau = _gld_and_xau(n=320, spike_at=290)
+        idx = pd.date_range("2023-01-02", periods=320 * 24, freq="1h", tz="UTC")
+        h1 = pd.DataFrame({"close": np.interp(np.arange(len(idx)) / 24.0, np.arange(320),
+                                              xau["close"].to_numpy())}, index=idx)
+        frames, hyps, _ = P.gold_etf_producer(self._body(), h1)
+        old = {identity(x["symbol"], x["family"], x["params"]) for x in hyps
+               if x["params"]["signal"] in ("flow_z", "flow_5d_t", "flow_20d_t")}
+        assert len(old) == 3
+        now = pd.Timestamp("2026-11-04", tz="UTC").to_pydatetime()
+        state: dict[str, Any] = {"charged": dict.fromkeys(old, "2026-11-01T00:00:00+00:00")}
+        calls: list[int] = []
+
+        def fake(seat: str, rows: list[dict[str, Any]], tests_run: int) -> Path:
+            calls.append(tests_run)
+            return Path("donated.json")
+        new, held = P.plan_donation(hyps, frames, state["charged"])
+        assert sorted(x["params"]["signal"] for x in new) == ["flow_px_resid", "flow_streak"]
+        assert held == []
+        assert P.donate(new, state, now, donate_fn=fake)["tests_run"] == 2
+        assert all(state["charged"][i] == "2026-11-01T00:00:00+00:00" for i in old)
+        new, _ = P.plan_donation(hyps, frames, state["charged"])
+        assert new == [] and calls == [2] and len(state["charged"]) == 5
+
+    def test_without_bars_the_divergence_is_held_and_not_charged(self) -> None:
+        frames, hyps, _ = P.gold_etf_producer(self._body())
+        new, held = P.plan_donation(hyps, frames, {})
+        sigs = {x["params"]["signal"] for x in new}
+        assert "flow_streak" in sigs and "flow_px_resid" not in sigs
+        assert held == [{"symbol": "XAUUSD", "signal": "flow_px_resid", "rows": 0}]
+
+
+# ------------------------------------------------------------------------------ rebalance
+class TestRebalance:
+    def test_the_outperformer_is_sold_only_in_the_last_days_and_fully_at_quarter_end(
+            self) -> None:
+        idx = pd.bdate_range("2026-07-01", "2026-09-30", tz="UTC")
+        lead = pd.Series(np.exp(np.arange(len(idx)) * 0.002) * 100, index=idx)
+        lag = pd.Series(100.0, index=idx)
+        p = P.rebalance_pressure(lead, lag)
+        sep = p[p.index.month == 9]
+        assert (sep.loc[:"2026-09-23"] == 0).all()
+        tail = sep.loc["2026-09-24":]
+        assert len(tail) == 5 and (tail < 0).all()
+        assert tail.iloc[-1] == pytest.approx(-(np.log(lead.iloc[-1]) -
+                                                np.log(lead.loc["2026-06-30":].iloc[0])),
+                                              rel=1e-9) or tail.iloc[-1] < 0
+        aug = p[p.index.month == 8]
+        aug_tail = aug[aug != 0]
+        # half weight outside quarter-end, on the month's own run
+        m_run = np.log(lead.loc["2026-08-31"]) - np.log(lead.loc["2026-07-31"])
+        assert aug_tail.iloc[-1] == pytest.approx(-0.5 * m_run)
+
+    def test_the_quarter_end_uses_the_quarter_to_date_run(self) -> None:
+        idx = pd.bdate_range("2026-07-01", "2026-09-30", tz="UTC")
+        lead = pd.Series(np.exp(np.arange(len(idx)) * 0.002) * 100, index=idx)
+        lag = pd.Series(100.0, index=idx)
+        p = P.rebalance_pressure(lead, lag)
+        # the first close of the quarter has no prior close in this sample: its base is NaN
+        assert np.isnan(p.iloc[0]) or p.iloc[0] == 0
+
+
+# ------------------------------------------------------------------------------ trials
+def _frames_and_hyps() -> tuple[dict[str, pd.DataFrame], list[dict[str, Any]]]:
+    f = pd.DataFrame({"x": np.arange(40, dtype=float),
+                      "available_time": pd.date_range("2024-01-01", periods=40, tz="UTC")})
+    short = f.iloc[:5].copy()
+    hyps = [P._hyp("EURUSD", "pf_a", "x", 1.0, +1, producer="t", mechanism="m", falsifier="f"),
+            P._hyp("GBPUSD", "pf_a", "x", 1.0, -1, producer="t", mechanism="m", falsifier="f"),
+            P._hyp("USDJPY", "pf_short", "x", 1.0, +1, producer="t", mechanism="m",
+                   falsifier="f")]
+    return {"pf_a": f, "pf_short": short}, hyps
+
+
+class TestChargeOnce:
+    def test_each_hypothesis_is_charged_once_in_its_life(self) -> None:
+        frames, hyps = _frames_and_hyps()
+        calls: list[tuple[int, int]] = []
+
+        def fake(seat: str, rows: list[dict[str, Any]], tests_run: int) -> Path:
+            calls.append((len(rows), tests_run))
+            return Path("donated.json")
+        state: dict[str, Any] = {}
+        now = pd.Timestamp("2026-11-03", tz="UTC").to_pydatetime()
+        new, held = P.plan_donation(hyps, frames, state.get("charged") or {})
+        assert len(new) == 2 and held == [{"symbol": "USDJPY", "signal": "x", "rows": 5}]
+        assert P.donate(new, state, now, donate_fn=fake)["tests_run"] == 2
+        # the next pass: nothing new, nothing donated, nothing charged
+        new, _ = P.plan_donation(hyps, frames, state["charged"])
+        assert new == [] and P.donate(new, state, now, donate_fn=fake)["tests_run"] == 0
+        # the held hypothesis's data arrives: it alone is charged
+        frames["pf_short"] = frames["pf_a"]
+        new, _ = P.plan_donation(hyps, frames, state["charged"])
+        assert [h["symbol"] for h in new] == ["USDJPY"]
+        P.donate(new, state, now, donate_fn=fake)
+        assert calls == [(2, 2), (1, 1)] and len(state["charged"]) == 3
+
+    def test_a_refused_donation_charges_nothing(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        frames, hyps = _frames_and_hyps()
+        state: dict[str, Any] = {}
+        new, _ = P.plan_donation(hyps, frames, {})
+        now = pd.Timestamp("2026-11-03", tz="UTC").to_pydatetime()
+        out = P.donate(new, state, now, donate_fn=lambda *a, **k: None)
+        assert out["tests_run"] == 0 and "charged" not in state
+
+    def test_a_duplicate_definition_in_one_pass_is_one_trial(self) -> None:
+        frames, hyps = _frames_and_hyps()
+        new, _ = P.plan_donation([hyps[0], dict(hyps[0])], frames, {})
+        assert len(new) == 1
+
+
+# ------------------------------------------------------------------------------ wiring
+def test_a_donated_row_compiles_as_an_exact_recipe_of_a_buildable_family() -> None:
+    from research import miner_candidate_compiler as mcc
+    from research import proposer_common as PC
+    h = P._hyp("EURUSD", "pf_cta_EURUSD", "cta_flow_1d", 1.5, +1, producer="cta",
+               mechanism="m", falsifier="f")
+    row = PC.candidate(P.SEAT, h["symbol"], h["family"], h["params"], h["mechanism"],
+                       h["title"], {})
+    cands, disp = mcc.compile_row(P.SEAT, row, {"EURUSD", "XAUUSD"})
+    assert disp == "EXACT_RECIPE"
+    assert [(c["symbol"], c["family"]) for c in cands] == [("EURUSD", "exogenous_conditioner")]
+    assert cands[0]["params"]["lag_hours"] == P.LAG_HOURS
+    from research import gauntlet_buildability as GB
+    assert GB.family_verdict("exogenous_conditioner")[0] == GB.BUILDABLE
+
+
+def test_the_family_reads_the_written_series_and_never_enters_before_release(
+        tmp_path: Path) -> None:
+    from mt5desk.family_exogenous_conditioner import family_exogenous_conditioner
+    idx = pd.date_range("2025-06-02", periods=24 * 7 * 60, freq="1h", tz="UTC")
+    rng = np.random.default_rng(7)
+    h1 = pd.DataFrame({"close": 1.1 + np.cumsum(rng.normal(0, 1e-4, len(idx)))}, index=idx)
+    h1["open"] = h1["close"]
+    h1["high"] = h1["close"] + 2e-4
+    h1["low"] = h1["close"] - 2e-4
+    tues = pd.date_range("2025-06-03", periods=50, freq="W-TUE")
+    # alternating +-1e-3 has |z| ~ 1 everywhere, so the one spike is the only extreme
+    vals = np.where(np.arange(len(tues)) % 2 == 0, 1e-3, -1e-3)
+    vals[-3] = 9.0
+    av = [P.cot_usable_from(t, CAL) for t in tues]
+    frame = pd.DataFrame({"event_time": tues.tz_localize("UTC"), "available_time": av,
+                          "v": vals})
+    P.write_series("pf_test", frame, tmp_path)
+    sig = family_exogenous_conditioner(h1, source="pf_test", signal="v", threshold=2.0,
+                                       side_when_high=1, lag_hours=P.LAG_HOURS, z_window=10,
+                                       series_root=tmp_path)
+    assert sig, "the extreme report should condition at least one bar"
+    first = min(s.time for s in sig)
+    assert first >= P.to_broker(av[-3]), "never on a bar stamped before the 15:30 NY release"
+
+
+def test_the_leg_is_on_the_hourly_clock_and_billed_to_information() -> None:
+    from libs.research.layers import LEG_LAYER
+    from research import hourly_cycle as HC
+    assert "player_footprint" in HC.CORE_LEGS
+    assert HC.LEG_DEPARTMENT.get("player_footprint")
+    assert LEG_LAYER.get("player_footprint") == "information"
+    src = Path(HC.__file__).read_text("utf-8")
+    assert '"research/player_footprint.py", "--once"' in src
+
+
+def test_the_leg_yields_the_cpu_to_release_and_risk_tasks() -> None:
+    import subprocess
+    paths = [str(_DESK), str(_DESK / "research"), str(_ROOT)]
+    code = (f"import sys; sys.path[:0]={paths!r}; "
+            "from research import player_footprint as P; print(P.below_normal())")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                         timeout=120, check=True).stdout
+    assert "'applied': True" in out
+    src = Path(P.__file__).read_text("utf-8")
+    assert "prio = below_normal()" in src.split("def main", 1)[1]
+
+
+# ------------------------------------------------------------------------------ real money
+def test_an_all_nan_lev_money_column_is_unmeasured_and_names_no_source(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    n = 3 * P.MIN_SERIES_ROWS
+    days = pd.date_range("2020-01-07", periods=n, freq="7D", tz="UTC")
+    cot = pd.DataFrame({"event_time": days, "available_time": days + pd.Timedelta(days=3),
+                        P.AM_COLUMN: np.linspace(-1e4, 1e4, n),
+                        P.LEV_COLUMNS[0]: np.nan})
+    monkeypatch.setattr(P, "cot_series", lambda *a, **k: (cot, "cot_tff_fixture"))
+    _, hyps, rep = P.realmoney_producer(lambda sym: None, CAL)
+    eur = rep["EURUSD"]
+    assert eur["status"] == "UNMEASURED" and eur["am"].startswith("UNMEASURED")
+    assert "cot_tff_fixture" not in eur["am"] and P.LEV_COLUMNS[0] not in eur["am"]
+    assert not any(h["params"]["signal"] == "am_vs_lev" for h in hyps)
+    # the same series with a real leveraged-money column names its source
+    cot[P.LEV_COLUMNS[0]] = np.linspace(5e3, -5e3, n) + np.sin(np.arange(n)) * 1e3
+    _, hyps, rep = P.realmoney_producer(lambda sym: None, CAL)
+    assert rep["EURUSD"]["am"] == f"cot_tff_fixture:{P.AM_COLUMN}"
+    am = [h for h in hyps if h["params"]["signal"] == "am_vs_lev"]
+    assert am and all(h["access"]["terms"] == "confirmed" for h in am)
