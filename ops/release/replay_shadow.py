@@ -399,6 +399,799 @@ def exempt_scripts(
     return scripts - money_scripts(trees, closure, listed)
 
 
+# ------------------------------------------------------------- box-task installers (#1107)
+#: A BOX-TASK INSTALLER IS MEASURED BY THE ONE THING IT SCHEDULES (2026-11-13; the Auditor's
+#: ruling on #1107: no false-fail and no not_money_scripts.txt listing). An installer is a .ps1
+#: under SCRIPT_DIRS, so it stays money path (is_money) and reads UNMEASURED unless
+#: `installer_target` shows, from its text alone (nothing is run), that:
+#:   - every code line is inside a fixed vocabulary (INSTALLER_CMDLETS at command position,
+#:     INSTALLER_ENUMS as parameter values, literals, variables, `-f` formats, `if`/`else`
+#:     blocks): no other command or alias, no redirection, call operator, subexpression, script
+#:     block, method call (but the Date arithmetic), here-string or non-ASCII character;
+#:   - it registers ONE task under ONE literal name, through exactly one New-ScheduledTaskAction
+#:     whose -Execute / -Argument / -WorkingDirectory evaluate, through the variables the script
+#:     assigns (each once), to one fixed command line that runs EXACTLY ONE file of the tree. That
+#:     file must be a Python module, or a .cmd runner outside MONEY_PATH and SCRIPT_DIRS that is
+#:     read the same way to the one .py it runs. Zero files, two, a script, or anything that does
+#:     not evaluate: UNMEASURED;
+#:   - no code line but that registration and the Unregister of the same name is DYNAMIC.
+#: The module is MONEY when it is in the base's closure, an entry point or under MONEY_PATH; when
+#: its path, the installer's text, the runner's text or the command line names a venue or state
+#: word (MONEY_WORDS, STATE_WORDS); when its own import closure in the PR's tree reaches MONEY_PATH
+#: or an entry point, names an entry point, or starts processes or imports dynamically; or when
+#: the task is a row of a money lane in either tree's manifest. A money module is measured only
+#: when the base's replay imported it; a control-plane task (components.py) never is.
+INSTALLER_CMDLETS = frozenset(
+    c.lower()
+    for c in (
+        "New-ScheduledTaskAction", "New-ScheduledTaskTrigger", "New-ScheduledTaskSettingsSet",
+        "New-ScheduledTaskPrincipal", "Register-ScheduledTask", "Unregister-ScheduledTask",
+        "Get-ScheduledTask", "Get-ScheduledTaskInfo", "New-TimeSpan", "Get-Date", "Join-Path",
+        "Resolve-Path", "Split-Path", "Test-Path", "New-Item", "Out-Null", "Write-Host",
+        "Get-Command",
+    )
+)  # fmt: skip
+INSTALLER_ENUMS = frozenset(
+    e.lower()
+    for e in (
+        "IgnoreNew", "Parallel", "Queue", "ServiceAccount", "S4U", "Interactive", "Highest",
+        "Limited", "Directory", "SilentlyContinue", "Stop", "SYSTEM",
+    )
+)  # fmt: skip
+_PS_KEYWORDS = frozenset({"if", "else", "throw", "exit", "param"})
+#: The cmdlets that name a task: each must name it by -TaskName (never a pipeline or an object).
+_TASK_CMDLETS = frozenset(
+    {"register-scheduledtask", "unregister-scheduledtask", "get-scheduledtask",
+     "get-scheduledtaskinfo"}
+)  # fmt: skip
+_PS_METHODS = frozenset({".addhours", ".addminutes", ".adddays", ".addseconds"})
+#: Variables an installer may never assign: automatic, preference and environment variables
+#: change what the cmdlets above do.
+_PS_RESERVED = frozenset({"psscriptroot", "pscommandpath", "psdefaultparametervalues", "args",
+                          "input", "this", "_", "true", "false", "null", "home", "pwd", "host",
+                          "myinvocation", "executioncontext", "profile", "pshome"})  # fmt: skip
+_PS_TOKEN = re.compile(
+    r"(?P<nl>`?\r?\n)|(?P<ws>[ \t]+)"
+    r"|(?P<sq>'(?:[^'\n]|'')*')"
+    r'|(?P<dq>"(?:[^"`\n$]|`[^\n]|""|\$(?![({]))*")'
+    r"|(?P<var>\$(?:env:)?[A-Za-z_]\w*)"
+    r"|(?P<type>\[(?:switch|string|int|TimeSpan)\](?:::Zero)?)"
+    r"|(?P<index>\[\d+\])"
+    r"|(?P<prop>\.[A-Za-z_]\w*)"
+    r"|(?P<param>-[A-Za-z]\w*(?::\$(?:true|false))?)"
+    r"|(?P<num>\d+)"
+    r"|(?P<punct>[(){},=|@])"
+    r"|(?P<word>[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z][A-Za-z0-9]*)?(?:\.exe)?)",
+    re.IGNORECASE,
+)
+#: The repository's root inside an evaluated path: a NUL, which no file's text can hold (_text
+#: drops them), so no string an installer writes can pose as it.
+_REPO = "\x00repo"
+#: The box's checkout, the one absolute root a command line may name.
+_BOX_ROOT = "c:\\opt\\quant"
+_PY_EXE = re.compile(r"(python[0-9.]*|pythonw|py)(\.exe)?", re.IGNORECASE)
+_PS_EXE = re.compile(r"(powershell|pwsh)(\.exe)?", re.IGNORECASE)
+_PY_FLAGS = frozenset({"-u", "-B", "-I", "-E", "-s", "-S", "-3", "-O"})
+_PLAIN_ARG = re.compile(r"-{0,2}[A-Za-z0-9][A-Za-z0-9_.=,-]*")
+_SCRIPTISH = (*SCRIPT_EXTS, ".py", ".pyw", ".exe", ".dll", ".lnk")
+#: Severity order: the first kinds are measured, the rest UNMEASURED.
+INSTALLER_MEASURED = ("no_order_path_change", "money_target_replayed")
+_INSTALLER_KINDS = (
+    *INSTALLER_MEASURED, "money_target_unreplayed", "control_plane_task", "target_not_module",
+    "dynamic_line", "unresolved_target", "outside_vocabulary", "unreadable",
+)  # fmt: skip
+
+
+def _ps_tokens(code: str) -> list[tuple[str, str, int]] | None:
+    """(kind, text, line) for every token of `code`, or None when anything is outside the
+    vocabulary's characters (an unknown character, an unclosed or line-spanning string)."""
+    out: list[tuple[str, str, int]] = []
+    pos, line = 0, 0
+    while pos < len(code):
+        m = _PS_TOKEN.match(code, pos)
+        if not m or m.end() == pos:
+            return None
+        kind = m.lastgroup or ""
+        if kind == "var" and code[m.end() : m.end() + 1] == "(":
+            return None  # $x(...): nothing is invoked
+        if kind != "ws":
+            out.append((kind, m.group(), line))
+        line += m.group().count("\n")
+        pos = m.end()
+    return out
+
+
+def _ps_group(toks: list[tuple[str, str, int]], i: int) -> int:
+    """The index just past the operand that starts at `i`: a balanced (...) group or one token,
+    with the .property / [index] tokens that follow it. -1 when it does not close."""
+    if i >= len(toks):
+        return -1
+    if toks[i][1] in ("(", "@"):
+        j = i + 1 if toks[i][1] == "(" else i + 2
+        depth = 1
+        while j < len(toks) and depth:
+            depth += {"(": 1, ")": -1}.get(toks[j][1], 0)
+            j += 1
+        if depth:
+            return -1
+    else:
+        j = i + 1
+    while j < len(toks) and toks[j][0] in ("prop", "index"):
+        j += 1
+    return j
+
+
+def _ps_value(toks: list[tuple[str, str, int]], env: dict[str, str | None]) -> str | None:
+    """The string an expression evaluates to, for the few shapes an installer builds paths and
+    command lines with; None for anything else (never a guess)."""
+    if not toks:
+        return None
+    kinds = [k for k, _, _ in toks]
+    texts = [t for _, t, _ in toks]
+    low = [t.lower() for t in texts]
+    if len(toks) == 1:
+        if kinds[0] == "sq":
+            return texts[0][1:-1].replace("''", "'")
+        if kinds[0] == "dq" and not re.search(r"[$`]", texts[0]):
+            return texts[0][1:-1].replace('""', '"')
+        if kinds[0] == "var":
+            return env.get(texts[0][1:].lower())
+        return None
+    if texts[0] == "(" and _ps_group(toks, 0) == len(toks):
+        end = len(toks)
+        while kinds[end - 1] == "prop":
+            end -= 1
+        inner, props = toks[1 : end - 1], low[end:]
+        if props == [".path"] and inner and inner[0][1].lower() == "resolve-path":
+            v = _ps_value(inner[1:], env)
+            return _norm_win(v) if v is not None else None
+        if props == [".source"] and [t.lower() for _, t, _ in inner] in (
+            ["get-command", "powershell.exe"],
+            ["get-command", "pwsh.exe"],
+        ):
+            return inner[1][1]
+        return _ps_value(inner, env) if not props else None
+    if low[0] == "resolve-path":
+        v = _ps_value(toks[1:], env)
+        return _norm_win(v) if v is not None else None
+    if low[0] == "join-path":
+        a = _ps_group(toks, 1)
+        if a < 0 or _ps_group(toks, a) != len(toks):
+            return None
+        x, y = _ps_value(toks[1:a], env), _ps_value(toks[a:], env)
+        return None if x is None or y is None else f"{x}\\{y}"
+    if kinds[0] == "sq" and low[1:2] == ["-f"]:
+        args: list[str] = []
+        i = 2
+        while i < len(toks):
+            j = _ps_group(toks, i)
+            v = _ps_value(toks[i:j], env) if j > i else None
+            if v is None:
+                return None
+            args.append(v)
+            if j < len(toks) and texts[j] != ",":
+                return None
+            i = j + 1
+        fmt = texts[0][1:-1].replace("''", "'")
+        try:
+            return re.sub(
+                r"\{\{|\}\}|\{(\d+)\}",
+                lambda m: args[int(m.group(1))] if m.group(1) else m.group()[0],
+                fmt,
+            )
+        except IndexError:
+            return None
+    return None
+
+
+def _norm_win(path: str) -> str | None:
+    """A path under the repository marker with `.` and `..` resolved (None when it climbs out);
+    any other path unchanged."""
+    if not path.startswith(_REPO):
+        return path
+    parts: list[str] = []
+    for seg in re.split(r"[\\/]", path[len(_REPO) :]):
+        if seg in ("", "."):
+            continue
+        if seg == "..":
+            if not parts:
+                return None
+            parts.pop()
+        else:
+            parts.append(seg)
+    return "\\".join((_REPO, *parts))
+
+
+def _repo_file(token: str, wd: str | None = None) -> str | None:
+    """The repo-relative path a command-line token names: under the repository marker or the
+    box's checkout, or relative to a known working directory. None for anything else."""
+    t = token
+    if t.lower().startswith(_BOX_ROOT + "\\"):
+        t = _REPO + t[len(_BOX_ROOT) :]
+    elif not t.startswith(_REPO):
+        if wd is None or not re.fullmatch(r"[A-Za-z0-9_][\w.\\/-]*", t):
+            return None
+        t = f"{wd}\\{t}"
+    n = _norm_win(t)
+    if n is None or not n.startswith(_REPO):
+        return None
+    return n[len(_REPO) :].replace("\\", "/").strip("/") or None
+
+
+def _split_cmd(line: str) -> list[str] | None:
+    """Whitespace-separated words, a "double-quoted" word kept whole; None for a stray quote."""
+    out = []
+    for m in re.finditer(r'"([^"]*)"|(\S+)', line):
+        word = m.group(1) if m.group(1) is not None else m.group(2)
+        if m.group(2) is not None and '"' in word:
+            return None
+        out.append(word)
+    return out
+
+
+def _command_file(words: list[str], wd: str | None, files: set[str]) -> str | None:
+    """The ONE tree file a command runs: an interpreter's script or `-m` module, PowerShell's
+    -File, or the program itself; every other word a plain flag or value. None otherwise."""
+    if not words:
+        return None
+    prog = _repo_file(words[0])
+    rest: list[str]
+    if prog is not None:
+        target, rest = prog, words[1:]
+    elif _PY_EXE.fullmatch(re.split(r"[\\/]", words[0])[-1]):
+        i = 1
+        while i < len(words) and words[i] in _PY_FLAGS:
+            i += 1
+        if i + 1 < len(words) and words[i] == "-m":
+            dotted = words[i + 1]
+            if not re.fullmatch(r"[A-Za-z_]\w*(\.[A-Za-z_]\w*)*", dotted):
+                return None
+            rel = dotted.replace(".", "/")
+            roots = {r for r in (*IMPORT_ROOTS, _repo_file(wd) if wd else None) if r is not None}
+            if wd is not None and wd.rstrip("\\") == _REPO:
+                roots.add("")
+            found = {
+                c
+                for r in roots
+                for c in (f"{r}/{rel}.py".lstrip("/"), f"{r}/{rel}/__main__.py".lstrip("/"))
+                if c in files
+            }
+            if len(found) != 1:
+                return None
+            target, rest = found.pop(), words[i + 2 :]
+        elif i < len(words):
+            f = _repo_file(words[i], wd)
+            if f is None or not f.endswith(".py"):
+                return None
+            target, rest = f, words[i + 1 :]
+        else:
+            return None
+    elif _PS_EXE.fullmatch(re.split(r"[\\/]", words[0])[-1]):
+        i = 1
+        while i < len(words) and words[i].lower() in ("-noprofile", "-noninteractive", "-nologo"):
+            i += 1
+        if i + 1 < len(words) and words[i].lower() == "-executionpolicy":
+            if words[i + 1].lower() not in ("bypass", "remotesigned", "allsigned"):
+                return None
+            i += 2
+        if i + 1 >= len(words) or words[i].lower() != "-file":
+            return None
+        f = _repo_file(words[i + 1], wd)
+        if f is None:
+            return None
+        target, rest = f, words[i + 2 :]
+    else:
+        return None
+    if target not in files:
+        return None
+    for w in rest:  # a plain flag or value: never a path, a script or a second program
+        if not _PLAIN_ARG.fullmatch(w) or w.lower().endswith(_SCRIPTISH):
+            return None
+    return target
+
+
+def _shadowed(program: str, wd: str | None, files: set[str]) -> bool:
+    """Whether a bare program name (no directory) could run a file of the tree: cmd.exe and
+    CreateProcess look in the working directory before the system's, so a `py.cmd` beside the
+    task's working directory would run instead of the interpreter."""
+    if re.search(r"[\\/]", program) or wd is None:
+        return False
+    norm = _norm_win(wd)
+    if norm is None or not norm.startswith(_REPO):
+        return True
+    here = norm[len(_REPO) :].replace("\\", "/").strip("/")
+    name = program.casefold()
+    return any(
+        (f.rsplit("/", 1)[0] if "/" in f else "") == here
+        and (
+            Path(f).name.casefold() == name or ("." not in name and Path(f).stem.casefold() == name)
+        )
+        for f in files
+    )
+
+
+def _cmd_line(exe: str, arg: str, wd: str | None, files: set[str]) -> str | None:
+    """The one tree file a task action runs (`exe` with `arg`, both evaluated)."""
+    if _shadowed(exe, wd, files):
+        return None
+    if re.split(r"[\\/]", exe)[-1].lower() in ("cmd", "cmd.exe"):
+        m = re.fullmatch(r"((?:/[dDsS]\s+)*)/[cC]\s+(.*)", arg.strip(), re.DOTALL)
+        if not m:
+            return None
+        rest = m.group(2).strip()
+        if "s" in m.group(1).lower():
+            if len(rest) < 2 or rest[0] != '"' or rest[-1] != '"':
+                return None
+            inner = rest[1:-1]
+        elif re.fullmatch(r'"[^"]+"', rest):
+            inner = rest
+        else:
+            return None
+        inner = re.sub(r'\s*>>\s*"[^"&|<>^%!()\r\n]+\.log"\s+2>&1\s*$', "", inner)
+        if re.search(r"[&|<>^%!()`;\r\n]", inner):
+            return None
+        words = _split_cmd(inner)
+        if words and _shadowed(words[0], wd, files):
+            return None
+    else:
+        if re.search(r"[&|<>^%!()`;\r\n]", arg):
+            return None
+        words = _split_cmd(f'"{exe}" {arg}' if '"' not in exe else "")
+    return _command_file(words, wd, files) if words else None
+
+
+def _runner_module(tree: Path, runner: str, files: set[str]) -> tuple[str | None, str]:
+    """(the one .py a .cmd runner runs, its text). The runner may hold only `@echo off`, `rem`,
+    `set "LOG=<x>.log"`, `set "PYTHONPATH=<the box's import roots>"`, `exit /b`, and ONE
+    interpreter line; anything else, or a second line that runs something, resolves to None."""
+    text = read(tree, runner)
+    if text is None:
+        return None, ""
+    env: dict[str, str] = {}
+    runs: list[str] = []
+    roots = {"\\".join(x for x in (_BOX_ROOT, r.replace("/", "\\")) if x) for r in IMPORT_ROOTS}
+    for raw in text.splitlines():
+        s = raw.strip()
+        if not s:
+            continue
+        low = s.lower()
+        if not s.isascii() or "^" in s:
+            return None, text
+        if low == "@echo off" or re.match(r"rem(\s|$)", low):
+            continue
+        m = re.fullmatch(r'set "([A-Za-z_]\w*)=([^"%&|<>^!()]*)"', s)
+        if m:
+            name, value = m.group(1).upper(), m.group(2)
+            if name in env or name not in ("LOG", "PYTHONPATH"):
+                return None, text
+            if name == "LOG" and not value.lower().endswith(".log"):
+                return None, text
+            if name == "PYTHONPATH" and not {v.lower() for v in value.split(";")} <= roots:
+                return None, text
+            env[name] = value
+            continue
+        if re.fullmatch(r"exit /b (%errorlevel%|\d+)", low):
+            continue
+        runs.append(s)
+    if len(runs) != 1:
+        return None, text
+    line = runs[0]
+    if "LOG" in env:
+        line = re.sub(r'\s*>>\s*"?%LOG%"?\s+2>&1\s*$', "", line, flags=re.IGNORECASE)
+    if re.search(r"[&|<>^%!()`;]", line):
+        return None, text
+    words = _split_cmd(line)
+    if not words or not _PY_EXE.fullmatch(re.split(r"[\\/]", words[0])[-1]):
+        return None, text
+    target = _command_file(words, None, files)
+    return (target if target and target.endswith(".py") else None), text
+
+
+def _parse_installer(text: str, path: str, files: set[str]) -> tuple[str, str, str] | str:
+    """(the task's name, the one tree file its action runs, the evaluated command line), or the
+    kind that stops it."""
+    lines = text.splitlines()
+    code = "\n".join("" if ln.lstrip().startswith("#") else ln for ln in lines)
+    if not code.isascii() or "@'" in code or '@"' in code or "<#" in code:
+        return "outside_vocabulary"
+    toks = _ps_tokens(code)
+    if toks is None:
+        return "outside_vocabulary"
+    sig = [t for t in toks if t[0] != "nl" or not t[1].startswith("`")]
+    # the vocabulary, token by token
+    opener: list[str] = []  # the open parentheses
+    prev: tuple[str, str, int] | None = None
+    for i, (kind, text_, _) in enumerate(sig):
+        low = text_.lower()
+        cmd_pos = prev is None or prev[0] == "nl" or prev[1] in ("(", "{", "}", "|", "=")
+        if kind == "word":
+            if cmd_pos:
+                if low not in INSTALLER_CMDLETS and low not in _PS_KEYWORDS:
+                    return "outside_vocabulary"
+            elif not (
+                (prev is not None and prev[0] == "param" and low in INSTALLER_ENUMS)
+                or (prev is not None and prev[1].lower() == "get-command"
+                    and low in ("powershell.exe", "pwsh.exe"))
+            ):  # fmt: skip
+                return "outside_vocabulary"
+        elif kind == "prop" and i + 1 < len(sig) and sig[i + 1][1] == "(":
+            if low not in _PS_METHODS:
+                return "outside_vocabulary"
+        elif kind == "punct":
+            if text_ == "(":
+                opener.append("(")
+            elif text_ == ")":
+                if not opener:
+                    return "outside_vocabulary"
+                opener.pop()
+            elif text_ == "{":
+                if not (prev is not None and (prev[1].lower() == "else" or (
+                        prev[1] == ")" and _if_paren(sig, i - 1)))):  # fmt: skip
+                    return "outside_vocabulary"  # a script block is never data here
+            elif text_ == "|":
+                if i + 1 >= len(sig) or sig[i + 1][1].lower() != "out-null":
+                    return "outside_vocabulary"
+            elif text_ == "@":
+                j = _ps_group(sig, i)
+                if (
+                    j < 0
+                    or i + 1 >= len(sig)
+                    or sig[i + 1][1] != "("
+                    or any(
+                        k not in ("var", "punct") or (k == "punct" and t not in ",")
+                        for k, t, _ in sig[i + 2 : j - 1]
+                    )
+                ):
+                    return "outside_vocabulary"
+            elif text_ == "=" and (prev is None or not (
+                    (prev[0] == "var" and not prev[1].lower().startswith("$env:")
+                     and prev[1][1:].lower() not in _PS_RESERVED
+                     and not re.match(r"ps.", prev[1][1:], re.IGNORECASE)
+                     and (not prev[1].lower().endswith("preference")
+                          or prev[1].lower() == "$erroractionpreference"))
+                    or (prev[0] == "prop" and prev[1].lower() == ".repetition")
+            )):  # fmt: skip
+                return "outside_vocabulary"
+        prev = (kind, text_, 0) if kind != "nl" else ("nl", "\n", 0)
+    if opener:
+        return "outside_vocabulary"
+    stmts = _ps_statements(sig)
+    # one action, one registration, at most one Unregister; New-Item only makes a directory
+    every = [t[1].lower() for t in sig if t[0] == "word"]
+    if every.count("new-scheduledtaskaction") != 1 or every.count("register-scheduledtask") != 1:
+        return "unresolved_target"
+    if every.count("unregister-scheduledtask") > 1:
+        return "unresolved_target"
+    for s in stmts:
+        low_s = [t[1].lower() for t in s]
+        if {"-inputobject", "-cimsession"} & set(low_s):
+            return "unresolved_target"  # a task named by anything but its one literal name
+        if sum(x in _TASK_CMDLETS for x in low_s) > low_s.count("-taskname"):
+            return "unresolved_target"
+        if "new-item" in low_s:
+            k = low_s.index("new-item")
+            if low_s[k + 1 : k + 3] != ["-itemtype", "directory"] or "-value" in low_s:
+                return "outside_vocabulary"
+    # the variables, each assigned once
+    env: dict[str, str | None] = {
+        "psscriptroot": _REPO + "\\" + str(Path(path).parent).replace("/", "\\")
+    }
+    seen: set[str] = set()
+    action_var = None
+    action: list[tuple[str, str, int]] = []
+    for s in stmts:
+        if s and s[0][1].lower() == "param":
+            i = 2
+            while i < len(s) - 1:
+                if s[i][0] == "type":
+                    i += 1
+                if i >= len(s) or s[i][0] != "var":
+                    return "outside_vocabulary"
+                name = s[i][1][1:].lower()
+                if name in seen:
+                    return "unresolved_target"
+                seen.add(name)
+                j = i + 1
+                if j < len(s) and s[j][1] == "=":
+                    k = _ps_group(s, j + 1)
+                    env[name] = _ps_value(s[j + 1 : k], env) if k > 0 else None
+                    j = k
+                else:
+                    env[name] = None
+                if j < 0 or j >= len(s):
+                    return "outside_vocabulary"
+                i = j + 1 if s[j][1] == "," else j
+            continue
+        if len(s) > 2 and s[0][0] == "var" and s[1][1] == "=":
+            name = s[0][1][1:].lower()
+            if name in seen:
+                return "unresolved_target"  # a second value: no single command line
+            seen.add(name)
+            if s[2][1].lower() == "new-scheduledtaskaction":
+                action_var, action = name, s[3:]
+                env[name] = None
+            else:
+                env[name] = _ps_value(s[2:], env)
+    if action_var is None:
+        return "unresolved_target"
+    # -TaskName: one literal name, everywhere
+    tasks = set()
+    for k, t in enumerate(sig):
+        if t[0] == "param" and t[1].lower() == "-taskname":
+            j = _ps_group(sig, k + 1)
+            v = _ps_value(sig[k + 1 : j], env) if j > k + 1 else None
+            if v is None:
+                return "unresolved_target"
+            tasks.add(v.casefold())
+    if len(tasks) != 1 or re.search(r"[*?\[\]]", next(iter(tasks))):
+        return "unresolved_target"  # one name, and never a wildcard
+    reg = next(s for s in stmts if s and s[0][1].lower() == "register-scheduledtask")
+    reg_low = [t[1].lower() for t in reg]
+    if (
+        reg_low.count("-action") != 1
+        or reg_low[reg_low.index("-action") + 1] != f"${action_var}"
+        or {"-xml", "-inputobject"} & set(reg_low)
+    ):
+        return "unresolved_target"
+    # the action: -Execute, -Argument, -WorkingDirectory, each once and each evaluated
+    got: dict[str, str | None] = {}
+    i = 0
+    while i < len(action):
+        p = action[i][1].lower()
+        if action[i][0] != "param" or p not in ("-execute", "-argument", "-workingdirectory"):
+            return "unresolved_target"
+        j = _ps_group(action, i + 1)
+        if p in got or j < 0:
+            return "unresolved_target"
+        got[p] = _ps_value(action[i + 1 : j], env)
+        i = j
+    exe, arg = got.get("-execute"), got.get("-argument", "")
+    wd = got.get("-workingdirectory")
+    if exe is None or arg is None or ("-workingdirectory" in got and wd is None):
+        return "unresolved_target"
+    wd_norm = _norm_win(wd) if wd is not None else None
+    if wd is not None and (wd_norm is None or not wd_norm.startswith(_REPO)):
+        return "unresolved_target"
+    # DYNAMIC: only the registration's own lines, and the Unregister of the same name
+    allowed = set()
+    for s in stmts:
+        if s and s[0][1].lower() in ("register-scheduledtask", "unregister-scheduledtask"):
+            allowed |= set(range(s[0][2], s[-1][2] + 1))
+    for n, ln in enumerate(code.splitlines()):
+        if DYNAMIC.search(ln) and n not in allowed:
+            return "dynamic_line"
+    target = _cmd_line(exe, arg, wd_norm, files)
+    if target is None:
+        return "unresolved_target"
+    return tasks.pop(), target, f"{exe} {arg}"
+
+
+def _if_paren(sig: list[tuple[str, str, int]], close: int) -> bool:
+    """Whether the ")" at `close` ends an `if (...)` condition."""
+    depth = 0
+    for k in range(close, -1, -1):
+        depth += {")": 1, "(": -1}.get(sig[k][1], 0)
+        if depth == 0:
+            return k > 0 and sig[k - 1][1].lower() == "if"
+    return False
+
+
+def _ps_statements(sig: list[tuple[str, str, int]]) -> list[list[tuple[str, str, int]]]:
+    """Statements: split at a newline outside parentheses, and at { and }."""
+    out: list[list[tuple[str, str, int]]] = [[]]
+    depth = 0
+    for t in sig:
+        depth += {"(": 1, ")": -1}.get(t[1], 0)
+        if (t[0] == "nl" and depth == 0) or t[1] in ("{", "}"):
+            out.append([])
+        elif t[0] != "nl":
+            out[-1].append(t)
+    return [s for s in out if s]
+
+
+#: What a module may never do and still be called no order-path change: start a process or import
+#: by name at run time (either can reach any order code with no import a scan sees).
+_LAUNCH_MODULES = frozenset(
+    {"subprocess", "importlib", "runpy", "pty", "multiprocessing", "concurrent", "builtins",
+     "webbrowser"}
+)
+_LAUNCH_NAMES = frozenset({"exec", "eval", "__import__", "compile", "__builtins__"})
+_OS_LAUNCH = ("system", "popen", "exec", "spawn", "posix_spawn", "startfile", "fork",
+              "create_subprocess")  # fmt: skip
+#: Modules that are launches only through these attributes (any reference to one is a launch).
+_ATTR_LAUNCH: dict[str, tuple[str, ...]] = {
+    "os": _OS_LAUNCH, "posix": _OS_LAUNCH, "nt": _OS_LAUNCH,
+    "asyncio": (*_OS_LAUNCH, "subprocess"),
+    "psutil": ("Popen",), "sys": ("modules",),
+}  # fmt: skip
+#: Modules whose attributes may never be looked up by name (getattr, __getattribute__,
+#: __dict__), and never passed around bare: what they hand back no scan can see (#1107 MF1).
+_ROOTS_BY_NAME = frozenset({*_LAUNCH_MODULES, *_ATTR_LAUNCH, "ctypes"})
+#: CTYPES (#1107 audit ruling): a launch, unless EVERY use in the file is a C type, byref, or a
+#: kernel32 call from this read-only allowlist (mt5_session.py reads its Windows session id).
+_CTYPES_OK = re.compile(
+    r"ctypes\.(c_\w+|byref|windll\.kernel32\.(ProcessIdToSessionId|GetCurrentProcessId))"
+)
+
+
+def _launches(src: str) -> bool:
+    """Whether Python source can start a process or import or call by name at run time
+    (unparsable: True). Every import and its alias is mapped, so `import os as o; o.system`
+    resolves to os.system; a by-name lookup on such a module, any reference to __builtins__,
+    builtins or sys.modules, and any ctypes use outside _CTYPES_OK (or a ctypes import with no
+    allowlisted use at all) are launches."""
+    try:
+        node = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return True
+    alias: dict[str, str] = {}
+    for n in ast.walk(node):
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                if a.asname:
+                    alias[a.asname] = a.name
+                else:
+                    top = a.name.split(".")[0]
+                    alias[top] = top
+                if a.name.split(".")[0] in _LAUNCH_MODULES:
+                    return True
+        elif isinstance(n, ast.ImportFrom):
+            mod = n.module or ""
+            if n.level:
+                continue  # a relative import is the repository's own; the closure reads it
+            if mod.split(".")[0] in _LAUNCH_MODULES:
+                return True
+            for a in n.names:
+                if a.name == "*" and mod.split(".")[0] in _ROOTS_BY_NAME:
+                    return True
+                alias[a.asname or a.name] = f"{mod}.{a.name}"
+
+    def dotted(e: ast.expr) -> str | None:
+        if isinstance(e, ast.Name):
+            return alias.get(e.id, e.id)
+        if isinstance(e, ast.Attribute):
+            v = dotted(e.value)
+            return None if v is None else f"{v}.{e.attr}"
+        return None
+
+    def is_launch(d: str) -> bool:
+        parts = d.split(".")
+        if parts[0] in _LAUNCH_MODULES or parts[0] in _LAUNCH_NAMES:
+            return True
+        prefixes = _ATTR_LAUNCH.get(parts[0])
+        return prefixes is not None and len(parts) > 1 and parts[1].startswith(prefixes)
+
+    inner = {id(n.value) for n in ast.walk(node) if isinstance(n, ast.Attribute)}
+    ctypes_uses = 0
+    for n in ast.walk(node):
+        if isinstance(n, ast.Name | ast.Attribute):
+            d = dotted(n)
+            if d is None:
+                if isinstance(n, ast.Attribute) and n.attr in ("__getattribute__", "__dict__"):
+                    return True
+                continue
+            if is_launch(d):
+                return True
+            parts = d.split(".")
+            if parts[-1] in ("__getattribute__", "__dict__") and parts[0] in _ROOTS_BY_NAME:
+                return True
+            if id(n) in inner:
+                continue  # judged as part of the longer chain it starts
+            if parts[0] == "ctypes":
+                if not _CTYPES_OK.fullmatch(d):
+                    return True  # CreateProcess, CDLL, cast, or ctypes handed on bare
+                ctypes_uses += 1
+            if len(parts) == 1 and parts[0] in _ROOTS_BY_NAME:
+                return True  # `o = os`: the module handed on, no longer readable by name
+        elif isinstance(n, ast.Call) and n.args:
+            f = dotted(n.func) if isinstance(n.func, ast.Name | ast.Attribute) else None
+            first = dotted(n.args[0]) if isinstance(n.args[0], ast.Name | ast.Attribute) else None
+            if (
+                f in ("getattr", "builtins.getattr", "object.__getattribute__")
+                and first is not None and first.split(".")[0] in _ROOTS_BY_NAME
+            ):  # fmt: skip
+                return True
+    # imported and never used the allowlisted way: nothing shows what it is for
+    return "ctypes" in {v.split(".")[0] for v in alias.values()} and not ctypes_uses
+
+
+def _module_is_money(head: Path, module: str, closure: set[str]) -> bool:
+    """Whether running `module` (in the PR's tree) can reach the order path; see the note above
+    INSTALLER_CMDLETS."""
+    if module in closure or module in ENTRY_POINTS or module.startswith(MONEY_PATH):
+        return True
+    if MONEY_WORDS.search(module) or STATE_WORDS.search(module):
+        return True
+    entries = _money_names(head, set())  # the entry points' own names, every form
+    for f in import_closure(head, (module,)) or {module}:
+        if f in ENTRY_POINTS or f.startswith(MONEY_PATH):
+            return True
+        src = read(head, f)
+        if src is None or _launches(src) or _names_any(src.lower(), entries):
+            return True
+    return False
+
+
+def _task_lanes(tree: Path, task: str) -> list[str] | None:
+    """The lanes the manifest gives `task` in `tree` (None when it cannot be read)."""
+    text = read(tree, MANIFEST)
+    if text is None:
+        return None
+    rows = [dict(_ATTR.findall(x)) for x in text.splitlines() if x.strip().startswith("TASK ")]
+    return [r.get("lane", "") for r in rows if r.get("name", "").casefold() == task]
+
+
+def _installer_in(
+    base: Path, head: Path, tree: Path, path: str, closure: set[str], imported: set[str]
+) -> dict[str, Any]:
+    """`tree`'s version of an installer, read and classified (see INSTALLER_CMDLETS); the
+    control plane is the base's, and a money lane in either manifest is money."""
+    out: dict[str, Any] = {"target": None, "via": None, "task": None}
+    text = read(tree, path)
+    if text is None:
+        return {**out, "kind": "unreadable"}
+    files = tree_files(tree)
+    got = _parse_installer(text, path, files)
+    if isinstance(got, str):
+        return {**out, "kind": got}
+    task, target, line = got
+    out["task"] = task
+    words = [text.lower(), task, line.lower()]
+    if target.endswith(".py"):
+        module: str | None = target
+    elif (
+        target.lower().endswith((".cmd", ".bat")) and not is_script(target)
+        and not target.startswith(MONEY_PATH) and target not in closure
+    ):  # fmt: skip
+        module, runner = _runner_module(tree, target, files)
+        out["via"] = target
+        words.append(runner.lower())
+    else:
+        return {**out, "target": target, "kind": "target_not_module"}
+    if module is None:
+        return {**out, "kind": "unresolved_target"}
+    out["target"] = module
+    held = _held_tasks(base)
+    if held is None or task in {t.casefold() for t in held}:
+        return {**out, "kind": "control_plane_task"}
+    lanes = [_task_lanes(t, task) for t in (base, head)]
+    money = (
+        any(MONEY_WORDS.search(w) or STATE_WORDS.search(w) for w in words)
+        or any(ln is None or any(x not in _FREE_LANES for x in ln) for ln in lanes)
+        or _module_is_money(tree, module, closure)
+    )
+    if not money:
+        return {**out, "kind": "no_order_path_change"}
+    replayed = module in imported
+    return {**out, "kind": "money_target_replayed" if replayed else "money_target_unreplayed"}
+
+
+def installer_targets(
+    base: Path, head: Path, changed: list[str], closure: set[str], imported: set[str]
+) -> dict[str, dict[str, Any]]:
+    """{installer: {target, via, kind}} for every changed .ps1 under SCRIPT_DIRS that registers a
+    scheduled task. `target` and `via` are repo-relative paths (or None); `kind` is one of
+    _INSTALLER_KINDS, and only INSTALLER_MEASURED kinds are measured. An installer the base also
+    holds is judged on both versions (the same task, and the worse kind)."""
+    out: dict[str, dict[str, Any]] = {}
+    for f in sorted(changed):
+        if not (is_script(f) and f.lower().endswith(".ps1")):
+            continue
+        texts = [read(t, f) for t in (base, head)]
+        if not any(t and "register-scheduledtask" in t.lower() for t in texts):
+            continue
+        now = _installer_in(base, head, head, f, closure, imported)
+        if texts[0] is not None:
+            was = _installer_in(base, head, base, f, closure, imported)
+            if was["task"] != now["task"] or was["target"] != now["target"]:
+                now = {**now, "kind": max(now["kind"], "unresolved_target",
+                                          key=_INSTALLER_KINDS.index)}  # fmt: skip
+            else:
+                now["kind"] = max(now["kind"], was["kind"], key=_INSTALLER_KINDS.index)
+        out[f] = {k: now[k] for k in ("target", "via", "kind")}
+    return out
+
+
 #: The box's task table. A data file under MONEY_PATH, so any change to it is money path, unless
 #: every line it changes is a TASK row that names nothing money (manifest_is_money): the rows for
 #: the gate's own clocks (the sign train, the sweep's helpers) are not order code.
@@ -440,12 +1233,19 @@ def _held_tasks(tree: Path) -> set[str] | None:
 
 
 def manifest_is_money(
-    base: Path, head: Path, closure: set[str], money: set[str], exempt: set[str]
+    base: Path,
+    head: Path,
+    closure: set[str],
+    money: set[str],
+    exempt: set[str],
+    installers: frozenset[str] = frozenset(),
 ) -> bool:
     """Whether the change to MANIFEST is money path. Comments and blank lines are prose. Every
     other added or removed line must be a TASK row whose raw text names no venue, state or
     money-path name, and whose runs, also_runs and installer are each a file that is not money
-    path (a script under SCRIPT_DIRS only when `exempt` clears it). Anything else, or a tree
+    path (a script under SCRIPT_DIRS only when `exempt` clears it). An `installer` attribute may
+    also name one of `installers`: the PR's installers `installer_targets` measured as no
+    order-path change, and only there (never as `runs` or `also_runs`). Anything else, or a tree
     that cannot be read, is money (fail closed)."""
     b, h = read(base, MANIFEST), read(head, MANIFEST)
     if b is None or h is None:
@@ -466,7 +1266,9 @@ def manifest_is_money(
         Path(f).stem.lower() for f in {*closure, *ENTRY_POINTS} if Path(f).name != "__init__.py"
     }
     names = (_money_names(base, closure) - dirs) | state_names(base, closure)
-    names |= {n for m in money for n in (Path(m).name.lower(), Path(m).stem.lower())}
+    names |= {
+        n for m in money - installers for n in (Path(m).name.lower(), Path(m).stem.lower())
+    }  # fmt: skip
     held = _held_tasks(base)
     if held is None:
         return True
@@ -490,11 +1292,13 @@ def manifest_is_money(
         # one row per name, any case, in each tree: a second row rebinds that task (v3 MF2)
         if in_was.count(name) > 1 or in_now.count(name) > 1:
             return True
-        paths = [p.strip() for k in ("runs", "also_runs", "installer")
+        paths = [(k, p.strip()) for k in ("runs", "also_runs", "installer")
                  for p in attrs.get(k, "").split(",") if p.strip()]  # fmt: skip
-        for p in paths:
+        for k, p in paths:
             if not _PLAIN_PATH.fullmatch(p) or any(seg in ("", ".", "..") for seg in p.split("/")):
                 return True  # only a plain repo path is compared as the file it names (v3 MF1)
+            if k == "installer" and p in installers:
+                continue  # measured: it schedules one module that is no order path (#1107)
             if p in closure or p in ENTRY_POINTS or p.startswith(MONEY_PATH) or p in money:
                 return True
             if is_script(p) and p not in exempt:
@@ -823,10 +1627,15 @@ def compare(
     covered = imported | new_and_bounded(base, head, head_imported)
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
-    rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
+    installers = installer_targets(base, head, changed, closure, imported)
+    measured = {f for f, v in installers.items() if v["kind"] in INSTALLER_MEASURED}
+    clear = frozenset(f for f in measured if installers[f]["kind"] == INSTALLER_MEASURED[0])
+    rows_only = MANIFEST in changed and not manifest_is_money(
+        base, head, closure, money, exempt, clear
+    )
     uncovered = sorted(
         f for f in changed
-        if is_money(f, closure, exempt=exempt) and f not in covered
+        if is_money(f, closure, exempt=exempt) and f not in covered and f not in measured
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
@@ -844,6 +1653,9 @@ def compare(
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
+        # each changed box-task installer: the one module it schedules (`target`, through the
+        # .cmd runner `via`), and its kind; only INSTALLER_MEASURED kinds are measured (#1107)
+        "installer_targets": installers,
     }
 
 
