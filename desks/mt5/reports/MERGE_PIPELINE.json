@@ -1,18 +1,18 @@
 {
-  "at": "2026-11-13T09:20:23+00:00",
+  "at": "2026-11-13T09:50:09+00:00",
   "status": "RED",
   "red": [
-    "CLEAR_WAITING #1041: CLEARed 44.2 h ago, still open",
-    "CLEAR_WAITING #801: CLEARed 58.2 h ago, still open",
-    "CLEAR_WAITING #797: CLEARed 57.8 h ago, still open",
-    "CLEAR_WAITING #737: CLEARed 57.4 h ago, still open",
-    "CLEAR_WAITING #473: CLEARed 64.8 h ago, still open",
-    "LIVE_STALLED: no code on LIVE for 15.4 h while mergeable work waits",
-    "SIGN_TRAIN_FAILING: 383 runs in a row failed"
+    "CLEAR_WAITING #1041: CLEARed 44.7 h ago, still open",
+    "CLEAR_WAITING #801: CLEARed 58.7 h ago, still open",
+    "CLEAR_WAITING #797: CLEARed 58.3 h ago, still open",
+    "CLEAR_WAITING #737: CLEARed 57.8 h ago, still open",
+    "CLEAR_WAITING #473: CLEARed 65.3 h ago, still open",
+    "LIVE_STALLED: no code on LIVE for 15.9 h while mergeable work waits",
+    "SIGN_TRAIN_FAILING: 389 runs in a row failed"
   ],
   "queue": {
     "queued_runs": 0,
-    "in_progress_runs": 11,
+    "in_progress_runs": 4,
     "oldest_queued_min": null,
     "superseded_queued_runs": 0,
     "superseded_run_ids": []
@@ -29,18 +29,18 @@
     "fp_rate": 0.01
   },
   "sweep": {
-    "at": "2026-11-13T09:20:22.6221516Z",
+    "at": "2026-11-13T09:50:09.0384991Z",
     "age_min": 0.0,
     "rc": 1,
     "note": "FAILED: sparse-checkout failed (128)",
     "mutex_held_runs": 0
   },
   "sign_train": {
-    "at": "2026-11-13T09:40:08.7235013Z",
-    "age_min": -19.8,
+    "at": "2026-11-13T10:10:08.5181925Z",
+    "age_min": -20.0,
     "rc": 1,
     "note": "FAILED: no desk Python at C:\\opt\\quant\\.venv\\Scripts\\python.exe",
-    "fail_runs": 383,
+    "fail_runs": 389,
     "mutex_held_runs": 0,
     "waiting_on": null,
     "waiting_min": null
@@ -48,11 +48,23 @@
   "live": {
     "last_code_commit": "cdd8c6f3e",
     "last_code_at": "2026-11-12T17:58:39Z",
-    "hours_since_code": 15.36,
+    "hours_since_code": 15.86,
     "last_merge_at": "2026-11-12T17:58:40Z",
-    "hours_since_merge": 15.36
+    "hours_since_merge": 15.86
   },
   "prs": [
+    {
+      "pr": 1084,
+      "head": "a158b9b0a",
+      "draft": true,
+      "queued_checks": [],
+      "oldest_queued_min": null,
+      "clear_at": null,
+      "clear_age_h": null,
+      "review": "success",
+      "gating_green": false,
+      "green_since": null
+    },
     {
       "pr": 1083,
       "head": "5e87d745a",
@@ -552,7 +564,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-11T13:10:39Z",
-      "clear_age_h": 44.16,
+      "clear_age_h": 44.66,
       "review": "failure",
       "gating_green": false,
       "green_since": null
@@ -3216,7 +3228,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:07:29Z",
-      "clear_age_h": 58.22,
+      "clear_age_h": 58.71,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3240,7 +3252,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:33:12Z",
-      "clear_age_h": 57.79,
+      "clear_age_h": 58.28,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -3576,7 +3588,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T23:59:15Z",
-      "clear_age_h": 57.35,
+      "clear_age_h": 57.85,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -5532,7 +5544,7 @@
       "queued_checks": [],
       "oldest_queued_min": null,
       "clear_at": "2026-11-10T16:34:20Z",
-      "clear_age_h": 64.77,
+      "clear_age_h": 65.26,
       "review": "failure",
       "gating_green": true,
       "green_since": null
@@ -6679,7 +6691,7 @@
     },
     {
       "pr": 218,
-      "head": "24865d84f",
+      "head": "f9219b244",
       "draft": true,
       "queued_checks": [],
       "oldest_queued_min": null,
@@ -6787,7 +6799,7 @@
     },
     {
       "pr": 201,
-      "head": "497857f76",
+      "head": "e63985b11",
       "draft": false,
       "queued_checks": [],
       "oldest_queued_min": null,
