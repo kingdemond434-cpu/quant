@@ -449,6 +449,9 @@ LEG_LAYER: dict[str, str] = {
     # THE LOSS LEARNER (2026-11-03) steps a live sleeve's target, stop or hold on the loss mode
     # its own trades show -- where and when a position ends -- which is the exit layer.
     "loss_learner": "exit",
+    # THE DOCKET PRICED IN dE[log W] PER CPU-SECOND (idea 617, 2026-11-11) decides nothing about a
+    # trade; it measures where the Judge's next CPU-second buys the most growth -- meta.
+    "docket_elog_priority": "meta",
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m): online-FDR wealth per lineage, the
     # effective-trial census and the genome archive. It predicts, sizes and times nothing; it
     # measures whether the machine's evidence is still evidence after an unbounded stream of

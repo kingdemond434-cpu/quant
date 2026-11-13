@@ -208,6 +208,7 @@ NON_REGIONAL_NAMES: frozenset[str] = frozenset({
     "moat_factory",
     "search_paradigm_census", "execution_alpha_miner", "missed_trade_archaeologist",
     "loss_learner",
+    "docket_elog_priority",
     "alpha_evolution", "representation_discovery", "math_lab", "physics_lab",
     "world_frontier", "hypothesis_factory", "combination_lab", "dislocation_lab",
 })
