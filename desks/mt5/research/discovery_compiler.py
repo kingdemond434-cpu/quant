@@ -91,6 +91,11 @@ MAX_DISCOVERIES = 200
 MAX_CHILDREN = 40
 MAX_INTAKE_FILE_BYTES = 32 * 1024 * 1024
 MAX_ROWS_PER_FILE = 400
+#: Share of each pass's `limit` the registry backlog may NOT take while seat files wait. Measured
+#: 2026-11-13 (Tier S): the UNPROCESSED backlog filled all 200 slots first, every seat file was
+#: then `_mark`ed read with its rows refused, and 203,189 seat rows in three days were never
+#: revisited. Seats get this share first; unused seat room returns to the backlog.
+SEAT_SHARE = 0.5
 
 RULE = ("no discovery exists without a disposition; maximum conversion is every economically "
         "defensible transformation, never the cartesian product")
@@ -166,8 +171,27 @@ def _fresh(cursor: dict[str, Any], path: Path) -> bool:
     except OSError:
         return False
     seen = cursor["files"].get(str(path))
+    if isinstance(seen, dict) and seen.get("next_row") is not None:
+        return True                     # a file only partly taken in is owed the rest
     return not (isinstance(seen, dict) and seen.get("size") == st.st_size
                 and seen.get("mtime") == int(st.st_mtime))
+
+
+def _resume_row(cursor: dict[str, Any], path: Path) -> int:
+    """Where a partly-taken file resumes. Only while it is byte-for-byte the file the offset was
+    taken against; a rewritten file restarts at 0 (re-reading is safe: `_record` dedupes)."""
+    seen = cursor["files"].get(str(path))
+    try:
+        st = path.stat()
+    except OSError:
+        return 0
+    if (isinstance(seen, dict) and seen.get("size") == st.st_size
+            and seen.get("mtime") == int(st.st_mtime)):
+        try:
+            return max(0, int(seen.get("next_row") or 0))
+        except (TypeError, ValueError):
+            return 0
+    return 0
 
 
 def _mark(cursor: dict[str, Any], path: Path, **extra: Any) -> None:
@@ -526,31 +550,56 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
         return deadline is not None and time.monotonic() > deadline
 
     def add(source_id: str, source_type: str, spec: dict[str, Any], *, origin: str,
-            generator: str) -> None:
+            generator: str) -> bool:
+        """False only when the row was REFUSED for room; a duplicate counts as taken."""
         if len(got) >= limit:
-            return
+            return False
         mech = spec.get("declared_mechanism") or spec.get("why") or source_type
         if not record:
             key = R.content_hash(source_id, str(spec.get("symbol") or ""), spec,
                                  str(spec.get("chart") or ""))
             if key in seen:
-                return
+                return True
             seen.add(key)
             got.append({"discovery_id": f"dry_{key}", "source_type": source_type,
                         "origin": origin, **spec})
             by_source[source_type] = by_source.get(source_type, 0) + 1
-            return
+            return True
         did, created = _record(source_id, source_type, spec, mechanism=str(mech), origin=origin,
                                generator=generator, conn=conn)
         if created:
             got.append({"discovery_id": did, "source_type": source_type, "origin": origin, **spec})
             by_source[source_type] = by_source.get(source_type, 0) + 1
+        return True
 
-    for row in R.discoveries(state="UNPROCESSED", limit=limit, conn=conn):
-        got.append(registry_parent(row))
-        by_source["registry_unprocessed"] = by_source.get("registry_unprocessed", 0) + 1
-        if len(got) >= limit:
-            return got, by_source, unmeasured
+    def take_file(path: Path, rows: list[Any], source_id: str, make: Any) -> None:
+        """Take rows from the resume offset; `_mark` the file read only when every row was taken,
+        otherwise record where the next pass resumes. A refused or cut row is OWED, never lost."""
+        start = _resume_row(cursor, path)
+        stop = min(len(rows), start + MAX_ROWS_PER_FILE)
+        i = start
+        while i < stop:
+            if out_of_time():
+                break
+            made = make(rows[i])
+            if made is not None and not add(source_id, *made[0], **made[1]):
+                break
+            i += 1
+        if i >= len(rows):
+            _mark(cursor, path)
+        else:
+            _mark(cursor, path, next_row=i, rows=len(rows))
+
+    backlog = list(R.discoveries(state="UNPROCESSED", limit=limit, conn=conn))
+    backlog_cap = limit - int(limit * SEAT_SHARE) if INTEL.exists() else limit
+
+    def take_backlog(n: int) -> None:
+        while backlog and n > 0 and len(got) < limit:
+            got.append(registry_parent(backlog.pop(0)))
+            by_source["registry_unprocessed"] = by_source.get("registry_unprocessed", 0) + 1
+            n -= 1
+
+    take_backlog(backlog_cap)
 
     if INTEL.exists():
         files = sorted([*INTEL.glob("*/*.json"), *INTEL.glob("*/*.jsonl")],
@@ -564,15 +613,17 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
                 doc = [json.loads(ln) for ln in _jsonl_lines(path)]
             else:
                 doc = _read_json(path)
-            for row in rows_of(doc)[:MAX_ROWS_PER_FILE]:
-                add(f"intel:{path.parent.name}:{path.name}", "intelligence",
-                    _spec_from_row(row, seat=path.parent.name, path=path),
-                    origin=R.origin_of(path.parent.name), generator=f"seat:{path.parent.name}")
-            _mark(cursor, path)
+            seat = path.parent.name
+            take_file(path, rows_of(doc), f"intel:{seat}:{path.name}",
+                      lambda row, _seat=seat, _path=path: (
+                          ("intelligence", _spec_from_row(row, seat=_seat, path=_path)),
+                          {"origin": R.origin_of(_seat), "generator": f"seat:{_seat}"}))
     else:
         unmeasured.append({"what": "data/intelligence", "why": "the seat donation tree is absent "
                                                                "on this host; seat conversion is "
                                                                "UNMEASURED, not zero"})
+
+    take_backlog(limit)                 # seat room the seats did not use goes back to the backlog
 
     if FRONTIER_QUEUE.exists():
         if _fresh(cursor, FRONTIER_QUEUE):

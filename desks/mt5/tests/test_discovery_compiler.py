@@ -489,3 +489,40 @@ def test_a_row_with_no_evidence_carries_unmeasured_never_a_guess():
     assert prov["source_culture"] == "UNMEASURED"
     assert prov["culture_derivation"]["source_culture"] == "UNMEASURED"
     assert "source_url" not in prov and "source_seat" not in prov
+
+
+def _many_rows(n: int) -> dict[str, Any]:
+    return {"source": "seatx", "discoveries": [
+        {"kind": "anomaly", "symbol": "EURUSD", "family": "asia_momentum",
+         "params": {"timeframe": "H1", "rr": 1.0 + i / 100}, "mechanism": f"handover {i}"}
+        for i in range(n)]}
+
+
+def test_a_seat_file_refused_for_room_is_resumed_not_marked_read(desk, ctx):
+    """Tier S 2026-11-13: rows refused at the limit were marked read and never revisited."""
+    path = desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json"
+    _write(path, _many_rows(10))
+    cursor = dc.load_cursor()
+    taken: list[dict[str, Any]] = []
+    for _ in range(6):
+        got, _b, _u = dc.intake(cursor, limit=4)
+        taken += [g for g in got if g.get("source_type") == "intelligence"]
+        if cursor["files"].get(str(path), {}).get("next_row") is None and len(taken) >= 10:
+            break
+    assert len(taken) == 10
+    assert cursor["files"][str(path)].get("next_row") is None
+    got, _b, _u = dc.intake(cursor, limit=4)                 # fully read: nothing re-taken
+    assert not [g for g in got if g.get("source_type") == "intelligence"]
+
+
+def test_the_registry_backlog_cannot_starve_the_seats(desk, ctx, monkeypatch):
+    backlog = [{"discovery_id": f"b{i}", "source_type": "registry"} for i in range(50)]
+    monkeypatch.setattr(dc.R, "discoveries",
+                        lambda state=None, limit=0, conn=None: backlog[:limit])
+    monkeypatch.setattr(dc, "registry_parent", lambda row, *a: dict(row))
+    _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(10))
+    got, by_source, _u = dc.intake(dc.load_cursor(), limit=10)
+    assert by_source.get("intelligence") == 5 and by_source.get("registry_unprocessed") == 5
+    _write(desk["paths"]["INTEL"] / "seatx" / "discoveries_1.json", _many_rows(2))
+    got, by_source, _u = dc.intake(dc.load_cursor(), limit=10)    # unused seat room returns
+    assert len(got) == 10 and by_source.get("registry_unprocessed", 0) >= 8
