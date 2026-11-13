@@ -346,3 +346,14 @@ desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
 desks/mt5/research/decay_regime.py
+libs/execution/__init__.py
+libs/execution/algos.py
+libs/execution/broker.py
+libs/execution/ea_bridge.py
+libs/execution/engine.py
+libs/execution/errors.py
+libs/execution/event_guard.py
+libs/execution/journal.py
+libs/execution/paper_broker.py
+libs/execution/retry.py
+libs/execution/tca.py

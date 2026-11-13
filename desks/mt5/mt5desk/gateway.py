@@ -2159,6 +2159,21 @@ MAX_SAME_SIDE_PER_SYMBOL = 2
 MAX_SAME_SIDE_PER_SYMBOL = int(os.environ.get("MAX_SAME_SIDE_PER_SYMBOL", MAX_SAME_SIDE_PER_SYMBOL))
 REFUSALS = BASE / "data" / "refused_orders.jsonl"
 
+#: The per-sleeve event-window verdicts (research/event_window_policy.py) and the spread state
+#: (research/spread_state.py). Both are reports; an absent or expired one leaves its gate as the
+#: docstrings below say, never silently permissive about a READ calendar.
+#: The entry deferral's two inputs, each rewritten by its hourly leg on the documented 60-min
+#: cadence (research/hourly_cycle.py) and read here only while inside its 26-hour validity.
+EVENT_POLICY = BASE / "reports" / "EVENT_WINDOW_POLICY.json"
+SPREAD_STATE = BASE / "reports" / "SPREAD_STATE.json"
+#: The repository's published-schedule calendar (libs/execution/event_guard.CALENDAR), 2 levels
+#: up from the desk: the documented official sources only, never an invented date.
+EVENT_CALENDAR = BASE.parents[1] / "data" / "event_calendar.json"
+_REPORT_CACHE: dict[str, tuple[float, dict]] = {}
+#: The hour the gateway last logged an unreadable event calendar, so the gap is said once an hour
+#: rather than once per sleeve per pass.
+_CAL_WARNED: dict[str, str] = {}
+
 
 def same_side_count(symbol: str, side: int, positions: object,
                     pending: dict[str, float] | None = None) -> int:
@@ -2176,22 +2191,6 @@ def same_side_count(symbol: str, side: int, positions: object,
     if q * (1.0 if side > 0 else -1.0) > 0:
         n += 1
     return n
-
-
-#: The per-sleeve event-window verdicts (research/event_window_policy.py) and the spread state
-#: (research/spread_state.py). Both are reports; an absent or expired one leaves its gate as the
-#: docstrings below say, never silently permissive about a READ calendar.
-#: The entry deferral's two inputs, each rewritten by its hourly leg on the documented 60-min
-#: cadence (research/hourly_cycle.py) and read here only while inside its 26-hour validity.
-EVENT_POLICY = BASE / "reports" / "EVENT_WINDOW_POLICY.json"
-SPREAD_STATE = BASE / "reports" / "SPREAD_STATE.json"
-#: The repository's published-schedule calendar (libs/execution/event_guard.CALENDAR), 2 levels
-#: up from the desk: the documented official sources only, never an invented date.
-EVENT_CALENDAR = BASE.parents[1] / "data" / "event_calendar.json"
-_REPORT_CACHE: dict[str, tuple[float, dict]] = {}
-#: The hour the gateway last logged an unreadable event calendar, so the gap is said once an hour
-#: rather than once per sleeve per pass.
-_CAL_WARNED: dict[str, str] = {}
 
 
 def _report(path: Path) -> dict:
