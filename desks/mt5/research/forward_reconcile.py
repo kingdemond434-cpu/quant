@@ -862,6 +862,8 @@ def main() -> int:
     cert_clock_keys = certified_clock_keys()
     certs = certified_pairs()
     cert_ids = certified_ids()
+    # dropped alias clock -> its surviving clock, published by shadow_forward's enrolment pass.
+    aliases = dict(_read(SHADOW / "clock_aliases.json").get("aliases") or {})
     # UNKNOWN IS NOT ZERO. If either the engine's enrolment or its certified-clock list is
     # unreadable, this pass has no basis on which to retire anything -- it can only report.
     unknown_enrolment = enrolled is None or cert_clock_keys is None
@@ -989,7 +991,18 @@ def main() -> int:
                     "stopped clock counted as forward evidence would take a day-14 verdict on "
                     "stale trades. Evidence preserved; revive only through a fresh certificate "
                     "and a new pre-registered window.")
-                actions.append({"key": key, "action": "RETIRED_ORPHAN"})
+                # AN ALIAS NAMES ITS SURVIVOR (shadow_forward._one_clock_per_cell, 2026-11-04):
+                # the same cell under another key, whose clock keeps its own forward_start.
+                survivor = (aliases or {}).get(key)
+                if survivor:
+                    row["alias_of"] = survivor
+                    row["retire_reason"] = (
+                        f"ALIAS of `{survivor}`: the same executable cell (params the family "
+                        "never reads, or a selector it never reads). The survivor's clock runs "
+                        "on with its forward_start untouched; this row's evidence is preserved "
+                        "and is not counted as a second clock.")
+                actions.append({"key": key, "action": "RETIRED_ORPHAN",
+                                **({"alias_of": survivor} if survivor else {})})
                 changed = True
                 continue
 
