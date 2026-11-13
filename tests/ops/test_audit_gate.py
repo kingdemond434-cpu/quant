@@ -582,6 +582,26 @@ def test_one_approval_covers_every_clear_given_before_it_and_the_newest_counts(h
     assert f"sha={A}" in merge
 
 
+@pytest.mark.parametrize("body", ["Approve merges", "approve merges", " APPROVE  MERGES\n"])
+def test_the_approval_line_is_read_in_any_case_and_spacing(hub: Any, body: str) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T12:00:00Z", body=body)],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+
+
+@pytest.mark.parametrize("body", ["Approve merges please", "APPROVE", "approve-merges"])
+def test_anything_but_the_line_is_still_no_approval(hub: Any, body: str) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T12:00:00Z", body=body)],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
 def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     h = hub(
         comments=[
