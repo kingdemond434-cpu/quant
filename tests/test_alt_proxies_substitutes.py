@@ -828,8 +828,12 @@ def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
         assert r["status"] == A.status_of(A.BY_ID[sid], {}), sid
         assert list(r)[:3] == ["class", "paid", "free"]      # the engine finds columns by word
         assert bool(r["free"]) == (sid in A.SUBSTITUTED_BY), sid
+        assert r["unsubstituted_because"], sid
+        if sid not in A.SUBSTITUTED_BY:                     # no candidate at all: terms block
+            assert r["status"] == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}", sid
+            continue
         assert r["status"].startswith("BLOCKED_NO_SUBSTITUTE:UNVERIFIED="), sid
-        assert "UNVERIFIED" in r["substitute_check"] and r["unsubstituted_because"], sid
+        assert "UNVERIFIED" in r["substitute_check"], sid
     assert "za_statssa_retail" not in rows["za_beti"]["evidence"]   # unconfirmed: no evidence
     lib = {r["id"] for r in doc["library_rows"]}
     assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v
