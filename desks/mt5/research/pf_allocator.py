@@ -3393,6 +3393,71 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
                              "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items()))}
 
 
+def retired_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, Any]]:
+    """The columns that are a RETIRED sleeve by its own name, bound to fraction 0, and why.
+
+    #444, REBUILT ON LIVE (2026-11-13). `live_policy_zero` judges symbol, timeframe, family, lane
+    and allowlist -- never the row's status -- so a column named after a sleeve the promoter
+    RETIRED (a terminal, evidence verdict: `promoter` never re-promotes an existing name) was
+    still funded whenever its symbol was admissible. The gateway trades LIVE rows only
+    (`decision_core.load_sleeves_verbose`), so that heat was never placed: the published book
+    claimed heat the account did not hold. Zeroing it through the exchange-zero path REFILLS the
+    heat across the columns that can trade, so the floor stays filled and growth goes up
+    (GROWTH_GOVERNANCE Rule 1: the book's placed heat rises, nothing is shrunk).
+
+    THREE THINGS ARE NOT ZEROED, each on purpose:
+      * STANDBY rows. They are priced under their own names so `admission_of` can read the solve
+        and `_door_status` can lift them to LIVE; zeroing them would make every STANDBY sleeve's
+        refusal self-fulfilling (2026-10-13: 14 certified XAUUSD sleeves stuck ~13 days).
+      * The pinned min-lot override rows (`decision_core.MINLOT_OVERRIDE_SLEEVES`): the gateway
+        trades those RETIRED-by-live_policy rows as LIVE copies, sized by this book.
+      * Columns that reach a RETIRED row only through the `SYMBOL_family_selector` key. A new
+        candidate of the same mechanism joins the book on that key (`promoter._join_keys`), so a
+        zero there could refuse a fresh certificate on an old sleeve's verdict. They are counted
+        in `key_only_retired` so what that costs is measured, not assumed.
+    Only an exact-name match whose every row is RETIRED is zeroed."""
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError) as exc:
+        return frozenset(), {"status": "UNMEASURED", "why": f"sleeves.json: {type(exc).__name__}"}
+    try:
+        from mt5desk.decision_core import MINLOT_OVERRIDE_SLEEVES as _pins
+    except Exception:                                          # pragma: no cover - import guard
+        _pins = frozenset()
+    pins = {str(n).lower() for n in _pins}
+    by_name: dict[str, list[dict[str, Any]]] = {}
+    by_key: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        if isinstance(r, dict):
+            by_name.setdefault(str(r.get("name")).lower(), []).append(r)
+            if r.get("symbol") and r.get("family"):
+                by_key.setdefault(_row_key(r), []).append(r)
+
+    def _all_retired(mine: list[dict[str, Any]]) -> bool:
+        return bool(mine) and all(str(r.get("status") or "").upper() == "RETIRED" for r in mine)
+
+    zero: dict[str, str] = {}
+    key_only: list[str] = []
+    for n in names:
+        low = str(n).lower()
+        if low in pins:
+            continue
+        mine = by_name.get(low) or []
+        if mine:
+            if _all_retired(mine):
+                r0 = mine[0]
+                zero[str(n)] = (f"RETIRED on the roster ({r0.get('retired_by') or 'promoter'}: "
+                                f"{str(r0.get('retire_reason') or 'no reason recorded')[:120]}); "
+                                f"the gateway trades LIVE rows only, so its heat is refilled")
+            continue
+        if _all_retired(by_key.get(low) or []):
+            key_only.append(str(n))
+    return frozenset(zero), {"status": "MEASURED", "n_columns": len(names),
+                             "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items())),
+                             "key_only_retired": sorted(key_only),
+                             "n_key_only_retired": len(key_only)}
+
+
 def ceiling_guard_book(funded: Mapping[str, float], ceiling: float, *,
                        eps: float = 1e-6) -> tuple[dict[str, float], dict[str, Any]]:
     """`funded` scaled so its total is at most `ceiling` (+eps), with what was found. A book at or
@@ -3860,7 +3925,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if lp_zero:
         _log(f"live policy ZERO: {len(lp_zero)} column(s) the Fusion account may not trade, "
              f"bound to fraction 0 ({', '.join(sorted(lp_zero)[:6])})")
-    ts_zero = ts_zero | lp_zero
+    # A RETIRED SLEEVE BY ITS OWN NAME IS A ZERO OF THE SAME KIND (#444): the gateway trades LIVE
+    # rows only, so heat the book gives it is never placed; refill it across the tradeable columns.
+    rs_zero, retired_meta = retired_zero([e.name for e in ev])
+    if rs_zero:
+        _log(f"retired ZERO: {len(rs_zero)} column(s) named after a RETIRED sleeve, bound to "
+             f"fraction 0 ({', '.join(sorted(rs_zero)[:6])})")
+    ts_zero = ts_zero | lp_zero | rs_zero
     if ts_zero:
         _log(f"tier S exchange ZERO: {len(ts_zero)} sleeve(s) bound to fraction 0 in every path "
              f"({', '.join(sorted(ts_zero)[:6])})")
@@ -4677,7 +4748,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
         best = str(proof.get("best_baseline") or "")
         fb_book = (proof.get("books") or {}).get(best) or {}
-        if best and fb_book and lp_zero:
+        if best and fb_book and (lp_zero or rs_zero):
             _fb_why: dict[str, str] = {}
             _fb = fallback_on_admissible(best, ev, ts_zero,
                                          sum(float(v) for v in fb_book.values()), _fb_why)
@@ -4994,6 +5065,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "exchange_zero": exchange_zero_meta,
         # Which columns the principal's live policy bound to 0 on the Fusion book, and why.
         "live_policy": live_policy_meta,
+        "retired_zero": retired_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
         # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
         # to choose whose certificate applies. Published so the delta is a measurement.
