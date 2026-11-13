@@ -820,7 +820,14 @@ def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
         if isinstance(old_w, (int, float)):
             windows_lost_max = (min(old_w, w_now) if isinstance(w_now, (int, float))
                                 else old_w)
-    out = {
+    # PRESERVE WHAT THIS FUNCTION DOES NOT OWN (recovered box patch 41, 2026-09-25; re-landed
+    # 2026-11-13). The document carries sections other lanes write -- `handed_over`, the measured
+    # causes whose one-line fix lives in a file another lane holds -- and rebuilding the dict from
+    # scratch silently deleted them on the first re-declare. A writer that drops a neighbour's
+    # evidence while recording its own is the same defect class this whole file is about.
+    owned = ("law", "declared_max", "windows_lost_max", "updated_utc", "declared")
+    out = {k: v for k, v in (prev or {}).items() if k not in owned}
+    out.update({
         "law": ("ORGAN CADENCE DEBT. Every organ here is KNOWN to be dark and carries its reason. "
                 "The list may only SHRINK: an organ leaves by being repaired, never by being "
                 "deleted, and a NEW dark organ fails the fence immediately rather than joining a "
@@ -829,7 +836,7 @@ def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
         "windows_lost_max": windows_lost_max,
         "updated_utc": doc.get("generated"),
         "declared": dict(sorted(existing.items())),
-    }
+    })
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
     return path

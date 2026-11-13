@@ -184,3 +184,43 @@ def test_judging_throughput_reads_the_guard_and_absence_is_unmeasured(tmp_path, 
 def test_live_pass_matches_the_interpreter_not_a_wrapper_shell(argv, expected):
     """Audit of #138: a wrapper shell whose command line mentions the judge is not the judge."""
     assert gg.is_judge_argv(argv) is expected
+
+
+# --------------------------------------------- the cold start that lost two passes (patch 29)
+def test_a_cold_start_reads_far_enough_back_to_find_a_pass_boundary():
+    """THE DEFECT THIS ORGAN SHIPPED WITH. It began 2 MB from the end of a log the judge writes
+    ~16-24 MB of per pass, so a fresh cursor landed INSIDE a pass and `fold` correctly skipped an
+    epilogue with no pass to attach it to: `passes_recorded: 0` beside two completed passes."""
+    assert gg.COLD_START_LOOKBACK_BYTES >= 24_000_000 * 2, (
+        "a cold start must begin behind the last pass boundary, not inside it")
+
+
+def test_a_cold_start_says_so_in_the_events_so_an_empty_ledger_is_explainable(tmp_path,
+                                                                             monkeypatch):
+    """A zero must never read the same as 'no passes happened'."""
+    log = tmp_path / "MT5-Gauntlet.log"
+    log.write_bytes(b"noise\n" * 200)
+    monkeypatch.setattr(gg, "LOG", log)
+    monkeypatch.setattr(gg, "COLD_START_LOOKBACK_BYTES", 100)
+    events, cursor = gg.read_new_events(0)
+    assert any(e["phase"] == "cold_start" for e in events)
+    assert cursor == log.stat().st_size
+
+
+def test_an_incremental_read_never_claims_a_cold_start(tmp_path, monkeypatch):
+    """Only a fresh cursor is a cold start; the incremental path stays silent."""
+    log = tmp_path / "MT5-Gauntlet.log"
+    log.write_bytes(b"noise\n" * 200)
+    monkeypatch.setattr(gg, "LOG", log)
+    events, _ = gg.read_new_events(600)
+    assert not any(e["phase"] == "cold_start" for e in events)
+
+
+def test_the_cold_start_marker_never_becomes_a_pass():
+    """It is an explanation, not a phase of any sweep."""
+    assert gg.fold([{"phase": "cold_start", "text": "x"}], [], "T0") == []
+    passes = gg.fold([{"phase": "cold_start", "text": "x"},
+                      {"phase": "prewarm", "text": "PRE-WARM: ..."},
+                      {"phase": "ledger", "text": "SURVIVORS_LEDGER.json: 1 claim(s)"}], [], "T0")
+    assert len(passes) == 1 and passes[0]["outcome"] == "REACHED_EPILOGUE"
+    assert "cold_start" not in passes[0]["phases"]

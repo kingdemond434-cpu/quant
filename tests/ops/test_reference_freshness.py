@@ -17,6 +17,7 @@ and every reference is planted under tmp_path.
 """
 from __future__ import annotations
 
+import ast
 import json
 import os
 import sqlite3
@@ -449,3 +450,32 @@ def test_the_canon_incident_row_names_the_guard_call_its_owner_must_add() -> Non
     assert CANON in row.reference
     src = (Path(__file__).resolve().parents[2] / "desks/mt5/research/certificate_truth.py")
     assert "require_live_reference(" in src.read_text(encoding="utf-8")
+
+
+def test_both_canon_incident_rows_are_closed_by_a_real_call_in_apply() -> None:
+    """Recovered box patch 25 (2026-09-24; re-landed 2026-11-13). Both rows of the 837-row
+    incident -- the clock branch and the survivor-ledger branch -- declare `apply`, and one
+    `require_live_reference` there closes both. The call is proved from the AST of the declared
+    function, never from a substring of the file: "it imports the module" is the shape of every
+    dead safety rail this desk has found, and the import sits on the line above the call."""
+    rows = [rf.by_id("certificate_truth.apply"), rf.by_id("certificate_truth.ledger_claims")]
+    for row in rows:
+        assert row is not None
+        assert row.status == "guarded", f"{row.path_id} may only ratchet towards guarded"
+        assert CANON in row.reference
+        assert (row.guard_site or row.function) == "apply"
+    module = Path(rf.ROOT) / rows[0].module  # type: ignore[union-attr]
+    fn = next(n for n in ast.walk(ast.parse(module.read_text(encoding="utf-8")))
+              if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "apply")
+    called = {c.func.id for c in ast.walk(fn)
+              if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
+    assert "require_live_reference" in called
+
+
+def test_the_unguarded_ratchet_is_now_the_floor() -> None:
+    """Zero declared paths remove on an unproved reference, so the NEXT unguarded row fails the
+    gate instead of being absorbed by headroom. A ceiling with slack under it is not a ratchet."""
+    import scripts.check_no_retirement_on_absence as fence
+
+    assert fence.UNGUARDED_CEILING == 0
+    assert sum(1 for s in rf.DESTRUCTIVE_PATHS if s.status == "unguarded") == 0

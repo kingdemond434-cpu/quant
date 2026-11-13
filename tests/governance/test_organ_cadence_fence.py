@@ -268,6 +268,25 @@ def test_declare_cannot_absorb_a_new_dark_organ_or_loosen_a_ratchet(box: Path) -
     assert again["ok"] is False and any(p.startswith("b:") for p in again["problems"])
 
 
+def test_declare_preserves_every_section_it_does_not_own(box: Path) -> None:
+    """Recovered box patch 41: `declare` rebuilt the document from scratch and silently deleted
+    the `handed_over` section beside the debt -- another lane's measured causes. It may rewrite
+    only the keys it owns, and it still never loosens a ratchet while doing so."""
+    handed = {"market_constitution": {"cause": "measured elsewhere", "owner": "another lane"}}
+    debt = _write(box, DEBT, json.dumps({"declared_max": 1, "windows_lost_max": 0,
+                                         "declared": {"a": {"why": "x"}},
+                                         "handed_over": handed}))
+    doc = {"generated": NOW.isoformat(), "organs": [],
+           "seal_duty_cycle": {"available": True, "windows_lost": 3}}
+
+    fence.declare(doc, debt)
+
+    after = json.loads(debt.read_text("utf-8"))
+    assert after["handed_over"] == handed
+    assert set(after["declared"]) == {"a"}
+    assert after["declared_max"] == 1 and after["windows_lost_max"] == 0
+
+
 def test_declare_refuses_over_an_unreadable_debt_file(box: Path) -> None:
     """An unreadable previous debt is refused, never re-declared from scratch as {}."""
     debt = _write(box, DEBT, "{not json")

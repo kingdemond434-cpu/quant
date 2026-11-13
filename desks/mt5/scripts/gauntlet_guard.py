@@ -66,6 +66,22 @@ WINDOW_S_FALLBACK = 4 * 3600
 #: How many passes the report keeps. A distribution needs more than the last one.
 KEEP_PASSES = 60
 
+#: HOW FAR BACK A COLD START READS, and why it is not a small number (recovered box patch 29,
+#: 2026-09-24; re-landed 2026-11-13).
+#:
+#: MEASURED ON THE BOX 2026-09-24: this organ reported `passes_recorded: 0` while the judge's own
+#: log held two completed passes. The reader, the classifier and the fold all verified correct
+#: against ground truth (37 of 37 markers). The defect was the COLD START: it began 2 MB from the
+#: end of a log the judge writes ~16-24 MB of per pass, so a fresh cursor landed INSIDE a pass --
+#: after its `PRE-WARM` and before its epilogue -- and `fold` then correctly skipped the epilogue,
+#: because no pass was open to attach it to. The same happens after any outage (an adoption once
+#: deleted the cursor file for 38 minutes while the log advanced past a pass boundary).
+#:
+#: 120 MB is about five passes, so a cold start begins BEHIND the last boundary rather than inside
+#: it. The cost (~1 s; 89 MB scanned in 0.6 s on the box) is paid once per cold start and never on
+#: the incremental path.
+COLD_START_LOOKBACK_BYTES = 120_000_000
+
 #: The judge's own script name, as it appears in the command line of its process.
 JUDGE = "external_gauntlet.py"
 
@@ -263,9 +279,17 @@ def read_new_events(cursor: int) -> tuple[list[dict], int]:
     size = LOG.stat().st_size
     if cursor > size:
         return [{"phase": "rotated", "text": f"log shrank {cursor} -> {size}"}], size
-    if cursor <= 0:
-        cursor = max(0, size - 2_000_000)
+    cold_start = cursor <= 0
+    if cold_start:
+        cursor = max(0, size - COLD_START_LOOKBACK_BYTES)
     events: list[dict] = []
+    if cold_start and cursor:
+        # A ZERO MUST BE EXPLAINABLE. Without this row an empty ledger reads identically whether
+        # no pass happened or the reader skipped the history that held them -- the exact
+        # ambiguity that let `passes_recorded: 0` stand beside two completed passes.
+        events.append({"phase": "cold_start",
+                       "text": f"cold start: began {size - cursor} byte(s) from the end of a "
+                               f"{size}-byte log; anything before that is not counted here"})
     with LOG.open("rb") as fh:
         fh.seek(cursor)
         if cursor:
@@ -284,6 +308,8 @@ def fold(events: list[dict], passes: list[dict], seen_at: str) -> list[dict]:
     out = list(passes)
     for ev in events:
         phase, text = ev["phase"], ev["text"]
+        if phase == "cold_start":
+            continue                   # an explanation of the reader, never a phase of a sweep
         cur = out[-1] if out and out[-1].get("outcome") == "OPEN" else None
         if phase == "prewarm":
             if cur is not None:
@@ -358,6 +384,11 @@ def main(argv: list[str] | None = None) -> int:
         "frame_integrity": frames,
         "live_pass": live,
         "live_watch": watch,
+        # WHY THE LEDGER MIGHT BE EMPTY, in the artifact rather than in someone's head.
+        "ledger_note": ("a pass is recorded only from its PRE-WARM line onward, so a pass already "
+                        "running when this organ cold-started is not counted; cold-start "
+                        f"backfill is {COLD_START_LOOKBACK_BYTES} byte(s)"),
+        "cold_start_this_run": any(e.get("phase") == "cold_start" for e in events),
         "passes_recorded": len(passes),
         "passes_closed": len(closed),
         "passes_reached_epilogue": len(reached),

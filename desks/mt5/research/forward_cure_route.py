@@ -97,7 +97,7 @@ def accumulate(base: Path | None = None) -> dict:
     A row is ADDED or REFRESHED from the snapshot. A row is RETIRED only on positive evidence in
     the latest gate report: the same cell now passing all ten (CERTIFIED -- it belongs in the
     canon, not here) or now failing a VALIDITY gate (DEAD -- validity is absolute). Silence
-    retires nothing.
+    retires nothing, and a validity gate the verdict does not carry is silence too.
     """
     root = Path(base) if base is not None else BASE
     reports = root / "desks" / "mt5" / "reports"
@@ -144,7 +144,14 @@ def accumulate(base: Path | None = None) -> dict:
                 continue                       # unjudged this pass: silence retires nothing
             if v.get("passed"):
                 retired[key] = "CERTIFIED"
-            elif any(not (isinstance(st.get(g), dict) and st[g].get("passed") is True)
+            # POSITIVE EVIDENCE ONLY, AND THE SUB-FIELD COUNTS TOO (recovered box patch 24,
+            # 2026-09-24; re-landed 2026-11-13). This read `not (present and passed)`, so a
+            # validity gate MISSING from a present verdict was a failure -- retirement on an
+            # absence, one field below the one this module guards. Measured in the live report the
+            # day it was found: 32,773 of 140,090 verdicts carried non-empty stages with NO
+            # validity gate in them at all. A gate fails when its stage is there and says so; a
+            # gate nobody judged says nothing (L1.28a).
+            elif any(isinstance(st.get(g), dict) and st[g].get("passed") is not True
                      for g in validity):
                 retired[key] = "VALIDITY_FAIL"
     for key in retired:
@@ -174,7 +181,8 @@ def accumulate(base: Path | None = None) -> dict:
                       "applied by whatever adjudicates them, never here."),
         "retirement_rule": ("POSITIVE EVIDENCE ONLY: a row leaves on a later verdict that passes "
                             "all ten (CERTIFIED) or fails a VALIDITY gate (DEAD). An absent, "
-                            "short or unreadable verdict never voids a row."),
+                            "short or unreadable verdict never voids a row, and a validity gate "
+                            "ABSENT from a present verdict is UNJUDGED, never failed."),
     }
     _write(reports / "FORWARD_CURE_ROSTER.json", {**census, "rows": rows})
     return census
