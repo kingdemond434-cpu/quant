@@ -132,6 +132,11 @@ def main() -> int:
     ptmp.replace(POSITIONS)
     print(f"wrote {OUT.name}: equity {rec['equity']} {rec['currency']} "
           f"today_pnl {rec['today_pnl']} positions {rec['open_positions']}")
+    # K3 (2026-11-13): the account's leverage and every sized symbol's margin per lot, read on the
+    # same connection. Read-only; record_mt5 never raises, so the publish above cannot be lost to
+    # it. History -> desks/mt5/data/leverage_history.jsonl, assessed by research/leverage_watch.
+    from research.leverage_watch import record_mt5
+    print(f"leverage: {record_mt5(mt5, (p.symbol for p in positions))}")
     return 0
 
 

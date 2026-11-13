@@ -1154,6 +1154,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
+    # K3: the venues' leverage and per-symbol margin, read every hour against the sized book.
+    "leverage_watch",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
@@ -1438,7 +1440,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology",
+                     # K3: can every sized order still be margined at today's leverage?
+                     "leverage_watch"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -2361,6 +2365,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "tier5_acceptance": 180,
     "cro_noon_freshness": 60,
     "mission_control": 180,
+    # K3 leverage watch: one JSONL read plus a TradeLocker read for E8, 120 s inside.
+    "leverage_watch": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
     # already started, which would leave a producer half-run and the census judging the stub.
@@ -6421,6 +6427,12 @@ def main() -> None:
     # the knowledge graph, and has no capital, gate, promotion, risk or order authority.
     msc = _costed("mission_control", lambda: _producer(
         "mission_control", "research/mission_control.py"))
+    # K3 LEVERAGE WATCH. The terminal readers (publish_account_state, ftmo_venue_reader) record
+    # each venue's leverage and margin per lot; this leg judges change, feasibility of every
+    # sized order and the half-leverage stress in the cut-prone window. Read-only, no orders.
+    lvw = _costed("leverage_watch", lambda: _producer(
+        "leverage_watch", "research/leverage_watch.py", "--once", "--read-e8",
+        "--budget-s", "120"))
     # THE FINAL RESEARCH DASHBOARD (Tier-5 mandate 162), here for the same reason `publish_state`
     # is: it JOINS the artifacts this pass wrote, so the dashboard is the hour that just ran and
     # not the one before it. It reports and never gates.
@@ -6528,6 +6540,7 @@ def main() -> None:
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
                     "mission_control": msc,
+                    "leverage_watch": lvw,
                     "runtime_attestation": rta,
                     "self_repair": slf,
                     "loop_liveness": llv, "clock_liveness": clk,

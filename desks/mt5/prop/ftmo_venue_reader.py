@@ -280,6 +280,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     try:
         doc = run(mt5)
+        # K3 (2026-11-13): leverage and margin per lot on this same connection, every pass, so a
+        # pre-event or weekend cut at FTMO is on record within five minutes. Read-only, never
+        # raises; the venue doc above is already written.
+        from research.leverage_watch import record_mt5
+        log(f"leverage: {record_mt5(mt5)}")
     finally:
         mt5.shutdown()
     log(f"ftmo venue reader: {doc.get('status')} phase={doc.get('phase')} ({doc.get('phase_why')})")
