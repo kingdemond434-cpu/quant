@@ -244,7 +244,13 @@ def test_an_added_import_is_measured_by_import(tmp_path: Path) -> None:
     ("old", "new", "want"),
     [
         ("import a\n", "import b\n", {(1, 1): True}),
-        ("class A:\n    x = 1\n", "class A(B):\n    x = 1\n", {(1, 1): True}),
+        # a class header that changes its bases, metaclass or decorators can change method
+        # resolution: the class's own code must run inside an agreed call (#6704c691c audit SF)
+        ("class A:\n    x = 1\n", "class A(B):\n    x = 1\n", {(2, 2): False}),
+        ("class A(B):\n    x = 1\n", "class A(B, metaclass=M):\n    x = 1\n", {(2, 2): False}),
+        ("class A:\n    x = 1\n", "@d\nclass A:\n    x = 1\n", {(3, 3): False}),
+        # a rename alone is measured by the import that bound the new name
+        ("class A(B):\n    x = 1\n", "class C(B):\n    x = 1\n", {(1, 1): True}),
         ("class A:\n    x = 1\n", "class A:\n    x = 2\n", {(2, 2): False}),
         ("T = {1: 2}\n", "T = {1: 3}\n", {(1, 1): False}),
         ("f()\n", "g()\n", {(1, 1): False}),

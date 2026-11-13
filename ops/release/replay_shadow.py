@@ -25,7 +25,8 @@ MERGES). It also FAILS when:
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
 - the base tree cannot run a scenario, or places nothing anywhere on the grid (UNMEASURED);
 - the PR's tree raises where the base did not;
-- a family decides differently on the signal leg's grid (`signal_problems`).
+- a family decides differently on the signal leg's grid, or a gateway pass intends different
+  orders (`signal_problems`).
 
 THE SIGNAL LEG (2026-11-13): the scenario legs stub the family code out, so a change to a family
 module was money path the replay never ran. When a changed money-path Python file is still
@@ -36,6 +37,23 @@ the PR's side) and every statement it removed or replaced (on the base's side) e
 family call that traded on the base and decided identically on both trees, or at import
 (`signal_measured`). Imported is not enough there, and a file the leg never reached stays
 UNMEASURED with the reason.
+
+THE CERTIFIED CELLS (2026-11-13): the signal leg also runs each family with the params its
+certificates carry (`cert_cells`: the base's sleeves.json and canon, then FIXTURE_CERTS for the
+families those books leave short), its inputs rebuilt by `family_inputs.resolve` from fixture
+loaders (replay_child.Fixtures: peer, factor and driver bars, macro, COT, tape, swap terms, world
+series), so an input-hungry family (carry, ensemble, regime_split, world_macro_state, the macro
+and COT families) trades on the grid and its changed lines can run.
+
+THE FUSION GATEWAY LEG (2026-11-13): replay_child.py `--gateway` runs the gateway's family lane
+(`resolve_family_order` for every sleeve, `cap_by_heat`, `run_family_sleeves` armed) on a copy of
+the tree, against a fake terminal (fixed account, contract terms, positions, ticks and bars on a
+frozen clock), for one sleeve per certified cell, 24 passes from each of two account states. A
+pass's decision is every resolved plan, what the cap admitted and every request that reached
+`order_send`; passes are compared and line-traced exactly like signal-leg calls, so gateway.py,
+fusion_rails.py, order_door.py, cross_account.py and the rest count as measured only when every
+changed statement ran inside a pass that intended an order on the base and decided the same on
+the PR, and any differing pass FAILS.
 
 LIMIT: the PR's code runs in the child that writes its own result, so a PR written to fool this
 check can. That is the reviewer's job (independent-review); this check catches regressions.
@@ -775,12 +793,124 @@ RESEARCH_DIR = "desks/mt5/research/"
 IMPORT_COVERED_RESEARCH = frozenset({"desks/mt5/research/admission_integrity.py"})
 
 
-def run_signals(tree: Path, trace: list[str]) -> dict[str, Any]:
+#: Families no certificate in the base's books names, with the params their certificates carry
+#: (synthetic, shaped like the real ones), so their input paths run too. A book row for the same
+#: family is preferred; these fill the gaps only.
+FIXTURE_CERTS: tuple[dict[str, Any], ...] = (
+    {"family": "carry", "symbol": "AUDJPY", "params": {}},
+    {
+        "family": "ensemble",
+        "symbol": "EURUSD",
+        "params": {
+            "members": [
+                {"symbol": "EURUSD", "family": "trend_ma_cross", "params": {}},
+                {"symbol": "EURUSD", "family": "mean_reversion_rsi", "params": {}},
+            ],
+            "weights": [1.0, 1.0],
+            "threshold": 0.5,
+        },
+    },
+    {
+        "family": "regime_split",
+        "symbol": "XAUUSD",
+        "params": {"base_family": "trend_ma_cross", "vol": "high", "trend": "", "liq": ""},
+    },
+    {
+        "family": "regime_split",
+        "symbol": "EURUSD",
+        "params": {"base_family": "mean_reversion_rsi", "vol": "", "trend": "range", "liq": ""},
+    },
+    {
+        "family": "world_macro_state",
+        "symbol": "EURUSD",
+        "params": {
+            "series_key": "fixture.cpi_yoy",
+            "z_obs": 24,
+            "z_lo": 0.5,
+            "z_hi": 99.0,
+            "direction": "long",
+        },
+    },
+    {
+        "family": "world_macro_state",
+        "symbol": "XAUUSD",
+        "params": {
+            "series_key": "fixture.policy_rate",
+            "z_obs": 12,
+            "z_lo": -99.0,
+            "z_hi": -0.5,
+            "direction": "short",
+        },
+    },
+    {"family": "macro_conditional", "symbol": "XAUUSD", "params": {}},
+    {"family": "cot_positioning", "symbol": "XAUUSD", "params": {}},
+    {"family": "cot_comm_follow", "symbol": "XAUUSD", "params": {}},
+    {
+        "family": "cross_asset_residual",
+        "symbol": "XAUUSD",
+        "params": {"factor_symbols": ["EURUSD", "USDJPY"]},
+    },
+    {"family": "relative_value", "symbol": "EURUSD", "params": {"peer_symbol": "GBPUSD"}},
+    {"family": "lead_lag", "symbol": "EURUSD", "params": {"driver_symbol": "XAUUSD"}},
+    {"family": "liquidity_regime", "symbol": "EURUSD", "params": {}},
+    {"family": "orderflow_imbalance", "symbol": "XAUUSD", "params": {}},
+    {"family": "event_reaction", "symbol": "EURUSD", "params": {}},
+)
+#: How many certificates per family the leg runs (book rows first, sorted, then the fixtures).
+CERTS_PER_FAMILY = 2
+#: The base's books a certificate's family, symbol and params are read from.
+CERT_BOOKS = ("desks/mt5/data/sleeves.json", "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json")
+
+
+def cert_cells(base: Path) -> list[dict[str, Any]]:
+    """The certified cells the signal and gateway legs run: per family, up to CERTS_PER_FAMILY
+    distinct (symbol, params) from the BASE's books (the richest params first: a lossy row that
+    kept only its chart says least), then FIXTURE_CERTS for the families the books leave short.
+    Read from the base only, so both trees run exactly the same cells."""
+    rows: list[dict[str, Any]] = []
+    for book in CERT_BOOKS:
+        try:
+            doc = json.loads(read(base, book) or "null")
+        except ValueError:
+            continue
+        if isinstance(doc, dict) and isinstance(doc.get("sleeves"), list):
+            rows += [r for r in doc["sleeves"] if isinstance(r, dict)]
+        elif isinstance(doc, dict) and isinstance(doc.get("survivors"), dict):
+            rows += [
+                {**(v.get("shadow_spec") or {})}
+                for v in doc["survivors"].values()
+                if isinstance(v, dict) and isinstance(v.get("shadow_spec"), dict)
+            ]
+    seen: dict[str, dict[str, dict[str, Any]]] = {}
+    for r in rows:
+        fam, sym, params = r.get("family"), r.get("symbol"), r.get("params")
+        if not (isinstance(fam, str) and fam and isinstance(sym, str) and isinstance(params, dict)):
+            continue
+        cell = {"family": fam, "symbol": sym, "params": params}
+        seen.setdefault(fam, {})[json.dumps(cell, sort_keys=True, default=str)] = cell
+    out: list[dict[str, Any]] = []
+    for fam in sorted(seen):
+        ranked = sorted(seen[fam].items(), key=lambda kv: (-len(kv[1]["params"]), kv[0]))
+        out += [cell for _k, cell in ranked[:CERTS_PER_FAMILY]]
+    have: dict[str, int] = {}
+    for c in out:
+        have[c["family"]] = have.get(c["family"], 0) + 1
+    for c in FIXTURE_CERTS:
+        if have.get(c["family"], 0) < CERTS_PER_FAMILY:
+            out.append(json.loads(json.dumps(c)))
+            have[c["family"]] = have.get(c["family"], 0) + 1
+    return out
+
+
+def run_signals(
+    tree: Path, trace: list[str], certs: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
     """The signal leg on one tree, in a fresh process and an empty directory, line-tracing the
-    repository files `trace` names."""
+    repository files `trace` names, over the grid and the certified cells `certs`."""
     with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
         work = Path(tmp)
-        (work / "spec.json").write_text(json.dumps({"trace": sorted(trace)}), "utf-8")
+        spec = {"trace": sorted(trace), "certs": certs or []}
+        (work / "spec.json").write_text(json.dumps(spec), "utf-8")
         out = work / "out.json"
         try:
             p = subprocess.run(
@@ -794,6 +924,60 @@ def run_signals(tree: Path, trace: list[str]) -> dict[str, Any]:
             return {"crash": f"rc {p.returncode}: {(p.stderr or p.stdout)[-600:]}"}
         doc: dict[str, Any] = json.loads(out.read_text("utf-8"))
         return doc
+
+
+#: The gateway leg runs once per tree: every certified cell as a sleeve, 2 accounts x 8 passes.
+GATEWAY_TIMEOUT_S = 1800
+
+
+def gateway_anchor() -> str:
+    """The gateway leg's frozen clock: this hour, ten minutes in. Chosen once per comparison and
+    handed to both trees, so they decide on the same instant; near the wall clock, so the box's
+    own freshness checks read the fixture tick as current."""
+    from datetime import UTC, datetime
+
+    now = datetime.now(tz=UTC).replace(minute=10, second=0, microsecond=0)
+    return now.isoformat()
+
+
+def run_gateway(
+    tree: Path, trace: list[str], certs: list[dict[str, Any]], anchor: str
+) -> dict[str, Any]:
+    """The Fusion gateway leg on one tree (replay_child.py --gateway): a copy of the tree's CI
+    file set in an empty directory, a fake terminal, the frozen clock `anchor`."""
+    with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
+        work = Path(tmp)
+        spec = {"trace": sorted(trace), "certs": certs, "anchor": anchor}
+        (work / "spec.json").write_text(json.dumps(spec), "utf-8")
+        out = work / "out.json"
+        try:
+            p = subprocess.run(
+                [sys.executable, "-I", str(CHILD), "--gateway", str(tree.resolve()),
+                 str(work / "spec.json"), str(out)],
+                cwd=work, capture_output=True, text=True, timeout=GATEWAY_TIMEOUT_S, check=False,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired:
+            return {"crash": f"timed out after {GATEWAY_TIMEOUT_S}s"}
+        if p.returncode != 0 or not out.exists():
+            return {"crash": f"rc {p.returncode}: {(p.stderr or p.stdout)[-600:]}"}
+        doc: dict[str, Any] = json.loads(out.read_text("utf-8"))
+        return doc
+
+
+def merge_legs(sig: dict[str, Any], gw: dict[str, Any]) -> dict[str, Any]:
+    """One tree's signal and gateway legs as one document (the gateway's keys are prefixed
+    `gateway|` by the child, so no key of one leg can stand for the other's)."""
+    lines = {k: dict(v) for k, v in (sig.get("lines") or {}).items()}
+    for key, per in (gw.get("lines") or {}).items():
+        mine = lines.setdefault(key, {})
+        for f, got in per.items():
+            mine[f] = sorted({*(mine.get(f) or []), *got})
+    return {
+        "names": [*(sig.get("names") or []), *(gw.get("names") or [])],
+        "calls": {**(sig.get("calls") or {}), **(gw.get("calls") or {})},
+        "lines": lines,
+        "imported": sorted({*(sig.get("imported") or []), *(gw.get("imported") or [])}),
+    }
 
 
 def _traded(call: dict[str, Any]) -> bool:
@@ -887,6 +1071,28 @@ def changed_statements(old: str, new: str) -> set[tuple[int, int]]:
 _IMPORT_OK = (ast.ClassDef, ast.Import, ast.ImportFrom)
 
 
+def _class_shape(node: ast.ClassDef) -> tuple[str, str, str, str]:
+    """A class header without its name: bases, keywords (metaclass included), decorators, and
+    the body (so a renamed class is matched only to the class it was)."""
+    return (
+        ast.dump(ast.Tuple(elts=node.bases, ctx=ast.Load())),
+        ";".join(ast.dump(k) for k in node.keywords),
+        ";".join(ast.dump(d) for d in node.decorator_list),
+        ";".join(ast.dump(b) for b in node.body),
+    )
+
+
+def _name_only(node: ast.ClassDef, old_classes: list[ast.ClassDef]) -> bool:
+    """Whether a touched class header changed nothing but (at most) the class's name: the
+    same-named class of the old text has the same bases, keywords and decorators, or, for a
+    rename, a class the new text no longer names had the same header AND body."""
+    shape = _class_shape(node)
+    same = [c for c in old_classes if c.name == node.name]
+    if same:
+        return any(_class_shape(c)[:3] == shape[:3] for c in same)
+    return any(_class_shape(c) == shape for c in old_classes)
+
+
 def changed_spans(old: str, new: str) -> dict[tuple[int, int], bool]:
     """`changed_statements`, each span mapped to whether a line run AT IMPORT may satisfy it
     (`_IMPORT_OK`). A span charged by two statements is import-satisfiable only if both are."""
@@ -910,6 +1116,10 @@ def changed_spans(old: str, new: str) -> dict[tuple[int, int], bool]:
         if isinstance(n, _STMT):
             deco = [d.lineno for d in getattr(n, "decorator_list", [])]
             nodes.append((min([n.lineno, *deco]), n.end_lineno or n.lineno, n))
+    try:
+        old_classes = [n for n in ast.walk(ast.parse(old)) if isinstance(n, ast.ClassDef)]
+    except SyntaxError:
+        old_classes = []
     spans: dict[tuple[int, int], bool] = {}
 
     def add(span: tuple[int, int], import_ok: bool) -> None:
@@ -922,6 +1132,11 @@ def changed_spans(old: str, new: str) -> dict[tuple[int, int], bool]:
             continue
         start, end, node = min(holders, key=lambda x: (x[1] - x[0], -x[0]))
         ok = isinstance(node, _IMPORT_OK)
+        if isinstance(node, ast.ClassDef) and not _name_only(node, old_classes):
+            # bases, metaclass, keywords or decorators changed: method resolution may differ,
+            # so the class's own code must have run inside an agreed call (#6704c691c audit SF)
+            add((node.body[0].lineno, end), False)
+            continue
         if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
             add((node.body[0].lineno, end), False)
         elif isinstance(node, _HEADED):
@@ -998,7 +1213,7 @@ def signal_measured(
             show = [f"PR {a}-{z}" for a, z in miss_h[:6]] + [f"base {a}-{z}" for a, z in miss_b[:6]]
             why[f] = (
                 f"{len(miss_h) + len(miss_b)} changed statement(s) never ran in a family call "
-                f"that traded and agreed: lines {', '.join(show)}"
+                f"or gateway pass that traded and agreed: lines {', '.join(show)}"
             )
             continue
         measured.add(f)
@@ -1087,31 +1302,60 @@ def compare(
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
-    # THE SIGNAL LEG, only when a changed money-path Python file is still uncovered (a PR that
-    # touches no such file pays nothing for it)
+    # THE SIGNAL AND GATEWAY LEGS, only when a changed money-path Python file is still
+    # uncovered (a PR that touches no such file pays nothing for them)
     signal: dict[str, Any] = {"ran": False}
+    gateway: dict[str, Any] = {"ran": False}
     candidates = [f for f in uncovered if f.endswith(".py")]
     if candidates:
-        sb, sh = run_signals(base, candidates), run_signals(head, candidates)
-        signal = {"ran": True, "traced": candidates}
+        certs = cert_cells(base)
+        sb, sh = run_signals(base, candidates, certs), run_signals(head, candidates, certs)
+        anchor = gateway_anchor()
+        gb, gh = (
+            run_gateway(base, candidates, certs, anchor),
+            run_gateway(head, candidates, certs, anchor),
+        )
+        signal = {"ran": True, "traced": candidates, "certs": len(certs)}
+        gateway = {"ran": True, "anchor": anchor}
+        if "crash" in gb:
+            # nothing it ran counts; every file it would have measured stays UNMEASURED below
+            gateway["unmeasured"] = f"the base tree cannot run it ({gb['crash'][-300:]})"
+            gb = gh = {}
+        elif "crash" in gh:
+            problems.append(f"gateway leg: the PR's tree crashed ({gh['crash']})")
+            gb = gh = {}
         if "crash" in sb:
             problems.append(f"UNMEASURED signal leg: the base tree cannot run it ({sb['crash']})")
         elif "crash" in sh:
             problems.append(f"signal leg: the PR's tree crashed ({sh['crash']})")
         else:
-            diverged, agreed = signal_problems(sb, sh)
+            mb, mh = merge_legs(sb, gb), merge_legs(sh, gh)
+            diverged, agreed = signal_problems(mb, mh)
             problems += diverged
-            measured, why = signal_measured(base, head, candidates, sb, sh, agreed)
+            measured, why = signal_measured(base, head, candidates, mb, mh, agreed)
             uncovered = [f for f in uncovered if f not in measured]
-            both = set(sb.get("calls") or {}) & set(sh.get("calls") or {})
+            both = set(mb.get("calls") or {}) & set(mh.get("calls") or {})
+            gw_keys = {k for k in both if k.startswith("gateway|")}
             signal.update(
                 families=len(sb.get("names") or []),
-                calls_compared=len(both),
+                calls_compared=len(both - gw_keys),
                 # skipped, never compared: the base itself ran past the call budget
-                calls_base_timeout=sum(1 for k in both if (sb["calls"][k] or {}).get("timeout")),
-                calls_agreed_trading=len(agreed),
+                calls_base_timeout=sum(
+                    1 for k in both - gw_keys if (mb["calls"][k] or {}).get("timeout")
+                ),
+                calls_agreed_trading=len(agreed - gw_keys),
+                fixtures=sb.get("fixtures") or [],
                 measured=sorted(measured),
                 unmeasured=why,
+            )
+            gateway.update(
+                sleeves=len(gb.get("names") or []),
+                passes_compared=len(gw_keys),
+                passes_base_timeout=sum(
+                    1 for k in gw_keys if (mb["calls"][k] or {}).get("timeout")
+                ),
+                passes_agreed_trading=len(agreed & gw_keys),
+                intended_orders=sum(int((mb["calls"][k] or {}).get("n") or 0) for k in gw_keys),
             )
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
@@ -1128,7 +1372,10 @@ def compare(
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
         # the signal leg: what it ran, compared and measured, and why a file stayed UNMEASURED
+        # (the gateway leg's measurements are folded into `measured` / `unmeasured` there)
         "signal_leg": signal,
+        # the Fusion gateway leg: its passes, what they intended, and what agreed
+        "gateway_leg": gateway,
     }
 
 
