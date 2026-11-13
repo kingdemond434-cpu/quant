@@ -9213,6 +9213,10 @@
    "gate": "none",
    "evidence": [
     "desks/mt5/research/conversion_handoff_converter.py",
+    "desks/mt5/research/conversion_handoff_common.py",
+    "desks/mt5/research/conversion_handoff_io.py",
+    "desks/mt5/research/conversion_handoff_routes.py",
+    "desks/mt5/research/conversion_handoff_children.py",
     "desks/mt5/tests/test_conversion_handoff_converter.py",
     "desks/mt5/research/hourly_cycle.py"
    ],
