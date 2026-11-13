@@ -9203,6 +9203,71 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "FT1",
+   "item": "Tick-tape microstructure, information side (Fincept capability, re-implemented, no AGPL code copied): tick-rule signed flow, sign-only quote imbalance, VPIN-style toxicity, Kyle-lambda impact and spread regime per H1 bar, accumulated past the tape window and proposed as judge cells",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/mt5desk/flow_toxicity.py",
+    "desks/mt5/research/flow_toxicity_miner.py",
+    "libs/research/microstructure_census.py",
+    "tests/research/test_flow_toxicity.py"
+   ],
+   "scheduled_by": "hourly_cycle:flow_toxicity",
+   "artifact": "desks/mt5/reports/FLOW_TOXICITY.json",
+   "consumer": "desks/mt5/research/proposer_common.py donate -> miner_candidate_compiler -> external_gauntlet build_cell (exogenous_conditioner / alt_series_momentum read data/lake/series/micro_<SYM>.parquet); libs/data/datahub_desk.py micro.flow_bars",
+   "gap": "LANDED 2026-11-13. Series start at the tape's first retained day and grow from there; cells read short_history at the judge's cut until the series spans it. Depth constructions stay UNBUILDABLE_ON_VENUE (depth_probe NO_DEPTH), re-probed weekly.",
+   "next_step": "Read FLOW_TOXICITY.json on the box after the first passes: measured symbols, cells proposed, donation counts.",
+   "landed": [
+    "flow toxicity 2026-11-13"
+   ]
+  },
+  {
+   "id": "FT2",
+   "item": "DataHub contract coverage: every registered contract names the clock that refreshes it and the families that read it; an hourly audit measures refresh and judged cells per contract and names NO_REFRESH / NO_CONSUMER defects",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/data/datahub_desk.py",
+    "libs/data/datahub.py",
+    "scripts/datahub_coverage.py",
+    "tests/research/test_datahub_coverage_and_tools.py"
+   ],
+   "scheduled_by": "hourly_cycle:datahub_coverage",
+   "artifact": "desks/mt5/reports/DATAHUB_COVERAGE.json",
+   "consumer": "human-read (capability_graph HUMAN_READ); libs/research/tool_registry.py datahub_coverage tool",
+   "gap": "LANDED 2026-11-13. calendar.events (event_reaction) and tape.spread_flow (liquidity_regime, orderflow_imbalance) read AWAITING_JUDGE: 0 judged verdicts, short history at the judge's cut.",
+   "next_step": "Backfill a PIT calendar history for event_reaction; let tape-family series read the accumulated micro_ series (money-path change, needs the Auditor).",
+   "landed": [
+    "datahub coverage 2026-11-13"
+   ]
+  },
+  {
+   "id": "FT3",
+   "item": "Typed analytics tool registry (Fincept capability): one catalogue of the desk's analytics tools with inputs verified against signatures, outputs, DataHub contracts verified against desk_hub, propose-only authority, a prompt block for LLM seats",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/research/tool_registry.py",
+    "scripts/build_tool_registry.py",
+    "tests/research/test_datahub_coverage_and_tools.py"
+   ],
+   "scheduled_by": "hourly_cycle:tool_registry",
+   "artifact": "desks/mt5/reports/TOOL_REGISTRY.json",
+   "consumer": "human-read and research/LLM seats via libs/research/tool_registry.py call() / prompt_block()",
+   "gap": "LANDED 2026-11-13. No LLM seat injects prompt_block yet; the LLM lab (#332) is not on LIVE.",
+   "next_step": "Inject prompt_block into the LLM lab's seat context when #332 lands.",
+   "landed": [
+    "tool registry 2026-11-13"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

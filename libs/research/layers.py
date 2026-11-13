@@ -68,6 +68,9 @@ LEG_LAYER: dict[str, str] = {
     # A leg with no layer is an hour of compute that `opportunity_cost` cannot attribute, so
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
+    # Tick-tape flow / toxicity / impact series and the cells they condition (information), and
+    # the DataHub contract coverage audit (information: which inputs reach the judge).
+    "flow_toxicity": "information", "datahub_coverage": "information",
     "bar_clock_probe": "information",
     # prediction: turning information into a claim about returns
     "intake_catchup": "prediction",
@@ -590,6 +593,8 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    # The typed analytics-tool catalogue the research and LLM seats discover tools from.
+    "tool_registry": "meta",
     # The organ census is meta by construction: it measures the desk's own organs against the
     # seven-link chain and orders research compute by survivor yield. It generates no hypothesis.
     "organ_census": "meta",

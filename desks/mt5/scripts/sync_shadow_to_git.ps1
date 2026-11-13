@@ -813,6 +813,13 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
+    # tick-tape flow/toxicity/impact series readings and the cells they proposed (hourly leg
+    # flow_toxicity), which DataHub contracts reach judged cells (leg datahub_coverage), and the
+    # verified analytics-tool catalogue the research and LLM seats read (leg tool_registry),
+    # 2026-11-13. Small JSON; the lake series parquets stay on the box.
+    "desks/mt5/reports/FLOW_TOXICITY.json",
+    "desks/mt5/reports/DATAHUB_COVERAGE.json",
+    "desks/mt5/reports/TOOL_REGISTRY.json",
     # breadth in independent hypothesis families, the daily new-independent metric and the
     # merge census that carries it (2026-10-28, research/hypothesis_families.py); and the
     # gauntlet novelty set-aside, measured before any trial-count decision (audit 8628268b6)
