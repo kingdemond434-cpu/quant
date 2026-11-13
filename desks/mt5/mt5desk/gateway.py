@@ -3002,7 +3002,10 @@ def new_risk_gate(release_ok: bool, release_why: str, reconcile: dict | None,
 #: A symbol whose own last quote is older than this is not traded on
 #: (docs/desktop_pass/recovery_drills/gateway_stale_quote_gate.md). The pass-level feed check
 #: reads ONE reference tick; a symbol whose feed stopped while the terminal stays connected and
-#: the reference keeps ticking was traded at its last price.
+#: the reference keeps ticking was traded at its last price. Derived from the schedule, not a
+#: size: the resident gateway passes every 60 s (research/gateway_resident.py INTERVAL_S), so
+#: 300 s is 5 consecutive passes with no new quote on a symbol whose session is open -- the feed
+#: has stopped, not paused between ticks. Value as set in the spec (gateway_stale_quote_gate.md).
 STALE_QUOTE_S = 300
 
 
@@ -3019,10 +3022,12 @@ def quote_age_s(tick: object) -> float | None:
     return float((pd.Timestamp(datetime.now(tz=UTC)) - at).total_seconds())
 
 
-#: MT5 trade retcodes that mean the request was executed (wholly or in part):
-#: 10008 PLACED, 10009 DONE, 10010 DONE_PARTIAL -- `order_door.SUCCESS`, written as a literal so
-#: the test harnesses that exec gateway functions carry it (pinned equal to the door's set).
+#: MT5 trade retcodes that mean the request was executed (wholly or in part), as documented by
+#: the venue (MetaTrader 5 trade server return codes): 10008 PLACED, 10009 DONE, 10010
+#: DONE_PARTIAL -- `order_door.SUCCESS`, written as a literal so the test harnesses that exec
+#: gateway functions carry it (pinned equal to the door's set). Not chosen numbers; not a size.
 FILLED_RETCODES = (10008, 10009, 10010)
+#: 10010 DONE_PARTIAL, as documented by the venue (MetaTrader 5 trade server return codes).
 RETCODE_DONE_PARTIAL = 10010
 
 
@@ -3042,7 +3047,9 @@ def scalp_fill(res: object, asked: float) -> tuple[float, float]:
 
 
 #: How long a recorded close residual is kept when nothing clears it (a position the broker
-#: closed on its own stop never comes back through a close send).
+#: closed on its own stop never comes back through a close send). A record, not a size: 72 h =
+#: 3 consecutive broker days, past the longest hold the book's own exits allow (the Friday close
+#: takes every lane flat), so an entry that old belongs to a position that no longer exists.
 CLOSE_RESIDUAL_KEEP_H = 72.0
 
 
@@ -3088,8 +3095,13 @@ def note_close_result(st: dict, p: object, res: object, what: str) -> float | No
     return residual
 
 
-#: How far back the book-consistency check reads deals. A position whose opening deal is older
-#: than this is outside the check (the restart reconcile still reads it).
+#: How far back the book-consistency check reads deals. Derived from the schedule, not a size:
+#: the lag this guards is between two reads a pass apart (the gateway's cadence is minutes), and
+#: the positions it checks are the ones whose OPENING deal it can see. The book's holds are
+#: bounded by its own exits (the gold book's 19:30 UTC CLOSE_HOUR, each sleeve's time exit, the
+#: Friday close that takes every lane flat), so 48 h = 2 consecutive broker days covers the
+#: opening deal of every position the desk can be holding on a weekday. An older position is
+#: outside this check only; the restart reconcile still reads it. It sizes nothing.
 BOOK_CHECK_WINDOW_H = 48.0
 
 
