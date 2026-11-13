@@ -84,11 +84,30 @@ def heal(apply: bool) -> int:
     by_status = Counter(str(r.get("status") or "?") for r in rows)
     print(f"roster: {len(rows)} rows   {dict(by_status)}")
 
-    silent, reasoned = [], []
+    # A PRINCIPAL STOP IS NEVER HEALED (2026-10-14). Reading the row's reason fields covers a stop
+    # that wrote its reason in a field this fixer knows (#397 widens that to any `*_reason`); this
+    # covers the one that did not -- a re-mint, a rewritten roster, a field someone dropped. A stop
+    # in PRINCIPAL_STOPS.json holds the identity whatever the row records, and with no readable
+    # stops file this fixer restores nothing: it cannot tell a stop from an accident.
+    import sys as _sys
+    _desk = str(ROOT / "desks" / "mt5")
+    if _desk not in _sys.path:
+        _sys.path.insert(0, _desk)
+    from mt5desk.principal_stops import load, match
+    stops, problem = load(SLEEVES.with_name("PRINCIPAL_STOPS.json"))
+    if problem:
+        print(f"PRINCIPAL STOPS UNREADABLE ({problem}): restoring nothing this pass")
+        return 1
+
+    silent, reasoned, held = [], [], []
     for r in rows:
         if str(r.get("status") or "").upper() not in LIFTABLE:
             continue
+        if match(r, stops) is not None:
+            held.append(r)
+            continue
         (reasoned if _reason(r) else silent).append(r)
+    print(f"STANDBY held by a principal stop: {len(held)}  (never restored here)")
 
     print(f"\nSTANDBY with a recorded reason : {len(reasoned)}  (left alone -- a real verdict)")
     for r in reasoned[:4]:
