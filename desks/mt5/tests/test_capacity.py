@@ -141,3 +141,43 @@ def test_headroom_says_how_much_room_this_account_has_left() -> None:
     assert row["headroom_multiple"] > 1.0
     assert row["headroom_multiple"] == pytest.approx(
         row["floor_binding_below_eur"] / 742.0, rel=1e-3)
+
+
+def _desk(tmp_path: Path, account: dict | None, gateway: dict | None) -> Path:
+    data = tmp_path / "data"
+    data.mkdir()
+    import json
+    if account is not None:
+        (data / "account_state.json").write_text(json.dumps(account), "utf-8")
+    if gateway is not None:
+        (data / "gateway_state.json").write_text(json.dumps(gateway), "utf-8")
+    return tmp_path
+
+
+def test_another_accounts_state_is_never_this_desks_equity(tmp_path, monkeypatch) -> None:
+    """2026-11-11: the account organ published FTMO-Server2 / USD 99,666.72 in ~2 of 3 runs and
+    CAPACITY.json priced Fusion at that equity, labelled EUR. Another account is skipped."""
+    base = _desk(tmp_path, {"server": "FTMO-Server2", "currency": "USD", "equity": 99666.72},
+                 {"equity": 266.01})
+    monkeypatch.setattr(capacity, "BASE", base)
+    monkeypatch.setattr(capacity, "REPO", tmp_path / "no_repo")
+    out = capacity.measure(sleeves=[])
+    assert out["equity_eur"] == 266.01
+    assert out["equity_source"] == "gateway_state.json"
+
+
+def test_the_desks_own_account_state_still_comes_first(tmp_path, monkeypatch) -> None:
+    base = _desk(tmp_path, {"server": "FusionMarkets-Live", "currency": "EUR", "equity": 266.01},
+                 {"equity": 100.0})
+    monkeypatch.setattr(capacity, "BASE", base)
+    monkeypatch.setattr(capacity, "REPO", tmp_path / "no_repo")
+    out = capacity.measure(sleeves=[])
+    assert out["equity_eur"] == 266.01
+    assert out["equity_source"] == "account_state.json"
+
+
+def test_the_desk_account_check() -> None:
+    assert capacity._is_desk_account({"server": "FusionMarkets-Live"})
+    assert capacity._is_desk_account({"equity": 1.0}), "an older record with no server is kept"
+    assert not capacity._is_desk_account({"server": "FTMO-Server2"})
+    assert not capacity._is_desk_account([])

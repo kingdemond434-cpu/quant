@@ -400,6 +400,20 @@ def over_risked(rows: list[dict[str, Any]],
             if r.get("status") == "MEASURED" and float(r.get("over_policy_now") or 0) > tolerance]
 
 
+#: The desk's live account is Fusion. account_state.json names the server it was read from; a
+#: record from any other server (FTMO, E8, a demo) is another account and never this desk's equity.
+DESK_SERVER_PREFIX = "FusionMarkets-"
+
+
+def _is_desk_account(doc: object) -> bool:
+    """True when an account_state record is the desk's own account. A record that names no server
+    (older publisher) is accepted as before; one that names another server is refused."""
+    if not isinstance(doc, dict):
+        return False
+    server = doc.get("server")
+    return server is None or str(server).startswith(DESK_SERVER_PREFIX)
+
+
 def measure(sleeves: list[dict[str, Any]] | None = None,
             equity: float | None = None) -> dict[str, Any]:
     """The whole capability, in one call."""
@@ -433,6 +447,12 @@ def measure(sleeves: list[dict[str, Any]] | None = None,
         ):
             try:
                 doc = json.loads(candidate.read_text("utf-8"))
+                if label == "account_state.json" and not _is_desk_account(doc):
+                    # THE ACCOUNT ORGAN PUBLISHED ANOTHER ACCOUNT (measured 2026-11-11). Its
+                    # pathless attach landed on the FTMO terminal in ~2 of 3 runs, so this file
+                    # read FTMO-Server2 / USD 99,666.72 and CAPACITY.json priced Fusion's Elog(C)
+                    # at ~375x its equity, labelled EUR. Another account's equity is no equity.
+                    continue
                 for k in keys:
                     doc = doc[k]
                 val = float(doc)
