@@ -380,3 +380,27 @@ def test_the_zcache_cot_path_follows_the_release_calendar(tmp_path: Path,
     shutdown = (got.index >= pd.Timestamp("2018-12-20", tz="UTC")) & (
         got.index < pd.Timestamp("2019-03-06", tz="UTC"))
     assert not shutdown.any()
+
+
+def test_a_slipped_cot_release_is_bound_by_when_it_was_seen(tmp_path: Path,
+                                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    """Global data 2026-11-13: availability is bound by release_seen_utc, never by report date
+    plus a lag, when the refresher saw the release later than the calendar says."""
+    tuesdays = pd.date_range("2026-09-01", periods=10, freq="W-TUE", tz="UTC")
+    seen = [pd.NaT] * 10
+    seen[-1] = pd.Timestamp("2026-11-19T14:05:00Z")          # Nov 3 report seen 16 days late
+    seen[-2] = pd.Timestamp("2026-10-30T20:31:00Z")          # on time: the calendar stands
+    table = pd.DataFrame({"report_date": tuesdays, "release_seen_utc": seen})
+    from mt5desk.market_calendar import cot_usable_index
+    got = ff.cot_usable_from(table)
+    cal = cot_usable_index(tuesdays)
+    assert got[-1] == pd.Timestamp("2026-11-20T00:00:00Z")
+    assert got[-2] == cal[-2] and list(got[:-1]) == list(cal[:-1])
+    assert ff.cot_usable_from(table.drop(columns="release_seen_utc")).equals(cal)
+
+
+def test_vix_positioning_conditions_the_us_indices() -> None:
+    pairs = {(sym, rep, mkt, sign) for _b, aliases, reps in fsd.COT_MAP
+             for sym in aliases[:1] for rep, mkt, sign in reps}
+    for sym in ("US500", "NAS100"):
+        assert {(sym, "legacy", "vix", -1), (sym, "tff", "vix", -1)} <= pairs

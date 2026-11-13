@@ -132,6 +132,21 @@ def cot_table(report: str, market: str) -> pd.DataFrame | None:
     return _cot_cached(str(path), mtime)
 
 
+def cot_usable_from(table: pd.DataFrame) -> pd.DatetimeIndex:
+    """The calendar instant each report became usable, pushed later where the refresher saw the
+    release later (`release_seen_utc`, Global data 2026-11-13: a slipped CFTC release is bound
+    by when it was SEEN, never by report date + a lag). A seen time moves the row to the next
+    00:00 UTC after it; a row with no seen time keeps the calendar instant."""
+    from mt5desk.market_calendar import cot_usable_index
+    usable = cot_usable_index(table["report_date"])
+    if "release_seen_utc" not in table.columns:
+        return usable
+    seen = pd.DatetimeIndex(pd.to_datetime(table["release_seen_utc"], utc=True, errors="coerce"))
+    after = seen.floor("D") + pd.Timedelta(days=1)
+    later = seen.notna() & usable.notna() & (after > usable)
+    return usable.where(~np.asarray(later), after)
+
+
 def cot_net_share(report: str, market: str, group: str) -> pd.Series | None:
     """(long - short) / open interest of `group`, indexed by the instant it became USABLE."""
     cols = COT_GROUPS.get(str(report), {}).get(str(group))
@@ -142,8 +157,7 @@ def cot_net_share(report: str, market: str, group: str) -> pd.Series | None:
                   for c in cols)
     with np.errstate(divide="ignore", invalid="ignore"):
         share = np.where(oi > 0, (lo - sh) / oi, np.nan)
-    from mt5desk.market_calendar import cot_usable_index
-    usable = cot_usable_index(table["report_date"])
+    usable = cot_usable_from(table)
     s = pd.Series(share, index=usable)
     s = s[s.index.notna()].dropna()
     return s if not s.empty else None

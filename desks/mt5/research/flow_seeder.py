@@ -67,6 +67,10 @@ COT_MAP: tuple[tuple[str, tuple[str, ...], tuple[tuple[str, str, int], ...]], ..
     ("gold", ("XAGUSD",), (("legacy", "silver", 1), ("disagg", "silver", 1))),
     ("index", ("US500", "SPX500", "US500.cash"), (("tff", "sp500", 1),)),
     ("index", ("NAS100", "USTEC", "US100"), (("tff", "nasdaq100", 1),)),
+    # VIX futures positioning (CFTC 1170E1, Global data 2026-11-13) read against the index it
+    # prices: a net-long-volatility crowd is a short-equity crowd, hence sign -1.
+    ("index", ("US500", "SPX500", "US500.cash"), (("legacy", "vix", -1), ("tff", "vix", -1))),
+    ("index", ("NAS100", "USTEC", "US100"), (("legacy", "vix", -1), ("tff", "vix", -1))),
     ("major", ("EURUSD",), (("tff", "eur", 1),)),
     ("major", ("GBPUSD",), (("legacy", "gbp", 1), ("tff", "gbp", 1))),
     ("major", ("USDJPY",), (("legacy", "jpy", -1), ("tff", "jpy", -1))),
