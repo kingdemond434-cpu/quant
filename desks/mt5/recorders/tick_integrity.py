@@ -74,7 +74,9 @@ missing: each returns UNMEASURED with the reason attached. None of them counts t
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import sys
 from contextlib import suppress
 from dataclasses import asdict, dataclass, field
@@ -571,10 +573,114 @@ def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
     return worst, reasons
 
 
+#: THE VERDICT CACHE, AND WHY A CHECKER NEEDS ONE. Measured on the box 2026-11-11: a 10-day pass
+#: over 245 symbols took 73 to 118 minutes, so the hourly task skipped every other slot and the
+#: desk was watched every two hours while believing it was watched every hour. Almost all of that
+#: is re-decoding SEALED days that have not changed since the last pass. A sealed day before today
+#: whose files, gap rows, session mask and thresholds are all byte-for-byte what they were is
+#: judged exactly as it was, so its verdict is reused. Anything that moves -- a new segment, an
+#: orphan, a compaction, a gap row, a shifted session, a threshold, this schema -- changes the key
+#: and the day is judged again. Unsealed days and today are never cached.
+#:
+#: BIT ROT IS THE ONE CHANGE A STAT CANNOT SEE, so every cached day is re-verified in full at
+#: least once per `CACHE_REVERIFY_S`, staggered per day so the whole tape never falls due in one
+#: pass. The cache lives beside the tape (`<root>/state/`), not in the repository, and a missing
+#: or unreadable cache only costs time: every day is judged in full.
+CACHE_VERSION = 1
+CACHE_REVERIFY_S = 24 * 3600
+CACHE_FILE = "tick_integrity_cache.json"
+
+
+def _stat_sig(path: Path) -> list[Any]:
+    try:
+        st = path.stat()
+    except OSError:
+        return [path.name, None]
+    return [path.name, st.st_size, st.st_mtime_ns]
+
+
+def day_fingerprint(store: TapeStore, symbol: str, day: str, model: SessionModel) -> str:
+    """Everything `judge_day` reads for a sealed past day, reduced to one digest."""
+    h = hashlib.sha256()
+    d = store.day_dir(symbol, day)
+    try:
+        files = sorted(f for f in d.iterdir() if f.is_file())
+    except OSError:
+        files = []
+    session, basis, obs = model.mask_for(day)
+    parts: list[Any] = [
+        CACHE_VERSION, SCHEMA, symbol, day,
+        [_stat_sig(f) for f in files], _stat_sig(store.gap_path(symbol, day)),
+        basis, int(obs), hashlib.sha256(np.packbits(session).tobytes()).hexdigest(),
+        bool(model.pooled_obs >= MIN_SESSION_DAYS),
+        [COVERAGE_FAIL, COVERAGE_DEGRADED, UNEXPLAINED_FAIL_MIN, UNEXPLAINED_DEGRADED_MIN,
+         DUP_DEGRADED, CROSSED_DEGRADED, STALE_RUN_S, ONE_SIDED_FX, SESSION_QUORUM,
+         MIN_WEEKDAY_OBS, MIN_SESSION_DAYS],
+        asset_class_of(symbol), bool(is_fx(symbol)),
+    ]
+    h.update(json.dumps(parts, default=str, sort_keys=True).encode("utf-8"))
+    return h.hexdigest()
+
+
+def _reverify_due(key: str, judged_at: float, now_s: float) -> bool:
+    """True once a cached day is older than its staggered re-verification period."""
+    jitter = int(hashlib.sha256(key.encode("utf-8")).hexdigest()[:8], 16) % (CACHE_REVERIFY_S // 4)
+    return now_s - judged_at >= CACHE_REVERIFY_S - jitter
+
+
+def _load_cache(path: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or doc.get("version") != CACHE_VERSION:
+        return {}
+    rows = doc.get("days")
+    return rows if isinstance(rows, dict) else {}
+
+
+#: Unvisited cache rows older than this are dropped, so a cache merged across narrow passes
+#: (`--days 3`, `--symbols X`) does not grow without bound.
+CACHE_KEEP_DAYS = 60
+
+
+def _merge_cache(old: dict[str, Any], fresh: dict[str, Any], today: str) -> dict[str, Any]:
+    """This pass's rows over the previous cache: a narrow pass must not evict what it skipped."""
+    floor = (pd.Timestamp(today) - pd.Timedelta(days=CACHE_KEEP_DAYS)).date().isoformat()
+    out = {k: v for k, v in old.items() if k.rsplit("/", 1)[-1] >= floor}
+    out.update(fresh)
+    return out
+
+
+def _save_cache(path: Path, rows: dict[str, Any]) -> None:
+    with suppress(OSError):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Per-process temp name: two overlapping passes must never interleave one temp file.
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps({"version": CACHE_VERSION, "days": rows},
+                                  separators=(",", ":")), "utf-8")
+        tmp.replace(path)
+
+
+def _from_cache(entry: Any, fp: str) -> DayVerdict | None:
+    if not isinstance(entry, dict) or entry.get("fp") != fp:
+        return None
+    with suppress(TypeError):
+        return DayVerdict(**entry["row"])
+    return None
+
+
 def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | None = None,
-        include_unsealed: bool = True) -> dict[str, Any]:
+        include_unsealed: bool = True, use_cache: bool = True) -> dict[str, Any]:
     """Judge every symbol-day the tape holds. Returns the report document."""
     syms = symbols if symbols is not None else store.symbols()
+    cache_path = store.state_dir / CACHE_FILE
+    cache = _load_cache(cache_path) if use_cache else {}
+    fresh: dict[str, Any] = {}
+    stats = {"enabled": use_cache, "hits": 0, "judged": 0, "reverified": 0, "uncacheable": 0,
+             "path": str(cache_path)}
+    now_s = datetime.now(tz=UTC).timestamp()
+    today = datetime.now(tz=UTC).date().isoformat()
     cutoff = ""
     if days_back:
         cutoff = (datetime.now(tz=UTC).date() - timedelta(days=int(days_back))).isoformat()
@@ -589,7 +695,29 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             judged = [d for d in judged if store.seal(sym, d) is not None]
         sym_rows = []
         for d in judged:
-            sym_rows.append(judge_day(store, sym, d, model, now_ms))
+            key = f"{sym}/{d}"
+            cacheable = use_cache and d < today and store.seal(sym, d) is not None
+            if not cacheable:
+                stats["uncacheable"] += 1
+                sym_rows.append(judge_day(store, sym, d, model, now_ms))
+                continue
+            fp = day_fingerprint(store, sym, d, model)
+            entry = cache.get(key)
+            hit = _from_cache(entry, fp)
+            if hit is not None and not _reverify_due(key, float(entry.get("at") or 0), now_s):
+                stats["hits"] += 1
+                fresh[key] = entry
+                sym_rows.append(hit)
+                continue
+            if hit is not None:
+                stats["reverified"] += 1
+            stats["judged"] += 1
+            row = judge_day(store, sym, d, model, now_ms)
+            # Keyed on the files AFTER judging: `reconcile` may recover an orphan into the
+            # manifest, and the next pass must see the day as it now stands.
+            fresh[key] = {"fp": day_fingerprint(store, sym, d, model), "at": now_s,
+                          "row": asdict(row)}
+            sym_rows.append(row)
         rows.extend(sym_rows)
         ticks = sum(r.n_ticks for r in sym_rows)
         byts = sum(r.bytes for r in sym_rows)
@@ -614,6 +742,8 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "verdicts": _tally([r.verdict for r in sym_rows]),
         }
 
+    if use_cache:
+        _save_cache(cache_path, _merge_cache(cache, fresh, today))
     recorder = _recorder_status()
     tally = _tally([r.verdict for r in rows])
     total_ticks = sum(r.n_ticks for r in rows)
@@ -662,6 +792,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "one_sided_symbol_days": sum(1 for r in rows if r.one_sided),
         },
         "verdicts": tally,
+        "verdict_cache": stats,
         "recorder": recorder,
         "by_symbol": per_symbol,
         # Worst first: the point of the report is the failures, and burying them under 250 clean
@@ -723,6 +854,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--days", type=int, default=None, help="only judge the last N days")
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--sealed-only", action="store_true")
+    ap.add_argument("--no-cache", action="store_true",
+                    help="judge every day in full, ignoring and not writing the verdict cache")
     args = ap.parse_args(argv)
 
     from recorders.tick_recorder import DEFAULT_TAPE_ROOT
@@ -736,7 +869,8 @@ def main(argv: list[str] | None = None) -> int:
               f"somewhere else (MT5_TAPE_ROOT).")
         return 2
 
-    rep = run(store, syms, args.days, include_unsealed=not args.sealed_only)
+    rep = run(store, syms, args.days, include_unsealed=not args.sealed_only,
+              use_cache=not args.no_cache)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
 
@@ -746,6 +880,9 @@ def main(argv: list[str] | None = None) -> int:
           f"{t['bytes']/1e6:.1f} MB  ({t['bytes_per_tick']} B/tick, "
           f"{t['bytes_per_symbol_day']/1e6:.3f} MB per symbol-day)")
     print(f"  verdicts: {rep['verdicts']}")
+    vc = rep["verdict_cache"]
+    print(f"  verdict cache: {vc['hits']} reused, {vc['judged']} judged in full "
+          f"({vc['reverified']} periodic re-verify), {vc['uncacheable']} unsealed or today")
     print(f"  UNEXPLAINED session minutes: {t['unexplained_minutes']}  "
           f"(explained by a gap row: {t['explained_minutes']})")
     print(f"  compaction: {t['days_compacted']} day(s) folded, {t['segments_folded']:,} "

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-11T01:37:59+00:00",
+  "generated": "2026-11-13T21:44:16+00:00",
   "root": "C:\\opt\\quant",
   "thresholds": {
     "trailing_refusals_max": 30,
@@ -12,7 +12,7 @@
     "UNMEASURED on the trading host (vmi3571445; identity UNMEASURED: no trading-box id is recorded in config/trading_host.json -- hostname fallback: vmi3571445 matches vmi3571445, reported, never taken as the identity): the gateway has stopped writing placement evidence here, and silence on the box that places orders is not a pass (L1.28a)"
   ],
   "notes": [
-    "desks/mt5/data/decision_ledger.jsonl's newest row is 2026-10-30T04:12:06+00:00 (285.4h old), past the 24h live window: this is a published copy, not a live ledger, so whether a sleeve is halted NOW is UNMEASURED on this host",
+    "desks/mt5/data/decision_ledger.jsonl's newest row is 2026-10-30T04:12:06+00:00 (353.5h old), past the 24h live window: this is a published copy, not a live ledger, so whether a sleeve is halted NOW is UNMEASURED on this host",
     "gateway clock LEGACY: unmarked broker-clock stamp from a pre-fix gateway; read converted"
   ],
   "runs": {},
@@ -20,14 +20,14 @@
   "verdict": "UNMEASURED",
   "applicable": true,
   "ledger_newest_at": "2026-10-30T04:12:06+00:00",
-  "ledger_age_h": 285.432,
+  "ledger_age_h": 353.536,
   "rows_scanned": 3956,
   "gateway_clock": {
     "placement_pass": "2026-10-30T22:50:04+00:00",
     "placement_pass_clock": null,
     "new_format": false,
     "pass_utc": "2026-10-30T19:50:04+00:00",
-    "ahead_s": -971275.7,
+    "ahead_s": -1216452.8,
     "verdict": "LEGACY",
     "why": "unmarked broker-clock stamp from a pre-fix gateway; read converted"
   },

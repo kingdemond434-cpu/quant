@@ -28,7 +28,11 @@ H1, H2 = sb_mod.H1, sb_mod.H2
 
 @pytest.fixture
 def sb(tmp_path: Path) -> Any:
-    return sb_mod.Sandbox(tmp_path)
+    # The window mechanics (notice, veto, expiry) are pinned at 24 h so every veto path stays
+    # tested whatever REGISTRY_HOLD_H LIVE carries.
+    s = sb_mod.Sandbox(tmp_path)
+    s.ag.REGISTRY_HOLD_H = 24.0
+    return s
 
 
 def _through_window(sb: Any) -> None:
