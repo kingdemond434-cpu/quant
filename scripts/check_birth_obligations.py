@@ -122,6 +122,22 @@ def _read(path: Path) -> str:
         return ""
 
 
+#: The executable and destructive axes walk the same ~1,100 source files (53 MB on the box);
+#: each file is read once per run, keyed by size and mtime so an edited file is read again.
+_SRC_CACHE: dict[tuple[str, int, int], str] = {}
+
+
+def _read_src(path: Path) -> str:
+    try:
+        st = path.stat()
+    except OSError:
+        return ""
+    key = (str(path), st.st_size, st.st_mtime_ns)
+    if key not in _SRC_CACHE:
+        _SRC_CACHE[key] = _read(path)
+    return _SRC_CACHE[key]
+
+
 def _json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8-sig"))
@@ -144,7 +160,7 @@ def _executables(root: Path) -> tuple[set[str], set[str], str]:
         for p in sorted(d.rglob("*.py")):
             if "__pycache__" in p.parts or p.name.startswith("_"):
                 continue
-            if "__main__" in _read(p):
+            if "__main__" in _read_src(p):
                 objects.add(p.relative_to(root).as_posix())
     if not objects:
         return set(), set(), f"{UNMEASURED}: no executable areas in this tree"
@@ -270,7 +286,7 @@ def _destructive(root: Path) -> tuple[set[str], set[str], str]:
         for p in sorted(d.rglob("*.py")):
             if "__pycache__" in p.parts:
                 continue
-            text = _read(p)
+            text = _read_src(p)
             if not DESTRUCTIVE.search(text):
                 continue
             rel = p.relative_to(root).as_posix()
@@ -310,8 +326,8 @@ def _attribution(root: Path) -> tuple[set[str], set[str], str]:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     except sqlite3.Error as exc:
         return set(), set(), f"{UNMEASURED}: registry unopenable ({exc})"
-    objects: set[str] = set()
-    ok: set[str] = set()
+    total = attributed = 0
+    unstamped: set[str] = set()
     cut = BIRTH_OBLIGATION_FROM[:19]
     # THE UPPER CUT, AND IT IS A DENOMINATOR AND NOT A TOLERANCE. `attribution_census` is the
     # organ that measures this axis; a row created AFTER its last pass has not been measured yet,
@@ -330,24 +346,53 @@ def _attribution(root: Path) -> tuple[set[str], set[str], str]:
             if PRODUCER_FIELD not in cols:
                 return set(), set(), (f"{UNMEASURED}: {table} carries no {PRODUCER_FIELD} column "
                                       f"yet (libs/moat/registry.EXTENSIONS adds it on connect)")
-            rows = conn.execute(
-                f"select {idcol}, coalesce({PRODUCER_FIELD},'') from {table} "  # noqa: S608
-                f"where replace(substr(created_at,1,19),' ','T') >= ? "
-                f"and replace(substr(created_at,1,19),' ','T') <= ?",
-                (cut, measured_to)).fetchall()
-            for rid, who in rows:
-                name = f"{prefix}:{rid}"
-                objects.add(name)
-                if str(who or "").strip():
-                    ok.add(name)
+            # THE DATABASE COUNTS; PYTHON HOLDS ONLY THE NAMES IT MUST PRINT (Desk health
+            # 2026-11-06: this fence ran past its 600 s clock on the box, where these two tables
+            # hold 2.9M rows and every one in the window was built into a Python string). The
+            # window and the stamp test are the same expressions as before; only the stamped
+            # rows are counted in SQL instead of named in Python.
+            where = (f"from {table} where replace(substr(created_at,1,19),' ','T') >= ? "
+                     f"and replace(substr(created_at,1,19),' ','T') <= ?")
+            # Python's str.strip() whitespace, ASCII part (tab, LF, VT, FF, CR, space).
+            ws = "char(9,10,11,12,13,32)"
+            blank = f"trim(coalesce({PRODUCER_FIELD},''), {ws}) = ''"
+            n, n_ok = conn.execute(
+                f"select count(distinct {idcol}), "
+                f"count(distinct case when not ({blank}) then {idcol} end) {where}",
+                (cut, measured_to)).fetchone()
+            total += int(n or 0)
+            attributed += int(n_ok or 0)
+            # An id is complete when ANY of its rows carries the stamp, as the set union did.
+            unstamped |= {f"{prefix}:{rid}" for (rid,) in conn.execute(
+                f"select {idcol} {where} group by {idcol} "
+                f"having max(case when {blank} then 0 else 1 end) = 0",
+                (cut, measured_to))}
     except sqlite3.Error as exc:
         return set(), set(), f"{UNMEASURED}: registry unreadable ({exc})"
     finally:
         conn.close()
-    if not objects:
+    if not total:
         return set(), set(), f"{UNMEASURED}: no cell or discovery born since {cut}"
-    return objects, ok, (f"{len(ok)}/{len(objects)} cells and discoveries born since {cut} and "
-                         f"measured by {measured_to} carry their producer stamp")
+    return (_Counted(unstamped, total), set(),
+            f"{attributed}/{total} cells and discoveries born since {cut} and "
+            f"measured by {measured_to} carry their producer stamp")
+
+
+class _Counted(frozenset):  # type: ignore[type-arg]
+    """An axis's objects when only the INCOMPLETE ones need names: iterating it yields those
+    names (so `objects - ok` is the incomplete set, exactly), and its length is the whole
+    population the database counted. Used where naming every complete object would cost a
+    string per row of a table of millions."""
+
+    total: int
+
+    def __new__(cls, names: set[str], total: int) -> _Counted:
+        obj = super().__new__(cls, names)
+        obj.total = total
+        return obj
+
+    def __len__(self) -> int:
+        return self.total
 
 
 def _certificate_birth(root: Path) -> tuple[set[str], set[str], str]:
@@ -493,6 +538,7 @@ def measure(root: Path | None = None, *, floors: Path | None = None,
     trading = _is_trading_host(base) or require_state
     source_view = (os.environ.get("QUANT_LAWGATE_SOURCE_VIEW") == "1"
                    and not require_state)
+    _SRC_CACHE.clear()
     for ax in AXES:
         objects, ok, why = ax.derive(base)
         # AN AXIS IS ONLY AS CURRENT AS THE REPORT IT READS, AND ONLY SOME HOSTS WRITE THOSE.
@@ -564,6 +610,7 @@ def measure(root: Path | None = None, *, floors: Path | None = None,
                 + ", ".join(arrived[:5]) + ("..." if len(arrived) > 5 else "")
                 + ". Give it the obligation, or RETIRE it with a reason in "
                   "docs/research/retirements.jsonl.")
+    _SRC_CACHE.clear()                  # the texts live for one measurement, never longer
     return {"schema": "birth_obligations/1",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "root": str(base), "axes": axes, "failures": failures}
