@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 843,
+  "NEVER": 845,
   "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1068,
+  "attested": 1070,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -689,7 +689,18 @@
     ]
    },
    {
-    "at": "2026-11-11T00:30:37+00:00",
+    "at": "2026-11-11T14:50:08+00:00",
+    "host": "vmi3571445",
+    "machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:halt_rail",
+     "leg:index_discovery"
+    ]
+   },
+   {
+    "at": "2026-11-11T17:09:52+00:00",
     "host": "vm",
     "machine_id": "d165c2d88d894a4787be219662b439ad",
     "on_attesting_host": false,
@@ -701,7 +712,7 @@
     ]
    },
    {
-    "at": "2026-11-11T00:33:30+00:00",
+    "at": "2026-11-13T12:41:18+00:00",
     "host": "vm",
     "machine_id": "d165c2d88d894a4787be219662b439ad",
     "on_attesting_host": false,
@@ -724,7 +735,7 @@
     ]
    },
    {
-    "at": "2026-11-11T00:38:08+00:00",
+    "at": "2026-11-13T12:44:58+00:00",
     "host": "vm",
     "machine_id": "d165c2d88d894a4787be219662b439ad",
     "on_attesting_host": false,
@@ -27690,6 +27701,62 @@
    "measured_at": "2026-11-03T23:44:49+00:00"
   },
   {
+   "organ": "leg:halt_rail",
+   "kind": "leg",
+   "code": [
+    "scripts/check_halt_rail_integrity.py"
+   ],
+   "clock": "hourly_cycle:halt_rail",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/HALT_RAIL_INTEGRITY.json",
+   "artifact_declared": "desks/mt5/reports/HALT_RAIL_INTEGRITY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-11-11T14:50:08+00:00"
+  },
+  {
+   "organ": "leg:index_discovery",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/index_discovery.py"
+   ],
+   "clock": "hourly_cycle:index_discovery",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/INDEX_DISCOVERY.json",
+   "artifact_declared": "desks/mt5/reports/INDEX_DISCOVERY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-11-11T14:50:08+00:00"
+  },
+  {
    "organ": "leg:sensor_ledger",
    "kind": "leg",
    "code": [
@@ -27715,7 +27782,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:30:37+00:00"
+   "measured_at": "2026-11-11T17:09:52+00:00"
   },
   {
    "organ": "library:libs/ops/env_secret.py",
@@ -27743,7 +27810,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:30:37+00:00"
+   "measured_at": "2026-11-11T17:09:52+00:00"
   },
   {
    "organ": "task:MT5-NewsResident",
@@ -27771,7 +27838,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:30:37+00:00"
+   "measured_at": "2026-11-11T17:09:52+00:00"
   },
   {
    "organ": "leg:ws_fetch_alfred",
@@ -27799,7 +27866,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_implied_move",
@@ -27827,7 +27894,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_latent_states",
@@ -27855,7 +27922,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_model_disagreement",
@@ -27883,7 +27950,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_name_sentiment",
@@ -27911,7 +27978,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_news_hawkes",
@@ -27939,7 +28006,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_option_chains",
@@ -27967,7 +28034,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_own_risk_index",
@@ -27995,7 +28062,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_pit_audit",
@@ -28023,7 +28090,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_priced_in",
@@ -28051,7 +28118,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_regime_probabilities",
@@ -28079,7 +28146,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_taiwan_options",
@@ -28107,7 +28174,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "leg:ws_vol_conditioner",
@@ -28135,7 +28202,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "library:desks/mt5/research/state_vector_build.py",
@@ -28155,7 +28222,7 @@
    "artifact_declared": "desks/mt5/data/state_vector.json",
    "artifact_resolved_by": "declared",
    "artifact_declared_n": 1,
-   "artifact_age_s": 33682,
+   "artifact_age_s": 156982,
    "artifact_bytes": 11500,
    "artifact_sha256": "298d8b9c819d1a21bb7d38b3b7eb5f84b52b9de3030ce0e9a4fe8e5135e44e25",
    "summary": {},
@@ -28163,7 +28230,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:33:30+00:00"
+   "measured_at": "2026-11-13T12:41:18+00:00"
   },
   {
    "organ": "executable:scripts/collect_owner_macro.py",
@@ -28191,7 +28258,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
-   "measured_at": "2026-11-11T00:38:08+00:00"
+   "measured_at": "2026-11-13T12:44:58+00:00"
   }
  ],
  "ratchet": {

@@ -54,6 +54,8 @@ def test_fresh_secrets_fills_only_absent_secret_names(monkeypatch: pytest.Monkey
              "user": {"MY_SECRET": "s", "FRED_API_KEY": "user-copy"}}
     monkeypatch.setattr(es, "_registry_all", lambda hive: hives[hive])
     got = es.fresh_secrets({"OPENROUTER_API_KEY": "already", "PATH": "/bin"})
+    assert got == {"FRED_API_KEY": "k1", "MY_SECRET": "s"}     # GITHUB_TOKEN is withheld
+    got = es.fresh_secrets({"OPENROUTER_API_KEY": "already"}, allow={"GITHUB_TOKEN"})
     assert got == {"FRED_API_KEY": "k1", "GITHUB_TOKEN": "t", "MY_SECRET": "s"}
 
 
@@ -82,8 +84,9 @@ def test_with_the_catalog_only_catalogued_names_are_carried(
                          "USERNAME": "dell", "COMPUTERNAME": "box"},
              "user": {}}
     monkeypatch.setattr(es, "_registry_all", lambda hive: hives[hive])
-    assert set(es.fresh_secrets({})) == {"FRED_API_KEY", "JQ_USER", "JQ_PASS", "ESTAT_APP_ID",
-                                         "JQUANTS_EMAIL"}
+    assert set(es.fresh_secrets({})) == {"FRED_API_KEY", "ESTAT_APP_ID"}   # logins withheld
+    assert set(es.fresh_secrets({}, allow={"JQ_USER", "JQ_PASS", "JQUANTS_EMAIL"})) == {
+        "FRED_API_KEY", "JQ_USER", "JQ_PASS", "ESTAT_APP_ID", "JQUANTS_EMAIL"}
 
 
 def test_without_the_catalog_only_api_key_shapes_are_carried(
@@ -115,3 +118,24 @@ def test_an_unreadable_catalog_carries_nothing(monkeypatch: pytest.MonkeyPatch,
                         lambda hive: {"FRED_API_KEY": "k", "GITHUB_TOKEN": "t"}
                         if hive == "machine" else {})
     assert es.fresh_secrets({}) == {}
+
+
+def test_children_get_no_repository_token_or_login_unless_a_leg_reads_it(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Audit #204 (2026-11-11): a resident handed GITHUB_TOKEN and the J-Quants login to every
+    child, LLM seats included. They are withheld unless the caller names them in `allow`."""
+    cat = tmp_path / "env_keys_catalog.json"
+    cat.write_text(json.dumps({"keys": [
+        {"name": "FRED_API_KEY", "group": "free_data"}, {"name": "GITHUB_TOKEN", "group": "ops"},
+        {"name": "JQ_USER", "group": "account_free"}, {"name": "JQ_PASS", "group": "account_free"},
+        {"name": "OPENROUTER_API_KEY", "group": "llm"}]}))
+    monkeypatch.setattr(es, "CATALOG", cat)
+    hives = {"machine": {"FRED_API_KEY": "k", "GITHUB_TOKEN": "t", "JQ_USER": "u",
+                         "JQ_PASS": "p", "OPENROUTER_API_KEY": "o"}, "user": {}}
+    monkeypatch.setattr(es, "_registry_all", lambda hive: hives[hive])
+    assert set(es.fresh_secrets({})) == {"FRED_API_KEY", "OPENROUTER_API_KEY"}
+    assert set(es.fresh_secrets({}, allow=es.child_allow({"free_stack_hunter"}))) == {
+        "FRED_API_KEY", "OPENROUTER_API_KEY", "JQ_USER", "JQ_PASS"}
+    assert set(es.fresh_secrets({}, allow=es.child_allow({"cell_emitter"}))) == {
+        "FRED_API_KEY", "OPENROUTER_API_KEY", "GITHUB_TOKEN"}
+    assert es.child_allow({"world_crawler"}) == set()
