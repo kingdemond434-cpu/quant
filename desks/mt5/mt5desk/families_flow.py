@@ -322,6 +322,80 @@ def family_expiry_gamma(
     return out
 
 
+# ------------------------------------------------------------------- COMEX gold strike pin ---
+PIN_MODES = ("pin", "unpin")
+
+
+def comex_gold_option_expiry(year: int, month: int) -> date:
+    """COMEX gold (OG) options on the contract whose delivery month FOLLOWS (year, month): trading
+    terminates four business days before the last business day of (year, month). Weekdays only,
+    no exchange holiday table -- the same limit `expiry_gamma` states."""
+    nxt = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    last = nxt - timedelta(days=1)
+    while last.weekday() >= 5:
+        last -= timedelta(days=1)
+    return add_weekdays(last, -4)
+
+
+def family_strike_pin(
+    df: pd.DataFrame,
+    *,
+    grid: float = 25.0,
+    day_from: int = -3,
+    day_to: int = 0,
+    decision_hour: int = 16,
+    mode: str = "pin",
+    max_frac: float = 0.5,
+    hold_d: int = 1,
+    atr_n: int = 20,
+    stop_atr: float = 1.5,
+    rr: float = 1.0,
+) -> list[Signal]:
+    """Option dealers' hedging pins an underlying toward the dense strike grid into expiry
+    (archived idea 232: XAUUSD toward the nearest $25 multiple in the days before COMEX gold
+    options expire). Each weekday `day_from..day_to` weekdays from the expiry, at
+    `decision_hour`, when the close sits within `max_frac` of a half-grid of the nearest strike,
+    `pin` trades TOWARD that strike and `unpin` away from it. Date and price only."""
+    if mode not in PIN_MODES or float(grid) <= 0 or not 0.0 < float(max_frac) <= 0.5:
+        return []
+    if int(day_from) > int(day_to) or abs(int(day_from)) > 10 or abs(int(day_to)) > 10:
+        return []
+    if not 0 <= int(decision_hour) <= 23 or int(hold_d) < 1 or df is None or len(df) == 0:
+        return []
+    d = _h1(df)
+    pos = _daily_decisions(d, int(decision_hour))
+    if pos.size == 0:
+        return []
+    days = d.index[pos].date
+    lo, hi = days[0], days[-1]
+    targets: set[date] = set()
+    y, m = (lo.year - 1, 12) if lo.month == 1 else (lo.year, lo.month - 1)
+    while (y, m) <= ((hi.year + 1, 1) if hi.month == 12 else (hi.year, hi.month + 1)):
+        e = comex_gold_option_expiry(y, m)
+        targets.update(add_weekdays(e, k) for k in range(int(day_from), int(day_to) + 1))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    close = d["close"].astype(float).to_numpy()
+    atr = _atr(d, int(atr_n)).to_numpy()
+    ttl = int(hold_d) * bars_per_day(d)
+    g = float(grid)
+    out: list[Signal] = []
+    for j, p in enumerate(pos):
+        if days[j] not in targets:
+            continue
+        px = close[p]
+        if not math.isfinite(px):
+            continue
+        gap = round(px / g) * g - px
+        if gap == 0.0 or abs(gap) > float(max_frac) * g:
+            continue
+        s = (1 if gap > 0 else -1) * (1 if mode == "pin" else -1)
+        sig = _signal(d, int(p), s, atr, stop_atr=stop_atr, rr=rr, ttl_bars=ttl,
+                      tag=f"strike_pin.{mode}")
+        if sig is not None:
+            out.append(sig)
+    return out
+
+
 # -------------------------------------------------------------------------------- tick tape ---
 def _day_imbalance(path: Path, rule: str, min_ticks: int) -> pd.Series | None:
     try:
@@ -398,15 +472,18 @@ def tape_flow_for(df: pd.DataFrame, symbol: str) -> pd.Series | None:
 FLOW_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "cot_report": family_cot_report,
     "expiry_gamma": family_expiry_gamma,
+    "strike_pin": family_strike_pin,
 }
 
 #: `cot_report` reads a dataset the bars do not carry; `expiry_gamma` reads its own bars and
 #: the calendar only.
-INFORMATION_CLASS: dict[str, str] = {"cot_report": "exogenous", "expiry_gamma": "price_only"}
+INFORMATION_CLASS: dict[str, str] = {"cot_report": "exogenous", "expiry_gamma": "price_only",
+                                     "strike_pin": "price_only"}
 FOREIGN_SERIES: dict[str, tuple[tuple[str | None, str], ...]] = {
     "cot_report": (("market", "data/cot{,_tff,_disagg}/<market>.parquet (CFTC legacy, TFF, "
                               "disaggregated; usable from the Monday after release)"),),
     "expiry_gamma": (),
+    "strike_pin": (),
 }
 INPUTS: dict[str, tuple[str, str]] = {
     "cot_report": ("EXOGENOUS: one trader group's net share of open interest in the CFTC report "
@@ -415,8 +492,12 @@ INPUTS: dict[str, tuple[str, str]] = {
                    "data/cot_tff/<market>.parquet"),
     "expiry_gamma": ("price only + the third-Friday equity-option expiry calendar, computed from "
                      "the date alone", "data/universe/*_H1.parquet"),
+    "strike_pin": ("price only + the COMEX gold option expiry calendar (four business days "
+                   "before the last business day of the prior month), from the date alone",
+                   "data/universe/*_H1.parquet"),
 }
 TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
+    "strike_pin": (("H1",), "decides once a day at a broker decision HOUR"),
     "expiry_gamma": (("H1",), "decides once a day at a broker decision HOUR; on a four-hour or "
                               "daily chart the decision hour does not exist"),
 }
@@ -432,11 +513,13 @@ __all__ = [
     "INFORMATION_CLASS",
     "INPUTS",
     "TIMEFRAMES",
+    "comex_gold_option_expiry",
     "cot_net_share",
     "cot_table",
     "expiry_days",
     "family_cot_report",
     "family_expiry_gamma",
+    "family_strike_pin",
     "tape_days",
     "tape_flow",
     "tape_flow_for",

@@ -161,8 +161,9 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                    " london_close_momentum",
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     # `expiry_gamma` (2026-11-13, families_flow): the option dealer's hedge around the
-    # third-Friday expiry, a forced participant on a dated calendar like `forced_flow`.
-    "forced_flow event market": "forced_flow expiry_gamma",
+    # third-Friday expiry, a forced participant on a dated calendar like `forced_flow`;
+    # `strike_pin` is the same dealer pinning gold to the $25 grid into COMEX option expiry.
+    "forced_flow event market": "forced_flow expiry_gamma strike_pin",
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",

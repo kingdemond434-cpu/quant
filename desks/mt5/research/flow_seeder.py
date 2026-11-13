@@ -169,6 +169,18 @@ def gamma_cells() -> list[dict[str, Any]]:
     return out
 
 
+def pin_cells() -> list[dict[str, Any]]:
+    """Archived idea 232: XAUUSD pinned to the $25 strike grid into COMEX gold option expiry."""
+    if not admissible("XAUUSD", "strike_pin"):
+        return []
+    return [{"bucket": "gold", "symbol": "XAUUSD", "family": "strike_pin",
+             "mechanism": f"strike_pin.comex_gold.{mode}",
+             "params": {"grid": 25.0, "day_from": lo, "day_to": 0, "mode": mode,
+                        "decision_hour": hour, "max_frac": frac}}
+            for lo in (-3, -1) for mode in ("pin", "unpin") for hour in (16, 20)
+            for frac in (0.3, 0.5)]
+
+
 def tape_cells() -> list[dict[str, Any]]:
     from mt5desk.families_flow import TAPE_FLOW_SOURCE, tape_days
     out: list[dict[str, Any]] = []
@@ -187,7 +199,7 @@ def tape_cells() -> list[dict[str, Any]]:
 
 
 def plan() -> list[dict[str, Any]]:
-    return cot_cells() + gamma_cells() + tape_cells()
+    return cot_cells() + pin_cells() + gamma_cells() + tape_cells()
 
 
 def cot_freshness(today: date | None = None) -> dict[str, Any]:

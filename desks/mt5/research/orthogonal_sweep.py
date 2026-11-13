@@ -636,7 +636,7 @@ NOT_SOURCED_HERE = {
                     "research/specialist_cell enumerates each asset-class desk's catalogue, "
                     "builds every cell through the sealed build_cell and charges its own trials; "
                     "sweeping it here would charge them twice"),
-    **dict.fromkeys(("cot_report", "expiry_gamma"),
+    **dict.fromkeys(("cot_report", "expiry_gamma", "strike_pin"),
                     "research/flow_seeder enumerates the CFTC report x group x mode and the "
                     "expiry set x window x direction grids on gold, indices and FX majors, builds "
                     "every cell through the sealed build_cell and charges its own trials; "

@@ -162,6 +162,28 @@ def test_expiry_gamma_fires_only_on_its_window_and_sees_no_future() -> None:
     assert ff.family_expiry_gamma(d, expiry="weekly") == []
 
 
+def test_strike_pin_trades_toward_the_grid_only_before_comex_gold_expiry() -> None:
+    assert ff.comex_gold_option_expiry(2026, 11) == date(2026, 11, 23)   # Nov 30 Mon - 4
+    assert ff.comex_gold_option_expiry(2026, 1) == date(2026, 1, 26)     # Jan 30 Fri - 4
+    d = _bars(1500, start="2019-01-07") * 20.0                           # ~2000: a $25 grid
+    pin = ff.family_strike_pin(d, day_from=-3, day_to=0, mode="pin", max_frac=0.5)
+    unpin = ff.family_strike_pin(d, day_from=-3, day_to=0, mode="unpin", max_frac=0.5)
+    assert pin and [s.side for s in pin] == [-s.side for s in unpin]
+    for s in pin:
+        day = pd.Timestamp(s.time).date()
+        e = ff.comex_gold_option_expiry(day.year, day.month)
+        assert day in {ff.add_weekdays(e, k) for k in range(-3, 1)}
+        px = float(d.loc[s.time, "close"])
+        assert s.side == (1 if round(px / 25) * 25 > px else -1)
+    cut = pd.Timestamp("2021-07-01", tz="UTC")
+    d2 = d.copy()
+    d2.loc[d2.index >= cut, "close"] *= 0.5
+    again = ff.family_strike_pin(d2, day_from=-3, day_to=0, mode="pin", max_frac=0.5)
+    assert ([(s.time, s.side) for s in pin if s.time < cut]
+            == [(s.time, s.side) for s in again if s.time < cut])
+    assert ff.family_strike_pin(d, grid=0) == [] and ff.family_strike_pin(d, mode="x") == []
+
+
 # ------------------------------------------------------------------------- the tick tape ---
 @pytest.fixture()
 def tape(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> pd.DataFrame:
@@ -218,7 +240,7 @@ def test_registered_where_the_gauntlet_and_the_registries_look() -> None:
     from libs.research.alpha_clusters import classify_family
     from research import axis_registry
     from research import orthogonal_sweep as osw
-    for name in ("cot_report", "expiry_gamma"):
+    for name in ("cot_report", "expiry_gamma", "strike_pin"):
         assert fo.ORTHOGONAL_FAMILIES[name] is fs.SPECIALIST_FAMILIES[name]
         assert name in fo.FAMILY_INPUTS and name in axis_registry.FAMILY_TABLE
         assert name in osw.NOT_SOURCED_HERE
@@ -234,7 +256,8 @@ def test_the_grid_is_gold_indices_majors_and_never_exotic() -> None:
         assert "exotic" not in str(up.asset_class_of(c["symbol"]) or "").lower()
         assert c["bucket"] in ("gold", "index", "major")
     fams = {c["family"] for c in cells}
-    assert {"cot_report", "cot_net_fade", "cot_positioning", "expiry_gamma"} <= fams
+    assert {"cot_report", "cot_net_fade", "cot_positioning", "expiry_gamma",
+            "strike_pin"} <= fams
     reports = {c["params"].get("report") for c in cells if c["family"] == "cot_report"}
     assert {"legacy", "tff", "disagg"} <= reports
     assert all(c["symbol"] != "EURZAR" for c in cells)
