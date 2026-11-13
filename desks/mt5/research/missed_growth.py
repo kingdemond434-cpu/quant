@@ -1021,6 +1021,34 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
             "why": "measured cost in its own units; the E[log W] price is UNMEASURED"}
 
 
+def formula_input_hold_line() -> dict[str, Any]:
+    """What holding input-UNMEASURED formula certificates off the forward clock costs.
+
+    `shadow_admission.formula_input_unmeasured` refuses a clock to a formula certificate that
+    reads the spread or tick columns and was gated before the corrected reading of those columns.
+    The cost is the forward days those clocks do not accrue; its E[log W] price is UNMEASURED,
+    because the in-sample series that would price it is the series in question. TWO-SIDED: the
+    hold lifts per certificate on its own re-gate, and a re-gated pass enrols like any other."""
+    try:
+        from research import shadow_admission as sa
+        sa.authorized_runs(BASE, lanes=("h1",))
+        held = list(sa.FORMULA_INPUT_HELD)
+    except Exception as exc:
+        return {"verdict": UNMEASURED,
+                "why": f"shadow admission unreadable: {type(exc).__name__}: {exc}"}
+    if not held:
+        return {"verdict": NOT_BINDING, "certificates_held": 0,
+                "enforced": sa.formula_input_hold_enforced(),
+                "rule_effective_utc": sa.FORMULA_INPUT_RULE_EFFECTIVE_UTC,
+                "why": "no formula certificate reading spread/activity/flow awaits a re-gate"}
+    return {"verdict": UNMEASURED, "certificates_held": len(held),
+            "enforced": sa.formula_input_hold_enforced(),
+            "rule_effective_utc": sa.FORMULA_INPUT_RULE_EFFECTIVE_UTC,
+            "sample": held[:20],
+            "why": "certificates refused a clock until re-gated on the corrected input reading; "
+                   "forward days not accrued, E[log W] price UNMEASURED"}
+
+
 #: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was
 #: every ~2.6 h measured. Like the stop-geometry gate it registers no rail (the register is
 #: sealed), so its line is PUBLISHED here beside the rails. A STANDBY row needs TWO distinct
@@ -1201,7 +1229,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "formula_input_hold": formula_input_hold_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

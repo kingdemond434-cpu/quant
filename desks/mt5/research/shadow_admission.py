@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import sys
 from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
 
 try:  # package import (tests/library callers) versus direct script execution
@@ -397,6 +400,66 @@ def _evicted_keys(base: Path) -> set[str]:
     return {str(k) for k in ev} if isinstance(ev, list) else set()
 
 
+#: Bar columns a `formula` expression can read that are NOT price: the file's spread and tick
+#: count. Their terminals in the grammar: `spread`, `activity` (ticks), `flow` (signed ticks).
+FORMULA_INPUT_TERMINALS = ("spread", "activity", "flow")
+_FORMULA_INPUT_RE = re.compile(r"\b(" + "|".join(FORMULA_INPUT_TERMINALS) + r")\b")
+#: UTC instant the corrected reading of those columns is adopted on the box. None = not adopted,
+#: so NO certificate reading them is lifted yet. A certificate gated at or after this instant was
+#: judged on the corrected reading and is admitted as any other. Set by the input-rule patch.
+FORMULA_INPUT_RULE_EFFECTIVE_UTC: str | None = None
+#: Certificates held this pass by `formula_input_unmeasured`, for the missed-growth line.
+FORMULA_INPUT_HELD: list[dict[str, str]] = []
+
+
+def formula_input_hold_enforced() -> bool:
+    """Default on. QUANT_FORMULA_INPUT_HOLD=0 counts the held certificates and enrols them."""
+    return os.environ.get("QUANT_FORMULA_INPUT_HOLD", "1").strip() != "0"
+
+
+def formula_reads_inputs(params: object) -> list[str]:
+    """Which of spread/activity/flow a formula's stored expression names. The expression is
+    stored as a prefix list, a rendered call or a list's repr; all three are read as text."""
+    expr = params.get("expr") if isinstance(params, dict) else None
+    if expr is None:
+        return []
+    return sorted(set(_FORMULA_INPUT_RE.findall(expr if isinstance(expr, str) else repr(expr))))
+
+
+def formula_input_unmeasured(name: object, row: object) -> str | None:
+    """Why this certificate is UNMEASURED on input quality, or None. ONE answer for the enrolment
+    door and both allocators.
+
+    MEASURED 2026-11-10 (box read formula_spread_zero_measure_AUDSGD_2026-11-10T1808Z.json):
+    5,702 of 5,757 formula certificates read the spread or tick columns; the spread column
+    changes meaning at 2020 on all 47 symbols read (all-zero or one constant before, mixed
+    after); and on AUDSGD 38 of 40 measured cells lose their fills when a zero is read as
+    undefined. Until such a certificate is re-gated on the corrected reading it is evidence of
+    the column, not of the market."""
+    if not isinstance(row, dict):
+        return None
+    spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+    if str(spec.get("family") or "") != "formula" and ".formula." not in str(name):
+        return None
+    reads = formula_reads_inputs(spec.get("params"))
+    if not reads:
+        return None
+    gated, eff = str(row.get("gated_at") or ""), FORMULA_INPUT_RULE_EFFECTIVE_UTC
+    g_at, e_at = (_utc(gated) if gated else None), (_utc(eff) if eff else None)
+    if g_at is not None and e_at is not None and g_at >= e_at:
+        return None
+    return (f"FORMULA_INPUT_UNMEASURED: reads {', '.join(reads)}; gated_at {gated or 'absent'} "
+            f"is before the corrected input rule ({eff or 'not yet adopted'})")
+
+
+def _utc(text: str) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
 def _drop(name: object, why: str) -> None:
     """Record and announce a ten-gate certificate that will not reach the forward engine.
 
@@ -530,6 +593,7 @@ def authorized_runs(base: Path = BASE,
     # pass's findings. This list always describes the run that just happened, never a backlog.
     DROPPED_CERTIFICATES.clear()
     EVICTED_CERTIFICATES.clear()
+    FORMULA_INPUT_HELD.clear()
     universal, canon_from = _canon(base)
     evicted = _evicted_keys(base)
     if not is_exact_policy(universal.get("gate_policy")):
@@ -592,6 +656,13 @@ def authorized_runs(base: Path = BASE,
             _drop(name, f"`shadow_spec.params` is {type(params).__name__}, not a mapping -- "
                         f"unrunnable without guessing the parameterization that passed")
             continue
+        held = formula_input_unmeasured(name, row)
+        if held:
+            FORMULA_INPUT_HELD.append({"certificate": str(name), "why": held})
+            if formula_input_hold_enforced():
+                _drop(name, held + " -- no clock until it is re-gated, because a matured clock "
+                                   "on a standing certificate is promoted with no human act")
+                continue
         # {} is NOT "lost parameters": it is the complete parameterization "family defaults",
         # byte-exactly what the gauntlet executed (build_cell with params={}) and what the
         # p=<hash-of-empty> cell identity certifies. Excluding it kept both overnight_gap_decay
