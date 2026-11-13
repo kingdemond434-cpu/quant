@@ -345,16 +345,15 @@ def test_one_offline_pass_writes_every_artifact(desk: dict[str, Any]) -> None:
                for s in rep2["sources"].values())
 
 
-def test_sec_without_a_user_agent_is_unconfigured_not_fetched(
+def test_sec_without_a_contact_ua_is_blocked_on_contact_not_fetched(
         desk: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ac.EDGAR_UA_ENV:
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(ac, "DEFAULT_EDGAR_UA", "")
     calls: list[str] = []
     rep = ac.run(budget_s=30, now=datetime(2024, 9, 27, tzinfo=UTC), get=_fake_get(calls),
                  loader=_loader, clock=av.identity_clock, universe_doc=UNIVERSE_DOC,
                  only=["sec_8k_guidance"], n_placebo=10)
-    assert rep["sources"]["sec_8k_guidance"]["status"] == "UNCONFIGURED"
+    assert rep["sources"]["sec_8k_guidance"]["status"] == "BLOCKED_ON_CONTACT"
     assert not calls
 
 
@@ -424,7 +423,6 @@ def test_every_request_declares_what_it_is() -> None:
 def test_the_box_key_name_configures_sec(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ac.EDGAR_UA_ENV:
         monkeypatch.delenv(name, raising=False)
-    # a SYSTEM-run leg with no env value still declares itself, with no person in the string
-    assert ac.edgar_ua() == ac.DEFAULT_EDGAR_UA and "@" not in ac.DEFAULT_EDGAR_UA
+    assert ac.edgar_ua() == ""
     monkeypatch.setenv("EDGAR_UA", "desk research contact")
     assert ac.edgar_ua() == "desk research contact"
