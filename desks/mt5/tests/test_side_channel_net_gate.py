@@ -86,7 +86,7 @@ def test_no_blocked_channel_is_loaded_and_each_is_reported(monkeypatch) -> None:
     assert r["summary"]["producing"] == ["cot"]
 
 
-def _bars(tmp_path, sym, rets):
+def _write_bars(tmp_path, sym, rets):
     idx = pd.date_range("2018-01-01", periods=len(rets), freq="1D", tz="UTC")
     close = 100 * np.exp(np.cumsum(rets))
     frame = pd.DataFrame({"close": close}, index=idx.rename("time"))
@@ -102,8 +102,8 @@ def test_correlation_miner_reports_a_break_between_two_instruments(tmp_path, mon
     a = common + rng.normal(0, 0.002, n)
     b = common + rng.normal(0, 0.002, n)
     b[-30:] = -common[-30:] + rng.normal(0, 0.002, 30)          # the relationship flips
-    _bars(tmp_path, "EURUSD", a)
-    _bars(tmp_path, "GBPUSD", b)
+    _write_bars(tmp_path, "EURUSD", a)
+    _write_bars(tmp_path, "GBPUSD", b)
     monkeypatch.setattr(_bars, "hypothesis_symbols", lambda u=None: ["EURUSD", "GBPUSD"])
     rows = C.mine_correlations(tmp_path)
     assert rows and rows[0]["symbols"] == ["EURUSD", "GBPUSD"] and rows[0]["z"] < -C.Z_MIN

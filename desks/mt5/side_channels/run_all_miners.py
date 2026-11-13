@@ -164,6 +164,8 @@ def run_all_miners() -> dict:
     for name, why in set_aside.items():
         print(f"  {name}: SET_ASIDE ({why})")
     for name, why in BLOCKED_ON_TERMS.items():
+        if name in results:          # a test roster may carry the name; its own status stands
+            continue
         results[name] = {"status": "BLOCKED_ON_TERMS", "why": why}
         print(f"  {name}: BLOCKED_ON_TERMS ({why})")
 
