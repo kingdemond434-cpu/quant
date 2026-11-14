@@ -138,6 +138,11 @@ def test_corpus_errors_never_carry_the_key(tmp_path, monkeypatch) -> None:
     def boom(url, timeout=30):
         raise OSError(f"cannot open {url}")
     monkeypatch.setattr(c.urllib.request, "urlopen", boom)
+    # The fetch goes through the redirect-guarded opener since LIVE's 46183393ca (keyed_urlopen),
+    # which never calls urlopen: patch it too, or the test reaches the real network instead.
+    from libs.data import keyed_sources
+    monkeypatch.setattr(keyed_sources, "keyed_urlopen",
+                        lambda url, timeout=30, **_kw: boom(url, timeout))
     monkeypatch.setattr(sys, "argv", ["x", "--force"])
     assert c.main() == 0
     written = (tmp_path / "cov.json").read_text("utf-8")
