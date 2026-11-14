@@ -135,6 +135,9 @@ AXES: tuple[dict, ...] = (
     {"axis": "microstructure", "id": "dukascopy_ticks",
      "what": "Dukascopy tick bid/ask back to ~2003 -- the SPREAD SERIES itself",
      "url": "https://datafeed.dukascopy.com/datafeed/XAUUSD/2025/05/03/14h_ticks.bi5",
+     "terms": "REFUSED",
+     "terms_why": ("Dukascopy's terms of use refuse automated access and commercial use "
+                   "(data_universe_map.json dukascopy_bi5_datafeed_VERDICT)"),
      "binds_to": ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY"],
      "unblocks": ["liquidity_regime"],
      "revision_safe": "yes -- tick history is not revised",
@@ -334,8 +337,19 @@ def build(do_probe: bool) -> dict:
     rows = []
     for a in AXES:
         row = dict(a)
-        row["probe"] = probe(a["url"]) if do_probe else {"reachable": None,
-                                                         "why": "not probed this pass"}
+        if a.get("terms") == "REFUSED":
+            # Refused on terms: never probed, on any pass. Unreachable lawfully, not a network
+            # verdict, and it carries the missed-growth line the refusal costs.
+            row["probe"] = {"reachable": False, "status": None,
+                            "why": f"BLOCKED_ON_TERMS: {a.get('terms_why', '')}",
+                            "missed_growth": {"mechanism": f"{a['id']}_terms_refusal",
+                                              "lost": a["what"],
+                                              "unblocks_lost": list(a.get("unblocks") or []),
+                                              "verdict": "a gap, not a zero"}}
+        elif do_probe:
+            row["probe"] = probe(a["url"])
+        else:
+            row["probe"] = {"reachable": None, "why": "not probed this pass"}
         rows.append(row)
     reach = [r for r in rows if r["probe"].get("reachable") is True]
     unreach = [r for r in rows if r["probe"].get("reachable") is False]

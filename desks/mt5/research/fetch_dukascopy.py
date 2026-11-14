@@ -1,4 +1,9 @@
-"""Deep tick history for the MT5 universe, free, back roughly two decades.
+"""Dukascopy tick history: REFUSED ON TERMS, this module opens no socket (see BLOCKED_ON_TERMS).
+
+What follows is the original design note, kept because the decoder and --compare still work on
+files already held on disk.
+
+Deep tick history for the MT5 universe, back roughly two decades.
 
 PORTED FROM THE AURUM DESK (golddesk sibling repo) 2026-09-12, and adapted from three hard-coded
 symbols to the whole registry. It arrives to close a NAMED gap: `liquidity_regime` sits on the
@@ -61,8 +66,6 @@ import lzma
 import struct
 import sys
 import time
-import urllib.error
-import urllib.request
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -146,39 +149,35 @@ def decode_hour(blob: bytes, symbol: str, t: datetime) -> tuple[list, str]:
     return rows, "ok"
 
 
+#: Dukascopy's Terms of Use (www.dukascopy.com legal pages, read 2026-08-28 and recorded in
+#: data/data_universe_map.json as dukascopy_bi5_datafeed_VERDICT, grade excluded-illegitimate) bar
+#: "any scraper, robot, bot, spider, data mining ... to access, acquire, copy, or monitor ... any
+#: data" without written consent, and limit use to "your own non-commercial use". A trading desk's
+#: hourly collector is both. So the network fetch is REMOVED, not switched off: no flag, argument
+#: or environment variable re-opens it (Audit finding relayed 2026-11-14). The decoder and the
+#: comparison stay, because they are pure and read only bytes already on disk.
+BLOCKED_ON_TERMS = ("BLOCKED_ON_TERMS: Dukascopy's terms of use refuse automated access and "
+                    "commercial use of its data (data_universe_map.json "
+                    "dukascopy_bi5_datafeed_VERDICT); no socket is opened")
+MISSED_GROWTH = {
+    "mechanism": "dukascopy_terms_refusal",
+    "lost": "multi-year second-venue tick bid/ask depth (spread series, intrabar ordering, "
+            "excursion) for FX, metals, index and energy CFDs; liquidity_regime stays without "
+            "a years-deep spread series",
+    "stand_in": "the desk's own MT5 terminal tick history (first-party, no third-party licence) "
+                "and the Dukascopy files already held on disk, labelled and not refreshed",
+    "verdict": "a gap, not a zero",
+}
+
+
 def fetch_hour(symbol: str, t: datetime, timeout: float = 30.0,
                retries: int = 4, pause: float = 0.0) -> tuple[list, str]:
-    """One hour of ticks, with backoff. Returns (rows, status) — never silent.
+    """Refused on terms: returns no rows and the BLOCKED_ON_TERMS status, and opens no socket.
 
-    RETRIES MATTER MORE THAN THEY LOOK. A five-year pull is ~20,000 requests;
-    at even a 0.5% transient failure rate that is a hundred hours silently
-    recorded as gaps, and a gap is indistinguishable from a holiday in the
-    output. Retrying turns a network blip into a delay instead of a hole in the
-    data — and holes in the data are the thing this whole fetch exists to fix.
-
-    404 is NOT retried: on this feed it means the hour genuinely does not exist.
+    The signature is kept so every caller reads a named refusal rather than an ImportError.
     """
-    url = hour_url(symbol, t)
-    last = "unknown"
-    for attempt in range(retries):
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "aurum/1.0"})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                blob = r.read()
-            if pause:
-                time.sleep(pause)
-            return decode_hour(blob, symbol, t)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return [], "missing"          # weekend/holiday — expected
-            last = f"http {e.code}"
-            if e.code in (400, 401, 403):
-                return [], last               # not transient; do not hammer
-        except Exception as e:
-            last = type(e).__name__
-        if attempt < retries - 1:
-            time.sleep(min(30.0, 2.0 ** attempt))
-    return [], last
+    del symbol, t, timeout, retries, pause
+    return [], "blocked_on_terms"
 
 
 def hours(start: datetime, end: datetime) -> Iterator[datetime]:
@@ -444,11 +443,15 @@ def main() -> int:
     if args.offline_test:
         return offline_test(args.symbol)
     if args.selftest:
-        return selftest(args.symbol)
+        print(BLOCKED_ON_TERMS)
+        return 2
     if args.compare:
         return compare(Path(args.compare[0]), Path(args.compare[1]))
     if not (args.start and args.end):
         ap.error("--from and --to required (or use --selftest)")
+    if not args.dry_run:
+        print(BLOCKED_ON_TERMS)
+        return 2
 
     start = datetime.fromisoformat(args.start).replace(tzinfo=UTC)
     end = datetime.fromisoformat(args.end).replace(tzinfo=UTC)
