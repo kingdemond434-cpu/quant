@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import threading
+import time
 import tracemalloc
 from pathlib import Path
 
@@ -349,3 +350,80 @@ def test_outage_rows_never_satisfy_the_one_task_guarantee(tmp_path, monkeypatch)
     assert asked["n"] == 0, "no real decision yet, so the guard was never consulted"
     rep = json.loads(dw.MEMORY_GUARD_REPORT.read_text("utf-8"))
     assert rep["worked_this_pass"] == 0 and rep["tripped"] is False
+
+
+# --------------------------------------------------------------- the task time limit (11-05)
+# MT5-Deepening was killed at its 50-minute task limit: the 40-minute budget clock started only
+# after the setup (ledger read, VOI sort: minutes on the box), and the lock a killed run left
+# refused the next triggers although its process was gone.
+def test_the_budget_counts_the_setup_and_still_decides_one_row(tmp_path, monkeypatch) -> None:
+    _isolate(tmp_path, monkeypatch, _tasks(6))
+    monkeypatch.setattr(dw, "memory_guard", lambda: (False, "ok"))
+    real_costs = dw.task_costs
+
+    def slow_setup():
+        time.sleep(0.3)                        # setup that alone outruns the budget below
+        return real_costs()
+    monkeypatch.setattr(dw, "task_costs", slow_setup)
+    monkeypatch.setattr(dw, "RUN_BUDGET_SEC", 0.1)
+    assert dw.main([]) == 0
+    rows = [json.loads(ln) for ln in dw.WORKED.read_text("utf-8").splitlines() if ln]
+    assert len(rows) == 1, "the setup is inside the budget, and a pass always decides one row"
+
+
+def test_a_lock_left_by_a_dead_run_is_taken_at_once(tmp_path, monkeypatch) -> None:
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    lock.write_text(json.dumps({"pid": 2_000_000_000, "at": time.time() - 60}), "utf-8")
+    assert dw._single_flight() is not None, "a young lock whose process is gone blocked the run"
+
+
+def test_a_lock_held_by_a_live_run_is_respected_however_old(tmp_path, monkeypatch) -> None:
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    lock.write_text(json.dumps({"pid": os.getpid(),
+                                "at": time.time() - dw.RUN_BUDGET_SEC * 3}), "utf-8")
+    assert dw._single_flight() is None
+
+
+def test_a_lock_whose_pid_was_reused_by_another_process_is_taken(tmp_path, monkeypatch) -> None:
+    """Windows reuses pids (Auditor SF2 on #745): the lock records its holder's create_time, and
+    a live process on that pid with a different start is not the holder."""
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    lock.write_text(json.dumps({"pid": os.getpid(), "at": time.time() - 60,
+                                "create_time": 1_000_000.0}), "utf-8")
+    assert dw._single_flight() is not None
+
+
+def test_a_lock_records_its_holders_start_and_that_holder_is_respected(tmp_path,
+                                                                       monkeypatch) -> None:
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    assert dw._single_flight() is not None
+    held = json.loads(lock.read_text("utf-8"))
+    assert held["pid"] == os.getpid() and isinstance(held["create_time"], float)
+    assert dw._single_flight() is None, "the live holder recorded with its start keeps the lock"
+
+
+def test_the_replay_scans_rows_even_when_its_setup_outruns_the_budget(tmp_path,
+                                                                      monkeypatch) -> None:
+    """MEASURED on the box 11-05: wanted 7,200, matched 0, rows_scanned 0, elapsed 1,459 s, the
+    cursor parked at row 0 of the same file every pass -- the story rebuild and the file listing
+    spent the whole budget before the first row. The scan now always makes progress."""
+    src = tmp_path / "intel" / "mql5_signals" / "discoveries.jsonl"
+    src.parent.mkdir(parents=True)
+    rows = [{"source": "mql5_signals", "title": f"row {i}", "url": f"https://x/{i}"}
+            for i in range(10)]
+    src.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    want = dw._deepening_task_id("mql5_signals", rows[7])
+    monkeypatch.setattr(dw, "RULE_CURSOR", tmp_path / "cursor.json")
+
+    def slow_stories():
+        time.sleep(0.2)
+        return []
+    monkeypatch.setattr(dw, "_story_tasks", slow_stories)
+    monkeypatch.setattr(dw, "rule_work", lambda task, universe: ([], "NO_RULE", []))
+    _results, note = dw.replay_blocked({want}, {"EURUSD"}, 0.0, paths=[src])
+    assert note["rows_scanned"] >= 8 and note["matched"] == 1, note
+    assert note["story_s"] >= 0.2 and "scan_s" in note

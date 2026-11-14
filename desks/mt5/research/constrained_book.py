@@ -113,15 +113,21 @@ def _terminal_account() -> tuple[dict[str, float | None], str]:
         return none, "MetaTrader5 is not importable on this host"
     opened = False
     try:
-        if mt5.terminal_info() is None:
-            try:
-                from mt5desk.config import terminal_path
-                path = terminal_path()
-            except Exception:
-                path = ""
-            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
-            if not opened:
-                return none, f"terminal unreachable ({mt5.last_error()})"
+        # Pinned to the desk's terminal and proven Fusion's (2026-11-11): the box runs FTMO too.
+        try:
+            from mt5desk.config import terminal_path
+            path = terminal_path()
+        except Exception:
+            path = ""
+        from research.mt5_session import attach_or_initialize, venue_refusal
+        held = mt5.terminal_info() is not None
+        if not attach_or_initialize(mt5, path=path or None, timeout=15000):
+            return none, f"terminal unreachable ({mt5.last_error()})"
+        opened = not held
+        why = venue_refusal(mt5, path or None)
+        if why is not None:
+            opened = True                       # the wrong terminal is let go, whoever held it
+            return none, f"wrong venue, refused: {why}"
         acc = mt5.account_info()
         if acc is None:
             return none, "the terminal reports no account"

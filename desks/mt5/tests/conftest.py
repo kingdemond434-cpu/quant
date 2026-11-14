@@ -157,6 +157,32 @@ def measured_dsr_inputs_module(tmp_path_factory: pytest.TempPathFactory) -> Iter
 
 
 @pytest.fixture(autouse=True)
+def _experiment_ledger_in_tmp(tmp_path_factory, monkeypatch):
+    """THE LIFETIME TRIAL LEDGER NEVER LANDS IN THE CHECKOUT FROM A TEST (2026-11-11).
+    `experiment_ledger.family_trials` falls back to `lifetime(write=True)` when OUT is absent,
+    and OUT is gitignored, so on CI the first test that reached any trial charge wrote
+    `desks/mt5/reports/EXPERIMENT_LEDGER.json` into the tree. Under `-n auto` that write landed
+    inside another worker's tree snapshot and failed
+    `test_hypothesis_families::test_the_docket_writer_runs_the_census_and_reaims_every_hour`
+    ("the end-to-end merge test wrote a desk file") on unrelated PRs (#721, twice). A test's own
+    redirect of OUT is applied after this one and wins."""
+    try:
+        from libs.research import experiment_ledger as el
+    except Exception:
+        yield
+        return
+    checkout = Path(__file__).resolve().parents[3]
+    try:
+        in_checkout = Path(el.OUT).resolve().is_relative_to(checkout)
+    except (OSError, ValueError):
+        in_checkout = True
+    if in_checkout:     # a module-scoped redirect (test_placebo_audit's owned ledger) is kept
+        monkeypatch.setattr(el, "OUT", tmp_path_factory.mktemp("experiment_ledger") /
+                            "EXPERIMENT_LEDGER.json")
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     """THE ORDER DOOR'S LEDGER NEVER LANDS IN THE REPO FROM A TEST. `mt5desk.order_door` appends
     one row per money action to `desks/mt5/data/order_door_ledger.jsonl` -- the box's real
