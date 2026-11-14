@@ -361,7 +361,8 @@ def family_seasonal_window(
 #: params carry, so they wrap.
 def unwrappable() -> frozenset[str]:
     from mt5desk.family_exit_operated import _UNWRAPPABLE
-    return frozenset(_UNWRAPPABLE | {"entry_conditioned", "exit_operated"}) - {"carry"}
+    own = {"entry_conditioned", "exit_operated", "entry_alpha"}
+    return frozenset(_UNWRAPPABLE | own) - {"carry"}
 
 
 def wrappable(name: str) -> bool:
@@ -541,3 +542,16 @@ TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
     "seasonal_window": (("H1",), "decides once a day at a broker decision HOUR; on a four-hour or "
                                  "daily chart the decision hour does not exist"),
 }
+
+
+# THE CLUSTER-REACH FAMILIES (row 72, 2026-11-03): `entry_alpha` (execution_entry) and
+# `implied_vol` (options_implied), the two declared clusters no registered family reached. They
+# live in their own module and join this registry here, so `gauntlet_buildability` reads their
+# information class and foreign series from the same tables as every specialist family.
+from mt5desk import families_cluster_reach as _reach  # noqa: E402
+
+SPECIALIST_FAMILIES.update(_reach.CLUSTER_REACH_FAMILIES)
+INFORMATION_CLASS.update(_reach.INFORMATION_CLASS)
+FOREIGN_SERIES.update(_reach.FOREIGN_SERIES)
+INPUTS.update(_reach.INPUTS)
+TIMEFRAMES.update(_reach.TIMEFRAMES)
