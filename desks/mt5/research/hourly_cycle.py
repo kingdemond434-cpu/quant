@@ -2432,7 +2432,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # raised for, and the one this organ exists to catch.
     "clock_liveness": 420,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
-    "expression_factory": 720,
+    # MEASURED 2026-11-13 20:51Z on the box: killed at 727 s, so its own stop overshoots by more
+    # than the old 120 s margin (setup -- census, harvest, world load -- is not budget-checked,
+    # and a cell in flight finishes) and the pass wrote nothing. It runs on the mathlab resident,
+    # which has no scheduler limit, so the margin costs nothing: 300 s, 2.5x the overshoot seen.
+    "expression_factory": 900,
     # THE FREE-STACK HUNTER stops itself at --budget-s 600 and persists its cursor after every
     # source, so a cut pass still advanced; the cap sits above so the yield artifact is written.
     "free_stack_hunt": 720,
