@@ -304,12 +304,18 @@ def main() -> int:
     if not single_instance():
         log("another recorder instance is alive -- exiting (single-instance lock)")
         return 0
-    # PINNED TO THE DESK'S TERMINAL (2026-11-11). This was `mt5.initialize()` with no path: the
-    # box runs Fusion and FTMO logged in side by side, and a bare attach takes whichever the
-    # bridge sees first, so restart order decided which broker the moat tape recorded.
+    # NEVER A BARE initialize() FROM SESSION 0 (2026-11-13), AND PINNED TO THE DESK'S TERMINAL
+    # (2026-11-11). This runs as SYSTEM every ten minutes; after the 2026-11-12 reboot, before
+    # anyone logged on, a bare initialize() from a SYSTEM task launched the Fusion terminal
+    # headless in Session 0 with no login, the interactive watchdog then refused to launch beside
+    # it, and E8's cross-account fence failed closed on every gold window. The shared guard
+    # (`attach_or_initialize`) never launches from Session 0. And the box runs Fusion and FTMO
+    # logged in side by side, so an attach with no path took whichever the bridge saw first:
+    # restart order decided which broker the moat tape recorded. The path pins it.
     terminal = terminal_path()
     if not attach_or_initialize(mt5, path=terminal, timeout=15000):
-        log(f"mt5 attach FAILED ({terminal or 'no terminal_path.txt'}): {mt5.last_error()}")
+        log(f"mt5 attach refused or failed ({terminal or 'no terminal_path.txt'}; Session 0 "
+            f"never launches a terminal): {mt5.last_error()}")
         return 1
     why = venue_refusal(mt5, terminal)
     if why is not None:
