@@ -754,9 +754,11 @@ class LawfulDiscovery:
         try:
             self.holds.hold(host, status, url, rec.backend)
         except HoldWriteError as exc:
+            # A HoldWriteError's text is composed by HostHolds.hold from the host and exception
+            # TYPE names only, never a raised message, so it is safe to record as written.
             with _STATS_LOCK:
-                _HOLD_ERRORS.append(f"{_now()} {type(exc).__name__}")
-            rec.why = f"{rec.why}; HOLD WRITE FAILED: {type(exc).__name__}".strip("; ")
+                _HOLD_ERRORS.append(f"{_now()} {exc}")
+            rec.why = f"{rec.why}; HOLD WRITE FAILED: {exc}".strip("; ")
 
     def get(self, url: str, rec: BackendRecord) -> Fetched | None:
         """Hold -> robots -> slot -> GET -> (redirect target: hold + robots again) -> hold the
