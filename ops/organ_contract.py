@@ -161,6 +161,14 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # recorder that beats but records nothing reads STALE, and never_stale starts it.
     "MT5-TickRecorder":   ("desks/mt5/reports/TAPE_RECORDER.json", 120,
                            "the bronze tick tape; age is its newest tick, true UTC"),
+    # UNCONTRACTED UNTIL 2026-11-11, and that is why a day of scheduler kills read as nothing
+    # worse than FAILING: no run since 2026-11-10 16:45Z had exited 0, so the report was never
+    # written and no one could say whether the watermarks moved. The pass now ends inside its own
+    # budget and always writes this report (with the backlog it left), so a missing or old report
+    # means the organ is not finishing, which is the defect, and it now reads STALE.
+    "MT5-TapeFeatures":   ("desks/mt5/reports/TAPE_FEATURES.json", 150,
+                           "tape -> silver, intrabar bars and the tick cost and slippage "
+                           "surfaces; backlog_symbol_days says what the pass left unbuilt"),
     # THE FOURTEEN UNCONTRACTED ORGANS (2026-09-12). Every one appeared on the board as
     # "no artifact contract: this process could stop and nothing would notice" -- which is
     # exactly the gap that lets a new organ die quietly, and the principal asked for it closed.

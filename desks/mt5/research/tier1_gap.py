@@ -161,12 +161,16 @@ def ingestion(now: datetime) -> dict[str, Any]:
 def _judging_rate(now: datetime) -> dict[str, Any]:
     """JUDGING_RATE.json with its FRESH/STALE/UNMEASURED verdict (judging_rate_attempt)."""
     try:
+        import importlib
+
         try:
-            from research import judging_rate_attempt as jra
+            jra = importlib.import_module("research.judging_rate_attempt")
         except ImportError:
-            from desks.mt5.research import judging_rate_attempt as jra  # type: ignore[no-redef]
-        return jra.read_rate(now, rate_path=REPORTS / "JUDGING_RATE.json",
-                             attempt_path=REPORTS / "JUDGING_RATE.attempt.json")
+            jra = importlib.import_module("desks.mt5.research.judging_rate_attempt")
+        verdict: dict[str, Any] = jra.read_rate(
+            now, rate_path=REPORTS / "JUDGING_RATE.json",
+            attempt_path=REPORTS / "JUDGING_RATE.attempt.json")
+        return verdict
     except Exception as exc:   # the reader is evidence; its failure is UNMEASURED, never fatal
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}",
                 "rate": _read(REPORTS / "JUDGING_RATE.json")}

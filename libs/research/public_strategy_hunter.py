@@ -67,7 +67,39 @@ class Source:
     surface: str = "site"
 
 
+#: The desk never contacts YouTube (zuck's standing rule, 2026-11-13; Governance
+#: wayback-youtube-ruling-2026-11-14) and never reads the Internet Archive ("scholarship and
+#: research purposes only"). The network getter refuses these hosts before any socket opens;
+#: the refusal is an OSError, so every caller records it as BLOCKED, never as "no content".
+TERMS_REFUSED_HOSTS: dict[str, str] = {
+    "youtube.com": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+    "youtu.be": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+    "googlevideo.com": "BLOCKED_ON_TERMS: the desk never contacts YouTube (no-YouTube rule)",
+    "archive.org": ("BLOCKED_ON_TERMS: Internet Archive terms limit use to scholarship and "
+                    "research purposes only"),
+}
+#: missed_growth: YouTube channel discovery and caption transcripts are not read; video ideas
+#: come only from sources whose own terms allow automated use. A gap, not a zero.
+YOUTUBE_MISSED_GROWTH = ("youtube channels and transcripts unread under the no-YouTube rule; "
+                         "a gap, not a zero")
+
+
+class TermsRefused(PermissionError):
+    """A host whose owner's terms (or a standing desk rule) refuse automated reading."""
+
+
+def terms_refusal(url: str) -> str | None:
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    for h, why in TERMS_REFUSED_HOSTS.items():
+        if host == h or host.endswith("." + h):
+            return why
+    return None
+
+
 def fetch(url: str, *, timeout: float = 30.0) -> bytes:
+    why = terms_refusal(url)
+    if why:
+        raise TermsRefused(why)
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
     with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as response:
         payload: object = response.read()
@@ -170,6 +202,20 @@ def discover(source: Source, getter: Callable[[str], bytes] = fetch) -> list[dic
             "content_hash": digest,
         }
     ]
+
+
+#: A Google API key's shape. Scraped pages quote other sites' embedded keys in their scripts and
+#: config blocks, and every corpus this hunter feeds is committed to a PUBLIC repository
+#: (2026-11-14: three data/intelligence files carried one). No mined row may carry a key, ours or
+#: anyone else's, so every string a discovered item holds is scrubbed before it is used or kept.
+_KEY_SHAPE = re.compile(r"AIza[0-9A-Za-z_\-]{35}")
+KEY_REDACTED = "[api key removed]"
+
+
+def scrub_keys(item: dict[str, Any]) -> dict[str, Any]:
+    """The item with every key-shaped substring in its string values replaced by KEY_REDACTED."""
+    return {k: _KEY_SHAPE.sub(KEY_REDACTED, v) if isinstance(v, str) else v
+            for k, v in item.items()}
 
 
 def _refused(exc: BaseException, what: str) -> dict[str, object]:
@@ -493,7 +539,7 @@ def run(
     processed, failures, discovered_sources = [], [], set(state.get("discovered_sources", []))
     for source in sources:
         try:
-            items = discover(source, getter)
+            items = [scrub_keys(i) for i in discover(source, getter)]
         except Exception as exc:  # each source is an independent acquisition path
             failures.append({"source": source.name, "stage": "DISCOVER", "error": str(exc)})
             continue

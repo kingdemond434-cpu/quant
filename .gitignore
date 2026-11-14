@@ -446,6 +446,9 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
+# the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
+desks/mt5/data/keyed_sources/
 # free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
 # the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
 desks/mt5/data/free_stack/
@@ -525,6 +528,7 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
+!desks/mt5/reports/DECAY_VERDICTS.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
@@ -551,6 +555,11 @@ judge_coverage_txn-*
 desks/mt5/reports/JUDGE_COVERAGE_TIMEOUT.json.tmp
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp-*
 desks/mt5/data/hypotheses/conversion_handoff.json.tmp-*
+# THE VERDICT-RATE CHECKPOINT (2026-11-14): research/judging_throughput.VERDICT_CKPT_NAME, the resume
+# point of the gate ledger stream. Machine state rewritten every hour; never published.
+desks/mt5/data/hypotheses/gate_verdict_rate_ckpt.json
+desks/mt5/data/hypotheses/gate_verdict_rate_ckpt.json.tmp
+desks/mt5/data/hypotheses/gate_verdict_rate_ckpt.cells
 # per-shard verdict publications (sealed judge, IDEA_QUEUE 159): a provisional copy, never state
 desks/mt5/data/hypotheses/shard_verdicts/
 # The sidecar AND its markers (.born, .torn-*, .vanished-*, .tmp, .lock): box-local state; a
@@ -608,3 +617,12 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+
+# proposer_common.donate_per_family: the cells each converting producer has already charged
+# (one JSONL per source). Box state; losing it re-charges once, never under-counts.
+desks/mt5/data/donation_ledgers/
+# The loss brain's report (decay + loss learner), published by sync_shadow_to_git $reportPaths.
+!desks/mt5/reports/LOSS_LEARNER.json
+!desks/mt5/reports/PLAUSIBILITY_AUDIT.json
+# Tier S emission rotation memory (2026-11-14): box-local, grows with every donated cell.
+desks/mt5/data/tier_s/emitted_cells.json

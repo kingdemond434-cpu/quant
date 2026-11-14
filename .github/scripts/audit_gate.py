@@ -65,9 +65,17 @@ STANDING APPROVAL (2026-11-10 16:07Z, zuck: "No change the design n do them for 
 His daily comment is retired for everything but the gate itself. An `APPROVE MERGES` he types at
 or after STANDING_FROM (the minute of that order) is STANDING: it also covers every CLEAR that
 comes AFTER it, so an Auditor CLEAR of the exact head is then enough to merge, with no further
-comment from him. Three things it never does. It never covers a PROTECTED PR (this controller,
-the workflows, ops/release/): a change to what approves merges still needs his own comment newer
-than its CLEAR, so the approving machinery never approves a change to itself. It never outlives a
+comment from him. Since 2026-11-14 (zuck 00:50Z: "pls make everything unprotected forever nth goes
+in protection") it covers PROTECTED PRs too, still on the manual path with every GATING job. Three
+things it never does. It never covers a PR that touches a NEVER-STANDING file: the ROOT policy's
+root, enforced-root and grow-only files (read from ops/release/authority/ROOT_POLICY.json, this
+controller among them), every workflow, all of ops/release/ (ceilings, replay-shadow and its
+exemption list, the risk invariants, the independent review, the LIVE ruleset), and the approving
+machinery (ops/release_authority.py, ops/signing/, libs/ops/release.py); and a PROTECTED PR
+off that list (test configuration, ops/gates.sh) stands only once the base-run trusted-eval has
+passed on its exact head. A change to what approves merges still needs his own comment newer than
+its CLEAR, so the approving machinery never approves a change to itself, and an unreadable policy
+covers nothing. It never outlives a
 `DEACTIVATE RELEASE CONTROLLER`, which anyone trusted may post: after one, only an approval newer
 than the CLEAR counts, until he types `ACTIVATE RELEASE CONTROLLER` again. And it removes nothing
 else: the CLEAR must still name the head (or the same diff), an AUDIT HOLD still stops the PR,
@@ -218,6 +226,38 @@ DOC_EXTS = (".md", ".txt", ".rst")
 #: AUTO-tier PR can merge, because a missing job is never a pass).
 AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
 PROTECTED_FILE = Path(__file__).resolve().parents[2] / "ops" / "release" / "protected_paths.txt"
+ROOT_POLICY_FILE = (
+    Path(__file__).resolve().parents[2] / "ops" / "release" / "authority" / "ROOT_POLICY.json"
+)
+#: Never covered by zuck's standing approval, on top of the ROOT policy's own lists (root,
+#: enforced root, grow-only). Since #1172 put the base-run trusted-eval over the gating workflows
+#: and the release machinery (tests/ops/test_gating_workflows_pinned.py and the release, seal,
+#: signing, promotion and adopt-guard pins in ops/release/trusted_eval_suites.txt), every other
+#: PROTECTED path stands on an Auditor CLEAR plus a green base-run trusted-eval of the exact head.
+#: What stays his: every workflow, the memecoin fence, replay-shadow's and the review's exception
+#: and model lists, the seal's NON_CODE, the release authority's own service and its signer list
+#: (#1192 audit HOLD). Each can leave this list only with a base pin of its own.
+#: ops/release/ceilings.json stands only when the change is inside the ROOT policy's delegated
+#: envelope (zuck 2026-11-14 03:30Z, risk autonomy).
+NEVER_STANDING = (
+    # every workflow (#1192 audit HOLD 1): no base suite pins which steps receive the State App
+    # key (live-seal) or stops a new workflow file declaring it, so they stay his
+    ".github/workflows/*",
+    # the memecoin LIVE fence (#1192 audit HOLD 2)
+    ".github/scripts/memecoin_gate.py",
+    # replay-shadow's exceptions and the independent review's models and rubric: one row turns a
+    # replay FAIL into MATCHES_DECLARED or takes a script off the money path (#1192 HOLD 3)
+    "ops/release/expected_divergence.json", "ops/release/not_money_scripts.txt",
+    "ops/release/local_models.json", "ops/release/review_rubric.md",
+    # NON_CODE: the paths the seal skips (#1192 audit HOLD 4)
+    "libs/ops/release.py",
+    "ops/release_authority.py", "ops/run_release_authority.cmd", "ops/signing/*",
+)  # fmt: skip
+#: The risk ceilings: standing only inside the delegated envelope (see NEVER_STANDING).
+CEILINGS_FILE = "ops/release/ceilings.json"
+#: The job that holds a PR to the ceilings and the firm rules. Required on every merge that rests on
+#: the standing approval, so a prop firm's own limit binds on every autonomous path.
+RISK_JOB = "risk-invariants"
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 #: The app every required check run must come from.
 CI_APP = "github-actions"
@@ -390,10 +430,14 @@ def _zuck_typed(c: Mapping[str, Any]) -> bool:
 
 
 def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
-    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE."""
+    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE.
+    The line is read in any letter case and with any run of spaces between the words: a phone's
+    autocorrect posted "Approve merges" on 2026-11-13 and the gate silently ignored it. Every
+    other rule stands (zuck's own account, typed by him, unedited, nothing else in the body)."""
     best: str | None = None
     for c in comments:
-        if str(c.get("body") or "").strip() == APPROVE and _zuck_typed(c):
+        line = " ".join(str(c.get("body") or "").split()).upper()
+        if line == APPROVE and _zuck_typed(c):
             best = max(best or "", str(c["created_at"]))
     return best
 
@@ -425,10 +469,74 @@ def activated(comments: Iterable[Mapping[str, Any]], phrase: str = ACTIVATE) -> 
     return last[1], f"`{phrase}` is {'ON' if last[1] else 'OFF'} since {last[0]}"
 
 
-def standing(level: str, board: Iterable[Mapping[str, Any]]) -> bool:
-    """May zuck's approval stand for CLEARs that come after it, on a PR of this tier? Never for
-    a PROTECTED (or unclassified) PR, and never while the controller is switched off."""
-    return level in ("LOW", "AUTO") and activated(board)[0]
+def never_standing_patterns() -> tuple[str, ...] | None:
+    """NEVER_STANDING plus ROOT_POLICY.json's root_files, enforced_root_files and grow_only;
+    None when the policy cannot be read or names no root file (fail closed)."""
+    try:
+        policy = json.loads(ROOT_POLICY_FILE.read_text(encoding="utf-8"))
+        lists = [policy[k] for k in ("root_files", "enforced_root_files", "grow_only")]
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        return None
+    if not all(isinstance(v, list) and all(isinstance(x, str) and x for x in v) for v in lists):
+        return None
+    if not lists[0]:
+        return None
+    return (*NEVER_STANDING, *(x for v in lists for x in v))
+
+
+def standing(
+    level: str,
+    board: Iterable[Mapping[str, Any]],
+    names: Iterable[str] = (),
+    trusted: Callable[[], bool] | None = None,
+    ceilings_ok: Callable[[], bool] | None = None,
+) -> bool:
+    """May zuck's approval stand for CLEARs that come after it, on a PR of this tier and these
+    files? LOW and AUTO, yes. PROTECTED, only when it names its files, none of them is
+    NEVER-STANDING (this gate's runner, the authority service and signers, root), the root policy
+    is readable, `trusted()` says the base-run trusted-eval passed on this exact head (#1162 audit
+    HOLD 2), and, when it changes ops/release/ceilings.json, `ceilings_ok()` says the change is
+    inside the delegated envelope. No callable is a no. Never for REFUSED or anything else, and
+    never while the controller is switched off."""
+    if not activated(board)[0]:
+        return False
+    if level in ("LOW", "AUTO"):
+        return True
+    if level != "PROTECTED":
+        return False
+    files = [str(n) for n in names if n]
+    pats = never_standing_patterns()
+    if not files or pats is None or trusted is None:
+        return False
+    if any(fnmatch.fnmatchcase(n.lower(), p.lower()) for n in files for p in pats):
+        return False
+    try:
+        if any(n.lower() == CEILINGS_FILE for n in files) and (
+            ceilings_ok is None or ceilings_ok() is not True
+        ):
+            return False
+        return trusted() is True
+    except Exception:  # an unreadable trusted-eval is a no
+        return False
+
+
+def ceilings_delegated(base_ref: str, head: str) -> bool:
+    """Is the head's ops/release/ceilings.json change inside the ROOT policy's delegated envelope
+    (ops/release/authority/policy.py envelope_check, the policy read from THIS checkout)? Any
+    read or parse error is a no."""
+    try:
+        pol = _authority_mod("policy")
+        policy = json.loads(ROOT_POLICY_FILE.read_text(encoding="utf-8"))
+        sides = [
+            json.loads(_git("show", f"{rev}:{CEILINGS_FILE}"))
+            for rev in (f"origin/{base_ref}", head)
+        ]
+        return not pol.envelope_check(sides[0], sides[1], policy.get("envelope") or {})
+    except Exception:
+        return False
+
+
+STANDING_WHY = "covered by zuck's standing approval of"
 
 
 def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> tuple[bool, str]:
@@ -437,7 +545,7 @@ def approved(clear: Mapping[str, str], at: str | None, stands: bool = False) -> 
     if at is None:
         return False, f"no `{APPROVE}` from zuck on #{APPROVALS_ISSUE} yet"
     if clear["at"] >= at and stands and at >= STANDING_FROM:
-        return True, f"covered by zuck's standing approval of {at}"
+        return True, f"{STANDING_WHY} {at}"
     if clear["at"] >= at:
         return False, (
             f"the CLEAR ({clear['at']}) came after zuck's latest approval ({at}): "
@@ -509,6 +617,22 @@ def checks(
     if not_ok:
         return "fail", "gating jobs did not succeed: " + ", ".join(not_ok)
     return "pass", f"{len(newest)} check run(s) green, gating jobs succeeded"
+
+
+#: The AUTO job a signed MATCHES_DECLARED may stand in for (ops/release/replay_shadow.py: a Fusion
+#: roster divergence that equals the Auditor's declaration for this PR and exact head exits 1,
+#: never PASS). Only the release authority maps it, and only to CONTROLLER (policy.py).
+REPLAY_JOB = "replay-shadow"
+
+
+def newest_run_id(
+    runs: Iterable[Mapping[str, Any]], name: str, genuine: Callable[[Mapping[str, Any]], bool]
+) -> Any:
+    """The id of the newest genuine check run called `name`, or None."""
+    mine = [r for r in runs if str(r.get("name") or "") == name and genuine(r)]
+    if not mine:
+        return None
+    return max(mine, key=lambda r: str(r.get("started_at") or "")).get("id")
 
 
 # ------------------------------------------------------------------------ the GitHub side
@@ -862,6 +986,12 @@ def authority_clear(
     if not patch or st.get("patch_id") != patch:
         return None, "the authority CLEAR names another change (patch-id)"
     want = {"PROTECTED": ("CONTROLLER",), "AUTO": ("AUTO",), "LOW": ("LOW", "AUTO")}
+    declared = (st.get("evidence") or {}).get("replay_declared") if isinstance(
+        st.get("evidence"), dict) else None  # fmt: skip
+    if st.get("tier") == "CONTROLLER" and gate_tier in ("AUTO", "LOW") and declared:
+        # the authority raised it to CONTROLLER for a MATCHES_DECLARED replay: stricter, so
+        # trusted-eval and the CONTROLLER window apply on top of every gating job
+        want = {**want, gate_tier: (*want[gate_tier], "CONTROLLER")}
     if st.get("tier") not in want.get(gate_tier, ()):
         return None, f"the authority judged class {st.get('tier')}, the gate reads {gate_tier}"
     return st, f"authority CLEAR {head[:9]} [{st.get('tier')}] ({st.get('issued_at')})"
@@ -1163,6 +1293,8 @@ def run(
     one element, spent here (None: no limit, a single PR's run)."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
+    # the replay-shadow run a verified authority CLEAR judged MATCHES_DECLARED (authority_rows)
+    declared: dict[str, Any] = {"run": None}
     if p.get("state") != "open":
         _summary(f"#{pr} is {p.get('state')}: nothing to do")
         return 0
@@ -1180,6 +1312,23 @@ def run(
     level, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
+    # the PR's files, for the standing approval; empty (so never standing for PROTECTED) when the
+    # listing is incomplete or the AUTO floor is unreadable, the two cases tier() calls unsure
+    listed = bool(files) and len(files) == int(p2.get("changed_files") or 0) < MAX_FILES
+    names = (
+        [str(n) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n]
+        if listed and protected_patterns() is not None
+        else []
+    )
+
+    def te() -> bool:
+        """The base-run trusted-eval passed on this exact head (read only for a PROTECTED PR)."""
+        return trusted_eval_passed(repo, pr, head, base)[0]
+
+    def ce() -> bool:
+        """The head's ceilings change is inside the delegated envelope (read only if it has one)."""
+        return ceilings_delegated(base, head)
+
     if level == "REFUSED":
         _summary(f"#{pr} @ {head[:9]}: {twhy}")
         if not box:
@@ -1227,7 +1376,9 @@ def run(
         if (
             ours
             and boards
-            and approved(last, approval_at(boards[-1]), standing(level, boards[-1]))[0]
+            and approved(last, approval_at(boards[-1]), standing(level, boards[-1], names, te, ce))[
+                0
+            ]
         ):
             return "zuck approved its CLEAR of this head"
         return None
@@ -1317,7 +1468,11 @@ def run(
                 "--slurp",
             )
             board = _flat(ap)
-            ok, awhy = approved(clear, approval_at(board), standing(level, board))
+            ok, awhy = approved(clear, approval_at(board), standing(level, board, names, te, ce))
+            if ok and awhy.startswith(STANDING_WHY):
+                # it rests on the standing approval, not a comment newer than the CLEAR: the
+                # risk-invariants job (the ceilings and the prop firms' own limits) must pass too
+                clear = {**clear, "standing": "yes"}
             if ok or not registry:
                 return (clear if ok else None), f"{why}; {awhy}"
             why = f"{why}; {awhy}"
@@ -1327,6 +1482,7 @@ def run(
 
     def authority_rows() -> tuple[list[dict[str, Any]], str]:
         """The authority path's one CLEAR row for this head, or none; why (see AUTHORITY_*)."""
+        declared["run"] = None
         pub = os.environ.get(AUTHORITY_PUBKEY_ENV) or ""
         folder = os.environ.get(AUTHORITY_DIR_ENV) or ""
         pin_path = os.environ.get(AUTHORITY_PIN_ENV) or ""
@@ -1356,6 +1512,9 @@ def run(
             ok, ewhy = trusted_eval_passed(repo, pr, head, base)
             if not ok:
                 return [], f"authority: {why}, but {ewhy}"
+        ev: dict[str, Any] = st["evidence"] if isinstance(st.get("evidence"), dict) else {}
+        rd = ev.get("replay_declared") if st["tier"] == "CONTROLLER" else None
+        declared["run"] = rd.get("run") if isinstance(rd, dict) else None
         # the gate's own row shape: the window, the HOLD, the up-to-date and CI rules below apply
         return [{"pr": pr, "sha": head, "verdict": "CLEAR", "at": st["issued_at"]}], ""
 
@@ -1408,7 +1567,16 @@ def run(
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         genuine = provenance(repo, pr, head) if low else _from_ci_app
-        need = required + (AUTO_JOBS if clear.get("by") == "registry" else ())
+        auto: tuple[str, ...] = AUTO_JOBS if clear.get("by") == "registry" else ()
+        if (
+            auto
+            and declared["run"] is not None
+            and newest_run_id(runs, REPLAY_JOB, genuine) == declared["run"]
+        ):  # the very run the authority signed as MATCHES_DECLARED; a re-run is judged anew
+            auto = tuple(j for j in auto if j != REPLAY_JOB)
+        need = required + auto
+        if clear.get("standing") and RISK_JOB not in need:
+            need = (*need, RISK_JOB)
         state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
@@ -1421,6 +1589,29 @@ def run(
                 _status(repo, head, "pending", qwhy)
                 _summary(f"#{pr} @ {head[:9]}: not merged -- {qwhy}")
                 return 0
+        if (
+            state == "fail"
+            and low
+            and box
+            and os.environ.get(REGISTRY_ENV)
+            and os.environ.get(AUTHORITY_PUBKEY_ENV)
+            and checks(runs, tuple(j for j in need if j != REPLAY_JOB), genuine)[0] != "fail"
+        ):
+            # replay-shadow is the one red job: a MATCHES_DECLARED the authority signed for this
+            # exact run is never an AUTO merge, so the PR leaves the no-comment path for the
+            # authority's CONTROLLER path (trusted-eval, the veto window) instead of quarantine
+            rclear, rwhy = registry_now(pr_verdicts(), "replay-shadow red on the AUTO path")
+            if (
+                declared["run"] is not None
+                and newest_run_id(runs, REPLAY_JOB, genuine) == declared["run"]
+            ):
+                if rclear is None:  # signed, but its window is still running: no quarantine
+                    _summary(f"#{pr} @ {head[:9]}: not merged -- {rwhy}")
+                    return 0
+                mode, low, registry, required = "manual", False, True, GATING_JOBS
+                _summary(f"#{pr} @ {head[:9]}: replay-shadow MATCHES_DECLARED, signed by the "
+                         "authority as CONTROLLER: the authority path decides")  # fmt: skip
+                continue
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
             if low:  # the no-comment paths quarantine a failure; the manual path reports it

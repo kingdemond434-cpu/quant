@@ -1,0 +1,116 @@
+name: youtube-corpus
+
+# YOUTUBE METADATA AND LINKS, OFF THE BOX (11-13: 24/7 caption mining is blocked by the rules --
+# the trading box never contacts YouTube, cloud egress is refused, and the only caption route
+# was zuck's PC, which nothing may rely on). This job runs on a fresh GitHub-hosted VM every
+# 6 hours and uses the free YouTube Data API (official, keyed, 10k units/day; collector budget
+# 2,000 per run) to enumerate every video of the configured channels (QuantGuild, Algovibes,
+# ... in config/video_mining_channels.json): titles, descriptions, tags and every description
+# link. Captions are OFF (YOUTUBE_CORPUS_NO_TRANSCRIPTS=1): YouTube's robots.txt Disallows the
+# caption paths and the only other route is third-party mirrors, which the rules ban.
+# Publishing commits on top of the existing data branch (never an orphan force-push), and the
+# job fails before publishing if the branch exists but its state did not restore.
+# Output goes to the data branch claude/youtube-corpus (pushes there start no CI). The box's
+# Quant-VideoCells task reads that branch over its existing git remote.
+# Uses the repository secret YOUTUBE_API_KEY when it exists. The owner decided (2026-11-13) not to
+# add one, and there is no keyless route inside the rules: youtube.com/robots.txt disallows
+# /feeds/videos.xml for every user agent and robots_gate fails closed. So without the key the job
+# skips cleanly: a green run with a NO_KEY notice, no checkout, no publish, no commit. It never
+# goes red on a missing key (a red every 6h only adds to the CI queue and tells nobody anything new).
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: youtube-corpus
+  cancel-in-progress: false
+
+jobs:
+  corpus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Key gate (skip cleanly without YOUTUBE_API_KEY)
+        id: key
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [ -z "${YOUTUBE_API_KEY}" ]; then
+            echo "::notice::NO_KEY: YOUTUBE_API_KEY not set and no keyless route is allowed (robots.txt disallows /feeds/videos.xml); skipped"
+            echo "present=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=1" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.key.outputs.present == '1'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: claude/llm-auto-upgrade-verify-gcjac3
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts/collect_youtube_corpus.py
+            scripts/fetch_video_transcript.py
+            config/video_mining_channels.json
+          sparse-checkout-cone-mode: false
+      - name: Restore corpus state from the data branch
+        if: steps.key.outputs.present == '1'
+        id: restore
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin claude/youtube-corpus >/dev/null; then
+            git fetch --depth 1 origin claude/youtube-corpus
+            for p in data/youtube_channels.json data/intelligence; do
+              if git cat-file -e "FETCH_HEAD:$p" 2>/dev/null; then
+                git checkout FETCH_HEAD -- "$p"
+              fi
+            done
+            git reset -q
+            if ! git cat-file -e FETCH_HEAD:data/intelligence 2>/dev/null; then
+              echo "::warning::data branch has no data/intelligence yet"
+            fi
+            echo "exists=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=0" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Collect
+        if: steps.key.outputs.present == '1'
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CORPUS_NO_TRANSCRIPTS: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p data/secrets data/intelligence/youtube
+          umask 077
+          printf '%s' "${YOUTUBE_API_KEY}" > data/secrets/youtube_api_key
+          python3 scripts/collect_youtube_corpus.py
+          rm -f data/secrets/youtube_api_key
+          echo "{\"ts\": \"$(date -u +%FT%TZ)\", \"status\": \"OK\"}" > data/intelligence/youtube/LAST_RUN.json
+      - name: Publish to the data branch
+        # Runs after a failed collect too (partial state is still evidence), but never after a
+        # failed or skipped restore: publishing an unrestored tree would overwrite accumulated
+        # evidence, and a keyless run has nothing to publish.
+        if: always() && steps.key.outputs.present == '1' && steps.restore.outcome == 'success'
+        run: |
+          set -euo pipefail
+          rm -rf data/secrets
+          git config user.name "youtube-corpus"
+          git config user.email "youtube-corpus@users.noreply.github.com"
+          tmp=$(mktemp -d)
+          cp -r data "$tmp/"
+          rm -rf data
+          git sparse-checkout disable
+          if [ "${{ steps.restore.outputs.exists }}" = "1" ]; then
+            git checkout -q -f -B corpus-out FETCH_HEAD
+          else
+            git checkout -q --orphan corpus-out
+            git rm -rq --cached . || true
+          fi
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -r "$tmp/data" .
+          git add -A data
+          git commit -qm "youtube corpus $(date -u +%FT%TZ)" || { echo "no change"; exit 0; }
+          git push -q origin HEAD:claude/youtube-corpus

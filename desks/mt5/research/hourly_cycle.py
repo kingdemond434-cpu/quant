@@ -1107,6 +1107,12 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "attestation_remint": {3: "REMINT_BREACH"},
+    # `halt_rail` 2 -- a latched halt, or a ruin-rail input too stale to judge while the desk is
+    # halted; 3 -- the rail's inputs cannot be read at all. Both stay FAILURES rather than
+    # verdict exits, for the reason recorded against `silent_organs` below: a declared verdict
+    # records as `verdict_exit=N`, which every streak reader counts as ok, and a RED nobody is
+    # paged for is exactly how this desk ran 11.7 days halted with one reachable rail.
+    "halt_rail": {2: "HALT_RAIL_RED", 3: "HALT_RAIL_UNMEASURED"},
     # pf_allocator exits 3 when it stands down behind a lock it may not reclaim (a live,
     # heartbeating holder); the named stand-down is reports/ALLOCATOR_STANDDOWN.json.
     "pf_allocator": {3: "LOCK_REFUSED"},
@@ -1185,9 +1191,16 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # Whether each ruin rail can reach its input, and the halt's REAL age -- capital-path class, so
+    # it runs every pass and never waits for a rotation (scripts/check_halt_rail_integrity.py).
+    "halt_rail",
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
+    # Half-landed steps (a workflow or box task naming a file that is not in the tree) and the
+    # FAILING box tasks, ranked and capped at five (zuck 2026-11-13, Phase 6). --static-only: no
+    # network, two small reads; the cloud hourly pass runs the full GitHub half.
+    "arch_health",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -1222,6 +1235,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
+    # ORDER-SENSITIVE DECAY (R0312): a reader of the lane state files and the per-sleeve ledgers,
+    # seconds; it runs every hour beside the fused reliability column it complements.
+    "decay_verdicts",
+    # THE TIER-S CLUSTER JUDGED AS ONE HYPOTHESIS (P8-J1): reads the lane state files and each
+    # clock's own per-key ledger, seconds; a report, so it rides the core clock beside decay.
+    "cluster_judge",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
     "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
@@ -1315,7 +1334,7 @@ DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery"
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
-                     "dukascopy_backfill", "synthetic_usdx",
+                     "tape_deepen", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
@@ -1330,7 +1349,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
-                     "occupancy_map", "dsr_inputs"), "data"),
+                     "occupancy_map", "dsr_inputs",
+                     # the free-key sources (EIA, Nasdaq Data Link, e-Stat, KOSIS, ECOS, BLS)
+                     # and the ledger of which keys are set (#144, 2026-09-30)
+                     "keyed_sources", "credential_coverage"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
                      "market_intel", "mine",
@@ -1438,7 +1460,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration", "decay_verdicts", "cluster_judge"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -2072,6 +2094,14 @@ INDEX_DISCOVERY_ROUTES_ARGS: tuple[str, ...] = tuple(
     a for r in INDEX_DISCOVERY_ROUTES for a in ("--route", r))
 
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The backward tape walk stops itself at --budget-s 300 (or at QUANT_LEG_BUDGET_S less a
+    # margin, when priced lower) and saves its state after every symbol turn.
+    "tape_deepen": 420,
+    # The keyed sources stop themselves at --budget-s 300 (70% of it fetching) and persist their
+    # cursor after every source; the cap sits above so the report and the donation are written.
+    "keyed_sources": 420,
+    # A registry read, a glob over clock files and the last 24h of donation files: seconds.
+    "credential_coverage": 180,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -4236,6 +4266,17 @@ def main() -> None:
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
     fm = _costed("fred_macro", fred_macro)
+    # THE KEYED FREE SOURCES (#144): every free-key dataset no other lane builds (EIA weekly
+    # stocks, Nasdaq Data Link fixes, e-Stat, KOSIS, ECOS, BLS components) as PIT lake series,
+    # direct exogenous_conditioner cells, indirect conditioned parents and
+    # reports/KEYED_SOURCES_ALLOCATION_INTEL.json; BLOCKED_AUTH:<VAR> until set.
+    kys = _costed("keyed_sources", lambda: _producer(
+        "keyed_sources", "research/keyed_sources.py", "--once", "--budget-s", "300"))
+    # AND WHICH KEYS ARE SET: per env var, presence on this host (never a value), every
+    # consumer, whether it is on a clock, and cells minted from it in the last 24h, read from
+    # the consumers' own donation files. Writes reports/CREDENTIAL_COVERAGE.json.
+    crv = _costed("credential_coverage", lambda: _producer(
+        "credential_coverage", "research/credential_coverage.py", "--once"))
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -5889,12 +5930,13 @@ def main() -> None:
     # hour from the six ICE legs so it never lags them; a factor only, never a tradeable symbol.
     usx = _costed("synthetic_usdx",
                   lambda: _producer("synthetic_usdx", "research/synthetic_usdx.py"))
-    # LONG-HISTORY DEPTH, BOUNDED AND RESUMABLE. Eight complete symbol-days per data-department
-    # pass compounds the public bid/ask archive without turning the hourly cycle into a multi-hour
-    # download. This source may inform structure and spread regimes; Fusion-native evidence remains
-    # the only venue-cost authority (enforced again in the producer's report).
-    _costed("dukascopy_backfill", lambda: _producer(
-        "dukascopy_backfill", "research/dukascopy_backfill.py", "--symbol-days", "8"))
+    # LONG-HISTORY DEPTH, FROM THE VENUE ITSELF (2026-11-14). The Dukascopy download that stood
+    # here is terms-refused (#891); the Fusion terminal already holds weeks of its own broker's
+    # ticks behind the first day this desk recorded, and `tape_deepen` copies them backwards into
+    # the same day files the forward writer keeps, bounded per pass and resumable. Every day it
+    # lands counts toward the 66-day tape bar the order-flow families wait on.
+    _costed("tape_deepen", lambda: _producer(
+        "tape_deepen", "recorders/tape_deepen.py", "--budget-s", "300"))
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
@@ -6295,6 +6337,24 @@ def main() -> None:
         "opportunity_forecast", "research/opportunity_forecast.py"))
     erl = _costed("edge_reliability", lambda: _producer(
         "edge_reliability", "research/edge_reliability.py"))
+    # ORDER-SENSITIVE DECAY ON EVERY LIVE AND FORWARD-CLOCK SLEEVE (R0312, SARES archaeology).
+    # Every statistic above is invariant to the ORDER of a sleeve's trades; this one is not. The
+    # realised R series is cut into pre-registered equal-count blocks by trade index (frozen in
+    # code, identical for every sleeve), one-sided p per block, Edgington mean-p early vs late.
+    # Below 20 trades the row is UNMEASURED_TOO_FEW_TRADES by name. A demote/shrink INPUT only:
+    # it sizes nothing and gates nothing (reports/DECAY_VERDICTS.json; the sizing hook is the
+    # Max-growth thread's and is published as NOT_WIRED).
+    dcv = _costed("decay_verdicts", lambda: _producer(
+        "decay_verdicts", "research/decay_verdicts.py"))
+    # THE TIER-S CLUSTER, JUDGED AS ONE HYPOTHESIS (P8-J1, 2026-10-14). The forward clocks at
+    # n >= 5 and t >= the Tier S bar are one mechanism on correlated crosses; judged one by one
+    # they count one bet many times. This leg reads each clock's OWN ledger (a shared legacy
+    # file is UNMEASURED_SHARED_LEDGER by name), measures pairwise correlation with overlap
+    # counts, hierarchical clusters and eigenvalue N_eff, and the cluster's composite t against
+    # the SAME bar with one trial for the record. A report: no sizing, no gate, no trial write
+    # (reports/CLUSTER_JUDGE.json; promotion_input is NOT_WIRED, the Max-growth thread's).
+    clj = _costed("cluster_judge", lambda: _producer(
+        "cluster_judge", "research/cluster_judge.py"))
     # LIVE TRUTH, CLOSED INTO RESEARCH CREDIT AND KEPT AS A SERIES (Tier-1 audit, 2026-09-29):
     #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
     #                               bandit.calibration_credit reads it (research budget, live)
@@ -6363,6 +6423,19 @@ def main() -> None:
     # when an organ went silent since the last reading.
     sil = _costed("silent_organs", lambda: _producer(
         "silent_organs", "scripts/check_silent_organs.py"))
+    # ARCHITECTURE HEALTH, box half (zuck 2026-11-13, Phase 6). A monitor, never a gate.
+    ahl = _costed("arch_health", lambda: _producer(
+        "arch_health", "scripts/arch_health.py", "--static-only",
+        "--out", "desks/mt5/reports/ARCH_HEALTH.json"))
+    # CAN EACH RUIN RAIL ACTUALLY FIRE, AND HOW OLD IS THE HALT REALLY (noon CRO, 2026-11-11).
+    # The Fusion gateway had been halted 11.7 days -- 26,043 consecutive paused passes -- while
+    # `check_research_health` reported "TRADING HALTED for 0.0 day(s)" every pass, because it aged
+    # the marker the ruin rail rewrites every five minutes. Under it, the halt had frozen
+    # `gateway_state.json`, the rail's ONLY input, so five of its seven rails could not fire at all
+    # and the sixth re-affirmed a dead equity. Two small file reads and a bounded log tail; it is
+    # capital-path class, so it rides the core clock like `placement_interlock` and `judge_alive`.
+    hri = _costed("halt_rail", lambda: _producer(
+        "halt_rail", "scripts/check_halt_rail_integrity.py"))
     # NO PRODUCER IS DARK (LAWS 7). Every seat, miner and organ the component registry knows,
     # with its clock, its last production and its verdict -- and the RELIGHT of every dark row
     # in the same pass, judged by the producer's own output moving, never by a zero exit code.
@@ -6598,7 +6671,9 @@ def main() -> None:
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
-                    "edge_reliability": erl, "arena": ar, "session_capital": scap,
+                    "edge_reliability": erl, "decay_verdicts": dcv,
+                    "cluster_judge": clj, "arena": ar,
+                    "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
@@ -6607,7 +6682,9 @@ def main() -> None:
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
+                    "dead_architecture": dac, "silent_organs": sil, "halt_rail": hri,
+                    "arch_health": ahl,
+                    "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
@@ -6636,7 +6713,7 @@ def main() -> None:
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
                     "allocator_join": aj,
-                    "fred_macro": fm,
+                    "fred_macro": fm, "keyed_sources": kys, "credential_coverage": crv,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
