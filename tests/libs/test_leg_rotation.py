@@ -318,3 +318,47 @@ def test_a_leg_that_fits_the_room_is_only_deferred() -> None:
     dec = LR.plan_pass(["a", "b"], att, plan="core", budget_s=1_000.0, now=now)
     assert dec.deferred == {"b"} and not dec.unschedulable
     assert "leads the next pass" in dec.why["b"]
+
+
+def test_daily_floor_forces_futures_state_and_shares_the_soft_slot() -> None:
+    """futures_state never reached rotation while always-run overran the budget (box 11-11):
+    its daily floor forces it, but never on the same soft pass as a door leg."""
+    now = datetime(2026, 11, 11, 2, tzinfo=UTC)
+    soft, hard = LR.DAILY_FLOOR_H["futures_state"]
+    att = _att_aged({"futures_state": 1, "filler": 5}, {"futures_state": soft + 0.1, "filler": 9.0},
+                    {"futures_state": 778.0, "filler": 1.0}, now)
+    dec = LR.plan_pass(["futures_state", "filler"], att, plan="core", budget_s=1.0, now=now)
+    assert "futures_state" in dec.forced
+    att = _att_aged({"tier_s": 5, "futures_state": 1},
+                    {"tier_s": LR.DUE_BY_AGE_H["tier_s"][0] + 0.5, "futures_state": soft + 0.1},
+                    {"tier_s": 1_500.0, "futures_state": 778.0}, now)
+    dec = LR.plan_pass(["tier_s", "futures_state"], att, plan="core", budget_s=1.0, now=now)
+    assert len(dec.forced) == 1, "one soft-forced leg per pass, door or daily"
+    att.last_at["futures_state"] = (now - timedelta(hours=hard)).isoformat()
+    dec = LR.plan_pass(["tier_s", "futures_state"], att, plan="core", budget_s=1.0, now=now)
+    assert {"tier_s", "futures_state"} <= dec.forced, "hard age forces regardless"
+
+
+def test_daily_floor_reads_the_artifact_and_stays_off_the_door_maps(tmp_path: Path) -> None:
+    now = datetime(2026, 11, 11, 2, tzinfo=UTC)
+    assert _REAL_ARTIFACT_AGE_H("futures_state", now, tmp_path) == float("inf")
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports/FUTURES_STATE.json").write_text(
+        json.dumps({"generated_utc": (now - timedelta(hours=5)).isoformat()}))
+    assert abs(_REAL_ARTIFACT_AGE_H("futures_state", now, tmp_path) - 5.0) < 1e-6
+    assert set(LR.DAILY_FLOOR_ARTIFACTS) == set(LR.DAILY_FLOOR_H)
+    assert not set(LR.DAILY_FLOOR_H) & (set(LR.DUE_BY_AGE_H) | LR.ALWAYS_RUN)
+    assert set(LR.DAILY_FLOOR_H) <= set(LR.legs_in_order())
+
+
+def test_a_daily_leg_that_wrote_nothing_backs_off_then_is_named(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor should-fix: an absent artifact must not hard-force the leg every pass."""
+    now = datetime(2026, 11, 11, 2, tzinfo=UTC)
+    monkeypatch.setattr(LR, "_artifact_age_h", lambda leg, n, desk=None: float("inf"))
+    att = _att_aged({"futures_state": 1}, {"futures_state": 1.0}, {"futures_state": 778.0}, now)
+    dec = LR.plan_pass(["futures_state"], att, plan="core", budget_s=1.0, now=now)
+    assert "futures_state" not in dec.forced, "inside the back-off it only rotates"
+    att.last_at["futures_state"] = (now - timedelta(hours=LR.DAILY_FLOOR_RETRY_H)).isoformat()
+    dec = LR.plan_pass(["futures_state"], att, plan="core", budget_s=1.0, now=now)
+    assert "futures_state" in dec.forced and "FAILED WRITE" in dec.why["futures_state"]

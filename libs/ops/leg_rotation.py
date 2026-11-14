@@ -178,6 +178,35 @@ DUE_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
     "replication_civilization": (("reports/REPLICATION.json", "at"),),
 }
 
+#: DAILY FRESHNESS FLOORS (2026-11-11): non-door legs whose inputs move daily or weekly, so a
+#: day-old artifact is fresh enough, but which ordinary rotation could not reach while the
+#: always-run set alone overran the core budget. Measured on the box 2026-11-11 01:18Z:
+#: futures_state (priced 778 s) ran ONCE (11-05, timeout) and sat in deferred/outside_window
+#: ever since, so reports/FUTURES_STATE.json was never written. Same semantics as DUE_BY_AGE_H
+#: -- forced at SOFT hours (sharing the one-soft-forced-leg-per-pass rule, so a daily leg never
+#: lands on the same pass as tier_s or replication), forced whatever else at HARD -- but kept in
+#: a sibling map because DUE_BY_AGE_H/DUE_ARTIFACTS are pinned to the promotion door's 6 h
+#: expiry and its input paths. Below SOFT the leg competes in ordinary rotation as before.
+DAILY_FLOOR_H: dict[str, tuple[float, float]] = {
+    "futures_state": (20.0, 30.0),
+}
+DAILY_FLOOR_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
+    "futures_state": (("reports/FUTURES_STATE.json", "generated_utc"),),
+}
+
+
+#: A daily-floor leg whose last run did not refresh its artifact (killed before writing) is not
+#: forced again until this many hours after that run (Auditor should-fix, 2026-11-11): without
+#: it an absent artifact reads infinitely old and the leg is hard-forced EVERY pass, ~778 s an
+#: hour. It still competes in ordinary rotation inside the back-off; only the forcing waits.
+DAILY_FLOOR_RETRY_H: float = 6.0
+
+
+def _floor_h(leg: str) -> tuple[float, float] | None:
+    """(soft, hard) hours for a due-by-age or daily-floor leg, else None."""
+    return DUE_BY_AGE_H.get(leg) or DAILY_FLOOR_H.get(leg)
+
+
 #: MF2: a due leg is checked at pass START, so it is forced at an age in [hard, hard + period) and
 #: its output lands one runtime later. hard + CORE_PERIOD_H + the leg's cap must stay under the
 #: door's 6 h expiry (pinned in desks/mt5/tests/test_hourly_cycle_leg_rotation.py). Both legs
@@ -189,7 +218,7 @@ def _artifact_age_h(leg: str, now: datetime, desk: Path | None = None) -> float:
     """Hours since the OLDEST door input this leg writes was stamped; inf when any is missing."""
     base = DESK if desk is None else desk
     worst = 0.0
-    for rel, key in DUE_ARTIFACTS.get(leg, ()):
+    for rel, key in DUE_ARTIFACTS.get(leg) or DAILY_FLOOR_ARTIFACTS.get(leg, ()):
         try:
             doc = json.loads((base / rel).read_text(encoding="utf-8-sig"))
             at = datetime.fromisoformat(str(doc[key]).replace("Z", "+00:00"))
@@ -203,9 +232,20 @@ def _artifact_age_h(leg: str, now: datetime, desk: Path | None = None) -> float:
 
 def _due_age_h(leg: str, att: Attendance, now: datetime) -> float | None:
     """Due age of a due-by-age leg (the older of run age and artifact age), else None."""
-    if leg not in DUE_BY_AGE_H:
+    if _floor_h(leg) is None:
         return None
-    return max(att.age_s(leg, now) / 3600.0, _artifact_age_h(leg, now))
+    run_h = att.age_s(leg, now) / 3600.0
+    due = max(run_h, _artifact_age_h(leg, now))
+    if leg in DAILY_FLOOR_H and due > run_h and run_h < DAILY_FLOOR_RETRY_H:
+        return run_h          # ran recently but wrote nothing: back off, never force each pass
+    return due
+
+
+def failed_write(leg: str, att: Attendance, now: datetime) -> bool:
+    """A daily-floor leg that ran after its artifact was last stamped (or with none at all)."""
+    if leg not in DAILY_FLOOR_H or att.runs.get(leg, 0) <= 0:
+        return False
+    return _artifact_age_h(leg, now) > att.age_s(leg, now) / 3600.0
 
 
 def legs_in_order(source: Path | None = None) -> list[str]:
@@ -406,7 +446,8 @@ def _rank(leg: str, att: Attendance, now: datetime,
           order: dict[str, int]) -> tuple[int, float, int]:
     """Sort key: always-run and due legs first, then never-run, then oldest-first, file order."""
     due = _due_age_h(leg, att, now)
-    if leg in ALWAYS_RUN or (due is not None and due >= DUE_BY_AGE_H[leg][0]):
+    floor = _floor_h(leg)
+    if leg in ALWAYS_RUN or (due is not None and floor is not None and due >= floor[0]):
         tier = 0
     elif att.runs.get(leg, 0) <= 0:
         tier = 1
@@ -453,7 +494,8 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
     fixed_s = sum(att.cost_s(leg) for leg in roster if leg in ALWAYS_RUN)
     for leg in roster:
         due = _due_age_h(leg, att, t0)
-        if due is not None and due >= DUE_BY_AGE_H[leg][1]:
+        floor = _floor_h(leg)
+        if due is not None and floor is not None and due >= floor[1]:
             fixed_s += att.cost_s(leg)
     for leg in sorted(roster, key=lambda n: _rank(n, att, t0, order)):
         cost = att.cost_s(leg)
@@ -463,16 +505,23 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
             dec.why[leg] = "always-run: irreversible or on the money path"
             continue
         due = _due_age_h(leg, att, t0)
-        if due is not None:
-            soft_h, hard_h = DUE_BY_AGE_H[leg]
+        floor = _floor_h(leg)
+        if due is not None and floor is not None:
+            soft_h, hard_h = floor
             if due >= hard_h or (due >= soft_h and not soft_forced):
                 dec.admitted.add(leg)
                 dec.forced.add(leg)
                 spent += cost
                 if due < hard_h:
                     soft_forced = True
-                age_txt = ("never run or no door input" if due == float("inf")
-                           else f"door input {due:.1f}h old")
+                what = "door input" if leg in DUE_BY_AGE_H else "daily artifact"
+                age_txt = (f"never run or no {what}" if due == float("inf")
+                           else f"{what} {due:.1f}h old")
+                if failed_write(leg, att, t0):
+                    age_txt = (f"FAILED WRITE: its last run "
+                               f"{att.age_s(leg, t0) / 3600.0:.1f}h ago left the daily "
+                               f"artifact unwritten (retried after {DAILY_FLOOR_RETRY_H:g}h); "
+                               + age_txt)
                 dec.why[leg] = (f"due by age: {age_txt} >= "
                                 f"{hard_h if due >= hard_h else soft_h:g}h; forced")
                 continue
