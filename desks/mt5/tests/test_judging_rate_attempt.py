@@ -255,3 +255,113 @@ def test_tier1_gap_reads_a_dead_pass_as_stale(tmp_path: Path, monkeypatch) -> No
     (r / "JUDGING_RATE.attempt.json").unlink()
     mj = tg.mining_and_judging(NOW + timedelta(minutes=10))
     assert mj["judging_rate_status"] == jra.FRESH and mj["verdicts_per_day"] == 5266.0
+
+
+# ------------------------------------------------------------------ v1.1 (audit should-fixes)
+def test_a_failed_rate_write_costs_neither_the_env_nor_throughput(box: Path, monkeypatch) -> None:
+    """Should-fix 1: the guarded rate write. On 42a5b556d the raise escaped run()."""
+    real = jt._write_atomic
+
+    def _fail_rate(path, doc):
+        if path.name == "JUDGING_RATE.json":
+            raise PermissionError(r"WinError 5: C:\opt\quant\desks\mt5\reports\JUDGING_RATE.json")
+        return real(path, doc)
+
+    monkeypatch.setattr(jt, "_write_atomic", _fail_rate)
+    payload = jt.run(write=True, now=NOW, apply=True)
+    assert (box.parent / "env.json").exists()
+    thr = json.loads((box / "JUDGING_THROUGHPUT.json").read_text("utf-8"))
+    assert thr["attempt"]["started_at"] == NOW.isoformat()
+    assert payload["applied"]["cadence"]["status"] == "APPLIED"
+    marker = json.loads((box / "JUDGING_RATE.attempt.json").read_text("utf-8"))
+    assert marker["phase"] == "applied" and marker["done"] is True
+    # The marker is tracked state: the error's type, never its text (audit of 80c9e6e7 MF1).
+    assert marker["rate_write_error"] == "PermissionError"
+    assert "opt" not in json.dumps(marker) and "WinError" not in json.dumps(marker)
+    assert "rate_write_failed" in [p["phase"] for p in marker["phases"]]
+    got = _read(box, now=NOW + timedelta(seconds=30))   # even inside the grace window
+    assert got["status"] == jra.STALE
+    assert "could not write JUDGING_RATE.json" in got["why"] and "PermissionError" in got["why"]
+
+
+def test_a_pre_change_rate_with_unmeasured_verdicts_is_never_fresh(tmp_path: Path) -> None:
+    """Should-fix 2: no top-level status, but verdicts.status UNMEASURED."""
+    (tmp_path / "r.json").write_text(json.dumps(
+        {"at": NOW.isoformat(), "verdicts_per_day": UNMEASURED,
+         "verdicts": {"status": UNMEASURED, "why": "gate_verdict_ledger.jsonl absent"}}), "utf-8")
+    got = jra.read_rate(NOW, rate_path=tmp_path / "r.json", attempt_path=tmp_path / "a.json")
+    assert got["status"] == UNMEASURED
+    assert "verdicts.status UNMEASURED" in got["why"] and "absent" in got["why"]
+    (tmp_path / "r.json").write_text(json.dumps(
+        {"at": NOW.isoformat(), "verdicts": {"status": "MEASURED"}}), "utf-8")
+    got = jra.read_rate(NOW, rate_path=tmp_path / "r.json", attempt_path=tmp_path / "a.json")
+    assert got["status"] == jra.FRESH
+
+
+def test_the_deadline_types_cleanly() -> None:
+    """Should-fix 3: no new mypy arg-type at the ledger deadline (`float(deadline_s)`)."""
+    import inspect
+    src = inspect.getsource(jt._verdict_counts)
+    assert "float(deadline_s):" not in src
+    assert "budget_s = None if deadline_s is None else float(deadline_s)" in src
+
+
+def test_the_marker_is_attributed_to_the_scheduled_leg() -> None:
+    """Should-fix 4: the census sees judging_throughput (an hourly leg) write the marker, and
+    judging_rate_attempt names no artifact, so it is no clockless organ (NO_CLOCK stays 266)."""
+    sys.path.insert(0, str(_ROOT / "scripts"))
+    import check_dead_architecture as cda
+    w_mod, _ = cda.artifacts_and_reads(_DESK / "research" / "judging_rate_attempt.py")
+    w_leg, _ = cda.artifacts_and_reads(_DESK / "research" / "judging_throughput.py")
+    assert w_mod == set(), f"judging_rate_attempt names artifacts {w_mod}: a clockless organ"
+    assert "JUDGING_RATE.attempt.json" in w_leg
+    assert jt.ATTEMPT_PUBLISHED == jra.ATTEMPT_PATH
+
+
+def _registry(path: Path, n: int) -> Path:
+    import sqlite3
+    c = sqlite3.connect(path)
+    c.execute("CREATE TABLE research_candidates (id INTEGER, created_at TEXT)")
+    c.executemany("INSERT INTO research_candidates VALUES (?, ?)",
+                  [(i, NOW.isoformat()) for i in range(n)])
+    c.commit()
+    c.close()
+    return path
+
+
+def test_the_creation_count_has_a_deadline(tmp_path: Path, monkeypatch) -> None:
+    """Should-fix 5: overrun is UNMEASURED with the reason, never a partial count."""
+    reg = _registry(tmp_path / "r.sqlite", 20_000)
+    late = jt._creation_counts(NOW, reg, deadline_s=-1.0)
+    assert late["status"] == UNMEASURED and "deadline" in late["why"]
+    assert "counts" not in late
+    ok = jt._creation_counts(NOW, reg, deadline_s=60.0)
+    assert ok["status"] == "MEASURED" and ok["counts"]["24h"] == 20_000
+
+    # an overrun DURING the scan: the clock jumps once the query is under way
+    import time as _t
+    calls = {"n": 0}
+    real = _t.monotonic
+
+    def _clock() -> float:
+        calls["n"] += 1
+        return real() + (0.0 if calls["n"] <= 2 else 1e6)
+
+    monkeypatch.setattr(_t, "monotonic", _clock)
+    mid = jt._creation_counts(NOW, reg, deadline_s=5.0)
+    monkeypatch.setattr(_t, "monotonic", real)
+    assert mid["status"] == UNMEASURED and "deadline" in mid["why"], mid
+    assert "counts" not in mid
+
+
+def test_measure_rate_bounds_the_creation_count(tmp_path: Path, monkeypatch) -> None:
+    seen: dict[str, object] = {}
+
+    def _spy(now, path=None, deadline_s=None):
+        seen["deadline_s"] = deadline_s
+        return {"status": UNMEASURED, "why": "spy"}
+
+    monkeypatch.setattr(jt, "_creation_counts", _spy)
+    jt.measure_rate({"depth": UNMEASURED}, {}, NOW, ledger=_ledger(tmp_path / "l.jsonl"),
+                    deadline_s=150.0)
+    assert seen["deadline_s"] == jt.CREATION_BUDGET_S
